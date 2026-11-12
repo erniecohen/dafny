@@ -1,0 +1,388 @@
+# Called only by review.yml's explicit, same-repository manual parity probe.
+name: Platform parity measurements
+on:
+  workflow_call:
+    inputs:
+      platform:
+        type: string
+        required: true
+permissions:
+  contents: read
+env:
+  DOTNET_PROCESSOR_COUNT: '4'
+  DOTNET_NOLOGO: 'true'
+  DOTNET_CLI_TELEMETRY_OPTOUT: 'true'
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 'true'
+  COPYFILE_DISABLE: '1'
+jobs:
+  build:
+    if: ${{ github.repository == 'erniecohen/dafny' && github.event_name == 'workflow_dispatch' && (inputs.platform == 'macos' || inputs.platform == 'linux') }}
+    name: "Parity ${{ inputs.platform }}: Build (Release)"
+    runs-on: ${{ inputs.platform == 'macos' && 'mac-studio' || 'ubuntu-24.04' }}
+    continue-on-error: true
+    timeout-minutes: 60
+    outputs:
+      revision: ${{ steps.version.outputs.revision }}
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Yield to interactive work
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          case "$(ps -o comm= -p "$PPID")" in
+            */Runner.Worker|Runner.Worker) ;;
+            *) echo "::error::Expected this job's Runner.Worker parent"; exit 1 ;;
+          esac
+          renice 10 -p "$PPID" "$$" >/dev/null
+          test "$(ps -o nice= -p "$PPID" | tr -d ' ')" = 10
+          test "$(ps -o nice= -p "$$" | tr -d ' ')" = 10
+          echo 'Job worker and shell niceness: 10; subsequent actions inherit it.'
+      - uses: actions/checkout@v4
+      - name: Version
+        id: version
+        run: sh .github/review/version.sh | tee -a "$GITHUB_OUTPUT"
+      - uses: ./.github/actions/setup-dotnet
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Boogie packages
+        run: sh Scripts/fetch-boogie-packages.sh
+      - name: Build
+        run: |
+          dotnet publish Source/Dafny/Dafny.csproj -c Release -o out/dafny \
+            -p:GeneratePackageOnBuild=false -p:ContinuousIntegrationBuild=true -p:SourceRevisionId=${{ steps.version.outputs.revision }}
+      - name: Check the version it reports
+        run: |
+          v=$(dotnet out/dafny/Dafny.dll --version | head -1)
+          echo "dafny --version: $v"
+          test "$v" = "${{ steps.version.outputs.version }}"
+      - name: Check the packaged standard libraries
+        run: |
+          v=$(sed -n 's/.*DefaultZ3Version = "\(.*\)";.*/\1/p' Source/DafnyCore/DafnyOptions.cs)
+          z3h=$(sh .github/review/setup-z3.sh "$v" z3h)
+          python3 .github/review/packaged-libraries.py "$PWD/out/dafny/Dafny" "$z3h" \
+            out/packaged-libraries
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: parity-${{ inputs.platform }}-packaged-libraries
+          path: |
+            out/packaged-libraries/summary.json
+            out/packaged-libraries/*/result.json
+            out/packaged-libraries/*/stdout.txt
+            out/packaged-libraries/*/stderr.txt
+            out/packaged-libraries/*/resources.csv
+            out/packaged-libraries/*/package-smoke.bin
+          retention-days: 14
+      - name: Pack
+        run: |
+          sh .github/review/portable-dafny.sh out/dafny
+          tar -C out -czf dafny.tar.gz dafny
+          python3 .github/review/check-distribution.py out/dafny --archive dafny.tar.gz
+      - uses: actions/upload-artifact@v4
+        with:
+          name: parity-${{ inputs.platform }}-dafny
+          path: dafny.tar.gz
+          retention-days: 14
+
+
+
+  suite:
+    if: ${{ github.repository == 'erniecohen/dafny' && github.event_name == 'workflow_dispatch' && (inputs.platform == 'macos' || inputs.platform == 'linux') }}
+    name: "Parity ${{ inputs.platform }}: Verifier suite (axioms ${{ matrix.axioms }}, shard ${{ matrix.shard }} of 4)"
+    needs: build
+    runs-on: ${{ inputs.platform == 'macos' && 'mac-studio' || 'ubuntu-24.04' }}
+    continue-on-error: true
+    timeout-minutes: 240
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3]
+        axioms: ['off', 'on']
+    steps:
+      - name: Yield to interactive work
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          case "$(ps -o comm= -p "$PPID")" in
+            */Runner.Worker|Runner.Worker) ;;
+            *) echo "::error::Expected this job's Runner.Worker parent"; exit 1 ;;
+          esac
+          renice 10 -p "$PPID" "$$" >/dev/null
+          test "$(ps -o nice= -p "$PPID" | tr -d ' ')" = 10
+          test "$(ps -o nice= -p "$$" | tr -d ' ')" = 10
+          echo 'Job worker and shell niceness: 10; subsequent actions inherit it.'
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-dotnet
+      - uses: actions/download-artifact@v4
+        with:
+          name: parity-${{ inputs.platform }}-dafny
+      - name: Unpack Dafny
+        run: |
+          mkdir -p out && tar -C out -xzf dafny.tar.gz
+          sh .github/review/portable-dafny.sh out/dafny
+      - name: Z3
+        run: |
+          solver=$(sh .github/review/setup-z3.sh)
+          echo "Z3=$solver" >> "$GITHUB_ENV"
+      - name: Verify
+        run: |
+          L=Source/IntegrationTests/TestFiles/LitTests/LitTest
+          python3 .github/review/lit-verdicts.py plan "$L" plan.tsv
+          python3 .github/review/lit-verdicts.py run plan.tsv "$L" "$PWD/out/dafny/Dafny" "$Z3" \
+            verdicts-${{ matrix.axioms }}-${{ matrix.shard }}.tsv --shard ${{ matrix.shard }}/4 --jobs 4 \
+            --additional-axioms ${{ matrix.axioms == 'on' }} --measurements measurements/${{ matrix.axioms }}
+          python3 .github/review/additional-axioms.py inventory measurements/${{ matrix.axioms }} \
+            resources-${{ matrix.axioms }}-${{ matrix.shard }}.json
+      - name: Record per-program resource counts and headroom
+        if: always()
+        run: |
+          python3 .github/review/program-resources.py suite measurements/${{ matrix.axioms }} \
+            Source/IntegrationTests/TestFiles/LitTests/LitTest verdicts-${{ matrix.axioms }}-${{ matrix.shard }}.tsv ru \
+            --solver "$Z3" --archive ci-z3/archive.zip
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: parity-${{ inputs.platform }}-verdicts-${{ matrix.axioms }}-${{ matrix.shard }}
+          path: |
+            verdicts-${{ matrix.axioms }}-${{ matrix.shard }}.tsv
+            resources-${{ matrix.axioms }}-${{ matrix.shard }}.json
+            plan.tsv
+            ru/
+          retention-days: 90
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: parity-${{ inputs.platform }}-suite-measurements-${{ matrix.axioms }}-${{ matrix.shard }}
+          path: measurements
+          compression-level: 9
+          retention-days: 90
+
+
+
+  stdlib:
+    if: ${{ github.repository == 'erniecohen/dafny' && github.event_name == 'workflow_dispatch' && (inputs.platform == 'macos' || inputs.platform == 'linux') }}
+    name: "Parity ${{ inputs.platform }}: Standard library (Z3 ${{ matrix.z3 }}, axioms ${{ matrix.axioms }})"
+    needs: build
+    runs-on: ${{ inputs.platform == 'macos' && 'mac-studio' || 'ubuntu-24.04' }}
+    continue-on-error: true
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        # This line's Z3, and the Z3 that the tree's own tests expect (its
+        # DefaultZ3Version), with which upstream builds the library.
+        z3: ['5.1.0', 'of the tests']
+        axioms: ['off', 'on']
+    steps:
+      - name: Yield to interactive work
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          case "$(ps -o comm= -p "$PPID")" in
+            */Runner.Worker|Runner.Worker) ;;
+            *) echo "::error::Expected this job's Runner.Worker parent"; exit 1 ;;
+          esac
+          renice 10 -p "$PPID" "$$" >/dev/null
+          test "$(ps -o nice= -p "$PPID" | tr -d ' ')" = 10
+          test "$(ps -o nice= -p "$$" | tr -d ' ')" = 10
+          echo 'Job worker and shell niceness: 10; subsequent actions inherit it.'
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-dotnet
+      - uses: actions/download-artifact@v4
+        with:
+          name: parity-${{ inputs.platform }}-dafny
+      - name: Unpack Dafny
+        run: |
+          mkdir -p out && tar -C out -xzf dafny.tar.gz
+          sh .github/review/portable-dafny.sh out/dafny
+      - name: Z3
+        run: |
+          v='${{ matrix.z3 }}'
+          if [ "$v" = 'of the tests' ]; then
+            v=$(sed -n 's/.*DefaultZ3Version = "\(.*\)";.*/\1/p' Source/DafnyCore/DafnyOptions.cs)
+          fi
+          solver=$(sh .github/review/setup-z3.sh "$v")
+          echo "Z3=$solver" >> "$GITHUB_ENV"
+          echo "Z3V=$v" >> "$GITHUB_ENV"
+      - name: Verify
+        run: |
+          "$Z3" --version
+          python3 .github/review/std-verdicts.py run Source/DafnyStandardLibraries "$PWD/out/dafny/Dafny" "$Z3" \
+            std-verdicts.tsv --cores 4 --additional-axioms ${{ matrix.axioms == 'on' }} \
+            --boogie "/deterministicLiteralHashes:1 /restartProver" --measurements measurements
+          python3 .github/review/std-verdicts.py expected std-verdicts.tsv > "expected-std-verdicts-z3-$Z3V.tsv"
+          # Fingerprints, to compare runs of one tree without downloading artifacts (#186):
+          # the verdict columns, and the declarations' resource and proof counts.
+          vfp=$(shasum -a 256 < "expected-std-verdicts-z3-$Z3V.tsv" | cut -c1-16)
+          rfp=$(awk -F'\t' '$1 !~ /^run /{print $1"\t"$5"\t"$6}' std-verdicts.tsv | shasum -a 256 | cut -c1-16)
+          echo "verdict fingerprint $vfp, resource fingerprint $rfp"
+          {
+            echo "## Standard library, axioms ${{ matrix.axioms }}, Z3 $Z3V: ${{ github.sha }}"
+            echo
+            echo "Source/DafnyStandardLibraries, verified as its Makefile's verify target does, with"
+            echo "the library's own resource limits and no time limit, the library part with"
+            echo "Boogie's /deterministicLiteralHashes:1 /restartProver (#186, #30)."
+            echo
+            python3 .github/review/std-verdicts.py summary std-verdicts.tsv
+            echo
+            echo "Verdict fingerprint \`$vfp\`, resource fingerprint \`$rfp\`."
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Record per-program resource counts and headroom
+        if: always()
+        run: |
+          python3 .github/review/program-resources.py library measurements \
+            Source/DafnyStandardLibraries std-verdicts.tsv ru --solver "$Z3" --archive ci-z3/archive.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: parity-${{ inputs.platform }}-std-verdicts-${{ matrix.axioms }}-z3-${{ env.Z3V }}
+          path: |
+            std-verdicts.tsv
+            expected-std-verdicts-z3-${{ env.Z3V }}.tsv
+            ru/
+            measurements/
+          retention-days: 90
+
+
+  regressions:
+    if: ${{ github.repository == 'erniecohen/dafny' && github.event_name == 'workflow_dispatch' && (inputs.platform == 'macos' || inputs.platform == 'linux') }}
+    name: "Parity ${{ inputs.platform }}: Regression tests (upstream harness)"
+    runs-on: ${{ inputs.platform == 'macos' && 'mac-studio' || 'ubuntu-24.04' }}
+    continue-on-error: true
+    timeout-minutes: 90
+    steps:
+      - name: Yield to interactive work
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          case "$(ps -o comm= -p "$PPID")" in
+            */Runner.Worker|Runner.Worker) ;;
+            *) echo "::error::Expected this job's Runner.Worker parent"; exit 1 ;;
+          esac
+          renice 10 -p "$PPID" "$$" >/dev/null
+          test "$(ps -o nice= -p "$PPID" | tr -d ' ')" = 10
+          test "$(ps -o nice= -p "$$" | tr -d ' ')" = 10
+          echo 'Job worker and shell niceness: 10; subsequent actions inherit it.'
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-dotnet
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: The solvers the tests expect
+        run: |
+          v=$(sed -n 's/.*DefaultZ3Version = "\(.*\)";.*/\1/p' Source/DafnyCore/DafnyOptions.cs)
+          mkdir -p Binaries/z3/bin
+          for version in "$v" 4.12.1 5.1.0; do
+            solver=$(sh .github/review/setup-z3.sh "$version" "ci-z3-$version")
+            cp "$solver" "Binaries/z3/bin/z3-$version"
+          done
+      - name: Boogie packages
+        run: sh Scripts/fetch-boogie-packages.sh
+      - name: Build the test harness
+        run: dotnet build Source/IntegrationTests -c Release
+      - name: Cardinality resolver and translation admission tests
+        run: |
+          dotnet test --settings .github/review/ci.runsettings --logger "trx;LogFileName=test-1.trx" --results-directory parity-results Source/DafnyCore.Test -c Release --filter 'FullyQualifiedName~Cardinality|FullyQualifiedName~NewtypeReferenceCharacteristicTests'
+          dotnet test --settings .github/review/ci.runsettings --logger "trx;LogFileName=test-2.trx" --results-directory parity-results Source/DafnyLanguageServer.Test -c Release --filter FullyQualifiedName~Cardinality
+          dotnet test --settings .github/review/ci.runsettings --logger "trx;LogFileName=test-3.trx" --results-directory parity-results Source/IntegrationTests -c Release --no-build --filter FullyQualifiedName~CardinalityEmissionTests
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '16.0.0'
+      - name: JavaScript runtime dependency
+        run: npm install --no-save --package-lock=false bignumber.js@9.1.2
+      - name: Run the tests named in .github/review/regressions
+        env:
+          DAFNY_INTEGRATION_TESTS_ONLY_COMPILERS: cs
+        run: |
+          filter=$(grep -v '^#' .github/review/regressions | grep . | sed 's|^|DisplayName~|' | paste -sd'|' -)
+          if [ -z "$filter" ]; then echo "no tests named"; exit 0; fi
+          echo "$filter"
+          dotnet test --settings .github/review/ci.runsettings --logger "trx;LogFileName=test-4.trx" --results-directory parity-results Source/IntegrationTests -c Release --no-build \
+            --logger "console;verbosity=normal" --filter "$filter"
+      - name: Batch requests reuse resolution and create fresh proof tasks
+        env:
+          Z3: ${{ github.workspace }}/Binaries/z3/bin/z3-5.1.0
+        run: dotnet test --settings .github/review/ci.runsettings --logger "trx;LogFileName=test-5.trx" --results-directory parity-results Source/IntegrationTests -c Release --no-build --filter FullyQualifiedName~VerificationBatchTests --logger "console;verbosity=normal"
+      - name: A module window reports what one module at a time reports (#241)
+        env:
+          Z3: ${{ github.workspace }}/Binaries/z3/bin/z3-5.1.0
+        run: dotnet test --settings .github/review/ci.runsettings --logger "trx;LogFileName=test-6.trx" --results-directory parity-results Source/IntegrationTests -c Release --no-build --filter FullyQualifiedName~ModuleWindowTests --logger "console;verbosity=normal"
+      - name: Literal identities are option guarded and local to each module
+        run: dotnet test --settings .github/review/ci.runsettings --logger "trx;LogFileName=test-7.trx" --results-directory parity-results Source/IntegrationTests -c Release --no-build --filter FullyQualifiedName~AdditionalAxiomsTranslationTests --logger "console;verbosity=normal"
+      - name: Obligation lowering inventory and structural comparisons
+        run: dotnet test --settings .github/review/ci.runsettings --logger "trx;LogFileName=test-8.trx" --results-directory parity-results Source/DafnyCore.Test -c Release --filter FullyQualifiedName~Obligation --logger "console;verbosity=normal"
+      - name: Editor obligation option changes invalidate verification results
+        env:
+          Z3: ${{ github.workspace }}/Binaries/z3/bin/z3-5.1.0
+        run: dotnet test --settings .github/review/ci.runsettings --logger "trx;LogFileName=test-9.trx" --results-directory parity-results Source/DafnyLanguageServer.Test -c Release --filter FullyQualifiedName~ConsistentObligationChecksTest --logger "console;verbosity=normal"
+      - name: Editor option changes invalidate verification results
+        run: dotnet test --settings .github/review/ci.runsettings --logger "trx;LogFileName=test-10.trx" --results-directory parity-results Source/DafnyLanguageServer.Test -c Release --filter FullyQualifiedName~AdditionalAxiomsTest --logger "console;verbosity=normal"
+
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: parity-${{ inputs.platform }}-regressions
+          path: parity-results
+          retention-days: 90
+
+
+  resolver-tests:
+    if: ${{ github.repository == 'erniecohen/dafny' && github.event_name == 'workflow_dispatch' && (inputs.platform == 'macos' || inputs.platform == 'linux') }}
+    name: "Parity ${{ inputs.platform }}: Resolver unit tests and language-server recovery"
+    runs-on: ${{ inputs.platform == 'macos' && 'mac-studio' || 'ubuntu-24.04' }}
+    continue-on-error: true
+    timeout-minutes: 20
+    steps:
+      - name: Yield to interactive work
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          case "$(ps -o comm= -p "$PPID")" in
+            */Runner.Worker|Runner.Worker) ;;
+            *) echo "::error::Expected this job's Runner.Worker parent"; exit 1 ;;
+          esac
+          renice 10 -p "$PPID" "$$" >/dev/null
+          test "$(ps -o nice= -p "$PPID" | tr -d ' ')" = 10
+          test "$(ps -o nice= -p "$$" | tr -d ' ')" = 10
+          echo 'Job worker and shell niceness: 10; subsequent actions inherit it.'
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-dotnet
+      - name: Boogie packages
+        run: sh Scripts/fetch-boogie-packages.sh
+      - name: Build resolver and language-server tests
+        run: dotnet build Source/DafnyLanguageServer.Test -c Release
+      # These tests exercise type resolution only. The language-server tests
+      # explicitly disable automatic verification, so this job starts no solver.
+      - name: Test redirecting dependencies, numeric ancestry and recovery scopes
+        run: |
+          dotnet test --settings .github/review/ci.runsettings --logger "trx;LogFileName=test-11.trx" --results-directory parity-results Source/DafnyCore.Test -c Release --no-build \
+            --logger "console;verbosity=normal" \
+            --filter "FullyQualifiedName~DafnyCore.Test.RedirectingTypeDependencyTrackerTests|FullyQualifiedName~DafnyCore.Test.NumericAncestryTests|FullyQualifiedName~DafnyCore.Test.NumericAncestryAllocationTests|FullyQualifiedName~DafnyCore.Test.ScopeCheckpointTest|FullyQualifiedName~MapComprehensionSubstitutionTests" \
+            --blame-hang --blame-hang-timeout 60s --blame-hang-dump-type none
+      - name: Test newtype-cycle edits in both resolver modes
+        run: |
+          dotnet test --settings .github/review/ci.runsettings --logger "trx;LogFileName=test-12.trx" --results-directory parity-results Source/DafnyLanguageServer.Test -c Release --no-build \
+            --logger "console;verbosity=normal" \
+            --filter "FullyQualifiedName~InferredNewtypeCycleTest" \
+            --blame-hang --blame-hang-timeout 60s --blame-hang-dump-type none
+
+      - name: Z3 for incremental bitvector verification
+        run: |
+          solver=$(sh .github/review/setup-z3.sh)
+          echo "Z3=$solver" >> "$GITHUB_ENV"
+      - name: Test cached inherited members and rotations after edits
+        run: |
+          dotnet test --settings .github/review/ci.runsettings --logger "trx;LogFileName=test-13.trx" --results-directory parity-results Source/DafnyLanguageServer.Test -c Release --no-build \
+            --logger "console;verbosity=normal" \
+            --filter "FullyQualifiedName~IncrementalBitvectorMembersTest" \
+            --blame-hang --blame-hang-timeout 90s --blame-hang-dump-type none
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: parity-${{ inputs.platform }}-resolver-tests
+          path: parity-results
+          retention-days: 90
