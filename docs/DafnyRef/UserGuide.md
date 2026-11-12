@@ -303,7 +303,9 @@ programs together in a single run of `dafny`.
 Various options control the verification process, in addition to all those described for [`dafny resolve`](#sec-dafny-resolve).
 
 - `--verification-cache DIR` opts into a persistent cache for individual prepared
-  verification tasks. It uses a fresh solver history for each task. Unchanged complete solver inputs, execution options, ordered type
+  verification tasks. It uses a fresh solver history and deterministic numeric
+  declaration hashes for each task. The enabled session supersedes a legacy
+  `/deterministicLiteralHashes:0` override; disabling the cache preserves that setting. Unchanged complete solver inputs, execution options, ordered type
   inputs, and solver/runtime dependency bytes can reuse a completed result.
   Valid results are reusable with a time limit; errors and resource exhaustion
   require a positive resource limit and no elapsed-time limit. Replayed JSON

@@ -46,6 +46,8 @@ public sealed class TaskCacheSession {
 
   private TaskCacheSession(DafnyOptions options, string directory) {
     this.options = options;
+    // Normalized numeric declaration order must survive a fresh CLR process.
+    options.DeterministicLiteralHashes = true;
     results = new TaskResultCache(new ContentAddressedCache(directory));
     environment = new TaskExecutionEnvironment(options);
     var original = options.CreateSolver;

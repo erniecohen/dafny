@@ -293,3 +293,15 @@ Report/selection/setup stages execute against the current compilation rather tha
 a stored rendered report. Legacy `--boogie` settings either flow into those
 interfaces/actual commands or select a bypassed external profile; the opt-in
 transport is available only on the modern verify command.
+
+## Stable numeric solver inputs
+
+The enabled session selects the existing Boogie deterministic numeric content-hash
+path before preparing a task, alongside its existing fresh-checker policy. Legacy
+numeric hashes depend on the CLR process seed and can reorder normalized SMT
+declarations even in repeated shipped-compiler invocations. Reusing source in a
+fresh process must not inject that ambient seed into task inputs. The option-off
+path preserves the shipped setting. This uses the pinned Boogie implementation
+and changes no Boogie API. An explicit legacy numeric-hash setting is superseded
+inside the enabled session, like the session's independent solver-history policy.
+The effective value is included in each task execution key.

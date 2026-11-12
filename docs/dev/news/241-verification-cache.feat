@@ -8,3 +8,5 @@ Publication awaits the final solver handshake even if its continuation follows
 checker retirement; failed or absent handshakes still prevent reuse.
 Each cached task owns a fresh Boogie checker so cleanup timing cannot change
 the next task's solver setup or cache key.
+
+Enabled task caching uses content-derived numeric solver declaration hashes for stable inputs across fresh processes; the disabled path retains the shipped setting.
