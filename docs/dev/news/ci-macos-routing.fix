@@ -1,0 +1,1 @@
+Run trusted portable CI and verdict-qualified suite/library gates on the guarded macOS pool, with bounded concurrency, nice 10 job processes, pinned solvers and per-program resource headroom reports.
