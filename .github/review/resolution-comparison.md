@@ -1,7 +1,7 @@
 # Module-resolution compatibility audit
 
 `review.yml` builds the pre-feature control at
-`50624274c63bed6d3bff8c16dc8f64cfb686ef20` with the same SDK, runtime and
+`8deca8ad4e8b49988f683855fe78a6917338511c` with the same SDK, runtime and
 checksum-checked Boogie packages as the candidate. Its binary verifies the
 candidate's public inputs. The control must remain a separately reviewed shipped commit without the
 resolution option; it must not silently follow the feature branch.
@@ -37,6 +37,11 @@ resolver; this integration does not enable source operators implicitly. Its
 shipped default verdict files are unchanged. The five completed paired
 captures and six full-Std seed observations on the preceding shipped base are at
 https://github.com/erniecohen/dafny/actions/runs/43252258965.
+
+The control advanced to `8deca8ad4e8b49988f683855fe78a6917338511c`
+after https://github.com/erniecohen/dafny/pull/286 added CI-only .NET download
+retries. Its product source is identical to the preceding pinned control. Both
+builds now use the shipped retry policy.
 
 For each suite shard and for the standard library, the audit runs that control,
 the candidate with the option omitted, and the candidate at N = 1, 2, 4, 8.

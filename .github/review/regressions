@@ -365,6 +365,7 @@ git-issues/github-issue-241-module-window.dfy
 git-issues/github-issue-205.dfy
 
 # Opt-in parallel resolution: ordered diagnostics, verification and isolated Boogie (https://github.com/erniecohen/dafny/issues/241).
+# Includes rejected Std legacy/newtype configurations at N=1,2,4,8.
 git-issues/github-issue-241-parallel-resolution.dfy
 
 # Opt-in /cacheUsedTypes and /lockFreeExpansion send the solver the same text (Boogie 3.5.5-review.c5a9f2ef, #241).
