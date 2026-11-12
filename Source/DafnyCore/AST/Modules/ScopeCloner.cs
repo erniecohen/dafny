@@ -98,6 +98,7 @@ class ScopeCloner : DeepModuleSignatureCloner {
       var otd = new AbstractTypeDecl(Origin(d.Origin), d.NameNode.Clone(this), newParent, characteristics, tps,
         [], // omit the newParent traits
         members, CloneAttributes(d.Attributes), d.IsRefining);
+      otd.TerminationContract = d.TerminationContract;
       otd.CardinalityParentObligations = based.CardinalityParentObligations;
       based = otd;
       based.CardinalityViewOf = d;
