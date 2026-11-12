@@ -87,3 +87,17 @@ obligations separately. It adds no axiom, assumption, precondition or unchecked
 fact. The selected declaration passes all four combinations of additional axioms
 and consistent-obligation checks at the unchanged bound. This is focused repair
 evidence; whole-library and dependent-client qualification still gate the PR.
+
+The same preparation change makes `Std.JSON.ZeroCopy.Deserializer.Core.TryStructural`
+exhaust its existing 100-million RU limit when checking its four well-formedness
+obligations together. Assertion isolation checks those existing obligations
+separately, preserving the function body and contract. All four additional-axiom
+and consistent-obligation combinations pass without changing the bound.
+
+`Std.BulkActions.BatchReader.Read` remains out of resource at its original bound.
+The final validity assertion changed cost after its module's translated/pruned
+text changed. Attempts to expose its validity conjuncts did not give a repair
+that passes all four option combinations; those diagnostic edits are not kept.
+Its moved verdict is recorded for the baseline review instead of increasing its
+resource ceiling. The complete pre-repair cohort and every changed-task RU delta
+are in [the qualification report](241-default-translation-results.md).

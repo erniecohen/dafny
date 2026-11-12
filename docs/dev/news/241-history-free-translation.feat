@@ -5,3 +5,5 @@ move solver resource costs. Translation-table consumers use the same graph
 materialization and module-owned proof/report maps as uncached consumers.
 
 The moved Base64 encoding proof checks its existing obligations in separate assertion batches, within its unchanged resource limit.
+
+The moved structural-JSON function checks its existing well-formedness obligations separately, within its unchanged resource limit.
