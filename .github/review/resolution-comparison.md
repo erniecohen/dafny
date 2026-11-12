@@ -1,7 +1,7 @@
 # Module-resolution compatibility audit
 
 `review.yml` builds the pre-feature control at
-`dfe57d8d94869cbfa9169f9e331ab882790eb5d6` with the same SDK, runtime and
+`c02d46e8c7faad8490b66238d1a3378267985728` with the same SDK, runtime and
 checksum-checked Boogie packages as the candidate. Its binary verifies the
 candidate's public inputs. A change to this control requires a separately
 reviewed default change; it must not silently follow the feature branch.
@@ -14,6 +14,14 @@ control/candidate audit remains at
 https://github.com/erniecohen/dafny/actions/runs/43134871839. The control remains
 pinned to a shipped commit without this feature; no verdict baseline is changed
 by this update.
+
+The control advanced again to `c02d46e8c7faad8490b66238d1a3378267985728`
+after https://github.com/erniecohen/dafny/pull/276 and
+https://github.com/erniecohen/dafny/pull/275 landed independently. The latter
+fixes the default decreases-tuple relation and deliberately changes shipped
+suite/library verdicts. Both builds must include that fix; its legacy opt-out
+is not enabled for this audit. The prior complete audit remains at
+https://github.com/erniecohen/dafny/actions/runs/43151173385.
 
 For each suite shard and for the standard library, the audit runs that control,
 the candidate with the option omitted, and the candidate at N = 1, 2, 4, 8.

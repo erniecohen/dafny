@@ -31,7 +31,7 @@ def enabled(expression, event, head, repository, flags, ref_type="branch"):
                 ref='refs/tags/v-test' if ref_type == 'tag' else 'refs/heads/scratch/probe',
                 ref_type=ref_type, event=NS(pull_request=NS(head=NS(repo=NS(full_name=head)))))
     options = dict(platform_parity=False, binaries=False, default_comparison=False,
-                   resolver_probe=False, additional_axioms_probe=False, platform='macos')
+                   decreases_order_comparison=False, resolver_probe=False, additional_axioms_probe=False, platform='macos')
     options.update(flags if isinstance(flags, dict) else {k: flags for k in options if k != 'platform'})
     inputs = NS(**options)
     return bool(eval(expression.strip(), {'__builtins__': {}}, {
