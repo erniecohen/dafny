@@ -42,17 +42,8 @@ public class CommonOptionBag {
     };
 
   public static readonly Option<string> VerificationCache = new("--verification-cache",
-    "Reuse complete verification-task solver exchanges in DIR. Opt-in; uses fresh solver histories and module-scoped names. " +
+    "Reuse complete verification-task solver exchanges in DIR. Opt-in; uses a fresh solver history for each task. " +
     "Replayed timing fields are identified in CSV/JSON logs. Unsupported tasks run normally.") { ArgumentHelpName = "DIR" };
-
-  public static readonly Option<bool> TranslationCache = new("--translation-cache",
-    "Reuse module translations in this process using semantic resolution keys and module-scoped names. " +
-    "Enables --resolution-threads 1 when no worker count is selected. Stores no files and no verification results.");
-
-  public static readonly Option<int> ResolutionThreads = new("--resolution-threads", () => 0,
-    "Resolve independent modules with N workers and module-scoped generated names. Opt-in; N must be positive.") {
-    ArgumentHelpName = "N"
-  };
 
   public static readonly Option<string> PipelineProfile =
     new("--pipeline-profile", @"
@@ -735,13 +726,6 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(WarnAsErrors, OptionScope.Cli);
     OptionRegistry.RegisterOption(ProgressOption, OptionScope.Cli);
     OptionRegistry.RegisterOption(LogLocation, OptionScope.Cli);
-    ResolutionThreads.AddValidator(result => {
-      if (result.Tokens.Count != 0 && result.GetValueOrDefault<int>() < 1) {
-        result.ErrorMessage = "--resolution-threads must be a positive integer.";
-      }
-    });
-    OptionRegistry.RegisterOption(ResolutionThreads, OptionScope.Cli);
-    OptionRegistry.RegisterOption(TranslationCache, OptionScope.Cli);
     OptionRegistry.RegisterOption(VerificationCache, OptionScope.Cli);
     OptionRegistry.RegisterOption(PipelineProfile, OptionScope.Cli);
     OptionRegistry.RegisterOption(LogLevelOption, OptionScope.Cli);

@@ -92,9 +92,7 @@ public class TupleTypeDecl : IndDatatypeDecl {
   }
 
   public override string SanitizedName =>
-    ModuleNamingScope.Current is { } scope
-      ? scope.Value(this, "sanitized-name", () => $"Tuple{SystemModuleManager.ArgumentGhostnessToString(ArgumentGhostness)}")
-      : sanitizedName ??= $"Tuple{SystemModuleManager.ArgumentGhostnessToString(ArgumentGhostness)}";
+    sanitizedName ??= $"Tuple{SystemModuleManager.ArgumentGhostnessToString(ArgumentGhostness)}";
 
   public override string GetCompileName(DafnyOptions options) => NonGhostTupleTypeDecl?.GetCompileName(options) ?? $"Tuple{NonGhostDims}";
 }

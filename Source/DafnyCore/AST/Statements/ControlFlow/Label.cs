@@ -8,9 +8,6 @@ public class Label {
   string uniqueId = null;
 
   public string AssignUniqueId(FreshIdGenerator idGen) {
-    if (ModuleNamingScope.Current is { } scope) {
-      return scope.Name(this, () => idGen.FreshNumericId("label"));
-    }
     if (uniqueId == null) {
       uniqueId = idGen.FreshNumericId("label");
     }

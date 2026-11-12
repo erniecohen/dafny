@@ -44,10 +44,9 @@ namespace Microsoft.Dafny {
 
     public string GetProofDependencyId(ProofDependency dep) {
       lock (SyncRoot) {
-        var idString = ModuleNamingScope.Current is { } scope
-          ? $"id{scope.Prefix}{scope.Next("proof-dependency")}" : $"{idPrefix}id{proofDependencyIdCount}";
+        var idString = $"{idPrefix}id{proofDependencyIdCount}";
         ProofDependenciesById[idString] = dep;
-        if (ModuleNamingScope.Current == null) { proofDependencyIdCount++; }
+        proofDependencyIdCount++;
         var (_, currentSet) = idsByMemberName.GetOrCreate(currentDeclarationString, () => (currentDeclaration, new HashSet<ProofDependency>()));
         currentSet.Add(dep);
         return idString;

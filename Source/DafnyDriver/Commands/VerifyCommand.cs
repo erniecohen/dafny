@@ -70,11 +70,10 @@ public static class VerifyCommand {
   private static IReadOnlyList<Option> VerifyOptions =>
     new Option[] {
         PerformanceStatisticsOption,
+        CommonOptionBag.VerificationCache,
         FilterSymbol,
         FilterPosition,
         FilterPositionBatch,
-        CommonOptionBag.TranslationCache,
-        CommonOptionBag.VerificationCache,
         VerificationModuleWindow,
         VerificationModuleWindowMemory,
         DafnyFile.DoNotVerifyDependencies
@@ -83,9 +82,6 @@ public static class VerifyCommand {
       Concat(DafnyCommands.ResolverOptions);
 
   public static async Task<int> HandleVerification(DafnyOptions options) {
-    if ((options.Get(CommonOptionBag.TranslationCache) || !string.IsNullOrEmpty(options.Get(CommonOptionBag.VerificationCache))) && options.Get(CommonOptionBag.ResolutionThreads) == 0) {
-      options.Set(CommonOptionBag.ResolutionThreads, 1);
-    }
     var batch = options.GetOrOptionDefault(FilterPositionBatch).ToArray();
     options.VerificationCacheBatchMode = batch.Length != 0;
     if (batch.Length != 0 && options.Get(FilterPosition) != null) {

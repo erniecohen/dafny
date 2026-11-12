@@ -51,8 +51,6 @@ public class Compilation : IDisposable {
   private readonly LazyConcurrentDictionary<ModuleDefinition,
     Task<IReadOnlyDictionary<ICanVerify, IReadOnlyList<IVerificationTask>>>> translatedModules = new();
 
-  private readonly ConcurrentDictionary<ModuleDefinition, ProofDependencyManager> moduleProofDependencies = new();
-
   private readonly ConcurrentDictionary<ICanVerify, Unit> verifyingOrVerifiedSymbols = new();
   private readonly LazyConcurrentDictionary<ICanVerify, IReadOnlyList<IVerificationTask>> tasksPerVerifiable = new();
 
@@ -405,8 +403,7 @@ public class Compilation : IDisposable {
           var result = await verifier.GetVerificationTasksAsync(boogieEngine, resolution, containingModule,
             cancellationSource.Token);
 
-          moduleProofDependencies[containingModule] = result.ProofDependencies;
-          return result.Tasks.GroupBy(t => {
+          return result.GroupBy(t => {
             var dafnyToken = (CanVerifyOrigin)t.ScopeToken;
             return dafnyToken.CanVerify;
           }).ToDictionary(
@@ -548,7 +545,7 @@ public class Compilation : IDisposable {
     var tokenString = BoogieGenerator.ToDafnyToken(verificationTask.Split.Token).OriginToString(Options);
     logger.LogDebug($"Received Boogie status {boogieStatus} for {tokenString}, version {Input.Version}");
 
-    updates.OnNext(new BoogieUpdate(moduleProofDependencies[canVerify.ContainingModule], canVerify,
+    updates.OnNext(new BoogieUpdate(transformedProgram!.ProofDependencyManager, canVerify,
       verificationTask,
       boogieStatus));
   }
@@ -804,7 +801,6 @@ public class Compilation : IDisposable {
 
   public void ClearModuleCache(ModuleDefinition moduleDefinition) {
     translatedModules.Remove(moduleDefinition);
-    moduleProofDependencies.TryRemove(moduleDefinition, out _);
   }
 
   public void ClearCanVerifyCache(ICanVerify canVerify, bool allowRepeat = false) {

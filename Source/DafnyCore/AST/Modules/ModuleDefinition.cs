@@ -110,9 +110,6 @@ Generate module names in the older A_mB_mC style instead of the current A.B.C sc
   public Graph<ICallable> InterModuleCallGraph = new();
 
   [FilledInDuringResolution]
-  internal string? ResolutionKey { get; set; }
-  internal ModuleTranslationInputs? TranslationInputs { get; set; }
-
   public int Height;  // height in the topological sorting of modules;
 
   [FilledInDuringResolution]
@@ -184,9 +181,6 @@ Generate module names in the older A_mB_mC style instead of the current A.B.C sc
   }
 
   private VisibilityScope? visibilityScope;
-  internal void ShareVisibilityScope(ModuleDefinition original) {
-    visibilityScope = original.VisibilityScope;
-  }
   public VisibilityScope VisibilityScope =>
     visibilityScope ??= new VisibilityScope(this.SanitizedName);
 
@@ -203,12 +197,6 @@ Generate module names in the older A_mB_mC style instead of the current A.B.C sc
 
   public string SanitizedName {
     get {
-      if (ModuleNamingScope.Current is { } scope) {
-        return scope.Value(this, "sanitized-name", () => IsBuiltinName ? Name :
-          EnclosingModule != null && EnclosingModule.Name != "_module"
-            ? EnclosingModule.SanitizedName + "_m" + NonglobalVariable.SanitizeName(Name)
-            : NonglobalVariable.SanitizeName(Name));
-      }
       if (sanitizedName == null) {
         if (IsBuiltinName) {
           sanitizedName = Name;
@@ -233,19 +221,6 @@ Generate module names in the older A_mB_mC style instead of the current A.B.C sc
   }
 
   public string GetCompileName(DafnyOptions options) {
-    if (ModuleNamingScope.Current is { } scope) {
-      return scope.Value(this, "module-compile-name", () => {
-        if (GetImplementedModule() is { } implementedModule) { return implementedModule.GetCompileName(options); }
-        var args = options.DisallowExterns ? null : Attributes.FindExpressions(Attributes, "extern");
-        var suffix = options.Get(CommonOptionBag.AddCompileSuffix) && Name != "_module" && Name != "_System" ? "_Compile" : "";
-        if (args?.FirstOrDefault() is StringLiteralExpr literal) { return (string)literal.Value!; }
-        if (args != null) { return Name + suffix; }
-        var name = IsBuiltinName ? Name : EnclosingModule is { TryToAvoidName: false }
-          ? options.Get(LegacyModuleNames) ? SanitizedName : EnclosingModule.GetCompileName(options) + options.Backend.ModuleSeparator + NonglobalVariable.SanitizeName(Name)
-          : NonglobalVariable.SanitizeName(Name);
-        return name + suffix;
-      });
-    }
     if (compileName != null) {
       return compileName;
     }

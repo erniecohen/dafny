@@ -151,7 +151,7 @@ namespace DafnyTestGeneration {
                  cmd.Attributes.Params != null &&
                  cmd.Attributes.Params.Count() == 1)
         .Select(
-          cmd => options.CapturedStateDescription(cmd.Attributes.Params[0].ToString()))
+          cmd => cmd.Attributes.Params[0].ToString())
         .Select(cmd => Regex.Replace(cmd, @"\s+", "") + uniqueId);
       return state.ToList();
     }

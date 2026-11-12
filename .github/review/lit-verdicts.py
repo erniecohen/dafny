@@ -78,7 +78,18 @@ def plan(litdir, out):
                 opts = re.split(r'%(?:build|run)\b', cmd, 1)[1]
             if opts is None:
                 continue
-            toks = [t for t in shlex.split(opts) if not t.startswith('%')]
+            # The suite supplies its pinned solver itself. Resolve the harness solver
+            # placeholder by dropping that option and its value together.
+            raw = shlex.split(opts)
+            toks = []
+            i = 0
+            while i < len(raw):
+                if raw[i] == '--solver-path' and i + 1 < len(raw) and raw[i + 1].startswith('%'):
+                    i += 2
+                    continue
+                if not raw[i].startswith('%'):
+                    toks.append(raw[i])
+                i += 1
             if '--no-verify' in toks:
                 continue
             keep, skip = [], False
@@ -99,8 +110,7 @@ def plan(litdir, out):
 
 
 def verify(args):
-    litdir, dafny, z3, path, opts, additional_axioms, measurements = args[:7]
-    resolution_threads = args[7] if len(args) > 7 else 0
+    litdir, dafny, z3, path, opts, additional_axioms, measurements = args
     own = shlex.split(opts)
     names = {t.split('=')[0].split(':')[0] for t in own if t.startswith('--')}
     # A precompiled library (--standard-libraries, a .doo) records the --boogie
@@ -117,8 +127,6 @@ def verify(args):
             fixed += FIXED[i:i + 2] if takes else [name]
         i += 2 if takes else 1
     extra = ['--additional-axioms'] if additional_axioms else []
-    if resolution_threads:
-        extra += ['--resolution-threads', str(resolution_threads)]
     dest = Path(measurements).resolve() / path if measurements else None
     if dest:
         dest.mkdir(parents=True, exist_ok=True)
@@ -145,13 +153,13 @@ def verify(args):
     return (path, rc, fin + ('; %d out of resource' % oor if oor else ''), ','.join(errs), secs)
 
 
-def run(planf, litdir, dafny, z3, out, shard='0/1', jobs=4, additional_axioms=False, measurements=None, resolution_threads=0):
+def run(planf, litdir, dafny, z3, out, shard='0/1', jobs=4, additional_axioms=False, measurements=None):
     i, n = (int(x) for x in shard.split('/'))
     with open(planf) as f:
         rows = [l.rstrip('\n').split('\t') for l in f if l.strip()]
     rows = [r if len(r) == 2 else r + [''] for r in rows]
     mine = [r for k, r in enumerate(rows) if k % n == i]
-    work = [(litdir, dafny, z3, p, o, additional_axioms, measurements, resolution_threads) for p, o in mine]
+    work = [(litdir, dafny, z3, p, o, additional_axioms, measurements) for p, o in mine]
     print('shard %d/%d: %d of %d programs, %d at a time' % (i, n, len(mine), len(rows), jobs), flush=True)
     with concurrent.futures.ThreadPoolExecutor(jobs) as ex, open(out, 'w') as f:
         for r in ex.map(verify, work):
@@ -235,7 +243,7 @@ if __name__ == '__main__':
         opts = dict(zip(args[5::2], args[6::2]))
         run(*args[:5], shard=opts.get('--shard', '0/1'), jobs=int(opts.get('--jobs', '4')),
             additional_axioms=opts.get('--additional-axioms', 'false') == 'true',
-            measurements=opts.get('--measurements'), resolution_threads=int(opts.get('--resolution-threads', '0')))
+            measurements=opts.get('--measurements'))
     elif cmd == 'summary':
         summary(args)
     elif cmd == 'expected':

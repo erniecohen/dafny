@@ -208,7 +208,6 @@ public class CliCompilation {
 
       if (ev is BoogieUpdate { BoogieStatus: Completed completed } boogieUpdate) {
         var canVerifyResult = canVerifyResults[boogieUpdate.CanVerify];
-        canVerifyResult.ProofDependencies = boogieUpdate.ProofDependencyManager;
         canVerifyResult.CompletedParts.Enqueue((boogieUpdate.VerificationTask, completed));
         var completedPartsCount = Interlocked.Increment(ref canVerifyResult.CompletedCount);
 
@@ -356,8 +355,7 @@ public class CliCompilation {
 
         yield return new CanVerifyResult(canVerify,
           results.CompletedParts.Select(c => new VerificationTaskResult(c.Task, c.Result.Result)).ToList()) {
-          ProofDependencies = Options.Get(CommonOptionBag.ResolutionThreads) > 0
-            ? results.ProofDependencies : repeatVerification ? requestDependencies : null
+          ProofDependencies = repeatVerification ? requestDependencies : null
         };
 
         canVerifyResults.TryRemove(canVerify, out _); // Free memory
@@ -517,8 +515,7 @@ public class CliCompilation {
 
           yield return new CanVerifyResult(canVerify,
             results.CompletedParts.Select(c => new VerificationTaskResult(c.Task, c.Result.Result)).ToList()) {
-            ProofDependencies = Options.Get(CommonOptionBag.ResolutionThreads) > 0
-            ? results.ProofDependencies : repeatVerification ? requestDependencies : null
+            ProofDependencies = repeatVerification ? requestDependencies : null
           };
 
           canVerifyResults.TryRemove(canVerify, out _); // Free memory

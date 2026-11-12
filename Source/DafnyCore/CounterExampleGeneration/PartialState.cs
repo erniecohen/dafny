@@ -227,9 +227,9 @@ public class PartialState {
     }
   }
 
-  public string FullStateName => Model.CapturedStateDescription(State.Name);
+  public string FullStateName => State.Name;
 
-  private string ShortenedStateName => ShortenName(FullStateName, 20);
+  private string ShortenedStateName => ShortenName(State.Name, 20);
 
   public bool IsInitialState => FullStateName.Equals(InitialStateName);
 

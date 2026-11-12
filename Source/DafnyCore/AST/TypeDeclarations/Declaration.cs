@@ -115,25 +115,13 @@ public abstract class Declaration : NodeWithOrigin, IAttributeBearingDeclaration
   }
 
   protected string? sanitizedName;
-  public virtual string SanitizedName => ModuleNamingScope.Current is { } scope
-    ? scope.Value(this, "sanitized-name", () => NonglobalVariable.SanitizeName(Name))
-    : sanitizedName ??= NonglobalVariable.SanitizeName(Name);
+  public virtual string SanitizedName => sanitizedName ??= NonglobalVariable.SanitizeName(Name);
 
   protected string? enclosingModuleName; // Computed at the same time as compileName
 
   protected string? compileName;
 
-  private (string Name, string? Enclosing) ScopedCompileName(DafnyOptions options) {
-    return ModuleNamingScope.Current!.Value(this, "declaration-compile-name", () => {
-      this.IsExtern(options, out var enclosing, out var name);
-      if (IsCompiled) { enclosing = null; }
-      if (this is TopLevelDecl topDecl) { enclosing ??= topDecl.EnclosingModuleDefinition.GetCompileName(options); }
-      return (name ?? SanitizedName, enclosing);
-    });
-  }
-
   public virtual string GetCompileName(DafnyOptions options) {
-    if (ModuleNamingScope.Current != null) { return ScopedCompileName(options).Name; }
     if (compileName == null) {
       this.IsExtern(options, out var possibleEnclosingModuleName, out compileName);
       if (!IsCompiled) {
@@ -157,7 +145,6 @@ public abstract class Declaration : NodeWithOrigin, IAttributeBearingDeclaration
   }
 
   public string GetQualificationName(DafnyOptions options) {
-    if (ModuleNamingScope.Current != null) { return ScopedCompileName(options).Enclosing!; }
     if (compileName == null) {
       GetCompileName(options); // Sets the enclosing module name if defined by externs.
       return enclosingModuleName!;

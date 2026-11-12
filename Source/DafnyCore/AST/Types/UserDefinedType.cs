@@ -31,8 +31,7 @@ public class UserDefinedType : NonProxyType, IHasReferences {
   }
 
   string compileName;
-  public string GetCompileName(DafnyOptions options) => ModuleNamingScope.Current != null
-    ? ResolvedClass.GetCompileName(options) : compileName ??= ResolvedClass.GetCompileName(options);
+  public string GetCompileName(DafnyOptions options) => compileName ??= ResolvedClass.GetCompileName(options);
 
   public string GetFullCompanionCompileName(DafnyOptions options) {
     Contract.Requires(ResolvedClass is TraitDecl || (ResolvedClass is NonNullTypeDecl nntd && nntd.Class is TraitDecl));

@@ -24,7 +24,6 @@ namespace Microsoft.Dafny {
     private readonly DafnyOptions options;
     public readonly Model Model;
     public readonly List<PartialState> States = [];
-    internal string CapturedStateDescription(string name) => options.CapturedStateDescription(name);
     public static readonly UserDefinedType UnknownType =
       new(new Token(), "?", null);
     private readonly ModelFuncWrapper fSelect, fSetMember, fSeqLength, fSeqIndex, fBox,

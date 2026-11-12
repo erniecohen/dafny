@@ -364,24 +364,22 @@ git-issues/github-issue-241-module-window.dfy
 # Std.RealCompleteness: least upper bounds for iset<real>, from one {:axiom} lemma (https://github.com/erniecohen/dafny/issues/205).
 git-issues/github-issue-205.dfy
 
-# Opt-in parallel resolution: ordered diagnostics, verification and isolated Boogie (https://github.com/erniecohen/dafny/issues/241).
-git-issues/github-issue-241-parallel-resolution.dfy
-
 # Opt-in /cacheUsedTypes and /lockFreeExpansion send the solver the same text (Boogie 3.5.5-review.c5a9f2ef, #241).
 git-issues/github-issue-241-split-setup.dfy
 
-# Process-local translation snapshots preserve current proof tasks and reports (https://github.com/erniecohen/dafny/issues/241).
-git-issues/github-issue-241-translation-cache.dfy
+# Upstream review follow-up (https://github.com/erniecohen/dafny/issues/23).
+git-issues/github-issue-23-box-bad.dfy
+git-issues/github-issue-23-ordinal-subset.dfy
+git-issues/github-issue-23-ordinal-undefined.dfy
+git-issues/github-issue-23-lambda.dfy
+git-issues/github-issue-23-constant.dfy
+git-issues/github-issue-23-lambda-cost.dfy
+git-issues/github-issue-23-glue.dfy
 
 # Stable source contracts for https://github.com/erniecohen/dafny/issues/211: both resolvers, effect boundaries, export/refinement views and reachable false controls.
 git-issues/github-issue-211-m4b.dfy
 # Wide JavaScript runtime bitwise results (https://github.com/erniecohen/dafny/issues/246).
 git-issues/git-issue-246.dfy
-
-# Persistent per-task exchanges: fresh-process replay, changed-key oracle and negative controls (https://github.com/erniecohen/dafny/issues/241).
-git-issues/git-issue-241-verification-cache.dfy
-TranslationCacheTests.ExtractedCounterexampleTraceIsNonemptyAndIdenticalAcrossRepeatedRequests
-TranslationCacheTests.ModularTerminationBypassKeepsCurrentModuleCoverageMaps
 
 # Compatible component and tuple decreases orders (https://github.com/erniecohen/dafny/issues/264).
 git-issues/git-issue-264.dfy
@@ -395,3 +393,6 @@ git-issues/git-issue-193-reference-laws.dfy
 
 # Distinct opaque nullable and non-null type constructors (https://github.com/erniecohen/dafny/issues/268).
 git-issues/github-issue-268.dfy
+
+# Persistent per-task solver replay (https://github.com/erniecohen/dafny/issues/241).
+git-issues/git-issue-241-verification-cache.dfy

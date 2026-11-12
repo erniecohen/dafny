@@ -265,11 +265,11 @@ public class VerificationBatchTests {
   private class CancelledPreparationVerifier : IProgramVerifier {
     public TaskCompletionSource Preparing { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-    public async Task<ModuleVerificationTasks> GetVerificationTasksAsync(ExecutionEngine engine,
+    public async Task<IReadOnlyList<IVerificationTask>> GetVerificationTasksAsync(ExecutionEngine engine,
       ResolutionResult resolution, ModuleDefinition moduleDefinition, CancellationToken cancellationToken) {
       Preparing.SetResult();
       await Task.Delay(Timeout.Infinite, cancellationToken);
-      return new ModuleVerificationTasks(Array.Empty<IVerificationTask>(), resolution.ResolvedProgram.ProofDependencyManager);
+      return Array.Empty<IVerificationTask>();
     }
   }
 

@@ -6,7 +6,7 @@ Build the CLI, select the pinned Z3 executable, and run:
 python3 .github/measure/VerificationCache/run.py \
   --dafny Binaries/Dafny.dll --solver "$Z3" \
   --library Source/DafnyStandardLibraries --output "$ARTIFACTS" \
-  --runs 5 --jobs 5
+  --runs 5 --jobs 4
 ```
 
 The output directory must be new. Its manifests, copied sources, full native CLI

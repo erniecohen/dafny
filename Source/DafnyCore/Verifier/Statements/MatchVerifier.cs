@@ -17,7 +17,7 @@ public class MatchStmtVerifier {
     Contract.Requires(locals != null);
     Contract.Requires(etran != null);
 
-    var missingCases = MissingCasesForTranslation(stmt);
+    FillMissingCases(stmt);
 
     generator.TrStmt_CheckWellformed(stmt.Source, builder, locals, etran, true);
     // Pattern locals assume their declared field types. A suspended source
@@ -28,7 +28,7 @@ public class MatchStmtVerifier {
     b.Add(BoogieGenerator.TrAssumeCmd(stmt.Origin, Expr.False));
     StmtList els = b.Collect(stmt.Origin);
     IfCmd ifCmd = null;
-    foreach (var missingCtor in missingCases) {
+    foreach (var missingCtor in stmt.MissingCases) {
       // havoc all bound variables
       b = new BoogieStmtListBuilder(generator, generator.Options, builder.Context);
       var newLocals = new Variables();
@@ -84,18 +84,9 @@ public class MatchStmtVerifier {
     }
   }
 
-  private static List<DatatypeCtor> MissingCasesForTranslation(IMatch match) {
-    // A resolved match can be emitted by several translators. Complete its
-    // translation view without adding metadata to the shared resolved node.
-    var missingCases = ModuleNamingScope.Current == null
-      ? match.MissingCases : new List<DatatypeCtor>(match.MissingCases);
-    FillMissingCases(match, missingCases);
-    return missingCases;
-  }
-
-  private static void FillMissingCases(IMatch match, List<DatatypeCtor> missingCases) {
+  private static void FillMissingCases(IMatch match) {
     Contract.Requires(match != null);
-    if (missingCases.Any()) {
+    if (match.MissingCases.Any()) {
       return;
     }
 
@@ -125,10 +116,10 @@ public class MatchStmtVerifier {
       // So, for now, record the missing constructors:
       foreach (var ctr in dtd.Ctors) {
         if (!memberNamesUsed.Contains(ctr.Name)) {
-          missingCases.Add(ctr);
+          match.MissingCases.Add(ctr);
         }
       }
-      Contract.Assert(memberNamesUsed.Count + missingCases.Count == dtd.Ctors.Count);
+      Contract.Assert(memberNamesUsed.Count + match.MissingCases.Count == dtd.Ctors.Count);
     }
   }
 
@@ -180,7 +171,7 @@ public class MatchStmtVerifier {
 
   public static void TrMatchExpr(BoogieGenerator boogieGenerator, MatchExpr me, WFOptions wfOptions, Variables locals,
     BoogieStmtListBuilder builder, BoogieGenerator.ExpressionTranslator etran, BoogieGenerator.AddResultCommands addResultCommands) {
-    var missingCases = MissingCasesForTranslation(me);
+    FillMissingCases(me);
 
     boogieGenerator.CheckWellformed(me.Source, wfOptions, locals, builder, etran);
     // Establish the source's type before assuming the pattern variables' types.
@@ -190,7 +181,7 @@ public class MatchStmtVerifier {
     BoogieStmtListBuilder elsBldr = new BoogieStmtListBuilder(boogieGenerator, boogieGenerator.Options, builder.Context);
     elsBldr.Add(BoogieGenerator.TrAssumeCmd(me.Origin, Expr.False));
     StmtList els = elsBldr.Collect(me.Origin);
-    foreach (var missingCtor in missingCases) {
+    foreach (var missingCtor in me.MissingCases) {
       // havoc all bound variables
       var b = new BoogieStmtListBuilder(boogieGenerator, boogieGenerator.Options, builder.Context);
       var newLocals = new Variables();

@@ -248,7 +248,7 @@ public class ModuleWindowTests {
   private class HookedVerifier(Func<ModuleDefinition, CancellationToken, Task> hook) : IProgramVerifier {
     private readonly DafnyProgramVerifier inner = new(NullLogger<DafnyProgramVerifier>.Instance);
 
-    public async Task<ModuleVerificationTasks> GetVerificationTasksAsync(ExecutionEngine engine,
+    public async Task<IReadOnlyList<IVerificationTask>> GetVerificationTasksAsync(ExecutionEngine engine,
       ResolutionResult resolution, ModuleDefinition moduleDefinition, CancellationToken cancellationToken) {
       var tasks = await inner.GetVerificationTasksAsync(engine, resolution, moduleDefinition, cancellationToken);
       await hook(moduleDefinition, cancellationToken);

@@ -37,8 +37,6 @@ public class Program : NodeWithoutOrigin {
   public IEnumerable<ModuleDefinition> CompileModules => new[] { SystemModuleManager.SystemModule }.Concat(Modules());
   // Contains the definitions to be used for compilation.
 
-  internal Dictionary<ModuleDecl, string> ResolutionKeys { get; set; } = new();
-
   public Method MainMethod; // Method to be used as main if compiled
   public LiteralModuleDecl DefaultModule;
   public IList<FileModuleDefinition> Files { get; } = new List<FileModuleDefinition>();

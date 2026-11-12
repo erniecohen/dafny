@@ -39,38 +39,6 @@ namespace Microsoft.Dafny.LanguageServer.IntegrationTest.Various {
     }
 
     [Theory]
-    [InlineData(1)]
-    [InlineData(4)]
-    public async Task ParallelResolutionCounterexamplesUseCurrentPositions(int threads) {
-      await SetUp(options => {
-        options.Set(CommonOptionBag.ResolutionThreads, threads);
-        options.Set(CommonOptionBag.RelaxDefiniteAssignment, true);
-        var solver = Environment.GetEnvironmentVariable("DAFNY_TEST_Z3");
-        if (solver != null) {
-          options.ProverOptions.Add("PROVER_PATH=" + solver);
-        }
-      });
-      var document = CreateTestDocument("""
-        module M {
-          method Abs(x: int) returns (y: int)
-            ensures y >= 0
-          {
-          }
-        }
-        """, "ParallelResolutionCounterexamplesUseCurrentPositions.dfy");
-      await client.OpenDocumentAndWaitAsync(document, CancellationToken);
-      var before = Assert.Single(await RequestCounterExamples(document.Uri));
-      Assert.Matches("-[0-9]+ == y", before.Assumption);
-      ApplyChange(ref document, new OmniSharp.Extensions.LanguageServer.Protocol.Models.Range(0, 0, 0, 0),
-        "module Unrelated {}\n");
-      await client.WaitForNotificationCompletionAsync(document.Uri, CancellationToken);
-      var after = Assert.Single(await RequestCounterExamples(document.Uri));
-      Assert.Equal(before.Position.Line + 1, after.Position.Line);
-      Assert.Equal(before.Position.Character, after.Position.Character);
-      Assert.Matches("-[0-9]+ == y", after.Assumption);
-    }
-
-    [Theory]
     [MemberData(nameof(OptionSettings))]
     public async Task CounterexamplesStillWorksIfNothingHasBeenVerified(Action<DafnyOptions> optionSettings) {
       await SetUpOptions(optionSettings);

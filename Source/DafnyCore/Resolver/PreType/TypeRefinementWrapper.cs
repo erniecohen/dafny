@@ -11,7 +11,7 @@ namespace Microsoft.Dafny;
 
 public class TypeRefinementWrapper : TypeProxy {
   private static int count = 0;
-  public readonly int UniqueId = ModuleNamingScope.Current?.Next("refinement") ?? count++;
+  public readonly int UniqueId = count++;
   public TypeRefinementWrapper(Type t) : base() {
     T = t;
   }

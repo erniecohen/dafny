@@ -26,7 +26,7 @@ namespace Microsoft.Dafny.LanguageServer.Language {
       this.logger = logger;
     }
 
-    public async Task<ModuleVerificationTasks> GetVerificationTasksAsync(ExecutionEngine engine,
+    public async Task<IReadOnlyList<IVerificationTask>> GetVerificationTasksAsync(ExecutionEngine engine,
       ResolutionResult resolution,
       ModuleDefinition moduleDefinition,
       CancellationToken cancellationToken) {
@@ -50,8 +50,6 @@ namespace Microsoft.Dafny.LanguageServer.Language {
 
         cancellationToken.ThrowIfCancellationRequested();
 
-        var dependencies = program.Options.Get(CommonOptionBag.ResolutionThreads) > 0
-          ? new ProofDependencyManager() : program.ProofDependencyManager;
         var boogieProgram = await DafnyMain.LargeStackFactory.StartNew(() => {
           Type.ResetScopes();
           var translatorFlags = new BoogieGenerator.TranslatorFlags(errorReporter.Options) {
@@ -59,21 +57,8 @@ namespace Microsoft.Dafny.LanguageServer.Language {
             ReportRanges = program.Options.Get(Snippets.ShowSnippets),
             PreludeText = program.PreludeText
           };
-          if (program.Options.Get(CommonOptionBag.TranslationCache)) {
-            var cache = ModuleTranslationCache.ProcessCache;
-            var module = cache.TranslateModule(program, moduleDefinition, translatorFlags, cancellationToken, out var reused);
-            var cached = module.Program;
-            dependencies = module.ProofDependencies;
-            if (profile != null) {
-              profile.Span("translate", profileStart!.Value, new Dictionary<string, object?> {
-                ["module"] = moduleName, ["cached"] = reused,
-                ["declarations"] = cached.TopLevelDeclarations.Count(), ["implementations"] = cached.Implementations.Count()
-              });
-            }
-            return cached;
-          }
           var threadAllocated = profile != null ? GC.GetAllocatedBytesForCurrentThread() : 0;
-          var translator = new BoogieGenerator(errorReporter, dependencies, translatorFlags);
+          var translator = new BoogieGenerator(errorReporter, resolution.ResolvedProgram.ProofDependencyManager, translatorFlags);
           if (profile != null) {
             // The constructor reads, parses and resolves the prelude, once per module.
             profile.Span("translate.prelude", profileStart!.Value, new Dictionary<string, object?> {
@@ -115,7 +100,7 @@ namespace Microsoft.Dafny.LanguageServer.Language {
             ["tasks"] = tasks.Count
           });
         }
-        return new ModuleVerificationTasks(tasks, dependencies);
+        return tasks;
       }
       finally {
         mutex.Release();
