@@ -412,17 +412,22 @@ class WorkflowControls(unittest.TestCase):
         workflow = Path(__file__).parents[1] / 'workflows/review.yml'
         text = workflow.read_text()
         guards = {name: re.search(r'^  ' + name + r':\n(?:    name:[^\n]*\n)?    if: \$\{\{ (.*) \}\}', text, re.M)[1]
-                  for name in ['build', 'regressions', 'resolver-tests', 'default-comparison']}
+                  for name in ['build', 'regressions', 'resolver-tests', 'default-comparison', 'decreases-order-comparison']}
         for event in ['push', 'pull_request', 'workflow_dispatch']:
             for ref in ['refs/heads/dev', 'refs/heads/review/4.11.0', 'refs/tags/v1', 'refs/heads/scratch/test']:
                 for flag in [False, True]:
-                    wanted = event == 'workflow_dispatch' and flag and ref.startswith('refs/heads/scratch/')
-                    for name, guard in guards.items():
-                        expression = guard.replace('github.event_name', repr(event)).replace('github.ref', repr(ref)).replace('inputs.default_comparison', repr(flag))
-                        expression = expression.replace('&&', ' and ').replace('!', ' not ')
-                        actual = eval(expression.strip(), {'__builtins__': {}, 'startsWith': lambda a, b: a.startswith(b)})
-                        with self.subTest(event=event, ref=ref, flag=flag, job=name):
-                            self.assertEqual(actual, wanted if name == 'default-comparison' else not wanted)
+                    for decreases_flag in [False, True]:
+                        manual_scratch = event == 'workflow_dispatch' and ref.startswith('refs/heads/scratch/')
+                        for name, guard in guards.items():
+                            expression = guard.replace('github.event_name', repr(event)).replace('github.ref', repr(ref))
+                            expression = expression.replace('inputs.default_comparison', repr(flag)).replace('inputs.decreases_order_comparison', repr(decreases_flag))
+                            expression = expression.replace('&&', ' and ').replace('||', ' or ').replace('!', ' not ')
+                            actual = eval(expression.strip(), {'__builtins__': {}, 'startsWith': lambda a, b: a.startswith(b)})
+                            wanted = (manual_scratch and flag if name == 'default-comparison' else
+                                      manual_scratch and decreases_flag if name == 'decreases-order-comparison' else
+                                      not (manual_scratch and (flag or decreases_flag)))
+                            with self.subTest(event=event, ref=ref, flag=flag, decreases_flag=decreases_flag, job=name):
+                                self.assertEqual(actual, wanted)
         self.assertIn('ref: ' + comparison.PRODUCT_A, text)
         expected_selection = "${{ inputs.default_comparison_mode == 'baseline-control' && '" + comparison.PRODUCT_A + "' || '" + comparison.PRODUCT_B + "' }}"
         self.assertIn('ref: ' + expected_selection + '\n          path: comparison-candidate', text)

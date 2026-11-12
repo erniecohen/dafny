@@ -70,7 +70,7 @@ def compare(args):
     for group in ['suite-off', 'suite-on', 'std-off-5.1.0', 'std-on-5.1.0', 'std-off-4.12.1', 'std-on-4.12.1']:
         data = {}
         for mode in ['legacy', 'default']:
-            dirs = sorted(inp.glob(group + '-' + mode + '*'))
+            dirs = sorted(path for path in inp.glob(group + '-' + mode + '*') if path.is_dir())
             if not dirs:
                 raise ValueError('missing measurements: ' + group + '-' + mode)
             rows, declarations, units = {}, {}, 0

@@ -19,6 +19,7 @@ class DecreasesOrderComparisonTests(unittest.TestCase):
             root = Path(directory)
             for group in ['suite-off', 'suite-on', 'std-off-5.1.0', 'std-on-5.1.0', 'std-off-4.12.1', 'std-on-4.12.1']:
                 for mode, outcome, ru in [('legacy', 'Correct', 40), ('default', 'Errors', 25)]:
+                    (root / (group + '-' + mode + '.log')).write_text('recording output\n')
                     part = root / (group + '-' + mode)
                     part.mkdir()
                     if group.startswith('suite'):
