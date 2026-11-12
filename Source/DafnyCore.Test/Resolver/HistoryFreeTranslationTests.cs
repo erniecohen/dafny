@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.CommandLine;
 using System.Reactive.Linq;
 using Microsoft.Boogie.SMTLib;
 using Microsoft.Boogie;
@@ -39,6 +40,22 @@ public class HistoryFreeTranslationTests {
       }
     }
     """;
+
+  [Fact]
+  public void LookupSelectorsDoNotChangeResolutionInputs() {
+    var options = new DafnyOptions(TextReader.Null, TextWriter.Null, TextWriter.Null);
+    options.ApplyDefaultOptionsWithoutSettingsDefault();
+    var expected = ModuleResolutionKey.Options(options).OrderBy(p => p.Key).ToArray();
+    var translation = new Option<bool>("--translation-cache");
+    var verification = new Option<string>("--verification-cache");
+    foreach (var enabled in new[] { false, true }) {
+      options.Set(translation, enabled);
+      options.Set(verification, enabled ? "another-cache-directory" : "");
+      Assert.Equal(expected, ModuleResolutionKey.Options(options).OrderBy(p => p.Key));
+    }
+    options.Set(CommonOptionBag.AdditionalAxioms, true);
+    Assert.NotEqual(expected, ModuleResolutionKey.Options(options).OrderBy(p => p.Key).ToArray());
+  }
 
   [Theory]
   [InlineData(false, 0)]
