@@ -303,16 +303,71 @@ jobs:
           if [ '${{ matrix.part }}' = stdlib ]; then expected=.github/review/expected-std-resolution-z3-5.1.0.tsv; fi
           python3 .github/review/resolution-comparison.py compare --part '${{ matrix.part }}' --output parallel-results --expected "$expected"
       - name: Measure three seeds for scopes with changed outcomes
-        if: always()
+        if: always() && matrix.part != 'stdlib'
         run: |
           if [ -f parallel-results/report.json ]; then
             python3 .github/review/resolution-comparison.py variance --part '${{ matrix.part }}' --dafny "$PWD/out/dafny/Dafny" --output parallel-results
           fi
+      - name: Preserve inputs for independent full-Std seed jobs
+        if: matrix.part == 'stdlib'
+        run: |
+          mkdir -p seed-inputs/off/measurements seed-inputs/1
+          cp parallel-results/report.json seed-inputs/
+          cp parallel-results/off/vector.json seed-inputs/off/
+          cp parallel-results/1/vector.json seed-inputs/1/
+          cp parallel-results/off/measurements/Std.invocation.json seed-inputs/off/measurements/
+      - uses: actions/upload-artifact@v4
+        if: matrix.part == 'stdlib'
+        with:
+          name: resolution-std-seed-inputs
+          path: seed-inputs
+          retention-days: 90
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: parallel-resolution-${{ matrix.part }}
           path: parallel-results
+          retention-days: 90
+          compression-level: 9
+
+  resolution-std-seeds:
+    name: Full Std resolution seed (${{ matrix.mode }}, ${{ matrix.seed }})
+    needs: parallel-resolution
+    runs-on: ubuntu-24.04
+    timeout-minutes: 100
+    strategy:
+      fail-fast: false
+      matrix:
+        mode: ['off', '1']
+        seed: [0, 1, 2]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-dotnet
+      - uses: actions/download-artifact@v4
+        with:
+          name: dafny
+      - uses: actions/download-artifact@v4
+        with:
+          name: resolution-std-seed-inputs
+          path: seed-results
+      - name: Unpack the captured producer and pin the solver
+        run: |
+          mkdir -p out
+          tar -C out -xzf dafny.tar.gz
+          curl -fsSLo z3.zip "$Z3_RELEASE/$Z3_LINUX_X64.zip"
+          echo "$Z3_LINUX_X64_SHA256  z3.zip" | sha256sum -c -
+          unzip -q z3.zip
+          echo "Z3=$PWD/$Z3_LINUX_X64/bin/z3" >> "$GITHUB_ENV"
+      - name: Repeat the complete Std invocation
+        run: |
+          python3 .github/review/resolution-comparison.py variance --part stdlib \
+            --dafny "$PWD/out/dafny/Dafny" --z3 "$Z3" --output seed-results \
+            --seed '${{ matrix.seed }}' --mode '${{ matrix.mode }}'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: resolution-std-seed-${{ matrix.mode }}-${{ matrix.seed }}
+          path: seed-results
           retention-days: 90
           compression-level: 9
 
@@ -924,7 +979,7 @@ jobs:
 
   release:
     name: GitHub release
-    needs: [build, binaries, verdicts, stdlib, javascript-runtime, regressions, resolver, resolver-tests, finite-support, statement-conclusions, axiom-resources, verification-batch, parallel-resolution]
+    needs: [build, binaries, verdicts, stdlib, javascript-runtime, regressions, resolver, resolver-tests, finite-support, statement-conclusions, axiom-resources, verification-batch, parallel-resolution, resolution-std-seeds]
     if: github.ref_type == 'tag'
     runs-on: ubuntu-24.04
     timeout-minutes: 15

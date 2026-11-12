@@ -245,13 +245,17 @@ def variance(args):
             original = json.loads((root / 'off/measurements' / source / 'command.json').read_text())[1:]
             cwd = ROOT / 'Source/IntegrationTests/TestFiles/LitTests/LitTest'
         name = hashlib.sha256((source + '\t' + scope).encode()).hexdigest()[:16]
-        for seed in (0, 1, 2):
-            for mode in ('off', '1'):
+        seeds = (args.seed,) if getattr(args, 'seed', None) is not None else (0, 1, 2)
+        modes = (args.mode,) if getattr(args, 'mode', None) is not None else ('off', '1')
+        for seed in seeds:
+            for mode in modes:
                 folder = root / 'seed-variance' / name / str(seed) / mode
                 folder.mkdir(parents=True, exist_ok=False)
                 log = folder / 'proofs.json'
                 argv = original.copy()
                 argv[argv.index('--log-format') + 1] = 'json;LogFileName=' + str(log)
+                if getattr(args, 'z3', None) is not None:
+                    argv[argv.index('--solver-path') + 1] = str(args.z3.resolve())
                 extra = ['--bprint', str(folder / 'program.bpl'), '--boogie', '/randomSeed:' + str(seed)]
                 if mode == '1':
                     extra += ['--resolution-threads', '1']
@@ -306,6 +310,9 @@ def main():
     seeds.add_argument('--part', required=True)
     seeds.add_argument('--dafny', type=Path, required=True)
     seeds.add_argument('--output', type=Path, required=True)
+    seeds.add_argument('--seed', type=int, choices=[0, 1, 2])
+    seeds.add_argument('--mode', choices=['off', '1'])
+    seeds.add_argument('--z3', type=Path)
     args = parser.parse_args()
     if args.action == 'capture':
         capture(args)

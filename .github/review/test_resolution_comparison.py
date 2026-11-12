@@ -5,6 +5,7 @@ import importlib.util
 import io
 import json
 import os
+import shutil
 from pathlib import Path
 import tempfile
 from types import SimpleNamespace
@@ -86,7 +87,7 @@ class ResolutionComparisonControls(unittest.TestCase):
         audit.dump(self.root / 'report.json', dict(default_to_on=dict(proofs=changes)))
         audit.dump(self.root / 'off/measurements/Std.invocation.json', dict(command=[
             'adapter', 'verify', 'src/Std/dfyconfig.toml', '--log-format', 'json;LogFileName=old',
-            '--boogie', '/deterministicLiteralHashes:1 /restartProver']))
+            '--boogie', '/deterministicLiteralHashes:1 /restartProver', '--solver-path', 'original-z3']))
         commands = []
 
         def fake_process(command, **kwargs):
@@ -107,3 +108,12 @@ class ResolutionComparisonControls(unittest.TestCase):
             self.assertIn('--bprint', command)
             self.assertIn('/deterministicLiteralHashes:1 /restartProver', command)
         self.assertEqual(len(json.loads((self.root / 'seed-variance.json').read_text())), 6)
+        shutil.rmtree(self.root / 'seed-variance')
+        commands.clear()
+        with patch.object(audit.subprocess, 'Popen', side_effect=fake_process), contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(audit.variance(SimpleNamespace(output=self.root, part='stdlib', dafny=Path('candidate'),
+                seed=0, mode='off', z3=Path('replacement-z3'))), 0)
+        command, = commands
+        self.assertNotIn('--resolution-threads', command)
+        self.assertEqual(command[command.index('--solver-path') + 1], str(Path('replacement-z3').resolve()))
+        self.assertEqual(len(json.loads((self.root / 'seed-variance.json').read_text())), 1)
