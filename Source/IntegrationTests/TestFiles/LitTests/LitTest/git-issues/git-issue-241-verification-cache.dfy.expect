@@ -1,1 +1,2 @@
 verification cache: exact replay; zero warm solver calls; changed-key oracle; corruption and limit controls
+verification cache: imported-body early cutoff; unchanged imported Boogie; exact changed-task oracles

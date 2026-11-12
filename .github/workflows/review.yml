@@ -843,6 +843,9 @@ jobs:
           python3 .github/review/verification-cache.py Binaries/net10.0/Dafny.dll "$solver" \
             Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/git-issue-241-verification-cache.dfy \
             verification-cache-linux
+          python3 .github/review/verification-cache-cutoff.py Binaries/net10.0/Dafny.dll "$solver" \
+            Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/Inputs/git-issue-241-cache-cutoff.dfy \
+            verification-cache-cutoff-linux
 
   resolver-tests:
     if: ${{ (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'erniecohen/dafny'))) && !inputs.platform_parity && (!(github.event_name == 'workflow_dispatch' && (inputs.default_comparison || inputs.decreases_order_comparison) && startsWith(github.ref, 'refs/heads/scratch/'))) }}
