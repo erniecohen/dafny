@@ -70,6 +70,12 @@ The pre-fix control is source `428e348b0b125cb67505f03a0026b3f497f98e48`, from t
 
 The byte-identity control in the completed build job of the [comparison run](https://github.com/erniecohen/dafny/actions/runs/43103517370), at source `59addceb`, reports exact stdout, stderr, Boogie and SMT bytes for all seven fixture families under pre-fix default versus candidate legacy. Its later measurement jobs were cancelled and supply none of the resource totals below. Subsequent verifier changes only attach diagnostic origins in the corrected mode; the legacy path is unchanged.
 
+The later shipped source-contract changes through `908d5b8b8` are integrated in
+`0fc877a47043b74c7451ea549a3149cd2a46b8cb`. They change modular source-contract reachability while retaining
+the corrected component relations and tuple lift. The measurements above identify
+their original source precisely; final validation of the combined branch is linked
+from the PR.
+
 All resource differences below are corrected default minus legacy.
 
 | Scope | Additional axioms | Changed declarations | Legacy RU | Default RU | Change |
