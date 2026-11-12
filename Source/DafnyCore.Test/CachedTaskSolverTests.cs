@@ -27,7 +27,8 @@ public class CachedTaskSolverTests : IDisposable {
 
   private static async Task Finish(CachedTaskSolver transport) {
     transport.Send("; Valid");
-    await transport.PingPong();
+    await Assert.ThrowsAsync<CacheTaskCheckerRetirementException>(transport.PingPong);
+    await transport.AwaitPendingHandshake();
   }
 
   [Theory]
@@ -83,7 +84,7 @@ public class CachedTaskSolverTests : IDisposable {
     Assert.False(finishing.IsCompleted);
     Assert.False(Directory.Exists(Path.Combine(directory, "v1", "results")));
     handshake.SetResult();
-    await pending;
+    await Assert.ThrowsAsync<CacheTaskCheckerRetirementException>(() => pending);
     await finishing;
     var outcome = valid ? CacheTaskOutcome.Correct : CacheTaskOutcome.OutOfResource;
     Assert.Equal(CachePublication.Stored, cold.CompleteNormally(outcome, 17));
@@ -92,7 +93,7 @@ public class CachedTaskSolverTests : IDisposable {
     Setup(warm);
     Assert.Equal(valid ? "unsat" : "unknown", (await warm.SendRequest("(check-sat)")).Name);
     warm.Send(valid ? "; Valid" : "; Out of resource");
-    await warm.PingPong();
+    await Assert.ThrowsAsync<CacheTaskCheckerRetirementException>(warm.PingPong);
     await warm.AwaitPendingHandshake();
     Assert.Equal(CachePublication.AlreadyPresent, warm.CompleteNormally(outcome, 17));
     Assert.True(warm.Replayed);

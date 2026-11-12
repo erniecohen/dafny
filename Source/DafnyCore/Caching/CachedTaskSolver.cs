@@ -14,6 +14,10 @@ internal sealed class CacheReplayMismatchException : Exception {
   public CacheReplayMismatchException() : base("Cached solver exchange did not match the current task.") { }
 }
 
+internal sealed class CacheTaskCheckerRetirementException : TimeoutException {
+  public CacheTaskCheckerRetirementException() : base("The completed cached task owns its checker exclusively.") { }
+}
+
 /// <summary>
 /// A single-task transport. Its owner must provide a complete execution environment, create a
 /// fresh instance per split/iteration, and restart the entire task on CacheReplayMismatchException.
@@ -114,7 +118,10 @@ internal sealed class CachedTaskSolver : SMTLibSolver {
         // Preserve the mismatch flag for our task retry, while releasing its pool slot.
         throw new TimeoutException("Cached transport cannot return to the checker pool.", error);
       }
-      if (terminalComment) { sealedExchange = true; }
+      if (terminalComment) {
+        sealedExchange = true;
+        throw new CacheTaskCheckerRetirementException();
+      }
       return;
     }
     if (solver != null) {
@@ -126,7 +133,14 @@ internal sealed class CachedTaskSolver : SMTLibSolver {
       }
     }
     Record(step);
-    if (terminalComment) { sealedExchange = true; }
+    if (terminalComment) {
+      sealedExchange = true;
+      // RestartProverPerVC restarts the native process but retains the checker's
+      // Boogie setup buffers. An elapsed idle-retirement decision can then change
+      // the next task's initial stream. Retire every completed task's checker
+      // through the pinned pool's existing TimeoutException cleanup path.
+      throw new CacheTaskCheckerRetirementException();
+    }
   }
 
   internal async Task AwaitPendingHandshake() {
@@ -136,6 +150,7 @@ internal sealed class CachedTaskSolver : SMTLibSolver {
     // the pending transport; a failed handshake still prevents publication.
     if (pendingHandshake != null) {
       try { await pendingHandshake; }
+      catch (CacheTaskCheckerRetirementException) when (sealedExchange) { }
       catch { cacheable = false; }
     }
   }

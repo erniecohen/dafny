@@ -547,6 +547,13 @@ wrapper withholds `Completed` until the task observable closes and any pending
 final idle handshake finishes. The pinned checker can retire after a 100 ms
 cleanup deadline while that handshake's continuation is still pending; observable
 completion alone therefore does not establish that the exchange is sealed.
+Restarting the native solver alone also leaves Boogie setup buffers in the
+checker. To make task ownership independent of the preceding task's retirement
+timing, each completed cached task retires its checker after the terminal
+handshake, using the pinned pool's existing `TimeoutException` cleanup path.
+Both cold and replay therefore start the next task with a fresh Boogie prover
+as well as an independent native solver history. This cleanup exception is not
+a verification timeout and is consumed by the existing pool protocol.
 Divergence discards all buffered completion data and retries
 `FromSeed` with persistent reads disabled and a fresh solver. Divergent keys are
 quarantined persistently, so a later invocation recomputes without replaying the
