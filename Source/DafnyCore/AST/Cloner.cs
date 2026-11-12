@@ -75,6 +75,7 @@ namespace Microsoft.Dafny {
 
       EnsureOperatorClones(d.EnclosingModuleDefinition);
       var clone = CloneDeclarationSyntax(d, newParent);
+      clone.TerminationContract = d.TerminationContract;
       var parentObligations = d.CardinalityParentObligations;
       // Iterator syntax has no parent-trait list, and its clone constructor omits
       // Traits. A parent introduced by kind-changing refinement must still survive.
@@ -245,6 +246,7 @@ namespace Microsoft.Dafny {
           return CloneMethod(m);
         }
       });
+      result.TerminationContract = member.TerminationContract;
       if (!isReference && !ReferenceEquals(member, result)) {
         operatorClones?.Register(member, result);
       }

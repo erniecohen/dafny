@@ -69,6 +69,16 @@ other change sits behind a new opt-in option, except that added axioms share one
 same resource counts as before.  Show that, on the suite and on the standard
 library, before anything relies on the option.
 
+A soundness fix is **on by default**.  It also gets a hidden opt-out option,
+`--legacy-<what it fixes>`, that restores the old output byte for byte, for
+comparison and migration only.  Its pull request lists, from CI, every suite and
+standard-library verdict that differs between the default and the opt-out.  Only
+proofs that verified because of the unsoundness may move.  Each one is repaired
+in the same pull request where it can be, and otherwise its expected verdict
+changes with that reason on record ("The verdict gates", below).  A feature that
+replaces an assumption with a check, such as `--modular-termination`, is not a
+soundness fix: it stays opt-in until it is believed sound.
+
 ## Merging fix pull requests
 
 Every product change updates `.github/review/base` and appends its test to

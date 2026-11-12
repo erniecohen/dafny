@@ -1,0 +1,473 @@
+stable source contracts
+good, refresh false, consistent false
+
+Dafny program verifier finished with 14 verified, 0 errors
+false, refresh false, consistent false
+github-issue-211-m4b-false.dfy(4,91): Error: assertion might not hold
+github-issue-211-m4b-false.dfy(6,74): Error: assertion might not hold
+github-issue-211-m4b-false.dfy(7,59): Error: assertion might not hold
+github-issue-211-m4b-false.dfy(8,45): Error: assertion might not hold
+github-issue-211-m4b-false.dfy(9,50): Error: assertion might not hold
+github-issue-211-m4b-false.dfy(10,69): Error: assertion might not hold
+github-issue-211-m4b-false.dfy(11,53): Error: assertion might not hold
+github-issue-211-m4b-false.dfy(12,48): Error: assertion might not hold
+
+Dafny program verifier finished with 0 verified, 8 errors
+sealed, refresh false, consistent false
+github-issue-211-m4b-sealed.dfy(7,26): Error: modular termination: class 'C' cannot extend sealed trait 'Library.Sealed' from another module; the defining trait must declare {:termination false}; @AssumeCrossModuleTermination cannot override sealing
+1 resolution/type errors detected in github-issue-211-m4b-sealed.dfy
+sealed-alias, refresh false, consistent false
+github-issue-211-m4b-sealed-alias.dfy(8,24): Error: modular termination: class 'C' cannot extend sealed trait 'Library.Sealed' from another module; the defining trait must declare {:termination false}; @AssumeCrossModuleTermination cannot override sealing
+1 resolution/type errors detected in github-issue-211-m4b-sealed-alias.dfy
+ancestors, refresh false, consistent false
+github-issue-211-m4b-ancestors.dfy(3,29): Error: modular termination: 'Open' cannot expose sealed ancestor 'Library.Sealed'; every non-object ancestor of a foreign implementation or extensible trait must declare {:termination false}
+github-issue-211-m4b-ancestors.dfy(5,29): Error: modular termination: 'Grandchild' cannot expose sealed ancestor 'Library.Child'; every non-object ancestor of a foreign implementation or extensible trait must declare {:termination false}
+github-issue-211-m4b-ancestors.dfy(5,29): Error: modular termination: 'Grandchild' cannot expose sealed ancestor 'Library.Sealed'; every non-object ancestor of a foreign implementation or extensible trait must declare {:termination false}
+3 resolution/type errors detected in github-issue-211-m4b-ancestors.dfy
+open-producer, refresh false, consistent false
+github-issue-211-m4b-open-producer.dfy(5,52): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+
+Dafny program verifier finished with 0 verified, 1 error
+general-top, refresh false, consistent false
+github-issue-211-m4b-general-top.dfy(4,61): Error: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so under --modular-termination it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
+
+Dafny program verifier finished with 0 verified, 1 error
+general-bound, refresh false, consistent false
+github-issue-211-m4b-general-bound.dfy(4,55): Error: decreases clause might not decrease (--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
+
+Dafny program verifier finished with 0 verified, 1 error
+closed-bad, refresh false, consistent false
+github-issue-211-m4b-closed-bad.dfy(25,30): Error: class 'Derived' with fields without known initializers, like 'field' of type 'S', must declare a constructor
+1 resolution/type errors detected in github-issue-211-m4b-closed-bad.dfy
+rank-general, refresh false, consistent false
+github-issue-211-m4b-rank-general.dfy(6,38): Error: modular termination: the 'decreases {:global}' bound of 'Client.F' can reach dispatch to implementations that other modules may provide (bound -> General contract of 'Library.Leaf' (publish {:termination_closed} for independent closed code)); a bound may only use code that cannot reach one, since its value must not depend on the termination that the bounds establish
+1 resolution/type errors detected in github-issue-211-m4b-rank-general.dfy
+named-general, refresh false, consistent false
+github-issue-211-m4b-named-general.dfy(8,64): Error: modular termination: in 'Client.F', the value passed for parameter 'f' of 'Client.Apply', which has a 'decreases {:callback}' bound, must be a lambda expression, a parameter with such a bound (outside a lambda), or a function that reaches no dispatched call
+1 resolution/type errors detected in github-issue-211-m4b-named-general.dfy
+implicit-general, refresh false, consistent false
+github-issue-211-m4b-implicit-general.dfy(8,52): Error: modular termination: in 'Client.F', this may evaluate the initializer of constant 'Library.Weight', which can reach dispatch to implementations that other modules may provide and has no 'decreases {:global}' bound, so it cannot run under the caller's bound (same-bound rule)
+github-issue-211-m4b-implicit-general.dfy(9,9): Error: modular termination: in 'Client.Types', this may evaluate the constraint or witness of type 'Library.Small', which can reach dispatch to implementations that other modules may provide and has no 'decreases {:global}' bound, so it cannot run under the caller's bound (same-bound rule)
+github-issue-211-m4b-implicit-general.dfy(9,33): Error: modular termination: in 'Client.Types', this may evaluate the default values of the components of type 'Library.D', which can reach dispatch to implementations that other modules may provide and has no 'decreases {:global}' bound, so it cannot run under the caller's bound (same-bound rule)
+3 resolution/type errors detected in github-issue-211-m4b-implicit-general.dfy
+iterator, refresh false, consistent false
+
+Dafny program verifier finished with 3 verified, 0 errors
+iterator-false, refresh false, consistent false
+github-issue-211-m4b-iterator-false.dfy(7,4): Error: assertion might not hold
+
+Dafny program verifier finished with 0 verified, 1 error
+iterator-general, refresh false, consistent false
+github-issue-211-m4b-iterator-general.dfy(4,48): Error: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so under --modular-termination it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
+
+Dafny program verifier finished with 2 verified, 1 error
+placement, refresh false, consistent false
+github-issue-211-m4b-placement.dfy(1,9): Error: modular termination: {:termination_closed} takes no arguments and applies to a callable, constant, type or iterator
+github-issue-211-m4b-placement.dfy(2,13): Error: modular termination: {:termination_closed} takes no arguments and applies to a callable, constant, type or iterator
+github-issue-211-m4b-placement.dfy(3,13): Error: modular termination: {:termination_closed} takes no arguments and applies to a callable, constant, type or iterator
+github-issue-211-m4b-placement.dfy(4,18): Error: modular termination: {:termination_closed} takes no arguments and applies to a callable, constant, type or iterator
+4 resolution/type errors detected in github-issue-211-m4b-placement.dfy
+fixed-override, refresh false, consistent false
+github-issue-211-m4b-fixed-override.dfy(10,13): Error: fully defined function 'Final' is inherited from trait 'T' and is not allowed to be re-declared
+1 resolution/type errors detected in github-issue-211-m4b-fixed-override.dfy
+opaque-effect, refresh false, consistent false
+github-issue-211-m4b-opaque-effect.dfy(7,9): Error: modular termination: in 'Client.Bounded', this may evaluate the default values of the components of type 'Library.T', which can reach dispatch to implementations that other modules may provide and has no 'decreases {:global}' bound, so it cannot run under the caller's bound (same-bound rule)
+1 resolution/type errors detected in github-issue-211-m4b-opaque-effect.dfy
+provided, refresh false, consistent false
+
+Dafny program verifier finished with 1 verified, 0 errors
+provided-bad, refresh false, consistent false
+github-issue-211-m4b-provided-bad.dfy(9,59): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+
+Dafny program verifier finished with 0 verified, 1 error
+provided-false, refresh false, consistent false
+github-issue-211-m4b-provided-false.dfy(4,64): Error: assertion might not hold
+
+Dafny program verifier finished with 0 verified, 1 error
+views, refresh false, consistent false
+
+Dafny program verifier finished with 5 verified, 0 errors
+views-bad, refresh false, consistent false
+github-issue-211-m4b-views-bad.dfy(10,56): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+
+Dafny program verifier finished with 1 verified, 1 error
+views-false, refresh false, consistent false
+github-issue-211-m4b-views-false.dfy(5,76): Error: assertion might not hold
+github-issue-211-m4b-views-false.dfy(6,76): Error: assertion might not hold
+github-issue-211-m4b-views-false.dfy(7,45): Error: assertion might not hold
+
+Dafny program verifier finished with 0 verified, 3 errors
+refinement, refresh false, consistent false
+
+Dafny program verifier finished with 1 verified, 0 errors
+refinement-bad, refresh false, consistent false
+github-issue-211-m4b-refinement-bad.dfy(8,9): Error: modular termination: the {:termination_closed} promise of 'Closed' is not established; its body, specifications or implicit evaluations can reach open dispatch, an unknown application or an imported General contract
+1 resolution/type errors detected in github-issue-211-m4b-refinement-bad.dfy
+refinement-false, refresh false, consistent false
+github-issue-211-m4b-refinement-false.dfy(4,69): Error: assertion might not hold
+
+Dafny program verifier finished with 0 verified, 1 error
+grandparent, refresh false, consistent false
+github-issue-211-m4b-grandparent.dfy(14,11): Error: method's 'decreases {:global}' bound must be below or equal to that in the trait
+github-issue-211-m4b-grandparent.dfy(15,13): Error: function's 'decreases {:global}' bound must be below or equal to that in the trait
+
+Dafny program verifier finished with 3 verified, 2 errors
+multiple-bad, refresh false, consistent false
+github-issue-211-m4b-multiple-bad.dfy(5,11): Error: method's 'decreases {:global}' bound must be below or equal to that in the trait
+github-issue-211-m4b-multiple-bad.dfy(6,11): Error: method's 'decreases {:global}' bound must be below or equal to that in the trait
+
+Dafny program verifier finished with 0 verified, 2 errors
+good, refresh false, consistent true
+
+Dafny program verifier finished with 14 verified, 0 errors
+false, refresh false, consistent true
+github-issue-211-m4b-false.dfy(4,91): Error: assertion might not hold
+github-issue-211-m4b-false.dfy(6,74): Error: assertion might not hold
+github-issue-211-m4b-false.dfy(7,59): Error: assertion might not hold
+github-issue-211-m4b-false.dfy(8,45): Error: assertion might not hold
+github-issue-211-m4b-false.dfy(9,50): Error: assertion might not hold
+github-issue-211-m4b-false.dfy(10,69): Error: assertion might not hold
+github-issue-211-m4b-false.dfy(11,53): Error: assertion might not hold
+github-issue-211-m4b-false.dfy(12,48): Error: assertion might not hold
+
+Dafny program verifier finished with 0 verified, 8 errors
+sealed, refresh false, consistent true
+github-issue-211-m4b-sealed.dfy(7,26): Error: modular termination: class 'C' cannot extend sealed trait 'Library.Sealed' from another module; the defining trait must declare {:termination false}; @AssumeCrossModuleTermination cannot override sealing
+1 resolution/type errors detected in github-issue-211-m4b-sealed.dfy
+sealed-alias, refresh false, consistent true
+github-issue-211-m4b-sealed-alias.dfy(8,24): Error: modular termination: class 'C' cannot extend sealed trait 'Library.Sealed' from another module; the defining trait must declare {:termination false}; @AssumeCrossModuleTermination cannot override sealing
+1 resolution/type errors detected in github-issue-211-m4b-sealed-alias.dfy
+ancestors, refresh false, consistent true
+github-issue-211-m4b-ancestors.dfy(3,29): Error: modular termination: 'Open' cannot expose sealed ancestor 'Library.Sealed'; every non-object ancestor of a foreign implementation or extensible trait must declare {:termination false}
+github-issue-211-m4b-ancestors.dfy(5,29): Error: modular termination: 'Grandchild' cannot expose sealed ancestor 'Library.Child'; every non-object ancestor of a foreign implementation or extensible trait must declare {:termination false}
+github-issue-211-m4b-ancestors.dfy(5,29): Error: modular termination: 'Grandchild' cannot expose sealed ancestor 'Library.Sealed'; every non-object ancestor of a foreign implementation or extensible trait must declare {:termination false}
+3 resolution/type errors detected in github-issue-211-m4b-ancestors.dfy
+open-producer, refresh false, consistent true
+github-issue-211-m4b-open-producer.dfy(5,52): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+
+Dafny program verifier finished with 0 verified, 1 error
+general-top, refresh false, consistent true
+github-issue-211-m4b-general-top.dfy(4,61): Error: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so under --modular-termination it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
+
+Dafny program verifier finished with 0 verified, 1 error
+general-bound, refresh false, consistent true
+github-issue-211-m4b-general-bound.dfy(4,55): Error: decreases clause might not decrease (--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
+
+Dafny program verifier finished with 0 verified, 1 error
+closed-bad, refresh false, consistent true
+github-issue-211-m4b-closed-bad.dfy(25,30): Error: class 'Derived' with fields without known initializers, like 'field' of type 'S', must declare a constructor
+1 resolution/type errors detected in github-issue-211-m4b-closed-bad.dfy
+rank-general, refresh false, consistent true
+github-issue-211-m4b-rank-general.dfy(6,38): Error: modular termination: the 'decreases {:global}' bound of 'Client.F' can reach dispatch to implementations that other modules may provide (bound -> General contract of 'Library.Leaf' (publish {:termination_closed} for independent closed code)); a bound may only use code that cannot reach one, since its value must not depend on the termination that the bounds establish
+1 resolution/type errors detected in github-issue-211-m4b-rank-general.dfy
+named-general, refresh false, consistent true
+github-issue-211-m4b-named-general.dfy(8,64): Error: modular termination: in 'Client.F', the value passed for parameter 'f' of 'Client.Apply', which has a 'decreases {:callback}' bound, must be a lambda expression, a parameter with such a bound (outside a lambda), or a function that reaches no dispatched call
+1 resolution/type errors detected in github-issue-211-m4b-named-general.dfy
+implicit-general, refresh false, consistent true
+github-issue-211-m4b-implicit-general.dfy(8,52): Error: modular termination: in 'Client.F', this may evaluate the initializer of constant 'Library.Weight', which can reach dispatch to implementations that other modules may provide and has no 'decreases {:global}' bound, so it cannot run under the caller's bound (same-bound rule)
+github-issue-211-m4b-implicit-general.dfy(9,9): Error: modular termination: in 'Client.Types', this may evaluate the constraint or witness of type 'Library.Small', which can reach dispatch to implementations that other modules may provide and has no 'decreases {:global}' bound, so it cannot run under the caller's bound (same-bound rule)
+github-issue-211-m4b-implicit-general.dfy(9,33): Error: modular termination: in 'Client.Types', this may evaluate the default values of the components of type 'Library.D', which can reach dispatch to implementations that other modules may provide and has no 'decreases {:global}' bound, so it cannot run under the caller's bound (same-bound rule)
+3 resolution/type errors detected in github-issue-211-m4b-implicit-general.dfy
+iterator, refresh false, consistent true
+
+Dafny program verifier finished with 3 verified, 0 errors
+iterator-false, refresh false, consistent true
+github-issue-211-m4b-iterator-false.dfy(7,4): Error: assertion might not hold
+
+Dafny program verifier finished with 0 verified, 1 error
+iterator-general, refresh false, consistent true
+github-issue-211-m4b-iterator-general.dfy(4,48): Error: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so under --modular-termination it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
+
+Dafny program verifier finished with 2 verified, 1 error
+placement, refresh false, consistent true
+github-issue-211-m4b-placement.dfy(1,9): Error: modular termination: {:termination_closed} takes no arguments and applies to a callable, constant, type or iterator
+github-issue-211-m4b-placement.dfy(2,13): Error: modular termination: {:termination_closed} takes no arguments and applies to a callable, constant, type or iterator
+github-issue-211-m4b-placement.dfy(3,13): Error: modular termination: {:termination_closed} takes no arguments and applies to a callable, constant, type or iterator
+github-issue-211-m4b-placement.dfy(4,18): Error: modular termination: {:termination_closed} takes no arguments and applies to a callable, constant, type or iterator
+4 resolution/type errors detected in github-issue-211-m4b-placement.dfy
+fixed-override, refresh false, consistent true
+github-issue-211-m4b-fixed-override.dfy(10,13): Error: fully defined function 'Final' is inherited from trait 'T' and is not allowed to be re-declared
+1 resolution/type errors detected in github-issue-211-m4b-fixed-override.dfy
+opaque-effect, refresh false, consistent true
+github-issue-211-m4b-opaque-effect.dfy(7,9): Error: modular termination: in 'Client.Bounded', this may evaluate the default values of the components of type 'Library.T', which can reach dispatch to implementations that other modules may provide and has no 'decreases {:global}' bound, so it cannot run under the caller's bound (same-bound rule)
+1 resolution/type errors detected in github-issue-211-m4b-opaque-effect.dfy
+provided, refresh false, consistent true
+
+Dafny program verifier finished with 1 verified, 0 errors
+provided-bad, refresh false, consistent true
+github-issue-211-m4b-provided-bad.dfy(9,59): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+
+Dafny program verifier finished with 0 verified, 1 error
+provided-false, refresh false, consistent true
+github-issue-211-m4b-provided-false.dfy(4,64): Error: assertion might not hold
+
+Dafny program verifier finished with 0 verified, 1 error
+views, refresh false, consistent true
+
+Dafny program verifier finished with 5 verified, 0 errors
+views-bad, refresh false, consistent true
+github-issue-211-m4b-views-bad.dfy(10,56): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+
+Dafny program verifier finished with 1 verified, 1 error
+views-false, refresh false, consistent true
+github-issue-211-m4b-views-false.dfy(5,76): Error: assertion might not hold
+github-issue-211-m4b-views-false.dfy(6,76): Error: assertion might not hold
+github-issue-211-m4b-views-false.dfy(7,45): Error: assertion might not hold
+
+Dafny program verifier finished with 0 verified, 3 errors
+refinement, refresh false, consistent true
+
+Dafny program verifier finished with 1 verified, 0 errors
+refinement-bad, refresh false, consistent true
+github-issue-211-m4b-refinement-bad.dfy(8,9): Error: modular termination: the {:termination_closed} promise of 'Closed' is not established; its body, specifications or implicit evaluations can reach open dispatch, an unknown application or an imported General contract
+1 resolution/type errors detected in github-issue-211-m4b-refinement-bad.dfy
+refinement-false, refresh false, consistent true
+github-issue-211-m4b-refinement-false.dfy(4,69): Error: assertion might not hold
+
+Dafny program verifier finished with 0 verified, 1 error
+grandparent, refresh false, consistent true
+github-issue-211-m4b-grandparent.dfy(14,11): Error: method's 'decreases {:global}' bound must be below or equal to that in the trait
+github-issue-211-m4b-grandparent.dfy(15,13): Error: function's 'decreases {:global}' bound must be below or equal to that in the trait
+
+Dafny program verifier finished with 3 verified, 2 errors
+multiple-bad, refresh false, consistent true
+github-issue-211-m4b-multiple-bad.dfy(5,11): Error: method's 'decreases {:global}' bound must be below or equal to that in the trait
+github-issue-211-m4b-multiple-bad.dfy(6,11): Error: method's 'decreases {:global}' bound must be below or equal to that in the trait
+
+Dafny program verifier finished with 0 verified, 2 errors
+good, refresh true, consistent false
+
+Dafny program verifier finished with 14 verified, 0 errors
+false, refresh true, consistent false
+github-issue-211-m4b-false.dfy(4,91): Error: assertion might not hold
+github-issue-211-m4b-false.dfy(6,74): Error: assertion might not hold
+github-issue-211-m4b-false.dfy(7,59): Error: assertion might not hold
+github-issue-211-m4b-false.dfy(8,45): Error: assertion might not hold
+github-issue-211-m4b-false.dfy(9,50): Error: assertion might not hold
+github-issue-211-m4b-false.dfy(10,69): Error: assertion might not hold
+github-issue-211-m4b-false.dfy(11,53): Error: assertion might not hold
+github-issue-211-m4b-false.dfy(12,48): Error: assertion might not hold
+
+Dafny program verifier finished with 0 verified, 8 errors
+sealed, refresh true, consistent false
+github-issue-211-m4b-sealed.dfy(7,26): Error: modular termination: class 'C' cannot extend sealed trait 'Library.Sealed' from another module; the defining trait must declare {:termination false}; @AssumeCrossModuleTermination cannot override sealing
+1 resolution/type errors detected in github-issue-211-m4b-sealed.dfy
+sealed-alias, refresh true, consistent false
+github-issue-211-m4b-sealed-alias.dfy(8,24): Error: modular termination: class 'C' cannot extend sealed trait 'Library.Sealed' from another module; the defining trait must declare {:termination false}; @AssumeCrossModuleTermination cannot override sealing
+1 resolution/type errors detected in github-issue-211-m4b-sealed-alias.dfy
+ancestors, refresh true, consistent false
+github-issue-211-m4b-ancestors.dfy(3,29): Error: modular termination: 'Open' cannot expose sealed ancestor 'Library.Sealed'; every non-object ancestor of a foreign implementation or extensible trait must declare {:termination false}
+github-issue-211-m4b-ancestors.dfy(5,29): Error: modular termination: 'Grandchild' cannot expose sealed ancestor 'Library.Child'; every non-object ancestor of a foreign implementation or extensible trait must declare {:termination false}
+github-issue-211-m4b-ancestors.dfy(5,29): Error: modular termination: 'Grandchild' cannot expose sealed ancestor 'Library.Sealed'; every non-object ancestor of a foreign implementation or extensible trait must declare {:termination false}
+3 resolution/type errors detected in github-issue-211-m4b-ancestors.dfy
+open-producer, refresh true, consistent false
+github-issue-211-m4b-open-producer.dfy(5,52): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+
+Dafny program verifier finished with 0 verified, 1 error
+general-top, refresh true, consistent false
+github-issue-211-m4b-general-top.dfy(4,61): Error: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so under --modular-termination it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
+
+Dafny program verifier finished with 0 verified, 1 error
+general-bound, refresh true, consistent false
+github-issue-211-m4b-general-bound.dfy(4,55): Error: decreases clause might not decrease (--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
+
+Dafny program verifier finished with 0 verified, 1 error
+closed-bad, refresh true, consistent false
+github-issue-211-m4b-closed-bad.dfy(25,30): Error: class 'Derived' with fields without known initializers, like 'field' of type 'S', must declare a constructor
+1 resolution/type errors detected in github-issue-211-m4b-closed-bad.dfy
+rank-general, refresh true, consistent false
+github-issue-211-m4b-rank-general.dfy(6,38): Error: modular termination: the 'decreases {:global}' bound of 'Client.F' can reach dispatch to implementations that other modules may provide (bound -> General contract of 'Library.Leaf' (publish {:termination_closed} for independent closed code)); a bound may only use code that cannot reach one, since its value must not depend on the termination that the bounds establish
+1 resolution/type errors detected in github-issue-211-m4b-rank-general.dfy
+named-general, refresh true, consistent false
+github-issue-211-m4b-named-general.dfy(8,64): Error: modular termination: in 'Client.F', the value passed for parameter 'f' of 'Client.Apply', which has a 'decreases {:callback}' bound, must be a lambda expression, a parameter with such a bound (outside a lambda), or a function that reaches no dispatched call
+1 resolution/type errors detected in github-issue-211-m4b-named-general.dfy
+implicit-general, refresh true, consistent false
+github-issue-211-m4b-implicit-general.dfy(8,52): Error: modular termination: in 'Client.F', this may evaluate the initializer of constant 'Library.Weight', which can reach dispatch to implementations that other modules may provide and has no 'decreases {:global}' bound, so it cannot run under the caller's bound (same-bound rule)
+github-issue-211-m4b-implicit-general.dfy(9,9): Error: modular termination: in 'Client.Types', this may evaluate the constraint or witness of type 'Library.Small', which can reach dispatch to implementations that other modules may provide and has no 'decreases {:global}' bound, so it cannot run under the caller's bound (same-bound rule)
+github-issue-211-m4b-implicit-general.dfy(9,33): Error: modular termination: in 'Client.Types', this may evaluate the default values of the components of type 'Library.D', which can reach dispatch to implementations that other modules may provide and has no 'decreases {:global}' bound, so it cannot run under the caller's bound (same-bound rule)
+3 resolution/type errors detected in github-issue-211-m4b-implicit-general.dfy
+iterator, refresh true, consistent false
+
+Dafny program verifier finished with 3 verified, 0 errors
+iterator-false, refresh true, consistent false
+github-issue-211-m4b-iterator-false.dfy(7,4): Error: assertion might not hold
+
+Dafny program verifier finished with 0 verified, 1 error
+iterator-general, refresh true, consistent false
+github-issue-211-m4b-iterator-general.dfy(4,48): Error: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so under --modular-termination it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
+
+Dafny program verifier finished with 2 verified, 1 error
+placement, refresh true, consistent false
+github-issue-211-m4b-placement.dfy(1,9): Error: modular termination: {:termination_closed} takes no arguments and applies to a callable, constant, type or iterator
+github-issue-211-m4b-placement.dfy(2,13): Error: modular termination: {:termination_closed} takes no arguments and applies to a callable, constant, type or iterator
+github-issue-211-m4b-placement.dfy(3,13): Error: modular termination: {:termination_closed} takes no arguments and applies to a callable, constant, type or iterator
+github-issue-211-m4b-placement.dfy(4,18): Error: modular termination: {:termination_closed} takes no arguments and applies to a callable, constant, type or iterator
+4 resolution/type errors detected in github-issue-211-m4b-placement.dfy
+fixed-override, refresh true, consistent false
+github-issue-211-m4b-fixed-override.dfy(10,13): Error: fully defined function 'Final' is inherited from trait 'T' and is not allowed to be re-declared
+1 resolution/type errors detected in github-issue-211-m4b-fixed-override.dfy
+opaque-effect, refresh true, consistent false
+github-issue-211-m4b-opaque-effect.dfy(7,9): Error: modular termination: in 'Client.Bounded', this may evaluate the default values of the components of type 'Library.T', which can reach dispatch to implementations that other modules may provide and has no 'decreases {:global}' bound, so it cannot run under the caller's bound (same-bound rule)
+1 resolution/type errors detected in github-issue-211-m4b-opaque-effect.dfy
+provided, refresh true, consistent false
+
+Dafny program verifier finished with 1 verified, 0 errors
+provided-bad, refresh true, consistent false
+github-issue-211-m4b-provided-bad.dfy(9,59): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+
+Dafny program verifier finished with 0 verified, 1 error
+provided-false, refresh true, consistent false
+github-issue-211-m4b-provided-false.dfy(4,64): Error: assertion might not hold
+
+Dafny program verifier finished with 0 verified, 1 error
+views, refresh true, consistent false
+
+Dafny program verifier finished with 5 verified, 0 errors
+views-bad, refresh true, consistent false
+github-issue-211-m4b-views-bad.dfy(10,56): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+
+Dafny program verifier finished with 1 verified, 1 error
+views-false, refresh true, consistent false
+github-issue-211-m4b-views-false.dfy(5,76): Error: assertion might not hold
+github-issue-211-m4b-views-false.dfy(6,76): Error: assertion might not hold
+github-issue-211-m4b-views-false.dfy(7,45): Error: assertion might not hold
+
+Dafny program verifier finished with 0 verified, 3 errors
+refinement, refresh true, consistent false
+
+Dafny program verifier finished with 1 verified, 0 errors
+refinement-bad, refresh true, consistent false
+github-issue-211-m4b-refinement-bad.dfy(8,9): Error: modular termination: the {:termination_closed} promise of 'Closed' is not established; its body, specifications or implicit evaluations can reach open dispatch, an unknown application or an imported General contract
+1 resolution/type errors detected in github-issue-211-m4b-refinement-bad.dfy
+refinement-false, refresh true, consistent false
+github-issue-211-m4b-refinement-false.dfy(4,69): Error: assertion might not hold
+
+Dafny program verifier finished with 0 verified, 1 error
+grandparent, refresh true, consistent false
+github-issue-211-m4b-grandparent.dfy(14,11): Error: method's 'decreases {:global}' bound must be below or equal to that in the trait
+github-issue-211-m4b-grandparent.dfy(15,13): Error: function's 'decreases {:global}' bound must be below or equal to that in the trait
+
+Dafny program verifier finished with 3 verified, 2 errors
+multiple-bad, refresh true, consistent false
+github-issue-211-m4b-multiple-bad.dfy(5,11): Error: method's 'decreases {:global}' bound must be below or equal to that in the trait
+github-issue-211-m4b-multiple-bad.dfy(6,11): Error: method's 'decreases {:global}' bound must be below or equal to that in the trait
+
+Dafny program verifier finished with 0 verified, 2 errors
+good, refresh true, consistent true
+
+Dafny program verifier finished with 14 verified, 0 errors
+false, refresh true, consistent true
+github-issue-211-m4b-false.dfy(4,91): Error: assertion might not hold
+github-issue-211-m4b-false.dfy(6,74): Error: assertion might not hold
+github-issue-211-m4b-false.dfy(7,59): Error: assertion might not hold
+github-issue-211-m4b-false.dfy(8,45): Error: assertion might not hold
+github-issue-211-m4b-false.dfy(9,50): Error: assertion might not hold
+github-issue-211-m4b-false.dfy(10,69): Error: assertion might not hold
+github-issue-211-m4b-false.dfy(11,53): Error: assertion might not hold
+github-issue-211-m4b-false.dfy(12,48): Error: assertion might not hold
+
+Dafny program verifier finished with 0 verified, 8 errors
+sealed, refresh true, consistent true
+github-issue-211-m4b-sealed.dfy(7,26): Error: modular termination: class 'C' cannot extend sealed trait 'Library.Sealed' from another module; the defining trait must declare {:termination false}; @AssumeCrossModuleTermination cannot override sealing
+1 resolution/type errors detected in github-issue-211-m4b-sealed.dfy
+sealed-alias, refresh true, consistent true
+github-issue-211-m4b-sealed-alias.dfy(8,24): Error: modular termination: class 'C' cannot extend sealed trait 'Library.Sealed' from another module; the defining trait must declare {:termination false}; @AssumeCrossModuleTermination cannot override sealing
+1 resolution/type errors detected in github-issue-211-m4b-sealed-alias.dfy
+ancestors, refresh true, consistent true
+github-issue-211-m4b-ancestors.dfy(3,29): Error: modular termination: 'Open' cannot expose sealed ancestor 'Library.Sealed'; every non-object ancestor of a foreign implementation or extensible trait must declare {:termination false}
+github-issue-211-m4b-ancestors.dfy(5,29): Error: modular termination: 'Grandchild' cannot expose sealed ancestor 'Library.Child'; every non-object ancestor of a foreign implementation or extensible trait must declare {:termination false}
+github-issue-211-m4b-ancestors.dfy(5,29): Error: modular termination: 'Grandchild' cannot expose sealed ancestor 'Library.Sealed'; every non-object ancestor of a foreign implementation or extensible trait must declare {:termination false}
+3 resolution/type errors detected in github-issue-211-m4b-ancestors.dfy
+open-producer, refresh true, consistent true
+github-issue-211-m4b-open-producer.dfy(5,52): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+
+Dafny program verifier finished with 0 verified, 1 error
+general-top, refresh true, consistent true
+github-issue-211-m4b-general-top.dfy(4,61): Error: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so under --modular-termination it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
+
+Dafny program verifier finished with 0 verified, 1 error
+general-bound, refresh true, consistent true
+github-issue-211-m4b-general-bound.dfy(4,55): Error: decreases clause might not decrease (--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
+
+Dafny program verifier finished with 0 verified, 1 error
+closed-bad, refresh true, consistent true
+github-issue-211-m4b-closed-bad.dfy(25,30): Error: class 'Derived' with fields without known initializers, like 'field' of type 'S', must declare a constructor
+1 resolution/type errors detected in github-issue-211-m4b-closed-bad.dfy
+rank-general, refresh true, consistent true
+github-issue-211-m4b-rank-general.dfy(6,38): Error: modular termination: the 'decreases {:global}' bound of 'Client.F' can reach dispatch to implementations that other modules may provide (bound -> General contract of 'Library.Leaf' (publish {:termination_closed} for independent closed code)); a bound may only use code that cannot reach one, since its value must not depend on the termination that the bounds establish
+1 resolution/type errors detected in github-issue-211-m4b-rank-general.dfy
+named-general, refresh true, consistent true
+github-issue-211-m4b-named-general.dfy(8,64): Error: modular termination: in 'Client.F', the value passed for parameter 'f' of 'Client.Apply', which has a 'decreases {:callback}' bound, must be a lambda expression, a parameter with such a bound (outside a lambda), or a function that reaches no dispatched call
+1 resolution/type errors detected in github-issue-211-m4b-named-general.dfy
+implicit-general, refresh true, consistent true
+github-issue-211-m4b-implicit-general.dfy(8,52): Error: modular termination: in 'Client.F', this may evaluate the initializer of constant 'Library.Weight', which can reach dispatch to implementations that other modules may provide and has no 'decreases {:global}' bound, so it cannot run under the caller's bound (same-bound rule)
+github-issue-211-m4b-implicit-general.dfy(9,9): Error: modular termination: in 'Client.Types', this may evaluate the constraint or witness of type 'Library.Small', which can reach dispatch to implementations that other modules may provide and has no 'decreases {:global}' bound, so it cannot run under the caller's bound (same-bound rule)
+github-issue-211-m4b-implicit-general.dfy(9,33): Error: modular termination: in 'Client.Types', this may evaluate the default values of the components of type 'Library.D', which can reach dispatch to implementations that other modules may provide and has no 'decreases {:global}' bound, so it cannot run under the caller's bound (same-bound rule)
+3 resolution/type errors detected in github-issue-211-m4b-implicit-general.dfy
+iterator, refresh true, consistent true
+
+Dafny program verifier finished with 3 verified, 0 errors
+iterator-false, refresh true, consistent true
+github-issue-211-m4b-iterator-false.dfy(7,4): Error: assertion might not hold
+
+Dafny program verifier finished with 0 verified, 1 error
+iterator-general, refresh true, consistent true
+github-issue-211-m4b-iterator-general.dfy(4,48): Error: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so under --modular-termination it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
+
+Dafny program verifier finished with 2 verified, 1 error
+placement, refresh true, consistent true
+github-issue-211-m4b-placement.dfy(1,9): Error: modular termination: {:termination_closed} takes no arguments and applies to a callable, constant, type or iterator
+github-issue-211-m4b-placement.dfy(2,13): Error: modular termination: {:termination_closed} takes no arguments and applies to a callable, constant, type or iterator
+github-issue-211-m4b-placement.dfy(3,13): Error: modular termination: {:termination_closed} takes no arguments and applies to a callable, constant, type or iterator
+github-issue-211-m4b-placement.dfy(4,18): Error: modular termination: {:termination_closed} takes no arguments and applies to a callable, constant, type or iterator
+4 resolution/type errors detected in github-issue-211-m4b-placement.dfy
+fixed-override, refresh true, consistent true
+github-issue-211-m4b-fixed-override.dfy(10,13): Error: fully defined function 'Final' is inherited from trait 'T' and is not allowed to be re-declared
+1 resolution/type errors detected in github-issue-211-m4b-fixed-override.dfy
+opaque-effect, refresh true, consistent true
+github-issue-211-m4b-opaque-effect.dfy(7,9): Error: modular termination: in 'Client.Bounded', this may evaluate the default values of the components of type 'Library.T', which can reach dispatch to implementations that other modules may provide and has no 'decreases {:global}' bound, so it cannot run under the caller's bound (same-bound rule)
+1 resolution/type errors detected in github-issue-211-m4b-opaque-effect.dfy
+provided, refresh true, consistent true
+
+Dafny program verifier finished with 1 verified, 0 errors
+provided-bad, refresh true, consistent true
+github-issue-211-m4b-provided-bad.dfy(9,59): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+
+Dafny program verifier finished with 0 verified, 1 error
+provided-false, refresh true, consistent true
+github-issue-211-m4b-provided-false.dfy(4,64): Error: assertion might not hold
+
+Dafny program verifier finished with 0 verified, 1 error
+views, refresh true, consistent true
+
+Dafny program verifier finished with 5 verified, 0 errors
+views-bad, refresh true, consistent true
+github-issue-211-m4b-views-bad.dfy(10,56): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+
+Dafny program verifier finished with 1 verified, 1 error
+views-false, refresh true, consistent true
+github-issue-211-m4b-views-false.dfy(5,76): Error: assertion might not hold
+github-issue-211-m4b-views-false.dfy(6,76): Error: assertion might not hold
+github-issue-211-m4b-views-false.dfy(7,45): Error: assertion might not hold
+
+Dafny program verifier finished with 0 verified, 3 errors
+refinement, refresh true, consistent true
+
+Dafny program verifier finished with 1 verified, 0 errors
+refinement-bad, refresh true, consistent true
+github-issue-211-m4b-refinement-bad.dfy(8,9): Error: modular termination: the {:termination_closed} promise of 'Closed' is not established; its body, specifications or implicit evaluations can reach open dispatch, an unknown application or an imported General contract
+1 resolution/type errors detected in github-issue-211-m4b-refinement-bad.dfy
+refinement-false, refresh true, consistent true
+github-issue-211-m4b-refinement-false.dfy(4,69): Error: assertion might not hold
+
+Dafny program verifier finished with 0 verified, 1 error
+grandparent, refresh true, consistent true
+github-issue-211-m4b-grandparent.dfy(14,11): Error: method's 'decreases {:global}' bound must be below or equal to that in the trait
+github-issue-211-m4b-grandparent.dfy(15,13): Error: function's 'decreases {:global}' bound must be below or equal to that in the trait
+
+Dafny program verifier finished with 3 verified, 2 errors
+multiple-bad, refresh true, consistent true
+github-issue-211-m4b-multiple-bad.dfy(5,11): Error: method's 'decreases {:global}' bound must be below or equal to that in the trait
+github-issue-211-m4b-multiple-bad.dfy(6,11): Error: method's 'decreases {:global}' bound must be below or equal to that in the trait
+
+Dafny program verifier finished with 0 verified, 2 errors

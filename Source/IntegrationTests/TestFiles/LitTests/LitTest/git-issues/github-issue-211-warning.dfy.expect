@@ -50,12 +50,13 @@ bounded trait, --modular-termination, --allow-warnings: warning, verifies
 github-issue-211-warning-bounded.dfy(5,29): Warning: trait 'T' has {:termination false} and no {:axiom} annotation: --modular-termination checks the calls dispatched through it only in code verified with that option
 
 Dafny program verifier finished with 3 verified, 0 errors
-class, --modular-termination, --allow-warnings: the unbounded dispatched call is rejected; the warnings stay
+class, --modular-termination, --allow-warnings: sealed foreign extension is rejected; the warnings stay
 github-issue-211-warning-class.dfy(13,8): Warning: class 'C' has @AssumeCrossModuleTermination and no {:axiom} annotation: code verified without it, such as the module of a trait it extends, did not check the calls dispatched to it for termination
 github-issue-211-warning-class.dfy(33,8): Warning: trait 'U' has @AssumeCrossModuleTermination and no {:axiom} annotation: code verified without it, such as the module of a trait it extends, did not check the calls dispatched to it for termination
-github-issue-211-warning-class.dfy(18,20): Error: decreases clause might not decrease (the dispatched callee has no 'decreases {:global}' bound, which --modular-termination requires)
-
-Dafny program verifier finished with 3 verified, 1 error
+github-issue-211-warning-class.dfy(13,21): Error: modular termination: class 'C' cannot extend sealed trait 'Tr.T' from another module; the defining trait must declare {:termination false}; @AssumeCrossModuleTermination cannot override sealing
+github-issue-211-warning-class.dfy(25,30): Error: modular termination: class 'D' cannot extend sealed trait 'Tr.T' from another module; the defining trait must declare {:termination false}; @AssumeCrossModuleTermination cannot override sealing
+github-issue-211-warning-class.dfy(33,21): Error: modular termination: trait 'U' cannot extend sealed trait 'Tr.T' from another module; the defining trait must declare {:termination false}; @AssumeCrossModuleTermination cannot override sealing
+3 resolution/type errors detected in github-issue-211-warning-class.dfy
 user of Std.Actions, --standard-libraries: no warning for the library's 20 declarations
 
 Dafny program verifier finished with 0 verified, 0 errors
