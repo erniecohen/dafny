@@ -52,3 +52,22 @@ There are no changed declaration keys or logical-error outcomes. The `Read` fail
 | 4.12.1 / on | 363 | 1026098165 | 1027584028 | +1485863 |
 
 The complete declaration aggregates and batch counts are in [the current Std CI cost ledger](241-default-translation-std-ci-costs.tsv). Isolation changes batch shape for the two repaired proofs, so these aggregates do not pair their old and new VC numbers. These artifacts establish current CI verdict and cost changes; they do not capture native SMT byte hashes. Complete transport identity between the prerequisite and translation-table modes remains pending.
+
+
+### Post-integration focused proof and display repairs
+
+The regression failure at https://github.com/erniecohen/dafny/actions/runs/43302337128/job/131476681653 reproduces locally against the integrated default compiler. With consistent-obligation checking enabled, `issue100-original.wfi` moves from Correct at 41,618 RU in shipped `8deca8ad` to OutOfResource at 16,033,149 RU in all four legacy/refreshed and additional-axiom combinations. The existing 16-million limit is unchanged. A CLI assertion-isolation probe verifies its five correctness batches at 153,835 total RU. The retained repair annotates only `wfi`, preserving its body and contract; the complete registered assertion-invariance shard then passes, including the original/explicit/final-true variants, old-heap and guarded-argument checks, sequential path and false controls, and project-option precedence. Probe cost values describe the explicit probe; the full registered-shard result is separate evidence.
+
+The filtered Base64 scope in https://github.com/erniecohen/dafny/actions/runs/43302341109/job/131476524557 also exposes three moves, all Correct in the corresponding shipped artifact at https://github.com/erniecohen/dafny/actions/runs/43233144216:
+
+| Declaration | Obligation checking | Integrated outcome / RU |
+|---|---|---|
+| `DecodeValidPartialsFrom1PaddedSeq (well-formedness)` | off and on | OutOfResource / 1055894 |
+| `EncodeBVLengthExact (correctness)` | off | OutOfResource / 1054802 |
+| `EncodeDecodeValid (correctness)` | on | OutOfResource / 1023215 |
+
+The retained `DecodeValidPartialsFrom1PaddedSeq` repair adds only `{:isolate_assertions}`. In the complete filtered Base64 scope, both obligation-checking modes verify all 17 well-formedness batches (1,316,029 total RU, maximum 503,870) and seven correctness batches (350,014 RU off; 358,359 on). The one-million per-task limit is unchanged. A separate reachable `assert false` produces Errors in both modes while all 17 well-formedness batches remain Valid. This changes two batches to 24, adding 22 batches. The other two moved correctness verdicts remain recorded; an isolation probe for `EncodeBVLengthExact` still exhausts a batch and was discarded. These filtered-scope observations do not replace the standing whole-Std four-core cohort above.
+
+`BitvectorsMore` retains its 9 verified / 41 error verdict and diagnostics in both resolver modes. Its resolved-program display now sorts the canonical width inventory and includes the generated helper width `bv4`; the refreshed global system display no longer duplicates the module-owned rotation helper declarations. Both snapshots are refreshed from the local native outputs. The labeled-refinement trigger check still requires `$Heap_at_0`, the current heap, receiver and assign-such-that binder in order, while accepting the module-qualified binder name and resulting line wrapping.
+
+The merged operator `revealed` witness is a separate unresolved front-end regression: shipped `8deca8ad` resolves it, but the integrated default and table builds reject the export view. Ownership is coordinated on https://github.com/erniecohen/dafny/pull/263#issuecomment-6836472064. No resolver-site fix is implemented here. Complete native-stream qualification retains its exact producer/input identities; the source repairs above require renewed qualification of their affected proof inputs.
