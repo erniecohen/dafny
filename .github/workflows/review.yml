@@ -1133,10 +1133,12 @@ jobs:
           name: dafny
       - name: Unpack Dafny
         run: mkdir -p out && tar -C out -xzf dafny.tar.gz
-      - name: Check unchanged existing product inputs
+      - name: Check unchanged product inputs at the reference-model introduction
         run: |
-          git fetch --no-tags --depth=1 origin "$(cat .github/review/issue193-base)"
-          python3 .github/review/issue193-identity.py reference-results/identity
+          python3 -m unittest discover -s .github/review -p test_issue193_identity.py
+          git fetch --no-tags --depth=1 origin "$(cat .github/review/issue193-base)" "$(cat .github/review/issue193-product)"
+          python3 .github/review/issue193-identity.py reference-results/identity \
+            --product-commit "$(cat .github/review/issue193-product)"
       - name: Pinned solver
         run: |
           if [ '${{ matrix.z3 }}' = 5.1.0 ]; then
