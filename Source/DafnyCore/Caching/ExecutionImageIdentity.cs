@@ -24,6 +24,11 @@ internal static class ExecutionImageIdentity {
       }
     }
     var image = Images.GetOrAdd(Path.GetFullPath(executable), Capture);
+    if (OperatingSystem.IsLinux() && LinuxMappedImages().Any(path => !image.Digests.ContainsKey(path))) {
+      // dlopen dependencies (notably ICU/OpenSSL) need not appear in ldd output.
+      // An unrecorded late load changes this invocation's supported profile.
+      throw new NotSupportedException("a native execution image was loaded after identity capture");
+    }
     // Loaded code must remain immutable throughout this supported invocation. Do not
     // certify replacement files against images already loaded by the current process.
     foreach (var (path, stamp) in image.Stamps) {
@@ -88,6 +93,7 @@ internal static class ExecutionImageIdentity {
         }
       }
     } else if (OperatingSystem.IsLinux()) {
+      foreach (var mapped in LinuxMappedImages()) { files.Add(mapped); }
       foreach (var image in files.Where(f => f == executable || f.EndsWith(".so", StringComparison.Ordinal)).ToArray()) {
         foreach (var line in Run("/usr/bin/ldd", image).Split('\n')) {
           var tokens = line.Trim().Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
@@ -114,6 +120,22 @@ internal static class ExecutionImageIdentity {
       stamps.Add(file, stamp);
     }
     return new Image(manifest, stamps);
+  }
+
+  private static IEnumerable<string> LinuxMappedImages() {
+    foreach (var line in File.ReadLines("/proc/self/maps")) {
+      var columns = line.Split((char[]?)null, 6, StringSplitOptions.RemoveEmptyEntries);
+      if (columns.Length != 6 || !columns[5].StartsWith('/')) { continue; }
+      var path = columns[5];
+      // CLR JIT mappings are generated from the already pinned managed producer.
+      if (path.StartsWith("/memfd:", StringComparison.Ordinal)) { continue; }
+      if (!columns[1].Contains('x') && !path.Contains(".so", StringComparison.Ordinal) &&
+          !path.EndsWith(".dll", StringComparison.Ordinal)) { continue; }
+      if (path.EndsWith(" (deleted)", StringComparison.Ordinal) || !File.Exists(path)) {
+        throw new NotSupportedException("unidentifiable mapped native execution image");
+      }
+      yield return path;
+    }
   }
 
   private static string Run(string executable, params string[] arguments) {

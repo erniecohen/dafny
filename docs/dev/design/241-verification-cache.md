@@ -509,7 +509,9 @@ The environment descriptor includes an ABI identifier and actual bytes of all
 application/runtime managed assemblies, the native solver and host, hostfxr,
 runtime native libraries and resolved native dependencies. The macOS profile
 also hashes the actual OS dyld shared-cache files; Linux resolves dependencies
-with `ldd`. Native launcher scripts and Windows are unsupported. All environment
+with `ldd` and records actual mapped libraries, including dlopen-only ICU/OpenSSL
+inputs. An unrecorded later Linux native load bypasses. Native launcher scripts
+and Windows are unsupported. All environment
 variable values are represented by digests. Image digests are memoized only within
 an invocation that treats code files as immutable; file length/mtime changes
 disable reuse for that invocation rather than certifying new files against old
