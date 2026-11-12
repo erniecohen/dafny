@@ -35,7 +35,8 @@ public class SmtExecutionLimitsTests {
   public void AuditedScalarOverridesAreAdmitted() {
     Assert.True(SmtExecutionLimits.Read(new[] {
       "(set-option :timeout 0)", "(set-option :smt.random_seed 17)",
-      "(set-option :smt.qi.eager_threshold 44.5)", "(set-option :smt.mbqi false)"
+      "(set-option :smt.qi.eager_threshold 44.5)", "(set-option :smt.mbqi false)",
+      "(set-option :smt.arith.nl false)"
     }).Supported);
   }
 }

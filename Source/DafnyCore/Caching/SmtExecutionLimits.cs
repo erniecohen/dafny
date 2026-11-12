@@ -12,7 +12,7 @@ internal static class SmtExecutionLimits {
     ":print-success", ":produce-models", ":produce-unsat-cores", ":auto_config", ":type_check",
     ":smt.delay_units", ":model_evaluator.completion", ":model.completion", ":model.compact",
     ":smt.refine_inj_axioms", ":smt.mbqi", ":model.v2", ":pp.bv_literals",
-    ":smt.arith.random_initial_value", ":smt.pull_nested_quantifiers"
+    ":smt.arith.random_initial_value", ":smt.pull_nested_quantifiers", ":smt.arith.nl"
   };
   private static readonly HashSet<string> NumericOptions = new(StringComparer.Ordinal) {
     ":smt.qi.eager_threshold", ":smt.qi.lazy_threshold", ":smt.qi.max_instances", ":smt.case_split",
