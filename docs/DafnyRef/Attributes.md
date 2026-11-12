@@ -1135,3 +1135,36 @@ datatype Attribute =
 However, @-attributes have more checks:
 * The attribute should be applied to a place where it can be used by Dafny
 * Arguments should be literals
+
+### `operator` (experimental) {#sec-operator-attribute}
+
+With `--user-defined-operators --type-system-refresh`, a named function or
+predicate can declare a fallback operator using one literal string argument:
+
+```dafny
+datatype Vec = Vec(x: int, y: int) {
+  function {:operator "+"} plus(b: Vec): Vec { Vec(x + b.x, y + b.y) }
+  function {:operator "-"} negate(): Vec { Vec(-x, -y) }
+  predicate {:operator "<="} le(b: Vec) { x <= b.x && y <= b.y }
+}
+```
+
+The initial milestone supports directly declared members of concrete classes
+and inductive datatypes. An instance binary operator has one explicit operand;
+unary minus has none. A static binary operator has two explicit operands and
+static unary minus has one. The first static formal must be the owner's nominal
+type with its own type parameters. Enclosing type parameters are allowed;
+member type parameters and default or `nameonly` operands are rejected.
+
+The supported binary symbols are `+ - * / % < <= > >=`; unary `-` has a separate
+slot. Each comparison must return `bool`. At most one member may declare each
+symbol/effective arity on an owner. The second operand and arithmetic result
+may differ from the owner's type. Predicates, ghost or opaque functions, and
+functions with by-method implementations use their ordinary call restrictions.
+
+`==` and `!=` cannot be declared. Use a named predicate for mathematical
+equivalence. Methods, extreme predicates, two-state functions, trait/newtype/
+codatatype owners, inherited operators, bitwise symbols, and an `"override"`
+argument are unsupported. A valid fallback declaration is allowed even when
+some uses select an intrinsic. Without the option, this attribute remains
+ordinary unknown metadata, including malformed operator-looking arguments.

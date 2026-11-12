@@ -14,6 +14,15 @@ namespace Microsoft.Dafny {
   }
 
   public class Cloner {
+    private OperatorCloneContext operatorClones;
+    public OperatorCloneContext OperatorClones => operatorClones ??= CreateOperatorCloneContext();
+    protected OperatorCloneContext ExistingOperatorClones => operatorClones;
+    protected virtual OperatorCloneContext CreateOperatorCloneContext() => new();
+    protected void EnsureOperatorClones(ModuleDefinition source) {
+      if (source?.EnclosingLiteralModuleDecl?.Options.Get(CommonOptionBag.UserDefinedOperators) == true) {
+        _ = OperatorClones;
+      }
+    }
     public bool CloneResolvedFields { get; }
     private readonly Dictionary<Statement, Statement> statementClones = new();
     private readonly Dictionary<IVariable, IVariable> clones = new();
@@ -64,6 +73,7 @@ namespace Microsoft.Dafny {
       Contract.Requires(d != null);
       Contract.Requires(newParent != null);
 
+      EnsureOperatorClones(d.EnclosingModuleDefinition);
       var clone = CloneDeclarationSyntax(d, newParent);
       clone.TerminationContract = d.TerminationContract;
       var parentObligations = d.CardinalityParentObligations;
@@ -75,6 +85,7 @@ namespace Microsoft.Dafny {
       clone.CardinalityParentObligations = parentObligations.Select(CloneType).ToImmutableArray();
       // A generic clone may create a distinct refinement specialization. Only
       // a pure view cloner is allowed to identify it with the source declaration.
+      operatorClones?.Register(d, clone);
       return clone;
     }
 
@@ -208,13 +219,20 @@ namespace Microsoft.Dafny {
     }
 
     public TypeParameter CloneTypeParam(TypeParameter tp) {
-      return (TypeParameter)typeParameterClones.GetOrCreate(tp,
+      var result = (TypeParameter)typeParameterClones.GetOrCreate(tp,
         () => new TypeParameter(Origin(tp.Origin), tp.NameNode.Clone(this), tp.VarianceSyntax,
           CloneTPChar(tp.Characteristics), tp.TypeBounds.ConvertAll(CloneType), tp.Attributes));
+      operatorClones?.Register(tp, result);
+      return result;
     }
 
     public virtual MemberDecl CloneMember(MemberDecl member, bool isReference) {
-      var clone = memberClones.GetOrCreate(member, () => {
+      EnsureOperatorClones(member.EnclosingClass?.EnclosingModuleDefinition);
+      if (!isReference && operatorClones != null && memberClones.TryGetValue(member, out var cached) &&
+          ReferenceEquals(cached, member)) {
+        memberClones.Remove(member);
+      }
+      var result = memberClones.GetOrCreate(member, () => {
         if (isReference) {
           return member;
         }
@@ -228,8 +246,11 @@ namespace Microsoft.Dafny {
           return CloneMethod(m);
         }
       });
-      clone.TerminationContract = member.TerminationContract;
-      return clone;
+      result.TerminationContract = member.TerminationContract;
+      if (!isReference && !ReferenceEquals(member, result)) {
+        operatorClones?.Register(member, result);
+      }
+      return result;
     }
 
     public virtual Type CloneType(Type t) {

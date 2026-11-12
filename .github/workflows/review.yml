@@ -85,6 +85,10 @@ env:
   HARNESS_Z3_4_16_0_SHA256: 87de9c9e86c877abfccb00cf24b946c4a1bda7b9cba6f363ea58311d2573c320
 
 jobs:
+  operators-disabled:
+    if: github.head_ref == 'codex/194-operators-m1' || github.ref == 'refs/heads/codex/194-operators-m1' || startsWith(github.ref, 'refs/heads/scratch/194-')
+    uses: ./.github/workflows/operators-m1-off.yml
+
   decreases-order-comparison:
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.decreases_order_comparison && startsWith(github.ref, 'refs/heads/scratch/') }}
     uses: ./.github/workflows/decreases-order.yml
@@ -776,6 +780,10 @@ jobs:
           echo "$filter"
           dotnet test --settings .github/review/ci.runsettings Source/IntegrationTests -c Release --no-build \
             --logger "console;verbosity=normal" --filter "$filter"
+      - name: Operator selection cloning and safe symbolic rename
+        run: |
+          dotnet test --settings .github/review/ci.runsettings Source/DafnyCore.Test -c Release --filter FullyQualifiedName~OperatorSelectionTests --logger "console;verbosity=normal"
+          dotnet test --settings .github/review/ci.runsettings Source/DafnyLanguageServer.Test -c Release --filter 'FullyQualifiedName~OperatorSymbolsAreReferencesButAreNeverRenamed|FullyQualifiedName~OperatorHoverDistinguishesRankFromAnOrdinaryFallbackCall' --logger "console;verbosity=normal"
       - name: Batch requests reuse resolution and create fresh proof tasks
         env:
           Z3: ${{ github.workspace }}/Binaries/z3/bin/z3-5.1.0

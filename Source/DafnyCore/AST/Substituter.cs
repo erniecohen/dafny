@@ -170,6 +170,7 @@ namespace Microsoft.Dafny {
             newTypeApplicationAtEnclosingClass != e.TypeApplication_AtEnclosingClass ||
             newTypeApplicationJustFunction != e.TypeApplication_JustFunction) {
           var newFce = new FunctionCallExpr(expr.Origin, e.NameNode, receiver, e.OpenParen, e.CloseParen, newArgs, e.AtLabel ?? oldHeapLabel) {
+            IsOperatorCall = e.IsOperatorCall,
             Function = e.Function, // resolve on the fly (and set newFce.Type below, at end)
             CoCall = e.CoCall, // also copy the co-call status
             CoCallHint = e.CoCallHint, // and any co-call hint
