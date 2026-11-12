@@ -12,6 +12,15 @@ namespace DafnyCore.Test.Resolver;
 
 [Collection("Cardinality resolution")]
 public class HistoryFreeTranslationTests {
+  [Fact]
+  public void DefaultSolverDeclarationOrderUsesContentHashes() {
+    var options = new DafnyOptions(TextReader.Null, TextWriter.Null, TextWriter.Null);
+    Assert.True(options.DeterministicLiteralHashes);
+    var literal = new Microsoft.Boogie.LiteralExpr(Microsoft.Boogie.Token.NoToken,
+      Microsoft.BaseTypes.BigNum.FromString("18446744073709551616"));
+    Assert.Equal(literal.GetContentHash(true), literal.GetContentHash(options.DeterministicLiteralHashes));
+  }
+
   private const string Units = """
     module Dependency {
       datatype D = A | B(x: int)

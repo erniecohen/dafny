@@ -41,8 +41,11 @@ snapshot metadata rejects reuse. An unsupported snapshot follows the same fresh
 translation fallback in default and cache modes. No parser round-trip substitutes
 for reporting metadata.
 
-The old language-server builtin cache uses CloneId/system shape; it cannot certify
-a dependency-local result and is bypassed on the common path. This change does
+The legacy language-server CloneId/system-shape builtin cache cannot certify
+a dependency-local result. The default caller-thread path invokes the shared
+content-keyed complete-output hook instead. The existing editor cache preserves
+reuse when parse identity and exact prerequisite outputs still match, retaining
+builtin, signature, member and translation-input views together. This change does
 not publish or trust a persistent resolution snapshot. Final L/G/R identities
 and detached persistence remain separate work.
 
@@ -103,3 +106,15 @@ that passes all four option combinations; those diagnostic edits are not kept.
 Its moved verdict is recorded for the baseline review instead of increasing its
 resource ceiling. The complete pre-repair cohort and every changed-task RU delta
 are in [the qualification report](241-default-translation-results.md).
+
+## Numeric normalization
+
+Boogie normalized declaration order also participates in solver emission. Its
+legacy numeric content hashes use process-dependent runtime hashes for large
+integers. Two fresh invocations of the shipped compiler can therefore emit
+different SMT despite identical Boogie. The default prerequisite selects the
+existing `DeterministicLiteralHashes` path in the pinned Boogie, so integer, real,
+bitvector and floating-point content hashes derive from their values. An explicit
+`--boogie /deterministicLiteralHashes:0` remains a legacy override and is outside
+the cross-process stable-input profile. No Boogie implementation or global-state
+reset is introduced.
