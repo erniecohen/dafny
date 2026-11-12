@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Security.Cryptography;
@@ -14,6 +15,11 @@ namespace Microsoft.Dafny.LanguageServer.Language;
 
 public class ResolutionCache {
   public PruneIfNotUsedSinceLastPruneCache<byte[], ModuleResolutionResult> Modules { get; } = new(new HashEquality());
+  internal readonly ConcurrentDictionary<string, LocalResolutionEntry> ModuleOutputs = new(StringComparer.Ordinal);
+  internal SystemModuleManager? ModuleBuiltins;
+  internal string? ModuleBuiltinOptions;
+  internal sealed record LocalResolutionEntry(Guid ParseIdentity, ModuleResolutionResult[] Prerequisites,
+    ModuleResolutionResult Output);
   public SystemModuleManager? Builtins { get; set; }
   public Dictionary<TopLevelDeclWithMembers, Dictionary<string, MemberDecl>>? SystemClassMembers { get; set; }
 }
@@ -21,6 +27,7 @@ public class ResolutionCache {
 public class CachingResolver : ProgramResolver {
   private readonly ILogger<CachingResolver> logger;
   private readonly Dictionary<ModuleDecl, byte[]> hashes = new();
+  private readonly ConcurrentDictionary<string, byte> usedModuleKeys = new(StringComparer.Ordinal);
   private readonly ResolutionCache cache;
   private readonly TelemetryPublisherBase telemetryPublisher;
 
@@ -39,7 +46,11 @@ public class CachingResolver : ProgramResolver {
     // Cancellation can occur while waiting for the cache lock, before base.Resolve runs.
     ResetCardinalityValidationReceipt();
     return cache.Modules.ProfileAndPruneCache(async () => {
+      usedModuleKeys.Clear();
       await base.Resolve(cancellationToken);
+      foreach (var key in cache.ModuleOutputs.Keys) {
+        if (!usedModuleKeys.ContainsKey(key)) { cache.ModuleOutputs.TryRemove(key, out _); }
+      }
       return Task.FromResult(Unit.Value);
     }, logger, telemetryPublisher, Program.FullName, "resolution", cancellationToken);
   }
@@ -47,6 +58,37 @@ public class CachingResolver : ProgramResolver {
   // The old CloneId/system-shape cache cannot certify dependency-local builtin views.
   protected override Dictionary<TopLevelDeclWithMembers, Dictionary<string, MemberDecl>> ResolveSystemModule(Program program) =>
     base.ResolveSystemModule(program);
+
+  protected override SystemModuleManager PrepareResolutionSystemModule(string optionsKey) {
+    if (cache.ModuleBuiltinOptions != optionsKey) {
+      cache.ModuleOutputs.Clear();
+      cache.ModuleBuiltins = null;
+      cache.ModuleBuiltinOptions = optionsKey;
+    }
+    cache.ModuleBuiltins = (cache.ModuleBuiltins ?? SystemModuleManager).CreateResolutionView(SystemModuleManager);
+    return cache.ModuleBuiltins;
+  }
+
+  protected override ModuleResolutionResult ResolveModuleOutput(ModuleDecl declaration, string key,
+    IReadOnlyList<ModuleResolutionResult> prerequisites, Func<ModuleResolutionResult> resolve, out bool cached) {
+    usedModuleKeys.TryAdd(key, 0);
+    // The key certifies semantics. Parse identity additionally certifies that
+    // retained diagnostic tokens still belong to this editor document version.
+    // Reference checks ensure an output never retains a replaced prerequisite.
+    if (cache.ModuleOutputs.TryGetValue(key, out var entry) && entry.ParseIdentity == declaration.CloneId &&
+        entry.Prerequisites.SequenceEqual(prerequisites, ReferenceEqualityComparer.Instance)) {
+      cached = true;
+      logger.LogDebug($"Resolution cache hit for {declaration}");
+      return entry.Output;
+    }
+    cached = false;
+    logger.LogDebug($"Resolution cache miss for {declaration}");
+    var beforeResolution = DateTime.Now;
+    var result = resolve();
+    cache.ModuleOutputs[key] = new(declaration.CloneId, prerequisites.ToArray(), result);
+    telemetryPublisher.PublishTime("ModuleResolution", declaration.FullName, DateTime.Now - beforeResolution);
+    return result;
+  }
 
   protected override ModuleResolutionResult ResolveModuleDeclaration(CompilationData compilation, ModuleDecl decl) {
     var hash = GetHash(decl);

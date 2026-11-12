@@ -30,6 +30,25 @@ public class ResolutionPipelineTests {
     }
     """;
 
+  [Fact]
+  public async Task RejectedLegacyNewtypesDoNotTraverseUnresolvedImports() {
+    const string source = """
+      module Api { newtype N = x: int | 0 <= x }
+      module Client { import A = Api function F(x: A.N): A.N { x } }
+      """;
+    var (_, baseline) = await Resolve(source, 0, false,
+      configure: p => p.Options.Set(CommonOptionBag.GeneralNewtypes, true));
+    var expected = Errors(baseline);
+    Assert.NotEmpty(expected);
+    Assert.Contains(expected, message => message.Contains("requires --type-system-refresh"));
+    foreach (var threads in new[] { 1, 2, 4, 8 }) {
+      var (program, reporter) = await Resolve(source, threads, false,
+        configure: p => p.Options.Set(CommonOptionBag.GeneralNewtypes, true));
+      Assert.Equal(expected, Errors(reporter));
+      Assert.Null(program.CardinalityValidationReceipt);
+    }
+  }
+
   [Theory]
   [InlineData(false)]
   [InlineData(true)]

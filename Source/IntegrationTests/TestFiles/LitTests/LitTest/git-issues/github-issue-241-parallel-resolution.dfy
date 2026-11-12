@@ -42,3 +42,15 @@ module ErrorC { import A = W1 function F(): int { A.F(true) } }
 // RUN: %diff "%t.v1" "%t.v4"
 // RUN: %baredafny verify --verify-included-files --cores 1 --resolution-threads 4 --bprint "%t.shifted.bpl" "%s.shifted.dfy" > "%t.shifted"
 // RUN: %diff "%t.n1_M.bpl" "%t.shifted_M.bpl"
+
+// Rejected legacy/newtype configuration: report the same 19 errors as the
+// shipped serial path, without traversing unresolved translation inputs.
+// RUN: %exits-with 2 %baredafny verify --use-basename-for-filename --show-snippets:false --type-system-refresh:false --additional-axioms:false --consistent-obligation-checks:false --filter-symbol Std.Base64.EncodeBVIsBase64. --cores 1 --verification-time-limit 0 "%repositoryRoot/Source/DafnyStandardLibraries/src/Std/dfyconfig.toml" > "%t.rejected.off"
+// RUN: %exits-with 2 %baredafny verify --use-basename-for-filename --show-snippets:false --type-system-refresh:false --additional-axioms:false --consistent-obligation-checks:false --filter-symbol Std.Base64.EncodeBVIsBase64. --cores 1 --verification-time-limit 0 --resolution-threads 1 "%repositoryRoot/Source/DafnyStandardLibraries/src/Std/dfyconfig.toml" > "%t.rejected.1"
+// RUN: %exits-with 2 %baredafny verify --use-basename-for-filename --show-snippets:false --type-system-refresh:false --additional-axioms:false --consistent-obligation-checks:false --filter-symbol Std.Base64.EncodeBVIsBase64. --cores 1 --verification-time-limit 0 --resolution-threads 2 "%repositoryRoot/Source/DafnyStandardLibraries/src/Std/dfyconfig.toml" > "%t.rejected.2"
+// RUN: %exits-with 2 %baredafny verify --use-basename-for-filename --show-snippets:false --type-system-refresh:false --additional-axioms:false --consistent-obligation-checks:false --filter-symbol Std.Base64.EncodeBVIsBase64. --cores 1 --verification-time-limit 0 --resolution-threads 4 "%repositoryRoot/Source/DafnyStandardLibraries/src/Std/dfyconfig.toml" > "%t.rejected.4"
+// RUN: %exits-with 2 %baredafny verify --use-basename-for-filename --show-snippets:false --type-system-refresh:false --additional-axioms:false --consistent-obligation-checks:false --filter-symbol Std.Base64.EncodeBVIsBase64. --cores 1 --verification-time-limit 0 --resolution-threads 8 "%repositoryRoot/Source/DafnyStandardLibraries/src/Std/dfyconfig.toml" > "%t.rejected.8"
+// RUN: %diff "%t.rejected.off" "%t.rejected.1"
+// RUN: %diff "%t.rejected.off" "%t.rejected.2"
+// RUN: %diff "%t.rejected.off" "%t.rejected.4"
+// RUN: %diff "%t.rejected.off" "%t.rejected.8"
