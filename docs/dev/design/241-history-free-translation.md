@@ -17,7 +17,9 @@ naming algorithm.
 ## Common default path
 
 Sequential resolution now uses the same dependency-local module views as the
-published worker pipeline. A module's height is its dependency depth, rather
+published dependency-local ownership operation. The default calls this operation
+directly on its existing resolver thread. Only positive `--resolution-threads`
+values create scheduler workers; parallel scheduling is not a prerequisite. A module's height is its dependency depth, rather
 than a global ordinal. Builtin shapes and bit widths are gathered from the
 module's resolved dependency closure and emitted in a stable order. The existing
 module naming scope supplies fresh counters for resolution and translation,

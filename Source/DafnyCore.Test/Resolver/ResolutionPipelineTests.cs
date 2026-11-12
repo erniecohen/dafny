@@ -33,6 +33,43 @@ public class ResolutionPipelineTests {
   [Theory]
   [InlineData(false)]
   [InlineData(true)]
+  public async Task DefaultResolutionUsesCallerAndMatchesScheduledOwnership(bool refresh) {
+    var caller = 0;
+    var observed = new List<int>();
+    var (direct, directReporter) = await Resolve(Source, 0, refresh,
+      starting: _ => observed.Add(Environment.CurrentManagedThreadId),
+      configure: _ => caller = Environment.CurrentManagedThreadId);
+    Assert.Empty(Errors(directReporter));
+    Assert.NotEmpty(observed);
+    Assert.All(observed, thread => Assert.Equal(caller, thread));
+    var (scheduled, scheduledReporter) = await Resolve(Source, 1, refresh);
+    Assert.Empty(Errors(scheduledReporter));
+    Assert.Equal(Keys(direct), Keys(scheduled));
+    Assert.Equal(Translate(direct, true), Translate(scheduled, true));
+  }
+
+  [Fact]
+  public async Task RejectedLegacyNewtypesDoNotTraverseUnresolvedImports() {
+    const string source = """
+      module Api { newtype N = x: int | 0 <= x }
+      module Client { import A = Api function F(x: A.N): A.N { x } }
+      """;
+    var (_, baseline) = await Resolve(source, 0, false,
+      configure: p => p.Options.Set(CommonOptionBag.GeneralNewtypes, true));
+    var expected = Errors(baseline);
+    Assert.NotEmpty(expected);
+    Assert.Contains(expected, message => message.Contains("requires --type-system-refresh"));
+    foreach (var threads in new[] { 1, 2, 4, 8 }) {
+      var (program, reporter) = await Resolve(source, threads, false,
+        configure: p => p.Options.Set(CommonOptionBag.GeneralNewtypes, true));
+      Assert.Equal(expected, Errors(reporter));
+      Assert.Null(program.CardinalityValidationReceipt);
+    }
+  }
+
+  [Theory]
+  [InlineData(false)]
+  [InlineData(true)]
   public async Task WorkerCountsPreserveKeysDiagnosticsAndBoogie(bool refresh) {
     var (baseline, reporter) = await Resolve(Source, 1, refresh);
     Assert.Empty(Errors(reporter));

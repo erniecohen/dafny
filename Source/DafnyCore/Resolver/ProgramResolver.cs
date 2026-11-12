@@ -60,6 +60,9 @@ public class ProgramResolver {
       if (declaration is LiteralModuleDecl literal) { literal.ModuleDef.Height = declaration.Height; }
     }
 
+    var systemKey = ModuleResolutionKey.Compute("_System", "", ModuleResolutionKey.DafnyVersion,
+      ModuleResolutionKey.Options(Options), []);
+    Program.SystemModuleManager = PrepareResolutionSystemModule(systemKey);
     using var systemNames = new ModuleNamingScope("_System");
     var systemClassMembers = ResolveSystemModule(Program);
     foreach (var moduleClassMembers in systemClassMembers) {
@@ -74,8 +77,8 @@ public class ProgramResolver {
       rewriter.PreResolve(Program);
     }
 
-    // Zero selects sequential scheduling, never a different naming or builtin view.
-    ResolveModulesInParallel(sortedDecls, moduleDeclarationPointers, cancellationToken);
+    // Local ownership is shared; zero resolves directly without the opt-in scheduler.
+    ResolveModuleOutputs(sortedDecls, moduleDeclarationPointers, cancellationToken);
 
     if (Reporter.ErrorCount != startingErrorCount) {
       return Task.CompletedTask;
@@ -104,7 +107,7 @@ public class ProgramResolver {
   /// A dependency-ready queue, with publication to dependents distinct from ordered
   /// publication to the program and its reporter. No height barrier is introduced.
   /// </summary>
-  private void ResolveModulesInParallel(List<ModuleDecl> declarations,
+  private void ResolveModuleOutputs(List<ModuleDecl> declarations,
     Dictionary<ModuleDecl, Action<ModuleDecl>> pointers, CancellationToken cancellationToken) {
     var indices = declarations.Select((declaration, index) => (declaration, index))
       .ToDictionary(p => p.declaration, p => p.index);
@@ -114,7 +117,7 @@ public class ProgramResolver {
     var remaining = prerequisites.Select(p => p.Length).ToArray();
     var ready = new SortedSet<int>();
     var results = new ModuleResolutionResult[declarations.Count];
-    var catalog = new ResolutionBuiltinCatalog(SystemModuleManager);
+    var catalog = SystemModuleManager.ResolutionCatalog ?? new ResolutionBuiltinCatalog(SystemModuleManager);
     var initialBuiltins = new SystemModuleManager(SystemModuleManager);
     var initialMembers = new Dictionary<TopLevelDeclWithMembers, Dictionary<string, MemberDecl>>(classMembers);
     var profile = PipelineProfile.For(Options);
@@ -192,29 +195,40 @@ public class ProgramResolver {
             }
             var start = profile?.Begin();
             ResolutionWorkerStarting?.Invoke(declarations[index]);
-            var resolved = worker.ResolveModuleDeclaration(Program.Compilation, declarations[index]);
-            var translationInputs = new ModuleTranslationInputs(resolved.ErrorReporter.HasErrors ? null : declarations[index],
-              closure.Select(i => results[i].TranslationInputs));
-            translationInputs.Bitwidths.UnionWith(builtins.Bitwidths);
-            builtins.RestrictResolutionOutput(translationInputs);
-            foreach (var definition in resolved.Signatures.Keys) {
-              translationInputs.ModuleNames.Add(definition.FullName);
-              definition.TranslationInputs = translationInputs;
-              definition.ResolutionKey = Program.ResolutionKeys[declarations[index]];
+            ModuleResolutionResult ResolveOutput() {
+              var resolved = worker.ResolveModuleDeclaration(Program.Compilation, declarations[index]);
+              // An import can be unresolved without producing a new local diagnostic.
+              // Its resolved fields (and hence Children) are not safe to traverse.
+              var invalid = resolved.ErrorReporter.HasErrors ||
+                closure.Any(i => results[i].ErrorReporter.HasErrors ||
+                  results[i].Signatures.Keys.Any(m => !m.SuccessfullyResolved)) ||
+                resolved.Signatures.Keys.Any(m => !m.SuccessfullyResolved);
+              var translationInputs = new ModuleTranslationInputs(invalid ? null : declarations[index],
+                closure.Select(i => results[i].TranslationInputs));
+              translationInputs.Bitwidths.UnionWith(builtins.Bitwidths);
+              builtins.RestrictResolutionOutput(translationInputs);
+              foreach (var definition in resolved.Signatures.Keys) {
+                translationInputs.ModuleNames.Add(definition.FullName);
+                definition.TranslationInputs = translationInputs;
+                definition.ResolutionKey = Program.ResolutionKeys[declarations[index]];
+              }
+              var output = resolved with {
+                Key = Program.ResolutionKeys[declarations[index]], Builtins = builtins,
+                SystemClassMembers = worker.classMembers.Where(p => p.Key.EnclosingModuleDefinition.Name == "_System" &&
+                    translationInputs.BuiltinNames.Contains(p.Key.Name))
+                  .ToDictionary(p => p.Key, p => p.Value),
+                TranslationInputs = translationInputs
+              };
+              if (output.ResolvedDeclaration is LiteralModuleDecl resolvedModule) {
+                resolvedModule.ModuleDef.TranslationInputs = output.TranslationInputs;
+              }
+              return output;
             }
-            var output = resolved with {
-              Key = Program.ResolutionKeys[declarations[index]], Builtins = builtins,
-              SystemClassMembers = worker.classMembers.Where(p => p.Key.EnclosingModuleDefinition.Name == "_System" &&
-                  translationInputs.BuiltinNames.Contains(p.Key.Name))
-                .ToDictionary(p => p.Key, p => p.Value),
-              TranslationInputs = translationInputs
-            };
-            if (output.ResolvedDeclaration is LiteralModuleDecl resolvedModule) {
-              resolvedModule.ModuleDef.TranslationInputs = output.TranslationInputs;
-            }
+            var output = ResolveModuleOutput(declarations[index], Program.ResolutionKeys[declarations[index]],
+              closure.Select(i => results[i]).ToArray(), ResolveOutput, out var cached);
             if (profile != null) {
               profile.Span("resolve.module", start.Value, new Dictionary<string, object> {
-                ["module"] = declarations[index].FullName, ["key"] = output.Key, ["cached"] = false
+                ["module"] = declarations[index].FullName, ["key"] = output.Key, ["cached"] = cached
               });
             }
             lock (gate) {
@@ -246,18 +260,52 @@ public class ProgramResolver {
     // module-local outputs and names, but execute their callbacks on one worker.
     var count = Options.Plugins.Except(DafnyOptions.DefaultPlugins).Any()
       ? 1 : Math.Min(Math.Max(1, Options.Get(CommonOptionBag.ResolutionThreads)), declarations.Count);
-    var workers = Enumerable.Range(0, count).Select(_ => new Thread(RunWorker, 0x10000000) { IsBackground = true }).ToArray();
-    foreach (var worker in workers) { worker.Start(); }
-    foreach (var worker in workers) { worker.Join(); }
+    if (Options.Get(CommonOptionBag.ResolutionThreads) == 0) {
+      RunWorker();
+    } else {
+      var workers = Enumerable.Range(0, count).Select(_ => new Thread(RunWorker, 0x10000000) { IsBackground = true }).ToArray();
+      foreach (var worker in workers) { worker.Start(); }
+      foreach (var worker in workers) { worker.Join(); }
+    }
     failure?.Throw();
     cancellationToken.ThrowIfCancellationRequested();
 
+    // Rebind containment after every parent output is known. In particular, a
+    // cached child must not keep a fresh parent that a subsequent parent cache
+    // hit replaces. Imports and signature/member views already refer to the
+    // exact prerequisite outputs accepted by ResolveModuleOutput.
+    var definitions = declarations.Select((declaration, index) => (declaration, index))
+      .Where(p => p.declaration is LiteralModuleDecl && results[p.index].ResolvedDeclaration is LiteralModuleDecl)
+      .ToDictionary(p => ((LiteralModuleDecl)p.declaration).ModuleDef,
+        p => ((LiteralModuleDecl)results[p.index].ResolvedDeclaration).ModuleDef);
     for (var i = 0; i < declarations.Count; i++) {
       var result = results[i];
       SystemModuleManager.MergeResolutionView(result.Builtins);
       foreach (var members in result.SystemClassMembers) { classMembers[members.Key] = members.Value; }
       ProcessDeclarationResolutionResult(pointers, declarations[i], result);
     }
+    for (var i = 0; i < declarations.Count; i++) {
+      var parent = declarations[i].EnclosingModuleDefinition;
+      var resolvedParent = parent != null ? definitions.GetValueOrDefault(parent, parent) : null;
+      results[i].ResolvedDeclaration.EnclosingModuleDefinition = resolvedParent;
+      if (results[i].ResolvedDeclaration is LiteralModuleDecl literal) {
+        literal.ModuleDef.EnclosingModule = resolvedParent;
+      }
+    }
+  }
+
+  /// <summary>Editor caches may supply canonical intrinsic identities across resolutions.</summary>
+  protected virtual SystemModuleManager PrepareResolutionSystemModule(string optionsKey) => SystemModuleManager;
+
+  /// <summary>
+  /// Cache the complete worker output, including its dependency-local builtin,
+  /// signature, member and translation-input views. Whole-program admission is
+  /// deliberately outside this hook and is rerun after deterministic publication.
+  /// </summary>
+  protected virtual ModuleResolutionResult ResolveModuleOutput(ModuleDecl declaration, string key,
+    IReadOnlyList<ModuleResolutionResult> prerequisites, Func<ModuleResolutionResult> resolve, out bool cached) {
+    cached = false;
+    return resolve();
   }
 
   private static string ModuleSource(ModuleDecl declaration) {
