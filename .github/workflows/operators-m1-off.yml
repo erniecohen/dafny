@@ -27,7 +27,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p out/evidence
-          git worktree add --detach out/baseline-source c02d46e8c7faad8490b66238d1a3378267985728
+          git worktree add --detach out/baseline-source 7dc1d91b1159bafb2d75dfb092930112528e6c18
           git rev-parse HEAD > out/evidence/candidate-revision
           git -C out/baseline-source rev-parse HEAD > out/evidence/baseline-revision
           # Only assembly build metadata is controlled. Semantic output is not normalized.
