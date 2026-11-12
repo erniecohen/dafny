@@ -342,6 +342,8 @@ namespace Microsoft.Dafny {
       Prune = true;
       TypeEncodingMethod = Bpl.CoreOptions.TypeEncoding.Arguments;
       NormalizeNames = true;
+      // Numeric declaration hashes must depend on content, not the CLR process seed.
+      DeterministicLiteralHashes = true;
       EmitDebugInformation = false;
       Backend = new CsharpBackend(this);
       Printer = new NullPrinter();

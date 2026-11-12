@@ -11,3 +11,5 @@ The moved structural-JSON function checks its existing well-formedness obligatio
 The original well-founded induction regression and the one-padding Base64 decomposition lemma keep their existing proof obligations and resource ceilings, with assertion isolation to repair moved proof costs. Generated-name and canonical builtin-display expectations follow the new ownership scheme.
 
 Operator export views recognize dependency-local compiler builtin identities while retaining visibility checks on user declarations.
+
+Normalized solver declaration order uses deterministic numeric literal hashes by default, removing dependence on the runtime process hash seed.

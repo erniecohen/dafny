@@ -146,7 +146,7 @@ sealed class RecordingSolver : SMTLibSolver {
       lock(lifecycle) {
       if (!closed) {
         closed = true; Changed();
-        
+
         var record = new { problem, query = 0, kind = "final", sha256 = Convert.ToHexStringLower(commandHash.GetCurrentHash()), length = commandLength };
         File.AppendAllText(Path.Combine(directory,"solver-"+number+".jsonl"),JsonSerializer.Serialize(record)+"\n");
       }
