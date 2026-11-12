@@ -9,7 +9,7 @@ ghost function iRegress<T(!new)>(p:T->bool,o:WfO<T>,t:T,n:nat):(r:T) requires in
 ghost function rf<T(!new)>(p:T->bool,o:WfO<T>,t:T):(r:nat->T) requires inductiveP(p,o) && !p(t) ensures iChain(o,r) {
     (n:nat) => iRegress(p,o,t,n)
 }
-lemma wfi<T(!new)>(p:T->bool,o:WfO<T>,t:T) requires inductiveP(p,o) ensures forall t :: p(t) {
+lemma {:isolate_assertions} wfi<T(!new)>(p:T->bool,o:WfO<T>,t:T) requires inductiveP(p,o) ensures forall t :: p(t) {
     forall t ensures p(t) { if !p(t) { var ch := rf(p,o,t); assert wf(o); }}
     //assert forall t :: p(t); // proof diverges without this
 }

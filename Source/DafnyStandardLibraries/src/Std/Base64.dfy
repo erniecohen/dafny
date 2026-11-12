@@ -1197,7 +1197,7 @@ module Std.Base64 {
     assert Is2Padding(s[(|s| - 4)..]);
   }
 
-  lemma DecodeValidPartialsFrom1PaddedSeq(s: seq<char>)
+  lemma {:isolate_assertions} DecodeValidPartialsFrom1PaddedSeq(s: seq<char>)
     requires IsBase64String(s)
     requires |s| >= 4
     requires Is1Padding(s[(|s| - 4)..])
