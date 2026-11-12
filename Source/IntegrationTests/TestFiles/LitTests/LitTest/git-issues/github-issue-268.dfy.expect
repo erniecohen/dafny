@@ -1,0 +1,4 @@
+github-issue-268.dfy(23,4): Error: assertion might not hold
+github-issue-268.dfy(27,4): Error: assertion might not hold
+
+Dafny program verifier finished with 7 verified, 2 errors
