@@ -72,9 +72,11 @@ The byte-identity control in the completed build job of the [comparison run](htt
 
 The later shipped source-contract changes through `908d5b8b8` are integrated in
 `0fc877a47043b74c7451ea549a3149cd2a46b8cb`. They change modular source-contract reachability while retaining
-the corrected component relations and tuple lift. The measurements above identify
-their original source precisely; final validation of the combined branch is linked
-from the PR.
+the corrected component relations and tuple lift. The recorded measurement source
+remains identified above; final validation of the combined branch is linked from
+the PR. A focused repeat against the later shipped source and combined candidate
+legacy mode gives byte-identical stdout, stderr, Boogie and SMT output for all
+seven fixture families, including M2 and callbacks.
 
 All resource differences below are corrected default minus legacy.
 
