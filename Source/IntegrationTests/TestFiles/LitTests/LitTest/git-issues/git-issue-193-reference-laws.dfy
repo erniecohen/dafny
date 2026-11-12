@@ -1,4 +1,4 @@
-// RUN: %verify --additional-axioms:false "%s" > "%t"
+// RUN: %verify --additional-axioms:false "%repositoryRoot/Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/git-issue-193-reference-laws.dfy" > "%t"
 // RUN: %diff "%s.expect" "%t"
 // https://github.com/erniecohen/dafny/issues/193
 include "../../../../../DafnyStandardLibraries/optional/IntegerBitwise.dfy"
