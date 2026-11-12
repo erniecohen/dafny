@@ -127,10 +127,10 @@ internal static class ExecutionImageIdentity {
     return new Image(manifest, stamps);
   }
 
-  internal static IEnumerable<string> LinuxDependencyRoots(IEnumerable<string> files,
+  internal static IReadOnlyList<string> LinuxDependencyRoots(IEnumerable<string> files,
     ISet<string> mappedImages, string executable, string? host) => files.Where(file =>
       (file == executable || file == host || mappedImages.Contains(file)) &&
-      !file.EndsWith(".dll", StringComparison.Ordinal));
+      !file.EndsWith(".dll", StringComparison.Ordinal)).ToArray();
 
   private static IEnumerable<string> LinuxMappedImages() {
     foreach (var line in File.ReadLines("/proc/self/maps")) {

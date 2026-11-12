@@ -5,6 +5,16 @@ namespace Microsoft.Dafny.Test;
 
 public class ExecutionImageIdentityTests {
   [Fact]
+  public void DiscoveredDependenciesDoNotInvalidateRootEnumeration() {
+    var files = new HashSet<string> { "/runtime/dotnet", "/solver/z3", "/runtime/libcoreclr.so" };
+    var mapped = new HashSet<string>(files);
+    var roots = ExecutionImageIdentity.LinuxDependencyRoots(files, mapped, "/solver/z3", "/runtime/dotnet");
+    foreach (var root in roots) { files.Add(root + ".dependency"); }
+    Assert.Equal(3, roots.Count);
+    Assert.Equal(6, files.Count);
+  }
+
+  [Fact]
   public void UnloadedOptionalRuntimeProvidersAreNotDependencyRoots() {
     var files = new[] { "/runtime/dotnet", "/solver/z3", "/runtime/libcoreclr.so",
       "/runtime/liboptional-tracing.so", "/runtime/System.Private.CoreLib.dll" };
