@@ -551,7 +551,7 @@ Std Std.Arithmetic.Power.LemmaPowDivisionInequality (correctness)	Correct
 Std Std.Arithmetic.Power.LemmaPowDivisionInequality (well-formedness)	Correct		
 Std Std.Arithmetic.Power.LemmaPowDivisionInequalityAuto (correctness)	Correct		
 Std Std.Arithmetic.Power.LemmaPowDivisionInequalityAuto (well-formedness)	Correct		
-Std Std.Arithmetic.Power.LemmaPowIncreases (correctness)	Correct		
+Std Std.Arithmetic.Power.LemmaPowIncreases (correctness)	OutOfResource		
 Std Std.Arithmetic.Power.LemmaPowIncreasesAuto (correctness)	Correct		
 Std Std.Arithmetic.Power.LemmaPowIncreasesConverse (correctness)	Correct		
 Std Std.Arithmetic.Power.LemmaPowIncreasesConverseAuto (correctness)	Correct		
@@ -992,7 +992,7 @@ Std Std.Collections.Seq.Max (well-formedness)	Correct
 Std Std.Collections.Seq.MembershipImpliesIndexing (correctness)	Correct		
 Std Std.Collections.Seq.MembershipImpliesIndexing (well-formedness)	Correct		
 Std Std.Collections.Seq.MergeSortBy (well-formedness)	Correct		
-Std Std.Collections.Seq.MergeSortedWith (well-formedness)	OutOfResource		
+Std Std.Collections.Seq.MergeSortedWith (well-formedness)	Correct		
 Std Std.Collections.Seq.Min (well-formedness)	Correct		
 Std Std.Collections.Seq.Partitioned (well-formedness)	Correct		
 Std Std.Collections.Seq.PartitionedCompositionLeft (correctness)	Correct		
@@ -2193,7 +2193,7 @@ TargetSpecific-py Std.FileIO.WriteUTF8ToFile (correctness)	Correct
 TargetSpecific-py Std.JavaCsActionsExterns.MakeSetReader (correctness)	Correct		
 TargetSpecific-py Std.JavaCsActionsExterns.MakeSetReader (well-formedness)	Correct		
 TargetSpecific-py Std.PythonConcurrent.MutableMap.Get (well-formedness)	Correct		
-run Std	4	7743 verified, 2 errors, 10 out of resource	src/Std/Arithmetic/DivMod.dfy(879,8) src/Std/Arithmetic/DivMod.dfy(922,8) src/Std/Arithmetic/LittleEndianNat.dfy(50,30) src/Std/Arithmetic/Mul.dfy(154,22) src/Std/Collections/Seq.dfy(1010,11) src/Std/Collections/Seq.dfy(1042,8) src/Std/JSON/ZeroCopy/Deserializer.dfy(387,16) src/Std/JSON/ZeroCopy/Deserializer.dfy(998,59) src/Std/Termination.dfy(125,17) src/Std/Termination.dfy(134,17) src/Std/Unicode/UnicodeEncodingForm.dfy(133,11) src/Std/Unicode/UnicodeStringsWithUnicodeChar.dfy(30,4)
+run Std	4	7703 verified, 2 errors, 10 out of resource	src/Std/Arithmetic/DivMod.dfy(879,8) src/Std/Arithmetic/DivMod.dfy(922,8) src/Std/Arithmetic/LittleEndianNat.dfy(50,30) src/Std/Arithmetic/Mul.dfy(154,22) src/Std/Arithmetic/Power.dfy(396,8) src/Std/Collections/Seq.dfy(1042,8) src/Std/JSON/ZeroCopy/Deserializer.dfy(387,16) src/Std/JSON/ZeroCopy/Deserializer.dfy(998,59) src/Std/Termination.dfy(125,17) src/Std/Termination.dfy(134,17) src/Std/Unicode/UnicodeEncodingForm.dfy(133,11) src/Std/Unicode/UnicodeStringsWithUnicodeChar.dfy(30,4)
 run TargetSpecific-cs	0	15 verified, 0 errors	
 run TargetSpecific-go	0	16 verified, 0 errors	
 run TargetSpecific-java	0	15 verified, 0 errors	
