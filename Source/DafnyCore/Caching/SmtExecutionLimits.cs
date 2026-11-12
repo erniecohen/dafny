@@ -8,6 +8,11 @@ namespace Microsoft.Dafny.Caching;
 
 /// <summary>Reads effective limit commands without mistaking comments, strings or quoted names for commands.</summary>
 internal static class SmtExecutionLimits {
+  private static readonly HashSet<string> InitialCommands = new(StringComparer.Ordinal) {
+    "reset", "reset-assertions", "set-option", "set-info", "set-logic", "declare-fun", "declare-const",
+    "declare-sort", "declare-datatype", "declare-datatypes", "declare-codatatypes", "define-fun",
+    "define-fun-rec", "define-funs-rec", "define-sort", "assert", "push", "pop"
+  };
   private static readonly HashSet<string> BooleanOptions = new(StringComparer.Ordinal) {
     ":print-success", ":produce-models", ":produce-unsat-cores", ":auto_config", ":type_check",
     ":smt.delay_units", ":model_evaluator.completion", ":model.completion", ":model.compact",
@@ -51,6 +56,11 @@ internal static class SmtExecutionLimits {
         else if (c == '(') { EndToken(); depth++; if (depth == 1) { words.Clear(); } }
         else if (c == ')') {
           EndToken();
+          if (depth == 1 && (words.Count == 0 || !InitialCommands.Contains(words[0]))) {
+            // In particular, solver-side include/load commands require a file-content
+            // manifest. Raw logic/option strings must not inject an unmodeled input.
+            supported = false;
+          }
           if (depth == 1 && words.Count > 0 && words[0] == "set-option") {
             var name = words.Count > 1 ? words[1] : "";
             if (name is ":timeout" or ":rlimit") {

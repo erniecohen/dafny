@@ -26,6 +26,9 @@ public class SmtExecutionLimitsTests {
   [InlineData("(set-option :smtlib2_log \"solver.log\")")]
   [InlineData("(set-option :unknown.future.option true)")]
   [InlineData("(set-option :smt.random_seed NaN)")]
+  [InlineData("(include \"extra.smt2\")")]
+  [InlineData("(set-logic ALL) (include \"extra.smt2\")")]
+  [InlineData("(set-option :smt.mbqi false) (load-plugin \"plugin\")")]
   [InlineData("(set-option :timeout 0")]
   public void UnrecognizedLimitAndParallelProfilesAreRejected(string command) {
     Assert.False(SmtExecutionLimits.Read(new[] { command }).Supported);
