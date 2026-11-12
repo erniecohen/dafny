@@ -1127,9 +1127,10 @@ jobs:
           name: dafny
       - name: Unpack Dafny
         run: mkdir -p out && tar -C out -xzf dafny.tar.gz
-      - name: Check unchanged existing product inputs
+      - name: Check M1 introduction and current optional inputs
         run: |
-          git fetch --no-tags --depth=1 origin "$(cat .github/review/issue193-base)"
+          git fetch --no-tags --depth=2 origin "$(cat .github/review/issue193-introduced)"
+          python3 -m unittest discover -s .github/review -p test_issue193_identity.py
           python3 .github/review/issue193-identity.py reference-results/identity
       - name: Pinned solver
         run: |
