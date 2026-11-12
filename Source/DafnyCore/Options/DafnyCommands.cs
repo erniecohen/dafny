@@ -111,6 +111,7 @@ public static class DafnyCommands {
     CommonOptionBag.GeneralTraits,
     CommonOptionBag.GeneralNewtypes,
     CommonOptionBag.TypeSystemRefresh,
+    CommonOptionBag.UserDefinedOperators,
     CommonOptionBag.BitvectorMapKeys,
     CommonOptionBag.ContextualLambdaDomains,
     CommonOptionBag.ContextualQuantifierDomains,

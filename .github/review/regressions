@@ -393,3 +393,6 @@ git-issues/git-issue-193-reference-laws.dfy
 
 # Distinct opaque nullable and non-null type constructors (https://github.com/erniecohen/dafny/issues/268).
 git-issues/github-issue-268.dfy
+
+# Source-only opt-in function operators, clone preservation and negative controls (https://github.com/erniecohen/dafny/issues/194).
+git-issues/github-issue-194.dfy
