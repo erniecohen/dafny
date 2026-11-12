@@ -38,8 +38,11 @@ Default verdict files are unchanged.
 full-scope total RU, and out-of-resource VC counts. For scopes with changed
 outcomes, `seed-variance.json` records seeds 0, 1, 2 under both modes. Suite
 experiments rerun the complete affected program with its native limits and
-options. Std experiments filter one affected symbol at a time, retaining its
-native limits, deterministic literal hashes and a fresh prover per batch.
+options. Std experiments rerun the complete Std invocation, retaining its native
+limits, deterministic literal hashes, printing and a fresh prover per batch.
+Filtering to an affected symbol could skip earlier module translations and change
+the default translator's name history. Seed zero must reproduce the original
+full per-VC outcome/RU vector before the seed spread is accepted as evidence.
 The seed experiments are sensitivity measurements, not replacements for the
 full-population seed-zero comparison or its reviewed baseline.
 
