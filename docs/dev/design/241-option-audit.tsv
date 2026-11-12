@@ -143,6 +143,7 @@ cli	unicode-char	--unicode-char	System.CommandLine.Option`1[System.Boolean]	inpu
 cli	update-throttling	--update-throttling	System.CommandLine.Option`1[System.Int32]	command-setup	setup or another command; executes before/outside proof transport
 cli	use-basename-for-filename	--use-basename-for-filename	System.CommandLine.Option`1[System.Boolean]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
 cli	use-caching	--use-caching	System.CommandLine.Option`1[System.Boolean]	command-setup	setup or another command; executes before/outside proof transport
+cli	user-defined-operators	--user-defined-operators	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	verbose	--verbose	System.CommandLine.Option`1[System.Boolean]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
 cli	verification-cache	--verification-cache	System.CommandLine.Option`1[System.String]	profile	explicit opt-in lifecycle/naming/history; unknown profile bypasses
 cli	verification-coverage-report	--verification-coverage-report	System.CommandLine.Option`1[System.String]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
