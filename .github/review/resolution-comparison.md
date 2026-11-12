@@ -69,3 +69,44 @@ change. In particular, module-qualified names, background restriction and
 normalization order can all affect the search. A claim that renaming caused a
 movement needs a separate controlled name-mapping replay that reproduces the
 default input/outcome. The audit does not make that claim automatically.
+
+
+## Enabled suite expectations after the shipped decreases-order repair
+
+The four gating shards at
+https://github.com/erniecohen/dafny/actions/runs/43219720405
+failed only their stale enabled expectation comparison. Each passed exact
+control-versus-option-omitted equality and N = 1 versus N = 2, 4, 8 equality
+for Boogie bytes, verdicts and per-task RU. All four report no default-to-N = 1
+verdict movements. The 1,165-row replacement is assembled from their unmodified
+`expected-opt-in.tsv` artifacts:
+[part 0](https://github.com/erniecohen/dafny/actions/runs/43219720405/artifacts/13946616791),
+[part 1](https://github.com/erniecohen/dafny/actions/runs/43219720405/artifacts/13947450603),
+[part 2](https://github.com/erniecohen/dafny/actions/runs/43219720405/artifacts/13946622992),
+[part 3](https://github.com/erniecohen/dafny/actions/runs/43219720405/artifacts/13946418909).
+
+Every changed row below equals the corresponding shipped default row. The
+reasons follow the independently shipped repair and its proof changes in
+https://github.com/erniecohen/dafny/pull/275 and
+[`decreases-order-results.md`](../../docs/dev/decreases-order-results.md).
+The default expectation files are unchanged. The two existing valid-print
+observer profiles remain as previously recorded in the enabled vector.
+
+| Program | Reason for replacing the enabled row |
+| --- | --- |
+| `dafny0/DecreasesTo0.dfy` | Restore positive `GoodInstances` proofs and add three intentional negative-old-value errors; inserted methods move diagnostic lines. |
+| `dafny0/DecreasesTo1.dfy` | Add three intentional negative-old-value errors; inserted methods move diagnostic lines. |
+| `dafny0/FunctionSpecifications.dfy` | `GoodPost` well-formedness now finishes after redundant lower-bound batches are removed. |
+| `dafny0/NoTypeArgs.dfy` | Repair the recursive lemma and prove two concatenation helpers, adding two successful batches. |
+| `dafny0/Termination.dfy` | Remove the redundant lower-bound failure at line 126. |
+| `dafny0/ForLoops.dfy` | The decreases-order source changes move two diagnostic lines, with unchanged outcomes and counts. |
+| `dafny1/SchorrWaite.dfy` | Remove three redundant successful lower-bound batches. |
+| `dafny1/PriorityQueue.dfy` | Remove one redundant successful lower-bound batch. |
+| `dafny2/SnapshotableTrees.dfy` | Repair `Iterator.Push`; its explicit proof facts change successful split accounting, preserving the existing error and four resource failures. |
+| `dafny2/MinWindowMax.dfy` | The corrected decreases-order translation removes redundant batches and lets the previously resource-limited enabled-resolution proof finish. |
+| `dafny2/SmallestMissingNumber-functional.dfy` | Remove two redundant successful lower-bound batches, preserving seven resource failures. |
+| `dafny3/Inc.dfy` | Remove a redundant lower-bound diagnostic at an already reported location. |
+| `dafny4/ExpandedGuardednessNeg.dfy` | Remove two redundant lower-bound diagnostics at already reported locations. |
+| `dafny4/Primes.dfy` | Remove one redundant successful lower-bound batch. |
+| `git-issues/git-issue-4939a.dfy` | Remove two redundant lower-bound diagnostics at already reported locations. |
+| `git-issues/git-issue-193-reference-laws.dfy` | Add the six successful reference-model laws shipped by https://github.com/erniecohen/dafny/pull/276. |
