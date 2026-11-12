@@ -1,12 +1,12 @@
 # M1 measured patch size
 
-Measured against shipped base `b98637c6677560944b2498002ecd32ec987a90af` using `git diff --numstat`. The last product revision is `8e68181614589a048bfecd8f6ee6c8c066ff5a47`; the accompanying metadata/report commit changes no product source. Each count is added plus deleted lines. Generated parser/scanner output is excluded.
+Measured against shipped base `908d5b8b8e53359955a03dac5a9033caee9c6470` using `git diff --numstat`. The last product revision is `07318fba0d0eeb72a834750a36d7f2190ae960db`; the accompanying metadata/report commit changes no product source. Each count is added plus deleted lines. Generated parser/scanner output is excluded.
 
-The design estimated **1,091–2,023 product lines**. This revision changes **709 product lines** under the design's product scope. Existing call finalization, concrete-syntax traversal and Cloner inheritance account for the smaller implementation; line counts are not correctness evidence.
+The design estimated **1,091–2,023 product lines**. This revision changes **712 product lines** under the design's product scope. Existing call finalization, concrete-syntax traversal and Cloner inheritance account for the smaller implementation; line counts are not correctness evidence.
 
 | Product file | Added | Deleted | Actual changed | Design estimate |
 |---|---:|---:|---:|---:|
-| `Source/DafnyCore/AST/Cloner.cs` | 24 | 2 | 26 | 35–70 |
+| `Source/DafnyCore/AST/Cloner.cs` | 25 | 4 | 29 | 35–70 |
 | `Source/DafnyCore/AST/Expressions/Applications/FunctionCallExpr.cs` | 3 | 1 | 4 | 10–20 |
 | `Source/DafnyCore/AST/Expressions/Operators/ChainingExpression.cs` | 9 | 4 | 13 | 30–60 |
 | `Source/DafnyCore/AST/Expressions/Operators/OperatorSyntaxExpr.cs` | 69 | 0 | 69 | 75–130 |
@@ -142,4 +142,4 @@ The input-validation estimate is shared by `ProgramParser.cs` and `DafnyFile.cs`
 | `docs/dev/operators-m1-size.md` | 145 | 0 | 145 |
 | `docs/dev/operators-m1.md` | 96 | 0 | 96 |
 
-Other changes total **1821 lines**, including tests, CI, documentation and review metadata. The table includes this report. The complete patch has **2530 changed lines**.
+Other changes total **1821 lines**, including tests, CI, documentation and review metadata. The table includes this report. The complete patch has **2533 changed lines**.
