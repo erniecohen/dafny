@@ -558,6 +558,10 @@ including raw prover-option overrides. Only an explicit inventory of scalar
 Boolean/numeric SMT options is admitted. Unknown controls, string-valued options,
 external logging and parallel/deadline controls bypass rather than silently
 skipping their side effects on a hit.
+Top-level initialization commands also have an explicit inventory. Solver-side
+`include`/load commands and unknown forms require an input-content manifest and
+therefore bypass V1. Raw option or logic strings cannot introduce such commands
+while retaining result-cache admission.
 Completed Valid is eligible under any limit; Errors/OutOfResource additionally
 require positive RU and zero timeout. Timeout, memory failure, cancellation,
 protocol error and unknown outcomes are never reused. Retention is bounded by
