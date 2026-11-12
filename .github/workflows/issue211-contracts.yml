@@ -1,0 +1,85 @@
+name: Stable termination contracts
+on:
+  pull_request:
+    branches: ['review/**']
+    paths:
+      - 'Source/DafnyCore/Resolver/ModularTermination.cs'
+      - 'Source/IntegrationTests/ModularTerminationContractTests.cs'
+      - '.github/review/source-contracts-identity.py'
+      - '.github/workflows/issue211-contracts.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  products:
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        product: [base, candidate]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ matrix.product == 'base' && 'b98637c6677560944b2498002ecd32ec987a90af' || github.sha }}
+          path: product
+      - uses: ./.github/actions/setup-dotnet
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Build under identical display metadata
+        working-directory: product
+        run: |
+          sh Scripts/fetch-boogie-packages.sh
+          dotnet publish Source/Dafny/Dafny.csproj -c Release -o ../out/dafny \
+            -p:GeneratePackageOnBuild=false -p:SourceRevisionId=fcb2042d.review.identity
+          git rev-parse HEAD > ../out/source.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: identity-${{ matrix.product }}
+          path: out
+          retention-days: 14
+  identity:
+    needs: products
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {kind: suite, shard: '0/4', source: Source/IntegrationTests/TestFiles/LitTests/LitTest}
+          - {kind: suite, shard: '1/4', source: Source/IntegrationTests/TestFiles/LitTests/LitTest}
+          - {kind: suite, shard: '2/4', source: Source/IntegrationTests/TestFiles/LitTests/LitTest}
+          - {kind: suite, shard: '3/4', source: Source/IntegrationTests/TestFiles/LitTests/LitTest}
+          - {kind: std, shard: '0/1', source: Source/DafnyStandardLibraries}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-dotnet
+      - uses: actions/download-artifact@v4
+        with:
+          name: identity-base
+          path: products/base
+      - uses: actions/download-artifact@v4
+        with:
+          name: identity-candidate
+          path: products/candidate
+      - name: Pin solver and prepare executables
+        run: |
+          curl -fsSLo solver.zip https://github.com/Z3Prover/z3/releases/download/z3-5.1.0/z3-5.1.0-x64-glibc-2.39.zip
+          echo 'f47be8d27d3230e823bf1eeede2fe0abaca55bb78d0b59974370e6689a92284a  solver.zip' | sha256sum -c -
+          unzip -q solver.zip -d solver
+          chmod +x products/*/dafny/Dafny solver/*/bin/z3
+      - name: Compare exact outputs and resource units with the option off
+        run: |
+          python3 .github/review/source-contracts-identity.py '${{ matrix.kind }}' \
+            products/base/dafny/Dafny products/candidate/dafny/Dafny solver/*/bin/z3 \
+            '${{ matrix.source }}' identity-results --shard '${{ matrix.shard }}'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: identity-${{ matrix.kind }}-${{ strategy.job-index }}
+          path: identity-results
+          retention-days: 30

@@ -651,6 +651,16 @@ jobs:
         env:
           Z3: ${{ github.workspace }}/Binaries/z3/bin/z3-5.1.0
         run: dotnet test Source/IntegrationTests -c Release --no-build --filter FullyQualifiedName~ModuleWindowTests --logger "console;verbosity=normal"
+      - name: Stable source contracts preserve exact client translation
+        run: dotnet test Source/IntegrationTests -c Release --no-build --filter FullyQualifiedName~ModularTerminationContractTests --logger "console;verbosity=normal"
+      - name: Reverified replacements preserve exact client Boogie and SMT
+        run: python3 .github/review/source-contracts-substitution.py Source/IntegrationTests/bin/Release/net10.0/Dafny Binaries/z3/bin/z3-5.1.0 source-contracts-substitution
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: source-contracts-substitution
+          path: source-contracts-substitution
+          retention-days: 30
       - name: Literal identities are option guarded and local to each module
         run: dotnet test Source/IntegrationTests -c Release --no-build --filter FullyQualifiedName~AdditionalAxiomsTranslationTests --logger "console;verbosity=normal"
       - name: Obligation lowering inventory and structural comparisons
