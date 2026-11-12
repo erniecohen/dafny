@@ -84,7 +84,7 @@ records. The language-server test checks that renaming a callable leaves its
 operator symbols untouched.
 
 The disabled comparison workflow builds the pinned starting product
-`dfe57d8d94869cbfa9169f9e331ab882790eb5d6` and the candidate with identical assembly
+`bb521a9522ec584d4b0069a8e80ba9e48291dee4` and the candidate with identical assembly
 version metadata. It compares literal outputs and resource vectors on the full
 existing verifier-suite plan and the source standard library with all six target
 parts, plus malformed-input/parser/printing and artifact controls. Generated

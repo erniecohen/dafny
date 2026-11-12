@@ -1,6 +1,6 @@
 # M1 measured patch size
 
-Measured against shipped base `dfe57d8d94869cbfa9169f9e331ab882790eb5d6` using `git diff --numstat`. The last product revision is `2bd0f4b6303180d36d70c44aafe572f71593cc82`; the accompanying metadata/report commit changes no product source. Each count is added plus deleted lines. Generated parser/scanner output is excluded.
+Measured against shipped base `bb521a9522ec584d4b0069a8e80ba9e48291dee4` using `git diff --numstat`. The last product revision is `2bd0f4b6303180d36d70c44aafe572f71593cc82`; the accompanying metadata/report commit changes no product source. Each count is added plus deleted lines. Generated parser/scanner output is excluded.
 
 The design estimated **1,091–2,023 product lines**. This revision changes **712 product lines** under the design's product scope. Existing call finalization, concrete-syntax traversal and Cloner inheritance account for the smaller implementation; line counts are not correctness evidence.
 
