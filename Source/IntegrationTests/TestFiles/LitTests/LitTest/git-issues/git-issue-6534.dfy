@@ -1,13 +1,13 @@
 // RUN: %exits-with 4 %verify "%s" > "%t"
 // RUN: %diff "%s.expect" "%t"
 
-// The prelude had an axiom saying that every box is the box of a value of every type,
-// which is false: at bool, every box would be $Box(true) or $Box(false). No program is
-// known to prove false by it; the axioms themselves had no model (see the issue). The fix
-// deletes it, and relies instead on the inverse for a box known to hold a value of the
-// type. Proofs about fields had relied on the deleted axiom, so the fix also says that the
-// value a field holds in the heap is a box of the field's type. Each constructor below
-// needs that: its postcondition is about the box of the value just stored in a field.
+// The deleted inverse made every box a value of every type. The source counterexample
+// in github-issue-23-box-bad.dfy proves false with that inverse: Opt<int> and Opt<bool>
+// share the datatype sort, exposing three int boxes to bool unboxing. The guarded
+// inverse must preserve legitimate field proofs instead. The heap holds a box of the
+// field's type, so the inverse can reconstruct the value just stored in each field.
+// The constructor postconditions below check that preservation, and Vacuity checks
+// that the facts in play still cannot prove false.
 
 class Node {
   var next: Node?
