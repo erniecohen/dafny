@@ -651,6 +651,16 @@ jobs:
         env:
           Z3: ${{ github.workspace }}/Binaries/z3/bin/z3-5.1.0
         run: dotnet test Source/IntegrationTests -c Release --no-build --filter FullyQualifiedName~ModuleWindowTests --logger "console;verbosity=normal"
+      - name: Stable source contracts preserve exact client translation
+        run: dotnet test Source/IntegrationTests -c Release --no-build --filter FullyQualifiedName~ModularTerminationContractTests --logger "console;verbosity=normal"
+      - name: Reverified replacements preserve exact client Boogie and SMT
+        run: python3 .github/review/source-contracts-substitution.py Source/IntegrationTests/bin/Release/net10.0/Dafny Binaries/z3/bin/z3-5.1.0 source-contracts-substitution
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: source-contracts-substitution
+          path: source-contracts-substitution
+          retention-days: 30
       - name: Literal identities are option guarded and local to each module
         run: dotnet test Source/IntegrationTests -c Release --no-build --filter FullyQualifiedName~AdditionalAxiomsTranslationTests --logger "console;verbosity=normal"
       - name: Obligation lowering inventory and structural comparisons
@@ -821,19 +831,16 @@ jobs:
   binaries:
     name: Binaries (${{ matrix.rid }})
     needs: build
-    if: github.ref_type == 'tag' || inputs.binaries
+    # The osx-arm64 build runs on the owner's self-hosted Mac (label mac-studio);
+    # this job only runs for tags and manual dispatches, never for pull requests.
+    if: github.repository == 'erniecohen/dafny' && (github.ref_type == 'tag' || inputs.binaries)
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
     strategy:
       matrix:
-        # TEMPORARY (https://github.com/erniecohen/dafny/issues/256): hosted macOS
-        # runners were not assigned (three release runs on 2026-11-11 waited 15
-        # minutes and were cancelled), so osx-arm64 is built on a Mac and added to the
-        # release by .github/review/release-macos.sh.  To restore, uncomment the
-        # osx-arm64 entry and revert the notes text and docs of that change.
         include:
-          # - rid: osx-arm64
-          #   os: macos-15
+          - rid: osx-arm64
+            os: mac-studio
           - rid: linux-x64
             os: ubuntu-24.04
     steps:
@@ -887,8 +894,8 @@ jobs:
   release:
     name: GitHub release
     needs: [build, binaries, verdicts, stdlib, javascript-runtime, regressions, resolver, resolver-tests, finite-support, statement-conclusions, axiom-resources, verification-batch, integer-bitwise-reference]
-    if: github.ref_type == 'tag'
-    runs-on: ubuntu-24.04
+    if: github.repository == 'erniecohen/dafny' && github.ref_type == 'tag'
+    runs-on: mac-studio
     timeout-minutes: 15
     permissions:
       contents: write
@@ -898,7 +905,7 @@ jobs:
           pattern: binaries-*
           merge-multiple: true
       - name: Sums
-        run: sha256sum dafny-*.zip | tee SHA256SUMS
+        run: shasum -a 256 dafny-*.zip | tee SHA256SUMS
       - name: Create the release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -909,8 +916,7 @@ jobs:
             echo "Dafny \`$VERSION\`, built from this tag by the workflow \`review\`."
             echo "What it contains is described in the tag's \`REVIEW.md\`, where there is one."
             echo
-            echo "Self-contained binaries for Linux on x64, and for macOS on Apple silicon (added from a"
-            echo "Mac by \`.github/review/release-macos.sh\`, with SHA256SUMS updated): they need no .NET."
+            echo "Self-contained binaries for Linux on x64 and for macOS on Apple silicon: they need no .NET."
             echo "\`dafny --version\` prints \`$VERSION\`."
             echo
             echo "Z3 is not included.  CI here verifies with Z3 5.1.0, from Z3's public GitHub release;"

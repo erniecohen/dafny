@@ -763,6 +763,9 @@ namespace Microsoft.Dafny {
       }
 
       program = p;
+      if (options.Get(CommonOptionBag.ModularTermination)) {
+        proofDependencies = p.ProofDependencyManager.ForModule(forModule.FullDafnyName);
+      }
       this.forModule = forModule;
       triggersCollector = new TriggersCollector(new Dictionary<Expression, HashSet<OldExpr>>(), options, forModule);
       Type.EnableScopes();
