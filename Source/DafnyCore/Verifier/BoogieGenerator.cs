@@ -46,6 +46,17 @@ namespace Microsoft.Dafny {
 
   public partial class BoogieGenerator {
     private DafnyOptions options;
+    private int capturedStateCount;
+    private int sourceCommentCount;
+
+    internal string CaptureStateName(string description) {
+      if (options.Get(CommonOptionBag.ResolutionThreads) == 0) {
+        return description;
+      }
+      var name = $"module:{forModule.FullName}:state:{capturedStateCount++}";
+      options.RecordCapturedStateDescription(name, description);
+      return name;
+    }
     public DafnyOptions Options => options;
     public const string NameSeparator = "$$";
     public const string CallPrefix = "Call";
@@ -750,9 +761,19 @@ namespace Microsoft.Dafny {
       RequireCardinalityValidation(p);
       using var moduleNames = Options.Get(CommonOptionBag.ResolutionThreads) > 0
         ? new ModuleNamingScope(forModule.FullName) : null;
-      if (moduleNames != null) {
-        proofDependencies.SetCurrentDefinition(forModule.FullName, forModule.EnclosingLiteralModuleDecl);
+      if (moduleNames == null) {
+        return DoTranslationCore(p, forModule);
       }
+      Type.ResetScopes();
+      try {
+        proofDependencies.SetCurrentDefinition(forModule.FullName, forModule.EnclosingLiteralModuleDecl);
+        return DoTranslationCore(p, forModule);
+      } finally {
+        Type.ResetScopes();
+      }
+    }
+
+    private Bpl.Program DoTranslationCore(Program p, ModuleDefinition forModule) {
       if (sink == null) {
         return new Bpl.Program();
       }
@@ -768,6 +789,9 @@ namespace Microsoft.Dafny {
       }
 
       program = p;
+      if (options.Get(CommonOptionBag.ModularTermination)) {
+        proofDependencies = p.ProofDependencyManager.ForModule(forModule.FullDafnyName);
+      }
       this.forModule = forModule;
       triggersCollector = new TriggersCollector(new Dictionary<Expression, HashSet<OldExpr>>(), options, forModule);
       Type.EnableScopes();
@@ -775,7 +799,7 @@ namespace Microsoft.Dafny {
       EstablishModuleScope(p.SystemModuleManager.SystemModule, forModule);
       Type.PushScope(this.currentScope);
 
-      var moduleInputs = moduleNames != null ? forModule.TranslationInputs : null;
+      var moduleInputs = ModuleNamingScope.Current != null ? forModule.TranslationInputs : null;
       foreach (var w in moduleInputs != null ? moduleInputs.Bitwidths : program.SystemModuleManager.Bitwidths) {
         // type axioms
         AddBitvectorTypeAxioms(w);
@@ -2284,7 +2308,8 @@ namespace Microsoft.Dafny {
 
     public void InsertUniqueIdForImplementation(Bpl.Declaration decl) {
       var impl = decl as Bpl.Implementation;
-      var prefix = UniqueIdPrefix ?? (decl.tok.filename == null ? "" : System.Text.RegularExpressions.Regex.Replace(decl.tok.filename, @".v\d+.dfy", ".dfy"));
+      var prefix = options.Get(CommonOptionBag.ResolutionThreads) > 0 ? "module:" + forModule.ResolutionKey :
+        UniqueIdPrefix ?? (decl.tok.filename == null ? "" : System.Text.RegularExpressions.Regex.Replace(decl.tok.filename, @".v\d+.dfy", ".dfy"));
       if (impl != null && !string.IsNullOrEmpty(prefix)) {
         decl.AddAttribute("id", prefix + ":" + impl.Name + ":0");
       }
@@ -2971,7 +2996,10 @@ namespace Microsoft.Dafny {
         Contract.Assert(cc != null);
       } else {
         var name = cl.FullSanitizedName;
-        if (cl is ClassLikeDecl { NonNullTypeDecl: { } }) {
+        // An opaque reference type keeps the nullable declaration in its self synonym.
+        // It must remain distinct from the separately provided non-null type.
+        var underlyingDecl = cl is InternalTypeSynonymDecl { Rhs: UserDefinedType rhs } ? rhs.ResolvedClass : cl;
+        if (underlyingDecl is ClassLikeDecl { NonNullTypeDecl: { } }) {
           name = name + "?";  // TODO: this doesn't seem like the best place to do this name transformation
         }
         cc = new Bpl.Constant(cl.Origin, new Bpl.TypedIdent(cl.Origin, "class." + name, Predef.ClassNameType), !cl.EnclosingModuleDefinition.IsFacade);
@@ -3991,7 +4019,10 @@ namespace Microsoft.Dafny {
       Contract.Requires(builder != null);
       Contract.Requires(stmt != null);
       Contract.Requires(comment != null);
-      builder.Add(new Bpl.CommentCmd(string.Format("----- {0} ----- {1}({2},{3})", comment, stmt.Origin.Filepath, stmt.Origin.line, stmt.Origin.col)));
+      var location = builder.Options.Get(CommonOptionBag.ResolutionThreads) > 0
+        ? $"module:{builder.tran.forModule.FullName}:statement:{builder.tran.sourceCommentCount++}"
+        : string.Format("{0}({1},{2})", stmt.Origin.Filepath, stmt.Origin.line, stmt.Origin.col);
+      builder.Add(new Bpl.CommentCmd(string.Format("----- {0} ----- {1}", comment, location)));
     }
 
     /// <summary>
@@ -4810,6 +4841,9 @@ namespace Microsoft.Dafny {
       }
 
       private static Stack<FuelContext> GetSavedContexts() {
+        if (ModuleNamingScope.Current is { } scope) {
+          return scope.Value(typeof(FuelSetting), "fuel-contexts", () => new Stack<FuelContext>());
+        }
         var result = SavedContexts.Value;
         if (result == null) {
           SavedContexts.Value = result = new();

@@ -140,9 +140,12 @@ public class ProgramResolver {
       var declaration = declarations[i];
       if (declaration is LiteralModuleDecl literal) {
         _ = literal.ModuleDef.VisibilityScope;
+        // An absent default export has a constant, lazily allocated signature.
+        // Initialize it before multiple importers can request the same view.
+        _ = literal.AccessibleSignature();
       }
-      var key = ModuleResolutionKey.Compute(declaration.FullName, ModuleSource(declaration), Options.VersionNumber,
-        ModuleResolutionKey.Options(declaration.Options), prerequisites[i].Select(j =>
+      var key = ModuleResolutionKey.Compute(declaration.FullName, ModuleSource(declaration), ModuleResolutionKey.DafnyVersion,
+        KeyOptions(declaration), prerequisites[i].Select(j =>
           new ModuleResolutionKey.Prerequisite(DependencyRole(declaration, declarations[j]),
             declarations[j].FullName, Program.ResolutionKeys[declarations[j]])));
       Program.ResolutionKeys[declaration] = key;
@@ -270,9 +273,27 @@ public class ProgramResolver {
 
   private static string ModuleSource(ModuleDecl declaration) {
     if (declaration is LiteralModuleDecl { ModuleDef.IsDefaultModule: true } literal) {
-      return string.Join("\n", literal.ModuleDef.TopLevelDecls.Select(d => d.EntireRange.PrintOriginal()));
+      // The synthetic default class has no token range, and its members can
+      // span several files. Hash each source member rather than its wrapper.
+      return string.Join("\n", literal.ModuleDef.TopLevelDecls.SelectMany(d =>
+        d is DefaultClassDecl defaults ? defaults.Members.Cast<INode>() : new INode[] { d })
+        .Select(d => d.EntireRange.PrintOriginal()));
     }
     return declaration.EntireRange.PrintOriginal();
+  }
+
+  private IEnumerable<KeyValuePair<string, string>> KeyOptions(ModuleDecl declaration) {
+    foreach (var option in ModuleResolutionKey.Options(declaration.Options)) { yield return option; }
+    IEnumerable<INode> nodes = new[] { declaration };
+    if (declaration is LiteralModuleDecl literal) {
+      nodes = nodes.Append(literal.ModuleDef).Concat(literal.ModuleDef.TopLevelDecls.SelectMany(top =>
+        new INode[] { top }.Concat(top is TopLevelDeclWithMembers members ? members.Members : [])));
+    }
+    // Resolution warnings consult ShouldVerify. The selected roots and library
+    // exclusions may change that answer without changing source or CLI options.
+    // Store the effective per-declaration answers in structural order, not URIs.
+    yield return KeyValuePair.Create("effective:verification-membership",
+      string.Concat(nodes.Select(node => node.ShouldVerify(Program.Compilation) ? "1" : "0")));
   }
 
   private static string DependencyRole(ModuleDecl declaration, ModuleDecl prerequisite) {

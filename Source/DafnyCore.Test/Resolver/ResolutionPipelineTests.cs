@@ -1,5 +1,9 @@
 using Microsoft.Boogie;
 using Microsoft.Dafny;
+using Microsoft.Extensions.Logging.Abstractions;
+using System.Collections.Immutable;
+using System.Reflection;
+using System.Text.RegularExpressions;
 using DafnyType = Microsoft.Dafny.Type;
 using Program = Microsoft.Dafny.Program;
 
@@ -18,6 +22,7 @@ public class ResolutionPipelineTests {
       import B = Base
       function F(x: int): int { var t := (x, true, 3); B.Value()(t.0) }
       lemma Good(x: int) ensures F(x) == x + 1 { }
+      method Work(x: int) returns (y: int) { var z := x; y := z; assert y == x; }
     }
     module W {
       import B = Base
@@ -33,7 +38,7 @@ public class ResolutionPipelineTests {
     Assert.Empty(Errors(reporter));
     var expected = Translate(baseline);
     var keys = Keys(baseline);
-    foreach (var count in new[] { 2, 8, 8 }) {
+    foreach (var count in new[] { 2, 4, 8, 8 }) {
       var (program, actualReporter) = await Resolve(Source, count, refresh);
       Assert.Empty(Errors(actualReporter));
       Assert.Equal(keys, Keys(program));
@@ -52,6 +57,32 @@ public class ResolutionPipelineTests {
     Assert.Empty(Errors(reporter));
     Assert.Equal(Keys(before)["_module.M"], Keys(after)["_module.M"]);
     Assert.Equal(expected, Translate(after).Single(p => p.Key == "M").Value);
+    var (alone, aloneReporter) = await Resolve(Source[..Source.IndexOf("module W", StringComparison.Ordinal)], 4, refresh);
+    Assert.Empty(Errors(aloneReporter));
+    Assert.Equal(Keys(before)["_module.M"], Keys(alone)["_module.M"]);
+    Assert.Equal(expected, Translate(alone).Single(p => p.Key == "M").Value);
+    var (changed, changedReporter) = await Resolve(Source.Replace("bv13", "bv29"), 2, refresh);
+    Assert.Empty(Errors(changedReporter));
+    Assert.Equal(Keys(before)["_module.M"], Keys(changed)["_module.M"]);
+    Assert.Equal(expected, Translate(changed).Single(p => p.Key == "M").Value);
+    var (shifted, shiftedReporter) = await Resolve("module Before { function F(): bv33 { 0 } }\n" + Source, 4, refresh);
+    Assert.Empty(Errors(shiftedReporter));
+    Assert.Equal(Keys(before)["_module.M"], Keys(shifted)["_module.M"]);
+    Assert.Equal(expected, Translate(shifted).Single(p => p.Key == "M").Value);
+    var stateName = Regex.Match(expected, "captureState \"([^\"]+)\"").Groups[1].Value;
+    Assert.NotEmpty(stateName);
+    string ModelText() => $"*** MODEL\n*** STATE {stateName}\n*** END_STATE\n*** END_MODEL\n";
+    var beforeState = DafnyModel.ExtractModel(before.Options, ModelText()).States.Last();
+    var shiftedState = DafnyModel.ExtractModel(shifted.Options, ModelText()).States.Last();
+    Assert.True(beforeState.StateContainsPosition());
+    Assert.Equal(beforeState.GetLineId() + 1, shiftedState.GetLineId());
+    Assert.Equal(beforeState.GetCharId(), shiftedState.GetCharId());
+    var (renamed, renamedReporter) = await Resolve(Source, 8, refresh, uri: new Uri("untitled:renamed.dfy"));
+    Assert.Empty(Errors(renamedReporter));
+    Assert.Equal(Keys(before)["_module.M"], Keys(renamed)["_module.M"]);
+    Assert.Equal(expected, Translate(renamed).Single(p => p.Key == "M").Value);
+    Assert.Equal(Translate(before, true).Single(p => p.Key == "M").Value,
+      Translate(renamed, true).Single(p => p.Key == "M").Value);
   }
 
   [Theory]
@@ -62,7 +93,7 @@ public class ResolutionPipelineTests {
     var (baseline, baselineReporter) = await Resolve(source, 0, refresh);
     var expected = Errors(baselineReporter);
     Assert.NotEmpty(expected);
-    foreach (var count in new[] { 1, 2, 8 }) {
+    foreach (var count in new[] { 1, 2, 4, 8 }) {
       var (program, reporter) = await Resolve(source, count, refresh);
       Assert.Equal(expected, Errors(reporter));
       Assert.Null(program.CardinalityValidationReceipt);
@@ -90,6 +121,59 @@ public class ResolutionPipelineTests {
       """, 8, refresh);
     Assert.Empty(Errors(reporter));
     Translate(program);
+  }
+
+  [Theory]
+  [InlineData(false)]
+  [InlineData(true)]
+  public async Task TranslationDoesNotLeaveMutableAstState(bool refresh) {
+    var (program, reporter) = await Resolve("""
+      module Base {
+        datatype D = X | Y
+        ghost function Pick(n: int): int { var x: int :| x == n; x }
+        ghost function Captured(I: int, i: int): int -> int { x => I + i + x }
+        function Partial(d: D): int { match d case X => 0 }
+        method Work() { assert L: true; reveal L; }
+      }
+      module M { import B = Base ghost function F(n: int): int { B.Pick(n) } }
+      """, 4, refresh);
+    Assert.Empty(Errors(reporter));
+    var module = program.Modules().Single(m => m.Name == "Base");
+    var nodes = new HashSet<INode>();
+    void Visit(INode node) {
+      if (nodes.Add(node)) {
+        foreach (var child in node.Children) { Visit(child); }
+        if (node is NestedMatchExpr expression) { Visit(expression.Flattened); }
+        if (node is NestedMatchStmt statement) { Visit(statement.Flattened); }
+      }
+    }
+    Visit(module);
+    var lets = nodes.OfType<Microsoft.Dafny.LetExpr>().Where(e => !e.Exact).ToArray();
+    var labels = nodes.OfType<AssertStmt>().Select(s => s.Label).Where(l => l != null).ToArray();
+    Assert.NotEmpty(lets);
+    Assert.NotEmpty(labels);
+    var matches = nodes.OfType<IMatch>().ToDictionary(m => m, m => m.MissingCases.ToArray());
+    Assert.NotEmpty(matches);
+    // The caller's async context may already contain a fuel stack. Translation
+    // must not borrow or initialize it, even when it translates nested scopes.
+    var inherited = BoogieGenerator.FuelSetting.SavedContexts.Value;
+    var translator = new BoogieGenerator(reporter, new ProofDependencyManager());
+    var first = translator.DoTranslation(program, module);
+    Assert.Equal(0, first.Resolve(program.Options));
+    Assert.Equal(0, first.Typecheck(program.Options));
+    foreach (var let in lets) { Assert.Null(let.GetTranslationDesugaring(translator)); }
+    foreach (var label in labels) { Assert.Null(label!.E); }
+    foreach (var match in matches) { Assert.Equal(match.Value, match.Key.MissingCases); }
+    Assert.Same(inherited, BoogieGenerator.FuelSetting.SavedContexts.Value);
+    var expected = Translate(program);
+    Assert.Equal(expected, Translate(program));
+    var culture = System.Globalization.CultureInfo.CurrentCulture;
+    try {
+      System.Globalization.CultureInfo.CurrentCulture = System.Globalization.CultureInfo.GetCultureInfo("tr-TR");
+      Assert.Equal(expected, Translate(program));
+    } finally {
+      System.Globalization.CultureInfo.CurrentCulture = culture;
+    }
   }
 
   [Fact]
@@ -138,6 +222,67 @@ public class ResolutionPipelineTests {
   }
 
   [Fact]
+  public void KeyVersionBindsTheResolverBuild() {
+    var assembly = typeof(ProgramResolver).Assembly;
+    Assert.Contains(assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion,
+      ModuleResolutionKey.DafnyVersion);
+    Assert.Contains(typeof(ProgramResolver).Module.ModuleVersionId.ToString("D"), ModuleResolutionKey.DafnyVersion);
+  }
+
+  [Theory]
+  [InlineData(false)]
+  [InlineData(true)]
+  public async Task VerificationMembershipKeysResolutionDiagnostics(bool refresh) {
+    const string source = "module M { trait {:termination false} T {} }";
+    var uri = new Uri("untitled:resolution.dfy");
+    void Configure(Program program) {
+      if (!program.Compilation.RootSourceUris.Contains(uri)) { program.Compilation.RootSourceUris.Add(uri); }
+      program.Compilation.UrisToVerify = null;
+    }
+    var (root, rootReporter) = await Resolve(source, 2, refresh, configure: Configure, warnUncheckedTermination: true);
+    var (library, libraryReporter) = await Resolve(source, 4, refresh, configure: program => {
+      Configure(program);
+      program.Compilation.AlreadyVerifiedRoots.Add(uri);
+    }, warnUncheckedTermination: true);
+    Assert.Empty(Errors(rootReporter));
+    Assert.Empty(Errors(libraryReporter));
+    Assert.Contains(rootReporter.AllMessages, d => d.Message.Contains("termination false"));
+    Assert.DoesNotContain(libraryReporter.AllMessages, d => d.Message.Contains("termination false"));
+    Assert.NotEqual(Keys(root)["_module.M"], Keys(library)["_module.M"]);
+  }
+
+  [Theory]
+  [InlineData(false, false)]
+  [InlineData(false, true)]
+  [InlineData(true, false)]
+  [InlineData(true, true)]
+  public async Task DefaultModuleSourceMembersParticipateInKeys(bool refresh, bool multipleFiles) {
+    async Task<Program> Run(int body) {
+      const string first = "function F(): int { 1 }";
+      var second = $"function G(): int {{ {body} }}";
+      if (!multipleFiles) {
+        return (await Resolve(first + "\n" + second, 4, refresh)).Item1;
+      }
+      var options = new DafnyOptions(TextReader.Null, TextWriter.Null, TextWriter.Null);
+      options.ApplyDefaultOptionsWithoutSettingsDefault();
+      options.Set(CommonOptionBag.ResolutionThreads, 4);
+      options.Set(CommonOptionBag.TypeSystemRefresh, refresh);
+      var reporter = new BatchErrorReporter(options);
+      var uris = new[] { new Uri("untitled:first.dfy"), new Uri("untitled:second.dfy") };
+      var fs = new InMemoryFileSystem(ImmutableDictionary<Uri, string>.Empty.Add(uris[0], first).Add(uris[1], second));
+      var files = uris.Select(uri => DafnyFile.HandleDafnyFile(fs, reporter, options, uri, Microsoft.Dafny.Token.NoToken, false)).ToArray();
+      var parser = new ProgramParser(NullLogger<ProgramParser>.Instance, fs);
+      var parsed = await parser.ParseFiles("default-module", files, reporter, CancellationToken.None);
+      await new ProgramResolver(parsed.Program).Resolve(CancellationToken.None);
+      Assert.Empty(Errors(reporter));
+      return parsed.Program;
+    }
+    var before = await Run(2);
+    var after = await Run(3);
+    Assert.NotEqual(Keys(before)[before.DefaultModule.FullName], Keys(after)[after.DefaultModule.FullName]);
+  }
+
+  [Fact]
   public void EffectiveLegacyOptionsParticipateInTheKey() {
     var options = new DafnyOptions(TextReader.Null, TextWriter.Null, TextWriter.Null);
     options.ApplyDefaultOptionsWithoutSettingsDefault();
@@ -182,9 +327,10 @@ public class ResolutionPipelineTests {
   private static string[] Errors(BatchErrorReporter reporter) => reporter.AllMessagesByLevel[ErrorLevel.Error]
     .Select(d => $"{d.Message}").ToArray();
 
-  private static Dictionary<string, string> Translate(Program program) {
+  private static Dictionary<string, string> Translate(Program program, bool checksums = false) {
     var result = new Dictionary<string, string>();
-    foreach (var module in BoogieGenerator.Translate(program, program.Reporter)) {
+    var flags = new BoogieGenerator.TranslatorFlags(program.Options) { InsertChecksums = checksums };
+    foreach (var module in BoogieGenerator.Translate(program, program.Reporter, flags)) {
       Assert.Equal(0, module.Item2.Resolve(program.Options));
       Assert.Equal(0, module.Item2.Typecheck(program.Options));
       var text = new StringWriter();
@@ -197,15 +343,19 @@ public class ResolutionPipelineTests {
   }
 
   private static async Task<(Program, BatchErrorReporter)> Resolve(string source, int threads, bool refresh,
-    Action<ModuleDecl>? starting = null) {
+    Action<ModuleDecl>? starting = null, Uri? uri = null, Action<Program>? configure = null,
+    bool warnUncheckedTermination = false) {
     DafnyType.ResetScopes();
     var options = new DafnyOptions(TextReader.Null, TextWriter.Null, TextWriter.Null);
     options.ApplyDefaultOptionsWithoutSettingsDefault();
     options.Set(CommonOptionBag.ResolutionThreads, threads);
     options.Set(CommonOptionBag.TypeSystemRefresh, refresh);
+    options.Set(CommonOptionBag.WarnUncheckedTermination, warnUncheckedTermination);
+    options.ModelViewFile = "-";
     var reporter = new BatchErrorReporter(options);
-    var parsed = await ProgramParser.Parse(source, new Uri("untitled:resolution.dfy"), reporter);
+    var parsed = await ProgramParser.Parse(source, uri ?? new Uri("untitled:resolution.dfy"), reporter);
     Assert.Empty(Errors(reporter));
+    configure?.Invoke(parsed.Program);
     await new ProgramResolver(parsed.Program) { ResolutionWorkerStarting = starting }.Resolve(CancellationToken.None);
     return (parsed.Program, reporter);
   }

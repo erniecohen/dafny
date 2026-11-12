@@ -1,3 +1,5 @@
 Adds opt-in `--resolution-threads N` for dependency-ready parallel module resolution,
 deterministically ordered diagnostics, semantic module keys and module-qualified
-generated names. The default resolution path is unchanged.
+generated names. Boogie state and snapshot identifiers are stable under unrelated
+source movement, with counterexample locations rebound for the current invocation.
+The default resolution path is unchanged.

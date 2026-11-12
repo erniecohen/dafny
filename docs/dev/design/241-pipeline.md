@@ -830,12 +830,23 @@ depths, so adding an unrelated module does not renumber an existing module.
 fully qualified module identity, original source, Dafny version, effective options
 and sorted `(dependency role, qualified identity, key)` prerequisite records. It
 does not use `CloneId`, execution order, worker count or the whole-program builtin
-shape. Execution/report destinations are excluded; other option values are
+shape. The implicit default module hashes its individual source declarations and
+members, including members contributed by different files; its synthetic default
+class has no source span and cannot stand in for those members.
+Execution/report destinations are excluded; other option values are
 conservatively included. Effective legacy fields and backend native-type support
 are also included, since legacy parsing can bypass the modern option dictionary.
+Effective per-declaration verification membership is included without source URIs:
+the unchecked-termination warning distinguishes selected roots from already
+verified library declarations even when their source and CLI options match.
 The key is available on each module output and in the
 requested `resolve.module` profile events. `--pipeline-profile` also works with
 `resolve`, allowing resolve-only measurements without solver startup.
+`ModuleResolutionKey.DafnyVersion` binds the informational version (including the
+fork revision) and resolver assembly MVID. The latter rejects differently built
+or uncommitted resolver binaries even when revision metadata is absent or stale.
+This conservatively permits reuse only across matching resolver builds, rather
+than relying on the legacy fixed `4.11.0.0` file version.
 
 Each worker owns its reporter, signature map, class-member tables and builtin
 publication view. A per-resolution catalog interns intrinsic tuple, arrow, array,
@@ -858,6 +869,19 @@ declarations' generators, including generators reached through `codeContext`, do
 not carry translation history between modules. Translation uses the prerequisite
 closure for builtin declarations, bitvector axioms, function fuel and trait-parent
 axioms. Proof-dependency IDs are module-qualified as well.
+Let desugarings, assertion-label Boogie expressions and the saved fuel-context
+stack are translation-local under the option. Computing missing match cases does
+not add metadata to the resolved match. Captured-variable and heap-label ordering
+is ordinal, fresh counters use invariant formatting, and translation cleans up its
+type scope even on failure.
+
+Capture-state labels use the module identity, and snapshot implementation IDs use
+the full module key. State and source-comment ordinals restart in each translator. Physical paths and line
+numbers do not enter those Boogie annotations. A compilation-local reporting map
+rebinds captured states to current source locations for counterexamples and test
+generation. The IDE uses the resolved program's map, including after an unrelated
+module shifts source lines. Raw saved model files contain the stable state IDs;
+their physical source descriptions require that invocation's reporting map.
 
 Remaining process state is deliberately outside the content key: visibility
 tokens are atomic opaque set identities and their memo tables are synchronized;
@@ -869,19 +893,35 @@ remain derived from their declarations; backend compilation and solver preparati
 are later boundaries. Source locations remain attached to diagnostics; any snapshot
 loader must rebind them to the current source map. This PR does not introduce a
 cache, freeze resolved ASTs for reuse, or remove the language server's outer lock.
+The opt-in scheduler bypasses the IDE's legacy CloneId/system-shape result cache;
+edits resolve module bodies again. That cache remains active on the default path.
 External plugin callbacks have no concurrency contract, so their presence limits
 the opt-in path to one worker. Whole-program admission and global rewrites always
 run outside the module scheduler.
 
+The key is the local, pre-global resolution identity. Global postpasses are not
+implicitly certified by it: modular termination reads downstream implementation
+facts during translation, and test-runner generation can replace a generated body
+after module resolution. Before any translation-cache lookup supports those
+profiles, it must incorporate the current translation-observable global projection
+or bypass reuse. The proposed local/global/final key split is reviewed separately
+in https://github.com/erniecohen/dafny/pull/272; this PR does not implement it or
+claim that the local key alone covers those global translation inputs. A generated
+abstract signature also needs its stable `ModuleDefinition.FullName` as a selector
+within the owning resolution result: several signatures can share one owner key.
+
 The reproducible resolve-only benchmark is
 [`.github/review/resolution-threads.py`](../../../.github/review/resolution-threads.py).
-It measures five fresh processes per N on the standard library, the three public
-lit inputs with the most module declarations, and a generated wide DAG. The
-integration regression compares actual `--bprint` files at N = 1, 2, 8 and after
+It measures five fresh processes per N on the standard library, its examples,
+the DafnyCore project, the three public lit inputs with the most module
+declarations, and a generated wide DAG. The
+integration regression compares actual `--bprint` files at N = 1, 2, 4, 8 and after
 unrelated builtin growth. Unit tests cover key boundaries, diagnostic order, both
 inference engines, refinement invalidation, export ownership and immediate ready
-queue progress. CI also compares the opt-in suite and standard-library verdicts
-with the default baselines.
+queue progress. CI checks exact default bytes, verdicts and RU against the shipped
+control, then exact worker-count invariance. Opt-in verdicts have their own
+separately reviewed baselines; default-to-opt-in movements and three-seed cost
+observations are reported explicitly.
 
 ### 6.3 Improve the existing resolution cache
 

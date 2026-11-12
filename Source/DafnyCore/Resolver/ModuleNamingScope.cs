@@ -66,6 +66,13 @@ internal sealed class ModuleNamingScope : IDisposable {
     return (T)value;
   }
 
+  public T? FindValue<T>(object owner, string kind) where T : class =>
+    values.TryGetValue((owner, kind), out var value) ? (T)value : null;
+
+  public void SetValue<T>(object owner, string kind, T value) where T : notnull {
+    values[(owner, kind)] = value;
+  }
+
   public void Dispose() {
     current = previous;
   }
