@@ -1,13 +1,13 @@
 // RUN: %verify "%s" > "%t"
 // RUN: %diff "%s.expect" "%t"
 
-// The axiom for the ORDINAL expression (o - m) + n carried the guard of (o + m) - n,
-// n <= o.Offset + m, so it also applied where o - m is not defined, and there it said
-// something false. A program cannot state such a term: o - m is well-formed only when
-// m <= o.Offset, and constant ordinal arithmetic is folded before it reaches the solver.
-// So no program is known to prove false by it; the axioms themselves had no model (see
-// the issue). The guard is now m <= o.Offset. With it the axiom also applies where it
-// holds and did not apply before, when n exceeds o.Offset + m:
+// The axiom for (o - m) + n applies exactly where o - m is defined, m <= o.Offset.
+// The former guard n <= o.Offset + m also applied outside that domain.
+// github-issue-23-ordinal-undefined.dfy checks that the invalid constant expression's
+// postcondition is refused independently of its well-formedness error. Constant
+// ordinal arithmetic can reach the solver; it is not all folded away.
+// These two lemmas check the defined cases, including n > o.Offset + m, where the
+// corrected axiom supplies a fact that the old guard excluded.
 
 lemma MinusThenPlus(o: ORDINAL, m: nat, n: nat)
   requires m <= o.Offset && o.Offset + m < n

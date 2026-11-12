@@ -79,7 +79,8 @@ namespace Microsoft.Dafny {
     ///       (Dt#Equal(a, b) ==> X#Equal(a.x, b.x) && Y#Equal(a.y, b.y)) &&
     ///       (Ctor?(a) && Ctor?(b) && X#Equal(a.x, b.x) && Y#Equal(a.y, b.y) ==> Dt#Equal(a, b))
     /// Dt#Equal is equality (see AddExtensionalityAxiom), so the first conjunct holds of all values and needs
-    /// no antecedent. The second one does: a and b range over all of DatatypeType, the sort that every
+    /// no antecedent (guarding it makes tuple proofs such as Std LittleEndianNat.LemmaSeqAdd far costlier).
+    /// The second one does: a and b range over all of DatatypeType, the sort that every
     /// datatype shares, and without the antecedent it would make equal any two values, of any datatypes,
     /// whose projections agree.
     /// </summary>
@@ -106,12 +107,6 @@ namespace Microsoft.Dafny {
         var ctorQa = FunctionCall(ctor.Origin, ctorQ.Name, Bpl.Type.Bool, a);
         var ctorQb = FunctionCall(ctor.Origin, ctorQ.Name, Bpl.Type.Bool, b);
         var ante = BplAnd(ctorQa, ctorQb);
-        if (dt.Ctors.Count == 1) {
-          trigger = BplTrigger(dtEqual);
-        } else {
-          trigger = new Bpl.Trigger(ctor.Origin, true, new List<Bpl.Expr> { dtEqual, ctorQa },
-            new Bpl.Trigger(ctor.Origin, true, new List<Bpl.Expr> { dtEqual, ctorQb }));
-        }
 
         Bpl.Expr eqs = Bpl.Expr.True;
         for (var i = 0; i < ctor.Formals.Count; i++) {
@@ -123,9 +118,15 @@ namespace Microsoft.Dafny {
           eqs = BplAnd(eqs, eq);
         }
 
-        var body = dt.Ctors.Count == 1
-          ? BplAnd(BplImp(dtEqual, eqs), BplImp(BplAnd(ante, eqs), dtEqual))
-          : BplImp(ante, BplIff(dtEqual, eqs));
+        Bpl.Expr body;
+        if (dt.Ctors.Count == 1) {
+          trigger = BplTrigger(dtEqual);
+          body = BplAnd(BplImp(dtEqual, eqs), BplImp(BplAnd(ante, eqs), dtEqual));
+        } else {
+          trigger = new Bpl.Trigger(ctor.Origin, true, new List<Bpl.Expr> { dtEqual, ctorQa },
+            new Bpl.Trigger(ctor.Origin, true, new List<Bpl.Expr> { dtEqual, ctorQb }));
+          body = BplImp(ante, BplIff(dtEqual, eqs));
+        }
         var ax = BplForall(new List<Variable> { aVar, bVar }, trigger, body);
         AddOtherDefinition(constructorFunctions[ctor], new Bpl.Axiom(dt.Origin, ax, $"Datatype extensional equality definition: {ctor.FullName}"));
       }
