@@ -312,7 +312,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/checkout@v4
         with:
-          ref: b98637c6677560944b2498002ecd32ec987a90af
+          ref: c02d46e8c7faad8490b66238d1a33782679857284869cbfa9169f9e331ab882790eb5d6
           path: resolution-baseline-source
       - uses: ./.github/actions/setup-dotnet
       - uses: actions/setup-java@v4
@@ -1002,7 +1002,7 @@ jobs:
             --filter "FullyQualifiedName~DafnyCore.Test.RedirectingTypeDependencyTrackerTests|FullyQualifiedName~DafnyCore.Test.NumericAncestryTests|FullyQualifiedName~DafnyCore.Test.NumericAncestryAllocationTests|FullyQualifiedName~DafnyCore.Test.ScopeCheckpointTest|FullyQualifiedName~MapComprehensionSubstitutionTests" \
             --blame-hang --blame-hang-timeout 60s --blame-hang-dump-type none
       - name: Test isolated parallel resolution and module keys
-        run: dotnet test Source/DafnyCore.Test -c Release --no-build --filter FullyQualifiedName~ResolutionPipelineTests --logger "console;verbosity=normal"
+        run: dotnet test --settings .github/review/ci.runsettings Source/DafnyCore.Test -c Release --no-build --filter FullyQualifiedName~ResolutionPipelineTests --logger "console;verbosity=normal"
       - name: Test newtype-cycle edits in both resolver modes
         run: |
           dotnet test --settings .github/review/ci.runsettings Source/DafnyLanguageServer.Test -c Release --no-build \
@@ -1022,7 +1022,7 @@ jobs:
             --blame-hang --blame-hang-timeout 90s --blame-hang-dump-type none
       - name: Test current counterexample positions with module-local state labels
         run: |
-          DAFNY_TEST_Z3="$Z3" dotnet test Source/DafnyLanguageServer.Test -c Release --no-build \
+          DAFNY_TEST_Z3="$Z3" dotnet test --settings .github/review/ci.runsettings Source/DafnyLanguageServer.Test -c Release --no-build \
             --filter "FullyQualifiedName~ParallelResolutionCounterexamplesUseCurrentPositions" \
             --blame-hang --blame-hang-timeout 60s --blame-hang-dump-type none
 
