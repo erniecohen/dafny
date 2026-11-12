@@ -1,5 +1,5 @@
 // Fresh processes and cache corruption require the external CLI rather than the singleton verdict planner.
-// RUN: python3 "%repositoryRoot/.github/review/verification-cache.py" "%repositoryRoot/Binaries/Dafny.dll" "%repositoryRoot/Binaries/z3/bin/z3-5.1.0" "%s" "%t.dir" > "%t"
+// RUN: python3 "%repositoryRoot/.github/review/verification-cache.py" "%binaryDir/Dafny.dll" "%review-z3" "%s" "%t.dir" > "%t"
 // RUN: %diff "%s.expect" "%t"
 // UNSUPPORTED: windows
 
