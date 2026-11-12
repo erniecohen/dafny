@@ -1,7 +1,7 @@
 # Module-resolution compatibility audit
 
 `review.yml` builds the pre-feature control at
-`c02d46e8c7faad8490b66238d1a3378267985728` with the same SDK, runtime and
+`7dc1d91b1159bafb2d75dfb092930112528e6c18` with the same SDK, runtime and
 checksum-checked Boogie packages as the candidate. Its binary verifies the
 candidate's public inputs. A change to this control requires a separately
 reviewed default change; it must not silently follow the feature branch.
@@ -22,6 +22,13 @@ fixes the default decreases-tuple relation and deliberately changes shipped
 suite/library verdicts. Both builds must include that fix; its legacy opt-out
 is not enabled for this audit. The prior complete audit remains at
 https://github.com/erniecohen/dafny/actions/runs/43151173385.
+
+The control advanced to `7dc1d91b1159bafb2d75dfb092930112528e6c18`
+after https://github.com/erniecohen/dafny/pull/270 independently changed the
+shipped map-glue guards for matching and refactored datatype equality. Its
+prelude bytes belong in both builds; the feature must not undo that shipped
+change. The completed preceding-base captures remain at
+https://github.com/erniecohen/dafny/actions/runs/43214507192.
 
 For each suite shard and for the standard library, the audit runs that control,
 the candidate with the option omitted, and the candidate at N = 1, 2, 4, 8.

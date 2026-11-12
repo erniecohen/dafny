@@ -22,6 +22,11 @@ on:
         type: boolean
         default: false
 
+      review_followup_probe:
+        description: Record expected new-test baseline differences without failing the scratch probe
+        type: boolean
+        default: false
+
       platform_parity:
         description: Measure Linux/macOS parity at this exact source without changing baselines
         type: boolean
@@ -288,6 +293,7 @@ jobs:
       # time, and not the resources its finished proofs used.  To change the
       # expected verdicts on purpose, see .github/review/lit-verdicts.py.
       - name: Compare with the expected verdicts
+        continue-on-error: ${{ github.event_name == 'workflow_dispatch' && inputs.review_followup_probe && startsWith(github.ref, 'refs/heads/scratch/') }}
         env:
           PROBE: ${{ inputs.additional_axioms_probe }}
         run: |
@@ -312,7 +318,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/checkout@v4
         with:
-          ref: c02d46e8c7faad8490b66238d1a3378267985728
+          ref: 7dc1d91b1159bafb2d75dfb092930112528e6c18
           path: resolution-baseline-source
       - uses: ./.github/actions/setup-dotnet
       - uses: actions/setup-java@v4
@@ -747,6 +753,7 @@ jobs:
       # and error lines.  Not times, and not the resources finished proofs used.  To
       # change the expected verdicts on purpose, see .github/review/std-verdicts.py.
       - name: Compare with the expected verdicts
+        continue-on-error: ${{ github.event_name == 'workflow_dispatch' && inputs.review_followup_probe && startsWith(github.ref, 'refs/heads/scratch/') }}
         env:
           PROBE: ${{ inputs.additional_axioms_probe }}
         run: |
@@ -898,6 +905,7 @@ jobs:
       - name: JavaScript runtime dependency
         run: npm install --no-save --package-lock=false bignumber.js@9.1.2
       - name: Run the tests named in .github/review/regressions
+        continue-on-error: ${{ github.event_name == 'workflow_dispatch' && inputs.review_followup_probe && startsWith(github.ref, 'refs/heads/scratch/') }}
         env:
           DAFNY_INTEGRATION_TESTS_ONLY_COMPILERS: cs
         run: |

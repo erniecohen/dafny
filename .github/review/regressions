@@ -370,6 +370,15 @@ git-issues/github-issue-241-parallel-resolution.dfy
 # Opt-in /cacheUsedTypes and /lockFreeExpansion send the solver the same text (Boogie 3.5.5-review.c5a9f2ef, #241).
 git-issues/github-issue-241-split-setup.dfy
 
+# Upstream review follow-up (https://github.com/erniecohen/dafny/issues/23).
+git-issues/github-issue-23-box-bad.dfy
+git-issues/github-issue-23-ordinal-subset.dfy
+git-issues/github-issue-23-ordinal-undefined.dfy
+git-issues/github-issue-23-lambda.dfy
+git-issues/github-issue-23-constant.dfy
+git-issues/github-issue-23-lambda-cost.dfy
+git-issues/github-issue-23-glue.dfy
+
 # Stable source contracts for https://github.com/erniecohen/dafny/issues/211: both resolvers, effect boundaries, export/refinement views and reachable false controls.
 git-issues/github-issue-211-m4b.dfy
 # Wide JavaScript runtime bitwise results (https://github.com/erniecohen/dafny/issues/246).
