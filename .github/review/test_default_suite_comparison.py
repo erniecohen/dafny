@@ -419,7 +419,10 @@ class WorkflowControls(unittest.TestCase):
                     wanted = event == 'workflow_dispatch' and flag and ref.startswith('refs/heads/scratch/')
                     for name, guard in guards.items():
                         expression = guard.replace('github.event_name', repr(event)).replace('github.ref', repr(ref)).replace('inputs.default_comparison', repr(flag))
-                        expression = expression.replace('&&', ' and ').replace('!', ' not ')
+                        expression = expression.replace('&&', ' and ').replace('||', ' or ').replace('!', ' not ')
+                        expression = expression.replace('github.repository', repr('erniecohen/dafny'))
+                        expression = expression.replace('github.event.pull_request.head.repo.full_name', repr('erniecohen/dafny'))
+                        expression = expression.replace('inputs.platform_parity', 'False')
                         actual = eval(expression.strip(), {'__builtins__': {}, 'startsWith': lambda a, b: a.startswith(b)})
                         with self.subTest(event=event, ref=ref, flag=flag, job=name):
                             self.assertEqual(actual, wanted if name == 'default-comparison' else not wanted)
@@ -440,7 +443,7 @@ class WorkflowControls(unittest.TestCase):
         self.assertIn('-C "$DOTNET_ROOT" --exclude=dotnet --exclude=./dotnet', section)
         self.assertIn('--record-dotnet-environment "$PWD/default-comparison" "$DOTNET_ROOT"', section)
         self.assertLess(section.index('--record-dotnet-environment'), section.index('for variant in baseline candidate; do'))
-        self.assertIn('test "$(sha256sum "$DOTNET_ROOT/dotnet")" = "$host_before"', section)
+        self.assertIn('test "$(shasum -a 256 "$DOTNET_ROOT/dotnet")" = "$host_before"', section)
 
 
 if __name__ == '__main__':
