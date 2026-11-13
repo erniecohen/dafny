@@ -5,6 +5,11 @@ on:
   push:
     branches: ['scratch/193-reference-model/probe']
   workflow_dispatch:
+    inputs:
+      revision:
+        description: Exact candidate revision to build and prove (empty uses the workflow revision)
+        type: string
+        default: ''
 permissions:
   contents: read
 env:
@@ -20,7 +25,11 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.revision || github.sha }}
       - uses: ./.github/actions/setup-dotnet
+      - name: Record candidate source
+        run: git rev-parse HEAD >> "$GITHUB_STEP_SUMMARY"
       - name: Build candidate
         run: |
           sh Scripts/fetch-boogie-packages.sh
@@ -44,16 +53,23 @@ jobs:
         resolver: ['legacy', 'refreshed']
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.revision || github.sha }}
       - uses: ./.github/actions/setup-dotnet
       - uses: actions/download-artifact@v4
         with:
           name: issue193-dafny
       - name: Unpack Dafny
         run: mkdir -p out && tar -C out -xzf dafny.tar.gz
-      - name: Check M1 introduction and current optional inputs
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          path: identity-gate
+          sparse-checkout: .github/review
+      - name: Check historical M1 identity
         run: |
-          git fetch --no-tags --depth=2 origin "$(cat .github/review/issue193-introduced)"
-          python3 -m unittest discover -s .github/review -p test_issue193_identity.py
+          cp identity-gate/.github/review/issue193-identity.py .github/review/issue193-identity.py
+          git fetch --no-tags --depth=2 origin 25203d9115f8f104b325c8a058bf41051bdbbe69
           python3 .github/review/issue193-identity.py reference-results/identity
       - name: Pinned solver
         run: |
