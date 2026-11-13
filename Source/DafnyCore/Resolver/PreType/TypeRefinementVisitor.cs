@@ -90,6 +90,7 @@ public class TypeRefinementVisitor : ASTVisitor<IASTVisitorContext> {
 
     } else if (expr is NestedMatchExpr matchExpr) {
       foreach (var kase in matchExpr.Cases) {
+        VisitMatchCasePattern(kase.Pat, () => TypeRefinementWrapper.NormalizeSansBottom(matchExpr.Source));
         flows.Add(new FlowBetweenExpressions(expr, kase.Body, "case"));
       }
 
@@ -350,9 +351,50 @@ public class TypeRefinementVisitor : ASTVisitor<IASTVisitorContext> {
 
   }
 
+  /// <summary>
+  /// Sets up the flows into the variables bound by a case pattern of a "match" expression or statement. A variable
+  /// bound at the top of the pattern gets the type of the match source; a variable bound to a constructor argument gets
+  /// the declared type of the constructor's formal, with the type arguments of the source substituted for those of the
+  /// datatype, as for a let-pattern (see VisitPattern above).
+  /// </summary>
+  private void VisitMatchCasePattern(ExtendedPattern pattern, Func<Type> getPatternRhsType) {
+    switch (pattern) {
+      case DisjunctivePattern disjunctivePattern:
+        foreach (var alternative in disjunctivePattern.Alternatives) {
+          VisitMatchCasePattern(alternative, getPatternRhsType);
+        }
+        break;
+      case IdPattern idPattern:
+        if (idPattern.BoundVar != null) {
+          flows.Add(new FlowIntoVariableFromComputedType(idPattern.BoundVar, getPatternRhsType, idPattern.Origin, "case"));
+        }
+        if (idPattern.Arguments != null && idPattern.Ctor != null) {
+          var ctor = idPattern.Ctor;
+          Contract.Assert(idPattern.Arguments.Count == ctor.Formals.Count);
+          for (var i = 0; i < idPattern.Arguments.Count; i++) {
+            var argumentIndex = i;
+            VisitMatchCasePattern(idPattern.Arguments[i], () => {
+              var sourceType = getPatternRhsType().NormalizeExpand();
+              Contract.Assert(sourceType.IsDatatype);
+              Contract.Assert(sourceType.TypeArgs.Count == ctor.EnclosingDatatype.TypeArgs.Count);
+              var typeMap = TypeParameter.SubstitutionMap(ctor.EnclosingDatatype.TypeArgs, sourceType.TypeArgs);
+              return ctor.Formals[argumentIndex].Type.Subst(typeMap);
+            });
+          }
+        }
+        break;
+      default:
+        break;
+    }
+  }
+
   protected override void PostVisitOneStatement(Statement stmt, IASTVisitorContext context) {
     if (stmt is VarDeclPattern varDeclPattern) {
       VisitPattern(varDeclPattern.LHS, () => TypeRefinementWrapper.NormalizeSansBottom(varDeclPattern.RHS), context);
+    } else if (stmt is NestedMatchStmt nestedMatchStmt) {
+      foreach (var kase in nestedMatchStmt.Cases) {
+        VisitMatchCasePattern(kase.Pat, () => TypeRefinementWrapper.NormalizeSansBottom(nestedMatchStmt.Source));
+      }
     } else if (stmt is SingleAssignStmt { Lhs: IdentifierExpr lhsIdentifierExpr } assignStmt) {
       if (assignStmt is { Rhs: ExprRhs exprRhs }) {
         flows.Add(new FlowIntoVariable(lhsIdentifierExpr.Var, exprRhs.Expr, assignStmt.Origin, $"{lhsIdentifierExpr.Var.Name} :="));
