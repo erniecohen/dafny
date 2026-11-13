@@ -342,8 +342,12 @@ namespace Microsoft.Dafny {
       }
     }
 
-    private void PrintQuantifierDomain(List<BoundVar> boundVars, Attributes attrs, Expression range) {
+    private void PrintQuantifierDomain(List<BoundVar> boundVars, Attributes attrs, Expression range,
+      bool isFollowedByQSep = false) {
       Contract.Requires(boundVars != null);
+      if (isFollowedByQSep) {
+        MarkBeforeQSep(range);
+      }
       string sep = "";
       foreach (BoundVar bv in boundVars) {
         wr.Write("{0}", sep);
@@ -391,6 +395,11 @@ namespace Microsoft.Dafny {
           if (binding.FormalParameterName != null) {
             wr.Write($"{binding.FormalParameterName.val} := ");
           }
+          if (i + 1 < bindings.ArgumentBindings.Count && !bindings.ArgumentBindings[i + 1].IsGhost) {
+            // After "ghost", the next argument does not start with an identifier.
+            var next = bindings.ArgumentBindings[i + 1];
+            MarkBeforeComma(binding.Actual, next.Actual, next.FormalParameterName != null);
+          }
           PrintActualArgument(binding.Actual, isTuple);
         }
       } else {
@@ -400,6 +409,9 @@ namespace Microsoft.Dafny {
           if (arg is DefaultValueExpression { Resolved: null }) {
             // An error was detected during resolution, so this argument was not filled in. Omit printing it.
             continue;
+          }
+          if (i + 1 < bindings.Arguments.Count) {
+            MarkBeforeComma(arg, bindings.Arguments[i + 1]);
           }
           wr.Write(sep);
           sep = ", ";
@@ -422,11 +434,16 @@ namespace Microsoft.Dafny {
     void PrintBindings(ActualBindings bindings, bool isFollowedBySemicolon) {
       Contract.Requires(bindings != null);
       string sep = "";
-      foreach (var binding in bindings.ArgumentBindings) {
+      for (var i = 0; i < bindings.ArgumentBindings.Count; i++) {
+        var binding = bindings.ArgumentBindings[i];
         wr.Write(sep);
         sep = ", ";
         if (binding.FormalParameterName != null) {
           wr.Write($"{binding.FormalParameterName.val} := ");
+        }
+        if (i + 1 < bindings.ArgumentBindings.Count) {
+          var next = bindings.ArgumentBindings[i + 1];
+          MarkBeforeComma(binding.Actual, next.Actual, next.FormalParameterName != null);
         }
         PrintExpression(binding.Actual, isFollowedBySemicolon);
       }
@@ -435,33 +452,164 @@ namespace Microsoft.Dafny {
     void PrintExpressionList(List<Expression> exprs, bool isFollowedBySemicolon) {
       Contract.Requires(exprs != null);
       string sep = "";
-      foreach (Expression e in exprs) {
+      for (var i = 0; i < exprs.Count; i++) {
+        var e = exprs[i];
         Contract.Assert(e != null);
         wr.Write(sep);
         sep = ", ";
+        if (i + 1 < exprs.Count) {
+          MarkBeforeComma(e, exprs[i + 1]);
+        }
         PrintExpression(e, isFollowedBySemicolon);
       }
     }
     void PrintExpressionPairList(List<MapDisplayEntry> exprs) {
       Contract.Requires(exprs != null);
       string sep = "";
-      foreach (MapDisplayEntry p in exprs) {
+      for (var i = 0; i < exprs.Count; i++) {
+        var p = exprs[i];
         Contract.Assert(p != null);
         wr.Write(sep);
         sep = ", ";
         PrintExpression(p.A, false);
         wr.Write(" := ");
+        if (i + 1 < exprs.Count) {
+          MarkBeforeComma(p.B, exprs[i + 1].A);
+        }
         PrintExpression(p.B, false);
       }
+    }
+
+    // ----------------------------- serialization boundaries -----------------------------
+
+    /// <summary>
+    /// Serialization only: the comprehensions and lambdas that are printed with parentheses although
+    /// they are rightmost in their expression, because of the text that follows the expression or
+    /// because of the grammar context in which the expression is printed.
+    /// </summary>
+    private readonly HashSet<Expression> serializationParens = new(ReferenceEqualityComparer.Instance);
+
+    /// <summary>
+    /// The expressions whose printed text ends the printed text of "expr", from "expr" inward, when
+    /// "expr" is printed as the rightmost expression of its context.  This follows the cases of
+    /// PrintExpr that print their last subexpression without a closing delimiter.
+    /// </summary>
+    private IEnumerable<Expression> RightmostSpine(Expression expr) {
+      while (expr != null) {
+        yield return expr;
+        expr = expr switch {
+          OperatorSyntaxExpr e => options.DafnyPrintResolvedFile != null && e.ResolvedExpression != null ? e.ResolvedExpression : e.Syntax,
+          ParensExpression e => e.E,
+          BinaryExpr e => e.Op == BinaryExpr.Opcode.Exp ? e.E0 : e.E1,
+          TernaryExpr e => e.E2,
+          ChainingExpression e => e.Operands[^1],
+          UnaryOpExpr { Op: UnaryOpExpr.Opcode.Not } e => e.E,
+          NegationExpression e => e.E,
+          LetExpr e => e.Body,
+          LetOrFailExpr e => e.Body,
+          QuantifierExpr e => e.SplitQuantifier != null ? e.SplitQuantifierExpression : e.Term,
+          SetComprehension e => e.TermIsImplicit ? null : e.Term,
+          MapComprehension e => e.Term,
+          LambdaExpr e => e.Term,
+          ITEExpr e => e.Els,
+          StmtExpr e => e.E,
+          NestedMatchExpr { UsesOptionalBraces: false, Cases.Count: > 0 } e => e.Cases[^1].Body,
+          _ => null
+        };
+      }
+    }
+
+    /// <summary>
+    /// Serialization: "expr" is printed rightmost and is followed by "::".  A set comprehension without
+    /// a term that ends "expr" would take that "::" as its own
+    /// (https://github.com/erniecohen/dafny/issues/305).
+    /// </summary>
+    private void MarkBeforeQSep(Expression expr) {
+      if (printMode == PrintModes.Serialization && expr != null && TrailingTermlessSetComprehension(expr) is { } s) {
+        serializationParens.Add(s);
+      }
+    }
+
+    /// <summary>
+    /// Serialization: "expr" is printed rightmost and is followed by ", " and then by "next", or by a
+    /// named argument if "nextIsNamed".  The parser takes ", x" after the range of a set comprehension
+    /// without a term as another bound variable whenever x is an identifier
+    /// (https://github.com/erniecohen/dafny/issues/305).
+    /// </summary>
+    private void MarkBeforeComma(Expression expr, Expression next, bool nextIsNamed = false) {
+      if (printMode != PrintModes.Serialization || expr == null || next == null ||
+          TrailingTermlessSetComprehension(expr) is not { } s) {
+        return;
+      }
+      if (nextIsNamed || StartsWithIdentifier(PrintedText(next))) {
+        serializationParens.Add(s);
+      }
+    }
+
+    private SetComprehension TrailingTermlessSetComprehension(Expression expr) {
+      return RightmostSpine(expr).LastOrDefault() is SetComprehension { TermIsImplicit: true } s ? s : null;
+    }
+
+    /// <summary>
+    /// Serialization: "expr" is printed rightmost in a grammar context that does not admit an
+    /// unparenthesized lambda expression, such as a precondition.  A lambda that ends "expr" keeps its
+    /// parentheses (https://github.com/erniecohen/dafny/issues/301).  The body of that lambda admits
+    /// lambdas again.
+    /// </summary>
+    private void MarkLambdaFreeContext(Expression expr) {
+      if (printMode == PrintModes.Serialization && expr != null &&
+          RightmostSpine(expr).FirstOrDefault(e => e is LambdaExpr) is { } lambda) {
+        serializationParens.Add(lambda);
+      }
+    }
+
+    private string PrintedText(Expression expr) {
+      var savedWriter = wr;
+      using var exprWriter = new StringWriter(wr.FormatProvider) { NewLine = wr.NewLine };
+      try {
+        wr = exprWriter;
+        PrintExpression(expr, false);
+      } finally {
+        wr = savedWriter;
+      }
+      return exprWriter.ToString();
+    }
+
+    // The words that can start an expression but are not identifiers.
+    private static readonly HashSet<string> ExpressionKeywords = [
+      "allocated", "assert", "assigned", "assume", "bool", "calc", "char", "exists", "expect", "false",
+      "forall", "fresh", "ghost", "if", "imap", "int", "iset", "map", "match", "multiset", "nat", "new",
+      "null", "object", "old", "ORDINAL", "real", "reveal", "seq", "set", "string", "this", "true",
+      "unchanged", "var"
+    ];
+
+    private static bool StartsWithIdentifier(string text) {
+      var start = 0;
+      while (start < text.Length && char.IsWhiteSpace(text[start])) {
+        start++;
+      }
+      if (start == text.Length || !(char.IsLetter(text[start]) || text[start] == '_')) {
+        return false;
+      }
+      var end = start;
+      while (end < text.Length && (char.IsLetterOrDigit(text[end]) || text[end] is '_' or '\'' or '?')) {
+        end++;
+      }
+      return !ExpressionKeywords.Contains(text[start..end]);
     }
 
     void PrintFrameExpressionList(List<FrameExpression/*!*/>/*!*/ fexprs) {
       Contract.Requires(fexprs != null);
       string sep = "";
-      foreach (FrameExpression fe in fexprs) {
+      for (var i = 0; i < fexprs.Count; i++) {
+        var fe = fexprs[i];
         Contract.Assert(fe != null);
         wr.Write(sep);
         sep = ", ";
+        // A field name, or an implicit "this" followed by its field name, starts with "`".
+        if (fe.FieldName == null && i + 1 < fexprs.Count && fexprs[i + 1].E is not ImplicitThisExpr) {
+          MarkBeforeComma(fe.E, fexprs[i + 1].E);
+        }
         if (fe.E is ImplicitThisExpr) {
           Contract.Assert(fe.FieldName != null);
         } else if (printMode == PrintModes.Serialization && Expression.StripParens(fe.E) is LambdaExpr) {
@@ -601,7 +749,15 @@ namespace Microsoft.Dafny {
         }
 
         if (!e.Lhs.IsImplicit) {
-          PrintExpr(e.Lhs, opBindingStrength, false, false, !parensNeeded && isFollowedBySemicolon, -1, keyword);
+          if (printMode == PrintModes.Serialization && e.Lhs is ParensExpression &&
+              Expression.StripParens(e.Lhs) is NameSegment receiverName && typeAndModuleNames.Contains(receiverName.Name)) {
+            // "(D).m" selects a member of the value D, but "D.m" could select a member of the type or module D.
+            wr.Write("(");
+            PrintExpression(e.Lhs, false);
+            wr.Write(")");
+          } else {
+            PrintExpr(e.Lhs, opBindingStrength, false, false, !parensNeeded && isFollowedBySemicolon, -1, keyword);
+          }
           if (e.Lhs.Type is ResolverIdentifierExpr.ResolverTypeType) {
             Contract.Assert(e.Lhs is NameSegment ||
                             e.Lhs is ExprDotName); // these are the only expressions whose .Type can be ResolverType_Type
@@ -1199,7 +1355,7 @@ namespace Microsoft.Dafny {
 
         wr.Write(e is ForallExpr ? "forall" : "exists");
         wr.Write(" ");
-        PrintQuantifierDomain(e.BoundVars, e.Attributes, e.Range);
+        PrintQuantifierDomain(e.BoundVars, e.Attributes, e.Range, keyword == null);
         if (keyword == null) {
           wr.Write(" :: ");
         } else {
@@ -1222,7 +1378,7 @@ namespace Microsoft.Dafny {
 
       } else if (expr is SetComprehension) {
         var e = (SetComprehension)expr;
-        bool parensNeeded = !isRightmost;
+        bool parensNeeded = !isRightmost || serializationParens.Contains(e);
         if (parensNeeded) {
           wr.Write("(");
         }
@@ -1243,6 +1399,9 @@ namespace Microsoft.Dafny {
 
         PrintAttributes(e.Attributes, false);
         wr.Write(" | ");
+        if (!e.TermIsImplicit) {
+          MarkBeforeQSep(e.Range);
+        }
         PrintExpression(e.Range, !parensNeeded && isFollowedBySemicolon);
         if (!e.TermIsImplicit) {
           wr.Write(" :: ");
@@ -1271,6 +1430,7 @@ namespace Microsoft.Dafny {
 
         PrintAttributes(e.Attributes, false);
         wr.Write(" | ");
+        MarkBeforeQSep(e.Range);
         PrintExpression(e.Range, false);
         wr.Write(" :: ");
         if (e.TermLeft != null) {
@@ -1290,7 +1450,7 @@ namespace Microsoft.Dafny {
 
       } else if (expr is LambdaExpr) {
         var e = (LambdaExpr)expr;
-        bool parensNeeded = !isRightmost;
+        bool parensNeeded = !isRightmost || serializationParens.Contains(e);
         if (parensNeeded) {
           wr.Write("(");
         }
@@ -1307,6 +1467,7 @@ namespace Microsoft.Dafny {
 
         if (e.Range != null) {
           wr.Write(" requires ");
+          MarkLambdaFreeContext(e.Range);
           PrintExpression(e.Range, false);
         }
 
@@ -1319,6 +1480,7 @@ namespace Microsoft.Dafny {
             wr.Write(", ");
           }
 
+          MarkLambdaFreeContext(read.E);
           PrintExpression(read.E, false);
         }
 

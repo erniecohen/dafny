@@ -245,6 +245,9 @@ namespace Microsoft.Dafny {
         s.LocalVars.ForEach(local => CheckPreTypeIsDetermined(local.Origin, local.PreType, "local variable"));
         s.LocalVars.ForEach(local => CheckTypeArgsContainNoOrdinal(local.Origin, local.PreType));
 
+      } else if (stmt is NestedMatchStmt nestedMatchStmt) {
+        CheckCasePatterns(nestedMatchStmt);
+
       } else if (stmt is ForallStmt) {
         var s = (ForallStmt)stmt;
         s.BoundVars.ForEach(bv => CheckPreTypeIsDetermined(bv.Origin, bv.PreType, "bound variable"));
@@ -312,6 +315,10 @@ namespace Microsoft.Dafny {
       }
 
       var familyDeclName = PreTypeResolver.AncestorName(expr.PreType);
+
+      if (expr is NestedMatchExpr nestedMatchExpr) {
+        CheckCasePatterns(nestedMatchExpr);
+      }
 
       if (expr is StaticReceiverExpr stexpr) {
         CheckPreTypeIsDetermined(stexpr.Origin, stexpr.PreType, "static receiver");
@@ -559,6 +566,20 @@ namespace Microsoft.Dafny {
     static bool OperatesOnIndDatatype(PreType left, PreType right) {
       return (left is DPreType dpLeft && PreTypeResolver.AncestorPreType(dpLeft)?.Decl is IndDatatypeDecl) ||
              (right is DPreType dpRight && PreTypeResolver.AncestorPreType(dpRight)?.Decl is IndDatatypeDecl);
+    }
+
+    /// <summary>
+    /// The variables that the case patterns of a match bind are not expressions, so they are not visited otherwise.
+    /// A type that the user gives for such a variable may leave type arguments to inference, as in "case C(x: T) =>".
+    /// </summary>
+    void CheckCasePatterns(INestedMatch nestedMatch) {
+      foreach (var caze in nestedMatch.Cases) {
+        foreach (var idPattern in caze.Pat.DescendantsAndSelf.OfType<IdPattern>()) {
+          if (idPattern.BoundVar is { } bv) {
+            CheckPreTypeIsDetermined(bv.Origin, bv.PreType, "bound variable");
+          }
+        }
+      }
     }
 
     void CheckVariable(IVariable v, string whatIsBeingChecked) {

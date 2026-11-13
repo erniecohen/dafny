@@ -1,0 +1,1 @@
+Parenthesize a set comprehension without a term during library serialization when a following `::` or `, identifier` would otherwise extend it.
