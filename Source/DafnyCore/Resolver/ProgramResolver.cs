@@ -370,7 +370,14 @@ public class ProgramResolver {
     var count = Options.Plugins.Except(DafnyOptions.DefaultPlugins).Any()
       ? 1 : Math.Min(Math.Max(1, Options.Get(CommonOptionBag.ResolutionThreads)), declarations.Count);
     if (Options.Get(CommonOptionBag.ResolutionThreads) == 0) {
-      RunWorker();
+      // The worker resets the scope state of the thread it runs on, once per module. Here that is the
+      // caller's thread, whose scopes Resolve enabled and later disables, so give the caller its state back.
+      var callerScopes = Type.SaveScopes();
+      try {
+        RunWorker();
+      } finally {
+        Type.RestoreScopes(callerScopes);
+      }
     } else {
       var workers = Enumerable.Range(0, count).Select(_ => new Thread(RunWorker, 0x10000000) { IsBackground = true }).ToArray();
       foreach (var worker in workers) { worker.Start(); }
