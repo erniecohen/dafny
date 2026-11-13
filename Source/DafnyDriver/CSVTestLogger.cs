@@ -15,7 +15,10 @@ namespace Microsoft.Dafny {
     private readonly IDafnyOutputWriter logWriter;
     private string writerFilename;
 
-    public CSVTestLogger(IDafnyOutputWriter logWriter) {
+    private readonly bool includeReplayTiming;
+
+    public CSVTestLogger(IDafnyOutputWriter logWriter, bool includeReplayTiming = false) {
+      this.includeReplayTiming = includeReplayTiming;
       this.logWriter = logWriter;
     }
 
@@ -70,11 +73,15 @@ namespace Microsoft.Dafny {
     }
 
     private void TestRunCompleteHandler(object sender, TestRunCompleteEventArgs e) {
-      writer.WriteLine("TestResult.DisplayName,TestResult.Outcome,TestResult.Duration,TestResult.ResourceCount,RandomSeed");
-      foreach (var result in results.OrderByDescending(r => r.Duration)) {
+      writer.WriteLine("TestResult.DisplayName,TestResult.Outcome,TestResult.Duration,TestResult.ResourceCount,RandomSeed" + (includeReplayTiming ? ",TimingReplayed" : ""));
+      foreach (var result in includeReplayTiming
+                 ? results.OrderBy(r => r.TestCase.DisplayName, StringComparer.Ordinal)
+                 : results.OrderByDescending(r => r.Duration)) {
         var resourceCount = result.GetPropertyValue(VerificationResultLogger.ResourceCountProperty);
         var randomSeed = result.GetPropertyValue(VerificationResultLogger.RandomSeedProperty) ?? "unknown";
-        writer.WriteLine($"{result.TestCase.DisplayName},{result.Outcome},{result.Duration},{resourceCount},{randomSeed}");
+        var replayed = includeReplayTiming && result.GetPropertyValue(VerificationResultLogger.TimingReplayedProperty, false);
+        writer.WriteLine($"{result.TestCase.DisplayName},{result.Outcome},{result.Duration},{resourceCount},{randomSeed}" +
+          (includeReplayTiming ? $",{replayed.ToString().ToLowerInvariant()}" : ""));
       }
 
       writer.Flush();
