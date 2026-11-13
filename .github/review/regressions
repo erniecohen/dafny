@@ -399,6 +399,9 @@ git-issues/github-issue-194.dfy
 
 # Canonical native-result map rows (https://github.com/erniecohen/dafny/issues/284).
 git-issues/git-issue-284-map.dfy
+# The already registered SubsetTypes, SchorrWaite-stages and issue-82 maps/reads
+# cases also cover the proof and expected-statistics repairs for this encoding.
+# DivMod.LemmaMultiplyDivideLe is checked by the complete standard-library gate.
 
 # Historical identity scoping (https://github.com/erniecohen/dafny/issues/293):
 # Python regression controls: .github/review/test_milestone_identity.py, run by Build.
