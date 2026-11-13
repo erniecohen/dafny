@@ -7,24 +7,64 @@ runs:
       with:
         distribution: temurin
         java-version: '17'
-    - uses: actions/setup-dotnet@v4
-      env:
-        DOTNET_INSTALL_DIR: ${{ runner.temp }}/dafny-dotnet
-      with:
-        dotnet-version: 10.0.x
-    - name: Runtime for generated C# programs
+    - name: .NET 10 SDK and .NET 8 runtime (cached per runner)
       shell: bash
+      env:
+        SDK_CHANNEL: '10.0'
+        RUNTIME_CHANNEL: '8.0'
+        # Refresh the cached install (picking up new patch releases) after this many days.
+        MAX_AGE_DAYS: '7'
       run: |
-        # Transient network failures (curl exit 56, broken pipe) failed jobs before any test ran;
-        # retry the script download and the install a bounded number of times.
-        # Avoid the short endpoint's intermittently failing redirect hop; identical installer.
-        curl -fsSL --retry 5 --retry-all-errors --retry-delay 5 https://builds.dotnet.microsoft.com/dotnet/scripts/v1/dotnet-install.sh -o "$RUNNER_TEMP/dotnet-install.sh"
-        for attempt in 1 2 3; do
-          bash "$RUNNER_TEMP/dotnet-install.sh" --channel 8.0 --runtime dotnet --install-dir "$DOTNET_ROOT" --no-path --skip-non-versioned-files && break
-          test "$attempt" -lt 3 || exit 1
-          echo "dotnet-install attempt $attempt failed; retrying in 10 s"
-          sleep 10
-        done
+        # Every job used to download .NET from Microsoft into runner.temp, which is wiped per job;
+        # network errors (curl exit 16/28/56) then failed jobs before any test ran.
+        # The install now lives in the runner's persistent tool cache and is downloaded only when
+        # missing, stale, or for a different channel. A failed refresh falls back to the cached copy.
+        set -euo pipefail
+        root="$RUNNER_TOOL_CACHE/dafny-dotnet"
+        stamp="$root/.dafny-dotnet-stamp"
+        want="sdk=$SDK_CHANNEL runtime=$RUNTIME_CHANNEL os=$RUNNER_OS arch=$RUNNER_ARCH"
+        usable() { test -x "$root/dotnet" && test -f "$stamp" && test "$(cat "$stamp")" = "$want"; }
+        fresh() { usable && test -z "$(find "$stamp" -mtime +"$MAX_AGE_DAYS")"; }
+        install() {
+          local dir="$1" script="$RUNNER_TEMP/dotnet-install.sh"
+          rm -rf "$dir"
+          # Fetch the script from the CDN directly: the dot.net redirector timed out on TCP connect
+          # while the CDN answered in <0.1 s. Bounded timeouts turn a hang into a retry.
+          # Explicit && chaining: set -e is suppressed inside a function called from an if condition,
+          # and the stamp must be written only when every step succeeded.
+          curl -fsSL --http1.1 --connect-timeout 10 --max-time 60 --retry 5 --retry-all-errors --retry-delay 5 \
+            https://builds.dotnet.microsoft.com/dotnet/scripts/v1/dotnet-install.sh -o "$script" &&
+          bash "$script" --channel "$SDK_CHANNEL" --install-dir "$dir" --no-path --skip-non-versioned-files &&
+          bash "$script" --channel "$RUNTIME_CHANNEL" --runtime dotnet --install-dir "$dir" --no-path --skip-non-versioned-files &&
+          "$dir/dotnet" --list-runtimes | grep -q '^Microsoft.NETCore.App 8\.' &&
+          printf '%s\n' "$want" > "$dir/.dafny-dotnet-stamp"
+        }
+        if fresh; then
+          echo "Using cached .NET in $root ($(cat "$stamp"))"
+        else
+          # A stale but usable cache gets one refresh attempt (dotnet-install.sh retries internally);
+          # only a missing cache is worth three.
+          ok= attempts=3
+          if usable; then attempts=1; fi
+          for attempt in $(seq 1 "$attempts"); do
+            if install "$root.new"; then ok=1; break; fi
+            echo "dotnet install attempt $attempt of $attempts failed"
+            if test "$attempt" -lt "$attempts"; then sleep 10; fi
+          done
+          if test -n "$ok"; then
+            rm -rf "$root"
+            mv "$root.new" "$root"
+          elif usable; then
+            echo "::warning::.NET refresh failed; using the cached install in $root"
+            rm -rf "$root.new"
+          else
+            rm -rf "$root.new"
+            echo "::error::.NET install failed after 3 attempts and no cached install exists"
+            exit 1
+          fi
+        fi
+        echo "DOTNET_ROOT=$root" >> "$GITHUB_ENV"
+        echo "$root" >> "$GITHUB_PATH"
     - name: Check SDK and runtime inventory
       shell: bash
       run: |
@@ -32,3 +72,4 @@ runs:
         dotnet --list-runtimes
         test "$(dotnet --version | cut -d. -f1)" = 10
         test -z "$(dotnet --list-sdks | grep -v '^10\.' || true)"
+        dotnet --list-runtimes | grep -q '^Microsoft.NETCore.App 8\.'

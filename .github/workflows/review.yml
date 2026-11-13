@@ -14,6 +14,7 @@ on:
     branches: ['review/**', 'dev']
     tags: ['v*']
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
     branches: ['review/**', 'dev']
   workflow_dispatch:
     inputs:
@@ -86,15 +87,15 @@ env:
 
 jobs:
   operators-disabled:
-    if: github.head_ref == 'codex/194-operators-m1' || github.ref == 'refs/heads/codex/194-operators-m1' || startsWith(github.ref, 'refs/heads/scratch/194-')
+    if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.draft) && (github.head_ref == 'codex/194-operators-m1' || github.ref == 'refs/heads/codex/194-operators-m1' || startsWith(github.ref, 'refs/heads/scratch/194-')) }}
     uses: ./.github/workflows/operators-m1-off.yml
 
   decreases-order-comparison:
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.decreases_order_comparison && startsWith(github.ref, 'refs/heads/scratch/') }}
+    if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.draft) && (github.event_name == 'workflow_dispatch' && inputs.decreases_order_comparison && startsWith(github.ref, 'refs/heads/scratch/')) }}
     uses: ./.github/workflows/decreases-order.yml
 
   build:
-    if: ${{ (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'erniecohen/dafny'))) && !inputs.platform_parity && (!(github.event_name == 'workflow_dispatch' && (inputs.default_comparison || inputs.decreases_order_comparison) && startsWith(github.ref, 'refs/heads/scratch/'))) }}
+    if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.draft) && ((github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'erniecohen/dafny'))) && !inputs.platform_parity && (!(github.event_name == 'workflow_dispatch' && (inputs.default_comparison || inputs.decreases_order_comparison) && startsWith(github.ref, 'refs/heads/scratch/')))) }}
     name: Build (Release)
     runs-on: [self-hosted, macOS, ARM64, mac-studio]
     timeout-minutes: 60
@@ -175,7 +176,7 @@ jobs:
           retention-days: 14
 
   suite:
-    if: ${{ (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'erniecohen/dafny'))) && !inputs.platform_parity }}
+    if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.draft) && ((github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'erniecohen/dafny'))) && !inputs.platform_parity) }}
     name: Verifier suite (axioms ${{ matrix.axioms }}, shard ${{ matrix.shard }} of 4)
     needs: build
     runs-on: [self-hosted, macOS, ARM64, mac-studio]
@@ -245,7 +246,7 @@ jobs:
           retention-days: 90
 
   verdicts:
-    if: ${{ !inputs.platform_parity && ((github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'erniecohen/dafny'))) && (true)) }}
+    if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.draft) && (!inputs.platform_parity && ((github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'erniecohen/dafny'))) && (true))) }}
     name: Verdicts (axioms ${{ matrix.axioms }})
     needs: [build, suite]
     runs-on: [self-hosted, macOS, ARM64, mac-studio]
@@ -314,7 +315,7 @@ jobs:
           retention-days: 90
 
   verification-batch:
-    if: ${{ (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'erniecohen/dafny'))) && !inputs.platform_parity }}
+    if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.draft) && ((github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'erniecohen/dafny'))) && !inputs.platform_parity) }}
     name: Resolve-once verification batch controls
     needs: build
     runs-on: [self-hosted, macOS, ARM64, mac-studio]
@@ -357,7 +358,7 @@ jobs:
           retention-days: 90
 
   default-comparison:
-    if: ${{ !inputs.platform_parity && (github.event_name == 'workflow_dispatch' && inputs.default_comparison && startsWith(github.ref, 'refs/heads/scratch/')) }}
+    if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.draft) && (!inputs.platform_parity && (github.event_name == 'workflow_dispatch' && inputs.default_comparison && startsWith(github.ref, 'refs/heads/scratch/'))) }}
     name: Repeated default suite and standard-library comparison (probe)
     runs-on: ubuntu-24.04
     timeout-minutes: 360
@@ -468,7 +469,7 @@ jobs:
           retention-days: 90
 
   resolver:
-    if: ${{ (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'erniecohen/dafny'))) && !inputs.platform_parity }}
+    if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.draft) && ((github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'erniecohen/dafny'))) && !inputs.platform_parity) }}
     name: Resolver matrix (both modes)
     needs: build
     runs-on: [self-hosted, macOS, ARM64, mac-studio]
@@ -535,7 +536,7 @@ jobs:
           retention-days: 90
 
   stdlib:
-    if: ${{ (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'erniecohen/dafny'))) && !inputs.platform_parity }}
+    if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.draft) && ((github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'erniecohen/dafny'))) && !inputs.platform_parity) }}
     name: Standard library (Z3 ${{ matrix.z3 }}, axioms ${{ matrix.axioms }})
     needs: build
     runs-on: ${{ matrix.z3 == 'of the tests' && needs.build.outputs.harness_z3 == '4.12.1' && 'mac-studio' || 'ubuntu-24.04' }}
@@ -636,7 +637,7 @@ jobs:
           retention-days: 90
 
   axiom-resources:
-    if: ${{ !inputs.platform_parity && ((github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'erniecohen/dafny'))) && (!cancelled() && needs.suite.result == 'success')) }}
+    if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.draft) && (!inputs.platform_parity && ((github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'erniecohen/dafny'))) && (!cancelled() && needs.suite.result == 'success'))) }}
     name: Additional-axiom resource comparisons
     needs: [suite, stdlib]
     # Also after a failed standard-library job, but not after a cancellation, which can leave its
@@ -675,7 +676,7 @@ jobs:
           retention-days: 90
 
   javascript-runtime:
-    if: ${{ (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'erniecohen/dafny'))) && !inputs.platform_parity }}
+    if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.draft) && ((github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'erniecohen/dafny'))) && !inputs.platform_parity) }}
     name: JavaScript runtime (Node ${{ matrix.node }})
     runs-on: [self-hosted, macOS, ARM64, mac-studio]
     strategy:
@@ -725,7 +726,7 @@ jobs:
             before-control.txt
 
   regressions:
-    if: ${{ (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'erniecohen/dafny'))) && !inputs.platform_parity && (!(github.event_name == 'workflow_dispatch' && (inputs.default_comparison || inputs.decreases_order_comparison) && startsWith(github.ref, 'refs/heads/scratch/'))) }}
+    if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.draft) && ((github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'erniecohen/dafny'))) && !inputs.platform_parity && (!(github.event_name == 'workflow_dispatch' && (inputs.default_comparison || inputs.decreases_order_comparison) && startsWith(github.ref, 'refs/heads/scratch/')))) }}
     name: Regression tests (upstream harness)
     runs-on: [self-hosted, macOS, ARM64, mac-studio]
     timeout-minutes: 90
@@ -818,7 +819,7 @@ jobs:
 
   regressions-linux:
     name: Regression tests with Linux resource expectations
-    if: ${{ !inputs.platform_parity && !(github.event_name == 'workflow_dispatch' && inputs.default_comparison && startsWith(github.ref, 'refs/heads/scratch/')) }}
+    if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.draft) && (!inputs.platform_parity && !(github.event_name == 'workflow_dispatch' && inputs.default_comparison && startsWith(github.ref, 'refs/heads/scratch/'))) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
@@ -844,7 +845,7 @@ jobs:
           grep -Eq 'Total( tests)?: *1([^0-9]|$)' test.log
 
   resolver-tests:
-    if: ${{ (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'erniecohen/dafny'))) && !inputs.platform_parity && (!(github.event_name == 'workflow_dispatch' && (inputs.default_comparison || inputs.decreases_order_comparison) && startsWith(github.ref, 'refs/heads/scratch/'))) }}
+    if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.draft) && ((github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'erniecohen/dafny'))) && !inputs.platform_parity && (!(github.event_name == 'workflow_dispatch' && (inputs.default_comparison || inputs.decreases_order_comparison) && startsWith(github.ref, 'refs/heads/scratch/')))) }}
     name: Resolver unit tests and language-server recovery
     runs-on: [self-hosted, macOS, ARM64, mac-studio]
     timeout-minutes: 20
@@ -894,7 +895,7 @@ jobs:
             --blame-hang --blame-hang-timeout 90s --blame-hang-dump-type none
 
   finite-support:
-    if: ${{ (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'erniecohen/dafny'))) && !inputs.platform_parity }}
+    if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.draft) && ((github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'erniecohen/dafny'))) && !inputs.platform_parity) }}
     name: Finite-support encoding and boundary controls
     needs: build
     runs-on: [self-hosted, macOS, ARM64, mac-studio]
@@ -937,7 +938,7 @@ jobs:
           retention-days: 90
 
   statement-conclusions:
-    if: ${{ (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'erniecohen/dafny'))) && !inputs.platform_parity }}
+    if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.draft) && ((github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'erniecohen/dafny'))) && !inputs.platform_parity) }}
     name: Statement-expression conclusions (opt-in)
     needs: build
     runs-on: [self-hosted, macOS, ARM64, mac-studio]
@@ -983,6 +984,7 @@ jobs:
           retention-days: 90
 
   integer-bitwise-reference:
+    if: ${{ github.event_name != 'pull_request' || !github.event.pull_request.draft }}
     name: Integer bitwise reference (Z3 ${{ matrix.z3 }}, ${{ matrix.resolver }})
     needs: build
     runs-on: ubuntu-24.04
@@ -1036,7 +1038,7 @@ jobs:
 
 
   binaries:
-    if: ${{ !inputs.platform_parity && (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && (github.ref_type == 'tag' || inputs.binaries)) }}
+    if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.draft) && (!inputs.platform_parity && (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && (github.ref_type == 'tag' || inputs.binaries))) }}
     name: Binaries (${{ matrix.rid }})
     needs: build
     # The osx-arm64 build runs on the owner's self-hosted Mac (label mac-studio);
@@ -1112,7 +1114,7 @@ jobs:
           retention-days: 14
 
   release:
-    if: ${{ !inputs.platform_parity && (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref_type == 'tag') }}
+    if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.draft) && (!inputs.platform_parity && (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref_type == 'tag')) }}
     name: GitHub release
     needs: [build, binaries, verdicts, stdlib, javascript-runtime, regressions, regressions-linux, resolver, resolver-tests, finite-support, statement-conclusions, axiom-resources, verification-batch, integer-bitwise-reference]
     runs-on: mac-studio
@@ -1164,13 +1166,13 @@ jobs:
             --verify-tag --title "$VERSION" --notes-file notes.md
 
   parity-linux:
-    if: ${{ github.repository == 'erniecohen/dafny' && github.event_name == 'workflow_dispatch' && inputs.platform_parity }}
+    if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.draft) && (github.repository == 'erniecohen/dafny' && github.event_name == 'workflow_dispatch' && inputs.platform_parity) }}
     uses: ./.github/workflows/platform-parity.yml
     with:
       platform: linux
 
   parity-macos:
-    if: ${{ github.repository == 'erniecohen/dafny' && github.event_name == 'workflow_dispatch' && inputs.platform_parity }}
+    if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.draft) && (github.repository == 'erniecohen/dafny' && github.event_name == 'workflow_dispatch' && inputs.platform_parity) }}
     uses: ./.github/workflows/platform-parity.yml
     with:
       platform: macos
@@ -1178,7 +1180,7 @@ jobs:
   parity-report:
     name: Platform parity report (probe)
     needs: [parity-linux, parity-macos]
-    if: ${{ !cancelled() && github.repository == 'erniecohen/dafny' && github.event_name == 'workflow_dispatch' && inputs.platform_parity }}
+    if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.draft) && (!cancelled() && github.repository == 'erniecohen/dafny' && github.event_name == 'workflow_dispatch' && inputs.platform_parity) }}
     runs-on: [self-hosted, macOS, ARM64, mac-studio]
     timeout-minutes: 15
     permissions:
