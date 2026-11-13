@@ -1311,6 +1311,7 @@ module Std.Base64 {
       == { EncodeDecodeValidEmpty(b); }
         b;
       }
+      assert {:split_here} DecodeValid(s) == b;
     } else if |b| % 3 == 0 {
       calc {
         DecodeValid(EncodeBV(b));
@@ -1321,6 +1322,7 @@ module Std.Base64 {
       == { EncodeDecodeUnpadded(b); }
         b;
       }
+      assert {:split_here} DecodeValid(s) == b;
     } else if |b| % 3 == 1 {
       EncodeDecodeValid2Padded(b);
       var prefix := b[..(|b| - 1)];
@@ -1344,6 +1346,7 @@ module Std.Base64 {
       ==
         b;
       }
+      assert {:split_here} DecodeValid(s) == b;
     } else if |b| % 3 == 2 {
       EncodeDecodeValid1Padded(b);
       var prefix := b[..(|b| - 2)];
@@ -1367,6 +1370,7 @@ module Std.Base64 {
       ==
         b;
       }
+      assert {:split_here} DecodeValid(s) == b;
     }
   }
 
