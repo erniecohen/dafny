@@ -1,0 +1,1 @@
+The verifier no longer crashes on a proof-form `forall` statement in a statement expression outside a method or function body: a constant initializer, a subset-type or newtype constraint or witness, a default parameter value, or an iterator body. The statement's postcondition is checked there as it is in a method body.
