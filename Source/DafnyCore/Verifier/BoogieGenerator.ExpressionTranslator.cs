@@ -1607,7 +1607,7 @@ namespace Microsoft.Dafny {
         if (usesOldHeap) {
           capturedHeaps.Add(Old.HeapExpr);
         }
-        foreach (var label in heapAt.OrderBy(label => label.Name)) {
+        foreach (var label in heapAt.OrderBy(label => label.Name, ModuleNamingScope.Current != null ? StringComparer.Ordinal : StringComparer.CurrentCulture)) {
           capturedHeaps.Add(OldAt(label).HeapExpr);
         }
         Expr guard = Expr.True;
@@ -1618,7 +1618,7 @@ namespace Microsoft.Dafny {
           guard = BplAnd(guard, BoogieGenerator.FunctionCall(e.Origin, BuiltinFunction.IsGoodHeap, null, capturedHeap));
           guard = BplAnd(guard, BoogieGenerator.HeapSameOrSucc(capturedHeap, heap));
         }
-        foreach (var variable in freeVariables.OrderBy(variable => variable.UniqueName)) {
+        foreach (var variable in freeVariables.OrderBy(variable => variable.UniqueName, ModuleNamingScope.Current != null ? StringComparer.Ordinal : StringComparer.CurrentCulture)) {
           if (variable.Type.MayShowReferences) {
             var value = BoogieGenerator.TrVar(e.Origin, variable);
             guard = BplAnd(guard, BoogieGenerator.MkIs(value, variable.Type));
@@ -1841,7 +1841,7 @@ namespace Microsoft.Dafny {
         if (usesOldHeap) {
           capturedHeaps.Add(Old.HeapExpr);
         }
-        foreach (var label in heapAt.OrderBy(label => label.Name)) {
+        foreach (var label in heapAt.OrderBy(label => label.Name, ModuleNamingScope.Current != null ? StringComparer.Ordinal : StringComparer.CurrentCulture)) {
           capturedHeaps.Add(OldAt(label).HeapExpr);
         }
         foreach (var capturedHeap in capturedHeaps) {
@@ -1850,7 +1850,7 @@ namespace Microsoft.Dafny {
           }
           guard = BplAnd(guard, BoogieGenerator.HeapSameOrSucc(capturedHeap, heap));
         }
-        foreach (var v in fvs.OrderBy(v => v.UniqueName)) {
+        foreach (var v in fvs.OrderBy(v => v.UniqueName, ModuleNamingScope.Current != null ? StringComparer.Ordinal : StringComparer.CurrentCulture)) {
           if (v.Type.MayShowReferences) {
             guard = BplAnd(guard, BoogieGenerator.MkIsAlloc(BoogieGenerator.TrVar(e.Origin, v), v.Type, heap));
           }
@@ -1885,7 +1885,7 @@ namespace Microsoft.Dafny {
         if (usesOldHeap) {
           capturedHeaps.Add(Old.HeapExpr);
         }
-        foreach (var label in heapAt.OrderBy(l => l.Name)) {
+        foreach (var label in heapAt.OrderBy(l => l.Name, ModuleNamingScope.Current != null ? StringComparer.Ordinal : StringComparer.CurrentCulture)) {
           capturedHeaps.Add(OldAt(label).HeapExpr);
         }
         foreach (var heap in capturedHeaps) {
@@ -1894,7 +1894,7 @@ namespace Microsoft.Dafny {
           }
           captured = BplAnd(captured, BplOr(Bpl.Expr.Eq(heap, h), BoogieGenerator.HeapSucc(heap, h)));
         }
-        foreach (var v in fvs.OrderBy(v => v.UniqueName)) {
+        foreach (var v in fvs.OrderBy(v => v.UniqueName, ModuleNamingScope.Current != null ? StringComparer.Ordinal : StringComparer.CurrentCulture)) {
           if (v.Type.MayShowReferences) {
             captured = BplAnd(captured, BoogieGenerator.MkIsAlloc(BoogieGenerator.TrVar(e.Origin, v), v.Type, h));
           }

@@ -279,7 +279,8 @@ namespace Microsoft.Dafny {
         Error(ErrorId.ref_default_export_unchangeable, nw, "can't change if a module export is default ({0})", nw.Name);
       }
 
-      nw.Exports.AddRange(d.Exports);
+      nw.Exports.AddRange(ModuleNamingScope.Current == null ? d.Exports :
+        d.Exports.Select(export => new ExportSignature(refinementCloner, export)));
       nw.Extends.AddRange(d.Extends);
     }
 
@@ -1699,7 +1700,11 @@ namespace Microsoft.Dafny {
         // refining module, retain its name but not be default, unless the refining module has the same name
         ModuleExportDecl dex = d as ModuleExportDecl;
         if (dex.IsDefault && d.Name != newParent.Name) {
-          ddex = new ModuleExportDecl(ddex.Options, dex.Origin, d.NameNode, d.Attributes, newParent, dex.Exports, dex.Extends,
+          // ExportSignature.Decl is written during resolution. Sibling refinements
+          // must not borrow the base's export signatures under module isolation.
+          var exports = ModuleNamingScope.Current == null ? dex.Exports : ddex.Exports;
+          var extends = ModuleNamingScope.Current == null ? dex.Extends : ddex.Extends;
+          ddex = new ModuleExportDecl(ddex.Options, dex.Origin, d.NameNode, d.Attributes, newParent, exports, extends,
             dex.ProvideAll, dex.RevealAll, false, true, Guid.NewGuid());
         }
         ddex.SetupDefaultSignature();

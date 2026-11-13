@@ -41,6 +41,18 @@ public class CommonOptionBag {
       IsHidden = true
     };
 
+  public static readonly Option<string> VerificationCache = new("--verification-cache",
+    "Reuse complete verification-task solver exchanges in DIR. Requires --type-system-refresh. Opt-in; uses a fresh solver history and stable numeric declaration order for each task. " +
+    "Replayed timing fields are identified in CSV/JSON logs. Unsupported tasks run normally.") { ArgumentHelpName = "DIR" };
+  public static readonly Option<bool> TranslationCache = new("--translation-cache",
+    "Reuse module translations in this process using semantic resolution keys. " +
+    "Requires --type-system-refresh. Uses the default module-scoped translator. Stores no files or verification results.");
+
+  public static readonly Option<int> ResolutionThreads = new("--resolution-threads", () => 0,
+    "Resolve independent modules with N workers. Requires --type-system-refresh. Scheduling is opt-in; generated names are module-scoped in every mode.") {
+    ArgumentHelpName = "N"
+  };
+
   public static readonly Option<string> PipelineProfile =
     new("--pipeline-profile", @"
 (experimental) Write timing events of the verification pipeline to the given file, one JSON object per line: parsing, resolution, translation to Boogie, Boogie's preparation of each module, and each verification task's queue wait and solver time, with process-wide allocation, garbage-collection and CPU deltas; and front-end events with the running thread's CPU time and allocation: each file parsed or .doo file read, the module dependency graph, each module's resolution and its phases, each global resolution pass, and each module's translation. Also accepted by resolve. Only the file is added; Dafny's other output and its solver input are unchanged.".TrimStart()) {
@@ -750,6 +762,14 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(WarnAsErrors, OptionScope.Cli);
     OptionRegistry.RegisterOption(ProgressOption, OptionScope.Cli);
     OptionRegistry.RegisterOption(LogLocation, OptionScope.Cli);
+    OptionRegistry.RegisterOption(VerificationCache, OptionScope.Cli);
+    ResolutionThreads.AddValidator(result => {
+      if (result.Tokens.Count != 0 && result.GetValueOrDefault<int>() < 1) {
+        result.ErrorMessage = "--resolution-threads must be a positive integer.";
+      }
+    });
+    OptionRegistry.RegisterOption(ResolutionThreads, OptionScope.Cli);
+    OptionRegistry.RegisterOption(TranslationCache, OptionScope.Cli);
     OptionRegistry.RegisterOption(PipelineProfile, OptionScope.Cli);
     OptionRegistry.RegisterOption(PipelineProfileHeap, OptionScope.Cli);
     OptionRegistry.RegisterOption(PipelineProfileGcEvents, OptionScope.Cli);
