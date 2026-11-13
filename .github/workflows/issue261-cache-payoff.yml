@@ -90,9 +90,10 @@ jobs:
               --cores 4 --verification-time-limit 0 --solver-path "$Z3" $NOOP
             # One target-specific part (on the committed Std .doo), as the CI job runs six.
             cd src/Std/TargetSpecific
-            # shellcheck disable=SC2046,SC2086
+            # It takes no --boogie options: they must equal those the .doo was built with.
+            # shellcheck disable=SC2046
             run --name std-ts-js-verify-noop --reps 3 -- verify dfyconfig.toml $(find . -name '*-js*.dfy' | sort) \
-              --cores 4 --verification-time-limit 0 --solver-path "$Z3" $NOOP
+              --cores 4 --verification-time-limit 0 --solver-path "$Z3" --solver-option SOLVER=noop
             ;;
           core)
             run --name core-resolve-t0 --reps 3 -- resolve Source/DafnyCore/dfyconfig.toml

@@ -33,8 +33,8 @@ materialization and the rebinding of https://github.com/erniecohen/dafny/pull/28
 nothing).  Translation reuse is bounded the same way, for the modules outside D(m) (an upper
 bound: the global projection G of https://github.com/erniecohen/dafny/pull/272 can
 invalidate more).  Edits considered: the median over all user modules (a random edit), the
-median over the leaves (user modules no other user module depends on) and the root (the
-user module with the most dependents).  Library modules are never edited, so they are always
+median over the leaves (user modules no other user module depends on), the root (the
+user module with the most dependents) and the costliest user module to resolve.  Library modules are never edited, so they are always
 hits.  A saving's share of wall time is the saved module work divided by the module work,
 times the modules' wall time (the modules interval union), divided by the wall time.
 """
@@ -117,7 +117,9 @@ def analyze_profile(path, wall_s):
     manifest = events[0]
     spans = [e for e in events if e['ev'] == 'span']
     fe = [e for e in events if e['ev'] == 'fe']
-    graph = next(e for e in events if e['ev'] == 'moduleGraph')
+    graph = next((e for e in events if e['ev'] == 'moduleGraph'), None)
+    if graph is None:
+        return None  # the run stopped before resolution (see its .out)
     nodes = graph['nodes']
     mods = [e for e in fe if e['stage'] == 'resolve.module']
     cost = defaultdict(float)
@@ -171,12 +173,16 @@ def analyze_profile(path, wall_s):
     per = {m: saving(m) for m in user}
     leaves = [m for m in user if len(deps[m] & userset) == 1]
     root = max(user, key=lambda m: (len(deps[m] & userset), cost[m])) if user else None
+    hot = max(user, key=lambda m: cost[m]) if user else None
+    r['hot'] = name_of[hot] if hot is not None else None
+    r['hot share'] = cost[hot] / work if work and hot is not None else 0
     r['leaves'] = len(leaves)
     r['root'] = name_of[root] if root is not None else None
     r['root dependents'] = per[root][2] - 1 if root is not None else 0
     r['dependents (median)'] = statistics.median(per[m][2] - 1 for m in user) if user else 0
     r['translate work'] = tr_total
-    for label, ms in (('random', user), ('leaf', leaves), ('root', [root] if root is not None else [])):
+    for label, ms in (('random', user), ('leaf', leaves), ('root', [root] if root is not None else []),
+                      ('hot', [hot] if hot is not None else [])):
         if not ms:
             continue
         res = statistics.median(per[m][0] for m in ms)
@@ -193,14 +199,18 @@ def analyze(a):
         for tsv in Path(d).rglob('runs.tsv'):
             for line in tsv.read_text().splitlines()[1:]:
                 name, rep, _, wall = line.split('\t')
-                rows[name].append(analyze_profile(tsv.parent / f'{name}-{rep}.jsonl', float(wall)))
+                r = analyze_profile(tsv.parent / f'{name}-{rep}.jsonl', float(wall))
+                if r is not None:
+                    rows[name].append(r)
     report = {}
     for name in sorted(rows):
         rs = rows[name]
         med = {}
         for k in rs[0]:
             vals = [r[k] for r in rs if k in r]
-            if vals and isinstance(vals[0], (int, float)) and not isinstance(vals[0], bool):
+            if vals and isinstance(vals[0], int) and not isinstance(vals[0], bool) and len(set(vals)) == 1:
+                med[k] = vals[0]
+            elif vals and isinstance(vals[0], (int, float)) and not isinstance(vals[0], bool):
                 med[k] = statistics.median(vals)
             else:
                 med[k] = vals[0] if vals else None
@@ -223,18 +233,19 @@ def analyze(a):
                      f"{s(r['module work'])} | {s(r['library'])} | {s(r['global'])} ({pct(r['global'], w)}) | "
                      f"{s(r['translate'])} ({pct(r['translate'], w)}) | {s(r['prepare'])} ({pct(r['prepare'], w)}) | "
                      f"{s(r['vcgen'])} ({pct(r['vcgen'], w)}, {r['tasks']}) | {s(r['gc pause'])} ({pct(r['gc pause'], w)}) |")
-    lines += ['', '| run | resolver, threads | user modules | library modules | graph nodes / edges | leaves | root (dependents) | median dependents |',
-              '|---|---|---:|---:|---:|---:|---|---:|']
+    lines += ['', '| run | resolver, threads | user modules | library modules | graph nodes / edges | leaves | root (dependents) | median dependents | costliest module (share of module work) |',
+              '|---|---|---:|---:|---:|---:|---|---:|---|']
     for name, r in report.items():
         lines.append(f"| {name} | {'refresh' if r['refresh'] else 'legacy'}, {r['threads']} | {r['modules (user)']} | "
                      f"{r['modules (library)']} | {r['graph nodes']} / {r['graph edges']} | {r['leaves']} | "
-                     f"{r['root']} ({r['root dependents']}) | {r['dependents (median)']} |")
+                     f"{r['root']} ({r['root dependents']}) | {r['dependents (median)']} | "
+                     f"{r['hot']} ({100 * r['hot share']:.0f}%) |")
     lines += ['', 'Upper bound on what a warm cache saves, per edit (resolution wall saved; translation saved where translated):', '',
-              '| run | edit leaf | edit random | edit root |', '|---|---:|---:|---:|']
+              '| run | edit leaf | edit random | edit root | edit costliest |', '|---|---:|---:|---:|---:|']
     for name, r in report.items():
         w = r['wall']
         cells = []
-        for label in ('leaf', 'random', 'root'):
+        for label in ('leaf', 'random', 'root', 'hot'):
             k = f'saved resolve wall ({label})'
             if k not in r:
                 cells.append('')
