@@ -27,6 +27,7 @@ on:
       - 'Source/IntegrationTests/TestFiles/LitTests/LitTest/dafny4/Primes.dfy'
       - 'Source/IntegrationTests/TestFiles/LitTests/LitTest/dafny4/UnionFind.dfy'
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
     branches: ['review/**', 'dev']
     paths:
       - '.github/workflows/obligation-proofs.yml'
@@ -64,7 +65,7 @@ env:
 
 jobs:
   shard:
-    if: ${{ github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'erniecohen/dafny')) }}
+    if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.draft) && (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'erniecohen/dafny'))) }}
     name: Obligation proof repairs (#170), part ${{ matrix.part }} of 12
     runs-on: [self-hosted, macOS, ARM64, mac-studio]
     timeout-minutes: 60
@@ -125,7 +126,7 @@ jobs:
           retention-days: 90
 
   hosted-shard:
-    if: ${{ !(github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'erniecohen/dafny'))) }}
+    if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.draft) && (!(github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'erniecohen/dafny')))) }}
     name: Obligation proof repairs (#170), part ${{ matrix.part }} of 12
     runs-on: ubuntu-24.04
     timeout-minutes: 60
