@@ -1,6 +1,1 @@
-<<<<<<< HEAD
-v4.11.0 d65c7b1bcf4002477485c45caaad4a4d2f31c549
-# CI gate scoping (https://github.com/erniecohen/dafny/issues/293) changes no product input.
-=======
-v4.11.0 dd22970ffe36095802d706ed48336fc06752bb5b
->>>>>>> 5bb02009
+v4.11.0 985d6ba4af71d3c108adef83951bc10b40d94246
