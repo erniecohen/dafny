@@ -325,3 +325,24 @@ passive native-writer comparison preserves option-off Boogie, task commands,
 outcomes/RU, reports/stdout/stderr/exit against the prior producer under both type
 systems. These focused checks supplement the frozen broader cohorts; they do not
 relabel them as runs of the new managed-image namespace.
+
+
+### Refreshed CLI admission measurements
+
+Product source `470f93a90fc27d1e73b338fa8aa20d81d282993b` repeats five
+fresh-process samples per scenario on the two-module, three-task regression
+program with `--type-system-refresh`. Median [minimum, maximum], seconds:
+
+| Scenario | Wall | CPU | Solver calls | Reported RU |
+|---|---|---|---:|---:|
+| Cold | 10.445 [5.960, 15.350] | 8.482 [5.251, 9.251] | 3 | 7068 |
+| Warm | 8.608 [5.715, 13.322] | 6.535 [5.072, 8.765] | 0 | 7068 |
+| One-function edit | 9.242 [6.169, 17.796] | 7.049 [5.405, 11.913] | 1 | 7189 |
+
+Cold has one solver-version probe; warm/edit have none. All five warm pairs
+replay exact stdout/stderr/exit and untimed reports/RU. Each edit reruns exactly
+one changed key and replays two. Exit 4 includes the intentional reachable-false
+control. Other work was concurrent; wall/CPU ranges are descriptive, not isolated
+latency claims. The [measurement summary](241-result-cache-refresh-measurements.json)
+records product identity and binary hashes. The earlier full-Std measurements
+retain their original producer; their project already selects refreshed typing.
