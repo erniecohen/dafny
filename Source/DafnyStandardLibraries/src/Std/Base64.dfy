@@ -1213,6 +1213,7 @@ module Std.Base64 {
     requires Is1Padding(s[(|s| - 4)..])
     ensures
       (
+        UnpaddedBase64Prefix(s);
         var b := DecodeValid(s);
         b[..(|b| - 2)] == DecodeUnpadded(s[..(|s| - 4)]) &&
         b[(|b| - 2)..] == Decode1Padding(s[(|s| - 4)..]))
