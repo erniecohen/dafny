@@ -1,2 +1,2 @@
-v4.11.0 6b798eab25e119869f0f9760ebf87d39852d0e83
-# Combined character and canonical-map repairs, including the merged proof maintenance.
+v4.11.0 8fd3c781ac196607fd80baec3eab2a37e29c09a4
+# Combined representation repairs with checked producer state preservation.
