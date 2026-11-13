@@ -402,3 +402,7 @@ git-issues/github-issue-268.dfy
 git-issues/github-issue-194.dfy
 
 # Parallel operator-export builtin ownership and visibility negatives are in git-issues/github-issue-241-parallel-resolution.dfy.
+
+# Refreshed inference is required by the opt-in resolver; invalid internal worker inputs still report ordinary errors.
+git-issues/github-issue-241-resolution-options.dfy
+git-issues/github-issue-241-rejected-stdlib.dfy

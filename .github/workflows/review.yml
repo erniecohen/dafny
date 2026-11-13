@@ -322,7 +322,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/checkout@v4
         with:
-          ref: 8deca8ad4e8b49988f683855fe78a6917338511c
+          ref: 0025e3f001351ee0f7c801c052bdd7d992c0de6e
           path: resolution-baseline-source
       - uses: ./.github/actions/setup-dotnet
       - uses: actions/setup-java@v4

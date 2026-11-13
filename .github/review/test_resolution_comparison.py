@@ -51,12 +51,39 @@ class ResolutionComparisonControls(unittest.TestCase):
         audit.dump(self.root / 'off/vector.json', changed)
         self.assertEqual(self.check(), 1)
 
+    def test_refreshed_option_off_byte_difference_fails(self):
+        changed = copy.deepcopy(self.vector)
+        changed['boogie']['example.dfy']['program_M.bpl'] = 'different-bytes'
+        audit.dump(self.root / 'off-refreshed/vector.json', changed)
+        self.assertEqual(self.check(), 1)
+
+    def test_refreshed_profile_is_explicit_and_native_profile_is_unchanged(self):
+        args = ['verify', 'example.dfy', '--type-system-refresh:false']
+        native = audit.invocation('dafny', args, '0', 'out.bpl', False)
+        self.assertEqual(native, ['dafny', 'verify', '--bprint', 'out.bpl', *args[1:]])
+        for threads in ('0', '1', '2', '4', '8'):
+            command = audit.invocation('dafny', args, threads, 'out.bpl', True)
+            self.assertEqual(command[-1], '--type-system-refresh:true')
+            self.assertIn('--type-system-refresh:false', command)
+            self.assertEqual('--resolution-threads' in command, threads != '0')
+
     def test_identical_worker_loss_of_a_proof_is_rejected(self):
         changed = copy.deepcopy(self.vector)
         changed['proofs'].clear()
         for mode in ('1', '2', '4', '8'):
             audit.dump(self.root / mode / 'vector.json', changed)
         self.assertEqual(self.check(), 1)
+
+    def test_engine_changes_are_separate_from_matched_engine_worker_population(self):
+        native = copy.deepcopy(self.vector)
+        native['proofs']['example.dfy\tLegacyOnly\t1'] = ['Valid', 25]
+        native['total_ru'] += 25
+        for mode in ('baseline', 'off'):
+            audit.dump(self.root / mode / 'vector.json', native)
+        self.assertEqual(self.check(), 0)
+        report = json.loads((self.root / 'report.json').read_text())
+        self.assertEqual(report['refreshed_to_on']['proofs'], {})
+        self.assertIn('example.dfy\tLegacyOnly\t1', report['default_to_refreshed']['proofs'])
 
     def test_missing_reviewed_baseline_fails(self):
         self.expected.unlink()

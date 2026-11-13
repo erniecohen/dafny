@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Paired default-preservation and N=1,2,4,8 resolution audit.
 
-Use the unchanged native suite/library runners. A small executable adapter adds
-only resolution-threads and raw Boogie capture; every invocation, verification
+Use the native suite/library runners. Native default controls keep their options;
+a separate, explicit refreshed-engine profile exercises worker resolution.
+Every invocation, verification
 log, per-VC outcome/RU, and per-module byte digest is retained. Std uses the same
 literal hashing and prover restart options as the ordinary default gate.
 """
@@ -19,7 +20,7 @@ import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[2]
-MODES = ('baseline', 'off', '1', '2', '4', '8')
+MODES = ('baseline', 'off', 'baseline-refreshed', 'off-refreshed', '1', '2', '4', '8')
 
 
 def load_runner(name):
@@ -38,6 +39,19 @@ def digest(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def invocation(executable, args, threads, boogie, refreshed):
+    added = ['--bprint', str(boogie)]
+    if threads != '0':
+        added += ['--resolution-threads', threads]
+    command = [executable, args[0], *added, *args[1:]]
+    if refreshed:
+        # This is an explicit audit profile, including for fixtures whose native
+        # RUN line selects legacy inference. Native baseline/off remain intact.
+        # Last occurrence wins, as it does for ordinary CLI/project overrides.
+        command += ['--type-system-refresh:true']
+    return command
+
+
 def wrapper():
     """Called by a native runner as its executable, once per Dafny process."""
     args = sys.argv[2:]
@@ -51,10 +65,8 @@ def wrapper():
     folder.mkdir(parents=True, exist_ok=False)
     executable = os.environ['RESOLUTION_AUDIT_DAFNY']
     threads = os.environ['RESOLUTION_AUDIT_THREADS']
-    added = ['--bprint', str(folder / 'program.bpl')]
-    if threads != '0':
-        added += ['--resolution-threads', threads]
-    command = [executable, args[0], *added, *args[1:]]
+    command = invocation(executable, args, threads, folder / 'program.bpl',
+        os.environ['RESOLUTION_AUDIT_REFRESHED'] == 'true')
     process = subprocess.Popen(command, start_new_session=True)
     timed_out = False
     try:
@@ -129,8 +141,9 @@ def capture(args):
         folder = out / mode
         folder.mkdir(exist_ok=False)
         os.environ.update(RESOLUTION_AUDIT_OUT=str(folder),
-            RESOLUTION_AUDIT_DAFNY=str((args.baseline if mode == 'baseline' else args.dafny).resolve()),
-            RESOLUTION_AUDIT_THREADS='0' if mode in ('off', 'baseline') else mode,
+            RESOLUTION_AUDIT_DAFNY=str((args.baseline if mode.startswith('baseline') else args.dafny).resolve()),
+            RESOLUTION_AUDIT_THREADS='0' if mode in ('off', 'baseline', 'off-refreshed', 'baseline-refreshed') else mode,
+            RESOLUTION_AUDIT_REFRESHED='false' if mode in ('off', 'baseline') else 'true',
             RESOLUTION_AUDIT_TIMEOUT='5350' if args.part == 'stdlib' else '890')
         verdicts = folder / 'verdicts.tsv'
         if args.part == 'stdlib':
@@ -138,7 +151,7 @@ def capture(args):
                 boogie='/deterministicLiteralHashes:1 /restartProver', measurements=str(folder / 'measurements'))
         else:
             native.run(str(plan), str(ROOT / 'Source/IntegrationTests/TestFiles/LitTests/LitTest'),
-                str(adapter), str(args.z3.resolve()), str(verdicts), shard=str(args.part) + '/4', jobs=4,
+                str(adapter), str(args.z3.resolve()), str(verdicts), shard=str(args.part) + '/4', jobs=args.jobs,
                 measurements=str(folder / 'measurements'))
         rows = native.load(verdicts)
         if args.part != 'stdlib':
@@ -173,19 +186,24 @@ def compare(args):
     report = {'part': args.part, 'comparisons': {}, 'totals': {}}
     for mode, vector in vectors.items():
         report['totals'][mode] = {k: vector[k] for k in ('total_ru', 'out_of_resource_vcs')}
-    for left, right in [('baseline', 'off'), ('1', '2'), ('1', '4'), ('1', '8')]:
+    for left, right in [('baseline', 'off'), ('baseline-refreshed', 'off-refreshed'),
+            ('1', '2'), ('1', '4'), ('1', '8')]:
         delta = {field: differences(vectors[left][field], vectors[right][field])
             for field in ('verdicts', 'proofs', 'boogie')}
         report['comparisons'][left + ':' + right] = delta
         if any(delta.values()):
             errors.append(left + ':' + right + ' differs')
     for field in ('verdicts', 'proofs'):
-        if set(vectors['off'][field]) != set(vectors['1'][field]):
-            errors.append('Default-to-on ' + field + ' population differs')
+        if set(vectors['off-refreshed'][field]) != set(vectors['1'][field]):
+            errors.append('Refreshed-to-on ' + field + ' population differs')
     report['default_to_on'] = {field: differences(vectors['off'][field], vectors['1'][field])
         for field in ('verdicts', 'proofs')}
-    # This is the opt-in vector to review after the first failing run. Never
-    # overwrite the default baseline and never derive an expected vector in-place.
+    report['default_to_refreshed'] = {field: differences(vectors['off'][field], vectors['off-refreshed'][field])
+        for field in ('verdicts', 'proofs')}
+    report['refreshed_to_on'] = {field: differences(vectors['off-refreshed'][field], vectors['1'][field])
+        for field in ('verdicts', 'proofs')}
+    # Review a locally generated opt-in vector before pushing. Never overwrite
+    # the default baseline or derive an expected vector in-place during CI.
     actual = vectors['1']['verdicts']
     (root / 'expected-opt-in.tsv').write_text(''.join(k + '\t' + '\t'.join(v) + '\n' for k, v in sorted(actual.items())))
     if args.expected.is_file():
@@ -199,8 +217,10 @@ def compare(args):
         errors.append('Opt-in baseline not yet reviewed')
     report['errors'] = errors
     dump(root / 'report.json', report)
-    print(json.dumps({k: v for k, v in report.items() if k not in ('comparisons', 'default_to_on')}, indent=2))
+    print(json.dumps({k: v for k, v in report.items()
+        if k not in ('comparisons', 'default_to_on', 'default_to_refreshed', 'refreshed_to_on')}, indent=2))
     print('Default-to-on verdict movements:', json.dumps(report['default_to_on']['verdicts'], indent=2))
+    print('Refreshed-to-on verdict movements:', json.dumps(report['refreshed_to_on']['verdicts'], indent=2))
     if os.environ.get('GITHUB_STEP_SUMMARY'):
         with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as f:
             f.write('\n### Module-resolution audit: ' + args.part + '\n\n```\n' + json.dumps(report['totals'], indent=2) + '\n```\n')
@@ -225,7 +245,8 @@ def variance(args):
     """Three-seed OFF/ON observations of every scope whose outcome moved."""
     root = args.output.resolve()
     report = json.loads((root / 'report.json').read_text())
-    changed = report['default_to_on']['proofs']
+    changed = report.get('refreshed_to_on', report['default_to_on'])['proofs']
+    control = 'off-refreshed' if args.part != 'stdlib' else 'off'
     scopes = sorted({tuple(key.split('\t')[:2]) for key, value in changed.items()
         if value['before'] is not None and value['after'] is not None and value['before'][0] != value['after'][0]})
     observations = []
@@ -242,7 +263,7 @@ def variance(args):
             cwd = ROOT / 'Source/DafnyStandardLibraries'
             original = invocation['command'][1:]
         else:
-            original = json.loads((root / 'off/measurements' / source / 'command.json').read_text())[1:]
+            original = json.loads((root / control / 'measurements' / source / 'command.json').read_text())[1:]
             cwd = ROOT / 'Source/IntegrationTests/TestFiles/LitTests/LitTest'
         name = hashlib.sha256((source + '\t' + scope).encode()).hexdigest()[:16]
         seeds = (args.seed,) if getattr(args, 'seed', None) is not None else (0, 1, 2)
@@ -259,7 +280,7 @@ def variance(args):
                 extra = ['--bprint', str(folder / 'program.bpl'), '--boogie', '/randomSeed:' + str(seed)]
                 if mode == '1':
                     extra += ['--resolution-threads', '1']
-                command = [str(args.dafny.resolve()), argv[0], *extra, *argv[1:]]
+                command = [str(args.dafny.resolve()), argv[0], *extra, *argv[1:], '--type-system-refresh:true']
                 process = subprocess.Popen(command, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                     text=True, start_new_session=True)
                 try:
@@ -277,7 +298,7 @@ def variance(args):
                 if not records or not affected.issubset({r['name'] for r in records}):
                     raise ValueError('Missing affected scopes: ' + source)
                 if seed == 0:
-                    vector = json.loads((root / mode / 'vector.json').read_text())
+                    vector = json.loads((root / (control if mode == 'off' else mode) / 'vector.json').read_text())
                     validate_seed_zero(vector, source, records)
                 entries = {r['name']: dict(outcome=r['outcome'], ru=r['resourceCount'],
                     vcs={str(v['vcNum']): [v['outcome'], v['resourceCount']] for v in r['vcResults']})
@@ -301,6 +322,7 @@ def main():
     run.add_argument('--z3', type=Path, required=True)
     run.add_argument('--output', type=Path, required=True)
     run.add_argument('--plan', type=Path)
+    run.add_argument('--jobs', type=int, choices=range(1, 5), default=4)
     run.add_argument('--modes', default=','.join(MODES))
     check = commands.add_parser('compare')
     check.add_argument('--part', required=True)

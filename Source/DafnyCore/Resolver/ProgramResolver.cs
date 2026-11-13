@@ -213,22 +213,28 @@ public class ProgramResolver {
               // An import can be unresolved without producing a new local diagnostic.
               // Its resolved fields (and hence Children) are not safe to traverse.
               var invalid = resolved.ErrorReporter.HasErrors ||
-                closure.Any(i => results[i].ErrorReporter.HasErrors ||
+                closure.Any(i => results[i].TranslationInputs == null || results[i].ErrorReporter.HasErrors ||
                   results[i].Signatures.Keys.Any(m => !m.SuccessfullyResolved)) ||
                 resolved.Signatures.Keys.Any(m => !m.SuccessfullyResolved);
-              var translationInputs = new ModuleTranslationInputs(invalid ? null : declarations[index],
-                closure.Select(i => results[i].TranslationInputs));
-              translationInputs.Bitwidths.UnionWith(builtins.Bitwidths);
-              builtins.RestrictResolutionOutput(translationInputs);
+              // Internal callers may use workers without going through CLI option
+              // validation. Invalid ASTs have no translation input or pruned builtin
+              // output: even their Children accessors can require successful resolution.
+              ModuleTranslationInputs translationInputs = null;
+              if (!invalid) {
+                translationInputs = new ModuleTranslationInputs(declarations[index],
+                  closure.Select(i => results[i].TranslationInputs));
+                translationInputs.Bitwidths.UnionWith(builtins.Bitwidths);
+                builtins.RestrictResolutionOutput(translationInputs);
+              }
               foreach (var definition in resolved.Signatures.Keys) {
-                translationInputs.ModuleNames.Add(definition.FullName);
+                translationInputs?.ModuleNames.Add(definition.FullName);
                 definition.TranslationInputs = translationInputs;
                 definition.ResolutionKey = Program.ResolutionKeys[declarations[index]];
               }
               var output = resolved with {
                 Key = Program.ResolutionKeys[declarations[index]], Builtins = builtins,
                 SystemClassMembers = worker.classMembers.Where(p => p.Key.EnclosingModuleDefinition.Name == "_System" &&
-                    translationInputs.BuiltinNames.Contains(p.Key.Name))
+                    (translationInputs == null || translationInputs.BuiltinNames.Contains(p.Key.Name)))
                   .ToDictionary(p => p.Key, p => p.Value),
                 TranslationInputs = translationInputs
               };

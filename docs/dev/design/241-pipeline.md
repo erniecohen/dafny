@@ -716,8 +716,9 @@ The IDE keys unsaved document overlays, not disk contents substituted for them.
 Every hit is rebound to a current compilation version and checked for cancellation
 before publication. New syntax/type/global-admission diagnostics remain
 authoritative; older successful verifier results are never published as success
-for an invalid or newer document version. Both resolver engines use this same
-post-resolution cache architecture, with the engine/effective options in the key.
+for an invalid or newer document version. The default editor cache and internal worker API retain both engines, with the
+engine/effective options in the key. The opt-in pipeline options require refreshed
+inference, as specified in section 8.4.
 
 ## 6. Incremental front end and safe parallelism
 
@@ -1094,11 +1095,11 @@ refinement. Module attributes still use legacy inference under refreshed mode.
 | Option family | Legacy engine | `--type-system-refresh` |
 | --- | --- | --- |
 | Window, background sharing, VC allocation, solver/task streaming | Operate after legacy resolution; preserve its emitted obligations | Same architecture after refreshed resolution; compare against refreshed baseline, not against legacy output |
-| Result cache / early prepared artifacts | Key completed legacy encoding and all legacy options | Key engine and refreshed options, including general-newtype/inference switches; never reinterpret legacy records |
+| Result cache / early prepared artifacts | The opt-in result cache is rejected; default preparation retains legacy encoding | Key engine and refreshed options, including general-newtype/inference switches; never reinterpret legacy records |
 | Prelude template | Key actual prelude/defines/options; engine may be conservatively over-keyed | Same; do not assume equal output merely because the prelude text is equal |
 | Incremental signatures / `.doo` | Freeze resolved final `Type` state, never live proxies | Freeze final normalized types after pretype conversion/refinement; no unresolved pretypes or shared lazy builtin mutation |
-| Parallel module resolution | Private constraint/scoping state; immutable imported proxies/types | Additional builtin and lazy-signature isolation; no declaration-level threading through one resolver |
-| Parallel translation | Isolate resolved-AST writes, scopes, IDs and proof dependencies | Same hazards; a different inference engine does not make the AST immutable |
+| Parallel module resolution | Explicit opt-in is rejected; internal/default workers must still report legacy errors safely | Additional builtin and lazy-signature isolation; no declaration-level threading through one resolver |
+| Parallel translation / translation cache | The opt-in translation cache is rejected; default translation preserves legacy behavior | Same hazards; a different inference engine does not make the AST immutable |
 | Full import-ready pipeline | Global admission remains necessary | Same global admission; refreshed inference does not make cardinality local |
 
 ## 7. Focused implementation milestones
@@ -1344,7 +1345,18 @@ Test the actual late lookup and each proposed earlier boundary separately.
 | Rehydration | Alias/definition-axiom ownership, solved type identities, weak-table preparation state, model views, labels and coverage; saved artifacts independently compared with full fresh recomputation |
 | Reports | Coverage, redundant/contradictory-assumption warnings, errors with relocated source coordinates, logs for repeated batches; same semantic payload and appropriate historical/current cost distinction |
 
-Run old and refreshed inference independently on supported fixtures. Do not run
+The opt-in parallel-resolution, translation-cache and result-cache options require
+`--type-system-refresh`. Validate the effective CLI/project options before parsing:
+an effective false value is a clear option error with exit 2. Do not silently
+select another inference engine. Internal/default worker callers still need
+independent invalid-input handling: if a module or its prerequisites failed
+resolution, leave translation inputs absent and skip builtin output pruning.
+Never traverse unresolved `Children` to prepare a translation that cannot run.
+The rejected Std command and its 19-error shipped transcript are a CLI regression;
+Core tests run its source closure directly through workers at N=1,2,4,8, bypassing
+option validation, and require the same diagnostics and no admission receipt.
+
+Run old and refreshed inference independently on supported default-path fixtures. Do not run
 the unchanged Std general-newtype configuration with the legacy engine and call
 the resulting configuration error a resolver performance regression. For generic
 controls, pair `--type-system-refresh:false --general-newtypes:false` and
@@ -1353,7 +1365,8 @@ controls, pair `--type-system-refresh:false --general-newtypes:false` and
 The LSP test base currently forces refreshed inference and general newtypes;
 the Boolean theory parameter in `CardinalityCachingTest` controls cache waiting,
 not inference. Add a parameterized setup that overrides both engine options for
-supported legacy fixtures and explicitly admits each new feature. Merely running
+supported legacy fixtures on the default path; new options must explicitly admit
+the refreshed path. Merely running
 the test filters below does not create a two-engine or option-ON matrix.
 
 Reuse and extend these existing test locations:

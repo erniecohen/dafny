@@ -43,7 +43,7 @@ def main():
         'dafny-core': (['Source/DafnyCore/dfyconfig.toml'], 0),
         'modules-98': ([str(lit / 'github-issue-187.dfy')], 0),
         'modules-57': ([str(lit / 'git-issue-1180a.dfy')], 2),
-        'modules-47': ([str(lit / 'git-issue-1996.dfy'), '--type-system-refresh=false', '--general-newtypes=false'], 2),
+        'modules-47': ([str(lit / 'git-issue-1996.dfy'), '--general-newtypes=false'], 2),
         'wide': ([str(wide)], 0),
     }
     summary = []
@@ -57,7 +57,7 @@ def main():
                 profile = stem.with_suffix('.jsonl')
                 profile.unlink(missing_ok=True)
                 command = shlex.split(args.dafny) + ['resolve', *files, '--allow-warnings',
-                    '--resolution-threads', str(threads), '--pipeline-profile', str(profile)]
+                    '--resolution-threads', str(threads), '--pipeline-profile', str(profile), '--type-system-refresh:true']
                 with stem.with_suffix('.log').open('w') as output:
                     result = subprocess.run(command, stdout=output, stderr=subprocess.STDOUT, timeout=180)
                 if result.returncode != expected_exit:

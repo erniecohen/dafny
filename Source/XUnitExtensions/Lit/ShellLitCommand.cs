@@ -13,9 +13,12 @@ namespace XUnitExtensions.Lit {
     private string shellCommand;
     public string[] Arguments { get; }
     private string[] passthroughEnvironmentVariables;
+    private readonly string workingDirectory;
 
-    public ShellLitCommand(string shellCommand, IEnumerable<string> arguments, IEnumerable<string> passthroughEnvironmentVariables) {
+    public ShellLitCommand(string shellCommand, IEnumerable<string> arguments, IEnumerable<string> passthroughEnvironmentVariables,
+      string workingDirectory = null) {
       this.shellCommand = shellCommand;
+      this.workingDirectory = workingDirectory;
       this.Arguments = arguments.ToArray();
       this.passthroughEnvironmentVariables = passthroughEnvironmentVariables.ToArray();
     }
@@ -23,6 +26,9 @@ namespace XUnitExtensions.Lit {
     public async Task<int> Execute(TextReader inputReader,
       TextWriter outputWriter, TextWriter errorWriter) {
       using var process = new Process();
+      if (workingDirectory != null) {
+        process.StartInfo.WorkingDirectory = workingDirectory;
+      }
 
       if (shellCommand.Contains('/') && Path.GetFileName(shellCommand) is var command and ("python3" or "cargo")) {
         var workingDir = Path.GetDirectoryName(shellCommand);
@@ -35,8 +41,8 @@ namespace XUnitExtensions.Lit {
         process.StartInfo.ArgumentList.Add(argument);
       }
 
-      // We avoid setting the current directory so that we maintain parity with
-      // MainMethodLitCommand, which can't change the current directory.
+      // The default keeps parity with MainMethodLitCommand. Explicit working
+      // directories affect only this subprocess, never the test runner.
 
       process.StartInfo.UseShellExecute = false;
       process.StartInfo.RedirectStandardInput = true;

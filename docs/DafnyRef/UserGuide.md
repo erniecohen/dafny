@@ -260,7 +260,9 @@ implementation.
 
 The options relevant to this command are
 - `--resolution-threads N` opts into dependency-ready resolution with up to `N`
-  workers (`N >= 1`). Without this option, the existing resolver path is used.
+  workers (`N >= 1`). It requires `--type-system-refresh`; an effective false
+  value, including one from a project file, is rejected before source parsing
+  with exit code 2. Without this option, the existing resolver path is used.
   Diagnostics are emitted in the usual module order. Generated identifiers are
   qualified by module, including identifiers used during verification translation.
   Boogie state labels use stable module identities; counterexamples in the current
@@ -272,9 +274,9 @@ The options relevant to this command are
   Whole-program rewriters, replaceable-module instantiation, duplicate module-name
   checks and cardinality validation still run on every invocation. External plugins
   currently limit this mode to one worker because their callbacks have no
-  concurrent-resolution contract. This mode bypasses the language server's legacy
-  resolution-result cache; edits resolve module bodies again until a compatible
-  content-keyed cache is implemented.
+  concurrent-resolution contract. The language server caches complete module
+  outputs by semantic key, unchanged parse identity and prerequisite output
+  identity; whole-program admission is rerun after a hit.
 - those relevant to the command-line itself
    - `--allow-warnings` --- return a success [exit code](#sec-exit-codes), even when there are warnings 
 

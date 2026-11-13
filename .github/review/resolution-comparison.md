@@ -1,7 +1,7 @@
 # Module-resolution compatibility audit
 
 `review.yml` builds the pre-feature control at
-`8deca8ad4e8b49988f683855fe78a6917338511c` with the same SDK, runtime and
+`0025e3f001351ee0f7c801c052bdd7d992c0de6e` with the same SDK, runtime and
 checksum-checked Boogie packages as the candidate. Its binary verifies the
 candidate's public inputs. The control must remain a separately reviewed shipped commit without the
 resolution option; it must not silently follow the feature branch.
@@ -43,9 +43,22 @@ after https://github.com/erniecohen/dafny/pull/286 added CI-only .NET download
 retries. Its product source is identical to the preceding pinned control. Both
 builds now use the shipped retry policy.
 
-For each suite shard and for the standard library, the audit runs that control,
-the candidate with the option omitted, and the candidate at N = 1, 2, 4, 8.
-It uses the native verdict runners and their unmodified proof settings. Std
+The control advanced to `0025e3f001351ee0f7c801c052bdd7d992c0de6e`
+after the independent operator design addendum. Its product source is unchanged.
+
+Parallel resolution requires `--type-system-refresh`. For each suite shard and
+the standard library, the audit keeps two native default controls (`baseline`,
+`off`) with the original inference settings. It additionally runs an explicit
+refreshed-engine profile on both builds (`baseline-refreshed`, `off-refreshed`)
+and on the candidate at N = 1, 2, 4, 8. That profile appends
+`--type-system-refresh:true` after the original arguments, including for fixtures
+whose native RUN line selects legacy inference. It is a distinct comparison
+profile; the native default observations and shipped verdict gates remain intact.
+The option-validation regression separately requires rejection of the original
+incompatible flags with exit 2, without parsing or resolving source.
+
+All profiles use the native verdict runners and retain their resource, solver
+and assertion-batch settings. Std
 uses `/deterministicLiteralHashes:1 /restartProver`, exactly as its ordinary
 verdict gate does. Target-specific parts retain their recorded library options.
 
@@ -61,21 +74,25 @@ before removal. Original proof logs and commands remain in every artifact.
 The comparison requires exact equality of:
 
 - control vs option omitted: verdicts, per-VC outcomes and RU, and module bytes;
+- refreshed control vs refreshed option omitted: the same three vectors;
 - N = 1 vs N = 2, 4, 8: the same three vectors;
-- default vs enabled: proof and verdict populations (outcomes and RU may differ).
+- refreshed option omitted vs enabled: proof and verdict populations (outcomes
+  and RU may differ).
 
 The enabled verdict vector is compared with its own reviewed files:
 `expected-resolution-suite.tsv` and `expected-std-resolution-z3-5.1.0.tsv`.
-The first capture fails until those files are reviewed and committed separately
-from implementation changes, with every changed verdict explained. It writes
-`expected-opt-in.tsv` for that review; it never overwrites an expected file.
+Generate and review those files locally before pushing, separately from the
+implementation changes, with every changed verdict explained. A local capture
+writes `expected-opt-in.tsv` for that review; it never overwrites an expected file.
 Default verdict files are unchanged.
 
-`report.json` lists every default-to-enabled verdict and per-VC RU movement,
+`report.json` separately lists native-default to refreshed, refreshed to enabled,
+and native-default to enabled verdict and per-VC RU movements,
 full-scope total RU, and out-of-resource VC counts. For scopes with changed
-outcomes, `seed-variance.json` records seeds 0, 1, 2 under both modes. Suite
+outcomes between refreshed serial and enabled, `seed-variance.json` records
+seeds 0, 1, 2 under both modes. Suite
 experiments rerun the complete affected program with its native limits and
-options. Std experiments rerun the complete Std invocation, retaining its native
+options with the explicit refreshed-engine profile. Std experiments rerun the complete Std invocation, retaining its native
 limits, deterministic literal hashes, printing and a fresh prover per batch.
 Filtering to an affected symbol could skip earlier module translations and change
 the default translator's name history. Seed zero must reproduce the original

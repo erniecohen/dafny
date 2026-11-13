@@ -1,11 +1,14 @@
 Adds opt-in `--resolution-threads N` for dependency-ready parallel module resolution,
 deterministically ordered diagnostics, semantic module keys and module-qualified
-generated names. Boogie state and snapshot identifiers are stable under unrelated
+generated names. It requires `--type-system-refresh`; legacy inference is rejected
+at option validation with exit code 2. Boogie state and snapshot identifiers are stable under unrelated
 source movement, with counterexample locations rebound for the current invocation.
 Editor resolution caches retain complete dependency-local worker outputs keyed by
 module identity, with canonical builtin views and containment rebound on publication.
 Whole-program admission is rerun after cache hits. Rejected resolver configurations
-report their diagnostics without traversing unresolved translation inputs.
+report their diagnostics without constructing translation inputs or pruning
+builtin outputs for invalid modules, including internal worker callers that
+bypass CLI validation.
 Operator export views recognize canonical builtin identities without relaxing
 visibility checks on user declarations.
 The default resolution path is unchanged.

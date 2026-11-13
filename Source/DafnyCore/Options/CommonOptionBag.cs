@@ -42,7 +42,7 @@ public class CommonOptionBag {
     };
 
   public static readonly Option<int> ResolutionThreads = new("--resolution-threads", () => 0,
-    "Resolve independent modules with N workers and module-scoped generated names. Opt-in; N must be positive.") {
+    "Resolve independent modules with N workers and module-scoped generated names. Requires --type-system-refresh. Opt-in; N must be positive.") {
     ArgumentHelpName = "N"
   };
 
