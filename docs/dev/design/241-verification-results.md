@@ -346,3 +346,13 @@ control. Other work was concurrent; wall/CPU ranges are descriptive, not isolate
 latency claims. The [measurement summary](241-result-cache-refresh-measurements.json)
 records product identity and binary hashes. The earlier full-Std measurements
 retain their original producer; their project already selects refreshed typing.
+
+## Native process history control
+
+The [fixed-input causal replay](241-native-process-history.md) establishes why
+logical reset is insufficient for reproducible per-task reuse: the same native
+task gives 20,558 or 20,534 RU after different prior histories, each repeated five
+times, while fresh processes give 20,536. No translation difference is involved.
+The enabled cache already isolates reusable tasks with fresh native solving;
+option-off retains the shipped pooled lifecycle. No new default restart policy
+or Boogie lifecycle change is introduced by this qualification.
