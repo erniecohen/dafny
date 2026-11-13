@@ -467,3 +467,8 @@ git-issues/github-issue-281-hide.dfy
 
 # Termination records in .doo libraries under --modular-termination, milestone M3-4 (https://github.com/erniecohen/dafny/issues/211): tampered, missing and mismatched records and contracts are rejected.
 git-issues/github-issue-211-m3-4.dfy
+# Canonical builtins of a reused resolution view are set up once, and Debug contract
+# assertions hold in the resolution and cardinality tests: DafnyCore.Test
+# PipelineProfileResolutionTests.ReusedViewSetsUpEachBuiltinOnce and
+# CacheHitsHaveExplicitEventsAndNoReplayedPhases, and CardinalityProfileTests, run in
+# Debug by the regressions job.
