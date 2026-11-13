@@ -28,7 +28,7 @@ lemma subsetCharRange(c: AnyChar)
 {}
 
 lemma forallCharRange()
-  ensures forall c: char :: 0 <= c as int < 0x110000
+  ensures forall c: char {:trigger c as int} :: 0 <= c as int < 0x110000
 {}
 
 lemma fieldCharRange(x: Cell)
