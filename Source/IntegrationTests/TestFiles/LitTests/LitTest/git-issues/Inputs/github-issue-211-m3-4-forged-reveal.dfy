@@ -1,5 +1,5 @@
-// A lemma that claims to be Dafny's generated reveal lemma.  The serialization drops it from the stored
-// program, where the call in Bad then resolves to G.L.
+// A lemma that claims to be Dafny's generated reveal lemma.  The serialization dropped it from the stored
+// program, where the call in Bad then resolved to G.L (https://github.com/erniecohen/dafny/issues/325).
 module G {
   lemma L() ensures true {}
 }

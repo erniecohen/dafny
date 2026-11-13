@@ -765,8 +765,10 @@ NoGhost - disable printing of functions, ghost methods, and proof
       int state = 0;  // 0 - no members yet; 1 - previous member was a field; 2 - previous member was non-field
       foreach (MemberDecl m in members) {
         if (PrintModeSkipGeneral(project, m.Origin)) { continue; }
-        if (printMode == PrintModes.Serialization && Attributes.Contains(m.Attributes, "auto_generated")) {
-          // omit this declaration
+        if (printMode == PrintModes.Serialization && m.IsGeneratedByDafny) {
+          // omit a member that Dafny generated, such as a reveal lemma: reading the library back generates it
+          // again.  A member on which the user wrote {:auto_generated} is printed like any other, because
+          // leaving it out would change what the library's names resolve to.
         } else if (m is MethodOrConstructor methodOrConstructor) {
           if (state != 0) { wr.WriteLine(); }
           PrintMethod(methodOrConstructor, indent, printFlags.InterfaceOnly);

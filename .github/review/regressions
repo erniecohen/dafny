@@ -467,3 +467,6 @@ git-issues/github-issue-281-hide.dfy
 
 # Termination records in .doo libraries under --modular-termination, milestone M3-4 (https://github.com/erniecohen/dafny/issues/211): tampered, missing and mismatched records and contracts are rejected.
 git-issues/github-issue-211-m3-4.dfy
+
+# User-written {:auto_generated} members are kept in .doo libraries; a user-written {:opaque_reveal} trait lemma must be implemented; the auditor reports {:axiom}/{:verify false} beside a user-written {:auto_generated} (https://github.com/erniecohen/dafny/issues/325).
+git-issues/github-issue-325.dfy

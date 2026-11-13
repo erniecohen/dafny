@@ -1,0 +1,35 @@
+
+Dafny program verifier finished with 1 verified, 0 errors
+github-issue-325-client.dfy(5,31): Error: a postcondition could not be proved on this return path
+github-issue-325-client.dfy(5,25): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 1 verified, 1 error
+
+Dafny program verifier finished with 4 verified, 0 errors
+github-issue-325-lib-client.dfy(18,30): Error: a postcondition could not be proved on this return path
+github-issue-325-lib-client.dfy(18,24): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 5 verified, 1 error
+Legacy resolver
+
+Dafny program verifier finished with 1 verified, 0 errors
+github-issue-325-client.dfy(5,31): Error: a postcondition could not be proved on this return path
+github-issue-325-client.dfy(5,25): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 1 verified, 1 error
+
+Dafny program verifier finished with 4 verified, 0 errors
+github-issue-325-lib-client.dfy(18,30): Error: a postcondition could not be proved on this return path
+github-issue-325-lib-client.dfy(18,24): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 5 verified, 1 error
+Trait lemma marked {:opaque_reveal}
+github-issue-325-trait.dfy(6,6): Error: class 'C' does not implement trait lemma 'T.L'
+1 resolution/type errors detected in github-issue-325-trait.dfy
+Auditor
+github-issue-325-audit.dfy(4,40): Warning: The {:verify false} attribute should only be used during development. Consider using a bodyless lemma together with the {:axiom} attribute instead
+github-issue-325-audit.dfy(3,33): Warning: Ax: Declaration has explicit `{:axiom}` attribute. Possible mitigation: Provide a proof or test.
+github-issue-325-audit.dfy(4,40): Warning: Vf: Declaration has `{:verify false}` attribute. Possible mitigation: Remove `{:verify false}` attribute and prove if possible.
+Dafny auditor completed with 2 findings
+
+Dafny program verifier did not attempt verification
