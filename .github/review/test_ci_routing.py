@@ -41,6 +41,22 @@ def enabled(expression, event, head, repository, flags, ref_type="branch", draft
 
 
 class RoutingTests(unittest.TestCase):
+    def test_draft_pull_requests_skip_all_jobs(self):
+        count = 0
+        for path in ROOT.glob('*.yml'):
+            text = path.read_text()
+            if '\n  pull_request:\n' not in text:
+                continue
+            for match in re.finditer(r'^  ([\w-]+):\n(.*?)(?=^  [\w-]+:\n|\Z)', text.split('\njobs:\n', 1)[1], re.M | re.S):
+                condition = re.search(r'^    if: (.*)$', match[2], re.M)
+                guard = condition[1] if condition else 'true'
+                for flags in [False, True]:
+                    with self.subTest(workflow=path.name, job=match[1], flags=flags):
+                        self.assertFalse(enabled(guard, 'pull_request', 'erniecohen/dafny',
+                                                 'erniecohen/dafny', flags, draft=True))
+                count += 1
+        self.assertGreater(count, 0)
+
     def test_mac_job_worker_is_reniced_before_checkout(self):
         for name, _ in mac_jobs():
             workflow, job = name.split('/')

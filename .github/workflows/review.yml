@@ -315,6 +315,7 @@ jobs:
           retention-days: 90
 
   resolution-baseline:
+    if: ${{ github.event_name != 'pull_request' || !github.event.pull_request.draft }}
     name: Build pre-resolution-option control
     needs: build
     runs-on: ubuntu-24.04
@@ -344,6 +345,7 @@ jobs:
           retention-days: 14
 
   parallel-resolution:
+    if: ${{ github.event_name != 'pull_request' || !github.event.pull_request.draft }}
     name: Parallel resolution (${{ matrix.part }})
     needs: [build, resolution-baseline]
     runs-on: ubuntu-24.04
@@ -410,6 +412,7 @@ jobs:
           compression-level: 9
 
   resolution-std-seeds:
+    if: ${{ github.event_name != 'pull_request' || !github.event.pull_request.draft }}
     name: Full Std resolution seed (${{ matrix.mode }}, ${{ matrix.seed }})
     needs: parallel-resolution
     runs-on: ubuntu-24.04
