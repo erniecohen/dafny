@@ -1,0 +1,8 @@
+github-issue-241-cache-background.dfy(39,2): Error: a postcondition could not be proved on this return path
+github-issue-241-cache-background.dfy(38,20): Related location: this is the postcondition that could not be proved
+github-issue-241-cache-background.dfy(57,26): Error: assertion might not hold
+github-issue-241-cache-background.dfy(75,4): Error: assertion might not hold
+github-issue-241-cache-background.dfy(80,2): Error: a postcondition could not be proved on this return path
+github-issue-241-cache-background.dfy(79,19): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 28 verified, 4 errors

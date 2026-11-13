@@ -170,6 +170,7 @@ cli	warn-shadowing	--warn-shadowing	System.CommandLine.Option`1[System.Boolean]	
 cli	warn-unchecked-termination	--warn-unchecked-termination	System.CommandLine.Option`1[System.Boolean]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
 cli	worst-amount	--worst-amount	System.CommandLine.Option`1[System.UInt32]	command-setup	setup or another command; executes before/outside proof transport
 prover	Microsoft.Boogie.CoreOptions.Ai		Microsoft.Boogie.CoreOptions+AiFlags	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.CoreOptions.CacheBackground		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
 prover	Microsoft.Boogie.CoreOptions.CacheUsedTypes		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
 prover	Microsoft.Boogie.CoreOptions.Cho		System.Collections.Generic.List`1[Microsoft.Boogie.CoreOptions+ConcurrentHoudiniOptions]	execution	complete inherited prover interface enumerated and encoded before first query
 prover	Microsoft.Boogie.CoreOptions.ConcurrentHoudini		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
@@ -207,6 +208,7 @@ prover	Microsoft.Boogie.CoreOptions.RandomizeVcIterations		System.Int32	executio
 prover	Microsoft.Boogie.CoreOptions.RelaxFocus		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
 prover	Microsoft.Boogie.CoreOptions.ResourceLimit		System.UInt32	execution	complete inherited prover interface enumerated and encoded before first query
 prover	Microsoft.Boogie.CoreOptions.RunDiagnosticsOnTimeout		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.CoreOptions.ScheduleByImplementation		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
 prover	Microsoft.Boogie.CoreOptions.SmokeTimeout		System.UInt32	execution	complete inherited prover interface enumerated and encoded before first query
 prover	Microsoft.Boogie.CoreOptions.SoundnessSmokeTest		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
 prover	Microsoft.Boogie.CoreOptions.StructuralLiterals		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
