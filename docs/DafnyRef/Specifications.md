@@ -684,7 +684,7 @@ of each module it defines. A contract is the module's interface: its declaration
 iterators and by-method implementations left out; function bodies stay, since a client may reveal them.
 The record also lists the contracts of the libraries the build was verified against, and ends with a
 hash of the whole record. The build writes a library only when its whole program was verified, every
-verification task conclusively, without `--no-verify`, a procedure filter, `{:verify false}`, `{:only}`,
+verification task conclusively, without `--no-verify`, `--boogie` arguments, `{:verify false}`, `{:only}`,
 `decreases *` or included files that were not verified, and without unchecked premises. These are
 every assumption that `dafny audit` reports in the library's own files (such as `assume` statements,
 `{:axiom}`, `{:extern}` members with contracts, `@AssumeCrossModuleTermination`, `forall` statements
@@ -693,15 +693,20 @@ the program, members without a body other than instance members of traits and me
 modules, `{:extern}` members, and `--allow-axioms`. Only one assumption that `dafny audit` reports is
 accepted: `{:termination false}` on a trait, which under the option is checked against the global
 bounds. The reveal lemma that Dafny generates for an opaque function states the function's definition
-and is not an assumption. The build reports the first of these it finds and writes nothing.
-`--allow-warnings` does not hide them; it is recorded with the other options.
+and is not an assumption; it is recognised as the lemma Dafny generated, not by its attributes. The
+attributes `{:auto_generated}` and `{:opaque_reveal}`, which mark declarations that Dafny generates, may
+not be written in a library's sources. Iterators are not yet supported: `dafny audit` reports the members
+that Dafny generates for an iterator as axioms, and the build refuses a library that declares one. The
+build reports the first of these it finds and writes nothing. `--allow-warnings` does not hide them; it is
+recorded with the other options.
 
 Under the option, a module cannot refine or replace a module of a library: it would inherit bodies
 that are not part of the library's contracts, so a change to them would not be detected.
 
-The options are recorded with their values as given; for `--boogie` that is the whole list of
-arguments, so two builds that differ only in a Boogie argument that does not change what a proof means,
-such as a logging flag, still do not admit each other's libraries. Two libraries that both declare
+Under the option, `--boogie` arguments are refused, both when a library is built and when one is loaded:
+many of them (such as `/loopUnroll`, `/noVerify`, `/proc` and some `/proverOpt` settings) can make a
+program verify that is not proved. Only arguments on a reviewed list of ones that cannot weaken a proof
+are allowed, and that list is empty for now. The options are recorded with their values as given. Two libraries that both declare
 top-level members outside any module, in the default module, cannot be loaded together, since both
 provide the module `_default`.
 
@@ -717,11 +722,14 @@ file given with `--library`, a `.dll` library and the bundled standard library, 
 it is rejected, so that its record is never ignored; libraries built without the option are read as
 before.
 
-The verification that a record certifies is that of the program as Dafny parsed it from the library's
-sources. The program stored in the library is that program printed back; the build checks that it
-parses and prints back to the same text, and recomputes the contracts from it, but does not verify it
-again. A printer error that changed the meaning of a program while printing it back to the same text
-would therefore not be caught.
+The record certifies the program stored in the library, which is the program Dafny parsed from the
+library's sources, printed back. After verifying the sources, the build checks that the stored program
+parses and prints back to the same text, then parses, resolves and verifies the stored program again,
+with the same libraries and options, and takes its assumption check, its inventory of verified
+implementations, its contracts and its imports from that program. The library is written only when
+that second verification is also complete and conclusive, so a difference between the printed and the
+verified program cannot reach a record. The second verification roughly doubles the verification cost
+of a library build.
 
 The record shows that the library was built by this build of Dafny, from this program, under these
 options; it is checked, not signed, so a library whose record was rewritten as a whole, with every hash

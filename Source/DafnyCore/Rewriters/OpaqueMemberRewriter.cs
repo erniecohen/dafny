@@ -11,6 +11,15 @@ namespace Microsoft.Dafny;
 /// specifically asks to see it via the reveal_foo() lemma
 /// </summary>
 public class OpaqueMemberRewriter : IRewriter {
+  /// <summary>
+  /// The reveal lemmas this rewriter generated.  --modular-termination recognises them by this
+  /// provenance rather than by their attributes, which a user can also write.
+  /// </summary>
+  private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<Method, object> GeneratedRevealLemmas = new();
+
+  public static bool IsGeneratedRevealLemma(INode node) =>
+    node is Method method && GeneratedRevealLemmas.TryGetValue(method, out _);
+
   protected Dictionary<MethodOrConstructor, Function> revealOriginal; // Map reveal_* lemmas (or two-state lemmas) back to their original functions
 
   public OpaqueMemberRewriter(ErrorReporter reporter)
@@ -158,6 +167,7 @@ public class OpaqueMemberRewriter : IRewriter {
         new Specification<Expression>([], null), null, lemma_attrs, null);
     }
     newDecls.Add(reveal);
+    GeneratedRevealLemmas.AddOrUpdate(reveal, m);
     reveal.InheritVisibility(m, true);
     if (m is Function fn) {
       revealOriginal[reveal] = fn;

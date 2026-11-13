@@ -180,6 +180,18 @@ public class DafnyFile {
     };
   }
 
+  /// <summary>
+  /// A source file held in memory, to be verified: the stored program of a library that
+  /// --modular-termination verifies a second time before it records it.
+  /// </summary>
+  public static DafnyFile FromText(DafnyOptions options, Uri uri, string text) {
+    return new DafnyFile(DafnyFileExtension, uri.ToString(), Path.GetFileName(uri.LocalPath),
+      () => new FileSnapshot(new StringReader(text), null), uri, Token.Cli, options) {
+      ShouldNotCompile = false,
+      ShouldNotVerify = false,
+    };
+  }
+
   public static DafnyFile HandleStandardInput(DafnyOptions options, IOrigin origin) {
     return new DafnyFile(DafnyFileExtension, "<stdin>", "<stdin>",
       () => new FileSnapshot(options.Input, null), StdInUri, origin, options) {

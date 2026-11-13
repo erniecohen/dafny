@@ -263,9 +263,16 @@ verify('refining client', [doo('refine-base')], 'refine', 2, "module 'M2' refine
 
 # Producer: only a completely verified program gets a record.
 build('no-verify', source('lib'), '--no-verify', expected_exit=3, diagnostic='was not completely verified')
-# A build restricted to some procedures writes no library at all, and says why it has no record.
+# A build restricted to some procedures writes no library at all, and says why it has no record.  No
+# --boogie argument is allowed under the option, so the restriction is refused as one.
 build('proc-filter', source('lib'), '--boogie', '/proc:*Count*', expected_exit=2, writes=False,
-      diagnostic='verification was restricted to some procedures')
+      diagnostic="--boogie argument '/proc:*Count*' is not allowed under --modular-termination")
+# An unsound Boogie argument: the loop verifies only when unrolled.  Before, the build got a complete
+# record and a client passing the same argument proved false.
+build('loop-unroll', source('loop-unroll'), '--boogie', '/loopUnroll:1', expected_exit=3,
+      diagnostic="--boogie argument '/loopUnroll:1' is not allowed under --modular-termination")
+verify('client with --boogie', [doo('lib')], 'client', 1, extra=['--boogie', '/loopUnroll:1'],
+       diagnostic="--boogie is set locally to [/loopUnroll:1], but the library was built with []")
 build('verify-false', source('verify-false'), expected_exit=3, diagnostic='Declaration has {:verify false} attribute')
 build('decreases-star', source('decreases-star'), expected_exit=3, diagnostic='uses decreases *')
 build('only', source('only'), expected_exit=3, diagnostic='Member has explicit temporary @VerifyOnly attribute')
@@ -299,6 +306,19 @@ build('opaque', source('opaque'))
 verify('client of opaque', [doo('opaque')], 'client-opaque', 0)
 build('opacity-opaque', source('opacity'), '--default-function-opacity', 'opaque')
 build('opacity-auto', source('opacity'), '--default-function-opacity', 'autoRevealDependencies')
+
+# Producer: {:auto_generated} and {:opaque_reveal} written by the user.  The serialization drops a member
+# that has {:auto_generated}, and the inventory skipped it.  Before, both got a complete record and a client
+# proved false; the second has no assumption at all.  The stored program is also verified again, which
+# refuses the second form by itself.
+build('forged-reveal', source('forged-reveal'), expected_exit=3,
+      diagnostic='uses {:opaque_reveal}, which only Dafny may write under --modular-termination')
+build('forged-generated', source('forged-generated'), expected_exit=3,
+      diagnostic='uses {:auto_generated}, which only Dafny may write under --modular-termination')
+
+# Iterators are not supported yet: the inventory reports the members Dafny generates for them as axioms.
+build('iterator', source('iterator'), expected_exit=3,
+      diagnostic="declares iterator 'Gen'; iterators are not yet supported under --modular-termination")
 
 # The one exemption from the inventory: {:termination false} on a trait is checked under the option.
 build('termination-false', str(sources / 'github-issue-211-m4b-good.dfy'))

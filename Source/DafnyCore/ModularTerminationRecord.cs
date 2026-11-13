@@ -199,9 +199,16 @@ public sealed class ModularTerminationContracts {
 /// declared exemption leaves the build without a record.
 /// </summary>
 public static class ModularTerminationProducer {
+  /// <summary>
+  /// The URI under which the stored program is parsed, resolved and verified again.
+  /// </summary>
+  private static readonly Uri StoredProgramUri = new("transcript:///modular-termination-retained.dfy");
+
+  /// <param name="inputs">The files of this build: its libraries are loaded again, with the stored
+  /// program in place of the sources, to verify the stored program.</param>
   public static async Task<ModularTerminationCompletion> Complete(Program program,
     IReadOnlyList<Tuple<string, Microsoft.Boogie.Program>> boogiePrograms,
-    Microsoft.Boogie.PipelineOutcome outcome, bool verified) {
+    Microsoft.Boogie.PipelineOutcome outcome, bool verified, IReadOnlyList<DafnyFile> inputs) {
     var options = program.Options;
     if (ModularTerminationRecords.UnsupportedConfiguration(options) is { } unsupported) {
       return ModularTerminationCompletion.Failed(unsupported);
@@ -218,42 +225,180 @@ public static class ModularTerminationProducer {
     if (program.AfterParsingClone == null) {
       return ModularTerminationCompletion.Failed("its parsed program was not retained");
     }
-
     if (options.Get(CommonOptionBag.AllowAxioms)) {
       return ModularTerminationCompletion.Failed("it was built with --allow-axioms, which admits unchecked premises");
     }
+    if (UnsupportedSource(program) is { } unsupportedSource) {
+      return ModularTerminationCompletion.Failed(unsupportedSource);
+    }
+    if (AssumptionIn(program) is { } assumption) {
+      return ModularTerminationCompletion.Failed(assumption);
+    }
+    if (options.Printer is not DafnyConsolePrinter printer) {
+      return ModularTerminationCompletion.Failed("the verifier's per-implementation results are not available");
+    }
+    if (InventoryFailure(printer, boogiePrograms) is { } inventoryFailure) {
+      return ModularTerminationCompletion.Failed(inventoryFailure);
+    }
+
+    var programText = new DooFile(program.AfterParsingClone).ProgramText;
+    var (reparsedText, reparseError) = await RoundTrip(options, programText, StoredProgramUri);
+    if (reparsedText == null) {
+      return ModularTerminationCompletion.Failed($"its retained program does not parse: {reparseError}");
+    }
+    if (WithoutNameLine(reparsedText) != WithoutNameLine(programText)) {
+      return ModularTerminationCompletion.Failed("its retained program does not print back to itself");
+    }
+    // The record certifies the program that is stored, so that program is the one that must verify:
+    // resolve and verify it again, with the same libraries and options, and take its inventory,
+    // contracts and imports from it.  This covers every way the printed program can differ from the
+    // verified one.
+    var (stored, storedFailure) = await VerifyStored(options, programText, inputs);
+    if (stored == null) {
+      return ModularTerminationCompletion.Failed(storedFailure!);
+    }
+    var (contracts, contractError) = await ModularTerminationContracts.Compute(options, programText, StoredProgramUri);
+    if (contracts == null) {
+      return ModularTerminationCompletion.Failed($"its retained program does not parse: {contractError}");
+    }
+    if (ModularTerminationRecords.Solver(options) is not { } solver) {
+      return ModularTerminationCompletion.Failed("the Z3 binary that verified it could not be identified");
+    }
+    return ModularTerminationCompletion.Complete(programText, contracts, stored.Compilation.ModularTerminationImports,
+      ModularTerminationRecords.SemanticOptions(options), ModularTerminationRecords.ForkBuildId(options), solver);
+  }
+
+  /// <summary>
+  /// Parses, resolves and verifies the stored program, with the build's libraries and a quiet copy of
+  /// its options, and checks it as the build itself was checked: no assumption, and every Boogie
+  /// implementation verified with every verification condition Valid.  Returns the stored program,
+  /// or why it cannot be recorded.
+  /// </summary>
+  private static async Task<(Program? Program, string? Failure)> VerifyStored(DafnyOptions options, string programText,
+    IReadOnlyList<DafnyFile> inputs) {
+    var storedOptions = new DafnyOptions(options, true) {
+      DafnyPrintFile = null,
+      DafnyPrintResolvedFile = null,
+      PrintFile = null,
+      XmlSink = null,
+    };
+    var printer = new DafnyConsolePrinter(storedOptions);
+    storedOptions.Printer = printer;
+    var reporter = new BatchErrorReporter(storedOptions);
+    string FirstError() => reporter.AllMessagesByLevel[ErrorLevel.Error].FirstOrDefault()?.Message ?? "unknown error";
+
+    var files = inputs.Where(f => f.ShouldNotVerify)
+      .Append(DafnyFile.FromText(storedOptions, StoredProgramUri, programText)).ToList();
+    var parsed = await new ProgramParser(Microsoft.Extensions.Logging.Abstractions.NullLogger<ProgramParser>.Instance,
+      OnDiskFileSystem.Instance).ParseFiles("the stored program", files, reporter, System.Threading.CancellationToken.None);
+    var stored = parsed.Program;
+    if (reporter.HasErrors) {
+      return (null, $"its stored program does not parse: {FirstError()}");
+    }
+    if (DafnyMain.Resolve(stored) != null || reporter.HasErrors) {
+      return (null, $"its stored program does not resolve: {FirstError()}");
+    }
+    if (UnsupportedSource(stored) is { } unsupported) {
+      return (null, $"in its stored program, {unsupported}");
+    }
+    if (AssumptionIn(stored) is { } assumption) {
+      return (null, $"in its stored program, {assumption}");
+    }
+    var boogiePrograms = await DafnyMain.LargeStackFactory.StartNew(() =>
+      BoogieGenerator.Translate(stored, reporter).ToList());
+    if (reporter.HasErrors) {
+      return (null, $"its stored program cannot be translated for verification: {FirstError()}");
+    }
+    using var engine = Microsoft.Boogie.ExecutionEngine.CreateWithoutSharedCache(storedOptions);
+    var verified = true;
+    foreach (var (moduleName, boogieProgram) in boogiePrograms) {
+      var (outcome, stats) = await await DafnyMain.LargeStackFactory.StartNew(() =>
+        DafnyMain.BoogieOnce(reporter, storedOptions, TextWriter.Null, engine, "modular-termination-retained.dfy",
+          moduleName, boogieProgram, "modular_termination_stored"));
+      verified &= outcome == Microsoft.Boogie.PipelineOutcome.VerificationCompleted &&
+                  DafnyMain.IsBoogieVerified(outcome, stats);
+    }
+    if (InventoryFailure(printer, boogiePrograms) is { } inventoryFailure) {
+      return (null, $"its stored program does not verify: {inventoryFailure}");
+    }
+    if (!verified || reporter.HasErrors) {
+      return (null, reporter.HasErrors
+        ? $"its stored program does not verify: {FirstError()}"
+        : "its stored program does not verify");
+    }
+    return (stored, null);
+  }
+
+  /// <summary>
+  /// What this milestone does not support in the library's own program, or null: iterators, whose
+  /// generated members the assumption inventory reports as axioms, and the attributes that mark a
+  /// declaration as generated, which only Dafny may write.
+  /// </summary>
+  private static string? UnsupportedSource(Program program) {
+    var urisToVerify = program.Compilation.UrisToVerify ?? new HashSet<Uri>();
+    foreach (var node in program.DefaultModule.Descendants()) {
+      if (node.Origin?.Uri == null || !urisToVerify.Contains(node.Origin.Uri)) {
+        continue;
+      }
+      if (node is IteratorDecl iterator) {
+        return $"{Where(node.Origin)} declares iterator '{iterator.Name}'; iterators are not yet supported under --modular-termination";
+      }
+      var attributes = node switch {
+        Attributes a => [a],
+        IAttributeBearingDeclaration d => d.Attributes.AsEnumerable(),
+        _ => []
+      };
+      foreach (var attribute in attributes) {
+        if (attribute is UserSuppliedAttributes or UserSuppliedAtAttribute &&
+            attribute.Name is "auto_generated" or "opaque_reveal") {
+          return $"{Where(node.Origin)} uses {{:{attribute.Name}}}, which only Dafny may write under --modular-termination";
+        }
+      }
+    }
+    return null;
+  }
+
+  private static string Where(IOrigin origin) => $"{origin.Uri.Segments.LastOrDefault()}({origin.line},{origin.col + 1})";
+
+  /// <summary>
+  /// The first assumption in the library's own program, or null.
+  /// </summary>
+  private static string? AssumptionIn(Program program) {
     var urisToVerify = program.Compilation.UrisToVerify ?? new HashSet<Uri>();
     bool Owned(IOrigin? origin) => origin?.Uri != null && urisToVerify.Contains(origin.Uri);
-    string Where(IOrigin origin) => $"{origin.Uri.Segments.LastOrDefault()}({origin.line},{origin.col + 1})";
     // Dafny's own assumption inventory, the one `dafny audit` reports: every assumption it finds in the
     // library's own program refuses the record.
     foreach (var assumption in program.Assumptions(null!)) {
       if (Owned(assumption.Tok) && AuditExemption(assumption) == null) {
-        return ModularTerminationCompletion.Failed(
-          $"{Where(assumption.Tok)} has an assumption that 'dafny audit' reports: {AuditAssumption.UpdateVerbatim(assumption.desc.Issue, "", "").TrimEnd('.')}");
+        return $"{Where(assumption.Tok)} has an assumption that 'dafny audit' reports: {AuditAssumption.UpdateVerbatim(assumption.desc.Issue, "", "").TrimEnd('.')}";
       }
     }
     // What the inventory does not report: premises outside method and function bodies, bodyless members
     // without a postcondition (whose termination is still assumed), extern members without contracts,
     // and the verification exemptions.
     foreach (var node in program.DefaultModule.Descendants()) {
-      if (!Owned(node.Origin) || IsGeneratedReveal(node)) {
+      if (!Owned(node.Origin) || OpaqueMemberRewriter.IsGeneratedRevealLemma(node)) {
         continue;
       }
       if (UncheckedPremise(node) is { } premise) {
-        return ModularTerminationCompletion.Failed($"{Where(node.Origin!)} {premise}");
+        return $"{Where(node.Origin!)} {premise}";
       }
     }
+    return null;
+  }
 
-    if (options.Printer is not DafnyConsolePrinter printer) {
-      return ModularTerminationCompletion.Failed("the verifier's per-implementation results are not available");
-    }
+  /// <summary>
+  /// Why the verifier's results do not cover every Boogie implementation generated for the program with
+  /// every verification condition Valid, or null.
+  /// </summary>
+  private static string? InventoryFailure(DafnyConsolePrinter printer,
+    IReadOnlyList<Tuple<string, Microsoft.Boogie.Program>> boogiePrograms) {
     var correct = new Dictionary<string, int>();
     foreach (var entry in printer.VerificationResults) {
       var allValid = entry.Result.Outcome == VC.VcOutcome.Correct &&
                      entry.Result.VCResults.All(vc => vc.Outcome == Microsoft.Boogie.SolverOutcome.Valid);
       if (!allValid) {
-        return ModularTerminationCompletion.Failed($"the verification of {entry.Implementation.Name} was not conclusive ({entry.Result.Outcome})");
+        return $"the verification of {entry.Implementation.Name} was not conclusive ({entry.Result.Outcome})";
       }
       correct[entry.Implementation.Name] = correct.GetValueOrDefault(entry.Implementation.Name) + 1;
     }
@@ -265,35 +410,12 @@ public static class ModularTerminationProducer {
     }
     foreach (var (name, count) in expected.OrderBy(kv => kv.Key, StringComparer.Ordinal)) {
       if (correct.GetValueOrDefault(name) < count) {
-        return ModularTerminationCompletion.Failed($"{name} was not verified");
+        return $"{name} was not verified";
       }
     }
-
-    var programText = new DooFile(program.AfterParsingClone).ProgramText;
-    var uri = new Uri("transcript:///modular-termination-retained.dfy");
-    var (reparsedText, reparseError) = await RoundTrip(options, programText, uri);
-    if (reparsedText == null) {
-      return ModularTerminationCompletion.Failed($"its retained program does not parse: {reparseError}");
-    }
-    if (WithoutNameLine(reparsedText) != WithoutNameLine(programText)) {
-      return ModularTerminationCompletion.Failed("its retained program does not print back to itself");
-    }
-    var (contracts, contractError) = await ModularTerminationContracts.Compute(options, programText, uri);
-    if (contracts == null) {
-      return ModularTerminationCompletion.Failed($"its retained program does not parse: {contractError}");
-    }
-    if (ModularTerminationRecords.Solver(options) is not { } solver) {
-      return ModularTerminationCompletion.Failed("the Z3 binary that verified it could not be identified");
-    }
-    return ModularTerminationCompletion.Complete(programText, contracts, program.Compilation.ModularTerminationImports,
-      ModularTerminationRecords.SemanticOptions(options), ModularTerminationRecords.ForkBuildId(options), solver);
+    return null;
   }
 
-  /// <summary>
-  /// Why a node of the library's own program is not checked by its verification, or null.  The
-  /// per-implementation inventory cannot see these: an exempted, assumed, external or bodyless
-  /// declaration either produces no verification condition or one that holds by assumption.
-  /// </summary>
   /// <summary>
   /// Why an assumption that the auditor reports does not stop a record, or null when it does.  Only one is
   /// exempt: {:termination false} on a trait, which under --modular-termination is a checked extensibility
@@ -306,14 +428,10 @@ public static class ModularTerminationProducer {
   }
 
   /// <summary>
-  /// The reveal lemma that OpaqueMemberRewriter generates for an opaque function.  It carries {:axiom} and
-  /// {:verify false}, but it only states the function's own definition, so it is not a premise.
+  /// Why a node of the library's own program is not checked by its verification, or null.  The
+  /// per-implementation inventory cannot see these: an exempted, assumed, external or bodyless
+  /// declaration either produces no verification condition or one that holds by assumption.
   /// </summary>
-  private static bool IsGeneratedReveal(INode node) {
-    return node is IAttributeBearingDeclaration d && Attributes.Contains(d.Attributes, "opaque_reveal") &&
-           Attributes.Contains(d.Attributes, "auto_generated");
-  }
-
   private static string? UncheckedPremise(INode node) {
     if (node is IAttributeBearingDeclaration attributed) {
       var verify = true;
@@ -400,7 +518,7 @@ public static class ModularTerminationRecords {
 
   public static string RecordFailureMessage(string failure) {
     return $"cannot build a library under --modular-termination: {failure}. A library built with --modular-termination " +
-           "records that its own program was completely verified; build it without --no-verify, procedure filters, " +
+           "records that its own program was completely verified; build it without --no-verify, --boogie arguments, " +
            "{:verify false}, {:only}, decreases *, assumptions (anything 'dafny audit' reports, bodyless members, --allow-axioms) " +
            "or {:extern}, and with every verification task succeeding";
   }
@@ -590,8 +708,21 @@ public static class ModularTerminationRecords {
     if (!options.IsUsingZ3()) {
       return "only Z3 is supported as the recorded solver";
     }
+    if (OptionValue(options, BoogieOptionBag.BoogieArguments) is IEnumerable<string> boogieArguments &&
+        boogieArguments.SelectMany(BoogieOptionBag.SplitArguments)
+          .FirstOrDefault(argument => !AllowedBoogieArguments.Contains(argument)) is { } refused) {
+      return $"--boogie argument '{refused}' is not allowed under --modular-termination, because it can change what " +
+             "verification checks (see the allowed list in the Reference Manual)";
+    }
     return null;
   }
+
+  /// <summary>
+  /// The --boogie arguments allowed under --modular-termination: those reviewed as unable to weaken a
+  /// proof.  None is allowed yet; any other argument (/loopUnroll, /noVerify, /proc, /proverOpt, ...)
+  /// could make an unproved program verify.
+  /// </summary>
+  public static readonly IReadOnlySet<string> AllowedBoogieArguments = new HashSet<string>();
 
   public static SortedDictionary<string, string> SemanticOptions(DafnyOptions options) {
     var result = new SortedDictionary<string, string>(StringComparer.Ordinal);

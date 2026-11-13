@@ -313,7 +313,7 @@ namespace Microsoft.Dafny {
 
           if (options.Get(CommonOptionBag.ModularTermination) && options.Backend is LibraryBackend) {
             dafnyProgram.ModularTerminationCompletion =
-              await DafnyCore.ModularTerminationProducer.Complete(dafnyProgram, boogiePrograms, outcome, verified);
+              await DafnyCore.ModularTerminationProducer.Complete(dafnyProgram, boogiePrograms, outcome, verified, dafnyFiles);
             if (options.UserConstrainedProcsToCheck &&
                 dafnyProgram.ModularTerminationCompletion.Failure is { } failure) {
               // A build restricted to some procedures writes no library; say why it cannot have a record.
