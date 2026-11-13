@@ -27,7 +27,7 @@ The same cohort also compares the prerequisite with translation-table OFF, OFF w
 
 `EncodeBVIsBase64` also exhausts its bound in the obligation gate's filtered invocation, which is a different preparation context from this complete-library cohort. The assertion-isolation repair preserves its contract and proof body; the subsequent library cohort must account for its changed assertion-batch population.
 
-Default expected verdicts must be refreshed only from failed current gating artifacts in a separate explained commit. This report changes no expected verdict file and does not claim current-head CI acceptance.
+The owner's current push policy requires expected verdict files to be generated locally with the pinned standing gate, before a single validated push. Historical artifact-derived cohorts below retain their original provenance; current local refreshes are committed separately with their reasons.
 
 ## Historical Std gating artifacts after the first two proof repairs
 
@@ -165,4 +165,32 @@ The renewed suite also reproduces the previously listed `MinimumWindowMax` addit
 
 The complete repaired program verifies all 232 batches in both additional-axiom profiles, compared with the previous 222. The ten added batches check the explicit proof. With axioms off, correctness uses 66,726,084 aggregate RU and the maximum task is 10,945,376; with axioms on, correctness uses 80,486,571 RU and the maximum task is 38,066,580. Well-formedness remains 69,095 RU across nine batches. These are focused producer-specific observations, not a new full-suite performance benchmark. Two complete prerequisite/table-OFF/cold/warm native-writer supplements pass every compared field on the repaired source. Four reachable-false controls (both inside the new `forall` body and at method exit, in each axiom profile) fail with Invalid, without OOR/timeouts; audit has no findings. Both legacy/refreshed upstream-harness compatibility profiles also verify 232 batches with the harness's pinned Z3 4.12.1. Main cache proof qualification uses Z3 5.1.0.
 
-The complete frozen cohort predates this integration-fixture repair; the two repaired-source supplements cover that changed program under the same frozen product binaries. CI must first publish its changed 232-batch expected rows before those rows are refreshed in a separate explained commit. This report does not hand-edit expected-verdict files in anticipation of an artifact.
+That earlier frozen cohort predates the integration-fixture repair. The completed task-native cohort below includes it. Under the owner's revised push policy, both expected suite files are generated locally from its prerequisite stdout/stderr/exit using the standing verdict extractor and expected-file exporter. All 1,172 program keys per profile match; the only changed row is `dafny2/MinWindowMax.dfy`, from 222 to 232 verified batches, because the retained explicit proof adds ten checked batches. No CI artifact is used for this refresh.
+
+
+### Completed task-native qualification
+
+The task-scoped native-writer cohort completes 2,362 cases and 31,706 task observations per mode, using the frozen product binaries identified above and integration/Std inputs from `e7e18c65ec22fd5780adfe05aacd5c9e5a65b4a8`. This input includes the retained-maxima repair. All prerequisite/table-OFF, OFF/cold and cold/warm pairs have identical per-task native bytes, printed Boogie, outcomes/RU, untimed report fields, stderr and exit, with complete task/physical coverage. Cold/warm stdout also matches throughout. The twelve prerequisite/table-OFF stdout differences are exactly the added option-help line in CLI-rejected invocations with zero proof tasks; they remain classified diagnostic differences. No unclassified difference or observer error occurs.
+
+All 24 corrected native verifier companions pass the same comparisons, adding 352 task observations per mode: 2,386 cases and 32,058 task observations combined. These companions cover verification, not compiler execution or stdin/redirection behavior. The main cohort contains 28,156 Valid, 3,490 Invalid and 60 OutOfResource observations per mode; these include deliberate negative tests and known resource-limited library outcomes, not a claim that all programs verify.
+
+Physical solver counts remain separate:
+
+| Scope | Prerequisite | Table OFF | Cold | Warm |
+|---|---:|---:|---:|---:|
+| Main cohort | 1578 | 1578 | 1577 | 1577 |
+| Corrected verifier companions | 20 | 20 | 20 | 20 |
+| Full Std, axioms off (included above) | 2 | 2 | 2 | 2 |
+| Full Std, axioms on (included above) | 1 | 2 | 1 | 1 |
+| `MinimumWindowMax`, axioms on (included above) | 2 | 1 | 1 | 1 |
+
+The last two rows are the only main-cohort cases with different physical counts. Their complete task-byte sequences and all proof/report fields agree. These observations confirm the owner-selected boundary without changing the default solver lifecycle or adding `/restartProver`. The [machine-readable qualification summary](241-task-native-qualification.json) records producer identities, counts and every classified diagnostic difference. The passive observer and strict comparator are published in https://github.com/erniecohen/dafny/pull/262. Corruption controls reject an altered task hash and a dropped task record.
+
+
+### Native Std growth control
+
+A separate prerequisite capture grows an unrelated non-dependency module from one to 64 functions. In each additional-axiom profile, all 86 printed original units and all 7,773 native Std task command sequences remain byte-identical; the unrelated unit's own text changes. This complements the 93-module frontend graph control above: printed CLI programs and frontend module graphs have different counts. Complete task and physical coverage, outcomes, exit and stderr match. Physical solver counts are 3/3 with axioms off and 1/1 with axioms on.
+
+One no-axioms report row changes RU despite identical native commands: `Std.Arithmetic.MulInternalsNonlinear.LemmaMulIsAssociative (correctness)` remains Valid, 20,558 to 20,534 RU. All other report fields and all additional-axiom report rows match. This growth experiment establishes translation/task-text invariance; it does not establish exact RU invariance across a changed preceding solver history. It is separate from the complete OFF/cold/warm equality cohort, which has no such difference. The solver lifecycle is unchanged.
+
+The owner now restricts both public cache options to `--type-system-refresh`. The frozen full cohort predates that admission restriction; legacy internal-API translation observations remain implementation evidence, not a claim that legacy CLI cache invocations are accepted. Std's project already selects the refreshed type system. New CLI admission tests reject legacy cache requests before pipeline startup with exit 2.
