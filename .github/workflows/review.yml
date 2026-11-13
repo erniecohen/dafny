@@ -15,7 +15,7 @@ on:
     tags: ['v*']
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
-    branches: ['review/**', 'dev']
+    branches: ['review/**', 'dev', 'codex/241-local-translation-default']
   workflow_dispatch:
     inputs:
       binaries:
