@@ -12,6 +12,10 @@
 // RUN: %diff "%t.voff" "%t.von"
 // RUN: python3 "%repositoryRoot/.github/review/frontend-profile.py" check "%t.verify.jsonl" >> "%t"
 // RUN: %diff "%s.expect" "%t"
+// RUN: %resolve --show-snippets:false --use-basename-for-filename "%S/Inputs/github-issue-241-frontend-exports.dfy" > "%t.exports.off"
+// RUN: %resolve --show-snippets:false --use-basename-for-filename --pipeline-profile "%t.exports.jsonl" "%S/Inputs/github-issue-241-frontend-exports.dfy" > "%t.exports.on"
+// RUN: %diff "%t.exports.off" "%t.exports.on"
+// RUN: python3 "%repositoryRoot/.github/review/frontend-profile.py" check-phases "%t.exports.jsonl"
 
 module A {
   function Sum(n: nat): nat { if n == 0 then 0 else n + Sum(n - 1) }

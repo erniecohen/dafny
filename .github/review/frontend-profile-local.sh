@@ -46,13 +46,13 @@ for job in $jobs; do
         --dafny "$DAFNY" --out "$out/$job" --reps "$reps" --seed "$seed" ;;
     std-translate)
       python3 "$script" run --corpus std-translate --command verify --cores "$cores" --project "$std" \
-        --configs ws-default-off,ws-default-on,srv-default-on \
+        --configs ws-default-off,ws-default-on,srv-default-off,srv-default-on \
         --dafny "$DAFNY" --out "$out/$job" --reps "$reps" --seed "$seed" ;;
     suite)
       lit=Source/IntegrationTests/TestFiles/LitTests/LitTest
       python3 .github/review/lit-verdicts.py plan "$lit" "$out/plan.tsv"
       python3 "$script" run --corpus suite-0 --command verify --cores "$cores" --plan "$out/plan.tsv" --litdir "$lit" \
-        --configs ws-legacy-off,ws-legacy-on,ws-refresh-on \
+        --configs ws-legacy-off,ws-legacy-on,ws-refresh-off,ws-refresh-on \
         --dafny "$DAFNY" --out "$out/$job" --reps "$reps" --seed "$seed" ;;
     std-heap)
       python3 "$script" heap --corpus std --project "$std" --windows 1,4 --reps 3 --cores "$cores" \

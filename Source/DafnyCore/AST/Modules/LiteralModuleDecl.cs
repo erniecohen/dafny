@@ -136,9 +136,8 @@ public class LiteralModuleDecl : ModuleDecl, ICanFormat, IHasSymbolChildren {
     var preResolveErrorCount = resolver.reporter.ErrorCount;
 
     resolver.ResolveModuleExport(this, sig);
-    PipelineProfile.ModulePhase(resolver.Options, "signature");
+    PipelineProfile.ModulePhase(resolver.Options, "registrationAndExports");
     var good = module.Resolve(sig, resolver);
-    PipelineProfile.ModulePhase(resolver.Options, "body");
 
     if (good && resolver.reporter.ErrorCount == preResolveErrorCount) {
       // Check that the module export gives a self-contained view of the module.

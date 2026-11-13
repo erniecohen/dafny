@@ -2136,8 +2136,12 @@ in the neighborhood of the error; the error location (file, line, column) is alw
   thread that ran it, and the process's GC pause time: one per file parsed (or
   `.doo` file read); the module dependency graph (imports, refinement, exports and
   nesting); one per module declaration resolved, with the time of each phase of its
-  resolution; one per global resolution pass; and one per module translated to
-  Boogie. Three hidden options extend it for measurements: `--pipeline-profile-heap`
+  resolution (registration/export, setup, member signatures, module attributes,
+  bodies, and accessible members are separate; export-view resolution uses the
+  distinct `exportViewSetup`, `exportSignature`, `exportModuleAttributes`,
+  `exportBody` and `exportAccessibleMembers` phases); one per global resolution
+  pass; and one per module translated to Boogie. Three hidden options extend it for
+  measurements: `--pipeline-profile-heap`
   forces a full compacting garbage collection after parsing, after resolution and
   when each module's results are reported, and records the live heap (this changes
   timing); `--pipeline-profile-gc-events` records each collection and each pause

@@ -6,8 +6,9 @@ name: Issue 241 front-end profile
 # rounds of every configuration in a shuffled order), so comparisons between configurations are
 # paired.  Front-end quantities come from `dafny resolve`, or from `dafny verify` with Boogie's
 # no-op solver: no solver time enters them.  The analysis job writes the tables to the job
-# summary and uploads them with every CSV and raw profile.  The driver exits 1 only when a
-# profiled run's output differs from the unprofiled run's.  .github/review/frontend-profile-local.sh
+# summary and uploads them with every CSV and raw profile. The driver checks each round's
+# output digest and exit code against OFF and fails on missing observations.
+# .github/review/frontend-profile-local.sh
 # runs the same protocol on one machine (for core-count scaling).
 
 on:
@@ -81,7 +82,7 @@ jobs:
           - name: std-translate
             run: >-
               run --corpus std-translate --command verify --cores 4 --project Source/DafnyStandardLibraries/src/Std/dfyconfig.toml
-              --configs ws-default-off,ws-default-on,srv-default-on
+              --configs ws-default-off,ws-default-on,srv-default-off,srv-default-on
           # The suite's multi-module programs under both resolvers, no-op solver, in three shards.
           - name: suite-0
             suite: '0/3'
@@ -115,7 +116,7 @@ jobs:
             L=Source/IntegrationTests/TestFiles/LitTests/LitTest
             python3 .github/review/lit-verdicts.py plan "$L" plan.tsv
             python3 "$SCRIPT" run --corpus "suite-${SUITE%/*}" --command verify --cores 4 --plan plan.tsv --litdir "$L" \
-              --shard "$SUITE" --configs ws-legacy-off,ws-legacy-on,ws-refresh-on \
+              --shard "$SUITE" --configs ws-legacy-off,ws-legacy-on,ws-refresh-off,ws-refresh-on \
               --dafny "$D" --out "results/$NAME" --reps "$REPS" --seed "$SEED"
           else
             dotnet tool install --global dotnet-gcdump --version 10.0.750501

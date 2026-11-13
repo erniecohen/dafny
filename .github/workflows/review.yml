@@ -124,6 +124,7 @@ jobs:
           python3 -m unittest discover -s .github/review -p test_platform_parity.py
           python3 -m unittest discover -s .github/review -p test_check_distribution.py
           python3 -m unittest discover -s .github/review -p test_program_resources.py
+          python3 -m unittest discover -s .github/review -p test_frontend_profile.py
       - name: Version
         id: version
         run: |

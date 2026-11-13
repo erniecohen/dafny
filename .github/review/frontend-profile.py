@@ -10,6 +10,7 @@
                                 [--points parsed,resolved,1,20,43,80]
     frontend-profile.py analyze DIR... --out REPORT.md [--seed 1]
     frontend-profile.py check   PROFILE.jsonl     a digest that does not depend on timing, for tests
+    frontend-profile.py check-phases PROFILE.jsonl  check a successful resolution with export views
 
 `run` is the timing protocol.  Every configuration of --configs runs once as a warm-up, which
 is discarded, then --reps rounds follow; in each round every configuration runs once, in an
@@ -46,9 +47,9 @@ bootstrap CI; the module graph's resolution weight W_R, weighted critical path L
 profile and the ideal parallel bound R_global + max(W_R/N, L_R); the library share; retention;
 and the GC.  Every derived quantity is given with its formula.
 
-The driver only measures; it exits 0 unless a run could not be started.  It fails (exit 1) if
-the output of a configuration with the profile on differs from the same configuration with it
-off, since the profile must not change Dafny's output.
+The driver fails (exit 1) if any warm-up or measured round's output digest or exit code
+differs from its matching profile-OFF round, or a required observation is missing. Programs
+dropped for warm-up parse/resolution errors are excluded from this comparison.
 """
 import argparse
 import csv
@@ -250,6 +251,10 @@ class Writer:
         w.writerow(row)
         f.flush()
 
+    def close(self):
+        for f, _ in self.files.values():
+            f.close()
+
 
 def corpus_programs(a):
     if a.plan:
@@ -273,7 +278,31 @@ def slug(s):
     return re.sub(r'[^A-Za-z0-9_.-]+', '_', s)
 
 
+def identity_errors(observations, targets, configs, reps):
+    """Compare (output digest, exit code) pairs, including every expected measured round."""
+    errors = []
+    for target in targets:
+        for config in configs:
+            gc, resolver, prof = parse_config(config)
+            off_config = f'{gc}-{resolver}-off'
+            for rep in range(reps + 1):
+                key = (target, config, rep)
+                off_key = (target, off_config, rep)
+                if key not in observations:
+                    errors.append(f'{target}: {config} round {rep}: missing observation')
+                if prof == 'off':
+                    continue
+                if off_key not in observations:
+                    errors.append(f'{target}: {config} round {rep}: missing matching {off_config} observation')
+                elif key in observations and observations[key] != observations[off_key]:
+                    errors.append(f'{target}: {config} round {rep}: output digest or exit code differs from '
+                                  f'{off_config}')
+    return errors
+
+
 def cmd_run(a):
+    if a.reps < 1:
+        raise ValueError('--reps must include at least one measured round')
     out = Path(a.out).resolve()
     (out / 'profiles').mkdir(parents=True, exist_ok=True)
     (out / 'outputs').mkdir(exist_ok=True)
@@ -283,7 +312,7 @@ def cmd_run(a):
     programs = corpus_programs(a)
     w = Writer(out)
     outputs = {}
-    mismatches = []
+    observations = {}
     dropped = set()
 
     def go(config, rep, order, warmup):
@@ -293,7 +322,8 @@ def cmd_run(a):
             prof_path = out / 'profiles' / f'{a.corpus}__{slug(target)}__{config}__{rep}.jsonl'
             args, env = command_line(a.dafny, a.command, config, target, own, prof_path, a.cores)
             res, data = run_one(args, env, cwd)
-            sha = hashlib.sha256(data).hexdigest()[:16]
+            sha = hashlib.sha256(data).hexdigest()
+            observations[(target, config, rep)] = (sha, res['exit'])
             key = (target, config)
             if key not in outputs:
                 outputs[key] = sha
@@ -341,16 +371,12 @@ def cmd_run(a):
         for k, config in enumerate(order):
             go(config, rep, k, False)
 
-    # The profile must not change the output.
-    for (target, config), sha in outputs.items():
-        gc, resolver, prof = parse_config(config)
-        if prof != 'off':
-            off = outputs.get((target, f'{gc}-{resolver}-off'))
-            if off is not None and off != sha:
-                mismatches.append(f'{target}: {config} output differs from {gc}-{resolver}-off')
+    # Round numbers pair configurations even when execution order is shuffled.
+    mismatches = identity_errors(observations, [t for t, _, _ in programs if t not in dropped], configs, a.reps)
+    w.close()
     (out / f'identity-{a.corpus}.txt').write_text(
-        ('\n'.join(mismatches) if mismatches else 'identical: every profiled configuration\'s output equals its '
-                                                    'unprofiled one\'s, where both ran') + '\n')
+        ('\n'.join(mismatches) if mismatches else 'identical: output digest and exit code match OFF in every '
+                                               'warm-up and measured round of every retained program') + '\n')
     return 1 if mismatches else 0
 
 
@@ -843,6 +869,30 @@ def analyze_heap(heap, dumps, p, rng):
 # ---------------------------------------------------------------------------- check
 
 
+def cmd_check_phases(a):
+    """The successful export fixture must exercise both actual resolution paths in order."""
+    seen = set()
+    for event in load_events(a.profile):
+        if event.get('ev') != 'fe' or event.get('stage') != 'resolve.module':
+            continue
+        phases = [p['phase'] for p in event.get('phases') or []]
+        for signature, sequence in (
+                ('signature', ['resolveSetup', 'signature', 'moduleAttributes', 'body', 'accessibleMembers']),
+                ('exportSignature', ['exportViewSetup', 'exportSignature', 'exportModuleAttributes',
+                                     'exportBody', 'exportAccessibleMembers'])):
+            for i, phase in enumerate(phases):
+                if phase != signature:
+                    continue
+                if i == 0 or phases[i - 1:i + 4] != sequence:
+                    print(f'{event["module"]}: invalid {signature} boundaries: {phases}', file=sys.stderr)
+                    return 1
+                seen.add(signature)
+    if seen != {'signature', 'exportSignature'}:
+        print(f'missing resolution paths: {sorted({"signature", "exportSignature"} - seen)}', file=sys.stderr)
+        return 1
+    return 0
+
+
 def cmd_check(a):
     events = load_events(a.profile)
     out = []
@@ -916,6 +966,8 @@ def main(argv):
             s.add_argument('--top', type=int, default=25)
     s = sub.add_parser('check')
     s.add_argument('profile')
+    s = sub.add_parser('check-phases')
+    s.add_argument('profile')
     s = sub.add_parser('analyze')
     s.add_argument('dirs', nargs='+')
     s.add_argument('--out', required=True)
@@ -931,6 +983,8 @@ def main(argv):
         return cmd_gcdump(a)
     if a.cmd == 'check':
         return cmd_check(a)
+    if a.cmd == 'check-phases':
+        return cmd_check_phases(a)
     return cmd_analyze(a)
 
 
