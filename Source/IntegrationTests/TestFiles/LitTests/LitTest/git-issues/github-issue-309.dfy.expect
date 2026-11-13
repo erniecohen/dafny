@@ -1,0 +1,16 @@
+Legacy resolver
+github-issue-309.dfy(20,12): Error: the type of this bound variable is underspecified
+github-issue-309.dfy(32,12): Error: the type of this bound variable is underspecified
+github-issue-309.dfy(42,19): Error: the type of this bound variable is underspecified
+3 resolution/type errors detected in github-issue-309.dfy
+Refreshed resolver
+github-issue-309.dfy(20,12): Error: the type ('MyClx<?2>') of this bound variable is underspecified
+github-issue-309.dfy(32,12): Error: the type ('MyClx<?2>') of this bound variable is underspecified
+github-issue-309.dfy(42,19): Error: the type ('SubsetType<?3>') of this bound variable is underspecified
+3 resolution/type errors detected in github-issue-309.dfy
+Refreshed resolver, the program of the issue
+git-issue-3921.dfy(8,8): Error: the type ('SubsetType<?0>') of this local variable is underspecified
+git-issue-3921.dfy(16,16): Error: the type ('SubsetType<?4>') of this bound variable is underspecified
+git-issue-3921.dfy(40,13): Error: pattern (of type object) cannot be used with source type MyClx<U>
+git-issue-3921.dfy(62,14): Error: the type ('MyClx<?2>') of this bound variable is underspecified
+4 resolution/type errors detected in git-issue-3921.dfy

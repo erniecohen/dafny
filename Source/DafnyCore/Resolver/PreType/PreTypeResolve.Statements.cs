@@ -593,7 +593,14 @@ namespace Microsoft.Dafny {
         var errorCountBeforeResolvingDestinations = ErrorCount;
         if (assign != null) {
           foreach (var lhs in assign.Lhss) {
+            var errorCountBeforeDestination = ErrorCount;
             ResolveExpression(lhs, resolutionContext);
+            // As in the legacy resolver (ConcreteAssignStatement.GenResolve). An ordinary assignment reports
+            // this in ResolveUpdateStmt instead.
+            if (assign is AssignOrReturnStmt && ErrorCount == errorCountBeforeDestination &&
+                lhs is SeqSelectExpr { SelectOne: false }) {
+              ReportError(lhs, "cannot assign to a range of array elements (try the 'forall' statement)");
+            }
           }
         }
 
@@ -971,8 +978,9 @@ namespace Microsoft.Dafny {
           }
           Expression id = resolver.makeTemp("recv", s, resolutionContext, lseq.Seq);
           Expression id0 = id0 = resolver.makeTemp("idx", s, resolutionContext, lseq.E0);
+          // The new destination is left unresolved, like the other reconstructed destinations; it is resolved
+          // together with the desugared statements below. (Types are not available until pre-types are converted.)
           lhsExtract = new SeqSelectExpr(lseq.Origin, lseq.SelectOne, id, id0, null, lseq.CloseParen);
-          lhsExtract.Type = lseq.Type;
         } else if (lhsResolved is MultiSelectExpr lmulti) {
           Expression id = resolver.makeTemp("recv", s, resolutionContext, lmulti.Array);
           var idxs = new List<Expression>();
@@ -981,7 +989,6 @@ namespace Microsoft.Dafny {
             idxs.Add(idx);
           }
           lhsExtract = new MultiSelectExpr(lmulti.Origin, id, idxs);
-          lhsExtract.Type = lmulti.Type;
         } else if (lhsResolved is IdentifierExpr) {
           // do nothing
         } else if (lhsResolved == null) {

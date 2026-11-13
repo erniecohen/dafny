@@ -1,0 +1,269 @@
+#!/usr/bin/env python3
+"""Record the guarded-character/legacy comparison, including individual proof outcomes and RU."""
+import argparse
+import hashlib
+import importlib.util
+import json
+import os
+from pathlib import Path
+import shutil
+import subprocess
+import sys
+
+ROOT = Path(__file__).resolve().parents[2]
+
+
+def runner(name):
+    spec = importlib.util.spec_from_file_location(name, Path(__file__).with_name(name + '-verdicts.py'))
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def inventory(out):
+    declarations, batches, missing = {}, {}, []
+    for command in sorted((out / 'measurements').rglob('command.json')):
+        name = command.parent.relative_to(out / 'measurements').as_posix()
+        log = command.with_name('results.json')
+        if not log.exists() or not log.read_text().strip():
+            missing.append(name)
+            continue
+        for decl in json.loads(log.read_text())['verificationResults']:
+            key = name + ': ' + decl['name']
+            if key in declarations:
+                raise ValueError('duplicate declaration ' + key)
+            declarations[key] = decl['outcome']
+            for vc in decl['vcResults']:
+                batches[key + ': ' + str(vc['vcNum'])] = [vc['outcome'], vc['resourceCount']]
+    (out / 'proofs.json').write_text(json.dumps({
+        'declarations': declarations, 'batches': batches, 'no_verification_log': missing,
+        'resource_units': sum(b[1] for b in batches.values())}, indent=2))
+
+
+def record(args):
+    out = Path(args.output).resolve()
+    out.mkdir(parents=True, exist_ok=True)
+    module = runner('lit' if args.kind == 'suite' else 'std')
+    if args.mode == 'legacy':
+        module.FIXED = module.FIXED + ['--legacy-unguarded-char']
+    dafny, z3 = str(Path(args.dafny).resolve()), str(Path(args.z3).resolve())
+    (out / 'source.json').write_text(json.dumps({
+        'source': os.environ.get('GITHUB_SHA', ''), 'mode': args.mode,
+        'axioms': args.axioms, 'solver_sha256': hashlib.sha256(Path(z3).read_bytes()).hexdigest()}, indent=2))
+    if args.kind == 'suite':
+        litdir = ROOT / 'Source/IntegrationTests/TestFiles/LitTests/LitTest'
+        module.plan(litdir, out / 'plan.tsv')
+        module.run(out / 'plan.tsv', str(litdir), dafny, z3, out / 'verdicts.tsv',
+                   shard=args.shard, jobs=args.jobs, additional_axioms=args.axioms == 'on',
+                   measurements=out / 'measurements')
+        inventory(out)
+    else:
+        module.run(str(ROOT / 'Source/DafnyStandardLibraries'), dafny, z3, out / 'verdicts.tsv',
+                   cores=args.jobs, additional_axioms=args.axioms == 'on',
+                   boogie='/deterministicLiteralHashes:1 /restartProver', measurements=str(out / 'measurements'))
+
+
+def compare(args):
+    inp, out = Path(args.input), Path(args.output)
+    out.mkdir(parents=True, exist_ok=True)
+    report, text = {}, ['# Character representation comparison', '', 'All differences are default minus legacy; measurements are Z3 resource units.', '']
+    for group in ['suite-off', 'suite-on', 'std-off-5.1.0', 'std-on-5.1.0']:
+        data = {}
+        for mode in ['legacy', 'default']:
+            dirs = sorted(path for path in inp.glob(group + '-' + mode + '*') if path.is_dir())
+            if not dirs:
+                raise ValueError('missing measurements: ' + group + '-' + mode)
+            rows, declarations, resources, units = {}, {}, {}, 0
+            for directory in dirs:
+                for line in (directory / 'verdicts.tsv').read_text().splitlines():
+                    row = line.split('\t')
+                    if row[0] in rows:
+                        raise ValueError('duplicate verdict ' + row[0])
+                    rows[row[0]] = row[1:4]
+                    if group.startswith('std') and not row[0].startswith('run '):
+                        declarations[row[0]] = row[1]
+                        units += int(row[4])
+                        resources[row[0]] = int(row[4])
+                if group.startswith('suite'):
+                    proofs = json.loads((directory / 'proofs.json').read_text())
+                    overlap = declarations.keys() & proofs['declarations'].keys()
+                    if overlap:
+                        raise ValueError('duplicate declarations ' + str(overlap))
+                    declarations.update(proofs['declarations'])
+                    units += proofs['resource_units']
+                    resources.update({key: batch[1] for key, batch in proofs['batches'].items()})
+            data[mode] = dict(rows=rows, declarations=declarations, resource_units=units, resources=resources)
+            suffix = '-additional-axioms' if '-on' in group else ''
+            baseline = ('expected-verdicts' if group.startswith('suite') else 'expected-std-verdicts-z3-' + group.split('-')[-1]) + suffix + '.tsv'
+            if mode == 'default':
+                (out / baseline).write_text(''.join('\t'.join([name] + row) + '\n' for name, row in sorted(rows.items())))
+        a, b = data['legacy'], data['default']
+        differences = {name: {'legacy': a['rows'].get(name), 'default': b['rows'].get(name)}
+                       for name in sorted(a['rows'].keys() | b['rows'].keys()) if a['rows'].get(name) != b['rows'].get(name)}
+        changes = {name: {'legacy': a['declarations'].get(name), 'default': b['declarations'].get(name)}
+                   for name in sorted(a['declarations'].keys() | b['declarations'].keys()) if a['declarations'].get(name) != b['declarations'].get(name)}
+        ru_changes = {name: {'legacy': a['resources'].get(name), 'default': b['resources'].get(name)}
+                      for name in sorted(a['resources'].keys() | b['resources'].keys())
+                      if a['resources'].get(name) != b['resources'].get(name)}
+        (out / (group + '-resource-changes.tsv')).write_text('name\tlegacy_ru\tdefault_ru\tdelta_ru\n' + ''.join(
+            f"{name}\t{change['legacy']}\t{change['default']}\t{change['default'] - change['legacy'] if None not in change.values() else 'unmatched'}\n"
+            for name, change in ru_changes.items()))
+        report[group] = {'resource_changes': ru_changes, 'row_changes': differences, 'declaration_changes': changes,
+                         'program_rows': len(a['rows']), 'changed_resource_rows': len(ru_changes),
+                         'legacy_ru': a['resource_units'], 'default_ru': b['resource_units'],
+                         'delta_ru': b['resource_units'] - a['resource_units'],
+                         'legacy_declarations': len(a['declarations']), 'default_declarations': len(b['declarations'])}
+        text += ['## ' + group, '', f"{len(differences)} verdict rows and {len(changes)} declaration outcomes change.",
+                 f"{len(ru_changes)} resource rows change. RU: {a['resource_units']:,} → {b['resource_units']:,} ({b['resource_units'] - a['resource_units']:+,}).", '']
+        for name, change in differences.items():
+            text += [f"- `{name}`: `{change['legacy']}` → `{change['default']}`"]
+        text += ['', 'Declaration outcomes:', '']
+        for name, change in changes.items():
+            text += [f"- `{name}`: {change['legacy']} → {change['default']}"]
+        if not changes:
+            text += ['None.']
+        text += ['']
+    (out / 'report.json').write_text(json.dumps(report, indent=2))
+    (out / 'summary.md').write_text('\n'.join(text))
+    print('\n'.join(text))
+    return int(any(group['row_changes'] or group['declaration_changes'] for group in report.values()))
+
+
+def identity(args):
+    out = Path(args.output).resolve()
+    out.mkdir(parents=True, exist_ok=True)
+    fixtures = ROOT / 'Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues'
+    report = {}
+    for unicode in ['false', 'true']:
+      for refresh in ['false', 'true']:
+       for consistent in ['false', 'true']:
+        name = f'char-u{unicode}-r{refresh}-c{consistent}'
+        results = []
+        for mode, dafny, extra in [('baseline', args.baseline, []), ('legacy', args.dafny, ['--legacy-unguarded-char'])]:
+            bpl, smt = out / 'program.bpl', out / 'program.smt2'
+            for path in out.glob('program*'):
+                path.unlink()
+            cmd = [str(Path(dafny).resolve()), 'verify', str(fixtures / 'git-issue-284-char.dfy'),
+                   '--solver-path', str(Path(args.z3).resolve()), '--cores:1', '--show-snippets:false',
+                   '--resource-limit:16000000', '--verification-time-limit:0',
+                   '--use-basename-for-filename', '--bprint', str(bpl), '--solver-log', str(smt),
+                   '--unicode-char:' + unicode, '--type-system-refresh:' + refresh,
+                   '--consistent-obligation-checks:' + consistent]
+            p = subprocess.run(cmd + extra, capture_output=True, timeout=180)
+            paths = sorted(out.glob('program*'))
+            content = {path.name: path.read_bytes() for path in paths}
+            results.append((p.returncode, p.stdout, p.stderr, content))
+            (out / f'{name}-{mode}.stdout').write_bytes(p.stdout)
+            (out / f'{name}-{mode}.stderr').write_bytes(p.stderr)
+            for path in paths:
+                shutil.copyfile(path, out / f'{name}-{mode}-{path.name}')
+        translated = all(result[0] == 4 and result[3].get('program.bpl') and
+                         result[3].get('program.smt2') for result in results)
+        report[name] = dict(equal=results[0] == results[1], translated=bool(translated),
+                            baseline_exit=results[0][0], legacy_exit=results[1][0])
+    (out / 'identity.json').write_text(json.dumps(report, indent=2))
+    print(json.dumps(report, indent=2))
+    return 0 if all(case['equal'] and case['translated'] for case in report.values()) else 1
+
+
+def controls(args):
+    out = Path(args.output).resolve()
+    out.mkdir(parents=True, exist_ok=True)
+    fixture = ROOT / 'Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/git-issue-284-char.dfy'
+    report = {}
+    for unicode in ['false', 'true']:
+     for refresh in ['false', 'true']:
+      for consistent in ['false', 'true']:
+       for mode in ['default', 'legacy']:
+        name = f'{mode}-u{unicode}-r{refresh}-c{consistent}'
+        cmd = [str(Path(args.dafny).resolve()), 'verify', str(fixture), '--solver-path', str(Path(args.z3).resolve()),
+               '--unicode-char:' + unicode, '--type-system-refresh:' + refresh,
+               '--consistent-obligation-checks:' + consistent, '--cores:1',
+               '--resource-limit:16000000', '--verification-time-limit:0', '--show-snippets:false',
+               '--use-basename-for-filename', '--log-format', 'json;LogFileName=' + str(out / (name + '.json'))]
+        if mode == 'legacy': cmd += ['--legacy-unguarded-char']
+        p = subprocess.run(cmd, capture_output=True, timeout=180)
+        (out / (name + '.stdout')).write_bytes(p.stdout)
+        (out / (name + '.stderr')).write_bytes(p.stderr)
+        expected = Path(str(fixture) + ('.legacy.expect' if unicode == 'false' else '.expect')).read_bytes()
+        report[name] = {'exit': p.returncode, 'expected_output': p.returncode == 4 and p.stdout == expected, 'stderr_empty': not p.stderr}
+    cmd = [str(Path(args.dafny).resolve()), 'verify', str(fixture.with_name('git-issue-284-char-unicode.dfy')),
+           '--solver-path', str(Path(args.z3).resolve()), '--unicode-char:true', '--cores:1',
+           '--resource-limit:16000000', '--verification-time-limit:0', '--show-snippets:false']
+    p = subprocess.run(cmd, capture_output=True, timeout=180)
+    (out / 'unicode.stdout').write_bytes(p.stdout)
+    (out / 'unicode.stderr').write_bytes(p.stderr)
+    report['surrogates'] = {'exit': p.returncode}
+    (out / 'controls.json').write_text(json.dumps(report, indent=2))
+    print(json.dumps(report, indent=2))
+    return int(any(not case.get('expected_output', case['exit'] == 0) or not case.get('stderr_empty', True) for case in report.values()))
+
+
+def negative(args):
+    """Replay the first VC of the negative control, before counterexample blocking."""
+    out = Path(args.output).resolve()
+    out.mkdir(parents=True, exist_ok=True)
+    fixture = ROOT / 'Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/git-issue-284-char.dfy'
+    report = {}
+    for unicode in ['false', 'true']:
+        name = 'unicode-' + unicode
+        smt = out / (name + '.smt2')
+        cmd = [str(Path(args.dafny).resolve()), 'verify', str(fixture),
+               '--solver-path', str(Path(args.z3).resolve()), '--cores:1',
+               '--verification-time-limit:0', '--resource-limit:16000000',
+               '--unicode-char:' + unicode, '--filter-symbol', 'charNegative.',
+               '--boogie', '/prune:0', '--boogie', '/typeEncoding:a',
+               '--solver-log', str(smt)]
+        p = subprocess.run(cmd, capture_output=True, timeout=180)
+        (out / (name + '.stdout')).write_bytes(p.stdout)
+        (out / (name + '.stderr')).write_bytes(p.stderr)
+        source = smt.read_text()
+        first = source.index('(check-sat)') + len('(check-sat)')
+        query = out / (name + '-first-query.smt2')
+        query.write_text(source[:first] + '\n')
+        replay = subprocess.run([str(Path(args.z3).resolve()), str(query)],
+                                capture_output=True, timeout=180)
+        (out / (name + '.replay')).write_bytes(replay.stdout)
+        (out / (name + '.replay.stderr')).write_bytes(replay.stderr)
+        report[name] = {'verifier_exit': p.returncode, 'replay_exit': replay.returncode,
+                        'erased': 'T@U' in source, 'result': replay.stdout.decode().strip(),
+                        'replay_stderr_empty': not replay.stderr,
+                        'negative_failed': b'0 verified, 1 error' in p.stdout}
+    (out / 'negative.json').write_text(json.dumps(report, indent=2))
+    print(json.dumps(report, indent=2))
+    return int(any(case['verifier_exit'] != 4 or case['replay_exit'] != 0 or
+                   not case['erased'] or not case['negative_failed'] or
+                   not case['replay_stderr_empty'] or case['result'] not in ['sat', 'unknown']
+                   for case in report.values()))
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description=__doc__)
+    sub = parser.add_subparsers(dest='command', required=True)
+    p = sub.add_parser('record')
+    p.add_argument('kind', choices=['suite', 'std'])
+    p.add_argument('--mode', choices=['default', 'legacy'], required=True)
+    p.add_argument('--axioms', choices=['off', 'on'], default='off')
+    p.add_argument('--shard', default='0/1')
+    p.add_argument('--jobs', type=int, default=4)
+    p.add_argument('--dafny', required=True)
+    p.add_argument('--z3', required=True)
+    p.add_argument('--output', required=True)
+    p = sub.add_parser('compare')
+    p.add_argument('--input', required=True)
+    p.add_argument('--output', required=True)
+    p = sub.add_parser('identity')
+    p.add_argument('--baseline', required=True)
+    p.add_argument('--dafny', required=True)
+    p.add_argument('--z3', required=True)
+    p.add_argument('--output', required=True)
+    p = sub.add_parser('controls')
+    p.add_argument('--dafny', required=True)
+    p.add_argument('--z3', required=True)
+    p.add_argument('--output', required=True)
+    p = sub.add_parser('negative')
+    p.add_argument('--dafny', required=True)
+    p.add_argument('--z3', required=True)
+    p.add_argument('--output', required=True)
+    args = parser.parse_args()
+    sys.exit({'record': record, 'compare': compare, 'identity': identity, 'controls': controls, 'negative': negative}[args.command](args) or 0)

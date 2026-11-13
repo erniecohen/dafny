@@ -1,0 +1,179 @@
+name: Canonical map payload comparison
+on:
+  workflow_dispatch:
+  workflow_call:
+permissions:
+  contents: read
+env:
+  DOTNET_NOLOGO: 'true'
+  DOTNET_CLI_TELEMETRY_OPTOUT: 'true'
+  Z3_RELEASE: https://github.com/Z3Prover/z3/releases/download/z3-5.1.0
+  Z3_ARCHIVE: z3-5.1.0-x64-glibc-2.39
+  Z3_SHA256: f47be8d27d3230e823bf1eeede2fe0abaca55bb78d0b59974370e6689a92284a
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          # The stack's pre-map product includes the character repair.
+          ref: a220fed05038ff4c70ac325d29b7c0a5238ba0e7
+          path: baseline
+      - uses: ./.github/actions/setup-dotnet
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Check comparison bookkeeping
+        run: python3 -m unittest discover -s .github/review -p test_typeencoding_comparisons.py
+      - name: Build candidate and pre-fix product with identical version metadata
+        run: |
+          sh Scripts/fetch-boogie-packages.sh
+          dotnet publish Source/Dafny/Dafny.csproj -c Release -o out/candidate -p:GeneratePackageOnBuild=false -p:SourceRevisionId=typeencoding-map-comparison
+          cd baseline
+          sh Scripts/fetch-boogie-packages.sh
+          dotnet publish Source/Dafny/Dafny.csproj -c Release -o ../out/baseline -p:GeneratePackageOnBuild=false -p:SourceRevisionId=typeencoding-map-comparison
+      - name: Pin solver
+        run: |
+          curl -fsSLo z3.zip "$Z3_RELEASE/$Z3_ARCHIVE.zip"
+          echo "$Z3_SHA256  z3.zip" | sha256sum -c -
+          unzip -q z3.zip
+      - name: Check old-source versus legacy byte identity
+        run: |
+          python3 .github/review/typeencoding-map.py identity --baseline out/baseline/Dafny --dafny out/candidate/Dafny \
+            --z3 "$Z3_ARCHIVE/bin/z3" --output identity
+          echo '## Old-source / legacy byte identity' >> "$GITHUB_STEP_SUMMARY"
+          cat identity/identity.json >> "$GITHUB_STEP_SUMMARY"
+      - name: Iset equality and false controls
+        run: |
+          mkdir -p controls
+          python3 .github/review/typeencoding-map.py controls --dafny out/candidate/Dafny \
+            --z3 "$Z3_ARCHIVE/bin/z3" --output controls
+      - name: Replay erased negative iset contexts
+        run: |
+          python3 .github/review/typeencoding-map.py negative --dafny out/candidate/Dafny \
+            --z3 "$Z3_ARCHIVE/bin/z3" --output controls/negative
+      - run: tar -C out -czf candidate.tar.gz candidate
+      - uses: actions/upload-artifact@v4
+        with:
+          name: map-candidate
+          path: candidate.tar.gz
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: map-identity
+          path: |
+            identity
+            controls
+          retention-days: 90
+  suite:
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    strategy:
+      fail-fast: false
+      matrix:
+        axioms: ['off', 'on']
+        shard: [0, 1, 2, 3]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-dotnet
+      - uses: actions/download-artifact@v4
+        with:
+          name: map-candidate
+      - run: mkdir -p out && tar -C out -xzf candidate.tar.gz
+      - name: Pin solver
+        run: |
+          curl -fsSLo z3.zip "$Z3_RELEASE/$Z3_ARCHIVE.zip"
+          echo "$Z3_SHA256  z3.zip" | sha256sum -c -
+          unzip -q z3.zip
+      - name: Record suite verdicts, proof outcomes and resources
+        run: |
+          # Each invocation is unchanged; grouping reduces hosted-runner requests.
+          for comparison_mode in default legacy; do
+            for comparison_shard in ${{ matrix.shard }}; do
+              python3 .github/review/typeencoding-map.py record suite --mode "$comparison_mode" --axioms '${{ matrix.axioms }}' \
+                --shard "$comparison_shard/4" --dafny out/candidate/Dafny --z3 "$Z3_ARCHIVE/bin/z3" \
+                --output "results/suite-${{ matrix.axioms }}-$comparison_mode-$comparison_shard"
+            done
+          done
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: suite-${{ matrix.axioms }}-${{ matrix.shard }}-compact
+          path: |
+            results/*/verdicts.tsv
+            results/*/proofs.json
+            results/*/plan.tsv
+            results/*/source.json
+          retention-days: 90
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: raw-suite-${{ matrix.axioms }}-${{ matrix.shard }}
+          path: results/*/measurements
+          compression-level: 9
+          retention-days: 90
+  std:
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-dotnet
+      - uses: actions/download-artifact@v4
+        with:
+          name: map-candidate
+      - run: mkdir -p out && tar -C out -xzf candidate.tar.gz
+      - name: Pin solver
+        run: |
+          curl -fsSLo z3.zip "$Z3_RELEASE/$Z3_ARCHIVE.zip"
+          echo "$Z3_SHA256  z3.zip" | sha256sum -c -
+          unzip -q z3.zip
+      - name: Record standard-library verdicts and resources
+        run: |
+          for comparison_solver in 5.1.0; do
+            comparison_z3="$PWD/$Z3_ARCHIVE/bin/z3"
+            for comparison_axioms in off on; do
+              for comparison_mode in default legacy; do
+                python3 .github/review/typeencoding-map.py record std --mode "$comparison_mode" --axioms "$comparison_axioms" \
+                  --dafny out/candidate/Dafny --z3 "$comparison_z3" \
+                  --output "results/std-$comparison_axioms-$comparison_solver-$comparison_mode"
+              done
+            done
+          done
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: std-all
+          path: results
+          compression-level: 9
+          retention-days: 90
+  report:
+    needs: [suite, std]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: suite-*
+          path: measurements
+          merge-multiple: true
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: std-*
+          path: measurements
+          merge-multiple: true
+      - name: List every changed verdict and resource totals
+        run: |
+          python3 .github/review/typeencoding-map.py compare --input measurements --output comparison
+          cat comparison/summary.md >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: map-comparison
+          path: comparison
+          retention-days: 90

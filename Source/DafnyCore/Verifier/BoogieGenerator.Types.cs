@@ -1236,7 +1236,8 @@ public partial class BoogieGenerator {
       var etran = new ExpressionTranslator(this, Predef, NewOneHeapExpr(dd.Origin), null);
       Bpl.Expr parentConstraint;
       Expression condition;
-      if (baseType.IsNumericBased() || baseType.IsBitVectorType || baseType.IsBoolType || baseType.IsCharType) {
+      if (baseType.IsNumericBased() || baseType.IsBitVectorType || baseType.IsBoolType ||
+          (baseType.IsCharType && options.Get(CommonOptionBag.LegacyUnguardedChar))) {
         // optimize this to only use the numeric/bitvector constraint, not the whole $Is thing on the base type
         parentConstraint = Bpl.Expr.True;
         var udt = UserDefinedType.FromTopLevelDecl(dd.Origin, dd);

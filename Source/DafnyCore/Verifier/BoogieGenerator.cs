@@ -736,6 +736,9 @@ namespace Microsoft.Dafny {
       if (options.Get(CommonOptionBag.UnicodeCharacters)) {
         defines.Add("UNICODE_CHAR");
       }
+      if (options.Get(CommonOptionBag.LegacyUnguardedChar)) {
+        defines.Add("LEGACY_UNGUARDED_CHAR");
+      }
       Bpl.Program prelude;
       int errorCount = flags.PreludeText == null
         ? BplParser.Parse(preludePath, defines, out prelude)
