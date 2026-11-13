@@ -30,6 +30,16 @@ public class SystemModuleManager {
 
   public ModuleSignature systemNameInfo;
 
+  /// <summary>
+  /// The resolution of this manager's system module: its signature, the declarations it set up and
+  /// their members. A resolution view that continues this one sets up only the builtins it adds, so
+  /// that each canonical builtin declaration is registered and resolved exactly once.
+  /// </summary>
+  internal sealed record ResolvedSystemModule(ModuleSignature Signature, IReadOnlySet<TopLevelDecl> Declarations,
+    Dictionary<TopLevelDeclWithMembers, Dictionary<string, MemberDecl>> ClassMembers);
+
+  internal ResolvedSystemModule ResolvedSystem { get; set; }
+
   public int MaxNonGhostTupleSizeUsed { get; private set; }
   public IOrigin MaxNonGhostTupleSizeToken { get; private set; }
 
@@ -96,7 +106,7 @@ public class SystemModuleManager {
   /// </summary>
   public SystemModuleManager CreateResolutionView(SystemModuleManager parsed) {
     var catalog = ResolutionCatalog ?? new ResolutionBuiltinCatalog(this);
-    var view = new SystemModuleManager(this, catalog);
+    var view = new SystemModuleManager(this, catalog) { ResolvedSystem = ResolvedSystem };
     foreach (var arity in parsed.ArrowTypeDecls.Keys) { view.CreateArrowTypeDecl(arity); }
     foreach (var dimensions in parsed.arrayTypeDecls.Keys) {
       var (_, modify) = ArrayType(Token.NoToken, dimensions, null, true);
