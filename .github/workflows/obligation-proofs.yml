@@ -64,8 +64,39 @@ env:
   Z3_LINUX_X64_SHA256: f47be8d27d3230e823bf1eeede2fe0abaca55bb78d0b59974370e6689a92284a
 
 jobs:
+  tree:
+    # Verification is keyed on the git tree, not the commit: see .github/review/tree-reuse.py.  A
+    # full run of the shards leaves the artifact verified-obligation-proofs-<tree>; a later run
+    # of the same tree (the push after a squash merge) finds it and skips the shards.
+    name: Tree reuse
+    if: ${{ github.repository == 'erniecohen/dafny' && (github.event_name != 'pull_request' || !github.event.pull_request.draft) }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      reuse: ${{ steps.find.outputs.reuse }}
+      tree: ${{ steps.find.outputs.tree }}
+      run: ${{ steps.find.outputs.run }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Controls for the tree matching
+        run: python3 -m unittest discover -s .github/review -p test_tree_reuse.py
+      - name: Look for a verified run of this tree
+        id: find
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          EVENT: ${{ github.event_name }}
+          REF_TYPE: ${{ github.ref_type }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          RUN_ID: ${{ github.run_id }}
+        run: python3 .github/review/tree-reuse.py find --workflow .github/workflows/obligation-proofs.yml --marker verified-obligation-proofs
+
   shard:
-    if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.draft) && (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'erniecohen/dafny'))) }}
+    if: ${{ ((github.event_name != 'pull_request' || !github.event.pull_request.draft) && (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'erniecohen/dafny')))) && needs.tree.outputs.reuse != 'true' }}
+    needs: tree
     name: Obligation proof repairs (#170), part ${{ matrix.part }} of 12
     runs-on: [self-hosted, macOS, ARM64, mac-studio]
     timeout-minutes: 60
@@ -172,4 +203,36 @@ jobs:
         with:
           name: obligation-proof-part-${{ matrix.part }}
           path: Source/IntegrationTests/bin/Release/net10.0/TestFiles/LitTests/LitTest/git-issues/Output/git-issue-170*.dfy.tmp.dir
+          retention-days: 90
+
+  verdict:
+    # Success when every shard succeeded or was skipped for a reused verification.  A full run
+    # on a push or a pull request records the marker that a later run of the same tree reuses.
+    name: Verdict
+    if: ${{ !cancelled() && !contains(needs.*.result, 'failure') && needs.tree.result == 'success' && (github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)) }}
+    needs: [tree, shard]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Judge the shards
+        id: gate
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+        run: python3 .github/review/tree-reuse.py gate --jobs shard
+      - name: Marker for this tree
+        if: ${{ steps.gate.outputs.verified == 'true' }}
+        env:
+          EVENT: ${{ github.event_name }}
+          SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          mkdir verified
+          python3 .github/review/tree-reuse.py marker --out verified/tree.json
+      - uses: actions/upload-artifact@v4
+        if: ${{ steps.gate.outputs.verified == 'true' }}
+        with:
+          name: verified-obligation-proofs-${{ needs.tree.outputs.tree }}
+          path: verified
+          overwrite: true
           retention-days: 90
