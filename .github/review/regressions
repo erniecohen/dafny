@@ -461,3 +461,6 @@ git-issues/github-issue-309.dfy
 # a quantifier that binds nothing, and hideable definition axioms of generic functions.
 git-issues/github-issue-281-empty-quantifier.dfy
 git-issues/github-issue-281-hide.dfy
+# Caller type scopes across inline module resolution (--resolution-threads 0):
+# DafnyCore.Test ResolutionPipelineTests.ResolutionEndsWithCallerScopesDisabled and
+# ModuleErrorLeavesCallerScopesAsScheduledResolutionDoes, run by the worker-resolution CI step.
