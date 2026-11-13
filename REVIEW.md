@@ -209,8 +209,8 @@ that runs Boogie's own test jobs and packs Boogie's NuGet packages.  The same fi
 is offered to Boogie's master as
 [boogie-org/boogie#1169](https://github.com/boogie-org/boogie/pull/1169).
 
-This branch builds against that fork's release `v3.5.5+review.c5a9f2ef`, whose
-packages have the version `3.5.5-review.c5a9f2ef`.  The release carries them with
+This branch builds against that fork's release `v3.5.5+review.27e27ebc`, whose
+packages have the version `3.5.5-review.27e27ebc`.  The release carries them with
 their sha256 sums, and its `REVIEW.md` says what the fork changes and how its
 version is computed.  Besides that fix, it brings:
 
@@ -244,12 +244,28 @@ version is computed.  Besides that fix, it brings:
   verdicts.  Pass them with `--boogie "/cacheUsedTypes /lockFreeExpansion"`; a
   program that loads the standard library cannot yet, because its `.doo` records
   the `--boogie` options it was built with and refuses others.
+- **Canonical native-result map payloads**, on by default
+  ([#284](https://github.com/erniecohen/dafny/issues/284)): the same-index
+  read-over-write axiom requires a native payload's box/unbox round trip to
+  preserve the stored value. This weakens the inconsistent row without adding
+  an axiom. The hidden `--legacy-noncanonical-map-payloads` switch restores the
+  old row for comparison and migration.
+- **A pooled-solver idle-handshake repair**, on by default
+  ([#287](https://github.com/erniecohen/dafny/issues/287)): a healthy solver no
+  longer gets retired merely because its idle handshake exceeds 100 ms. The
+  default safeguard is 300 seconds; dead or broken transports still retire
+  promptly. No verification condition changes, but retaining physical solvers
+  changes their pooled history and can change later batches' resource counts
+  and outcomes at a resource limit. No fixed RU decrease is promised.
+  Restart-per-batch measurements should be unaffected by that history change;
+  native pooled runs can move. Boogie's hidden `/legacySolverIdleTimeout:1`
+  restores the old deadline for comparison, passed through Dafny's `--boogie`.
 
 `a48933e` made this branch build against the fork's packages, at
-`3.5.5-review.37e4435d`.  It now builds against `3.5.5-review.c5a9f2ef`:
+`3.5.5-review.37e4435d`.  It now builds against `3.5.5-review.27e27ebc`:
 
 - `Source/DafnyCore/DafnyCore.csproj` names `Boogie.ExecutionEngine`
-  `3.5.5-review.c5a9f2ef`, and `dotnet-tools.json` names the `boogie` tool at the
+  `3.5.5-review.27e27ebc`, and `dotnet-tools.json` names the `boogie` tool at the
   same version;
 - `nuget.config` adds a local package source, `Binaries/boogie-packages`, and maps
   every Boogie package to it and to nothing else, so a missing package stops the
