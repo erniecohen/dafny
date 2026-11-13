@@ -396,3 +396,6 @@ git-issues/github-issue-268.dfy
 
 # Source-only opt-in function operators, clone preservation and negative controls (https://github.com/erniecohen/dafny/issues/194).
 git-issues/github-issue-194.dfy
+
+# Library serialization preserves refinement syntax (https://github.com/erniecohen/dafny/issues/280).
+git-issues/git-issue-280.dfy
