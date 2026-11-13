@@ -23,7 +23,8 @@ public partial class BoogieGenerator {
     var baseValue = AdaptBoxing(origin, value, sourceType, baseType);
     var wrapper = new BoogieWrapper(baseValue, baseType);
     Expression constraint;
-    if (baseType.IsNumericBased() || baseType.IsBitVectorType || baseType.IsBoolType || baseType.IsCharType) {
+    if (baseType.IsNumericBased() || baseType.IsBitVectorType || baseType.IsBoolType ||
+        (baseType.IsCharType && options.Get(CommonOptionBag.LegacyUnguardedChar))) {
       // This is the authoritative combined predicate used by the numeric $Is axiom.
       constraint = ModuleResolver.GetImpliedTypeConstraint(wrapper, udt);
     } else {
