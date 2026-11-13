@@ -465,6 +465,14 @@ git-issues/github-issue-281-hide.dfy
 # DafnyCore.Test ResolutionPipelineTests.ResolutionEndsWithCallerScopesDisabled and
 # ModuleErrorLeavesCallerScopesAsScheduledResolutionDoes, run by the worker-resolution CI step.
 
+# Termination records in .doo libraries under --modular-termination, milestone M3-4 (https://github.com/erniecohen/dafny/issues/211): tampered, missing and mismatched records and contracts are rejected.
+git-issues/github-issue-211-m3-4.dfy
+# Canonical builtins of a reused resolution view are set up once, and Debug contract
+# assertions hold in the resolution and cardinality tests: DafnyCore.Test
+# PipelineProfileResolutionTests.ReusedViewSetsUpEachBuiltinOnce and
+# CacheHitsHaveExplicitEventsAndNoReplayedPhases, and CardinalityProfileTests, run in
+# Debug by the regressions job.
+
 # The refreshed resolver gives a variable bound by a match case pattern the declared type of the
 # constructor's field (https://github.com/erniecohen/dafny/issues/327).
 git-issues/github-issue-327.dfy

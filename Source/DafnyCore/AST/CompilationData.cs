@@ -26,4 +26,10 @@ public class CompilationData(
   public ISet<Uri> UrisToCompile;
 
   public TranslationRecord AlreadyTranslatedRecord { get; set; }
+
+  /// <summary>
+  /// Under --modular-termination, the termination contract of each module exported by an admitted
+  /// .doo library, by module name.  A library built from this compilation records them as its imports.
+  /// </summary>
+  public IReadOnlyList<DafnyCore.ModularTerminationContractRef> ModularTerminationImports { get; set; } = [];
 }
