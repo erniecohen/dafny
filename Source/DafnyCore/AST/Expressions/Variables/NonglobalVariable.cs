@@ -33,9 +33,12 @@ public abstract class NonglobalVariable : NodeWithOrigin, IVariable {
     LocalVariable.DisplayNameHelper(this);
 
   private string? uniqueName;
-  public string? UniqueName => uniqueName;
-  public bool HasBeenAssignedUniqueName => uniqueName != null;
+  public string? UniqueName => ModuleNamingScope.Current is { } scope ? scope.Name(this) : uniqueName;
+  public bool HasBeenAssignedUniqueName => UniqueName != null;
   public string AssignUniqueName(VerificationIdGenerator generator) {
+    if (ModuleNamingScope.Current is { } scope) {
+      return scope.Name(this, () => generator.FreshId(Name + "#"));
+    }
     return uniqueName ??= generator.FreshId(Name + "#");
   }
 
@@ -90,6 +93,9 @@ public abstract class NonglobalVariable : NodeWithOrigin, IVariable {
   protected string? compileName;
 
   public virtual string GetOrCreateCompileName(CodeGenIdGenerator generator) {
+    if (ModuleNamingScope.Current is { } scope) {
+      return scope.CompileName(this, () => $"_{scope.Prefix}{generator.FreshNumericId()}_{CompileNameShadowable}");
+    }
     return compileName ??= $"_{generator.FreshNumericId()}_{CompileNameShadowable}";
   }
 

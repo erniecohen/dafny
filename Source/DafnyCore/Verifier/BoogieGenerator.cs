@@ -46,6 +46,17 @@ namespace Microsoft.Dafny {
 
   public partial class BoogieGenerator {
     private DafnyOptions options;
+    private int capturedStateCount;
+    private int sourceCommentCount;
+
+    internal string CaptureStateName(string description) {
+      if (options.Get(CommonOptionBag.ResolutionThreads) == 0) {
+        return description;
+      }
+      var name = $"module:{forModule.FullName}:state:{capturedStateCount++}";
+      options.RecordCapturedStateDescription(name, description);
+      return name;
+    }
     public DafnyOptions Options => options;
     public const string NameSeparator = "$$";
     public const string CallPrefix = "Call";
@@ -748,6 +759,21 @@ namespace Microsoft.Dafny {
 
     public Bpl.Program DoTranslation(Program p, ModuleDefinition forModule) {
       RequireCardinalityValidation(p);
+      using var moduleNames = Options.Get(CommonOptionBag.ResolutionThreads) > 0
+        ? new ModuleNamingScope(forModule.FullName) : null;
+      if (moduleNames == null) {
+        return DoTranslationCore(p, forModule);
+      }
+      Type.ResetScopes();
+      try {
+        proofDependencies.SetCurrentDefinition(forModule.FullName, forModule.EnclosingLiteralModuleDecl);
+        return DoTranslationCore(p, forModule);
+      } finally {
+        Type.ResetScopes();
+      }
+    }
+
+    private Bpl.Program DoTranslationCore(Program p, ModuleDefinition forModule) {
       if (sink == null) {
         return new Bpl.Program();
       }
@@ -773,7 +799,8 @@ namespace Microsoft.Dafny {
       EstablishModuleScope(p.SystemModuleManager.SystemModule, forModule);
       Type.PushScope(this.currentScope);
 
-      foreach (var w in program.SystemModuleManager.Bitwidths) {
+      var moduleInputs = ModuleNamingScope.Current != null ? forModule.TranslationInputs : null;
+      foreach (var w in moduleInputs != null ? moduleInputs.Bitwidths : program.SystemModuleManager.Bitwidths) {
         // type axioms
         AddBitvectorTypeAxioms(w);
         // bitwise operations
@@ -802,7 +829,12 @@ namespace Microsoft.Dafny {
         AddBitvectorNatConversionFunction(w);
       }
 
-      foreach (TopLevelDecl d in program.SystemModuleManager.SystemModule.TopLevelDecls) {
+      var systemDeclarations = program.SystemModuleManager.SystemModule.TopLevelDecls;
+      if (moduleInputs != null) {
+        systemDeclarations = systemDeclarations.Where(d => moduleInputs.BuiltinNames.Contains(d.Name))
+          .OrderBy(d => d.Name, StringComparer.Ordinal);
+      }
+      foreach (TopLevelDecl d in systemDeclarations) {
         CurrentDeclaration = d;
         if (d is AbstractTypeDecl abstractType) {
           GetOrCreateTypeConstructor(abstractType);
@@ -838,6 +870,9 @@ namespace Microsoft.Dafny {
 
       //translate us first
       List<ModuleDefinition> mods = program.RawModules().ToList();
+      if (moduleInputs != null) {
+        mods = mods.Where(m => moduleInputs.ModuleNames.Contains(m.FullName)).OrderBy(m => m.FullName, StringComparer.Ordinal).ToList();
+      }
       mods.Remove(forModule);
       mods.Insert(0, forModule);
 
@@ -1259,8 +1294,16 @@ namespace Microsoft.Dafny {
       sink.AddTopLevelDeclaration(new Bpl.Axiom(tok, ax, $"bounded integer round trip for bv{w}"));
     }
 
+    private IEnumerable<ModuleDefinition> TranslationModules() {
+      var modules = program.RawModules();
+      if (Options.Get(CommonOptionBag.ResolutionThreads) > 0 && forModule.TranslationInputs is { } inputs) {
+        return modules.Where(m => inputs.ModuleNames.Contains(m.FullName)).OrderBy(m => m.FullName, StringComparer.Ordinal);
+      }
+      return modules;
+    }
+
     private void ComputeFunctionFuel() {
-      foreach (ModuleDefinition m in program.RawModules()) {
+      foreach (ModuleDefinition m in TranslationModules()) {
         foreach (TopLevelDecl d in m.TopLevelDecls) {
           if (d is TopLevelDeclWithMembers) {
             var c = (TopLevelDeclWithMembers)d;
@@ -1331,7 +1374,7 @@ namespace Microsoft.Dafny {
     ///   embellished.
     /// </summary>
     private void AddTraitParentAxioms() {
-      foreach (ModuleDefinition m in program.RawModules()) {
+      foreach (ModuleDefinition m in TranslationModules()) {
         foreach (var c in m.TopLevelDecls.OfType<TopLevelDeclWithMembers>().Where(RevealedInScope)) {
           foreach (var parentTypeInExtendsClause in c.Traits) {
             var childType = UserDefinedType.FromTopLevelDecl(c.Origin, c);
@@ -2265,7 +2308,8 @@ namespace Microsoft.Dafny {
 
     public void InsertUniqueIdForImplementation(Bpl.Declaration decl) {
       var impl = decl as Bpl.Implementation;
-      var prefix = UniqueIdPrefix ?? (decl.tok.filename == null ? "" : System.Text.RegularExpressions.Regex.Replace(decl.tok.filename, @".v\d+.dfy", ".dfy"));
+      var prefix = options.Get(CommonOptionBag.ResolutionThreads) > 0 ? "module:" + forModule.ResolutionKey :
+        UniqueIdPrefix ?? (decl.tok.filename == null ? "" : System.Text.RegularExpressions.Regex.Replace(decl.tok.filename, @".v\d+.dfy", ".dfy"));
       if (impl != null && !string.IsNullOrEmpty(prefix)) {
         decl.AddAttribute("id", prefix + ":" + impl.Name + ":0");
       }
@@ -3975,7 +4019,10 @@ namespace Microsoft.Dafny {
       Contract.Requires(builder != null);
       Contract.Requires(stmt != null);
       Contract.Requires(comment != null);
-      builder.Add(new Bpl.CommentCmd(string.Format("----- {0} ----- {1}({2},{3})", comment, stmt.Origin.Filepath, stmt.Origin.line, stmt.Origin.col)));
+      var location = builder.Options.Get(CommonOptionBag.ResolutionThreads) > 0
+        ? $"module:{builder.tran.forModule.FullName}:statement:{builder.tran.sourceCommentCount++}"
+        : string.Format("{0}({1},{2})", stmt.Origin.Filepath, stmt.Origin.line, stmt.Origin.col);
+      builder.Add(new Bpl.CommentCmd(string.Format("----- {0} ----- {1}", comment, location)));
     }
 
     /// <summary>
@@ -4794,6 +4841,9 @@ namespace Microsoft.Dafny {
       }
 
       private static Stack<FuelContext> GetSavedContexts() {
+        if (ModuleNamingScope.Current is { } scope) {
+          return scope.Value(typeof(FuelSetting), "fuel-contexts", () => new Stack<FuelContext>());
+        }
         var result = SavedContexts.Value;
         if (result == null) {
           SavedContexts.Value = result = new();
