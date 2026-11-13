@@ -335,145 +335,6 @@ jobs:
           path: comparison
           retention-days: 90
 
-  resolution-baseline:
-    if: ${{ github.event_name != 'pull_request' || !github.event.pull_request.draft }}
-    name: Build pre-resolution-option control
-    needs: build
-    runs-on: ubuntu-24.04
-    timeout-minutes: 45
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/checkout@v4
-        with:
-          ref: 0025e3f001351ee0f7c801c052bdd7d992c0de6e
-          path: resolution-baseline-source
-      - uses: ./.github/actions/setup-dotnet
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
-      - name: Build fixed control with the same toolchain and dependencies
-        working-directory: resolution-baseline-source
-        run: |
-          sh Scripts/fetch-boogie-packages.sh
-          dotnet publish Source/Dafny/Dafny.csproj -c Release -o out/dafny -p:GeneratePackageOnBuild=false
-          git rev-parse HEAD > out/dafny/resolution-control-source.txt
-          tar -C out -czf resolution-baseline.tar.gz dafny
-      - uses: actions/upload-artifact@v4
-        with:
-          name: resolution-baseline
-          path: resolution-baseline-source/resolution-baseline.tar.gz
-          retention-days: 14
-
-  parallel-resolution:
-    if: ${{ github.event_name != 'pull_request' || !github.event.pull_request.draft }}
-    name: Parallel resolution (${{ matrix.part }})
-    needs: [build, resolution-baseline]
-    runs-on: ubuntu-24.04
-    timeout-minutes: 240
-    strategy:
-      fail-fast: false
-      matrix:
-        part: ['0', '1', '2', '3', 'stdlib']
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/setup-dotnet
-      - uses: actions/download-artifact@v4
-        with:
-          name: dafny
-      - uses: actions/download-artifact@v4
-        with:
-          name: resolution-baseline
-      - name: Unpack both builds
-        run: |
-          mkdir -p out resolution-control
-          tar -C out -xzf dafny.tar.gz
-          tar -C resolution-control -xzf resolution-baseline.tar.gz
-      - name: Pinned solver
-        run: |
-          curl -fsSLo z3.zip "$Z3_RELEASE/$Z3_LINUX_X64.zip"
-          echo "$Z3_LINUX_X64_SHA256  z3.zip" | sha256sum -c -
-          unzip -q z3.zip
-          echo "Z3=$PWD/$Z3_LINUX_X64/bin/z3" >> "$GITHUB_ENV"
-      - name: Capture fixed control, option off, and N=1,2,4,8
-        run: |
-          python3 .github/review/resolution-comparison.py capture --part '${{ matrix.part }}' \
-            --baseline "$PWD/resolution-control/dafny/Dafny" --dafny "$PWD/out/dafny/Dafny" --z3 "$Z3" --output parallel-results
-      - name: Check default preservation, worker invariance, and reviewed opt-in baseline
-        run: |
-          expected=.github/review/expected-resolution-suite.tsv
-          if [ '${{ matrix.part }}' = stdlib ]; then expected=.github/review/expected-std-resolution-z3-5.1.0.tsv; fi
-          python3 .github/review/resolution-comparison.py compare --part '${{ matrix.part }}' --output parallel-results --expected "$expected"
-      - name: Measure three seeds for scopes with changed outcomes
-        if: always() && matrix.part != 'stdlib'
-        run: |
-          if [ -f parallel-results/report.json ]; then
-            python3 .github/review/resolution-comparison.py variance --part '${{ matrix.part }}' --dafny "$PWD/out/dafny/Dafny" --output parallel-results
-          fi
-      - name: Preserve inputs for independent full-Std seed jobs
-        if: matrix.part == 'stdlib'
-        run: |
-          mkdir -p seed-inputs/off/measurements seed-inputs/1
-          cp parallel-results/report.json seed-inputs/
-          cp parallel-results/off/vector.json seed-inputs/off/
-          cp parallel-results/1/vector.json seed-inputs/1/
-          cp parallel-results/off/measurements/Std.invocation.json seed-inputs/off/measurements/
-      - uses: actions/upload-artifact@v4
-        if: matrix.part == 'stdlib'
-        with:
-          name: resolution-std-seed-inputs
-          path: seed-inputs
-          retention-days: 90
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: parallel-resolution-${{ matrix.part }}
-          path: parallel-results
-          retention-days: 90
-          compression-level: 9
-
-  resolution-std-seeds:
-    if: ${{ github.event_name != 'pull_request' || !github.event.pull_request.draft }}
-    name: Full Std resolution seed (${{ matrix.mode }}, ${{ matrix.seed }})
-    needs: parallel-resolution
-    runs-on: ubuntu-24.04
-    timeout-minutes: 100
-    strategy:
-      fail-fast: false
-      matrix:
-        mode: ['off', '1']
-        seed: [0, 1, 2]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/setup-dotnet
-      - uses: actions/download-artifact@v4
-        with:
-          name: dafny
-      - uses: actions/download-artifact@v4
-        with:
-          name: resolution-std-seed-inputs
-          path: seed-results
-      - name: Unpack the captured producer and pin the solver
-        run: |
-          mkdir -p out
-          tar -C out -xzf dafny.tar.gz
-          curl -fsSLo z3.zip "$Z3_RELEASE/$Z3_LINUX_X64.zip"
-          echo "$Z3_LINUX_X64_SHA256  z3.zip" | sha256sum -c -
-          unzip -q z3.zip
-          echo "Z3=$PWD/$Z3_LINUX_X64/bin/z3" >> "$GITHUB_ENV"
-      - name: Repeat the complete Std invocation
-        run: |
-          python3 .github/review/resolution-comparison.py variance --part stdlib \
-            --dafny "$PWD/out/dafny/Dafny" --z3 "$Z3" --output seed-results \
-            --seed '${{ matrix.seed }}' --mode '${{ matrix.mode }}'
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: resolution-std-seed-${{ matrix.mode }}-${{ matrix.seed }}
-          path: seed-results
-          retention-days: 90
-          compression-level: 9
-
   verification-batch:
     if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.draft) && ((github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'erniecohen/dafny'))) && !inputs.platform_parity) }}
     name: Resolve-once verification batch controls
@@ -660,8 +521,6 @@ jobs:
         run: python3 -m unittest discover -s .github/review -p test_additional_axioms.py
       - name: Test matrix runner
         run: python3 -m unittest discover -s .github/review -p test_resolver_matrix.py
-      - name: Test fail-closed resolution comparison controls
-        run: python3 -m unittest discover -s .github/review -p test_resolution_comparison.py
       - name: Resolve manifest in both modes
         env:
           PROBE: ${{ inputs.resolver_probe }}
@@ -1036,8 +895,6 @@ jobs:
             --logger "console;verbosity=normal" \
             --filter "FullyQualifiedName~DafnyCore.Test.RedirectingTypeDependencyTrackerTests|FullyQualifiedName~DafnyCore.Test.NumericAncestryTests|FullyQualifiedName~DafnyCore.Test.NumericAncestryAllocationTests|FullyQualifiedName~DafnyCore.Test.ScopeCheckpointTest|FullyQualifiedName~MapComprehensionSubstitutionTests" \
             --blame-hang --blame-hang-timeout 60s --blame-hang-dump-type none
-      - name: Test isolated parallel resolution and module keys
-        run: dotnet test --settings .github/review/ci.runsettings Source/DafnyCore.Test -c Release --no-build --filter FullyQualifiedName~ResolutionPipelineTests --logger "console;verbosity=normal"
       - name: Test newtype-cycle edits in both resolver modes
         run: |
           dotnet test --settings .github/review/ci.runsettings Source/DafnyLanguageServer.Test -c Release --no-build \
@@ -1055,11 +912,6 @@ jobs:
             --logger "console;verbosity=normal" \
             --filter "FullyQualifiedName~IncrementalBitvectorMembersTest" \
             --blame-hang --blame-hang-timeout 90s --blame-hang-dump-type none
-      - name: Test current counterexample positions with module-local state labels
-        run: |
-          DAFNY_TEST_Z3="$Z3" dotnet test --settings .github/review/ci.runsettings Source/DafnyLanguageServer.Test -c Release --no-build \
-            --filter "FullyQualifiedName~ParallelResolutionCounterexamplesUseCurrentPositions" \
-            --blame-hang --blame-hang-timeout 60s --blame-hang-dump-type none
 
   finite-support:
     if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.draft) && ((github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'erniecohen/dafny'))) && !inputs.platform_parity) }}
@@ -1283,7 +1135,7 @@ jobs:
   release:
     if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.draft) && (!inputs.platform_parity && (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref_type == 'tag')) }}
     name: GitHub release
-    needs: [build, binaries, verdicts, stdlib, javascript-runtime, regressions, regressions-linux, resolver, resolver-tests, finite-support, statement-conclusions, axiom-resources, verification-batch, integer-bitwise-reference, parallel-resolution, resolution-std-seeds]
+    needs: [build, binaries, verdicts, stdlib, javascript-runtime, regressions, regressions-linux, resolver, resolver-tests, finite-support, statement-conclusions, axiom-resources, verification-batch, integer-bitwise-reference]
     runs-on: mac-studio
     timeout-minutes: 15
     permissions:

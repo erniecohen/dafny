@@ -716,9 +716,8 @@ The IDE keys unsaved document overlays, not disk contents substituted for them.
 Every hit is rebound to a current compilation version and checked for cancellation
 before publication. New syntax/type/global-admission diagnostics remain
 authoritative; older successful verifier results are never published as success
-for an invalid or newer document version. The default editor cache and internal worker API retain both engines, with the
-engine/effective options in the key. The opt-in pipeline options require refreshed
-inference, as specified in section 8.4.
+for an invalid or newer document version. Both resolver engines use this same
+post-resolution cache architecture, with the engine/effective options in the key.
 
 ## 6. Incremental front end and safe parallelism
 
@@ -818,124 +817,7 @@ case. Adding a lock around `id++` prevents duplication but permits different SMT
 names on every schedule. Apply the same reasoning to type/visibility IDs, builtin
 enumeration and declaration-order ties.
 
-### 6.2.1 Opt-in implementation boundary
-
-`--resolution-threads N` selects a separate path in `ProgramResolver`; omission
-retains the original loop. The graph is the existing resolution graph, including
-refinement bases, nested prerequisites, imports, abstract imports and export views.
-A ready queue publishes completed prerequisites immediately, independently of the
-later diagnostic merge in `sortedDecls` order. Heights in this mode are dependency
-depths, so adding an unrelated module does not renumber an existing module.
-
-`ModuleResolutionKey` hashes a domain-separated, length-delimited encoding of the
-fully qualified module identity, original source, Dafny version, effective options
-and sorted `(dependency role, qualified identity, key)` prerequisite records. It
-does not use `CloneId`, execution order, worker count or the whole-program builtin
-shape. The implicit default module hashes its individual source declarations and
-members, including members contributed by different files; its synthetic default
-class has no source span and cannot stand in for those members.
-Execution/report destinations are excluded; other option values are
-conservatively included. Effective legacy fields and backend native-type support
-are also included, since legacy parsing can bypass the modern option dictionary.
-Effective per-declaration verification membership is included without source URIs:
-the unchecked-termination warning distinguishes selected roots from already
-verified library declarations even when their source and CLI options match.
-The key is available on each module output and in the
-requested `resolve.module` profile events. `--pipeline-profile` also works with
-`resolve`, allowing resolve-only measurements without solver startup.
-`ModuleResolutionKey.DafnyVersion` binds the informational version (including the
-fork revision) and resolver assembly MVID. The latter rejects differently built
-or uncommitted resolver binaries even when revision metadata is absent or stale.
-This conservatively permits reuse only across matching resolver builds, rather
-than relying on the legacy fixed `4.11.0.0` file version.
-
-Each worker owns its reporter, signature map, class-member tables and builtin
-publication view. A per-resolution catalog interns intrinsic tuple, arrow, array,
-bitvector and pretype definitions under a lock; workers record their own usage.
-First-touch pretype/member initialization finishes before another worker receives
-the definition. Translation input discovery includes resolved node fields that
-structural `Children` omits, such as conversion targets, original frame lambdas
-and lowered array initializers. Function subset types retain their underlying
-arrow family; resolution-requested bitvector widths are recorded per worker.
-The published view and translator input are restricted to the module's resolved
-prerequisite closure. Refinement export signatures are copied:
-their resolved `Decl` fields cannot be shared with the base or sibling refinements.
-Re-publishing an unchanged declaration does not write its parent's list while
-dependents are reading it.
-
-`ModuleNamingScope` gives each resolver and translator a private name-generator
-state, variable/label name map and counters, qualified by the module identity.
-It preserves semantic fresh-name prefixes such as match wildcards. Imported
-declarations' generators, including generators reached through `codeContext`, do
-not carry translation history between modules. Translation uses the prerequisite
-closure for builtin declarations, bitvector axioms, function fuel and trait-parent
-axioms. Proof-dependency IDs are module-qualified as well.
-Let desugarings, assertion-label Boogie expressions and the saved fuel-context
-stack are translation-local under the option. Computing missing match cases does
-not add metadata to the resolved match. Captured-variable and heap-label ordering
-is ordinal, fresh counters use invariant formatting, and translation cleans up its
-type scope even on failure.
-
-Capture-state labels use the module identity, and snapshot implementation IDs use
-the full module key. State and source-comment ordinals restart in each translator. Physical paths and line
-numbers do not enter those Boogie annotations. A compilation-local reporting map
-rebinds captured states to current source locations for counterexamples and test
-generation. The IDE uses the resolved program's map, including after an unrelated
-module shifts source lines. Raw saved model files contain the stable state IDs;
-their physical source descriptions require that invocation's reporting map.
-
-Remaining process state is deliberately outside the content key: visibility
-tokens are atomic opaque set identities and their memo tables are synchronized;
-they are not emitted as generated identifiers. Quantifier construction still
-allocates a transient process identity, but its externally used `FullName` is
-module-scoped in this mode. Debug type-proxy and refinement-wrapper IDs created
-during resolution use module counters. Pure string caches on imported declarations
-remain derived from their declarations; backend compilation and solver preparation
-are later boundaries. Source locations remain attached to diagnostics; any snapshot
-loader must rebind them to the current source map. This PR does not introduce a
-persistent cache, freeze resolved ASTs, or remove the language server's outer lock.
-The default path retains the IDE's legacy CloneId/system-shape result cache. The
-opt-in scheduler exposes a complete worker-output hook keyed by `ModuleResolutionKey`.
-The IDE retains the dependency-local builtin, signature, member and translation-input
-views together. Reuse additionally requires unchanged parse identity for diagnostic
-tokens and the exact prerequisite output objects; replacing a prerequisite forces
-its dependents to resolve again. An editor-owned intrinsic catalog supplies canonical
-builtin identities across edits, with fresh per-resolution and per-worker views.
-Operator-export clone contexts snapshot the view's actual builtin type identities:
-an interned declaration need not be owned by the publication module. The snapshot
-survives output pruning and grants no exemption based on a module or type name;
-user declarations still require ordinary export visibility and revelation.
-Containment is rebound after deterministic publication, including parent cache hits.
-Rejected modules and their failed prerequisite closures are not traversed to collect
-translation inputs. These are editor-session results, not serialized snapshots or
-whole-program admission receipts.
-External plugin callbacks have no concurrency contract, so their presence limits
-the opt-in path to one worker. Whole-program admission and global rewrites always
-run outside the module scheduler.
-
-The key is the local, pre-global resolution identity. Global postpasses are not
-implicitly certified by it: modular termination reads downstream implementation
-facts during translation, and test-runner generation can replace a generated body
-after module resolution. Before any translation-cache lookup supports those
-profiles, it must incorporate the current translation-observable global projection
-or bypass reuse. The proposed local/global/final key split is reviewed separately
-in https://github.com/erniecohen/dafny/pull/272; this PR does not implement it or
-claim that the local key alone covers those global translation inputs. A generated
-abstract signature also needs its stable `ModuleDefinition.FullName` as a selector
-within the owning resolution result: several signatures can share one owner key.
-
-The reproducible resolve-only benchmark is
-[`.github/review/resolution-threads.py`](../../../.github/review/resolution-threads.py).
-It measures five fresh processes per N on the standard library, its examples,
-the DafnyCore project, the three public lit inputs with the most module
-declarations, and a generated wide DAG. The
-integration regression compares actual `--bprint` files at N = 1, 2, 4, 8 and after
-unrelated builtin growth. Unit tests cover key boundaries, diagnostic order, both
-inference engines, refinement invalidation, export ownership and immediate ready
-queue progress. CI checks exact default bytes, verdicts and RU against the shipped
-control, then exact worker-count invariance. Opt-in verdicts have their own
-separately reviewed baselines; default-to-opt-in movements and three-seed cost
-observations are reported explicitly.
+Operator-export clone contexts snapshot the actual builtin declaration identities from the dependency-local publication view. This shared correctness hook also applies on the default caller-thread path: an interned declaration can be owned by a different publication module. It does not exempt declarations by module or type name, and user declarations retain their ordinary visibility and revelation checks.
 
 ### 6.3 Improve the existing resolution cache
 
@@ -1095,11 +977,11 @@ refinement. Module attributes still use legacy inference under refreshed mode.
 | Option family | Legacy engine | `--type-system-refresh` |
 | --- | --- | --- |
 | Window, background sharing, VC allocation, solver/task streaming | Operate after legacy resolution; preserve its emitted obligations | Same architecture after refreshed resolution; compare against refreshed baseline, not against legacy output |
-| Result cache / early prepared artifacts | The opt-in result cache is rejected; default preparation retains legacy encoding | Key engine and refreshed options, including general-newtype/inference switches; never reinterpret legacy records |
+| Result cache / early prepared artifacts | Key completed legacy encoding and all legacy options | Key engine and refreshed options, including general-newtype/inference switches; never reinterpret legacy records |
 | Prelude template | Key actual prelude/defines/options; engine may be conservatively over-keyed | Same; do not assume equal output merely because the prelude text is equal |
 | Incremental signatures / `.doo` | Freeze resolved final `Type` state, never live proxies | Freeze final normalized types after pretype conversion/refinement; no unresolved pretypes or shared lazy builtin mutation |
-| Parallel module resolution | Explicit opt-in is rejected; internal/default workers must still report legacy errors safely | Additional builtin and lazy-signature isolation; no declaration-level threading through one resolver |
-| Parallel translation / translation cache | The opt-in translation cache is rejected; default translation preserves legacy behavior | Same hazards; a different inference engine does not make the AST immutable |
+| Parallel module resolution | Private constraint/scoping state; immutable imported proxies/types | Additional builtin and lazy-signature isolation; no declaration-level threading through one resolver |
+| Parallel translation | Isolate resolved-AST writes, scopes, IDs and proof dependencies | Same hazards; a different inference engine does not make the AST immutable |
 | Full import-ready pipeline | Global admission remains necessary | Same global admission; refreshed inference does not make cardinality local |
 
 ## 7. Focused implementation milestones
@@ -1345,18 +1227,7 @@ Test the actual late lookup and each proposed earlier boundary separately.
 | Rehydration | Alias/definition-axiom ownership, solved type identities, weak-table preparation state, model views, labels and coverage; saved artifacts independently compared with full fresh recomputation |
 | Reports | Coverage, redundant/contradictory-assumption warnings, errors with relocated source coordinates, logs for repeated batches; same semantic payload and appropriate historical/current cost distinction |
 
-The opt-in parallel-resolution, translation-cache and result-cache options require
-`--type-system-refresh`. Validate the effective CLI/project options before parsing:
-an effective false value is a clear option error with exit 2. Do not silently
-select another inference engine. Internal/default worker callers still need
-independent invalid-input handling: if a module or its prerequisites failed
-resolution, leave translation inputs absent and skip builtin output pruning.
-Never traverse unresolved `Children` to prepare a translation that cannot run.
-The rejected Std command and its 19-error shipped transcript are a CLI regression;
-Core tests run its source closure directly through workers at N=1,2,4,8, bypassing
-option validation, and require the same diagnostics and no admission receipt.
-
-Run old and refreshed inference independently on supported default-path fixtures. Do not run
+Run old and refreshed inference independently on supported fixtures. Do not run
 the unchanged Std general-newtype configuration with the legacy engine and call
 the resulting configuration error a resolver performance regression. For generic
 controls, pair `--type-system-refresh:false --general-newtypes:false` and
@@ -1365,8 +1236,7 @@ controls, pair `--type-system-refresh:false --general-newtypes:false` and
 The LSP test base currently forces refreshed inference and general newtypes;
 the Boolean theory parameter in `CardinalityCachingTest` controls cache waiting,
 not inference. Add a parameterized setup that overrides both engine options for
-supported legacy fixtures on the default path; new options must explicitly admit
-the refreshed path. Merely running
+supported legacy fixtures and explicitly admits each new feature. Merely running
 the test filters below does not create a two-engine or option-ON matrix.
 
 Reuse and extend these existing test locations:
@@ -1639,3 +1509,12 @@ measurements are substituted for the issue's corpus results.
 [verify-command]: https://github.com/erniecohen/dafny/blob/d0301c6f702dabada677d99c3ebf63745f357d9c/Source/DafnyDriver/Commands/VerifyCommand.cs#L68
 [visibility]: https://github.com/erniecohen/dafny/blob/d0301c6f702dabada677d99c3ebf63745f357d9c/Source/DafnyCore/AST/VisibilityScope.cs#L11
 [visitor]: https://github.com/erniecohen/boogie/blob/7873c81883456dfc98fabd84b5d3b6d132417219/Source/Core/StandardVisitor.cs#L1616
+
+The default translation prerequisite shares the dependency-local ownership and
+complete editor-output cache hook from the resolution work. Zero resolution threads
+executes that operation directly on the caller, without creating scheduler workers;
+positive thread counts select the optional concurrent scheduler. Rejected modules
+and failed prerequisite closures do not undergo translation-input discovery. The
+editor retains canonical builtin identities and reuses an output only with its
+original diagnostic parse identity and exact prerequisite output objects. These
+changes do not add persistent resolution snapshots.

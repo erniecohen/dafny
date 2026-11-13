@@ -548,34 +548,35 @@ namespace Microsoft.Dafny {
       }
 
       var newNameNode = new Name(Origin(f.NameNode.Origin), newName);
+      var signatureEllipsis = f.SignatureEllipsis == null ? null : Origin(f.SignatureEllipsis);
 
       if (f is Predicate) {
         return new Predicate(Origin(f.Origin), newNameNode, f.HasStaticKeyword, f.IsGhost, f.IsOpaque, tps, formals,
           result,
           req, reads, ens, decreases, body, Predicate.BodyOriginKind.OriginalOrInherited,
           f.ByMethodTok == null ? null : Origin(f.ByMethodTok), byMethodBody,
-          CloneAttributes(f.Attributes), null);
+          CloneAttributes(f.Attributes), signatureEllipsis);
       } else if (f is LeastPredicate) {
         return new LeastPredicate(Origin(f.Origin), newNameNode, f.HasStaticKeyword, f.IsOpaque,
           ((LeastPredicate)f).TypeOfK, tps, formals, result,
-          req, reads, ens, body, CloneAttributes(f.Attributes), null);
+          req, reads, ens, body, CloneAttributes(f.Attributes), signatureEllipsis);
       } else if (f is GreatestPredicate greatestPredicate) {
         return new GreatestPredicate(Origin(f.Origin), newNameNode, f.HasStaticKeyword, f.IsOpaque,
           ((GreatestPredicate)f).TypeOfK, tps, formals, result,
-          req, reads, ens, body, CloneAttributes(f.Attributes), null);
+          req, reads, ens, body, CloneAttributes(f.Attributes), signatureEllipsis);
       } else if (f is TwoStatePredicate) {
         return new TwoStatePredicate(Origin(f.Origin), newNameNode, f.HasStaticKeyword, f.IsOpaque, tps, formals,
           result,
-          req, reads, ens, decreases, body, CloneAttributes(f.Attributes), null);
+          req, reads, ens, decreases, body, CloneAttributes(f.Attributes), signatureEllipsis);
       } else if (f is TwoStateFunction) {
         return new TwoStateFunction(Origin(f.Origin), newNameNode, f.HasStaticKeyword, f.IsOpaque, tps, formals,
           result, CloneType(f.ResultType),
-          req, reads, ens, decreases, body, CloneAttributes(f.Attributes), null);
+          req, reads, ens, decreases, body, CloneAttributes(f.Attributes), signatureEllipsis);
       } else {
         return new Function(Origin(f.Origin), newNameNode, f.HasStaticKeyword, f.IsGhost, f.IsOpaque, tps, formals,
           result, CloneType(f.ResultType),
           req, reads, ens, decreases, body, f.ByMethodTok == null ? null : Origin(f.ByMethodTok), byMethodBody,
-          CloneAttributes(f.Attributes), null);
+          CloneAttributes(f.Attributes), signatureEllipsis);
       }
     }
 

@@ -51,7 +51,7 @@ public static class ModuleResolutionKey {
   internal static IEnumerable<KeyValuePair<string, string>> Options(DafnyOptions options) {
     // Execution, reporting, and lookup locations are not semantic resolution inputs.
     var ignored = new HashSet<string>(StringComparer.Ordinal) {
-      "resolution-threads", "resolution-cache", "pipeline-profile", "bprint", "rprint", "print", "sprint", "pprint",
+      "resolution-threads", "resolution-cache", "translation-cache", "verification-cache", "pipeline-profile", "bprint", "rprint", "print", "sprint", "pprint",
       "log-level", "log-location", "show-snippets", "use-basename-for-filename", "cores", "library",
       "log-format", "verification-coverage-report", "solver-log", "output", "progress"
     };

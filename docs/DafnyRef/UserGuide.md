@@ -259,24 +259,6 @@ and specification from
 implementation.
 
 The options relevant to this command are
-- `--resolution-threads N` opts into dependency-ready resolution with up to `N`
-  workers (`N >= 1`). It requires `--type-system-refresh`; an effective false
-  value, including one from a project file, is rejected before source parsing
-  with exit code 2. Without this option, the existing resolver path is used.
-  Diagnostics are emitted in the usual module order. Generated identifiers are
-  qualified by module, including identifiers used during verification translation.
-  Boogie state labels use stable module identities; counterexamples in the current
-  invocation retain their current source coordinates. Reading raw saved models
-  separately requires that invocation's state-to-source map.
-  Resolution keys cover the module's source, fully qualified identity, options,
-  Dafny version, and prerequisites from the semantic resolution graph (including
-  refinement bases, nesting, imports and export views).
-  Whole-program rewriters, replaceable-module instantiation, duplicate module-name
-  checks and cardinality validation still run on every invocation. External plugins
-  currently limit this mode to one worker because their callbacks have no
-  concurrent-resolution contract. The language server caches complete module
-  outputs by semantic key, unchanged parse identity and prerequisite output
-  identity; whole-program admission is rerun after a hit.
 - those relevant to the command-line itself
    - `--allow-warnings` --- return a success [exit code](#sec-exit-codes), even when there are warnings 
 
@@ -319,6 +301,13 @@ It is also permitted to verify completely disjoint files or
 programs together in a single run of `dafny`.
 
 Various options control the verification process, in addition to all those described for [`dafny resolve`](#sec-dafny-resolve).
+
+- `--resolution-threads N` uses N workers for dependency-ready module resolution.
+  It requires `--type-system-refresh`; an incompatible configuration is rejected
+  before parsing with exit code 2. The effective CLI or project-file options apply.
+  Scheduling is opt-in and N must be positive when specified. Sequential and
+  parallel resolution use the same module-scoped names, dependency heights and
+  builtin inventories; changing N does not select a different translation scheme.
 
 - What is verified
    - `--verify-included-files` (when enabled, all included files are verified, except library files, otherwise just those files on the command-line)

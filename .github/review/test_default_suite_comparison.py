@@ -421,13 +421,10 @@ class WorkflowControls(unittest.TestCase):
                         for name, guard in guards.items():
                             expression = guard.replace('github.repository', repr('erniecohen/dafny'))
                             expression = expression.replace('github.event.pull_request.head.repo.full_name', repr('erniecohen/dafny'))
-                            # This control exercises ready PRs; draft routing has its own exhaustive controls.
-                            expression = expression.replace('github.event.pull_request.draft', 'False')
                             expression = expression.replace('inputs.platform_parity', 'False')
                             expression = expression.replace('github.event_name', repr(event)).replace('github.ref', repr(ref))
                             expression = expression.replace('inputs.default_comparison', repr(flag)).replace('inputs.decreases_order_comparison', repr(decreases_flag))
-                            expression = expression.replace('&&', ' and ').replace('||', ' or ')
-                            expression = re.sub(r'!(?!=)', ' not ', expression)
+                            expression = expression.replace('&&', ' and ').replace('||', ' or ').replace('!', ' not ')
                             actual = eval(expression.strip(), {'__builtins__': {}, 'startsWith': lambda a, b: a.startswith(b)})
                             wanted = (manual_scratch and flag if name == 'default-comparison' else
                                       manual_scratch and decreases_flag if name == 'decreases-order-comparison' else

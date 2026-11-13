@@ -55,21 +55,15 @@ public class ProgramResolver {
     var sortedDecls = dependencies.TopologicallySortedComponents();
     Program.ModuleSigs = new();
 
-    if (Options.Get(CommonOptionBag.ResolutionThreads) > 0) {
-      foreach (var declaration in sortedDecls) {
-        declaration.Height = dependencies.FindVertex(declaration).Successors.Select(v => v.N.Height + 1).DefaultIfEmpty(0).Max();
-        if (declaration is LiteralModuleDecl literal) { literal.ModuleDef.Height = declaration.Height; }
-      }
-    } else {
-      SetHeights(sortedDecls);
+    foreach (var declaration in sortedDecls) {
+      declaration.Height = dependencies.FindVertex(declaration).Successors.Select(v => v.N.Height + 1).DefaultIfEmpty(0).Max();
+      if (declaration is LiteralModuleDecl literal) { literal.ModuleDef.Height = declaration.Height; }
     }
 
-    if (Options.Get(CommonOptionBag.ResolutionThreads) > 0) {
-      var systemKey = ModuleResolutionKey.Compute("_System", "", ModuleResolutionKey.DafnyVersion,
-        ModuleResolutionKey.Options(Options), []);
-      Program.SystemModuleManager = PrepareResolutionSystemModule(systemKey);
-    }
-    using var systemNames = Options.Get(CommonOptionBag.ResolutionThreads) > 0 ? new ModuleNamingScope("_System") : null;
+    var systemKey = ModuleResolutionKey.Compute("_System", "", ModuleResolutionKey.DafnyVersion,
+      ModuleResolutionKey.Options(Options), []);
+    Program.SystemModuleManager = PrepareResolutionSystemModule(systemKey);
+    using var systemNames = new ModuleNamingScope("_System");
     var systemClassMembers = ResolveSystemModule(Program);
     foreach (var moduleClassMembers in systemClassMembers) {
       classMembers[moduleClassMembers.Key] = moduleClassMembers.Value;
@@ -83,15 +77,8 @@ public class ProgramResolver {
       rewriter.PreResolve(Program);
     }
 
-    if (Options.Get(CommonOptionBag.ResolutionThreads) > 0) {
-      ResolveModulesInParallel(sortedDecls, moduleDeclarationPointers, cancellationToken);
-    } else {
-      foreach (var decl in sortedDecls) {
-        cancellationToken.ThrowIfCancellationRequested();
-        var moduleResolutionResult = ResolveModuleDeclaration(compilation, decl);
-        ProcessDeclarationResolutionResult(moduleDeclarationPointers, decl, moduleResolutionResult);
-      }
-    }
+    // Local ownership is shared; zero resolves directly without the opt-in scheduler.
+    ResolveModuleOutputs(sortedDecls, moduleDeclarationPointers, cancellationToken);
 
     if (Reporter.ErrorCount != startingErrorCount) {
       return Task.CompletedTask;
@@ -120,7 +107,7 @@ public class ProgramResolver {
   /// A dependency-ready queue, with publication to dependents distinct from ordered
   /// publication to the program and its reporter. No height barrier is introduced.
   /// </summary>
-  private void ResolveModulesInParallel(List<ModuleDecl> declarations,
+  private void ResolveModuleOutputs(List<ModuleDecl> declarations,
     Dictionary<ModuleDecl, Action<ModuleDecl>> pointers, CancellationToken cancellationToken) {
     var indices = declarations.Select((declaration, index) => (declaration, index))
       .ToDictionary(p => p.declaration, p => p.index);
@@ -213,28 +200,22 @@ public class ProgramResolver {
               // An import can be unresolved without producing a new local diagnostic.
               // Its resolved fields (and hence Children) are not safe to traverse.
               var invalid = resolved.ErrorReporter.HasErrors ||
-                closure.Any(i => results[i].TranslationInputs == null || results[i].ErrorReporter.HasErrors ||
+                closure.Any(i => results[i].ErrorReporter.HasErrors ||
                   results[i].Signatures.Keys.Any(m => !m.SuccessfullyResolved)) ||
                 resolved.Signatures.Keys.Any(m => !m.SuccessfullyResolved);
-              // Internal callers may use workers without going through CLI option
-              // validation. Invalid ASTs have no translation input or pruned builtin
-              // output: even their Children accessors can require successful resolution.
-              ModuleTranslationInputs translationInputs = null;
-              if (!invalid) {
-                translationInputs = new ModuleTranslationInputs(declarations[index],
-                  closure.Select(i => results[i].TranslationInputs));
-                translationInputs.Bitwidths.UnionWith(builtins.Bitwidths);
-                builtins.RestrictResolutionOutput(translationInputs);
-              }
+              var translationInputs = new ModuleTranslationInputs(invalid ? null : declarations[index],
+                closure.Select(i => results[i].TranslationInputs));
+              translationInputs.Bitwidths.UnionWith(builtins.Bitwidths);
+              builtins.RestrictResolutionOutput(translationInputs);
               foreach (var definition in resolved.Signatures.Keys) {
-                translationInputs?.ModuleNames.Add(definition.FullName);
+                translationInputs.ModuleNames.Add(definition.FullName);
                 definition.TranslationInputs = translationInputs;
                 definition.ResolutionKey = Program.ResolutionKeys[declarations[index]];
               }
               var output = resolved with {
                 Key = Program.ResolutionKeys[declarations[index]], Builtins = builtins,
                 SystemClassMembers = worker.classMembers.Where(p => p.Key.EnclosingModuleDefinition.Name == "_System" &&
-                    (translationInputs == null || translationInputs.BuiltinNames.Contains(p.Key.Name)))
+                    translationInputs.BuiltinNames.Contains(p.Key.Name))
                   .ToDictionary(p => p.Key, p => p.Value),
                 TranslationInputs = translationInputs
               };
@@ -278,10 +259,14 @@ public class ProgramResolver {
     // Plugins have arbitrary state and no concurrent-resolution contract. Retain
     // module-local outputs and names, but execute their callbacks on one worker.
     var count = Options.Plugins.Except(DafnyOptions.DefaultPlugins).Any()
-      ? 1 : Math.Min(Options.Get(CommonOptionBag.ResolutionThreads), declarations.Count);
-    var workers = Enumerable.Range(0, count).Select(_ => new Thread(RunWorker, 0x10000000) { IsBackground = true }).ToArray();
-    foreach (var worker in workers) { worker.Start(); }
-    foreach (var worker in workers) { worker.Join(); }
+      ? 1 : Math.Min(Math.Max(1, Options.Get(CommonOptionBag.ResolutionThreads)), declarations.Count);
+    if (Options.Get(CommonOptionBag.ResolutionThreads) == 0) {
+      RunWorker();
+    } else {
+      var workers = Enumerable.Range(0, count).Select(_ => new Thread(RunWorker, 0x10000000) { IsBackground = true }).ToArray();
+      foreach (var worker in workers) { worker.Start(); }
+      foreach (var worker in workers) { worker.Join(); }
+    }
     failure?.Throw();
     cancellationToken.ThrowIfCancellationRequested();
 

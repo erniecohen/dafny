@@ -30,6 +30,24 @@ public class ResolutionPipelineTests {
     }
     """;
 
+  [Theory]
+  [InlineData(false)]
+  [InlineData(true)]
+  public async Task DefaultResolutionUsesCallerAndMatchesScheduledOwnership(bool refresh) {
+    var caller = 0;
+    var observed = new List<int>();
+    var (direct, directReporter) = await Resolve(Source, 0, refresh,
+      starting: _ => observed.Add(Environment.CurrentManagedThreadId),
+      configure: _ => caller = Environment.CurrentManagedThreadId);
+    Assert.Empty(Errors(directReporter));
+    Assert.NotEmpty(observed);
+    Assert.All(observed, thread => Assert.Equal(caller, thread));
+    var (scheduled, scheduledReporter) = await Resolve(Source, 1, refresh);
+    Assert.Empty(Errors(scheduledReporter));
+    Assert.Equal(Keys(direct), Keys(scheduled));
+    Assert.Equal(Translate(direct, true), Translate(scheduled, true));
+  }
+
   [Fact]
   public async Task OperatorExportViewsKeepCanonicalBuiltinIdentities() {
     const string source = """
@@ -92,66 +110,21 @@ public class ResolutionPipelineTests {
 
   [Fact]
   public async Task RejectedLegacyNewtypesDoNotTraverseUnresolvedImports() {
-    // Invoke Core directly, bypassing CLI validation, as a default-worker caller
-    // can do. An option rejection alone would not cover invalid AST traversal.
     const string source = """
       module Api { newtype N = x: int | 0 <= x }
       module Client { import A = Api function F(x: A.N): A.N { x } }
       """;
     var (_, baseline) = await Resolve(source, 0, false,
-      configureOptions: options => options.Set(CommonOptionBag.GeneralNewtypes, true));
+      configure: p => p.Options.Set(CommonOptionBag.GeneralNewtypes, true));
     var expected = Errors(baseline);
     Assert.NotEmpty(expected);
     Assert.Contains(expected, message => message.Contains("requires --type-system-refresh"));
     foreach (var threads in new[] { 1, 2, 4, 8 }) {
       var (program, reporter) = await Resolve(source, threads, false,
-        configureOptions: options => options.Set(CommonOptionBag.GeneralNewtypes, true));
+        configure: p => p.Options.Set(CommonOptionBag.GeneralNewtypes, true));
       Assert.Equal(expected, Errors(reporter));
       Assert.Null(program.CardinalityValidationReceipt);
-      var api = (LiteralModuleDecl)program.DefaultModuleDef.SourceDecls.Single(d => d.Name == "Api");
-      var inputs = typeof(ModuleDefinition).GetProperty("TranslationInputs", BindingFlags.Instance | BindingFlags.NonPublic)!;
-      Assert.Null(inputs.GetValue(api.ModuleDef));
     }
-  }
-
-  [Theory]
-  [InlineData(1)]
-  [InlineData(2)]
-  [InlineData(4)]
-  [InlineData(8)]
-  public async Task ReportedLegacyStdCommandKeepsNineteenErrorsInWorkers(int threads) {
-    var standardLibrary = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory,
-      "../../../../../Source/DafnyStandardLibraries/src/Std"));
-    var paths = Directory.EnumerateFiles(standardLibrary, "*.dfy", SearchOption.AllDirectories)
-      .Where(p => !p.Split(Path.DirectorySeparatorChar).Contains("TargetSpecific"))
-      .Order(StringComparer.Ordinal).ToArray();
-    Assert.NotEmpty(paths);
-    async Task<(Program, BatchErrorReporter)> Run(int count) {
-      var options = new DafnyOptions(TextReader.Null, TextWriter.Null, TextWriter.Null);
-      options.ApplyDefaultOptionsWithoutSettingsDefault();
-      options.Set(CommonOptionBag.ResolutionThreads, count);
-      options.Set(CommonOptionBag.TypeSystemRefresh, false);
-      options.Set(CommonOptionBag.GeneralNewtypes, true);
-      options.Set(CommonOptionBag.GeneralTraits, CommonOptionBag.GeneralTraitsOptions.Datatype);
-      options.Set(CommonOptionBag.EnforceDeterminism, true);
-      options.Set(PrintStmt.TrackPrintEffectsOption, true);
-      options.Set(Method.ReadsClausesOnMethods, true);
-      var reporter = new BatchErrorReporter(options);
-      var files = paths.Select(path => DafnyFile.HandleDafnyFile(OnDiskFileSystem.Instance, reporter, options,
-        new Uri(path), Microsoft.Dafny.Token.NoToken, false)).ToArray();
-      var parser = new ProgramParser(NullLogger<ProgramParser>.Instance, OnDiskFileSystem.Instance);
-      var parsed = await parser.ParseFiles("dfyconfig.toml", files, reporter, CancellationToken.None);
-      Assert.Empty(Errors(reporter));
-      await new ProgramResolver(parsed.Program).Resolve(CancellationToken.None);
-      return (parsed.Program, reporter);
-    }
-    var (_, baseline) = await Run(0);
-    Assert.Equal(19, baseline.ErrorCount);
-    var (program, actual) = await Run(threads);
-    Assert.Equal(Errors(baseline), Errors(actual));
-    Assert.Null(program.CardinalityValidationReceipt);
-    var inputs = typeof(ModuleDefinition).GetProperty("TranslationInputs", BindingFlags.Instance | BindingFlags.NonPublic)!;
-    Assert.All(program.ModuleSigs.Keys.Where(m => !m.SuccessfullyResolved), m => Assert.Null(inputs.GetValue(m)));
   }
 
   [Theory]

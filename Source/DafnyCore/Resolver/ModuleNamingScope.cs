@@ -7,7 +7,7 @@ namespace Microsoft.Dafny;
 
 /// <summary>
 /// Synchronous worker/translator state. Imported declarations never lend their mutable
-/// name generators or cached variable/label names to another module under the opt-in path.
+/// name generators or cached variable/label names to another module.
 /// </summary>
 internal sealed class ModuleNamingScope : IDisposable {
   [ThreadStatic] private static ModuleNamingScope? current;
