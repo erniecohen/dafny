@@ -317,6 +317,10 @@ Various options control the verification process, in addition to all those descr
   Only trusted local writers may share a cache. Remove `DIR/v1` to evict it;
   there is no automatic disk eviction. This option is off by default and can
   also be set in `dfyconfig.toml`.
+- `--resolution-threads N` uses N workers for dependency-ready module resolution.
+  Scheduling is opt-in and N must be positive when specified. Sequential and
+  parallel resolution use the same module-scoped names, dependency heights and
+  builtin inventories; changing N does not select a different translation scheme.
 
 - What is verified
    - `--verify-included-files` (when enabled, all included files are verified, except library files, otherwise just those files on the command-line)

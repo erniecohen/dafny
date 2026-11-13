@@ -297,14 +297,14 @@ transport is available only on the modern verify command.
 ## Stable numeric solver inputs
 
 The enabled session selects the existing Boogie deterministic numeric content-hash
-path before preparing a task, alongside its existing fresh-checker policy. Legacy
-numeric hashes depend on the CLR process seed and can reorder normalized SMT
-declarations even in repeated shipped-compiler invocations. Reusing source in a
-fresh process must not inject that ambient seed into task inputs. The option-off
-path preserves the shipped setting. This uses the pinned Boogie implementation
-and changes no Boogie API. An explicit legacy numeric-hash setting is superseded
-inside the enabled session, like the session's independent solver-history policy.
-The effective value is included in each task execution key.
+path before preparing a task, alongside its existing fresh-checker policy. The
+[dependency-local default translator](https://github.com/erniecohen/dafny/pull/285)
+also selects deterministic numeric hashes. An explicit legacy numeric-hash setting
+can reintroduce CLR-process-seed ordering; the enabled session supersedes that
+setting, like its independent solver-history policy. The option-off path preserves
+both the shipped default and explicit overrides. This uses the pinned Boogie
+implementation and changes no Boogie API. The effective value is included in each
+task execution key.
 
 
 The public `--verification-cache` option requires `--type-system-refresh`.

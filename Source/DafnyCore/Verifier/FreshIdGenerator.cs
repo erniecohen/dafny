@@ -2,9 +2,21 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Linq;
+using System.Globalization;
 
 namespace Microsoft.Dafny {
   public abstract class FreshIdGenerator {
+    private readonly bool moduleLocal;
+    private FreshIdGenerator Scoped => !moduleLocal && ModuleNamingScope.Current is { } scope
+      ? scope.Generator(this, () => new ModuleGenerator(commonPrefix, scope.Prefix)) : null;
+
+    private readonly string modulePrefix = "";
+
+    private sealed class ModuleGenerator : FreshIdGenerator {
+      public ModuleGenerator(string prefix, string modulePrefix) : base(prefix, true, modulePrefix) {
+      }
+    }
+
     string tipString;  // a string representation of Tip
     int tipChildrenCount = 0;
     readonly Stack<Dictionary<string, int>> prefixToCountStack = new();  // invariant PrefixToCount_Stack.Count == Tip.Count
@@ -12,6 +24,10 @@ namespace Microsoft.Dafny {
     public /*spec public*/ readonly Stack<int> Tip = new();
 
     public void Push() {
+      if (Scoped is { } scoped) {
+        scoped.Push();
+        return;
+      }
       Tip.Push(tipChildrenCount);
       tipChildrenCount = 0;
       tipString = ComputeTipString();
@@ -19,6 +35,10 @@ namespace Microsoft.Dafny {
     }
 
     public void Pop() {
+      if (Scoped is { } scoped) {
+        scoped.Pop();
+        return;
+      }
       Contract.Requires(Tip.Count > 0);
       int k = Tip.Pop();
       tipChildrenCount = k + 1;
@@ -27,8 +47,11 @@ namespace Microsoft.Dafny {
     }
 
     string ComputeTipString() {
-      return Tip.Any() ? string.Join('_', Tip.Reverse().Select(t => t.ToString())) : null;
+      return Tip.Any() ? string.Join('_', Tip.Reverse().Select(FormatNumber)) : null;
     }
+
+    private string FormatNumber(int value) => moduleLocal
+      ? value.ToString(CultureInfo.InvariantCulture) : value.ToString();
 
     readonly string commonPrefix = "";
 
@@ -36,11 +59,20 @@ namespace Microsoft.Dafny {
       prefixToCountStack.Push(new());
     }
 
+    private FreshIdGenerator(string commonPrefix, bool moduleLocal, string modulePrefix) : this(commonPrefix) {
+      this.moduleLocal = moduleLocal;
+      this.modulePrefix = modulePrefix;
+    }
+
     protected FreshIdGenerator(string commonPrefix) : this() {
       this.commonPrefix = commonPrefix;
     }
 
     public void Reset() {
+      if (Scoped is { } scoped) {
+        scoped.Reset();
+        return;
+      }
       var prefixToCount = prefixToCountStack.Peek();
       lock (prefixToCount) {
         prefixToCount.Clear();
@@ -48,17 +80,25 @@ namespace Microsoft.Dafny {
     }
 
     public string FreshId(string prefix) {
-      return commonPrefix + prefix + FreshNumericId(prefix);
+      if (Scoped is { } scoped) {
+        return scoped.FreshId(prefix);
+      }
+      // Several generated-name prefixes carry meaning (for example, match
+      // wildcards start with '_'). Preserve those prefixes when qualifying names.
+      return commonPrefix + prefix + modulePrefix + FreshNumericId(prefix);
     }
 
     public virtual string FreshNumericId(string prefix = "") {
+      if (Scoped is { } scoped) {
+        return scoped.FreshNumericId(prefix);
+      }
       var prefixToCount = prefixToCountStack.Peek();
       lock (prefixToCount) {
         if (!prefixToCount.TryGetValue(prefix, out var old)) {
           old = 0;
         }
         prefixToCount[prefix] = old + 1;
-        return tipString == null ? old.ToString() : tipString + "_" + old.ToString();
+        return tipString == null ? FormatNumber(old) : tipString + "_" + FormatNumber(old);
       }
     }
 

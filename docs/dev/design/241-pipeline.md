@@ -817,6 +817,8 @@ case. Adding a lock around `id++` prevents duplication but permits different SMT
 names on every schedule. Apply the same reasoning to type/visibility IDs, builtin
 enumeration and declaration-order ties.
 
+Operator-export clone contexts snapshot the actual builtin declaration identities from the dependency-local publication view. This shared correctness hook also applies on the default caller-thread path: an interned declaration can be owned by a different publication module. It does not exempt declarations by module or type name, and user declarations retain their ordinary visibility and revelation checks.
+
 ### 6.3 Improve the existing resolution cache
 
 Under proposed `--resolution-cache-content`:
@@ -1507,3 +1509,12 @@ measurements are substituted for the issue's corpus results.
 [verify-command]: https://github.com/erniecohen/dafny/blob/d0301c6f702dabada677d99c3ebf63745f357d9c/Source/DafnyDriver/Commands/VerifyCommand.cs#L68
 [visibility]: https://github.com/erniecohen/dafny/blob/d0301c6f702dabada677d99c3ebf63745f357d9c/Source/DafnyCore/AST/VisibilityScope.cs#L11
 [visitor]: https://github.com/erniecohen/boogie/blob/7873c81883456dfc98fabd84b5d3b6d132417219/Source/Core/StandardVisitor.cs#L1616
+
+The default translation prerequisite shares the dependency-local ownership and
+complete editor-output cache hook from the resolution work. Zero resolution threads
+executes that operation directly on the caller, without creating scheduler workers;
+positive thread counts select the optional concurrent scheduler. Rejected modules
+and failed prerequisite closures do not undergo translation-input discovery. The
+editor retains canonical builtin identities and reuses an output only with its
+original diagnostic parse identity and exact prerequisite output objects. These
+changes do not add persistent resolution snapshots.

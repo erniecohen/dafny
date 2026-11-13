@@ -830,7 +830,7 @@ jobs:
         run: dotnet test --settings .github/review/ci.runsettings Source/DafnyCore.Test -c Release --filter FullyQualifiedName~Obligation --logger "console;verbosity=normal"
       - name: Persistent task cache storage, lifecycle and option inventory
         run: |
-          dotnet test --settings .github/review/ci.runsettings Source/DafnyCore.Test -c Release --filter 'FullyQualifiedName~ContentAddressedCacheTests|FullyQualifiedName~CacheTableTests|FullyQualifiedName~CachedTaskSolverTests|FullyQualifiedName~SmtExecutionLimitsTests|FullyQualifiedName~ExecutionImageIdentityTests' --logger "console;verbosity=normal"
+          dotnet test --settings .github/review/ci.runsettings Source/DafnyCore.Test -c Release --filter 'FullyQualifiedName~ContentAddressedCacheTests|FullyQualifiedName~CacheTableTests|FullyQualifiedName~CachedTaskSolverTests|FullyQualifiedName~SmtExecutionLimitsTests|FullyQualifiedName~ExecutionImageIdentityTests|FullyQualifiedName~TaskCacheSessionPolicyTests' --logger "console;verbosity=normal"
           dotnet test --settings .github/review/ci.runsettings Source/DafnyDriver.Test -c Release --filter FullyQualifiedName~VerificationCacheOptionAuditTest --logger "console;verbosity=normal"
       - name: Editor obligation option changes invalidate verification results
         env:

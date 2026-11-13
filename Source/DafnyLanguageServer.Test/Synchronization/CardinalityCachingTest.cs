@@ -64,10 +64,14 @@ public class CardinalityCachingTest : ClientBasedLanguageServerTest {
     Assert.All(errors, diagnostic => Assert.True(HasCode(diagnostic, errorId), diagnostic.Message));
   }
 
-  [Fact]
-  public async Task DownstreamEditsRevalidateCachedDependencies() {
+  [Theory]
+  [InlineData(0)]
+  [InlineData(1)]
+  [InlineData(2)]
+  [InlineData(4)]
+  public async Task DownstreamEditsRevalidateCachedDependencies(int threads) {
     var directory = GetFreshTempPath();
-    await CreateOpenAndWaitForResolve("", Path.Combine(directory, DafnyProject.FileName));
+    await CreateOpenAndWaitForResolve(threads == 0 ? "" : $"[options]\nresolution-threads = {threads}\n", Path.Combine(directory, DafnyProject.FileName));
     await CreateOpenAndWaitForResolve("module Api { trait {:termination false} V {} }",
       Path.Combine(directory, "api.dfy"));
     await CreateOpenAndWaitForResolve("""
@@ -101,10 +105,14 @@ public class CardinalityCachingTest : ClientBasedLanguageServerTest {
     await AssertNoErrors(clientDocument);
   }
 
-  [Fact]
-  public async Task ImportedHelperAndExportEditsCannotLeaveAStaleAdmission() {
+  [Theory]
+  [InlineData(0)]
+  [InlineData(1)]
+  [InlineData(2)]
+  [InlineData(4)]
+  public async Task ImportedHelperAndExportEditsCannotLeaveAStaleAdmission(int threads) {
     var directory = GetFreshTempPath();
-    await CreateOpenAndWaitForResolve("", Path.Combine(directory, DafnyProject.FileName));
+    await CreateOpenAndWaitForResolve(threads == 0 ? "" : $"[options]\nresolution-threads = {threads}\n", Path.Combine(directory, DafnyProject.FileName));
     await CreateOpenAndWaitForResolve("module Api { trait {:termination false} V {} }",
       Path.Combine(directory, "api.dfy"));
     var storageDocument = await CreateOpenAndWaitForResolve("""
@@ -141,6 +149,77 @@ public class CardinalityCachingTest : ClientBasedLanguageServerTest {
     ApplyChange(ref storageDocument, new Range(3, 0, 4, 0), "  type F = int\n");
     await client.WaitForNotificationCompletionAsync(storageDocument.Uri, CancellationToken);
     await AssertNoErrors(clientDocument);
+  }
+
+  [Theory]
+  [InlineData(false)]
+  [InlineData(true)]
+  public async Task CachedModuleViewsPreserveBoogieAcrossUnrelatedBuiltinGrowth(bool refresh) {
+    const string source = """
+      module Api {
+        function Shift(x: bv13): bv13 { x << 2 }
+        function Pair(x: int): (int, bool, int) { (x, true, x) }
+        function Callback(): int -> (int, bool, int) { Pair }
+        method Arrays() { var a := new int[2, 3]((i, j) => i + j); }
+      }
+      module Client {
+        import A = Api
+        function F(x: int): int { A.Callback()(x).0 }
+      }
+      """;
+    const string growth = """
+      module Unrelated {
+        function F(x: bv77): (int, bool, int, int, int) { (0, true, 0, 0, 0) }
+      }
+      """;
+    var options = new DafnyOptions(TextReader.Null, TextWriter.Null, TextWriter.Null);
+    options.ApplyDefaultOptionsWithoutSettingsDefault();
+    options.Set(CommonOptionBag.ResolutionThreads, 4);
+    options.Set(CommonOptionBag.TypeSystemRefresh, refresh);
+    var template = await ProgramParser.Parse(source, new Uri("untitled:module-views.dfy"), new BatchErrorReporter(options));
+    var cache = new ResolutionCache();
+    async Task<Program> Input(bool expanded) {
+      var parsed = await ProgramParser.Parse(source + (expanded ? growth : ""),
+        new Uri("untitled:module-views.dfy"), new BatchErrorReporter(options));
+      // Like the editor parse cache: fresh syntax, preserving unchanged parse identities.
+      var program = new Program(new Cloner(true), template.Program) {
+        Reporter = parsed.Program.Reporter, SystemModuleManager = parsed.Program.SystemModuleManager
+      };
+      if (expanded) {
+        var extra = parsed.Program.DefaultModuleDef.SourceDecls.Single(d => d.Name == "Unrelated");
+        program.DefaultModuleDef.SourceDecls.Add(new Cloner(true).CloneDeclaration(extra, program.DefaultModuleDef));
+      }
+      return program;
+    }
+    static LiteralModuleDecl Api(Program program) =>
+      (LiteralModuleDecl)program.DefaultModuleDef.SourceDecls.Single(d => d.Name == "Api");
+    static string Boogie(Program program) => string.Join("\n", BoogieGenerator.Translate(program, program.Reporter)
+      .Select(module => {
+        Assert.Equal(0, module.Item2.Resolve(program.Options));
+        Assert.Equal(0, module.Item2.Typecheck(program.Options));
+        var text = new StringWriter();
+        using var writer = new Microsoft.Boogie.TokenTextWriter(text, program.Options);
+        module.Item2.Emit(writer);
+        return text.ToString();
+      }));
+    var first = await Input(false);
+    await new CachingResolver(first, NullLogger<CachingResolver>.Instance, new NoTelemetryPublisher(), cache)
+      .Resolve(System.Threading.CancellationToken.None);
+    Assert.Equal(0, first.Reporter.ErrorCount);
+    var api = Api(first);
+    foreach (var expanded in new[] { false, true, false, true }) {
+      var warm = await Input(expanded);
+      await new CachingResolver(warm, NullLogger<CachingResolver>.Instance, new NoTelemetryPublisher(), cache)
+        .Resolve(System.Threading.CancellationToken.None);
+      Assert.Equal(0, warm.Reporter.ErrorCount);
+      Assert.Same(api, Api(warm));
+      Assert.Same(warm.DefaultModuleDef, api.ModuleDef.EnclosingModule);
+      var actual = Boogie(warm);
+      var cold = await Input(expanded);
+      await new ProgramResolver(cold).Resolve(System.Threading.CancellationToken.None);
+      Assert.Equal(0, cold.Reporter.ErrorCount);
+      Assert.Equal(Boogie(cold), actual);
+    }
   }
 
   [Theory]

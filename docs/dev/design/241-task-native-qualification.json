@@ -1,0 +1,344 @@
+{
+  "contract": "Exact native command bytes per task after its empty solver checkpoint through completion; exclude physical carriers, prior-task history and idle cleanup; report physical counts separately.",
+  "observerCommit": "d29a9612e2fcfa46eb55b91b56fda97c5d9ee17d",
+  "inputSource": {
+    "source": "e7e18c65ec22fd5780adfe05aacd5c9e5a65b4a8",
+    "archiveSha256": "0bcf609c7513d51b64d10df4206c5554c042784db517cc8b5be337ea5353d00a"
+  },
+  "frozenProducers": {
+    "default": {
+      "source": "62c7976f8104901326fd8bd20dce33145eab2d88",
+      "product": "05276f470205c09b39c616fee0e7a7f2bdd17e56"
+    },
+    "table": {
+      "source": "28cb1c2e3edf3e71d7a6c0b7cfa0f2e9c7eb0b2a",
+      "product": "af0f8caad62f86cce82a3887c2bb2fce9431b9ba"
+    }
+  },
+  "primary": {
+    "complete": true,
+    "expectedCases": 2362,
+    "completedCases": 2362,
+    "errors": [],
+    "unclassified": [],
+    "classifiedDifferences": [
+      {
+        "name": "suite-0/dafny0/Calculations.dfy",
+        "pair": "default-off",
+        "field": "stdout",
+        "cause": "Added translation-option help line in CLI-rejected invocation; no proof tasks"
+      },
+      {
+        "name": "suite-1/dafny0/Calculations.dfy",
+        "pair": "default-off",
+        "field": "stdout",
+        "cause": "Added translation-option help line in CLI-rejected invocation; no proof tasks"
+      },
+      {
+        "name": "suite-0/dafny0/LetExpr.dfy",
+        "pair": "default-off",
+        "field": "stdout",
+        "cause": "Added translation-option help line in CLI-rejected invocation; no proof tasks"
+      },
+      {
+        "name": "suite-1/dafny0/LetExpr.dfy",
+        "pair": "default-off",
+        "field": "stdout",
+        "cause": "Added translation-option help line in CLI-rejected invocation; no proof tasks"
+      },
+      {
+        "name": "suite-0/dafny0/SmallTests.dfy",
+        "pair": "default-off",
+        "field": "stdout",
+        "cause": "Added translation-option help line in CLI-rejected invocation; no proof tasks"
+      },
+      {
+        "name": "suite-1/dafny0/SmallTests.dfy",
+        "pair": "default-off",
+        "field": "stdout",
+        "cause": "Added translation-option help line in CLI-rejected invocation; no proof tasks"
+      },
+      {
+        "name": "suite-0/git-issues/git-issue-2266.dfy",
+        "pair": "default-off",
+        "field": "stdout",
+        "cause": "Added translation-option help line in CLI-rejected invocation; no proof tasks"
+      },
+      {
+        "name": "suite-1/git-issues/git-issue-2266.dfy",
+        "pair": "default-off",
+        "field": "stdout",
+        "cause": "Added translation-option help line in CLI-rejected invocation; no proof tasks"
+      },
+      {
+        "name": "suite-0/git-issues/git-issue-3294.dfy",
+        "pair": "default-off",
+        "field": "stdout",
+        "cause": "Added translation-option help line in CLI-rejected invocation; no proof tasks"
+      },
+      {
+        "name": "suite-1/git-issues/git-issue-3294.dfy",
+        "pair": "default-off",
+        "field": "stdout",
+        "cause": "Added translation-option help line in CLI-rejected invocation; no proof tasks"
+      },
+      {
+        "name": "suite-0/git-issues/git-issue-5873.dfy",
+        "pair": "default-off",
+        "field": "stdout",
+        "cause": "Added translation-option help line in CLI-rejected invocation; no proof tasks"
+      },
+      {
+        "name": "suite-1/git-issues/git-issue-5873.dfy",
+        "pair": "default-off",
+        "field": "stdout",
+        "cause": "Added translation-option help line in CLI-rejected invocation; no proof tasks"
+      }
+    ],
+    "nativeTasksPerMode": {
+      "default": 31706,
+      "off": 31706,
+      "cold": 31706,
+      "warm": 31706
+    },
+    "reportTaskObservations": 31706,
+    "outcomes": {
+      "Valid": 28156,
+      "OutOfResource": 60,
+      "Invalid": 3490
+    },
+    "std": {
+      "std-1/Std": {
+        "tasks": {
+          "default": 7773,
+          "off": 7773,
+          "cold": 7773,
+          "warm": 7773
+        },
+        "physicalSolvers": {
+          "default": 1,
+          "off": 2,
+          "cold": 1,
+          "warm": 1
+        },
+        "physicalStreamsEqual": {
+          "default-off": false,
+          "off-cold": false,
+          "cold-warm": true
+        },
+        "pairs": {
+          "default-off": {
+            "stdout": true,
+            "stderr": true,
+            "boogie.json": true,
+            "exit": true,
+            "taskNativeBytes": true,
+            "completeTaskCoverage": true,
+            "completePhysicalCoverage": true,
+            "reportPresence": true,
+            "untimedReports": true
+          },
+          "off-cold": {
+            "stdout": true,
+            "stderr": true,
+            "boogie.json": true,
+            "exit": true,
+            "taskNativeBytes": true,
+            "completeTaskCoverage": true,
+            "completePhysicalCoverage": true,
+            "reportPresence": true,
+            "untimedReports": true
+          },
+          "cold-warm": {
+            "stdout": true,
+            "stderr": true,
+            "boogie.json": true,
+            "exit": true,
+            "taskNativeBytes": true,
+            "completeTaskCoverage": true,
+            "completePhysicalCoverage": true,
+            "reportPresence": true,
+            "untimedReports": true
+          }
+        }
+      },
+      "std-0/Std": {
+        "tasks": {
+          "default": 7773,
+          "off": 7773,
+          "cold": 7773,
+          "warm": 7773
+        },
+        "physicalSolvers": {
+          "default": 2,
+          "off": 2,
+          "cold": 2,
+          "warm": 2
+        },
+        "physicalStreamsEqual": {
+          "default-off": true,
+          "off-cold": true,
+          "cold-warm": true
+        },
+        "pairs": {
+          "default-off": {
+            "stdout": true,
+            "stderr": true,
+            "boogie.json": true,
+            "exit": true,
+            "taskNativeBytes": true,
+            "completeTaskCoverage": true,
+            "completePhysicalCoverage": true,
+            "reportPresence": true,
+            "untimedReports": true
+          },
+          "off-cold": {
+            "stdout": true,
+            "stderr": true,
+            "boogie.json": true,
+            "exit": true,
+            "taskNativeBytes": true,
+            "completeTaskCoverage": true,
+            "completePhysicalCoverage": true,
+            "reportPresence": true,
+            "untimedReports": true
+          },
+          "cold-warm": {
+            "stdout": true,
+            "stderr": true,
+            "boogie.json": true,
+            "exit": true,
+            "taskNativeBytes": true,
+            "completeTaskCoverage": true,
+            "completePhysicalCoverage": true,
+            "reportPresence": true,
+            "untimedReports": true
+          }
+        }
+      }
+    }
+  },
+  "physicalSolvers": {
+    "total": {
+      "default": 1578,
+      "off": 1578,
+      "cold": 1577,
+      "warm": 1577
+    },
+    "groups": {
+      "Std": {
+        "default": 15,
+        "off": 16,
+        "cold": 15,
+        "warm": 15
+      },
+      "suite": {
+        "default": 1559,
+        "off": 1558,
+        "cold": 1558,
+        "warm": 1558
+      },
+      "history controls": {
+        "default": 4,
+        "off": 4,
+        "cold": 4,
+        "warm": 4
+      }
+    }
+  },
+  "correctedCliCompanions": {
+    "cases": 24,
+    "nativeTasksPerMode": {
+      "default": 352,
+      "off": 352,
+      "cold": 352,
+      "warm": 352
+    },
+    "physicalSolversPerMode": {
+      "default": 20,
+      "off": 20,
+      "cold": 20,
+      "warm": 20
+    },
+    "errors": 0,
+    "differences": 0
+  },
+  "solverCountVariationCases": [
+    {
+      "case": "std-1/Std",
+      "default": 1,
+      "off": 2,
+      "cold": 1,
+      "warm": 1
+    },
+    {
+      "case": "suite-1/dafny2/MinWindowMax.dfy",
+      "default": 2,
+      "off": 1,
+      "cold": 1,
+      "warm": 1
+    }
+  ],
+  "recyclingIssue": "https://github.com/erniecohen/dafny/issues/287",
+  "comparatorCorruptionControls": "Altering a task hash and dropping a task record are both rejected; native false-program observations remain Invalid.",
+  "nativeStdGrowth": {
+    "complete": true,
+    "results": [
+      {
+        "profile": 0,
+        "checks": {
+          "Boogie": true,
+          "nativeTasks": true,
+          "reports": false,
+          "negativeGuard": true,
+          "exit": true,
+          "stderr": true,
+          "taskCoverage": true,
+          "physicalCoverage": true
+        },
+        "printedUnits": 86,
+        "nativeStdTasks": 7773,
+        "physicalSolvers": [
+          3,
+          3
+        ],
+        "exit": 4,
+        "reportDifference": {
+          "declaration": "Std.Arithmetic.MulInternalsNonlinear.LemmaMulIsAssociative (correctness)",
+          "outcome": [
+            "Valid",
+            "Valid"
+          ],
+          "RU": [
+            20558,
+            20534
+          ],
+          "identicalTaskNativeBytes": true,
+          "classification": "Native solver process history survives logical reset; exact replay of 1660/1918 prior tasks from one fixed source reproduces 20558/20534 RU, five times each. Fresh target-only replay is 20536 RU, five times."
+        }
+      },
+      {
+        "profile": 1,
+        "checks": {
+          "Boogie": true,
+          "nativeTasks": true,
+          "reports": true,
+          "negativeGuard": true,
+          "exit": true,
+          "stderr": true,
+          "taskCoverage": true,
+          "physicalCoverage": true
+        },
+        "printedUnits": 86,
+        "nativeStdTasks": 7773,
+        "physicalSolvers": [
+          1,
+          1
+        ],
+        "exit": 4
+      }
+    ]
+  },
+  "admissionScope": "Frozen cohort predates CLI admission restriction. Public cache options now require the refreshed type system; Std project already enables it.",
+  "nativeProcessHistoryEvidence": "241-native-process-history.json"
+}
