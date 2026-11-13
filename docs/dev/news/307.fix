@@ -1,0 +1,1 @@
+Keep the parentheses around a method receiver during library serialization when the receiver's name is also a type or module name.

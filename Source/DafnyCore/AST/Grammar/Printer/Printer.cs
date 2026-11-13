@@ -206,6 +206,29 @@ NoGhost - disable printing of functions, ghost methods, and proof
       return sb.ToString(0, len);
     }
 
+    /// <summary>
+    /// Serialization: the names of the types and modules that the program declares, in any module.
+    /// A parenthesized name with one of these names keeps its parentheses as the receiver of a member
+    /// selection, since without them the name could denote the type or module rather than a value
+    /// (https://github.com/erniecohen/dafny/issues/307).
+    /// </summary>
+    private readonly HashSet<string> typeAndModuleNames = [];
+
+    private void CollectTypeAndModuleNames(ModuleDefinition module) {
+      foreach (var decl in module.TopLevelDecls) {
+        typeAndModuleNames.Add(decl.Name);
+        if (decl is LiteralModuleDecl literal) {
+          CollectTypeAndModuleNames(literal.ModuleDef);
+        }
+      }
+      foreach (var prefixNamed in module.PrefixNamedModules) {
+        foreach (var part in prefixNamed.Parts) {
+          typeAndModuleNames.Add(part.val);
+        }
+        CollectTypeAndModuleNames(prefixNamed.Module.ModuleDef);
+      }
+    }
+
     public void PrintProgramLargeStack(Program prog, bool afterResolver) {
 #pragma warning disable VSTHRD002
       DafnyMain.LargeStackFactory.StartNew(() => PrintProgram(prog, afterResolver)).Wait();
@@ -215,6 +238,9 @@ NoGhost - disable printing of functions, ghost methods, and proof
     public void PrintProgram(Program prog, bool afterResolver) {
       Contract.Requires(prog != null);
       this.afterResolver = afterResolver;
+      if (printMode == PrintModes.Serialization) {
+        CollectTypeAndModuleNames(prog.DefaultModuleDef);
+      }
       if (options.ShowEnv != Bpl.ExecutionEngineOptions.ShowEnvironment.Never) {
         wr.WriteLine("// " + options.Version);
         wr.WriteLine("// " + options.Environment);
@@ -935,10 +961,14 @@ NoGhost - disable printing of functions, ghost methods, and proof
     public void PrintAttributeArgs(List<Expression> args, bool isFollowedBySemicolon) {
       Contract.Requires(args != null);
       string prefix = " ";
-      foreach (var arg in args) {
+      for (var i = 0; i < args.Count; i++) {
+        var arg = args[i];
         Contract.Assert(arg != null);
         wr.Write(prefix);
         prefix = ", ";
+        if (i + 1 < args.Count) {
+          MarkBeforeComma(arg, args[i + 1]);
+        }
         PrintExpression(arg, isFollowedBySemicolon);
       }
     }
@@ -1256,15 +1286,23 @@ NoGhost - disable printing of functions, ghost methods, and proof
       }
     }
 
-    internal void PrintSpec(string kind, List<AttributedExpression> ee, int indent) {
+    /// <summary>
+    /// Only loop invariants and the postconditions of a forall statement admit an unparenthesized lambda
+    /// expression; the other specification clauses do not, so "admitsLambda" is false by default for them.
+    /// </summary>
+    internal void PrintSpec(string kind, List<AttributedExpression> ee, int indent, bool? admitsLambda = null) {
       Contract.Requires(kind != null);
       Contract.Requires(ee != null);
       if (printMode == PrintModes.NoGhostOrIncludes) { return; }
+      admitsLambda ??= kind == "invariant";
       foreach (AttributedExpression e in ee) {
         Contract.Assert(e != null);
         wr.WriteLine();
         Indent(indent);
         wr.Write("{0}", kind);
+        if (admitsLambda == false) {
+          MarkLambdaFreeContext(e.E);
+        }
         PrintAttributedExpression(e);
       }
     }
@@ -1298,7 +1336,11 @@ NoGhost - disable printing of functions, ghost methods, and proof
         ty = TypeRefinementWrapper.NormalizeSansRefinementWrappers(ty);
       }
       string s = ty.TypeName(options, null, true);
-      if (ty is TypeRefinementWrapper or not TypeProxy && !s.StartsWith("_")) {
+      // A name that starts with "_" is usually that of a type parameter the resolver generated, which
+      // the printed program does not declare.  Serialization prints the parsed program, before the
+      // resolver adds such type parameters, so there the name is one the program wrote, as in
+      // "forall g: _T0 :: ..." (https://github.com/erniecohen/dafny/issues/304).
+      if (ty is TypeRefinementWrapper or not TypeProxy && (!s.StartsWith("_") || printMode == PrintModes.Serialization)) {
         wr.Write("{0}{1}", prefix, s);
       }
     }
