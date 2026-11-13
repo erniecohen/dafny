@@ -1,0 +1,1 @@
+Scope historical integer-bitwise and source-contract identity checks to their milestones, preserve exact manual replay, and keep current proof and behavior tests running for later compiler changes.

@@ -17,7 +17,7 @@ public class ActualBindings : NodeWithoutOrigin {
   public ActualBindings(Cloner cloner, ActualBindings original) {
     ArgumentBindings = original.ArgumentBindings.Select(actualBinding => new ActualBinding(
       actualBinding.FormalParameterName == null ? null : cloner.Origin((IOrigin)actualBinding.FormalParameterName),
-      cloner.CloneExpr(actualBinding.Actual))).ToList();
+      cloner.CloneExpr(actualBinding.Actual), actualBinding.IsGhost)).ToList();
     if (cloner.CloneResolvedFields) {
       arguments = original.Arguments?.Select(cloner.CloneExpr).ToList();
     }
