@@ -456,3 +456,7 @@ git-issues/github-issue-241-rejected-stdlib.dfy
 git-issues/github-issue-310.dfy
 git-issues/github-issue-310-errors.dfy
 git-issues/github-issue-309.dfy
+
+# Caller type scopes across inline module resolution (--resolution-threads 0):
+# DafnyCore.Test ResolutionPipelineTests.ResolutionEndsWithCallerScopesDisabled and
+# ModuleErrorLeavesCallerScopesAsScheduledResolutionDoes, run by the worker-resolution CI step.
