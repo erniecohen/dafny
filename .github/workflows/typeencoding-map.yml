@@ -26,15 +26,7 @@ jobs:
           distribution: temurin
           java-version: '17'
       - name: Check comparison bookkeeping
-        run: python3 -m unittest discover -s .github/review -p test_decreases_order.py
-      - name: Candidate Boogie packages from the reviewed source's CI
-        uses: actions/download-artifact@v4
-        with:
-          repository: erniecohen/boogie
-          run-id: 43352967935
-          name: packages
-          github-token: ${{ github.token }}
-          path: Binaries/boogie-packages
+        run: python3 -m unittest discover -s .github/review -p test_typeencoding_comparisons.py
       - name: Build candidate and pre-fix product with identical version metadata
         run: |
           sh Scripts/fetch-boogie-packages.sh
@@ -49,21 +41,19 @@ jobs:
           unzip -q z3.zip
       - name: Check old-source versus legacy byte identity
         run: |
-          set +e
           python3 .github/review/typeencoding-map.py identity --baseline out/baseline/Dafny --dafny out/candidate/Dafny \
             --z3 "$Z3_ARCHIVE/bin/z3" --output identity
-          result=$?
-          echo "$result" > identity/exit.txt
-          echo '## Old-source / legacy byte identity (probe)' >> "$GITHUB_STEP_SUMMARY"
+          echo '## Old-source / legacy byte identity' >> "$GITHUB_STEP_SUMMARY"
           cat identity/identity.json >> "$GITHUB_STEP_SUMMARY"
-          # Expected differences during development are recorded, never hidden or
-          # mistaken for acceptance, and do not send failure notifications.
-          exit 0
       - name: Iset equality and false controls
         run: |
           mkdir -p controls
           python3 .github/review/typeencoding-map.py controls --dafny out/candidate/Dafny \
             --z3 "$Z3_ARCHIVE/bin/z3" --output controls
+      - name: Replay erased negative iset contexts
+        run: |
+          python3 .github/review/typeencoding-map.py negative --dafny out/candidate/Dafny \
+            --z3 "$Z3_ARCHIVE/bin/z3" --output controls/negative
       - run: tar -C out -czf candidate.tar.gz candidate
       - uses: actions/upload-artifact@v4
         with:
