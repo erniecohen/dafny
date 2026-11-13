@@ -50,6 +50,16 @@ public abstract class Type : NodeWithOrigin {
     scopesEnabled = false;
   }
 
+  /// <summary>The calling thread's scope stack and enabled state, for <see cref="RestoreScopes"/>.</summary>
+  public readonly record struct ScopeState(List<VisibilityScope> Scopes, bool Enabled);
+
+  public static ScopeState SaveScopes() => new(Scopes, scopesEnabled);
+
+  public static void RestoreScopes(ScopeState state) {
+    _scopes.Value = state.Scopes;
+    scopesEnabled = state.Enabled;
+  }
+
   public static void PopScope() {
     Contract.Assert(Scopes.Count > 0);
     Scopes.RemoveAt(Scopes.Count - 1);

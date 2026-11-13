@@ -48,6 +48,48 @@ public class ResolutionPipelineTests {
     Assert.Equal(Translate(direct, true), Translate(scheduled, true));
   }
 
+  // Resolve enables the calling thread's type visibility scopes and disables them once modules are
+  // resolved. With zero resolution threads, modules are resolved on the calling thread, by a worker
+  // that resets that thread's scope state; the caller's state must survive it. In a Debug build the
+  // first test failed the assertion in Type.DisableScopes; in any build the second showed the difference.
+  [Theory]
+  [InlineData(0, false)]
+  [InlineData(0, true)]
+  [InlineData(1, false)]
+  [InlineData(2, true)]
+  public async Task ResolutionEndsWithCallerScopesDisabled(int threads, bool refresh) {
+    VisibilityScope? scope = null;
+    var probed = false;
+    var (_, reporter) = await Resolve(Source, threads, refresh, resolved: () => (scope, probed) = (ScopeAfterPush(), true));
+    Assert.Empty(Errors(reporter));
+    Assert.True(probed);
+    Assert.Null(scope);
+  }
+
+  [Theory]
+  [InlineData(false)]
+  [InlineData(true)]
+  public async Task ModuleErrorLeavesCallerScopesAsScheduledResolutionDoes(bool refresh) {
+    const string source = "module M { function F(): int { true } }";
+    var enabled = new Dictionary<int, bool>();
+    foreach (var threads in new[] { 0, 1 }) {
+      var (_, reporter) = await Resolve(source, threads, refresh,
+        resolved: () => enabled[threads] = ScopeAfterPush() != null);
+      Assert.NotEmpty(Errors(reporter));
+    }
+    Assert.Equal(enabled[1], enabled[0]);
+  }
+
+  private static VisibilityScope? ScopeAfterPush() {
+    var scope = new VisibilityScope();
+    DafnyType.PushScope(scope);
+    try {
+      return DafnyType.GetScope();
+    } finally {
+      DafnyType.PopScope(scope);
+    }
+  }
+
   [Fact]
   public async Task OperatorExportViewsKeepCanonicalBuiltinIdentities() {
     const string source = """
@@ -441,7 +483,7 @@ public class ResolutionPipelineTests {
 
   private static async Task<(Program, BatchErrorReporter)> Resolve(string source, int threads, bool refresh,
     Action<ModuleDecl>? starting = null, Uri? uri = null, Action<Program>? configure = null,
-    bool warnUncheckedTermination = false, Action<DafnyOptions>? configureOptions = null) {
+    bool warnUncheckedTermination = false, Action<DafnyOptions>? configureOptions = null, System.Action? resolved = null) {
     DafnyType.ResetScopes();
     var options = new DafnyOptions(TextReader.Null, TextWriter.Null, TextWriter.Null);
     options.ApplyDefaultOptionsWithoutSettingsDefault();
@@ -455,6 +497,8 @@ public class ResolutionPipelineTests {
     Assert.Empty(Errors(reporter));
     configure?.Invoke(parsed.Program);
     await new ProgramResolver(parsed.Program) { ResolutionWorkerStarting = starting }.Resolve(CancellationToken.None);
+    // Resolve completes synchronously, so this runs on the thread that resolved.
+    resolved?.Invoke();
     return (parsed.Program, reporter);
   }
 }
