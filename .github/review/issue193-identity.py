@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Historical M1 noninterference plus identity of current optional proof inputs.
+"""Historical M1 noninterference at its exact shipped revisions.
 
 The only added product files are explicitly included optional proof sources.
 They are outside the library source glob, packaged libraries and compiler build.
@@ -38,8 +38,6 @@ def check(head='HEAD'):
         raise ValueError(f'Old product input changed, or unexpected product input added: {unexpected}')
     if {r[-1] for r in changes if product(r[-1])} != ADDED:
         raise ValueError('Historical milestone must add every optional input')
-    if subprocess.run(['git','diff','--quiet',INTRODUCED,head,'--',*sorted(ADDED)],cwd=ROOT,check=False).returncode:
-        raise ValueError('Current milestone inputs differ from the shipped M1 revision')
     # None of the new sources is part of the existing source-Std input glob.
     assert all(not p.startswith('Source/DafnyStandardLibraries/src/') for p in ADDED)
     # No embedded binary changes can be hidden by excluding the source glob.
@@ -47,10 +45,10 @@ def check(head='HEAD'):
     result = {'base':BASE,'introduced':INTRODUCED,
               'head':subprocess.check_output(['git','rev-parse',head],cwd=ROOT,text=True).strip(),
               'existing_product_input_identity':True,'optional_additions':sorted(r[-1] for r in changes if product(r[-1])),
-              'current_optional_input_identity':True,
               'both_off':'At the shipped M1 revision: no default pipeline, solver theory, language option, source-Std or embedded library changes.',
               'scope':'Historical structural identity compares the exact shipped M1 revision and its parent. '
-                      'Current optional sources must still match M1; later compiler inputs are outside this claim. '
+                      'Later compiler and optional-source edits are outside this historical claim; '
+                      'current optional sources are checked by the bitwise proof tests. '
                       'Normal review CI checks the full suite and source Std against their existing verdict baselines. '
                       'Language-enabled comparisons are unavailable until M2 introduces the option.'}
     return result

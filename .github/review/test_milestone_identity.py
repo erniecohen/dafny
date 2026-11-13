@@ -1,4 +1,4 @@
-"""Keep M1's historical identity guard strict without freezing later compilers."""
+"""Keep M1 historical identity strict without freezing later compiler or proof edits."""
 import importlib.util
 from pathlib import Path
 import subprocess
@@ -13,9 +13,7 @@ spec.loader.exec_module(identity)
 
 class IdentityTests(unittest.TestCase):
     def setUp(self):
-        scratch = Path('work/ci-gate-scope/tests')
-        scratch.mkdir(parents=True, exist_ok=True)
-        directory = tempfile.TemporaryDirectory(dir=scratch.resolve())
+        directory = tempfile.TemporaryDirectory(prefix='milestone-identity-')
         self.addCleanup(directory.cleanup)
         self.root = Path(directory.name)
         self.git('init', '-q')
@@ -57,7 +55,7 @@ class IdentityTests(unittest.TestCase):
         self.assertEqual(result['introduced'], self.introduced)
         self.assertEqual(result['head'], head)
         self.assertTrue(result['existing_product_input_identity'])
-        self.assertTrue(result['current_optional_input_identity'])
+        self.assertNotIn('current_optional_input_identity', result)
 
     def test_introducing_commit_cannot_change_existing_product_inputs(self):
         self.git('checkout', '-q', self.base)
@@ -67,11 +65,14 @@ class IdentityTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'Old product input changed'):
             self.check()
 
-    def test_current_optional_input_change_is_rejected(self):
-        self.write(sorted(identity.ADDED)[0], 'different proof\n')
-        self.commit()
-        with self.assertRaisesRegex(ValueError, 'Current milestone inputs differ'):
-            self.check()
+    def test_later_optional_input_changes_preserve_the_historical_claim(self):
+        self.write(sorted(identity.ADDED)[0], 'revised proof for a later milestone\n')
+        head = self.commit()
+        result = self.check()
+        self.assertEqual(result['introduced'], self.introduced)
+        self.assertEqual(result['head'], head)
+        self.assertTrue(result['existing_product_input_identity'])
+        self.assertNotIn('current_optional_input_identity', result)
 
     def test_missing_introduced_input_is_rejected(self):
         self.git('checkout', '-q', self.base)

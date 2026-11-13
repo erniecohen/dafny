@@ -1021,7 +1021,7 @@ jobs:
           name: dafny
       - name: Unpack Dafny
         run: mkdir -p out && tar -C out -xzf dafny.tar.gz
-      - name: Check historical M1 identity and current optional sources
+      - name: Check historical M1 identity
         if: needs.milestone-scope.outputs.integer_bitwise == 'true'
         run: |
           git fetch --no-tags --depth=2 origin 25203d9115f8f104b325c8a058bf41051bdbbe69
