@@ -75,7 +75,7 @@ jobs:
       - name: Measure
         run: |
           out="$PWD/results/${{ matrix.corpus }}"
-          run() { python3 "$SCRIPT" run --dafny "$D" --out "$out" "$@"; }
+          run() { python3 "$GITHUB_WORKSPACE/$SCRIPT" run --dafny "$D" --out "$out" "$@"; }
           case "${{ matrix.corpus }}" in
           std)
             cd Source/DafnyStandardLibraries
