@@ -18,7 +18,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/checkout@v4
         with:
-          ref: 0025e3f001351ee0f7c801c052bdd7d992c0de6e
+          ref: 587201ff5ec4e864cd8b80c7b06498c2859c1a6b
           path: baseline
       - uses: ./.github/actions/setup-dotnet
       - uses: actions/setup-java@v4
