@@ -87,7 +87,7 @@ env:
 
 jobs:
   character-representation-comparison:
-    if: ${{ github.head_ref == 'codex/284-a-repairs' || github.ref == 'refs/heads/codex/284-a-repairs' }}
+    if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.draft) && (github.head_ref == 'codex/284-a-repairs' || github.ref == 'refs/heads/codex/284-a-repairs') }}
     uses: ./.github/workflows/typeencoding-a.yml
 
   operators-disabled:
