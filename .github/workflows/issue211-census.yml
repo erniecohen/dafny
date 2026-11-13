@@ -7,6 +7,7 @@ name: Issue 211 modular-termination census
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
     branches: ['review/**']
     paths:
       - '.github/review/modular-termination-census.py'
@@ -27,7 +28,7 @@ env:
 
 jobs:
   census:
-    if: ${{ github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'erniecohen/dafny')) }}
+    if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.draft) && (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'erniecohen/dafny'))) }}
     runs-on: [self-hosted, macOS, ARM64, mac-studio]
     timeout-minutes: 120
     steps:
@@ -73,7 +74,7 @@ jobs:
           retention-days: 30
 
   hosted-census:
-    if: ${{ !(github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'erniecohen/dafny'))) }}
+    if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.draft) && (!(github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'erniecohen/dafny')))) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 120
     steps:
