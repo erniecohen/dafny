@@ -1,4 +1,4 @@
-// RUN: %baredafny resolve --resolution-threads 8 %s > "%t"
+// RUN: %baredafny resolve --type-system-refresh --resolution-threads 8 %s > "%t"
 // Source-map shift and filename stability fixture for parallel resolution.
 module Before { function F(): bv33 { 0 } }
 module Base {

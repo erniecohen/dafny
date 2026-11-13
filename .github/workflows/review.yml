@@ -15,7 +15,7 @@ on:
     tags: ['v*']
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
-    branches: ['review/**', 'dev', 'codex/284-a-repairs']
+    branches: ['review/**', 'dev', 'codex/284-a-repairs', 'codex/241-verification-cache']
   workflow_dispatch:
     inputs:
       binaries:
@@ -836,6 +836,16 @@ jobs:
         run: dotnet test --settings .github/review/ci.runsettings Source/IntegrationTests -c Release --no-build --filter FullyQualifiedName~AdditionalAxiomsTranslationTests --logger "console;verbosity=normal"
       - name: Obligation lowering inventory and structural comparisons
         run: dotnet test --settings .github/review/ci.runsettings Source/DafnyCore.Test -c Release --filter FullyQualifiedName~Obligation --logger "console;verbosity=normal"
+      - name: Persistent task cache storage, lifecycle and option inventory
+        run: |
+          dotnet test --settings .github/review/ci.runsettings Source/DafnyCore.Test -c Release --filter 'FullyQualifiedName~ContentAddressedCacheTests|FullyQualifiedName~CacheTableTests|FullyQualifiedName~CachedTaskSolverTests|FullyQualifiedName~SmtExecutionLimitsTests|FullyQualifiedName~ExecutionImageIdentityTests|FullyQualifiedName~TaskCacheSessionPolicyTests' --logger "console;verbosity=normal"
+          dotnet test --settings .github/review/ci.runsettings Source/DafnyDriver.Test -c Release --filter FullyQualifiedName~VerificationCacheOptionAuditTest --logger "console;verbosity=normal"
+      - name: Translation snapshots match default Boogie and raw solver commands
+        run: dotnet test --settings .github/review/ci.runsettings Source/DafnyCore.Test -c Release --filter FullyQualifiedName~ModuleTranslationCacheTests --logger "console;verbosity=normal"
+      - name: Translation snapshots preserve reports, coverage and resource counts
+        env:
+          Z3: ${{ github.workspace }}/Binaries/z3/bin/z3-5.1.0
+        run: dotnet test --settings .github/review/ci.runsettings Source/IntegrationTests -c Release --no-build --filter FullyQualifiedName~TranslationCacheTests --logger "console;verbosity=normal"
       - name: Editor obligation option changes invalidate verification results
         env:
           Z3: ${{ github.workspace }}/Binaries/z3/bin/z3-5.1.0
@@ -870,6 +880,16 @@ jobs:
           dotnet test --settings .github/review/ci.runsettings Source/IntegrationTests -c Release --no-build \
             --logger "console;verbosity=normal" --filter "$filter" | tee test.log
           grep -Eq 'Total( tests)?: *1([^0-9]|$)' test.log
+
+      - name: Check persistent result replay with the Linux native dependency closure
+        run: |
+          solver=$(sh .github/review/setup-z3.sh 5.1.0 ci-z3-cache)
+          python3 .github/review/verification-cache.py Binaries/net10.0/Dafny.dll "$solver" \
+            Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/git-issue-241-verification-cache.dfy \
+            verification-cache-linux
+          python3 .github/review/verification-cache-cutoff.py Binaries/net10.0/Dafny.dll "$solver" \
+            Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/Inputs/git-issue-241-cache-cutoff.dfy \
+            verification-cache-cutoff-linux
 
   resolver-tests:
     if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.draft) && ((github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'erniecohen/dafny'))) && !inputs.platform_parity && (!(github.event_name == 'workflow_dispatch' && (inputs.default_comparison || inputs.decreases_order_comparison) && startsWith(github.ref, 'refs/heads/scratch/')))) }}

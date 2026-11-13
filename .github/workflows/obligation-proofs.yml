@@ -28,7 +28,7 @@ on:
       - 'Source/IntegrationTests/TestFiles/LitTests/LitTest/dafny4/UnionFind.dfy'
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
-    branches: ['review/**', 'dev', 'codex/284-a-repairs']
+    branches: ['review/**', 'dev', 'codex/284-a-repairs', 'codex/241-verification-cache']
     paths:
       - '.github/workflows/obligation-proofs.yml'
       - 'Source/DafnyCore/Verifier/**'

@@ -58,6 +58,19 @@ namespace Microsoft.Dafny.LanguageServer.Language {
             ReportRanges = program.Options.Get(Snippets.ShowSnippets),
             PreludeText = program.PreludeText
           };
+          if (program.Options.Get(CommonOptionBag.TranslationCache)) {
+            var cache = ModuleTranslationCache.ProcessCache;
+            var module = cache.TranslateModule(program, moduleDefinition, translatorFlags, cancellationToken, out var reused);
+            var cached = module.Program;
+            dependencies = module.ProofDependencies;
+            if (profile != null) {
+              profile.Span("translate", profileStart!.Value, new Dictionary<string, object?> {
+                ["module"] = moduleName, ["cached"] = reused,
+                ["declarations"] = cached.TopLevelDeclarations.Count(), ["implementations"] = cached.Implementations.Count()
+              });
+            }
+            return cached;
+          }
           var threadAllocated = profile != null ? GC.GetAllocatedBytesForCurrentThread() : 0;
           var translator = new BoogieGenerator(errorReporter, dependencies, translatorFlags);
           if (profile != null) {
@@ -91,7 +104,9 @@ namespace Microsoft.Dafny.LanguageServer.Language {
         }
 
         profileStart = profile?.Begin();
+        var resultCache = Caching.TaskCacheSession.For(program.Options);
         var tasks = await engine.GetVerificationTasks(boogieProgram, cancellationToken);
+        if (resultCache != null) { tasks = tasks.Select(resultCache.Wrap).ToList(); }
         if (profile != null) {
           // Boogie's preparation: type checking, inlining, preprocessing, passification and splitting.
           profile.Span("prepare", profileStart!.Value, new Dictionary<string, object?> {
