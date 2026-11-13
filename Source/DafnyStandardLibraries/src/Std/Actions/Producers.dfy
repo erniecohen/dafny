@@ -1466,6 +1466,7 @@ module Std.Producers {
         old(DecreasesMetric()).SuccDecreasesToSucc(DecreasesMetric());
       }
 
+      assert {:split_here} Valid();
       if result.Some? {
         assert Seq.Last(source.Outputs()) == result;
         Seq.PartitionedLastTrueImpliesAll(source.Outputs(), IsSome);
@@ -2057,7 +2058,7 @@ module Std.Producers {
       }
 
       Repr := {this} + original.Repr + mapping.Repr;
-      assert Valid();
+      assert {:split_here} Valid();
       assert original.DecreasedBy(next);
       if next.Some? {
         old(DecreasesMetric()).TupleDecreasesToTuple(DecreasesMetric());

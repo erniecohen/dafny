@@ -382,6 +382,8 @@ module Std.Base64 {
       ==
         DecodeRecursively(s);
       == {
+           assert |s| % 4 == 0;
+           assert |s[4..]| == |s| - 4;
            assert |s[4..]| % 4 == 0;
            reveal DecodeRecursively;
          }
@@ -1189,6 +1191,7 @@ module Std.Base64 {
     requires Is2Padding(s[(|s| - 4)..])
     ensures
       (
+        UnpaddedBase64Prefix(s);
         var b := DecodeValid(s);
         b[..(|b| - 1)] == DecodeUnpadded(s[..(|s| - 4)]) &&
         b[(|b| - 1)..] == Decode2Padding(s[(|s| - 4)..]))

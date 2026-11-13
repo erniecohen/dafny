@@ -75,6 +75,7 @@ module Std.JSON.ZeroCopy.Deserializer {
 
     type jopt = v: Vs.View | v.Length() <= 1 witness Vs.View.OfBytes([])
 
+    @IsolateAssertions
     @ResourceLimit("100e6")
     function TryStructural(cs: FreshCursor)
       : (sp: Split<Structural<jopt>>)
@@ -82,6 +83,7 @@ module Std.JSON.ZeroCopy.Deserializer {
     {
       var SP(before, cs) := WS(cs);
       var SP(val, cs) := cs.SkipByte().Split();
+      assert val.Length() <= 1;
       var SP(after, cs) := WS(cs);
       SP(Grammar.Structural(before, val, after), cs)
     }
@@ -347,7 +349,7 @@ module Std.JSON.ZeroCopy.Deserializer {
               sep.t.t.s[(sep.t.t.beg as int)..(sep.t.t.end as int)] == [SEPARATOR];
               { assert (sep.t.t.beg as int) + 1 == (sep.t.t.end as int) by { assert sep.t.t.Length() == 1; } }
               sep.t.t.s[(sep.t.t.beg as int)..(sep.t.t.beg as int) + 1] == [SEPARATOR];
-              { assert sep.t.t.s[(sep.t.t.beg as int)..(sep.t.t.beg as int) + 1] == [sep.t.t.s[sep.t.t.beg as int]] by { AboutLists(sep.t.t.s, sep.t.t.beg); } }
+              { assert sep.t.t.s[(sep.t.t.beg as int)..(sep.t.t.beg as int) + 1] == [sep.t.t.s[sep.t.t.beg as int]] by { hide *; AboutLists(sep.t.t.s, sep.t.t.beg); } }
               [sep.t.t.s[sep.t.t.beg as int]] == [SEPARATOR];
               sep.t.t.s[sep.t.t.beg as int] as opt_byte == SEPARATOR as opt_byte;
               sep.t.t.At(0) as opt_byte == SEPARATOR as opt_byte;
@@ -384,7 +386,7 @@ module Std.JSON.ZeroCopy.Deserializer {
               sep.t.t.s[(sep.t.t.beg as int)..(sep.t.t.end as int)] == [CLOSE];
               { assert (sep.t.t.beg as int) + 1 == (sep.t.t.end as int) by { assert sep.t.t.Length() == 1; } }
               sep.t.t.s[(sep.t.t.beg as int)..(sep.t.t.beg as int) + 1] == [CLOSE];
-              { assert sep.t.t.s[(sep.t.t.beg as int)..(sep.t.t.beg as int) + 1] == [sep.t.t.s[sep.t.t.beg as int]] by { AboutLists(sep.t.t.s, sep.t.t.beg); } }
+              { assert sep.t.t.s[(sep.t.t.beg as int)..(sep.t.t.beg as int) + 1] == [sep.t.t.s[sep.t.t.beg as int]] by { hide *; AboutLists(sep.t.t.s, sep.t.t.beg); } }
               [sep.t.t.s[sep.t.t.beg as int]] == [CLOSE];
               sep.t.t.s[sep.t.t.beg as int] as opt_byte == CLOSE as opt_byte;
               sep.t.t.At(0) as opt_byte == CLOSE as opt_byte;
@@ -715,6 +717,7 @@ module Std.JSON.ZeroCopy.Deserializer {
       Success(cs.Split())
     }
 
+    @IsolateAssertions
     @ResourceLimit("10e6")
     function String(cs: FreshCursor): (pr: ParseResult<jstring>)
       ensures pr.Success? ==> pr.value.StrictlySplitFrom?(cs, Spec.String)
@@ -876,7 +879,15 @@ module Std.JSON.ZeroCopy.Deserializer {
     {
       var rItem := (d: jitem) requires d < arr => Spec.Item(d);
       assert Spec.Bracketed(arr, SuffixedElementSpec) == Spec.Bracketed(arr, rItem) by {
-        assert SpecProperties.Bracketed_Morphism_Requires(arr, SuffixedElementSpec, rItem);
+        assert SpecProperties.Bracketed_Morphism_Requires(arr, SuffixedElementSpec, rItem) by {
+          forall d: jitem | d < arr
+            ensures SuffixedElementSpec.requires(d)
+            ensures rItem.requires(d)
+            ensures SuffixedElementSpec(d) == rItem(d)
+          {
+            assert SuffixedElementSpec(d) == Spec.Item(d);
+          }
+        }
         SpecProperties.Bracketed_Morphism(arr, SuffixedElementSpec, rItem);
       }
       calc {
@@ -994,10 +1005,16 @@ module Std.JSON.ZeroCopy.Deserializer {
     {
       var rMember := (d: jmember) requires d < obj => Spec.Member(d);
       assert Spec.Bracketed(obj, SuffixedElementSpec) == Spec.Bracketed(obj, rMember) by {
-        assert Spec.Bracketed(obj, SuffixedElementSpec) == Spec.Bracketed(obj, rMember) by {
-          assert SpecProperties.Bracketed_Morphism_Requires(obj, SuffixedElementSpec, rMember);
-          SpecProperties.Bracketed_Morphism(obj, SuffixedElementSpec, rMember);
+        assert SpecProperties.Bracketed_Morphism_Requires(obj, SuffixedElementSpec, rMember) by {
+          forall d: jmember | d < obj
+            ensures SuffixedElementSpec.requires(d)
+            ensures rMember.requires(d)
+            ensures SuffixedElementSpec(d) == rMember(d)
+          {
+            assert SuffixedElementSpec(d) == Spec.Member(d);
+          }
         }
+        SpecProperties.Bracketed_Morphism(obj, SuffixedElementSpec, rMember);
       }
       calc {
         Spec.Bracketed(obj, SuffixedElementSpec);

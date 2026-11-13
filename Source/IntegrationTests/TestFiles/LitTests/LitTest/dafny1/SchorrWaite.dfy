@@ -279,6 +279,7 @@ method {:isolate_assertions} SchorrWaite(root: Node, ghost S: set<Node>)
       assert {:focus} true;
       // push
 
+      label BeforePush:
       var newT := t.children[t.childrenVisited];
       t.children := t.children[t.childrenVisited := p];
       p := t;
@@ -288,6 +289,18 @@ method {:isolate_assertions} SchorrWaite(root: Node, ghost S: set<Node>)
       t.marked := true;
       t.pathFromRoot := path;
       unmarkedNodes := unmarkedNodes - {t};
+      forall n | n in S && n.marked
+        ensures var pth := n.pathFromRoot;
+                  old(allocated(pth)) && old(ReachableVia(root, pth, n, S))
+      {
+        if n == t {
+          assert n.pathFromRoot == path;
+          assert old(ReachableVia(root, path, t, S));
+        } else {
+          assert old@BeforePush(n.marked);
+          assert n.pathFromRoot == old@BeforePush(n.pathFromRoot);
+        }
+      }
     }
   }
 }

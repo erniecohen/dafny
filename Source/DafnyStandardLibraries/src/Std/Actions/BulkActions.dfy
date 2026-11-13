@@ -202,6 +202,8 @@ module Std.BulkActions {
       } else {
         s := elements[index..];
       }
+      assert elements == elements[..index] + s;
+      Seq.LemmaMapDistributesOverConcat(ToBatched<T, E>, elements[..index], s);
       index := |elements|;
 
       var produced := Seq.Map(ToBatched, s);
@@ -213,12 +215,29 @@ module Std.BulkActions {
         assert Seq.AllNot(outputs, IsSome);
         Seq.PartitionedCompositionRight(old(Outputs()), outputs, IsSome);
       } else {
-        assert Seq.All(old(Outputs()), IsSome);
+        assert Seq.All(old(Outputs()), IsSome) by {
+          hide *;
+          reveal Valid;
+          assert old(index) < |elements|;
+        }
         Seq.PartitionedCompositionLeft(old(Outputs()), outputs, IsSome);
       }
       ProducedComposition(old(Outputs()), outputs);
 
-      assert Valid();
+      assert ValidHistory(history);
+      assert Produced() == Seq.Map(ToBatched, elements);
+      assert |Produced()| == index;
+      assert Valid() by {
+        hide *;
+        reveal Valid();
+      }
+      assert ValidAndDisjoint() by {
+        hide *;
+        reveal ValidAndDisjoint();
+      }
+      assert old(State()).ValidChange(State());
+      assert ValidChange();
+      assert NewProduced() == produced;
     }
 
   }
