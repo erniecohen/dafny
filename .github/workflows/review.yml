@@ -1241,7 +1241,9 @@ jobs:
           retention-days: 90
 
   release:
-    if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.draft) && (!inputs.platform_parity && (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref_type == 'tag')) }}
+    # Explicit results: with a reused verification the skipped verifier jobs upstream of verdict
+    # would make the implicit success() false and skip the release.
+    if: ${{ !cancelled() && needs.build.result == 'success' && needs.binaries.result == 'success' && needs.verdict.result == 'success' && (github.event_name != 'pull_request' || !github.event.pull_request.draft) && (!inputs.platform_parity && (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref_type == 'tag')) }}
     name: GitHub release
     needs: [build, binaries, verdict]
     runs-on: mac-studio

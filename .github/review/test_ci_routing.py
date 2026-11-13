@@ -38,7 +38,8 @@ def enabled(expression, event, head, repository, flags, ref_type="branch", draft
     inputs = NS(**options)
     return bool(eval(expression.strip(), {'__builtins__': {}}, {
         'github': github, 'inputs': inputs, 'cancelled': lambda: False,
-        'startsWith': str.startswith, 'needs': NS(suite=NS(result='success'), tree=NS(outputs=NS(reuse=reuse)))}))
+        'startsWith': str.startswith, 'needs': NS(suite=NS(result='success'), tree=NS(outputs=NS(reuse=reuse)),
+                     build=NS(result='success'), binaries=NS(result='success'), verdict=NS(result='success'))}))
 
 
 class RoutingTests(unittest.TestCase):
@@ -87,6 +88,14 @@ class RoutingTests(unittest.TestCase):
                                         'erniecohen/dafny', False, 'tag'))
         self.assertFalse(enabled(jobs['review.yml/release'], 'workflow_dispatch', 'erniecohen/dafny',
                                  'erniecohen/dafny', {'binaries': True}, 'branch'))
+
+    def test_release_states_its_needs_explicitly(self):
+        # A reused verification skips verifier jobs upstream of verdict; the implicit success()
+        # would then skip the release, so its guard must not rely on it.
+        guard = dict(mac_jobs())['review.yml/release']
+        self.assertTrue(guard.removeprefix('${{').strip().startswith('!cancelled()'))
+        for need in ['build', 'binaries', 'verdict']:
+            self.assertIn(f"needs.{need}.result == 'success'", guard)
 
     def test_a_reused_verification_skips_every_verifier_job(self):
         # Jobs of review.yml and obligation-proofs.yml are keyed on the tree.  The build and the
