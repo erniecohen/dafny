@@ -178,15 +178,9 @@ jobs:
           test "$(ps -o nice= -p "$$" | tr -d ' ')" = 10
           echo 'Job worker and shell niceness: 10; subsequent actions inherit it.'
       - uses: actions/checkout@v4
-      - name: CI event guards, regression partition and parity bookkeeping
-        run: |
-          python3 -m unittest discover -s .github/review -p test_ci_routing.py
-          python3 -m unittest discover -s .github/review -p test_milestone_identity.py
-          python3 -m unittest discover -s .github/review -p test_regression_filter.py
-          python3 -m unittest discover -s .github/review -p test_platform_parity.py
-          python3 -m unittest discover -s .github/review -p test_check_distribution.py
-          python3 -m unittest discover -s .github/review -p test_program_resources.py
-          python3 -m unittest discover -s .github/review -p test_frontend_profile.py
+      - name: CI event guards, regression partition, parity and comparison bookkeeping
+        # Every unit-test module in .github/review, so that none goes unrun.
+        run: python3 -m unittest discover -s .github/review -p 'test_*.py'
       - name: Version
         id: version
         run: |
