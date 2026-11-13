@@ -457,5 +457,10 @@ git-issues/github-issue-310.dfy
 git-issues/github-issue-310-errors.dfy
 git-issues/github-issue-309.dfy
 
+# Monomorphization repairs for /typeEncoding:m (https://github.com/erniecohen/dafny/issues/281):
+# a quantifier that binds nothing, and hideable definition axioms of generic functions.
+git-issues/github-issue-281-empty-quantifier.dfy
+git-issues/github-issue-281-hide.dfy
+
 # Termination records in .doo libraries under --modular-termination, milestone M3-4 (https://github.com/erniecohen/dafny/issues/211): tampered, missing and mismatched records and contracts are rejected.
 git-issues/github-issue-211-m3-4.dfy

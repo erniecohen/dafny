@@ -1,0 +1,8 @@
+github-issue-281-empty-quantifier.dfy(14,2): Error: assertion might not hold
+github-issue-281-empty-quantifier.dfy(38,2): Error: assertion might not hold
+
+Dafny program verifier finished with 2 verified, 2 errors
+github-issue-281-empty-quantifier.dfy(14,2): Error: assertion might not hold
+github-issue-281-empty-quantifier.dfy(38,2): Error: assertion might not hold
+
+Dafny program verifier finished with 2 verified, 2 errors
