@@ -1,0 +1,1 @@
+Guard character representation axioms by character membership, so the arguments type encoding no longer bounds its common carrier to the finite character range. Character subset and newtype membership retains parent-character membership. The hidden --legacy-unguarded-char option restores the old translation for comparison and migration only.

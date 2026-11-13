@@ -209,8 +209,8 @@ that runs Boogie's own test jobs and packs Boogie's NuGet packages.  The same fi
 is offered to Boogie's master as
 [boogie-org/boogie#1169](https://github.com/boogie-org/boogie/pull/1169).
 
-This branch builds against that fork's release `v3.5.5+review.c5a9f2ef`, whose
-packages have the version `3.5.5-review.c5a9f2ef`.  The release carries them with
+This branch builds against that fork's release `v3.5.5+review.27e27ebc`, whose
+packages have the version `3.5.5-review.27e27ebc`.  The release carries them with
 their sha256 sums, and its `REVIEW.md` says what the fork changes and how its
 version is computed.  Besides that fix, it brings:
 
@@ -244,12 +244,28 @@ version is computed.  Besides that fix, it brings:
   verdicts.  Pass them with `--boogie "/cacheUsedTypes /lockFreeExpansion"`; a
   program that loads the standard library cannot yet, because its `.doo` records
   the `--boogie` options it was built with and refuses others.
+- **Canonical native-result map payloads**, on by default
+  ([#284](https://github.com/erniecohen/dafny/issues/284)): the same-index
+  read-over-write axiom requires a native payload's box/unbox round trip to
+  preserve the stored value. This weakens the inconsistent row without adding
+  an axiom. The hidden `--legacy-noncanonical-map-payloads` switch restores the
+  old row for comparison and migration.
+- **A pooled-solver idle-handshake repair**, on by default
+  ([#287](https://github.com/erniecohen/dafny/issues/287)): a healthy solver no
+  longer gets retired merely because its idle handshake exceeds 100 ms. The
+  default safeguard is 300 seconds; dead or broken transports still retire
+  promptly. No verification condition changes, but retaining physical solvers
+  changes their pooled history and can change later batches' resource counts
+  and outcomes at a resource limit. No fixed RU decrease is promised.
+  Restart-per-batch measurements should be unaffected by that history change;
+  native pooled runs can move. Boogie's hidden `/legacySolverIdleTimeout:1`
+  restores the old deadline for comparison, passed through Dafny's `--boogie`.
 
 `a48933e` made this branch build against the fork's packages, at
-`3.5.5-review.37e4435d`.  It now builds against `3.5.5-review.c5a9f2ef`:
+`3.5.5-review.37e4435d`.  It now builds against `3.5.5-review.27e27ebc`:
 
 - `Source/DafnyCore/DafnyCore.csproj` names `Boogie.ExecutionEngine`
-  `3.5.5-review.c5a9f2ef`, and `dotnet-tools.json` names the `boogie` tool at the
+  `3.5.5-review.27e27ebc`, and `dotnet-tools.json` names the `boogie` tool at the
   same version;
 - `nuget.config` adds a local package source, `Binaries/boogie-packages`, and maps
   every Boogie package to it and to nothing else, so a missing package stops the
@@ -561,3 +577,34 @@ separate expected verdicts and recording paired OFF/ON resource counts. See
 [the standing axiom CI documentation](docs/dev/additional-axioms.md#standing-ci-for-the-shared-option-50)
 for scope, retained negative/vacuity controls, resource-order caveats and the
 scratch-only baseline-capture procedure. The OFF verdict files remain unchanged.
+
+## Guarded character representations
+
+The character reverse round trip is restricted to `$Is(ch,TChar)`, and character
+membership is defined by a valid integer value and a successful reverse round
+trip. The valid-integer forward round trip is unchanged. Redirecting character
+types retain their parent membership requirement, including in visible-type
+obligation checks. The hidden `--legacy-unguarded-char` option restores the old
+translation for comparison and migration.
+
+This only weakens the old conjunction of character axioms: the old unconditional
+reverse round trip and universal membership imply all three repaired clauses.
+For a concrete model of the repaired character fragment, take the erased carrier
+to be the integers, both character conversions to be identity, and membership
+to be the existing valid-range predicate. The range is the BMP in the legacy
+character mode, and Unicode scalar values in Unicode mode. The carrier remains
+infinite; invalid raw values need not be characters. The executable model in
+`git-issues/Inputs/issue-284-char-model.smt2` checks this interpretation and typed
+negative contexts in both modes. It models this fragment, not the entire Dafny
+prelude or Boogie encoding.
+
+The four character-range lemmas, checked subset introduction, a failing false
+assertion, and Unicode surrogate exclusion are regression controls. See
+https://github.com/erniecohen/dafny/issues/284 for the scope and the original
+inconsistency argument.
+
+The accompanying library proof changes establish padding-prefix and sequence
+decomposition facts explicitly, use existing encoding identities while keeping
+bitvector definitions opaque, and separate parser and encoding proof steps.
+They preserve the specifications and existing resource limits. Every additional
+assertion and lemma call is verified; they introduce no axiom or assumption.

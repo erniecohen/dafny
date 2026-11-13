@@ -1,0 +1,5 @@
+Use canonical native-result map read-over-write axioms in the arguments type encoding, removing its known contradiction with Boolean-map extensionality. The hidden --legacy-noncanonical-map-payloads switch restores the old axiom for comparison and migration only.
+
+Stabilize the affected Schorr-Waite reachability witnesses, nested-map witnesses, reads-footprint checks and quotient-order proof without increasing their resource limits.
+
+Expose Pascal's recurrence at the halved arguments in the even/even Lucas induction case, preserving the upstream fixture's theorem and resource limit. The encoding-cost diagnosis is in docs/dev/design/284-lucas-proof-repair.md.

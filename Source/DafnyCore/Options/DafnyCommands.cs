@@ -120,6 +120,9 @@ public static class DafnyCommands {
     CommonOptionBag.AncestorQualifiedModuleIds,
     CommonOptionBag.SynonymRefinesAbstractType,
     CommonOptionBag.LegacyDecreasesOrder,
+    CommonOptionBag.LegacyNoncanonicalMapPayloads,
+
+    CommonOptionBag.LegacyUnguardedChar,
     CommonOptionBag.ModularTermination,
     CommonOptionBag.InvariantConstructorInference,
     CommonOptionBag.TypeInferenceDebug,

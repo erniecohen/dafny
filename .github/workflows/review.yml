@@ -15,7 +15,7 @@ on:
     tags: ['v*']
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
-    branches: ['review/**', 'dev', 'codex/241-verification-cache']
+    branches: ['review/**', 'dev', 'codex/284-a-repairs', 'codex/241-verification-cache']
   workflow_dispatch:
     inputs:
       binaries:
@@ -86,6 +86,14 @@ env:
   HARNESS_Z3_4_16_0_SHA256: 87de9c9e86c877abfccb00cf24b946c4a1bda7b9cba6f363ea58311d2573c320
 
 jobs:
+  canonical-map-comparison:
+    if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.draft) && (github.head_ref == 'codex/284-map-pin' || github.ref == 'refs/heads/codex/284-map-pin') }}
+    uses: ./.github/workflows/typeencoding-map.yml
+
+  character-representation-comparison:
+    if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.draft) && (github.head_ref == 'codex/284-a-repairs' || github.ref == 'refs/heads/codex/284-a-repairs') }}
+    uses: ./.github/workflows/typeencoding-a.yml
+
   tree:
     # Verification is keyed on the git tree, not the commit.  A run that verified a tree in
     # full leaves the artifact verified-review-<tree>; this job looks for one from a completed,

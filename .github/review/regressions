@@ -412,6 +412,12 @@ git-issues/github-issue-241-translation-cache.dfy
 git-issues/github-issue-194.dfy
 git-issues/git-issue-241-verification-cache-requires-refresh.dfy
 
+# Canonical native-result map rows (https://github.com/erniecohen/dafny/issues/284).
+git-issues/git-issue-284-map.dfy
+# The already registered SubsetTypes, SchorrWaite-stages and issue-82 maps/reads
+# cases also cover the proof and expected-statistics repairs for this encoding.
+# DivMod.LemmaMultiplyDivideLe is checked by the complete standard-library gate.
+
 # Library serialization preserves refinement syntax (https://github.com/erniecohen/dafny/issues/280).
 git-issues/git-issue-280.dfy
 
@@ -428,6 +434,11 @@ git-issues/git-issue-311.dfy
 
 # Parallel operator-export builtin ownership and visibility negatives are in git-issues/github-issue-241-parallel-resolution.dfy.
 git-issues/git-issue-241-translation-cache-requires-refresh.dfy
+
+# Guarded character representation (https://github.com/erniecohen/dafny/issues/284).
+git-issues/git-issue-284-char.dfy
+git-issues/git-issue-284-char-unicode.dfy
+git-issues/git-issue-284-char-model.dfy
 
 # Historical identity scoping (https://github.com/erniecohen/dafny/issues/293):
 # Python regression controls: .github/review/test_milestone_identity.py, run by Build.
