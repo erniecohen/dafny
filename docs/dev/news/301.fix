@@ -1,1 +1,0 @@
-Keep required parentheses around lambda expressions used as binary operands or frame expressions during library serialization.

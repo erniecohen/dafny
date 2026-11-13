@@ -465,6 +465,7 @@ namespace Microsoft.Dafny {
         if (fe.E is ImplicitThisExpr) {
           Contract.Assert(fe.FieldName != null);
         } else if (printMode == PrintModes.Serialization && Expression.StripParens(fe.E) is LambdaExpr) {
+          // The frame grammar disallows an unparenthesized lambda.
           PrintExpression(fe.E, false, true);
         } else {
           PrintExpression(fe.E, true);
@@ -1289,8 +1290,7 @@ namespace Microsoft.Dafny {
 
       } else if (expr is LambdaExpr) {
         var e = (LambdaExpr)expr;
-        bool parensNeeded = !isRightmost ||
-                            (printMode == PrintModes.Serialization && contextBindingStrength >= BindingStrengthEquiv);
+        bool parensNeeded = !isRightmost;
         if (parensNeeded) {
           wr.Write("(");
         }
