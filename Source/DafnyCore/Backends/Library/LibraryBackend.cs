@@ -75,7 +75,7 @@ public class LibraryBackend : ExecutableBackend {
       }
       if (failure != null) {
         dafnyProgram.Reporter.Error(MessageSource.Compiler, "modular_termination_record", Token.Cli,
-          $"cannot build a library under --modular-termination: {failure}. A library built with --modular-termination records that its own program was completely verified; build it without --no-verify, filters, {{:verify false}}, {{:only}} or decreases *, and with every verification task succeeding");
+          ModularTerminationRecords.RecordFailureMessage(failure));
         return;
       }
       dooFile.Manifest.DooFileVersion = ModularTerminationRecords.RecordedDooFileVersion;

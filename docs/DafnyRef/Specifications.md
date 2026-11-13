@@ -677,19 +677,33 @@ It also rejects some programs that terminate:
 
 Under the option, a library is admitted only as a `.doo` file built with
 `dafny build --target:lib --modular-termination`. Such a build writes a termination record into the
-library: a hash of its program, of the build of Dafny that verified it, and of the options that change
-what a proof means (each also listed by name), and the termination contract of each module it
-defines. A contract is the module's interface: its declarations with the bodies of methods, lemmas,
+library: a hash of its program, of the build of Dafny that verified it (its Dafny and Boogie
+assemblies and the prelude file it read), and of the options that change what a proof means (each also
+listed by name), the version and a hash of the Z3 binary that verified it, and the termination contract
+of each module it defines. A contract is the module's interface: its declarations with the bodies of methods, lemmas,
 iterators and by-method implementations left out; function bodies stay, since a client may reveal them.
-The record also lists the contracts of the libraries the build was verified against. The build writes
-a library only when its whole program was verified, every verification task conclusively, without
-`--no-verify`, a procedure filter, `{:verify false}`, `{:only}`, `decreases *` or included files that
-were not verified; otherwise it reports which of these stops it and writes nothing.
+The record also lists the contracts of the libraries the build was verified against, and ends with a
+hash of the whole record. The build writes a library only when its whole program was verified, every
+verification task conclusively, without `--no-verify`, a procedure filter, `{:verify false}`, `{:only}`,
+`decreases *` or included files that were not verified, and without unchecked premises: `assume`
+statements, `{:axiom}`, members without a body outside traits and abstract modules, `{:extern}`
+members, `@AssumeCrossModuleTermination` or `--allow-axioms`. Otherwise it reports which of these stops
+it and writes nothing.
+
+Under the option, a module cannot refine or replace a module of a library: it would inherit bodies
+that are not part of the library's contracts, so a change to them would not be detected.
+
+The options are recorded with their values as given; for `--boogie` that is the whole list of
+arguments, so two builds that differ only in a Boogie argument that does not change what a proof means,
+such as a logging flag, still do not admit each other's libraries. Two libraries that both declare
+top-level members outside any module, in the default module, cannot be loaded together, since both
+provide the module `_default`.
 
 When a program loads such a library under the option, Dafny recomputes these hashes and the contracts
 from the library's program, and rejects the library, naming the mismatch, when any differs: its program,
-its contracts, its record (missing, incomplete or of an unknown format), the build of Dafny, or an
-option whose value differs from the current one. A library verified against another must be loaded
+its contracts, its record (missing, incomplete, of an unknown format or not matching its own hash), the
+build of Dafny or its prelude, the Z3 binary that the current run uses (the library must be checked
+with the same one), or an option whose value differs from the current one. A library verified against another must be loaded
 with it, and with one that provides the same contracts: a dependency whose method bodies changed is
 accepted, and one whose contracts changed is rejected. Under the option, Dafny also rejects a source
 file given with `--library`, a `.dll` library and the bundled standard library, which carry no record;

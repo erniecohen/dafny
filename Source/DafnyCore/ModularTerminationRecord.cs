@@ -32,12 +32,20 @@ public class ModularTerminationManifest {
   public string Status { get; set; } = null!;
   public long ContractSchema { get; set; }
   public string ForkBuildId { get; set; } = null!;
+  public string SolverVersion { get; set; } = null!;
+  public string SolverSha256 { get; set; } = null!;
   public string ProgramSha256 { get; set; } = null!;
   public string SemanticOptionsSha256 { get; set; } = null!;
   public string ContractsSha256 { get; set; } = null!;
   public Dictionary<string, string>? SemanticOptions { get; set; }
   public List<ModularTerminationContractRef>? Exports { get; set; }
   public List<ModularTerminationContractRef>? Imports { get; set; }
+
+  /// <summary>
+  /// The digest of every other field of the record, and of the manifest's doo_file_version, so that no
+  /// part of the record, its import list included, can be changed or removed on its own.
+  /// </summary>
+  public string RecordSha256 { get; set; } = null!;
 }
 
 public class ModularTerminationContractRef {
@@ -62,25 +70,32 @@ public sealed class ModularTerminationCompletion {
   public ModularTerminationContracts Contracts { get; private init; } = null!;
   public IReadOnlyList<ModularTerminationContractRef> Imports { get; private init; } = null!;
   public SortedDictionary<string, string> SemanticOptions { get; private init; } = null!;
+  public string ForkBuildId { get; private init; } = null!;
+  public ModularTerminationSolver Solver { get; private init; } = null!;
 
   public static ModularTerminationCompletion Failed(string failure) => new() { Failure = failure };
 
   public static ModularTerminationCompletion Complete(string programText, ModularTerminationContracts contracts,
-    IReadOnlyList<ModularTerminationContractRef> imports, SortedDictionary<string, string> semanticOptions) =>
+    IReadOnlyList<ModularTerminationContractRef> imports, SortedDictionary<string, string> semanticOptions,
+    string forkBuildId, ModularTerminationSolver solver) =>
     new() {
       ProgramText = programText,
       Contracts = contracts,
       Imports = imports,
-      SemanticOptions = semanticOptions
+      SemanticOptions = semanticOptions,
+      ForkBuildId = forkBuildId,
+      Solver = solver
     };
 
   public ModularTerminationManifest CreateRecord() {
-    return new ModularTerminationManifest {
+    var record = new ModularTerminationManifest {
       Schema = ModularTerminationManifest.CurrentSchema,
       Enabled = true,
       Status = ModularTerminationManifest.CompleteStatus,
       ContractSchema = ModularTerminationManifest.CurrentContractSchema,
-      ForkBuildId = ModularTerminationRecords.ForkBuildId,
+      ForkBuildId = ForkBuildId,
+      SolverVersion = Solver.Version,
+      SolverSha256 = Solver.Sha256,
       ProgramSha256 = ModularTerminationRecords.Sha256(ProgramText),
       SemanticOptionsSha256 = ModularTerminationRecords.SemanticOptionsSha256(SemanticOptions),
       ContractsSha256 = ModularTerminationRecords.Sha256(Contracts.EntryText),
@@ -88,8 +103,16 @@ public sealed class ModularTerminationCompletion {
       Exports = Contracts.Exports.ToList(),
       Imports = Imports.ToList()
     };
+    record.RecordSha256 = ModularTerminationRecords.RecordSha256(ModularTerminationRecords.RecordedDooFileVersion, record);
+    return record;
   }
 }
+
+/// <summary>
+/// The Z3 binary that verified a library, or that a client would verify with: its version and the
+/// SHA-256 of its bytes.
+/// </summary>
+public sealed record ModularTerminationSolver(string Version, string Sha256);
 
 /// <summary>
 /// The public termination contract of each top-level module of a retained program: the module
@@ -194,28 +217,16 @@ public static class ModularTerminationProducer {
       return ModularTerminationCompletion.Failed("its parsed program was not retained");
     }
 
+    if (options.Get(CommonOptionBag.AllowAxioms)) {
+      return ModularTerminationCompletion.Failed("it was built with --allow-axioms, which admits unchecked premises");
+    }
     var urisToVerify = program.Compilation.UrisToVerify ?? new HashSet<Uri>();
     foreach (var node in program.DefaultModule.Descendants()) {
       if (node.Origin?.Uri == null || !urisToVerify.Contains(node.Origin.Uri)) {
         continue;
       }
-      if (node is IAttributeBearingDeclaration attributed) {
-        var verify = true;
-        if (Attributes.ContainsBool(attributed.Attributes, "verify", ref verify) && !verify) {
-          return ModularTerminationCompletion.Failed($"{node.Origin.Uri.Segments.LastOrDefault()}({node.Origin.line},{node.Origin.col + 1}) is marked {{:verify false}}");
-        }
-        if (Attributes.Find(attributed.Attributes, "only") != null) {
-          return ModularTerminationCompletion.Failed($"{node.Origin.Uri.Segments.LastOrDefault()}({node.Origin.line},{node.Origin.col + 1}) uses {{:only}}");
-        }
-      }
-      var decreases = node switch {
-        MethodOrConstructor m => m.Decreases,
-        IteratorDecl i => i.Decreases,
-        LoopStmt l => l.Decreases,
-        _ => null
-      };
-      if (decreases?.Expressions?.Any(e => e is WildcardExpr) == true) {
-        return ModularTerminationCompletion.Failed($"{node.Origin.Uri.Segments.LastOrDefault()}({node.Origin.line},{node.Origin.col + 1}) uses decreases *, which does not establish termination");
+      if (UncheckedPremise(node) is { } premise) {
+        return ModularTerminationCompletion.Failed($"{node.Origin.Uri.Segments.LastOrDefault()}({node.Origin.line},{node.Origin.col + 1}) {premise}");
       }
     }
 
@@ -256,8 +267,64 @@ public static class ModularTerminationProducer {
     if (contracts == null) {
       return ModularTerminationCompletion.Failed($"its retained program does not parse: {contractError}");
     }
+    if (ModularTerminationRecords.Solver(options) is not { } solver) {
+      return ModularTerminationCompletion.Failed("the Z3 binary that verified it could not be identified");
+    }
     return ModularTerminationCompletion.Complete(programText, contracts, program.Compilation.ModularTerminationImports,
-      ModularTerminationRecords.SemanticOptions(options));
+      ModularTerminationRecords.SemanticOptions(options), ModularTerminationRecords.ForkBuildId(options), solver);
+  }
+
+  /// <summary>
+  /// Why a node of the library's own program is not checked by its verification, or null.  The
+  /// per-implementation inventory cannot see these: an exempted, assumed, external or bodyless
+  /// declaration either produces no verification condition or one that holds by assumption.
+  /// </summary>
+  private static string? UncheckedPremise(INode node) {
+    if (node is IAttributeBearingDeclaration attributed) {
+      var verify = true;
+      if (Attributes.ContainsBool(attributed.Attributes, "verify", ref verify) && !verify) {
+        return "is marked {:verify false}";
+      }
+      if (Attributes.Find(attributed.Attributes, "only") != null) {
+        return "uses {:only}";
+      }
+      if (Attributes.Find(attributed.Attributes, "axiom") != null) {
+        return "is marked {:axiom}, an unchecked premise";
+      }
+      if (Attributes.Find(attributed.Attributes, "extern") != null) {
+        return "is marked {:extern}, whose implementation is not verified";
+      }
+      if (Attributes.Find(attributed.Attributes, "AssumeCrossModuleTermination") != null) {
+        return "is marked @AssumeCrossModuleTermination, an unchecked termination premise";
+      }
+    }
+    switch (node) {
+      case AssumeStmt:
+        return "uses assume, an unchecked premise";
+      case MethodOrConstructor { Body: null } method when IsConcrete(method):
+        return $"declares {method.WhatKind} '{method.Name}' without a body, an unchecked premise";
+      case Function { Body: null } function when IsConcrete(function):
+        return $"declares {function.WhatKind} '{function.Name}' without a body, an unchecked premise";
+    }
+    var decreases = node switch {
+      MethodOrConstructor m => m.Decreases,
+      IteratorDecl i => i.Decreases,
+      LoopStmt l => l.Decreases,
+      _ => null
+    };
+    if (decreases?.Expressions?.Any(e => e is WildcardExpr) == true) {
+      return "uses decreases *, which does not establish termination";
+    }
+    return null;
+  }
+
+  /// <summary>
+  /// A member that must have a body: not an abstract member of a trait, and not in an abstract module,
+  /// whose refinements supply the bodies.
+  /// </summary>
+  private static bool IsConcrete(MemberDecl member) {
+    return member.EnclosingClass is not TraitDecl && member.EnclosingClass?.EnclosingModuleDefinition is not
+      { ModuleKind: ModuleKindEnum.Abstract };
   }
 
   /// <summary>
@@ -290,27 +357,134 @@ public static class ModularTerminationRecords {
   public const string IssueLink = "https://github.com/erniecohen/dafny/issues/211";
   public const string RebuildInstruction = "rebuild it with 'dafny build --target:lib --modular-termination'";
 
+  public static string RecordFailureMessage(string failure) {
+    return $"cannot build a library under --modular-termination: {failure}. A library built with --modular-termination " +
+           "records that its own program was completely verified; build it without --no-verify, procedure filters, " +
+           "{:verify false}, {:only}, decreases *, assumptions ({:axiom}, assume, bodyless members, --allow-axioms) " +
+           "or {:extern}, and with every verification task succeeding";
+  }
+
   public static string Sha256(string text) {
     return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(text))).ToLowerInvariant();
   }
 
   /// <summary>
-  /// Identifies the build of the verifier: the module version IDs of the Dafny and Boogie assemblies
-  /// that parse, resolve, translate and verify a program, including the embedded prelude.
+  /// Identifies the build of the verifier: the module version IDs of DafnyCore and of every Dafny and
+  /// Boogie assembly it references, directly or transitively (parser, resolver, translator, VC
+  /// generation, VC expressions and the SMT-LIB prover interface among them), and the SHA-256 of the
+  /// bytes of the prelude file that translation reads, which is not part of any assembly.  It changes
+  /// whenever one of these assemblies or the prelude changes; an assembly rebuilt from identical
+  /// inputs by a deterministic build keeps its module version ID.  The solver is recorded separately.
   /// </summary>
-  public static readonly string ForkBuildId = ComputeForkBuildId();
+  public static string ForkBuildId(DafnyOptions options) {
+    var preludePath = BoogieGenerator.PreludePath(options);
+    var prelude = File.Exists(preludePath) ? FileSha256(preludePath) : "missing";
+    return Sha256(AssemblyIdentity.Value + $"prelude:{prelude}\n");
+  }
 
-  private static string ComputeForkBuildId() {
-    var assemblies = new HashSet<Assembly> {
-      typeof(DooFile).Assembly,
-      typeof(Microsoft.Boogie.Program).Assembly,
-      typeof(Microsoft.Boogie.ExecutionEngine).Assembly,
-      typeof(Microsoft.Boogie.VCGenOptions).Assembly,
-    };
-    var lines = assemblies
-      .Select(a => $"{a.GetName().Name}:{a.ManifestModule.ModuleVersionId:N}\n")
-      .OrderBy(l => l, StringComparer.Ordinal);
-    return Sha256(string.Concat(lines));
+  private static readonly Lazy<string> AssemblyIdentity = new(() => {
+    var seen = new Dictionary<string, Assembly>(StringComparer.Ordinal);
+    var pending = new Stack<Assembly>();
+    pending.Push(typeof(DooFile).Assembly);
+    while (pending.Count != 0) {
+      var assembly = pending.Pop();
+      var name = assembly.GetName().Name ?? "";
+      if (!seen.TryAdd(name, assembly)) {
+        continue;
+      }
+      foreach (var reference in assembly.GetReferencedAssemblies()) {
+        if (reference.Name != null && IsVerifierAssembly(reference.Name) && !seen.ContainsKey(reference.Name)) {
+          pending.Push(Assembly.Load(reference));
+        }
+      }
+    }
+    return string.Concat(seen.OrderBy(kv => kv.Key, StringComparer.Ordinal)
+      .Select(kv => $"{kv.Key}:{kv.Value.ManifestModule.ModuleVersionId:N}\n"));
+  });
+
+  private static bool IsVerifierAssembly(string name) {
+    return name.StartsWith("Boogie.", StringComparison.Ordinal) || name.StartsWith("Dafny", StringComparison.Ordinal);
+  }
+
+  private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, string> FileDigests = new();
+
+  private static string FileSha256(string path) {
+    return FileDigests.GetOrAdd(path, p => {
+      using var stream = File.OpenRead(p);
+      return Convert.ToHexString(SHA256.HashData(stream)).ToLowerInvariant();
+    });
+  }
+
+  /// <summary>
+  /// The Z3 binary that this run uses, found as the verifier finds it: --solver-path, then the z3
+  /// directory next to Dafny, then the PATH.  Null when there is none.
+  /// </summary>
+  public static string? SolverPath(DafnyOptions options) {
+    const string proverPath = "PROVER_PATH=";
+    var explicitPath = options.ProverOptions.Find(o => o.StartsWith(proverPath));
+    if (explicitPath != null) {
+      var path = explicitPath[proverPath.Length..];
+      return File.Exists(path) ? path : null;
+    }
+    var isUnix = Environment.OSVersion.Platform is PlatformID.Unix or PlatformID.MacOSX;
+    var dafnyBinDir = Path.GetDirectoryName(typeof(DafnyOptions).Assembly.Location) ?? "";
+    var local = Path.Combine(dafnyBinDir, "z3", "bin", isUnix ? $"z3-{DafnyOptions.DefaultZ3Version}" : $"z3-{DafnyOptions.DefaultZ3Version}.exe");
+    if (File.Exists(local)) {
+      return local;
+    }
+    return Environment.GetEnvironmentVariable("PATH")?.Split(isUnix ? ':' : ';')
+      .Select(dir => Path.Combine(dir, isUnix ? "z3" : "z3.exe")).FirstOrDefault(File.Exists);
+  }
+
+  public static string? SolverSha256(DafnyOptions options) {
+    return SolverPath(options) is { } path ? FileSha256(path) : null;
+  }
+
+  private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, string> SolverVersions = new();
+
+  /// <summary>
+  /// The solver's identity; its version is probed, so this is used only where the solver runs anyway
+  /// or a diagnostic needs it.
+  /// </summary>
+  public static ModularTerminationSolver? Solver(DafnyOptions options) {
+    if (SolverPath(options) is not { } path) {
+      return null;
+    }
+    var version = SolverVersions.GetOrAdd(path, p => DafnyOptions.GetZ3Version(p)?.ToString() ?? "unknown");
+    return new ModularTerminationSolver(version, FileSha256(path));
+  }
+
+  /// <summary>
+  /// The canonical text of a record, without its own digest.  Each line is a key and its values,
+  /// separated by tabs, with backslash, tab and newline escaped.
+  /// </summary>
+  public static string RecordSha256(string dooFileVersion, ModularTerminationManifest record) {
+    var sb = new StringBuilder();
+    void Line(params string?[] parts) {
+      sb.Append(string.Join("\t", parts.Select(p => (p ?? "").Replace("\\", "\\\\").Replace("\t", "\\t").Replace("\n", "\\n"))));
+      sb.Append('\n');
+    }
+    Line("doo_file_version", dooFileVersion);
+    Line("schema", record.Schema.ToString(System.Globalization.CultureInfo.InvariantCulture));
+    Line("enabled", record.Enabled ? "true" : "false");
+    Line("status", record.Status);
+    Line("contract_schema", record.ContractSchema.ToString(System.Globalization.CultureInfo.InvariantCulture));
+    Line("fork_build_id", record.ForkBuildId);
+    Line("solver_version", record.SolverVersion);
+    Line("solver_sha256", record.SolverSha256);
+    Line("program_sha256", record.ProgramSha256);
+    Line("semantic_options_sha256", record.SemanticOptionsSha256);
+    Line("contracts_sha256", record.ContractsSha256);
+    foreach (var (option, value) in (record.SemanticOptions ?? new()).OrderBy(kv => kv.Key, StringComparer.Ordinal)) {
+      Line("option", option, value);
+    }
+    foreach (var export in record.Exports ?? []) {
+      Line("export", export.Module, export.ContractSha256);
+    }
+    foreach (var import in record.Imports ?? []) {
+      Line("import", import.Module, import.ContractSha256);
+    }
+    return Sha256(sb.ToString());
   }
 
   /// <summary>
@@ -336,6 +510,8 @@ public static class ModularTerminationRecords {
     CommonOptionBag.InvariantConstructorInference,
     CommonOptionBag.UserDefinedOperators,
     CommonOptionBag.AdditionalAxioms,
+    CommonOptionBag.AllowAxioms,
+    CommonOptionBag.TestAssumptions,
     CommonOptionBag.MapComprehensionDomainTriggers,
     CommonOptionBag.HeapFreeLambdaFacts,
     CommonOptionBag.StatementExpressionConclusions,
@@ -366,6 +542,9 @@ public static class ModularTerminationRecords {
     }
     if (OptionValue(options, CommonOptionBag.PluginOption) is IEnumerable plugins && plugins.Cast<object>().Any()) {
       return "plugins are not part of the recorded verifier build";
+    }
+    if (!options.IsUsingZ3()) {
+      return "only Z3 is supported as the recorded solver";
     }
     return null;
   }

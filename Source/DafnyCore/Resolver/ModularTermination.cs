@@ -772,6 +772,7 @@ public class ModularTerminationRewriter : IRewriter {
   }
 
   internal override void PostResolve(Program program) {
+    CheckLibraryRefinements(program);
     var analysis = new ModularTerminationAnalysis(program);
     var checkedClauses = new HashSet<(Attributes, ModuleDefinition)>();
     foreach (var module in program.Modules()) {
@@ -801,6 +802,31 @@ public class ModularTerminationRewriter : IRewriter {
           classifier.Visit(callable.Ins.Where(f => f.DefaultValue != null).Select(f => f.DefaultValue));
         }
       }
+    }
+  }
+
+  /// <summary>
+  /// A module that refines or replaces a module of a library inherits that module's bodies, which are
+  /// not part of the library's termination contracts (https://github.com/erniecohen/dafny/issues/211,
+  /// milestone M3-4): a changed body would leave the contract, and so the record of a library built
+  /// against it, unchanged.  Until contracts or records cover inherited bodies, such a module is rejected.
+  /// </summary>
+  private void CheckLibraryRefinements(Program program) {
+    var urisToVerify = program.Compilation.UrisToVerify;
+    if (urisToVerify == null) {
+      return;
+    }
+    foreach (var module in program.Modules()) {
+      if (module.Implements is not { } implements || implements.Target.Def is not { } target ||
+          module.Origin?.Uri == null || !urisToVerify.Contains(module.Origin.Uri) ||
+          target.Origin?.Uri == null || urisToVerify.Contains(target.Origin.Uri)) {
+        continue;
+      }
+      var verb = implements.Kind == ImplementationKind.Refinement ? "refines" : "replaces";
+      Reporter.Error(MessageSource.Resolver, module.NameNode.Origin,
+        $"modular termination: module '{module.Name}' {verb} module '{target.FullDafnyName}' of a library; " +
+        "under --modular-termination a module cannot refine or replace a library module, since the bodies it " +
+        "would inherit are not part of the library's termination contracts");
     }
   }
 

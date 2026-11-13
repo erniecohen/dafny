@@ -303,6 +303,8 @@ public class DooFile {
   /// and whose stored termination contracts are exactly those recomputed from it.  Reports the first
   /// mismatch and returns false otherwise.
   /// </summary>
+  private static string Short(string? digest) => digest == null ? "(none)" : digest[..Math.Min(12, digest.Length)];
+
   public async Task<bool> AdmitModularTermination(ErrorReporter reporter, Uri file, DafnyOptions options,
     DafnyOptions libraryOptions, IOrigin origin) {
     var name = file.Scheme == "dllresource" ? Path.GetFileName(file.LocalPath) : options.GetPrintPath(file.LocalPath);
@@ -328,14 +330,26 @@ public class DooFile {
         record.ContractSchema != ModularTerminationManifest.CurrentContractSchema) {
       return Reject($"its record has an unsupported format (doo_file_version {Manifest.DooFileVersion}, schema {record.Schema}, contract_schema {record.ContractSchema}); {ModularTerminationRecords.RebuildInstruction}");
     }
+    if (record.RecordSha256 != ModularTerminationRecords.RecordSha256(Manifest.DooFileVersion, record)) {
+      return Reject("its record does not match its digest; the library was modified after it was built");
+    }
     if (!record.Enabled || record.Status != ModularTerminationManifest.CompleteStatus) {
       return Reject($"its record does not state a complete verification (status '{record.Status}'); {ModularTerminationRecords.RebuildInstruction}");
     }
-    if (record.ForkBuildId != ModularTerminationRecords.ForkBuildId) {
-      return Reject($"it was verified by a different build of Dafny; {ModularTerminationRecords.RebuildInstruction} using this one");
-    }
     if (ModularTerminationRecords.UnsupportedConfiguration(options) is { } unsupported) {
       return Reject(unsupported);
+    }
+    if (record.ForkBuildId != ModularTerminationRecords.ForkBuildId(options)) {
+      return Reject($"it was verified by a different build of Dafny or of its prelude; {ModularTerminationRecords.RebuildInstruction} using this one");
+    }
+    var solverSha256 = ModularTerminationRecords.SolverSha256(options);
+    if (solverSha256 == null) {
+      return Reject($"no Z3 binary was found to compare with the one that verified it (Z3 {record.SolverVersion}); use --solver-path");
+    }
+    if (record.SolverSha256 != solverSha256) {
+      var current = ModularTerminationRecords.Solver(options);
+      return Reject($"it was verified with a different Z3 binary (Z3 {record.SolverVersion}, sha256 {Short(record.SolverSha256)}) " +
+                    $"than this run uses (Z3 {current?.Version}, sha256 {Short(solverSha256)}); use the same solver, or rebuild the library with this one");
     }
     if (record.ProgramSha256 != ModularTerminationRecords.Sha256(ProgramText)) {
       return Reject("its program does not match the program its record certifies; the library was modified after it was built");
