@@ -1,0 +1,1 @@
+Honor module-local function syntax when serializing libraries, preserving compiled and ghost function declarations across .doo round trips.

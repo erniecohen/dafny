@@ -423,7 +423,15 @@ NoGhost - disable printing of functions, ghost methods, and proof
             if (modDecl.Signature != null) {
               scope = modDecl.Signature.VisibilityScope;
             }
-            PrintModuleDefinition(compilation, modDecl.ModuleDef, scope, indent, prefixIds);
+            var savedOptions = options;
+            if (printMode == PrintModes.Serialization) {
+              options = modDecl.Options;
+            }
+            try {
+              PrintModuleDefinition(compilation, modDecl.ModuleDef, scope, indent, prefixIds);
+            } finally {
+              options = savedOptions;
+            }
           } else if (d is AliasModuleDecl) {
             var dd = (AliasModuleDecl)d;
 
