@@ -307,7 +307,9 @@ Various options control the verification process, in addition to all those descr
   parallel resolution use the same module-scoped names, dependency heights and
   builtin inventories; changing N does not select a different translation scheme.
 
-- `--translation-cache` reuses module translations within one process, for
+- `--translation-cache` requires `--type-system-refresh`; a legacy-type-system
+  request is rejected during option validation with exit code 2. It reuses module
+  translations within one process, for
   example across batch verification requests. It uses the same names and
   translation scheme as the default translator and does not select a resolution
   worker count. It stores no files or verification results. The table is bounded

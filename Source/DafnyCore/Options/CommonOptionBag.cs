@@ -43,7 +43,7 @@ public class CommonOptionBag {
 
   public static readonly Option<bool> TranslationCache = new("--translation-cache",
     "Reuse module translations in this process using semantic resolution keys. " +
-    "Uses the default module-scoped translator. Stores no files or verification results.");
+    "Requires --type-system-refresh. Uses the default module-scoped translator. Stores no files or verification results.");
 
   public static readonly Option<int> ResolutionThreads = new("--resolution-threads", () => 0,
     "Resolve independent modules with N workers. Scheduling is opt-in; generated names are module-scoped in every mode.") {

@@ -16,6 +16,13 @@ or change the resolution worker count. Repeated batch requests in one invocation
 can hit; separate CLI processes cannot. Current whole-program admission and
 verification still run. No on-disk translation cache is enabled.
 
+The public option requires `--type-system-refresh`. Once project and CLI options
+are bound, legacy-type-system requests fail before parsing/resolution, profiling
+or cache startup, with `Error: --translation-cache requires --type-system-refresh`
+and exit code 2. CLI overrides of project values are honored. Option-off legacy
+verification remains available. Earlier internal-API legacy cache observations
+qualify implementation internals, not public CLI admission.
+
 The governing contract is the owner decision at
 https://github.com/erniecohen/dafny/pull/262#issuecomment-6826006467:
 each unit's translation depends only on its contents and dependencies, including
@@ -521,3 +528,12 @@ not acceptance under the governing contract. It is retained in
 [241-translation-equivalence.md](241-translation-equivalence.md), with per-module
 raw byte digests in its accompanying table. The default prerequisite needs its
 own current moved-proof ledger; this table must introduce no additional movement.
+
+
+The refreshed-type admission revision passes the Release CLI build, all 467 Core
+tests, four rejection/precedence cases and the ordinary option-off legacy control.
+A refreshed two-batch CLI run preserves Boogie, outcomes/RU, untimed reports,
+stdout/stderr/exit with every module missing once and then hitting. A passive
+native-writer comparison also preserves each task's exact command bytes for
+OFF/cold and cold/warm. These focused checks qualify the admission change; the
+frozen full suite/Std cohorts retain their original producer identities.

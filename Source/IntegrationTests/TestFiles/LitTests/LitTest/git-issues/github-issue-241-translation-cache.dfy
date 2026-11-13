@@ -1,6 +1,6 @@
 // Batch/report regression: the singleton verdict planner cannot expand these batch/output placeholders.
-// RUN: %exits-with 4 %verify --cores 1 --solver-path "%repositoryRoot/Binaries/z3/bin/z3-5.1.0" --show-snippets:false --use-basename-for-filename --resolution-threads 1 --bprint "%t.off.bpl" --filter-position-batch "%s" --filter-position-batch "%s" "%s" > "%t.off"
-// RUN: %exits-with 4 %verify --cores 1 --solver-path "%repositoryRoot/Binaries/z3/bin/z3-5.1.0" --show-snippets:false --use-basename-for-filename --translation-cache --bprint "%t.on.bpl" --pipeline-profile "%t.jsonl" --filter-position-batch "%s" --filter-position-batch "%s" "%s" > "%t.on"
+// RUN: %exits-with 4 %verify --type-system-refresh --cores 1 --solver-path "%repositoryRoot/Binaries/z3/bin/z3-5.1.0" --show-snippets:false --use-basename-for-filename --resolution-threads 1 --bprint "%t.off.bpl" --filter-position-batch "%s" --filter-position-batch "%s" "%s" > "%t.off"
+// RUN: %exits-with 4 %verify --type-system-refresh --cores 1 --solver-path "%repositoryRoot/Binaries/z3/bin/z3-5.1.0" --show-snippets:false --use-basename-for-filename --translation-cache --bprint "%t.on.bpl" --pipeline-profile "%t.jsonl" --filter-position-batch "%s" --filter-position-batch "%s" "%s" > "%t.on"
 // RUN: %diff "%t.off" "%t.on"
 // RUN: %diff "%t.off_A.bpl" "%t.on_A.bpl"
 // RUN: %diff "%t.off_B.bpl" "%t.on_B.bpl"
