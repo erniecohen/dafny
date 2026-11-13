@@ -20,7 +20,7 @@ DafnyNewCli.SetHandlerUsingDafnyOptionsContinuation(verify, async (options, cont
   options.PrintFile = Path.Combine(request.LiveDirectory ?? Path.Combine(request.Destination, "live"), "program.bpl");
   var original = options.CreateSolver;
   options.CreateSolver = (library, solver) => {
-    var recording = new RecordingSolver(original(library, solver), current, Interlocked.Increment(ref counter), () => Interlocked.Increment(ref taskStarts));
+    var recording = new RecordingSolver(original(library, solver), current, Interlocked.Increment(ref counter), () => Interlocked.Increment(ref taskStarts), request.CaptureNativeInput);
     lock (captured) { captured.Add(new WeakReference<RecordingSolver>(recording)); }
     return recording;
   };
@@ -57,7 +57,7 @@ foreach (var selected in request.Modes) {
   File.WriteAllText(Path.Combine(current,"boogie.json"),JsonSerializer.Serialize(modules));
   Console.WriteLine(mode+" "+code+" "+clock.Elapsed.TotalSeconds);
 }
-record Request(string Cwd, string[] Arguments, string Destination, string[] Modes, string LiveDirectory);
+record Request(string Cwd, string[] Arguments, string Destination, string[] Modes, string LiveDirectory, bool CaptureNativeInput = false);
 
 sealed class RecordingSolver : SMTLibSolver {
   private readonly SMTLibSolver inner;
@@ -91,14 +91,15 @@ sealed class RecordingSolver : SMTLibSolver {
       File.AppendAllText(Path.Combine(directory,"solver-"+number+".jsonl"),JsonSerializer.Serialize(record)+"\n");
     }
   }
-  public RecordingSolver(SMTLibSolver inner, string directory, int number, System.Action taskStarted) {
+  public RecordingSolver(SMTLibSolver inner, string directory, int number, System.Action taskStarted, bool captureNativeInput) {
     this.taskStarted=taskStarted;
     this.inner=inner;this.directory=directory;this.number=number;
     var field = inner.GetType().GetField("toProver", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
       ?? throw new InvalidOperationException("native solver input writer not found");
     var original = (TextWriter)field.GetValue(inner)!;
     wire = new WireWriter(original, record => File.AppendAllText(
-      Path.Combine(directory, "solver-"+number+".jsonl"), JsonSerializer.Serialize(record)+"\n"));
+      Path.Combine(directory, "solver-"+number+".jsonl"), JsonSerializer.Serialize(record)+"\n"), captureNativeInput ? new BufferedStream(new FileStream(
+        Path.Combine(directory, "solver-"+number+".smt2"), FileMode.Create, FileAccess.Write, FileShare.Read), 65536) : null);
     field.SetValue(inner, wire);
   }
   public async Task FinishRecording() {
@@ -171,12 +172,15 @@ sealed class RecordingSolver : SMTLibSolver {
 // Observe the exact characters passed to the native process writer, including
 // internal (echo "ping") handshakes and adaptive requests. The native StreamWriter
 // encoding/newline are retained; no solver command or option is inserted.
-sealed class WireWriter(TextWriter inner, Action<object> publish) : TextWriter {
+sealed class WireWriter(TextWriter inner, Action<object> publish, Stream? capture = null) : TextWriter {
   private readonly object gate = new();
   private readonly IncrementalHash hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
   private long length;
   private IncrementalHash taskHash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
   private long taskLength;
+  private long taskStartOffset;
+  private int taskOrdinal;
+  private string prefixHash = Convert.ToHexStringLower(SHA256.HashData(Array.Empty<byte>()));
   private string? taskName;
   private string checkpoint = "fresh-process";
   private bool active = true;
@@ -184,7 +188,8 @@ sealed class WireWriter(TextWriter inner, Action<object> publish) : TextWriter {
     lock(gate) {
       if (taskName != null) throw new InvalidOperationException("reset before task completion: "+taskName);
       taskHash.Dispose(); taskHash=IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
-      taskLength=0; checkpoint=kind; active=true;
+      taskLength=0; checkpoint=kind; active=true; taskStartOffset=length;
+      prefixHash=Convert.ToHexStringLower(hash.GetCurrentHash());
     }
   }
   public void NameTask(string name) {
@@ -196,7 +201,9 @@ sealed class WireWriter(TextWriter inner, Action<object> publish) : TextWriter {
   public void FinishTask() {
     lock(gate) {
       if (taskName != null) {
-        publish(new { kind="task-wire", problem=taskName, checkpoint,
+        capture?.Flush();
+        publish(new { kind="task-wire", problem=taskName, checkpoint, ordinal=++taskOrdinal,
+          start=taskStartOffset, end=length, prefixSha256=prefixHash,
           sha256=Convert.ToHexStringLower(taskHash.GetCurrentHash()), length=taskLength });
         taskName=null;
       }
@@ -204,10 +211,10 @@ sealed class WireWriter(TextWriter inner, Action<object> publish) : TextWriter {
     }
   }
   public override Encoding Encoding => inner.Encoding;
-  private void Add(string value) { var bytes=Encoding.GetBytes(value); hash.AppendData(bytes); length+=bytes.Length; if(active) { taskHash.AppendData(bytes); taskLength+=bytes.Length; } }
+  private void Add(string value) { var bytes=Encoding.GetBytes(value); hash.AppendData(bytes); capture?.Write(bytes); length+=bytes.Length; if(active) { taskHash.AppendData(bytes); taskLength+=bytes.Length; } }
   public override void WriteLine(string? value) { lock(gate) { inner.WriteLine(value); Add((value ?? "")+inner.NewLine); } }
   public override void Write(string? value) { lock(gate) { inner.Write(value); if(value != null) Add(value); } }
   public override void Write(char value) { lock(gate) { inner.Write(value); Add(value.ToString()); } }
   public override void Flush() { lock(gate) { inner.Flush(); } }
-  public (string Hash,long Length) Snapshot() { lock(gate) { return (Convert.ToHexStringLower(hash.GetCurrentHash()),length); } }
+  public (string Hash,long Length) Snapshot() { lock(gate) { capture?.Flush(); return (Convert.ToHexStringLower(hash.GetCurrentHash()),length); } }
 }

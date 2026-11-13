@@ -18,7 +18,8 @@ before building. Run the resulting `NativeSolverWire.dll` with a JSON request:
   "Arguments": ["verify", "input.dfy", "--solver-path", "Z3_BINARY", "--cores", "1", "--verification-time-limit", "0"],
   "Destination": "OBSERVATION_DIRECTORY",
   "LiveDirectory": "TEMPORARY_OUTPUT_DIRECTORY",
-  "Modes": ["off", "cold", "warm"]
+  "Modes": ["off", "cold", "warm"],
+  "CaptureNativeInput": false
 }
 ```
 
@@ -78,3 +79,32 @@ pooling from explicit `/restartProver` and `/deterministicLiteralHashes:1`
 profiles. Version probes outside the verification-task solver factory are not
 included in the physical proof-solver counter. Timing values describe the current
 observation; they do not establish equality or a proof-cost change.
+
+
+## Diagnosing physical-history effects
+
+Set `CaptureNativeInput` to true to retain the exact native input as
+`solver-N.smt2`. `task-wire` records also include the task ordinal on that
+physical solver, byte offsets `start`/`end`, and the preceding physical-prefix
+hash. Offsets exclude the checkpoint operation itself. Slicing those offsets
+reproduces the task's recorded SHA-256 and length; bytes through `end` include
+its entire physical history. Capture is optional and adds file I/O, without
+inserting solver requests or changing command bytes. Its timing can affect
+when the existing idle-handshake policy recycles a process.
+
+Use `replay.py Z3_BINARY MODE_DIRECTORY PROBLEM` to send only that task to a
+fresh native process. Add `--history` to send its exact recorded physical
+prefix followed by the same task. Add `--history-from EARLIER_PROBLEM` to
+start at an earlier task checkpoint on that same physical stream, simulating
+retirement immediately before that task. `--runs N` repeats with fresh native
+processes; the last resource response belongs to the selected task. This
+control bypasses Dafny/Boogie scheduling and replay tables, preserving every
+recorded command byte. Both variants invoke `Z3_BINARY -smt2 -in`.
+
+A Boogie `(reset)` establishes an empty logical assertion context; it must not
+be assumed to erase every part of the native solver's process state. Task-byte
+equality and physical-history isolation are separate properties. The
+[reuse investigation](https://github.com/erniecohen/dafny/issues/287) records
+why the result cache uses fresh native solving for reusable tasks. An explicit
+`--boogie /restartProver` is a diagnostic fresh-process control, not a new
+default imposed by this tool or the translation stack.
