@@ -1,0 +1,20 @@
+runtime_sha256=f03542e162ef10523aeae806114eb9bfb800587cfc2f1590701c6d136ab67bb8
+bignumber_version=9.1.2 node_version=v22.23.4
+BitwiseAnd	k=8	actual=256	expected=256
+BitwiseOr	k=8	actual=256	expected=256
+BitwiseXor	k=8	actual=256	expected=256
+BitwiseAnd	k=30	actual=1073741824	expected=1073741824
+BitwiseOr	k=30	actual=1073741824	expected=1073741824
+BitwiseXor	k=30	actual=1073741824	expected=1073741824
+BitwiseAnd	k=31	actual=-2147483648	expected=2147483648
+BitwiseOr	k=31	actual=-2147483648	expected=2147483648
+BitwiseXor	k=31	actual=-2147483648	expected=2147483648
+BitwiseAnd	k=32	actual=0	expected=4294967296
+BitwiseOr	k=32	actual=0	expected=4294967296
+BitwiseXor	k=32	actual=0	expected=4294967296
+BitwiseAnd	k=53	actual=9007199254740992	expected=9007199254740992
+BitwiseOr	k=53	actual=9007199254740992	expected=9007199254740992
+BitwiseXor	k=53	actual=0	expected=9007199254740992
+BitwiseAnd	k=63	actual=9223372036854775808	expected=9223372036854775808
+BitwiseOr	k=63	actual=9223372036854775808	expected=9223372036854775808
+BitwiseXor	k=63	actual=0	expected=9223372036854775808
