@@ -341,6 +341,22 @@ Various options control the verification process, in addition to all those descr
   Modular termination, counterexample extraction and unsupported graph metadata
   recompute through the default materialization path.
 
+- `--boogie /cacheBackground` is an opt-in Boogie option
+  ([#241](https://github.com/erniecohen/dafny/issues/241)). When a split has the
+  same pruned declarations, in the same order, and the same random seed, type
+  encoding types and SMT options as the context its prover holds, the prover
+  restarts that context instead of setting it up again: it resends the commands
+  that set it up, without translating, erasing and printing the declarations
+  again. Each solver gets the same commands, in the same order, as without the
+  option, so verdicts and resource counts do not change. The separate opt-in
+  `--boogie /scheduleByImplementation` lets an implementation's splits run one
+  after the other on one prover, so that more contexts are restarted; it changes
+  which solver process verifies which split, and after which others, so resource
+  counts can differ from a run without it. Pass both with
+  `--boogie "/cacheBackground /scheduleByImplementation"`. A program that uses
+  `--standard-libraries` cannot pass them yet, because the library refuses
+  `--boogie` options other than its own.
+
 - What is verified
    - `--verify-included-files` (when enabled, all included files are verified, except library files, otherwise just those files on the command-line)
    - `--relax-definite-assignment`
