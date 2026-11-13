@@ -65,6 +65,23 @@ public class LibraryBackend : ExecutableBackend {
     }
 
     var dooFile = new DooFile(dafnyProgram.AfterParsingClone);
+    if (Options.Get(CommonOptionBag.ModularTermination)) {
+      var completion = dafnyProgram.ModularTerminationCompletion;
+      string failure = completion == null
+        ? "its program was not completely verified in this build (for example, --no-verify was used)"
+        : completion.Failure;
+      if (failure == null && completion.ProgramText != dooFile.ProgramText) {
+        failure = "its program changed after it was verified";
+      }
+      if (failure != null) {
+        dafnyProgram.Reporter.Error(MessageSource.Compiler, "modular_termination_record", Token.Cli,
+          ModularTerminationRecords.RecordFailureMessage(failure));
+        return;
+      }
+      dooFile.Manifest.DooFileVersion = ModularTerminationRecords.RecordedDooFileVersion;
+      dooFile.Manifest.ModularTermination = completion.CreateRecord();
+      dooFile.TerminationContractsText = completion.Contracts.EntryText;
+    }
     dooFile.Write(output);
   }
 
