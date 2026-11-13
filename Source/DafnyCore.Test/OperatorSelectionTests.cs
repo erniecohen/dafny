@@ -217,4 +217,31 @@ public class OperatorSelectionTests {
     context.Require(Assert.IsType<MemberOperatorSelection>(selected).Member);
     Assert.Throws<InvalidOperationException>(() => selected.Transport(context));
   }
+
+  [Fact]
+  public void BuiltinExportOwnershipRequiresRegisteredIdentity() {
+    var options = new DafnyOptions(TextReader.Null, TextWriter.Null, TextWriter.Null);
+    options.ApplyDefaultOptionsWithoutSettingsDefault();
+    var canonical = new SystemModuleManager(options);
+    var view = new SystemModuleManager(canonical, new ResolutionBuiltinCatalog(canonical));
+    view.CreateArrowTypeDecl(7);
+    var arrow = view.ArrowTypeDecls[7];
+    var identities = view.GetBuiltinTypeIdentities();
+    var context = new OperatorCloneContext {
+      ExportScope = new VisibilityScope(), SystemModule = view.SystemModule, SystemTypes = identities
+    };
+    var intrinsic = canonical.valuetypeDecls.Single(d => d.Name == "int");
+    Assert.NotSame(view.SystemModule, intrinsic.EnclosingModuleDefinition);
+    Assert.Same(intrinsic, context.Map(intrinsic));
+    var unrelated = new SystemModuleManager(options).valuetypeDecls.Single(d => d.Name == "int");
+    Assert.Equal(intrinsic.Name, unrelated.Name);
+    Assert.Equal(intrinsic.EnclosingModuleDefinition.Name, unrelated.EnclosingModuleDefinition.Name);
+    Assert.DoesNotContain(unrelated, identities);
+    Assert.Throws<InvalidOperationException>(() => context.Map(unrelated));
+    // Output pruning must not remove identities from an already saved clone context.
+    view.RestrictResolutionOutput(new ModuleTranslationInputs(null, []));
+    Assert.DoesNotContain(7, view.ArrowTypeDecls.Keys);
+    Assert.Same(arrow, context.Map(arrow));
+    Assert.Same(intrinsic, context.Map(intrinsic));
+  }
 }

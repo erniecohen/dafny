@@ -26,11 +26,18 @@ public class LetExpr : Expression, IAttributeBearingDeclaration, IBoundVarsBeari
   private BoogieGenerator? lastBoogieGeneratorUsed; // avoid clashing desugaring between translators
 
   public void SetTranslationDesugaring(BoogieGenerator trans, Expression expr) {
+    if (ModuleNamingScope.Current is { } scope) {
+      scope.SetValue(this, "let-desugaring", expr);
+      return;
+    }
     lastBoogieGeneratorUsed = trans;
     translationDesugaring = expr;
   }
 
   public Expression? GetTranslationDesugaring(BoogieGenerator trans) {
+    if (ModuleNamingScope.Current is { } scope) {
+      return scope.FindValue<Expression>(this, "let-desugaring");
+    }
     return lastBoogieGeneratorUsed == trans ? translationDesugaring : null;
   }
 

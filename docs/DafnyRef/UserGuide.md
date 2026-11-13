@@ -302,6 +302,11 @@ programs together in a single run of `dafny`.
 
 Various options control the verification process, in addition to all those described for [`dafny resolve`](#sec-dafny-resolve).
 
+- `--resolution-threads N` uses N workers for dependency-ready module resolution.
+  Scheduling is opt-in and N must be positive when specified. Sequential and
+  parallel resolution use the same module-scoped names, dependency heights and
+  builtin inventories; changing N does not select a different translation scheme.
+
 - What is verified
    - `--verify-included-files` (when enabled, all included files are verified, except library files, otherwise just those files on the command-line)
    - `--relax-definite-assignment`
