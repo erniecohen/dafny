@@ -407,6 +407,74 @@ class RuntimeControls(unittest.TestCase):
         self.assertEqual((self.root / 'host/fxr/8.0.32/fxr-marker').read_bytes(), b'fxr 8')
 
 
+_EXPRESSION_TOKEN = re.compile(r"""\s*(?:(?P<string>'(?:[^']|'')*')|(?P<number>\d+(?:\.\d+)?)|"""
+                               r"""(?P<name>[A-Za-z_][\w-]*(?:\.(?:[A-Za-z_][\w-]*|\*))*)|(?P<op>==|!=|<=|>=|&&|\|\||[!<>(),\[\]]))""")
+_EXPRESSION_FUNCTIONS = {
+    'startsWith': lambda a, b: str(a).lower().startswith(str(b).lower()),
+    'endsWith': lambda a, b: str(a).lower().endswith(str(b).lower()),
+    'contains': lambda a, b: str(b).lower() in str(a).lower(),
+}
+
+
+def translate_expression(expression, names):
+    """Translate a GitHub Actions expression to Python, token by token: string literals,
+    numbers, true/false/null, the functions above, operators, and dotted context names,
+    each of which must be in `names`, so an unmodelled name fails instead of being misread."""
+    python, position = [], 0
+    expression = expression.strip()
+    while position < len(expression):
+        match = _EXPRESSION_TOKEN.match(expression, position)
+        if not match or match.end() == position:
+            raise SyntaxError(f'unsupported expression at {expression[position:]!r}')
+        position = match.end()
+        if match['string'] is not None:
+            python.append(repr(match['string'][1:-1].replace("''", "'")))
+        elif match['number'] is not None:
+            python.append(match['number'])
+        elif match['name'] is not None:
+            name = match['name']
+            if name in ('true', 'false', 'null'):
+                python.append({'true': 'True', 'false': 'False', 'null': 'None'}[name])
+            elif name in _EXPRESSION_FUNCTIONS:
+                python.append(f'_functions[{name!r}]')
+            elif name in names:
+                python.append(f'_context[{name!r}]')
+            else:
+                raise KeyError(f'no value for {name} in {expression}')
+        else:
+            python.append({'&&': ' and ', '||': ' or ', '!': ' not '}.get(match['op'], match['op']))
+    return ''.join(python).strip()
+
+
+def evaluate_expression(expression, context):
+    """Evaluate a GitHub Actions expression over the given context values."""
+    return eval(translate_expression(expression, context), {'__builtins__': {}},
+                {'_context': context, '_functions': _EXPRESSION_FUNCTIONS})
+
+
+class ExpressionEvaluation(unittest.TestCase):
+    def test_context_names_are_whole_tokens(self):
+        context = {'github.ref': 'refs/tags/v1', 'github.ref_type': 'tag', 'needs.tree.outputs.reuse': 'true'}
+        self.assertTrue(evaluate_expression("needs.tree.outputs.reuse != 'true' || github.ref_type == 'tag'", context))
+        self.assertFalse(evaluate_expression("github.ref_type != 'tag'", context))
+        self.assertTrue(evaluate_expression("!startsWith(github.ref, 'refs/heads/')", context))
+        self.assertEqual(evaluate_expression("'it''s'", {}), "it's")
+
+    def test_unknown_names_are_not_guessed(self):
+        with self.assertRaises(KeyError):
+            evaluate_expression('github.head_ref == github.ref', {'github.ref': 'refs/heads/dev'})
+
+    def test_every_review_workflow_expression_parses(self):
+        # Including the concurrency block's cancel-in-progress expression.
+        text = (Path(__file__).parents[1] / 'workflows/review.yml').read_text()
+        expressions = re.findall(r'\$\{\{(.*?)\}\}', text)
+        self.assertIn(" github.ref_type != 'tag' ", expressions)
+        for expression in expressions:
+            # Functions the evaluator does not model (format, fromJSON, ...) translate as names.
+            names = {m['name'] for m in _EXPRESSION_TOKEN.finditer(expression) if m['name']}
+            compile(translate_expression(expression, names), 'review.yml', 'eval')
+
+
 class WorkflowControls(unittest.TestCase):
     def test_comparison_only_skips_require_manual_scratch_dispatch(self):
         workflow = Path(__file__).parents[1] / 'workflows/review.yml'
@@ -419,16 +487,21 @@ class WorkflowControls(unittest.TestCase):
                     for decreases_flag in [False, True]:
                         manual_scratch = event == 'workflow_dispatch' and ref.startswith('refs/heads/scratch/')
                         for name, guard in guards.items():
-                            expression = guard.replace('github.repository', repr('erniecohen/dafny'))
-                            expression = expression.replace('github.event.pull_request.head.repo.full_name', repr('erniecohen/dafny'))
-                            # This control exercises ready PRs; draft routing has its own exhaustive controls.
-                            expression = expression.replace('github.event.pull_request.draft', 'False')
-                            expression = expression.replace('inputs.platform_parity', 'False')
-                            expression = expression.replace('github.event_name', repr(event)).replace('github.ref', repr(ref))
-                            expression = expression.replace('inputs.default_comparison', repr(flag)).replace('inputs.decreases_order_comparison', repr(decreases_flag))
-                            expression = expression.replace('&&', ' and ').replace('||', ' or ')
-                            expression = re.sub(r'!(?!=)', ' not ', expression)
-                            actual = eval(expression.strip(), {'__builtins__': {}, 'startsWith': lambda a, b: a.startswith(b)})
+                            context = {
+                                'github.repository': 'erniecohen/dafny',
+                                'github.event.pull_request.head.repo.full_name': 'erniecohen/dafny',
+                                # This control exercises ready PRs; draft routing has its own exhaustive controls.
+                                'github.event.pull_request.draft': False,
+                                'github.event_name': event,
+                                'github.ref': ref,
+                                'github.ref_type': 'tag' if ref.startswith('refs/tags/') else 'branch',
+                                'inputs.platform_parity': False,
+                                'inputs.default_comparison': flag,
+                                'inputs.decreases_order_comparison': decreases_flag,
+                                # A tree that no earlier run verified.
+                                'needs.tree.outputs.reuse': '',
+                            }
+                            actual = evaluate_expression(guard, context)
                             wanted = (manual_scratch and flag if name == 'default-comparison' else
                                       manual_scratch and decreases_flag if name == 'decreases-order-comparison' else
                                       not (manual_scratch and (flag or decreases_flag)))
