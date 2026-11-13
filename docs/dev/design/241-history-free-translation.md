@@ -118,3 +118,21 @@ bitvector and floating-point content hashes derive from their values. An explici
 `--boogie /deterministicLiteralHashes:0` remains a legacy override and is outside
 the cross-process stable-input profile. No Boogie implementation or global-state
 reset is introduced.
+
+## Exact native input qualification
+
+Compare raw SMT per proof task from its own empty solver checkpoint, rather than
+per physical solver process. Include the task's complete ordered native setup,
+prelude/options, assertion and adaptive model/error requests. A reset establishes
+the empty boundary; compare the following bytes. A new process starts at its
+fresh empty checkpoint. End the task before idle cleanup. Require identical task
+bytes, outcomes, RU, stdout/stderr and exit across prerequisite/table-OFF and
+OFF/cold/warm. Every observed task must have a complete record; pair names and
+multiplicities without changing command order inside a record.
+
+Report physical solver counts and whole-process hashes separately. Prior tasks,
+physical process boundaries and idle-handshake recycling do not belong to a
+task's comparison. The pre-existing 100 ms idle-handshake policy can retire a
+healthy checker with the cache OFF too, as measured in
+https://github.com/erniecohen/dafny/issues/287. This stack leaves ordinary pooling
+and the Boogie lifecycle unchanged. Any task-local byte mismatch remains a blocker.
