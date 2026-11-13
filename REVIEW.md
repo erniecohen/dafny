@@ -418,6 +418,21 @@ separate hosted Linux job. `.github/review/regression-filter.py` partitions the
 standing manifest without dropping or duplicating entries. Every
 self-hosted job has an explicit repository/event guard: only pushes, manual
 runs, or pull requests whose head repository is `erniecohen/dafny` are admitted.
+
+CI verifies a git tree once.  Both `review.yml` and `obligation-proofs.yml` start with
+a job `tree` that takes `git rev-parse HEAD^{tree}` (for a pull request, the tree of the
+merge commit that is checked out) and looks for the artifact `verified-<workflow>-<tree>`,
+which a run leaves when all its verification jobs succeeded.  It reuses the marker only if
+its run, in this repository on a head of this repository, is of the same workflow, has
+completed, and succeeded (`.github/review/tree-reuse.py`, tested by `test_tree_reuse.py`).
+Then the verifier jobs skip, and the step summary of `tree` links the run it reused.  So the
+push of a squash-merge commit whose tree the pull request already verified, and the release tag of
+a tree that a push already verified, do not verify again; on a tag, only the build and the
+binaries run.  The job `verdict` is the aggregate result: it succeeds when every job
+succeeded or was skipped for reuse, and a release requires it.  A pull request reuses only pull
+request runs, a manual run on a branch and a pull request from a fork never reuse, and a tree that
+differs only in `.github/review/base` is a different tree, because the stamp is the version that
+the build checks.  Markers are kept for 90 days; without one everything runs.
 Fork pull requests skip these jobs. The obligation-proof matrix, resolution-only
 census and pipeline probe have separate hosted fallbacks for other events,
 including the obligation matrix's weekly schedule.
