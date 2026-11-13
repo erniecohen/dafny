@@ -1,0 +1,156 @@
+name: Issue 261 cache payoff
+
+# For https://github.com/erniecohen/dafny/issues/261: before a persistent per-module resolution
+# cache (spec: https://github.com/erniecohen/dafny/pull/282) is built, measure with
+# --pipeline-profile how much of a front-end run is per-module resolution and translation, and
+# bound what a warm cache could save for an edit to one module (.github/review/cache-payoff.py).
+# It measures the released binary, not the commit it runs on, and runs no solver: `dafny resolve`,
+# and `dafny verify` with Boogie's no-op solver (translation, Boogie preparation and VC
+# generation run; nothing is proved).  The corpora are public and pinned:
+#   Std        Source/DafnyStandardLibraries at the checked-out commit (and its TargetSpecific part)
+#   DafnyCore  Source/DafnyCore/dfyconfig.toml (the Dafny-in-Dafny back ends, on the Std .doo)
+#   cedar      https://github.com/cedar-policy/cedar-spec cedar-dafny at a86bdd9d (Apache-2.0)
+#   evm        https://github.com/Consensys/evm-dafny src/dafny at e2e52e86 (Apache-2.0), with its
+#              submodule https://github.com/Consensys/DafnyCrypto at d6753131 (Apache-2.0)
+
+on:
+  # A workflow that is not yet on the default branch cannot be dispatched; pushing a branch
+  # named like this runs it.
+  push:
+    branches: ['scratch/issue-261-cache-payoff*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  RELEASE: v4.11.0+fcb2042d.review.ddbc948c
+  SCRIPT: .github/review/cache-payoff.py
+  NOOP: --solver-option SOLVER=noop --boogie /deterministicLiteralHashes:1
+
+jobs:
+  measure:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        corpus: [std, core, cedar, evm]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Released Dafny and Z3 5.1.0
+        run: |
+          mkdir -p rel && cd rel
+          base="https://github.com/${GITHUB_REPOSITORY}/releases/download/${RELEASE//+/%2B}"
+          zip="dafny-${RELEASE#v}-linux-x64.zip"
+          curl -fsSL --retry 3 -O "$base/$zip" -O "$base/SHA256SUMS"
+          grep " $zip\$" SHA256SUMS | sha256sum -c -
+          unzip -q "$zip"
+          cd ..
+          z3=$(sh .github/review/setup-z3.sh 5.1.0 ci-z3)
+          echo "D=$PWD/rel/dafny/dafny" >> "$GITHUB_ENV"
+          echo "Z3=$z3" >> "$GITHUB_ENV"
+          rel/dafny/dafny --version
+      - name: Fetch pinned sources
+        if: matrix.corpus == 'cedar' || matrix.corpus == 'evm'
+        run: |
+          fetch() {  # repository, commit, directory, sparse paths...
+            git init -q "$3" && git -C "$3" remote add origin "$1"
+            if [ $# -gt 3 ]; then git -C "$3" sparse-checkout set "${@:4}"; fi
+            git -C "$3" fetch -q --depth 1 --filter=blob:none origin "$2"
+            git -C "$3" checkout -q FETCH_HEAD
+            echo "$1 $(git -C "$3" rev-parse HEAD)" >> corpora.txt
+          }
+          if [ "${{ matrix.corpus }}" = cedar ]; then
+            fetch https://github.com/cedar-policy/cedar-spec.git a86bdd9da410822ccb645912905a6bcb30ab66b5 ext/cedar cedar-dafny
+          else
+            fetch https://github.com/Consensys/evm-dafny.git e2e52e86d6623d48d0849f5ce1664f88c8f0e547 ext/evm src/dafny
+            fetch https://github.com/Consensys/DafnyCrypto.git d67531318c191f5703b71b256352c58f9e0c2e4a ext/evm/libs/DafnyCrypto
+          fi
+          cat corpora.txt
+      - name: Measure
+        run: |
+          out="$PWD/results/${{ matrix.corpus }}"
+          run() { python3 "$SCRIPT" run --dafny "$D" --out "$out" "$@"; }
+          case "${{ matrix.corpus }}" in
+          std)
+            cd Source/DafnyStandardLibraries
+            run --name std-resolve-t0 --reps 3 -- resolve src/Std/dfyconfig.toml
+            run --name std-resolve-t4 --reps 3 -- resolve src/Std/dfyconfig.toml --resolution-threads 4
+            # As the Standard library CI job verifies the library (std-verdicts.py), no solver.
+            # shellcheck disable=SC2086
+            run --name std-verify-noop-t4 --warmup 0 --reps 2 -- verify src/Std/dfyconfig.toml \
+              --resolution-threads 4 --cores 4 --verification-time-limit 0 --solver-path "$Z3" $NOOP
+            # shellcheck disable=SC2086
+            run --name std-verify-noop-t0 --warmup 0 --reps 1 -- verify src/Std/dfyconfig.toml \
+              --cores 4 --verification-time-limit 0 --solver-path "$Z3" $NOOP
+            # One target-specific part (on the committed Std .doo), as the CI job runs six.
+            cd src/Std/TargetSpecific
+            # shellcheck disable=SC2046,SC2086
+            run --name std-ts-js-verify-noop --reps 3 -- verify dfyconfig.toml $(find . -name '*-js*.dfy' | sort) \
+              --cores 4 --verification-time-limit 0 --solver-path "$Z3" $NOOP
+            ;;
+          core)
+            run --name core-resolve-t0 --reps 3 -- resolve Source/DafnyCore/dfyconfig.toml
+            run --name core-resolve-t4 --reps 3 -- resolve Source/DafnyCore/dfyconfig.toml --resolution-threads 4
+            ;;
+          cedar)
+            # Its own sources (not its tests); the refreshed resolver rejects it, so legacy only.
+            cd ext/cedar/cedar-dafny
+            mapfile -t files < <(find def thm validation difftest -name '*.dfy' | sort)
+            run --name cedar-resolve --reps 3 -- resolve "${files[@]}"
+            # shellcheck disable=SC2086
+            run --name cedar-verify-noop --warmup 0 --reps 2 -- verify "${files[@]}" \
+              --cores 4 --solver-path "$Z3" $NOOP
+            ;;
+          evm)
+            # Its Gradle build's Dafny 4 flags; the refreshed resolver rejects it, so legacy only.
+            cd ext/evm
+            mapfile -t files < <(find src/dafny -name '*.dfy' | sort)
+            flags=(--function-syntax 4 --quantifier-syntax 4 --allow-warnings)
+            run --name evm-resolve --reps 3 -- resolve "${files[@]}" "${flags[@]}"
+            # shellcheck disable=SC2086
+            run --name evm-verify-noop --warmup 0 --reps 2 -- verify "${files[@]}" "${flags[@]}" \
+              --cores 4 --solver-path "$Z3" $NOOP
+            ;;
+          esac
+      - name: Job summary
+        if: always()
+        run: |
+          {
+            echo "Runner: $(nproc) processors, $(free -g | awk '/Mem:/{print $2}') GB memory; Dafny $RELEASE; Z3 5.1.0."
+            cat corpora.txt 2>/dev/null || true
+            python3 "$SCRIPT" analyze "results/${{ matrix.corpus }}" --out report.md > /dev/null && cat report.md
+          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cache-payoff-${{ matrix.corpus }}
+          path: results
+          retention-days: 30
+
+  analyze:
+    needs: measure
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: cache-payoff-*
+          path: all
+      - name: Analyze
+        run: |
+          python3 "$SCRIPT" analyze all --out report.md --json report.json > /dev/null
+          cat report.md >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cache-payoff-report
+          path: |
+            report.md
+            report.json
+          retention-days: 30
