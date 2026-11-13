@@ -1,0 +1,10 @@
+github-issue-281-hide.dfy(15,2): Error: assertion might not hold
+github-issue-281-hide.dfy(20,2): Error: assertion might not hold
+github-issue-281-hide.dfy(25,2): Error: assertion might not hold
+
+Dafny program verifier finished with 3 verified, 3 errors
+github-issue-281-hide.dfy(15,2): Error: assertion might not hold
+github-issue-281-hide.dfy(20,2): Error: assertion might not hold
+github-issue-281-hide.dfy(25,2): Error: assertion might not hold
+
+Dafny program verifier finished with 3 verified, 3 errors

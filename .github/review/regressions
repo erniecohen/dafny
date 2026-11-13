@@ -446,3 +446,8 @@ git-issues/git-issue-284-char-model.dfy
 # Parallel resolution requires refreshed inference; default legacy diagnostics remain intact.
 git-issues/github-issue-241-resolution-options.dfy
 git-issues/github-issue-241-rejected-stdlib.dfy
+
+# Monomorphization repairs for /typeEncoding:m (https://github.com/erniecohen/dafny/issues/281):
+# a quantifier that binds nothing, and hideable definition axioms of generic functions.
+git-issues/github-issue-281-empty-quantifier.dfy
+git-issues/github-issue-281-hide.dfy

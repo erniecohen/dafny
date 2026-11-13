@@ -287,6 +287,17 @@ assertion its own split, with and without both new options, and requires the sam
 report and the same SMT-Lib text sent to the solver.  Its release note is
 `docs/dev/news/241-boogie-split-setup.feat`.
 
+The repairs for `/typeEncoding:m`
+([#281](https://github.com/erniecohen/dafny/issues/281)) are in Boogie, in
+[erniecohen/boogie#7](https://github.com/erniecohen/boogie/pull/7).  Its monomorphizer
+dropped a quantifier that binds nothing and kept the `hideable` mark when it split or
+instantiated an axiom, and its pruning treats `reveal` of a declared function as
+revealing that function's instances.  `/typeEncoding:a` sends the solver the same text as
+before.  Moving the pin to a Boogie release that contains them is a product change, and
+so a new version.  Its tests are `git-issues/github-issue-281-empty-quantifier.dfy` and
+`git-issues/github-issue-281-hide.dfy`, each run under `:m` and `:a` against one
+expected output.  Its release note is `docs/dev/news/281-typeencoding-m.fix`.
+
 **To build this branch, run `sh Scripts/fetch-boogie-packages.sh` once first.**
 CI does so in every job that builds.
 
