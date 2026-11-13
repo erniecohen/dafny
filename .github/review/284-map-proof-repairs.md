@@ -9,6 +9,9 @@ and each retains its independent hidden legacy comparator. The one-padding
 Base64 prefix witness from that parent and the two-padding witness and direct
 quotient proof from this change are all retained.
 
+The later [workflow-only character correction](https://github.com/erniecohen/dafny/commit/4d28430d8ac3a4e571e80b44498bfb87520bd146)
+is also merged. It leaves that pre-map product unchanged.
+
 The map byte-identity check uses that stacked parent as its pre-map product.
 This keeps the character representation and the other integrated changes equal
 on both sides of the comparison. The review and obligation workflows also
@@ -35,7 +38,11 @@ examples of false source theorems.
 `LimitedProducer` now splits at its existing checked `Valid()` assertion.
 `ConcatenatedProducer` proves the one-result history extension explicitly and
 uses the two component remaining counts: a produced result consumes one
-remaining element; an absent result establishes that none remain.
+remaining element; an absent result establishes that none remain. The checked
+history and output equalities remain in method scope so the final `Ensures`
+assertion can use them after the local state-change proof. Keeping them inside
+that local proof exhausted the legacy-map postcondition check; moving the same
+checks outside adds no assertion.
 `FlattenedProducer` checks and splits at `Valid()` after advancing the current
 inner producer and rebuilding `Repr`. The following metric argument then uses
 that checked representation fact. No contract, loop invariant, resource cap,
