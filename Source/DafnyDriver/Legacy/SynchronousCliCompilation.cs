@@ -311,6 +311,17 @@ namespace Microsoft.Dafny {
           (verified, outcome, moduleStats) =
             await BoogieAsync(dafnyProgram.Reporter, options, baseName, boogiePrograms, programId);
 
+          if (options.Get(CommonOptionBag.ModularTermination) && options.Backend is LibraryBackend) {
+            dafnyProgram.ModularTerminationCompletion =
+              await DafnyCore.ModularTerminationProducer.Complete(dafnyProgram, boogiePrograms, outcome, verified, dafnyFiles);
+            if (options.UserConstrainedProcsToCheck &&
+                dafnyProgram.ModularTerminationCompletion.Failure is { } failure) {
+              // A build restricted to some procedures writes no library; say why it cannot have a record.
+              dafnyProgram.Reporter.Error(MessageSource.Compiler, "modular_termination_record", Token.Cli,
+                DafnyCore.ModularTerminationRecords.RecordFailureMessage(failure));
+            }
+          }
+
           if (options.TrackVerificationCoverage) {
             ProofDependencyWarnings.WarnAboutSuspiciousDependenciesUsingStoredPartialResults(options,
               dafnyProgram.Reporter, depManager);

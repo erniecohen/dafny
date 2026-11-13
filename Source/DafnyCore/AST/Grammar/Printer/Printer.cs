@@ -26,7 +26,10 @@ namespace Microsoft.Dafny {
     NoGhostOrIncludes
   }
 
-  public record PrintFlags(bool UseOriginalDafnyNames = false);
+  /// <param name="InterfaceOnly">Print only what a client of a declaration may depend on: method, lemma,
+  /// constructor and iterator bodies and by-method bodies are omitted.  Used for the termination contracts
+  /// of --modular-termination libraries; nothing else sets it.</param>
+  public record PrintFlags(bool UseOriginalDafnyNames = false, bool InterfaceOnly = false);
 
   public partial class Printer {
     private DafnyOptions options;
@@ -389,7 +392,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
           if (i++ != 0) { wr.WriteLine(); }
           PrintIteratorSignature(iter, indent);
 
-          if (iter.Body != null) {
+          if (iter.Body != null && !printFlags.InterfaceOnly) {
             Indent(indent);
             PrintStatement(iter.Body, indent);
             wr.WriteLine();
@@ -766,10 +769,10 @@ NoGhost - disable printing of functions, ghost methods, and proof
           // omit this declaration
         } else if (m is MethodOrConstructor methodOrConstructor) {
           if (state != 0) { wr.WriteLine(); }
-          PrintMethod(methodOrConstructor, indent, false);
+          PrintMethod(methodOrConstructor, indent, printFlags.InterfaceOnly);
           if (m is ExtremeLemma { PrefixLemma: not null } com) {
             Indent(indent); wr.WriteLine("/***");
-            PrintMethod(com.PrefixLemma, indent, false);
+            PrintMethod(com.PrefixLemma, indent, printFlags.InterfaceOnly);
             Indent(indent); wr.WriteLine("***/");
           }
           state = 2;
@@ -1041,7 +1044,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
         PrintExtendedExpr(f.Body, ind, true, false);
         Indent(indent);
         wr.Write("}");
-        if (f.ByMethodBody != null) {
+        if (f.ByMethodBody != null && !printFlags.InterfaceOnly) {
           wr.Write(" by method ");
           if (options.DafnyPrintResolvedFile != null && f.ByMethodDecl != null) {
             Contract.Assert(f.ByMethodDecl.Ens.Count == 1);

@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using DafnyCore;
 using Microsoft.Boogie;
 using Microsoft.Dafny.Compilers;
 using Microsoft.Dafny.Plugins;
@@ -70,6 +71,10 @@ public class ProgramParser {
       }
     }
 
+    if (options.Get(CommonOptionBag.ModularTermination) && !BindModularTerminationLibraries(files, compilation, errorReporter)) {
+      return new ProgramParseResult(program, versionedFiles);
+    }
+
     foreach (var dafnyFile in files) {
       cancellationToken.ThrowIfCancellationRequested();
       if (options.Trace) {
@@ -122,6 +127,55 @@ public class ProgramParser {
     ShowWarningsForIncludeCycles(program);
 
     return new ProgramParseResult(program, versionedFiles);
+  }
+
+  /// <summary>
+  /// Under --modular-termination, every library input must be a .doo with an admitted record
+  /// (see DooFile.AdmitModularTermination), and the contract each library was verified against for a
+  /// module of another library must be the contract of that module in the library actually loaded.
+  /// A library whose body changed but whose contracts did not is still admitted.
+  /// </summary>
+  private static bool BindModularTerminationLibraries(IReadOnlyList<DafnyFile> files, CompilationData compilation,
+    ErrorReporter errorReporter) {
+    var options = errorReporter.Options;
+    var ok = true;
+    var exports = new SortedDictionary<string, (string Contract, DafnyFile File)>(StringComparer.Ordinal);
+    foreach (var file in files.Where(f => f.ShouldNotVerify)) {
+      if (file.TerminationRecord == null) {
+        errorReporter.Error(MessageSource.Project, "modular_termination_admission", file.Origin ?? Token.Cli,
+          $"cannot use {options.GetPrintPath(file.Uri.LocalPath)} without verifying it under --modular-termination: only a .doo library built with --modular-termination is admitted unverified; {ModularTerminationRecords.RebuildInstruction}");
+        ok = false;
+        continue;
+      }
+      foreach (var export in file.TerminationRecord.Exports ?? []) {
+        if (exports.TryGetValue(export.Module, out var other) && other.Contract != export.ContractSha256) {
+          errorReporter.Error(MessageSource.Project, "modular_termination_admission", file.Origin ?? Token.Cli,
+            $"cannot load {options.GetPrintPath(file.Uri.LocalPath)} under --modular-termination: it and {options.GetPrintPath(other.File.Uri.LocalPath)} both provide module {export.Module}, with different termination contracts");
+          ok = false;
+        } else {
+          exports[export.Module] = (export.ContractSha256, file);
+        }
+      }
+    }
+    foreach (var file in files.Where(f => f.TerminationRecord != null)) {
+      foreach (var import in file.TerminationRecord!.Imports ?? []) {
+        var name = options.GetPrintPath(file.Uri.LocalPath);
+        if (!exports.TryGetValue(import.Module, out var provider)) {
+          errorReporter.Error(MessageSource.Project, "modular_termination_admission", file.Origin ?? Token.Cli,
+            $"cannot load {name} under --modular-termination: it was verified against module {import.Module} of a library, but no admitted .doo library loaded here provides that module; also load the library it was built against");
+          ok = false;
+        } else if (provider.Contract != import.ContractSha256) {
+          errorReporter.Error(MessageSource.Project, "modular_termination_admission", file.Origin ?? Token.Cli,
+            $"cannot load {name} under --modular-termination: it was verified against a different termination contract of module {import.Module} than the one {options.GetPrintPath(provider.File.Uri.LocalPath)} provides (recorded {Short(import.ContractSha256)}, loaded {Short(provider.Contract)}); rebuild {name} against the loaded library");
+          ok = false;
+        }
+      }
+    }
+    compilation.ModularTerminationImports = exports
+      .Select(kv => new ModularTerminationContractRef(kv.Key, kv.Value.Contract)).ToList();
+    return ok;
+
+    static string Short(string digest) => digest.Length > 12 ? digest[..12] : digest;
   }
 
   private DfyParseFileResult ParseFileWithErrorHandling(DafnyOptions options,

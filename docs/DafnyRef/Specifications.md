@@ -606,8 +606,8 @@ Inside a lambda expression, the bound of the member it belongs to is the value o
 also where the lambda's body is checked in a heap of its own.
 
 The intended composition argument combines outer-bound descent with the ordinary termination
-discipline. The option remains experimental: the separate comparison repair and checked-library
-admission work must complete before it establishes termination of every accepted composition.
+discipline. The option remains experimental: the separate comparison repair and the remaining
+library-openness work must complete before it establishes termination of every accepted composition.
 
 A global bound, and a callback bound, may only use code that cannot reach a dispatched call: the
 functions and methods it calls, the constants it reads, the types it mentions (their constraints,
@@ -674,6 +674,66 @@ It also rejects some programs that terminate:
 * The C# parser is what turns `decreases {:global} E` and `decreases {:callback g} E` into bounds. A
   program that reaches Dafny through another front end, serialized, keeps them as ordinary decreases
   clauses with argument-less `{:global}` attributes or one-argument `{:callback g}` attributes.
+
+Under the option, a library is admitted only as a `.doo` file built with
+`dafny build --target:lib --modular-termination`. Such a build writes a termination record into the
+library: a hash of its program, of the build of Dafny that verified it (its Dafny and Boogie
+assemblies and the prelude file it read), and of the options that change what a proof means (each also
+listed by name), the version and a hash of the Z3 binary that verified it, and the termination contract
+of each module it defines. A contract is the module's interface: its declarations with the bodies of methods, lemmas,
+iterators and by-method implementations left out; function bodies stay, since a client may reveal them.
+The record also lists the contracts of the libraries the build was verified against, and ends with a
+hash of the whole record. The build writes a library only when its whole program was verified, every
+verification task conclusively, without `--no-verify`, `--boogie` arguments, `{:verify false}`, `{:only}`,
+`decreases *` or included files that were not verified, and without unchecked premises. These are
+every assumption that `dafny audit` reports in the library's own files (such as `assume` statements,
+`{:axiom}`, `{:extern}` members with contracts, `@AssumeCrossModuleTermination`, `forall` statements
+and loops without a body, and bodyless members with a postcondition), together with `assume` anywhere in
+the program, members without a body other than instance members of traits and members of abstract
+modules, `{:extern}` members, and `--allow-axioms`. Only one assumption that `dafny audit` reports is
+accepted: `{:termination false}` on a trait, which under the option is checked against the global
+bounds. The reveal lemma that Dafny generates for an opaque function states the function's definition
+and is not an assumption; it is recognised as the lemma Dafny generated, not by its attributes. The
+attributes `{:auto_generated}` and `{:opaque_reveal}`, which mark declarations that Dafny generates, may
+not be written in a library's sources. Iterators are not yet supported: `dafny audit` reports the members
+that Dafny generates for an iterator as axioms, and the build refuses a library that declares one. The
+build reports the first of these it finds and writes nothing. `--allow-warnings` does not hide them; it is
+recorded with the other options.
+
+Under the option, a module cannot refine or replace a module of a library: it would inherit bodies
+that are not part of the library's contracts, so a change to them would not be detected.
+
+Under the option, `--boogie` arguments are refused, both when a library is built and when one is loaded:
+many of them (such as `/loopUnroll`, `/noVerify`, `/proc` and some `/proverOpt` settings) can make a
+program verify that is not proved. Only arguments on a reviewed list of ones that cannot weaken a proof
+are allowed, and that list is empty for now. The options are recorded with their values as given. Two libraries that both declare
+top-level members outside any module, in the default module, cannot be loaded together, since both
+provide the module `_default`.
+
+When a program loads such a library under the option, Dafny recomputes these hashes and the contracts
+from the library's program, and rejects the library, naming the mismatch, when any differs: its program,
+its contracts, its record (missing, incomplete, of an unknown format or not matching its own hash), the
+build of Dafny or its prelude, the Z3 binary that the current run uses (the library must be checked
+with the same one), or an option whose value differs from the current one. A library verified against another must be loaded
+with it, and with one that provides the same contracts: a dependency whose method bodies changed is
+accepted, and one whose contracts changed is rejected. Under the option, Dafny also rejects a source
+file given with `--library`, a `.dll` library and the bundled standard library, which carry no record;
+`--standard-libraries:false` leaves the standard library out. Without the option, a library built with
+it is rejected, so that its record is never ignored; libraries built without the option are read as
+before.
+
+The record certifies the program stored in the library, which is the program Dafny parsed from the
+library's sources, printed back. After verifying the sources, the build checks that the stored program
+parses and prints back to the same text, then parses, resolves and verifies the stored program again,
+with the same libraries and options, and takes its assumption check, its inventory of verified
+implementations, its contracts and its imports from that program. The library is written only when
+that second verification is also complete and conclusive, so a difference between the printed and the
+verified program cannot reach a record. The second verification roughly doubles the verification cost
+of a library build.
+
+The record shows that the library was built by this build of Dafny, from this program, under these
+options; it is checked, not signed, so a library whose record was rewritten as a whole, with every hash
+recomputed, is trusted like any other input of the build.
 
 Before milestone M4a, a bound could call code that reaches a dispatched call, and a program could
 prove `false` through it, as in the example above; the rule for bounds closes that.
