@@ -163,6 +163,21 @@ public static class DafnyNewCli {
       dafnyOptions.ApplyDefaultOptionsWithoutSettingsDefault();
       dafnyOptions.UsingNewCli = true;
 
+      // Validate the effective options after CLI/project precedence is applied,
+      // before parsing or resolving source. This is a rejected configuration,
+      // with the same exit code as other Dafny front-end errors.
+      var resolutionThreadsResult = context.ParseResult.FindResultFor(CommonOptionBag.ResolutionThreads);
+      var resolutionThreadsRequested = resolutionThreadsResult?.Token is not null ||
+        dafnyOptions.DafnyProject?.Options.ContainsKey(CommonOptionBag.ResolutionThreads.Name) == true;
+      // A default-worker implementation can use this same resolver without an
+      // explicit opt-in. It must still report ordinary legacy resolution errors.
+      if (resolutionThreadsRequested && dafnyOptions.Get(CommonOptionBag.ResolutionThreads) > 0 &&
+          !dafnyOptions.Get(CommonOptionBag.TypeSystemRefresh)) {
+        await dafnyOptions.OutputWriter.Status("Error: --resolution-threads requires --type-system-refresh.");
+        context.ExitCode = (int)ExitValue.DAFNY_ERROR;
+        return;
+      }
+
       if (dafnyOptions.Get(CommonOptionBag.WaitForDebugger)) {
         while (!Debugger.IsAttached) {
           Thread.Sleep(100);

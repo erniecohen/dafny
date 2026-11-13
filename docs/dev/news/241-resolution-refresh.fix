@@ -1,0 +1,1 @@
+Explicit `--resolution-threads N` now requires `--type-system-refresh`. Incompatible CLI or project-file settings report an option error (exit code 2) before parsing; resolution without the scheduling option continues to accept the legacy type system.

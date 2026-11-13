@@ -1,0 +1,5 @@
+includes = ["../../github-issue-241-parallel-resolution.dfy.valid.dfy"]
+
+[options]
+resolution-threads = 2
+type-system-refresh = false

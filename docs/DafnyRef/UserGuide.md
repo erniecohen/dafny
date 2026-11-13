@@ -318,6 +318,8 @@ Various options control the verification process, in addition to all those descr
   there is no automatic disk eviction. This option is off by default and can
   also be set in `dfyconfig.toml`.
 - `--resolution-threads N` uses N workers for dependency-ready module resolution.
+  It requires `--type-system-refresh`; an incompatible configuration is rejected
+  before parsing with exit code 2. The effective CLI or project-file options apply.
   Scheduling is opt-in and N must be positive when specified. Sequential and
   parallel resolution use the same module-scoped names, dependency heights and
   builtin inventories; changing N does not select a different translation scheme.

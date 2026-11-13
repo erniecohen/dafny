@@ -428,3 +428,7 @@ git-issues/git-issue-241-translation-cache-requires-refresh.dfy
 
 # Historical identity scoping (https://github.com/erniecohen/dafny/issues/293):
 # Python regression controls: .github/review/test_milestone_identity.py, run by Build.
+
+# Parallel resolution requires refreshed inference; default legacy diagnostics remain intact.
+git-issues/github-issue-241-resolution-options.dfy
+git-issues/github-issue-241-rejected-stdlib.dfy

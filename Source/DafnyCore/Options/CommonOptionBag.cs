@@ -49,7 +49,7 @@ public class CommonOptionBag {
     "Requires --type-system-refresh. Uses the default module-scoped translator. Stores no files or verification results.");
 
   public static readonly Option<int> ResolutionThreads = new("--resolution-threads", () => 0,
-    "Resolve independent modules with N workers. Scheduling is opt-in; generated names are module-scoped in every mode.") {
+    "Resolve independent modules with N workers. Requires --type-system-refresh. Scheduling is opt-in; generated names are module-scoped in every mode.") {
     ArgumentHelpName = "N"
   };
 
