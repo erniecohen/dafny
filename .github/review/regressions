@@ -396,3 +396,14 @@ git-issues/github-issue-268.dfy
 
 # Source-only opt-in function operators, clone preservation and negative controls (https://github.com/erniecohen/dafny/issues/194).
 git-issues/github-issue-194.dfy
+
+# Library serialization round-trips; both resolvers, no verification.
+git-issues/git-issue-297.dfy
+git-issues/git-issue-298.dfy
+git-issues/git-issue-299.dfy
+git-issues/git-issue-300.dfy
+git-issues/git-issue-301.dfy
+git-issues/git-issue-302.dfy
+git-issues/git-issue-303.dfy
+git-issues/git-issue-306.dfy
+git-issues/git-issue-308.dfy
