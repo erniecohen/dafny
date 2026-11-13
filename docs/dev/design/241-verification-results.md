@@ -306,6 +306,13 @@ both the shipped default and explicit overrides. This uses the pinned Boogie
 implementation and changes no Boogie API. The effective value is included in each
 task execution key.
 
+The result cache composes with `--translation-cache`: a reused module snapshot
+supplies the current compilation's Boogie graph and proof map, then its prepared
+tasks pass through the result cache. Solver-version probe counts are telemetry,
+so the translation descriptor excludes them. The combined regression requires a
+warm invocation to reuse both tables, start no solver and reproduce uncached
+outcomes, RU, stdout, stderr and exit.
+
 
 The public `--verification-cache` option requires `--type-system-refresh`.
 After CLI/project option binding, legacy-type selection is rejected with a clear

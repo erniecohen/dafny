@@ -205,7 +205,10 @@ public sealed class ModuleTranslationCache {
       parts.Add(file.Origin.EntireRangeWithFallback.PrintOriginal());
     }
     foreach (var member in typeof(DafnyOptions).GetMembers(BindingFlags.Public | BindingFlags.Instance).OrderBy(m => m.Name, StringComparer.Ordinal)) {
-      if (member.Name is "PrintFile" or "LogPrefix" or "FileTimestamp" or "DafnyPrintFile" or "DafnyPrintResolvedFile") { continue; }
+      // A cold result-cache version probe increments telemetry; it cannot affect
+      // translation and must not distinguish an otherwise identical warm module.
+      if (member.Name is "PrintFile" or "LogPrefix" or "FileTimestamp" or "DafnyPrintFile" or "DafnyPrintResolvedFile" or
+          nameof(DafnyOptions.VerificationCacheVersionProbes)) { continue; }
       var valueType = member switch { FieldInfo f => f.FieldType, PropertyInfo p => p.PropertyType, _ => null };
       if (valueType == null || !(valueType.IsPrimitive || valueType.IsEnum || valueType == typeof(string) ||
           typeof(IEnumerable<string>).IsAssignableFrom(valueType))) { continue; }
