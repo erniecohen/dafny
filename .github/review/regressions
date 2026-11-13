@@ -405,3 +405,6 @@ git-issues/git-issue-241-history-free-translation.dfy
 git-issues/github-issue-194.dfy
 
 # Parallel operator-export builtin ownership and visibility negatives are in git-issues/github-issue-241-parallel-resolution.dfy.
+
+# Historical identity scoping (https://github.com/erniecohen/dafny/issues/293):
+# Python regression controls: .github/review/test_milestone_identity.py, run by Build.
