@@ -86,6 +86,21 @@ implementation changes, with every changed verdict explained. A local capture
 writes `expected-opt-in.tsv` for that review; it never overwrites an expected file.
 Default verdict files are unchanged.
 
+The refreshed-profile migration changes 84 enabled suite rows. The complete
+[review record](resolution-profile-movements.tsv) lists every native-default,
+refreshed-serial and enabled verdict, diagnostic-line set and total VC RU for each
+changed program. Refreshed serial is independently reproduced by the shipped
+control. No VC outcome changes between that serial profile and enabled N=1.
+The existing refreshed-engine exception in `git-issue-3921.dfy` additionally
+loses diagnostics emitted before the exception because workers buffer them;
+no VC is produced. Five `git-issue-817` fixtures also expose existing refreshed
+engine exceptions when their native legacy flag is explicitly overridden in this
+audit. These are recorded failures, not successful verification or new failures
+of native defaults. In actual CLI use, combining the opt-in resolver with their
+original false engine flag is rejected before parsing. The record was generated
+locally before pushing with the pinned Z3 5.1.0 profile; RU comparisons use builds
+on the same platform, never resource-count equality across platforms.
+
 `report.json` separately lists native-default to refreshed, refreshed to enabled,
 and native-default to enabled verdict and per-VC RU movements,
 full-scope total RU, and out-of-resource VC counts. For scopes with changed

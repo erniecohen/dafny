@@ -148,7 +148,7 @@ def capture(args):
         verdicts = folder / 'verdicts.tsv'
         if args.part == 'stdlib':
             native.run(str(ROOT / 'Source/DafnyStandardLibraries'), str(adapter), str(args.z3.resolve()), str(verdicts),
-                boogie='/deterministicLiteralHashes:1 /restartProver', measurements=str(folder / 'measurements'))
+                cores=args.jobs, boogie='/deterministicLiteralHashes:1 /restartProver', measurements=str(folder / 'measurements'))
         else:
             native.run(str(plan), str(ROOT / 'Source/IntegrationTests/TestFiles/LitTests/LitTest'),
                 str(adapter), str(args.z3.resolve()), str(verdicts), shard=str(args.part) + '/4', jobs=args.jobs,
