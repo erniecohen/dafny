@@ -54,12 +54,12 @@ def record(args):
         litdir = ROOT / 'Source/IntegrationTests/TestFiles/LitTests/LitTest'
         module.plan(litdir, out / 'plan.tsv')
         module.run(out / 'plan.tsv', str(litdir), dafny, z3, out / 'verdicts.tsv',
-                   shard=args.shard, jobs=4, additional_axioms=args.axioms == 'on',
+                   shard=args.shard, jobs=args.jobs, additional_axioms=args.axioms == 'on',
                    measurements=out / 'measurements')
         inventory(out)
     else:
         module.run(str(ROOT / 'Source/DafnyStandardLibraries'), dafny, z3, out / 'verdicts.tsv',
-                   cores=4, additional_axioms=args.axioms == 'on',
+                   cores=args.jobs, additional_axioms=args.axioms == 'on',
                    boogie='/deterministicLiteralHashes:1 /restartProver', measurements=str(out / 'measurements'))
 
 
@@ -73,7 +73,7 @@ def compare(args):
             dirs = sorted(path for path in inp.glob(group + '-' + mode + '*') if path.is_dir())
             if not dirs:
                 raise ValueError('missing measurements: ' + group + '-' + mode)
-            rows, declarations, units = {}, {}, 0
+            rows, declarations, resources, units = {}, {}, {}, 0
             for directory in dirs:
                 for line in (directory / 'verdicts.tsv').read_text().splitlines():
                     row = line.split('\t')
@@ -83,6 +83,7 @@ def compare(args):
                     if group.startswith('std') and not row[0].startswith('run '):
                         declarations[row[0]] = row[1]
                         units += int(row[4])
+                        resources[row[0]] = int(row[4])
                 if group.startswith('suite'):
                     proofs = json.loads((directory / 'proofs.json').read_text())
                     overlap = declarations.keys() & proofs['declarations'].keys()
@@ -90,7 +91,8 @@ def compare(args):
                         raise ValueError('duplicate declarations ' + str(overlap))
                     declarations.update(proofs['declarations'])
                     units += proofs['resource_units']
-            data[mode] = dict(rows=rows, declarations=declarations, resource_units=units)
+                    resources.update({key: batch[1] for key, batch in proofs['batches'].items()})
+            data[mode] = dict(rows=rows, declarations=declarations, resource_units=units, resources=resources)
             suffix = '-additional-axioms' if '-on' in group else ''
             baseline = ('expected-verdicts' if group.startswith('suite') else 'expected-std-verdicts-z3-' + group.split('-')[-1]) + suffix + '.tsv'
             if mode == 'default':
@@ -100,12 +102,19 @@ def compare(args):
                        for name in sorted(a['rows'].keys() | b['rows'].keys()) if a['rows'].get(name) != b['rows'].get(name)}
         changes = {name: {'legacy': a['declarations'].get(name), 'default': b['declarations'].get(name)}
                    for name in sorted(a['declarations'].keys() | b['declarations'].keys()) if a['declarations'].get(name) != b['declarations'].get(name)}
-        report[group] = {'row_changes': differences, 'declaration_changes': changes,
+        ru_changes = {name: {'legacy': a['resources'].get(name), 'default': b['resources'].get(name)}
+                      for name in sorted(a['resources'].keys() | b['resources'].keys())
+                      if a['resources'].get(name) != b['resources'].get(name)}
+        (out / (group + '-resource-changes.tsv')).write_text('name\tlegacy_ru\tdefault_ru\tdelta_ru\n' + ''.join(
+            f"{name}\t{change['legacy']}\t{change['default']}\t{change['default'] - change['legacy'] if None not in change.values() else 'unmatched'}\n"
+            for name, change in ru_changes.items()))
+        report[group] = {'resource_changes': ru_changes, 'row_changes': differences, 'declaration_changes': changes,
+                         'program_rows': len(a['rows']), 'changed_resource_rows': len(ru_changes),
                          'legacy_ru': a['resource_units'], 'default_ru': b['resource_units'],
                          'delta_ru': b['resource_units'] - a['resource_units'],
                          'legacy_declarations': len(a['declarations']), 'default_declarations': len(b['declarations'])}
         text += ['## ' + group, '', f"{len(differences)} verdict rows and {len(changes)} declaration outcomes change.",
-                 f"RU: {a['resource_units']:,} → {b['resource_units']:,} ({b['resource_units'] - a['resource_units']:+,}).", '']
+                 f"{len(ru_changes)} resource rows change. RU: {a['resource_units']:,} → {b['resource_units']:,} ({b['resource_units'] - a['resource_units']:+,}).", '']
         for name, change in differences.items():
             text += [f"- `{name}`: `{change['legacy']}` → `{change['default']}`"]
         text += ['', 'Declaration outcomes:', '']
@@ -117,6 +126,7 @@ def compare(args):
     (out / 'report.json').write_text(json.dumps(report, indent=2))
     (out / 'summary.md').write_text('\n'.join(text))
     print('\n'.join(text))
+    return int(any(group['row_changes'] or group['declaration_changes'] for group in report.values()))
 
 
 def identity(args):
@@ -147,10 +157,13 @@ def identity(args):
             (out / f'{name}-{mode}.stderr').write_bytes(p.stderr)
             for path in paths:
                 shutil.copyfile(path, out / f'{name}-{mode}-{path.name}')
-        report[name] = dict(equal=results[0] == results[1], baseline_exit=results[0][0], legacy_exit=results[1][0])
+        translated = all(result[0] == 4 and result[3].get('program.bpl') and
+                         result[3].get('program.smt2') for result in results)
+        report[name] = dict(equal=results[0] == results[1], translated=bool(translated),
+                            baseline_exit=results[0][0], legacy_exit=results[1][0])
     (out / 'identity.json').write_text(json.dumps(report, indent=2))
     print(json.dumps(report, indent=2))
-    return 0 if all(case['equal'] for case in report.values()) else 1
+    return 0 if all(case['equal'] and case['translated'] for case in report.values()) else 1
 
 
 def controls(args):
@@ -173,7 +186,7 @@ def controls(args):
         (out / (name + '.stdout')).write_bytes(p.stdout)
         (out / (name + '.stderr')).write_bytes(p.stderr)
         expected = Path(str(fixture) + ('.legacy.expect' if unicode == 'false' else '.expect')).read_bytes()
-        report[name] = {'exit': p.returncode, 'expected_output': p.stdout == expected, 'stderr_empty': not p.stderr}
+        report[name] = {'exit': p.returncode, 'expected_output': p.returncode == 4 and p.stdout == expected, 'stderr_empty': not p.stderr}
     cmd = [str(Path(args.dafny).resolve()), 'verify', str(fixture.with_name('git-issue-284-char-unicode.dfy')),
            '--solver-path', str(Path(args.z3).resolve()), '--unicode-char:true', '--cores:1',
            '--resource-limit:16000000', '--verification-time-limit:0', '--show-snippets:false']
@@ -183,7 +196,45 @@ def controls(args):
     report['surrogates'] = {'exit': p.returncode}
     (out / 'controls.json').write_text(json.dumps(report, indent=2))
     print(json.dumps(report, indent=2))
-    return 0
+    return int(any(not case.get('expected_output', case['exit'] == 0) or not case.get('stderr_empty', True) for case in report.values()))
+
+
+def negative(args):
+    """Replay the first VC of the negative control, before counterexample blocking."""
+    out = Path(args.output).resolve()
+    out.mkdir(parents=True, exist_ok=True)
+    fixture = ROOT / 'Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/git-issue-284-char.dfy'
+    report = {}
+    for unicode in ['false', 'true']:
+        name = 'unicode-' + unicode
+        smt = out / (name + '.smt2')
+        cmd = [str(Path(args.dafny).resolve()), 'verify', str(fixture),
+               '--solver-path', str(Path(args.z3).resolve()), '--cores:1',
+               '--verification-time-limit:0', '--resource-limit:16000000',
+               '--unicode-char:' + unicode, '--filter-symbol', 'charNegative.',
+               '--boogie', '/prune:0', '--boogie', '/typeEncoding:a',
+               '--solver-log', str(smt)]
+        p = subprocess.run(cmd, capture_output=True, timeout=180)
+        (out / (name + '.stdout')).write_bytes(p.stdout)
+        (out / (name + '.stderr')).write_bytes(p.stderr)
+        source = smt.read_text()
+        first = source.index('(check-sat)') + len('(check-sat)')
+        query = out / (name + '-first-query.smt2')
+        query.write_text(source[:first] + '\n')
+        replay = subprocess.run([str(Path(args.z3).resolve()), str(query)],
+                                capture_output=True, timeout=180)
+        (out / (name + '.replay')).write_bytes(replay.stdout)
+        (out / (name + '.replay.stderr')).write_bytes(replay.stderr)
+        report[name] = {'verifier_exit': p.returncode, 'replay_exit': replay.returncode,
+                        'erased': 'T@U' in source, 'result': replay.stdout.decode().strip(),
+                        'replay_stderr_empty': not replay.stderr,
+                        'negative_failed': b'0 verified, 1 error' in p.stdout}
+    (out / 'negative.json').write_text(json.dumps(report, indent=2))
+    print(json.dumps(report, indent=2))
+    return int(any(case['verifier_exit'] != 4 or case['replay_exit'] != 0 or
+                   not case['erased'] or not case['negative_failed'] or
+                   not case['replay_stderr_empty'] or case['result'] not in ['sat', 'unknown']
+                   for case in report.values()))
 
 
 if __name__ == '__main__':
@@ -194,6 +245,7 @@ if __name__ == '__main__':
     p.add_argument('--mode', choices=['default', 'legacy'], required=True)
     p.add_argument('--axioms', choices=['off', 'on'], default='off')
     p.add_argument('--shard', default='0/1')
+    p.add_argument('--jobs', type=int, default=4)
     p.add_argument('--dafny', required=True)
     p.add_argument('--z3', required=True)
     p.add_argument('--output', required=True)
@@ -209,5 +261,9 @@ if __name__ == '__main__':
     p.add_argument('--dafny', required=True)
     p.add_argument('--z3', required=True)
     p.add_argument('--output', required=True)
+    p = sub.add_parser('negative')
+    p.add_argument('--dafny', required=True)
+    p.add_argument('--z3', required=True)
+    p.add_argument('--output', required=True)
     args = parser.parse_args()
-    sys.exit({'record': record, 'compare': compare, 'identity': identity, 'controls': controls}[args.command](args) or 0)
+    sys.exit({'record': record, 'compare': compare, 'identity': identity, 'controls': controls, 'negative': negative}[args.command](args) or 0)

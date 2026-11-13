@@ -546,3 +546,34 @@ separate expected verdicts and recording paired OFF/ON resource counts. See
 [the standing axiom CI documentation](docs/dev/additional-axioms.md#standing-ci-for-the-shared-option-50)
 for scope, retained negative/vacuity controls, resource-order caveats and the
 scratch-only baseline-capture procedure. The OFF verdict files remain unchanged.
+
+## Guarded character representations
+
+The character reverse round trip is restricted to `$Is(ch,TChar)`, and character
+membership is defined by a valid integer value and a successful reverse round
+trip. The valid-integer forward round trip is unchanged. Redirecting character
+types retain their parent membership requirement, including in visible-type
+obligation checks. The hidden `--legacy-unguarded-char` option restores the old
+translation for comparison and migration.
+
+This only weakens the old conjunction of character axioms: the old unconditional
+reverse round trip and universal membership imply all three repaired clauses.
+For a concrete model of the repaired character fragment, take the erased carrier
+to be the integers, both character conversions to be identity, and membership
+to be the existing valid-range predicate. The range is the BMP in the legacy
+character mode, and Unicode scalar values in Unicode mode. The carrier remains
+infinite; invalid raw values need not be characters. The executable model in
+`git-issues/Inputs/issue-284-char-model.smt2` checks this interpretation and typed
+negative contexts in both modes. It models this fragment, not the entire Dafny
+prelude or Boogie encoding.
+
+The four character-range lemmas, checked subset introduction, a failing false
+assertion, and Unicode surrogate exclusion are regression controls. See
+https://github.com/erniecohen/dafny/issues/284 for the scope and the original
+inconsistency argument.
+
+The accompanying library proof changes establish padding-prefix and sequence
+decomposition facts explicitly, use existing encoding identities while keeping
+bitvector definitions opaque, and separate parser and encoding proof steps.
+They preserve the specifications and existing resource limits. Every additional
+assertion and lemma call is verified; they introduce no axiom or assumption.

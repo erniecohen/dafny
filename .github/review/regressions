@@ -400,3 +400,4 @@ git-issues/github-issue-194.dfy
 # Guarded character representation (https://github.com/erniecohen/dafny/issues/284).
 git-issues/git-issue-284-char.dfy
 git-issues/git-issue-284-char-unicode.dfy
+git-issues/git-issue-284-char-model.dfy
