@@ -302,6 +302,21 @@ programs together in a single run of `dafny`.
 
 Various options control the verification process, in addition to all those described for [`dafny resolve`](#sec-dafny-resolve).
 
+- `--verification-cache DIR` opts into a persistent cache for individual prepared
+  verification tasks. It requires `--type-system-refresh`; selecting the legacy
+  type system is an option error (exit 2). It uses a fresh solver history and deterministic numeric
+  declaration hashes for each task. The enabled session supersedes a legacy
+  `/deterministicLiteralHashes:0` override; disabling the cache preserves that setting. Unchanged complete solver inputs, execution options, ordered type
+  inputs, and solver/runtime dependency bytes can reuse a completed result.
+  Valid results are reusable with a time limit; errors and resource exhaustion
+  require a positive resource limit and no elapsed-time limit. Replayed JSON
+  timing fields carry `timingReplayed: true`; CSV adds `TimingReplayed`. Durations
+  describe the current invocation, not a new solver measurement. Unsupported
+  execution profiles run normally. The initial native profile supports macOS
+  and Linux; custom loading environments and solver launcher scripts bypass.
+  Only trusted local writers may share a cache. Remove `DIR/v1` to evict it;
+  there is no automatic disk eviction. This option is off by default and can
+  also be set in `dfyconfig.toml`.
 - `--resolution-threads N` uses N workers for dependency-ready module resolution.
   Scheduling is opt-in and N must be positive when specified. Sequential and
   parallel resolution use the same module-scoped names, dependency heights and

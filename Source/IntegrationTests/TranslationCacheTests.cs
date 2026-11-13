@@ -27,7 +27,43 @@ public class TranslationCacheTests {
     }
     """;
 
-  private record Run(string Stdout, string Stderr, ExitValue Exit, string[] Tasks);
+  private record Run(string Stdout, string Stderr, ExitValue Exit, string[] Tasks,
+    long SolverStarts, long ResultHits);
+
+  [Fact]
+  public async Task TranslationSnapshotsAndPersistentResultsComposeWithoutWarmSolverCalls() {
+    var directory = Path.Combine(Path.GetTempPath(), "dafny-combined-cache-" + Guid.NewGuid());
+    Directory.CreateDirectory(directory);
+    var cache = ModuleTranslationCache.ProcessCache;
+    cache.Clear();
+    try {
+      var source = Path.Combine(directory, "input.dfy");
+      await File.WriteAllTextAsync(source, Source);
+      var baseline = await Verify(source, false, true, false);
+      var results = Path.Combine(directory, "results");
+      var cold = await Verify(source, true, true, false, verificationCache: results);
+      var translations = cache.Translations;
+      var hits = cache.Hits;
+      var warm = await Verify(source, true, true, false, verificationCache: results);
+      Assert.Equal(ExitValue.VERIFICATION_ERROR, baseline.Exit);
+      Assert.NotEmpty(cold.Tasks);
+      Assert.True(cold.SolverStarts > 0);
+      Assert.Equal(0, cold.ResultHits);
+      Assert.Equal(0, warm.SolverStarts);
+      Assert.Equal(cold.SolverStarts, warm.ResultHits);
+      Assert.Equal(translations, cache.Translations);
+      Assert.True(cache.Hits > hits);
+      foreach (var run in new[] { cold, warm }) {
+        Assert.Equal(baseline.Stdout, run.Stdout);
+        Assert.Equal(baseline.Stderr, run.Stderr);
+        Assert.Equal(baseline.Exit, run.Exit);
+        Assert.Equal(baseline.Tasks, run.Tasks);
+      }
+    } finally {
+      cache.Clear();
+      Directory.Delete(directory, true);
+    }
+  }
 
   [Theory]
   [InlineData(false, false)]
@@ -188,13 +224,16 @@ public class TranslationCacheTests {
   }
 
   private static async Task<Run> Verify(string source, bool cached, bool refresh, bool coverage,
-    bool extractCounterexample = false, bool modularTermination = false) {
+    bool extractCounterexample = false, bool modularTermination = false, string? verificationCache = null) {
     var stdout = new StringWriter();
     var stderr = new StringWriter();
     var options = new DafnyOptions(TextReader.Null, stdout, stderr);
     options.ApplyDefaultOptionsWithoutSettingsDefault();
     options.Set(CommonOptionBag.UnicodeCharacters, true);
     options.Set(CommonOptionBag.TranslationCache, cached);
+    if (verificationCache != null) {
+      options.Set(CommonOptionBag.VerificationCache, verificationCache);
+    }
     if (extractCounterexample) {
       options.Set(CommonOptionBag.ExtractCounterexample, true);
       options.ExtractCounterexample = true;
@@ -234,6 +273,8 @@ public class TranslationCacheTests {
       await dependencies;
     }
     var exit = await cli.GetAndReportExitValue();
-    return new Run(stdout.ToString(), stderr.ToString(), exit, tasks.ToArray());
+    var resultCache = Microsoft.Dafny.Caching.TaskCacheSession.TryFor(options);
+    return new Run(stdout.ToString(), stderr.ToString(), exit, tasks.ToArray(),
+      resultCache?.SolverStarts ?? 0, resultCache?.Hits ?? 0);
   }
 }

@@ -1,0 +1,281 @@
+# Total option inventory for the pinned producer. Unknown names/types/aliases must fail the drift test.
+# kind	name	aliases	runtime type	stage	coverage
+cli	additional-axioms	--additional-axioms	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
+cli	allow-axioms	--allow-axioms	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
+cli	allow-deprecation	--allow-deprecation	System.CommandLine.Option`1[System.Boolean]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
+cli	allow-external-contracts	--allow-external-contracts	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
+cli	allow-warnings	--allow-warnings	System.CommandLine.Option`1[System.Boolean]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
+cli	analyze-proofs	--analyze-proofs	System.CommandLine.Option`1[System.Boolean]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
+cli	ancestor-qualified-module-ids	--ancestor-qualified-module-ids	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
+cli	arithmetic-solver	--arithmetic-solver	System.CommandLine.Option`1[System.Int32]	execution	effective prover interfaces/options plus exact SMT command stream; overrides retained
+cli	bitvector-map-keys	--bitvector-map-keys	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
+cli	boogie	--boogie	System.CommandLine.Option`1[System.Collections.Generic.IEnumerable`1[System.String]]	execution	effective prover interfaces/options plus exact SMT command stream; overrides retained
+cli	bootstrapping	--bootstrapping	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
+cli	bprint	--bprint	System.CommandLine.Option`1[System.String]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
+cli	build	--build,-b	System.CommandLine.Option`1[System.IO.FileInfo]	command-setup	setup or another command; executes before/outside proof transport
+cli	cache-verification	--cache-verification	System.CommandLine.Option`1[System.UInt32]	command-setup	setup or another command; executes before/outside proof transport
+cli	check	--check	System.CommandLine.Option`1[System.Boolean]	command-setup	setup or another command; executes before/outside proof transport
+cli	check-source-location-consistency	--check-source-location-consistency	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
+cli	compare-report	--compare-report	System.CommandLine.Option`1[System.Boolean]	command-setup	setup or another command; executes before/outside proof transport
+cli	compile-suffix	--compile-suffix	System.CommandLine.Option`1[System.Boolean]	command-setup	setup or another command; executes before/outside proof transport
+cli	conservative-match-inference	--conservative-match-inference	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
+cli	consistent-obligation-checks	--consistent-obligation-checks	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
+cli	contextual-lambda-domains	--contextual-lambda-domains	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
+cli	contextual-quantifier-domains	--contextual-quantifier-domains	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
+cli	cores	--cores	System.CommandLine.Option`1[System.UInt32]	execution	effective prover interfaces/options plus exact SMT command stream; overrides retained
+cli	coverage-report	--coverage-report	System.CommandLine.Option`1[System.String]	command-setup	setup or another command; executes before/outside proof transport
+cli	cs-replacement-types	--cs-replacement-types	System.CommandLine.Option`1[System.Boolean]	command-setup	setup or another command; executes before/outside proof transport
+cli	datatype-subset-conversions	--datatype-subset-conversions	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
+cli	default-function-opacity	--default-function-opacity	System.CommandLine.Option`1[Microsoft.Dafny.CommonOptionBag+DefaultFunctionOpacityOptions]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
+cli	disable-nonlinear-arithmetic	--disable-nonlinear-arithmetic	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
+cli	dont-verify-dependencies	--dont-verify-dependencies	System.CommandLine.Option`1[System.Boolean]	selection	selects current task inventory; each selected task is independently prepared
+cli	emit-uncompilable-code	--emit-uncompilable-code	System.CommandLine.Option`1[System.Boolean]	command-setup	setup or another command; executes before/outside proof transport
+cli	enforce-determinism	--enforce-determinism	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
+cli	error-limit	--error-limit	System.CommandLine.Option`1[System.Int32]	execution	effective prover interfaces/options plus exact SMT command stream; overrides retained
+cli	expected-coverage-report	--coverage-report,--expected-coverage-report	System.CommandLine.Option`1[System.String]	command-setup	setup or another command; executes before/outside proof transport
+cli	extract-counterexample	--extract-counterexample	System.CommandLine.Option`1[System.Boolean]	command-setup	setup or another command; executes before/outside proof transport
+cli	file-name	--file-name	System.CommandLine.Option`1[System.String]	command-setup	setup or another command; executes before/outside proof transport
+cli	filter-position	--filter-position	System.CommandLine.Option`1[System.String]	selection	selects current task inventory; each selected task is independently prepared
+cli	filter-position-batch	--filter-position-batch	System.CommandLine.Option`1[System.Collections.Generic.IList`1[System.String]]	bypass	unsupported side effects/factory/repeated batch; ordinary execution
+cli	filter-symbol	--filter-symbol	System.CommandLine.Option`1[System.String]	selection	selects current task inventory; each selected task is independently prepared
+cli	find-project	--find-project	System.CommandLine.Option`1[System.Boolean]	command-setup	setup or another command; executes before/outside proof transport
+cli	force-prune	--force-prune	System.CommandLine.Option`1[System.Boolean]	execution	effective prover interfaces/options plus exact SMT command stream; overrides retained
+cli	function-syntax	--function-syntax	System.CommandLine.Option`1[System.String]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
+cli	general-newtypes	--general-newtypes	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
+cli	general-traits	--general-traits	System.CommandLine.Option`1[Microsoft.Dafny.CommonOptionBag+GeneralTraitsOptions]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
+cli	go-module-name	--go-module-name	System.CommandLine.Option`1[System.String]	command-setup	setup or another command; executes before/outside proof transport
+cli	heap-free-lambda-facts	--heap-free-lambda-facts	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
+cli	help	--help,-?,-h,/?,/h	System.CommandLine.Help.HelpOption	command-setup	setup or another command; executes before/outside proof transport
+cli	help-internal	--help-internal	System.CommandLine.Option`1[System.Boolean]	command-setup	setup or another command; executes before/outside proof transport
+cli	hidden-no-verify	--hidden-no-verify	System.CommandLine.Option`1[System.Boolean]	selection	selects current task inventory; each selected task is independently prepared
+cli	ignore-indentation	--ignore-indentation	System.CommandLine.Option`1[System.Boolean]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
+cli	ignore-warnings	--ignore-warnings	System.CommandLine.Option`1[System.Boolean]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
+cli	include-runtime	--include-runtime	System.CommandLine.Option`1[System.Boolean]	command-setup	setup or another command; executes before/outside proof transport
+cli	include-runtime	--include-runtime	System.CommandLine.Option`1[System.Boolean]	command-setup	setup or another command; executes before/outside proof transport
+cli	include-test-runner	--include-test-runner	System.CommandLine.Option`1[System.Boolean]	command-setup	setup or another command; executes before/outside proof transport
+cli	input	--input	System.CommandLine.Option`1[System.Collections.Generic.IEnumerable`1[System.String]]	command-setup	setup or another command; executes before/outside proof transport
+cli	input-format	--input-format	System.CommandLine.Option`1[Microsoft.Dafny.CommonOptionBag+InputTypeEnum]	command-setup	setup or another command; executes before/outside proof transport
+cli	invariant-constructor-inference	--invariant-constructor-inference	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
+cli	isolate-assertions	--isolate-assertions	System.CommandLine.Option`1[System.Boolean]	execution	effective prover interfaces/options plus exact SMT command stream; overrides retained
+cli	javadoclike-docstring-plugin	--javadoclike-docstring-plugin	System.CommandLine.Option`1[System.Boolean]	command-setup	setup or another command; executes before/outside proof transport
+cli	json-diagnostics	--json-diagnostics	System.CommandLine.Option`1[System.Boolean]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
+cli	json-output	--json-output	System.CommandLine.Option`1[System.Boolean]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
+cli	legacy-data-constructors	--legacy-data-constructors	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
+cli	legacy-decreases-order	--legacy-decreases-order	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
+cli	legacy-module-names	--legacy-module-names	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
+cli	length-limit	--length-limit	System.CommandLine.Option`1[System.UInt32]	command-setup	setup or another command; executes before/outside proof transport
+cli	library	--library	System.CommandLine.Option`1[System.Collections.Generic.IList`1[System.IO.FileInfo]]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
+cli	log-format	--log-format	System.CommandLine.Option`1[System.Collections.Generic.IList`1[System.String]]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
+cli	log-level	--log-level	System.CommandLine.Option`1[Serilog.Events.LogEventLevel]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
+cli	log-location	--log-location	System.CommandLine.Option`1[System.String]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
+cli	loop-unroll	--loop-unroll	System.CommandLine.Option`1[System.Int32]	execution	effective prover interfaces/options plus exact SMT command stream; overrides retained
+cli	main-method	--main-method	System.CommandLine.Option`1[System.String]	command-setup	setup or another command; executes before/outside proof transport
+cli	manual-lemma-induction	--manual-lemma-induction	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
+cli	manual-triggers	--manual-triggers	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
+cli	map-comprehension-domain-triggers	--map-comprehension-domain-triggers	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
+cli	methods-to-test	--methods-to-test	System.CommandLine.Option`1[System.String]	command-setup	setup or another command; executes before/outside proof transport
+cli	migrate-signature-and-completion-table	--migrate-signature-and-completion-table	System.CommandLine.Option`1[System.Boolean]	command-setup	setup or another command; executes before/outside proof transport
+cli	modify-time	--modify-time	System.CommandLine.Option`1[System.Boolean]	command-setup	setup or another command; executes before/outside proof transport
+cli	modular-termination	--modular-termination	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
+cli	mutations	--mutations	System.CommandLine.Option`1[System.UInt32]	command-setup	setup or another command; executes before/outside proof transport
+cli	no-timestamp-for-coverage-report	--no-timestamp-for-coverage-report	System.CommandLine.Option`1[System.Boolean]	command-setup	setup or another command; executes before/outside proof transport
+cli	no-verify	--no-verify	System.CommandLine.Option`1[System.Boolean]	selection	selects current task inventory; each selected task is independently prepared
+cli	notify-ghostness	--notify-ghostness	System.CommandLine.Option`1[System.Boolean]	command-setup	setup or another command; executes before/outside proof transport
+cli	notify-line-verification-status	--notify-line-verification-status	System.CommandLine.Option`1[System.Boolean]	command-setup	setup or another command; executes before/outside proof transport
+cli	only-label	--only-label	System.CommandLine.Option`1[System.Nullable`1[Microsoft.Dafny.CoverageLabel]]	command-setup	setup or another command; executes before/outside proof transport
+cli	optimize-erasable-datatype-wrapper	--optimize-erasable-datatype-wrapper	System.CommandLine.Option`1[System.Boolean]	command-setup	setup or another command; executes before/outside proof transport
+cli	outer-module	--outer-module	System.CommandLine.Option`1[System.String]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
+cli	output	--output,-o	System.CommandLine.Option`1[System.IO.FileInfo]	command-setup	setup or another command; executes before/outside proof transport
+cli	performance-stats	--performance-stats	System.CommandLine.Option`1[System.Int32]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
+cli	pipeline-profile	--pipeline-profile	System.CommandLine.Option`1[System.String]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
+cli	plugin	--plugin	System.CommandLine.Option`1[System.Collections.Generic.IList`1[System.String]]	bypass	unsupported side effects/factory/repeated batch; ordinary execution
+cli	pprint	--pprint	System.CommandLine.Option`1[System.String]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
+cli	prelude	--prelude	System.CommandLine.Option`1[System.IO.FileInfo]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
+cli	print	--print	System.CommandLine.Option`1[System.Boolean]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
+cli	print	--print	System.CommandLine.Option`1[System.String]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
+cli	print-bpl	--print-bpl	System.CommandLine.Option`1[System.String]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
+cli	print-mode	--print-mode	System.CommandLine.Option`1[Microsoft.Dafny.PrintModes]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
+cli	print-ranges	--print-ranges	System.CommandLine.Option`1[System.Boolean]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
+cli	program-name	--program-name	System.CommandLine.Option`1[System.String]	command-setup	setup or another command; executes before/outside proof transport
+cli	progress	--progress	System.CommandLine.Option`1[Microsoft.Dafny.CommonOptionBag+ProgressLevel]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
+cli	project-file-cache-expiry	--project-file-cache-expiry	System.CommandLine.Option`1[System.Int32]	command-setup	setup or another command; executes before/outside proof transport
+cli	project-output	--project-output	System.CommandLine.Option`1[System.Boolean]	command-setup	setup or another command; executes before/outside proof transport
+cli	python-module-name	--python-module-name	System.CommandLine.Option`1[System.String]	command-setup	setup or another command; executes before/outside proof transport
+cli	python-reorder-replacements	--python-reorder-replacements	System.CommandLine.Option`1[System.Boolean]	command-setup	setup or another command; executes before/outside proof transport
+cli	quantifier-syntax	--quantifier-syntax	System.CommandLine.Option`1[Microsoft.Dafny.QuantifierSyntaxOptions]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
+cli	random-seed	--random-seed	System.CommandLine.Option`1[System.UInt32]	execution	effective prover interfaces/options plus exact SMT command stream; overrides retained
+cli	raw-pointers	--raw-pointers	System.CommandLine.Option`1[System.Boolean]	command-setup	setup or another command; executes before/outside proof transport
+cli	reads-clauses-on-methods	--reads-clauses-on-methods	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
+cli	referrers	--referrers	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
+cli	relax-definite-assignment	--relax-definite-assignment	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
+cli	report-file	--report-file	System.CommandLine.Option`1[System.String]	command-setup	setup or another command; executes before/outside proof transport
+cli	report-format	--report-format	System.CommandLine.Option`1[System.Nullable`1[Microsoft.Dafny.Auditor.Auditor+ReportFormat]]	command-setup	setup or another command; executes before/outside proof transport
+cli	resolution-threads	--resolution-threads	System.CommandLine.Option`1[System.Int32]	input	resolution scheduling precedes task lookup; exact prepared SMT and current assertion map
+cli	resource-limit	--resource-limit	System.CommandLine.Option`1[System.UInt32]	execution	effective prover interfaces/options plus exact SMT command stream; overrides retained
+cli	rprint	--rprint	System.CommandLine.Option`1[System.String]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
+cli	rust-module-name	--rust-module-name	System.CommandLine.Option`1[System.String]	command-setup	setup or another command; executes before/outside proof transport
+cli	rust-sync	--rust-sync	System.CommandLine.Option`1[System.Boolean]	command-setup	setup or another command; executes before/outside proof transport
+cli	show-hints	--show-hints	System.CommandLine.Option`1[System.Boolean]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
+cli	show-proof-obligation-expressions	--show-proof-obligation-expressions	System.CommandLine.Option`1[System.Boolean]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
+cli	show-snippets	--show-snippets	System.CommandLine.Option`1[System.Boolean]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
+cli	solver-log	--solver-log	System.CommandLine.Option`1[System.String]	bypass	unsupported side effects/factory/repeated batch; ordinary execution
+cli	solver-option	--solver-option	System.CommandLine.Option`1[System.Collections.Generic.IList`1[System.String]]	execution	effective prover interfaces/options plus exact SMT command stream; overrides retained
+cli	solver-option-help	--solver-option-help	System.CommandLine.Option`1[System.Boolean]	command-setup	setup or another command; executes before/outside proof transport
+cli	solver-path	--solver-path	System.CommandLine.Option`1[System.IO.FileInfo]	execution	effective prover interfaces/options plus exact SMT command stream; overrides retained
+cli	solver-plugin	--solver-plugin	System.CommandLine.Option`1[System.String]	bypass	unsupported side effects/factory/repeated batch; ordinary execution
+cli	spill-translation	--spill-translation	System.CommandLine.Option`1[System.Boolean]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
+cli	sprint	--sprint	System.CommandLine.Option`1[System.String]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
+cli	standard-libraries	--standard-libraries	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
+cli	statement-expression-conclusions	--statement-expression-conclusions	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
+cli	stdin	--stdin	System.CommandLine.Option`1[System.Boolean]	command-setup	setup or another command; executes before/outside proof transport
+cli	suggest-proof-refactoring	--suggest-proof-refactoring	System.CommandLine.Option`1[System.Boolean]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
+cli	synonym-refines-abstract-type	--synonym-refines-abstract-type	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
+cli	system-module	--system-module	System.CommandLine.Option`1[Microsoft.Dafny.CommonOptionBag+SystemModuleMode]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
+cli	target	--target,-t	System.CommandLine.Option`1[System.String]	command-setup	setup or another command; executes before/outside proof transport
+cli	test-assumptions	--test-assumptions	System.CommandLine.Option`1[Microsoft.Dafny.CommonOptionBag+TestAssumptionsMode]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
+cli	track-print-effects	--track-print-effects	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
+cli	translate-standard-library	--translate-standard-library	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
+cli	translation-record	--translation-record	System.CommandLine.Option`1[System.Collections.Generic.IList`1[System.IO.FileInfo]]	command-setup	setup or another command; executes before/outside proof transport
+cli	translation-record-output	--translation-record-output	System.CommandLine.Option`1[System.IO.FileInfo]	command-setup	setup or another command; executes before/outside proof transport
+cli	type-inference-trace	--type-inference-trace	System.CommandLine.Option`1[System.Boolean]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
+cli	type-system-debug	--type-system-debug	System.CommandLine.Option`1[System.Boolean]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
+cli	translation-cache	--translation-cache	System.CommandLine.Option`1[System.Boolean]	input	process-local translation snapshots precede task lookup; exact prepared SMT and current assertion map
+cli	type-system-refresh	--type-system-refresh	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
+cli	unicode-char	--unicode-char	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
+cli	update-throttling	--update-throttling	System.CommandLine.Option`1[System.Int32]	command-setup	setup or another command; executes before/outside proof transport
+cli	use-basename-for-filename	--use-basename-for-filename	System.CommandLine.Option`1[System.Boolean]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
+cli	use-caching	--use-caching	System.CommandLine.Option`1[System.Boolean]	command-setup	setup or another command; executes before/outside proof transport
+cli	user-defined-operators	--user-defined-operators	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
+cli	verbose	--verbose	System.CommandLine.Option`1[System.Boolean]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
+cli	verification-cache	--verification-cache	System.CommandLine.Option`1[System.String]	profile	explicit opt-in lifecycle/naming/history; unknown profile bypasses
+cli	verification-coverage-report	--verification-coverage-report	System.CommandLine.Option`1[System.String]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
+cli	verification-module-window	--verification-module-window	System.CommandLine.Option`1[System.UInt32]	profile	explicit opt-in lifecycle/naming/history; unknown profile bypasses
+cli	verification-module-window-memory	--verification-module-window-memory	System.CommandLine.Option`1[System.UInt32]	profile	explicit opt-in lifecycle/naming/history; unknown profile bypasses
+cli	verification-time-limit	--verification-time-limit	System.CommandLine.Option`1[System.UInt32]	execution	effective prover interfaces/options plus exact SMT command stream; overrides retained
+cli	verify-included-files	--verify-included-files	System.CommandLine.Option`1[System.Boolean]	selection	selects current task inventory; each selected task is independently prepared
+cli	verify-on	--verify-on	System.CommandLine.Option`1[Microsoft.Dafny.LanguageServer.Workspace.VerifyOnMode]	command-setup	setup or another command; executes before/outside proof transport
+cli	version	--version	System.CommandLine.Help.VersionOption	command-setup	setup or another command; executes before/outside proof transport
+cli	wait-for-debugger	--wait-for-debugger	System.CommandLine.Option`1[System.Boolean]	command-setup	setup or another command; executes before/outside proof transport
+cli	warn-as-errors	--warn-as-errors	System.CommandLine.Option`1[System.Boolean]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
+cli	warn-contradictory-assumptions	--warn-contradictory-assumptions	System.CommandLine.Option`1[System.Boolean]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
+cli	warn-missing-constructor-parentheses	--warn-missing-constructor-parentheses	System.CommandLine.Option`1[System.Boolean]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
+cli	warn-redundant-assumptions	--warn-redundant-assumptions	System.CommandLine.Option`1[System.Boolean]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
+cli	warn-shadowing	--warn-shadowing	System.CommandLine.Option`1[System.Boolean]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
+cli	warn-unchecked-termination	--warn-unchecked-termination	System.CommandLine.Option`1[System.Boolean]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
+cli	worst-amount	--worst-amount	System.CommandLine.Option`1[System.UInt32]	command-setup	setup or another command; executes before/outside proof transport
+prover	Microsoft.Boogie.CoreOptions.Ai		Microsoft.Boogie.CoreOptions+AiFlags	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.CoreOptions.CacheUsedTypes		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.CoreOptions.Cho		System.Collections.Generic.List`1[Microsoft.Boogie.CoreOptions+ConcurrentHoudiniOptions]	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.CoreOptions.ConcurrentHoudini		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.CoreOptions.DebugStagedHoudini		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.CoreOptions.DeterministicExtractLoops		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.CoreOptions.DeterministicLiteralHashes		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.CoreOptions.ErrorLimit		System.Int32	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.CoreOptions.ErrorTrace		System.Int32	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.CoreOptions.FreeVarLambdaLifting		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.CoreOptions.InferModifies		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.CoreOptions.InlineDepth		System.Int32	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.CoreOptions.InstrumentInfer		Microsoft.Boogie.CoreOptions+InstrumentationPlaces	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.CoreOptions.InstrumentWithAsserts		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.CoreOptions.KeepQuantifier		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.CoreOptions.LockFreeExpansion		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.CoreOptions.LoopUnrollCount		System.Int32	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.CoreOptions.ModelViewFile		System.String	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.CoreOptions.ModifyTopologicalSorting		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.CoreOptions.NormalizeDeclarationOrder		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.CoreOptions.OutputWriter		System.IO.TextWriter	current-report	current output binding
+prover	Microsoft.Boogie.CoreOptions.OverlookBoogieTypeErrors		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.CoreOptions.PrettyPrint		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.CoreOptions.PrintProverWarnings		Microsoft.Boogie.CoreOptions+ProverWarnings	bypass	observable warning or native transport output bypasses; None/zero encoded in supported profile
+prover	Microsoft.Boogie.CoreOptions.PrintSplitDeclarations		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.CoreOptions.PrintSplitFile		System.String	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.CoreOptions.ProcedureInlining		Microsoft.Boogie.CoreOptions+Inlining	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.CoreOptions.ProverLogFileAppend		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.CoreOptions.ProverLogFilePath		System.String	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.CoreOptions.ProverOptions		System.Collections.Generic.List`1[System.String]	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.CoreOptions.Prune		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.CoreOptions.PruneInfeasibleEdges		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.CoreOptions.RandomSeed		System.Nullable`1[System.Int32]	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.CoreOptions.RandomizeVcIterations		System.Int32	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.CoreOptions.RelaxFocus		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.CoreOptions.ResourceLimit		System.UInt32	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.CoreOptions.RunDiagnosticsOnTimeout		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.CoreOptions.SmokeTimeout		System.UInt32	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.CoreOptions.SoundnessSmokeTest		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.CoreOptions.StructuralLiterals		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.CoreOptions.TimeLimit		System.UInt32	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.CoreOptions.Trace		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.CoreOptions.TraceCachingForBenchmarking		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.CoreOptions.TraceCachingForDebugging		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.CoreOptions.TraceCachingForTesting		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.CoreOptions.TraceTimes		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.CoreOptions.TraceVerify		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.CoreOptions.TypeEncodingMethod		Microsoft.Boogie.CoreOptions+TypeEncoding	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.CoreOptions.UseArrayTheory		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.CoreOptions.UseBaseNameForFileName		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.CoreOptions.UseSubsumption		Microsoft.Boogie.CoreOptions+SubsumptionOption	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.CoreOptions.VariableDependenceIgnore		System.String	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.CoreOptions.VcsAssumeMult		System.Double	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.CoreOptions.VcsCores		System.Int32	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.CoreOptions.VcsDumpSplits		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.CoreOptions.VcsFinalAssertTimeout		System.UInt32	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.CoreOptions.VcsKeepGoingTimeout		System.UInt32	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.CoreOptions.VcsMaxCost		System.Double	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.CoreOptions.VcsMaxKeepGoingSplits		System.Int32	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.CoreOptions.VcsMaxSplits		System.Int32	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.CoreOptions.VcsPathCostMult		System.Double	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.CoreOptions.VcsPathJoinMult		System.Double	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.CoreOptions.VcsPathSplitMult		System.Double	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.CoreOptions.VcsSplitOnEveryAssert		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.CoreOptions.Verbosity		Microsoft.Boogie.CoreOptions+VerbosityLevel	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.CoreOptions.VerifySeparately		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.CoreOptions.VerifySnapshots		System.Int32	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.CoreOptions.VersionNumber		System.String	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.CoreOptions.XmlSink		Microsoft.Boogie.XmlSink	current-report	current output binding
+prover	Microsoft.Boogie.PrintOptions.PrintDefinitionAxiomsInPlace		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.PrintOptions.PrintDesugarings		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.PrintOptions.PrintInlined		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.PrintOptions.PrintInstrumented		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.PrintOptions.PrintPassiveFile		System.String	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.PrintOptions.PrintUnstructured		System.Int32	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.PrintOptions.PrintWithUniqueASTIds		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.PrintOptions.ReflectAdd		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.PrintOptions.StratifiedInlining		System.Int32	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.SMTLibOptions.CreateSolver		System.Func`3[Microsoft.Boogie.SMTLibOptions,Microsoft.Boogie.SMTLib.SMTLibSolverOptions,Microsoft.Boogie.SMTLib.SMTLibSolver]	profile	exact pinned factory and installed transport required
+prover	Microsoft.Boogie.SMTLibOptions.EmitDebugInformation		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.SMTLibOptions.ExpectingModel		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.SMTLibOptions.ImmediatelyAcceptCommands		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.SMTLibOptions.NormalizeNames		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.SMTLibOptions.ProduceModel		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.SMTLibOptions.ProduceUnsatCores		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.SMTLibOptions.ProverPreamble		System.String	bypass	external preamble file access is unsupported
+prover	Microsoft.Boogie.SMTLibOptions.RestartProverPerVC		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.SMTLibOptions.RunningBoogieFromCommandLine		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.SMTLibOptions.SIBoolControlVC		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.SMTLibOptions.TheProverFactory		Microsoft.Boogie.ProverFactory	profile	exact pinned factory and installed transport required
+prover	Microsoft.Boogie.SMTLibOptions.TimeLimitPerAssertionInPercent		System.UInt32	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.SMTLibOptions.TraceDiagnosticsOnTimeout		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.SMTLibOptions.TrackVerificationCoverage		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.SMTLibOptions.WarnVacuousProofs		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
+solver-field	AppendLogFile		System.Boolean	execution	all public solver fields/properties enumerated and encoded
+solver-field	BatchMode		System.Boolean	execution	all public solver fields/properties enumerated and encoded
+solver-field	ForceLogStatus		System.Boolean	execution	all public solver fields/properties enumerated and encoded
+solver-field	Inspector		System.String	execution	all public solver fields/properties enumerated and encoded
+solver-field	LogFilename		System.String	execution	all public solver fields/properties enumerated and encoded
+solver-field	Logic		System.String	execution	all public solver fields/properties enumerated and encoded
+solver-field	MemoryLimit		System.Int32	execution	all public solver fields/properties enumerated and encoded
+solver-field	ProverName		System.String	execution	all public solver fields/properties enumerated and encoded
+solver-field	ProverPath		System.String	execution	all public solver fields/properties enumerated and encoded
+solver-field	RandomSeed		System.Int32	execution	all public solver fields/properties enumerated and encoded
+solver-field	ResourceLimit		System.UInt32	execution	all public solver fields/properties enumerated and encoded
+solver-field	SeparateLogFiles		System.Boolean	execution	all public solver fields/properties enumerated and encoded
+solver-field	SmtOptions		System.Collections.Generic.List`1[Microsoft.Boogie.SMTLib.OptionValue]	execution	all public solver fields/properties enumerated and encoded
+solver-field	Solver		Microsoft.Boogie.SMTLib.SolverKind	execution	all public solver fields/properties enumerated and encoded
+solver-field	SolverArguments		System.Collections.Generic.List`1[System.String]	execution	all public solver fields/properties enumerated and encoded
+solver-field	TimeLimit		System.UInt32	execution	all public solver fields/properties enumerated and encoded
+solver-field	UseWeights		System.Boolean	execution	all public solver fields/properties enumerated and encoded
+solver-field	UsedTypes		System.Collections.Generic.List`1[Microsoft.Boogie.Type]	execution	ordered lowered type identities encoded separately, including inputs outside pruned declarations
+solver-field	Verbosity		System.Int32	bypass	observable warning or native transport output bypasses; None/zero encoded in supported profile
+solver-property	Help		System.String	command-setup	static option documentation; no execution read
+solver-property	LibOptions		Microsoft.Boogie.SMTLibOptions	execution	covered by complete inherited prover interfaces; never serialized as an opaque object
+solver-property	UseTickleBool		System.Boolean	execution	all public solver fields/properties enumerated and encoded
