@@ -1676,9 +1676,9 @@ module Std.Producers {
         }
       }
 
+      assert history == old(history) + [((), result)];
+      assert Outputs() == old(Outputs()) + [result];
       assert old(State()).ValidChange(State()) by {
-        assert history == old(history) + [((), result)];
-        assert Outputs() == old(Outputs()) + [result];
         if old(Remaining()).Some? {
           assert old(first.Remaining()).Some? && old(second.Remaining()).Some?;
           if result.Some? {
