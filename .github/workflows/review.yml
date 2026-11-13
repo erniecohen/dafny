@@ -940,6 +940,11 @@ jobs:
           python3 .github/review/verification-cache-cutoff.py Binaries/net10.0/Dafny.dll "$solver" \
             Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/Inputs/git-issue-241-cache-cutoff.dfy \
             verification-cache-cutoff-linux
+          # Key coverage, planted entries and the resource-limit boundaries u, u-1, L and L+1
+          # (https://github.com/erniecohen/dafny/issues/261).
+          python3 .github/review/verification-cache-keys.py Binaries/net10.0/Dafny.dll "$solver" \
+            Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/git-issue-241-verification-cache.dfy \
+            verification-cache-keys-linux
 
   resolver-tests:
     if: ${{ ((github.event_name != 'pull_request' || !github.event.pull_request.draft) && ((github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'erniecohen/dafny'))) && !inputs.platform_parity && (!(github.event_name == 'workflow_dispatch' && (inputs.default_comparison || inputs.decreases_order_comparison) && startsWith(github.ref, 'refs/heads/scratch/'))))) && needs.tree.outputs.reuse != 'true' }}

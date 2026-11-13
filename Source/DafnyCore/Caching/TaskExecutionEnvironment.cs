@@ -24,6 +24,10 @@ internal sealed class TaskExecutionEnvironment(DafnyOptions options) {
   private static readonly HashSet<string> ReportBindings = new(StringComparer.Ordinal) {
     "OutputWriter", "XmlSink"
   };
+  // The effective resource limit is not part of a task key. The transport abstracts it from the
+  // solver input and compares it with each stored result's own limit and resource use instead.
+  private const string ResourceLimit = "ResourceLimit";
+  private const string TaskResourceLimit = "task-resource-limit";
   private static readonly HashSet<string> VerifiedTransport = new(StringComparer.Ordinal) {
     "CreateSolver", "TheProverFactory"
   };
@@ -51,15 +55,16 @@ internal sealed class TaskExecutionEnvironment(DafnyOptions options) {
         var name = property.DeclaringType!.FullName + "." + property.Name;
         if (ReportBindings.Contains(property.Name)) { manifest[name] = "current-report-binding"; continue; }
         if (VerifiedTransport.Contains(property.Name)) { manifest[name] = "verified-transport"; continue; }
+        if (property.Name == ResourceLimit) { manifest[name] = TaskResourceLimit; continue; }
         manifest[name] = Encode(property.GetValue(library));
       }
       foreach (var field in solver.GetType().GetFields(BindingFlags.Instance | BindingFlags.Public).OrderBy(f => f.Name)) {
         if (field.Name == "UsedTypes") { continue; }
-        manifest["solver." + field.Name] = Encode(field.GetValue(solver));
+        manifest["solver." + field.Name] = field.Name == ResourceLimit ? TaskResourceLimit : Encode(field.GetValue(solver));
       }
       foreach (var property in solver.GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public).OrderBy(p => p.Name)) {
         if (property.Name is "LibOptions" or "Help") { continue; }
-        manifest["solver." + property.Name] = Encode(property.GetValue(solver));
+        manifest["solver." + property.Name] = property.Name == ResourceLimit ? TaskResourceLimit : Encode(property.GetValue(solver));
       }
       // UsedTypes inspects all nonimplementation declarations plus this implementation. Preserve
       // the resulting order explicitly, even when a type does not occur in the pruned VC text.

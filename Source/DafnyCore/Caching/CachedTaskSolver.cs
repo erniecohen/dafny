@@ -44,6 +44,9 @@ internal sealed class CachedTaskSolver : SMTLibSolver {
   private sealed record Exchange(int Schema, Step[] Steps);
   private sealed record Replay(CacheTaskOutcome Outcome, long ResourceCount, Step[] Steps);
   private static readonly JsonSerializerOptions JsonOptions = new() { MaxDepth = 512 };
+  /// <summary>Stands for the task's effective resource limit in keys and stored exchanges.</summary>
+  internal const string ResourceLimitPlaceholder = "(set-option :rlimit <task resource limit>)";
+  private const string ResourceLimitPrefix = "(set-option :rlimit ";
 
   private readonly TaskResultCache cache;
   private readonly Func<byte[]?> environment;
@@ -63,6 +66,10 @@ internal sealed class CachedTaskSolver : SMTLibSolver {
   private SMTLibSolver? solver;
   private TaskCacheDescriptor? descriptor;
   private Replay? replay;
+  private string? replaySlotKey;
+  private Step[]? limitIndependentPrefix;
+  private long peakResourceCount;
+  private bool reachedLimit;
 
   public CachedTaskSolver(TaskResultCache cache, Func<byte[]?> completeEnvironment,
     Func<SMTLibSolver> createFreshSolver, bool warningsHaveNoEffects = false) {
@@ -162,13 +169,14 @@ internal sealed class CachedTaskSolver : SMTLibSolver {
       if (mode == Mode.Pending) {
         // Earlier response-dependent queries are unsupported, so they go straight to the solver.
         if (request == "(check-sat)" && cacheable) {
-          var input = JsonSerializer.SerializeToUtf8Bytes(steps.Append(new Step(Kind.Request, request)), JsonOptions);
           var frozen = environment();
           if (frozen != null) {
             var limits = SmtExecutionLimits.Read(steps.Where(s => s.Kind == Kind.Send).Select(s => s.Command));
             if (limits.Supported) {
+              limitIndependentPrefix = WithoutEffectiveLimit(steps, limits.Resource);
+              var input = JsonSerializer.SerializeToUtf8Bytes(limitIndependentPrefix.Append(new Step(Kind.Request, request)), JsonOptions);
               descriptor = new TaskCacheDescriptor(input, frozen, limits.Resource, limits.Milliseconds);
-              replay = cache.TryRead(descriptor, new ExchangeLoader());
+              replay = cache.TryRead(descriptor, new ExchangeLoader(), out replaySlotKey);
             } else { cacheable = false; }
           } else { cacheable = false; }
           if (replay != null) {
@@ -194,6 +202,14 @@ internal sealed class CachedTaskSolver : SMTLibSolver {
         // Invalid can remain the aggregate outcome after an earlier counterexample even
         // when a subsequent query times out or exhausts memory. Do not cache that report.
         cacheable = false;
+      }
+      if (request == "(get-info :reason-unknown)" && response is { ArgCount: 1 } && response[0].Name is
+            "canceled" or "max. resource limit exceeded" or "resource limits reached" or "(resource limits reached)") {
+        reachedLimit = true;
+      }
+      if (request == "(get-info :rlimit)" && response is { Name: ":rlimit", ArgCount: 1 } &&
+          long.TryParse(response[0].Name, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var count)) {
+        peakResourceCount = Math.Max(peakResourceCount, count);
       }
       if (cacheable) {
         try {
@@ -262,12 +278,15 @@ internal sealed class CachedTaskSolver : SMTLibSolver {
     }
     // Boogie may retire a checker after its successful final handshake, before the
     // task's completion observer runs. Closing that sealed transport loses no evidence.
-    if (!cacheable || !sealedExchange || descriptor == null || mode is not (Mode.Live or Mode.Closed)) {
+    if (!cacheable || !sealedExchange || descriptor == null || limitIndependentPrefix == null || mode is not (Mode.Live or Mode.Closed)) {
       return CachePublication.Unavailable;
     }
     try {
-      var exchange = JsonSerializer.SerializeToUtf8Bytes(new Exchange(1, steps.ToArray()), JsonOptions);
-      return cache.TryPublish(descriptor, true, outcome, resourceCount, exchange);
+      var limit = descriptor.ResourceLimit;
+      var stored = limitIndependentPrefix.Concat(steps.Skip(limitIndependentPrefix.Length).Select(step => WithoutLimit(step, limit)));
+      var exchange = JsonSerializer.SerializeToUtf8Bytes(new Exchange(1, stored.ToArray()), JsonOptions);
+      return cache.TryPublish(descriptor, true, outcome, resourceCount, Math.Max(peakResourceCount, resourceCount),
+        reachedLimit || outcome == CacheTaskOutcome.OutOfResource, exchange);
     } catch (JsonException) {
       return CachePublication.Unavailable;
     }
@@ -275,7 +294,7 @@ internal sealed class CachedTaskSolver : SMTLibSolver {
 
   public void Abort() {
     cacheable = false;
-    if (replay != null && ReplayMismatch && descriptor != null) { cache.Reject(descriptor); }
+    if (replay != null && ReplayMismatch && replaySlotKey != null) { cache.Reject(replaySlotKey); }
   }
 
   public override async Task<IReadOnlyList<SExpr>> SendRequestsAndCloseInput(IReadOnlyList<string> requests,
@@ -303,11 +322,31 @@ internal sealed class CachedTaskSolver : SMTLibSolver {
       throw Mismatch();
     }
     var actual = replay!.Steps[replayPosition++];
-    if (actual.Kind != expected.Kind || actual.Command != expected.Command) {
+    if (actual.Kind != expected.Kind || actual.Command != WithoutLimit(expected, descriptor!.ResourceLimit).Command) {
       cacheable = false;
       throw Mismatch();
     }
     return actual;
+  }
+
+  private static bool IsLimitCommand(Step step, uint limit) =>
+    step.Kind == Kind.Send && step.Command.StartsWith(ResourceLimitPrefix, StringComparison.Ordinal) &&
+    step.Command == ResourceLimitPrefix + limit.ToString(System.Globalization.CultureInfo.InvariantCulture) + ")";
+
+  /// <summary>A command that sets exactly the task's effective limit, abstracted from it.</summary>
+  private static Step WithoutLimit(Step step, uint limit) =>
+    IsLimitCommand(step, limit) ? step with { Command = ResourceLimitPlaceholder } : step;
+
+  /// <summary>
+  /// The initial stream with the effective resource limit abstracted: the last command that sets
+  /// a resource limit before the first check, when it sets exactly the limit SmtExecutionLimits
+  /// found to be effective. Earlier limit commands, and limits set in any other form, stay literal.
+  /// </summary>
+  private static Step[] WithoutEffectiveLimit(IReadOnlyList<Step> prefix, uint limit) {
+    var result = prefix.ToArray();
+    var last = Array.FindLastIndex(result, step => step.Kind == Kind.Send && step.Command.Contains(":rlimit", StringComparison.Ordinal));
+    if (last >= 0) { result[last] = WithoutLimit(result[last], limit); }
+    return result;
   }
 
   private void Record(Step step) {

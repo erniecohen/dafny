@@ -15,16 +15,24 @@ A lookup identifies one prepared manual split and seed iteration. Its key is a
 versioned length-delimited SHA-256 over the exact ordered initial solver commands,
 the complete effective prover/solver options and adaptive response-program identity,
 ordered UsedTypes inputs, and the solver/runtime/environment identity. Prelude,
-pruning, assertion isolation, normalization, split options, resource limits,
-random seeds and raw Boogie options contribute through those frozen inputs.
+pruning, assertion isolation, normalization, split options, elapsed-time limits,
+random seeds and raw Boogie options contribute through those frozen inputs. The
+effective resource limit does not: the last `:rlimit` command that sets it, and the
+options that carry it, are replaced by a placeholder before hashing
+(https://github.com/erniecohen/dafny/issues/261).
 No module key or file hash substitutes for the prepared task input. Editing one
 function recomputes precisely tasks whose complete prepared input changes; a
 translation naming change may legitimately change additional task inputs.
 
 The payload stores the exact descriptor, completed outcome and RU, and complete
 subsequent command/response exchange. Current Boogie reconstructs models,
-counterexamples, error and coverage data against current assertions. Valid is
-reusable regardless of elapsed-time limits; errors and OutOfResource require a
+counterexamples, error and coverage data against current assertions. Each record also
+stores the largest resource count u the solver reported and the limit L it depends
+on. Under a current limit L' (0 for none), Valid is reused when L' = 0 or L' >= u;
+errors when L' >= u, or only when L' = L if the solver reported an exhausted limit
+during the task; OutOfResource at L when 0 < L' <= L. The task key has one index slot
+for each class (valid, errors, out-of-resource, and one per L for errors that reached
+the limit); the first OutOfResource record stays. Errors and OutOfResource require a
 positive effective RU bound and zero effective elapsed-time limit. Timed failures,
 crashes, cancellation, memory failures, unknowns and incomplete handshakes never
 publish. Unknown option types and unsupported side effects bypass.
@@ -265,8 +273,9 @@ Top-level initialization commands also have an explicit inventory. Solver-side
 `include`/load commands and unknown forms require an input-content manifest and
 therefore bypass V1. Raw option or logic strings cannot introduce such commands
 while retaining result-cache admission.
-Completed Valid is eligible under any limit; Errors/OutOfResource additionally
-require positive RU and zero timeout. Timeout, memory failure, cancellation,
+Completed Valid is eligible under any elapsed-time limit that equals its own and any
+resource limit that covers its use; Errors/OutOfResource additionally require
+positive RU and zero timeout. Timeout, memory failure, cancellation,
 protocol error and unknown outcomes are never reused. Retention is bounded by
 100,000 steps/nodes, response depth 128 and 32 MiB of retained command/response
 characters; oversized setup is flushed to a real solver and caching stops.

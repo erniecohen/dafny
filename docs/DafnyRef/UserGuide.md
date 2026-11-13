@@ -308,8 +308,15 @@ Various options control the verification process, in addition to all those descr
   declaration hashes for each task. The enabled session supersedes a legacy
   `/deterministicLiteralHashes:0` override; disabling the cache preserves that setting. Unchanged complete solver inputs, execution options, ordered type
   inputs, and solver/runtime dependency bytes can reuse a completed result.
-  Valid results are reusable with a time limit; errors and resource exhaustion
-  require a positive resource limit and no elapsed-time limit. Replayed JSON
+  The resource limit is not part of the key. Each result keeps the resource use
+  `u` the solver reported and the limit `L` it was produced under, and a run with
+  limit `L'` reuses it only where a fresh run would give the same answer: a valid
+  result when there is no limit or `L' >= u`; errors when `L' >= u` (or, if the
+  solver stopped at its limit while searching for them, only when `L' = L`); and
+  resource exhaustion at `L` when `0 < L' <= L`. Resource exhaustion reused under
+  a smaller limit reports the resource count recorded at `L`. Errors and resource exhaustion
+  require a positive resource limit; under an elapsed-time limit only valid
+  results are reused, and the time limit is part of the key. Replayed JSON
   timing fields carry `timingReplayed: true`; CSV adds `TimingReplayed`. Durations
   describe the current invocation, not a new solver measurement. Unsupported
   execution profiles run normally. The initial native profile supports macOS
