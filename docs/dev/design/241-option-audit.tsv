@@ -64,6 +64,8 @@ cli	legacy-data-constructors	--legacy-data-constructors	System.CommandLine.Optio
 cli	legacy-decreases-order	--legacy-decreases-order	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	legacy-module-names	--legacy-module-names	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	length-limit	--length-limit	System.CommandLine.Option`1[System.UInt32]	command-setup	setup or another command; executes before/outside proof transport
+cli	legacy-noncanonical-map-payloads	--legacy-noncanonical-map-payloads	System.CommandLine.Option`1[System.Boolean]	input	map encoding is lowered before task lookup; exact SMT and current assertion map
+cli	legacy-unguarded-char	--legacy-unguarded-char	System.CommandLine.Option`1[System.Boolean]	input	character encoding is lowered before task lookup; exact SMT and current assertion map
 cli	library	--library	System.CommandLine.Option`1[System.Collections.Generic.IList`1[System.IO.FileInfo]]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	log-format	--log-format	System.CommandLine.Option`1[System.Collections.Generic.IList`1[System.String]]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
 cli	log-level	--log-level	System.CommandLine.Option`1[Serilog.Events.LogEventLevel]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
@@ -181,6 +183,7 @@ prover	Microsoft.Boogie.CoreOptions.InlineDepth		System.Int32	execution	complete
 prover	Microsoft.Boogie.CoreOptions.InstrumentInfer		Microsoft.Boogie.CoreOptions+InstrumentationPlaces	execution	complete inherited prover interface enumerated and encoded before first query
 prover	Microsoft.Boogie.CoreOptions.InstrumentWithAsserts		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
 prover	Microsoft.Boogie.CoreOptions.KeepQuantifier		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.CoreOptions.LegacyNoncanonicalMapPayloads		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
 prover	Microsoft.Boogie.CoreOptions.LockFreeExpansion		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
 prover	Microsoft.Boogie.CoreOptions.LoopUnrollCount		System.Int32	execution	complete inherited prover interface enumerated and encoded before first query
 prover	Microsoft.Boogie.CoreOptions.ModelViewFile		System.String	execution	complete inherited prover interface enumerated and encoded before first query
@@ -248,6 +251,7 @@ prover	Microsoft.Boogie.SMTLibOptions.CreateSolver		System.Func`3[Microsoft.Boog
 prover	Microsoft.Boogie.SMTLibOptions.EmitDebugInformation		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
 prover	Microsoft.Boogie.SMTLibOptions.ExpectingModel		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
 prover	Microsoft.Boogie.SMTLibOptions.ImmediatelyAcceptCommands		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.SMTLibOptions.LegacySolverIdleTimeout		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
 prover	Microsoft.Boogie.SMTLibOptions.NormalizeNames		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
 prover	Microsoft.Boogie.SMTLibOptions.ProduceModel		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
 prover	Microsoft.Boogie.SMTLibOptions.ProduceUnsatCores		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query

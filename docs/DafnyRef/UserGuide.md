@@ -2672,6 +2672,17 @@ and what information it produces about the verification process.
   default; use `datatype-subset-conversions = true` in a project file's `[options]`.
 * `--consistent-obligation-checks` - prepare and check matching implicit obligations once using the existing local assertion machinery and fuel rules (experimental, disabled by default; also a project-file option).
 
+Native-result map read-over-write axioms require canonical stored payloads in
+the arguments type encoding. The hidden `--legacy-noncanonical-map-payloads`
+switch restores the previous inconsistent axiom for comparison and migration
+only, and is not suitable for trusted verification.
+
+The character representation axioms use character membership as a guard in both
+`--unicode-char` modes. The hidden `--legacy-unguarded-char` switch restores the
+previous unguarded axioms and character refinement translation for comparison
+and migration only. Those axioms are inconsistent under the arguments type
+encoding; the switch is not suitable for trusted verification.
+
 * `--extract-counterexample` - if verification fails, report a potential
   counterexample as a set of assumptions that can be inserted into the code.
   Note that Danfy cannot guarantee that the counterexample
