@@ -129,9 +129,20 @@ public class ProgramParser {
     IOrigin origin,
     Uri uri,
     CancellationToken cancellationToken) {
+    var profile = PipelineProfile.For(options);
+    var profileStart = profile?.BeginThread();
     var fileSnapshot = getSnapShot();
     try {
-      return ParseFile(options, fileSnapshot, uri, cancellationToken);
+      var result = ParseFile(options, fileSnapshot, uri, cancellationToken);
+      if (profile != null) {
+        // A .doo file is deserialized, not parsed; its stage says which.
+        var binary = uri.LocalPath.EndsWith(DafnyFile.DafnyBinaryExtension);
+        profile.FrontEnd(binary ? "parse.doo" : "parse.file", profileStart!.Value, new Dictionary<string, object> {
+          ["uri"] = uri.ToString(),
+          ["topLevelDecls"] = result.Module.SourceDecls.Count
+        });
+      }
+      return result;
     } catch (IOException e) {
       if (origin == null) {
         throw;

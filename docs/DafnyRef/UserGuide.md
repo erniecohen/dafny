@@ -2149,7 +2149,7 @@ in the neighborhood of the error; the error location (file, line, column) is alw
 
 * `--solver-log <file>` - [verification only] the file in which to place the SMT text sent to the solver
 
-* `--pipeline-profile <file>` - [verification only] (experimental) write timing
+* `--pipeline-profile <file>` - [verification and resolution] (experimental) write timing
   events of the verification pipeline to `<file>`, one JSON object per line: a
   manifest of the run (version, arguments, runtime, GC mode, core count); spans for
   finding the root files, parsing, cloning the parsed program and resolution; per
@@ -2163,6 +2163,32 @@ in the neighborhood of the error; the error location (file, line, column) is alw
   monotonic clock. The option only adds the file: Dafny's other output, and what it
   sends to the solver, are the same with and without it. The driver
   `.github/review/pipeline-profile.py` in Dafny's repository summarizes a profile.
+  `dafny resolve` accepts the option too. Both commands also write front-end
+  events, each with the wall time, the CPU time and the allocated bytes of the
+  thread that ran it, and the process's GC pause time: one per file parsed (or
+  `.doo` file read); the module dependency graph (imports, refinement, exports and
+  nesting); one per module declaration resolved, with the time of each phase of its
+  resolution (registration/export, setup, member signatures, module attributes,
+  bodies, and accessible members are separate; export-view resolution uses the
+  distinct `exportViewSetup`, `exportSignature`, `exportModuleAttributes`,
+  `exportBody` and `exportAccessibleMembers` phases); one per global resolution
+  pass; and one per module translated to Boogie. Three hidden options extend it for
+  measurements: `--pipeline-profile-heap`
+  forces a full compacting garbage collection after parsing, after resolution and
+  when each module's results are reported, and records the live heap (this changes
+  timing); `--pipeline-profile-gc-events` records each collection and each pause
+  from the runtime's GC events; and `--pipeline-profile-hold <directory>` waits at
+  each of those heap points for a driver to take a heap dump. The driver
+  `.github/review/frontend-profile.py` runs and analyzes these measurements.
+  Module resolution events are measured on the worker performing the resolution
+  or cache lookup, at both zero and positive `--resolution-threads`. Their `id`
+  refers to canonical graph order; the events themselves arrive in worker
+  completion order. `cached: true` reports reuse without replaying the original
+  phases. `status` distinguishes completed lookup/resolution (including diagnostic
+  errors), cancellation and failure; interrupted lookups have `cached: null`.
+  Thread-local phases are cleared after every attempt. Simultaneous workers'
+  wall intervals overlap, so the driver's serial global-work subtraction and
+  ideal parallel bound are omitted for profiles with positive resolution threads.
 
 * `--log-format <configuration>` - [verification only] (was `-verificationLogger:<configuration string>`)
   log verification
