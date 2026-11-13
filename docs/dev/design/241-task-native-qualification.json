@@ -313,7 +313,8 @@
             20558,
             20534
           ],
-          "identicalTaskNativeBytes": true
+          "identicalTaskNativeBytes": true,
+          "classification": "Native solver process history survives logical reset; exact replay of 1660/1918 prior tasks from one fixed source reproduces 20558/20534 RU, five times each. Fresh target-only replay is 20536 RU, five times."
         }
       },
       {
@@ -338,5 +339,6 @@
       }
     ]
   },
-  "admissionScope": "Frozen cohort predates CLI admission restriction. Public cache options now require the refreshed type system; Std project already enables it."
+  "admissionScope": "Frozen cohort predates CLI admission restriction. Public cache options now require the refreshed type system; Std project already enables it.",
+  "nativeProcessHistoryEvidence": "241-native-process-history.json"
 }

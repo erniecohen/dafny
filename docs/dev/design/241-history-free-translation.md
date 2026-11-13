@@ -136,3 +136,9 @@ task's comparison. The pre-existing 100 ms idle-handshake policy can retire a
 healthy checker with the cache OFF too, as measured in
 https://github.com/erniecohen/dafny/issues/287. This stack leaves ordinary pooling
 and the Boogie lifecycle unchanged. Any task-local byte mismatch remains a blocker.
+
+Logical reset provides an empty assertion context, not complete native-process
+isolation. The [controlled history replay](241-native-process-history.md)
+reproduces the unrelated-growth 24-RU difference with fixed task bytes and
+fixed source. Fresh native target-only runs agree. This is classified separately
+from task-input equality; ordinary pooled solving is unchanged.
