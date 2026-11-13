@@ -5,11 +5,12 @@
 # what is missing or does not match.
 #
 # The packages are Boogie 3.5.5 with the fix for boogie-org/boogie#1168, fixes to its
-# printer and opt-in split-setup options, the 14 packages of the release v3.5.5+review.27e27ebc of
+# printer, opt-in split-setup options and repairs to /typeEncoding:m monomorphization,
+# the 14 packages of the release v3.5.5+review.bdb7f929 of
 # https://github.com/erniecohen/boogie, which builds them in CI from the tag.  The release's
 # SHA256SUMS is Scripts/boogie-packages.sha256.
 set -eu
-release=https://github.com/erniecohen/boogie/releases/download/v3.5.5%2Breview.27e27ebc
+release=https://github.com/erniecohen/boogie/releases/download/v3.5.5%2Breview.bdb7f929
 root=$(cd "$(dirname "$0")/.." && pwd)
 sums="$root/Scripts/boogie-packages.sha256"
 feed="$root/Binaries/boogie-packages"
