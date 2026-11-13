@@ -18,6 +18,7 @@ public class TaskCacheSessionPolicyTests {
     var directory = Path.Combine(Path.GetTempPath(), "task-cache-numeric-policy-" + Guid.NewGuid());
     try {
       var options = new DafnyOptions(TextReader.Null, TextWriter.Null, TextWriter.Null);
+      options.Set(CommonOptionBag.TypeSystemRefresh, true);
       options.Set(CommonOptionBag.VerificationCache, directory);
       Assert.NotNull(TaskCacheSession.For(options));
       Assert.True(options.DeterministicLiteralHashes);

@@ -1,4 +1,5 @@
 Add opt-in --verification-cache DIR for persistent per-task solver exchanges.
+Requires --type-system-refresh; legacy-type selection is rejected as an option error before verification starts.
 Exact task inputs, ordered UsedTypes, execution options and native dependency
 identities guard reuse. Completed valid results and resource-bounded errors or
 resource exhaustion retain their resource counts; replayed log timings are marked.

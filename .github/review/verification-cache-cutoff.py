@@ -34,7 +34,7 @@ def run(name, text, directory=cache):
     profile, report, bpl = (destination / ('current.' + ext) for ext in ('jsonl', 'json', 'bpl'))
     for p in [profile, report, *destination.glob('current*.bpl')]:
         p.unlink(missing_ok=True)
-    args = ['dotnet', str(exe), 'verify', str(input_file), '--cores', '1',
+    args = ['dotnet', str(exe), 'verify', str(input_file), '--cores', '1', '--type-system-refresh',
             '--solver-path', str(solver), '--verification-time-limit', '0', '--resource-limit', '16000000',
             '--boogie', '/deterministicLiteralHashes:1', '--use-basename-for-filename', '--show-snippets:false',
             '--verification-cache', str(directory), '--pipeline-profile', str(profile), '--bprint', str(bpl),

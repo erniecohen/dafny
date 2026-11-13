@@ -37,7 +37,7 @@ def run(name, directory=cache, extra=(), time_limit="0", resource_limit="1600000
     csv_log = destination / (observer + ".csv")
     for file in (profile, log, csv_log):
         file.unlink(missing_ok=True)
-    args = ["dotnet", str(exe), "verify", str(input_file), "--cores", "1",
+    args = ["dotnet", str(exe), "verify", str(input_file), "--cores", "1", "--type-system-refresh",
             "--solver-path", str(solver), "--verification-time-limit", time_limit,
             "--resource-limit", resource_limit, "--use-basename-for-filename",
             "--show-snippets:false", "--pipeline-profile", str(profile),

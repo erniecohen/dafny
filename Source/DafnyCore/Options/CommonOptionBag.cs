@@ -42,7 +42,7 @@ public class CommonOptionBag {
     };
 
   public static readonly Option<string> VerificationCache = new("--verification-cache",
-    "Reuse complete verification-task solver exchanges in DIR. Opt-in; uses a fresh solver history and stable numeric declaration order for each task. " +
+    "Reuse complete verification-task solver exchanges in DIR. Requires --type-system-refresh. Opt-in; uses a fresh solver history and stable numeric declaration order for each task. " +
     "Replayed timing fields are identified in CSV/JSON logs. Unsupported tasks run normally.") { ArgumentHelpName = "DIR" };
 
   public static readonly Option<string> PipelineProfile =

@@ -305,3 +305,23 @@ path preserves the shipped setting. This uses the pinned Boogie implementation
 and changes no Boogie API. An explicit legacy numeric-hash setting is superseded
 inside the enabled session, like the session's independent solver-history policy.
 The effective value is included in each task execution key.
+
+
+The public `--verification-cache` option requires `--type-system-refresh`.
+After CLI/project option binding, legacy-type selection is rejected with a clear
+option error and exit 2, before parsing, resolution, solver setup or cache I/O.
+It does not silently bypass the cache. An ordinary option-off legacy invocation
+retains its shipped behavior. Native cache qualification selects the refreshed
+type system explicitly; Std project profiles already select it.
+
+The admission revision passes the Release build, all 492 Core tests and native
+CLI tests for implicit legacy typing, explicit false, project false and CLI
+overrides of a project true value. Invalid source deliberately confirms rejection
+precedes parsing; no profile or cache directory is created. An ordinary legacy
+option-off request remains accepted. Native regression/cutoff controls explicitly
+select refreshed typing and retain zero warm solver calls, exact report replay,
+corruption/race/limit controls and the 0/4/1/1 imported-edit call counts. A focused
+passive native-writer comparison preserves option-off Boogie, task commands,
+outcomes/RU, reports/stdout/stderr/exit against the prior producer under both type
+systems. These focused checks supplement the frozen broader cohorts; they do not
+relabel them as runs of the new managed-image namespace.
