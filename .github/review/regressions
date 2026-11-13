@@ -457,6 +457,10 @@ git-issues/github-issue-310.dfy
 git-issues/github-issue-310-errors.dfy
 git-issues/github-issue-309.dfy
 
+# Monomorphization repairs for /typeEncoding:m (https://github.com/erniecohen/dafny/issues/281):
+# a quantifier that binds nothing, and hideable definition axioms of generic functions.
+git-issues/github-issue-281-empty-quantifier.dfy
+git-issues/github-issue-281-hide.dfy
 # Caller type scopes across inline module resolution (--resolution-threads 0):
 # DafnyCore.Test ResolutionPipelineTests.ResolutionEndsWithCallerScopesDisabled and
 # ModuleErrorLeavesCallerScopesAsScheduledResolutionDoes, run by the worker-resolution CI step.

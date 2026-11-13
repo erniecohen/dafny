@@ -209,8 +209,8 @@ that runs Boogie's own test jobs and packs Boogie's NuGet packages.  The same fi
 is offered to Boogie's master as
 [boogie-org/boogie#1169](https://github.com/boogie-org/boogie/pull/1169).
 
-This branch builds against that fork's release `v3.5.5+review.27e27ebc`, whose
-packages have the version `3.5.5-review.27e27ebc`.  The release carries them with
+This branch builds against that fork's release `v3.5.5+review.bdb7f929`, whose
+packages have the version `3.5.5-review.bdb7f929`.  The release carries them with
 their sha256 sums, and its `REVIEW.md` says what the fork changes and how its
 version is computed.  Besides that fix, it brings:
 
@@ -262,10 +262,10 @@ version is computed.  Besides that fix, it brings:
   restores the old deadline for comparison, passed through Dafny's `--boogie`.
 
 `a48933e` made this branch build against the fork's packages, at
-`3.5.5-review.37e4435d`.  It now builds against `3.5.5-review.27e27ebc`:
+`3.5.5-review.37e4435d`.  It now builds against `3.5.5-review.bdb7f929`:
 
 - `Source/DafnyCore/DafnyCore.csproj` names `Boogie.ExecutionEngine`
-  `3.5.5-review.27e27ebc`, and `dotnet-tools.json` names the `boogie` tool at the
+  `3.5.5-review.bdb7f929`, and `dotnet-tools.json` names the `boogie` tool at the
   same version;
 - `nuget.config` adds a local package source, `Binaries/boogie-packages`, and maps
   every Boogie package to it and to nothing else, so a missing package stops the
@@ -286,6 +286,19 @@ The move from `a7d160a7` to `c5a9f2ef` is also a product change.  Its test,
 assertion its own split, with and without both new options, and requires the same
 report and the same SMT-Lib text sent to the solver.  Its release note is
 `docs/dev/news/241-boogie-split-setup.feat`.
+
+The move from `27e27ebc` to `bdb7f929` is a product change, and so a new version.
+It brings the repairs for `/typeEncoding:m`
+([#281](https://github.com/erniecohen/dafny/issues/281)), from
+[erniecohen/boogie#7](https://github.com/erniecohen/boogie/pull/7).  Boogie's
+monomorphizer now drops a quantifier that binds nothing, as the other encodings do, and
+keeps the `hideable` mark when it splits or instantiates an axiom; its pruning treats
+`reveal` of a declared function as revealing that function's instances.  The release also
+carries [erniecohen/boogie#10](https://github.com/erniecohen/boogie/pull/10), which
+changes only a test of Boogie's.  `/typeEncoding:a`, the default, sends the solver the
+same text as before.  Its tests are `git-issues/github-issue-281-empty-quantifier.dfy` and
+`git-issues/github-issue-281-hide.dfy`, each run under `:m` and `:a` against one
+expected output.  Its release note is `docs/dev/news/281-typeencoding-m.fix`.
 
 **To build this branch, run `sh Scripts/fetch-boogie-packages.sh` once first.**
 CI does so in every job that builds.
