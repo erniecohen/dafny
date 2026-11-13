@@ -87,9 +87,9 @@ namespace Microsoft.Dafny {
             wr.Write(s is YieldStmt ? "yield" : "return");
             if (s.Rhss != null) {
               var sep = " ";
-              foreach (var rhs in s.Rhss) {
+              for (var i = 0; i < s.Rhss.Count; i++) {
                 wr.Write(sep);
-                PrintRhs(rhs);
+                PrintRhs(s.Rhss[i], i + 1 < s.Rhss.Count ? s.Rhss[i + 1] : null);
                 sep = ", ";
               }
             }
@@ -207,7 +207,7 @@ namespace Microsoft.Dafny {
                 wr.Write(" ");
                 PrintQuantifierDomain(s.BoundVars, s.Attributes, s.Range);
               }
-              PrintSpec("ensures", s.Ens, indent + IndentAmount);
+              PrintSpec("ensures", s.Ens, indent + IndentAmount, true);
               if (s.Body != null) {
                 if (s.Ens.Count == 0) {
                   wr.Write(" ");
@@ -601,9 +601,9 @@ namespace Microsoft.Dafny {
           wr.Write(":= ");
         }
         var sep = "";
-        foreach (var rhs in update.Rhss) {
+        for (var i = 0; i < update.Rhss.Count; i++) {
           wr.Write(sep);
-          PrintRhs(rhs);
+          PrintRhs(update.Rhss[i], i + 1 < update.Rhss.Count ? update.Rhss[i + 1] : null);
           sep = ", ";
         }
       } else if (s is AssignSuchThatStmt) {
@@ -631,13 +631,13 @@ namespace Microsoft.Dafny {
         if (parenthesizeRhs) {
           wr.Write("(");
         }
-        PrintRhs(stmt.Rhs);
+        PrintRhs(stmt.Rhs, parenthesizeRhs ? null : stmt.Rhss.FirstOrDefault());
         if (parenthesizeRhs) {
           wr.Write(")");
         }
-        foreach (var rhs in stmt.Rhss) {
+        for (var i = 0; i < stmt.Rhss.Count; i++) {
           wr.Write(", ");
-          PrintRhs(rhs);
+          PrintRhs(stmt.Rhss[i], i + 1 < stmt.Rhss.Count ? stmt.Rhss[i + 1] : null);
         }
         if (options.DafnyPrintResolvedFile != null && stmt.ResolvedStatements.Count > 0) {
           wr.WriteLine();
@@ -797,6 +797,16 @@ namespace Microsoft.Dafny {
         }
         PrintStatement(s.Body, indent);
       }
+    }
+
+    /// <summary>
+    /// Prints "rhs", which is followed by ", " and "next" unless "next" is null.
+    /// </summary>
+    void PrintRhs(AssignmentRhs rhs, AssignmentRhs next) {
+      if (rhs is ExprRhs exprRhs && next is ExprRhs nextExprRhs) {
+        MarkBeforeComma(exprRhs.Expr, nextExprRhs.Expr);
+      }
+      PrintRhs(rhs);
     }
 
     void PrintRhs(AssignmentRhs rhs) {
