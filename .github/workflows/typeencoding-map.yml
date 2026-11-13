@@ -18,7 +18,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/checkout@v4
         with:
-          ref: 0025e3f001351ee0f7c801c052bdd7d992c0de6e
+          # The stack's pre-map product includes the character repair.
+          ref: a220fed05038ff4c70ac325d29b7c0a5238ba0e7
           path: baseline
       - uses: ./.github/actions/setup-dotnet
       - uses: actions/setup-java@v4
