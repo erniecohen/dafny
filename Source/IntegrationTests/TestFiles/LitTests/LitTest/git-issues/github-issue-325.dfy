@@ -11,6 +11,8 @@
 // RUN: %exits-with 2 %resolve "%S/Inputs/github-issue-325-trait.dfy" >> "%t"
 // RUN: echo "Auditor" >> "%t"
 // RUN: %baredafny audit --use-basename-for-filename "%S/Inputs/github-issue-325-audit.dfy" >> "%t"
+// RUN: echo "Hidden --legacy-auto-generated-attributes restores the old, unsound trait exemption" >> "%t"
+// RUN: %baredafny verify --cores:2 --standard-libraries:false --use-basename-for-filename --show-snippets:false --legacy-auto-generated-attributes "%S/Inputs/github-issue-325-trait.dfy" >> "%t"
 // RUN: %diff "%s.expect" "%t"
 
 // https://github.com/erniecohen/dafny/issues/325

@@ -33,3 +33,6 @@ github-issue-325-audit.dfy(4,40): Warning: Vf: Declaration has `{:verify false}`
 Dafny auditor completed with 2 findings
 
 Dafny program verifier did not attempt verification
+Hidden --legacy-auto-generated-attributes restores the old, unsound trait exemption
+
+Dafny program verifier finished with 1 verified, 0 errors
