@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Boogie;
 using Microsoft.Dafny.Compilers;
+using Microsoft.Dafny.Plugins;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using static Microsoft.Dafny.ParseErrors;
@@ -52,6 +53,22 @@ public class ProgramParser {
       errorReporter, compilation
     );
     var versionedFiles = new Dictionary<Uri, int>();
+    if (options.Get(CommonOptionBag.UserDefinedOperators)) {
+      string rejection = null;
+      if (!options.Get(CommonOptionBag.TypeSystemRefresh)) {
+        rejection = "--user-defined-operators currently requires --type-system-refresh";
+      } else if (options.Backend is LibraryBackend || options.Get(CommonOptionBag.UseStandardLibraries) ||
+                 options.LibraryFiles.Count != 0 || files.Any(f => f.ShouldNotVerify || f.ShouldNotCompile)) {
+        rejection = "--user-defined-operators does not support library/precompiled input or .doo output in this milestone; supply fully checked source";
+      } else if (options.Get(IExecutableBackend.TranslationRecords)?.Count > 0 ||
+                 options.Get(IExecutableBackend.TranslationRecordOutput) != null) {
+        rejection = "--user-defined-operators does not support translation record input/output in this milestone";
+      }
+      if (rejection != null) {
+        errorReporter.Error(MessageSource.Project, "operator_input", Token.Cli, rejection);
+        return new ProgramParseResult(program, versionedFiles);
+      }
+    }
 
     foreach (var dafnyFile in files) {
       cancellationToken.ThrowIfCancellationRequested();

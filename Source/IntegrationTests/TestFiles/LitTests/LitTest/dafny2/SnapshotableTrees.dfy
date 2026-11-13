@@ -593,6 +593,8 @@ module SnapTree {
       reveal R();
       reveal p.NodeValid();
       if p.left != null {
+        assert p.left.Contents <= C[n..];
+        assert R(st, n + |p.left.Contents|, C, Nodes);
         st := Push(st, n, p.left, C, Nodes);
       }
     }

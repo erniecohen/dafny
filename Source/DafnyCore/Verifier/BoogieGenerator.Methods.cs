@@ -1634,7 +1634,7 @@ namespace Microsoft.Dafny {
       for (int i = 0; i < N; i++) {
         Expression e0 = calleeDecreases[i];
         Expression e1 = sub.Substitute(contextDecreases[i]);
-        if (!CompatibleDecreasesTypes(e0.Type, e1.Type)) {
+        if (!CompatibleDecreasesTypesForComparison(e0.Type, e1.Type)) {
           N = i;
           break;
         }
@@ -1649,6 +1649,9 @@ namespace Microsoft.Dafny {
 
       var decrCountT = contextDecreases.Count;
       var decrCountC = calleeDecreases.Count;
+      // In the corrected lift, this computes the TOP/incompatible terminal value
+      // after the shared prefix. The following legacy explanation applies only
+      // when --legacy-decreases-order uses it to select its old prefix adapter.
       // Generally, we want to produce a check "decrClass <= decrTrait", allowing (the common case where) they are equal.
       // * If N < decrCountC && N < decrCountT, then "decrClass <= decrTrait" if the comparison ever gets beyond the
       //   parts that survived truncation.  Thus, we compare with "allowNoChange" set to "false".

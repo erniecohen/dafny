@@ -763,6 +763,9 @@ namespace Microsoft.Dafny {
       }
 
       program = p;
+      if (options.Get(CommonOptionBag.ModularTermination)) {
+        proofDependencies = p.ProofDependencyManager.ForModule(forModule.FullDafnyName);
+      }
       this.forModule = forModule;
       triggersCollector = new TriggersCollector(new Dictionary<Expression, HashSet<OldExpr>>(), options, forModule);
       Type.EnableScopes();
@@ -2949,7 +2952,10 @@ namespace Microsoft.Dafny {
         Contract.Assert(cc != null);
       } else {
         var name = cl.FullSanitizedName;
-        if (cl is ClassLikeDecl { NonNullTypeDecl: { } }) {
+        // An opaque reference type keeps the nullable declaration in its self synonym.
+        // It must remain distinct from the separately provided non-null type.
+        var underlyingDecl = cl is InternalTypeSynonymDecl { Rhs: UserDefinedType rhs } ? rhs.ResolvedClass : cl;
+        if (underlyingDecl is ClassLikeDecl { NonNullTypeDecl: { } }) {
           name = name + "?";  // TODO: this doesn't seem like the best place to do this name transformation
         }
         cc = new Bpl.Constant(cl.Origin, new Bpl.TypedIdent(cl.Origin, "class." + name, Predef.ClassNameType), !cl.EnclosingModuleDefinition.IsFacade);

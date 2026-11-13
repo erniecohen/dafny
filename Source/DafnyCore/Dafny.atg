@@ -354,6 +354,9 @@ ModuleDefinition<DeclModifierData dmod, ModuleDefinition parent, out ModuleDecl 
    (. CheckNoAttributes(ref attrs); .)
     (.
       module.SetOrigin(new SourceOrigin(dmod.FirstToken, t, name.ReportingRange));
+      if (theOptions.Get(CommonOptionBag.UserDefinedOperators)) {
+        module.Attributes = IntrinsicModuleAttributes(module.Attributes);
+      }
       submodule = new LiteralModuleDecl(theOptions, module, parent, Guid.NewGuid());
       submodule.SetOrigin(module.Origin);
       theOptions = dafnyOptionsBackup;
@@ -3488,7 +3491,7 @@ RelationalExpression<out Expression e, bool allowLemma, bool allowLambda, bool a
                                    (. startToken = e0.StartToken;
                                       var origin = new SourceOrigin(startToken, t, x);
                                       if (k == null) {
-                                        e = new BinaryExpr(origin, op, e0, e1);
+                                        e = SourceBinary(origin, op, e0, e1);
                                       } else {
                                         Contract.Assert(op == BinaryExpr.Opcode.Eq || op == BinaryExpr.Opcode.Neq);
                                         e = new TernaryExpr(origin, op == BinaryExpr.Opcode.Eq ? TernaryExpr.Opcode.PrefixEqOp : TernaryExpr.Opcode.PrefixNeqOp, k, e0, e1);
@@ -3551,7 +3554,7 @@ RelationalExpression<out Expression e, bool allowLemma, bool allowLambda, bool a
     }
   ]
   (. if (chain != null && kind != 3) {
-       e = new ChainingExpression(opLocs[0], chain, ops, opLocs, prefixLimits);
+       e = new ChainingExpression(opLocs[0], chain, ops, opLocs, prefixLimits, theOptions.Get(CommonOptionBag.UserDefinedOperators));
      }
      e.SetOrigin(new SourceOrigin(startToken, t, e.Center));
   .)
@@ -3616,7 +3619,7 @@ ShiftTerm<out Expression e0, bool allowLemma, bool allowLambda, bool allowBitwis
     )
     Term<out e1, allowLemma, allowLambda, allowBitwiseOps> (.
       var startToken = e0.StartToken;
-      e0 = new BinaryExpr(new SourceOrigin(startToken, t, x), op, e0, e1);
+      e0 = SourceBinary(new SourceOrigin(startToken, t, x), op, e0, e1);
      .)
   }
   .
@@ -3629,7 +3632,7 @@ Term<out Expression e0, bool allowLemma, bool allowLambda, bool allowBitwiseOps>
     AddOp<out x, out op>
     Factor<out e1, allowLemma, allowLambda, allowBitwiseOps>
     (. var startToken = e0.StartToken;
-       e0 = new BinaryExpr(new SourceOrigin(startToken, t, x), op, e0, e1);
+       e0 = SourceBinary(new SourceOrigin(startToken, t, x), op, e0, e1);
     .)
   }
   .
@@ -3651,7 +3654,7 @@ Factor<out Expression e0, bool allowLemma, bool allowLambda, bool allowBitwiseOp
     BitvectorFactor<out e1, allowLemma, allowLambda, allowBitwiseOps>
     (. 
       var startToken = e0.StartToken;
-      e0 = new BinaryExpr(new SourceOrigin(startToken, t, x), op, e0, e1);
+      e0 = SourceBinary(new SourceOrigin(startToken, t, x), op, e0, e1);
     .)
   }
   .
@@ -3674,11 +3677,11 @@ BitvectorFactor<out Expression e0, bool allowLemma, bool allowLambda, bool allow
     | "|"                                                (. op = BinaryExpr.Opcode.BitwiseOr; x = t; .)
     | "^"                                                (. op = BinaryExpr.Opcode.BitwiseXor; x = t; .)
     )
-    AsExpression<out e1, allowLemma, allowLambda, allowBitwiseOps>   (. var startToken = e0.StartToken; e0 = new BinaryExpr(new SourceOrigin(startToken, t, x), op, e0, e1); .)
+    AsExpression<out e1, allowLemma, allowLambda, allowBitwiseOps>   (. var startToken = e0.StartToken; e0 = SourceBinary(new SourceOrigin(startToken, t, x), op, e0, e1); .)
     { IF(IsBitwiseOp())
       ( "&" | "|" | "^" )                                (. if (x.kind != t.kind && !ambig) { ambig = true; SemErr(ErrorId.p_ambiguous_bitop, t, "Ambiguous use of &, |, ^. Use parentheses to disambiguate."); }
                                                             x = t; .)
-      AsExpression<out e1, allowLemma, allowLambda, allowBitwiseOps> (. startToken = e0.StartToken; e0 = new BinaryExpr(new SourceOrigin(startToken, t, x), op, e0, e1); .)
+      AsExpression<out e1, allowLemma, allowLambda, allowBitwiseOps> (. startToken = e0.StartToken; e0 = SourceBinary(new SourceOrigin(startToken, t, x), op, e0, e1); .)
     }
   ]
   .
@@ -3700,7 +3703,7 @@ AsExpression<out Expression e, bool allowLemma, bool allowLambda, bool allowBitw
 UnaryExpression<out Expression e, bool allowLemma, bool allowLambda, bool allowBitwiseOps>
 = (. Contract.Ensures(Contract.ValueAtReturn(out e) != null); Token/*!*/ x;  e = dummyExpr; .)
   ( "-"                                             (. x = t; .)
-    UnaryExpression<out e, allowLemma, allowLambda, allowBitwiseOps>  (. e = new NegationExpression(new SourceOrigin(x, t, x), e); .)
+    UnaryExpression<out e, allowLemma, allowLambda, allowBitwiseOps>  (. e = SourceNegation(new SourceOrigin(x, t, x), e); .)
   | NegOp                                           (. x = t; .)
     UnaryExpression<out e, allowLemma, allowLambda, allowBitwiseOps>  (. e = new UnaryOpExpr(new SourceOrigin(x, t, x), UnaryOpExpr.Opcode.Not, e); .)
   | PrimaryExpression<out e, allowLemma, allowLambda, allowBitwiseOps>

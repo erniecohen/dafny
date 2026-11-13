@@ -42,6 +42,8 @@ namespace Microsoft.Dafny {
     public ModuleSignature moduleInfo = null;
 
     public ErrorReporter Reporter => reporter;
+    private HashSet<TopLevelDecl> operatorOwnersValidated;
+    internal HashSet<TopLevelDecl> OperatorOwnersValidated => operatorOwnersValidated ??= new();
     public Scope<IVariable> Scope => scope;
 
     public List<TypeConstraint.ErrorMsg> TypeConstraintErrorsToBeReported { get; } = [];
@@ -659,7 +661,7 @@ namespace Microsoft.Dafny {
         }
 
         var scope = exportDecl.Signature.VisibilityScope;
-        Cloner cloner = new ScopeCloner(scope);
+        Cloner cloner = new ScopeCloner(scope, SystemModuleManager.SystemModule);
         var exportView = cloner.CloneModuleDefinition(m, m.EnclosingModule, m.NameNode);
         if (Options.DafnyPrintExportedViews.Contains(exportDecl.FullName)) {
           var wr = new StringWriter();
@@ -937,6 +939,10 @@ namespace Microsoft.Dafny {
       Contract.Requires(origin != null);
       Contract.Requires(name != null);
       Contract.Requires(moduleSignatures != null);
+      if (Options.Get(CommonOptionBag.UserDefinedOperators) && OperatorResolution.FeatureBearing(origin.ModuleDef)) {
+        reporter.Error(MessageSource.Resolver, "operator_abstract_import", origin.ModuleDef.Origin,
+          "user-defined operators do not support feature-bearing abstract-signature imports in this milestone");
+      }
       var errCount = reporter.Count(ErrorLevel.Error);
 
       var module = new ModuleDefinition(SourceOrigin.NoToken, new Name(name + ".Abs"), [], ModuleKindEnum.Abstract, true, null, null, null);
@@ -1000,7 +1006,7 @@ namespace Microsoft.Dafny {
         };
         return result;
       } else {
-        return new AbstractSignatureCloner(scope).CloneDeclaration(d, newParent);
+        return new AbstractSignatureCloner(scope, SystemModuleManager.SystemModule).CloneDeclaration(d, newParent);
       }
     }
 
@@ -2339,16 +2345,22 @@ namespace Microsoft.Dafny {
             if (cl.EnclosingModuleDefinition == trait.EnclosingModuleDefinition ||
                 trait.IsObjectTrait ||
                 (Attributes.ContainsBool(trait.Attributes, "termination", ref termination) && !termination) ||
-                Attributes.Contains(cl.Attributes, "AssumeCrossModuleTermination")) {
+                (!Options.Get(CommonOptionBag.ModularTermination) && Attributes.Contains(cl.Attributes, "AssumeCrossModuleTermination"))) {
               // all is good (or the user takes responsibility for the lack of termination checking)
               if (!cl.ParentTraitHeads.Contains(trait)) {
                 cl.ParentTraitHeads.Add(trait);
                 parentRelation.AddEdge(cl, trait);
               }
             } else {
-              reporter.Error(MessageSource.Resolver, parentTypeToken,
-                $"{cl.WhatKind} '{cl.Name}' is in a different module than trait '{trait.FullName}'. A {cl.WhatKind} may only extend a trait " +
-                $"in the same module, unless the parent trait is annotated with {{:termination false}} or the {cl.WhatKind} with @AssumeCrossModuleTermination.");
+              if (Options.Get(CommonOptionBag.ModularTermination)) {
+                reporter.Error(MessageSource.Resolver, parentTypeToken,
+                  $"modular termination: {cl.WhatKind} '{cl.Name}' cannot extend sealed trait '{trait.FullName}' from another module; " +
+                  "the defining trait must declare {:termination false}; @AssumeCrossModuleTermination cannot override sealing");
+              } else {
+                reporter.Error(MessageSource.Resolver, parentTypeToken,
+                  $"{cl.WhatKind} '{cl.Name}' is in a different module than trait '{trait.FullName}'. A {cl.WhatKind} may only extend a trait " +
+                  $"in the same module, unless the parent trait is annotated with {{:termination false}} or the {cl.WhatKind} with @AssumeCrossModuleTermination.");
+              }
             }
 
             if (cl is TraitDecl td) {
@@ -2686,7 +2698,9 @@ namespace Microsoft.Dafny {
           // The class is not allowed to do anything with the field other than silently inherit it.
           reporter.Error(MessageSource.Resolver, member.Origin,
             $"{baseMember.WhatKindAndName} is inherited from {baseType.WhatKindAndName} and is not allowed to be re-declared");
-        } else if ((baseMember as Function)?.Body != null || (baseMember as Constructor)?.Body != null) {
+        } else if ((baseMember as Function)?.Body != null || (baseMember as Constructor)?.Body != null ||
+                   (Options.Get(CommonOptionBag.ModularTermination) && baseMember is Function &&
+                    baseMember.TerminationContract is { IsDispatchSlot: false })) {
           // the overridden member is a fully defined function or method, so the class is not allowed to do anything with it other than silently inherit it
           reporter.Error(MessageSource.Resolver, member.Origin,
             $"fully defined {baseMember.WhatKindAndName} is inherited from {baseType.WhatKindAndName} and is not allowed to be re-declared");
