@@ -1475,7 +1475,7 @@ Std Std.JSON.ZeroCopy.Deserializer.Sequences.Bracketed (well-formedness)	Correct
 Std Std.JSON.ZeroCopy.Deserializer.Sequences.BracketedFromParts (well-formedness)	Correct		
 Std Std.JSON.ZeroCopy.Deserializer.Sequences.BracketedSpec (well-formedness)	Correct		
 Std Std.JSON.ZeroCopy.Deserializer.Sequences.Close (well-formedness)	Correct		
-Std Std.JSON.ZeroCopy.Deserializer.Sequences.Elements (well-formedness)	OutOfResource		
+Std Std.JSON.ZeroCopy.Deserializer.Sequences.Elements (well-formedness)	Correct		
 Std Std.JSON.ZeroCopy.Deserializer.Sequences.Open (well-formedness)	Correct		
 Std Std.JSON.ZeroCopy.Deserializer.Sequences.SEPARATOR (well-formedness)	Correct		
 Std Std.JSON.ZeroCopy.Deserializer.Sequences.SuffixedElementsSpec (well-formedness)	Correct		
@@ -2193,7 +2193,7 @@ TargetSpecific-py Std.FileIO.WriteUTF8ToFile (correctness)	Correct
 TargetSpecific-py Std.JavaCsActionsExterns.MakeSetReader (correctness)	Correct		
 TargetSpecific-py Std.JavaCsActionsExterns.MakeSetReader (well-formedness)	Correct		
 TargetSpecific-py Std.PythonConcurrent.MutableMap.Get (well-formedness)	Correct		
-run Std	4	7705 verified, 2 errors, 9 out of resource	src/Std/Arithmetic/DivMod.dfy(879,8) src/Std/Arithmetic/DivMod.dfy(922,8) src/Std/Arithmetic/LittleEndianNat.dfy(50,30) src/Std/Arithmetic/Mul.dfy(154,22) src/Std/Collections/Seq.dfy(1042,8) src/Std/JSON/ZeroCopy/Deserializer.dfy(387,16) src/Std/JSON/ZeroCopy/Deserializer.dfy(998,59) src/Std/Termination.dfy(125,17) src/Std/Termination.dfy(134,17) src/Std/Unicode/UnicodeEncodingForm.dfy(133,11) src/Std/Unicode/UnicodeStringsWithUnicodeChar.dfy(30,4)
+run Std	4	7692 verified, 2 errors, 8 out of resource	src/Std/Arithmetic/DivMod.dfy(879,8) src/Std/Arithmetic/DivMod.dfy(922,8) src/Std/Arithmetic/LittleEndianNat.dfy(50,30) src/Std/Arithmetic/Mul.dfy(154,22) src/Std/Collections/Seq.dfy(1042,8) src/Std/JSON/ZeroCopy/Deserializer.dfy(999,59) src/Std/Termination.dfy(125,17) src/Std/Termination.dfy(134,17) src/Std/Unicode/UnicodeEncodingForm.dfy(133,11) src/Std/Unicode/UnicodeStringsWithUnicodeChar.dfy(30,4)
 run TargetSpecific-cs	0	15 verified, 0 errors	
 run TargetSpecific-go	0	16 verified, 0 errors	
 run TargetSpecific-java	0	15 verified, 0 errors	
