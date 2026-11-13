@@ -398,11 +398,16 @@ git-issues/git-issue-193-reference-laws.dfy
 # Distinct opaque nullable and non-null type constructors (https://github.com/erniecohen/dafny/issues/268).
 git-issues/github-issue-268.dfy
 
+# Persistent per-task solver replay (https://github.com/erniecohen/dafny/issues/241).
+git-issues/git-issue-241-verification-cache.dfy
 # Default dependency-local translation (https://github.com/erniecohen/dafny/issues/241).
 git-issues/git-issue-241-history-free-translation.dfy
+git-issues/github-issue-241-translation-cache.dfy
+
 
 # Source-only opt-in function operators, clone preservation and negative controls (https://github.com/erniecohen/dafny/issues/194).
 git-issues/github-issue-194.dfy
+git-issues/git-issue-241-verification-cache-requires-refresh.dfy
 
 # Library serialization preserves refinement syntax (https://github.com/erniecohen/dafny/issues/280).
 git-issues/git-issue-280.dfy
@@ -419,6 +424,7 @@ git-issues/git-issue-308.dfy
 git-issues/git-issue-311.dfy
 
 # Parallel operator-export builtin ownership and visibility negatives are in git-issues/github-issue-241-parallel-resolution.dfy.
+git-issues/git-issue-241-translation-cache-requires-refresh.dfy
 
 # Historical identity scoping (https://github.com/erniecohen/dafny/issues/293):
 # Python regression controls: .github/review/test_milestone_identity.py, run by Build.

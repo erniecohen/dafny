@@ -21,7 +21,7 @@ public class HistoryFreeTranslationTests {
     Assert.Equal(literal.GetContentHash(true), literal.GetContentHash(options.DeterministicLiteralHashes));
   }
 
-  private const string Units = """
+  internal const string Units = """
     module Dependency {
       datatype D = A | B(x: int)
       function F(x: int): int { x + 1 }
@@ -107,7 +107,7 @@ public class HistoryFreeTranslationTests {
     Assert.Equal(expected, await CaptureCommands(after));
   }
 
-  private static async Task<string[]> CaptureCommands(Program program) {
+  internal static async Task<string[]> CaptureCommands(Program program, Microsoft.Boogie.Program? suppliedGraph = null) {
     var options = program.Options;
     options.VcsCores = 1;
     options.RestartProverPerVC = true;
@@ -117,7 +117,7 @@ public class HistoryFreeTranslationTests {
     options.CreateSolver = (_, _) => new CommandCapture(commands);
     using var engine = new ExecutionEngine(options, new EmptyVerificationResultCache(), TaskScheduler.Default);
     var module = program.RawModules().Single(m => m.Name == "Client");
-    var graph = new BoogieGenerator(program.Reporter, new ProofDependencyManager(), new(options)).DoTranslation(program, module);
+    var graph = suppliedGraph ?? new BoogieGenerator(program.Reporter, new ProofDependencyManager(), new(options)).DoTranslation(program, module);
     var tasks = await engine.GetVerificationTasks(graph, default);
     Assert.NotEmpty(tasks);
     foreach (var task in tasks) { await task.TryRun()!.LastAsync(); }

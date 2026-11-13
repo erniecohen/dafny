@@ -70,6 +70,8 @@ public static class VerifyCommand {
   private static IReadOnlyList<Option> VerifyOptions =>
     new Option[] {
         PerformanceStatisticsOption,
+        CommonOptionBag.VerificationCache,
+        CommonOptionBag.TranslationCache,
         FilterSymbol,
         FilterPosition,
         FilterPositionBatch,
@@ -82,6 +84,7 @@ public static class VerifyCommand {
 
   public static async Task<int> HandleVerification(DafnyOptions options) {
     var batch = options.GetOrOptionDefault(FilterPositionBatch).ToArray();
+    options.VerificationCacheBatchMode = batch.Length != 0;
     if (batch.Length != 0 && options.Get(FilterPosition) != null) {
       ErrorReporter reporter = options.DiagnosticsFormat switch {
         DafnyOptions.DiagnosticsFormats.PlainText => new ConsoleErrorReporter(options),
@@ -124,6 +127,13 @@ public static class VerifyCommand {
     }
 
     var exitCode = await compilation.GetAndReportExitCode();
+    if (Caching.TaskCacheSession.TryFor(options) is { } cache) {
+      PipelineProfile.For(options)?.Point("result-cache", new Dictionary<string, object?> {
+        ["solverStarts"] = cache.SolverStarts, ["solverVersionProbes"] = options.VerificationCacheVersionProbes, ["hits"] = cache.Hits,
+        ["publications"] = cache.Publications, ["fallbacks"] = cache.Fallbacks, ["conflicts"] = cache.Conflicts,
+        ["bypassReason"] = cache.LastBypassReason
+      });
+    }
     PipelineProfile.For(options)?.Finish("verify");
     return exitCode;
   }

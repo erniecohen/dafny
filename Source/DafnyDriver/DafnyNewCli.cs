@@ -146,6 +146,20 @@ public static class DafnyNewCli {
         }
       }
 
+      if (dafnyOptions.Get(CommonOptionBag.VerificationCache) != null &&
+          !dafnyOptions.Get(CommonOptionBag.TypeSystemRefresh)) {
+        await dafnyOptions.OutputWriter.Status("Error: --verification-cache requires --type-system-refresh");
+        context.ExitCode = (int)ExitValue.DAFNY_ERROR;
+        return;
+      }
+
+      if (dafnyOptions.Get(CommonOptionBag.TranslationCache) &&
+          !dafnyOptions.Get(CommonOptionBag.TypeSystemRefresh)) {
+        await dafnyOptions.OutputWriter.Status("Error: --translation-cache requires --type-system-refresh");
+        context.ExitCode = (int)ExitValue.DAFNY_ERROR;
+        return;
+      }
+
       dafnyOptions.ApplyDefaultOptionsWithoutSettingsDefault();
       dafnyOptions.UsingNewCli = true;
 
