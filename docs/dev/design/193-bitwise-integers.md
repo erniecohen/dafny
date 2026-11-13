@@ -6,7 +6,8 @@ This is a design deliverable and executable evidence, not a production implement
 
 **Source reviewed:** `review/4.11.0` at
 [`428e348b0b125cb67505f03a0026b3f497f98e48`](https://github.com/erniecohen/dafny/tree/428e348b0b125cb67505f03a0026b3f497f98e48).
-Paths and symbols below refer to that immutable tree. The binding policies are
+Unless explicitly updated in sections 5, 9.3 and 12 for the 2026-11-13 review,
+paths and symbols below refer to that immutable tree. The binding policies are
 `AGENTS.md`, `REVIEW.md`, and `docs/dev/additional-axioms.md` there. The preceding
 design is [PR 247 at a61b06c7](https://github.com/erniecohen/dafny/tree/a61b06c71d742ff19b280592d26d1a0e2ce9c87c).
 
@@ -511,6 +512,41 @@ none of those maps or guards. Test their actual interaction, including the
 separate `--heap-free-lambda-facts` option, as well as retaining #97's own
 negative/capture/old-heap fixtures. A bit-only test with the shared switch on
 cannot demonstrate an interaction with an uninstantiated lambda fact.
+
+**Backend qualification, updated 2026-11-13:**
+[issue 284](https://github.com/erniecohen/dafny/issues/284) is open. Its
+[owner decision](https://github.com/erniecohen/dafny/issues/284#issuecomment-6841746281)
+accepts two independent inconsistencies in the pinned erased theory as defects:
+raw character bounds make the common erased carrier finite despite an integer
+injection, and decoded-Boolean map extensionality together with erased
+read-over-write makes that carrier have at most two values. The approved
+character and canonical-map repairs are not in the integrated baseline
+`26a2c2d8e6cba1733f6baea494bb4db55bed24e8`. Their work is tracked in
+[Dafny PR 290](https://github.com/erniecohen/dafny/pull/290) and
+[Boogie PR 8](https://github.com/erniecohen/boogie/pull/8). These are semantic
+contradictions, not a claim that this design reproduced a falsely accepted
+Dafny program.
+
+Keep three claims separate:
+
+- **Intended semantics:** the total integer/reference and native-BV model above
+  justifies the ten guarded schemata mathematically.
+- **Emitted theory:** production acceptance must inspect actual definition and
+  bridge formulas together with Boogie's erasure and generated support axioms,
+  including map support and the complete counterexample formula (negated VC).
+  Adding no bridge quantifier does not repair existing encoder-generated axioms.
+- **Solver observations:** finite-slice SAT, resource-bounded false-control
+  rejection and corpus verdicts describe the queried contexts. They cannot
+  supply a model of the known inconsistent full erased theory.
+
+M2/M3 must identify exact Dafny and Boogie revisions containing the approved
+repairs before presenting evidence as applying to a repaired backend. If that
+baseline is unavailable, report the unresolved backend qualification explicitly;
+no unconditional production soundness acceptance follows. Even after both local
+repairs, issue 284's whole-theory countermodel/closure obligation for the joint
+collection, boxing, handle and comprehension theories remains open unless
+separately discharged or resolved by an approved encoding decision. Historical
+probes below retain their original pins and are not evidence for repaired output.
 
 ### Executable checks and guard counterexamples
 
@@ -1224,6 +1260,15 @@ full Dafny fixture and included in the general model argument, not silently
 replaced by a quantifier-free lambda abstraction and called fully checked.
 A production change still must replace every harness assumption by an actual
 emitted fact and rerun these controls; no production fact is approved here.
+In particular, [issue 284](https://github.com/erniecohen/dafny/issues/284) changes
+the status of the full erased baseline from merely unestablished to known
+inconsistent (section 5). Finite new-fact SAT and operational rejection remain
+separate observations and cannot discharge that defect. M2/M3 must retain the
+actual emitted formulas and erasure/support axioms, name the exact repaired
+Dafny/Boogie baseline or explicitly retain the unresolved backend qualification,
+and account for the remaining whole-theory closure obligation after local
+repairs. Neither the original nor round-2 results are relabelled or repinned by
+this update.
 
 The round-2 public report records exact pin, source hashes, per-VC outcomes and
 RU, both resolvers and both solvers. Keep 200,000 RU as the acceptance ceiling
@@ -1597,6 +1642,54 @@ regression drivers under the normal `git-issues/` test directory, with separate
 positive, negative and control inputs. No production milestone is completed by
 this design PR.
 
+**M1 shipped; M2 handoff.** The ordinary reference library shipped in
+[PR 276](https://github.com/erniecohen/dafny/pull/276) at
+[`25203d9115f8f104b325c8a058bf41051bdbbe69`](https://github.com/erniecohen/dafny/commit/25203d9115f8f104b325c8a058bf41051bdbbe69).
+Its explicitly included source is under
+[`Source/DafnyStandardLibraries/optional/`](https://github.com/erniecohen/dafny/tree/25203d9115f8f104b325c8a058bf41051bdbbe69/Source/DafnyStandardLibraries/optional):
+`IntegerBitwise.dfy` contains the core references and proofs, and
+`IntegerBitwiseDigits.dfy` the separate base-two adapter. This is outside the
+packaged source library. It implements no language option, compiler-owned
+unfolding or new solver facts. The
+[acceptance run](https://github.com/erniecohen/dafny/actions/runs/43149784234)
+retains four solver/resolver configurations, 116 checks / 4,704 logged scopes,
+936 intended false-control rejections, and positive/control ceilings of
+2,000,000 / 200,000 RU per scope. These are historical M1 acceptance quantities,
+not reruns or whole-erased-theory consistency evidence.
+
+M2 reuses M1's exact `P`, `norm`, `bitsNat`, `value`, Boolean, shift, rotation,
+`popNat` and `bit` definitions as its semantic specification; `BitsValue`,
+`ValueBits`, `AndView`, `NotView`, `BooleanBits`, `ShiftViews`, `RotationViews`
+and `PopulationView` supply the existing correspondence laws. Keep the digit
+adapter separate. M2 must provide a symbol/argument/domain mapping from those
+source definitions to the private compiler signatures, inspect each emitted
+one-step equation against the mapped body, and independently prove agreement
+with the ordinary references by the terminating recurrences (including negative
+integer arguments, width zero and count endpoints). Run the existing laws,
+clients and live controls through that mapped interface, using raw signatures
+with candidate consumer contracts unavailable during foundation checking. Source
+name matching or unchanged harness assumptions do not establish emitter
+correspondence; compiler identity and visibility checks remain separate gates.
+
+**Historical identity and standing proofs:** M1's introduction claim is the
+shipped revision `25203d9115f8f104b325c8a058bf41051bdbbe69` versus its parent
+`bb521a9522ec584d4b0069a8e80ba9e48291dee4`. Do not move that recorded baseline
+to accommodate later compiler changes.
+[PR 295](https://github.com/erniecohen/dafny/pull/295), still proposed as of
+2026-11-13, scopes that historical audit to manual dispatch and PRs touching
+its own sources, fixtures or audit tools. It keeps all four standing M1 proof,
+width-client and live-control jobs active on later compiler changes. It does
+not relax proof/resource/control gates or replace each new product milestone's
+B0/S4 comparison with its own predecessor. This design describes that proposal;
+it does not claim the changed gate has shipped.
+
+**M2/M3 backend dependency:** apply section 5 and section 9.3's issue-284
+qualification to definition unfolding and both bridge-emitter milestones. Name
+the exact repaired Dafny/Boogie baseline and inspect the actual erasure/support
+axioms; finite-slice SAT and live controls remain necessary, but do not close
+the whole-theory obligation. Until then report results as backend-qualified,
+without unconditional production soundness acceptance.
+
 **B0 (both options OFF identity):** compare the pre-existing input corpus against
 a build without the feature: byte-identical Boogie, unchanged verdicts and
 controlled RU, and unchanged relevant parsing/resolution diagnostics. Construct
@@ -1627,10 +1720,10 @@ separate reported outcomes. Runtime comparisons supplement these logical control
 | Milestone and named regression | Vacuity/control requirement | Both-OFF identity | Suite/Std comparison |
 |---|---|---|---|
 | **M0: design/evidence.** `193-design-evidence`: reproduce the models, exact proof inventory, query profiles and ground witnesses; review the fixed definitions and ten-fact inventory. | Current concrete controls, all-ten/#97 context and A+1 sensitivity; preserve historical failures and unknown reasons. Production-emitter correspondence remains pending. | Capture B0 baseline; documentation-only product-tree identity. | Capture available S4 baselines; no claim of an implemented-feature delta. |
-| **M1: pure mathematical library.** `193-reference-laws`: ordinary definitions, full sequence/value bijections, pointwise laws, base-two adapter, and the ten client lemmas in section 10.1. Verify every body independently. | `193-reference-live-false`: inhabited calls to proved laws followed by false and wrong-value assertions; include zero width and leading zeros. No new axioms or skipped proofs. | B0 on old inputs; new pure proofs run with both features OFF. | S4 for available modes; record unavailable language modes for M2, and report new library construction costs separately. |
-| **M2: fixed references/unfolding.** `193-reference-emission` and `193-bootstrap`: conditional UF signatures, exact finite unfold rules, proper builtin construction, raw-signature range proofs, then consumer contracts; options and DOO reload. | `193-unfold-live-false` plus actual definition-slice SAT and mutations. Test source/DOO spoofing, duplicate custom-prelude symbols, branch guards and noncircular range proofs. | B0 including no new declarations/bindings on the old path. | Complete S4 before accepting this product change; measure reference availability and unfolding separately from BV bridges. |
-| **M3a: arithmetic observation emitter.** `193-arithmetic-emission`: +/−/×/division/remainder/order, raw/composed forms, guards, scalar context and excluded operands. | `193-arithmetic-live-false`: each actual emitted fact, cumulative conjunction, wrong results, nonzero guards, complete emitted-slice SAT and mutations; real #97 interaction. | B0; retain pure-BV emission identity where no integer observation is eligible. | S4 against the predecessor with all older shared families active; list every moved row. |
-| **M3b: Boolean/shift emitter and adapters.** `193-boolean-shift-emission`: A/C/L/R and checked OR/XOR/ANDNOT/bit/rotation adapters; every pure/native helper is an explicit proof input. | `193-boolean-shift-live-false`: raw/composed and derived summaries, all-ten/#97 conjunction, actual emitted-slice SAT; counts 0/N and invalid counts. Retain #147 value, bound and emission controls. | B0; pure native helpers receive no unsolicited mixed facts. | S4; redo the complete minimal-basis client/support table with actual emission and cumulative M3a facts. |
+| **M1: shipped pure mathematical library (PR 276, `25203d91`).** `193-reference-laws`: ordinary definitions, full sequence/value bijections, pointwise laws, base-two adapter, and the ten client lemmas in section 10.1. Verify every body independently. | `193-reference-live-false`: inhabited calls to proved laws followed by false and wrong-value assertions; include zero width and leading zeros. No new axioms or skipped proofs. | B0 on old inputs; new pure proofs run with both features OFF. | S4 for available modes; record unavailable language modes for M2, and report new library construction costs separately. |
+| **M2: fixed references/unfolding; issue-284 qualification above.** `193-reference-emission` and `193-bootstrap`: conditional UF signatures, exact finite unfold rules, proper builtin construction, raw-signature range proofs, then consumer contracts; options and DOO reload. | `193-unfold-live-false` plus actual definition-slice SAT and mutations. Test source/DOO spoofing, duplicate custom-prelude symbols, branch guards and noncircular range proofs. | B0 including no new declarations/bindings on the old path. | Complete S4 before accepting this product change; measure reference availability and unfolding separately from BV bridges. |
+| **M3a: arithmetic observation emitter; issue-284 qualification above.** `193-arithmetic-emission`: +/−/×/division/remainder/order, raw/composed forms, guards, scalar context and excluded operands. | `193-arithmetic-live-false`: each actual emitted fact, cumulative conjunction, wrong results, nonzero guards, complete emitted-slice SAT and mutations; real #97 interaction. | B0; retain pure-BV emission identity where no integer observation is eligible. | S4 against the predecessor with all older shared families active; list every moved row. |
+| **M3b: Boolean/shift emitter and adapters; issue-284 qualification above.** `193-boolean-shift-emission`: A/C/L/R and checked OR/XOR/ANDNOT/bit/rotation adapters; every pure/native helper is an explicit proof input. | `193-boolean-shift-live-false`: raw/composed and derived summaries, all-ten/#97 conjunction, actual emitted-slice SAT; counts 0/N and invalid counts. Retain #147 value, bound and emission controls. | B0; pure native helpers receive no unsolicited mixed facts. | S4; redo the complete minimal-basis client/support table with actual emission and cumulative M3a facts. |
 | **M4: integer frontend/verifier.** `193-newtype-operators`: semantic width, both resolvers, constant folding and direct reference lowering; full/strict predicates, aliases, exports, refinements, caches and recorded library modes. | `193-source-live-false`: actual source operators and unfold/library facts active; reject false subtype membership, bad casts/counts and wrong values. Retain V2–V3. | B0 including formerly inert attributes, diagnostics and incremental invalidation. | S4 including the newtype client corpus; no reference-only proxy for actual source syntax. |
 | **M5a: common generator/C#.** `193-runtime-csharp`: native and BigInteger execution, small-width exhaustive and boundary inputs, exact semantic masks, count endpoints and single evaluation; inspect generated code. | Retain V2–V4; execute an independent reference oracle. No runtime BV/sequence detour. | B0 for old generated code and verifier output. | S4; separate verifier cost from target build/execution results. |
 | **M5b: Java.** `193-runtime-java`: promoted byte/short signs, logical right shift, host count masking, native and BigInteger paths. | Retain V2–V4; generated and executed reference comparisons, especially counts 0/N. | B0, including old Java output. | S4 plus Java target comparisons. |
@@ -1695,6 +1788,7 @@ These findings review a proposal, not an implemented language feature.
 | P0 | Incorrect divisor/count/cast handling, binder escape, heap mismatch or invented call permission can make a local fact false. | Exact schemata, guarded composition, explicit scalar context and actual-emission correspondence. The Python model documents which guards concern truth, source definedness or nonminimal policy. |
 | P0 | Full-interval closure does not imply an arbitrary newtype predicate, and carrier fit does not establish rotation meaning. | Preserve every result-membership obligation, including special operations. Section 12.1 gives a fitting-input/fitting-result counterexample to rotating at the carrier width. |
 | P1 | The old reference-transparent false controls exhaust; ordinary Errors/Invalid can still conceal raw solver unknown. | Diagnosis and the two-part control method are concrete: operational rejection plus genuine finite-slice SAT and mathematical extension. Full unsliced-prelude SAT is not established. Production controls must use actual emitted instances. |
+| P1 | Issue 284 establishes two contradictions in the historical erased backend. | Sections 5/9.3 and M2/M3 require exact repaired Dafny/Boogie pins or an explicit unresolved backend qualification; local repairs do not close the whole-theory obligation. Historical SAT/control observations stay pinned. |
 | P1 | Minimal-basis library construction is much dearer than calling its checked contracts. | Measured, not hidden: integer-input clients cost at most 66,537 RU, but native variable-count rotation support exceeds 16 million RU per width-64 helper. All selected bodies verify; unsplit caller failures remain explicit. |
 | P1 | The new fixed-reference mechanism and the real collector have not been implemented or measured. | Current projections establish conditional derivations and costs. M2/M3 still need their own live controls, identity and complete S4 comparisons. No prototype result waives these gates. |
 | P1 | Existing wide JavaScript helpers have publicly reproduced wrong results (#246). | Repair or bypass before using them; test compiled source as well as direct helpers. Other backends retain promotion, count, minimum-version and unsupported-target gates. |
@@ -1703,13 +1797,14 @@ These findings review a proposal, not an implemented language feature.
 | P2 | Direct facts for derived operations enlarge the trusted interface. | No demonstrated accelerator need in the shaped clients. Apply the explicit client/project thresholds and all soundness/compatibility gates before adding one. |
 | P2 | Signed/unbounded semantics, arbitrary width inference and automatic binder harvesting would expand the design substantially. | Deferred; total reference functions and explicit scalar lemmas do not silently enable those language features. |
 
-The definitions, models, exact conditional derivations and reference-ownership
-decision are settled enough to start M1. That frees pure mathematical library
-work from frontend/backend implementation and from adding solver facts. The
-remaining release risks are concrete integration obligations: definition
-unfolding, scope and visibility, emitted facts, proof costs and target arithmetic.
-The accepted architecture permits the focused milestones; it does not certify
-unimplemented gates or turn historical exhausted controls into passes.
+M1 has shipped as the optional ordinary-source library in PR 276; section 12
+records its immutable acceptance and M2 handoff. The reference-ownership decision
+and mathematical arguments guide the remaining milestones. M2/M3 still require
+checked correspondence with compiler-owned definitions and actual emission,
+scope and visibility checks, proof costs, and issue 284's explicit backend
+qualification. Target arithmetic remains a separate implementation obligation.
+The accepted architecture does not certify unimplemented gates, establish
+whole-erased-theory consistency or turn historical exhausted controls into passes.
 
 ## 14. Required outward documentation
 
