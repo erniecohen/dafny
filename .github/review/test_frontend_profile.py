@@ -125,5 +125,27 @@ class PhaseBoundaryTests(unittest.TestCase):
         self.assertLess(method.index('if (profile == null)'), method.index('new Dictionary'))
 
 
+class GraphIdentityTests(unittest.TestCase):
+    def check(self, ids):
+        events = [{'ev': 'manifest'}, {'ev': 'moduleGraph', 'nodes': [
+            {'id': i, 'module': str(i), 'kind': 'import', 'library': False} for i in range(2)], 'edges': []}]
+        events += [{'ev': 'fe', 'stage': 'resolve.module', 'id': i, 'module': str(i), 'kind': 'import',
+                    'start': 0, 'end': 1, 'threadAllocBytes': 0, 'threadCpuMs': 0, 'gcPauseMs': 0}
+                   for i in ids]
+        output = io.StringIO()
+        with patch.object(frontend, 'load_events', return_value=events), contextlib.redirect_stdout(output):
+            result = frontend.cmd_check(argparse.Namespace(profile='unused'))
+        return result, output.getvalue()
+
+    def test_completion_order_is_not_graph_order(self):
+        result, output = self.check([1, 0])
+        self.assertEqual(0, result)
+        self.assertIn('match graph ids: True', output)
+
+    def test_missing_and_duplicate_observations_fail(self):
+        self.assertEqual(1, self.check([0])[0])
+        self.assertEqual(1, self.check([0, 1, 1])[0])
+
+
 if __name__ == '__main__':
     unittest.main()

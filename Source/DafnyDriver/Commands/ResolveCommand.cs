@@ -6,18 +6,10 @@ namespace Microsoft.Dafny;
 
 static class ResolveCommand {
 
-  /// <summary>The front-end profile (#241) also applies to resolution alone.</summary>
-  private static readonly Option[] ProfileOptions = [
-    CommonOptionBag.PipelineProfile,
-    CommonOptionBag.PipelineProfileHeap,
-    CommonOptionBag.PipelineProfileGcEvents,
-    CommonOptionBag.PipelineProfileHold
-  ];
-
   public static Command Create() {
     var result = new Command("resolve", "Only check for parse and type resolution errors.");
     result.AddArgument(DafnyCommands.FilesArgument);
-    foreach (var option in DafnyCommands.ConsoleOutputOptions.Concat(DafnyCommands.ResolverOptions).Concat(ProfileOptions)) {
+    foreach (var option in DafnyCommands.ConsoleOutputOptions.Concat(DafnyCommands.ResolverOptions)) {
       result.AddOption(option);
     }
     DafnyNewCli.SetHandlerUsingDafnyOptionsContinuation(result, async (options, _) => {

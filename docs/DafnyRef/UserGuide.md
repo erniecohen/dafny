@@ -2180,6 +2180,15 @@ in the neighborhood of the error; the error location (file, line, column) is alw
   from the runtime's GC events; and `--pipeline-profile-hold <directory>` waits at
   each of those heap points for a driver to take a heap dump. The driver
   `.github/review/frontend-profile.py` runs and analyzes these measurements.
+  Module resolution events are measured on the worker performing the resolution
+  or cache lookup, at both zero and positive `--resolution-threads`. Their `id`
+  refers to canonical graph order; the events themselves arrive in worker
+  completion order. `cached: true` reports reuse without replaying the original
+  phases. `status` distinguishes completed lookup/resolution (including diagnostic
+  errors), cancellation and failure; interrupted lookups have `cached: null`.
+  Thread-local phases are cleared after every attempt. Simultaneous workers'
+  wall intervals overlap, so the driver's serial global-work subtraction and
+  ideal parallel bound are omitted for profiles with positive resolution threads.
 
 * `--log-format <configuration>` - [verification only] (was `-verificationLogger:<configuration string>`)
   log verification

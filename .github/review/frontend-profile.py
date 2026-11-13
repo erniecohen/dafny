@@ -188,7 +188,8 @@ def reduce_profile(events):
                 modules.append({'id': e['id'], 'module': e['module'], 'kind': e['kind'],
                                 'library': int(bool(library.get(e['id']))), 'wall_ms': e['end'] - e['start'],
                                 'cpu_ms': e.get('threadCpuMs'), 'alloc_bytes': e['threadAllocBytes'],
-                                'gc_pause_ms': e['gcPauseMs'], 'refresh': int(bool(e.get('typeSystemRefresh')))})
+                                'gc_pause_ms': e['gcPauseMs'], 'refresh': int(bool(e.get('typeSystemRefresh'))),
+                                'cached': e.get('cached'), 'status': e.get('status', 'completed')})
                 for p in e.get('phases') or []:
                     names.append('phase:' + p['phase'])
                     s = stages['phase:' + p['phase']]
@@ -689,6 +690,11 @@ def analyze_graphs(a, dirs, corpus, modules, per, p, rng):
         graphs += [json.loads(g.read_text()) for g in Path(d).rglob(f'graphs/{corpus}__*.json')]
     if not graphs:
         return
+    if any(g.get('manifest', {}).get('resolutionThreads', 0) > 0 for g in graphs):
+        p('Module events overlap under `--resolution-threads`. The serial subtraction '
+          '`R_global = span:resolve - Σ module wall time` and its ideal parallel bound are not '
+          'reported for these profiles.\n')
+        return
     for config in sorted({m['config'] for m in modules if m['corpus'] == corpus}):
         _, _, prof = parse_config(config)
         if prof == 'gcev':
@@ -917,9 +923,13 @@ def cmd_check(a):
         for x, y in graph['edges']:
             out.append(f'  {names[x]} -> {names[y]}')
         mods = [e for e in fe if e['stage'] == 'resolve.module']
-        same = [(e['id'], e['module']) for e in mods] == [(n['id'], n['module']) for n in graph['nodes']]
-        out.append(f'resolve.module events follow the graph: {same}')
-        literal = next((e for e in mods if e['kind'] == 'module' and e.get('phases')), None)
+        # Event order is worker completion order. Canonical ids come from the graph;
+        # sorting still detects missing, duplicate or misidentified module events.
+        same = sorted((e['id'], e['module']) for e in mods) == sorted(
+            (n['id'], n['module']) for n in graph['nodes'])
+        out.append(f'resolve.module events match graph ids: {same}')
+        literal = next((e for e in sorted(mods, key=lambda e: e['id'])
+                        if e['kind'] == 'module' and e.get('phases')), None)
         if literal:
             out.append('phases of a module: ' + ', '.join(p['phase'] for p in literal['phases']))
     heap = [e for e in events if e['ev'] == 'heap']
@@ -934,7 +944,7 @@ def cmd_check(a):
     summary = [e for e in events if e['ev'] == 'summary']
     out.append(f"summary: {summary[-1]['reason'] if summary else None}")
     print('\n'.join(out))
-    return 0
+    return 0 if ok and (graph is None or same) else 1
 
 
 # ---------------------------------------------------------------------------- main

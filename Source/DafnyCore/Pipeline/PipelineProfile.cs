@@ -137,6 +137,7 @@ public sealed class PipelineProfile {
       ["gcLatencyMode"] = GCSettings.LatencyMode.ToString(),
       ["cores"] = options.VcsCores,
       ["typeSystemRefresh"] = options.Get(CommonOptionBag.TypeSystemRefresh),
+      ["resolutionThreads"] = options.Get(CommonOptionBag.ResolutionThreads),
       ["heap"] = heapMode,
       ["hold"] = holdDirectory != null,
       ["gcEvents"] = options.Get(CommonOptionBag.PipelineProfileGcEvents),
@@ -220,8 +221,8 @@ public sealed class PipelineProfile {
   /// <summary>
   /// Emit a front-end span ("fe") from <paramref name="start"/> to now on this thread: wall time, this
   /// thread's CPU time and allocated bytes, and the process's GC pause time and collections in the
-  /// interval.  The CPU time and allocation are this thread's alone, so they are exact for the
-  /// front end, which runs on one thread.
+  /// interval. CPU time and allocation belong to this worker alone; simultaneous workers'
+  /// events overlap in wall time, while GC deltas are process-wide.
   /// </summary>
   public void FrontEnd(string stage, ThreadMark start, IDictionary<string, object?>? fields = null) {
     var end = BeginThread();
@@ -281,6 +282,7 @@ public sealed class PipelineProfile {
   public List<object?>? ModulePhasesTake() {
     var result = modulePhases;
     modulePhases = null;
+    modulePhaseMark = default;
     return result;
   }
 

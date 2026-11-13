@@ -16,6 +16,15 @@
 // RUN: %resolve --show-snippets:false --use-basename-for-filename --pipeline-profile "%t.exports.jsonl" "%S/Inputs/github-issue-241-frontend-exports.dfy" > "%t.exports.on"
 // RUN: %diff "%t.exports.off" "%t.exports.on"
 // RUN: python3 "%repositoryRoot/.github/review/frontend-profile.py" check-phases "%t.exports.jsonl"
+// RUN: %resolve --resolution-threads 2 --show-snippets:false --use-basename-for-filename "%s" &> "%t.parallel.off"
+// RUN: %resolve --resolution-threads 2 --show-snippets:false --use-basename-for-filename --pipeline-profile "%t.parallel.jsonl" "%s" &> "%t.parallel.on"
+// RUN: %diff "%t.parallel.off" "%t.parallel.on"
+// RUN: python3 "%repositoryRoot/.github/review/frontend-profile.py" check "%t.resolve.jsonl" > "%t.resolve.digest"
+// RUN: python3 "%repositoryRoot/.github/review/frontend-profile.py" check "%t.parallel.jsonl" > "%t.parallel.digest"
+// RUN: %diff "%t.resolve.digest" "%t.parallel.digest"
+// RUN: %resolve --resolution-threads 2 --show-snippets:false --use-basename-for-filename --pipeline-profile "%t.exports.parallel.jsonl" "%S/Inputs/github-issue-241-frontend-exports.dfy" > "%t.exports.parallel.on"
+// RUN: %diff "%t.exports.off" "%t.exports.parallel.on"
+// RUN: python3 "%repositoryRoot/.github/review/frontend-profile.py" check-phases "%t.exports.parallel.jsonl"
 
 module A {
   function Sum(n: nat): nat { if n == 0 then 0 else n + Sum(n - 1) }

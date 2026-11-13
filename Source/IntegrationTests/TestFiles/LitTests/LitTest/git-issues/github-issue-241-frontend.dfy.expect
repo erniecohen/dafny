@@ -27,7 +27,7 @@ module graph: 7 nodes, 8 edges
   _module -> A
   _module -> B
   _module -> C
-resolve.module events follow the graph: True
+resolve.module events match graph ids: True
 phases of a module: preResolve, registrationAndExports, resolveSetup, signature, moduleAttributes, body, accessibleMembers, exportsAndIntermediate, isRecursive, decreases, postDecreasesResolve:RefinementTransformer, postDecreasesResolve:ExpandAtAttributes, postDecreasesResolve:AutoContractsRewriter, postDecreasesResolve:OpaqueMemberRewriter, postDecreasesResolve:AutoReqFunctionRewriter, postDecreasesResolve:TimeLimitRewriter, postDecreasesResolve:ForallStmtRewriter, postDecreasesResolve:ProvideRevealAllRewriter, postDecreasesResolve:MatchFlattener, postDecreasesResolve:QuantifierSplittingRewriter, postDecreasesResolve:TriggerGeneratingRewriter, postDecreasesResolve:InductionRewriter, postDecreasesResolve:PrintEffectEnforcement, postDecreasesResolve:BitvectorOptimization, postDecreasesResolve:LocalLinter, postDecreasesResolve:PrecedenceLinter, additionalInformation, postResolve:RefinementTransformer, postResolve:ExpandAtAttributes, postResolve:AutoContractsRewriter, postResolve:OpaqueMemberRewriter, postResolve:AutoReqFunctionRewriter, postResolve:TimeLimitRewriter, postResolve:ForallStmtRewriter, postResolve:ProvideRevealAllRewriter, postResolve:MatchFlattener, postResolve:QuantifierSplittingRewriter, postResolve:TriggerGeneratingRewriter, postResolve:InductionRewriter, postResolve:PrintEffectEnforcement, postResolve:BitvectorOptimization, postResolve:LocalLinter, postResolve:PrecedenceLinter
 summary: resolve
 kinds: fe, gc, gcpause, heap, manifest, module, moduleGraph, span, summary, symbol, task
@@ -60,7 +60,7 @@ module graph: 7 nodes, 8 edges
   _module -> A
   _module -> B
   _module -> C
-resolve.module events follow the graph: True
+resolve.module events match graph ids: True
 phases of a module: preResolve, registrationAndExports, resolveSetup, signature, moduleAttributes, body, accessibleMembers, exportsAndIntermediate, isRecursive, decreases, postDecreasesResolve:RefinementTransformer, postDecreasesResolve:ExpandAtAttributes, postDecreasesResolve:AutoContractsRewriter, postDecreasesResolve:OpaqueMemberRewriter, postDecreasesResolve:AutoReqFunctionRewriter, postDecreasesResolve:TimeLimitRewriter, postDecreasesResolve:ForallStmtRewriter, postDecreasesResolve:ProvideRevealAllRewriter, postDecreasesResolve:MatchFlattener, postDecreasesResolve:QuantifierSplittingRewriter, postDecreasesResolve:TriggerGeneratingRewriter, postDecreasesResolve:InductionRewriter, postDecreasesResolve:PrintEffectEnforcement, postDecreasesResolve:BitvectorOptimization, postDecreasesResolve:LocalLinter, postDecreasesResolve:PrecedenceLinter, additionalInformation, postResolve:RefinementTransformer, postResolve:ExpandAtAttributes, postResolve:AutoContractsRewriter, postResolve:OpaqueMemberRewriter, postResolve:AutoReqFunctionRewriter, postResolve:TimeLimitRewriter, postResolve:ForallStmtRewriter, postResolve:ProvideRevealAllRewriter, postResolve:MatchFlattener, postResolve:QuantifierSplittingRewriter, postResolve:TriggerGeneratingRewriter, postResolve:InductionRewriter, postResolve:PrintEffectEnforcement, postResolve:BitvectorOptimization, postResolve:LocalLinter, postResolve:PrecedenceLinter
 heap points: parsed, resolved, module:A, module:B, module:B.Inner
 heap points measured: True

@@ -836,6 +836,11 @@ jobs:
           node-version: '16.0.0'
       - name: JavaScript runtime dependency
         run: npm install --no-save --package-lock=false bignumber.js@9.1.2
+      - name: Worker resolution and front-end profile integration
+        run: |
+          dotnet test --settings .github/review/ci.runsettings Source/DafnyCore.Test -c Release --no-build \
+            --filter 'FullyQualifiedName~ResolutionPipelineTests|FullyQualifiedName~PipelineProfileResolutionTests' \
+            --logger "console;verbosity=normal"
       - name: Run the tests named in .github/review/regressions
         continue-on-error: ${{ github.event_name == 'workflow_dispatch' && inputs.review_followup_probe && startsWith(github.ref, 'refs/heads/scratch/') }}
         env:

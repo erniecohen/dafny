@@ -272,43 +272,74 @@ public class ProgramResolver {
               foreach (var signature in result.Signatures) { workerProgram.ModuleSigs[signature.Key] = signature.Value; }
             }
             var start = profile?.Begin();
-            ResolutionWorkerStarting?.Invoke(declarations[index]);
-            ModuleResolutionResult ResolveOutput() {
-              var resolved = worker.ResolveModuleDeclaration(Program.Compilation, declarations[index]);
-              // An import can be unresolved without producing a new local diagnostic.
-              // Its resolved fields (and hence Children) are not safe to traverse.
-              var invalid = resolved.ErrorReporter.HasErrors ||
-                closure.Any(i => results[i].ErrorReporter.HasErrors ||
-                  results[i].Signatures.Keys.Any(m => !m.SuccessfullyResolved)) ||
-                resolved.Signatures.Keys.Any(m => !m.SuccessfullyResolved);
-              var translationInputs = new ModuleTranslationInputs(invalid ? null : declarations[index],
-                closure.Select(i => results[i].TranslationInputs));
-              translationInputs.Bitwidths.UnionWith(builtins.Bitwidths);
-              builtins.RestrictResolutionOutput(translationInputs);
-              foreach (var definition in resolved.Signatures.Keys) {
-                translationInputs.ModuleNames.Add(definition.FullName);
-                definition.TranslationInputs = translationInputs;
-                definition.ResolutionKey = Program.ResolutionKeys[declarations[index]];
+            var frontEndStart = profile?.BeginThread();
+            ModuleResolutionResult moduleOutput = null;
+            bool? cached = null;
+            var status = "failed";
+            try {
+              profile?.ModulePhasesStart();
+              ResolutionWorkerStarting?.Invoke(declarations[index]);
+              ModuleResolutionResult ResolveOutput() {
+                var resolved = worker.ResolveModuleDeclaration(Program.Compilation, declarations[index]);
+                // An import can be unresolved without producing a new local diagnostic.
+                // Its resolved fields (and hence Children) are not safe to traverse.
+                var invalid = resolved.ErrorReporter.HasErrors ||
+                  closure.Any(i => results[i].ErrorReporter.HasErrors ||
+                    results[i].Signatures.Keys.Any(m => !m.SuccessfullyResolved)) ||
+                  resolved.Signatures.Keys.Any(m => !m.SuccessfullyResolved);
+                var translationInputs = new ModuleTranslationInputs(invalid ? null : declarations[index],
+                  closure.Select(i => results[i].TranslationInputs));
+                translationInputs.Bitwidths.UnionWith(builtins.Bitwidths);
+                builtins.RestrictResolutionOutput(translationInputs);
+                foreach (var definition in resolved.Signatures.Keys) {
+                  translationInputs.ModuleNames.Add(definition.FullName);
+                  definition.TranslationInputs = translationInputs;
+                  definition.ResolutionKey = Program.ResolutionKeys[declarations[index]];
+                }
+                var output = resolved with {
+                  Key = Program.ResolutionKeys[declarations[index]], Builtins = builtins,
+                  SystemClassMembers = worker.classMembers.Where(p => p.Key.EnclosingModuleDefinition.Name == "_System" &&
+                      translationInputs.BuiltinNames.Contains(p.Key.Name))
+                    .ToDictionary(p => p.Key, p => p.Value),
+                  TranslationInputs = translationInputs
+                };
+                if (output.ResolvedDeclaration is LiteralModuleDecl resolvedModule) {
+                  resolvedModule.ModuleDef.TranslationInputs = output.TranslationInputs;
+                }
+                return output;
               }
-              var output = resolved with {
-                Key = Program.ResolutionKeys[declarations[index]], Builtins = builtins,
-                SystemClassMembers = worker.classMembers.Where(p => p.Key.EnclosingModuleDefinition.Name == "_System" &&
-                    translationInputs.BuiltinNames.Contains(p.Key.Name))
-                  .ToDictionary(p => p.Key, p => p.Value),
-                TranslationInputs = translationInputs
-              };
-              if (output.ResolvedDeclaration is LiteralModuleDecl resolvedModule) {
-                resolvedModule.ModuleDef.TranslationInputs = output.TranslationInputs;
+              moduleOutput = ResolveModuleOutput(declarations[index], Program.ResolutionKeys[declarations[index]],
+                closure.Select(i => results[i]).ToArray(), ResolveOutput, out var cacheHit);
+              cached = cacheHit;
+              status = "completed";
+            } catch (OperationCanceledException) {
+              status = "cancelled";
+              throw;
+            } finally {
+              if (profile != null) {
+                // Take clears thread-local state even after a cache hit, cancellation or failure.
+                // The id is canonical graph order; events are emitted as workers complete.
+                var phases = profile.ModulePhasesTake();
+                profile.FrontEnd("resolve.module", frontEndStart.Value, new Dictionary<string, object> {
+                  ["id"] = index,
+                  ["module"] = ProfileModuleName(declarations[index]),
+                  ["kind"] = ProfileModuleKind(declarations[index]),
+                  ["typeSystemRefresh"] = declarations[index].Options.Get(CommonOptionBag.TypeSystemRefresh),
+                  ["topLevelDecls"] = (declarations[index] as LiteralModuleDecl)?.ModuleDef.TopLevelDecls.Count(),
+                  ["key"] = Program.ResolutionKeys[declarations[index]],
+                  ["cached"] = cached,
+                  ["status"] = status,
+                  ["thread"] = Environment.CurrentManagedThreadId,
+                  ["errors"] = moduleOutput?.ErrorReporter.ErrorCount,
+                  ["phases"] = phases
+                });
+                profile.Span("resolve.module", start.Value, new Dictionary<string, object> {
+                  ["module"] = declarations[index].FullName,
+                  ["key"] = Program.ResolutionKeys[declarations[index]], ["cached"] = cached, ["status"] = status
+                });
               }
-              return output;
             }
-            var output = ResolveModuleOutput(declarations[index], Program.ResolutionKeys[declarations[index]],
-              closure.Select(i => results[i]).ToArray(), ResolveOutput, out var cached);
-            if (profile != null) {
-              profile.Span("resolve.module", start.Value, new Dictionary<string, object> {
-                ["module"] = declarations[index].FullName, ["key"] = output.Key, ["cached"] = cached
-              });
-            }
+            var output = moduleOutput;
             lock (gate) {
               results[index] = output;
               // A parent cannot be running: nesting is a prerequisite edge. Imports
