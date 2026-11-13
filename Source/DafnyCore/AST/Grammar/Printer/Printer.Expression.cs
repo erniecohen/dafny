@@ -1338,7 +1338,7 @@ namespace Microsoft.Dafny {
           parensNeeded = !isRightmost;
         } else {
           parensNeeded = !isRightmost || isFollowedBySemicolon ||
-                         (printMode == PrintModes.Serialization && contextBindingStrength != 0);
+                         (printMode == PrintModes.Serialization && contextBindingStrength != 0 && e.S is AssignStatement);
         }
 
         if (parensNeeded) {
