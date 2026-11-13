@@ -464,6 +464,8 @@ namespace Microsoft.Dafny {
         sep = ", ";
         if (fe.E is ImplicitThisExpr) {
           Contract.Assert(fe.FieldName != null);
+        } else if (printMode == PrintModes.Serialization && Expression.StripParens(fe.E) is LambdaExpr) {
+          PrintExpression(fe.E, false, true);
         } else {
           PrintExpression(fe.E, true);
         }

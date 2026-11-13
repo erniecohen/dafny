@@ -8,6 +8,10 @@
 // RUN: %baredafny resolve "%t.reduced-false.doo" --cores 1 --allow-warnings --type-system-refresh:false >> "%t"
 // RUN: %baredafny build -t:lib "%s" --no-verify --cores 1 --solver-path "%review-z3" --allow-warnings --type-system-refresh:true --output "%t.reduced-true.doo" >> "%t"
 // RUN: %baredafny resolve "%t.reduced-true.doo" --cores 1 --allow-warnings --type-system-refresh:true >> "%t"
+// RUN: %baredafny build -t:lib "%S/github-issue-4144.dfy" --no-verify --cores 1 --solver-path "%review-z3" --allow-warnings --type-system-refresh:false --output "%t.frames-false.doo" > "%t.frames-false.build"
+// RUN: %baredafny resolve "%t.frames-false.doo" --cores 1 --allow-warnings --type-system-refresh:false > "%t.frames-false.readback"
+// RUN: %baredafny build -t:lib "%S/github-issue-4144.dfy" --no-verify --cores 1 --solver-path "%review-z3" --allow-warnings --type-system-refresh:true --output "%t.frames-true.doo" > "%t.frames-true.build"
+// RUN: %baredafny resolve "%t.frames-true.doo" --cores 1 --allow-warnings --type-system-refresh:true > "%t.frames-true.readback"
 // RUN: %diff "%s.expect" "%t"
 
 method LambdaOperands(f: (int, int) -> bool) {
