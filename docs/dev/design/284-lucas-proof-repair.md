@@ -8,7 +8,7 @@ when maintaining this fixture.
 
 The canonical native-result map rows must remain enabled. The unguarded raw
 read-over-write equation contradicts Boolean-map extensionality, as
-[the soundness report, section 6.2](typeencoding-a-soundness.md#62-minimum-logical-repair-to-the-boolean-map-support-axiom),
+[the soundness report, section 6.2](https://github.com/erniecohen/dafny/blob/edaf1a6f4e1c8b6fa5aac00748630ab80185a9f9/docs/dev/design/typeencoding-a-soundness.md#62-minimum-logical-repair-to-the-boolean-map-support-axiom),
 and [the Boogie repair](https://github.com/erniecohen/boogie/pull/8) explain.
 The conditional round-trip equality restricts a raw stored payload to its native
 representation when the result type code is native. Removing it restores the
