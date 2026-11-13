@@ -67,6 +67,11 @@ lemma {:induction false} Lucas_Binary''(a: nat, b: nat)
   } else {
     Lucas_Binary''(a - 1, b);
     Lucas_Binary''(a - 1, b - 1);
+    if EVEN(a) && EVEN(b) {
+      // The even/even induction step uses Pascal's recurrence at the halved arguments.
+      assert binom(a / 2, b / 2) ==
+        binom((a - 1) / 2, b / 2) + binom((a - 1) / 2, (b - 1) / 2);
+    }
   }
 }
 
