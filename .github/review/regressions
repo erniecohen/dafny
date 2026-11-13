@@ -364,6 +364,9 @@ git-issues/github-issue-241-module-window.dfy
 # Std.RealCompleteness: least upper bounds for iset<real>, from one {:axiom} lemma (https://github.com/erniecohen/dafny/issues/205).
 git-issues/github-issue-205.dfy
 
+# Opt-in --pipeline-profile front-end events: byte-identical output, worker/cache events, real signature/body and export-view boundaries (#241, D1).
+git-issues/github-issue-241-frontend.dfy
+
 # Opt-in parallel resolution: ordered diagnostics, verification and isolated Boogie (https://github.com/erniecohen/dafny/issues/241).
 # Includes rejected Std legacy/newtype configurations at N=1,2,4,8.
 git-issues/github-issue-241-parallel-resolution.dfy

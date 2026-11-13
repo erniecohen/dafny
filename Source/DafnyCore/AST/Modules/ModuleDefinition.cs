@@ -507,18 +507,24 @@ Generate module names in the older A_mB_mC style instead of the current A.B.C sc
     var codatatypeDependencies = new Graph<CoDatatypeDecl>();
     var allDeclarations = AllDeclarationsAndNonNullTypeDecls(TopLevelDecls).ToList();
     int prevErrorCount = resolver.reporter.Count(ErrorLevel.Error);
+    // Close setup before timing the actual member signatures. Export-view Resolve calls
+    // share the containing module's phase list, but have distinct constant phase names.
+    PipelineProfile.ModulePhase(resolver.Options, exportSetName == null ? "resolveSetup" : "exportViewSetup");
     resolver.ResolveTopLevelDecls_Signatures(this, sig, allDeclarations, datatypeDependencies, codatatypeDependencies);
+    PipelineProfile.ModulePhase(resolver.Options, exportSetName == null ? "signature" : "exportSignature");
     Contract.Assert(resolver.AllTypeConstraints.Count == 0); // signature resolution does not add any type constraints
 
     if (resolver.reporter.Count(ErrorLevel.Error) == prevErrorCount) {
       // Attributes may refer to members, so signatures must resolve first. Failed signatures can contain
       // cyclic types; do not enter another constraint-solving phase after they have already been rejected.
       resolver.ResolveModuleAttributes(this, allDeclarations);
+      PipelineProfile.ModulePhase(resolver.Options, exportSetName == null ? "moduleAttributes" : "exportModuleAttributes");
     }
 
     if (resolver.reporter.Count(ErrorLevel.Error) == prevErrorCount) {
       resolver.ResolveTopLevelDecls_Core(allDeclarations, datatypeDependencies, codatatypeDependencies,
         exportSetName == null ? Name : $"{Name} export {exportSetName}", exportSetName != null);
+      PipelineProfile.ModulePhase(resolver.Options, exportSetName == null ? "body" : "exportBody");
     }
 
     Type.PopScope(resolver.moduleInfo.VisibilityScope);
@@ -587,6 +593,7 @@ Generate module names in the older A_mB_mC style instead of the current A.B.C sc
       }
     }
 
+    PipelineProfile.ModulePhase(resolver.Options, exportSetName == null ? "accessibleMembers" : "exportAccessibleMembers");
     return true;
   }
 

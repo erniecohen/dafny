@@ -90,6 +90,9 @@ cli	outer-module	--outer-module	System.CommandLine.Option`1[System.String]	input
 cli	output	--output,-o	System.CommandLine.Option`1[System.IO.FileInfo]	command-setup	setup or another command; executes before/outside proof transport
 cli	performance-stats	--performance-stats	System.CommandLine.Option`1[System.Int32]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
 cli	pipeline-profile	--pipeline-profile	System.CommandLine.Option`1[System.String]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
+cli	pipeline-profile-gc-events	--pipeline-profile-gc-events	System.CommandLine.Option`1[System.Boolean]	current-report	measurement side effects only; diagnostics/reporting and solver input unchanged
+cli	pipeline-profile-heap	--pipeline-profile-heap	System.CommandLine.Option`1[System.Boolean]	current-report	measurement side effects only; diagnostics/reporting and solver input unchanged
+cli	pipeline-profile-hold	--pipeline-profile-hold	System.CommandLine.Option`1[System.String]	current-report	measurement side effects only; diagnostics/reporting and solver input unchanged
 cli	plugin	--plugin	System.CommandLine.Option`1[System.Collections.Generic.IList`1[System.String]]	bypass	unsupported side effects/factory/repeated batch; ordinary execution
 cli	pprint	--pprint	System.CommandLine.Option`1[System.String]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
 cli	prelude	--prelude	System.CommandLine.Option`1[System.IO.FileInfo]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map

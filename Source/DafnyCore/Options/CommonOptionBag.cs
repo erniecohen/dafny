@@ -55,8 +55,27 @@ public class CommonOptionBag {
 
   public static readonly Option<string> PipelineProfile =
     new("--pipeline-profile", @"
-(experimental) Write timing events of the verification pipeline to the given file, one JSON object per line: parsing, resolution, translation to Boogie, Boogie's preparation of each module, and each verification task's queue wait and solver time, with process-wide allocation, garbage-collection and CPU deltas. Only the file is added; Dafny's other output and its solver input are unchanged.".TrimStart()) {
+(experimental) Write timing events of the verification pipeline to the given file, one JSON object per line: parsing, resolution, translation to Boogie, Boogie's preparation of each module, and each verification task's queue wait and solver time, with process-wide allocation, garbage-collection and CPU deltas; and front-end events with the running thread's CPU time and allocation: each file parsed or .doo file read, the module dependency graph, each module's resolution and its phases, each global resolution pass, and each module's translation. Also accepted by resolve. Only the file is added; Dafny's other output and its solver input are unchanged.".TrimStart()) {
       ArgumentHelpName = "file"
+    };
+
+  public static readonly Option<bool> PipelineProfileHeap =
+    new("--pipeline-profile-heap", @"
+(experimental) With --pipeline-profile, force a full compacting garbage collection after parsing, after resolution and when each module's results are reported, and record the live heap after it. This changes timing, so it is for retention measurements only.".TrimStart()) {
+      IsHidden = true
+    };
+
+  public static readonly Option<bool> PipelineProfileGcEvents =
+    new("--pipeline-profile-gc-events", @"
+(experimental) With --pipeline-profile, record each garbage collection and each pause from the runtime's GC events.".TrimStart()) {
+      IsHidden = true
+    };
+
+  public static readonly Option<string> PipelineProfileHold =
+    new("--pipeline-profile-hold", @"
+(experimental) With --pipeline-profile, at each heap point write <directory>/<n>.ready and wait for <directory>/<n>.go, so that a driver can take a heap dump there.".TrimStart()) {
+      IsHidden = true,
+      ArgumentHelpName = "directory"
     };
 
   public static readonly Option<string> LogLocation =
@@ -758,6 +777,9 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(ResolutionThreads, OptionScope.Cli);
     OptionRegistry.RegisterOption(TranslationCache, OptionScope.Cli);
     OptionRegistry.RegisterOption(PipelineProfile, OptionScope.Cli);
+    OptionRegistry.RegisterOption(PipelineProfileHeap, OptionScope.Cli);
+    OptionRegistry.RegisterOption(PipelineProfileGcEvents, OptionScope.Cli);
+    OptionRegistry.RegisterOption(PipelineProfileHold, OptionScope.Cli);
     OptionRegistry.RegisterOption(LogLevelOption, OptionScope.Cli);
     OptionRegistry.RegisterOption(ManualTriggerOption, OptionScope.Module);
     OptionRegistry.RegisterOption(UserDefinedOperators, OptionScope.Cli);

@@ -158,6 +158,10 @@ Label its issue `needs-owner-approval` before any pull request upstream.
   whose `review.yml` push run is green with `v` and its version, and starts the
   tag's release build.  Its task `scratch-cleanup` runs daily and deletes
   `scratch/**` branches older than seven days that no open pull request uses.
+- **CI skips a tree it already verified.**  `review.yml` and `obligation-proofs.yml`
+  reuse a successful run of the same tree (`REVIEW.md`, "CI"), so a squash merge of a
+  pull request that was current, and the tag of that tree, do not verify twice.  To force
+  a full run, dispatch the workflow on a branch.
 - **A failed run notifies the repository's owner.**  So a scratch or probe
   workflow that expects failures records them, in the job summary and an artifact,
   and exits 0.

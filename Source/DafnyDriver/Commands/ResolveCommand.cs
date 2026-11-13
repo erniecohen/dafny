@@ -23,6 +23,7 @@ static class ResolveCommand {
       if (value == ExitValue.SUCCESS) {
         await options.OutputWriter.Status("\nDafny program verifier did not attempt verification");
       }
+      PipelineProfile.For(options)?.Finish("resolve");
       return (int)value;
     });
     return result;
