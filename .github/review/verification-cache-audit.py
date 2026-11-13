@@ -18,7 +18,7 @@ placeholder, the time limit, the outcome, the resource counts, the resource limi
 depends on (0 when it holds under every limit that covers its resource use), and the recorded
 solver exchange.  Its index key is
     task = CacheDigest.Compute("prepared-task-result/v2", input, environment, time limit)
-    CacheDigest.Compute("prepared-task-result-slot/v2", task, slot[, exact resource limit])
+    CacheDigest.Compute("prepared-task-result-slot/v2", task, slot[, the limit it depends on])
 (Source/DafnyCore/Caching/CacheDigest.cs).  `keys` shows that a key is a function of those
 bytes; `replay` shows that the recorded result is what the solver answers for them, with the
 placeholder replaced by the record's resource limit, or by no limit for a limit-independent
@@ -91,7 +91,7 @@ def task_key(record):
 
 
 def record_key(record):
-    exact = struct.pack('>I', record['ResourceLimit']) if record['Slot'] == 'exact-limit' else b''
+    exact = struct.pack('>I', record['ResourceLimit']) if record['Slot'] in ('exact-limit', 'out-of-resource') else b''
     return digest('prepared-task-result-slot/v2', task_key(record).encode(), record['Slot'].encode(), exact)
 
 

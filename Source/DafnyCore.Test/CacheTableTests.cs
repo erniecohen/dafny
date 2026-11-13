@@ -133,27 +133,28 @@ public class CacheTableTests : IDisposable {
     Assert.Equal(reused, cache.TryRead(TaskInput(resourceLimit: limit), new ReportLoader()) != null);
   }
 
-  // Out of resources at L = 100, having used u = 104.
+  // Out of resources at L = 100, having used u = 104. Under a smaller limit a fresh run stops
+  // sooner and reports a different resource count, so only L' = L reuses it.
   [Theory]
   [InlineData(104U, false)]  // L' = u
   [InlineData(103U, false)]  // L' = u - 1
   [InlineData(100U, true)]   // L' = L
   [InlineData(101U, false)]  // L' = L + 1: a cold run might finish
-  [InlineData(99U, true)]
-  [InlineData(1U, true)]
+  [InlineData(99U, false)]   // L' = L - 1: a cold run reports a smaller count
   [InlineData(0U, false)]
-  public void OutOfResourceIsReusedUnderTheSameOrALowerLimit(uint limit, bool reused) {
+  public void OutOfResourceIsReusedOnlyAtTheSameLimit(uint limit, bool reused) {
     var cache = new TaskResultCache(new ContentAddressedCache(directory));
     Assert.Equal(CachePublication.Stored, Publish(cache, TaskInput(resourceLimit: 100), CacheTaskOutcome.OutOfResource, 104));
     Assert.Equal(reused, cache.TryRead(TaskInput(resourceLimit: limit), new ReportLoader()) != null);
   }
 
   [Fact]
-  public void ALaterOutOfResourceRecordUnderAnotherLimitNeitherReplacesNorQuarantinesTheFirst() {
+  public void OutOfResourceRecordsUnderDifferentLimitsAreSeparateEntries() {
     var cache = new TaskResultCache(new ContentAddressedCache(directory));
     Assert.Equal(CachePublication.Stored, Publish(cache, TaskInput(resourceLimit: 100), CacheTaskOutcome.OutOfResource, 104));
-    Assert.Equal(CachePublication.AlreadyPresent, Publish(cache, TaskInput(resourceLimit: 200), CacheTaskOutcome.OutOfResource, 207));
+    Assert.Equal(CachePublication.Stored, Publish(cache, TaskInput(resourceLimit: 200), CacheTaskOutcome.OutOfResource, 207));
     Assert.NotNull(cache.TryRead(TaskInput(resourceLimit: 100), new ReportLoader()));
+    Assert.NotNull(cache.TryRead(TaskInput(resourceLimit: 200), new ReportLoader()));
     Assert.Null(cache.TryRead(TaskInput(resourceLimit: 150), new ReportLoader()));
   }
 

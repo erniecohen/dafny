@@ -73,14 +73,6 @@ def run(name, directory, extra=(), solver_path=solver, resource_limit="16000000"
             "stats": stats, "tasks": tasks}
 
 
-def without_resources(value):
-    if isinstance(value, dict):
-        return {k: without_resources(v) for k, v in value.items() if k not in ("resourceCount", "TestResult.ResourceCount")}
-    if isinstance(value, list):
-        return [without_resources(v) for v in value]
-    return value
-
-
 def same_report(a, b, what):
     for field in ("report", "csv", "output"):
         assert a[field] == b[field], (what, field)
@@ -183,7 +175,7 @@ def reusable(record, limit):
     if outcome == "Invalid":
         return limit > 0 and limit >= used
     if outcome == "OutOfResource":
-        return 0 < limit <= produced
+        return limit == produced
     return False
 
 
@@ -197,29 +189,15 @@ def boundaries(name, directory, produced, limits):
         shutil.copytree(directory, copy)
         warm = run("%s-%d" % (name, limit), copy, resource_limit=str(limit))
         expected = sorted(task for task, result in produced.items() if reusable(result, limit))
-        # Out of resources at L, reused under a smaller limit, reports the resource count
-        # recorded at L, while a fresh run stops sooner: the verdicts agree, the counts do not.
-        recounted = [task for task in expected if produced[task][0] == "OutOfResource" and limit < produced[task][2]]
-        if recounted:
-            for field in ("report", "csv"):
-                assert without_resources(oracle[field]) == without_resources(warm[field]), (name, limit, field)
-            assert oracle["output"] == warm["output"], (name, limit)
-        else:
-            same_report(oracle, warm, (name, limit))
+        same_report(oracle, warm, (name, limit))
         replayed = sorted(task for task, event in warm["tasks"].items() if event["replayed"])
         assert replayed == expected, (name, limit, replayed, expected)
         assert warm["stats"]["solverStarts"] == 3 - len(expected), (name, limit, warm["stats"])
-        differ = []
         for task, event in warm["tasks"].items():
             cold_event = oracle["tasks"][task]
-            assert event["outcome"] == cold_event["outcome"], (name, limit, task, event, cold_event)
-            if task in recounted:
-                assert event["resourceCount"] == produced[task][1], (name, limit, task, event)
-                if event["resourceCount"] != cold_event["resourceCount"]:
-                    differ.append(task)
-            else:
-                assert event["resourceCount"] == cold_event["resourceCount"], (name, limit, task, event, cold_event)
-        checked.append("%d:%d%s" % (limit, len(expected), " (%d recorded counts)" % len(differ) if differ else ""))
+            assert (event["outcome"], event["resourceCount"]) == (cold_event["outcome"], cold_event["resourceCount"]), \
+                (name, limit, task, event, cold_event)
+        checked.append("%d:%d" % (limit, len(expected)))
     summary.append("%s limits (limit:replayed) %s" % (name, " ".join(checked)))
 
 
@@ -231,7 +209,8 @@ assert sorted(r[0] for r in cold_results.values()) == ["Invalid", "Valid", "Vali
 used = sorted({r[1] for r in cold_results.values()})
 boundaries("limit", cache, cold_results,
            sorted({u for u in used} | {u - 1 for u in used} | {LIMIT, LIMIT + 1}))
-# Out of resources at a small limit L is reused at every limit up to L, and at no larger one.
+# Out of resources at a small limit L is reused at L only: under a smaller limit a fresh run
+# stops sooner and reports a smaller resource count.
 SMALL = 100
 oor_cache = destination / "oor-cache"
 oor = run("oor", oor_cache, resource_limit=str(SMALL))

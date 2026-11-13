@@ -44,8 +44,8 @@ internal sealed class TaskCacheDescriptor {
     return bytes;
   }
 
-  /// <summary>The index entry of one stored result of this task: one per outcome class, and
-  /// one per exact limit for errors whose solver interaction reached that limit.</summary>
+  /// <summary>The index entry of one stored result of this task: one per limit-independent outcome
+  /// class, and one per exact limit for results whose solver interaction reached that limit.</summary>
   internal string SlotKey(string slot, uint? exactResourceLimit = null) =>
     CacheDigest.Compute("prepared-task-result-slot/v2", Encoding.ASCII.GetBytes(Key), Encoding.ASCII.GetBytes(slot),
       exactResourceLimit is { } limit ? UInt32(limit) : []);
@@ -74,7 +74,8 @@ internal interface ITaskResultSnapshotLoader<T> where T : class {
 /// under every such limit, so one record serves them all.</item>
 /// <item>Errors whose interaction never reached the limit are reused when L' &gt;= u, under an RU
 /// limit only. Errors from an interaction that reached the limit are reused only when L' = L.</item>
-/// <item>OutOfResource at L is reused when 0 &lt; L' &lt;= L, under an RU limit only.</item>
+/// <item>OutOfResource at L is reused only when L' = L: under a smaller limit a fresh run would
+/// stop sooner and report a different resource count.</item>
 /// <item>Under a time limit only Valid is published or reused, and the time limit is in the key.</item>
 /// </list>
 /// The rules only admit a candidate. The replay transport then re-executes the task's adaptive
@@ -121,17 +122,14 @@ internal sealed class TaskResultCache {
         (slot, slotKey, storedLimit) = (ExactLimitSlot, descriptor.SlotKey(ExactLimitSlot, descriptor.ResourceLimit), descriptor.ResourceLimit);
         break;
       case CacheTaskOutcome.OutOfResource when descriptor.IsResourceBounded:
-        (slot, slotKey, storedLimit) = (OutOfResourceSlot, descriptor.SlotKey(OutOfResourceSlot), descriptor.ResourceLimit);
+        (slot, slotKey, storedLimit) = (OutOfResourceSlot, descriptor.SlotKey(OutOfResourceSlot, descriptor.ResourceLimit), descriptor.ResourceLimit);
         break;
       default:
         return CachePublication.Unavailable;
     }
     var record = new Record(Schema, slot, descriptor.Input, descriptor.Environment, storedLimit,
       descriptor.TimeLimit, outcome, resourceCount, peakResourceCount, reportData.ToArray());
-    // Out-of-resource results under different limits are different records of one task, and
-    // the first one stays. Every other slot holds a single limit-independent value.
-    return store.TryPublish(CacheTable.VerificationResult, slotKey, JsonSerializer.SerializeToUtf8Bytes(record),
-      keepExisting: slot == OutOfResourceSlot);
+    return store.TryPublish(CacheTable.VerificationResult, slotKey, JsonSerializer.SerializeToUtf8Bytes(record));
   }
 
   public T TryRead<T>(TaskCacheDescriptor descriptor, ITaskResultSnapshotLoader<T> loader) where T : class =>
@@ -142,7 +140,7 @@ internal sealed class TaskResultCache {
     var candidates = descriptor.IsResourceBounded
       ? new[] {
         (ValidSlot, descriptor.SlotKey(ValidSlot)), (ErrorsSlot, descriptor.SlotKey(ErrorsSlot)),
-        (ExactLimitSlot, descriptor.SlotKey(ExactLimitSlot, limit)), (OutOfResourceSlot, descriptor.SlotKey(OutOfResourceSlot))
+        (ExactLimitSlot, descriptor.SlotKey(ExactLimitSlot, limit)), (OutOfResourceSlot, descriptor.SlotKey(OutOfResourceSlot, limit))
       }
       : new[] { (ValidSlot, descriptor.SlotKey(ValidSlot)) };
     foreach (var (slot, key) in candidates) {
@@ -159,7 +157,7 @@ internal sealed class TaskResultCache {
                       descriptor.IsResourceBounded && limit >= record.PeakResourceCount,
         ExactLimitSlot => record.Outcome == CacheTaskOutcome.Errors && descriptor.IsResourceBounded && record.ResourceLimit == limit,
         OutOfResourceSlot => record.Outcome == CacheTaskOutcome.OutOfResource && descriptor.IsResourceBounded &&
-                             limit <= record.ResourceLimit,
+                             record.ResourceLimit == limit,
         _ => false
       };
       if (admitted && loader.TryLoad(descriptor, record.Outcome, record.ResourceCount, record.ReportData, out var result)) {

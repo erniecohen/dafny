@@ -57,9 +57,7 @@ internal sealed class ContentAddressedCache {
     }
   }
 
-  /// <param name="keepExisting">An existing, different value under this key is expected (it is
-  /// another valid value) and stays; it is not a conflict. The default quarantines the key.</param>
-  public CachePublication TryPublish(CacheTable table, string key, ReadOnlySpan<byte> payload, bool keepExisting = false) {
+  public CachePublication TryPublish(CacheTable table, string key, ReadOnlySpan<byte> payload) {
     ValidateKey(key);
     // Resolve table names before doing any I/O, including on oversized inputs.
     var entryPath = EntryPath(table, key);
@@ -84,9 +82,6 @@ internal sealed class ContentAddressedCache {
       var stored = PublishFile(entryPath, record);
       if (!stored) {
         var existing = TryRead(table, key);
-        if (keepExisting && existing != null) {
-          return CachePublication.AlreadyPresent;
-        }
         if (existing == null || !payload.SequenceEqual(existing)) {
           Disable(table, key);
           return CachePublication.Conflict;

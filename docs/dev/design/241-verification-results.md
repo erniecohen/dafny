@@ -30,9 +30,9 @@ counterexamples, error and coverage data against current assertions. Each record
 stores the largest resource count u the solver reported and the limit L it depends
 on. Under a current limit L' (0 for none), Valid is reused when L' = 0 or L' >= u;
 errors when L' >= u, or only when L' = L if the solver reported an exhausted limit
-during the task; OutOfResource at L when 0 < L' <= L. The task key has one index slot
-for each class (valid, errors, out-of-resource, and one per L for errors that reached
-the limit); the first OutOfResource record stays. Errors and OutOfResource require a
+during the task; OutOfResource at L only when L' = L, since under a smaller limit a fresh
+run stops sooner and reports a smaller count. The task key has one index slot for valid,
+one for errors, and one per L for OutOfResource and for errors that reached the limit. Errors and OutOfResource require a
 positive effective RU bound and zero effective elapsed-time limit. Timed failures,
 crashes, cancellation, memory failures, unknowns and incomplete handshakes never
 publish. Unknown option types and unsupported side effects bypass.

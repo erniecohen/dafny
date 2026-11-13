@@ -137,14 +137,6 @@ public class ContentAddressedCacheTests : IDisposable {
   }
 
   [Fact]
-  public void AnExpectedAlternativeValueKeepsTheFirstWithoutDisablingTheKey() {
-    var cache = new ContentAddressedCache(directory);
-    Assert.Equal(CachePublication.Stored, cache.TryPublish(CacheTable.VerificationResult, key, Payload, keepExisting: true));
-    Assert.Equal(CachePublication.AlreadyPresent, cache.TryPublish(CacheTable.VerificationResult, key, "different"u8, keepExisting: true));
-    Assert.Equal(Payload, new ContentAddressedCache(directory).TryRead(CacheTable.VerificationResult, key));
-  }
-
-  [Fact]
   public async Task ConcurrentIdenticalPublishersConvergeWithoutPartialReads() {
     var writers = Enumerable.Range(0, 16).Select(_ => Task.Run(() => {
       var cache = new ContentAddressedCache(directory);
