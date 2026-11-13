@@ -21,7 +21,12 @@ namespace Microsoft.Dafny {
     BatchErrorReporter ErrorReporter,
     Dictionary<ModuleDefinition, ModuleSignature> Signatures,
     Dictionary<TopLevelDeclWithMembers, Dictionary<string, MemberDecl>> ClassMembers
-    );
+    ) {
+    public string Key { get; init; }
+    public SystemModuleManager Builtins { get; init; }
+    public Dictionary<TopLevelDeclWithMembers, Dictionary<string, MemberDecl>> SystemClassMembers { get; init; }
+    internal ModuleTranslationInputs TranslationInputs { get; init; }
+  }
 
   public interface ICanResolveNewAndOld {
     void GenResolve(INewOrOldResolver resolver, ResolutionContext context);
@@ -661,7 +666,8 @@ namespace Microsoft.Dafny {
         }
 
         var scope = exportDecl.Signature.VisibilityScope;
-        Cloner cloner = new ScopeCloner(scope, SystemModuleManager.SystemModule);
+        Cloner cloner = new ScopeCloner(scope, SystemModuleManager.SystemModule,
+          SystemModuleManager.GetBuiltinTypeIdentities());
         var exportView = cloner.CloneModuleDefinition(m, m.EnclosingModule, m.NameNode);
         if (Options.DafnyPrintExportedViews.Contains(exportDecl.FullName)) {
           var wr = new StringWriter();
@@ -1006,7 +1012,8 @@ namespace Microsoft.Dafny {
         };
         return result;
       } else {
-        return new AbstractSignatureCloner(scope, SystemModuleManager.SystemModule).CloneDeclaration(d, newParent);
+        return new AbstractSignatureCloner(scope, SystemModuleManager.SystemModule,
+          SystemModuleManager.GetBuiltinTypeIdentities()).CloneDeclaration(d, newParent);
       }
     }
 
@@ -2545,6 +2552,16 @@ namespace Microsoft.Dafny {
     }
 
     public ValuetypeDecl AddBitvectorTypeDecl(string name, int width) {
+      if (SystemModuleManager.ResolutionCatalog is { } catalog) {
+        var declaration = catalog.Bitvector(width, () => AddBitvectorTypeDeclCore(name, width));
+        SystemModuleManager.RecordBuiltin(declaration);
+        ProgramResolver.AddSystemClass(declaration, declaration.Members.ToDictionary(m => m.Name));
+        return declaration;
+      }
+      return AddBitvectorTypeDeclCore(name, width);
+    }
+
+    private ValuetypeDecl AddBitvectorTypeDeclCore(string name, int width) {
       var bvDecl = new ValuetypeDecl(name, ProgramResolver.SystemModuleManager.SystemModule,
         t => t.AsBitVectorType is { Width: var w } && w == width,
         typeArgs => new BitvectorType(Options, width));

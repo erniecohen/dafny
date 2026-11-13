@@ -15,7 +15,7 @@ on:
     tags: ['v*']
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
-    branches: ['review/**', 'dev']
+    branches: ['review/**', 'dev', 'codex/284-a-repairs']
   workflow_dispatch:
     inputs:
       binaries:
@@ -89,6 +89,10 @@ jobs:
   canonical-map-comparison:
     if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.draft) && (github.head_ref == 'codex/284-map-pin' || github.ref == 'refs/heads/codex/284-map-pin') }}
     uses: ./.github/workflows/typeencoding-map.yml
+
+  character-representation-comparison:
+    if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.draft) && (github.head_ref == 'codex/284-a-repairs' || github.ref == 'refs/heads/codex/284-a-repairs') }}
+    uses: ./.github/workflows/typeencoding-a.yml
 
   milestone-scope:
     if: ${{ github.event_name != 'pull_request' || !github.event.pull_request.draft }}

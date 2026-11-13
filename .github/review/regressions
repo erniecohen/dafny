@@ -364,6 +364,10 @@ git-issues/github-issue-241-module-window.dfy
 # Std.RealCompleteness: least upper bounds for iset<real>, from one {:axiom} lemma (https://github.com/erniecohen/dafny/issues/205).
 git-issues/github-issue-205.dfy
 
+# Opt-in parallel resolution: ordered diagnostics, verification and isolated Boogie (https://github.com/erniecohen/dafny/issues/241).
+# Includes rejected Std legacy/newtype configurations at N=1,2,4,8.
+git-issues/github-issue-241-parallel-resolution.dfy
+
 # Opt-in /cacheUsedTypes and /lockFreeExpansion send the solver the same text (Boogie 3.5.5-review.c5a9f2ef, #241).
 git-issues/github-issue-241-split-setup.dfy
 
@@ -394,6 +398,9 @@ git-issues/git-issue-193-reference-laws.dfy
 # Distinct opaque nullable and non-null type constructors (https://github.com/erniecohen/dafny/issues/268).
 git-issues/github-issue-268.dfy
 
+# Default dependency-local translation (https://github.com/erniecohen/dafny/issues/241).
+git-issues/git-issue-241-history-free-translation.dfy
+
 # Source-only opt-in function operators, clone preservation and negative controls (https://github.com/erniecohen/dafny/issues/194).
 git-issues/github-issue-194.dfy
 
@@ -402,6 +409,27 @@ git-issues/git-issue-284-map.dfy
 # The already registered SubsetTypes, SchorrWaite-stages and issue-82 maps/reads
 # cases also cover the proof and expected-statistics repairs for this encoding.
 # DivMod.LemmaMultiplyDivideLe is checked by the complete standard-library gate.
+
+# Library serialization preserves refinement syntax (https://github.com/erniecohen/dafny/issues/280).
+git-issues/git-issue-280.dfy
+
+# Library serialization round-trips; both resolvers, no verification.
+git-issues/git-issue-297.dfy
+git-issues/git-issue-298.dfy
+git-issues/git-issue-299.dfy
+git-issues/git-issue-300.dfy
+git-issues/git-issue-302.dfy
+git-issues/git-issue-303.dfy
+git-issues/git-issue-306.dfy
+git-issues/git-issue-308.dfy
+git-issues/git-issue-311.dfy
+
+# Parallel operator-export builtin ownership and visibility negatives are in git-issues/github-issue-241-parallel-resolution.dfy.
+
+# Guarded character representation (https://github.com/erniecohen/dafny/issues/284).
+git-issues/git-issue-284-char.dfy
+git-issues/git-issue-284-char-unicode.dfy
+git-issues/git-issue-284-char-model.dfy
 
 # Historical identity scoping (https://github.com/erniecohen/dafny/issues/293):
 # Python regression controls: .github/review/test_milestone_identity.py, run by Build.

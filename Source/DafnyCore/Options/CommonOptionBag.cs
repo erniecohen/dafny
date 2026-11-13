@@ -41,6 +41,11 @@ public class CommonOptionBag {
       IsHidden = true
     };
 
+  public static readonly Option<int> ResolutionThreads = new("--resolution-threads", () => 0,
+    "Resolve independent modules with N workers. Scheduling is opt-in; generated names are module-scoped in every mode.") {
+    ArgumentHelpName = "N"
+  };
+
   public static readonly Option<string> PipelineProfile =
     new("--pipeline-profile", @"
 (experimental) Write timing events of the verification pipeline to the given file, one JSON object per line: parsing, resolution, translation to Boogie, Boogie's preparation of each module, and each verification task's queue wait and solver time, with process-wide allocation, garbage-collection and CPU deltas. Only the file is added; Dafny's other output and its solver input are unchanged.".TrimStart()) {
@@ -298,6 +303,9 @@ true - All class instances are raw pointers and need to be manually deallocated"
 
   public static readonly Option<bool> LegacyNoncanonicalMapPayloads = new("--legacy-noncanonical-map-payloads", () => false,
     "Use the legacy, inconsistent native-result map rows for migration and comparison only.") { IsHidden = true };
+
+  public static readonly Option<bool> LegacyUnguardedChar = new("--legacy-unguarded-char", () => false,
+    "Use the legacy, inconsistent unguarded character axioms for migration and comparison only.") { IsHidden = true };
 
   public static readonly Option<bool> ModularTermination = new("--modular-termination", () => false,
     "Experimental; it does not yet establish termination in every program. Accept global and callback decreases bounds. Under this option, {:termination false} declares checked trait extensibility; foreign extension of sealed traits is rejected, including with @AssumeCrossModuleTermination. Dispatched overridable slots require strict global-bound descent. Imported operations are General at their declared bound, or TOP, unless they publish a checked {:termination_closed} promise; private bodies never strengthen an imported contract. Exact General calls require nonincrease as well as ordinary termination. Constants and type/iterator evaluation hooks also use public effects. Closed code and bound computations cannot reach open dispatch, unknown applications or imported General code. Callback formation, forwarding and application retain their checked bounds. Show call classifications with --show-hints. See the Reference Manual for restrictions and incomplete library admission. Disabled by default.");
@@ -734,6 +742,12 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(WarnAsErrors, OptionScope.Cli);
     OptionRegistry.RegisterOption(ProgressOption, OptionScope.Cli);
     OptionRegistry.RegisterOption(LogLocation, OptionScope.Cli);
+    ResolutionThreads.AddValidator(result => {
+      if (result.Tokens.Count != 0 && result.GetValueOrDefault<int>() < 1) {
+        result.ErrorMessage = "--resolution-threads must be a positive integer.";
+      }
+    });
+    OptionRegistry.RegisterOption(ResolutionThreads, OptionScope.Cli);
     OptionRegistry.RegisterOption(PipelineProfile, OptionScope.Cli);
     OptionRegistry.RegisterOption(LogLevelOption, OptionScope.Cli);
     OptionRegistry.RegisterOption(ManualTriggerOption, OptionScope.Module);
@@ -774,6 +788,8 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(LegacyNoncanonicalMapPayloads, OptionScope.Cli);
     DafnyOptions.RegisterLegacyBinding(LegacyNoncanonicalMapPayloads,
       (options, value) => options.LegacyNoncanonicalMapPayloads = value);
+
+    OptionRegistry.RegisterOption(LegacyUnguardedChar, OptionScope.Cli);
     OptionRegistry.RegisterOption(ModularTermination, OptionScope.Cli);
     OptionRegistry.RegisterOption(WarnUncheckedTermination, OptionScope.Cli);
     OptionRegistry.RegisterOption(InvariantConstructorInference, OptionScope.Cli);

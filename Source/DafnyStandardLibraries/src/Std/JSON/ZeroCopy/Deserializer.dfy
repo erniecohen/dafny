@@ -77,7 +77,7 @@ module Std.JSON.ZeroCopy.Deserializer {
 
     @IsolateAssertions
     @ResourceLimit("100e6")
-    function TryStructural(cs: FreshCursor)
+    function {:isolate_assertions} TryStructural(cs: FreshCursor)
       : (sp: Split<Structural<jopt>>)
       ensures sp.SplitFrom?(cs, (st: Structural<jopt>) => Spec.Structural(st, SpecView))
     {
@@ -196,6 +196,7 @@ module Std.JSON.ZeroCopy.Deserializer {
       sp
     }
 
+    @IsolateAssertions
     function AppendWithSuffix(ghost cs0: FreshCursor,
                               ghost json: ValueParser,
                               elems: Split<seq<TSuffixedElement>>,

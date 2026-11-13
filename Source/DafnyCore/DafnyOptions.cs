@@ -342,6 +342,8 @@ namespace Microsoft.Dafny {
       Prune = true;
       TypeEncodingMethod = Bpl.CoreOptions.TypeEncoding.Arguments;
       NormalizeNames = true;
+      // Numeric declaration hashes must depend on content, not the CLR process seed.
+      DeterministicLiteralHashes = true;
       EmitDebugInformation = false;
       Backend = new CsharpBackend(this);
       Printer = new NullPrinter();
@@ -451,6 +453,16 @@ namespace Microsoft.Dafny {
     public bool FailOnWarnings = false;
     [CanBeNull] private TestGenerationOptions testGenOptions = null;
     public bool ExtractCounterexample = false;
+
+    // Reporting data for this compilation, never a resolution input. A stable
+    // Boogie state name is rebound to its current source coordinates here.
+    private readonly ConcurrentDictionary<string, string> capturedStateDescriptions = new();
+
+    internal void RecordCapturedStateDescription(string name, string description) {
+      capturedStateDescriptions[name] = description;
+    }
+
+    public string CapturedStateDescription(string name) => capturedStateDescriptions.GetValueOrDefault(name, name);
 
     public bool ShowProofObligationExpressions = false;
 

@@ -8,7 +8,10 @@
 // RUN: %OutputCheck --file-to-check "%t_LabeledRefinement.bpl" "%s"
 
 // The inherited trigger must keep the explicit old-state label after re-resolution.
-// CHECK-L: { LabeledRefinement.C.P($Heap_at_0, $Heap, this, $as#n0#0) }
+// CHECK-L: { LabeledRefinement.C.P($Heap_at_0,
+// CHECK-NEXT-L: $Heap,
+// CHECK-NEXT-L: this,
+// CHECK-NEXT: ^\s+\$as#n\S+\) \}\s*$
 
 abstract module Base {
   predicate F(n: nat) { n >= 0 }

@@ -302,6 +302,11 @@ programs together in a single run of `dafny`.
 
 Various options control the verification process, in addition to all those described for [`dafny resolve`](#sec-dafny-resolve).
 
+- `--resolution-threads N` uses N workers for dependency-ready module resolution.
+  Scheduling is opt-in and N must be positive when specified. Sequential and
+  parallel resolution use the same module-scoped names, dependency heights and
+  builtin inventories; changing N does not select a different translation scheme.
+
 - What is verified
    - `--verify-included-files` (when enabled, all included files are verified, except library files, otherwise just those files on the command-line)
    - `--relax-definite-assignment`
@@ -2618,6 +2623,12 @@ Native-result map read-over-write axioms require canonical stored payloads in
 the arguments type encoding. The hidden `--legacy-noncanonical-map-payloads`
 switch restores the previous inconsistent axiom for comparison and migration
 only, and is not suitable for trusted verification.
+
+The character representation axioms use character membership as a guard in both
+`--unicode-char` modes. The hidden `--legacy-unguarded-char` switch restores the
+previous unguarded axioms and character refinement translation for comparison
+and migration only. Those axioms are inconsistent under the arguments type
+encoding; the switch is not suitable for trusted verification.
 
 * `--extract-counterexample` - if verification fails, report a potential
   counterexample as a set of assumptions that can be inserted into the code.
