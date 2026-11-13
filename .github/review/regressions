@@ -407,3 +407,6 @@ git-issues/git-issue-303.dfy
 git-issues/git-issue-306.dfy
 git-issues/git-issue-308.dfy
 git-issues/git-issue-311.dfy
+
+# Historical identity scoping (https://github.com/erniecohen/dafny/issues/293):
+# Python regression controls: .github/review/test_milestone_identity.py, run by Build.

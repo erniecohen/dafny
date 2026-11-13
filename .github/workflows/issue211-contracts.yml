@@ -7,6 +7,8 @@ on:
       - 'Source/DafnyCore/Resolver/ModularTermination.cs'
       - 'Source/IntegrationTests/ModularTerminationContractTests.cs'
       - '.github/review/source-contracts-identity.py'
+      - '.github/review/milestone-scope.py'
+      - '.github/review/test_milestone_identity.py'
       - '.github/workflows/issue211-contracts.yml'
   workflow_dispatch:
 permissions:
@@ -15,8 +17,29 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 jobs:
-  products:
+  milestone-scope:
     if: ${{ github.event_name != 'pull_request' || !github.event.pull_request.draft }}
+    runs-on: ubuntu-24.04
+    outputs:
+      integer_bitwise: ${{ steps.scope.outputs.integer_bitwise }}
+      source_contracts: ${{ steps.scope.outputs.source_contracts }}
+      base: ${{ steps.scope.outputs.base }}
+      candidate: ${{ steps.scope.outputs.candidate }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Scope milestone identity checks
+        id: scope
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: python3 .github/review/milestone-scope.py --event "$EVENT" --base "$BASE" --head "$HEAD"
+
+  products:
+    if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.draft) && needs.milestone-scope.outputs.source_contracts == 'true' }}
+    needs: milestone-scope
     runs-on: ubuntu-24.04
     strategy:
       matrix:
@@ -25,7 +48,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/checkout@v4
         with:
-          ref: ${{ matrix.product == 'base' && 'b98637c6677560944b2498002ecd32ec987a90af' || github.sha }}
+          ref: ${{ matrix.product == 'base' && needs.milestone-scope.outputs.base || needs.milestone-scope.outputs.candidate }}
           path: product
       - uses: ./.github/actions/setup-dotnet
       - uses: actions/setup-java@v4
@@ -45,8 +68,8 @@ jobs:
           path: out
           retention-days: 14
   identity:
-    if: ${{ github.event_name != 'pull_request' || !github.event.pull_request.draft }}
-    needs: products
+    if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.draft) && needs.milestone-scope.outputs.source_contracts == 'true' }}
+    needs: [milestone-scope, products]
     runs-on: ubuntu-24.04
     timeout-minutes: 180
     strategy:
@@ -60,6 +83,10 @@ jobs:
           - {kind: std, shard: '0/1', source: Source/DafnyStandardLibraries}
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.milestone-scope.outputs.candidate }}
+          path: sources
       - uses: ./.github/actions/setup-dotnet
       - uses: actions/download-artifact@v4
         with:
@@ -79,7 +106,7 @@ jobs:
         run: |
           python3 .github/review/source-contracts-identity.py '${{ matrix.kind }}' \
             products/base/dafny/Dafny products/candidate/dafny/Dafny solver/*/bin/z3 \
-            '${{ matrix.source }}' identity-results --shard '${{ matrix.shard }}'
+            'sources/${{ matrix.source }}' identity-results --shard '${{ matrix.shard }}'
       - uses: actions/upload-artifact@v4
         if: always()
         with:
