@@ -309,11 +309,16 @@ NoGhost - disable printing of functions, ghost methods, and proof
           Indent(indent);
           PrintClassMethodHelper("newtype", dd.Attributes, dd.Name, dd.TypeArgs);
           PrintExtendsClause(dd);
-          wr.Write(" = ");
-          if (dd.Var == null) {
+          // The parsed refinement omits its base type, constraint and witness.
+          // Keep the ellipsis so that reading a serialized library inherits them again.
+          if (dd.BaseType == null && dd.IsRefining) {
+            wr.WriteLine(" ...");
+          } else if (dd.Var == null) {
+            wr.Write(" = ");
             PrintType(dd.BaseType);
             wr.WriteLine();
           } else {
+            wr.Write(" = ");
             wr.Write(dd.Var.DisplayName);
             if (ShowType(dd.Var.Type)) {
               wr.Write(": ");
@@ -848,7 +853,8 @@ NoGhost - disable printing of functions, ghost methods, and proof
       Indent(indent);
       PrintClassMethodHelper(dt is IndDatatypeDecl ? "datatype" : "codatatype", dt.Attributes, dt.Name, dt.TypeArgs);
       PrintExtendsClause(dt);
-      wr.Write(" =");
+      // Before refinement merging, the constructors are inherited, not an empty definition.
+      wr.Write(printMode == PrintModes.Serialization && dt.IsRefining && dt.Ctors.Count == 0 ? " ..." : " =");
       string sep = "";
       foreach (DatatypeCtor ctor in dt.Ctors) {
         wr.Write(sep);
