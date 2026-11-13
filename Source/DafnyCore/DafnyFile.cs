@@ -29,6 +29,11 @@ public class DafnyFile {
   public Uri Uri { get; private set; }
   public IOrigin? Origin { get; }
 
+  /// <summary>
+  /// The admitted record of a .doo library loaded under --modular-termination, or null.
+  /// </summary>
+  public ModularTerminationManifest? TerminationRecord { get; private set; }
+
   private static readonly Dictionary<Uri, Uri> ExternallyVisibleEmbeddedFiles = new();
 
   static DafnyFile() {
@@ -157,6 +162,12 @@ public class DafnyFile {
       return null;
     }
 
+    if (asLibrary && options.Get(CommonOptionBag.ModularTermination)) {
+      reporter.Error(MessageSource.Project, "modular_termination_admission", origin,
+        $"cannot use {options.GetPrintPath(filePath)} as a library under --modular-termination: a source library carries no checked termination record; build it into a .doo with 'dafny build --target:lib --modular-termination' and pass that instead");
+      return null;
+    }
+
     if (!options.Get(DoNotVerifyDependencies) && asLibrary && warnLibrary) {
       reporter.Warning(MessageSource.Project, "UnverifiedLibrary", origin,
         "The file '{0}' was passed to --library. Verification for that file might have used options incompatible with the current ones, or might have been skipped entirely. Use a .doo file to enable Dafny to check that compatible options were used",
@@ -166,6 +177,18 @@ public class DafnyFile {
     return new DafnyFile(DafnyFileExtension, canonicalPath, baseName, () => fileSystem.ReadFile(uri), uri, origin, options) {
       ShouldNotCompile = asLibrary,
       ShouldNotVerify = asLibrary,
+    };
+  }
+
+  /// <summary>
+  /// A source file held in memory, to be verified: the stored program of a library that
+  /// --modular-termination verifies a second time before it records it.
+  /// </summary>
+  public static DafnyFile FromText(DafnyOptions options, Uri uri, string text) {
+    return new DafnyFile(DafnyFileExtension, uri.ToString(), Path.GetFileName(uri.LocalPath),
+      () => new FileSnapshot(new StringReader(text), null), uri, Token.Cli, options) {
+      ShouldNotCompile = false,
+      ShouldNotVerify = false,
     };
   }
 
@@ -247,11 +270,22 @@ public class DafnyFile {
       } catch (ArgumentException e) {
         reporter.Error(MessageSource.Project, origin, e.Message);
         yield break;
+      } catch (Tomlyn.TomlException e) when (options.Get(CommonOptionBag.ModularTermination)) {
+        // Under --modular-termination a manifest that Dafny cannot read, such as one with an unknown key in
+        // its record, is rejected like any other library modified after it was built, not left to crash.
+        reporter.Error(MessageSource.Project, origin,
+          $"cannot load {options.GetPrintPath(filePath)} under --modular-termination: its manifest cannot be read: {System.Text.RegularExpressions.Regex.Replace(e.Message.Split('\n')[0].Trim(), @"^\(\d+,\d+\) : error : ", "").TrimEnd('.')}; the library was modified after it was built, or was built by another version of Dafny");
+        yield break;
       }
     }
 
     var validDooOptions = dooFile.Validate(reporter, uri, options, origin);
     if (validDooOptions == null) {
+      yield break;
+    }
+
+    if (options.Get(CommonOptionBag.ModularTermination) &&
+        !await dooFile.AdmitModularTermination(reporter, uri, options, validDooOptions, origin)) {
       yield break;
     }
 
@@ -265,6 +299,7 @@ public class DafnyFile {
       () => new FileSnapshot(new StringReader(dooFile.ProgramText), null), uri, origin, validDooOptions) {
       ShouldNotCompile = asLibrary,
       ShouldNotVerify = true,
+      TerminationRecord = options.Get(CommonOptionBag.ModularTermination) ? dooFile.Manifest.ModularTermination : null,
     };
   }
 

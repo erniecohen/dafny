@@ -1,0 +1,118 @@
+build lib: exit 0
+build off: exit 0
+on client, on library: exit 0
+on client, off library: exit 1
+  CLI: Error: cannot load off.doo under --modular-termination: it has no modular termination record, because it was built without --modular-termination; rebuild it with 'dafny build --target:lib --modular-termination'
+off client, on library: exit 1
+  CLI: Error: cannot load lib.doo: it was built with --modular-termination and is checked only under that option; use --modular-termination, or rebuild the library without it
+off client, off library: exit 0
+false client: exit 4
+  github-issue-211-m3-4-client-false.dfy(7,4): Error: assertion might not hold
+tampered status, record digest kept: exit 1
+  CLI: Error: cannot load tampered-lib-status-raw.doo under --modular-termination: its record does not match its digest; the library was modified after it was built
+tampered program: exit 1
+  CLI: Error: cannot load tampered-lib-program.doo under --modular-termination: its program does not match the program its record certifies; the library was modified after it was built
+tampered program-contract: exit 1
+  CLI: Error: cannot load tampered-lib-program-contract.doo under --modular-termination: its stored termination contracts are not those of its program (module Lib); the library was modified after it was built
+tampered contracts: exit 1
+  CLI: Error: cannot load tampered-lib-contracts.doo under --modular-termination: its termination-contracts.json entry does not match its record; the library was modified after it was built
+tampered contracts-digest: exit 1
+  CLI: Error: cannot load tampered-lib-contracts-digest.doo under --modular-termination: its stored termination contracts are not those of its program (module Lib); the library was modified after it was built
+tampered missing-contracts: exit 1
+  CLI: Error: cannot load tampered-lib-missing-contracts.doo under --modular-termination: its termination-contracts.json entry is missing
+tampered missing-record: exit 1
+  CLI: Error: cannot load tampered-lib-missing-record.doo under --modular-termination: its manifest has no modular termination record; rebuild it with 'dafny build --target:lib --modular-termination'
+tampered build-id: exit 1
+  CLI: Error: cannot load tampered-lib-build-id.doo under --modular-termination: it was verified by a different build of Dafny or of its prelude; rebuild it with 'dafny build --target:lib --modular-termination' using this one
+tampered status: exit 1
+  CLI: Error: cannot load tampered-lib-status.doo under --modular-termination: its record does not state a complete verification (status 'partial'); rebuild it with 'dafny build --target:lib --modular-termination'
+tampered schema: exit 1
+  CLI: Error: cannot load tampered-lib-schema.doo under --modular-termination: its record has an unsupported format (doo_file_version 2.0, schema 2, contract_schema 1); rebuild it with 'dafny build --target:lib --modular-termination'
+tampered option: exit 1
+  CLI: Error: cannot load tampered-lib-option.doo under --modular-termination: its recorded semantic options do not match their digest; the library was modified after it was built
+tampered option-digest: exit 1
+  CLI: Error: cannot load tampered-lib-option-digest.doo under --modular-termination: it was verified with general-newtypes 'true', but this run uses 'false'; use the same value, or rebuild the library with it
+tampered unknown-key: exit 1
+  CLI: Error: cannot load tampered-lib-unknown-key.doo under --modular-termination: its manifest cannot be read: The property `unknown` was not found on object type DafnyCore.ModularTerminationManifest; the library was modified after it was built, or was built by another version of Dafny
+option mismatch: exit 1
+  CLI: Error: cannot load lib.doo under --modular-termination: it was verified with manual-triggers 'false', but this run uses 'true'; use the same value, or rebuild the library with it
+different solver: exit 1
+  CLI: Error: cannot load lib.doo under --modular-termination: it was verified with a different Z3 binary (Z3 5.1.0, sha256 <digest>) than this run uses (Z3 4.12.1, sha256 <digest>); use the same solver, or rebuild the library with this one
+build changed-prelude: exit 0
+changed prelude: exit 1
+  CLI: Error: cannot load changed-prelude.doo under --modular-termination: it was verified by a different build of Dafny or of its prelude; rebuild it with 'dafny build --target:lib --modular-termination' using this one
+source library: exit 1
+  CLI: Error: cannot use github-issue-211-m3-4-lib.dfy as a library under --modular-termination: a source library carries no checked termination record; build it into a .doo with 'dafny build --target:lib --modular-termination' and pass that instead
+standard library: exit 1
+  CLI: Error: cannot load DafnyStandardLibraries-notarget.doo under --modular-termination: the bundled standard library is not certified under --modular-termination; use --standard-libraries:false, or a standard library rebuilt as a --modular-termination library (see https://github.com/erniecohen/dafny/issues/211)
+  CLI: Error: cannot load DafnyStandardLibraries.doo under --modular-termination: the bundled standard library is not certified under --modular-termination; use --standard-libraries:false, or a standard library rebuilt as a --modular-termination library (see https://github.com/erniecohen/dafny/issues/211)
+build dependent: exit 0
+build lib-body: exit 0
+build lib-contract: exit 0
+client of both: exit 0
+body-only change: exit 0
+contract change: exit 1
+  CLI: Error: cannot load dependent.doo under --modular-termination: it was verified against a different termination contract of module Lib than the one lib-contract.doo provides (recorded <digest>, loaded <digest>); rebuild dependent.doo against the loaded library
+missing dependency: exit 1
+  CLI: Error: cannot load dependent.doo under --modular-termination: it was verified against module Lib of a library, but no admitted .doo library loaded here provides that module; also load the library it was built against
+dropped imports: exit 1
+  CLI: Error: cannot load tampered-dependent-imports-raw.doo under --modular-termination: its record does not match its digest; the library was modified after it was built
+dropped exports: exit 1
+  CLI: Error: cannot load tampered-lib-exports-raw.doo under --modular-termination: its record does not match its digest; the library was modified after it was built
+build refine-base: exit 0
+build refine: exit 2
+  github-issue-211-m3-4-refine.dfy(2,7): Error: modular termination: module 'M2' refines module 'M1' of a library; under --modular-termination a module cannot refine or replace a library module, since the bodies it would inherit are not part of the library's termination contracts
+refining client: exit 2
+  github-issue-211-m3-4-refine.dfy(2,7): Error: modular termination: module 'M2' refines module 'M1' of a library; under --modular-termination a module cannot refine or replace a library module, since the bodies it would inherit are not part of the library's termination contracts
+build no-verify: exit 3
+  CLI: Error: cannot build a library under --modular-termination: its program was not completely verified in this build (for example, --no-verify was used). A library built with --modular-termination records that its own program was completely verified; build it without --no-verify, --boogie arguments, {:verify false}, {:only}, decreases *, assumptions (anything 'dafny audit' reports, bodyless members, --allow-axioms) or {:extern}, and with every verification task succeeding
+build proc-filter: exit 2
+  CLI: Error: cannot build a library under --modular-termination: --boogie argument '/proc:*Count*' is not allowed under --modular-termination, because it can change what verification checks (see the allowed list in the Reference Manual). A library built with --modular-termination records that its own program was completely verified; build it without --no-verify, --boogie arguments, {:verify false}, {:only}, decreases *, assumptions (anything 'dafny audit' reports, bodyless members, --allow-axioms) or {:extern}, and with every verification task succeeding
+build loop-unroll: exit 3
+  CLI: Error: cannot build a library under --modular-termination: --boogie argument '/loopUnroll:1' is not allowed under --modular-termination, because it can change what verification checks (see the allowed list in the Reference Manual). A library built with --modular-termination records that its own program was completely verified; build it without --no-verify, --boogie arguments, {:verify false}, {:only}, decreases *, assumptions (anything 'dafny audit' reports, bodyless members, --allow-axioms) or {:extern}, and with every verification task succeeding
+client with --boogie: exit 1
+  CLI: Error: cannot load lib.doo: --boogie is set locally to [/loopUnroll:1], but the library was built with []
+build verify-false: exit 3
+  CLI: Error: cannot build a library under --modular-termination: github-issue-211-m3-4-verify-false.dfy(2,27) has an assumption that 'dafny audit' reports: Declaration has {:verify false} attribute. A library built with --modular-termination records that its own program was completely verified; build it without --no-verify, --boogie arguments, {:verify false}, {:only}, decreases *, assumptions (anything 'dafny audit' reports, bodyless members, --allow-axioms) or {:extern}, and with every verification task succeeding
+build decreases-star: exit 3
+  CLI: Error: cannot build a library under --modular-termination: github-issue-211-m3-4-decreases-star.dfy(2,11) has an assumption that 'dafny audit' reports: Method may not terminate (uses decreases *). A library built with --modular-termination records that its own program was completely verified; build it without --no-verify, --boogie arguments, {:verify false}, {:only}, decreases *, assumptions (anything 'dafny audit' reports, bodyless members, --allow-axioms) or {:extern}, and with every verification task succeeding
+build only: exit 3
+  CLI: Error: cannot build a library under --modular-termination: github-issue-211-m3-4-only.dfy(2,19) has an assumption that 'dafny audit' reports: Member has explicit temporary @VerifyOnly attribute. A library built with --modular-termination records that its own program was completely verified; build it without --no-verify, --boogie arguments, {:verify false}, {:only}, decreases *, assumptions (anything 'dafny audit' reports, bodyless members, --allow-axioms) or {:extern}, and with every verification task succeeding
+build fails: exit 4
+  github-issue-211-m3-4-fails.dfy(3,4): Error: assertion might not hold
+build assume: exit 3
+  CLI: Error: cannot build a library under --modular-termination: github-issue-211-m3-4-assume.dfy(6,6) has an assumption that 'dafny audit' reports: Definition has assume statement in body. A library built with --modular-termination records that its own program was completely verified; build it without --no-verify, --boogie arguments, {:verify false}, {:only}, decreases *, assumptions (anything 'dafny audit' reports, bodyless members, --allow-axioms) or {:extern}, and with every verification task succeeding
+build axiom: exit 3
+  CLI: Error: cannot build a library under --modular-termination: github-issue-211-m3-4-axiom.dfy(8,6) has an assumption that 'dafny audit' reports: Definition has assume {:axiom} statement in body. A library built with --modular-termination records that its own program was completely verified; build it without --no-verify, --boogie arguments, {:verify false}, {:only}, decreases *, assumptions (anything 'dafny audit' reports, bodyless members, --allow-axioms) or {:extern}, and with every verification task succeeding
+build bodyless: exit 3
+  CLI: Error: cannot build a library under --modular-termination: github-issue-211-m3-4-bodyless.dfy(2,19) has an assumption that 'dafny audit' reports: Declaration has explicit {:axiom} attribute. A library built with --modular-termination records that its own program was completely verified; build it without --no-verify, --boogie arguments, {:verify false}, {:only}, decreases *, assumptions (anything 'dafny audit' reports, bodyless members, --allow-axioms) or {:extern}, and with every verification task succeeding
+build bodyless-plain: exit 3
+  CLI: Error: cannot build a library under --modular-termination: github-issue-211-m3-4-bodyless-plain.dfy(2,11) has an assumption that 'dafny audit' reports: Compiled declaration has no body and has an ensures clause. A library built with --modular-termination records that its own program was completely verified; build it without --no-verify, --boogie arguments, {:verify false}, {:only}, decreases *, assumptions (anything 'dafny audit' reports, bodyless members, --allow-axioms) or {:extern}, and with every verification task succeeding
+build bodyless-noensures: exit 3
+  CLI: Error: cannot build a library under --modular-termination: github-issue-211-m3-4-bodyless-noensures.dfy(3,11) declares method 'M' without a body, an unchecked premise. A library built with --modular-termination records that its own program was completely verified; build it without --no-verify, --boogie arguments, {:verify false}, {:only}, decreases *, assumptions (anything 'dafny audit' reports, bodyless members, --allow-axioms) or {:extern}, and with every verification task succeeding
+build extern: exit 3
+  CLI: Error: cannot build a library under --modular-termination: github-issue-211-m3-4-extern.dfy(2,36) has an assumption that 'dafny audit' reports: Declaration with {:extern} has a ensures clause. A library built with --modular-termination records that its own program was completely verified; build it without --no-verify, --boogie arguments, {:verify false}, {:only}, decreases *, assumptions (anything 'dafny audit' reports, bodyless members, --allow-axioms) or {:extern}, and with every verification task succeeding
+build allow-axioms: exit 3
+  CLI: Error: cannot build a library under --modular-termination: it was built with --allow-axioms, which admits unchecked premises. A library built with --modular-termination records that its own program was completely verified; build it without --no-verify, --boogie arguments, {:verify false}, {:only}, decreases *, assumptions (anything 'dafny audit' reports, bodyless members, --allow-axioms) or {:extern}, and with every verification task succeeding
+build forall-nobody: exit 3
+  CLI: Error: cannot build a library under --modular-termination: github-issue-211-m3-4-forall-nobody.dfy(6,6) has an assumption that 'dafny audit' reports: Definition contains forall statement with no body. A library built with --modular-termination records that its own program was completely verified; build it without --no-verify, --boogie arguments, {:verify false}, {:only}, decreases *, assumptions (anything 'dafny audit' reports, bodyless members, --allow-axioms) or {:extern}, and with every verification task succeeding
+build while-nobody: exit 3
+  CLI: Error: cannot build a library under --modular-termination: github-issue-211-m3-4-while-nobody.dfy(7,6) has an assumption that 'dafny audit' reports: Definition contains loop with no body. A library built with --modular-termination records that its own program was completely verified; build it without --no-verify, --boogie arguments, {:verify false}, {:only}, decreases *, assumptions (anything 'dafny audit' reports, bodyless members, --allow-axioms) or {:extern}, and with every verification task succeeding
+build for-nobody: exit 3
+  CLI: Error: cannot build a library under --modular-termination: github-issue-211-m3-4-for-nobody.dfy(6,6) has an assumption that 'dafny audit' reports: Definition contains loop with no body. A library built with --modular-termination records that its own program was completely verified; build it without --no-verify, --boogie arguments, {:verify false}, {:only}, decreases *, assumptions (anything 'dafny audit' reports, bodyless members, --allow-axioms) or {:extern}, and with every verification task succeeding
+build static-trait: exit 3
+  CLI: Error: cannot build a library under --modular-termination: github-issue-211-m3-4-static-trait.dfy(4,19) has an assumption that 'dafny audit' reports: Ghost declaration has no body and has an ensures clause. A library built with --modular-termination records that its own program was completely verified; build it without --no-verify, --boogie arguments, {:verify false}, {:only}, decreases *, assumptions (anything 'dafny audit' reports, bodyless members, --allow-axioms) or {:extern}, and with every verification task succeeding
+build static-trait-function: exit 3
+  CLI: Error: cannot build a library under --modular-termination: github-issue-211-m3-4-static-trait-function.dfy(4,28) has an assumption that 'dafny audit' reports: Ghost declaration has no body and has an ensures clause. A library built with --modular-termination records that its own program was completely verified; build it without --no-verify, --boogie arguments, {:verify false}, {:only}, decreases *, assumptions (anything 'dafny audit' reports, bodyless members, --allow-axioms) or {:extern}, and with every verification task succeeding
+build opaque: exit 0
+client of opaque: exit 0
+build opacity-opaque: exit 0
+build opacity-auto: exit 0
+build forged-reveal: exit 3
+  CLI: Error: cannot build a library under --modular-termination: github-issue-211-m3-4-forged-reveal.dfy(10,54) uses {:opaque_reveal}, which only Dafny may write under --modular-termination. A library built with --modular-termination records that its own program was completely verified; build it without --no-verify, --boogie arguments, {:verify false}, {:only}, decreases *, assumptions (anything 'dafny audit' reports, bodyless members, --allow-axioms) or {:extern}, and with every verification task succeeding
+build forged-generated: exit 3
+  CLI: Error: cannot build a library under --modular-termination: github-issue-211-m3-4-forged-generated.dfy(10,31) uses {:auto_generated}, which only Dafny may write under --modular-termination. A library built with --modular-termination records that its own program was completely verified; build it without --no-verify, --boogie arguments, {:verify false}, {:only}, decreases *, assumptions (anything 'dafny audit' reports, bodyless members, --allow-axioms) or {:extern}, and with every verification task succeeding
+build iterator: exit 3
+  CLI: Error: cannot build a library under --modular-termination: github-issue-211-m3-4-iterator.dfy(2,13) declares iterator 'Gen'; iterators are not yet supported under --modular-termination. A library built with --modular-termination records that its own program was completely verified; build it without --no-verify, --boogie arguments, {:verify false}, {:only}, decreases *, assumptions (anything 'dafny audit' reports, bodyless members, --allow-axioms) or {:extern}, and with every verification task succeeding
+build termination-false: exit 0
+M3-4 termination records: 66 checks, all passed

@@ -465,6 +465,9 @@ git-issues/github-issue-281-hide.dfy
 # DafnyCore.Test ResolutionPipelineTests.ResolutionEndsWithCallerScopesDisabled and
 # ModuleErrorLeavesCallerScopesAsScheduledResolutionDoes, run by the worker-resolution CI step.
 
+# Termination records in .doo libraries under --modular-termination, milestone M3-4 (https://github.com/erniecohen/dafny/issues/211): tampered, missing and mismatched records and contracts are rejected.
+git-issues/github-issue-211-m3-4.dfy
+
 # A proof-form forall statement outside a method or function body (a constant initializer, a
 # subset-type or newtype constraint or witness, a default value, an iterator body) no longer
 # crashes the verifier (https://github.com/erniecohen/dafny/issues/315).
