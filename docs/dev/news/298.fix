@@ -1,0 +1,1 @@
+Serialize anonymous for-loop indices using their source-level wildcard name, so .doo libraries containing these loops can be read back.

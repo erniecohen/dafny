@@ -1,0 +1,4 @@
+github-issue-241-parallel-resolution.dfy(34,25): Error: Function body type mismatch (expected int, got bool)
+github-issue-241-parallel-resolution.dfy(35,25): Error: Function body type mismatch (expected bool, got int)
+github-issue-241-parallel-resolution.dfy(36,54): Error: incorrect argument type for function parameter 'x' (expected int, found bool)
+3 resolution/type errors detected in github-issue-241-parallel-resolution.dfy

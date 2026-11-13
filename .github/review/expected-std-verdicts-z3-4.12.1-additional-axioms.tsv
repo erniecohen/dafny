@@ -665,7 +665,7 @@ Std Std.Base64.DecodeValidEncodeEmpty (well-formedness)	Correct
 Std Std.Base64.DecodeValidEncodeUnpadded (correctness)	Correct		
 Std Std.Base64.DecodeValidEncodeUnpadded (well-formedness)	Correct		
 Std Std.Base64.DecodeValidPartialsFrom1PaddedSeq (correctness)	Correct		
-Std Std.Base64.DecodeValidPartialsFrom1PaddedSeq (well-formedness)	Correct		
+Std Std.Base64.DecodeValidPartialsFrom1PaddedSeq (well-formedness)	OutOfResource		
 Std Std.Base64.DecodeValidPartialsFrom2PaddedSeq (correctness)	Correct		
 Std Std.Base64.DecodeValidPartialsFrom2PaddedSeq (well-formedness)	Correct		
 Std Std.Base64.DecodeValidUnpaddedPartialFrom1PaddedSeq (correctness)	Correct		
@@ -2193,7 +2193,7 @@ TargetSpecific-py Std.FileIO.WriteUTF8ToFile (correctness)	Correct
 TargetSpecific-py Std.JavaCsActionsExterns.MakeSetReader (correctness)	Correct		
 TargetSpecific-py Std.JavaCsActionsExterns.MakeSetReader (well-formedness)	Correct		
 TargetSpecific-py Std.PythonConcurrent.MutableMap.Get (well-formedness)	Correct		
-run Std	0	7702 verified, 0 errors	
+run Std	4	7758 verified, 0 errors, 1 out of resource	src/Std/Base64.dfy(1217,40)
 run TargetSpecific-cs	0	15 verified, 0 errors	
 run TargetSpecific-go	0	16 verified, 0 errors	
 run TargetSpecific-java	0	15 verified, 0 errors	

@@ -76,7 +76,7 @@ module Std.JSON.ZeroCopy.Deserializer {
     type jopt = v: Vs.View | v.Length() <= 1 witness Vs.View.OfBytes([])
 
     @ResourceLimit("100e6")
-    function TryStructural(cs: FreshCursor)
+    function {:isolate_assertions} TryStructural(cs: FreshCursor)
       : (sp: Split<Structural<jopt>>)
       ensures sp.SplitFrom?(cs, (st: Structural<jopt>) => Spec.Structural(st, SpecView))
     {

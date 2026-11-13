@@ -89,6 +89,10 @@ method {:resource_limit "100e6"} {:isolate_assertions} MinimumWindowMax(a: array
     }
     n := n + 1;
     Bound(b, k, l, n, W);  // this reestablishes "l - k <= W"
+    // Re-establish the retained maxima one entry at a time.
+    forall u | k < u < l
+      ensures RightmostMax(a, b[u-1] + 1, b[u], n)
+    { }
   }
 }
 

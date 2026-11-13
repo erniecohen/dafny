@@ -8,7 +8,8 @@ namespace Microsoft.Dafny {
   /// Two scopes overlap if the intersections of their identifiers is not empty
   /// </summary>
   public class VisibilityScope {
-    private static uint maxScopeId;
+    private static long maxScopeId = -1;
+    private readonly object syncRoot = new();
 
     private readonly SortedSet<uint> scopeTokens = [];
 
@@ -28,49 +29,54 @@ namespace Microsoft.Dafny {
     private Dictionary<VisibilityScope, Tuple<int, bool>> cached = new();
 
     // By convention, the "null" scope sees all
-    public bool VisibleInScope(VisibilityScope other) {
-      if (other != null) {
-        if (cached.TryGetValue(other, out var result)) {
-          if (result.Item1 == other.scopeTokens.Count) {
-            // If the second scope did not change, then we can use the cached result.
-            // If this scoped changed, the cache would have been cleared.
-            return result.Item2;
-          } else {
-            // If the scoped used to overlap, they still do, since scopes only grow.
-            if (result.Item2) {
-              return true;
-            }
-          }
-        }
-        var overlaps = Overlaps(other.scopeTokens, scopeTokens);
-        cached[other] = new Tuple<int, bool>(other.scopeTokens.Count, overlaps);
-        return overlaps;
-
+    private uint[] Tokens() {
+      lock (syncRoot) {
+        return System.Linq.Enumerable.ToArray(scopeTokens);
       }
-      return true;
+    }
+
+    public bool VisibleInScope(VisibilityScope other) {
+      if (other == null) {
+        return true;
+      }
+      var otherTokens = other.Tokens();
+      lock (syncRoot) {
+        if (cached.TryGetValue(other, out var result) && result.Item1 == otherTokens.Length) {
+          return result.Item2;
+        }
+        var overlaps = scopeTokens.Overlaps(otherTokens);
+        cached[other] = new Tuple<int, bool>(otherTokens.Length, overlaps);
+        return overlaps;
+      }
     }
 
     [Pure]
     public bool IsEmpty() {
-      return scopeTokens.Count == 0;
+      lock (syncRoot) {
+        return scopeTokens.Count == 0;
+      }
     }
 
-    //However augmenting with a null scope does nothing
     public void Augment(VisibilityScope other) {
-      if (other != null) {
-        scopeTokens.UnionWith(other.scopeTokens);
-        scopeIds.UnionWith(other.scopeIds);
+      if (other == null || ReferenceEquals(this, other)) {
+        return;
+      }
+      var tokens = other.Tokens();
+      string[] ids;
+      lock (other.syncRoot) {
+        ids = System.Linq.Enumerable.ToArray(other.scopeIds);
+      }
+      lock (syncRoot) {
+        scopeTokens.UnionWith(tokens);
+        scopeIds.UnionWith(ids);
         cached.Clear();
       }
     }
 
     public VisibilityScope(string name) {
-      scopeTokens.Add(maxScopeId);
+      var id = System.Threading.Interlocked.Increment(ref maxScopeId);
+      scopeTokens.Add(checked((uint)id));
       scopeIds.Add(name);
-      if (maxScopeId == uint.MaxValue) {
-        Contract.Assert(false);
-      }
-      maxScopeId++;
     }
 
     public VisibilityScope() {
