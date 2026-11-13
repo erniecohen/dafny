@@ -606,8 +606,8 @@ Inside a lambda expression, the bound of the member it belongs to is the value o
 also where the lambda's body is checked in a heap of its own.
 
 The intended composition argument combines outer-bound descent with the ordinary termination
-discipline. The option remains experimental: the separate comparison repair and checked-library
-admission work must complete before it establishes termination of every accepted composition.
+discipline. The option remains experimental: the separate comparison repair and the remaining
+library-openness work must complete before it establishes termination of every accepted composition.
 
 A global bound, and a callback bound, may only use code that cannot reach a dispatched call: the
 functions and methods it calls, the constants it reads, the types it mentions (their constraints,
@@ -674,6 +674,32 @@ It also rejects some programs that terminate:
 * The C# parser is what turns `decreases {:global} E` and `decreases {:callback g} E` into bounds. A
   program that reaches Dafny through another front end, serialized, keeps them as ordinary decreases
   clauses with argument-less `{:global}` attributes or one-argument `{:callback g}` attributes.
+
+Under the option, a library is admitted only as a `.doo` file built with
+`dafny build --target:lib --modular-termination`. Such a build writes a termination record into the
+library: a hash of its program, of the build of Dafny that verified it, and of the options that change
+what a proof means (each also listed by name), and the termination contract of each module it
+defines. A contract is the module's interface: its declarations with the bodies of methods, lemmas,
+iterators and by-method implementations left out; function bodies stay, since a client may reveal them.
+The record also lists the contracts of the libraries the build was verified against. The build writes
+a library only when its whole program was verified, every verification task conclusively, without
+`--no-verify`, a procedure filter, `{:verify false}`, `{:only}`, `decreases *` or included files that
+were not verified; otherwise it reports which of these stops it and writes nothing.
+
+When a program loads such a library under the option, Dafny recomputes these hashes and the contracts
+from the library's program, and rejects the library, naming the mismatch, when any differs: its program,
+its contracts, its record (missing, incomplete or of an unknown format), the build of Dafny, or an
+option whose value differs from the current one. A library verified against another must be loaded
+with it, and with one that provides the same contracts: a dependency whose method bodies changed is
+accepted, and one whose contracts changed is rejected. Under the option, Dafny also rejects a source
+file given with `--library`, a `.dll` library and the bundled standard library, which carry no record;
+`--standard-libraries:false` leaves the standard library out. Without the option, a library built with
+it is rejected, so that its record is never ignored; libraries built without the option are read as
+before.
+
+The record shows that the library was built by this build of Dafny, from this program, under these
+options; it is checked, not signed, so a library whose record was rewritten as a whole, with every hash
+recomputed, is trusted like any other input of the build.
 
 Before milestone M4a, a bound could call code that reaches a dispatched call, and a program could
 prove `false` through it, as in the example above; the rule for bounds closes that.

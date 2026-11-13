@@ -29,6 +29,11 @@ public class DafnyFile {
   public Uri Uri { get; private set; }
   public IOrigin? Origin { get; }
 
+  /// <summary>
+  /// The admitted record of a .doo library loaded under --modular-termination, or null.
+  /// </summary>
+  public ModularTerminationManifest? TerminationRecord { get; private set; }
+
   private static readonly Dictionary<Uri, Uri> ExternallyVisibleEmbeddedFiles = new();
 
   static DafnyFile() {
@@ -157,6 +162,12 @@ public class DafnyFile {
       return null;
     }
 
+    if (asLibrary && options.Get(CommonOptionBag.ModularTermination)) {
+      reporter.Error(MessageSource.Project, "modular_termination_admission", origin,
+        $"cannot use {options.GetPrintPath(filePath)} as a library under --modular-termination: a source library carries no checked termination record; build it into a .doo with 'dafny build --target:lib --modular-termination' and pass that instead");
+      return null;
+    }
+
     if (!options.Get(DoNotVerifyDependencies) && asLibrary && warnLibrary) {
       reporter.Warning(MessageSource.Project, "UnverifiedLibrary", origin,
         "The file '{0}' was passed to --library. Verification for that file might have used options incompatible with the current ones, or might have been skipped entirely. Use a .doo file to enable Dafny to check that compatible options were used",
@@ -255,6 +266,11 @@ public class DafnyFile {
       yield break;
     }
 
+    if (options.Get(CommonOptionBag.ModularTermination) &&
+        !await dooFile.AdmitModularTermination(reporter, uri, options, validDooOptions, origin)) {
+      yield break;
+    }
+
     // For now it's simpler to let the rest of the pipeline parse the
     // program text back into the AST representation.
     // At some point we'll likely want to serialize a program
@@ -265,6 +281,7 @@ public class DafnyFile {
       () => new FileSnapshot(new StringReader(dooFile.ProgramText), null), uri, origin, validDooOptions) {
       ShouldNotCompile = asLibrary,
       ShouldNotVerify = true,
+      TerminationRecord = options.Get(CommonOptionBag.ModularTermination) ? dooFile.Manifest.ModularTermination : null,
     };
   }
 

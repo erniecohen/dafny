@@ -36,6 +36,12 @@ public class DooFile {
 
     public Dictionary<string, object> Options { get; set; }
 
+    /// <summary>
+    /// Present only in a library built under --modular-termination; null, and so absent from the
+    /// manifest, otherwise.
+    /// </summary>
+    public ModularTerminationManifest? ModularTermination { get; set; }
+
     static ManifestData() {
       CommonOptionBag.EnsureStaticConstructorHasRun();
     }
@@ -103,6 +109,11 @@ public class DooFile {
 
   public string ProgramText { get; set; }
 
+  /// <summary>
+  /// The termination-contracts.json entry of a library built under --modular-termination, or null.
+  /// </summary>
+  public string? TerminationContractsText { get; set; }
+
   public static async Task<DooFile> Read(string path) {
     using var archive = ZipFile.Open(path, ZipArchiveMode.Read);
     return await Read(archive);
@@ -137,6 +148,11 @@ public class DooFile {
     }
 
     var result = new DooFile(manifest, programText);
+    var contractsEntry = archive.GetEntry(ModularTerminationRecords.ContractsEntry);
+    if (contractsEntry != null) {
+      await using var contractsStream = contractsEntry.Open();
+      result.TerminationContractsText = await new StreamReader(contractsStream, Encoding.UTF8).ReadToEndAsync();
+    }
     return result;
   }
 
@@ -174,6 +190,13 @@ public class DooFile {
     if (!options.UsingNewCli) {
       reporter.Error(MessageSource.Project, origin,
         $"cannot load {options.GetPrintPath(file.LocalPath)}: .doo files cannot be used with the legacy CLI");
+      return null;
+    }
+
+    if (!options.Get(CommonOptionBag.ModularTermination) &&
+        (Manifest.ModularTermination != null || Manifest.DooFileVersion == ModularTerminationRecords.RecordedDooFileVersion)) {
+      reporter.Error(MessageSource.Project, origin,
+        $"cannot load {options.GetPrintPath(file.LocalPath)}: it was built with --modular-termination and is checked only under that option; use --modular-termination, or rebuild the library without it");
       return null;
     }
 
@@ -242,6 +265,10 @@ public class DooFile {
 
     var programTextWr = wr.NewFile(ProgramFileEntry);
     programTextWr.Write(ProgramText);
+
+    if (TerminationContractsText != null) {
+      wr.NewFile(ModularTerminationRecords.ContractsEntry).Write(TerminationContractsText);
+    }
   }
 
   public void Write(string path) {
@@ -261,6 +288,105 @@ public class DooFile {
       using var programTextWriter = new StreamWriter(programTextStream, Encoding.UTF8);
       programTextWriter.Write(ProgramText);
     }
+
+    if (TerminationContractsText != null) {
+      var contracts = archive.CreateEntry(ModularTerminationRecords.ContractsEntry);
+      using var contractsStream = contracts.Open();
+      using var contractsWriter = new StreamWriter(contractsStream, Encoding.UTF8);
+      contractsWriter.Write(TerminationContractsText);
+    }
+  }
+
+  /// <summary>
+  /// Under --modular-termination, admits this library only if it carries a complete record, issued by
+  /// this build of Dafny under the current semantic options, whose digests match the retained program
+  /// and whose stored termination contracts are exactly those recomputed from it.  Reports the first
+  /// mismatch and returns false otherwise.
+  /// </summary>
+  public async Task<bool> AdmitModularTermination(ErrorReporter reporter, Uri file, DafnyOptions options,
+    DafnyOptions libraryOptions, IOrigin origin) {
+    var name = file.Scheme == "dllresource" ? Path.GetFileName(file.LocalPath) : options.GetPrintPath(file.LocalPath);
+    var prefix = $"cannot load {name} under --modular-termination";
+
+    bool Reject(string reason) {
+      reporter.Error(MessageSource.Project, "modular_termination_admission", origin, $"{prefix}: {reason}");
+      return false;
+    }
+
+    var record = Manifest.ModularTermination;
+    if (record == null) {
+      if (file.Scheme == "dllresource") {
+        return Reject("the bundled standard library is not certified under --modular-termination; " +
+                      $"use --standard-libraries:false, or a standard library rebuilt as a --modular-termination library (see {ModularTerminationRecords.IssueLink})");
+      }
+      return Reject(Manifest.DooFileVersion == ModularTerminationRecords.RecordedDooFileVersion
+        ? $"its manifest has no modular termination record; {ModularTerminationRecords.RebuildInstruction}"
+        : $"it has no modular termination record, because it was built without --modular-termination; {ModularTerminationRecords.RebuildInstruction}");
+    }
+    if (Manifest.DooFileVersion != ModularTerminationRecords.RecordedDooFileVersion ||
+        record.Schema != ModularTerminationManifest.CurrentSchema ||
+        record.ContractSchema != ModularTerminationManifest.CurrentContractSchema) {
+      return Reject($"its record has an unsupported format (doo_file_version {Manifest.DooFileVersion}, schema {record.Schema}, contract_schema {record.ContractSchema}); {ModularTerminationRecords.RebuildInstruction}");
+    }
+    if (!record.Enabled || record.Status != ModularTerminationManifest.CompleteStatus) {
+      return Reject($"its record does not state a complete verification (status '{record.Status}'); {ModularTerminationRecords.RebuildInstruction}");
+    }
+    if (record.ForkBuildId != ModularTerminationRecords.ForkBuildId) {
+      return Reject($"it was verified by a different build of Dafny; {ModularTerminationRecords.RebuildInstruction} using this one");
+    }
+    if (ModularTerminationRecords.UnsupportedConfiguration(options) is { } unsupported) {
+      return Reject(unsupported);
+    }
+    if (record.ProgramSha256 != ModularTerminationRecords.Sha256(ProgramText)) {
+      return Reject("its program does not match the program its record certifies; the library was modified after it was built");
+    }
+    var recordedOptions = record.SemanticOptions ?? new Dictionary<string, string>();
+    if (record.SemanticOptionsSha256 != ModularTerminationRecords.SemanticOptionsSha256(recordedOptions)) {
+      return Reject("its recorded semantic options do not match their digest; the library was modified after it was built");
+    }
+    var currentOptions = ModularTerminationRecords.SemanticOptions(options);
+    foreach (var (option, value) in currentOptions) {
+      var recorded = recordedOptions.GetValueOrDefault(option);
+      if (recorded != value) {
+        return Reject($"it was verified with {option} '{recorded ?? "(not recorded)"}', but this run uses '{value}'; use the same value, or rebuild the library with it");
+      }
+    }
+    foreach (var option in recordedOptions.Keys.Where(k => !currentOptions.ContainsKey(k))) {
+      return Reject($"its record names an unknown semantic option {option}; {ModularTerminationRecords.RebuildInstruction}");
+    }
+    if (TerminationContractsText == null) {
+      return Reject($"its {ModularTerminationRecords.ContractsEntry} entry is missing");
+    }
+    if (record.ContractsSha256 != ModularTerminationRecords.Sha256(TerminationContractsText)) {
+      return Reject($"its {ModularTerminationRecords.ContractsEntry} entry does not match its record; the library was modified after it was built");
+    }
+    var (contracts, error) = await ModularTerminationContracts.Compute(libraryOptions, ProgramText, file);
+    if (contracts == null) {
+      return Reject($"its program does not parse: {error}");
+    }
+    if (contracts.EntryText != TerminationContractsText) {
+      var module = FirstContractDifference(contracts, TerminationContractsText);
+      return Reject($"its stored termination contracts are not those of its program{(module != null ? $" (module {module})" : "")}; the library was modified after it was built");
+    }
+    var exports = record.Exports ?? [];
+    if (!exports.Select(e => (e.Module, e.ContractSha256)).SequenceEqual(contracts.Exports.Select(e => (e.Module, e.ContractSha256)))) {
+      return Reject("the exports listed in its record are not the contracts of its program; the library was modified after it was built");
+    }
+    return true;
+  }
+
+  private static string? FirstContractDifference(ModularTerminationContracts computed, string storedText) {
+    var stored = new Dictionary<string, string>();
+    try {
+      using var document = System.Text.Json.JsonDocument.Parse(storedText);
+      foreach (var entry in document.RootElement.GetProperty("contracts").EnumerateArray()) {
+        stored[entry.GetProperty("module").GetString()!] = entry.GetProperty("interface").GetString()!;
+      }
+    } catch (Exception e) when (e is System.Text.Json.JsonException or KeyNotFoundException or InvalidOperationException) {
+      return null;
+    }
+    return computed.Interfaces.Keys.Concat(stored.Keys).Order(StringComparer.Ordinal)
+      .FirstOrDefault(m => computed.Interfaces.GetValueOrDefault(m) != stored.GetValueOrDefault(m));
   }
 
 }

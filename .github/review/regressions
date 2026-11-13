@@ -446,3 +446,6 @@ git-issues/git-issue-284-char-model.dfy
 # Parallel resolution requires refreshed inference; default legacy diagnostics remain intact.
 git-issues/github-issue-241-resolution-options.dfy
 git-issues/github-issue-241-rejected-stdlib.dfy
+
+# Termination records in .doo libraries under --modular-termination, milestone M3-4 (https://github.com/erniecohen/dafny/issues/211): tampered, missing and mismatched records and contracts are rejected.
+git-issues/github-issue-211-m3-4.dfy

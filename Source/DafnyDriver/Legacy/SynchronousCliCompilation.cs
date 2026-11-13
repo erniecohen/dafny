@@ -311,6 +311,11 @@ namespace Microsoft.Dafny {
           (verified, outcome, moduleStats) =
             await BoogieAsync(dafnyProgram.Reporter, options, baseName, boogiePrograms, programId);
 
+          if (options.Get(CommonOptionBag.ModularTermination) && options.Backend is LibraryBackend) {
+            dafnyProgram.ModularTerminationCompletion =
+              await DafnyCore.ModularTerminationProducer.Complete(dafnyProgram, boogiePrograms, outcome, verified);
+          }
+
           if (options.TrackVerificationCoverage) {
             ProofDependencyWarnings.WarnAboutSuspiciousDependenciesUsingStoredPartialResults(options,
               dafnyProgram.Reporter, depManager);
