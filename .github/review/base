@@ -1,2 +1,2 @@
-v4.11.0 8fd3c781ac196607fd80baec3eab2a37e29c09a4
-# Combined representation repairs with checked producer state preservation.
+v4.11.0 7b1a4b45929a7585b12f57068a6586fdb40aafbe
+# Combined representation repairs with checked producer postconditions.
