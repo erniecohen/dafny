@@ -172,7 +172,7 @@ def controls(args):
         p = subprocess.run(cmd, capture_output=True, timeout=180)
         (out / (name + '.stdout')).write_bytes(p.stdout)
         (out / (name + '.stderr')).write_bytes(p.stderr)
-        expected = fixture.with_suffix('.dfy.expect').read_bytes()
+        expected = Path(str(fixture) + ('.legacy.expect' if unicode == 'false' else '.expect')).read_bytes()
         report[name] = {'exit': p.returncode, 'expected_output': p.stdout == expected, 'stderr_empty': not p.stderr}
     cmd = [str(Path(args.dafny).resolve()), 'verify', str(fixture.with_name('git-issue-284-char-unicode.dfy')),
            '--solver-path', str(Path(args.z3).resolve()), '--unicode-char:true', '--cores:1',
