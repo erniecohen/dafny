@@ -1318,7 +1318,7 @@ module Std.Producers {
       }
 
       Repr := {this} + original.Repr + originalTotalAction.Repr;
-      assert Valid();
+      assert {:split_here} Valid();
       assert old(State()).ValidChange(State());
     }
 
@@ -1676,7 +1676,20 @@ module Std.Producers {
         }
       }
 
-      assert old(State()).ValidChange(State());
+      assert old(State()).ValidChange(State()) by {
+        assert history == old(history) + [((), result)];
+        assert Outputs() == old(Outputs()) + [result];
+        if old(Remaining()).Some? {
+          assert old(first.Remaining()).Some? && old(second.Remaining()).Some?;
+          if result.Some? {
+            assert 0 < old(Remaining()).value;
+            assert Remaining() == Some(old(Remaining()).value - 1);
+          } else {
+            assert old(Remaining()).value == 0;
+            assert Remaining() == Some(0);
+          }
+        }
+      }
 
       assert Ensures(t, result);
     }
@@ -2312,6 +2325,7 @@ module Std.Producers {
           DecreasesMetric().second.SuccDecreasesToOriginal();
           result := currentInner.value.Next();
           this.Repr := {this} + original.Repr + currentInner.value.Repr;
+          assert {:split_here} Valid();
 
           assert old@beforeCurrentInnerNext(currentInner.value.DecreasesMetric()).NonIncreasesTo(currentInner.value.DecreasesMetric());
           InnerDecreasesMetricNonIncreases@beforeCurrentInnerNext();
