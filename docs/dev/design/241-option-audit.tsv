@@ -139,6 +139,7 @@ cli	translation-record	--translation-record	System.CommandLine.Option`1[System.C
 cli	translation-record-output	--translation-record-output	System.CommandLine.Option`1[System.IO.FileInfo]	command-setup	setup or another command; executes before/outside proof transport
 cli	type-inference-trace	--type-inference-trace	System.CommandLine.Option`1[System.Boolean]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
 cli	type-system-debug	--type-system-debug	System.CommandLine.Option`1[System.Boolean]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
+cli	translation-cache	--translation-cache	System.CommandLine.Option`1[System.Boolean]	input	process-local translation snapshots precede task lookup; exact prepared SMT and current assertion map
 cli	type-system-refresh	--type-system-refresh	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	unicode-char	--unicode-char	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	update-throttling	--update-throttling	System.CommandLine.Option`1[System.Int32]	command-setup	setup or another command; executes before/outside proof transport

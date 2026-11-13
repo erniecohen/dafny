@@ -71,6 +71,7 @@ public static class VerifyCommand {
     new Option[] {
         PerformanceStatisticsOption,
         CommonOptionBag.VerificationCache,
+        CommonOptionBag.TranslationCache,
         FilterSymbol,
         FilterPosition,
         FilterPositionBatch,

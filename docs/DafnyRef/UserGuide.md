@@ -322,6 +322,16 @@ Various options control the verification process, in addition to all those descr
   parallel resolution use the same module-scoped names, dependency heights and
   builtin inventories; changing N does not select a different translation scheme.
 
+- `--translation-cache` requires `--type-system-refresh`; a legacy-type-system
+  request is rejected during option validation with exit code 2. It reuses module
+  translations within one process, for
+  example across batch verification requests. It uses the same names and
+  translation scheme as the default translator and does not select a resolution
+  worker count. It stores no files or verification results. The table is bounded
+  to 256 entries and 512 MiB of retained text; graph memory is additional.
+  Modular termination, counterexample extraction and unsupported graph metadata
+  recompute through the default materialization path.
+
 - What is verified
    - `--verify-included-files` (when enabled, all included files are verified, except library files, otherwise just those files on the command-line)
    - `--relax-definite-assignment`
