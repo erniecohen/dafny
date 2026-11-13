@@ -399,3 +399,6 @@ git-issues/github-issue-194.dfy
 
 # Library serialization preserves refinement syntax (https://github.com/erniecohen/dafny/issues/280).
 git-issues/git-issue-280.dfy
+
+# Historical identity scoping (https://github.com/erniecohen/dafny/issues/293):
+# Python regression controls: .github/review/test_milestone_identity.py, run by Build.
