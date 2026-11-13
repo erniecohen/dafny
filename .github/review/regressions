@@ -446,3 +446,9 @@ git-issues/git-issue-284-char-model.dfy
 # Parallel resolution requires refreshed inference; default legacy diagnostics remain intact.
 git-issues/github-issue-241-resolution-options.dfy
 git-issues/github-issue-241-rejected-stdlib.dfy
+
+# The refreshed resolver resolves :- into array elements (https://github.com/erniecohen/dafny/issues/310)
+# and checks the types of match pattern variables (https://github.com/erniecohen/dafny/issues/309).
+git-issues/github-issue-310.dfy
+git-issues/github-issue-310-errors.dfy
+git-issues/github-issue-309.dfy
