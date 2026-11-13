@@ -1189,6 +1189,7 @@ module Std.Base64 {
     requires Is2Padding(s[(|s| - 4)..])
     ensures
       (
+        UnpaddedBase64Prefix(s);
         var b := DecodeValid(s);
         b[..(|b| - 1)] == DecodeUnpadded(s[..(|s| - 4)]) &&
         b[(|b| - 1)..] == Decode2Padding(s[(|s| - 4)..]))
@@ -1321,7 +1322,13 @@ module Std.Base64 {
         DecodeValid(EncodeBV(b));
       ==
         DecodeValid(EncodeUnpadded(prefix) + Encode2Padding(suffix));
-      == {  DecodeValidPartialsFrom2PaddedSeq(s); }
+      == {
+        DecodeValidPartialsFrom2PaddedSeq(s);
+        DecodeValid2PaddingLengthMod3(s);
+        SeqPartsMakeWhole(DecodeValid(s), |DecodeValid(s)| - 1);
+        assert s[..(|s| - 4)] == EncodeUnpadded(prefix);
+        assert s[(|s| - 4)..] == Encode2Padding(suffix);
+      }
         DecodeUnpadded(EncodeUnpadded(prefix)) + Decode2Padding(Encode2Padding(suffix));
       == { EncodeDecodeUnpadded(prefix); EncodeDecode2Padding(suffix); }
         prefix + suffix;
@@ -1338,7 +1345,13 @@ module Std.Base64 {
         DecodeValid(EncodeBV(b));
       ==
         DecodeValid(EncodeUnpadded(prefix) + Encode1Padding(suffix));
-      == {  DecodeValidPartialsFrom1PaddedSeq(s); }
+      == {
+        DecodeValidPartialsFrom1PaddedSeq(s);
+        DecodeValid1PaddingLengthMod3(s);
+        SeqPartsMakeWhole(DecodeValid(s), |DecodeValid(s)| - 2);
+        assert s[..(|s| - 4)] == EncodeUnpadded(prefix);
+        assert s[(|s| - 4)..] == Encode1Padding(suffix);
+      }
         DecodeUnpadded(EncodeUnpadded(prefix)) + Decode1Padding(Encode1Padding(suffix));
       == { EncodeDecodeUnpadded(prefix); EncodeDecode1Padding(suffix); }
         prefix + suffix;
