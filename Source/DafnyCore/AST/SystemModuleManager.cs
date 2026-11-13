@@ -89,6 +89,27 @@ public class SystemModuleManager {
     MergeResolutionView(source);
   }
 
+  /// <summary>
+  /// Create an editor-owned view with canonical intrinsic identities. Parsed
+  /// builtin shapes are recreated through the same catalog as worker demands;
+  /// no source declarations or whole-program admission state are retained here.
+  /// </summary>
+  public SystemModuleManager CreateResolutionView(SystemModuleManager parsed) {
+    var catalog = ResolutionCatalog ?? new ResolutionBuiltinCatalog(this);
+    var view = new SystemModuleManager(this, catalog);
+    foreach (var arity in parsed.ArrowTypeDecls.Keys) { view.CreateArrowTypeDecl(arity); }
+    foreach (var dimensions in parsed.arrayTypeDecls.Keys) {
+      var (_, modify) = ArrayType(Token.NoToken, dimensions, null, true);
+      modify(view);
+    }
+    foreach (var ghostness in parsed.tupleTypeDecls.Keys) {
+      view.TupleType(Token.NoToken, ghostness.Count, true, ghostness);
+    }
+    view.Bitwidths.Clear();
+    view.Bitwidths.UnionWith(parsed.Bitwidths);
+    return view;
+  }
+
   internal void MergeResolutionView(SystemModuleManager source) {
     foreach (var pair in source.arrayTypeDecls) { arrayTypeDecls[pair.Key] = pair.Value; }
     foreach (var pair in source.ArrowTypeDecls) { ArrowTypeDecls[pair.Key] = pair.Value; }
@@ -111,6 +132,15 @@ public class SystemModuleManager {
     if (!SystemModule.SourceDecls.Contains(declaration)) {
       SystemModule.SourceDecls.Add(declaration);
     }
+  }
+
+  internal IReadOnlySet<TopLevelDecl> GetBuiltinTypeIdentities() {
+    // A worker's publication module is not the owner of interned declarations.
+    // Snapshot actual builtin identities before output pruning; neither module
+    // names nor a declaration's apparent shape establish compiler ownership.
+    return ResolutionCatalog == null ? null : SystemModule.SourceDecls
+      .Concat(valuetypeDecls).Concat(PreTypeBuiltins.Values)
+      .ToHashSet<TopLevelDecl>(ReferenceEqualityComparer.Instance);
   }
 
   internal void RestrictResolutionOutput(ModuleTranslationInputs inputs) {

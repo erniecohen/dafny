@@ -1,0 +1,94 @@
+# Focused reference-model preparation. Expected new-verdict differences are
+# recorded as data and do not notify the owner as workflow failures.
+name: integer-bitwise-reference-probe
+on:
+  push:
+    branches: ['scratch/193-reference-model/probe']
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  DOTNET_NOLOGO: 'true'
+  DOTNET_CLI_TELEMETRY_OPTOUT: 'true'
+  Z3_RELEASE: https://github.com/Z3Prover/z3/releases/download/z3-5.1.0
+  Z3_LINUX_X64: z3-5.1.0-x64-glibc-2.39
+  Z3_LINUX_X64_SHA256: f47be8d27d3230e823bf1eeede2fe0abaca55bb78d0b59974370e6689a92284a
+  HARNESS_Z3_RELEASE: https://github.com/dafny-lang/solver-builds/releases/download/snapshot-2026-04-03
+  HARNESS_Z3_4_12_1_SHA256: e07d4193d8e1851114fe4d507332a43576639f4aeaa33c7df15c36426d3cbf3b
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-dotnet
+      - name: Build candidate
+        run: |
+          sh Scripts/fetch-boogie-packages.sh
+          sh .github/review/version.sh > version.txt
+          . ./version.txt
+          dotnet publish Source/Dafny/Dafny.csproj -c Release -o out/dafny -p:GeneratePackageOnBuild=false -p:SourceRevisionId="$revision"
+          tar -C out -czf dafny.tar.gz dafny
+      - uses: actions/upload-artifact@v4
+        with:
+          name: issue193-dafny
+          path: dafny.tar.gz
+  integer-bitwise-reference:
+    name: Integer bitwise reference (Z3 ${{ matrix.z3 }}, ${{ matrix.resolver }})
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        z3: ['5.1.0', 'of the tests']
+        resolver: ['legacy', 'refreshed']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-dotnet
+      - uses: actions/download-artifact@v4
+        with:
+          name: issue193-dafny
+      - name: Unpack Dafny
+        run: mkdir -p out && tar -C out -xzf dafny.tar.gz
+      - name: Check M1 introduction and current optional inputs
+        run: |
+          git fetch --no-tags --depth=2 origin "$(cat .github/review/issue193-introduced)"
+          python3 -m unittest discover -s .github/review -p test_issue193_identity.py
+          python3 .github/review/issue193-identity.py reference-results/identity
+      - name: Pinned solver
+        run: |
+          if [ '${{ matrix.z3 }}' = 5.1.0 ]; then
+            curl -fsSLo z3.zip "$Z3_RELEASE/$Z3_LINUX_X64.zip"
+            echo "$Z3_LINUX_X64_SHA256  z3.zip" | sha256sum -c -
+            unzip -q z3.zip
+            chmod +x "$Z3_LINUX_X64/bin/z3"
+            echo "Z3=$PWD/$Z3_LINUX_X64/bin/z3" >> "$GITHUB_ENV"
+          else
+            v=$(sed -n 's/.*DefaultZ3Version = "\(.*\)";.*/\1/p' Source/DafnyCore/DafnyOptions.cs)
+            test "$v" = 4.12.1
+            curl -fsSLo z3h.zip "$HARNESS_Z3_RELEASE/z3-$v-x64-ubuntu-24.04-bin.zip"
+            echo "$HARNESS_Z3_4_12_1_SHA256  z3h.zip" | sha256sum -c -
+            mkdir -p z3h && unzip -q z3h.zip -d z3h
+            chmod +x "z3h/z3-$v"
+            echo "Z3=$PWD/z3h/z3-$v" >> "$GITHUB_ENV"
+          fi
+      - name: Prove bodies, measure width clients and reject live false controls
+        run: |
+          set +e
+          python3 .github/review/issue193-reference.py --dafny "$PWD/out/dafny/Dafny" \
+            --z3 "$Z3" --resolver '${{ matrix.resolver }}' --output reference-results/proofs
+          status=$?
+          echo "Proof probe exit: $status (see artifact; this probe is not an acceptance gate)." >> "$GITHUB_STEP_SUMMARY"
+          if [ -f reference-results/proofs/summary.md ]; then cat reference-results/proofs/summary.md >> "$GITHUB_STEP_SUMMARY"; fi
+          exit 0
+      - name: Record the new fixture verdict and expected baseline difference
+        if: matrix.z3 == '5.1.0' && matrix.resolver == 'legacy'
+        run: |
+          python3 .github/review/issue193-verdict-probe.py "$PWD/out/dafny/Dafny" "$Z3" reference-results/verdict-probe
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: integer-bitwise-reference-${{ matrix.z3 }}-${{ matrix.resolver }}
+          path: reference-results
+          retention-days: 90
+

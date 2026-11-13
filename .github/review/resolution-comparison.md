@@ -1,10 +1,10 @@
 # Module-resolution compatibility audit
 
 `review.yml` builds the pre-feature control at
-`dfe57d8d94869cbfa9169f9e331ab882790eb5d6` with the same SDK, runtime and
+`8deca8ad4e8b49988f683855fe78a6917338511c` with the same SDK, runtime and
 checksum-checked Boogie packages as the candidate. Its binary verifies the
-candidate's public inputs. A change to this control requires a separately
-reviewed default change; it must not silently follow the feature branch.
+candidate's public inputs. The control must remain a separately reviewed shipped commit without the
+resolution option; it must not silently follow the feature branch.
 
 The control advanced from `b98637c6677560944b2498002ecd32ec987a90af` after
 https://github.com/erniecohen/dafny/pull/279 independently changed the shipped
@@ -14,6 +14,34 @@ control/candidate audit remains at
 https://github.com/erniecohen/dafny/actions/runs/43134871839. The control remains
 pinned to a shipped commit without this feature; no verdict baseline is changed
 by this update.
+
+The control advanced again to `c02d46e8c7faad8490b66238d1a3378267985728`
+after https://github.com/erniecohen/dafny/pull/276 and
+https://github.com/erniecohen/dafny/pull/275 landed independently. The latter
+fixes the default decreases-tuple relation and deliberately changes shipped
+suite/library verdicts. Both builds must include that fix; its legacy opt-out
+is not enabled for this audit. The prior complete audit remains at
+https://github.com/erniecohen/dafny/actions/runs/43151173385.
+
+The control advanced to `7dc1d91b1159bafb2d75dfb092930112528e6c18`
+after https://github.com/erniecohen/dafny/pull/270 independently changed the
+shipped map-glue guards for matching and refactored datatype equality. Its
+prelude bytes belong in both builds; the feature must not undo that shipped
+change. The completed preceding-base captures remain at
+https://github.com/erniecohen/dafny/actions/runs/43214507192.
+
+The control advanced to `50624274c63bed6d3bff8c16dc8f64cfb686ef20`
+after https://github.com/erniecohen/dafny/pull/277 shipped the independent,
+opt-in source-operator feature. Both builds include that current parser and
+resolver; this integration does not enable source operators implicitly. Its
+shipped default verdict files are unchanged. The five completed paired
+captures and six full-Std seed observations on the preceding shipped base are at
+https://github.com/erniecohen/dafny/actions/runs/43252258965.
+
+The control advanced to `8deca8ad4e8b49988f683855fe78a6917338511c`
+after https://github.com/erniecohen/dafny/pull/286 added CI-only .NET download
+retries. Its product source is identical to the preceding pinned control. Both
+builds now use the shipped retry policy.
 
 For each suite shard and for the standard library, the audit runs that control,
 the candidate with the option omitted, and the candidate at N = 1, 2, 4, 8.

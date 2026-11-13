@@ -30,6 +30,85 @@ public class ResolutionPipelineTests {
     }
     """;
 
+  [Fact]
+  public async Task OperatorExportViewsKeepCanonicalBuiltinIdentities() {
+    const string source = """
+      module M {
+        datatype D = D(n: int) {
+          function {:operator "+"} plus(b: D): D { D(n + b.n) }
+          predicate {:operator "<="} le(b: D) { n <= b.n }
+        }
+        function twice(x: D): D { x + x }
+        lemma check(x: D) ensures (x + x).n == 2 * x.n { }
+        export reveals D, D.plus, D.le, twice provides check
+      }
+      module Generic {
+        datatype Box<T> = Box(v: T) {
+          function twice(): Box<T> { this + this }
+          function {:operator "+"} plus(b: Box<T>): Box<T> { b }
+        }
+        function use<T>(x: Box<T>): Box<T> { x + x }
+        export reveals Box, Box.plus, Box.twice, use
+      }
+      module Client {
+        import M
+        import Generic
+        lemma generic() { assert (Generic.Box(1) + Generic.Box(2)).v == 2; }
+        lemma check() { assert (M.D(1) + M.D(2)).n == 3; }
+      }
+      """;
+    Dictionary<string, string>? expected = null;
+    foreach (var threads in new[] { 0, 1, 2, 4, 8 }) {
+      var (program, reporter) = await Resolve(source, threads, true,
+        configureOptions: options => options.Set(CommonOptionBag.UserDefinedOperators, true));
+      Assert.Empty(Errors(reporter));
+      var boogie = Translate(program);
+      if (threads > 0) {
+        if (expected == null) { expected = boogie; } else { Assert.Equal(expected, boogie); }
+      }
+    }
+  }
+
+  [Fact]
+  public async Task OperatorExportViewsStillRejectHiddenUserMembers() {
+    const string source = """
+      module M {
+        datatype D = D(n: int) {
+          function {:operator "+"} plus(b: D): D { D(n + b.n) }
+        }
+        function twice(x: D): D { x + x }
+        export reveals D, twice
+      }
+      """;
+    string[]? expected = null;
+    foreach (var threads in new[] { 0, 1, 2, 4, 8 }) {
+      var (_, reporter) = await Resolve(source, threads, true,
+        configureOptions: options => options.Set(CommonOptionBag.UserDefinedOperators, true));
+      var errors = Errors(reporter);
+      Assert.Contains(errors, e => e.Contains("operator selection cannot be transported into this export view"));
+      if (expected == null) { expected = errors; } else { Assert.Equal(expected, errors); }
+    }
+  }
+
+  [Fact]
+  public async Task RejectedLegacyNewtypesDoNotTraverseUnresolvedImports() {
+    const string source = """
+      module Api { newtype N = x: int | 0 <= x }
+      module Client { import A = Api function F(x: A.N): A.N { x } }
+      """;
+    var (_, baseline) = await Resolve(source, 0, false,
+      configure: p => p.Options.Set(CommonOptionBag.GeneralNewtypes, true));
+    var expected = Errors(baseline);
+    Assert.NotEmpty(expected);
+    Assert.Contains(expected, message => message.Contains("requires --type-system-refresh"));
+    foreach (var threads in new[] { 1, 2, 4, 8 }) {
+      var (program, reporter) = await Resolve(source, threads, false,
+        configure: p => p.Options.Set(CommonOptionBag.GeneralNewtypes, true));
+      Assert.Equal(expected, Errors(reporter));
+      Assert.Null(program.CardinalityValidationReceipt);
+    }
+  }
+
   [Theory]
   [InlineData(false)]
   [InlineData(true)]
@@ -344,7 +423,7 @@ public class ResolutionPipelineTests {
 
   private static async Task<(Program, BatchErrorReporter)> Resolve(string source, int threads, bool refresh,
     Action<ModuleDecl>? starting = null, Uri? uri = null, Action<Program>? configure = null,
-    bool warnUncheckedTermination = false) {
+    bool warnUncheckedTermination = false, Action<DafnyOptions>? configureOptions = null) {
     DafnyType.ResetScopes();
     var options = new DafnyOptions(TextReader.Null, TextWriter.Null, TextWriter.Null);
     options.ApplyDefaultOptionsWithoutSettingsDefault();
@@ -352,6 +431,7 @@ public class ResolutionPipelineTests {
     options.Set(CommonOptionBag.TypeSystemRefresh, refresh);
     options.Set(CommonOptionBag.WarnUncheckedTermination, warnUncheckedTermination);
     options.ModelViewFile = "-";
+    configureOptions?.Invoke(options);
     var reporter = new BatchErrorReporter(options);
     var parsed = await ProgramParser.Parse(source, uri ?? new Uri("untitled:resolution.dfy"), reporter);
     Assert.Empty(Errors(reporter));

@@ -36,6 +36,10 @@ class ExtremeLemmaSpecificationSubstituter : ExtremeCloner {
     } else if (expr is SuffixExpr) {
       // make sure to clone any user-supplied type-parameter instantiations
       return base.CloneExpr(expr);
+    } else if (expr is OperatorSyntaxExpr) {
+      // Unlike disposable syntax, this node carries a frozen call/intrinsic choice.
+      // Prefix resolution must replay it rather than reclassify its source spelling.
+      return base.CloneExpr(expr);
     } else if (expr is ConcreteSyntaxExpression) {
       var e = (ConcreteSyntaxExpression)expr;
       // Note, the ExtremeLemmaSpecificationSubstituter is an unusual cloner in that it operates on

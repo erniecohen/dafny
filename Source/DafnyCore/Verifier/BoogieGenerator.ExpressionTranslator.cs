@@ -457,7 +457,7 @@ namespace Microsoft.Dafny {
         List<Expression> oldExprsDafny = [];
         int N = Math.Min(oldArray.Length, newArray.Length);
         for (int i = 0; i < N; i++) {
-          if (!CompatibleDecreasesTypes(oldArray[i].Type, newArray[i].Type)) {
+          if (!BoogieGenerator.CompatibleDecreasesTypesForComparison(oldArray[i].Type, newArray[i].Type)) {
             N = i;
             break;
           }
@@ -472,7 +472,17 @@ namespace Microsoft.Dafny {
         List<IOrigin> toks = oldExprs.Zip(newExprs, (_, _) => (IOrigin)decreasesToExpr.Origin).ToList();
         var decreasesExpr = BoogieGenerator.DecreasesCheck(toks, null,
           newExprsDafny, oldExprsDafny, newExprs, oldExprs, null,
-          null, allowNoChange, false);
+          null, allowNoChange, false,
+          N == oldArray.Length && (N < newArray.Length || decreasesToExpr.AllowNoChange && N == newArray.Length));
+        if (BoogieGenerator.UseConsistentDecreasesOrder) {
+          // Simplification can return a shared Boolean literal, including when
+          // there is no compatible prefix. Do not mutate its diagnostic token.
+          if (decreasesExpr is Bpl.LiteralExpr { isBool: true } literal) {
+            decreasesExpr = new Bpl.LiteralExpr(decreasesToExpr.Origin, literal.asBool);
+          } else {
+            decreasesExpr.tok = decreasesToExpr.Origin;
+          }
+        }
         return decreasesExpr;
       }
 
@@ -2389,8 +2399,7 @@ namespace Microsoft.Dafny {
             }
           } else if (e.Member is ConstantField { Rhs: { } rhs } && BoogieGenerator.RevealedInScope(e.Member)) {
             // The type arguments are substituted too: the right-hand side is stated in terms of the enclosing
-            // type's type parameters, which are not in scope here (and BplForallTrim may keep a bound
-            // variable's type antecedent, which mentions them).
+            // type's type parameters, which are not in scope here.
             r = CanCallAssumption(Substitute(rhs, e.Obj, new Dictionary<IVariable, Expression>(), e.TypeArgumentSubstitutionsWithParents()),
               options.Get(CommonOptionBag.ConsistentObligationChecks) ? cco : null);
           }

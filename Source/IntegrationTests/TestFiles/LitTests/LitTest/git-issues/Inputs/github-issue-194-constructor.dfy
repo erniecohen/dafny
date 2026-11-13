@@ -1,0 +1,1 @@
+datatype D = {:operator "+"} D

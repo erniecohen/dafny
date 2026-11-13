@@ -252,6 +252,15 @@ true - All class instances are raw pointers and need to be manually deallocated"
     IsHidden = true
   };
 
+  public static readonly Option<bool> UserDefinedOperators = new("--user-defined-operators", () => false,
+    "Enable fallback arithmetic and comparison function operators on concrete classes and inductive datatypes. " +
+    "Requires --type-system-refresh. Equality and module-attribute operators remain intrinsic. " +
+    "Datatype < and > retain intrinsic rank comparison; call annotated predicates by name. " +
+    "Override mode, compounds, trait operators and library/precompiled input reuse are not yet supported. Disabled by default.") {
+    // Automatic usage on old CLI errors must retain its literal disabled output.
+    IsHidden = true
+  };
+
   public static readonly Option<bool> AdditionalAxioms = new("--additional-axioms", () => false,
     "Enable additional verifier axioms. May change verification performance and proof stability. Disabled by default.");
 
@@ -288,6 +297,9 @@ true - All class instances are raw pointers and need to be manually deallocated"
 
   public static readonly Option<bool> SynonymRefinesAbstractType = new("--synonym-refines-abstract-type", () => false,
     "In a refining module, let a type synonym 'type O<Xs> = T<Xs>' refine an abstract type O that has members, where T is a class, trait, datatype, newtype or abstract type declared in the refining module: the members of O are merged into T, as they would be into a declaration of O itself. Disabled by default.");
+
+  public static readonly Option<bool> LegacyDecreasesOrder = new("--legacy-decreases-order", () => false,
+    "Use the legacy, unsound decreases-tuple comparison for migration and comparison only.") { IsHidden = true };
 
   public static readonly Option<bool> ModularTermination = new("--modular-termination", () => false,
     "Experimental; it does not yet establish termination in every program. Accept global and callback decreases bounds. Under this option, {:termination false} declares checked trait extensibility; foreign extension of sealed traits is rejected, including with @AssumeCrossModuleTermination. Dispatched overridable slots require strict global-bound descent. Imported operations are General at their declared bound, or TOP, unless they publish a checked {:termination_closed} promise; private bodies never strengthen an imported contract. Exact General calls require nonincrease as well as ordinary termination. Constants and type/iterator evaluation hooks also use public effects. Closed code and bound computations cannot reach open dispatch, unknown applications or imported General code. Callback formation, forwarding and application retain their checked bounds. Show call classifications with --show-hints. See the Reference Manual for restrictions and incomplete library admission. Disabled by default.");
@@ -733,6 +745,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(PipelineProfile, OptionScope.Cli);
     OptionRegistry.RegisterOption(LogLevelOption, OptionScope.Cli);
     OptionRegistry.RegisterOption(ManualTriggerOption, OptionScope.Module);
+    OptionRegistry.RegisterOption(UserDefinedOperators, OptionScope.Cli);
     OptionRegistry.RegisterOption(AdditionalAxioms, OptionScope.Cli);
     OptionRegistry.RegisterOption(MapComprehensionDomainTriggers, OptionScope.Cli);
     OptionRegistry.RegisterOption(HeapFreeLambdaFacts, OptionScope.Cli);
@@ -765,6 +778,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(DatatypeSubsetConversions, OptionScope.Cli);
     OptionRegistry.RegisterOption(AncestorQualifiedModuleIds, OptionScope.Cli);
     OptionRegistry.RegisterOption(SynonymRefinesAbstractType, OptionScope.Cli);
+    OptionRegistry.RegisterOption(LegacyDecreasesOrder, OptionScope.Cli);
     OptionRegistry.RegisterOption(ModularTermination, OptionScope.Cli);
     OptionRegistry.RegisterOption(WarnUncheckedTermination, OptionScope.Cli);
     OptionRegistry.RegisterOption(InvariantConstructorInference, OptionScope.Cli);

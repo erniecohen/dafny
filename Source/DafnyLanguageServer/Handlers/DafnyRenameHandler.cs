@@ -58,7 +58,8 @@ namespace Microsoft.Dafny.LanguageServer.Handlers {
       }
 
       var usages = state.SymbolTable.GetReferences(declaration.Uri.ToUri(), declaration.Range.Start);
-      var changes = usages
+      var changes = usages.Where(location => !state.SymbolTable.NonTextualReferences.Any(range =>
+          range.Uri == location.Uri.ToUri() && range.ToLspRange() == location.Range))
         .Append(declaration)
         .GroupBy(location => location.Uri)
         .ToDictionary(

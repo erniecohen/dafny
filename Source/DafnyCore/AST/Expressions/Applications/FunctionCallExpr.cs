@@ -5,6 +5,7 @@ using System.Linq;
 namespace Microsoft.Dafny;
 
 public class FunctionCallExpr : Expression, IHasReferences, ICloneable<FunctionCallExpr> {
+  public bool IsOperatorCall;
   public Name NameNode;
   public string Name => NameNode.Value;
   public Expression Receiver;
@@ -123,6 +124,7 @@ public class FunctionCallExpr : Expression, IHasReferences, ICloneable<FunctionC
   }
 
   public FunctionCallExpr(Cloner cloner, FunctionCallExpr original) : base(cloner, original) {
+    IsOperatorCall = original.IsOperatorCall;
     NameNode = new Name(cloner, original.NameNode);
     Receiver = cloner.CloneExpr(original.Receiver);
     OpenParen = original.OpenParen == null ? null : cloner.Origin(original.OpenParen);
@@ -151,6 +153,6 @@ public class FunctionCallExpr : Expression, IHasReferences, ICloneable<FunctionC
 
   public override IEnumerable<Type> ComponentTypes => Util.Concat(TypeApplication_AtEnclosingClass, TypeApplication_JustFunction);
   public IEnumerable<Reference> GetReferences() {
-    return Enumerable.Repeat(new Reference(NameNode.ReportingRange, Function), 1);
+    return Enumerable.Repeat(new Reference(NameNode.ReportingRange, Function, !IsOperatorCall), 1);
   }
 }

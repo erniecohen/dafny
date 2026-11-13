@@ -892,9 +892,22 @@ during resolution use module counters. Pure string caches on imported declaratio
 remain derived from their declarations; backend compilation and solver preparation
 are later boundaries. Source locations remain attached to diagnostics; any snapshot
 loader must rebind them to the current source map. This PR does not introduce a
-cache, freeze resolved ASTs for reuse, or remove the language server's outer lock.
-The opt-in scheduler bypasses the IDE's legacy CloneId/system-shape result cache;
-edits resolve module bodies again. That cache remains active on the default path.
+persistent cache, freeze resolved ASTs, or remove the language server's outer lock.
+The default path retains the IDE's legacy CloneId/system-shape result cache. The
+opt-in scheduler exposes a complete worker-output hook keyed by `ModuleResolutionKey`.
+The IDE retains the dependency-local builtin, signature, member and translation-input
+views together. Reuse additionally requires unchanged parse identity for diagnostic
+tokens and the exact prerequisite output objects; replacing a prerequisite forces
+its dependents to resolve again. An editor-owned intrinsic catalog supplies canonical
+builtin identities across edits, with fresh per-resolution and per-worker views.
+Operator-export clone contexts snapshot the view's actual builtin type identities:
+an interned declaration need not be owned by the publication module. The snapshot
+survives output pruning and grants no exemption based on a module or type name;
+user declarations still require ordinary export visibility and revelation.
+Containment is rebound after deterministic publication, including parent cache hits.
+Rejected modules and their failed prerequisite closures are not traversed to collect
+translation inputs. These are editor-session results, not serialized snapshots or
+whole-program admission receipts.
 External plugin callbacks have no concurrency contract, so their presence limits
 the opt-in path to one worker. Whole-program admission and global rewrites always
 run outside the module scheduler.
