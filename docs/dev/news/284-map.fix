@@ -1,0 +1,1 @@
+Use canonical native-result map read-over-write axioms in the arguments type encoding, removing its known contradiction with Boolean-map extensionality. The hidden --legacy-noncanonical-map-payloads switch restores the old axiom for comparison and migration only.
