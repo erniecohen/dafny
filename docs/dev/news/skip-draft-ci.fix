@@ -1,0 +1,1 @@
+Skip CI jobs for draft pull requests and start the existing checks when a pull request is marked ready for review.

@@ -166,8 +166,13 @@ comparisons are always functions/predicates returning `bool`.
 | `< <= > >=` | Function/predicate returning `bool` | Each has its own slot; no generated order laws or operand reversal |
 | `== !=` | **Forbidden in enabled mode, with or without `"override"`** | Existing equality/inequality everywhere; use a named relation |
 | `+= -= *= /= %=` | No declaration | Later syntax for the selected binary operation followed by assignment |
-| `& \| ^ ! << >>` | Deferred, including in the first PR | Existing bool/BV intrinsics, and independently enabled #193 integer intrinsics |
-| Other symbols | Forbidden | No new membership, indexing, conversion, cardinality, short-circuit, or prefix-equality overloading |
+| `& \| ^`, unary `!`, `<< >>` | Function/predicate fallback after B1; ordinary by-method allowed | Existing intrinsic families win; user shift count has the declared parameter type; #193 stays independent (19) |
+| `[]` | Function/predicate, one or more indices; direct owners after E1 | Existing indexable families retain their errors/obligations; one multi-index call differs from nested calls (15) |
+| `[:=]` | Pure function, indices followed by value; E2 expression form has one index | Existing sequence/map/multiset update wins; nested calls need no batch law (16) |
+| `[_.._]`, `[_..]`, `[.._]`, `[..]` | Four fixed function/predicate slice shapes after E2 | Pass only written bounds; no invented zero, length, optional value or slice law (16) |
+| `()` | Function/predicate application, zero or more arguments, after E1 | Named calls and existing arrows keep priority; no synthesized requires/reads projections (17) |
+| `[]:=` | Zero-result method setter in M6b; no read-expression use | Singleton statements only initially; value-owner destinations instead use pure `[:=]` and whole-root assignment (18) |
+| Other symbols/spellings | Forbidden unless explicitly admitted in the addendum | No membership, conversion, cardinality, short-circuit, prefix-equality or arbitrary-fixity extension |
 
 `!=` remains the existing complement of intrinsic equality. It is not derived
 from a user `eq`. Separately declared `>` and `>=` avoid right-operand lookup and
@@ -2028,18 +2033,22 @@ procedure, never an anticipatory verdict rewrite.
 The first PR is useful without waiting for all later rows. Equality override is
 absent from this sequence.
 
-| Stage | Scope | Required gate before relaxing M1 restrictions |
-|---|---|---|
-| D0 | This rewritten design/review | Owner/coordinator can assign M1 using its concrete scope; no product implementation here |
-| M1 | Direct function/predicate operators, refreshed resolver, fallback only, source-only artifacts, simple export records and safe references | Entire 12.3 matrix plus OFF suite/library/output gates |
-| M2a | Trait descriptor inheritance and explicit trait-view instance calls | Diamond deduplication, unrelated ambiguity, omitted/repeated metadata, normal dispatch, ordinary-call frames/termination; no unproved laws |
-| M2b | Bound-aware lookup and full refinement/abstract/export transport | All 14 clone routes, both 5.7 negatives, two refinements of one origin, synonym-target correspondence, chain records, Ordered/Rat expansion |
-| M3 | Full `.doo`/`.dtr` interpretation/coverage protocol from 11.1 | Both mismatch directions; original-source reload; hidden metadata and flattened-source negatives; full precompiled module coverage before reuse |
-| M4 | Legacy resolver and declared-trait-view parity | Exact operator/named-call pairs under both resolvers, including bounded views and all negative controls; remove only the supported prerequisite restriction |
-| M5a | General-newtype/codatatype owner support that named calls/backends already support, plus contextual intrinsic escape | Nominal/opaque views, no implicit result lifting, all escape arities and disabled parse-error identity |
-| M5b | Explicit non-equality arithmetic/order override | Intrinsic escape already available; modular-newtype example, strict datatype order, frozen choices across generic/refinement/export/library paths; no equality/bitwise override |
-| M6 | Compound assignment and single-result arithmetic methods | Location/old-value capture once, alias/mutation evaluation order, frame/null/bounds/initialization/subset checks, nested-method negatives |
-| Independent #193 | Bounded integer bitwise intrinsics and their own reference/model/backend work | U/I matrix in 6.5; no native privilege for a user name/attribute; all #193 model/vacuity/count/result/codegen gates |
+| Stage | Scope | Required gate before relaxing M1 restrictions | Addendum product estimate |
+|---|---|---|---|
+| D0 | This design/review plus addendum sections 15–24 | Concrete reviewable design only; no product implementation in this packet | Documentation only |
+| M1 | Direct function/predicate arithmetic/order operators, refreshed resolver, fallback only, source-only artifacts, simple export records and safe references | Entire 12.3 matrix plus OFF suite/library/output gates | Existing M1, not re-estimated |
+| E1, after M1 | Read indexing and value application on M1 owners, with shared suffix records and paired IDE references | Selected ordinary calls before primitive constraints/triggers; named/arrow priority; preserved clones; no hidden array helpers | 636–1,167; per-file 22.1 |
+| E2, after E1 | Pure functional update and four slice shapes; nested updates and tuple keys | Missing bounds stay absent; result types are ordinary call results; generated colon slices stay intrinsic | 188–348; per-file 22.2 |
+| B1, after M1 | Direct-owner function/predicate bitwise fallback | Existing precedence/mixing/cardinality parsing; family priority; no user native privilege or automatic count rules | 81–161 after E1, or 101–201 independently; 22.2 |
+| M2a | Trait descriptor inheritance and explicit trait-view calls, including available surface keys | Diamond deduplication, unrelated ambiguity, stable metadata and ordinary dispatch/frames/termination | Existing M2 scope |
+| M2b | Bound-aware lookup and full refinement/abstract/export transport for those keys | All 14 clone routes, both 5.7 negatives, checked view/binder correspondence and frozen generic choices; no inferred assignment policy | Existing M2 scope; 22.4 |
+| M3 | Full `.doo`/`.dtr` interpretation/coverage protocol from 11.1 | Both mismatch directions; original-source reload; hidden metadata/flattened-source negatives; full precompiled coverage | Existing M3 scope |
+| M4 | Legacy resolver and declared-trait-view parity, including already shipped new surfaces | Exact notation/named-call pairs under both resolvers; intrinsic capability parity checked per surface | Additional adapters 235–440; per-file 22.4 |
+| M5a | Supported general-newtype/codatatype owners and contextual intrinsic escape | Nominal/opaque views, existing intrinsic ancestry, no implicit result lifting or new arrow conversion, disabled parser identity | New-surface adapters 65–135; per-file 22.4 |
+| M5b | Explicit non-equality arithmetic/order override | Escape already available; frozen choices across generic/refinement/export/library paths; no equality, bitwise, indexing or application override | Existing M5b scope |
+| M6a | Compound capture infrastructure and pure value indexed assignment | Ordinary writable roots, pure expression RHSs, one-block expansion, old-value capture, whole-root alias-equality and frame/subtype checks | Part of indexed 403–688 total; 22.3 |
+| M6b | Single-result arithmetic methods and zero-result indexed setters | Ordinary call effects; no nested expression methods; reject setter multi-assignment; compounds freeze each read/operation/write choice | Remainder of indexed 403–688; existing arithmetic work additional |
+| Independent #193 | Bounded integer bitwise intrinsics and their own reference/model/backend work | U/I matrix; no native privilege for user attributes; all #193 model/vacuity/count/result/codegen gates | Not included here |
 
 If M2b is too large, separate the ordinary checked type-view/binder transport
 from symbolic-bound lookup; do not expose an accepted path between those PRs
@@ -2225,3 +2234,1009 @@ operator syntax, intrinsic escape, clone-record implementation, native-code
 comparisons and line estimates remain design material. No implementation,
 exact-pin runtime run, new performance benchmark, or completed #193 vacuity gate
 is claimed.
+
+## 15. Addendum Q1: read indexing and the shared surface representation
+
+This addendum extends the complete design; it does not expand the already
+implemented M1 contract retroactively. Sections 15–24 and the revised tables in
+2.3 and 12.4 are the new recommendations. Earlier references to deferring user
+bitwise/indexing syntax remain descriptions of M1, not permanent prohibitions.
+
+The audit for this addendum uses source/design
+[bb521a95](https://github.com/erniecohen/dafny/tree/bb521a9522ec584d4b0069a8e80ba9e48291dee4),
+M1 [558551c8](https://github.com/erniecohen/dafny/blob/558551c864b84df46c13be1855e4f6b157ff3d74/docs/dev/operators-m1.md),
+and the independent #193 design at
+[5fa590ac](https://github.com/erniecohen/dafny/blob/5fa590ac006d15c78715c03d57064291626e23c3/docs/dev/design/193-bitwise-integers.md).
+The [addendum request](https://github.com/erniecohen/dafny/issues/194#issuecomment-6814055563)
+is the scope. No product implementation or Dafny execution is claimed here.
+The supplied Dafny files have **unverified expected outcomes**. Python model
+execution is reported separately in section 24.2.
+
+### 15.1 Slots and ordinary calls
+
+Declare a read slot with `{:operator "[]"}`. With `k >= 1` indices:
+
+```dafny
+function {:operator "[]"} get(i1: I1, ..., ik: Ik): R
+static function {:operator "[]"} get(x: Owner, i1: I1, ..., ik: Ik): R
+```
+
+These are signature schemata; the packet's `q1-positive.dfy` is complete source.
+The receiver/first formal supplies the static nominal owner. The indices and
+result have their declared ordinary types; there is no implicit integer,
+nonnegativity, finiteness, cardinality, or key-membership restriction. A string,
+tuple or datatype key is as legitimate as an integer. A predicate may supply a
+Boolean result. No method supplies a read expression.
+
+`x[i,j]` is one call, `x.get(i,j)` or `Owner.get(x,i,j)`. In contrast,
+`x[i][j]` is two independently selected calls. The outer occurrence uses the
+static type of the first result. There is no empty-index spelling `x[]`.
+
+Generalize the existing descriptor from unary/binary to a surface family and
+effective operand count, plus a shape discriminator where needed:
+
+```text
+SurfaceKey = (family, effectiveArity, shape)
+effectiveArity includes the owner, whether receiver or first static formal
+IndexRead(k)       -> k+1 operands
+Update(k)          -> k+2 operands: owner, k indices, new value
+Application(n)     -> n+1 operands
+Slice(mask)        -> 1+popcount(mask) operands, mask = written lower/upper bounds
+IndexStore(k)      -> k+2 operands, in statement context only
+```
+
+An instance get2 and a static get2 collide. Get1 and get2 do not. Argument or
+result types never break a same-key ambiguity. Slice(lower) and Slice(upper)
+remain different despite equal arity. Retain the existing restrictions on
+member type parameters, defaults, nameonly parameters and multiple attributes.
+Enclosing-owner type parameters substitute normally. Do not synthesize an
+argument tuple for `x[i,j]`: `x[(i,j)]` is a different, one-index slot.
+
+The selected ordinary call supplies requires, reads, ghost-use checks,
+termination and compiled admissibility. An ordinary function-by-method is
+eligible; verification uses its function contract and compilation uses its
+already verified implementation. No getter/updater relationship, extensionality
+or array law follows from an attribute. A read-only indexer may read heap state
+when its ordinary reads clause permits it.
+
+### 15.2 Decide intrinsic capability before adding intrinsic constraints
+
+Use a pending obligation until ordinary inference determines a receiver head.
+Maintain the visible nominal view for slot lookup separately from the existing
+intrinsic capability view. Then choose an intrinsic or the unique fallback,
+before emitting constraints specific to that intrinsic.
+
+The receiver-family reservations are deliberately per surface:
+
+| Surface | Existing intrinsic family reserved before argument checks |
+|---|---|
+| Read `x[...]` | Sequence/string, array, map/imap, multiset |
+| Functional `x[i := v]` | Sequence/string, map/imap, multiset |
+| Range `x[lo..hi]`, including omissions | Sequence/string, array |
+| Value application `f(...)` | An existing normalized arrow view |
+| Indexed assignment | The existing intrinsic collection/array LHS rules; do not turn immutable sequence/map indexing into an lvalue |
+
+Within a reserved family, wrong dimension, index count/type, key type, bound,
+nullness, frame, compiled-use restriction or precondition remains an error on
+the ordinary intrinsic route. A two-dimensional array used with the wrong
+number of indices does not acquire a fallback; nor does `s[i,j]` for a sequence
+newtype. No diagnostic/constraint rollback and no retry after proof failure.
+
+A capability absent for a *different surface* is different: a visible newtype
+over a map might later define slicing, because maps have no intrinsic slice
+operation, while its map reads/updates remain intrinsic. Owner availability is
+still gated by M5. Primitive collection types cannot acquire members.
+
+Transparent aliases and visible subsets use the underlying owner's view.
+Preserve existing revealed-newtype intrinsic behavior without losing the
+nominal identity for member selection; never inspect hidden representations.
+Do not automatically inherit a represented type's operator members into a
+nominal newtype.
+
+There is a real resolver parity issue, not just a shared registry task:
+refreshed single selection follows `AncestorPreType`, whereas legacy
+`Indexable`/`ContainerIndex`/`ContainerResult` starts from `NormalizeExpand`.
+Thus general-newtype indexing cannot be advertised as supported by both
+resolvers merely because both can find the same slot.
+[Refreshed selection](https://github.com/erniecohen/dafny/blob/bb521a9522ec584d4b0069a8e80ba9e48291dee4/Source/DafnyCore/Resolver/PreType/PreTypeResolve.Expressions.cs#L2472-L2546);
+[legacy constraints](https://github.com/erniecohen/dafny/blob/bb521a9522ec584d4b0069a8e80ba9e48291dee4/Source/DafnyCore/Resolver/NameResolutionAndTypeInference/XConstraint.cs#L43-L224).
+
+For an unbounded type parameter, invent no indexing capability. M2 supplies
+only visible, instantiated instance slots from declared bounds and the ordinary
+bound-typed receiver view. An abstract/exported type needs an exposed member
+signature and checked selection transport. Keep M1's guards until those named
+call paths work. A saved generic user call remains that call after specialization
+to an intrinsically indexable type. A frozen intrinsic does not become a member
+call after a representation change.
+
+### 15.3 Concrete hooks, source identity, and triggers
+
+In the refreshed resolver, branch before the `SeqSelectExpr` and
+`MultiSelectExpr` cases at
+[212–249](https://github.com/erniecohen/dafny/blob/bb521a9522ec584d4b0069a8e80ba9e48291dee4/Source/DafnyCore/Resolver/PreType/PreTypeResolve.Expressions.cs#L212-L249).
+The existing multi-select case imposes an array type and numeric indices
+immediately. Running it first would poison a valid arbitrary-key user call.
+The later legacy adapter branches before `ResolveSeqSelectExpr` and the
+`MultiSelectExpr` case in `NameResolutionAndTypeInference.cs`, not after their
+`XConstraint` emissions.
+
+Retain `SeqSelectExpr`/`MultiSelectExpr` only as printable source inside the
+generalized concrete-syntax wrapper. The semantic child is either the actual
+intrinsic or an ordinary `FunctionCallExpr`. Extend the source-kind switch,
+operand enumeration, direct source-root cloning, intrinsic selection identity,
+and freezing together. M1 currently assumes binary syntax or unary minus in
+[OperatorSyntaxExpr](https://github.com/erniecohen/dafny/blob/558551c864b84df46c13be1855e4f6b157ff3d74/Source/DafnyCore/AST/Expressions/Operators/OperatorSyntaxExpr.cs#L14-L36)
+and [UnderspecificationDetector](https://github.com/erniecohen/dafny/blob/558551c864b84df46c13be1855e4f6b157ff3d74/Source/DafnyCore/Resolver/PreType/UnderspecificationDetector.cs#L278-L303).
+Accepting more attribute strings alone is insufficient.
+
+Every record includes family/count/shape, selected callable/slot, static versus
+instance call form, receiver/type view, and intrinsic family where applicable.
+Transport through all section 5.6 clone paths independently of resolved fields.
+Retain source operands and delimiter origins; do not capture mutable inference
+proxies or old lexical variables in the immutable selection. For a static call,
+pass the owner once as an argument, with a type-only static receiver.
+
+The trigger collector explicitly recognizes `SeqSelectExpr`, `MultiSelectExpr`
+and `ApplyExpr` as well as `FunctionCallExpr`
+([91–99](https://github.com/erniecohen/dafny/blob/bb521a9522ec584d4b0069a8e80ba9e48291dee4/Source/DafnyCore/Triggers/TriggersCollector.cs#L91-L99)).
+It must see the ordinary selected call, not an index-shaped semantic node.
+This applies to explicit `{:trigger x[i]}` and inferred candidates. Preserve
+ordinary named-call trigger behavior; add no user-index trigger heuristic or
+array-select encoding. Generated membership/collection operations stay intrinsic.
+Named-call/notation trigger equivalence is a later implementation check, not a
+claim proved by these design examples.
+
+## 16. Addendum Q2: functional updates, repeated updates, and slices
+
+### 16.1 Pure update slots and composition
+
+Use `{:operator "[:=]"}` for a pure update function. It has `k >= 1` index
+parameters followed by the new value; static form prepends the owner:
+
+```dafny
+function {:operator "[:=]"} put(i: I, v: V): R
+static function {:operator "[:=]"} put(x: Owner, i: I, v: V): R
+```
+
+Expression `x[i := v]` selects `k=1` and means exactly `x.put(i,v)` or
+`Owner.put(x,i,v)`. `R` need not be the owner type. A surrounding assignment
+checks its ordinary result compatibility; another suffix selects from `R`.
+The broader `k`-index descriptor is useful for section 18's multi-index
+*assignment*, which calls a selected function directly without inventing a new
+functional-update spelling.
+
+Choose the user path before the existing `SeqUpdateExpr` constraints, especially
+the constraint making the result agree with the source collection type
+([250–289](https://github.com/erniecohen/dafny/blob/bb521a9522ec584d4b0069a8e80ba9e48291dee4/Source/DafnyCore/Resolver/PreType/PreTypeResolve.Expressions.cs#L250-L289)).
+The legacy `SeqUpdateExpr` case needs the corresponding enabled fork.
+Use a wrapper and ordinary call, with the same contract/reads/ghost/by-method
+policy as read indexing. No mutation, preservation law or getter is implied.
+
+The exact expansion of `x[i := v][j := w]` is `x.put(i,v).put(j,w)` when both
+static result views select those members. Evaluation is receiver, first index,
+first value, first call, second index, second value, second call. Each written
+operand is evaluated once under ordinary ghost erasure. The second call receives
+the first result; an explicit later occurrence of the variable `x` still denotes
+that variable. There is no automatic rebinding of expressions inside later
+indices/values. Alias variables holding the original value remain unchanged.
+
+Repeated same-index updates are two calls. A conventional sequence wrapper may
+have last-write-wins behavior, but the language assumes no such law. No batch
+update operation or compiler folding is needed.
+
+### 16.2 Multi-update spellings: a deliberate boundary
+
+The current suffix grammar already parses nested updates and a tuple-valued
+index, but does not parse either comma spelling:
+
+| Source | Decision in this addendum |
+|---|---|
+| `x[i := v][j := w]` | Accept as two nested calls |
+| `x[(i,j) := v]` | Accept as one call with a tuple key |
+| `x[i,j := v]` | Keep the existing parser rejection; call a named multi-index updater |
+| `x[i := v, j := w]` | Keep the existing parser rejection; write nested updates |
+| `x[i,j] := v` | Already parsed assignment; section 18 can select a two-index updater/setter |
+
+This is a scope decision, **not** a claim that new terminals or Coco alternatives
+are technically unavoidable. As with section 8.2's proposed compound hook, an
+enabled handwritten action before the closing bracket could consume existing
+`:=`/comma tokens and parse more operands without changing the scanner.
+That would still be new parser behavior, with new source representation,
+recovery, grouping and evaluation-order commitments. Nested updates already
+state sequential composition explicitly; tuple keys/named calls express
+multi-index update without that work. Do not silently add the comma spellings
+while describing the change as wrapping already parsed syntax.
+The packet includes a parser-negative multi-index-update example.
+
+### 16.3 Omitted slice bounds are absent arguments
+
+Use four literal shape attributes; underscores are shape placeholders inside
+the attribute string, not identifiers or new source tokens:
+
+| Source | Attribute | Instance parameters | Named expansion |
+|---|---|---|---|
+| `x[lo..hi]` | `{:operator "[_.._]"}` | `(lo: L, hi: H): R` | `x.between(lo,hi)` |
+| `x[lo..]` | `{:operator "[_..]"}` | `(lo: L): R` | `x.from(lo)` |
+| `x[..hi]` | `{:operator "[.._]"}` | `(hi: H): R` | `x.until(hi)` |
+| `x[..]` | `{:operator "[..]"}` | `(): R` | `x.all()` |
+
+Static forms prepend `x: Owner` and use the same key. Names such as `between`
+are illustrative ordinary member names. Only the written bounds are passed,
+left-to-right after the receiver. No zero, length call, sentinel, optional
+argument, implicit tuple, or standard-library `Option` type is manufactured.
+Bounds can have arbitrary declared types, including unequal lower/upper types.
+No result type, default endpoint, interval convention or identity law is built in.
+In particular, `x[..]` need not equal `x`, and a library may require a nonempty
+domain even for that shape.
+
+**Why four shapes:** one function with presence flags reduces the number of
+declarations but needs dummy bounds or an optional-value representation.
+A numeric zero sentinel excludes other index types and conflates omission with
+a written value. A compiler-owned option type adds a new dependency and encoding;
+default arguments would change the existing operator eligibility rule. Four
+fixed keys preserve exact ordinary named-call expansion with no hidden values.
+A library can implement three small forwarding functions to its preferred
+common slice helper. Missing one shape is an error; it is not inferred from
+the others.
+
+Preserve `SeqSelectExpr.E0/E1` nullness in source/clone metadata. Branch before
+`ResolveRangeSelectionExpr` fixes a sequence result and numeric bounds.
+Intrinsic sequences/arrays retain their existing endpoint conventions and
+obligations; these do not leak into a selected user slice. Functional chaining
+after a slice needs only nested ordinary calls.
+
+Colon multi-slicing (`x[n:m:]`) is distinct. The parser constructs a
+`SeqDisplayExpr` of generated slices and additions
+([4489–4501](https://github.com/erniecohen/dafny/blob/bb521a9522ec584d4b0069a8e80ba9e48291dee4/Source/DafnyCore/Dafny.atg#L4489-L4501)).
+Keep those generated operations intrinsic-only. Do not accidentally overload
+this unrequested surface by wrapping every constructed `SeqSelectExpr`.
+
+## 17. Addendum Q3: application of a user value
+
+### 17.1 Shape and selection
+
+`{:operator "()"}` marks an ordinary function/predicate with `n >= 0` argument
+parameters; static form has owner plus those parameters. Results and argument
+types are ordinary declared types. Zero-argument application is supported.
+Require positional actuals on this new user-value path initially, matching the
+no-default/no-nameonly/member-type-parameter policy. Existing named calls and
+arrow calls retain their own actual-binding rules.
+
+Preserve the order of
+[ResolveApplySuffix](https://github.com/erniecohen/dafny/blob/bb521a9522ec584d4b0069a8e80ba9e48291dee4/Source/DafnyCore/Resolver/PreType/PreTypeResolve.Expressions.cs#L2015-L2148):
+
+1. Resolve a name/member as an ordinary function, method, constructor, type or
+   module. An ordinary named-call error is not permission to search an apply slot.
+2. For a value with an existing normalized arrow view, use ordinary arrow
+   application. Bad arity/type/requires/reads remains its ordinary error.
+3. Only for a resolved non-arrow value, wait for its ordinary determined static
+   head and select its unique Application(n) slot. A callable-valued field can
+   enter this case. Use the captured lexical/heap context and resolved actuals.
+4. An unresolved head, absent slot, unsupported view or same-key ambiguity is an
+   enabled diagnostic, not a search over types suggested by the expected result.
+
+An owner type name in function-call position does not construct an instance or
+invoke an instance slot. A method cannot occur in an expression merely because
+it has an operator attribute. Keep apply slots function-only in this addendum;
+M6's arithmetic methods/setters do not implicitly broaden that rule.
+
+A synonym/subset with an existing arrow view remains an arrow. A nominal
+newtype of an arrow is **not automatically callable** at the pin: refresh tests
+`DPreType.IsArrowType(dp.Decl)` and legacy uses `AsArrowType` after
+`NormalizeExpand`. M5 may admit its own explicit apply slot; this addendum adds
+no representation-to-arrow conversion.
+
+Reject a non-null application `AtTok` on a selected user apply slot. Eligible
+slots are one-state functions, so `f@L(args)` must receive the ordinary rule that
+an @-label can only be applied to a two-state function. The fallback branch must
+not silently discard a label that the existing named/arrow path would check.
+Using `old@L(f(args))` remains a different, ordinary heap-context expression.
+
+### 17.2 Nested calls and contract projections
+
+`f(x)(y)` is ordinary composition: first apply `f` to `x`, then apply the
+returned value to `y`. The result may be an arrow or another user callable.
+There is no automatic partial application or inserted curry object.
+`f(x,y)` selects one two-argument slot; it does not mean `f(x)(y)`.
+
+Ghost/compiled use, reads, requires, opaque bodies, termination and by-method
+execution are ordinary function-call rules. Do not synthesize `f.requires` or
+`f.reads`, because the user value has not become an arrow. It may of course have
+ordinary named members; the feature creates no reserved pseudo-members.
+Where ordinary Dafny supports it, the actual member function value
+`f.invoke` can be used with its usual `.requires`/`.reads` selectors. Inherited
+slots use M2's ordinary dispatch and frozen declared view.
+
+### 17.3 AST and implementation
+
+`ApplySuffix` already is concrete syntax and hides its source children after
+resolution
+([ApplySuffix.cs](https://github.com/erniecohen/dafny/blob/bb521a9522ec584d4b0069a8e80ba9e48291dee4/Source/DafnyCore/AST/Expressions/Applications/ApplySuffix.cs#L18-L36)).
+Give operator-eligible value applications a saved selection and the same checked
+transport service as other surfaces. Retain arrow-versus-user meaning across
+clones; do not reselect after type substitution. Ordinary direct named calls
+continue through their existing semantics.
+
+Do not teach `ApplyExpr` to mean user application: it remains genuine arrow
+application. Reuse M1's selected ordinary call finalization, including actual
+parameters and type substitution. Do not manufacture an unresolved
+`f.invoke(...)` name after its lexical scope has been popped.
+
+The later legacy hook is `ResolveApplySuffix` in
+`Resolver/NameResolutionAndTypeInference/NameResolutionAndTypeInference.cs`.
+The trigger collector's existing `AnnotateApplySuffix` specifically preserves
+call terms across module re-resolution
+([231–241](https://github.com/erniecohen/dafny/blob/bb521a9522ec584d4b0069a8e80ba9e48291dee4/Source/DafnyCore/Triggers/TriggersCollector.cs#L231-L241)).
+Its saved candidate must preserve the frozen call and nontextual reference.
+Neither an extra arrow-application term nor a new user-application trigger
+operator belongs in the semantic output.
+
+## 18. Addendum Q4: indexed assignment, aliasing, and frames
+
+### 18.1 Two explicit destination policies
+
+A concrete class/reference destination uses `{:operator "[]:="}` on an ordinary
+**zero-result method**. It has one or more index parameters followed by a value;
+static form prepends the owner. `c[i,j] := v` selects the two-index setter.
+It needs no getter and implies no read-after-write law. A setter can affect
+anything permitted by its ordinary modifies clause, including locations unrelated
+to the indices.
+
+A concrete value destination, initially an inductive datatype, uses the pure
+`{:operator "[:=]"}` updater. Its result must be assignable to the actual root
+storage type, including subset obligations. It likewise needs no getter.
+`x[i,j] := v` may call a two-index updater directly even though
+`x[i,j := v]` remains a parser error. The expression form in section 16 selects
+only the one-index key.
+
+Choose and freeze Setter versus Replacement from the static visible capability,
+never a runtime type or hidden representation. Initial M6 admits concrete
+class/datatype owners. A reference-trait setter can later use M2 dispatch when
+its visible slot specifies that policy. A general abstract/bounded destination
+whose policy is not determined remains rejected until an explicit visible
+capability rule is supplied. Ordinary read/index/apply support through traits
+does not by itself authorize generic writeback.
+
+### 18.2 Accepted roots and restrictions
+
+A value replacement needs an ordinary writable root: mutable local/out variable,
+mutable field, or intrinsic array element (including a multidimensional element).
+Thus `h.value[i] := v` and `a[k][i] := v` can replace the field/array element
+that holds the value. Capture the root address once. The root's ordinary
+initialization, nullness, bounds, read/write-frame and result-subtype checks remain.
+
+An input parameter, constructor result, function result or intermediate user
+value-index result is not a writable root. Do not invent recursive lenses for
+`x[i][j] := v` when `x[i]` is a user value read. Conversely, an object returned
+by a getter can be the receiver of an ordinary mutable-field assignment,
+`x[i].field := v`, or of a class setter. The receiver of a class setter does not
+itself need to be an lvalue.
+
+Intrinsic indexing families retain their existing LHS rules. An array bounds
+failure cannot trigger a setter fallback; a sequence/map read does not become
+mutable merely because an update expression exists. Assignment to a slice is
+not added. A getter-only type does not supply storage.
+
+For the first indexed-assignment milestone, require pure expression RHSs in
+every statement containing a user indexed destination. Reject method RHSs,
+allocation RHSs, havoc and assign-such-that variants on that new path. A
+function-by-method still counts as an ordinary pure function expression.
+These restrictions make all accepted captures and replacement computations
+observe the pre-statement heap. Other existing statements retain their behavior.
+Effectful RHS support would need an additional explicit interference/evaluation
+design; it is not silently inherited from whole-RHS arithmetic method operators.
+
+### 18.3 Single assignment expansion
+
+For a class setter, the conceptual ordinary expansion is:
+
+```dafny
+// r[i,j] := v;
+var t := r;
+var a := i;
+var b := j;
+var u := v;
+t.set(a,b,u);
+```
+
+Evaluate receiver, indices left-to-right, then value, each once, and perform the
+ordinary selected call. Static form uses a type-only static receiver and passes
+`t` once. The full method precondition, modifies/reads, ghost and termination
+checks apply. There is no final store generated after the method, and no
+postcondition `t[i,j] == u` unless the method itself supplies it.
+
+For a value in a field:
+
+```dafny
+// h.value[i] := v;
+var p := h;
+var a := p.value;
+var k := i;
+var u := v;
+var b := a.put(k,u);
+p.value := b;
+```
+
+This is ordinary pure-call-plus-store behavior, including a read of the old
+root. A local root needs no address temporary; an array root captures array and
+indices before reading its old value. Use hygienic temporaries with ordinary
+ghost inference and correct declared/subset types. Do not force ghost operands
+into executable temporaries or bypass definite initialization.
+
+### 18.4 Parallel assignment means parallel whole-root replacement
+
+For a multi-assignment containing value-index destinations and no method setter:
+
+1. In LHS order, capture each root's address, old value and index arguments.
+   For a normal non-index destination, capture its address without inventing a
+   read of its old value.
+2. In RHS order, evaluate each pure RHS once.
+3. In LHS order, compute each proposed whole-root replacement from its captured
+   old value and the corresponding RHS. A later updater does not receive an
+   earlier updater's result.
+4. Perform one ordinary simultaneous assignment to all captured roots, including
+   ordinary destinations in the same statement.
+
+Use the existing pairwise condition: **root locations are distinct, or complete
+replacement values are equal**. The verifier already checks this for ordinary
+assignment
+([CheckLhssDistinctness and multi-assignment](https://github.com/erniecohen/dafny/blob/bb521a9522ec584d4b0069a8e80ba9e48291dee4/Source/DafnyCore/Verifier/Statements/BoogieGenerator.TrAssignment.cs#L127-L184)).
+No new frame or alias axiom is needed.
+
+For a conventional row updater and `x = Row([1,2])`,
+`x[0], x[1] := 7,8` proposes `Row([7,2])` and `Row([1,8])` for the same
+location, so verification fails. Different indices do not prove disjoint roots.
+`x[0], x[0] := 7,7` can verify because the complete replacements are equal.
+Distinct variable names do not prove distinct heap fields: `p.value` and
+`q.value` may alias and get the same check. With distinct roots,
+`x[i], y[j] := y[j], x[i]` uses old values as expected.
+
+For ordered composition, write `x := x[i := v][j := w]`. Do not reinterpret a
+parallel statement as that fold: arbitrary updaters have no commutation or lens
+laws.
+
+Reject every multi-assignment containing a user **method setter**, even when
+indices or receiver variables differ. Its frame can overlap another destination,
+and one setter can invalidate another's precondition. Successive explicit
+statements/calls express the order and expose the ordinary interference
+obligations. This conservative boundary is preferable to assuming independent
+array-cell semantics from bracket notation.
+
+### 18.5 Preserve the assignment AST contract and relate to M6 compounds
+
+Both resolvers currently resolve LHS expressions before checking assignability.
+The new outer destination needs a context-specific path **before getter
+lowering**, so getter-free setters/updaters work and an ordinary function call
+never masquerades as an lvalue.
+[ConcreteAssignStatement](https://github.com/erniecohen/dafny/blob/bb521a9522ec584d4b0069a8e80ba9e48291dee4/Source/DafnyCore/AST/Statements/Assignment/ConcreteAssignStatement.cs#L37-L50);
+[refreshed assignment](https://github.com/erniecohen/dafny/blob/bb521a9522ec584d4b0069a8e80ba9e48291dee4/Source/DafnyCore/Resolver/PreType/PreTypeResolve.Statements.cs#L543-L604).
+
+Store a frozen per-LHS selection and destination policy on the original source
+statement, transported independently of `ResolvedStatements`. A root-capture
+recipe contains source structure/view information, not stale generated locals.
+Reconstruct hygienic captures after transport.
+
+Install **one ordinary BlockStmt** as the resolved expansion. Inside it put the
+capture declarations and then the ordinary selected CallStmt or one ordinary
+parallel AssignStatement. Do not append captures/calls as several entries of
+`AssignStatement.ResolvedStatements`: the verifier casts the multi-entry case
+to `SingleAssignStmt`
+([TrUpdateStmt](https://github.com/erniecohen/dafny/blob/bb521a9522ec584d4b0069a8e80ba9e48291dee4/Source/DafnyCore/Verifier/Statements/BoogieGenerator.TrStatement.cs#L496-L526)).
+The existing verifier/backend paths should suffice unchanged.
+
+M6's later `x[i] += y` needs separately frozen getter, binary operator and
+setter/updater selections. Capture receiver/root and indices once; read via the
+selected getter, apply the selected operation, then call the setter or compute
+and store the whole-root update. No getter/setter coherence is assumed.
+Single assignment here does not need a getter. This explicit expansion lets
+compound and method work reuse the same capture machinery without expanding
+their acceptance boundary prematurely.
+
+Initial M6 also rejects a user indexed destination as an **aggregate `forall`
+update**. Its capture block is not the special single-assignment body recognized
+by the existing resolver; a proof/call body does not acquire heap effects from
+this lowering
+([forall classification](https://github.com/erniecohen/dafny/blob/bb521a9522ec584d4b0069a8e80ba9e48291dee4/Source/DafnyCore/Resolver/PreType/PreTypeResolve.Statements.cs#L324-L376)).
+An ordinary aggregate whole-root assignment remains available, for example
+`forall k | 0 <= k < a.Length { a[k] := a[k].put(0,v); }`, with the ordinary
+preconditions and parallel-update checks. Pure user calls in aggregate RHSs
+remain permitted. A separate quantified destination lowering is not assumed.
+
+### 18.6 Frame expressions are values or genuine intrinsic locations
+
+The array-element location form puts **a backtick before the bracket**, under
+`--referrers`:
+
+```dafny
+a`[i]
+```
+
+It constructs
+`IndexFieldLocationExpression`, not `SeqSelectExpr`
+([FieldLocationBody](https://github.com/erniecohen/dafny/blob/bb521a9522ec584d4b0069a8e80ba9e48291dee4/Source/DafnyCore/Dafny.atg#L4522-L4548)).
+It requires a statically available intrinsic array and correct dimensions.
+User get/set/update metadata never supplies that cell. Reject a user-owned
+non-array operand even if its getter returns an object. The legacy resolver's
+independent restriction on field-location expressions remains until separately
+changed.
+
+Ordinary `reads x[i]`, `modifies x[i]` or `unchanged(x[i])` instead evaluates
+the selected getter as an ordinary function. It is allowed exactly when its
+result is an ordinary permitted frame value and its call is well-defined there.
+An object result names that object's frame; a permitted collection names its
+members. An integer result is not a frame. This never denotes a cell inside `x`
+or grants a setter permission.
+
+An object returned by a getter may support its own genuine field-location
+expression; an array result may support a subsequent genuine indexed location.
+That is ordinary composition through the returned value. It does not create
+user-defined storage semantics.
+
+Setter calls must fit their complete callee frame into the caller's frame.
+Pure replacement needs the updater's ordinary reads plus permission to read and
+write its root field/array element. Retain existing intrinsic location handling
+in `ExpressionTranslator.TranslateSeqSelectExpr` and `InRWClause_Aux`;
+neither may receive a selected user read disguised as an array selection.
+
+
+## 19. Addendum Q5: bitwise symbols are ordinary fallback calls
+
+### 19.1 Slots, count types, and no extra meaning
+
+Allow direct function/predicate fallback slots for all six existing spellings:
+
+| Symbol | Instance shape | Static shape | Result/count rule |
+|---|---|---|---|
+| `& \| ^` | `f(b: U): R` | `f(a: Owner, b: U): R` | Ordinary declared U and R |
+| Unary `!` | `f(): R` | `f(a: Owner): R` | Ordinary R; no truthiness conversion |
+| `<< >>` | `f(k: K): R` | `f(a: Owner, k: K): R` | K is the declared count parameter type |
+
+Use attributes such as `{:operator "&"}` and `{:operator "<<"}`.
+No member gets a semantic width, bitvector identity, axiom, native lowering or
+algebraic law from the symbol. Function-by-method remains ordinary verified
+execution. Keep method bitwise slots and bitwise compound-assignment spellings
+outside this function-only stage; M6 does not silently enable them.
+
+Recommend `int` or `nat` for conventional count APIs, but do not impose either.
+A library may declare a count datatype, or a function accepting negative counts
+with its own meaning. It must prove its body and satisfy its declared contract.
+There is no special bitvector-to-integer count conversion or inferred
+`0 <= k <= width` condition on a user call. The unique slot is selected before
+argument checks; those checks cannot choose another slot.
+
+Requiring an integer count universally would add a special type rule with no
+ordinary-call justification. General declared K is simpler and supports the
+same conventional API through the function signature. In particular, the
+packet's Bits wrapper explicitly requires `0 <= k <= 8`; its rejection of -1
+comes from that contract.
+
+### 19.2 Intrinsic coexistence, including #193
+
+The base supports intrinsic `!` on bool and bitvectors. Intrinsic
+`& | ^ << >>` are bitvector operations, **not** Boolean binary operations.
+Boolean `&&`/`||` stay short-circuit intrinsic syntax and cannot be declared.
+Preserve those exact family distinctions
+([binary resolution](https://github.com/erniecohen/dafny/blob/bb521a9522ec584d4b0069a8e80ba9e48291dee4/Source/DafnyCore/Resolver/PreType/PreTypeResolve.Expressions.cs#L1279-L1295);
+[type families](https://github.com/erniecohen/dafny/blob/bb521a9522ec584d4b0069a8e80ba9e48291dee4/Source/DafnyCore/Resolver/PreType/PreTypeConstraints.cs#L690-L703)).
+
+Reserve an applicable intrinsic family before checking the other operand/count
+and its obligations. A bad bitvector count or #193 result predicate is an error,
+not permission to invoke a user member. Preserve nominal/visible capability
+information and recorded semantic width as section 5.6 requires.
+
+With `U = --user-defined-operators` and `I = --integer-bitwise`:
+
+| U | I | Ordinary supported datatype/class with a slot | Properly width-qualified revealed integer newtype | Existing bool/BV |
+|---|---|---|---|---|
+| off | off | No selected user meaning | No #193 meaning | Existing rules |
+| on | off | Ordinary fallback call | A declared user fallback only after M5 permits that owner; otherwise existing error | Existing rules |
+| off | on | No selected user meaning | #193 intrinsic | Existing rules |
+| on | on | Ordinary fallback call | #193 intrinsic takes priority; failure does not fall back | Existing rules |
+
+Primitive `int` cannot gain members through this feature. Hidden representations
+do not reveal width or slots. A frozen call from an abstract/trait view remains
+a call even when a concrete specialization would choose an intrinsic for newly
+written source. User attributes never gain #193's compiler privilege. The
+independent [#193 selection contract](https://github.com/erniecohen/dafny/blob/5fa590ac006d15c78715c03d57064291626e23c3/docs/dev/design/193-bitwise-integers.md#63-both-resolvers-and-issue-194)
+already has the required separation; no #193 implementation is included here.
+
+### 19.3 Preserve the actual grammar, not conventional expectations
+
+From strongest to weakest among these groups: unary `!`, `& | ^`,
+`* / %`, `+ -`, `<< >>`. Thus `a << b + c` is `a << (b + c)`.
+Repeated same-symbol bitwise operators associate left. Mixed unparenthesized
+`a & b | c` remains the existing ambiguity diagnostic; use explicit parentheses.
+The current shift sequence allows mixed shifts with its existing left association.
+
+The cardinality production suppresses unparenthesized `& | ^` at the top level
+inside `|...|`. Parenthesized expressions re-enter ordinary parsing:
+`|(a & b)|` parses and is meaningful if the returned value supports intrinsic
+cardinality. Suffix argument expressions also retain their existing contexts.
+Do not overload cardinality or treat its closing bar as a user operator.
+[ShiftTerm through UnaryExpression](https://github.com/erniecohen/dafny/blob/bb521a9522ec584d4b0069a8e80ba9e48291dee4/Source/DafnyCore/Dafny.atg#L3596-L3706)
+is authoritative.
+
+## 20. Addendum Q6: parser fit and disabled identity
+
+### 20.1 Existing productions and precise guarded changes
+
+All **accepted** surfaces in sections 15–19 already have a parsing path.
+Recognition needs no new production, alternative, scanner token, precedence
+level or associativity rule. Guarded source-construction/metadata actions do
+need edits; "already parses" does not mean "no parser source changes."
+
+| Surface | Existing hook in `Dafny.atg` | Enabled action |
+|---|---|---|
+| `x[i]` | `Suffix`, `SeqSelectExpr` at 4504 | Retain source root/delimiters in a wrapper |
+| `x[i,j]` | `Suffix`, `MultiSelectExpr` at 4477 | Same, and delay intrinsic-only array registration |
+| `x[i := v]` | `Suffix`, `SeqUpdateExpr` at 4507 | Wrap this source occurrence with update key |
+| Four `x[..]` shapes | `Suffix`, range select at 4488 | Retain both omission bits; no invented operands |
+| `f(x)`/`f()` | `Suffix` at 4511–4515; name/dot call actions around 4345/4436 | Reuse ApplySuffix; retain paired punctuation and later frozen selection |
+| Indexed assignment LHS | `Lhs` at 3732–3741 uses `Suffix` | No new grammar; carry source context to destination resolution |
+| `& \| ^` | `BitvectorFactor` at 3677/3681 | Guarded source factory, unchanged mixing checks |
+| `<< >>` | `ShiftTerm` at 3596–3622 | Guarded source factory, unchanged adjacency/token coalescing |
+| Unary `!` | `UnaryExpression` at 3704–3705 | Wrap only eligible source Not, not other unary operations |
+
+Source links:
+[suffix construction](https://github.com/erniecohen/dafny/blob/bb521a9522ec584d4b0069a8e80ba9e48291dee4/Source/DafnyCore/Dafny.atg#L4320-L4515),
+[LHS/unary/bitwise](https://github.com/erniecohen/dafny/blob/bb521a9522ec584d4b0069a8e80ba9e48291dee4/Source/DafnyCore/Dafny.atg#L3596-L3741).
+The symbol strings in attributes are ordinary existing string literals.
+
+Do not route `FieldLocationBody` through user indexing. Colon multi-slicing's
+generated additions/selects also remain intrinsic. Genuine source operations
+inside their operand expressions still resolve normally; generated machinery
+does not become eligible merely because its node class matches a source class.
+
+The multi-index action unconditionally enqueues
+`SystemModuleModifiers.Add(b => b.ArrayType(...))` at 4479. When enabled,
+defer that registration until intrinsic multi-index selection needs it, before
+building that intrinsic's ordinary type constraints. A selected user call should
+not leave a synthesized arrayN type that its explicit named-call expansion did
+not request. Do not require this change on the disabled path. The later output
+comparison must confirm that registration timing has not changed intrinsic
+meaning or introduced observable unused helpers.
+
+The two new comma-update spellings rejected in section 16.2 could be implemented
+with a guarded pre-`]` handwritten parser hook, using existing tokens and
+Expression routines. That would be additional recognition and recovery work.
+It is deliberately not part of the accepted surface/table above.
+
+### 20.2 Disabled identity argument and limits of the evidence
+
+When U is false, execute the original construction actions, including array
+registration and malformed-input recovery. New guards perform no lookahead,
+allocation of generated names, descriptor validation, constraint registration,
+member search, serialization changes or reference creation before returning to
+that path. Unknown `operator` attributes retain the old inert behavior,
+including malformed/unsupported attribute contents.
+
+Leave terminal declarations, Coco alternatives/predicates, scanner tables,
+FIRST/FOLLOW sets, error IDs/text and the current mixed-bitwise diagnostic
+unchanged. Regenerate rather than hand-edit generated parser files. This is a
+constructive argument for the implementation boundary, **not an observed
+byte-identity test result**.
+
+Extend M1's
+[IntrinsicAttributeCloner](https://github.com/erniecohen/dafny/blob/558551c864b84df46c13be1855e4f6b157ff3d74/Source/DafnyCore/AST/Grammar/ParserNonGeneratedPart.cs#L20-L37)
+for every new source shape. Module attributes still enter the old intrinsic
+legacy phase until M4 changes that restriction explicitly. Function attributes
+and triggers are not blanket-disabled. Original unresolved application suffixes
+retain normal named/arrow behavior there; a new user-call fallback must not leak
+into that phase.
+
+Error recovery for an already invalid `x[i,j := v]`, `a & b | c` or malformed
+suffix must remain the existing parse path, regardless of a visible user member.
+When grammar succeeds but lookup fails, issue a targeted enabled diagnostic:
+missing family/arity/shape, ambiguous slots, unsupported static view, or
+undetermined receiver. A selected call's argument/contract failure remains its
+ordinary diagnostic, with punctuation as the primary source and callee as
+related information.
+
+## 21. Addendum Q7: paired punctuation, navigation, and rename
+
+M1 already represents references with `IsTextual`, marks selected function calls
+nontextual, and excludes their ranges from rename edits.
+[IHasReferences](https://github.com/erniecohen/dafny/blob/558551c864b84df46c13be1855e4f6b157ff3d74/Source/DafnyCore/AST/IHasReferences.cs#L14);
+[FunctionCallExpr](https://github.com/erniecohen/dafny/blob/558551c864b84df46c13be1855e4f6b157ff3d74/Source/DafnyCore/AST/Expressions/Applications/FunctionCallExpr.cs#L155-L156);
+[rename filtering](https://github.com/erniecohen/dafny/blob/558551c864b84df46c13be1855e4f6b157ff3d74/Source/DafnyLanguageServer/Handlers/DafnyRenameHandler.cs#L60-L64).
+
+For a selected bracket/application suffix:
+
+- Give its opening and closing delimiter **separate token-sized hit ranges**,
+  both targeting the same member and displaying the same selected-call meaning.
+- Treat the closing delimiter as an alias of one canonical occurrence at the
+  opening token. Find-references returns that occurrence once.
+- Keep receiver/index/argument identifiers and nested operations at their own
+  ranges. Do not use the entire `[...]` or `(...)` span.
+- Rename initiated at either delimiter may resolve the backing declaration,
+  but edits only the declaration and explicit named references. Neither
+  punctuation token is changed.
+- In `f(x)` the identifier `f` still names its variable/member; the parentheses
+  name the selected apply slot. Each pair in `f(x)(y)` has its own selection.
+
+The full-span alternative is unsafe with current navigation, which prefers
+larger containing ranges
+([SymbolTable.GetDeclarationNode](https://github.com/erniecohen/dafny/blob/558551c864b84df46c13be1855e4f6b157ff3d74/Source/DafnyLanguageServer/Workspace/SymbolTable.cs#L166-L179)).
+It could capture an index's own hover or definition. Two independent occurrences
+would avoid that but duplicate find-references. Canonical occurrence plus alias
+hits is the recommended small extension.
+
+Add an optional canonical occurrence range to `Reference`, defaulting to its
+own `Referer`. Populate hit maps/OperatorMeanings with both punctuation ranges,
+but canonicalize `NodeToReferences`. Extend selected call source metadata to
+retain both tokens through cloning/substitution, and emit the references from
+one source of truth, not both wrapper and resolved call. Keep all old behavior
+on ordinary textual references.
+
+For setters, place the paired nontextual reference metadata on the generated
+`MemberSelectExpr` and emit it there, rather than adding another reference on
+`CallStmt`. Its existing textual reference must be replaced for that selected
+occurrence, because the call's child traversal already visits the member select
+([MemberSelectExpr references](https://github.com/erniecohen/dafny/blob/558551c864b84df46c13be1855e4f6b157ff3d74/Source/DafnyCore/AST/Expressions/Applications/MemberSelectExpr.cs#L297-L298)).
+Ordinary method-name references retain their default textual behavior.
+
+Copy this metadata explicitly in `AST/Substituter.cs` when it rebuilds member
+selections and function calls. It currently copies `IsOperatorCall` on rebuilt
+function calls; new delimiter/canonical-occurrence fields need the same treatment
+([reconstruction](https://github.com/erniecohen/dafny/blob/558551c864b84df46c13be1855e4f6b157ff3d74/Source/DafnyCore/AST/Substituter.cs#L122-L180)).
+Do not assume ordinary resolved-child substitution alone preserves new IDE data.
+
+An intrinsic selection has no user definition target, but can show its intrinsic
+meaning at either token. An indexed assignment shows its selected setter or
+updater, not an invented getter. A later compound shows the several selected
+operations in hover and can choose its principal destination operation for
+navigation. `:=` or `..` may be secondary hover aliases if useful, but they add
+no separate occurrence and must not capture operand ranges.
+
+Source printing/formatting retains existing syntax, grouping and spacing;
+resolved/debug printing may show the named expansion. An invalid/incomplete
+suffix needs no selected-member hover. No formatter or IDE feature may require
+type resolution merely to preserve the written delimiters.
+
+## 22. Addendum Q8: milestone placement and incremental per-file estimates
+
+E1/E2/B1 in section 12.4 are independent additions to the useful M1 surface,
+not a reason to hold M1 for M2 or M5. E1 establishes shared suffix transport and
+IDE infrastructure with reads/application; E2 adds updates/slices. B1 can ship
+after M1 alone or reuse E1's structural work. None requires arbitrary symbols,
+equality override, new axioms, native code generation, or setter semantics.
+
+M2a/M2b extend the same keys through ordinary trait/bound views; their original
+lineage, visibility and clone gates remain. M5 enables only owners/representations
+that the equivalent named calls and intrinsic capabilities already support.
+M5b's arithmetic/order overrides do **not** silently authorize overriding
+intrinsic indexing, slicing, application or bitwise symbols. The new surfaces
+remain fallback-only. Read/apply through an abstract view does not imply an
+assignment policy; section 18.1's restriction remains.
+
+The estimates below are incremental **added plus deleted hand-edited product
+lines against M1**, excluding generated output, tests, documentation and #193.
+They are planning ranges, not measured diffs; roughly 50% error remains plausible.
+They count shared work once. Paths beginning `AST/` or `Resolver/` are relative
+to `Source/DafnyCore/`; LanguageServer paths are relative to `Source/`.
+
+### 22.1 E1: shared suffix infrastructure, read indexing and application
+
+| File | Changed lines | Work |
+|---|---:|---|
+| `Source/DafnyCore/Dafny.atg` | 15–35 | Source-only construction; defer intrinsic array registration |
+| `AST/Grammar/ParserNonGeneratedPart.cs` | 25–50 | Shared factory and module-attribute restoration |
+| `AST/Expressions/Operators/OperatorSyntaxExpr.cs` | 80–140 | Variadic source kinds, operands, direct clone reconstruction and punctuation |
+| `AST/Expressions/Applications/ApplySuffix.cs` | 30–55 | Saved value-application selection and replay |
+| `AST/OperatorSelection.cs` | 40–70 | Surface/count/shape and intrinsic-family recipes |
+| `AST/OperatorCloneContext.cs` | 10–25 | Correspondence/replay support for new recipe variants |
+| `Resolver/OperatorResolution.cs` | 50–85 | Keys, arities and declaration validation |
+| `Resolver/PreType/PreTypeResolve.Operators.cs` | 180–290 | Pending surface selection, ordinary selected-call helpers |
+| `Resolver/PreType/PreTypeResolve.Expressions.cs` | 85–150 | Branch before primitive constraints/noncallable diagnostics |
+| `Resolver/PreType/UnderspecificationDetector.cs` | 25–50 | Generalized freeze/finalization boundary |
+| `AST/Grammar/Printer/Printer.Expression.cs` | 15–35 | Source/resolved output for suffix wrappers |
+| `AST/IHasReferences.cs` | 8–16 | Canonical occurrence range with unchanged default |
+| `AST/Expressions/Applications/FunctionCallExpr.cs` | 20–40 | Paired nontextual source hits |
+| `DafnyLanguageServer/Workspace/SymbolTable.cs` | 35–65 | Alias hits, canonical references and meanings |
+| `DafnyLanguageServer/Handlers/DafnyHoverHandler.cs` | 8–18 | Paired delimiter meaning/signature |
+| `DafnyLanguageServer/Handlers/DafnyRenameHandler.cs` | 0–8 | Existing filtering should mostly suffice |
+| `Triggers/TriggersCollector.cs` | 0–8 | Audit suffix candidate preservation; no new heuristic |
+| `Options/CommonOptionBag.cs` | 5–12 | Update enabled option's actual supported-surface description |
+| `AST/Substituter.cs` | 5–15 | Preserve new function-call source metadata during reconstruction |
+| **E1 total** | **636–1,167** | Shared work is not charged again below |
+
+If E1 needs splitting, land structural scaffolding first with the acceptance
+guards still present, then reads/application. Do not expose partially supported
+clone or trigger paths between those changes.
+
+### 22.2 E2 and B1 after E1
+
+| File | E2 updates/slices | B1 bitwise | Work |
+|---|---:|---:|---|
+| `Source/DafnyCore/Dafny.atg` | 8–16 | 10–20 | Existing construction actions |
+| `AST/Grammar/ParserNonGeneratedPart.cs` | 12–24 | 10–20 | Source factories/intrinsic attribute traversal |
+| `AST/Expressions/Operators/OperatorSyntaxExpr.cs` | 25–50 | 10–20 | Update/slice forms; unary Not |
+| `AST/OperatorSelection.cs` | 10–20 | 5–10 | Shape/mask and intrinsic family identity |
+| `Resolver/OperatorResolution.cs` | 20–35 | 15–25 | Allowed keys/signatures |
+| `Resolver/PreType/PreTypeResolve.Operators.cs` | 70–120 | 20–40 | Fallback/call handling and intrinsic capability classification |
+| `Resolver/PreType/PreTypeResolve.Expressions.cs` | 30–55 | 0 | Avoid source/result collection constraints on user path |
+| `Resolver/PreType/UnderspecificationDetector.cs` | 8–16 | 8–18 | Complete shape freeze |
+| `AST/Grammar/Printer/Printer.Expression.cs` | 5–12 | 0 | Omitted bounds and update printing |
+| `DafnyLanguageServer/Workspace/SymbolTable.cs` | 0 | 3–8 | Unary/bitwise meaning strings |
+| **Totals** | **188–348** | **81–161** | No duplicate E1 scaffold/paired-reference work |
+
+If B1 precedes E1, allow **101–201** product lines instead, primarily to generalize
+the existing unary-only wrapper/freezing paths. Trait, newtype and legacy
+availability still follows their respective milestones.
+
+### 22.3 M6 indexed destinations, with existing M6 work accounted separately
+
+These are the *additional indexed-destination* lines, not an estimate for all
+previously planned compounds and arithmetic methods.
+
+| File | Changed lines | Work |
+|---|---:|---|
+| New `Resolver/IndexedAssignmentLowering.cs` | 220–340 | Static policy, root capture, pure-RHS checks and ordinary block construction |
+| `AST/Statements/Assignment/AssignStatement.cs` | 35–65 | Per-LHS frozen choice and one-block expansion/clone transport |
+| `AST/Statements/Assignment/ConcreteAssignStatement.cs` | 10–25 | Context-aware destination entry before read resolution |
+| `Resolver/PreType/PreTypeResolve.Statements.cs` | 65–110 | Pending destination selection and ordinary-call/store finalization |
+| `Resolver/OperatorResolution.cs` | 20–40 | Setter method and update arity validation |
+| `AST/OperatorSelection.cs` | 25–50 | Destination-policy recipe without captured generated locals |
+| `AST/Expressions/Applications/MemberSelectExpr.cs` | 15–30 | Nontextual setter source metadata, replacing the generated textual reference |
+| `DafnyLanguageServer/Workspace/SymbolTable.cs` | 10–20 | Destination operation meaning |
+| `AST/Substituter.cs` | 3–8 | Preserve setter member-selection metadata |
+| **Indexed M6 total** | **403–688** | Split pure replacements and singleton setters if useful |
+
+No new product rule is expected in `BoogieGenerator.TrAssignment.cs`,
+`BoogieGenerator.TrStatement.cs`, `BoogieGenerator.ExpressionTranslator.cs` or
+the compilers. A need for new alias, heap-location or setter axioms is a reason
+to recheck the lowering, not an intended extension.
+
+### 22.4 Existing later milestones: adapter work, not hidden prerequisites
+
+| Stage/file | Incremental range for these surfaces | Obligation |
+|---|---:|---|
+| M4: `Resolver/NameResolutionAndTypeInference/NameResolutionAndTypeInference.cs` | 235–420 | Read/apply/update/slice/bitwise/destination forks using the shared policy |
+| M4: `Resolver/NameResolutionAndTypeInference/XConstraint.cs` | 0–20 | Prefer emitting existing constraints only on intrinsic branches; no global weakening |
+| M5: `Resolver/PreType/PreTypeResolve.Operators.cs` | 35–70 | Nominal owner versus visible ancestor capability per surface |
+| M5: `Resolver/NameResolutionAndTypeInference/NameResolutionAndTypeInference.cs` | 20–40 | Feature-gated supported-newtype parity, if M4 has shipped |
+| M5: `Resolver/OperatorResolution.cs` | 10–25 | Eligible owner/ordinary callable constraints |
+| M2: existing inheritance/bound/clone implementation | No separate additive budget claimed | Feed generalized keys into M2's already planned work; accept no path lacking its transport proof |
+
+The adapters cannot claim newtype/arrow parity by erasing representations
+indiscriminately. Existing M3 artifact guards/protocol and M1 source-only
+restrictions remain in force. This packet adds no runner bookkeeping, verdict
+ledger, repository snapshot, or speculative baseline updates.
+
+## 23. Addendum Q9: arbitrary symbols and declared precedence
+
+A separate language could parse an operator sequence into operands, existing
+token groups and explicit parentheses, then associate it using a scoped fixity
+table. Precedence climbing or a stack algorithm is linear in sequence length
+for a fixed comparable precedence relation. That association pass is the easy
+part of the work.
+
+It would conflict with this request's fixed precedence/associativity policy if
+it changes any binding powers. Merely assigning existing symbols to their
+existing classes adds little capability. Do not schedule arbitrary declared
+precedence as a milestone of this addendum.
+
+"No new scanner tokens" also bounds the available spelling alphabet. A sequence
+of existing punctuation tokens can be recognized by a separate enabled parser
+hook, but an unrecognized character still fails lexing. Existing shifts,
+disjointness, comparisons, generic brackets, arrows, short-circuit operators,
+attributes and assignment must retain unambiguous meanings. Guarded handwritten
+consumption can leave Coco tables unchanged; it does not remove the need to
+design a second enabled grammar and its error recovery.
+
+If future demand justifies it, resolve **syntactic fixity before operand type
+resolution**, independently of the selected member. Type-specific fixity is
+circular: grouping determines intermediate types, types select owners/operators,
+and those choices would determine grouping. It can yield multiple or no
+interpretations and contradict the deterministic selection design.
+A workable future rule gives each symbol a module/import-scoped fixity, rejects
+conflicting imported declarations and honors all explicit parentheses.
+It is "after symbol/fixity name lookup", not after type-dependent overload
+resolution. Preserve comparison chains separately; their short-circuit and
+adjacent-edge semantics are not ordinary binary associativity.
+
+The main costs are:
+
+- Retain flat syntax and meaningful partial trees for incomplete programs;
+  diagnose malformed expressions locally before unrelated type resolution.
+- Preserve parser recovery; choosing old precedence after a common flat parse
+  does not preserve disabled malformed-input behavior.
+- Let the formatter operate without successful resolution. Fixity/import edits
+  can regroup a module and invalidate its IDE/verification caches.
+- Transport the fixity environment with source/module views and artifacts;
+  reprinting inherited text under a new environment must not change a proof.
+- Preserve source spans, explicit grouping and comparison-chain behavior, and
+  specify adjacency/whitespace rules for multicharacter token sequences.
+
+A separate experiment would plausibly require:
+
+| Product area/file | Changed lines |
+|---|---:|
+| `Dafny.atg` enabled hooks | 100–180 |
+| New operator-sequence parser/fixity pass | 250–450 |
+| New flat syntax AST | 100–180 |
+| Module/fixity collection | 100–200 |
+| Printer/formatter | 100–180 |
+| Declaration transport and IDE invalidation | 100–200 |
+| Options/diagnostics | 80–160 |
+| **Total before tests/artifact work** | **830–1,550** |
+
+These are design estimates, not evidence about another language's implementation.
+The suffix and fixed bitwise additions deliver useful library APIs without
+these costs. Revisit arbitrary fixity only with concrete operators that the
+fixed forms cannot reasonably express.
+
+## 24. Next question, answered, and evidence boundary
+
+### 24.1 Where may lowering occur relative to heaps, binders, and control flow?
+
+**Next question:** can a resolver hoist these calls or their capture temporaries
+out of `old`, a quantified body, a lambda or a short-circuit branch?
+
+**Answer: no.** Pure expression lowering replaces the selected occurrence *in
+place*, retaining its lexical binders, heap label, evaluation context and normal
+well-formedness conditions. For example:
+
+```dafny
+old(x[i])       // old(x.get(i))
+x[old(i)]       // x.get(old(i))
+p && f(x)      // p && f.invoke(x), if the selected result is bool
+```
+
+These are expansion schemata, not interchangeable heaps. Ordinary `old` rules
+still decide which subexpressions read the old heap. No synthesized temporary
+may escape its binder or force a call that belonged to an unselected branch.
+The resolver must not resolve a delayed member name in a later lexical scope.
+Reuse the captured ordinary call context from M1 and the frozen recipe, with
+all ordinary checks. The same discipline applies to explicit trigger attributes
+and ordinary labelled two-state calls inside operands. Selected user apply
+slots themselves reject `@` application labels as section 17.1 specifies.
+
+Only section 18's statement lowering introduces capture temporaries, inside a
+new block at the original statement and control-flow position. Every expression
+inside those captures is resolved in the original context. A static selected
+member uses a type-only static receiver and includes the owner once as an
+actual argument; it does not erase a source receiver's well-formedness checks.
+The normal call and block semantics, not an operator-specific heap axiom,
+provide the relative correctness argument.
+
+This also explains why getters, pure updaters and method setters cannot acquire
+implicit coherence laws. A library can prove a lens/order/bitwise interface's
+laws through ordinary traits, but merely selecting the same punctuation never
+licenses regrouping, parallel setter calls or rewriting a getter after a store.
+
+### 24.2 What the packet establishes
+
+The accompanying standalone Dafny sources cover all five requested surface
+groups, including all four slice shapes, single/multi-index reads and writes,
+zero-argument and nested application, ghost/reads/by-method cases, tuple-key and
+chained updates, bitwise precedence examples, ordinary call-precondition
+failures, alias/frame failures, parser/resolver rejection boundaries and
+`assert false` controls. Every expected Dafny result is explicitly
+**unverified**. Current M1 does not implement these surfaces, and no Dafny
+compiler was run for this addendum.
+
+A "positive" file contains positive substantive declarations plus a deliberately
+failing named false-control declaration. It is not expected to verify as one
+error-free file. A resolver-negative file cannot establish its embedded
+false-control outcome; use the separate ordinary named-call control or the
+independently resolving positive/control case. No `assume`, axiom, admitted
+stub or contradictory precondition is used to make a positive example pass.
+
+The standard-library-only Python models were run:
+
+| Model | Executed result | Coverage |
+|---|---|---|
+| `models/functional_model.py` | **18/18 tests passed** | Receiver/index/value order and single evaluation; persistent aliases; all slice masks; tuple keys; changing result type; failure stops; 288 exhaustive small chained-update cases |
+| `models/assignment_model.py` | **20/20 tests passed** | Root capture; old-value swaps; mixed ordinary/value destinations; root alias equality; multi-index updater; singleton setters; frame/precondition failures; rejected setter multi-assignment |
+
+The 288 exhaustive cases are included in one of the 18 tests, not additional
+test methods. Both models exercise ordinary desugarings and explicit expected
+states/traces; they do not test Dafny resolution, clone transport, trigger output,
+backend execution, source recovery or disabled byte identity.
+
+Later implementation validation should compare accepted notation with its exact
+ordinary expansion and retain effective negative/false controls. It should
+check selected-call/call-graph/trigger/frame behavior, source clone transport,
+paired IDE references and disabled output at the already required gates.
+There is no new test-runner or acceptance ledger proposed in this packet.
