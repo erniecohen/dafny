@@ -1,9 +1,12 @@
+using System.Collections.Generic;
+
 namespace Microsoft.Dafny;
 
 class AbstractSignatureCloner : ScopeCloner {
 
-  public AbstractSignatureCloner(VisibilityScope scope, ModuleDefinition systemModule = null)
-    : base(scope, systemModule) {
+  public AbstractSignatureCloner(VisibilityScope scope, ModuleDefinition systemModule = null,
+    IReadOnlySet<TopLevelDecl> systemTypes = null)
+    : base(scope, systemModule, systemTypes) {
   }
 
   public override ModuleDefinition CloneModuleDefinition(ModuleDefinition m, ModuleDefinition newParent, Name name) {

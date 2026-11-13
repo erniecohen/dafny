@@ -293,7 +293,7 @@ dafny2/Calculations.dfy	0	20 verified, 0 errors
 dafny2/Classics.dfy	0	4 verified, 0 errors	
 dafny2/Intervals.dfy	0	5 verified, 0 errors	
 dafny2/MajorityVote.dfy	0	16 verified, 0 errors	
-dafny2/MinWindowMax.dfy	0	222 verified, 0 errors	
+dafny2/MinWindowMax.dfy	0	232 verified, 0 errors
 dafny2/MonotonicHeapstate.dfy	0	17 verified, 0 errors	
 dafny2/SegmentSum.dfy	0	3 verified, 0 errors	
 dafny2/SmallestMissingNumber-functional.dfy	4	51 verified, 0 errors, 7 out of resource; 8 out of resource	157,230,277,278,279,297

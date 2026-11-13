@@ -2281,7 +2281,7 @@ public abstract class TypeProxy : Type {
 
 #if TI_DEBUG_PRINT
   static int _id = 0;
-  int id = _id++;
+  int id = ModuleNamingScope.Current?.Next("type-proxy") ?? _id++;
 #endif
   [System.Diagnostics.Contracts.Pure]
   public override string TypeName(DafnyOptions options, ModuleDefinition context, bool parseAble) {

@@ -11,6 +11,7 @@ public sealed class OperatorCloneContext {
   public bool HasSelections { get; set; }
   public VisibilityScope ExportScope { get; set; }
   public ModuleDefinition SystemModule { get; set; }
+  internal IReadOnlySet<TopLevelDecl> SystemTypes { get; set; }
 
   public void Register(Declaration source, Declaration target) {
     finalDeclarations[source] = target;
@@ -28,7 +29,8 @@ public sealed class OperatorCloneContext {
     // Type parameters are binders, not exported declarations. Compiler-owned type
     // heads keep their shared identities rather than passing through an export facade.
     if (ExportScope != null && source is not TypeParameter &&
-        !(source is TopLevelDecl top && ReferenceEquals(top.EnclosingModuleDefinition, SystemModule))) {
+        !(source is TopLevelDecl top && (ReferenceEquals(top.EnclosingModuleDefinition, SystemModule) ||
+          SystemTypes?.Contains(top) == true))) {
       if (!source.IsVisibleInScope(ExportScope) ||
           source is TopLevelDeclWithMembers and not DefaultClassDecl && !source.IsRevealedInScope(ExportScope)) {
         throw new InvalidOperationException("operator selection cannot be transported into this export view");

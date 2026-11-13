@@ -937,11 +937,11 @@ module Std.Base64 {
     reveal IsUnpaddedBase64String, IsBase64String;
   }
 
-  lemma EncodeBVIsBase64(b: seq<bv8>)
+  lemma {:isolate_assertions} EncodeBVIsBase64(b: seq<bv8>)
     ensures IsBase64String(EncodeBV(b))
   {
-    // Prove the modulo arithmetic and string concatenation separately from
-    // the bitvector encoding identities.
+    // Check modulo arithmetic, concatenation and bitvector encoding
+    // obligations in separate assertion batches.
     hide *;
     if |b| % 3 == 0 {
       EncodeUnpaddedBase64(b);
@@ -1197,7 +1197,7 @@ module Std.Base64 {
     assert Is2Padding(s[(|s| - 4)..]);
   }
 
-  lemma DecodeValidPartialsFrom1PaddedSeq(s: seq<char>)
+  lemma {:isolate_assertions} DecodeValidPartialsFrom1PaddedSeq(s: seq<char>)
     requires IsBase64String(s)
     requires |s| >= 4
     requires Is1Padding(s[(|s| - 4)..])
