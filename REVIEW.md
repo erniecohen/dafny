@@ -229,8 +229,8 @@ that runs Boogie's own test jobs and packs Boogie's NuGet packages.  The same fi
 is offered to Boogie's master as
 [boogie-org/boogie#1169](https://github.com/boogie-org/boogie/pull/1169).
 
-This branch builds against that fork's release `v3.5.5+review.bdb7f929`, whose
-packages have the version `3.5.5-review.bdb7f929`.  The release carries them with
+This branch builds against that fork's release `v3.5.5+review.dcd726f6`, whose
+packages have the version `3.5.5-review.dcd726f6`.  The release carries them with
 their sha256 sums, and its `REVIEW.md` says what the fork changes and how its
 version is computed.  Besides that fix, it brings:
 
@@ -264,6 +264,15 @@ version is computed.  Besides that fix, it brings:
   verdicts.  Pass them with `--boogie "/cacheUsedTypes /lockFreeExpansion"`; a
   program that loads the standard library cannot yet, because its `.doo` records
   the `--boogie` options it was built with and refuses others.
+- **`/cacheBackground` and `/scheduleByImplementation`, off by default**
+  ([#241](https://github.com/erniecohen/dafny/issues/241)).  Under
+  `/cacheBackground`, a prover whose next split has the same pruned declarations,
+  in the same order, seed, type encoding types and SMT options as the context it
+  holds restarts that context instead of setting it up again; each solver gets the
+  same commands in the same order, so resource counts do not change.
+  `/scheduleByImplementation` lets an implementation's splits run one after the
+  other on one prover, so that more contexts are restarted; it changes which
+  solver process verifies which split, so resource counts can differ.
 - **Canonical native-result map payloads**, on by default
   ([#284](https://github.com/erniecohen/dafny/issues/284)): the same-index
   read-over-write axiom requires a native payload's box/unbox round trip to
@@ -282,10 +291,10 @@ version is computed.  Besides that fix, it brings:
   restores the old deadline for comparison, passed through Dafny's `--boogie`.
 
 `a48933e` made this branch build against the fork's packages, at
-`3.5.5-review.37e4435d`.  It now builds against `3.5.5-review.bdb7f929`:
+`3.5.5-review.37e4435d`.  It now builds against `3.5.5-review.dcd726f6`:
 
 - `Source/DafnyCore/DafnyCore.csproj` names `Boogie.ExecutionEngine`
-  `3.5.5-review.bdb7f929`, and `dotnet-tools.json` names the `boogie` tool at the
+  `3.5.5-review.dcd726f6`, and `dotnet-tools.json` names the `boogie` tool at the
   same version;
 - `nuget.config` adds a local package source, `Binaries/boogie-packages`, and maps
   every Boogie package to it and to nothing else, so a missing package stops the
@@ -319,6 +328,15 @@ changes only a test of Boogie's.  `/typeEncoding:a`, the default, sends the solv
 same text as before.  Its tests are `git-issues/github-issue-281-empty-quantifier.dfy` and
 `git-issues/github-issue-281-hide.dfy`, each run under `:m` and `:a` against one
 expected output.  Its release note is `docs/dev/news/281-typeencoding-m.fix`.
+
+The move from `bdb7f929` to `dcd726f6` is a product change, and so a new version.
+It brings `/cacheBackground` and `/scheduleByImplementation`, from
+[erniecohen/boogie#6](https://github.com/erniecohen/boogie/pull/6); with both off, the
+solver gets the same text as before.  Its test,
+`git-issues/github-issue-241-cache-background.dfy`, verifies a program with every
+assertion its own split on one core, with and without `/cacheBackground`, and requires
+the same report and, from the CSV log, the same outcome and resource count for every
+check.  Its release note is `docs/dev/news/241-boogie-cache-background.feat`.
 
 **To build this branch, run `sh Scripts/fetch-boogie-packages.sh` once first.**
 CI does so in every job that builds.
