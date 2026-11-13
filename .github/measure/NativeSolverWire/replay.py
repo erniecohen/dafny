@@ -49,7 +49,10 @@ for sample in range(args.runs):
     assert b'(error' not in result.stdout, result.stdout[-1000:]
     resources = [int(v) for v in re.findall(rb'\(:rlimit (\d+)\)', result.stdout)]
     assert resources, 'the captured task must request resource statistics'
+    outcomes = re.findall(rb'(?m)^(sat|unsat|unknown)\r?$', result.stdout)
+    assert outcomes, 'the captured task must have a check response'
     observations.append({'sample': sample, 'targetRU': resources[-1],
+                         'targetSmtOutcome': outcomes[-1].decode(),
                          'resourceResponses': len(resources),
                          'stdoutSha256': hashlib.sha256(result.stdout).hexdigest(),
                          'stderrSha256': hashlib.sha256(result.stderr).hexdigest(),

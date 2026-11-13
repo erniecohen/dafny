@@ -164,7 +164,7 @@ sealed class RecordingSolver : SMTLibSolver {
         File.AppendAllText(Path.Combine(directory,"solver-"+number+".jsonl"),JsonSerializer.Serialize(record)+"\n");
       }
       }
-      RecordFinal();
+      try { RecordFinal(); } finally { wire.CloseCapture(); }
     }
   }
 }
@@ -178,6 +178,8 @@ sealed class WireWriter(TextWriter inner, Action<object> publish, Stream? captur
   private long length;
   private IncrementalHash taskHash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
   private long taskLength;
+  private bool captureClosed;
+  public void CloseCapture() { lock(gate) { if (!captureClosed) { capture?.Dispose(); captureClosed=true; } } }
   private long taskStartOffset;
   private int taskOrdinal;
   private string prefixHash = Convert.ToHexStringLower(SHA256.HashData(Array.Empty<byte>()));
