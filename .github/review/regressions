@@ -473,6 +473,10 @@ git-issues/github-issue-211-m3-4.dfy
 # CacheHitsHaveExplicitEventsAndNoReplayedPhases, and CardinalityProfileTests, run in
 # Debug by the regressions job.
 
+# Boogie /cacheBackground (https://github.com/erniecohen/dafny/issues/241): the same report and
+# the same outcome and resource count of every check as without it.
+git-issues/github-issue-241-cache-background.dfy
+
 # A proof-form forall statement outside a method or function body (a constant initializer, a
 # subset-type or newtype constraint or witness, a default value, an iterator body) no longer
 # crashes the verifier (https://github.com/erniecohen/dafny/issues/315).
