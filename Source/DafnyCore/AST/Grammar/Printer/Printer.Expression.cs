@@ -363,7 +363,8 @@ namespace Microsoft.Dafny {
       }
     }
 
-    void PrintActualArguments(ActualBindings bindings, string/*?*/ name, Bpl.IToken/*?*/ atLabel) {
+    void PrintActualArguments(ActualBindings bindings, string/*?*/ name, Bpl.IToken/*?*/ atLabel,
+      bool isTuple = false) {
       Contract.Requires(bindings != null);
       var i = 0;
       if (name != null && name.EndsWith("#")) {
@@ -390,7 +391,7 @@ namespace Microsoft.Dafny {
           if (binding.FormalParameterName != null) {
             wr.Write($"{binding.FormalParameterName.val} := ");
           }
-          PrintExpression(binding.Actual, false);
+          PrintActualArgument(binding.Actual, isTuple);
         }
       } else {
         // print arguments after incorporating default parameters
@@ -402,10 +403,20 @@ namespace Microsoft.Dafny {
           }
           wr.Write(sep);
           sep = ", ";
-          PrintExpression(arg, false);
+          PrintActualArgument(arg, isTuple);
         }
       }
       wr.Write(")");
+    }
+
+    void PrintActualArgument(Expression expression, bool isTuple) {
+      // Tuple components do not admit unparenthesized decreases-to expressions.
+      // Preserve that grammar boundary when serializing the parsed program.
+      if (isTuple && printMode == PrintModes.Serialization) {
+        PrintExpr(expression, BindingStrengthDecreasesTo, true, true, false, -1);
+      } else {
+        PrintExpression(expression, false);
+      }
     }
 
     void PrintBindings(ActualBindings bindings, bool isFollowedBySemicolon) {
@@ -544,7 +555,8 @@ namespace Microsoft.Dafny {
         }
 
         if (printArgs) {
-          PrintActualArguments(dtv.Bindings, null, null);
+          PrintActualArguments(dtv.Bindings, null, null,
+            dtv.MemberName.StartsWith(SystemModuleManager.TupleTypeCtorNamePrefix));
         }
 
       } else if (expr is DisplayExpression) {
@@ -1259,7 +1271,12 @@ namespace Microsoft.Dafny {
         PrintExpression(e.Range, false);
         wr.Write(" :: ");
         if (e.TermLeft != null) {
-          PrintExpression(e.TermLeft, false);
+          if (printMode == PrintModes.Serialization &&
+              Expression.StripParens(e.TermLeft) is StmtExpr { S: AssignStatement }) {
+            PrintExpression(e.TermLeft, false, false);
+          } else {
+            PrintExpression(e.TermLeft, false);
+          }
           wr.Write(" := ");
         }
 
@@ -1270,7 +1287,8 @@ namespace Microsoft.Dafny {
 
       } else if (expr is LambdaExpr) {
         var e = (LambdaExpr)expr;
-        bool parensNeeded = !isRightmost;
+        bool parensNeeded = !isRightmost ||
+                            (printMode == PrintModes.Serialization && contextBindingStrength >= BindingStrengthEquiv);
         if (parensNeeded) {
           wr.Write("(");
         }
@@ -1317,7 +1335,8 @@ namespace Microsoft.Dafny {
         if (e.S is AssertStmt || e.S is ExpectStmt || e.S is AssumeStmt || e.S is CalcStmt) {
           parensNeeded = !isRightmost;
         } else {
-          parensNeeded = !isRightmost || isFollowedBySemicolon;
+          parensNeeded = !isRightmost || isFollowedBySemicolon ||
+                         (printMode == PrintModes.Serialization && contextBindingStrength != 0);
         }
 
         if (parensNeeded) {
