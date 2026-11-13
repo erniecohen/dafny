@@ -464,3 +464,6 @@ git-issues/github-issue-281-hide.dfy
 # Caller type scopes across inline module resolution (--resolution-threads 0):
 # DafnyCore.Test ResolutionPipelineTests.ResolutionEndsWithCallerScopesDisabled and
 # ModuleErrorLeavesCallerScopesAsScheduledResolutionDoes, run by the worker-resolution CI step.
+
+# Rank of arrow-typed datatype fields under --additional-axioms (https://github.com/erniecohen/dafny/issues/326).
+git-issues/github-issue-326.dfy

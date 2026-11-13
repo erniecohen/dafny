@@ -969,3 +969,104 @@ range and inhabited `assert false` controls must still fail. Acceptance also
 requires exact-source CI and complete OFF suite/library verdict and controlled
 resource equality. A diagnostic wrapper that records expected failures and
 exits zero is not that acceptance gate.
+
+## Rank of arrow-typed datatype fields (#326)
+
+https://github.com/erniecohen/dafny/issues/326. For a field `f` of an inductive
+datatype constructor `C` whose type is the total arrow `A0, ..., An-1 -> U`, the
+option adds, in `BoogieGenerator.DataTypes.cs` beside the existing field rank axioms:
+
+```boogie
+forall params, t0..tn: Ty, h: Heap, bx0..bxn-1: Box
+  { ApplyN(t0..tn, h, params_f, bx0..bxn-1), #C(params) }
+  $IsGoodHeap(h) && $Is(params_f, Tclass._System.___hTotalFuncN(t0..tn))
+    && $IsBox(bx0, t0) && ... && $IsBox(bxn-1, tn-1)
+  ==> RANK(ApplyN(t0..tn, h, params_f, bx0..bxn-1)) < DtRank(#C(params))
+```
+
+`RANK` is `DtRank` of the unboxed value for a datatype result, `BoxRank` for a
+type-parameter result and `Seq#Rank` for a sequence result. For a `map` or `imap`
+result it is the value form of the existing map field axiom: under the domain test
+on the applied map, `DtRank` of the unboxed value, triggered on that domain test and
+the constructor term. For the partial arrow `-->` (`___hPartialFuncN`) the
+antecedent also has `RequiresN` of the same arguments. Set, multiset and map-key
+results have no axiom: their elements need equality, which no datatype with an
+arrow-typed field supports, so such a result never contains the constructor's
+own type. `~>` fields and codatatype fields get nothing. The option is tested
+before anything is built, so with it off the Boogie program is unchanged. Its kind
+is **asserts**.
+
+### Model
+
+Take the set-theoretic model of inductive datatypes in which a value of a
+datatype whose constructors take functions is a well-founded tree, possibly
+infinitely branching: a constructor applied to a total function `A -> T` has the
+values of the function among its immediate subterms, and the rank is the ordinal
+height of the tree. Total arrow handles that satisfy
+`$Is(_, ___hTotalFuncN(..))` read no heap and have the trivial precondition, so in
+a good heap `ApplyN` is the mathematical function's value at the boxed arguments;
+its rank is below the rank of the constructor term that stores the function. A
+partial arrow handle reads no heap either; where `RequiresN` holds the application
+is a value of the stored function's graph and the same argument applies. Outside
+the precondition nothing is stated. A `~>` function may read the heap, and a value
+built from a heap-reading function can, through a field it reads, contain itself;
+no fact is given for such fields. A codatatype has no rank.
+
+Dafny's `DtRank` is integer-valued, and a constructor such as
+`Lim(f: nat -> Ord)` has an unbounded set of subterm ranks, so the integer
+interpretation needs ordinal ranks. The existing axioms already need them, by
+default: `Lim(m: imap<nat, Ord>)` with `m := imap k :: Up(k)` gives the same
+infinitely branching tree and verifies today. Source programs cannot state
+integer facts about `DtRank`; the only uses are the strict comparisons of
+`decreases` and `<` on datatype values, and those are consistent with ordinal
+ranks. The new axiom adds no new shape of model to the existing one.
+
+### Circular constructions
+
+A cycle would need a value `v == C(..f..)` with `f(x) == v` or `f(x)` containing
+`v`. Each route to one is rejected before the new fact applies:
+
+- a function name in its own body (`Node(F)` inside `F`) is a naked function in a
+  recursive setting, a resolution error, as are the same through a `const`, a
+  class `const` initializer, a datatype member, a trait member and
+  `--general-traits`;
+- eta expansion `Node((n: nat) => F())` and dispatch through a trait both fail the
+  termination check;
+- a lambda that reads the heap does not satisfy `->`'s subset constraint, and a
+  `~>` value coerced to `->` fails the same check; a `~>` field gets no fact, and a
+  `~>` value with an empty reads clause still cannot read the object that holds
+  the value under construction;
+- subset types over arrows add their constraint to `->`'s, and newtypes over
+  arrows are rejected;
+- iterators: the yielded value and the iterator's state are heap state, so the
+  lambda that would read them is not `->`;
+- curried fields `A -> (B -> T)` give nothing for the inner arrow, which is a
+  result of arrow type, not a datatype;
+- codatatypes: no fact at all, and a datatype holding a codatatype through an
+  arrow gets only the fact for the codatatype value, which no rank axiom relates
+  to its own fields.
+
+When a termination check fails, the function's definition axiom is still
+emitted, and with it the existing rank axioms can prove `false` in other
+declarations of the same program: `function F(): T { Node([F()]) }` does so with a
+`seq` field, by default. With the option on, `Node((n: nat) => F())` behaves the
+same. The program does not verify, because the termination error is reported.
+
+A trait marked `{:termination false}` and extended in another module is not
+checked for termination (https://github.com/erniecohen/dafny/issues/211). The
+existing direct-field axiom then proves `false` by default, and the new axiom does
+so with the option on. Both move when that issue is fixed.
+
+### Controls
+
+`git-issues/github-issue-326.dfy` runs, with the option off and on and under both
+resolvers, the issue's program, a positive file (Brouwer ordinals with an
+induction lemma, multi-argument and zero-argument arrows, partial arrows,
+generic and mutually recursive datatypes, `seq`, `map` and `imap` results, a
+subset type over an arrow and a `~>` variable holding a `->` field) and a vacuity
+control with an `ensures false` lemma for each of those forms. With the option on
+it runs one file per circular route above, each with a false-derivation attempt
+that must not verify, and the seq-field baseline and the
+`{:termination false}` interaction. The positive file has 19 verified
+declarations with the option on and 16 errors with it off; every vacuity control
+fails in both settings.

@@ -146,6 +146,26 @@ Z3 5.1.0 (`Sequences.Elements` well-formedness to out of resource, `DecodeValidP
 well-formedness to correct); the commit that updates their expected verdicts gives the counts.
 With the option off, no verdict of the suite or of the standard library moves.
 
+## Rank of arrow-typed datatype fields under `--additional-axioms` ([issue 326](https://github.com/erniecohen/dafny/issues/326))
+
+The existing field rank axioms put the elements of a `seq`, `set` or `multiset` field and the keys
+and values of a `map` field below the constructor value, but nothing related an application of a
+function-typed field to it, so `function Count(o: Ord): nat` over
+`datatype Ord = Zero | Succ(Ord) | Lim(f: nat -> Ord)` failed its termination check at `Count(f(0))`.
+With `--additional-axioms`, `AddArrowFieldRankAxioms` (`BoogieGenerator.DataTypes.cs`) adds, for
+a field of type `A -> T`, `RANK(ApplyN(.., h, f, bx..)) < DtRank(#C(..f..))` under
+`$IsGoodHeap(h)`, `$Is(f, TotalFuncN(..))` and the arguments' types, for a datatype,
+type-parameter, `seq`, `map` or `imap` result, triggered on the application and the constructor
+term; for `A --> T` the antecedent also has `RequiresN`.  `~>` fields and codatatype fields get
+nothing.  Its kind is **asserts**.  The model is the well-founded (possibly infinitely branching)
+tree model with ordinal ranks that the existing `imap` field axioms already need
+([`docs/dev/additional-axioms.md`](docs/dev/additional-axioms.md#rank-of-arrow-typed-datatype-fields-326)),
+which also lists each circular-construction route and why it is rejected.  With the option off
+the translation is unchanged.  The regression is `git-issues/github-issue-326.dfy`: the issue's
+program, positive and `ensures false` fixtures under both resolvers and both settings, and one
+fixture per circular route, with a false-derivation attempt, with the option on.  The release
+note is `docs/dev/news/326.feat`.
+
 ## Review follow-up (https://github.com/erniecohen/dafny/issues/23)
 
 The glued-map elements guard now uses the glued map's domain. The domain axiom

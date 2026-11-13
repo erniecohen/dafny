@@ -1,0 +1,368 @@
+original (additional-axioms:false, type-system-refresh:false, Z3 5.1.0)
+github-issue-326-original.dfy(6,35): Error: cannot prove termination; try supplying a decreases clause
+github-issue-326-original.dfy(12,29): Error: cannot prove termination; try supplying a decreases clause
+github-issue-326-original.dfy(19,36): Error: cannot prove termination; try supplying a decreases clause
+
+Dafny program verifier finished with 1 verified, 3 errors
+positive (additional-axioms:false, type-system-refresh:false, Z3 5.1.0)
+github-issue-326-positive.dfy(20,48): Error: decreases clause might not decrease
+github-issue-326-positive.dfy(28,34): Error: cannot prove termination; try supplying a decreases clause
+github-issue-326-positive.dfy(38,41): Error: cannot prove termination; try supplying a decreases clause
+github-issue-326-positive.dfy(49,62): Error: decreases clause might not decrease
+github-issue-326-positive.dfy(56,25): Error: cannot prove termination; try supplying a decreases clause
+github-issue-326-positive.dfy(62,25): Error: cannot prove termination; try supplying a decreases clause
+github-issue-326-positive.dfy(69,37): Error: cannot prove termination; try supplying a decreases clause
+github-issue-326-positive.dfy(78,38): Error: cannot prove termination; try supplying a decreases clause
+github-issue-326-positive.dfy(89,25): Error: cannot prove termination; try supplying a decreases clause
+github-issue-326-positive.dfy(92,25): Error: cannot prove termination; try supplying a decreases clause
+github-issue-326-positive.dfy(98,47): Error: cannot prove termination; try supplying a decreases clause
+github-issue-326-positive.dfy(102,52): Error: cannot prove termination; try supplying a decreases clause
+github-issue-326-positive.dfy(106,53): Error: cannot prove termination; try supplying a decreases clause
+github-issue-326-positive.dfy(113,29): Error: cannot prove termination; try supplying a decreases clause
+github-issue-326-positive.dfy(120,7): Error: cannot prove termination; try supplying a decreases clause
+github-issue-326-positive.dfy(127,0): Error: a postcondition could not be proved on this return path
+github-issue-326-positive.dfy(126,20): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 3 verified, 16 errors
+false-control (additional-axioms:false, type-system-refresh:false, Z3 5.1.0)
+github-issue-326-false-control.dfy(12,29): Error: cannot prove termination; try supplying a decreases clause
+github-issue-326-false-control.dfy(18,0): Error: a postcondition could not be proved on this return path
+github-issue-326-false-control.dfy(17,10): Related location: this is the postcondition that could not be proved
+github-issue-326-false-control.dfy(20,2): Error: assertion might not hold
+github-issue-326-false-control.dfy(26,0): Error: a postcondition could not be proved on this return path
+github-issue-326-false-control.dfy(25,10): Related location: this is the postcondition that could not be proved
+github-issue-326-false-control.dfy(27,2): Error: assertion might not hold
+github-issue-326-false-control.dfy(35,0): Error: a postcondition could not be proved on this return path
+github-issue-326-false-control.dfy(34,10): Related location: this is the postcondition that could not be proved
+github-issue-326-false-control.dfy(37,15): Error: assertion might not hold
+github-issue-326-false-control.dfy(38,19): Error: assertion might not hold
+github-issue-326-false-control.dfy(44,0): Error: a postcondition could not be proved on this return path
+github-issue-326-false-control.dfy(43,10): Related location: this is the postcondition that could not be proved
+github-issue-326-false-control.dfy(48,2): Error: assertion might not hold
+github-issue-326-false-control.dfy(49,2): Error: assertion might not hold
+github-issue-326-false-control.dfy(55,0): Error: a postcondition could not be proved on this return path
+github-issue-326-false-control.dfy(54,10): Related location: this is the postcondition that could not be proved
+github-issue-326-false-control.dfy(56,2): Error: assertion might not hold
+github-issue-326-false-control.dfy(62,0): Error: a postcondition could not be proved on this return path
+github-issue-326-false-control.dfy(61,10): Related location: this is the postcondition that could not be proved
+github-issue-326-false-control.dfy(63,2): Error: assertion might not hold
+github-issue-326-false-control.dfy(69,0): Error: a postcondition could not be proved on this return path
+github-issue-326-false-control.dfy(68,10): Related location: this is the postcondition that could not be proved
+github-issue-326-false-control.dfy(70,2): Error: assertion might not hold
+github-issue-326-false-control.dfy(78,2): Error: assertion might not hold
+github-issue-326-false-control.dfy(83,12): Error: a precondition for this call could not be proved
+github-issue-326-false-control.dfy(75,16): Related location: this is the precondition that could not be proved
+
+Dafny program verifier finished with 5 verified, 19 errors
+original (additional-axioms:false, type-system-refresh:true, Z3 5.1.0)
+github-issue-326-original.dfy(6,35): Error: cannot prove termination; try supplying a decreases clause
+github-issue-326-original.dfy(12,29): Error: cannot prove termination; try supplying a decreases clause
+github-issue-326-original.dfy(19,36): Error: cannot prove termination; try supplying a decreases clause
+
+Dafny program verifier finished with 1 verified, 3 errors
+positive (additional-axioms:false, type-system-refresh:true, Z3 5.1.0)
+github-issue-326-positive.dfy(20,48): Error: decreases clause might not decrease
+github-issue-326-positive.dfy(28,34): Error: cannot prove termination; try supplying a decreases clause
+github-issue-326-positive.dfy(38,41): Error: cannot prove termination; try supplying a decreases clause
+github-issue-326-positive.dfy(49,62): Error: decreases clause might not decrease
+github-issue-326-positive.dfy(56,25): Error: cannot prove termination; try supplying a decreases clause
+github-issue-326-positive.dfy(62,25): Error: cannot prove termination; try supplying a decreases clause
+github-issue-326-positive.dfy(69,37): Error: cannot prove termination; try supplying a decreases clause
+github-issue-326-positive.dfy(78,38): Error: cannot prove termination; try supplying a decreases clause
+github-issue-326-positive.dfy(89,25): Error: cannot prove termination; try supplying a decreases clause
+github-issue-326-positive.dfy(92,25): Error: cannot prove termination; try supplying a decreases clause
+github-issue-326-positive.dfy(98,47): Error: cannot prove termination; try supplying a decreases clause
+github-issue-326-positive.dfy(102,52): Error: cannot prove termination; try supplying a decreases clause
+github-issue-326-positive.dfy(106,53): Error: cannot prove termination; try supplying a decreases clause
+github-issue-326-positive.dfy(113,29): Error: cannot prove termination; try supplying a decreases clause
+github-issue-326-positive.dfy(120,7): Error: cannot prove termination; try supplying a decreases clause
+github-issue-326-positive.dfy(127,0): Error: a postcondition could not be proved on this return path
+github-issue-326-positive.dfy(126,20): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 3 verified, 16 errors
+false-control (additional-axioms:false, type-system-refresh:true, Z3 5.1.0)
+github-issue-326-false-control.dfy(12,29): Error: cannot prove termination; try supplying a decreases clause
+github-issue-326-false-control.dfy(18,0): Error: a postcondition could not be proved on this return path
+github-issue-326-false-control.dfy(17,10): Related location: this is the postcondition that could not be proved
+github-issue-326-false-control.dfy(20,2): Error: assertion might not hold
+github-issue-326-false-control.dfy(26,0): Error: a postcondition could not be proved on this return path
+github-issue-326-false-control.dfy(25,10): Related location: this is the postcondition that could not be proved
+github-issue-326-false-control.dfy(27,2): Error: assertion might not hold
+github-issue-326-false-control.dfy(35,0): Error: a postcondition could not be proved on this return path
+github-issue-326-false-control.dfy(34,10): Related location: this is the postcondition that could not be proved
+github-issue-326-false-control.dfy(37,15): Error: assertion might not hold
+github-issue-326-false-control.dfy(38,19): Error: assertion might not hold
+github-issue-326-false-control.dfy(44,0): Error: a postcondition could not be proved on this return path
+github-issue-326-false-control.dfy(43,10): Related location: this is the postcondition that could not be proved
+github-issue-326-false-control.dfy(48,2): Error: assertion might not hold
+github-issue-326-false-control.dfy(49,2): Error: assertion might not hold
+github-issue-326-false-control.dfy(55,0): Error: a postcondition could not be proved on this return path
+github-issue-326-false-control.dfy(54,10): Related location: this is the postcondition that could not be proved
+github-issue-326-false-control.dfy(56,2): Error: assertion might not hold
+github-issue-326-false-control.dfy(62,0): Error: a postcondition could not be proved on this return path
+github-issue-326-false-control.dfy(61,10): Related location: this is the postcondition that could not be proved
+github-issue-326-false-control.dfy(63,2): Error: assertion might not hold
+github-issue-326-false-control.dfy(69,0): Error: a postcondition could not be proved on this return path
+github-issue-326-false-control.dfy(68,10): Related location: this is the postcondition that could not be proved
+github-issue-326-false-control.dfy(70,2): Error: assertion might not hold
+github-issue-326-false-control.dfy(78,2): Error: assertion might not hold
+github-issue-326-false-control.dfy(83,12): Error: a precondition for this call could not be proved
+github-issue-326-false-control.dfy(75,16): Related location: this is the precondition that could not be proved
+
+Dafny program verifier finished with 5 verified, 19 errors
+original (additional-axioms:true, type-system-refresh:false, Z3 5.1.0)
+
+Dafny program verifier finished with 4 verified, 0 errors
+positive (additional-axioms:true, type-system-refresh:false, Z3 5.1.0)
+
+Dafny program verifier finished with 19 verified, 0 errors
+false-control (additional-axioms:true, type-system-refresh:false, Z3 5.1.0)
+github-issue-326-false-control.dfy(18,0): Error: a postcondition could not be proved on this return path
+github-issue-326-false-control.dfy(17,10): Related location: this is the postcondition that could not be proved
+github-issue-326-false-control.dfy(26,0): Error: a postcondition could not be proved on this return path
+github-issue-326-false-control.dfy(25,10): Related location: this is the postcondition that could not be proved
+github-issue-326-false-control.dfy(35,0): Error: a postcondition could not be proved on this return path
+github-issue-326-false-control.dfy(34,10): Related location: this is the postcondition that could not be proved
+github-issue-326-false-control.dfy(44,0): Error: a postcondition could not be proved on this return path
+github-issue-326-false-control.dfy(43,10): Related location: this is the postcondition that could not be proved
+github-issue-326-false-control.dfy(55,0): Error: a postcondition could not be proved on this return path
+github-issue-326-false-control.dfy(54,10): Related location: this is the postcondition that could not be proved
+github-issue-326-false-control.dfy(62,0): Error: a postcondition could not be proved on this return path
+github-issue-326-false-control.dfy(61,10): Related location: this is the postcondition that could not be proved
+github-issue-326-false-control.dfy(69,0): Error: a postcondition could not be proved on this return path
+github-issue-326-false-control.dfy(68,10): Related location: this is the postcondition that could not be proved
+github-issue-326-false-control.dfy(83,12): Error: a precondition for this call could not be proved
+github-issue-326-false-control.dfy(75,16): Related location: this is the precondition that could not be proved
+
+Dafny program verifier finished with 7 verified, 8 errors
+original (additional-axioms:true, type-system-refresh:true, Z3 5.1.0)
+
+Dafny program verifier finished with 4 verified, 0 errors
+positive (additional-axioms:true, type-system-refresh:true, Z3 5.1.0)
+
+Dafny program verifier finished with 19 verified, 0 errors
+false-control (additional-axioms:true, type-system-refresh:true, Z3 5.1.0)
+github-issue-326-false-control.dfy(18,0): Error: a postcondition could not be proved on this return path
+github-issue-326-false-control.dfy(17,10): Related location: this is the postcondition that could not be proved
+github-issue-326-false-control.dfy(26,0): Error: a postcondition could not be proved on this return path
+github-issue-326-false-control.dfy(25,10): Related location: this is the postcondition that could not be proved
+github-issue-326-false-control.dfy(35,0): Error: a postcondition could not be proved on this return path
+github-issue-326-false-control.dfy(34,10): Related location: this is the postcondition that could not be proved
+github-issue-326-false-control.dfy(44,0): Error: a postcondition could not be proved on this return path
+github-issue-326-false-control.dfy(43,10): Related location: this is the postcondition that could not be proved
+github-issue-326-false-control.dfy(55,0): Error: a postcondition could not be proved on this return path
+github-issue-326-false-control.dfy(54,10): Related location: this is the postcondition that could not be proved
+github-issue-326-false-control.dfy(62,0): Error: a postcondition could not be proved on this return path
+github-issue-326-false-control.dfy(61,10): Related location: this is the postcondition that could not be proved
+github-issue-326-false-control.dfy(69,0): Error: a postcondition could not be proved on this return path
+github-issue-326-false-control.dfy(68,10): Related location: this is the postcondition that could not be proved
+github-issue-326-false-control.dfy(83,12): Error: a precondition for this call could not be proved
+github-issue-326-false-control.dfy(75,16): Related location: this is the precondition that could not be proved
+
+Dafny program verifier finished with 7 verified, 8 errors
+route-class-const-ctor (additional-axioms:true, type-system-refresh:false, Z3 5.1.0)
+github-issue-326-route-class-const-ctor.dfy(7,29): Error: in the first division of the constructor body (before 'new;'), 'this' can only be used to assign to its fields
+1 resolution/type errors detected in github-issue-326-route-class-const-ctor.dfy
+route-class-const-init (additional-axioms:true, type-system-refresh:false, Z3 5.1.0)
+github-issue-326-route-class-const-init.dfy(5,8): Error: const definition contains a cycle: C.t -> C.M -> C.t
+1 resolution/type errors detected in github-issue-326-route-class-const-init.dfy
+route-class-const-pair (additional-axioms:true, type-system-refresh:false, Z3 5.1.0)
+github-issue-326-route-class-const-pair.dfy(5,8): Error: const definition contains a cycle: C.f -> C.t -> C.f
+1 resolution/type errors detected in github-issue-326-route-class-const-pair.dfy
+route-codatatype (additional-axioms:true, type-system-refresh:false, Z3 5.1.0)
+github-issue-326-route-codatatype.dfy(6,31): Error: cannot prove termination; try supplying a decreases clause
+github-issue-326-route-codatatype.dfy(9,28): Error: a postcondition could not be proved on this return path
+github-issue-326-route-codatatype.dfy(9,22): Related location: this is the postcondition that could not be proved
+github-issue-326-route-codatatype.dfy(13,83): Error: a postcondition could not be proved on this return path
+github-issue-326-route-codatatype.dfy(13,77): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 1 verified, 3 errors
+route-const (additional-axioms:true, type-system-refresh:false, Z3 5.1.0)
+github-issue-326-route-const.dfy(4,6): Error: recursive dependency involving constant initialization: K -> K
+1 resolution/type errors detected in github-issue-326-route-const.dfy
+route-const-function (additional-axioms:true, type-system-refresh:false, Z3 5.1.0)
+github-issue-326-route-const-function.dfy(4,6): Error: const definition contains a cycle: T0 -> F -> T0
+1 resolution/type errors detected in github-issue-326-route-const-function.dfy
+route-datatype-const (additional-axioms:true, type-system-refresh:false, Z3 5.1.0)
+github-issue-326-route-datatype-const.dfy(5,8): Error: const definition contains a cycle: D.t -> D.M -> D.t
+1 resolution/type errors detected in github-issue-326-route-datatype-const.dfy
+route-datatype-member (additional-axioms:true, type-system-refresh:false, Z3 5.1.0)
+github-issue-326-route-datatype-member.dfy(5,39): Error: cannot use naked function in recursive setting. Possible solution: eta expansion.
+1 resolution/type errors detected in github-issue-326-route-datatype-member.dfy
+route-eta (additional-axioms:true, type-system-refresh:false, Z3 5.1.0)
+github-issue-326-route-eta.dfy(6,45): Error: cannot prove termination; try supplying a decreases clause
+
+Dafny program verifier finished with 1 verified, 1 error
+route-heap-coerce (additional-axioms:true, type-system-refresh:false, Z3 5.1.0)
+github-issue-326-route-heap-coerce.dfy(7,24): Error: value does not satisfy the subset constraints of 'nat -> Tree' (possible cause: it may be partial or have read effects)
+github-issue-326-route-heap-coerce.dfy(9,2): Error: assertion might not hold
+
+Dafny program verifier finished with 0 verified, 2 errors
+route-heap-lambda (additional-axioms:true, type-system-refresh:false, Z3 5.1.0)
+github-issue-326-route-heap-lambda.dfy(7,14): Error: value does not satisfy the subset constraints of 'nat -> Tree' (possible cause: it may be partial or have read effects)
+
+Dafny program verifier finished with 0 verified, 1 error
+route-iterator (additional-axioms:true, type-system-refresh:false, Z3 5.1.0)
+github-issue-326-route-iterator.dfy(7,24): Error: insufficient reads clause to read field; Consider extracting f to a local variable before the lambda expression, or adding 'reads this' in the enclosing lambda specification for resolution
+
+Dafny program verifier finished with 1 verified, 1 error
+route-iterator-state (additional-axioms:true, type-system-refresh:false, Z3 5.1.0)
+github-issue-326-route-iterator-state.dfy(8,12): Error: value does not satisfy the subset constraints of 'nat -> Tree' (possible cause: it may be partial or have read effects)
+
+Dafny program verifier finished with 1 verified, 1 error
+route-naked (additional-axioms:true, type-system-refresh:false, Z3 5.1.0)
+github-issue-326-route-naked.dfy(4,32): Error: cannot use naked function in recursive setting. Possible solution: eta expansion.
+1 resolution/type errors detected in github-issue-326-route-naked.dfy
+route-nested (additional-axioms:true, type-system-refresh:false, Z3 5.1.0)
+github-issue-326-route-nested.dfy(6,31): Error: cannot prove termination; try supplying a decreases clause
+github-issue-326-route-nested.dfy(8,68): Error: cannot prove termination; try supplying a decreases clause
+github-issue-326-route-nested.dfy(9,26): Error: a postcondition could not be proved on this return path
+github-issue-326-route-nested.dfy(9,20): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 0 verified, 3 errors
+route-newtype (additional-axioms:true, type-system-refresh:false, Z3 5.1.0)
+github-issue-326-route-newtype.dfy(3,8): Error: newtypes must be based on some numeric type (got nat -> T)
+github-issue-326-route-newtype.dfy(6,37): Error: type conversions are not supported to this type (got nat -> W)
+2 resolution/type errors detected in github-issue-326-route-newtype.dfy
+route-subset (additional-axioms:true, type-system-refresh:false, Z3 5.1.0)
+github-issue-326-route-subset.dfy(5,47): Error: function precondition could not be proved
+github-issue-326-route-subset.dfy(8,42): Error: a postcondition could not be proved on this return path
+github-issue-326-route-subset.dfy(8,36): Related location: this is the postcondition that could not be proved
+github-issue-326-route-subset.dfy(10,19): Error: value does not satisfy the subset constraints of 'Tot<U>'
+github-issue-326-route-subset.dfy(15,31): Error: cannot prove termination; try supplying a decreases clause
+
+Dafny program verifier finished with 0 verified, 4 errors
+route-tilde-field (additional-axioms:true, type-system-refresh:false, Z3 5.1.0)
+github-issue-326-route-tilde-field.dfy(5,42): Error: a postcondition could not be proved on this return path
+github-issue-326-route-tilde-field.dfy(5,36): Related location: this is the postcondition that could not be proved
+github-issue-326-route-tilde-field.dfy(12,30): Error: insufficient reads clause to invoke function
+github-issue-326-route-tilde-field.dfy(12,73): Error: cannot prove termination; try supplying a decreases clause
+
+Dafny program verifier finished with 0 verified, 3 errors
+route-tilde-reads-empty (additional-axioms:true, type-system-refresh:false, Z3 5.1.0)
+github-issue-326-route-tilde-reads-empty.dfy(6,38): Error: insufficient reads clause to read field; Consider extracting c.t to a local variable before the lambda expression, or adding 'reads c' in the enclosing lambda specification for resolution
+github-issue-326-route-tilde-reads-empty.dfy(9,2): Error: assertion might not hold
+
+Dafny program verifier finished with 0 verified, 2 errors
+route-trait-dispatch (additional-axioms:true, type-system-refresh:false, Z3 5.1.0)
+github-issue-326-route-trait-dispatch.dfy(6,38): Error: cannot prove termination; try supplying a decreases clause
+
+Dafny program verifier finished with 3 verified, 1 error
+route-trait-member (additional-axioms:true, type-system-refresh:false, Z3 5.1.0)
+github-issue-326-route-trait-member.dfy(6,39): Error: cannot use naked function in recursive setting. Possible solution: eta expansion.
+1 resolution/type errors detected in github-issue-326-route-trait-member.dfy
+baseline-seq (additional-axioms:true, type-system-refresh:false, Z3 5.1.0)
+github-issue-326-baseline-seq.dfy(4,36): Error: cannot prove termination; try supplying a decreases clause
+
+Dafny program verifier finished with 1 verified, 1 error
+termination-false (additional-axioms:true, type-system-refresh:false, Z3 5.1.0)
+
+Dafny program verifier finished with 6 verified, 0 errors
+route-class-const-ctor (additional-axioms:true, type-system-refresh:true, --general-traits:datatype, Z3 5.1.0)
+github-issue-326-route-class-const-ctor.dfy(7,29): Error: in the first division of the constructor body (before 'new;'), 'this' can only be used to assign to its fields
+1 resolution/type errors detected in github-issue-326-route-class-const-ctor.dfy
+route-class-const-init (additional-axioms:true, type-system-refresh:true, --general-traits:datatype, Z3 5.1.0)
+github-issue-326-route-class-const-init.dfy(5,8): Error: const definition contains a cycle: C.t -> C.M -> C.t
+1 resolution/type errors detected in github-issue-326-route-class-const-init.dfy
+route-class-const-pair (additional-axioms:true, type-system-refresh:true, --general-traits:datatype, Z3 5.1.0)
+github-issue-326-route-class-const-pair.dfy(5,8): Error: const definition contains a cycle: C.f -> C.t -> C.f
+1 resolution/type errors detected in github-issue-326-route-class-const-pair.dfy
+route-codatatype (additional-axioms:true, type-system-refresh:true, --general-traits:datatype, Z3 5.1.0)
+github-issue-326-route-codatatype.dfy(6,31): Error: cannot prove termination; try supplying a decreases clause
+github-issue-326-route-codatatype.dfy(9,28): Error: a postcondition could not be proved on this return path
+github-issue-326-route-codatatype.dfy(9,22): Related location: this is the postcondition that could not be proved
+github-issue-326-route-codatatype.dfy(13,83): Error: a postcondition could not be proved on this return path
+github-issue-326-route-codatatype.dfy(13,77): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 1 verified, 3 errors
+route-const (additional-axioms:true, type-system-refresh:true, --general-traits:datatype, Z3 5.1.0)
+github-issue-326-route-const.dfy(4,6): Error: recursive dependency involving constant initialization: K -> K
+1 resolution/type errors detected in github-issue-326-route-const.dfy
+route-const-function (additional-axioms:true, type-system-refresh:true, --general-traits:datatype, Z3 5.1.0)
+github-issue-326-route-const-function.dfy(4,6): Error: const definition contains a cycle: T0 -> F -> T0
+1 resolution/type errors detected in github-issue-326-route-const-function.dfy
+route-datatype-const (additional-axioms:true, type-system-refresh:true, --general-traits:datatype, Z3 5.1.0)
+github-issue-326-route-datatype-const.dfy(5,8): Error: const definition contains a cycle: D.t -> D.M -> D.t
+1 resolution/type errors detected in github-issue-326-route-datatype-const.dfy
+route-datatype-member (additional-axioms:true, type-system-refresh:true, --general-traits:datatype, Z3 5.1.0)
+github-issue-326-route-datatype-member.dfy(5,39): Error: cannot use naked function in recursive setting. Possible solution: eta expansion.
+1 resolution/type errors detected in github-issue-326-route-datatype-member.dfy
+route-eta (additional-axioms:true, type-system-refresh:true, --general-traits:datatype, Z3 5.1.0)
+github-issue-326-route-eta.dfy(6,45): Error: cannot prove termination; try supplying a decreases clause
+
+Dafny program verifier finished with 1 verified, 1 error
+route-general-traits (additional-axioms:true, type-system-refresh:true, --general-traits:datatype, Z3 5.1.0)
+github-issue-326-route-general-traits.dfy(10,62): Error: cannot prove termination; try supplying a decreases clause
+github-issue-326-route-general-traits.dfy(12,48): Error: a postcondition could not be proved on this return path
+github-issue-326-route-general-traits.dfy(12,42): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 1 verified, 2 errors
+route-general-traits-member (additional-axioms:true, type-system-refresh:true, --general-traits:datatype, Z3 5.1.0)
+github-issue-326-route-general-traits-member.dfy(5,40): Error: cannot use naked function in recursive setting. Possible solution: eta expansion.
+1 resolution/type errors detected in github-issue-326-route-general-traits-member.dfy
+route-heap-coerce (additional-axioms:true, type-system-refresh:true, --general-traits:datatype, Z3 5.1.0)
+github-issue-326-route-heap-coerce.dfy(7,24): Error: value does not satisfy the subset constraints of 'nat -> Tree' (possible cause: it may be partial or have read effects)
+github-issue-326-route-heap-coerce.dfy(9,2): Error: assertion might not hold
+
+Dafny program verifier finished with 0 verified, 2 errors
+route-heap-lambda (additional-axioms:true, type-system-refresh:true, --general-traits:datatype, Z3 5.1.0)
+github-issue-326-route-heap-lambda.dfy(7,14): Error: value does not satisfy the subset constraints of 'nat -> Tree' (possible cause: it may be partial or have read effects)
+
+Dafny program verifier finished with 0 verified, 1 error
+route-iterator (additional-axioms:true, type-system-refresh:true, --general-traits:datatype, Z3 5.1.0)
+github-issue-326-route-iterator.dfy(7,24): Error: insufficient reads clause to read field; Consider extracting f to a local variable before the lambda expression, or adding 'reads this' in the enclosing lambda specification for resolution
+
+Dafny program verifier finished with 1 verified, 1 error
+route-iterator-state (additional-axioms:true, type-system-refresh:true, --general-traits:datatype, Z3 5.1.0)
+github-issue-326-route-iterator-state.dfy(8,12): Error: value does not satisfy the subset constraints of 'nat -> Tree' (possible cause: it may be partial or have read effects)
+
+Dafny program verifier finished with 1 verified, 1 error
+route-naked (additional-axioms:true, type-system-refresh:true, --general-traits:datatype, Z3 5.1.0)
+github-issue-326-route-naked.dfy(4,32): Error: cannot use naked function in recursive setting. Possible solution: eta expansion.
+1 resolution/type errors detected in github-issue-326-route-naked.dfy
+route-nested (additional-axioms:true, type-system-refresh:true, --general-traits:datatype, Z3 5.1.0)
+github-issue-326-route-nested.dfy(6,31): Error: cannot prove termination; try supplying a decreases clause
+github-issue-326-route-nested.dfy(8,68): Error: cannot prove termination; try supplying a decreases clause
+github-issue-326-route-nested.dfy(9,26): Error: a postcondition could not be proved on this return path
+github-issue-326-route-nested.dfy(9,20): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 0 verified, 3 errors
+route-newtype (additional-axioms:true, type-system-refresh:true, --general-traits:datatype --general-newtypes, Z3 5.1.0)
+github-issue-326-route-newtype.dfy(3,8): Error: a newtype ('Kids') must be based on some non-reference, non-trait, non-arrow, non-ORDINAL, non-datatype type (got nat -> T)
+1 resolution/type errors detected in github-issue-326-route-newtype.dfy
+route-subset (additional-axioms:true, type-system-refresh:true, --general-traits:datatype, Z3 5.1.0)
+github-issue-326-route-subset.dfy(5,47): Error: function precondition could not be proved
+github-issue-326-route-subset.dfy(5,48): Error: value does not satisfy the subset constraints of 'nat'
+github-issue-326-route-subset.dfy(8,42): Error: a postcondition could not be proved on this return path
+github-issue-326-route-subset.dfy(8,36): Related location: this is the postcondition that could not be proved
+github-issue-326-route-subset.dfy(10,19): Error: value does not satisfy the subset constraints of 'Tot<U>'
+github-issue-326-route-subset.dfy(15,31): Error: cannot prove termination; try supplying a decreases clause
+
+Dafny program verifier finished with 0 verified, 5 errors
+route-tilde-field (additional-axioms:true, type-system-refresh:true, --general-traits:datatype, Z3 5.1.0)
+github-issue-326-route-tilde-field.dfy(5,42): Error: a postcondition could not be proved on this return path
+github-issue-326-route-tilde-field.dfy(5,36): Related location: this is the postcondition that could not be proved
+github-issue-326-route-tilde-field.dfy(12,30): Error: insufficient reads clause to invoke function
+github-issue-326-route-tilde-field.dfy(12,73): Error: cannot prove termination; try supplying a decreases clause
+
+Dafny program verifier finished with 0 verified, 3 errors
+route-tilde-reads-empty (additional-axioms:true, type-system-refresh:true, --general-traits:datatype, Z3 5.1.0)
+github-issue-326-route-tilde-reads-empty.dfy(6,38): Error: insufficient reads clause to read field; Consider extracting c.t to a local variable before the lambda expression, or adding 'reads c' in the enclosing lambda specification for resolution
+github-issue-326-route-tilde-reads-empty.dfy(9,2): Error: assertion might not hold
+
+Dafny program verifier finished with 0 verified, 2 errors
+route-trait-dispatch (additional-axioms:true, type-system-refresh:true, --general-traits:datatype, Z3 5.1.0)
+github-issue-326-route-trait-dispatch.dfy(6,38): Error: cannot prove termination; try supplying a decreases clause
+github-issue-326-route-trait-dispatch.dfy(8,47): Error: cannot prove termination; try supplying a decreases clause
+
+Dafny program verifier finished with 2 verified, 2 errors
+route-trait-member (additional-axioms:true, type-system-refresh:true, --general-traits:datatype, Z3 5.1.0)
+github-issue-326-route-trait-member.dfy(6,39): Error: cannot use naked function in recursive setting. Possible solution: eta expansion.
+1 resolution/type errors detected in github-issue-326-route-trait-member.dfy
+baseline-seq (additional-axioms:true, type-system-refresh:true, --general-traits:datatype, Z3 5.1.0)
+github-issue-326-baseline-seq.dfy(4,36): Error: cannot prove termination; try supplying a decreases clause
+
+Dafny program verifier finished with 1 verified, 1 error
+termination-false (additional-axioms:true, type-system-refresh:true, --general-traits:datatype, Z3 5.1.0)
+
+Dafny program verifier finished with 4 verified, 0 errors

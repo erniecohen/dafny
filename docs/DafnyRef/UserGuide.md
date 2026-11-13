@@ -2634,6 +2634,9 @@ and what information it produces about the verification process.
   For a source lambda with a declared precondition, it also exposes the necessary
   direction of that precondition under the lambda's type, allocation and heap
   requirements. This applies to stored and returned lambda values.
+  An application of a function stored in a field of type `A -> T` of an inductive
+  datatype value, or of type `A --> T` where its precondition holds, is also
+  strictly below that value in the termination order.
   See [the soundness, trigger and solver-limit note](../dev/additional-axioms.md).
 
 * `--heap-free-lambda-facts` - check a lambda without a reads clause, whose
