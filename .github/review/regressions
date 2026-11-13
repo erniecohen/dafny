@@ -399,3 +399,6 @@ git-issues/github-issue-194.dfy
 
 # Canonical native-result map rows (https://github.com/erniecohen/dafny/issues/284).
 git-issues/git-issue-284-map.dfy
+
+# Historical identity scoping (https://github.com/erniecohen/dafny/issues/293):
+# Python regression controls: .github/review/test_milestone_identity.py, run by Build.
