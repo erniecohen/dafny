@@ -1361,14 +1361,22 @@ module Std.Arithmetic.DivMod {
   {
     assert (x - x * d) % d == x % d
     by {
-      LemmaModAuto(d);
       var f := i => (x - i * d) % d == x % d;
+      // Each integer multiple has remainder zero, so the induction facts
+      // follow directly from the concrete subtraction identity.
+      forall i: int
+        ensures f(i)
+      {
+        LemmaModMultiplesBasic(i, d);
+        LemmaSubModNoopRight(x, i * d, d);
+      }
       assert  MulAuto() ==> && f(0)
                             && (forall i {:trigger IsLe(0, i)} :: IsLe(0, i) && f(i) ==> f(i + 1))
                             && (forall i {:trigger IsLe(i, 0)} :: IsLe(i, 0) && f(i) ==> f(i - 1));
-      LemmaMulInductionAuto(x, f);
+      assert f(x);
     }
-    LemmaMulAuto();
+    LemmaMulIsDistributiveSub(x, 1, d);
+    LemmaMulBasics(x);
   }
 
   /* proves the validity of the quotient and remainder */
@@ -1381,9 +1389,11 @@ module Std.Arithmetic.DivMod {
     ensures q == x / d
     ensures r == x % d
   {
-    LemmaDivAuto(d);
-    LemmaMulInductionAuto(q, u => u == (u * d + r) / d);
-    LemmaMulInductionAuto(q, u => r == (u * d + r) % d);
+    // The quotient identity for a shifted multiple determines q; the
+    // fundamental division identity then determines r.
+    LemmaMulIsCommutative(q, d);
+    LemmaDivMultiplesVanishFancy(q, r, d);
+    LemmaFundamentalDivMod(x, d);
   }
 
   @TimeLimitMultiplier(5)

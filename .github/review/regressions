@@ -288,3 +288,9 @@ git-issues/github-issue-182.dfy
 
 # Body permissions of heap-free lambdas in every heap (--heap-free-lambda-facts).
 git-issues/lambda-facts-every-heap.dfy
+
+# Source proofs repaired for experimental obligation checks (#170).  The twelve bounded
+# git-issue-170 shards run in the separate workflow obligation-proofs.yml.
+dafny1/PriorityQueue.dfy
+dafny4/Primes.dfy
+dafny2/SnapshotableTrees.dfy
