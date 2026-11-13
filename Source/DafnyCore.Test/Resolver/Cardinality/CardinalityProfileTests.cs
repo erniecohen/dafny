@@ -288,9 +288,13 @@ public class CardinalityProfileTests {
       "trait V {} type Fake<T, U> datatype Holder = Holder(f: V -> bool)");
     var v = Find(program, "V");
     var template = (AbstractTypeDecl)Find(program, "Fake");
+    // No source declaration can have an arrow name ('#' is not an identifier character),
+    // and declarations are built under the invariant that only an ArrowTypeDecl has one.
+    // Forge the name afterwards, as a client that edits the AST could.
     var fakeArrow = new AbstractTypeDecl(template.Origin,
-      new Name(template.Origin, ArrowType.ArrowTypeName(1)), template.EnclosingModuleDefinition,
+      new Name(template.Origin, "Fake1"), template.EnclosingModuleDefinition,
       template.Characteristics, template.TypeArgs, [], [], null, false);
+    fakeArrow.NameNode = new Name(template.Origin, ArrowType.ArrowTypeName(1));
     var visitor = Visitor(program);
     Assert.False(visitor.IsBuiltin(fakeArrow));
     var actual = new UserDefinedType(v.Origin, v.Name, v, []);

@@ -1,0 +1,1 @@
+When the language server reuses its resolution of the built-in declarations, a new resolution sets up only the built-in types it adds. Before, it set up every built-in type again, which replaced the non-null type of `object` and other parts that earlier resolutions still held, and stopped a Debug build on a contract assertion.
