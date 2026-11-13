@@ -33,13 +33,32 @@ The supported transport is Boogie `v3.5.5+review.c5a9f2ef` with native SMT-Lib
 Z3 and ordinary verification. Reflection obtains the private native input writer;
 a different ABI fails explicitly. The wrapper writes through unchanged, hashing
 the exact encoded characters, lengths and original newlines. It inserts no SMT
-commands, changes no command bytes/order and does not normalize the wire. Each
-`solver-*.jsonl` includes a `wire-final` SHA-256 and byte length. A pooled solver's
-hash covers its entire physical process history, rather than one proof task.
-`meta.json` counts every physical solver created through the factory: acceptance
-requires one final wire observation for each. Prepared-prefix hashes are retained
-separately and include prover-interface calls/problem names; they must not be
-represented as raw SMT hashes.
+commands, changes no command bytes/order and does not normalize the wire.
+
+Each `solver-*.jsonl` contains two independent native-byte observations:
+
+- `task-wire` hashes the exact encoded sequence after a task's empty solver
+  checkpoint through its completed proof, including setup options, the prelude,
+  assertion input, native request pings and adaptive model/error queries. In this
+  pinned ABI each `Checker.BeginCheck` resets its prover; the `(reset)` operation
+  establishes the boundary, and bytes after it belong to the task. A replacement
+  process starts at its fresh empty checkpoint. The observer attaches the problem
+  name at `NewProblem`, which occurs after setup. It ends the task immediately
+  before `GoBackToIdle` starts the idle handshake, or at native close. An
+  overlapping task or missing checkpoint fails explicitly. Every `NewProblem`
+  increments `meta.json`'s `taskStarts`; acceptance requires exactly that many
+  completed task records, preserving problem names and multiplicity.
+- `wire-final` hashes the entire physical process history, including checkpoint
+  operations, previous tasks and idle handshakes. `meta.json` counts every physical
+  solver created through the factory; require one final observation for each.
+
+Strict raw-SMT equality compares `task-wire` SHA-256 and byte lengths by problem
+name, preserving multiplicity. Physical solver identity, boundaries, counts and
+idle recycling are reported separately and are excluded from that equality.
+[The measured idle-recycling nondeterminism](https://github.com/erniecohen/dafny/issues/287)
+is present with the translation table OFF. A difference in any task's own bytes
+still fails. Prepared-prefix hashes are retained separately; they include
+prover-interface calls/problem names and must not be called raw SMT hashes.
 
 The observer awaits Boogie's existing terminal `GoBackToIdle` handshakes, including
 its asynchronous/inlined call shapes, and retains only weak references to finished
@@ -48,7 +67,10 @@ truncated stream. The pinned native transport constructor writes no input before
 the hook is attached, and its close operation ends input without emitting another
 SMT command; see [the pinned transport source](https://github.com/erniecohen/boogie/blob/v3.5.5%2Breview.c5a9f2ef/Source/Provers/SMTLib/SMTLibProcess.cs).
 
-Compare `boogie.json`, stdout, stderr, exit, final wire hashes/lengths and complete
+Run `python3 .github/measure/NativeSolverWire/compare.py LEFT_MODE_DIRECTORY
+RIGHT_MODE_DIRECTORY` to check coverage and equality; it exits nonzero for any
+task-byte or report difference. Physical carrier differences are printed without
+failing that check. It compares `boogie.json`, stdout, stderr, exit, task wire hashes/lengths and complete
 untimed report rows. Split rows may finish asynchronously; pair them by VC number
 and random seed while preserving all fields and multiplicities. Record exact
 source/binary hashes and every argument per cohort. Distinguish ordinary solver

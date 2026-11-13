@@ -14,12 +14,13 @@ Directory.CreateDirectory(request.Destination);
 var verify = DafnyNewCli.RootCommand.Children.OfType<Command>().Single(c => c.Name == "verify");
 string mode = "", current = "";
 var counter = 0;
+var taskStarts = 0;
 var captured = new List<WeakReference<RecordingSolver>>();
 DafnyNewCli.SetHandlerUsingDafnyOptionsContinuation(verify, async (options, context) => {
   options.PrintFile = Path.Combine(request.LiveDirectory ?? Path.Combine(request.Destination, "live"), "program.bpl");
   var original = options.CreateSolver;
   options.CreateSolver = (library, solver) => {
-    var recording = new RecordingSolver(original(library, solver), current, Interlocked.Increment(ref counter));
+    var recording = new RecordingSolver(original(library, solver), current, Interlocked.Increment(ref counter), () => Interlocked.Increment(ref taskStarts));
     lock (captured) { captured.Add(new WeakReference<RecordingSolver>(recording)); }
     return recording;
   };
@@ -36,7 +37,7 @@ foreach (var selected in request.Modes) {
     var cache = typeof(DafnyOptions).Assembly.GetType("Microsoft.Dafny.ModuleTranslationCache")!;
     cache.GetProperty("ProcessCache")!.GetValue(null)!.GetType().GetMethod("Clear")!.Invoke(cache.GetProperty("ProcessCache")!.GetValue(null), null);
   }
-  counter = 0;
+  counter = 0; taskStarts = 0;
   captured.Clear();
   // Preserve malformed original-option diagnostics: observation options must
   // precede original options, so a missing trailing value cannot consume one.
@@ -51,7 +52,7 @@ foreach (var selected in request.Modes) {
   foreach (var file in Directory.GetFiles(live)) File.Move(file, Path.Combine(current, Path.GetFileName(file)), true);
   File.WriteAllText(Path.Combine(current,"stdout"), stdout.ToString());
   File.WriteAllText(Path.Combine(current,"stderr"), stderr.ToString());
-  File.WriteAllText(Path.Combine(current,"meta.json"), JsonSerializer.Serialize(new { code, command, wall=clock.Elapsed.TotalSeconds, solvers=counter }));
+  File.WriteAllText(Path.Combine(current,"meta.json"), JsonSerializer.Serialize(new { code, command, wall=clock.Elapsed.TotalSeconds, solvers=counter, taskStarts }));
   var modules = Directory.GetFiles(current,"*.bpl").ToDictionary(Path.GetFileName, p=>Convert.ToHexStringLower(SHA256.HashData(File.ReadAllBytes(p))));
   File.WriteAllText(Path.Combine(current,"boogie.json"),JsonSerializer.Serialize(modules));
   Console.WriteLine(mode+" "+code+" "+clock.Elapsed.TotalSeconds);
@@ -60,6 +61,7 @@ record Request(string Cwd, string[] Arguments, string Destination, string[] Mode
 
 sealed class RecordingSolver : SMTLibSolver {
   private readonly SMTLibSolver inner;
+  private readonly System.Action taskStarted;
   private readonly IncrementalHash commandHash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
   private long commandLength;
   private void Record(string kind, string value) {
@@ -89,12 +91,14 @@ sealed class RecordingSolver : SMTLibSolver {
       File.AppendAllText(Path.Combine(directory,"solver-"+number+".jsonl"),JsonSerializer.Serialize(record)+"\n");
     }
   }
-  public RecordingSolver(SMTLibSolver inner, string directory, int number) {
+  public RecordingSolver(SMTLibSolver inner, string directory, int number, System.Action taskStarted) {
+    this.taskStarted=taskStarted;
     this.inner=inner;this.directory=directory;this.number=number;
     var field = inner.GetType().GetField("toProver", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
       ?? throw new InvalidOperationException("native solver input writer not found");
     var original = (TextWriter)field.GetValue(inner)!;
-    wire = new WireWriter(original);
+    wire = new WireWriter(original, record => File.AppendAllText(
+      Path.Combine(directory, "solver-"+number+".jsonl"), JsonSerializer.Serialize(record)+"\n"));
     field.SetValue(inner, wire);
   }
   public async Task FinishRecording() {
@@ -116,13 +120,21 @@ sealed class RecordingSolver : SMTLibSolver {
     RecordFinal();
   }
   public override event Action<string> ErrorHandler { add { inner.ErrorHandler+=value; } remove { inner.ErrorHandler-=value; } }
-  public override void Send(string command) { Record("send",command);inner.Send(command); }
-  public override void NewProblem(string name) { lock(lifecycle) { problem=name; startedProblems++; } Record("problem",name);inner.NewProblem(name); }
+  public override void Send(string command) {
+    Record("send",command); inner.Send(command);
+    // The reset establishes an empty solver checkpoint. Its following bytes,
+    // rather than previous tasks or the checkpoint operation itself, are owned
+    // by the next task. A fresh process starts at the equivalent empty checkpoint.
+    if (command == "(reset)") wire.BeginTask("reset");
+  }
+  public override void NewProblem(string name) { lock(lifecycle) { problem=name; startedProblems++; } wire.NameTask(name); taskStarted(); Record("problem",name);inner.NewProblem(name); }
   public override Task PingPong() {
     var frames = new StackTrace().GetFrames().Select(frame => frame.GetMethod()).Where(method => method != null).ToArray();
     lastPingFrames = frames.Select(method => method.DeclaringType?.FullName+"."+method.Name).ToArray();
     var isCleanup = frames.Any(method => method.DeclaringType?.FullName?.StartsWith("Microsoft.Boogie.") == true &&
       (method.Name == "GoBackToIdle" || method.DeclaringType.Name.StartsWith("<GoBackToIdle>")));
+    // Idle cleanup is physical-pool bookkeeping, outside the completed task.
+    if (isCleanup) wire.FinishTask();
     Record("ping","");var ping=inner.PingPong();
     lock(lifecycle) { pings.Add(ping); if(isCleanup) cleanupPings++; Changed(); }
     return ping;
@@ -141,7 +153,7 @@ sealed class RecordingSolver : SMTLibSolver {
     return inner.SendRequestsAndCloseInput(requests,token);
   }
   public override void Close() {
-    try { inner.Close(); }
+    try { wire.FinishTask(); inner.Close(); }
     finally {
       lock(lifecycle) {
       if (!closed) {
@@ -159,12 +171,40 @@ sealed class RecordingSolver : SMTLibSolver {
 // Observe the exact characters passed to the native process writer, including
 // internal (echo "ping") handshakes and adaptive requests. The native StreamWriter
 // encoding/newline are retained; no solver command or option is inserted.
-sealed class WireWriter(TextWriter inner) : TextWriter {
+sealed class WireWriter(TextWriter inner, Action<object> publish) : TextWriter {
   private readonly object gate = new();
   private readonly IncrementalHash hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
   private long length;
+  private IncrementalHash taskHash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+  private long taskLength;
+  private string? taskName;
+  private string checkpoint = "fresh-process";
+  private bool active = true;
+  public void BeginTask(string kind) {
+    lock(gate) {
+      if (taskName != null) throw new InvalidOperationException("reset before task completion: "+taskName);
+      taskHash.Dispose(); taskHash=IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+      taskLength=0; checkpoint=kind; active=true;
+    }
+  }
+  public void NameTask(string name) {
+    lock(gate) {
+      if (!active || taskName != null) throw new InvalidOperationException("missing/overlapping task checkpoint: "+name);
+      taskName=name;
+    }
+  }
+  public void FinishTask() {
+    lock(gate) {
+      if (taskName != null) {
+        publish(new { kind="task-wire", problem=taskName, checkpoint,
+          sha256=Convert.ToHexStringLower(taskHash.GetCurrentHash()), length=taskLength });
+        taskName=null;
+      }
+      active=false;
+    }
+  }
   public override Encoding Encoding => inner.Encoding;
-  private void Add(string value) { var bytes=Encoding.GetBytes(value); hash.AppendData(bytes); length+=bytes.Length; }
+  private void Add(string value) { var bytes=Encoding.GetBytes(value); hash.AppendData(bytes); length+=bytes.Length; if(active) { taskHash.AppendData(bytes); taskLength+=bytes.Length; } }
   public override void WriteLine(string? value) { lock(gate) { inner.WriteLine(value); Add((value ?? "")+inner.NewLine); } }
   public override void Write(string? value) { lock(gate) { inner.Write(value); if(value != null) Add(value); } }
   public override void Write(char value) { lock(gate) { inner.Write(value); Add(value.ToString()); } }
