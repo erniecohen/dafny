@@ -12,6 +12,8 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.Dafny;
+using AuditAssumption = Microsoft.Dafny.Auditor.Assumption;
+using AuditAssumptionDescription = Microsoft.Dafny.Auditor.AssumptionDescription;
 
 namespace DafnyCore;
 
@@ -221,12 +223,25 @@ public static class ModularTerminationProducer {
       return ModularTerminationCompletion.Failed("it was built with --allow-axioms, which admits unchecked premises");
     }
     var urisToVerify = program.Compilation.UrisToVerify ?? new HashSet<Uri>();
+    bool Owned(IOrigin? origin) => origin?.Uri != null && urisToVerify.Contains(origin.Uri);
+    string Where(IOrigin origin) => $"{origin.Uri.Segments.LastOrDefault()}({origin.line},{origin.col + 1})";
+    // Dafny's own assumption inventory, the one `dafny audit` reports: every assumption it finds in the
+    // library's own program refuses the record.
+    foreach (var assumption in program.Assumptions(null!)) {
+      if (Owned(assumption.Tok) && AuditExemption(assumption) == null) {
+        return ModularTerminationCompletion.Failed(
+          $"{Where(assumption.Tok)} has an assumption that 'dafny audit' reports: {AuditAssumption.UpdateVerbatim(assumption.desc.Issue, "", "").TrimEnd('.')}");
+      }
+    }
+    // What the inventory does not report: premises outside method and function bodies, bodyless members
+    // without a postcondition (whose termination is still assumed), extern members without contracts,
+    // and the verification exemptions.
     foreach (var node in program.DefaultModule.Descendants()) {
-      if (node.Origin?.Uri == null || !urisToVerify.Contains(node.Origin.Uri)) {
+      if (!Owned(node.Origin) || IsGeneratedReveal(node)) {
         continue;
       }
       if (UncheckedPremise(node) is { } premise) {
-        return ModularTerminationCompletion.Failed($"{node.Origin.Uri.Segments.LastOrDefault()}({node.Origin.line},{node.Origin.col + 1}) {premise}");
+        return ModularTerminationCompletion.Failed($"{Where(node.Origin!)} {premise}");
       }
     }
 
@@ -279,6 +294,26 @@ public static class ModularTerminationProducer {
   /// per-implementation inventory cannot see these: an exempted, assumed, external or bodyless
   /// declaration either produces no verification condition or one that holds by assumption.
   /// </summary>
+  /// <summary>
+  /// Why an assumption that the auditor reports does not stop a record, or null when it does.  Only one is
+  /// exempt: {:termination false} on a trait, which under --modular-termination is a checked extensibility
+  /// marker (dispatch is checked against the global bounds recorded in the contract), not an assumption.
+  /// </summary>
+  private static string? AuditExemption(AuditAssumption assumption) {
+    return assumption.desc == AuditAssumptionDescription.HasTerminationFalseAttribute
+      ? "{:termination false} is checked under --modular-termination"
+      : null;
+  }
+
+  /// <summary>
+  /// The reveal lemma that OpaqueMemberRewriter generates for an opaque function.  It carries {:axiom} and
+  /// {:verify false}, but it only states the function's own definition, so it is not a premise.
+  /// </summary>
+  private static bool IsGeneratedReveal(INode node) {
+    return node is IAttributeBearingDeclaration d && Attributes.Contains(d.Attributes, "opaque_reveal") &&
+           Attributes.Contains(d.Attributes, "auto_generated");
+  }
+
   private static string? UncheckedPremise(INode node) {
     if (node is IAttributeBearingDeclaration attributed) {
       var verify = true;
@@ -301,6 +336,10 @@ public static class ModularTerminationProducer {
     switch (node) {
       case AssumeStmt:
         return "uses assume, an unchecked premise";
+      case ForallStmt { Body: null }:
+        return "has a forall statement without a body, an unchecked premise";
+      case OneBodyLoopStmt { Body: null }:
+        return "has a loop without a body, an unchecked premise";
       case MethodOrConstructor { Body: null } method when IsConcrete(method):
         return $"declares {method.WhatKind} '{method.Name}' without a body, an unchecked premise";
       case Function { Body: null } function when IsConcrete(function):
@@ -319,12 +358,14 @@ public static class ModularTerminationProducer {
   }
 
   /// <summary>
-  /// A member that must have a body: not an abstract member of a trait, and not in an abstract module,
-  /// whose refinements supply the bodies.
+  /// A member that must have a body: not an instance member of a trait, which its implementations
+  /// supply, and not in an abstract module, whose refinements supply the bodies.  A static member of a
+  /// trait has no implementations and must have a body.
   /// </summary>
   private static bool IsConcrete(MemberDecl member) {
-    return member.EnclosingClass is not TraitDecl && member.EnclosingClass?.EnclosingModuleDefinition is not
-      { ModuleKind: ModuleKindEnum.Abstract };
+    return member.EnclosingClass is not TraitDecl || member.IsStatic
+      ? member.EnclosingClass?.EnclosingModuleDefinition is not { ModuleKind: ModuleKindEnum.Abstract }
+      : false;
   }
 
   /// <summary>
@@ -360,7 +401,7 @@ public static class ModularTerminationRecords {
   public static string RecordFailureMessage(string failure) {
     return $"cannot build a library under --modular-termination: {failure}. A library built with --modular-termination " +
            "records that its own program was completely verified; build it without --no-verify, procedure filters, " +
-           "{:verify false}, {:only}, decreases *, assumptions ({:axiom}, assume, bodyless members, --allow-axioms) " +
+           "{:verify false}, {:only}, decreases *, assumptions (anything 'dafny audit' reports, bodyless members, --allow-axioms) " +
            "or {:extern}, and with every verification task succeeding";
   }
 
@@ -512,6 +553,9 @@ public static class ModularTerminationRecords {
     CommonOptionBag.AdditionalAxioms,
     CommonOptionBag.AllowAxioms,
     CommonOptionBag.TestAssumptions,
+    // Recorded, not refused: the refusal of assumptions above reads Dafny's assumption inventory, not
+    // its warnings, so --allow-warnings cannot hide one; recording it keeps the record faithful.
+    CommonOptionBag.AllowWarnings,
     CommonOptionBag.MapComprehensionDomainTriggers,
     CommonOptionBag.HeapFreeLambdaFacts,
     CommonOptionBag.StatementExpressionConclusions,

@@ -145,6 +145,8 @@ def tamper(kind, library='lib', redigest=True):
     elif kind == 'option-digest':
         manifest = set_field(manifest, 'general-newtypes', '"true"')
         manifest = set_field(manifest, 'semantic_options_sha256', '"%s"' % option_digest(manifest))
+    elif kind == 'unknown-key':
+        manifest = manifest.replace('[modular_termination]\n', '[modular_termination]\nunknown = 1\n', 1)
     elif kind in ('imports', 'exports'):
         # Drop the table without touching any digest.
         manifest = re.sub(r'(?ms)^\[\[modular_termination\.%s\]\]\n(?:(?!\[).*\n?)*' % kind, '', manifest)
@@ -205,15 +207,21 @@ for kind, diagnostic in [
     ('schema', 'unsupported format'),
     ('option', 'recorded semantic options do not match their digest'),
     ('option-digest', "it was verified with general-newtypes 'true', but this run uses 'false'"),
+    ('unknown-key', 'its manifest cannot be read'),
 ]:
     verify('tampered ' + kind, [tamper(kind)], 'client-lib', 1, diagnostic)
 verify('option mismatch', [doo('lib')], 'client-lib', 1, "it was verified with manual-triggers 'false', but this run uses 'true'",
        extra=['--manual-triggers'])
 
 # Solver identity: a different Z3 binary than the one that verified the library.
+# This needs a second Z3 binary, z3-4.12.1, next to the given one, as the review CI installs it.
 other_solver = Path(solver).with_name('z3-4.12.1')
-verify('different solver', [doo('lib')], 'client-lib', 1, 'it was verified with a different Z3 binary',
-       common_args=[str(other_solver) if a == solver else a for a in common])
+if not other_solver.exists():
+    print('different solver: requires %s next to the given solver' % other_solver.name)
+    failures.append('different solver: %s is not installed next to the given solver' % other_solver.name)
+else:
+    verify('different solver', [doo('lib')], 'client-lib', 1, 'it was verified with a different Z3 binary',
+           common_args=[str(other_solver) if a == solver else a for a in common])
 
 # Prelude: a library verified under a changed prelude is not admitted with the installed one.
 changed = output / 'changed-prelude'
@@ -258,19 +266,42 @@ build('no-verify', source('lib'), '--no-verify', expected_exit=3, diagnostic='wa
 # A build restricted to some procedures writes no library at all, and says why it has no record.
 build('proc-filter', source('lib'), '--boogie', '/proc:*Count*', expected_exit=2, writes=False,
       diagnostic='verification was restricted to some procedures')
-build('verify-false', source('verify-false'), expected_exit=3, diagnostic='is marked {:verify false}')
+build('verify-false', source('verify-false'), expected_exit=3, diagnostic='Declaration has {:verify false} attribute')
 build('decreases-star', source('decreases-star'), expected_exit=3, diagnostic='uses decreases *')
-build('only', source('only'), expected_exit=3, diagnostic='uses {:only}')
+build('only', source('only'), expected_exit=3, diagnostic='Member has explicit temporary @VerifyOnly attribute')
 build('fails', source('fails'), expected_exit=4, diagnostic='assertion might not hold')
 
 # Producer: unchecked premises leave the library without a record.
-build('assume', source('assume'), expected_exit=3, diagnostic='uses assume, an unchecked premise')
-build('axiom', source('axiom'), expected_exit=3, diagnostic='is marked {:axiom}, an unchecked premise')
-build('bodyless', source('bodyless'), expected_exit=3, diagnostic='is marked {:axiom}, an unchecked premise')
+build('assume', source('assume'), expected_exit=3, diagnostic='Definition has assume statement in body')
+build('axiom', source('axiom'), expected_exit=3, diagnostic='Definition has assume {:axiom} statement in body')
+build('bodyless', source('bodyless'), expected_exit=3, diagnostic='Declaration has explicit {:axiom} attribute')
 build('bodyless-plain', source('bodyless-plain'), expected_exit=3,
-      diagnostic="declares method 'Count' without a body")
-build('extern', source('extern'), expected_exit=3, diagnostic='is marked {:extern}')
+      diagnostic='Compiled declaration has no body and has an ensures clause')
+build('bodyless-noensures', source('bodyless-noensures'), expected_exit=3,
+      diagnostic="declares method 'M' without a body")
+build('extern', source('extern'), expected_exit=3, diagnostic='Declaration with {:extern} has a ensures clause')
 build('allow-axioms', source('lib'), '--allow-axioms', expected_exit=3, diagnostic='it was built with --allow-axioms')
+
+# Producer: the assumptions in Dafny's own inventory (what 'dafny audit' reports).  Each of these needs
+# --allow-warnings, which does not hide them.  Before the inventory was used, each got a complete record
+# and a client of it proved false.
+for name, diagnostic in [
+    ('forall-nobody', 'Definition contains forall statement with no body'),
+    ('while-nobody', 'Definition contains loop with no body'),
+    ('for-nobody', 'Definition contains loop with no body'),
+    ('static-trait', 'Ghost declaration has no body and has an ensures clause'),
+    ('static-trait-function', 'Ghost declaration has no body and has an ensures clause'),
+]:
+    build(name, source(name), '--allow-warnings', expected_exit=3, diagnostic=diagnostic)
+
+# Producer: the generated reveal lemma of an opaque function is not a premise.  Before, it refused the build.
+build('opaque', source('opaque'))
+verify('client of opaque', [doo('opaque')], 'client-opaque', 0)
+build('opacity-opaque', source('opacity'), '--default-function-opacity', 'opaque')
+build('opacity-auto', source('opacity'), '--default-function-opacity', 'autoRevealDependencies')
+
+# The one exemption from the inventory: {:termination false} on a trait is checked under the option.
+build('termination-false', str(sources / 'github-issue-211-m4b-good.dfy'))
 
 print('M3-4 termination records: %d checks, %s' % (counter[0], 'all passed' if not failures else 'FAILED'))
 for failure in failures:

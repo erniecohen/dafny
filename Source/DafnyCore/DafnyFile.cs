@@ -258,6 +258,12 @@ public class DafnyFile {
       } catch (ArgumentException e) {
         reporter.Error(MessageSource.Project, origin, e.Message);
         yield break;
+      } catch (Tomlyn.TomlException e) when (options.Get(CommonOptionBag.ModularTermination)) {
+        // Under --modular-termination a manifest that Dafny cannot read, such as one with an unknown key in
+        // its record, is rejected like any other library modified after it was built, not left to crash.
+        reporter.Error(MessageSource.Project, origin,
+          $"cannot load {options.GetPrintPath(filePath)} under --modular-termination: its manifest cannot be read: {System.Text.RegularExpressions.Regex.Replace(e.Message.Split('\n')[0].Trim(), @"^\(\d+,\d+\) : error : ", "").TrimEnd('.')}; the library was modified after it was built, or was built by another version of Dafny");
+        yield break;
       }
     }
 

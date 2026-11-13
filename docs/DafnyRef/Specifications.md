@@ -685,10 +685,16 @@ iterators and by-method implementations left out; function bodies stay, since a 
 The record also lists the contracts of the libraries the build was verified against, and ends with a
 hash of the whole record. The build writes a library only when its whole program was verified, every
 verification task conclusively, without `--no-verify`, a procedure filter, `{:verify false}`, `{:only}`,
-`decreases *` or included files that were not verified, and without unchecked premises: `assume`
-statements, `{:axiom}`, members without a body outside traits and abstract modules, `{:extern}`
-members, `@AssumeCrossModuleTermination` or `--allow-axioms`. Otherwise it reports which of these stops
-it and writes nothing.
+`decreases *` or included files that were not verified, and without unchecked premises. These are
+every assumption that `dafny audit` reports in the library's own files (such as `assume` statements,
+`{:axiom}`, `{:extern}` members with contracts, `@AssumeCrossModuleTermination`, `forall` statements
+and loops without a body, and bodyless members with a postcondition), together with `assume` anywhere in
+the program, members without a body other than instance members of traits and members of abstract
+modules, `{:extern}` members, and `--allow-axioms`. Only one assumption that `dafny audit` reports is
+accepted: `{:termination false}` on a trait, which under the option is checked against the global
+bounds. The reveal lemma that Dafny generates for an opaque function states the function's definition
+and is not an assumption. The build reports the first of these it finds and writes nothing.
+`--allow-warnings` does not hide them; it is recorded with the other options.
 
 Under the option, a module cannot refine or replace a module of a library: it would inherit bodies
 that are not part of the library's contracts, so a change to them would not be detected.
@@ -710,6 +716,12 @@ file given with `--library`, a `.dll` library and the bundled standard library, 
 `--standard-libraries:false` leaves the standard library out. Without the option, a library built with
 it is rejected, so that its record is never ignored; libraries built without the option are read as
 before.
+
+The verification that a record certifies is that of the program as Dafny parsed it from the library's
+sources. The program stored in the library is that program printed back; the build checks that it
+parses and prints back to the same text, and recomputes the contracts from it, but does not verify it
+again. A printer error that changed the meaning of a program while printing it back to the same text
+would therefore not be caught.
 
 The record shows that the library was built by this build of Dafny, from this program, under these
 options; it is checked, not signed, so a library whose record was rewritten as a whole, with every hash
