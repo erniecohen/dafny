@@ -194,6 +194,7 @@ module Std.JSON.ZeroCopy.Deserializer {
       sp
     }
 
+    @IsolateAssertions
     function AppendWithSuffix(ghost cs0: FreshCursor,
                               ghost json: ValueParser,
                               elems: Split<seq<TSuffixedElement>>,
