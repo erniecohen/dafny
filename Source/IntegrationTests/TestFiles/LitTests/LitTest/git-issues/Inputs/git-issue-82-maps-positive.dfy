@@ -95,7 +95,7 @@ lemma NestedRangeMapContract82(n: int)
 }
 
 // Use the same named inner computation as the actual key predicate.
-lemma NestedKeyWitness82(n: int, i: int)
+lemma {:isolate_assertions} NestedKeyWitness82(n: int, i: int)
   requires 0 <= i < 2
   ensures NestedInnerValue82(n + i) in NestedKeyMap82(n).Keys
   ensures NestedKeyMap82(n)[NestedInnerValue82(n + i)] == i
