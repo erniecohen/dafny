@@ -1,0 +1,156 @@
+name: Issue 241 pipeline profile
+
+# For https://github.com/erniecohen/dafny/issues/241, milestone D0: runs the standard library
+# with and without --pipeline-profile, alternating, and records that the output is
+# byte-identical, the option's overhead, and a summary of the profile (the stages, per-module
+# translation and Boogie preparation, task queue waits and solves, and the stretches after
+# resolution with no solver task running).  The summary is in the job summary; the profiles,
+# outputs, process samples and run table are in the artifact.  The driver exits 1, and the
+# job fails, only if a profiled run's output or exit code differs from an unprofiled run's.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    branches: ['review/**']
+    paths:
+      - '.github/review/pipeline-profile.py'
+      - '.github/workflows/issue241-pipeline-profile.yml'
+      - 'Source/DafnyCore/Pipeline/PipelineProfile.cs'
+  workflow_dispatch:
+    inputs:
+      project:
+        description: 'Project or file to verify, relative to the repository'
+        default: 'Source/DafnyStandardLibraries/src/Std/dfyconfig.toml'
+      cores:
+        description: 'Value of --cores'
+        default: '4'
+      repeat:
+        description: 'Runs with, and runs without, the option'
+        default: '2'
+      server_gc:
+        description: 'DOTNET_gcServer (0 or 1)'
+        default: '0'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_PROCESSOR_COUNT: '4'
+  DOTNET_NOLOGO: 'true'
+  DOTNET_CLI_TELEMETRY_OPTOUT: 'true'
+  Z3_RELEASE: https://github.com/Z3Prover/z3/releases/download/z3-5.1.0
+  Z3_LINUX_X64: z3-5.1.0-x64-glibc-2.39
+  Z3_LINUX_X64_SHA256: f47be8d27d3230e823bf1eeede2fe0abaca55bb78d0b59974370e6689a92284a
+
+jobs:
+  profile:
+    if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.draft) && (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'erniecohen/dafny'))) }}
+    runs-on: [self-hosted, macOS, ARM64, mac-studio]
+    timeout-minutes: 180
+    steps:
+      - name: Yield to interactive work
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          case "$(ps -o comm= -p "$PPID")" in
+            */Runner.Worker|Runner.Worker) ;;
+            *) echo "::error::Expected this job's Runner.Worker parent"; exit 1 ;;
+          esac
+          renice 10 -p "$PPID" "$$" >/dev/null
+          test "$(ps -o nice= -p "$PPID" | tr -d ' ')" = 10
+          test "$(ps -o nice= -p "$$" | tr -d ' ')" = 10
+          echo 'Job worker and shell niceness: 10; subsequent actions inherit it.'
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-dotnet
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Boogie packages
+        run: sh Scripts/fetch-boogie-packages.sh
+      - name: Build
+        run: dotnet publish Source/Dafny/Dafny.csproj -c Release -o out/dafny -p:GeneratePackageOnBuild=false
+      - name: Z3
+        run: |
+          solver=$(sh .github/review/setup-z3.sh)
+          echo "Z3=$solver" >> "$GITHUB_ENV"
+      - name: Profile
+        env:
+          PROJECT: ${{ inputs.project || 'Source/DafnyStandardLibraries/src/Std/dfyconfig.toml' }}
+          CORES: ${{ inputs.cores || '4' }}
+          REPEAT: ${{ inputs.repeat || '2' }}
+          DOTNET_gcServer: ${{ inputs.server_gc || '0' }}
+        run: |
+          case "$CORES" in
+            1|2|3|4) ;;
+            *) echo 'The shared CI pool permits --cores 1 through 4'; exit 1 ;;
+          esac
+          python3 .github/review/pipeline-profile.py run --dafny "$PWD/out/dafny/Dafny" --out profile \
+            --repeat "$REPEAT" -- --solver-path "$Z3" --cores "$CORES" --verification-time-limit 0 \
+            --boogie /deterministicLiteralHashes:1 --boogie /restartProver "$PROJECT"
+      - name: Job summary
+        if: always()
+        run: |
+          {
+            echo "Runner: $(python3 -c 'import os; print(os.cpu_count())') processors; .NET cap: $DOTNET_PROCESSOR_COUNT."
+            echo
+            cat profile/summary.md || echo "no summary"
+          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: issue241-pipeline-profile
+          path: profile
+          retention-days: 30
+
+  hosted-profile:
+    if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.draft) && (!(github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'erniecohen/dafny')))) }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-dotnet
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Boogie packages
+        run: sh Scripts/fetch-boogie-packages.sh
+      - name: Build
+        run: dotnet publish Source/Dafny/Dafny.csproj -c Release -o out/dafny -p:GeneratePackageOnBuild=false
+      - name: Z3
+        run: |
+          solver=$(sh .github/review/setup-z3.sh)
+          echo "Z3=$solver" >> "$GITHUB_ENV"
+      - name: Profile
+        env:
+          PROJECT: ${{ inputs.project || 'Source/DafnyStandardLibraries/src/Std/dfyconfig.toml' }}
+          CORES: ${{ inputs.cores || '4' }}
+          REPEAT: ${{ inputs.repeat || '2' }}
+          DOTNET_gcServer: ${{ inputs.server_gc || '0' }}
+        run: |
+          case "$CORES" in
+            1|2|3|4) ;;
+            *) echo 'The shared CI pool permits --cores 1 through 4'; exit 1 ;;
+          esac
+          python3 .github/review/pipeline-profile.py run --dafny "$PWD/out/dafny/Dafny" --out profile \
+            --repeat "$REPEAT" -- --solver-path "$Z3" --cores "$CORES" --verification-time-limit 0 \
+            --boogie /deterministicLiteralHashes:1 --boogie /restartProver "$PROJECT"
+      - name: Job summary
+        if: always()
+        run: |
+          {
+            echo "Runner: $(python3 -c 'import os; print(os.cpu_count())') processors; .NET cap: $DOTNET_PROCESSOR_COUNT."
+            echo
+            cat profile/summary.md || echo "no summary"
+          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: issue241-pipeline-profile
+          path: profile
+          retention-days: 30

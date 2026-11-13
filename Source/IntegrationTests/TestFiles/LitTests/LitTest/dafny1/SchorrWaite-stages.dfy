@@ -194,6 +194,25 @@ abstract module M2 refines M1 {
     ghost var pathFromRoot: Path
   }
 
+  // Pointer reversal changes the current graph. Extend the witness in the
+  // method's initial heap before reversing the edge, using the unchanged edge
+  // from the current node to the child about to be marked.
+  twostate lemma ExtendInitialPath(root: Node, prefix: Path, parent: Node,
+                                 child: Node, S: set<Node>)
+    requires parent in S
+    requires old(ReachableVia(root, prefix, parent, S))
+    requires child in old(parent.children)
+    ensures old(allocated(Path.Extend(prefix, parent)))
+    ensures old(ReachableVia(root, Path.Extend(prefix, parent), child, S))
+    // The same concrete witness establishes the existential reachability fact.
+    ensures old(Reachable(root, child, S))
+  {
+    // Supply the particular witness for Reachable's existential; no search
+    // over arbitrary paths is needed to establish the new node's reachability.
+    ghost var pathWitness := Path.Extend(prefix, parent);
+    assert old(ReachableVia(root, pathWitness, child, S));
+  }
+
   method SchorrWaite...
   {
     ghost var path := Path.Empty;
@@ -226,8 +245,14 @@ abstract module M2 refines M1 {
         // advance to next child
       } else {
         // push
-        path := Path.Extend(path, t);
+        ghost var child := t.children[t.childrenVisited];
+        ghost var extendedPath := Path.Extend(path, t);
+        ExtendInitialPath(root, path, t, child, S);
+        path := extendedPath;
         ...;
+        // Keep the witness tied to the child across the pointer reversal.
+        assert t == child;
+        assert old(allocated(path)) && old(ReachableVia(root, path, t, S));
         t.pathFromRoot := path;
       }
     }

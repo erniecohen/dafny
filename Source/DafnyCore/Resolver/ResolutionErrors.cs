@@ -11,6 +11,8 @@ public class ResolutionErrors {
     // ReSharper disable once InconsistentNaming
     none,
     r_assume_statement_without_axiom,
+    r_termination_false_without_axiom,
+    r_assume_cross_module_termination_without_axiom,
     r_ghost_var_only_in_specifications,
     r_only_in_specification,
     r_ghost_parameters_only_in_specification,
@@ -117,6 +119,22 @@ public class ResolutionErrors {
     Add(ErrorId.r_assume_statement_without_axiom,
       @"
 ".TrimStart(), InsertBefore("{:axiom}"));
+    Add(ErrorId.r_termination_false_without_axiom,
+      @"
+Calls to the members of a trait with `{:termination false}` are not checked for termination, since
+the trait may be extended in other modules, and so such calls can recurse forever and still verify,
+and can prove `false`. Under `--warn-unchecked-termination`, Dafny reports the trait, as it reports an
+`assume` statement without `{:axiom}`. Add `{:axiom}` to the trait to acknowledge the assumption, or
+use `--allow-axioms`.
+".TrimStart(), InsertBefore("{:axiom} "));
+    Add(ErrorId.r_assume_cross_module_termination_without_axiom,
+      @"
+A class or trait with `@AssumeCrossModuleTermination` may extend traits of other modules, and calls
+dispatched to it through those traits are not checked for termination; such calls can recurse forever
+and still verify, and can prove `false`. Under `--warn-unchecked-termination`, Dafny reports the
+declaration, as it reports an `assume` statement without `{:axiom}`. Add `{:axiom}` to the declaration
+to acknowledge the assumption, or use `--allow-axioms`.
+".TrimStart(), InsertBefore("{:axiom} "));
     Add(ErrorId.r_assert_only_assumes_others,
     @"
 When annotating an assertion with the `{:only}` attribute, all other implicit and explicit assertions

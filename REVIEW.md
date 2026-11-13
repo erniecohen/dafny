@@ -146,6 +146,58 @@ Z3 5.1.0 (`Sequences.Elements` well-formedness to out of resource, `DecodeValidP
 well-formedness to correct); the commit that updates their expected verdicts gives the counts.
 With the option off, no verdict of the suite or of the standard library moves.
 
+## Review follow-up (https://github.com/erniecohen/dafny/issues/23)
+
+The glued-map elements guard now uses the glued map's domain. The domain axiom
+makes this equivalent to the old guard on the input domain; no new fact is
+asserted. Both the core and generated preludes use it. The datatype-equality
+refactor selects the existing trigger and body in one conditional, preserving
+the asymmetric guard. Its equivalence is checked by comparing the generated
+Boogie on suite samples with one fixed prelude.
+
+The `github-issue-23-*` regressions cover the reviewer-supplied Box/Unbox
+contradiction, ORDINAL subset inverse, undefined ORDINAL subtraction, empty-type
+lambda, generic constant initializer and simplified glue example, in both
+resolver modes. They also retain the exact `Pos`/`F` lambda cost example.
+Unlike the older reviewed implementation, the finite-support repair
+(https://github.com/erniecohen/dafny/commit/854f5a65a50658c8c415629d67d0b1bd34860fed)
+uses `LambdaCanCallAssumption`, which
+exports source lambda facts under the formal type and allocation guards and
+matches them at the source family's selectors. At `f(5)` the actual argument
+satisfies `Pos`; it need not have a declared witness to instantiate those facts.
+This is a difference between encodings, not evidence that a `witness *` type is
+always inhabited. The `ViaLambda` negative control keeps the empty-domain case.
+
+`.github/workflows/issue23.yml` records a CI-only A/B probe: one fixed baseline
+binary and the same source inputs with only the two prelude guards changed,
+Z3 5.1.0, the suite's normal 16M limit and the library's own limits with
+`/deterministicLiteralHashes:1 /restartProver`. Full source, per-VC logs and
+verdicts are retained. Probe completion alone is not an acceptance gate: its
+recorded exits, verdict differences, resource counts and exact Boogie comparison
+must be inspected alongside the normal review gates.
+
+## Compatible decreases comparison ([issue 264](https://github.com/erniecohen/dafny/issues/264))
+
+The default termination check now lifts compatible strict/weak component orders
+right to left, with TOP padding. A fractional real decrease or an equal
+sequence/datatype rank cannot discard an increasing suffix. Numeric lower
+bounds are inside the component relations, retaining negative terminal values.
+Calls, loops, overrides, termination-ordering expressions, and the experimental
+modular global/callback checks share the construction. No new primitive axiom
+is added; the loop's assumed weak summary follows from the component laws, and
+the changed induction hypotheses follow from the well-founded strict lift.
+The [soundness argument](docs/dev/decreases-order.md) covers each component
+family and the lift.
+
+This soundness fix ships enabled by explicit owner decision. The hidden
+`--legacy-decreases-order` switch restores the former, unsound translation for
+comparison and migration. `--modular-termination` remains opt-in. The regression
+is `git-issues/git-issue-264.dfy`. Actions records default/legacy verdict and
+resource comparisons for the suite and standard library, and byte identity
+between the pre-fix product and candidate legacy mode. The [comparison results
+and proof annotations](docs/dev/decreases-order-results.md) list every changed
+declaration outcome and explain the baseline updates.
+
 ## Boogie
 
 Boogie's unguarded reverse casts,
@@ -157,8 +209,8 @@ that runs Boogie's own test jobs and packs Boogie's NuGet packages.  The same fi
 is offered to Boogie's master as
 [boogie-org/boogie#1169](https://github.com/boogie-org/boogie/pull/1169).
 
-This branch builds against that fork's release `v3.5.5+review.a7d160a7`, whose
-packages have the version `3.5.5-review.a7d160a7`.  The release carries them with
+This branch builds against that fork's release `v3.5.5+review.c5a9f2ef`, whose
+packages have the version `3.5.5-review.c5a9f2ef`.  The release carries them with
 their sha256 sums, and its `REVIEW.md` says what the fork changes and how its
 version is computed.  Besides that fix, it brings:
 
@@ -179,12 +231,25 @@ version is computed.  Besides that fix, it brings:
 - **Options that are off by default**, and that Dafny does not set:
   `/deterministicLiteralHashes:1`, `/printDefinitionAxiomsInPlace`, `/verifyAsTasks`
   and `/structuralLiterals`.  The fork's `REVIEW.md` describes them.
+- **A fix to a prover's cached background**
+  ([#241](https://github.com/erniecohen/dafny/issues/241)): a `Reset` after a
+  `FullReset` sent the first context's background instead of the current one's.
+  Dafny's task pipeline targets the prover for every split and never reaches that
+  path, so its queries do not change.
+- **Two more options that are off by default**, `/cacheUsedTypes` and
+  `/lockFreeExpansion` ([#241](https://github.com/erniecohen/dafny/issues/241)),
+  which take work out of setting up a prover for each split and change no byte
+  that the solver gets.  On Std with 4 cores they cut CPU by 13.7 to 16.4% with
+  a no-op solver and wall time by 8.6 to 9.4% with Z3 4.12.1, with the same
+  verdicts.  Pass them with `--boogie "/cacheUsedTypes /lockFreeExpansion"`; a
+  program that loads the standard library cannot yet, because its `.doo` records
+  the `--boogie` options it was built with and refuses others.
 
 `a48933e` made this branch build against the fork's packages, at
-`3.5.5-review.37e4435d`.  It now builds against `3.5.5-review.a7d160a7`:
+`3.5.5-review.37e4435d`.  It now builds against `3.5.5-review.c5a9f2ef`:
 
 - `Source/DafnyCore/DafnyCore.csproj` names `Boogie.ExecutionEngine`
-  `3.5.5-review.a7d160a7`, and `dotnet-tools.json` names the `boogie` tool at the
+  `3.5.5-review.c5a9f2ef`, and `dotnet-tools.json` names the `boogie` tool at the
   same version;
 - `nuget.config` adds a local package source, `Binaries/boogie-packages`, and maps
   every Boogie package to it and to nothing else, so a missing package stops the
@@ -199,6 +264,12 @@ It moves no verdict of the suite or of the standard library.  Its test,
 the printed program with Boogie, which now reports the error that Dafny reports,
 where it used to verify the program.  Its release note is
 `docs/dev/news/boogie-printed-programs.fix`.
+
+The move from `a7d160a7` to `c5a9f2ef` is also a product change.  Its test,
+`git-issues/github-issue-241-split-setup.dfy`, verifies a program with every
+assertion its own split, with and without both new options, and requires the same
+report and the same SMT-Lib text sent to the solver.  Its release note is
+`docs/dev/news/241-boogie-split-setup.feat`.
 
 **To build this branch, run `sh Scripts/fetch-boogie-packages.sh` once first.**
 CI does so in every job that builds.
@@ -218,18 +289,20 @@ For boogie-org/boogie#1168, `3ff7e36` adds the test
 `docs/dev/news/boogie-1168.fix`, named by description, since the issue number is
 Boogie's.
 
-For #6531, #6532, #6533 and #6535 the test is the issue's program, which proves
-`false` under 4.11.0 and is refused now.  For #6534, #6536 and #6537 no program
-is known to prove `false`: each issue shows that the axioms themselves have no
-model.  Their tests check what the fix changes that a program can see: for
-#6537 and #6536, facts that 4.11.0 does not prove and that now verify; for
-#6534, proofs about the values of fields that the deleted axiom used to carry
-and that the fix keeps, and a vacuity control: a method in which the facts the
-fix asserts are in play, and whose `assert false` must still fail.  For
-boogie-org/boogie#1168 no Dafny program is known to prove `false` either, and the
-test checks proofs about values read from arrays, sequences, maps, fields and
-sets, which relied on the reverse casts: they verify under 4.11.0 and with the
-fix, and fail when the reverse casts are dropped without the fix's casts.
+For #6531, #6532, #6533, #6534 and #6535 the regression tests include source
+programs that prove `false` under the old encoding and are refused now. In
+`github-issue-23-box-bad.dfy`, `Opt<int>` and `Opt<bool>` share the datatype sort;
+three distinct integer payloads are unboxed as booleans, and the unguarded
+Box/Unbox inverse identifies two of their boxes. The guarded inverse also has
+preservation tests for field values and `set<ORDINAL>` subset membership, and a
+vacuity control. For #6536, the undefined constant expression `((0 as ORDINAL) - 1) + 1`
+reaches the solver: the old axiom proved its postcondition despite its
+well-formedness error, whereas the corrected guard rejects both. The existing
+defined-arithmetic tests still verify. For #6537 the test checks facts about
+items that 4.11.0 did not prove. For boogie-org/boogie#1168 the test checks proofs
+about values read from arrays, sequences, maps, fields and sets, which relied on
+the reverse casts: they verify under 4.11.0 and with the fix, and fail when the
+reverse casts are dropped without the fix's casts.
 Boogie's own tests for the fix, on its branch `review/3.5.5`, include the issue's
 program, on which Boogie 3.5.5 proves `assert false`.
 
@@ -334,8 +407,68 @@ and reports each program's verdict.  It verifies Dafny's standard library,
 `Source/DafnyStandardLibraries`, as the library's Makefile's `verify` target does,
 once with Z3 5.1.0 and once with the Z3 that the tree's own tests expect (4.12.1 on
 this branch), and reports each declaration's verdict.  It also runs the tests named in `.github/review/regressions` in
-upstream's own harness.  On a tag it attaches self-contained binaries for `osx-arm64`
-and `linux-x64` to a GitHub release, with their sha256 sums.
+upstream's own harness.  On a tag it attaches self-contained binaries for `linux-x64` and `osx-arm64`
+to a GitHub release, with their sha256 sums.  The `osx-arm64` binary and the release
+itself are built on the self-hosted Apple-silicon pool (label `mac-studio`).
+The framework-dependent build, artifact reports and portable regression tests
+also use this pool, together with JavaScript runtime tests, resolver matrix and unit tests,
+finite-support controls, statement-expression controls and verification-batch controls. The test `dafny0/CoinductiveProofs.dfy` declares macOS
+unsupported because its expected resource counts differ, so it stays in a
+separate hosted Linux job. `.github/review/regression-filter.py` partitions the
+standing manifest without dropping or duplicating entries. Every
+self-hosted job has an explicit repository/event guard: only pushes, manual
+runs, or pull requests whose head repository is `erniecohen/dafny` are admitted.
+Fork pull requests skip these jobs. The obligation-proof matrix, resolution-only
+census and pipeline probe have separate hosted fallbacks for other events,
+including the obligation matrix's weekly schedule.
+
+The suite verdict gates (all shards, additional axioms off/on) and the Z3
+4.12.1 library gates use the guarded Mac pool. Their fixed-source verdicts
+matched hosted Linux; the owner approved their measured resource differences
+on 2026-11-11. The library job reads the build's harness solver version and
+admits only 4.12.1 to that pool; a future harness solver stays hosted until
+separately qualified. Z3 5.1.0 library gates remain on Linux because
+`Std.Arithmetic.DivMod.LemmaMultiplyDivideLe` changes from `OutOfResource` on
+Linux to `Correct` on macOS at the library's existing 1,000,000 RU limit.
+
+Each suite/library job records per-program totals, maximum batch RU,
+every batch's resource use and applicable limit, and actual solver binary and
+archive hashes in its verdict artifact. Job summaries list every batch using
+at least 75% of a finite limit, including overruns. A program's total can span
+multiple batches and is never compared with a single batch's limit. Literal
+member-level limits (both attribute syntaxes), legacy limits, and resource-limit
+multipliers are accounted for; unsupported limit syntax is reported rather
+than guessed. These observations do not add resource thresholds to the gates.
+
+A manual `review.yml` run with `platform_parity: true` builds both platforms
+at the dispatch's exact commit, runs every suite shard with additional axioms
+off/on, and verifies the library under both solvers in both modes. It records
+regression and resolver test results too. The `platform-parity-report`
+artifact compares verdict columns, resource counts, proof batches, coverage
+and job wall times; missing observations are incomplete evidence. Further
+platform migrations with resource-only differences require an owner decision;
+verdict differences retain the corresponding Linux gate. The frozen
+repeated-default-comparison experiment stays on Linux because it pins a Linux
+runtime and measures that environment. Self-contained `linux-x64` binaries
+also stay on Linux for their execution smoke test.
+
+Jobs in the shared pool set `DOTNET_PROCESSOR_COUNT=4`; suite shards use four
+single-core verifier processes and library jobs use `--cores 4`. This bounds
+ordinary .NET scheduling to four processors per runner. Every job that can
+use the Mac pool first sets its own ephemeral `Runner.Worker` and initial shell
+to nice 10, before checkout; subsequent actions and verifier processes inherit
+that niceness. The step verifies both values and never changes the listener,
+runner installation or service configuration. The test runsettings
+limit xUnit to two concurrent tests, since each lit test normally uses two
+verifier cores. Solver
+archives for both platforms and harness versions 4.12.1 and 4.16.0 are pinned
+in `.github/review/setup-z3.sh`. CI installs Java explicitly, and the shared
+framework-dependent artifact launches its managed assembly through `dotnet`
+on either operating system. No product source or verdict baseline changes.
+Published builds normalize source paths, and archives omit Apple metadata and
+extended ZIP attributes.
+See https://github.com/erniecohen/dafny/issues/256.
+`.github/review/release-macos.sh` remains as a manual fallback.
 
 ### Expected verdicts
 

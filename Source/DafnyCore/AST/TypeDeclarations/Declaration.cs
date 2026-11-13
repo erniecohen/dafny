@@ -12,6 +12,9 @@ public abstract class Declaration : NodeWithOrigin, IAttributeBearingDeclaration
     Contract.Invariant(Name != null);
   }
 
+  // On-only source contract metadata. Pure views retain it even when a body is erased.
+  public TerminationSourceContract? TerminationContract;
+
   public IOrigin BodyStartTok = Token.NoToken;
   public Name NameNode;
 
@@ -31,6 +34,7 @@ public abstract class Declaration : NodeWithOrigin, IAttributeBearingDeclaration
   private bool scopeIsInherited = false;
 
   protected Declaration(Cloner cloner, Declaration original) : base(cloner, original) {
+    TerminationContract = original.TerminationContract;
     NameNode = original.NameNode.Clone(cloner);
     BodyStartTok = cloner.Origin(original.BodyStartTok);
     Attributes = cloner.CloneAttributes(original.Attributes);

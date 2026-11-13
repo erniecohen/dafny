@@ -95,7 +95,7 @@ module Y7 {
     function F(n: nat): nat { 0 }
     method M(n: nat) returns (r: nat) {
       var it := new Iter(this, n);
-      // Rejected: the iterator reaches the dispatched call, and has no bound.
+      // Rejected already at construction: the iterator protocol reaches dispatch and has no bound.
       var more := it.MoveNext();
       r := 0;
     }

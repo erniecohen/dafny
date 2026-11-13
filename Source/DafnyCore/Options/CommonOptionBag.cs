@@ -41,6 +41,12 @@ public class CommonOptionBag {
       IsHidden = true
     };
 
+  public static readonly Option<string> PipelineProfile =
+    new("--pipeline-profile", @"
+(experimental) Write timing events of the verification pipeline to the given file, one JSON object per line: parsing, resolution, translation to Boogie, Boogie's preparation of each module, and each verification task's queue wait and solver time, with process-wide allocation, garbage-collection and CPU deltas. Only the file is added; Dafny's other output and its solver input are unchanged.".TrimStart()) {
+      ArgumentHelpName = "file"
+    };
+
   public static readonly Option<string> LogLocation =
     new("--log-location", "Sets the directory where to store log files") {
       IsHidden = true
@@ -241,6 +247,15 @@ true - All class instances are raw pointers and need to be manually deallocated"
     IsHidden = true
   };
 
+  public static readonly Option<bool> UserDefinedOperators = new("--user-defined-operators", () => false,
+    "Enable fallback arithmetic and comparison function operators on concrete classes and inductive datatypes. " +
+    "Requires --type-system-refresh. Equality and module-attribute operators remain intrinsic. " +
+    "Datatype < and > retain intrinsic rank comparison; call annotated predicates by name. " +
+    "Override mode, compounds, trait operators and library/precompiled input reuse are not yet supported. Disabled by default.") {
+    // Automatic usage on old CLI errors must retain its literal disabled output.
+    IsHidden = true
+  };
+
   public static readonly Option<bool> AdditionalAxioms = new("--additional-axioms", () => false,
     "Enable additional verifier axioms. May change verification performance and proof stability. Disabled by default.");
 
@@ -253,6 +268,9 @@ true - All class instances are raw pointers and need to be manually deallocated"
   public static readonly Option<bool> AllowAxioms = new("--allow-axioms", () => false,
     "Prevents a warning from being generated for axioms, such as assume statements and functions or methods without a body, that don't have an {:axiom} attribute.") {
   };
+
+  public static readonly Option<bool> WarnUncheckedTermination = new("--warn-unchecked-termination", () => false,
+    "Warn about each trait with {:termination false} and each class or trait with @AssumeCrossModuleTermination: calls dispatched through such a trait are not checked for termination. Like an assume statement, the declaration is not reported if it has an {:axiom} attribute or if --allow-axioms is set. Only declarations that the run verifies are reported, not those of libraries or included files. Disabled by default.");
 
   public static readonly Option<bool> BitvectorMapKeys = new("--bitvector-map-keys", () => false,
     "Preserve bitvector key types in map and imap lookups, and bitvector element types in multiset multiplicity lookups, during verification. Disabled by default.");
@@ -275,8 +293,11 @@ true - All class instances are raw pointers and need to be manually deallocated"
   public static readonly Option<bool> SynonymRefinesAbstractType = new("--synonym-refines-abstract-type", () => false,
     "In a refining module, let a type synonym 'type O<Xs> = T<Xs>' refine an abstract type O that has members, where T is a class, trait, datatype, newtype or abstract type declared in the refining module: the members of O are merged into T, as they would be into a declaration of O itself. Disabled by default.");
 
+  public static readonly Option<bool> LegacyDecreasesOrder = new("--legacy-decreases-order", () => false,
+    "Use the legacy, unsound decreases-tuple comparison for migration and comparison only.") { IsHidden = true };
+
   public static readonly Option<bool> ModularTermination = new("--modular-termination", () => false,
-    "Experimental; it does not yet establish termination in every program. Accept 'decreases {:global}' clauses, and reject a call dispatched to a bodyless member of a trait whose implementations may lie in other modules (a trait with {:termination false}, or one extended from another module) unless the callee's 'decreases {:global}' bound is below the caller's, captured on entry. Reject a call to known code that can reach such a dispatched call unless the callee's bound is at most the caller's; a helper that forwards one therefore needs a bound of its own. Code without a bound that can reach such a dispatched call (a type's constraint, witness or component defaults, or a constant's initializer) counts as called wherever a member mentions the type or reads the constant, so a member with a bound may not do so. A call through a function value whose code is not known (not a lambda expression, nor a function that reaches no dispatched call) has no bound either; 'decreases {:callback g} E' gives an in-parameter g the bound E, which an application of g must be below and the value passed for g must run under. A global or callback bound may only use code that cannot reach such a dispatched call. The option does not yet establish termination in every program (see the Reference Manual). Report as hints (with --show-hints) every call that needs one of the rules. See the Reference Manual. Disabled by default.");
+    "Experimental; it does not yet establish termination in every program. Accept global and callback decreases bounds. Under this option, {:termination false} declares checked trait extensibility; foreign extension of sealed traits is rejected, including with @AssumeCrossModuleTermination. Dispatched overridable slots require strict global-bound descent. Imported operations are General at their declared bound, or TOP, unless they publish a checked {:termination_closed} promise; private bodies never strengthen an imported contract. Exact General calls require nonincrease as well as ordinary termination. Constants and type/iterator evaluation hooks also use public effects. Closed code and bound computations cannot reach open dispatch, unknown applications or imported General code. Callback formation, forwarding and application retain their checked bounds. Show call classifications with --show-hints. See the Reference Manual for restrictions and incomplete library admission. Disabled by default.");
 
   public static readonly Option<bool> InvariantConstructorInference = new("--invariant-constructor-inference", () => false,
     "With the refreshed type system, let a datatype constructor argument whose formal type uses a type parameter in a non-variant position, such as the tail of a list, fix that type argument, instead of widening it to the type of another argument. Every argument is still checked against the chosen type. Disabled by default.");
@@ -710,8 +731,10 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(WarnAsErrors, OptionScope.Cli);
     OptionRegistry.RegisterOption(ProgressOption, OptionScope.Cli);
     OptionRegistry.RegisterOption(LogLocation, OptionScope.Cli);
+    OptionRegistry.RegisterOption(PipelineProfile, OptionScope.Cli);
     OptionRegistry.RegisterOption(LogLevelOption, OptionScope.Cli);
     OptionRegistry.RegisterOption(ManualTriggerOption, OptionScope.Module);
+    OptionRegistry.RegisterOption(UserDefinedOperators, OptionScope.Cli);
     OptionRegistry.RegisterOption(AdditionalAxioms, OptionScope.Cli);
     OptionRegistry.RegisterOption(MapComprehensionDomainTriggers, OptionScope.Cli);
     OptionRegistry.RegisterOption(HeapFreeLambdaFacts, OptionScope.Cli);
@@ -744,7 +767,9 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(DatatypeSubsetConversions, OptionScope.Cli);
     OptionRegistry.RegisterOption(AncestorQualifiedModuleIds, OptionScope.Cli);
     OptionRegistry.RegisterOption(SynonymRefinesAbstractType, OptionScope.Cli);
+    OptionRegistry.RegisterOption(LegacyDecreasesOrder, OptionScope.Cli);
     OptionRegistry.RegisterOption(ModularTermination, OptionScope.Cli);
+    OptionRegistry.RegisterOption(WarnUncheckedTermination, OptionScope.Cli);
     OptionRegistry.RegisterOption(InvariantConstructorInference, OptionScope.Cli);
     OptionRegistry.RegisterOption(VerificationLogFormat, OptionScope.Cli);
     OptionRegistry.RegisterOption(VerifyIncludedFiles, OptionScope.Cli);

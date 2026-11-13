@@ -243,7 +243,8 @@ module M3 refines M2 {
       }
     }
 
-    lemma {:autocontracts false} JoinMaintainsReaches1(r0: Element, r1: Element, C: CMap, C': CMap)
+    // Verify the reachability obligations separately.
+    lemma {:autocontracts false} {:isolate_assertions} JoinMaintainsReaches1(r0: Element, r1: Element, C: CMap, C': CMap)
       requires GoodCMap(C)
       requires r0 in C && r1 in C && C[r0].Root? && C[r1].Root? && C[r0].depth == C[r1].depth && r0 != r1
       requires C' == C[r0 := Link(r1)][r1 := Root(C[r1].depth + 1)]

@@ -1961,7 +1961,9 @@ this ordering. (The parentheses can be omitted if there is exactly 1 left-hand s
 and exactly 1 right-hand side.) For example, the following assertions are valid:
 <!-- %check-verify -->
 ```dafny
-method M(x: int, y: int) {
+method M(x: int, y: int)
+  requires 0 <= x
+{
   assert 1 decreases to 0;
   assert (true, false decreases to false, true);
   assert (x, y decreases to x - 1, y);
@@ -1977,7 +1979,15 @@ method M(x: int, y: int) {
 ```
 
 The `decreases to` operator is strict, that is, it means "strictly greater than".
-The `nonincreases to` operator is the non-strict ("greater than or equal") version of it.
+The `nonincreases to` operator uses the compatible weak tuple comparison described
+in [the decreases-clause rules](#sec-decreases-clause). In particular, a fractional
+real decrease with an unchanged suffix is weak nonincrease, while a suffix increase
+requires an earlier strict decrease. Numeric lower bounds apply here too: an old
+negative component can stay unchanged, but cannot decrease again.
+For example, `0 decreases to -1` holds, while `-1 decreases to -2` and
+`-1 nonincreases to -2` do not. This is a behavior change from the legacy
+ordering expressions, which omitted the numeric lower bound. A tuple's
+earlier strict decrease can still allow a later component to increase.
 
 ## 9.39. Compile-Time Constants {#sec-compile-time-constants}
 
@@ -2032,3 +2042,38 @@ The following is a list of expressions that can only appear in specification con
 * [Assert and calc expressions](#sec-statement-in-an-expression)
 * [Hash Calls](#sec-hash-call)
 * [Termination ordering expression](#sec-termination-ordering-expressions)
+
+## Experimental user-defined operators {#sec-user-defined-operators}
+
+With `--user-defined-operators --type-system-refresh`, source arithmetic and
+comparison expressions first select an applicable built-in operation. Otherwise,
+they select the unique directly declared function operator at the static left
+operand's concrete class or inductive datatype type (the only operand for unary
+minus). Selection uses no right-operand search, implicit user conversion, or
+expected-result overload search. An undetermined receiver requires an annotation
+or a named call. Transparent aliases and visible subsets use the underlying
+nominal owner's operators. Ordinary numeric-newtype arithmetic stays intrinsic.
+
+A selected user operation has exactly the meaning and checks of its named call:
+preconditions, receiver non-nullness, reads, ghost restrictions, opacity, ordinary
+type substitution and termination all apply. No algebraic laws or special
+compiler behavior follow from its symbol or member name. For example,
+`a * b + c <= d` on a rational datatype can mean
+`a.times(b).plus(c).le(d)`. No new precedence or associativity rules are added.
+A comparison chain remains the short-circuit conjunction of its adjacent edges;
+it supplies no transitivity law for user comparisons.
+
+Explicit `==`/`!=`, collection identity, equality-support characteristics,
+generated termination orders and `calc` connectors remain intrinsic. Datatype
+`<` and `>` keep their existing rank interpretation when applicable, including
+the restriction on using rank comparisons in compiled code. Such a compilation
+failure does not retry a declared predicate. Datatype `<=` and `>=` have no
+intrinsic rank interpretation, so they may use fallback predicates.
+
+Module-attribute arguments retain intrinsic operator syntax because that phase
+uses legacy resolution; explicit named calls are available there. This milestone
+supports fully checked source modules, concrete imports and consistent revealed
+exports. It rejects feature-bearing refinement/replacement or abstract-signature
+imports and opaque export views that hide a saved owner, member or intrinsic
+meaning. A saved selection is replayed through clones, never looked up afresh.
+Compound assignment and `builtin.<op>(...)` are not introduced.

@@ -296,6 +296,12 @@ git-issues/github-issue-190.dfy
 # Exact let in a self postcondition keeps the self-call allowance (#166).
 git-issues/github-issue-166.dfy
 
+# Source proofs repaired for experimental obligation checks (#170).  The twelve bounded
+# git-issue-170 shards run in the separate job `Obligation proof repairs (#170)`.
+dafny1/PriorityQueue.dfy
+dafny4/Primes.dfy
+dafny4/UnionFind.dfy
+dafny2/SnapshotableTrees.dfy
 # Rotations at widths that are not powers of two are defined by shifts; Z3 composed native
 # rotation counts modulo 2^W (https://github.com/erniecohen/dafny/issues/147).
 git-issues/github-issue-147.dfy
@@ -345,3 +351,48 @@ git-issues/github-issue-200.dfy
 
 # Declared lambda preconditions are necessary under --additional-axioms (#97).
 git-issues/github-issue-97.dfy
+
+# Opt-in --warn-unchecked-termination: {:termination false} and @AssumeCrossModuleTermination reported by verify (https://github.com/erniecohen/dafny/issues/211, item 1).
+git-issues/github-issue-211-warning.dfy
+
+# Opt-in --pipeline-profile writes a timing sidecar and leaves the output unchanged (#241).
+git-issues/github-issue-241.dfy
+
+# Opt-in --verification-module-window K reports what K = 1 reports (#241).
+git-issues/github-issue-241-module-window.dfy
+
+# Std.RealCompleteness: least upper bounds for iset<real>, from one {:axiom} lemma (https://github.com/erniecohen/dafny/issues/205).
+git-issues/github-issue-205.dfy
+
+# Opt-in /cacheUsedTypes and /lockFreeExpansion send the solver the same text (Boogie 3.5.5-review.c5a9f2ef, #241).
+git-issues/github-issue-241-split-setup.dfy
+
+# Upstream review follow-up (https://github.com/erniecohen/dafny/issues/23).
+git-issues/github-issue-23-box-bad.dfy
+git-issues/github-issue-23-ordinal-subset.dfy
+git-issues/github-issue-23-ordinal-undefined.dfy
+git-issues/github-issue-23-lambda.dfy
+git-issues/github-issue-23-constant.dfy
+git-issues/github-issue-23-lambda-cost.dfy
+git-issues/github-issue-23-glue.dfy
+
+# Stable source contracts for https://github.com/erniecohen/dafny/issues/211: both resolvers, effect boundaries, export/refinement views and reachable false controls.
+git-issues/github-issue-211-m4b.dfy
+# Wide JavaScript runtime bitwise results (https://github.com/erniecohen/dafny/issues/246).
+git-issues/git-issue-246.dfy
+
+# Compatible component and tuple decreases orders (https://github.com/erniecohen/dafny/issues/264).
+git-issues/git-issue-264.dfy
+git-issues/git-issue-264-refreshed.dfy
+# Positive and negative ordering expressions, and explicit list induction repaired for the corrected order.
+dafny0/DecreasesTo0.dfy
+dafny0/DecreasesTo1.dfy
+dafny0/NoTypeArgs.dfy
+# Pure integer bitwise reference model; no language or solver changes (https://github.com/erniecohen/dafny/issues/193).
+git-issues/git-issue-193-reference-laws.dfy
+
+# Distinct opaque nullable and non-null type constructors (https://github.com/erniecohen/dafny/issues/268).
+git-issues/github-issue-268.dfy
+
+# Source-only opt-in function operators, clone preservation and negative controls (https://github.com/erniecohen/dafny/issues/194).
+git-issues/github-issue-194.dfy

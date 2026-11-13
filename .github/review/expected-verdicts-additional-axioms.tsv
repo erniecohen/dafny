@@ -58,8 +58,8 @@ dafny0/DTypes.dfy	4	20 verified, 7 errors	18,56,121,127,137,156,179
 dafny0/DatatypeUpdate.dfy	4	5 verified, 2 errors	67,69
 dafny0/DatatypeUpdateResolution.dfy	2		13,14,18,20,29,53,55,61,63,70,71,72
 dafny0/Datatypes.dfy	4	29 verified, 15 errors	82,170,172,201,204,225,297,298,349,356,377,493,495
-dafny0/DecreasesTo0.dfy	4	4 verified, 10 errors	22,26,30,34,38,42,52,56,58,67
-dafny0/DecreasesTo1.dfy	4	2 verified, 9 errors	19,23,27,39,49,57,69,73,77
+dafny0/DecreasesTo0.dfy	4	4 verified, 13 errors	24,28,32,36,40,44,56,60,62,71,72,73,80
+dafny0/DecreasesTo1.dfy	4	2 verified, 12 errors	21,25,29,41,51,59,71,75,79,86,87,88
 dafny0/DecreasesTo3.dfy	4	0 verified, 7 errors	5,9,13,17,21,28,32
 dafny0/DecreasesTo5.dfy	2		5,10
 dafny0/DefaultParameters.dfy	4	72 verified, 74 errors	55,63,67,92,102,110,124,131,135,137,140,145,148,150,153,158,160,162,165,170,172,178,179,180,181,194,200,211,219,220,229,235,241,251,258,267,320,326,327,360,361,362,363,365,385,386,387,388,390,416,417,418,419,438,443,447,453,481,493,494,500,520,521,524,548,601
@@ -81,12 +81,12 @@ dafny0/ExternNegative.dfy	2		11,16
 dafny0/ExternNegative2.dfy	2		24
 dafny0/ExtremeReads.dfy	4	10 verified, 17 errors	47,50,69,83,105,127,130,149,168,171,181
 dafny0/ForLoops-Resolution.dfy	2		6,11,32,38,78,86,95,133,138,143,148,153,158,167,243,256,297,299,321,332,353,355,390,412,434,446,457,479,490,503,510,517
-dafny0/ForLoops.dfy	4	23 verified, 25 errors	19,24,116,150,155,204,218,225,230,238,241,272,275,287,290,298,306,311,344,362,372,415,434,443,457
+dafny0/ForLoops.dfy	4	23 verified, 25 errors	19,24,116,150,155,204,218,225,230,238,241,272,275,287,290,298,306,311,344,362,372,415,432,441,457
 dafny0/ForallCompilationNewSyntax.dfy	0	14 verified, 0 errors	
 dafny0/ForallStmtResolveErrors.dfy	2		8,25,26,36,48,55,62,63,64,73,74,85,86,105,129,130,131,132,133,134,143,149,154,162,174,176,178,190,251,253,267,269,283,285
 dafny0/ForbidNondeterminism.dfy	4	0 verified, 4 errors	9,14,15,23
 dafny0/Fuel.dfy	4	31 verified, 39 errors	17,66,71,92,93,94,120,121,122,129,132,133,157,200,245,247,280,335,336,397,398,399,407,435,436,437
-dafny0/FunctionSpecifications.dfy	4	10 verified, 11 errors, 1 out of resource; 2 out of resource	35,49,61,71,117,120,135,139,148,155,162,167
+dafny0/FunctionSpecifications.dfy	4	11 verified, 11 errors	35,61,71,117,120,135,139,148,155,162,167
 dafny0/GeneralNewtypeCollections.dfy	0	44 verified, 0 errors	
 dafny0/GeneralNewtypeCollectionsGeneric.dfy	0	44 verified, 0 errors	
 dafny0/GeneralNewtypeExtends.dfy	2		33,34,35,68,81
@@ -152,7 +152,7 @@ dafny0/Newtypes.dfy	4	43 verified, 16 errors	74,76,87,95,97,104,177,193,194,223,
 dafny0/NewtypesResolution.dfy	2		5,12,38,44,50,51,52,53,57,75,77,91,101,105,114,120,139,140,156,157,162,188,219,221,223,227,229,230,238,240,249,256,259,262,265,276,284,285,289,304,317,332,350,360,371,381,400,414,430,444,458,472,481,489,496,503
 dafny0/NoMoreAssume2Less2.dfy	4	0 verified, 26 errors	26,35,44,50,53,59,62,68,72,86,92,95,104,110,113,119,135,140,146,149,158,175,180,186,191,198
 dafny0/NoReferencesVerification.dfy	4	2 verified, 4 errors	16,26,33,49
-dafny0/NoTypeArgs.dfy	0	8 verified, 0 errors	
+dafny0/NoTypeArgs.dfy	0	10 verified, 0 errors	
 dafny0/NonGhostQuantifiers.dfy	2		16,46,50,54,114,123,140,149,153,158,163,167,171,176,181,192
 dafny0/NonZeroInitialization.dfy	4	12 verified, 13 errors	4,11,12,13,16,17,18,19,37,38,39,53,58
 dafny0/NonZeroInitializationCompile.dfy	0	15 verified, 0 errors	
@@ -228,7 +228,7 @@ dafny0/Strings.dfy	2		84,88,92,114,115,122,131,134,140
 dafny0/SubsetTypes.dfy	4	13 verified, 91 errors	7,8,10,11,15,16,19,21,23,31,42,44,49,51,56,63,64,66,67,71,72,75,77,79,87,98,100,101,106,108,113,123,125,135,136,141,143,144,157,159,169,182,199,204,213,216,232,241,270,271,272,273,278,279,284,285,286,287,288,318,323,330,337,342,343,347,348,352,360,365,377,379,381,383,385,390,392,394,396,398,401,411,413,429,436,445,452,459,464
 dafny0/SubsetTypesERR.dfy	2		11,13,15,17,23,25,27,29,37,39,42,44,46,57,59,63,65
 dafny0/TailCalls.dfy	2		21,38,43,110,126,139,171,174,178,181,188,195,229,261,288,310,316,323,338,369,380,416,425,437,449,451,462
-dafny0/Termination.dfy	4	106 verified, 27 errors	108,125,126,255,296,361,441,534,542,549,556,563,571,577,579,589,674,714,722,730,806,1128,1130,1143,1145,1182,1198
+dafny0/Termination.dfy	4	106 verified, 26 errors	108,125,255,296,361,441,534,542,549,556,563,571,577,579,589,674,714,722,730,806,1128,1130,1143,1145,1182,1198
 dafny0/TriggerInPredicate.dfy	0	0 verified, 0 errors	
 dafny0/Tuples.dfy	4	0 verified, 2 errors	22,24
 dafny0/Twostate-Functions.dfy	4	18 verified, 13 errors	11,18,23,66,68,92,97,129,147,164,167,183,186
@@ -262,7 +262,7 @@ dafny1/BDD.dfy	0	5 verified, 0 errors
 dafny1/BinaryTree.dfy	0	19 verified, 0 errors	
 dafny1/Celebrity.dfy	0	5 verified, 0 errors	
 dafny1/Cubes.dfy	0	2 verified, 0 errors	
-dafny1/ExtensibleArray.dfy	0	9 verified, 0 errors	
+dafny1/ExtensibleArray.dfy	0	13 verified, 0 errors	
 dafny1/ExtensibleArrayAuto.dfy	4	8 verified, 0 errors, 1 out of resource; 2 out of resource	74
 dafny1/FindZero.dfy	0	8 verified, 0 errors	
 dafny1/KatzManna.dfy	0	4 verified, 0 errors	
@@ -271,10 +271,10 @@ dafny1/ListCopy.dfy	0	2 verified, 0 errors
 dafny1/ListReverse.dfy	0	2 verified, 0 errors	
 dafny1/MatrixFun.dfy	0	6 verified, 0 errors	
 dafny1/MoreInduction.dfy	4	26 verified, 4 errors	78,83,88,93
-dafny1/PriorityQueue.dfy	0	22 verified, 0 errors	
+dafny1/PriorityQueue.dfy	0	109 verified, 0 errors	
 dafny1/Queue.dfy	0	18 verified, 0 errors	
-dafny1/SchorrWaite-stages.dfy	4	6 verified, 0 errors, 1 out of resource; 2 out of resource	36
-dafny1/SchorrWaite.dfy	0	272 verified, 0 errors	
+dafny1/SchorrWaite-stages.dfy	4	8 verified, 0 errors, 1 out of resource; 2 out of resource	36
+dafny1/SchorrWaite.dfy	0	269 verified, 0 errors	
 dafny1/SeparationLogicList.dfy	0	13 verified, 0 errors	
 dafny1/Substitution.dfy	0	9 verified, 0 errors	
 dafny1/SumOfCubes.dfy	0	17 verified, 0 errors	
@@ -293,12 +293,12 @@ dafny2/Calculations.dfy	0	20 verified, 0 errors
 dafny2/Classics.dfy	0	4 verified, 0 errors	
 dafny2/Intervals.dfy	0	5 verified, 0 errors	
 dafny2/MajorityVote.dfy	0	16 verified, 0 errors	
-dafny2/MinWindowMax.dfy	0	228 verified, 0 errors	
+dafny2/MinWindowMax.dfy	0	222 verified, 0 errors	
 dafny2/MonotonicHeapstate.dfy	0	17 verified, 0 errors	
 dafny2/SegmentSum.dfy	0	3 verified, 0 errors	
-dafny2/SmallestMissingNumber-functional.dfy	4	53 verified, 0 errors, 7 out of resource; 8 out of resource	157,230,277,278,279,297
+dafny2/SmallestMissingNumber-functional.dfy	4	51 verified, 0 errors, 7 out of resource; 8 out of resource	157,230,277,278,279,297
 dafny2/SmallestMissingNumber-imperative.dfy	0	8 verified, 0 errors	
-dafny2/SnapshotableTrees.dfy	4	103 verified, 1 error, 4 out of resource; 5 out of resource	72,363,383,426,451
+dafny2/SnapshotableTrees.dfy	4	108 verified, 1 error, 4 out of resource; 5 out of resource	72,363,383,426,451
 dafny2/StoreAndRetrieve.dfy	0	16 verified, 0 errors	
 dafny2/TreeBarrier.dfy	0	7 verified, 0 errors	
 dafny2/TreeFill.dfy	0	3 verified, 0 errors	
@@ -312,7 +312,7 @@ dafny3/Dijkstra.dfy	0	7 verified, 0 errors
 dafny3/EWD-1062.dfy	0	7 verified, 0 errors	
 dafny3/Filter.dfy	0	28 verified, 0 errors	
 dafny3/GenericSort.dfy	0	20 verified, 0 errors	
-dafny3/Inc.dfy	4	8 verified, 12 errors	55,84,93,111,120,182,211,220,238,247,318
+dafny3/Inc.dfy	4	8 verified, 11 errors	55,84,93,111,120,182,211,220,238,247,318
 dafny3/InductionVsCoinduction.dfy	0	12 verified, 0 errors	
 dafny3/InfiniteTrees.dfy	0	48 verified, 0 errors	
 dafny3/Iter.dfy	0	12 verified, 0 errors	
@@ -400,7 +400,7 @@ dafny4/Bug99.dfy	0	1 verified, 0 errors
 dafny4/Circ.dfy	4	2 verified, 1 error	18
 dafny4/ClassRefinement.dfy	0	11 verified, 0 errors	
 dafny4/CoqArt-InsertionSort.dfy	0	21 verified, 0 errors	
-dafny4/ExpandedGuardednessNeg.dfy	4	0 verified, 4 errors	8,13
+dafny4/ExpandedGuardednessNeg.dfy	4	0 verified, 2 errors	8,13
 dafny4/FlyingRobots.dfy	0	31 verified, 0 errors	
 dafny4/Fstar-QuickSort.dfy	0	6 verified, 0 errors	
 dafny4/GHC-MergeSort.dfy	0	55 verified, 0 errors	
@@ -418,7 +418,7 @@ dafny4/NipkowKlein-chapter3.dfy	0	20 verified, 0 errors
 dafny4/NipkowKlein-chapter7.dfy	0	26 verified, 0 errors	
 dafny4/NumberRepresentations.dfy	0	39 verified, 0 errors	
 dafny4/OpaqueBug.dfy	4	0 verified, 2 errors	13,23
-dafny4/Primes.dfy	0	15 verified, 0 errors	
+dafny4/Primes.dfy	0	26 verified, 0 errors	
 dafny4/Regression0.dfy	2		7,11
 dafny4/Regression1.dfy	0	0 verified, 0 errors	
 dafny4/Regression10.dfy	4	1 verified, 1 error	11
@@ -440,7 +440,7 @@ dafny4/Regression7.dfy	0	2 verified, 0 errors
 dafny4/Regression8.dfy	4	0 verified, 1 error	14
 dafny4/Regression9.dfy	0	2 verified, 0 errors	
 dafny4/SoftwareFoundations-Basics.dfy	4	53 verified, 1 error	41
-dafny4/UnionFind.dfy	4	44 verified, 0 errors, 2 out of resource; 3 out of resource	206,338
+dafny4/UnionFind.dfy	4	140 verified, 0 errors, 2 out of resource; 3 out of resource	206,339
 dafny4/gcd.dfy	4	95 verified, 0 errors, 2 out of resource; 3 out of resource	165,253
 dafny4/git-issue1.dfy	0	2 verified, 0 errors	
 dafny4/git-issue104.dfy	0	2 verified, 0 errors	
@@ -667,9 +667,9 @@ git-issues/git-issue-146.dfy	0	5 verified, 0 errors
 git-issues/git-issue-1479.dfy	4	1 verified, 2 errors	16,33
 git-issues/git-issue-148.dfy	0	2 verified, 0 errors	
 git-issues/git-issue-151.dfy	2		37,39,40,42
-git-issues/git-issue-1514.dfy	1		
-git-issues/git-issue-1514b.dfy	1		
-git-issues/git-issue-1514c.dfy	1		
+git-issues/git-issue-1514.dfy	0	3 verified, 0 errors	
+git-issues/git-issue-1514b.dfy	0	3 verified, 0 errors	
+git-issues/git-issue-1514c.dfy	0	3 verified, 0 errors	
 git-issues/git-issue-151b.dfy	2		24,26
 git-issues/git-issue-1545.dfy	2		5,15,17,19,21,35,44,46,50,56,58,60,62
 git-issues/git-issue-1553.dfy	0	0 verified, 0 errors	
@@ -702,6 +702,7 @@ git-issues/git-issue-1875.dfy	0	5 verified, 0 errors
 git-issues/git-issue-1887.dfy	2		6,11
 git-issues/git-issue-1903.dfy	0	1 verified, 0 errors	
 git-issues/git-issue-1909.dfy	0	1 verified, 0 errors	
+git-issues/git-issue-193-reference-laws.dfy	0	6 verified, 0 errors	
 git-issues/git-issue-1957.dfy	0	1 verified, 0 errors	
 git-issues/git-issue-1958.dfy	4	6 verified, 12 errors	13,18,32,36,56,61,65,70,77,81,104,167
 git-issues/git-issue-1963a.dfy	2		12
@@ -945,7 +946,7 @@ git-issues/git-issue-4936a.dfy	0	0 verified, 0 errors
 git-issues/git-issue-4936b.dfy	0	1 verified, 0 errors	
 git-issues/git-issue-4936c.dfy	2		32,42,53,64,95
 git-issues/git-issue-4936d.dfy	2		15
-git-issues/git-issue-4939a.dfy	4	11 verified, 6 errors	25,68,99,105
+git-issues/git-issue-4939a.dfy	4	11 verified, 4 errors	25,68,99,105
 git-issues/git-issue-4939b.dfy	4	1 verified, 2 errors	16,18
 git-issues/git-issue-4939c.dfy	0	0 verified, 0 errors	
 git-issues/git-issue-4946a.dfy	2		7
@@ -1130,12 +1131,20 @@ git-issues/git-issue-Main.dfy	0	0 verified, 0 errors
 git-issues/git-issue-Main1.dfy	0	0 verified, 0 errors	
 git-issues/git-issue-Main2.dfy	0	0 verified, 0 errors	
 git-issues/git-issue-Main3.dfy	0	0 verified, 0 errors	
-git-issues/git-issue1495.dfy	1		
+git-issues/git-issue1495.dfy	0	8 verified, 0 errors	
 git-issues/git-issue5822.dfy	4	1 verified, 1 error	7
 git-issues/github-issue-1267.dfy	0	1 verified, 0 errors	
 git-issues/github-issue-191.dfy	2	3 verified, 0 errors	14,19
+git-issues/github-issue-205.dfy	0	89 verified, 0 errors	
 git-issues/github-issue-2174.dfy	0	17 verified, 0 errors	
 git-issues/github-issue-2230.dfy	0	2 verified, 0 errors	
+git-issues/github-issue-23-box-bad.dfy	4	1 verified, 1 error	14
+git-issues/github-issue-23-constant.dfy	0	1 verified, 0 errors	
+git-issues/github-issue-23-glue.dfy	4	0 verified, 1 error	9
+git-issues/github-issue-23-lambda-cost.dfy	0	1 verified, 0 errors	
+git-issues/github-issue-23-lambda.dfy	4	1 verified, 1 error	11
+git-issues/github-issue-23-ordinal-subset.dfy	0	1 verified, 0 errors	
+git-issues/github-issue-23-ordinal-undefined.dfy	4	0 verified, 2 errors	8,9
 git-issues/github-issue-2563.dfy	4	0 verified, 0 errors	
 git-issues/github-issue-26-ten.dfy	0	0 verified, 0 errors	
 git-issues/github-issue-26.dfy	4	2 verified, 1 error	22

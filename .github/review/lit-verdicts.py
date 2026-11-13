@@ -16,6 +16,9 @@ itself:
     --resource-limit 16000000 --verification-time-limit 0 --cores 1
     --boogie /normalizeDeclarationOrder:0 --allow-warnings
 
+(--boogie is not added to a program that uses --standard-libraries, whose
+library refuses to load under --boogie options other than its own.)
+
 A resource limit, not a time limit, so that a verdict does not depend on the
 machine.  The verdicts are compared with each other, build against build, not
 with the .expect files: a program whose verdict moves is either a proof a change
@@ -75,7 +78,18 @@ def plan(litdir, out):
                 opts = re.split(r'%(?:build|run)\b', cmd, 1)[1]
             if opts is None:
                 continue
-            toks = [t for t in shlex.split(opts) if not t.startswith('%')]
+            # The suite supplies its pinned solver itself. Resolve the harness solver
+            # placeholder by dropping that option and its value together.
+            raw = shlex.split(opts)
+            toks = []
+            i = 0
+            while i < len(raw):
+                if raw[i] == '--solver-path' and i + 1 < len(raw) and raw[i + 1].startswith('%'):
+                    i += 2
+                    continue
+                if not raw[i].startswith('%'):
+                    toks.append(raw[i])
+                i += 1
             if '--no-verify' in toks:
                 continue
             keep, skip = [], False
@@ -99,6 +113,12 @@ def verify(args):
     litdir, dafny, z3, path, opts, additional_axioms, measurements = args
     own = shlex.split(opts)
     names = {t.split('=')[0].split(':')[0] for t in own if t.startswith('--')}
+    # A precompiled library (--standard-libraries, a .doo) records the --boogie
+    # options it was built with and refuses to load under others, so a program
+    # that uses one keeps its own (by default none).
+    if '--standard-libraries' in names and not any(
+            re.match(r'--standard-libraries[:=]false$', t) for t in own):
+        names.add('--boogie')
     fixed, i = [], 0
     while i < len(FIXED):  # an option the program sets itself is left to the program
         name = FIXED[i]

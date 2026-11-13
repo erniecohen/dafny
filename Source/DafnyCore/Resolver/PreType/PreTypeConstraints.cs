@@ -654,7 +654,7 @@ namespace Microsoft.Dafny {
       IsNewtypeBaseTypeGeneral,
     };
 
-    private bool ConfirmConstraint(CommonConfirmationBag check, PreType preType, DPreType auxPreType) {
+    internal bool ConfirmConstraint(CommonConfirmationBag check, PreType preType, DPreType auxPreType) {
       preType = preType.Normalize();
       if (preType is PreTypeProxy) {
         return false;
