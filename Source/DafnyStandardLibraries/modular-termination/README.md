@@ -56,6 +56,37 @@ reviewed and listed there.  The regression `git-issues/github-issue-211-m5a.dfy`
 `dafny audit` finds nothing in the core, and the workflow `issue211-std.yml` builds the core with
 Z3 5.1.0 and loads it into clients.
 
-Admitting the remaining modules needs either proofs of their premises or an explicit, recorded list
-of trusted premises (a later milestone); `Actions` also needs the migration of its termination
-bounds that the design's section 9.2 describes.
+Admitting the remaining modules needs either proofs of their premises or the recorded list of
+trusted premises described next; `Actions` also needs the migration of its termination bounds that
+the design's section 9.2 describes.
+
+## The expanded core, with the standard-library trust list
+
+Milestone M5b ([design](../../../docs/dev/design/211-m5b-trusted-premises.md)) adds a project,
+`trusted/dfyconfig.toml`, that builds the core together with `Axioms`, `RealCompleteness` and
+`Ordinal`, whose only unchecked premises are 18 of the 19 entries of the standard-library trust list
+compiled into Dafny (`Source/DafnyCore/ModularTerminationTrust.cs`):
+
+| Module | Trusted premises |
+|---|---|
+| `Axioms` | the six `FunctionExtensionality` lemmas and `Reals.Complete` |
+| `Ordinal` | eight lemmas and the ghost functions `Omega`, `PlusLimit` and `TimesLimit` |
+
+Each entry names a declaration and holds a digest of its statement and a digest of its context, the
+contracts of the modules it can see; editing either one makes the entry no longer match, and the build
+refuses it.  Any other premise is refused as before.
+
+`Strings` is left out of the expanded core, although its only premise,
+`HexConversion.CharsConsistent`, is the 19th entry of the list: its conversion modules refine the
+abstract module `Arithmetic.LittleEndianNat`, and the copies that refinement makes of the reveal
+lemmas of its opaque functions (`SeqExtend` is the first) carry `{:verify false}`, which a recorded
+library refuses.  Everything that imports `Strings` stays out with it.  The other three modules
+have no premise but the listed ones, and `Ordinal` and `RealCompleteness` import only `Axioms`.  The three ghost functions are global premises:
+their postconditions hold wherever the function is visible, not only where it is called.
+
+    dafny build --target:lib trusted/dfyconfig.toml --output:DafnyStandardLibraries-trusted.doo
+
+The project sets `--modular-termination-trust:standard-library`, and a client of the library must
+set it too, or the library is refused; the client's verification summary then says how many trusted
+premises its results assume, and `dafny audit` lists each of them.  Without the option a client
+admits only premise-free libraries, and the core built from `dfyconfig.toml` is unchanged.

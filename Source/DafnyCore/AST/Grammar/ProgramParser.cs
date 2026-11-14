@@ -119,7 +119,9 @@ public class ProgramParser {
       // Capture the original program text before resolution
       // if we're building a .doo file.
       // See comment on LibraryBackend.DooFile.
-      if (program.Options.Backend is LibraryBackend libBackend) {
+      // Also under a modular termination trust list, whose premise digests need the retained text.
+      if (program.Options.Backend is LibraryBackend ||
+          DafnyCore.ModularTerminationTrustList.Selected(program.Options) != null) {
         program.AfterParsingClone = new Program(new Cloner(true), program);
       }
     }
@@ -173,6 +175,10 @@ public class ProgramParser {
     }
     compilation.ModularTerminationImports = exports
       .Select(kv => new ModularTerminationContractRef(kv.Key, kv.Value.Contract)).ToList();
+    compilation.ModularTerminationPremises = files
+      .Where(f => f.ShouldNotVerify && f.TerminationRecord is { TrustList: not null, Premises: not null })
+      .SelectMany(f => f.TerminationRecord!.Premises!.Select(p =>
+        (options.GetPrintPath(f.Uri.LocalPath), f.TerminationRecord.TrustList!, p))).ToList();
     return ok;
 
     static string Short(string digest) => digest.Length > 12 ? digest[..12] : digest;

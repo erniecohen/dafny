@@ -837,6 +837,20 @@ The record shows that the library was built by this build of Dafny, from this pr
 options; it is checked, not signed, so a library whose record was rewritten as a whole, with every hash
 recomputed, is trusted like any other input of the build.
 
+A library may also record named trusted premises, with the option
+`--modular-termination-trust:standard-library` (the default is `none`, under which nothing changes).
+Dafny compiles in one trust list, `standard-library`: 19 `{:axiom}` lemmas and ghost functions of the
+standard library's `Axioms`, `Ordinal` and `Strings` modules, each with a reviewed reason and with
+digests of its statement and of its context (the contracts of the modules it can see). Under the option,
+a build accepts an `{:axiom}` declaration only when it is an entry of the list and both digests match,
+records each such premise in the library, and says in its verification summary how many trusted premises
+its results assume; every other assumption is refused as before. A client admits a library that records
+premises only when it selects the same list, and then reports them in its own summary and in
+`dafny audit`. The three ghost functions are global premises: their postconditions hold wherever the
+function is visible, not only where it is called. The project
+`Source/DafnyStandardLibraries/modular-termination/trusted` builds the standard-library core together with
+`Axioms`, `RealCompleteness` and `Ordinal`.
+
 Before milestone M4a, a bound could call code that reaches a dispatched call, and a program could
 prove `false` through it, as in the example above; the rule for bounds closes that.
 

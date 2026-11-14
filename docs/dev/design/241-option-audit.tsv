@@ -82,6 +82,7 @@ cli	methods-to-test	--methods-to-test	System.CommandLine.Option`1[System.String]
 cli	migrate-signature-and-completion-table	--migrate-signature-and-completion-table	System.CommandLine.Option`1[System.Boolean]	command-setup	setup or another command; executes before/outside proof transport
 cli	modify-time	--modify-time	System.CommandLine.Option`1[System.Boolean]	command-setup	setup or another command; executes before/outside proof transport
 cli	modular-termination	--modular-termination	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
+cli	modular-termination-trust	--modular-termination-trust	System.CommandLine.Option`1[System.String]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	mutations	--mutations	System.CommandLine.Option`1[System.UInt32]	command-setup	setup or another command; executes before/outside proof transport
 cli	no-timestamp-for-coverage-report	--no-timestamp-for-coverage-report	System.CommandLine.Option`1[System.Boolean]	command-setup	setup or another command; executes before/outside proof transport
 cli	no-verify	--no-verify	System.CommandLine.Option`1[System.Boolean]	selection	selects current task inventory; each selected task is independently prepared

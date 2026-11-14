@@ -329,6 +329,14 @@ namespace Microsoft.Dafny {
                 DafnyCore.ModularTerminationRecords.RecordFailureMessage(failure));
             }
           }
+          if (options.Get(CommonOptionBag.ModularTermination)) {
+            var completion = dafnyProgram.ModularTerminationCompletion;
+            IReadOnlyList<DafnyCore.ModularTerminationPremise> own = completion is { Failure: null } ? completion.Premises : [];
+            if (DafnyCore.ModularTerminationTrustList.Summary(own, completion?.TrustList,
+                  dafnyProgram.Compilation.ModularTerminationPremises) is { } summary) {
+              await options.OutputWriter.Status(summary);
+            }
+          }
 
           if (options.TrackVerificationCoverage) {
             ProofDependencyWarnings.WarnAboutSuspiciousDependenciesUsingStoredPartialResults(options,
