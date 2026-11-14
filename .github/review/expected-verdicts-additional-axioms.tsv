@@ -1153,6 +1153,7 @@ git-issues/github-issue-281-empty-quantifier.dfy	4	2 verified, 2 errors	14,38
 git-issues/github-issue-281-hide.dfy	4	3 verified, 3 errors	15,20,25
 git-issues/github-issue-2928.dfy	0	1 verified, 0 errors	
 git-issues/github-issue-315.dfy	4	16 verified, 12 errors	29,30,31,32,34,35,36,37,38,39,42,43
+git-issues/github-issue-325.dfy	0	1 verified, 0 errors	
 git-issues/github-issue-327.dfy	0	28 verified, 0 errors	
 git-issues/github-issue-3343.dfy	0	1 verified, 0 errors	
 git-issues/github-issue-3484.dfy	4	0 verified, 4 errors	5,11,17,23
