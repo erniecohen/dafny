@@ -12,7 +12,7 @@
 //   ghost function UpOrder(): Wfo<nat> { UpWellFounded(); Of(Up) }   // UpWellFounded proves wellFounded(Up)
 module Std.Termination.Orders {
   // An infinite sequence of values of T
-  type Chain<!T(!new)> = nat -> T
+  type {:termination_closed} Chain<!T(!new)> = nat -> T
 
   trait Wfo<!T(!new)> {
     // gt(x, y) says that x is greater than y
@@ -32,7 +32,7 @@ module Std.Termination.Orders {
   }
 
   // gt is r if r is well-founded, and empty otherwise
-  datatype WfoOf<!T(!new)> extends Wfo<T> = WfoOf(r: (T, T) -> bool) {
+  datatype {:termination_closed} WfoOf<!T(!new)> extends Wfo<T> = WfoOf(r: (T, T) -> bool) {
     ghost predicate gt(x: T, y: T) { wellFounded(r) && r(x, y) }
     ghost function aha(c: Chain<T>): (n: nat) ensures !gt(c(n), c(n + 1)) {
       if wellFounded(r) then assert stops(r, c); var n: nat :| !r(c(n), c(n + 1)); n else 0

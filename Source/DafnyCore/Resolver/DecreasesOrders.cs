@@ -13,14 +13,19 @@ namespace Microsoft.Dafny;
 ///   R3. A callable with a component "e by O" is treated as calling Wfo.gt and Wfo.aha, as a requires clause is
 ///       treated as called by its function.  These implied calls have no arguments to decrease, so the callable
 ///       must not be mutually recursive with them, or with any override of them.
-/// A component "e by O" is allowed only in the decreases clause of a function, method or loop, and not with
-/// --legacy-decreases-order.
+/// A component "e by O" is allowed only in the decreases clause of a function, method or loop, and in the
+/// "decreases {:global}" and "decreases {:callback f}" bounds of --modular-termination of a function or method,
+/// and not with --legacy-decreases-order.
 /// </summary>
 public static class DecreasesOrders {
   public const string WfoModule = "Std.Termination.Orders";
   public const string WfoName = "Wfo";
   public const string GtName = "gt";
   public const string AhaName = "aha";
+  public const string WfoOfName = "WfoOf";
+  public const string OfName = "Of";
+  public const string WellFoundedName = "wellFounded";
+  public const string StopsName = "stops";
 
   /// <summary>
   /// Whether the options let a client hold values of the trait Wfo: a datatype value converts to a trait type
@@ -32,10 +37,50 @@ public static class DecreasesOrders {
            options.Get(CommonOptionBag.GeneralTraits) != CommonOptionBag.GeneralTraitsOptions.Legacy;
   }
 
+  /// <summary>
+  /// Whether the orders library is loaded: with the standard library, or, under --modular-termination, which does
+  /// not load the bundled standard library, on its own (it imports nothing).
+  /// </summary>
+  public static bool LoadsOrdersLibrary(DafnyOptions options) {
+    return options.Get(CommonOptionBag.DecreasesOrders) && TypeSystemSupportsOrders(options) &&
+           (options.Get(CommonOptionBag.UseStandardLibraries) || options.Get(CommonOptionBag.ModularTermination));
+  }
+
+  /// <summary>
+  /// Whether "uri" is the orders library loaded under --modular-termination.  It has no modular termination record,
+  /// so it is verified with the program that loads it, under that program's options, instead of being admitted.
+  /// </summary>
+  public static bool VerifiesOrdersLibrary(DafnyOptions options, System.Uri uri) {
+    return options.Get(CommonOptionBag.ModularTermination) &&
+           (uri == DafnyMain.StandardLibrariesOrdersDooUri || uri == DafnyMain.StandardLibrariesOrdersInternalUri);
+  }
+
   public static bool IsStandardLibraryWfo(TopLevelDecl decl) {
-    return decl is TraitDecl { Name: WfoName } wfo &&
-           wfo.EnclosingModuleDefinition.FullDafnyName == WfoModule &&
-           wfo.Origin.Uri == DafnyMain.StandardLibrariesOrdersDooUri;
+    return decl is TraitDecl { Name: WfoName } && InOrdersLibrary(decl);
+  }
+
+  /// <summary>
+  /// Whether "decl" is a declaration of the orders library's module.
+  /// </summary>
+  public static bool InOrdersLibrary(TopLevelDecl decl) {
+    return decl.EnclosingModuleDefinition.FullDafnyName == WfoModule && decl.Origin.Uri == DafnyMain.StandardLibrariesOrdersDooUri;
+  }
+
+  /// <summary>
+  /// Whether "decl" is the orders library's datatype WfoOf, the order whose gt is the relation it holds.
+  /// </summary>
+  public static bool IsLibraryWfoOf(TopLevelDecl decl) {
+    return decl is DatatypeDecl { Name: WfoOfName } && InOrdersLibrary(decl);
+  }
+
+  /// <summary>
+  /// Whether "function" is one of the orders library's module-level functions Of, wellFounded and stops, whose only
+  /// code that is not known is the application of their arguments of arrow type.  Of makes a WfoOf from the relation
+  /// it is given.
+  /// </summary>
+  public static bool AppliesOnlyItsArguments(Function function) {
+    return function is { Name: OfName or WellFoundedName or StopsName, EnclosingClass: DefaultClassDecl cl } &&
+           cl.EnclosingModuleDefinition.FullDafnyName == WfoModule && function.Origin.Uri == DafnyMain.StandardLibrariesOrdersDooUri;
   }
 
   /// <summary>
@@ -109,15 +154,15 @@ public static class DecreasesOrders {
 
   static void CheckClause(DafnyOptions options, ErrorReporter reporter, ICallable callable, Specification<Expression> clause,
                           bool allowed, bool legacy, string? where) {
+    // The components of the ordinary clause, and (M4) those of the global and callback bounds of
+    // --modular-termination, which the parser builds only under that option.
+    var components = clause.Expressions.OfType<DecreasesByExpr>().ToList();
     for (var a = clause.Attributes; a != null; a = a.Prev) {
       if (ModularTermination.IsModularTerminationClause(a)) {
-        foreach (var e in a.Args.OfType<DecreasesByExpr>()) {
-          reporter.Error(MessageSource.Resolver, e.Origin,
-            $"a decreases component 'e by O' is not allowed in a '{{:{a.Name}}}' clause");
-        }
+        components.AddRange(a.Args.OfType<DecreasesByExpr>());
       }
     }
-    foreach (var e in clause.Expressions.OfType<DecreasesByExpr>()) {
+    foreach (var e in components) {
       if (!allowed) {
         reporter.Error(MessageSource.Resolver, e.Origin, $"a decreases component 'e by O' is not allowed in {where}");
       } else if (legacy) {
@@ -152,7 +197,7 @@ public static class DecreasesOrders {
       reporter.Error(MessageSource.Resolver, e.Order.Origin,
         $"the order O of a decreases component 'e by O' must be closed, but it mentions {what}");
     }
-      // R3
+    // R3
     var graph = callable.EnclosingModule.CallGraph;
     var representative = graph.GetSCCRepresentative(callable);
     foreach (var callee in ImpliedCallees(wfo)) {

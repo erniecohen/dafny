@@ -9,12 +9,16 @@ section "Well-founded orders").
   So the `gt` of every value of `Wfo<T>` is well-founded.
 - `Of(r)` is the order whose `gt` is `r`, for a relation `r` proved `wellFounded`.
 - `WfoOf` is the datatype that implements `Of`.
+- `Chain` and `WfoOf` are marked `{:termination_closed}`, so that under `--modular-termination`
+  other modules may use them in bounds.
 
 The module is a library of its own, `binaries/DafnyStandardLibraries-orders.doo`, built
 against `binaries/DafnyStandardLibraries.doo`. Dafny loads it with the standard library only
 under `--decreases-orders`, `--type-system-refresh` and `--general-traits=datatype` (or
-`full`), because a datatype implements the trait. Programs that do not use the option are
-unaffected.
+`full`), because a datatype implements the trait. Under `--modular-termination`, which does
+not load the standard library, Dafny loads this library on its own. It is then verified with
+the program that loads it, under that program's options, instead of being admitted by a
+modular termination record. Programs that do not use the option are unaffected.
 
 Rebuild the binary with `make update-orders`, then rebuild Dafny to embed it. The lit test
 `git-issues/github-issue-245.dfy` verifies the library from these sources.
