@@ -104,6 +104,26 @@ public class ImageDigestMemoTests : IDisposable {
   }
 
   [Fact]
+  public void ImagesNamedThroughSymbolicLinksAreRemembered() {
+    var target = Image("lib.so.1.2", "bytes");
+    if (FileStamp.Read(target) == null) { return; } // no known stat layout: the memo is off
+    var link = Path.Combine(Path.GetDirectoryName(target)!, "lib.so.1");
+    File.CreateSymbolicLink(link, target);
+    Assert.Equal(FileStamp.Read(target), FileStamp.Read(link));
+    Assert.Equal(Sha(target), new ImageDigestMemo(Cache).Digest(link));
+    var again = new ImageDigestMemo(Cache);
+    Assert.Equal(Sha(target), again.Digest(link));
+    Assert.Equal((0, 1), (again.Hashed, again.Remembered));
+    // Pointed at other bytes: another inode, so another key.
+    var other = Image("lib.so.1.3", "BYTES");
+    File.Delete(link);
+    File.CreateSymbolicLink(link, other);
+    var repointed = new ImageDigestMemo(Cache);
+    Assert.Equal(Sha(other), repointed.Digest(link));
+    Assert.Equal((1, 0), (repointed.Hashed, repointed.Remembered));
+  }
+
+  [Fact]
   public void CorruptEntriesAreRecomputed() {
     var path = Image("lib.so", "bytes");
     var key = ImageDigestMemo.Key(path, Stamp);

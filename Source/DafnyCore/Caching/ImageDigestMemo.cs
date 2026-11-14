@@ -37,7 +37,9 @@ internal sealed record FileStamp(long Length, long ModifiedSeconds, long Modifie
       stamp = new FileStamp(Int64(48), Int64(88), Int64(96), Int64(104), Int64(112), (ulong)Int64(0), (ulong)Int64(8));
     }
     // Check the layout against what .NET reports; a mismatch disables the memo, never misreads it.
+    // stat follows symbolic links, as reading the bytes does, while FileInfo describes the link.
     var info = new FileInfo(path);
+    if (info.LinkTarget != null && info.ResolveLinkTarget(true) is FileInfo target) { info = target; }
     return info.Exists && info.Length == stamp.Length &&
            new DateTimeOffset(info.LastWriteTimeUtc).ToUnixTimeSeconds() == stamp.ModifiedSeconds ? stamp : null;
   }
