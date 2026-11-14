@@ -1,7 +1,7 @@
 // The compilers erase bounded<O, F> to F, with no wrapper, in signatures, fields, generic instantiations and maps.
-// CHECK: public static void Pass(Func<BigInteger, BigInteger> c, Func<BigInteger, BigInteger> d, out Func<BigInteger, BigInteger> r, out Dafny.ISequence<Func<BigInteger, BigInteger>> s, out Func<BigInteger, BigInteger> b, out Holder h)
-// CHECK: public static void Gen(Func<BigInteger, BigInteger> c, out Func<BigInteger, BigInteger> d, out Cell<Func<BigInteger, BigInteger>> e)
-// CHECK: public Func<BigInteger, BigInteger> f {get; set;}
+// CHECK-L: public static void Pass(Func<BigInteger, BigInteger> c, Func<BigInteger, BigInteger> d, out Func<BigInteger, BigInteger> r, out Dafny.ISequence<Func<BigInteger, BigInteger>> s, out Func<BigInteger, BigInteger> b, out Holder h)
+// CHECK-L: public static void Gen(Func<BigInteger, BigInteger> c, out Func<BigInteger, BigInteger> d, out Cell<Func<BigInteger, BigInteger>> e)
+// CHECK-L: public Func<BigInteger, BigInteger> f {get; set;}
 datatype Box<T> = Box(t: T)
 class Holder {
   var f: bounded<nat, int -> int>
