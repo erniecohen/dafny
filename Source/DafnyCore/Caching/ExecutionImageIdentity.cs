@@ -10,20 +10,78 @@ using System.Security.Cryptography;
 
 namespace Microsoft.Dafny.Caching;
 
+/// <summary>
+/// Locations that an identity names by placeholder rather than by absolute path: the Dafny
+/// installation, the .NET installation and the solver's directory.  The bytes under them are
+/// still identified by their digests, so the same build and solver in another directory, as
+/// on another CI runner, has the same identity.
+/// </summary>
+internal sealed class ImageRoots {
+  private readonly (string Path, string Name)[] roots;
+
+  public ImageRoots(IEnumerable<(string Path, string Name)> roots) {
+    // The longest root first, so that a root inside another, such as a solver shipped inside
+    // the Dafny installation, is named by the innermost placeholder.
+    this.roots = roots.Select(r => (Path: Path.TrimEndingDirectorySeparator(Path.GetFullPath(r.Path)), r.Name))
+      .Where(r => r.Path.Length > 1).OrderByDescending(r => r.Path.Length).ThenBy(r => r.Name, StringComparer.Ordinal).ToArray();
+  }
+
+  public static ImageRoots For(string executable) {
+    var list = new List<(string, string)> { (AppContext.BaseDirectory, "<dafny>") };
+    if (RuntimeRoot() is { } runtime) { list.Add((runtime.FullName, "<dotnet>")); }
+    if (Path.GetDirectoryName(Path.GetFullPath(executable)) is { } solver) { list.Add((solver, "<solver>")); }
+    return new ImageRoots(list);
+  }
+
+  internal static DirectoryInfo? RuntimeRoot() =>
+    new DirectoryInfo(RuntimeEnvironment.GetRuntimeDirectory()).Parent?.Parent?.Parent;
+
+  /// <summary>Replaces each path in <paramref name="value"/> that lies under a root by the
+  /// root's placeholder.  A root matches only between separators (start, end, '/', '\\', ':',
+  /// ';', '='), never inside a longer name.</summary>
+  public string Relocate(string value) {
+    foreach (var (root, name) in roots) {
+      var start = 0;
+      while ((start = value.IndexOf(root, start, StringComparison.Ordinal)) >= 0) {
+        var end = start + root.Length;
+        if ((start == 0 || value[start - 1] is ':' or ';' or '=') &&
+            (end == value.Length || value[end] is '/' or '\\' or ':' or ';')) {
+          value = value[..start] + name + value[end..];
+          start += name.Length;
+        } else {
+          start = end;
+        }
+      }
+    }
+    return value;
+  }
+}
+
 /// <summary>Content identity for the supported native solver/runtime loading profile.</summary>
 internal static class ExecutionImageIdentity {
-  private sealed record Image(SortedDictionary<string, string> Digests,
+  internal sealed record Image(SortedDictionary<string, string> Digests,
     Dictionary<string, (long Length, DateTime Modified)> Stamps);
   private static readonly ConcurrentDictionary<string, Image> Images = new(StringComparer.Ordinal);
+  private static ImageDigestMemo? memo;
+  /// <summary>Images whose bytes this process hashed, and whose digests it took from the memo.</summary>
+  public static int ImagesHashed => memo?.Hashed ?? 0;
+  public static int ImageDigestsRemembered => memo?.Remembered ?? 0;
 
-  public static SortedDictionary<string, string> Read(string executable) {
+  /// <summary>
+  /// The digests of the images that a solver run from <paramref name="executable"/> loads, named
+  /// relative to <see cref="ImageRoots.For"/>.  Digests, and the macOS load-command listings that
+  /// enumerate dependencies, are remembered under <paramref name="cacheDirectory"/>
+  /// (<see cref="ImageDigestMemo"/>).
+  /// </summary>
+  public static SortedDictionary<string, string> Read(string executable, string? cacheDirectory) {
     foreach (var variable in new[] { "LD_PRELOAD", "LD_LIBRARY_PATH", "DYLD_INSERT_LIBRARIES", "DYLD_LIBRARY_PATH",
                "DYLD_FRAMEWORK_PATH", "DOTNET_STARTUP_HOOKS", "DOTNET_ADDITIONAL_DEPS", "CORECLR_ENABLE_PROFILING", "COR_ENABLE_PROFILING" }) {
       if (!string.IsNullOrEmpty(System.Environment.GetEnvironmentVariable(variable))) {
         throw new NotSupportedException("custom native/runtime loading environment");
       }
     }
-    var image = Images.GetOrAdd(Path.GetFullPath(executable), Capture);
+    var roots = ImageRoots.For(executable);
+    var image = Images.GetOrAdd(Path.GetFullPath(executable), path => Capture(path, memo ??= new ImageDigestMemo(cacheDirectory)));
     if (OperatingSystem.IsLinux() && LinuxMappedImages().Any(path => !image.Digests.ContainsKey(path))) {
       // dlopen dependencies (notably ICU/OpenSSL) need not appear in ldd output.
       // An unrecorded late load changes this invocation's supported profile.
@@ -37,17 +95,27 @@ internal static class ExecutionImageIdentity {
         throw new NotSupportedException("an execution image changed during this invocation");
       }
     }
-    return new(image.Digests, StringComparer.Ordinal);
+    return Relocate(image.Digests, roots);
   }
 
-  private static Image Capture(string executable) {
+  internal static SortedDictionary<string, string> Relocate(IReadOnlyDictionary<string, string> digests, ImageRoots roots) {
+    var relocated = new SortedDictionary<string, string>(StringComparer.Ordinal);
+    foreach (var (path, digest) in digests) {
+      if (!relocated.TryAdd(roots.Relocate(path), digest)) {
+        throw new NotSupportedException("two execution images have the same relocated name");
+      }
+    }
+    return relocated;
+  }
+
+  private static Image Capture(string executable, ImageDigestMemo memo) {
     var files = new HashSet<string>(StringComparer.Ordinal) { executable };
     if (System.Environment.ProcessPath is { } host) { files.Add(host); }
     foreach (var file in Directory.GetFiles(AppContext.BaseDirectory, "*.dll")
                .Concat(Directory.GetFiles(RuntimeEnvironment.GetRuntimeDirectory(), "*.dll"))
                .Concat(Directory.GetFiles(RuntimeEnvironment.GetRuntimeDirectory(), "*.dylib"))
                .Concat(Directory.GetFiles(RuntimeEnvironment.GetRuntimeDirectory(), "*.so"))) { files.Add(file); }
-    var runtimeRoot = new DirectoryInfo(RuntimeEnvironment.GetRuntimeDirectory()).Parent?.Parent?.Parent;
+    var runtimeRoot = ImageRoots.RuntimeRoot();
     var hostFxr = runtimeRoot == null ? null : Path.Combine(runtimeRoot.FullName, "host", "fxr");
     if (hostFxr == null || !Directory.Exists(hostFxr)) {
       throw new NotSupportedException("runtime host dependency identity is unavailable");
@@ -66,8 +134,8 @@ internal static class ExecutionImageIdentity {
       var seen = new HashSet<string>(StringComparer.Ordinal);
       while (pending.TryDequeue(out var image)) {
         if (!seen.Add(image)) { continue; }
-        var ownId = Run("/usr/bin/otool", "-D", image).Split('\n').Skip(1).FirstOrDefault()?.Trim();
-        foreach (var line in Run("/usr/bin/otool", "-L", image).Split('\n').Skip(1).Where(l => !string.IsNullOrWhiteSpace(l))) {
+        var ownId = memo.Inspect(image, "-D", () => Run("/usr/bin/otool", "-D", image)).Split('\n').Skip(1).FirstOrDefault()?.Trim();
+        foreach (var line in memo.Inspect(image, "-L", () => Run("/usr/bin/otool", "-L", image)).Split('\n').Skip(1).Where(l => !string.IsNullOrWhiteSpace(l))) {
           var dependency = line.Trim().Split(" (", StringSplitOptions.None)[0];
           if (dependency == ownId) { continue; }
           if (dependency.StartsWith("/usr/lib/", StringComparison.Ordinal) || dependency.StartsWith("/System/Library/", StringComparison.Ordinal)) {
@@ -79,7 +147,7 @@ internal static class ExecutionImageIdentity {
             dependency = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(image)!, dependency[13..]));
           }
           if (dependency.StartsWith("@rpath/", StringComparison.Ordinal)) {
-            var commands = Run("/usr/bin/otool", "-l", image);
+            var commands = memo.Inspect(image, "-l", () => Run("/usr/bin/otool", "-l", image));
             var paths = System.Text.RegularExpressions.Regex.Matches(commands, @"cmd LC_RPATH\s+cmdsize \d+\s+path (.*?) \(offset");
             if (paths.Count != 1 || paths[0].Groups[1].Value != "@loader_path") {
               throw new NotSupportedException("unsupported native rpath search");
@@ -108,13 +176,16 @@ internal static class ExecutionImageIdentity {
         }
       }
     } else { throw new NotSupportedException("native dependency enumeration is unsupported on this platform"); }
+    return Digests(files, memo);
+  }
+
+  internal static Image Digests(IEnumerable<string> files, ImageDigestMemo memo) {
     var manifest = new SortedDictionary<string, string>(StringComparer.Ordinal);
     var stamps = new Dictionary<string, (long, DateTime)>(StringComparer.Ordinal);
     foreach (var file in files.Order(StringComparer.Ordinal)) {
       var before = new FileInfo(file);
       var stamp = (before.Length, before.LastWriteTimeUtc);
-      using var stream = File.OpenRead(file);
-      manifest[file] = Convert.ToHexStringLower(SHA256.HashData(stream));
+      manifest[file] = memo.Digest(file);
       var after = new FileInfo(file);
       if (stamp != (after.Length, after.LastWriteTimeUtc)) {
         throw new NotSupportedException("an execution image changed while hashing");
