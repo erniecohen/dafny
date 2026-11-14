@@ -281,14 +281,16 @@ jobs:
       # The opt-in proof-result cache (https://github.com/erniecohen/dafny/issues/261), for the
       # programs that select the refreshed type system themselves.  Pushes to review/4.11.0
       # save it; other runs only restore it.  Its key names the solver binary's digest, so
-      # results never cross Z3 binaries; Dafny's own key covers the rest.
+      # results never cross Z3 binaries; Dafny's own key covers the rest.  Dafny names the
+      # paths under its own, .NET's and the solver's installations by placeholder (v3), so a
+      # cache saved on one runner answers on another.
       - name: Restore the proof-result cache
         uses: actions/cache/restore@v4
         with:
           path: verification-cache
-          key: verification-cache-v2-${{ runner.os }}-z3-${{ env.Z3SHA }}-${{ matrix.axioms }}-${{ matrix.shard }}-${{ github.run_id }}
+          key: verification-cache-v3-${{ runner.os }}-z3-${{ env.Z3SHA }}-${{ matrix.axioms }}-${{ matrix.shard }}-${{ github.run_id }}
           restore-keys: |
-            verification-cache-v2-${{ runner.os }}-z3-${{ env.Z3SHA }}-${{ matrix.axioms }}-${{ matrix.shard }}-
+            verification-cache-v3-${{ runner.os }}-z3-${{ env.Z3SHA }}-${{ matrix.axioms }}-${{ matrix.shard }}-
       - name: Re-prove a sample of the restored cache with a fresh solver
         run: |
           if [ -d verification-cache/v1/results ]; then
@@ -307,9 +309,18 @@ jobs:
             --verification-cache "$PWD/verification-cache"
           python3 .github/review/additional-axioms.py inventory measurements/${{ matrix.axioms }} \
             resources-${{ matrix.axioms }}-${{ matrix.shard }}.json
-      # The cached programs again, now reading the cache the run above wrote: the same
-      # verdicts and per-proof outcomes and resource counts, and both runs' times.
+          {
+            echo "## Proof-result cache, axioms ${{ matrix.axioms }}, shard ${{ matrix.shard }}"
+            echo
+            echo -n 'Restored cache: '
+            python3 .github/review/lit-verdicts.py cache-stats measurements/${{ matrix.axioms }} \
+              verdicts-${{ matrix.axioms }}-${{ matrix.shard }}.tsv || echo 'unavailable'
+          } >> "$GITHUB_STEP_SUMMARY"
+      # On pushes to review/4.11.0, whose cache is saved: the cached programs again, now
+      # reading the cache the run above wrote, with the same verdicts and per-proof outcomes
+      # and resource counts, and both runs' times.  Pull requests skip it to save runner time.
       - name: Re-verify the cached programs from the cache
+        if: github.event_name == 'push' && github.ref == 'refs/heads/review/4.11.0'
         run: |
           L=Source/IntegrationTests/TestFiles/LitTests/LitTest
           python3 .github/review/lit-verdicts.py run plan.tsv "$L" "$PWD/out/dafny/Dafny" "$Z3" \
@@ -320,8 +331,8 @@ jobs:
             verdicts-${{ matrix.axioms }}-${{ matrix.shard }}.tsv cache-reuse-${{ matrix.axioms }}-${{ matrix.shard }}.tsv \
             | tee cache-reuse-summary.txt
           {
-            echo "## Proof-result cache, axioms ${{ matrix.axioms }}, shard ${{ matrix.shard }}"
             echo
+            echo -n 'Second pass from its own cache: '
             tail -1 cache-reuse-summary.txt
           } >> "$GITHUB_STEP_SUMMARY"
       - name: Save the proof-result cache
@@ -329,7 +340,7 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: verification-cache
-          key: verification-cache-v2-${{ runner.os }}-z3-${{ env.Z3SHA }}-${{ matrix.axioms }}-${{ matrix.shard }}-${{ github.run_id }}
+          key: verification-cache-v3-${{ runner.os }}-z3-${{ env.Z3SHA }}-${{ matrix.axioms }}-${{ matrix.shard }}-${{ github.run_id }}
       - name: Record per-program resource counts and headroom
         if: always()
         run: |

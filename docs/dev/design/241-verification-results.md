@@ -220,11 +220,37 @@ used by the fork's CI. Both archive checksums were validated before recording
 their executable digests; arbitrary native wrappers cannot establish a complete
 dependency profile merely by reporting that version. Other solver builds,
 native launcher scripts and Windows bypass. All environment
-variable values are represented by digests. Image digests are memoized only within
-an invocation that treats code files as immutable; file length/mtime changes
-disable reuse for that invocation rather than certifying new files against old
-loaded code. The initial native dependency enumeration is conservative and can
-add appreciable cold and warm startup cost. A validated solver-version record
+variable values are represented by digests. Within an invocation, image digests
+are memoized under the assumption that code files are immutable; file length/mtime
+changes disable reuse for that invocation rather than certifying new files against
+old loaded code.
+
+Across invocations (https://github.com/erniecohen/dafny/issues/261), the digest of
+each image is remembered in the cache directory's `image-digests` table, keyed by
+its absolute path and its `stat` stamp: size, modification and status-change times
+to the nanosecond, device and inode. Any difference is a different key, and a
+missing, unreadable or inconsistent entry (wrong schema, path, stamp or digest
+form) is recomputed. A digest is published only if the stamp is unchanged after
+the bytes were read. The macOS load-command listings (`otool -D`, `-L`, `-l`) used
+to enumerate dependencies are remembered under the digest of the image's bytes, of
+which they are a function. The stamp is a weaker identity than the bytes: a
+rewrite that preserved size, both times, device and inode would be missed. It is
+accepted because the images are read-only system files (the dyld shared cache,
+system libraries) and build outputs, which are replaced rather than rewritten in
+place, and because an ordinary process cannot set the status-change time. Where
+the platform's `stat` layout is unknown, or disagrees with what .NET reports, no
+memo is used and every image is hashed. Without this memo the macOS profile hashed
+the whole dyld shared cache in every process, which dominated the
+startup of a warm run.
+
+The descriptor names images and path-valued settings relative to three roots:
+`<dafny>` (Dafny's installation), `<dotnet>` (the .NET installation that runs it)
+and `<solver>` (the solver's directory). A root is replaced only as a whole path
+component, and roots are tried longest first. The same build copied to another
+directory, or run by another runner with another .NET location, gets the same key,
+while the content digests still identify every byte. Paths outside the roots,
+including system libraries, and the solver's file name stay literal, as do all
+other environment variable values, which are still digested. A validated solver-version record
 avoids even a version-probe process on a supported warm run. Unknown dependency
 resolution runs normally instead of accepting a version string as identity.
 

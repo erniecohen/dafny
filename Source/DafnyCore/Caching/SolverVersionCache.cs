@@ -14,14 +14,15 @@ internal static class SolverVersionCache {
     try {
       using var stream = File.OpenRead(executable);
       var digest = Convert.ToHexStringLower(SHA256.HashData(stream));
+      var roots = ImageRoots.For(executable);
       var environment = new System.Collections.Generic.SortedDictionary<string, string>(StringComparer.Ordinal);
       foreach (System.Collections.DictionaryEntry entry in System.Environment.GetEnvironmentVariables()) {
-        environment[(string)entry.Key] = CacheDigest.Blob(Encoding.UTF8.GetBytes((string)entry.Value!));
+        environment[(string)entry.Key] = CacheDigest.Blob(Encoding.UTF8.GetBytes(roots.Relocate((string)entry.Value!)));
       }
       var key = CacheDigest.Compute("validated-solver-version/v1", Encoding.UTF8.GetBytes(digest),
         Encoding.UTF8.GetBytes(System.Runtime.InteropServices.RuntimeInformation.OSDescription),
         JsonSerializer.SerializeToUtf8Bytes(environment),
-        JsonSerializer.SerializeToUtf8Bytes(ExecutionImageIdentity.Read(executable)));
+        JsonSerializer.SerializeToUtf8Bytes(ExecutionImageIdentity.Read(executable, directory)));
       var store = new ContentAddressedCache(directory);
       var payload = store.TryRead(CacheTable.SolverIdentity, key);
       if (payload != null) {
