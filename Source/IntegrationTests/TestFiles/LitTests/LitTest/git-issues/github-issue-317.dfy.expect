@@ -157,3 +157,22 @@ github-issue-317-positive.dfy(70,19): Error: decreases clause might not decrease
 github-issue-317-positive.dfy(87,33): Error: decreases clause might not decrease
 
 Dafny program verifier finished with 9 verified, 7 errors
+newtype (trait-rank-decreases:false, additional-axioms:false, general-traits=full, Z3 5.1.0)
+github-issue-317-newtype.dfy(12,9): Error: decreases clause might not decrease
+github-issue-317-newtype.dfy(19,15): Error: decreases clause might not decrease
+
+Dafny program verifier finished with 3 verified, 2 errors
+newtype (trait-rank-decreases:true, additional-axioms:false, general-traits=full, Z3 5.1.0)
+github-issue-317-newtype.dfy(12,9): Error: decreases clause might not decrease
+github-issue-317-newtype.dfy(19,15): Error: decreases clause might not decrease
+
+Dafny program verifier finished with 3 verified, 2 errors
+newtype (trait-rank-decreases:false, additional-axioms:true, general-traits=full, Z3 5.1.0)
+github-issue-317-newtype.dfy(12,9): Error: decreases clause might not decrease
+github-issue-317-newtype.dfy(19,15): Error: decreases clause might not decrease
+
+Dafny program verifier finished with 3 verified, 2 errors
+newtype (trait-rank-decreases:true, additional-axioms:true, general-traits=full, Z3 5.1.0)
+github-issue-317-newtype.dfy(19,15): Error: decreases clause might not decrease
+
+Dafny program verifier finished with 4 verified, 1 error

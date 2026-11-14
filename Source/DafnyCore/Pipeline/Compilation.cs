@@ -206,12 +206,12 @@ public class Compilation : IDisposable {
                        DafnyMain.StandardLibrariesDooUri, Project.StartingToken, asLibrary)) {
         result.Add(file);
       }
+    }
 
-      if (Options.Get(CommonOptionBag.DecreasesOrders) && DecreasesOrders.TypeSystemSupportsOrders(Options)) {
-        await foreach (var file in DafnyFile.CreateAndValidate(fileSystem, errorReporter, Options,
-                         DafnyMain.StandardLibrariesOrdersDooUri, Project.StartingToken, asLibrary)) {
-          result.Add(file);
-        }
+    if (DecreasesOrders.LoadsOrdersLibrary(Options)) {
+      await foreach (var file in DafnyFile.CreateAndValidate(fileSystem, errorReporter, Options,
+                       DafnyMain.StandardLibrariesOrdersDooUri, Project.StartingToken, !Options.Get(CommonOptionBag.TranslateStandardLibrary))) {
+        result.Add(file);
       }
     }
 

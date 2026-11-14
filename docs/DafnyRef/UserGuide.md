@@ -2441,7 +2441,9 @@ or the Dafny 4 syntax (`ghost function` and `function`)
   is a closed ghost expression of the standard library's trait type
   `Std.Termination.Orders.Wfo<T>` and `e` has type `T`. A call or loop iteration must make
   `O.gt(old e, e)` true, or leave `e` unchanged. Requires `--type-system-refresh` and
-  `--general-traits=datatype` (or `full`). Disabled by default. Use `decreases-orders = true` in a project file's
+  `--general-traits=datatype` (or `full`). With `--modular-termination`, such components are
+  also allowed in `{:global}` and `{:callback}` bounds, and the orders library is loaded and
+  verified with the program. Disabled by default. Use `decreases-orders = true` in a project file's
   `[options]` section. See [well-founded orders](#sec-decreases-by).
 
 * `--modular-termination` - (experimental; it does not yet establish termination in every
