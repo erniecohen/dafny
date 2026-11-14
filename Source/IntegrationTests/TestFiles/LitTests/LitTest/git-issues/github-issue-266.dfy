@@ -25,7 +25,7 @@
 // RUN: %exits-with 2 %baredafny resolve --use-basename-for-filename --show-snippets:false --type-system-refresh --general-traits=datatype "%S/Inputs/github-issue-266-off.dfy" >> "%t"
 // RUN: echo "erasure" >> "%t"
 // RUN: %exits-with 0 %baredafny run --no-verify --use-basename-for-filename --modular-termination --target cs "%S/Inputs/github-issue-266-erase.dfy" >> "%t"
-// RUN: %exits-with 0 %baredafny translate cs --no-verify --use-basename-for-filename --modular-termination --output "%t.erase" "%S/Inputs/github-issue-266-erase.dfy" >> "%t"
+// RUN: %exits-with 0 %baredafny translate cs --no-verify --use-basename-for-filename --modular-termination --output "%t.erase.cs" "%S/Inputs/github-issue-266-erase.dfy" >> "%t"
 // RUN: %OutputCheck --file-to-check "%t.erase.cs" "%S/Inputs/github-issue-266-erase.dfy"
 // RUN: %diff "%s.expect" "%t"
 
