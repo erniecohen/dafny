@@ -76,6 +76,11 @@ describes the premise, so the list fails closed until the entry is reviewed agai
 - the 8 lemmas and 3 ghost functions of `Std.Ordinal`;
 - `Std.Strings.HexConversion.CharsConsistent`.
 
+*Update, https://github.com/erniecohen/dafny/issues/354:* the three ghost functions now have
+bodies that prove their postconditions from two new lemmas of `Std.Axioms`, `Ordinals.Infinite`
+and `Ordinals.Replacement`, and `Std.Ordinal` exports them without their bodies. The list has 18 entries, all lemmas: the 9 lemmas of `Std.Axioms`, the 8
+lemmas of `Std.Ordinal`, and `CharsConsistent`.
+
 Nothing else is on it. In particular:
 
 - no member is listed by module or by pattern; a new lemma added to `Std.Axioms` is refused until
@@ -273,7 +278,8 @@ workflow builds both libraries and checks:
 
 Decided: (1) admit the three function premises in version 1, recorded with kind `ghost function` and
 flagged as global premises by `dafny audit`; the restatement as lemmas is
-https://github.com/erniecohen/dafny/issues/354. (2) Built-in list only. (3) The option name and values
+https://github.com/erniecohen/dafny/issues/354, which has since replaced them by two lemmas of
+`Std.Axioms` (section 4). (2) Built-in list only. (3) The option name and values
 below, default `none`, hidden from the default help.
 
 1. **Admit the three Ordinal function premises?** The alternative is to restate `Omega`,
