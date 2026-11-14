@@ -42,7 +42,8 @@ have:
 |---|---|
 | `Ordinal` | eleven `{:axiom}` declarations about ordinal arithmetic |
 | `Termination`, `Frames`, `Actions/*` | import `Ordinal` |
-| `RealCompleteness` | the `{:axiom}` lemma `Complete` |
+| `Axioms` | `{:axiom}` lemmas, by design: the standard library's collected trusted premises |
+| `RealCompleteness` | imports `Axioms` |
 | `Strings` | the `@Axiom` lemma `HexConversion.CharsConsistent` |
 | `Parsers/*`, `Unicode/UnicodeEncodingForm`, `Unicode/Utf8EncodingForm`, `Unicode/Utf16EncodingForm`, `Unicode/Utf8EncodingScheme` | import `Strings` |
 | `Unicode/UnicodeStrings` | an abstract interface for the two `--unicode-char` refinements; under the option a client cannot refine a library module, and the refinement in `src/Std` is left out |

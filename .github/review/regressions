@@ -497,3 +497,8 @@ git-issues/github-issue-315.dfy
 # Certified standard-library core under --modular-termination, milestone M5a: the core resolves
 # and dafny audit finds nothing in it (https://github.com/erniecohen/dafny/issues/211).
 git-issues/github-issue-211-m5a.dfy
+
+# Std.Axioms: function extensionality for total arrows on int, real, bool, ORDINAL, (int, int)
+# and the empty domain, and the completeness of real, moved there from Std.RealCompleteness
+# (https://github.com/erniecohen/dafny/issues/34).
+git-issues/github-issue-34.dfy
