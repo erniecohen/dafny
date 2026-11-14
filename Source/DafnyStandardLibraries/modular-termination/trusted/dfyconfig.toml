@@ -5,9 +5,10 @@
 # unchecked premises are on the standard-library trust list that Dafny compiles in
 # (Source/DafnyCore/ModularTerminationTrust.cs):
 #
-#   - Axioms: the {:axiom} lemmas of function extensionality and of the completeness of real;
+#   - Axioms: the {:axiom} lemmas of function extensionality, of infinity and replacement for
+#     ORDINAL, and of the completeness of real;
 #   - RealCompleteness: imports Axioms;
-#   - Ordinal: eight {:axiom} lemmas and three {:axiom} ghost functions about ordinal arithmetic.
+#   - Ordinal: eight {:axiom} lemmas about ordinal arithmetic, and imports Axioms.
 #
 # Strings is left out: its conversion modules refine Arithmetic.LittleEndianNat, and the copies
 # of that module's opaque functions are refused as {:verify false} (see ../README.md).

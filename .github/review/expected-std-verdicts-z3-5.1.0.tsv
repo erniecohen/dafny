@@ -1533,6 +1533,9 @@ Std Std.JSON.ZeroCopy.Serializer.StructuralView (well-formedness)	Correct
 Std Std.JSON.ZeroCopy.Serializer.StructuralViewEns (correctness)	Correct		
 Std Std.JSON.ZeroCopy.Serializer.Text (well-formedness)	Correct		
 Std Std.JSON.ZeroCopy.Serializer.Value (well-formedness)	Correct		
+Std Std.Ordinal.LeastInfinite (correctness)	Correct		
+Std Std.Ordinal.LeastStrictUpperBound (well-formedness)	Correct		
+Std Std.Ordinal.LeastStrictUpperBoundExists (correctness)	Correct		
 Std Std.Ordinal.Omega (well-formedness)	Correct		
 Std Std.Ordinal.Plus (well-formedness)	Correct		
 Std Std.Ordinal.PlusLimit (well-formedness)	Correct		
@@ -2202,7 +2205,7 @@ TargetSpecific-py Std.FileIO.WriteUTF8ToFile (correctness)	Correct
 TargetSpecific-py Std.JavaCsActionsExterns.MakeSetReader (correctness)	Correct		
 TargetSpecific-py Std.JavaCsActionsExterns.MakeSetReader (well-formedness)	Correct		
 TargetSpecific-py Std.PythonConcurrent.MutableMap.Get (well-formedness)	Correct		
-run Std	0	8040 verified, 0 errors	
+run Std	0	8043 verified, 0 errors	
 run TargetSpecific-cs	0	15 verified, 0 errors	
 run TargetSpecific-go	0	16 verified, 0 errors	
 run TargetSpecific-java	0	15 verified, 0 errors	
