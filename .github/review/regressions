@@ -499,6 +499,10 @@ git-issues/github-issue-315.dfy
 # (https://github.com/erniecohen/dafny/issues/34).
 git-issues/github-issue-34.dfy
 
+# Before `new;`, a constructor may not read a constant whose initializer depends on `this`; the
+# old rule proved false (https://github.com/erniecohen/dafny/issues/339).
+git-issues/github-issue-339.dfy
+
 # Datatype and trait in one decreases order under --trait-rank-decreases, and the rank of trait-typed datatype
 # fields under --additional-axioms (https://github.com/erniecohen/dafny/issues/317).
 git-issues/github-issue-317.dfy

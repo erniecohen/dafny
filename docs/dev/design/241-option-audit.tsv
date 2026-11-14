@@ -63,6 +63,7 @@ cli	json-output	--json-output	System.CommandLine.Option`1[System.Boolean]	curren
 cli	legacy-auto-generated-attributes	--legacy-auto-generated-attributes	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	legacy-data-constructors	--legacy-data-constructors	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	legacy-decreases-order	--legacy-decreases-order	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
+cli	legacy-first-phase-const-reads	--legacy-first-phase-const-reads	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	legacy-module-names	--legacy-module-names	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	length-limit	--length-limit	System.CommandLine.Option`1[System.UInt32]	command-setup	setup or another command; executes before/outside proof transport
 cli	legacy-noncanonical-map-payloads	--legacy-noncanonical-map-payloads	System.CommandLine.Option`1[System.Boolean]	input	map encoding is lowered before task lookup; exact SMT and current assertion map

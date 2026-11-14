@@ -700,3 +700,19 @@ program that does not write these attributes is unchanged. The hidden
 `--legacy-auto-generated-attributes` option restores the old behaviour of all three for comparison
 and migration. The regression is `git-issues/github-issue-325.dfy`; the release note is
 `docs/dev/news/325.fix`.
+
+## Constants read before `new;` ([issue 339](https://github.com/erniecohen/dafny/issues/339))
+
+The resolver let the first division of a constructor body read any `const` field with an
+initializer, on the premise that such a constant does not depend on the object.  It can:
+`const s: D := t` reads the field `t`.  The verifier translates the read as the constant's
+function of `this`, whose definition axiom equates it with the initializer on the fields' final
+values, while before `new;` a field still holds a value that can change, so `t := One(s)` made
+`s == t` and `t == One(s)` both hold and proved `false`.  `CheckDividedConstructorInitVisitor` now
+reports a read of `this.c` before `new;`, in any context, when `c`'s initializer mentions `this`,
+explicitly or implicitly (another field or constant of `this`, an instance function, `this`
+itself).  An initializer that reads another constant mentions `this` itself, so no closure is
+needed.  Its kind is **weakens only**: it rejects programs and adds no fact or axiom; a program
+that does not make such a read is unchanged.  The hidden `--legacy-first-phase-const-reads`
+option restores the old rule for comparison and migration.  The regression is
+`git-issues/github-issue-339.dfy`; the release note is `docs/dev/news/339.fix`.
