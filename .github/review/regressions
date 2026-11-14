@@ -476,3 +476,7 @@ git-issues/github-issue-211-m3-4.dfy
 # Boogie /cacheBackground (https://github.com/erniecohen/dafny/issues/241): the same report and
 # the same outcome and resource count of every check as without it.
 git-issues/github-issue-241-cache-background.dfy
+
+# The refreshed resolver gives a variable bound by a match case pattern the declared type of the
+# constructor's field (https://github.com/erniecohen/dafny/issues/327).
+git-issues/github-issue-327.dfy
