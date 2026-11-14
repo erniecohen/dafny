@@ -47,6 +47,7 @@ The sections below describe how to use each library:
 
 - [Std.Actions](src/Std/Actions/Actions.md) -- utilities for abstract imperative actions, including enumerating and streaming values
 - [Std.Arithmetic](src/Std/Arithmetic/README.md) -- utilities and lemmas related to basic operations, such as multiplication and exponentiation
+- [Std.Axioms](src/Std/Axioms.md) -- trusted facts that Dafny cannot prove, such as function extensionality, each used only where it is called
 - [Std.Base64](src/Std/Base64.md) -- base-64 encoding and decoding
 - [Std.BoundedInts](src/Std/BoundedInts.md) -- definitions of types and constants for fixed-bit-width integers
 - [Std.Collections](src/Std/Collections/Collections.md) -- properties of the built-in collection types (seq, set, iset, map, imap, array)

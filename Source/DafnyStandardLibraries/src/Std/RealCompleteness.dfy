@@ -7,12 +7,15 @@
  Completeness of `real`: least upper bounds of sets of reals.
 
  Dafny's `real` is axiomatized as an ordered field and has no completeness
- facts.  This module supplies them through one trusted lemma, `Complete`, which
- is used only by an explicit call: a lemma without a body is a procedure, not a
- global axiom, so a program that does not call it is unaffected.  Everything
- else here is verified from `Complete`.
+ facts.  This module supplies them from one trusted lemma,
+ `Std.Axioms.Reals.Complete`, which is used only by an explicit call: a lemma
+ without a body is a procedure, not a global axiom, so a program that does not
+ call it is unaffected.  Everything in this module, including its own
+ `Complete`, is verified from that lemma.
  */
 module Std.RealCompleteness {
+
+  import Reals = Axioms.Reals
 
   /** `b` is an upper bound of `s`. */
   ghost predicate upper(s: iset<real>, b: real) {
@@ -20,19 +23,29 @@ module Std.RealCompleteness {
   }
 
   /**
-   The trusted fact, and the only axiom of this module: every nonempty set of
-   reals that is bounded above has a least upper bound.  This is true of the
-   real numbers ℝ, which are Dafny's model of `real`.
+   Every nonempty set of reals that is bounded above has a least upper bound,
+   as a call of the trusted `Std.Axioms.Reals.Complete`, which states it and
+   explains why it is true.
 
    `Complete` has no preconditions.  Its conclusions hold only when `w` is a
    member of `s` and `b` is an upper bound of `s`; for any other arguments
-   (an empty set, an unbounded set, a bad witness) its result is an unspecified
-   real, about which nothing is known.  Use `ExistsLub` or `Sup` for the
-   checked forms.
+   (an empty set, an unbounded set, a bad witness) its result is an
+   unspecified real, about which nothing is known.  Use `ExistsLub` or `Sup`
+   for the checked forms.
    */
-  lemma {:axiom} Complete(s: iset<real>, w: real, b: real) returns (u: real)
+  lemma Complete(s: iset<real>, w: real, b: real) returns (u: real)
     ensures w in s && upper(s, b) ==> upper(s, u)
     ensures w in s && upper(s, b) ==> forall v {:trigger upper(s, v)} :: upper(s, v) ==> u <= v
+  {
+    u := Reals.Complete(s, w, b);
+    if w in s && upper(s, b) {
+      assert Reals.UpperBound(s, b);
+      assert Reals.UpperBound(s, u);
+      forall v | upper(s, v) ensures u <= v {
+        assert Reals.UpperBound(s, v);
+      }
+    }
+  }
 
   /** `s` is nonempty and bounded above. */
   ghost predicate Eligible(s: iset<real>) {
