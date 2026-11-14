@@ -977,6 +977,8 @@ Std Std.Collections.Seq.LemmaNoDuplicatesDecomposition (correctness)	Correct
 Std Std.Collections.Seq.LemmaNoDuplicatesInConcat (correctness)	Correct		
 Std Std.Collections.Seq.LemmaSliceOfSlice (correctness)	Correct		
 Std Std.Collections.Seq.LemmaSliceOfSlice (well-formedness)	Correct		
+Std Std.Collections.Seq.LemmaSortedByTail (correctness)	Correct		
+Std Std.Collections.Seq.LemmaSortedByTail (well-formedness)	Correct		
 Std Std.Collections.Seq.LemmaSplitAt (correctness)	Correct		
 Std Std.Collections.Seq.LemmaSplitAt (well-formedness)	Correct		
 Std Std.Collections.Seq.LemmaSubseqMax (correctness)	Correct		
@@ -1014,6 +1016,8 @@ Std Std.Collections.Seq.Slice.PrefixRestrict (well-formedness)	Correct
 Std Std.Collections.Seq.Slice.Sub (well-formedness)	Correct		
 Std Std.Collections.Seq.Slice.View (well-formedness)	Correct		
 Std Std.Collections.Seq.SortedUnique (correctness)	Correct		
+Std Std.Collections.Seq.SortedUniqueHead (correctness)	Correct		
+Std Std.Collections.Seq.SortedUniqueHead (well-formedness)	Correct		
 Std Std.Collections.Seq.Split (well-formedness)	Correct		
 Std Std.Collections.Seq.SplitOnce (well-formedness)	Correct		
 Std Std.Collections.Seq.SplitOnceOption (well-formedness)	Correct		
@@ -1997,6 +2001,8 @@ Std Std.Strings.ToNat (well-formedness)	Correct
 Std Std.Termination.TerminationMetric.MaxOrdinal (well-formedness)	Correct		
 Std Std.Termination.TerminationMetric.MaxOrdinalAnyParent (correctness)	Correct		
 Std Std.Termination.TerminationMetric.MaxOrdinalAnyParent (well-formedness)	Correct		
+Std Std.Termination.TerminationMetric.MaxOrdinalAttained (correctness)	Correct		
+Std Std.Termination.TerminationMetric.MaxOrdinalAttained (well-formedness)	Correct		
 Std Std.Termination.TerminationMetric.MaxOrdinalDecreasesIfAllDecrease (correctness)	Correct		
 Std Std.Termination.TerminationMetric.MaxOrdinalDecreasesIfAllDecrease (well-formedness)	Correct		
 Std Std.Termination.TerminationMetric.MaxOrdinalNonIncreases (correctness)	Correct		
@@ -2049,6 +2055,8 @@ Std Std.Unicode.Base.LOW_SURROGATE_MAX (well-formedness)	Correct
 Std Std.Unicode.Base.LOW_SURROGATE_MIN (well-formedness)	Correct		
 Std Std.Unicode.Base.LowSurrogateCodePoint (well-formedness)	Correct		
 Std Std.Unicode.Base.ScalarValue (well-formedness)	Correct		
+Std Std.Unicode.CharAsBv24.CharIsUnicodeScalarValue (correctness)	Correct		
+Std Std.Unicode.CharAsBv24.CharIsUnicodeScalarValue (well-formedness)	Correct		
 Std Std.Unicode.UnicodeEncodingForm.DecodeCodeUnitSequence (well-formedness)	Correct		
 Std Std.Unicode.UnicodeEncodingForm.DecodeCodeUnitSequenceChecked (correctness)	Correct		
 Std Std.Unicode.UnicodeEncodingForm.DecodeCodeUnitSequenceChecked (well-formedness)	Correct		
@@ -2193,7 +2201,7 @@ TargetSpecific-py Std.FileIO.WriteUTF8ToFile (correctness)	Correct
 TargetSpecific-py Std.JavaCsActionsExterns.MakeSetReader (correctness)	Correct		
 TargetSpecific-py Std.JavaCsActionsExterns.MakeSetReader (well-formedness)	Correct		
 TargetSpecific-py Std.PythonConcurrent.MutableMap.Get (well-formedness)	Correct		
-run Std	0	7999 verified, 0 errors	
+run Std	0	8039 verified, 0 errors	
 run TargetSpecific-cs	0	15 verified, 0 errors	
 run TargetSpecific-go	0	16 verified, 0 errors	
 run TargetSpecific-java	0	15 verified, 0 errors	

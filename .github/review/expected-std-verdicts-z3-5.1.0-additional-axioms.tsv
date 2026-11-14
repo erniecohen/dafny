@@ -215,7 +215,7 @@ Std Std.Arithmetic.DivMod.LemmaFundamentalDivModConverse (correctness)	Correct
 Std Std.Arithmetic.DivMod.LemmaFundamentalDivModConverse (well-formedness)	Correct		
 Std Std.Arithmetic.DivMod.LemmaFundamentalDivModConverseAuto (correctness)	Correct		
 Std Std.Arithmetic.DivMod.LemmaFundamentalDivModConverseAuto (well-formedness)	Correct		
-Std Std.Arithmetic.DivMod.LemmaHoistOverDenominator (correctness)	OutOfResource		
+Std Std.Arithmetic.DivMod.LemmaHoistOverDenominator (correctness)	Correct		
 Std Std.Arithmetic.DivMod.LemmaHoistOverDenominator (well-formedness)	Correct		
 Std Std.Arithmetic.DivMod.LemmaHoistOverDenominatorAuto (correctness)	Correct		
 Std Std.Arithmetic.DivMod.LemmaHoistOverDenominatorAuto (well-formedness)	Correct		
@@ -399,7 +399,7 @@ Std Std.Arithmetic.LittleEndianNat.SeqExtend (well-formedness)	Correct
 Std Std.Arithmetic.LittleEndianNat.SeqExtendMultiple (well-formedness)	Correct		
 Std Std.Arithmetic.LittleEndianNat.SeqSub (well-formedness)	Correct		
 Std Std.Arithmetic.LittleEndianNat.SeqZero (well-formedness)	Correct		
-Std Std.Arithmetic.LittleEndianNat.ToNatLeft (well-formedness)	Errors		
+Std Std.Arithmetic.LittleEndianNat.ToNatLeft (well-formedness)	Correct		
 Std Std.Arithmetic.LittleEndianNat.ToNatRight (well-formedness)	Correct		
 Std Std.Arithmetic.LittleEndianNat.digit (well-formedness)	Correct		
 Std Std.Arithmetic.Logarithm.LemmaLog0 (correctness)	Correct		
@@ -495,7 +495,7 @@ Std Std.Arithmetic.Mul.LemmaMulNonnegativeAuto (correctness)	Correct
 Std Std.Arithmetic.Mul.LemmaMulNonzero (correctness)	Correct		
 Std Std.Arithmetic.Mul.LemmaMulNonzeroAuto (correctness)	Correct		
 Std Std.Arithmetic.Mul.LemmaMulOrdering (correctness)	Correct		
-Std Std.Arithmetic.Mul.LemmaMulOrderingAuto (correctness)	Errors		
+Std Std.Arithmetic.Mul.LemmaMulOrderingAuto (correctness)	Correct		
 Std Std.Arithmetic.Mul.LemmaMulProperties (correctness)	Correct		
 Std Std.Arithmetic.Mul.LemmaMulStrictInequality (correctness)	Correct		
 Std Std.Arithmetic.Mul.LemmaMulStrictInequalityAuto (correctness)	Correct		
@@ -977,6 +977,8 @@ Std Std.Collections.Seq.LemmaNoDuplicatesDecomposition (correctness)	Correct
 Std Std.Collections.Seq.LemmaNoDuplicatesInConcat (correctness)	Correct		
 Std Std.Collections.Seq.LemmaSliceOfSlice (correctness)	Correct		
 Std Std.Collections.Seq.LemmaSliceOfSlice (well-formedness)	Correct		
+Std Std.Collections.Seq.LemmaSortedByTail (correctness)	Correct		
+Std Std.Collections.Seq.LemmaSortedByTail (well-formedness)	Correct		
 Std Std.Collections.Seq.LemmaSplitAt (correctness)	Correct		
 Std Std.Collections.Seq.LemmaSplitAt (well-formedness)	Correct		
 Std Std.Collections.Seq.LemmaSubseqMax (correctness)	Correct		
@@ -1013,7 +1015,9 @@ Std Std.Collections.Seq.Slice.PrefixRestrict (correctness)	Correct
 Std Std.Collections.Seq.Slice.PrefixRestrict (well-formedness)	Correct		
 Std Std.Collections.Seq.Slice.Sub (well-formedness)	Correct		
 Std Std.Collections.Seq.Slice.View (well-formedness)	Correct		
-Std Std.Collections.Seq.SortedUnique (correctness)	OutOfResource		
+Std Std.Collections.Seq.SortedUnique (correctness)	Correct		
+Std Std.Collections.Seq.SortedUniqueHead (correctness)	Correct		
+Std Std.Collections.Seq.SortedUniqueHead (well-formedness)	Correct		
 Std Std.Collections.Seq.Split (well-formedness)	Correct		
 Std Std.Collections.Seq.SplitOnce (well-formedness)	Correct		
 Std Std.Collections.Seq.SplitOnceOption (well-formedness)	Correct		
@@ -1997,9 +2001,11 @@ Std Std.Strings.ToNat (well-formedness)	Correct
 Std Std.Termination.TerminationMetric.MaxOrdinal (well-formedness)	Correct		
 Std Std.Termination.TerminationMetric.MaxOrdinalAnyParent (correctness)	Correct		
 Std Std.Termination.TerminationMetric.MaxOrdinalAnyParent (well-formedness)	Correct		
-Std Std.Termination.TerminationMetric.MaxOrdinalDecreasesIfAllDecrease (correctness)	OutOfResource		
+Std Std.Termination.TerminationMetric.MaxOrdinalAttained (correctness)	Correct		
+Std Std.Termination.TerminationMetric.MaxOrdinalAttained (well-formedness)	Correct		
+Std Std.Termination.TerminationMetric.MaxOrdinalDecreasesIfAllDecrease (correctness)	Correct		
 Std Std.Termination.TerminationMetric.MaxOrdinalDecreasesIfAllDecrease (well-formedness)	Correct		
-Std Std.Termination.TerminationMetric.MaxOrdinalNonIncreases (correctness)	OutOfResource		
+Std Std.Termination.TerminationMetric.MaxOrdinalNonIncreases (correctness)	Correct		
 Std Std.Termination.TerminationMetric.MaxOrdinalNonIncreases (well-formedness)	Correct		
 Std Std.Termination.TerminationMetric.MultisetOrdinal (well-formedness)	Correct		
 Std Std.Termination.TerminationMetric.MultisetOrdinalAnyParent (correctness)	Correct		
@@ -2049,6 +2055,8 @@ Std Std.Unicode.Base.LOW_SURROGATE_MAX (well-formedness)	Correct
 Std Std.Unicode.Base.LOW_SURROGATE_MIN (well-formedness)	Correct		
 Std Std.Unicode.Base.LowSurrogateCodePoint (well-formedness)	Correct		
 Std Std.Unicode.Base.ScalarValue (well-formedness)	Correct		
+Std Std.Unicode.CharAsBv24.CharIsUnicodeScalarValue (correctness)	Correct		
+Std Std.Unicode.CharAsBv24.CharIsUnicodeScalarValue (well-formedness)	Correct		
 Std Std.Unicode.UnicodeEncodingForm.DecodeCodeUnitSequence (well-formedness)	Correct		
 Std Std.Unicode.UnicodeEncodingForm.DecodeCodeUnitSequenceChecked (correctness)	Correct		
 Std Std.Unicode.UnicodeEncodingForm.DecodeCodeUnitSequenceChecked (well-formedness)	Correct		
@@ -2064,13 +2072,13 @@ Std Std.Unicode.UnicodeEncodingForm.LemmaPrependMinimalWellFormedCodeUnitSubsequ
 Std Std.Unicode.UnicodeEncodingForm.LemmaSplitPrefixMinimalWellFormedCodeUnitSubsequenceInvertsPrepend (correctness)	Correct		
 Std Std.Unicode.UnicodeEncodingForm.LemmaUniquePrefixMinimalWellFormedCodeUnitSeq (correctness)	Correct		
 Std Std.Unicode.UnicodeEncodingForm.PartitionCodeUnitSequence (well-formedness)	Correct		
-Std Std.Unicode.UnicodeEncodingForm.PartitionCodeUnitSequenceChecked (correctness)	OutOfResource		
+Std Std.Unicode.UnicodeEncodingForm.PartitionCodeUnitSequenceChecked (correctness)	Correct		
 Std Std.Unicode.UnicodeEncodingForm.PartitionCodeUnitSequenceChecked (well-formedness)	Correct		
 Std Std.Unicode.UnicodeEncodingForm.SplitPrefixMinimalWellFormedCodeUnitSubsequence (well-formedness)	Correct		
 Std Std.Unicode.UnicodeEncodingForm.WellFormedCodeUnitSeq (well-formedness)	Correct		
 Std Std.Unicode.UnicodeStringsWithUnicodeChar.CharAsUnicodeScalarValue (well-formedness)	Correct		
 Std Std.Unicode.UnicodeStringsWithUnicodeChar.CharFromUnicodeScalarValue (well-formedness)	Correct		
-Std Std.Unicode.UnicodeStringsWithUnicodeChar.CharIsUnicodeScalarValue (correctness)	OutOfResource		
+Std Std.Unicode.UnicodeStringsWithUnicodeChar.CharIsUnicodeScalarValue (correctness)	Correct		
 Std Std.Unicode.UnicodeStringsWithUnicodeChar.CharIsUnicodeScalarValue (well-formedness)	Correct		
 Std Std.Unicode.UnicodeStringsWithUnicodeChar.FromUTF16Checked (well-formedness)	Correct		
 Std Std.Unicode.UnicodeStringsWithUnicodeChar.FromUTF8Checked (well-formedness)	Correct		
@@ -2193,7 +2201,7 @@ TargetSpecific-py Std.FileIO.WriteUTF8ToFile (correctness)	Correct
 TargetSpecific-py Std.JavaCsActionsExterns.MakeSetReader (correctness)	Correct		
 TargetSpecific-py Std.JavaCsActionsExterns.MakeSetReader (well-formedness)	Correct		
 TargetSpecific-py Std.PythonConcurrent.MutableMap.Get (well-formedness)	Correct		
-run Std	4	7991 verified, 2 errors, 6 out of resource	src/Std/Arithmetic/DivMod.dfy(922,8) src/Std/Arithmetic/LittleEndianNat.dfy(50,30) src/Std/Arithmetic/Mul.dfy(154,22) src/Std/Collections/Seq.dfy(1042,8) src/Std/Termination.dfy(125,17) src/Std/Termination.dfy(134,17) src/Std/Unicode/UnicodeEncodingForm.dfy(133,11) src/Std/Unicode/UnicodeStringsWithUnicodeChar.dfy(30,4)
+run Std	0	8039 verified, 0 errors	
 run TargetSpecific-cs	0	15 verified, 0 errors	
 run TargetSpecific-go	0	16 verified, 0 errors	
 run TargetSpecific-java	0	15 verified, 0 errors	
