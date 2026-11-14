@@ -1,6 +1,7 @@
 name: Certified standard-library core
-# Milestone M5a of https://github.com/erniecohen/dafny/issues/211: build the certified core of the
-# standard library under --modular-termination with Z3 5.1.0, then load it into clients.
+# Milestones M5a and M5b of https://github.com/erniecohen/dafny/issues/211: build the certified core of the
+# standard library under --modular-termination with Z3 5.1.0, and the expanded core with the
+# standard-library trust list, then load them into clients.
 on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
@@ -8,6 +9,7 @@ on:
     paths:
       - 'Source/DafnyStandardLibraries/**'
       - 'Source/DafnyCore/ModularTerminationRecord.cs'
+      - 'Source/DafnyCore/ModularTerminationTrust.cs'
       - 'Source/DafnyCore/DooFile.cs'
       - 'Source/DafnyCore/DafnyFile.cs'
       - 'Source/DafnyCore/Backends/Library/LibraryBackend.cs'
@@ -38,7 +40,7 @@ jobs:
       - name: Install Z3 5.1.0
         id: z3
         run: echo "path=$(sh .github/review/setup-z3.sh 5.1.0 ci-z3)" >> "$GITHUB_OUTPUT"
-      - name: Build the core and load it into clients
+      - name: Build the core and the expanded core, and load them into clients
         run: |
           status=0
           python3 .github/review/modular-termination-std.py out/dafny/Dafny '${{ steps.z3.outputs.path }}' \
