@@ -45,8 +45,8 @@ abstract module Std.Arithmetic.LittleEndianNat {
   {
     if |xs| == 0 then 0
     else
-      LemmaPowPositiveAuto();
-      LemmaMulNonnegativeAuto();
+      LemmaPowPositive(BASE(), |xs| - 1);
+      LemmaMulNonnegative(Last(xs), Pow(BASE(), |xs| - 1));
       ToNatLeft(DropLast(xs)) + Last(xs) * Pow(BASE(), |xs| - 1)
   }
 
