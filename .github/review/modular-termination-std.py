@@ -21,7 +21,7 @@ M5b: it then builds the expanded core, Source/DafnyStandardLibraries/modular-ter
 which adds the modules whose only premises are on the standard-library trust list, under
 --modular-termination-trust:standard-library, and checks:
 
-  - its record lists exactly the 18 premises of the trust list in its modules (all but
+  - its record lists exactly the 17 premises of the trust list in its modules (all but
     Std.Strings.HexConversion.CharsConsistent, since Strings is left out);
   - a client that opted in to the trust list verifies, and its summary names the premises;
   - a client that did not opt in is refused at admission;
@@ -44,7 +44,7 @@ PROJECT = os.environ.get('MODULAR_TERMINATION_STD_PROJECT') or os.path.join(
 TRUSTED_PROJECT = os.environ.get('MODULAR_TERMINATION_STD_TRUSTED_PROJECT') or os.path.join(
     ROOT, 'Source', 'DafnyStandardLibraries', 'modular-termination', 'trusted', 'dfyconfig.toml')
 TRUST = '--modular-termination-trust:standard-library'
-TRUST_LIST_SIZE = 18
+TRUST_LIST_SIZE = 17
 # The semantic options of the core's project file, which a client must use too.
 CORE_OPTIONS = ['--type-system-refresh', '--general-traits=datatype', '--general-newtypes',
                 '--reads-clauses-on-methods', '--enforce-determinism', '--track-print-effects']
