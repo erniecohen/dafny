@@ -44,8 +44,8 @@ changed prelude: exit 1
 source library: exit 1
   CLI: Error: cannot use github-issue-211-m3-4-lib.dfy as a library under --modular-termination: a source library carries no checked termination record; build it into a .doo with 'dafny build --target:lib --modular-termination' and pass that instead
 standard library: exit 1
-  CLI: Error: cannot load DafnyStandardLibraries-notarget.doo under --modular-termination: the bundled standard library is not certified under --modular-termination; use --standard-libraries:false, or a standard library rebuilt as a --modular-termination library (see https://github.com/erniecohen/dafny/issues/211)
-  CLI: Error: cannot load DafnyStandardLibraries.doo under --modular-termination: the bundled standard library is not certified under --modular-termination; use --standard-libraries:false, or a standard library rebuilt as a --modular-termination library (see https://github.com/erniecohen/dafny/issues/211)
+  CLI: Error: cannot load DafnyStandardLibraries-notarget.doo under --modular-termination: the bundled standard library is not certified under --modular-termination; use --standard-libraries:false, and pass with --library the certified standard-library core built from Source/DafnyStandardLibraries/modular-termination (see https://github.com/erniecohen/dafny/issues/211)
+  CLI: Error: cannot load DafnyStandardLibraries.doo under --modular-termination: the bundled standard library is not certified under --modular-termination; use --standard-libraries:false, and pass with --library the certified standard-library core built from Source/DafnyStandardLibraries/modular-termination (see https://github.com/erniecohen/dafny/issues/211)
 build dependent: exit 0
 build lib-body: exit 0
 build lib-contract: exit 0

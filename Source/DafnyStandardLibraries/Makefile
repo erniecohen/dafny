@@ -15,6 +15,12 @@ verify:
 build-binary:
 	$(DAFNY) build -t:lib --hidden-no-verify=$(NO_VERIFY) src/Std/dfyconfig.toml --output:${DOO_FILE_SOURCE}
 
+# The certified core under --modular-termination (https://github.com/erniecohen/dafny/issues/211):
+# a library with a modular termination record, tied to this build of Dafny and its Z3.
+# See modular-termination/README.md.
+build-modular-termination:
+	$(DAFNY) build -t:lib modular-termination/dfyconfig.toml --output:build/DafnyStandardLibraries-modular-termination.doo
+
 check-binary: build-binary
 	unzip -o ${DOO_FILE_SOURCE} -d build/current
 	unzip -o ${DOO_FILE_TARGET} -d build/previous
