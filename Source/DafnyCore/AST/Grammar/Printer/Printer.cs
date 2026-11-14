@@ -986,6 +986,11 @@ NoGhost - disable printing of functions, ghost methods, and proof
         if (field.IsGhost) {
           wr.Write("ghost ");
         }
+        // As for functions (Function.GetFunctionDeclarationKeywords), an opaque constant keeps its
+        // modifier, so that a printed program, and the source a .doo file carries, stays opaque.
+        if (field is ConstantField { IsOpaque: true }) {
+          wr.Write("opaque ");
+        }
         if (!field.IsMutable) {
           wr.Write("const");
         } else {
