@@ -22,34 +22,48 @@ github-issue-245-resolve.dfy(38,33): Error: the order O of a decreases component
 github-issue-245-resolve.dfy(53,27): Error: 'Helper' has a decreases component 'e by O', so it is treated as calling Wfo.gt; it must not be mutually recursive with Wfo.gt or its overrides
 github-issue-245-resolve.dfy(31,12): Error: a decreases component 'e by O' is not allowed in the decreases clause of an iterator
 6 resolution/type errors detected in github-issue-245-resolve.dfy
-in a clause of --modular-termination
-github-issue-245-global.dfy(7,22): Error: a decreases component 'e by O' is not allowed in a '{:global}' clause
-1 resolution/type errors detected in github-issue-245-global.dfy
+--modular-termination: global and callback bounds by an order, the orders library verified with the client
+
+Dafny program verifier finished with 15 verified, 0 errors
+--modular-termination: bounds that are not below, or name another order
+github-issue-245-mt-verify.dfy(53,7): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+github-issue-245-mt-verify.dfy(61,7): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+github-issue-245-mt-verify.dfy(69,7): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+github-issue-245-mt-verify.dfy(78,4): Error: decreases clause might not decrease (--modular-termination: the 'decreases {:callback}' bound of 'g' must be below the caller's 'decreases {:global}' bound)
+
+Dafny program verifier finished with 12 verified, 4 errors
+--modular-termination: bounds that reach open dispatch, outside the binder rule
+github-issue-245-mt-resolve.dfy(66,16): Error: modular termination: the 'decreases {:global}' bound of 'Ord.ByParam' can reach dispatch to implementations that other modules may provide (bound -> 'Ord.ParamOrder' -> 'Ord.ParamWellFounded' -> 'Ord.ParamClimbs' -> a call through a function value whose code is not known); a bound may only use code that cannot reach one, since its value must not depend on the termination that the bounds establish
+github-issue-245-mt-resolve.dfy(74,16): Error: modular termination: the 'decreases {:global}' bound of 'Ord.ByGeneral' can reach dispatch to implementations that other modules may provide (bound -> 'Ord.GeneralOrder' -> 'Ord.General' -> a call through a function value whose code is not known); a bound may only use code that cannot reach one, since its value must not depend on the termination that the bounds establish
+github-issue-245-mt-resolve.dfy(94,16): Error: modular termination: the 'decreases {:global}' bound of 'Client.Param' can reach dispatch to implementations that other modules may provide (bound -> a call through a function value whose code is not known); a bound may only use code that cannot reach one, since its value must not depend on the termination that the bounds establish
+github-issue-245-mt-resolve.dfy(102,16): Error: modular termination: the 'decreases {:global}' bound of 'Client.Lambda' can reach dispatch to implementations that other modules may provide (bound -> a call through a function value whose code is not known); a bound may only use code that cannot reach one, since its value must not depend on the termination that the bounds establish
+github-issue-245-mt-resolve.dfy(110,16): Error: modular termination: the 'decreases {:global}' bound of 'Client.NotClosed' can reach dispatch to implementations that other modules may provide (bound -> General contract of 'Ord.OpenUpOrder' (publish {:termination_closed} for independent closed code)); a bound may only use code that cannot reach one, since its value must not depend on the termination that the bounds establish
+5 resolution/type errors detected in github-issue-245-mt-resolve.dfy
 with --legacy-decreases-order
-github-issue-245.dfy(48,12): Error: a decreases component 'e by O' cannot be used with --legacy-decreases-order
-github-issue-245.dfy(55,12): Error: a decreases component 'e by O' cannot be used with --legacy-decreases-order
-github-issue-245.dfy(66,14): Error: a decreases component 'e by O' cannot be used with --legacy-decreases-order
-github-issue-245.dfy(75,12): Error: a decreases component 'e by O' cannot be used with --legacy-decreases-order
-github-issue-245.dfy(87,12): Error: a decreases component 'e by O' cannot be used with --legacy-decreases-order
-github-issue-245.dfy(94,12): Error: a decreases component 'e by O' cannot be used with --legacy-decreases-order
-github-issue-245.dfy(125,12): Error: a decreases component 'e by O' cannot be used with --legacy-decreases-order
+github-issue-245.dfy(52,12): Error: a decreases component 'e by O' cannot be used with --legacy-decreases-order
+github-issue-245.dfy(59,12): Error: a decreases component 'e by O' cannot be used with --legacy-decreases-order
+github-issue-245.dfy(70,14): Error: a decreases component 'e by O' cannot be used with --legacy-decreases-order
+github-issue-245.dfy(79,12): Error: a decreases component 'e by O' cannot be used with --legacy-decreases-order
+github-issue-245.dfy(91,12): Error: a decreases component 'e by O' cannot be used with --legacy-decreases-order
+github-issue-245.dfy(98,12): Error: a decreases component 'e by O' cannot be used with --legacy-decreases-order
+github-issue-245.dfy(129,12): Error: a decreases component 'e by O' cannot be used with --legacy-decreases-order
 7 resolution/type errors detected in github-issue-245.dfy
 without --type-system-refresh and --general-traits=datatype
-github-issue-245.dfy(48,14): Error: a decreases component of the form 'e by O' requires --type-system-refresh and --general-traits=datatype, since the orders are values of the trait Std.Termination.Orders.Wfo
-github-issue-245.dfy(55,14): Error: a decreases component of the form 'e by O' requires --type-system-refresh and --general-traits=datatype, since the orders are values of the trait Std.Termination.Orders.Wfo
-github-issue-245.dfy(66,16): Error: a decreases component of the form 'e by O' requires --type-system-refresh and --general-traits=datatype, since the orders are values of the trait Std.Termination.Orders.Wfo
-github-issue-245.dfy(75,14): Error: a decreases component of the form 'e by O' requires --type-system-refresh and --general-traits=datatype, since the orders are values of the trait Std.Termination.Orders.Wfo
-github-issue-245.dfy(87,14): Error: a decreases component of the form 'e by O' requires --type-system-refresh and --general-traits=datatype, since the orders are values of the trait Std.Termination.Orders.Wfo
-github-issue-245.dfy(94,14): Error: a decreases component of the form 'e by O' requires --type-system-refresh and --general-traits=datatype, since the orders are values of the trait Std.Termination.Orders.Wfo
-github-issue-245.dfy(101,47): Error: datatype extending traits is not yet enabled by default; use --general-traits=datatype to enable it
-github-issue-245.dfy(125,14): Error: a decreases component of the form 'e by O' requires --type-system-refresh and --general-traits=datatype, since the orders are values of the trait Std.Termination.Orders.Wfo
+github-issue-245.dfy(52,14): Error: a decreases component of the form 'e by O' requires --type-system-refresh and --general-traits=datatype, since the orders are values of the trait Std.Termination.Orders.Wfo
+github-issue-245.dfy(59,14): Error: a decreases component of the form 'e by O' requires --type-system-refresh and --general-traits=datatype, since the orders are values of the trait Std.Termination.Orders.Wfo
+github-issue-245.dfy(70,16): Error: a decreases component of the form 'e by O' requires --type-system-refresh and --general-traits=datatype, since the orders are values of the trait Std.Termination.Orders.Wfo
+github-issue-245.dfy(79,14): Error: a decreases component of the form 'e by O' requires --type-system-refresh and --general-traits=datatype, since the orders are values of the trait Std.Termination.Orders.Wfo
+github-issue-245.dfy(91,14): Error: a decreases component of the form 'e by O' requires --type-system-refresh and --general-traits=datatype, since the orders are values of the trait Std.Termination.Orders.Wfo
+github-issue-245.dfy(98,14): Error: a decreases component of the form 'e by O' requires --type-system-refresh and --general-traits=datatype, since the orders are values of the trait Std.Termination.Orders.Wfo
+github-issue-245.dfy(105,47): Error: datatype extending traits is not yet enabled by default; use --general-traits=datatype to enable it
+github-issue-245.dfy(129,14): Error: a decreases component of the form 'e by O' requires --type-system-refresh and --general-traits=datatype, since the orders are values of the trait Std.Termination.Orders.Wfo
 8 parse errors detected in github-issue-245.dfy
 without --decreases-orders
-github-issue-245.dfy(48,14): Error: a decreases component of the form 'e by O' requires the option --decreases-orders
-github-issue-245.dfy(55,14): Error: a decreases component of the form 'e by O' requires the option --decreases-orders
-github-issue-245.dfy(66,16): Error: a decreases component of the form 'e by O' requires the option --decreases-orders
-github-issue-245.dfy(75,14): Error: a decreases component of the form 'e by O' requires the option --decreases-orders
-github-issue-245.dfy(87,14): Error: a decreases component of the form 'e by O' requires the option --decreases-orders
-github-issue-245.dfy(94,14): Error: a decreases component of the form 'e by O' requires the option --decreases-orders
-github-issue-245.dfy(125,14): Error: a decreases component of the form 'e by O' requires the option --decreases-orders
+github-issue-245.dfy(52,14): Error: a decreases component of the form 'e by O' requires the option --decreases-orders
+github-issue-245.dfy(59,14): Error: a decreases component of the form 'e by O' requires the option --decreases-orders
+github-issue-245.dfy(70,16): Error: a decreases component of the form 'e by O' requires the option --decreases-orders
+github-issue-245.dfy(79,14): Error: a decreases component of the form 'e by O' requires the option --decreases-orders
+github-issue-245.dfy(91,14): Error: a decreases component of the form 'e by O' requires the option --decreases-orders
+github-issue-245.dfy(98,14): Error: a decreases component of the form 'e by O' requires the option --decreases-orders
+github-issue-245.dfy(129,14): Error: a decreases component of the form 'e by O' requires the option --decreases-orders
 7 parse errors detected in github-issue-245.dfy

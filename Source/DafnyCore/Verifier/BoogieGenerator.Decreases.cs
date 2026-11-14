@@ -286,7 +286,7 @@ public partial class BoogieGenerator {
       var oldCaller = codeContext is MethodOrConstructor and not TwoStateLemma;
       bound = callerBound.ConvertAll(e => {
         var onEntry = oldCaller ? new OldExpr(e.Origin, e) { Type = e.Type } : e;
-        return (Expression)new BoogieWrapper(etran.TrExpr(onEntry), e.Type);
+        return DecreasesByExpr.WithOrderOf(e, new BoogieWrapper(etran.TrExpr(onEntry), e.Type));
       });
     }
     modularTerminationLambdaStack.Add(bound);
@@ -353,7 +353,7 @@ public partial class BoogieGenerator {
       }
       modularTerminationLambdaBounds[lambda] = bound.ConvertAll(e => {
         var actual = Substitute(e, receiver, directSubstMap, typeMap);
-        return (Expression)new BoogieWrapper(etran.TrExpr(actual), actual.Type);
+        return DecreasesByExpr.WithOrderOf(actual, new BoogieWrapper(etran.TrExpr(actual), actual.Type));
       });
     }
   }
