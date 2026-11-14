@@ -776,7 +776,9 @@ public partial class BoogieGenerator {
       less = FunctionCall(tok, "ORD#Less", Bpl.Type.Bool, e0, e1);
       atmost = BplOr(eq, less);
 
-    } else if (ty0.IsTypeParameter || ty0.IsAbstractType) {
+    } else if (ty0.IsTypeParameter || ty0.IsAbstractType || IsValueTraitType(ty0)) {
+      // A trait that is not a reference type has no decreases order unless --trait-rank-decreases
+      // compares its values by BoxRank (above): such values only stay equal.
       eq = Bpl.Expr.Eq(e0, e1);
       less = Bpl.Expr.False;
       atmost = BplOr(less, eq);
