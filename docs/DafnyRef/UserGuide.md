@@ -2437,6 +2437,13 @@ or the Dafny 4 syntax (`ghost function` and `function`)
   `synonym-refines-abstract-type = true` in a project file's `[options]` section. See
   [type refinement](#sec-module-refinement).
 
+* `--decreases-orders` - (experimental) accept a decreases component `e by O`, where `O`
+  is a closed ghost expression of the standard library's trait type
+  `Std.Termination.Orders.Wfo<T>` and `e` has type `T`. A call or loop iteration must make
+  `O.gt(old e, e)` true, or leave `e` unchanged. Requires `--type-system-refresh` and
+  `--general-traits=datatype` (or `full`). Disabled by default. Use `decreases-orders = true` in a project file's
+  `[options]` section. See [well-founded orders](#sec-decreases-by).
+
 * `--modular-termination` - (experimental; it does not yet establish termination in every
   program) accept `decreases {:global}` clauses, and reject a call dispatched to a
   bodyless member of a trait whose implementations may lie in other modules unless it

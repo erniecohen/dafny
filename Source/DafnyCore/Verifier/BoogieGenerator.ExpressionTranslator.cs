@@ -2581,6 +2581,8 @@ namespace Microsoft.Dafny {
           total = BplAnd(total, BplImp(test, CanCallAssumption(e.Thn, cco)));
           total = BplAnd(total, BplImp(Boogie.Expr.Not(test), CanCallAssumption(e.Els, cco)));
           return total;
+        } else if (expr is DecreasesByExpr decreasesBy) {
+          return BplAnd(CanCallAssumption(decreasesBy.Order, cco), CanCallAssumption(decreasesBy.ResolvedExpression, cco));
         } else if (expr is ConcreteSyntaxExpression) {
           var e = (ConcreteSyntaxExpression)expr;
           return CanCallAssumption(e.ResolvedExpression, cco);

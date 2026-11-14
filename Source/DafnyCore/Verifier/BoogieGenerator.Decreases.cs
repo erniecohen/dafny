@@ -532,7 +532,17 @@ public partial class BoogieGenerator {
       var ty0 = dafny0[i].Type.NormalizeToAncestorType();
       var ty1 = dafny1[i].Type.NormalizeToAncestorType();
       Bpl.Expr strict, weak;
-      if (!CompatibleDecreasesTypesForComparison(ty0, ty1)) {
+      var order0 = DecreasesByExpr.OrderOf(dafny0[i]);
+      var order1 = DecreasesByExpr.OrderOf(dafny1[i]);
+      if (order0 != null || order1 != null) {
+        // A component "e by O" (--decreases-orders) is compared by O.gt(caller, callee), and only with a component with the same O.
+        if (order0 != null && order1 != null && DecreasesOrders.SameOrder(order0, order1) &&
+            DecreasesOrders.WfoOf(order1.Type) != null && CompatibleDecreasesTypesForComparison(ty0, ty1)) {
+          OrderedComponent(toks[i], order1, dafny0[i].Type, ee0[i], ee1[i], out strict, out weak);
+        } else {
+          strict = weak = Bpl.Expr.False;
+        }
+      } else if (!CompatibleDecreasesTypesForComparison(ty0, ty1)) {
         strict = weak = Bpl.Expr.False;
       } else if (ty0.IsNumericBased(Type.NumericPersuasion.Int) || ty0.IsNumericBased(Type.NumericPersuasion.Real)) {
         var real = ty0.IsNumericBased(Type.NumericPersuasion.Real);
@@ -559,6 +569,33 @@ public partial class BoogieGenerator {
       result = BplOr(strict, BplAnd(weak, result));
     }
     return result;
+  }
+
+  /// <summary>
+  /// The strict and weak relations of a component "e by O", with new value e0 (callee) and old value e1 (caller):
+  /// strict is O.gt(e1, e0), and weak is e0 == e1.  Weak must be equality, since O.gt need not be transitive and the
+  /// lift in ConsistentDecreasesCheck needs the absorption laws (docs/dev/decreases-order.md).  O is closed, so it
+  /// is translated the same in any state.
+  /// </summary>
+  void OrderedComponent(IOrigin tok, Expression order, Type type, Bpl.Expr e0, Bpl.Expr e1,
+                        out Bpl.Expr strict, out Bpl.Expr weak) {
+    var etran = new ExpressionTranslator(this, Predef, tok, null);
+    var callee = new BoogieWrapper(e0, type);
+    var caller = new BoogieWrapper(e1, type);
+    var gt = DecreasesOrders.Member(DecreasesOrders.WfoTrait(order.Type)!, DecreasesOrders.GtName);
+    var call = new FunctionCallExpr(tok, gt.NameNode, order, tok, Token.NoToken, [caller, callee]) {
+      Function = gt,
+      Type = Type.Bool,
+      TypeApplication_AtEnclosingClass = [DecreasesOrders.WfoOf(order.Type)!],
+      TypeApplication_JustFunction = []
+    };
+    // O is closed and well-formed (its well-formedness is checked with the decreases clause), so its can-call
+    // facts hold in every state.  O.gt has no precondition and reads nothing.  The can-call facts let the
+    // verifier unfold the functions that O and O.gt call.
+    strict = BplImp(etran.CanCallAssumption(call), etran.TrExpr(call));
+    weak = etran.TrExpr(Expression.CreateEq(callee, caller, type));
+    strict.tok = tok;
+    weak.tok = tok;
   }
 
   static bool CompatibleDecreasesTypes(Type t, Type u) {

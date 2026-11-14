@@ -26,6 +26,7 @@ cli	cores	--cores	System.CommandLine.Option`1[System.UInt32]	execution	effective
 cli	coverage-report	--coverage-report	System.CommandLine.Option`1[System.String]	command-setup	setup or another command; executes before/outside proof transport
 cli	cs-replacement-types	--cs-replacement-types	System.CommandLine.Option`1[System.Boolean]	command-setup	setup or another command; executes before/outside proof transport
 cli	datatype-subset-conversions	--datatype-subset-conversions	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
+cli	decreases-orders	--decreases-orders	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	default-function-opacity	--default-function-opacity	System.CommandLine.Option`1[Microsoft.Dafny.CommonOptionBag+DefaultFunctionOpacityOptions]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	disable-nonlinear-arithmetic	--disable-nonlinear-arithmetic	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	dont-verify-dependencies	--dont-verify-dependencies	System.CommandLine.Option`1[System.Boolean]	selection	selects current task inventory; each selected task is independently prepared

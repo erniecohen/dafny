@@ -392,7 +392,77 @@ comparison for migration and comparison only. It applies to ordinary and modular
 checks; `--modular-termination` itself remains opt-in. The repair is described in
 https://github.com/erniecohen/dafny/issues/264.
 
-#### 7.1.3.1. Global bounds: `decreases {:global}` (experimental) {#sec-global-decreases}
+#### 7.1.3.1. Well-founded orders: `decreases e by O` (experimental) {#sec-decreases-by}
+
+With the option `--decreases-orders` (off by default), a component of the
+`decreases` clause of a function, method or loop may name the well-founded order
+that compares it: `decreases e by O`. The option needs `--type-system-refresh`
+and `--general-traits=datatype` (or `full`), and loads the standard library's
+module `Std.Termination.Orders`. `O` must have exactly its trait type
+`Std.Termination.Orders.Wfo<T>`, and `e` must have exactly the type `T`. A value
+of `Wfo<T>` has a relation `gt(x, y)` (`x` is greater than `y`) and a member
+`aha` whose postcondition proves `gt` well-founded: every infinite sequence `c`
+of values of `T` has an `n` with `!gt(c(n), c(n + 1))`. For the component, the
+strict relation is `O.gt(old, new)`, where `old` is the value of `e` for the
+caller (or at the start of the loop iteration) and `new` is its value for the
+callee (or at the end of the iteration), and the weak relation is equality. The
+component then takes part in the tuple comparison above like any other.
+
+`O` must be closed: it may not mention local variables, parameters, `this` or
+the heap, so that caller and callee see the same order. A call between two
+callables compares a component by an order only if both clauses give that
+component the same order. A callable with a component `e by O` is treated as
+calling `Wfo.gt` and `Wfo.aha`, as a function is treated as calling what its
+`requires` clauses call. Those implied calls have no arguments that could
+decrease, so the callable must not be mutually recursive with `gt`, `aha` or
+any override of them. A component with an order is not allowed in the
+`decreases` clause of an iterator, in a `{:global}` or `{:callback}` clause, or
+with `--legacy-decreases-order`.
+
+To build an order, prove the relation well-founded and pass it to
+`Std.Termination.Orders.Of`, whose postcondition says that the order's `gt` is
+the relation:
+
+<!-- %check-verify %options --standard-libraries --type-system-refresh --general-traits=datatype --decreases-orders -->
+```dafny
+import opened Std.Termination.Orders
+
+ghost predicate Up(x: nat, y: nat) { x < y <= 100 }
+
+lemma UpWellFounded() ensures wellFounded<nat>(Up) {
+  forall c: Chain<nat> ensures stops<nat>(Up, c) {
+    if forall n: nat :: Up(c(n), c(n + 1)) {
+      Climbs(c, 101);
+      assert Up(c(101), c(102));
+    }
+  }
+}
+
+lemma Climbs(c: Chain<nat>, n: nat)
+  requires forall k: nat :: Up(c(k), c(k + 1))
+  ensures c(n) >= n
+{
+  if n > 0 { Climbs(c, n - 1); }
+}
+
+ghost function UpOrder(): Wfo<nat> { UpWellFounded(); Of(Up) }
+
+function CountUp(i: nat): nat
+  requires i <= 100
+  decreases i by UpOrder()
+{
+  if i == 100 then 0 else 1 + CountUp(i + 1)
+}
+```
+
+A datatype of another module may also implement `Wfo<T>` itself, giving `gt`
+and proving `aha`. Like any type that extends a trait of another module, it
+must then be marked `{:AssumeCrossModuleTermination}`, which `dafny audit`
+reports as an assumption.
+
+The design is described in https://github.com/erniecohen/dafny/issues/245.
+
+#### 7.1.3.2. Global bounds: `decreases {:global}` (experimental) {#sec-global-decreases}
 
 The module and call-graph components that Dafny prepends to a decreases tuple order only
 the calls that some module can see.  A call to a bodyless member of a trait is dispatched

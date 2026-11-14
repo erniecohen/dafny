@@ -40,6 +40,14 @@ namespace Microsoft.Dafny {
             e.PreType = e.E.PreType;
             break;
           }
+        case DecreasesByExpr expression: {
+            var e = expression;
+            ResolveExpression(e.E, resolutionContext);
+            ResolveExpression(e.Order, resolutionContext);
+            e.ResolvedExpression = e.E;
+            e.PreType = e.E.PreType;
+            break;
+          }
         case ChainingExpression expression: {
             var e = expression;
             ResolveExpression(e.E, resolutionContext);

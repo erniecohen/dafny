@@ -181,6 +181,12 @@ namespace Microsoft.Dafny {
           AddCallGraphEdge(context.CodeContext, function, functionCallExpr,
             IsFunctionReturnValue(function, functionCallExpr.Receiver, functionCallExpr.Args, context));
 
+        } else if (expr is DecreasesByExpr decreasesByExpr && DecreasesOrders.WfoTrait(decreasesByExpr.Order.Type) is { } wfo) {
+          // R3 of DecreasesOrders: a component "e by O" is an implied call of Wfo.gt and Wfo.aha
+          foreach (var callee in DecreasesOrders.ImpliedCallees(wfo)) {
+            AddCallGraphEdge(context.CodeContext, callee, decreasesByExpr, false);
+          }
+
         } else if (expr is QuantifierExpr quantifierExpr) {
           Contract.Assert(quantifierExpr.SplitQuantifier == null); // No split quantifiers during resolution
           if (context.CodeContext is Function enclosingFunction) {

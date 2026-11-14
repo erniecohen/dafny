@@ -21,6 +21,13 @@ namespace Microsoft.Dafny {
     public static readonly Uri StandardLibrariesDooUri = DafnyFile.ExposeInternalUri("DafnyStandardLibraries.dfy",
       new("dllresource://DafnyPipeline/DafnyStandardLibraries.doo"));
 
+    /// <summary>
+    /// The well-founded orders of --decreases-orders (https://github.com/erniecohen/dafny/issues/245), loaded with the
+    /// standard library under that option.  It needs --general-traits=datatype, so it is not part of the standard library itself.
+    /// </summary>
+    public static readonly Uri StandardLibrariesOrdersDooUri = DafnyFile.ExposeInternalUri("DafnyStandardLibraries-orders.dfy",
+      new("dllresource://DafnyPipeline/DafnyStandardLibraries-orders.doo"));
+
     static DafnyMain() {
       foreach (var target in new[] { "cs", "java", "go", "py", "js", "notarget" }) {
         StandardLibrariesDooUriTarget[target] = DafnyFile.ExposeInternalUri($"DafnyStandardLibraries-{target}.dfy",
