@@ -240,7 +240,19 @@ public class ModularTerminationAnalysis {
   /// program is fully resolved.
   /// </summary>
   public static ModularTerminationAnalysis Of(Program program) {
-    return Cache.GetValue(program, p => new ModularTerminationAnalysis(p));
+    return Cache.GetValue(program, p => {
+      // The analysis is computed the first time some module's translation asks for it, while that module's
+      // visibility scope is current, but it visits every module of the program.  Normalizing a type from a module
+      // that scope cannot see (for instance one an export set only provides) fails a visibility assertion, so the
+      // analysis runs with no scope, which sees every declaration as it is.
+      var saved = Type.SaveScopes();
+      Type.ResetScopes();
+      try {
+        return new ModularTerminationAnalysis(p);
+      } finally {
+        Type.RestoreScopes(saved);
+      }
+    });
   }
 
   public ModularTerminationAnalysis(Program program) {
