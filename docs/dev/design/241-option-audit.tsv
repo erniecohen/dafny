@@ -62,6 +62,7 @@ cli	javadoclike-docstring-plugin	--javadoclike-docstring-plugin	System.CommandLi
 cli	json-diagnostics	--json-diagnostics	System.CommandLine.Option`1[System.Boolean]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
 cli	json-output	--json-output	System.CommandLine.Option`1[System.Boolean]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
 cli	legacy-auto-generated-attributes	--legacy-auto-generated-attributes	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
+cli	legacy-cs-datatype-equality	--legacy-cs-datatype-equality	System.CommandLine.Option`1[System.Boolean]	command-setup	setup or another command; executes before/outside proof transport
 cli	legacy-data-constructors	--legacy-data-constructors	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	legacy-decreases-order	--legacy-decreases-order	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	legacy-first-phase-const-reads	--legacy-first-phase-const-reads	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
