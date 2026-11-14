@@ -617,11 +617,98 @@ namespace Microsoft.Dafny {
               q = new Bpl.ForallExpr(ctor.Origin, bvs, trigger, BplImp(inDomain, Bpl.Expr.Lt(lhs, rhs)));
               sink.AddTopLevelDeclaration(new Bpl.Axiom(ctor.Origin, q, "Inductive map value rank"));
             }
+          } else if (argType is ArrowType arrow && options.Get(CommonOptionBag.AdditionalAxioms)) {
+            // https://github.com/erniecohen/dafny/issues/326: an application of a "->" field, or of a "-->" field
+            // where its precondition holds, is below the constructor value.  "~>" fields are excluded.
+            if (arg.Type.IsArrowTypeWithoutPreconditions) {
+              AddArrowFieldRankAxioms(ctor, i, arrow, true);
+            } else if (arg.Type.IsArrowTypeWithoutReadEffects) {
+              AddArrowFieldRankAxioms(ctor, i, arrow, false);
+            }
           }
         }
       }
 
       return fn;
+    }
+
+    /// <summary>
+    /// For field "i" of inductive constructor "ctor", whose type is the total arrow type (if "total") or
+    /// the partial arrow type A0, ..., An-1 --> U, add, for a result type U that the existing field rank
+    /// axioms cover (a datatype, a type parameter, a seq or a map), the rank fact for the application of the
+    /// field:
+    ///
+    ///   axiom (forall params, t0..tn: Ty, h: Heap, bx0..bxn-1: Box ::
+    ///     { ApplyN(t0..tn, h, params_i, bx0..bxn-1), #dt.ctor(params) }
+    ///     $IsGoodHeap(h) && $Is(params_i, Tclass._System.___hTotalFuncN(t0..tn)) && $IsBox(bxj, tj)...
+    ///     [&& RequiresN(t0..tn, h, params_i, bx0..bxn-1)]          // for a partial arrow
+    ///     ==> RANK(ApplyN(t0..tn, h, params_i, bx0..bxn-1)) < DtRank(#dt.ctor(params)));
+    ///
+    /// where RANK is DtRank of the unboxed datatype value, BoxRank of a type-parameter value or Seq#Rank of a
+    /// sequence.  For a map result it is the value form of the existing map axiom, with the domain test on the
+    /// applied value as part of the trigger.  Set, multiset and map-key results are left out: their elements
+    /// support equality, and no datatype with an arrow-typed field does, so they never reach the group.
+    /// Only under --additional-axioms.
+    /// </summary>
+    private void AddArrowFieldRankAxioms(DatatypeCtor ctor, int i, ArrowType arrow, bool total) {
+      var tok = ctor.Origin;
+      var arity = arrow.Arity;
+      var arrowDecl = total
+        ? program.SystemModuleManager.TotalArrowTypeDecls[arity]
+        : program.SystemModuleManager.PartialArrowTypeDecls[arity];
+      var result = arrow.Result.NormalizeExpand();
+      var kind = total ? "total" : "partial";
+
+      // Builds the bound variables, the antecedent, the application and the constructor term of one axiom.
+      void Setup(out List<Bpl.Variable> bvs, out Bpl.Expr ante, out Bpl.Expr applied, out Bpl.Expr ct) {
+        CreateBoundVariables(ctor.Formals, out bvs, out var args);
+        var bvars = bvs;
+        var types = Map(Enumerable.Range(0, arity + 1), j => BplBoundVar("t#" + j, Predef.Ty, bvars));
+        var heap = BplBoundVar("h#", Predef.HeapType, bvars);
+        var boxes = Map(Enumerable.Range(0, arity), j => BplBoundVar("bx#" + j, Predef.BoxType, bvars));
+        var appArgs = Concat(types, Cons(heap, Cons(args[i], boxes)));
+        applied = FunctionCall(tok, Apply(arity), Predef.BoxType, appArgs);
+        ante = BplAnd(FunctionCall(tok, BuiltinFunction.IsGoodHeap, null, heap), MkIs(args[i], ClassTyCon(arrowDecl, types)));
+        for (var j = 0; j < arity; j++) {
+          ante = BplAnd(ante, MkIs(boxes[j], types[j], true));
+        }
+        if (!total) {
+          ante = BplAnd(ante, FunctionCall(tok, Requires(arity), Bpl.Type.Bool, appArgs));
+        }
+        ct = FunctionCall(tok, ctor.FullName, Predef.DatatypeType, args);
+      }
+
+      void Emit(List<Bpl.Variable> bvs, List<Bpl.Expr> triggerTerms, Bpl.Expr ante, Bpl.Expr lhs, Bpl.Expr ct, string what) {
+        var rhs = FunctionCall(tok, BuiltinFunction.DtRank, null, ct);
+        var q = new Bpl.ForallExpr(tok, bvs, new Bpl.Trigger(tok, true, triggerTerms), BplImp(ante, Bpl.Expr.Lt(lhs, rhs)));
+        sink.AddTopLevelDeclaration(new Bpl.Axiom(tok, q, $"Inductive {kind} arrow {what} rank"));
+      }
+
+      List<Bpl.Variable> bvs;
+      Bpl.Expr ante, applied, ct;
+      if (result.IsDatatype || result.IsTypeParameter || result is SeqType) {
+        Setup(out bvs, out ante, out applied, out ct);
+        Bpl.Expr lhs;
+        if (result.IsDatatype) {
+          lhs = FunctionCall(tok, BuiltinFunction.DtRank, null, FunctionCall(tok, BuiltinFunction.Unbox, Predef.DatatypeType, applied));
+        } else if (result.IsTypeParameter) {
+          lhs = FunctionCall(tok, BuiltinFunction.BoxRank, null, applied);
+        } else {
+          lhs = FunctionCall(tok, BuiltinFunction.SeqRank, null, FunctionCall(tok, BuiltinFunction.Unbox, Predef.SeqType, applied));
+        }
+        Emit(bvs, [applied, ct], ante, lhs, ct, "result");
+      } else if (result is MapType mapType) {
+        var finite = mapType.Finite;
+        var mapTy = finite ? Predef.MapType : Predef.IMapType;
+        Setup(out bvs, out ante, out applied, out ct);
+        var bx = BplBoundVar("bx#", Predef.BoxType, bvs);
+        var map = FunctionCall(tok, BuiltinFunction.Unbox, TrType(result), applied);
+        var domain = FunctionCall(tok, finite ? BuiltinFunction.MapDomain : BuiltinFunction.IMapDomain, mapTy, map);
+        var inDomain = IsSetMember(tok, domain, bx, finite);
+        var elements = FunctionCall(tok, finite ? BuiltinFunction.MapElements : BuiltinFunction.IMapElements, mapTy, map);
+        var value = FunctionCall(tok, BuiltinFunction.Unbox, Predef.DatatypeType, Bpl.Expr.SelectTok(tok, elements, bx));
+        Emit(bvs, [inDomain, ct], BplAnd(ante, inDomain), FunctionCall(tok, BuiltinFunction.DtRank, null, value), ct, "map value");
+      }
     }
 
     private void AddConstructorAxioms(DatatypeDecl dt, DatatypeCtor ctor, Bpl.Function ctorFunction, bool includeIsAllocAxiom) {

@@ -1154,6 +1154,27 @@ method TestD(dd: D) {
 }
 ```
 
+With `--additional-axioms`, a value obtained by applying a function stored in a
+field of an inductive datatype value is also strictly below that value, when the
+field's type is a total arrow `A -> T`, or a partial arrow `A --> T` and the
+application meets the function's precondition. As for the other rows, this
+reaches through `seq`, `map` and `imap` values in the function's result. Fields of
+type `A ~> T`, whose functions may read the heap, and fields of coinductive
+datatypes get no such fact. For example, this program verifies with
+`--additional-axioms` (https://github.com/erniecohen/dafny/issues/326):
+
+<!-- %check-verify %options --additional-axioms -->
+```dafny
+datatype Ord = Zero | Succ(pred: Ord) | Lim(f: nat -> Ord)
+
+function Count(o: Ord): nat {
+  match o
+  case Zero => 0
+  case Succ(p) => Count(p) + 1
+  case Lim(f) => Count(f(0)) + 1
+}
+```
+
 ## 12.8. Quantifier instantiation rules {#sec-quantifier-triggers}
 During verification, when Dafny knows that a universal quantifier is true, such as when verifying the body of a function that has the requires clause `forall x :: f(x) == 1`, it may instantiate the quantifier. Instantiation means Dafny will pick a value for all the variables of the quantifier, leading to a new expression, which it hopes to use to prove an assertion. In the above example, instantiating using `3` for `x` will lead to the expression `f(3) == 1`.
 

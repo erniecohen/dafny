@@ -1900,12 +1900,21 @@
   },
   {
     "File": "Source/DafnyCore/Verifier/Datatypes/BoogieGenerator.DataTypes.cs",
+    "Member": "AddArrowFieldRankAxioms/4",
+    "Producer": "Requires",
+    "Family": "datatype-constructors",
+    "Count": 1,
+    "Hash": "969118E8696F1FEC279E25595EB0357ACF381D568D2342BE72D608966BFA91EE",
+    "FileHash": "10C70E75585395D7085692B8A136889C9323E382DE9350DC222AA6E1C234CD23"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/Datatypes/BoogieGenerator.DataTypes.cs",
     "Member": "AddWellformednessCheck/1",
     "Producer": "CanCallAssumptionForVerification",
     "Family": "datatype-constructors",
     "Count": 1,
     "Hash": "4FE75F53F19328D63E47AB24BBCC96288D0AF2BA755628B9EE71387F2595A742",
-    "FileHash": "EFC6E6899BCCF637DCFF36106647496C7DD9AA19C6E6DE132A8CC80A245897F8"
+    "FileHash": "10C70E75585395D7085692B8A136889C9323E382DE9350DC222AA6E1C234CD23"
   },
   {
     "File": "Source/DafnyCore/Verifier/Datatypes/BoogieGenerator.DataTypes.cs",
@@ -1914,7 +1923,7 @@
     "Family": "datatype-constructors",
     "Count": 1,
     "Hash": "4F6AB76A8B97BE877888F40DC79AB13E29187D788627F2BAAA08A4AA14E7ABF2",
-    "FileHash": "EFC6E6899BCCF637DCFF36106647496C7DD9AA19C6E6DE132A8CC80A245897F8"
+    "FileHash": "10C70E75585395D7085692B8A136889C9323E382DE9350DC222AA6E1C234CD23"
   },
   {
     "File": "Source/DafnyCore/Verifier/Datatypes/BoogieGenerator.DataTypes.cs",
@@ -1923,7 +1932,7 @@
     "Family": "datatype-constructors",
     "Count": 1,
     "Hash": "48600C89A84759E47395FC7E646AFF260052B461BB975D82066E5115BFDB95D3",
-    "FileHash": "EFC6E6899BCCF637DCFF36106647496C7DD9AA19C6E6DE132A8CC80A245897F8"
+    "FileHash": "10C70E75585395D7085692B8A136889C9323E382DE9350DC222AA6E1C234CD23"
   },
   {
     "File": "Source/DafnyCore/Verifier/Expressions/TranslateBinaryExpr.cs",
