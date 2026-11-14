@@ -536,6 +536,9 @@ git-issues/github-issue-245.dfy
 # == on datatype values built at different type arguments is true in compiled C#, as verified (https://github.com/erniecohen/dafny/issues/352).
 git-issues/github-issue-352.dfy
 
+# Comparing two values of a trait that is not a reference type in a decreases clause no longer crashes the verifier (https://github.com/erniecohen/dafny/issues/350).
+git-issues/github-issue-350.dfy
+
 # Std.Ordinal's Omega, PlusLimit and TimesLimit are proved from the lemmas Std.Axioms.Ordinals.Infinite
 # and Replacement, not bodyless {:axiom} ghost functions (https://github.com/erniecohen/dafny/issues/354).
 git-issues/github-issue-354.dfy
