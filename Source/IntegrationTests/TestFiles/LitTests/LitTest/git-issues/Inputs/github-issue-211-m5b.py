@@ -32,8 +32,10 @@ std_options = ['--type-system-refresh', '--general-traits=datatype', '--general-
 common = ['--use-basename-for-filename', '--show-snippets:false', '--standard-libraries:false',
           '--solver-path', solver, '--cores', '1', '--resource-limit', '16000000',
           '--verification-time-limit', '0'] + std_options
-# dafny audit resolves only, so it takes neither the verifier's options nor --show-snippets.
-audit_common = ['--use-basename-for-filename', '--standard-libraries:false'] + std_options
+# dafny audit resolves only, so it takes neither the verifier's options nor --show-snippets.  It
+# takes --solver-path: admitting a library under --modular-termination checks the Z3 binary that
+# verified it, and without the option audit would find another one.
+audit_common = ['--use-basename-for-filename', '--standard-libraries:false', '--solver-path', solver] + std_options
 trust = '--modular-termination-trust:standard-library'
 failures = []
 counter = [0]
@@ -52,6 +54,13 @@ def doo(name):
     return str(output / (name + '.doo'))
 
 
+def strip_paths(line):
+    """A line with the test directories removed and every other absolute path shortened to <dir>/name."""
+    for directory in [str(output), str(std), str(executable.parent)]:
+        line = line.replace(directory + '/', '').replace(directory, '<dir>')
+    return re.sub(r'(?<![\w.])/[^\s\'",:()]*/([^\s\'",:()/]+)', r'<dir>/\1', line)
+
+
 def run(name, args, expected_exit, diagnostic=None, options=None):
     counter[0] += 1
     cmd = launcher + args + (common if options is None else options)
@@ -64,10 +73,15 @@ def run(name, args, expected_exit, diagnostic=None, options=None):
     print('%s: exit %d' % (name, process.returncode))
     for line in shown:
         print('  ' + line)
+    failed = process.returncode != expected_exit or (diagnostic is not None and diagnostic not in text)
     if process.returncode != expected_exit:
         failures.append('%s: expected exit %d' % (name, expected_exit))
     if diagnostic is not None and diagnostic not in text:
         failures.append('%s: missing diagnostic %r' % (name, diagnostic))
+    if failed:
+        # The first lines of the output, without directories, so that a failure explains itself.
+        for line in text.splitlines()[:40]:
+            print('  | ' + strip_paths(line))
     if re.search(r'out of resource|timed out|internal error|Unhandled exception', text, re.I):
         failures.append(name + ': infrastructure or resource failure')
     return text
