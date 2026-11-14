@@ -507,3 +507,8 @@ git-issues/github-issue-339.dfy
 # arguments are comparable component by component, as the legacy resolver does
 # (https://github.com/erniecohen/dafny/issues/47).
 git-issues/github-issue-47.dfy
+
+# --conservative-match-inference is on by default; with it, a pattern identifier whose type cannot
+# be a datatype is a bound variable without default type decisions, so an earlier newtype literal
+# keeps its contextual type (https://github.com/erniecohen/dafny/issues/48).
+git-issues/github-issue-48.dfy
