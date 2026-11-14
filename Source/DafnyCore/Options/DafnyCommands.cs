@@ -54,6 +54,7 @@ public static class DafnyCommands {
     CommonOptionBag.MapComprehensionDomainTriggers,
     CommonOptionBag.HeapFreeLambdaFacts,
     CommonOptionBag.StatementExpressionConclusions,
+    CommonOptionBag.TraitRankDecreases,
     CommonOptionBag.ShowProofObligationExpressions
   }.ToList();
 

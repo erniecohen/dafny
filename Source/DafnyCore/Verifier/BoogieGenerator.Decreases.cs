@@ -37,6 +37,13 @@ public partial class BoogieGenerator {
     if (t.IsTypeParameter || t.IsAbstractType || t.IsInternalTypeSynonym) {
       return t.Equals(u); // equality-only order within this opaque family
     }
+    if (UseTraitRankDecreases && IsStructurallyRanked(t) && IsStructurallyRanked(u) &&
+        (IsValueTraitType(t) || IsValueTraitType(u))) {
+      // --trait-rank-decreases: a value of a trait that is not a reference type joins the
+      // structural-rank order of inductive datatypes and sequences, through BoxRank.  See
+      // docs/dev/design/317-datatype-trait-decreases.md.
+      return true;
+    }
     if (!CompatibleDecreasesTypes(t, u)) {
       return false;
     }
@@ -45,6 +52,23 @@ public partial class BoogieGenerator {
     return (t is not BitvectorType a || u is not BitvectorType b || a.Width == b.Width) &&
       (t is not SetType c || u is not SetType d || c.Finite == d.Finite) &&
       (!t.IsCoDatatype && !u.IsCoDatatype || t.IsCoDatatype && u.IsCoDatatype);
+  }
+
+  bool UseTraitRankDecreases => UseConsistentDecreasesOrder && options.Get(CommonOptionBag.TraitRankDecreases);
+
+  /// <summary>
+  /// A trait that is not a reference type, whose values are boxed, so BoxRank gives their structural rank.
+  /// </summary>
+  static bool IsValueTraitType(Type t) {
+    return t.IsTraitType && !t.IsRefType;
+  }
+
+  /// <summary>
+  /// Under --trait-rank-decreases, the types whose decreases order is the structural rank: sequences,
+  /// inductive datatypes and traits that are not reference types.  "t" is normalized to its ancestor type.
+  /// </summary>
+  static bool IsStructurallyRanked(Type t) {
+    return t is SeqType || t.IsIndDatatype || IsValueTraitType(t);
   }
 
   /// <summary>
@@ -105,7 +129,11 @@ public partial class BoogieGenerator {
         break;
       }
       oldExpressions.Add(e1);
-      newExpressions.Add(e0direct);
+      // The comparison takes its types from these expressions, and "callee" below translates e0.  A trait-typed
+      // formal can be given an argument of a subtype, which e0direct has and whose representation differs (a
+      // datatype value, not a box), so under --trait-rank-decreases the comparison uses e0.  Otherwise the two
+      // types are of one family; the diagnostic below uses e0direct either way.
+      newExpressions.Add(UseTraitRankDecreases ? e0 : e0direct);
       toks.Add(new NestedOrigin(tok, e1.Origin, "this decreases clause was not satisfied"));
       canCalls = BplAnd(canCalls, etranCurrent.CanCallAssumptionForVerification(e1));
       canCalls = BplAnd(canCalls, etranCallee.CanCallAssumptionForVerification(e0direct));
@@ -579,6 +607,8 @@ public partial class BoogieGenerator {
       return BuiltinFunction.SeqRank;
     } else if (ty.IsIndDatatype) {
       return BuiltinFunction.DtRank;
+    } else if (UseTraitRankDecreases && IsValueTraitType(ty)) {
+      return BuiltinFunction.BoxRank;
     } else {
       return null;
     }
@@ -603,6 +633,13 @@ public partial class BoogieGenerator {
       eq = Bpl.Expr.False;
       Bpl.Expr b0 = FunctionCall(tok, rk0.Value, null, e0);
       Bpl.Expr b1 = FunctionCall(tok, rk1.Value, null, e1);
+      less = Bpl.Expr.Lt(b0, b1);
+      atmost = Bpl.Expr.Le(b0, b1);
+    } else if (rk0 == BuiltinFunction.BoxRank && rk1 == BuiltinFunction.BoxRank) {
+      // --trait-rank-decreases: two values of traits that are not reference types
+      Bpl.Expr b0 = FunctionCall(tok, BuiltinFunction.BoxRank, null, e0);
+      Bpl.Expr b1 = FunctionCall(tok, BuiltinFunction.BoxRank, null, e1);
+      eq = Bpl.Expr.Eq(b0, b1);
       less = Bpl.Expr.Lt(b0, b1);
       atmost = Bpl.Expr.Le(b0, b1);
     } else if (ty0 is BoolType) {
