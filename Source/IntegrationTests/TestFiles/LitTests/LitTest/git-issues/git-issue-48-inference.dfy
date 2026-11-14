@@ -1,5 +1,6 @@
-// Contextual newtype inference at a match (https://github.com/erniecohen/dafny/issues/48), under the
-// opt-in --conservative-match-inference.  The diagnostic regressions git-issue-48*.dfy stay as they were.
+// Contextual newtype inference at a match (https://github.com/erniecohen/dafny/issues/48), under
+// --conservative-match-inference (on by default; github-issue-48.dfy tests the default).  The diagnostic
+// regressions git-issue-48*.dfy stay as they were.
 // Modes: legacy or refreshed resolver, with the option off or on.
 // RUN: echo "original resolve (legacy, off)" > "%t"
 // RUN: %exits-with 0 %baredafny resolve --type-system-refresh:false --conservative-match-inference:false --allow-axioms "%S/Inputs/git-issue-48-inference-original.dfy" --use-basename-for-filename --show-snippets:false >> "%t"
@@ -58,7 +59,7 @@
 // RUN: echo "scope resolve (refreshed, off)" >> "%t"
 // RUN: %exits-with 2 %baredafny resolve --type-system-refresh:true --conservative-match-inference:false "%S/Inputs/git-issue-48-inference-scope.dfy" --use-basename-for-filename --show-snippets:false >> "%t"
 // RUN: echo "scope resolve (refreshed, on)" >> "%t"
-// RUN: %exits-with 2 %baredafny resolve --type-system-refresh:true --conservative-match-inference:true "%S/Inputs/git-issue-48-inference-scope.dfy" --use-basename-for-filename --show-snippets:false >> "%t"
+// RUN: %exits-with 0 %baredafny resolve --type-system-refresh:true --conservative-match-inference:true "%S/Inputs/git-issue-48-inference-scope.dfy" --use-basename-for-filename --show-snippets:false >> "%t"
 // RUN: echo "project file (option on)" >> "%t"
 // RUN: %exits-with 0 %baredafny resolve "%S/Inputs/git-issue-48-inference-project/dfyconfig.toml" --use-basename-for-filename --show-snippets:false >> "%t"
 // RUN: echo "project file, overridden on the command line (option off)" >> "%t"

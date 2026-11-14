@@ -454,6 +454,22 @@ namespace Microsoft.Dafny {
       }
     }
 
+    /// <summary>
+    /// Returns "true" if the current constraints show that "proxy" cannot be a datatype: some subtype of "proxy" is a type
+    /// that is not a datatype, or is a proxy confirmed to be in a family without datatypes (see Advice.ExcludesDatatypes),
+    /// such as the type of an integer literal.  A datatype has no subtypes other than itself, so a proxy with such a
+    /// subtype is not a datatype.  Makes no decision and changes no proxy.
+    /// </summary>
+    public bool CannotBeDatatype(PreTypeProxy proxy) {
+      var visited = new HashSet<PreTypeProxy>();
+      foreach (var sub in AllSubBounds(proxy, visited)) {
+        if (sub.Decl is not DatatypeDecl) {
+          return true;
+        }
+      }
+      return defaultAdvice.Any(advice => advice.ExcludesDatatypes && advice.PreType.Normalize() is PreTypeProxy p && visited.Contains(p));
+    }
+
     private IEnumerable<DPreType> AllSubBounds(PreTypeProxy proxy, ISet<PreTypeProxy> visited) {
       Contract.Requires(proxy.PT == null);
       if (visited.Contains(proxy)) {
