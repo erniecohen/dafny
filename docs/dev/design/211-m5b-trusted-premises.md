@@ -1,6 +1,8 @@
 # M5b for https://github.com/erniecohen/dafny/issues/211: a recorded trust list for standard-library premises
 
-**Status:** design only. This PR changes no product code.
+**Status:** approved and implemented in the same PR (https://github.com/erniecohen/dafny/pull/353).
+The owner decisions of section 8 are recorded there; section 12 lists where the implementation
+differs from the first draft of this design.
 
 **Target:** `review/4.11.0`, inspected at `c9210a81d37c301482a77a7cf02bc1d085fcd6ac`, the merge of
 M5a (https://github.com/erniecohen/dafny/pull/347). The design extends milestone 5 ("Std
@@ -54,13 +56,14 @@ also covered by the fork-build identity that every record carries. Each entry is
 |---|---|
 | `id` | the declaration's fully qualified name, such as `Std.Axioms.Reals.Complete` |
 | `kind` | `lemma` (a bodyless lemma) or `ghost function` (a bodyless ghost function or predicate) |
-| `statement_sha256` | digest of the declaration as the stored-program printer prints it: attributes, signature, type parameters, `requires`, `ensures`, `reads` and `decreases` |
+| `statement_sha256` | digest of the resolved declaration as the stored-program printer prints it: attributes, signature, type parameters, `requires`, `ensures`, `reads` and `decreases` |
 | `context_sha256` | digest of the declaration's **context**, defined below |
 | `reason` | one line, with a link, saying why the premise is true in Dafny's intended model and sound against its encoding |
 
 The **context** of a declaration is its enclosing module, plus every module that this module
 imports or refines, taken transitively. Its digest is the SHA-256 of the lines
-`<module full name>\t<SHA-256 of the module's printed text>`, sorted by name. These modules may come
+`<module key>\t<contract digest>`, sorted by key, over the M3 termination contracts of those modules
+(a module's declarations, with the bodies of methods and lemmas left out; function bodies stay). These modules may come
 from this library or from libraries it loaded. Binding to the context matters because a premise's
 meaning depends on definitions near it. `Reals.Complete` is about the predicate `UpperBound`
 defined beside it. `CharsConsistent` is about the constants of `HexConversion` and of the module it
@@ -83,17 +86,19 @@ Nothing else is on it. In particular:
   `{:termination false}` used as an assumption, or `decreases *` may be listed. Those refusals of
   M3–M5a are unchanged.
 
-A hidden maintenance command prints the computed entries of a program in the table's format. A
-regression test compares these with the table, so that any edit to a premise or its context fails
-the test until the table and its review are updated. Version 1 offers no way for users to supply
+`dafny audit` under the option prints, for each `{:axiom}` finding, whether the list admits it, and
+for a listed declaration whose digests differ it prints both computed digests, which are what a
+reviewer copies into the table. A regression test audits the standard-library project of section 7,
+so that any edit to a premise or its context fails the test until the table and its review are
+updated. Version 1 offers no way for users to supply
 their own list. Section 8 lists that as an owner decision.
 
 ## 3. The option
 
 Add `--modular-termination-trust` with the values `none` (the default) and `standard-library`.
-It is accepted only together with `--modular-termination`. It is opt-in and not hidden, because a
-user must choose it knowingly; its help text says that results become conditional on the listed
-premises. It does not change any verification condition, so it is **not** one of the exact-match
+It has no effect without `--modular-termination`. It is opt-in and, by the owner's decision, hidden
+from the default help while the feature is experimental; its help text says that results become
+conditional on the listed premises. It does not change any verification condition, so it is **not** one of the exact-match
 semantic options in `ModularTerminationRecords.SemanticOptionList`. Admission handles it with the
 subset rule of section 4.3, so a premise-free record such as the M5a core stays loadable whatever
 the client chooses.
@@ -108,9 +113,10 @@ With `--modular-termination-trust:standard-library`, the producer refusal in
 1. a premise that the auditor or `UncheckedPremise` reports as `{:axiom}`/`@Axiom` (the auditor's
    `HasAxiomAttribute`, and the `{:axiom}` case of `UncheckedPremise`);
 2. on a ghost lemma or ghost function without a body;
-3. whose `id`, `kind`, `statement_sha256` and `context_sha256`, computed on the **stored** program
-   (the program the record certifies, after the round trip that the producer already checks), match
-   an entry of the selected list.
+3. whose `id`, `kind`, `statement_sha256` and `context_sha256` match an entry of the selected list,
+   computed both on the source program and on the **stored** program (the program the record
+   certifies, after the round trip that the producer already checks); the two premise lists must be
+   equal.
 
 Any other premise refuses the record as today. The error names the declaration, and for a listed
 `id` whose digests differ it says which digest changed. A bodyless `{:axiom}` declaration is found
@@ -151,8 +157,9 @@ unknown schema.
 - that every recorded premise matches an entry of the client's table on all four fields. A table of
   a later Dafny build would anyway fail the existing fork-build check first;
 - that `premises_sha256` and `trust_list_sha256` match;
-- that the context digests, recomputed from the loaded program, match the recorded ones. This costs
-  only printing and hashing, and catches a record whose program and premise list disagree.
+- the context digests are not recomputed: the record digest already ties the premise list to
+  `program_sha256`, which admission checks against the loaded program, so a library whose program and
+  premise list disagree was modified after it was built and is refused by the existing checks.
 
 Premises of a library's own dependencies are recorded by those libraries. The client loads every
 library of a composition, so the premises of a composition are the union of the premises of its
@@ -243,16 +250,13 @@ more, so every existing expectation is unchanged.
 ## 7. Standard-library layout
 
 The premise-free core of M5a stays as it is, so that a client can still choose an unconditional
-result. M5b adds a second project, `Source/DafnyStandardLibraries/modular-termination/trusted/`. It
-is built with `--library` set to the core `.doo` and `--modular-termination-trust:standard-library`,
-so it is a separate library whose record imports the core's contracts and lists its own premises.
-Its candidate modules:
-
-- `Axioms` and `RealCompleteness`;
-- `Ordinal`, `Termination` and `Frames`;
-- `Strings`, `Parsers`, and the four Unicode encoding modules.
-
-Each joins only once it builds. For example, `Termination` and `Frames` may meet other refusals.
+result. M5b adds a second project, `Source/DafnyStandardLibraries/modular-termination/trusted/`, the
+**expanded core**: the core's files, unchanged, plus `Axioms`, `RealCompleteness`, `Ordinal` and
+`Strings`, built as one library with `--modular-termination-trust:standard-library`. The M5a project
+file is not touched, so the trust-dependent modules are added only where the trust option is set.
+(The first draft layered this library on the core `.doo`; a single project is simpler and gives the
+same records.) The modules that import these, `Termination`, `Frames`, `Parsers` and the Unicode
+encoding modules, join in later steps once each builds.
 `Actions` still waits for the bounds migration of section 9.2 of the M4b design. `JSON`,
 `UnicodeStringsWithUnicodeChar` and `TargetSpecific` stay out (section 1). The `issue211-std.yml`
 workflow builds both libraries and checks:
@@ -263,6 +267,11 @@ workflow builds both libraries and checks:
 - a core-only client whose output is unchanged.
 
 ## 8. Owner decisions
+
+Decided: (1) admit the three function premises in version 1, recorded with kind `ghost function` and
+flagged as global premises by `dafny audit`; the restatement as lemmas is
+https://github.com/erniecohen/dafny/issues/354. (2) Built-in list only. (3) The option name and values
+below, default `none`, hidden from the default help.
 
 1. **Admit the three Ordinal function premises?** The alternative is to restate `Omega`,
    `PlusLimit` and `TimesLimit` in `Std.Axioms` as lemmas that return a value with the stated
@@ -279,12 +288,13 @@ workflow builds both libraries and checks:
 With `--modular-termination` off, none of this code runs: no option, record field, audit section or
 summary line is reachable. With the option on and `--modular-termination-trust:none`, every
 existing producer refusal, record byte, admission error and output line is unchanged. A regression
-builds the M5a core both ways and compares the `.doo` manifests. No `BoogieGenerator` change is
+builds a premise-free library without the option, with `none` and with the list, and checks that
+every `.doo` entry is byte for byte the same and that the record digest is the one M5a computes. No `BoogieGenerator` change is
 involved, so verification conditions and resource counts are unchanged in all modes.
 
 ## 10. Implementation plan
 
-One product PR, then one Std PR:
+One PR (the decision put both steps in this one):
 
 1. **Trust list, producer, record, admission and reporting.** A new
    `Source/DafnyCore/ModularTerminationTrust.cs` holding the table and the statement and context
@@ -308,3 +318,16 @@ One product PR, then one Std PR:
 - the orders work of https://github.com/erniecohen/dafny/issues/245;
 - the Actions bounds migration (M4b design section 9.2);
 - the milestone 6 release gates.
+
+## 12. Implementation notes
+
+- The option is hidden and has no effect without `--modular-termination` (section 3).
+- The statement digest prints the resolved declaration (section 2), and the context is taken at
+  the granularity of the M3 contracts.
+- The consumer does not recompute context digests (section 4.3).
+- The standard-library layout is one expanded project rather than a layer (section 7).
+- There is no separate maintenance command; `dafny audit` prints the computed digests (section 2).
+- Negative controls in `git-issues/github-issue-211-m5b.dfy`: an edited premise statement, an edited
+  context, an unlisted `{:axiom}`, an `assume` statement and a client that did not opt in are each
+  refused, and a premise-free library is byte for byte the same with `none`, with the list and
+  without the option, with the record digest of M5a.

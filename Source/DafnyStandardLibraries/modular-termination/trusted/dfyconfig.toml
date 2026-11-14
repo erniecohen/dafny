@@ -1,0 +1,75 @@
+# The standard-library core with its trusted premises, under --modular-termination
+# (https://github.com/erniecohen/dafny/issues/211, milestone M5b).
+#
+# The modules of the certified core, ../dfyconfig.toml, unchanged, and the modules whose only
+# unchecked premises are on the standard-library trust list that Dafny compiles in
+# (Source/DafnyCore/ModularTerminationTrust.cs):
+#
+#   - Axioms: the {:axiom} lemmas of function extensionality and of the completeness of real;
+#   - RealCompleteness: imports Axioms;
+#   - Ordinal: eight {:axiom} lemmas and three {:axiom} ghost functions about ordinal arithmetic;
+#   - Strings: the @Axiom lemma HexConversion.CharsConsistent.
+#
+# `dafny build --target:lib` on this project writes a .doo library whose record lists each of
+# these premises, under the trust list's digests of its statement and context.  A client admits
+# it only with --modular-termination-trust:standard-library, and its results then assume these
+# premises.  The core, built from ../dfyconfig.toml, stays premise-free.
+
+includes = [
+  "../../src/Std/Arithmetic/DivMod.dfy",
+  "../../src/Std/Arithmetic/Internal/DivInternals.dfy",
+  "../../src/Std/Arithmetic/Internal/DivInternalsNonlinear.dfy",
+  "../../src/Std/Arithmetic/Internal/GeneralInternals.dfy",
+  "../../src/Std/Arithmetic/Internal/ModInternals.dfy",
+  "../../src/Std/Arithmetic/Internal/ModInternalsNonlinear.dfy",
+  "../../src/Std/Arithmetic/Internal/MulInternals.dfy",
+  "../../src/Std/Arithmetic/Internal/MulInternalsNonlinear.dfy",
+  "../../src/Std/Arithmetic/LittleEndianNat.dfy",
+  "../../src/Std/Arithmetic/Logarithm.dfy",
+  "../../src/Std/Arithmetic/Mul.dfy",
+  "../../src/Std/Arithmetic/Power.dfy",
+  "../../src/Std/Arithmetic/Power2.dfy",
+  "../../src/Std/Axioms.dfy",
+  "../../src/Std/Base64.dfy",
+  "../../src/Std/BoundedInts.dfy",
+  "../../src/Std/Collections/Array.dfy",
+  "../../src/Std/Collections/Collections.dfy",
+  "../../src/Std/Collections/Imap.dfy",
+  "../../src/Std/Collections/Iset.dfy",
+  "../../src/Std/Collections/Map.dfy",
+  "../../src/Std/Collections/Multiset.dfy",
+  "../../src/Std/Collections/Seq.dfy",
+  "../../src/Std/Collections/Set.dfy",
+  "../../src/Std/Collections/Tuple.dfy",
+  "../../src/Std/DynamicArray.dfy",
+  "../../src/Std/Functions.dfy",
+  "../../src/Std/Math.dfy",
+  "../../src/Std/Ordinal.dfy",
+  "../../src/Std/RealCompleteness.dfy",
+  "../../src/Std/Relations.dfy",
+  "../../src/Std/Strings.dfy",
+  "../../src/Std/Unicode/Unicode.dfy",
+  "../../src/Std/Unicode/UnicodeBase.dfy",
+  "../../src/Std/Wrappers.dfy",
+]
+
+[options]
+# The options of the core, ../dfyconfig.toml, unchanged, and the standard-library trust list.
+modular-termination = true
+modular-termination-trust = "standard-library"
+# Options that help support more values of consuming context options
+# (mostly turning on any more restrictive verification)
+track-print-effects = true
+enforce-determinism = true
+reads-clauses-on-methods = true
+type-system-refresh = true
+general-traits = "datatype"
+general-newtypes = true
+
+# Options important for sustainable development
+# of the libraries themselves.
+resource-limit = 1000000
+verification-time-limit = 300
+# These give too many false positives right now, but should be enabled in the future
+warn-redundant-assumptions = false
+warn-contradictory-assumptions = false

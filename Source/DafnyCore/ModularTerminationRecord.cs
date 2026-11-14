@@ -26,6 +26,11 @@ namespace DafnyCore;
 /// </summary>
 public class ModularTerminationManifest {
   public const long CurrentSchema = 1;
+  /// <summary>
+  /// The schema of a record with trusted premises (milestone M5b).  A record without premises keeps
+  /// CurrentSchema, and is byte for byte what a build without a trust list writes.
+  /// </summary>
+  public const long PremisesSchema = 2;
   public const long CurrentContractSchema = 1;
   public const string CompleteStatus = "complete";
 
@@ -39,9 +44,15 @@ public class ModularTerminationManifest {
   public string ProgramSha256 { get; set; } = null!;
   public string SemanticOptionsSha256 { get; set; } = null!;
   public string ContractsSha256 { get; set; } = null!;
+  /// <summary>The trust list that admitted the premises (schema 2 only).</summary>
+  public string? TrustList { get; set; }
+  public string? TrustListSha256 { get; set; }
+  public string? PremisesSha256 { get; set; }
   public Dictionary<string, string>? SemanticOptions { get; set; }
   public List<ModularTerminationContractRef>? Exports { get; set; }
   public List<ModularTerminationContractRef>? Imports { get; set; }
+  /// <summary>The trusted premises of the library's own program, sorted by id (schema 2 only).</summary>
+  public List<ModularTerminationPremise>? Premises { get; set; }
 
   /// <summary>
   /// The digest of every other field of the record, and of the manifest's doo_file_version, so that no
@@ -74,19 +85,24 @@ public sealed class ModularTerminationCompletion {
   public SortedDictionary<string, string> SemanticOptions { get; private init; } = null!;
   public string ForkBuildId { get; private init; } = null!;
   public ModularTerminationSolver Solver { get; private init; } = null!;
+  public string? TrustList { get; private init; }
+  public IReadOnlyList<ModularTerminationPremise> Premises { get; private init; } = [];
 
   public static ModularTerminationCompletion Failed(string failure) => new() { Failure = failure };
 
   public static ModularTerminationCompletion Complete(string programText, ModularTerminationContracts contracts,
     IReadOnlyList<ModularTerminationContractRef> imports, SortedDictionary<string, string> semanticOptions,
-    string forkBuildId, ModularTerminationSolver solver) =>
+    string forkBuildId, ModularTerminationSolver solver, string? trustList = null,
+    IReadOnlyList<ModularTerminationPremise>? premises = null) =>
     new() {
       ProgramText = programText,
       Contracts = contracts,
       Imports = imports,
       SemanticOptions = semanticOptions,
       ForkBuildId = forkBuildId,
-      Solver = solver
+      Solver = solver,
+      TrustList = premises is { Count: > 0 } ? trustList : null,
+      Premises = premises ?? []
     };
 
   public ModularTerminationManifest CreateRecord() {
@@ -105,6 +121,13 @@ public sealed class ModularTerminationCompletion {
       Exports = Contracts.Exports.ToList(),
       Imports = Imports.ToList()
     };
+    if (Premises.Count != 0) {
+      record.Schema = ModularTerminationManifest.PremisesSchema;
+      record.TrustList = TrustList;
+      record.TrustListSha256 = ModularTerminationTrustList.Sha256(TrustList!);
+      record.Premises = Premises.OrderBy(p => p.Id, StringComparer.Ordinal).ToList();
+      record.PremisesSha256 = ModularTerminationTrustList.PremisesSha256(record.Premises);
+    }
     record.RecordSha256 = ModularTerminationRecords.RecordSha256(ModularTerminationRecords.RecordedDooFileVersion, record);
     return record;
   }
@@ -231,7 +254,8 @@ public static class ModularTerminationProducer {
     if (UnsupportedSource(program) is { } unsupportedSource) {
       return ModularTerminationCompletion.Failed(unsupportedSource);
     }
-    if (AssumptionIn(program) is { } assumption) {
+    var trustList = ModularTerminationTrustList.Selected(options);
+    if (AssumptionIn(program, trustList) is { } assumption) {
       return ModularTerminationCompletion.Failed(assumption);
     }
     if (options.Printer is not DafnyConsolePrinter printer) {
@@ -249,23 +273,60 @@ public static class ModularTerminationProducer {
     if (WithoutNameLine(reparsedText) != WithoutNameLine(programText)) {
       return ModularTerminationCompletion.Failed("its retained program does not print back to itself");
     }
-    // The record certifies the program that is stored, so that program is the one that must verify:
-    // resolve and verify it again, with the same libraries and options, and take its inventory,
-    // contracts and imports from it.  This covers every way the printed program can differ from the
-    // verified one.
-    var (stored, storedFailure) = await VerifyStored(options, programText, inputs);
-    if (stored == null) {
-      return ModularTerminationCompletion.Failed(storedFailure!);
-    }
     var (contracts, contractError) = await ModularTerminationContracts.Compute(options, programText, StoredProgramUri);
     if (contracts == null) {
       return ModularTerminationCompletion.Failed($"its retained program does not parse: {contractError}");
+    }
+    // With a trust list, every premise of the verified program must match its entry, before the stored
+    // program is verified again.
+    List<ModularTerminationPremise> premises = [];
+    if (trustList != null) {
+      var (sourcePremises, premiseFailure) = Premises(program, contracts, program.Compilation.ModularTerminationImports);
+      if (premiseFailure != null) {
+        return ModularTerminationCompletion.Failed(premiseFailure);
+      }
+      premises = sourcePremises!;
+    }
+    // The record certifies the program that is stored, so that program is the one that must verify:
+    // resolve and verify it again, with the same libraries and options, and take its inventory,
+    // contracts, imports and premises from it.  This covers every way the printed program can differ
+    // from the verified one.
+    var (stored, storedFailure) = await VerifyStored(options, programText, inputs, trustList);
+    if (stored == null) {
+      return ModularTerminationCompletion.Failed(storedFailure!);
+    }
+    if (trustList != null) {
+      var (storedPremises, premiseFailure) = Premises(stored, contracts, stored.Compilation.ModularTerminationImports);
+      if (premiseFailure != null) {
+        return ModularTerminationCompletion.Failed($"in its stored program, {premiseFailure}");
+      }
+      if (storedPremises!.Count != premises.Count || storedPremises.Zip(premises).Any(p => !p.First.SameAs(p.Second))) {
+        return ModularTerminationCompletion.Failed("the trusted premises of its stored program are not those of the verified program");
+      }
     }
     if (ModularTerminationRecords.Solver(options) is not { } solver) {
       return ModularTerminationCompletion.Failed("the Z3 binary that verified it could not be identified");
     }
     return ModularTerminationCompletion.Complete(programText, contracts, stored.Compilation.ModularTerminationImports,
-      ModularTerminationRecords.SemanticOptions(options), ModularTerminationRecords.ForkBuildId(options), solver);
+      ModularTerminationRecords.SemanticOptions(options), ModularTerminationRecords.ForkBuildId(options), solver,
+      trustList, premises);
+  }
+
+  /// <summary>
+  /// The trusted premises of a program's own files, sorted by id, or why one does not match its entry in
+  /// the selected trust list.
+  /// </summary>
+  private static (List<ModularTerminationPremise>? Premises, string? Failure) Premises(Program program,
+    ModularTerminationContracts contracts, IReadOnlyList<ModularTerminationContractRef> imports) {
+    var evaluation = ModularTerminationTrustList.Evaluation.Compute(program, contracts, imports,
+      program.Compilation.UrisToVerify ?? new HashSet<Uri>());
+    var premises = evaluation.Premises.OrderBy(kv => kv.Value.Id, StringComparer.Ordinal).ToList();
+    foreach (var (member, premise) in premises) {
+      if (ModularTerminationTrustList.Evaluation.Mismatch(program.Options, premise) is { } mismatch) {
+        return (null, $"{Where(member.Origin)} {mismatch}");
+      }
+    }
+    return (premises.Select(kv => kv.Value).ToList(), null);
   }
 
   /// <summary>
@@ -275,7 +336,7 @@ public static class ModularTerminationProducer {
   /// or why it cannot be recorded.
   /// </summary>
   private static async Task<(Program? Program, string? Failure)> VerifyStored(DafnyOptions options, string programText,
-    IReadOnlyList<DafnyFile> inputs) {
+    IReadOnlyList<DafnyFile> inputs, string? trustList) {
     var storedOptions = new DafnyOptions(options, true) {
       DafnyPrintFile = null,
       DafnyPrintResolvedFile = null,
@@ -301,7 +362,7 @@ public static class ModularTerminationProducer {
     if (UnsupportedSource(stored) is { } unsupported) {
       return (null, $"in its stored program, {unsupported}");
     }
-    if (AssumptionIn(stored) is { } assumption) {
+    if (AssumptionIn(stored, trustList) is { } assumption) {
       return (null, $"in its stored program, {assumption}");
     }
     var boogiePrograms = await DafnyMain.LargeStackFactory.StartNew(() =>
@@ -361,15 +422,20 @@ public static class ModularTerminationProducer {
   private static string Where(IOrigin origin) => $"{origin.Uri.Segments.LastOrDefault()}({origin.line},{origin.col + 1})";
 
   /// <summary>
-  /// The first assumption in the library's own program, or null.
+  /// The first assumption in the library's own program, or null.  With a trust list, a candidate premise
+  /// whose id the list names is left to the digest match of Premises.
   /// </summary>
-  private static string? AssumptionIn(Program program) {
+  private static string? AssumptionIn(Program program, string? trustList) {
+    bool Listed(INode? node) => trustList != null && node != null &&
+                                ModularTerminationTrustList.CandidateId(node) is { } id &&
+                                ModularTerminationTrustList.Find(trustList, id) != null;
     var urisToVerify = program.Compilation.UrisToVerify ?? new HashSet<Uri>();
     bool Owned(IOrigin? origin) => origin?.Uri != null && urisToVerify.Contains(origin.Uri);
     // Dafny's own assumption inventory, the one `dafny audit` reports: every assumption it finds in the
     // library's own program refuses the record.
     foreach (var assumption in program.Assumptions(null!)) {
-      if (Owned(assumption.Tok) && AuditExemption(assumption) == null) {
+      if (Owned(assumption.Tok) && AuditExemption(assumption) == null &&
+          !(assumption.desc == AuditAssumptionDescription.HasAxiomAttribute && Listed(assumption.decl))) {
         return $"{Where(assumption.Tok)} has an assumption that 'dafny audit' reports: {AuditAssumption.UpdateVerbatim(assumption.desc.Issue, "", "").TrimEnd('.')}";
       }
     }
@@ -380,7 +446,7 @@ public static class ModularTerminationProducer {
       if (!Owned(node.Origin) || OpaqueMemberRewriter.IsGeneratedRevealLemma(node)) {
         continue;
       }
-      if (UncheckedPremise(node) is { } premise) {
+      if (UncheckedPremise(node, Listed(node)) is { } premise) {
         return $"{Where(node.Origin!)} {premise}";
       }
     }
@@ -432,7 +498,9 @@ public static class ModularTerminationProducer {
   /// per-implementation inventory cannot see these: an exempted, assumed, external or bodyless
   /// declaration either produces no verification condition or one that holds by assumption.
   /// </summary>
-  private static string? UncheckedPremise(INode node) {
+  /// <param name="listed">The node is a candidate premise that the selected trust list names: its {:axiom}
+  /// and its missing body are left to the digest match.</param>
+  private static string? UncheckedPremise(INode node, bool listed) {
     if (node is IAttributeBearingDeclaration attributed) {
       var verify = true;
       if (Attributes.ContainsBool(attributed.Attributes, "verify", ref verify) && !verify) {
@@ -441,7 +509,7 @@ public static class ModularTerminationProducer {
       if (Attributes.Find(attributed.Attributes, "only") != null) {
         return "uses {:only}";
       }
-      if (Attributes.Find(attributed.Attributes, "axiom") != null) {
+      if (!listed && Attributes.Find(attributed.Attributes, "axiom") != null) {
         return "is marked {:axiom}, an unchecked premise";
       }
       if (Attributes.Find(attributed.Attributes, "extern") != null) {
@@ -458,9 +526,9 @@ public static class ModularTerminationProducer {
         return "has a forall statement without a body, an unchecked premise";
       case OneBodyLoopStmt { Body: null }:
         return "has a loop without a body, an unchecked premise";
-      case MethodOrConstructor { Body: null } method when IsConcrete(method):
+      case MethodOrConstructor { Body: null } method when IsConcrete(method) && !listed:
         return $"declares {method.WhatKind} '{method.Name}' without a body, an unchecked premise";
-      case Function { Body: null } function when IsConcrete(function):
+      case Function { Body: null } function when IsConcrete(function) && !listed:
         return $"declares {function.WhatKind} '{function.Name}' without a body, an unchecked premise";
     }
     var decreases = node switch {
@@ -642,6 +710,15 @@ public static class ModularTerminationRecords {
     }
     foreach (var import in record.Imports ?? []) {
       Line("import", import.Module, import.ContractSha256);
+    }
+    // Schema 2 (milestone M5b): a record without these fields keeps the canonical text of schema 1.
+    if (record.TrustList != null || record.TrustListSha256 != null || record.PremisesSha256 != null || record.Premises != null) {
+      Line("trust_list", record.TrustList);
+      Line("trust_list_sha256", record.TrustListSha256);
+      Line("premises_sha256", record.PremisesSha256);
+      foreach (var premise in record.Premises ?? []) {
+        Line("premise", premise.Id, premise.Kind, premise.StatementSha256, premise.ContextSha256);
+      }
     }
     return Sha256(sb.ToString());
   }

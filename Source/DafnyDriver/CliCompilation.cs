@@ -32,6 +32,11 @@ public class CliCompilation {
   private int errorCount;
   private int warningCount;
   public bool DidVerification { get; private set; }
+  /// <summary>
+  /// Under --modular-termination, the summary line that names the trusted premises of the admitted
+  /// libraries, or null when there are none.
+  /// </summary>
+  public string? TrustedPremisesSummary { get; private set; }
   private bool batchInputsCaptured;
 
   // The module whose verification the current asynchronous flow started, when
@@ -279,6 +284,9 @@ public class CliCompilation {
     var requestDependencies = resolution.ResolvedProgram.ProofDependencyManager;
 
     DidVerification = true;
+    TrustedPremisesSummary = Options.Get(CommonOptionBag.ModularTermination)
+      ? DafnyCore.ModularTerminationTrustList.Summary([], null, resolution.ResolvedProgram.Compilation.ModularTerminationPremises)
+      : null;
 
     var canVerifies = FilterCanVerifies(resolution.CanVerifies, out var filterRange, filterPosition);
     VerifiedAssertions = filterRange.Filters;
