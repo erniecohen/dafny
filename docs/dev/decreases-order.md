@@ -52,11 +52,12 @@ new axioms or a mechanized proof of the translator.
   datatype value or sequence is its rank and of any other value `0`, so the
   family's laws are unchanged
   ([`design/317-datatype-trait-decreases.md`](design/317-datatype-trait-decreases.md)).
-  Without the option they have no order.
+  Without the option they are an equality-only family (below).
 * **ORDINAL:** ordinary ordinal `<` and its reflexive closure. Ordinal order is
   transitive and well-founded, so both absorption laws hold, including at limits.
-* **Equality-only families:** infinite sets/maps, arrows, abstract values and
-  coinductive datatypes have `s = false` and equivalence as `w` (domain
+* **Equality-only families:** infinite sets/maps, arrows, abstract values,
+  values of traits that are not reference types (without
+  `--trait-rank-decreases`) and coinductive datatypes have `s = false` and equivalence as `w` (domain
   equivalence for infinite maps). The laws hold
   trivially. Coinductive values are not assigned an inductive descent order.
 * **TOP:** every proper value is strictly and weakly below TOP; TOP is weakly
