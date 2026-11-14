@@ -530,7 +530,7 @@ git-issues/github-issue-47.dfy
 # keeps its contextual type (https://github.com/erniecohen/dafny/issues/48).
 git-issues/github-issue-48.dfy
 
-# Well-founded orders in decreases clauses, "e by O" with --decreases-orders (https://github.com/erniecohen/dafny/issues/245).
+# Well-founded orders in decreases clauses, "e by O" with --decreases-orders, also in the bounds of --modular-termination (https://github.com/erniecohen/dafny/issues/245).
 git-issues/github-issue-245.dfy
 
 # == on datatype values built at different type arguments is true in compiled C#, as verified (https://github.com/erniecohen/dafny/issues/352).
