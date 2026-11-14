@@ -321,6 +321,15 @@ Various options control the verification process, in addition to all those descr
   describe the current invocation, not a new solver measurement. Unsupported
   execution profiles run normally. The initial native profile supports macOS
   and Linux; custom loading environments and solver launcher scripts bypass.
+  Paths under Dafny's own installation, the .NET runtime and the solver's
+  directory enter the key as placeholders, so the same build in another directory
+  or on another machine reuses the cache; the bytes of every image are still
+  hashed into the key. Each image's digest is remembered in `DIR` under its
+  absolute path, size, modification and status-change times, device and inode,
+  and is recomputed when any of these differ or the entry is unreadable. This is
+  weaker than hashing the bytes on every run: a rewrite that kept all of these
+  would be missed. An ordinary process cannot set the status-change time, and the
+  images are read-only system files and build outputs, so the cache relies on it.
   Only trusted local writers may share a cache. Remove `DIR/v1` to evict it;
   there is no automatic disk eviction. This option is off by default and can
   also be set in `dfyconfig.toml`.
