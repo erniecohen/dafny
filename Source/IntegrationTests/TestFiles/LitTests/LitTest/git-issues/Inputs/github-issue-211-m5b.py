@@ -32,6 +32,8 @@ std_options = ['--type-system-refresh', '--general-traits=datatype', '--general-
 common = ['--use-basename-for-filename', '--show-snippets:false', '--standard-libraries:false',
           '--solver-path', solver, '--cores', '1', '--resource-limit', '16000000',
           '--verification-time-limit', '0'] + std_options
+# dafny audit resolves only, so it takes neither the verifier's options nor --show-snippets.
+audit_common = ['--use-basename-for-filename', '--standard-libraries:false'] + std_options
 trust = '--modular-termination-trust:standard-library'
 failures = []
 counter = [0]
@@ -50,9 +52,9 @@ def doo(name):
     return str(output / (name + '.doo'))
 
 
-def run(name, args, expected_exit, diagnostic=None):
+def run(name, args, expected_exit, diagnostic=None, options=None):
     counter[0] += 1
-    cmd = launcher + args + common
+    cmd = launcher + args + (common if options is None else options)
     process = subprocess.run(cmd, cwd=output, capture_output=True, text=True, timeout=600)
     text = process.stdout + process.stderr
     (output / ('%02d-%s.txt' % (counter[0], name.replace(' ', '-')))).write_text(json.dumps(cmd) + '\n' + text)
@@ -199,7 +201,8 @@ verify('client not opted in', [doo('trusted')], CLIENT, 1,
 verify('client trust none', [doo('trusted')], CLIENT, 1, 'use --modular-termination-trust:standard-library',
        extra=['--modular-termination-trust:none'])
 run('client audit', ['audit', '--modular-termination', trust, '--library', doo('trusted'), CLIENT], 0,
-    'the library relies on the trusted premise Std.Axioms.Reals.Complete (lemma) of the standard-library trust list')
+    'the library relies on the trusted premise Std.Axioms.Reals.Complete (lemma) of the standard-library trust list',
+    options=audit_common)
 
 
 def tampered(name, change):
