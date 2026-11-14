@@ -1,0 +1,159 @@
+original (trait-rank-decreases:false, additional-axioms:false, Z3 5.1.0)
+github-issue-317-original.dfy(9,60): Error: decreases clause might not decrease
+github-issue-317-original.dfy(12,22): Error: decreases clause might not decrease
+
+Dafny program verifier finished with 3 verified, 2 errors
+positive (trait-rank-decreases:false, additional-axioms:false, Z3 5.1.0)
+github-issue-317-positive.dfy(12,63): Error: decreases clause might not decrease
+github-issue-317-positive.dfy(15,20): Error: decreases clause might not decrease
+github-issue-317-positive.dfy(36,38): Error: decreases clause might not decrease
+github-issue-317-positive.dfy(42,19): Error: decreases clause might not decrease
+github-issue-317-positive.dfy(64,27): Error: decreases clause might not decrease
+github-issue-317-positive.dfy(70,19): Error: decreases clause might not decrease
+github-issue-317-positive.dfy(87,33): Error: decreases clause might not decrease
+
+Dafny program verifier finished with 9 verified, 7 errors
+false-control (trait-rank-decreases:false, additional-axioms:false, Z3 5.1.0)
+github-issue-317-false-control.dfy(14,9): Error: decreases clause might not decrease
+github-issue-317-false-control.dfy(27,15): Error: decreases clause might not decrease
+github-issue-317-false-control.dfy(33,9): Error: decreases clause might not decrease
+github-issue-317-false-control.dfy(46,13): Error: decreases clause might not decrease
+github-issue-317-false-control.dfy(58,9): Error: decreases clause might not decrease
+github-issue-317-false-control.dfy(70,12): Error: decreases clause might not decrease
+github-issue-317-false-control.dfy(82,9): Error: decreases clause might not decrease
+github-issue-317-false-control.dfy(89,12): Error: decreases clause might not decrease
+github-issue-317-false-control.dfy(96,12): Error: decreases clause might not decrease
+github-issue-317-false-control.dfy(110,38): Error: decreases clause might not decrease
+github-issue-317-false-control.dfy(117,4): Error: assertion might not hold
+github-issue-317-false-control.dfy(121,38): Error: decreases clause might not decrease
+github-issue-317-false-control.dfy(121,57): Error: a postcondition could not be proved on this return path
+github-issue-317-false-control.dfy(120,46): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 11 verified, 13 errors
+downcast (trait-rank-decreases:false, additional-axioms:false, Z3 5.1.0)
+github-issue-317-downcast.dfy(8,43): Error: decreases clause might not decrease
+github-issue-317-downcast.dfy(14,0): Error: a postcondition could not be proved on this return path
+github-issue-317-downcast.dfy(13,22): Related location: this is the postcondition that could not be proved
+github-issue-317-downcast.dfy(19,2): Error: a postcondition could not be proved on this return path
+github-issue-317-downcast.dfy(18,26): Related location: this is the postcondition that could not be proved
+github-issue-317-downcast.dfy(20,9): Error: cannot prove termination; try supplying a decreases clause
+
+Dafny program verifier finished with 1 verified, 4 errors
+positive (trait-rank-decreases:true, additional-axioms:false, Z3 5.1.0)
+github-issue-317-positive.dfy(12,63): Error: decreases clause might not decrease
+github-issue-317-positive.dfy(15,20): Error: decreases clause might not decrease
+github-issue-317-positive.dfy(36,38): Error: decreases clause might not decrease
+github-issue-317-positive.dfy(42,19): Error: decreases clause might not decrease
+github-issue-317-positive.dfy(42,34): Error: decreases clause might not decrease
+github-issue-317-positive.dfy(64,27): Error: decreases clause might not decrease
+github-issue-317-positive.dfy(65,29): Error: decreases clause might not decrease
+github-issue-317-positive.dfy(70,19): Error: decreases clause might not decrease
+github-issue-317-positive.dfy(71,21): Error: decreases clause might not decrease
+github-issue-317-positive.dfy(87,33): Error: decreases clause might not decrease
+
+Dafny program verifier finished with 9 verified, 10 errors
+false-control (trait-rank-decreases:true, additional-axioms:false, Z3 5.1.0)
+github-issue-317-false-control.dfy(14,9): Error: decreases clause might not decrease
+github-issue-317-false-control.dfy(27,15): Error: decreases clause might not decrease
+github-issue-317-false-control.dfy(33,9): Error: decreases clause might not decrease
+github-issue-317-false-control.dfy(46,13): Error: decreases clause might not decrease
+github-issue-317-false-control.dfy(58,9): Error: decreases clause might not decrease
+github-issue-317-false-control.dfy(70,12): Error: decreases clause might not decrease
+github-issue-317-false-control.dfy(82,9): Error: decreases clause might not decrease
+github-issue-317-false-control.dfy(89,12): Error: decreases clause might not decrease
+github-issue-317-false-control.dfy(96,12): Error: decreases clause might not decrease
+github-issue-317-false-control.dfy(110,38): Error: decreases clause might not decrease
+github-issue-317-false-control.dfy(117,4): Error: assertion might not hold
+github-issue-317-false-control.dfy(121,38): Error: decreases clause might not decrease
+github-issue-317-false-control.dfy(121,57): Error: a postcondition could not be proved on this return path
+github-issue-317-false-control.dfy(120,46): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 11 verified, 13 errors
+downcast (trait-rank-decreases:true, additional-axioms:false, Z3 5.1.0)
+github-issue-317-downcast.dfy(8,43): Error: decreases clause might not decrease
+github-issue-317-downcast.dfy(14,0): Error: a postcondition could not be proved on this return path
+github-issue-317-downcast.dfy(13,22): Related location: this is the postcondition that could not be proved
+github-issue-317-downcast.dfy(19,2): Error: a postcondition could not be proved on this return path
+github-issue-317-downcast.dfy(18,26): Related location: this is the postcondition that could not be proved
+github-issue-317-downcast.dfy(20,9): Error: cannot prove termination; try supplying a decreases clause
+
+Dafny program verifier finished with 1 verified, 4 errors
+positive (trait-rank-decreases:false, additional-axioms:true, Z3 5.1.0)
+github-issue-317-positive.dfy(12,63): Error: decreases clause might not decrease
+github-issue-317-positive.dfy(15,20): Error: decreases clause might not decrease
+github-issue-317-positive.dfy(36,38): Error: decreases clause might not decrease
+github-issue-317-positive.dfy(42,19): Error: decreases clause might not decrease
+github-issue-317-positive.dfy(64,27): Error: decreases clause might not decrease
+github-issue-317-positive.dfy(70,19): Error: decreases clause might not decrease
+github-issue-317-positive.dfy(87,33): Error: decreases clause might not decrease
+
+Dafny program verifier finished with 9 verified, 7 errors
+false-control (trait-rank-decreases:false, additional-axioms:true, Z3 5.1.0)
+github-issue-317-false-control.dfy(14,9): Error: decreases clause might not decrease
+github-issue-317-false-control.dfy(27,15): Error: decreases clause might not decrease
+github-issue-317-false-control.dfy(33,9): Error: decreases clause might not decrease
+github-issue-317-false-control.dfy(46,13): Error: decreases clause might not decrease
+github-issue-317-false-control.dfy(58,9): Error: decreases clause might not decrease
+github-issue-317-false-control.dfy(70,12): Error: decreases clause might not decrease
+github-issue-317-false-control.dfy(82,9): Error: decreases clause might not decrease
+github-issue-317-false-control.dfy(89,12): Error: decreases clause might not decrease
+github-issue-317-false-control.dfy(96,12): Error: decreases clause might not decrease
+github-issue-317-false-control.dfy(110,38): Error: decreases clause might not decrease
+github-issue-317-false-control.dfy(117,4): Error: assertion might not hold
+github-issue-317-false-control.dfy(121,57): Error: a postcondition could not be proved on this return path
+github-issue-317-false-control.dfy(120,46): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 11 verified, 12 errors
+downcast (trait-rank-decreases:false, additional-axioms:true, Z3 5.1.0)
+github-issue-317-downcast.dfy(19,2): Error: a postcondition could not be proved on this return path
+github-issue-317-downcast.dfy(18,26): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 3 verified, 1 error
+original (trait-rank-decreases:true, additional-axioms:true, Z3 5.1.0)
+github-issue-317-original.dfy(12,22): Error: decreases clause might not decrease
+
+Dafny program verifier finished with 4 verified, 1 error
+positive (trait-rank-decreases:true, additional-axioms:true, Z3 5.1.0)
+
+Dafny program verifier finished with 16 verified, 0 errors
+false-control (trait-rank-decreases:true, additional-axioms:true, Z3 5.1.0)
+github-issue-317-false-control.dfy(14,9): Error: decreases clause might not decrease
+github-issue-317-false-control.dfy(27,15): Error: decreases clause might not decrease
+github-issue-317-false-control.dfy(46,13): Error: decreases clause might not decrease
+github-issue-317-false-control.dfy(70,12): Error: decreases clause might not decrease
+github-issue-317-false-control.dfy(89,12): Error: decreases clause might not decrease
+github-issue-317-false-control.dfy(96,12): Error: decreases clause might not decrease
+github-issue-317-false-control.dfy(117,4): Error: assertion might not hold
+github-issue-317-false-control.dfy(121,57): Error: a postcondition could not be proved on this return path
+github-issue-317-false-control.dfy(120,46): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 15 verified, 8 errors
+downcast (trait-rank-decreases:true, additional-axioms:true, Z3 5.1.0)
+github-issue-317-downcast.dfy(19,2): Error: a postcondition could not be proved on this return path
+github-issue-317-downcast.dfy(18,26): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 3 verified, 1 error
+trait-pairs (trait-rank-decreases:true, additional-axioms:false, Z3 5.1.0)
+github-issue-317-trait-pairs.dfy(10,32): Error: decreases clause might not decrease
+github-issue-317-trait-pairs.dfy(23,28): Error: decreases clause might not decrease
+github-issue-317-trait-pairs.dfy(29,6): Error: decreases clause might not decrease
+github-issue-317-trait-pairs.dfy(33,6): Error: decreases clause might not decrease
+github-issue-317-trait-pairs.dfy(37,4): Error: decreases clause might not decrease
+
+Dafny program verifier finished with 2 verified, 5 errors
+trait-pairs (trait-rank-decreases:true, additional-axioms:true, Z3 5.1.0)
+github-issue-317-trait-pairs.dfy(29,6): Error: decreases clause might not decrease
+github-issue-317-trait-pairs.dfy(33,6): Error: decreases clause might not decrease
+github-issue-317-trait-pairs.dfy(37,4): Error: decreases clause might not decrease
+
+Dafny program verifier finished with 4 verified, 3 errors
+positive (trait-rank-decreases:true, additional-axioms:true, legacy-decreases-order, Z3 5.1.0)
+github-issue-317-positive.dfy(12,63): Error: decreases clause might not decrease
+github-issue-317-positive.dfy(15,20): Error: decreases clause might not decrease
+github-issue-317-positive.dfy(36,38): Error: decreases clause might not decrease
+github-issue-317-positive.dfy(42,19): Error: decreases clause might not decrease
+github-issue-317-positive.dfy(64,27): Error: decreases clause might not decrease
+github-issue-317-positive.dfy(70,19): Error: decreases clause might not decrease
+github-issue-317-positive.dfy(87,33): Error: decreases clause might not decrease
+
+Dafny program verifier finished with 9 verified, 7 errors

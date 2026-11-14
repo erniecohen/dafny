@@ -494,9 +494,13 @@ namespace Microsoft.Dafny {
 
         if (dt is IndDatatypeDecl) {
           var argType = arg.Type.NormalizeExpand();
-          if (argType.IsDatatype || argType.IsTypeParameter) {
+          // https://github.com/erniecohen/dafny/issues/317: with --additional-axioms, a field whose type is a trait
+          // that is not a reference type is boxed, and gets the same axiom as a type-parameter field.
+          if (argType.IsDatatype || argType.IsTypeParameter ||
+              (IsValueTraitType(argType) && options.Get(CommonOptionBag.AdditionalAxioms))) {
             // for datatype:             axiom (forall params :: {DtRank(#dt.ctor(params))} DtRank(params_i) < DtRank(#dt.ctor(params)));
             // for type-parameter type:  axiom (forall params :: {DtRank(#dt.ctor(params))} BoxRank(params_i) < DtRank(#dt.ctor(params)));
+            // for a non-reference trait: the same as for a type parameter
             CreateBoundVariables(ctor.Formals, out bvs, out args);
             Bpl.Expr lhs = FunctionCall(ctor.Origin, arg.Type.IsDatatype ? BuiltinFunction.DtRank : BuiltinFunction.BoxRank,
               null, args[i]);

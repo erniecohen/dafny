@@ -206,6 +206,13 @@ public class Compilation : IDisposable {
                        DafnyMain.StandardLibrariesDooUri, Project.StartingToken, asLibrary)) {
         result.Add(file);
       }
+
+      if (Options.Get(CommonOptionBag.DecreasesOrders) && DecreasesOrders.TypeSystemSupportsOrders(Options)) {
+        await foreach (var file in DafnyFile.CreateAndValidate(fileSystem, errorReporter, Options,
+                         DafnyMain.StandardLibrariesOrdersDooUri, Project.StartingToken, asLibrary)) {
+          result.Add(file);
+        }
+      }
     }
 
     var libraryPaths = CommonOptionBag.SplitOptionValueIntoFiles(Options.GetOrOptionDefault(CommonOptionBag.Libraries).Select(f => f.FullName));

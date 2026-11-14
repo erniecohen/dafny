@@ -2437,6 +2437,13 @@ or the Dafny 4 syntax (`ghost function` and `function`)
   `synonym-refines-abstract-type = true` in a project file's `[options]` section. See
   [type refinement](#sec-module-refinement).
 
+* `--decreases-orders` - (experimental) accept a decreases component `e by O`, where `O`
+  is a closed ghost expression of the standard library's trait type
+  `Std.Termination.Orders.Wfo<T>` and `e` has type `T`. A call or loop iteration must make
+  `O.gt(old e, e)` true, or leave `e` unchanged. Requires `--type-system-refresh` and
+  `--general-traits=datatype` (or `full`). Disabled by default. Use `decreases-orders = true` in a project file's
+  `[options]` section. See [well-founded orders](#sec-decreases-by).
+
 * `--modular-termination` - (experimental; it does not yet establish termination in every
   program) accept `decreases {:global}` clauses, and reject a call dispatched to a
   bodyless member of a trait whose implementations may lie in other modules unless it
@@ -2698,6 +2705,20 @@ and what information it produces about the verification process.
   if-then-else expressions. Disabled by default;
   `statement-expression-conclusions = true` in a project file's `[options]`
   section. It can change proof costs.
+
+* `--trait-rank-decreases` - in `decreases` clauses, order the values of a
+  trait that is not a reference type (one that does not extend `object`) by
+  structural rank, together with inductive datatypes and sequences. A
+  datatype that extends such a trait can then call a trait member on one of
+  its trait-typed fields: `decreases this` of the datatype is compared with
+  `decreases this` of the trait member, and two values of the trait can be
+  compared with each other. That a trait-typed field of an inductive datatype
+  value is below that value is an axiom of `--additional-axioms`, so most
+  programs need both options. Trait members without a `decreases` clause
+  still get no inferred `decreases this`; write it. No effect with
+  `--legacy-decreases-order`. Disabled by default;
+  `trait-rank-decreases = true` in a project file's `[options]` section. See
+  [the design note](../dev/design/317-datatype-trait-decreases.md).
 
 * `--manual-lemma-induction` - disables automatic inducntion for lemmas
 

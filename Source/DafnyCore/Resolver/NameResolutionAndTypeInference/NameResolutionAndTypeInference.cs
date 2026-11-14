@@ -433,6 +433,13 @@ namespace Microsoft.Dafny {
         e.E.SetOrigin(innerRange);
         e.Type = e.E.Type;
 
+      } else if (expr is DecreasesByExpr) {
+        var e = (DecreasesByExpr)expr;
+        ResolveExpression(e.E, resolutionContext);
+        ResolveExpression(e.Order, resolutionContext);
+        e.ResolvedExpression = e.E;
+        e.Type = e.E.Type;
+
       } else if (expr is ChainingExpression) {
         var e = (ChainingExpression)expr;
         ResolveExpression(e.E, resolutionContext);

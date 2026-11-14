@@ -1,0 +1,55 @@
+the orders library, verified from its sources
+
+Dafny program verifier finished with 7 verified, 0 errors
+positive: functions, methods, loops, mixed components, a user implementation of Wfo
+
+Dafny program verifier finished with 18 verified, 0 errors
+verification errors: wrong direction, another order, an order that is not well-founded, an ill-formed order
+github-issue-245-verify.dfy(16,32): Error: decreases clause might not decrease
+github-issue-245-verify.dfy(24,27): Error: decreases clause might not decrease
+github-issue-245-verify.dfy(31,25): Error: decreases clause might not decrease
+github-issue-245-verify.dfy(42,9): Error: decreases clause might not decrease
+github-issue-245-verify.dfy(54,24): Error: function precondition could not be proved
+github-issue-245-verify.dfy(47,13): Related location: this proposition could not be proved
+github-issue-245-verify.dfy(62,2): Error: decreases expression might not decrease
+
+Dafny program verifier finished with 2 verified, 6 errors
+resolution errors
+github-issue-245-resolve.dfy(10,17): Error: the order O of a decreases component 'e by O' must have type Std.Termination.Orders.Wfo<T> (got (nat, nat) -> bool)
+github-issue-245-resolve.dfy(17,12): Error: the expression of a decreases component 'e by O' must have exactly the element type of O (got int, expected nat)
+github-issue-245-resolve.dfy(24,26): Error: the order O of a decreases component 'e by O' must be closed, but it mentions variable 'k'
+github-issue-245-resolve.dfy(38,33): Error: the order O of a decreases component 'e by O' must have type Std.Termination.Orders.Wfo<T> (got WfoOf<nat>)
+github-issue-245-resolve.dfy(53,27): Error: 'Helper' has a decreases component 'e by O', so it is treated as calling Wfo.gt; it must not be mutually recursive with Wfo.gt or its overrides
+github-issue-245-resolve.dfy(31,12): Error: a decreases component 'e by O' is not allowed in the decreases clause of an iterator
+6 resolution/type errors detected in github-issue-245-resolve.dfy
+in a clause of --modular-termination
+github-issue-245-global.dfy(7,22): Error: a decreases component 'e by O' is not allowed in a '{:global}' clause
+1 resolution/type errors detected in github-issue-245-global.dfy
+with --legacy-decreases-order
+github-issue-245.dfy(48,12): Error: a decreases component 'e by O' cannot be used with --legacy-decreases-order
+github-issue-245.dfy(55,12): Error: a decreases component 'e by O' cannot be used with --legacy-decreases-order
+github-issue-245.dfy(66,14): Error: a decreases component 'e by O' cannot be used with --legacy-decreases-order
+github-issue-245.dfy(75,12): Error: a decreases component 'e by O' cannot be used with --legacy-decreases-order
+github-issue-245.dfy(87,12): Error: a decreases component 'e by O' cannot be used with --legacy-decreases-order
+github-issue-245.dfy(94,12): Error: a decreases component 'e by O' cannot be used with --legacy-decreases-order
+github-issue-245.dfy(125,12): Error: a decreases component 'e by O' cannot be used with --legacy-decreases-order
+7 resolution/type errors detected in github-issue-245.dfy
+without --type-system-refresh and --general-traits=datatype
+github-issue-245.dfy(48,14): Error: a decreases component of the form 'e by O' requires --type-system-refresh and --general-traits=datatype, since the orders are values of the trait Std.Termination.Orders.Wfo
+github-issue-245.dfy(55,14): Error: a decreases component of the form 'e by O' requires --type-system-refresh and --general-traits=datatype, since the orders are values of the trait Std.Termination.Orders.Wfo
+github-issue-245.dfy(66,16): Error: a decreases component of the form 'e by O' requires --type-system-refresh and --general-traits=datatype, since the orders are values of the trait Std.Termination.Orders.Wfo
+github-issue-245.dfy(75,14): Error: a decreases component of the form 'e by O' requires --type-system-refresh and --general-traits=datatype, since the orders are values of the trait Std.Termination.Orders.Wfo
+github-issue-245.dfy(87,14): Error: a decreases component of the form 'e by O' requires --type-system-refresh and --general-traits=datatype, since the orders are values of the trait Std.Termination.Orders.Wfo
+github-issue-245.dfy(94,14): Error: a decreases component of the form 'e by O' requires --type-system-refresh and --general-traits=datatype, since the orders are values of the trait Std.Termination.Orders.Wfo
+github-issue-245.dfy(101,47): Error: datatype extending traits is not yet enabled by default; use --general-traits=datatype to enable it
+github-issue-245.dfy(125,14): Error: a decreases component of the form 'e by O' requires --type-system-refresh and --general-traits=datatype, since the orders are values of the trait Std.Termination.Orders.Wfo
+8 parse errors detected in github-issue-245.dfy
+without --decreases-orders
+github-issue-245.dfy(48,14): Error: a decreases component of the form 'e by O' requires the option --decreases-orders
+github-issue-245.dfy(55,14): Error: a decreases component of the form 'e by O' requires the option --decreases-orders
+github-issue-245.dfy(66,16): Error: a decreases component of the form 'e by O' requires the option --decreases-orders
+github-issue-245.dfy(75,14): Error: a decreases component of the form 'e by O' requires the option --decreases-orders
+github-issue-245.dfy(87,14): Error: a decreases component of the form 'e by O' requires the option --decreases-orders
+github-issue-245.dfy(94,14): Error: a decreases component of the form 'e by O' requires the option --decreases-orders
+github-issue-245.dfy(125,14): Error: a decreases component of the form 'e by O' requires the option --decreases-orders
+7 parse errors detected in github-issue-245.dfy
