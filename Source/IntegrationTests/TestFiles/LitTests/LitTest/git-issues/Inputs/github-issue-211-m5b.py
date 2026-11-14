@@ -168,15 +168,15 @@ PREMISE_FREE = write('premise-free', """module PremiseFree {
 }
 """)
 
-# Producer: the real Axioms and RealCompleteness, with the trust list.  The record lists the seven
+# Producer: the real Axioms and RealCompleteness, with the trust list.  The record lists the nine
 # premises of Std.Axioms, and the build says that its results assume them.
 build('trusted', [str(std / 'Axioms.dfy'), str(real_completeness)], trust,
-      diagnostic='these results assume 7 trusted premises of the standard-library trust list, in this library')
+      diagnostic='these results assume 9 trusted premises of the standard-library trust list, in this library')
 manifest = entries(doo('trusted'))['manifest.toml']
 record = tomllib.loads(manifest)['modular_termination']
 premises = [(p['id'], p['kind']) for p in record.get('premises', [])]
 print('trusted record: schema %s, trust list %s, premises %s' % (record.get('schema'), record.get('trust_list'), premises))
-if record.get('schema') != 2 or len(premises) != 7 or record_digest(manifest) != record.get('record_sha256'):
+if record.get('schema') != 2 or len(premises) != 9 or record_digest(manifest) != record.get('record_sha256'):
     failures.append('trusted: unexpected record')
 
 # Producer: the same library without the trust list, and the negative controls with it.
@@ -207,11 +207,11 @@ build('assume', [str(std / 'Axioms.dfy'), str(real_completeness), write('assume'
 # Consumer: a client admits the trusted library only when it opts in to the same trust list, and its
 # summary and audit then name the premises.
 verify('client opted in', [doo('trusted')], CLIENT, 0,
-       'Under --modular-termination these results assume 7 trusted premises of the standard-library trust list, from 1 library',
+       'Under --modular-termination these results assume 9 trusted premises of the standard-library trust list, from 1 library',
        extra=[trust])
 verify('client not opted in', [doo('trusted')], CLIENT, 1,
        'it relies on the trusted premise Std.Axioms.FunctionExtensionality.Nullary of the standard-library trust list '
-       'and 6 more; use --modular-termination-trust:standard-library to admit it')
+       'and 8 more; use --modular-termination-trust:standard-library to admit it')
 verify('client trust none', [doo('trusted')], CLIENT, 1, 'use --modular-termination-trust:standard-library',
        extra=['--modular-termination-trust:none'])
 run('client audit', ['audit', '--modular-termination', trust, '--library', doo('trusted'), CLIENT], 0,

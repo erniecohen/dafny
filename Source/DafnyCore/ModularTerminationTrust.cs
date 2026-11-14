@@ -64,9 +64,9 @@ public static class ModularTerminationTrustList {
   private const string OrdinalLemmaReason =
     "A fact of ordinal arithmetic that holds for Dafny's ORDINAL, which Dafny axiomatizes only partially; " +
     "https://github.com/erniecohen/dafny/issues/211";
-  private const string OrdinalFunctionReason =
-    "The ordinal it specifies exists for every argument; a ghost-function premise, global wherever the function is in " +
-    "context, to be restated as a lemma in Std.Axioms: https://github.com/erniecohen/dafny/issues/354";
+  private const string OrdinalAxiomReason =
+    "Infinity and replacement hold of the ordinals, Dafny's model of ORDINAL, and are consistent with its encoding; " +
+    "Std.Ordinal proves Omega, PlusLimit and TimesLimit from them; https://github.com/erniecohen/dafny/issues/354";
   private const string CharsConsistentReason =
     "The two literal tables of HexConversion are inverse to each other, which holds by inspection but is too large to " +
     "verify; https://github.com/erniecohen/dafny/issues/211";
@@ -75,24 +75,23 @@ public static class ModularTerminationTrustList {
   /// Version 1 of the standard-library trust list, sorted by id.
   /// </summary>
   private static readonly ModularTerminationTrustEntry[] StandardLibraryEntries = [
-    new("Std.Axioms.FunctionExtensionality.Nullary", LemmaKind, "d847a8f43ab034e6351057339e883677f7a3d6473fbbeea1d9df72bc02563c3b", "1636b8699d1e29257e77fd100c8d8d96d6133d5d2dac60e6486489a4b7989726", ExtensionalityReason),
-    new("Std.Axioms.FunctionExtensionality.OnBool", LemmaKind, "772bcd4f033814446e3ad02282ab8902356b1ba8477e259112292bf9bfe8dab9", "1636b8699d1e29257e77fd100c8d8d96d6133d5d2dac60e6486489a4b7989726", ExtensionalityReason),
-    new("Std.Axioms.FunctionExtensionality.OnInt", LemmaKind, "93a569e38f30f6e3a6f15cddf676bc379dbb21647a6a127a58ceb79ba37adbfd", "1636b8699d1e29257e77fd100c8d8d96d6133d5d2dac60e6486489a4b7989726", ExtensionalityReason),
-    new("Std.Axioms.FunctionExtensionality.OnIntInt", LemmaKind, "cc5d28bb3befc12237a9421e21db95ee1a5709f67b8899cba9f36f2cfc0d18ba", "1636b8699d1e29257e77fd100c8d8d96d6133d5d2dac60e6486489a4b7989726", ExtensionalityReason),
-    new("Std.Axioms.FunctionExtensionality.OnOrdinal", LemmaKind, "4927c8b108ac8b93ee73d7ac5a9c39be319124f392a4e0a1fbd7f253e3da734e", "1636b8699d1e29257e77fd100c8d8d96d6133d5d2dac60e6486489a4b7989726", ExtensionalityReason),
-    new("Std.Axioms.FunctionExtensionality.OnReal", LemmaKind, "64581d25e05bef3d70c3b14c221b08c070c92c79dd35576e3dcee6f34eda8629", "1636b8699d1e29257e77fd100c8d8d96d6133d5d2dac60e6486489a4b7989726", ExtensionalityReason),
-    new("Std.Axioms.Reals.Complete", LemmaKind, "9e1506689a1fd764e248bf557e7a7c92a55454283bfb64a636de52fa50cc94d8", "1636b8699d1e29257e77fd100c8d8d96d6133d5d2dac60e6486489a4b7989726", CompletenessReason),
-    new("Std.Ordinal.Omega", GhostFunctionKind, "948b1f6d5a8b4f4b9312933dfff0093be111a6f74a9376d78400c22f5c014389", "d8a4b039f1dc4bb4508ed7819d8bf354a0b0f7441a2d0d6d09b3ca81ffe85b48", OrdinalFunctionReason),
-    new("Std.Ordinal.PlusDefinition", LemmaKind, "eb219ababb1ca42a8fc32cec0bb4f7de27d4098af5e7f080ee5c55464376b452", "d8a4b039f1dc4bb4508ed7819d8bf354a0b0f7441a2d0d6d09b3ca81ffe85b48", OrdinalLemmaReason),
-    new("Std.Ordinal.PlusIncreasingOnLeft", LemmaKind, "a532b56910d471ffd1ede250e6a64c1572a31b76545980cb395aa6020815646e", "d8a4b039f1dc4bb4508ed7819d8bf354a0b0f7441a2d0d6d09b3ca81ffe85b48", OrdinalLemmaReason),
-    new("Std.Ordinal.PlusIsAssociative", LemmaKind, "77370263028849d94c8e3c9710fde5b31232a702f573f3c8d058eac6737727fe", "d8a4b039f1dc4bb4508ed7819d8bf354a0b0f7441a2d0d6d09b3ca81ffe85b48", OrdinalLemmaReason),
-    new("Std.Ordinal.PlusLimit", GhostFunctionKind, "395070463fa7bfc87ddde31f3deb02db6cbe1c6a4e1d06793aeb99b9e3543626", "d8a4b039f1dc4bb4508ed7819d8bf354a0b0f7441a2d0d6d09b3ca81ffe85b48", OrdinalFunctionReason),
-    new("Std.Ordinal.PlusStrictlyIncreasingOnRight", LemmaKind, "24d9b13ef2469074d4bd8ba66fe607c560f7c813803e771b3c76312dd9bda89f", "d8a4b039f1dc4bb4508ed7819d8bf354a0b0f7441a2d0d6d09b3ca81ffe85b48", OrdinalLemmaReason),
-    new("Std.Ordinal.Succ", LemmaKind, "f084528542d58077ea04de89f273af2ac82fc78c049f2d86624c2a0350e51948", "d8a4b039f1dc4bb4508ed7819d8bf354a0b0f7441a2d0d6d09b3ca81ffe85b48", OrdinalLemmaReason),
-    new("Std.Ordinal.TimesDistributesOnLeft", LemmaKind, "e4528df57f3ab44e10ea5d0a42610107732cec0172ffde1e92ff363cda245a1e", "d8a4b039f1dc4bb4508ed7819d8bf354a0b0f7441a2d0d6d09b3ca81ffe85b48", OrdinalLemmaReason),
-    new("Std.Ordinal.TimesIncreasingOnLeft", LemmaKind, "5b44809184e1ea84953d2f61873429ff46f1eced6764ce83c42943e3f419dcba", "d8a4b039f1dc4bb4508ed7819d8bf354a0b0f7441a2d0d6d09b3ca81ffe85b48", OrdinalLemmaReason),
-    new("Std.Ordinal.TimesLimit", GhostFunctionKind, "d635cfd447a7fb6b776f4fdfca1b03efddca8dbcdfd9905e0c7ab13fdba95a55", "d8a4b039f1dc4bb4508ed7819d8bf354a0b0f7441a2d0d6d09b3ca81ffe85b48", OrdinalFunctionReason),
-    new("Std.Ordinal.TimesStrictlyIncreasingOnRight", LemmaKind, "4e847365a9b4f1b806e2fb45138549f586e5de74ba272f064f5fa6de94c5f31e", "d8a4b039f1dc4bb4508ed7819d8bf354a0b0f7441a2d0d6d09b3ca81ffe85b48", OrdinalLemmaReason),
+    new("Std.Axioms.FunctionExtensionality.Nullary", LemmaKind, "d847a8f43ab034e6351057339e883677f7a3d6473fbbeea1d9df72bc02563c3b", "4b66711dad2babe233eaf16094f97f8c508c46b1a06130a3462a4be3e71d7691", ExtensionalityReason),
+    new("Std.Axioms.FunctionExtensionality.OnBool", LemmaKind, "772bcd4f033814446e3ad02282ab8902356b1ba8477e259112292bf9bfe8dab9", "4b66711dad2babe233eaf16094f97f8c508c46b1a06130a3462a4be3e71d7691", ExtensionalityReason),
+    new("Std.Axioms.FunctionExtensionality.OnInt", LemmaKind, "93a569e38f30f6e3a6f15cddf676bc379dbb21647a6a127a58ceb79ba37adbfd", "4b66711dad2babe233eaf16094f97f8c508c46b1a06130a3462a4be3e71d7691", ExtensionalityReason),
+    new("Std.Axioms.FunctionExtensionality.OnIntInt", LemmaKind, "cc5d28bb3befc12237a9421e21db95ee1a5709f67b8899cba9f36f2cfc0d18ba", "4b66711dad2babe233eaf16094f97f8c508c46b1a06130a3462a4be3e71d7691", ExtensionalityReason),
+    new("Std.Axioms.FunctionExtensionality.OnOrdinal", LemmaKind, "4927c8b108ac8b93ee73d7ac5a9c39be319124f392a4e0a1fbd7f253e3da734e", "4b66711dad2babe233eaf16094f97f8c508c46b1a06130a3462a4be3e71d7691", ExtensionalityReason),
+    new("Std.Axioms.FunctionExtensionality.OnReal", LemmaKind, "64581d25e05bef3d70c3b14c221b08c070c92c79dd35576e3dcee6f34eda8629", "4b66711dad2babe233eaf16094f97f8c508c46b1a06130a3462a4be3e71d7691", ExtensionalityReason),
+    new("Std.Axioms.Ordinals.Infinite", LemmaKind, "aed51e4d10676252a263be19ffd749fee717af923eb911c0381b0f52458bf31f", "4b66711dad2babe233eaf16094f97f8c508c46b1a06130a3462a4be3e71d7691", OrdinalAxiomReason),
+    new("Std.Axioms.Ordinals.Replacement", LemmaKind, "1a235ca5cda70c581ecc2e1999d32ddd51f50ff521ab0de1841ad937c8853c71", "4b66711dad2babe233eaf16094f97f8c508c46b1a06130a3462a4be3e71d7691", OrdinalAxiomReason),
+    new("Std.Axioms.Reals.Complete", LemmaKind, "9e1506689a1fd764e248bf557e7a7c92a55454283bfb64a636de52fa50cc94d8", "4b66711dad2babe233eaf16094f97f8c508c46b1a06130a3462a4be3e71d7691", CompletenessReason),
+    new("Std.Ordinal.PlusDefinition", LemmaKind, "eb219ababb1ca42a8fc32cec0bb4f7de27d4098af5e7f080ee5c55464376b452", "1e89b2229497a7de8f7cb739e3dd1d25dc34ee541c310080dba73b24fcb5cf4b", OrdinalLemmaReason),
+    new("Std.Ordinal.PlusIncreasingOnLeft", LemmaKind, "a532b56910d471ffd1ede250e6a64c1572a31b76545980cb395aa6020815646e", "1e89b2229497a7de8f7cb739e3dd1d25dc34ee541c310080dba73b24fcb5cf4b", OrdinalLemmaReason),
+    new("Std.Ordinal.PlusIsAssociative", LemmaKind, "77370263028849d94c8e3c9710fde5b31232a702f573f3c8d058eac6737727fe", "1e89b2229497a7de8f7cb739e3dd1d25dc34ee541c310080dba73b24fcb5cf4b", OrdinalLemmaReason),
+    new("Std.Ordinal.PlusStrictlyIncreasingOnRight", LemmaKind, "24d9b13ef2469074d4bd8ba66fe607c560f7c813803e771b3c76312dd9bda89f", "1e89b2229497a7de8f7cb739e3dd1d25dc34ee541c310080dba73b24fcb5cf4b", OrdinalLemmaReason),
+    new("Std.Ordinal.Succ", LemmaKind, "f084528542d58077ea04de89f273af2ac82fc78c049f2d86624c2a0350e51948", "1e89b2229497a7de8f7cb739e3dd1d25dc34ee541c310080dba73b24fcb5cf4b", OrdinalLemmaReason),
+    new("Std.Ordinal.TimesDistributesOnLeft", LemmaKind, "e4528df57f3ab44e10ea5d0a42610107732cec0172ffde1e92ff363cda245a1e", "1e89b2229497a7de8f7cb739e3dd1d25dc34ee541c310080dba73b24fcb5cf4b", OrdinalLemmaReason),
+    new("Std.Ordinal.TimesIncreasingOnLeft", LemmaKind, "5b44809184e1ea84953d2f61873429ff46f1eced6764ce83c42943e3f419dcba", "1e89b2229497a7de8f7cb739e3dd1d25dc34ee541c310080dba73b24fcb5cf4b", OrdinalLemmaReason),
+    new("Std.Ordinal.TimesStrictlyIncreasingOnRight", LemmaKind, "4e847365a9b4f1b806e2fb45138549f586e5de74ba272f064f5fa6de94c5f31e", "1e89b2229497a7de8f7cb739e3dd1d25dc34ee541c310080dba73b24fcb5cf4b", OrdinalLemmaReason),
     new("Std.Strings.HexConversion.CharsConsistent", LemmaKind, "b6e08ac0a93292eb9cccc3b0de7b02effc370cac04f7f5480b5e610c2a1aa3f4", "e923bd6bfce672a1303b2c70285db99055865236562a926348e5db9b9806968d", CharsConsistentReason),
   ];
 
