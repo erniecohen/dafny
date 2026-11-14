@@ -307,8 +307,8 @@ verify('client of opaque', [doo('opaque')], 'client-opaque', 0)
 build('opacity-opaque', source('opacity'), '--default-function-opacity', 'opaque')
 build('opacity-auto', source('opacity'), '--default-function-opacity', 'autoRevealDependencies')
 
-# Producer: {:auto_generated} and {:opaque_reveal} written by the user.  The serialization drops a member
-# that has {:auto_generated}, and the inventory skipped it.  Before, both got a complete record and a client
+# Producer: {:auto_generated} and {:opaque_reveal} written by the user.  The serialization dropped a member
+# that has {:auto_generated} (until https://github.com/erniecohen/dafny/issues/325), and the inventory skipped it.  Before, both got a complete record and a client
 # proved false; the second has no assumption at all.  The stored program is also verified again, which
 # refuses the second form by itself.
 build('forged-reveal', source('forged-reveal'), expected_exit=3,

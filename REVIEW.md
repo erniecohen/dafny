@@ -659,3 +659,19 @@ decomposition facts explicitly, use existing encoding identities while keeping
 bitvector definitions opaque, and separate parser and encoding proof steps.
 They preserve the specifications and existing resource limits. Every additional
 assertion and lemma call is verified; they introduce no axiom or assumption.
+
+## User-written `{:auto_generated}` and `{:opaque_reveal}` ([issue 325](https://github.com/erniecohen/dafny/issues/325))
+
+Dafny marks the declarations it generates, such as the reveal lemmas of opaque members, with
+`{:auto_generated}` and `{:opaque_reveal}`, but a user can write those attributes too. Three
+places read the attributes as proof that Dafny generated a declaration. The library printer left
+every `{:auto_generated}` member out of a `.doo`, so a user-written member that shadowed an
+imported name disappeared and a client proved `false` from the stored contracts. The trait check
+let a class leave a `{:opaque_reveal}` trait lemma unimplemented, so a call to it assumed its
+postcondition. The auditor did not report `{:axiom}` or `{:verify false}` beside
+`{:auto_generated}`. All three now ask `Declaration.IsGeneratedByDafny`: the attribute and an
+origin that only Dafny makes. Its kind is **weakens only**; no fact or axiom is added, and a
+program that does not write these attributes is unchanged. The hidden
+`--legacy-auto-generated-attributes` option restores the old behaviour of all three for comparison
+and migration. The regression is `git-issues/github-issue-325.dfy`; the release note is
+`docs/dev/news/325.fix`.
