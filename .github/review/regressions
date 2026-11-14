@@ -524,3 +524,6 @@ git-issues/github-issue-47.dfy
 # be a datatype is a bound variable without default type decisions, so an earlier newtype literal
 # keeps its contextual type (https://github.com/erniecohen/dafny/issues/48).
 git-issues/github-issue-48.dfy
+
+# Well-founded orders in decreases clauses, "e by O" with --decreases-orders (https://github.com/erniecohen/dafny/issues/245).
+git-issues/github-issue-245.dfy

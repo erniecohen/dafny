@@ -752,8 +752,11 @@ DecreasesClause(allowWildcard, allowLambda) =
   "decreases" { Attribute } DecreasesList(allowWildcard, allowLambda)
 
 DecreasesList(allowWildcard, allowLambda) =
-  PossiblyWildExpression(allowLambda, allowWildcard)
-  { "," PossiblyWildExpression(allowLambda, allowWildcard) }
+  PossiblyWildExpression(allowLambda, allowWildcard) [ DecreasesOrder ]
+  { "," PossiblyWildExpression(allowLambda, allowWildcard) [ DecreasesOrder ] }
+
+DecreasesOrder =  // requires --decreases-orders
+  "by" Expression(allowLemma: false, allowLambda: true)
 
 PossiblyWildExpression(allowLambda, allowWild) =
   ( "*"  // if allowWild is false, using '*' provokes an error
