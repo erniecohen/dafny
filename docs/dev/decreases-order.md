@@ -46,6 +46,13 @@ new axioms or a mechanized proof of the translator.
   and `<=` there. Equality of ranks always admits the suffix, including across
   representations. Strict rank descent is well-founded and the numeric laws
   prove absorption, even through alternating sequence/datatype representations.
+* **Traits that are not reference types** (only with `--trait-rank-decreases`):
+  their values join the sequence and inductive-datatype family through
+  `BoxRank`, with `<` and `<=` on ranks. In the model, `BoxRank` of a boxed
+  datatype value or sequence is its rank and of any other value `0`, so the
+  family's laws are unchanged
+  ([`design/317-datatype-trait-decreases.md`](design/317-datatype-trait-decreases.md)).
+  Without the option they have no order.
 * **ORDINAL:** ordinary ordinal `<` and its reflexive closure. Ordinal order is
   transitive and well-founded, so both absorption laws hold, including at limits.
 * **Equality-only families:** infinite sets/maps, arrows, abstract values and

@@ -2698,6 +2698,20 @@ and what information it produces about the verification process.
   `statement-expression-conclusions = true` in a project file's `[options]`
   section. It can change proof costs.
 
+* `--trait-rank-decreases` - in `decreases` clauses, order the values of a
+  trait that is not a reference type (one that does not extend `object`) by
+  structural rank, together with inductive datatypes and sequences. A
+  datatype that extends such a trait can then call a trait member on one of
+  its trait-typed fields: `decreases this` of the datatype is compared with
+  `decreases this` of the trait member, and two values of the trait can be
+  compared with each other. That a trait-typed field of an inductive datatype
+  value is below that value is an axiom of `--additional-axioms`, so most
+  programs need both options. Trait members without a `decreases` clause
+  still get no inferred `decreases this`; write it. No effect with
+  `--legacy-decreases-order`. Disabled by default;
+  `trait-rank-decreases = true` in a project file's `[options]` section. See
+  [the design note](../dev/design/317-datatype-trait-decreases.md).
+
 * `--manual-lemma-induction` - disables automatic inducntion for lemmas
 
 * `--isolate-assertions` - verify assertions individually

@@ -140,6 +140,7 @@ cli	system-module	--system-module	System.CommandLine.Option`1[Microsoft.Dafny.Co
 cli	target	--target,-t	System.CommandLine.Option`1[System.String]	command-setup	setup or another command; executes before/outside proof transport
 cli	test-assumptions	--test-assumptions	System.CommandLine.Option`1[Microsoft.Dafny.CommonOptionBag+TestAssumptionsMode]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	track-print-effects	--track-print-effects	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
+cli	trait-rank-decreases	--trait-rank-decreases	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	translate-standard-library	--translate-standard-library	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	translation-record	--translation-record	System.CommandLine.Option`1[System.Collections.Generic.IList`1[System.IO.FileInfo]]	command-setup	setup or another command; executes before/outside proof transport
 cli	translation-record-output	--translation-record-output	System.CommandLine.Option`1[System.IO.FileInfo]	command-setup	setup or another command; executes before/outside proof transport

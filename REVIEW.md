@@ -166,6 +166,31 @@ program, positive and `ensures false` fixtures under both resolvers and both set
 fixture per circular route, with a false-derivation attempt, with the option on.  The release
 note is `docs/dev/news/326.feat`.
 
+## Datatypes and the traits they extend in one decreases order ([issue 317](https://github.com/erniecohen/dafny/issues/317))
+
+A trait that does not extend `object` had no order in `decreases` clauses, so in a datatype that
+extends it, `decreases this` could not be compared with `decreases this` of a trait member called
+on a trait-typed field, and the termination check was `assert false`.  With the new option
+`--trait-rank-decreases` (`BoogieGenerator.Decreases.cs`), the values of such traits join the
+structural-rank family of sequences and inductive datatypes through `BoxRank`:
+`CompatibleDecreasesTypesForComparison` accepts the pairs, `RankFunction` returns `BoxRank`, and
+`ComputeLessEq` compares two trait values by `BoxRank`.  The comparison takes its types from the
+callee's decreases expressions as translated, since a trait-typed formal can receive a datatype
+argument.  It is a change to the language's termination order, so it has its own option, and it
+has no effect with `--legacy-decreases-order`.  With `--additional-axioms`, a trait-typed field of
+an inductive datatype constructor gets the type-parameter field axiom
+`BoxRank(field) < DtRank(#C(..))` (`BoogieGenerator.DataTypes.cs`); its kind is **asserts**.  The
+model interprets `BoxRank` of a boxed datatype value or sequence as its rank and of any other
+value as `0`; every rank axiom holds there, and the comparisons are ordinal comparisons of that
+rank, a well-founded component pair that the existing tuple argument lifts
+([`docs/dev/design/317-datatype-trait-decreases.md`](docs/dev/design/317-datatype-trait-decreases.md),
+which also covers cycles through two datatypes and implementations by classes and codatatypes).
+Inference is unchanged: a trait member without a `decreases` clause still needs `decreases this`.
+With both options off the translation is unchanged.  The regression is
+`git-issues/github-issue-317.dfy`: the issue's program, positive, false-control and downcast
+fixtures with each option off and on, trait-value pairs with the option on, and the positive file
+under `--legacy-decreases-order`.  The release note is `docs/dev/news/317.feat`.
+
 ## Review follow-up (https://github.com/erniecohen/dafny/issues/23)
 
 The glued-map elements guard now uses the glued map's domain. The domain axiom

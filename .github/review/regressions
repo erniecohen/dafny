@@ -498,3 +498,7 @@ git-issues/github-issue-315.dfy
 # and the empty domain, and the completeness of real, moved there from Std.RealCompleteness
 # (https://github.com/erniecohen/dafny/issues/34).
 git-issues/github-issue-34.dfy
+
+# Datatype and trait in one decreases order under --trait-rank-decreases, and the rank of trait-typed datatype
+# fields under --additional-axioms (https://github.com/erniecohen/dafny/issues/317).
+git-issues/github-issue-317.dfy
