@@ -4,11 +4,11 @@
 // RUN: %diff "%s.expect" "%t"
 
 // Std.RealCompleteness (#205): least upper bounds of sets of reals, from one
-// trusted lemma, Complete.  This file uses it for the supremum of an interval and
-// for the intermediate value theorem for polynomials of arbitrary degree, given
-// as coefficient sequences.  Inputs/github-issue-205-negative.dfy has the
-// vacuity controls.  The audit lists the standard library's assumptions, among
-// which Complete is the only one this module adds.
+// trusted lemma, Std.Axioms.Reals.Complete.  This file uses it for the supremum of
+// an interval and for the intermediate value theorem for polynomials of arbitrary
+// degree, given as coefficient sequences.  Inputs/github-issue-205-negative.dfy has
+// the vacuity controls.  The audit lists the standard library's assumptions, which
+// include Std.Axioms (issue 34): Reals.Complete and the function-extensionality lemmas.
 
 import opened Std.RealCompleteness
 

@@ -7,17 +7,17 @@ github-issue-205-negative.dfy(45,2): Error: assertion might not hold
 github-issue-205-negative.dfy(54,2): Error: assertion might not hold
 
 Dafny program verifier finished with 0 verified, 5 errors
-DafnyStandardLibraries.dfy(15547,26): Warning: Omega: Declaration has explicit `{:axiom}` attribute. Possible mitigation: Provide a proof or test.
-DafnyStandardLibraries.dfy(15552,17): Warning: Succ: Declaration has explicit `{:axiom}` attribute. Possible mitigation: Provide a proof or test.
-DafnyStandardLibraries.dfy(15555,26): Warning: PlusLimit: Declaration has explicit `{:axiom}` attribute. Possible mitigation: Provide a proof or test.
-DafnyStandardLibraries.dfy(15571,17): Warning: PlusDefinition: Declaration has explicit `{:axiom}` attribute. Possible mitigation: Provide a proof or test.
-DafnyStandardLibraries.dfy(15574,17): Warning: PlusStrictlyIncreasingOnRight: Declaration has explicit `{:axiom}` attribute. Possible mitigation: Provide a proof or test.
-DafnyStandardLibraries.dfy(15579,17): Warning: PlusIncreasingOnLeft: Declaration has explicit `{:axiom}` attribute. Possible mitigation: Provide a proof or test.
-DafnyStandardLibraries.dfy(15599,17): Warning: PlusIsAssociative: Declaration has explicit `{:axiom}` attribute. Possible mitigation: Provide a proof or test.
-DafnyStandardLibraries.dfy(15603,26): Warning: TimesLimit: Declaration has explicit `{:axiom}` attribute. Possible mitigation: Provide a proof or test.
-DafnyStandardLibraries.dfy(15634,17): Warning: TimesStrictlyIncreasingOnRight: Declaration has explicit `{:axiom}` attribute. Possible mitigation: Provide a proof or test.
-DafnyStandardLibraries.dfy(15639,17): Warning: TimesIncreasingOnLeft: Declaration has explicit `{:axiom}` attribute. Possible mitigation: Provide a proof or test.
-DafnyStandardLibraries.dfy(15643,17): Warning: TimesDistributesOnLeft: Declaration has explicit `{:axiom}` attribute. Possible mitigation: Provide a proof or test.
+DafnyStandardLibraries.dfy(15590,26): Warning: Omega: Declaration has explicit `{:axiom}` attribute. Possible mitigation: Provide a proof or test.
+DafnyStandardLibraries.dfy(15595,17): Warning: Succ: Declaration has explicit `{:axiom}` attribute. Possible mitigation: Provide a proof or test.
+DafnyStandardLibraries.dfy(15598,26): Warning: PlusLimit: Declaration has explicit `{:axiom}` attribute. Possible mitigation: Provide a proof or test.
+DafnyStandardLibraries.dfy(15614,17): Warning: PlusDefinition: Declaration has explicit `{:axiom}` attribute. Possible mitigation: Provide a proof or test.
+DafnyStandardLibraries.dfy(15617,17): Warning: PlusStrictlyIncreasingOnRight: Declaration has explicit `{:axiom}` attribute. Possible mitigation: Provide a proof or test.
+DafnyStandardLibraries.dfy(15622,17): Warning: PlusIncreasingOnLeft: Declaration has explicit `{:axiom}` attribute. Possible mitigation: Provide a proof or test.
+DafnyStandardLibraries.dfy(15642,17): Warning: PlusIsAssociative: Declaration has explicit `{:axiom}` attribute. Possible mitigation: Provide a proof or test.
+DafnyStandardLibraries.dfy(15646,26): Warning: TimesLimit: Declaration has explicit `{:axiom}` attribute. Possible mitigation: Provide a proof or test.
+DafnyStandardLibraries.dfy(15677,17): Warning: TimesStrictlyIncreasingOnRight: Declaration has explicit `{:axiom}` attribute. Possible mitigation: Provide a proof or test.
+DafnyStandardLibraries.dfy(15682,17): Warning: TimesIncreasingOnLeft: Declaration has explicit `{:axiom}` attribute. Possible mitigation: Provide a proof or test.
+DafnyStandardLibraries.dfy(15686,17): Warning: TimesDistributesOnLeft: Declaration has explicit `{:axiom}` attribute. Possible mitigation: Provide a proof or test.
 DafnyStandardLibraries.dfy(34,38): Warning: Action: Trait method calls may not terminate (uses `@AssumeCrossModuleTermination`). Possible mitigation: Remove if possible.
 DafnyStandardLibraries.dfy(119,38): Warning: TotalActionProof: Trait method calls may not terminate (uses `@AssumeCrossModuleTermination`). Possible mitigation: Remove if possible.
 DafnyStandardLibraries.dfy(128,38): Warning: DefaultTotalActionProof: Trait method calls may not terminate (uses `@AssumeCrossModuleTermination`). Possible mitigation: Remove if possible.
@@ -48,19 +48,25 @@ DafnyStandardLibraries-notarget.dfy(61,28): Warning: Put: Declaration has explic
 DafnyStandardLibraries-notarget.dfy(65,4): Warning: _ctor: Declaration has explicit `{:axiom}` attribute. Possible mitigation: Provide a proof or test.
 DafnyStandardLibraries-notarget.dfy(67,28): Warning: Lock: Declaration has explicit `{:axiom}` attribute. Possible mitigation: Provide a proof or test.
 DafnyStandardLibraries-notarget.dfy(69,28): Warning: Unlock: Declaration has explicit `{:axiom}` attribute. Possible mitigation: Provide a proof or test.
-DafnyStandardLibraries.dfy(17531,17): Warning: CharsConsistent: Declaration has explicit `{:axiom}` attribute. Possible mitigation: Provide a proof or test.
-DafnyStandardLibraries.dfy(18231,4): Warning: CharIsUnicodeScalarValue: Definition has `assume {:axiom}` statement in body. Possible mitigation: Replace with `assert` and prove.
+DafnyStandardLibraries.dfy(17588,17): Warning: CharsConsistent: Declaration has explicit `{:axiom}` attribute. Possible mitigation: Provide a proof or test.
+DafnyStandardLibraries.dfy(18288,4): Warning: CharIsUnicodeScalarValue: Definition has `assume {:axiom}` statement in body. Possible mitigation: Replace with `assert` and prove.
 DafnyStandardLibraries.dfy(502,38): Warning: BulkAction: Trait method calls may not terminate (uses `@AssumeCrossModuleTermination`). Possible mitigation: Remove if possible.
 DafnyStandardLibraries.dfy(522,38): Warning: BatchReader: Trait method calls may not terminate (uses `@AssumeCrossModuleTermination`). Possible mitigation: Remove if possible.
 DafnyStandardLibraries.dfy(710,38): Warning: BatchSeqWriter: Trait method calls may not terminate (uses `@AssumeCrossModuleTermination`). Possible mitigation: Remove if possible.
 DafnyStandardLibraries.dfy(795,38): Warning: BatchSeqWriterTotalProof: Trait method calls may not terminate (uses `@AssumeCrossModuleTermination`). Possible mitigation: Remove if possible.
 DafnyStandardLibraries.dfy(847,38): Warning: BatchArrayWriter: Trait method calls may not terminate (uses `@AssumeCrossModuleTermination`). Possible mitigation: Remove if possible.
 DafnyStandardLibraries.dfy(966,38): Warning: BatchArrayWriterTotalProof: Trait method calls may not terminate (uses `@AssumeCrossModuleTermination`). Possible mitigation: Remove if possible.
-DafnyStandardLibraries.dfy(17115,17): Warning: Complete: Declaration has explicit `{:axiom}` attribute. Possible mitigation: Provide a proof or test.
-DafnyStandardLibraries.dfy(12663,17): Warning: CharsConsistent: Declaration has explicit `{:axiom}` attribute. Possible mitigation: Provide a proof or test.
-DafnyStandardLibraries.dfy(12548,4): Warning: ToNat16: Definition has `assume {:axiom}` statement in body. Possible mitigation: Replace with `assert` and prove.
-DafnyStandardLibraries.dfy(15301,4): Warning: Members: Definition has `assume {:axiom}` statement in body. Possible mitigation: Replace with `assert` and prove.
-DafnyStandardLibraries.dfy(15311,4): Warning: Items: Definition has `assume {:axiom}` statement in body. Possible mitigation: Replace with `assert` and prove.
-Dafny auditor completed with 54 findings
+DafnyStandardLibraries.dfy(8587,19): Warning: Nullary: Declaration has explicit `{:axiom}` attribute. Possible mitigation: Provide a proof or test.
+DafnyStandardLibraries.dfy(8591,19): Warning: OnInt: Declaration has explicit `{:axiom}` attribute. Possible mitigation: Provide a proof or test.
+DafnyStandardLibraries.dfy(8595,19): Warning: OnReal: Declaration has explicit `{:axiom}` attribute. Possible mitigation: Provide a proof or test.
+DafnyStandardLibraries.dfy(8599,19): Warning: OnBool: Declaration has explicit `{:axiom}` attribute. Possible mitigation: Provide a proof or test.
+DafnyStandardLibraries.dfy(8603,19): Warning: OnOrdinal: Declaration has explicit `{:axiom}` attribute. Possible mitigation: Provide a proof or test.
+DafnyStandardLibraries.dfy(8607,19): Warning: OnIntInt: Declaration has explicit `{:axiom}` attribute. Possible mitigation: Provide a proof or test.
+DafnyStandardLibraries.dfy(8620,19): Warning: Complete: Declaration has explicit `{:axiom}` attribute. Possible mitigation: Provide a proof or test.
+DafnyStandardLibraries.dfy(12706,17): Warning: CharsConsistent: Declaration has explicit `{:axiom}` attribute. Possible mitigation: Provide a proof or test.
+DafnyStandardLibraries.dfy(12591,4): Warning: ToNat16: Definition has `assume {:axiom}` statement in body. Possible mitigation: Replace with `assert` and prove.
+DafnyStandardLibraries.dfy(15344,4): Warning: Members: Definition has `assume {:axiom}` statement in body. Possible mitigation: Replace with `assert` and prove.
+DafnyStandardLibraries.dfy(15354,4): Warning: Items: Definition has `assume {:axiom}` statement in body. Possible mitigation: Replace with `assert` and prove.
+Dafny auditor completed with 60 findings
 
 Dafny program verifier did not attempt verification
