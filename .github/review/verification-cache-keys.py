@@ -44,9 +44,9 @@ def without_timing(value):
     return value
 
 
-def run(name, directory, extra=(), solver_path=solver, resource_limit="16000000"):
+def run(name, directory, extra=(), solver_path=solver, resource_limit="16000000", dafny=exe):
     profile, log, csv_log = (destination / (name + suffix) for suffix in (".jsonl", ".json", ".csv"))
-    args = ["dotnet", str(exe), "verify", str(input_file), "--cores", "1", "--type-system-refresh",
+    args = ["dotnet", str(dafny), "verify", str(input_file), "--cores", "1", "--type-system-refresh",
             "--solver-path", str(solver_path), "--verification-time-limit", "0",
             "--resource-limit", resource_limit, "--use-basename-for-filename",
             "--show-snippets:false", "--pipeline-profile", str(profile),
@@ -107,7 +107,11 @@ assert audit.replay(cache, str(solver))
 warm = run("warm", cache)
 same_report(cold, warm, "warm")
 assert warm["stats"]["hits"] == 3 and warm["stats"]["solverStarts"] == 0, warm["stats"]
-summary = []
+# The cold run remembered every execution image's digest; the warm run hashes none.
+assert cold["stats"]["imagesHashed"] > 0, cold["stats"]
+assert warm["stats"]["imagesHashed"] == 0 and warm["stats"]["imageDigestsRemembered"] > 0, warm["stats"]
+summary = ["image digests: %d hashed cold, %d remembered warm" % (cold["stats"]["imagesHashed"],
+                                                                  warm["stats"]["imageDigestsRemembered"])]
 
 
 def expect_miss(name, extra=(), solver_path=solver, expected=None, edit=None):
@@ -149,14 +153,29 @@ assert misses == 3
 # (how many counterexamples are requested, and so the final resource count) is in the environment.
 errors, misses, _ = expect_miss("error-limit", ("--error-limit", "1"), expected=["environment"])
 assert misses == 3
-# The same solver bytes at another path: the solver image path is part of the identity.
+# The same solver bytes in another directory, and a copy of the Dafny build in another
+# directory: paths under the Dafny, .NET and solver installations are named by placeholder
+# and their bytes by digest, so every task hits, as on another CI runner.
 copy_dir = destination / "solver-copy"
 copy_dir.mkdir()
 solver_copy = copy_dir / solver.name
 shutil.copy2(solver, solver_copy)
-moved, misses, _ = expect_miss("solver-path", solver_path=solver_copy, expected=["environment"])
+dafny_copy = destination / "dafny-copy" / exe.parent.name
+shutil.copytree(exe.parent, dafny_copy)
+for name, dafny, solver_path in (("solver-path", exe, solver_copy), ("dafny-path", dafny_copy / exe.name, solver),
+                                 ("both-paths", dafny_copy / exe.name, solver_copy)):
+    directory = destination / (name + "-cache")
+    shutil.copytree(cache, directory)
+    moved = run(name, directory, solver_path=solver_path, dafny=dafny)
+    same_report(cold, moved, name)
+    assert moved["stats"]["hits"] == 3 and moved["stats"]["solverStarts"] == 0, (name, moved["stats"])
+    summary.append("%s: 3 of 3 hit" % name)
+# The same bytes under another file name are another image name, and miss.
+renamed_solver = copy_dir / (solver.name + "-renamed")
+shutil.copy2(solver, renamed_solver)
+renamed, misses, _ = expect_miss("solver-name", solver_path=renamed_solver, expected=["environment"])
 assert misses == 3
-same_report(cold, moved, "solver-path")
+same_report(cold, renamed, "solver-name")
 # A program edit misses exactly the task whose VC contains the edited body, through its solver input.
 assert original.count("int { x + 1 }") == 1
 edited, misses, changed_tasks = expect_miss("edit", edit=lambda text: text.replace("int { x + 1 }", "int { x + 2 }"),
