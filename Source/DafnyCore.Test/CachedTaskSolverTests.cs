@@ -18,10 +18,11 @@ public class CachedTaskSolverTests : IDisposable {
       return new Solver(reason, warning);
     }, warningsHaveNoEffects);
 
-  private static void Setup(CachedTaskSolver transport) {
+  private static void Setup(CachedTaskSolver transport, uint resourceLimit = 100) {
     transport.NewProblem("current split");
+    transport.Send("(set-option :rlimit 0)");
     transport.Send("(set-option :timeout 0)");
-    transport.Send("(set-option :rlimit 100)");
+    transport.Send("(set-option :rlimit " + resourceLimit + ")");
     transport.Send("(assert true)");
   }
 
@@ -183,6 +184,52 @@ public class CachedTaskSolverTests : IDisposable {
     task.Close();
   }
 
+  [Theory]
+  [InlineData(1000U, true)]
+  [InlineData(17U, true)]
+  [InlineData(16U, false)]
+  [InlineData(0U, true)]
+  public async Task TheEffectiveResourceLimitIsComparedWithResourceUseRatherThanKeyed(uint limit, bool replayed) {
+    var cold = Transport();
+    Setup(cold);
+    Assert.Equal("unsat", (await cold.SendRequest("(check-sat)")).Name);
+    Assert.Equal("17", (await cold.SendRequest("(get-info :rlimit)"))[0].Name);
+    await Finish(cold);
+    Assert.Equal(CachePublication.Stored, cold.CompleteNormally(CacheTaskOutcome.Correct, 17));
+    cold.Close();
+    var warm = Transport();
+    Setup(warm, limit);
+    await warm.SendRequest("(check-sat)");
+    await warm.SendRequest("(get-info :rlimit)");
+    await Finish(warm);
+    // A re-proved Valid interaction is the same limit-independent record.
+    Assert.Equal(CachePublication.AlreadyPresent, warm.CompleteNormally(CacheTaskOutcome.Correct, 17));
+    Assert.Equal(replayed, warm.Replayed);
+    Assert.Equal(replayed ? 1 : 2, starts);
+    Assert.Equal(cold.ExecutionKey, warm.ExecutionKey);
+    warm.Close();
+  }
+
+  [Fact]
+  public async Task AnEarlierLimitCommandIsNotAbstracted() {
+    var cold = Transport();
+    Setup(cold);
+    await cold.SendRequest("(check-sat)");
+    await Finish(cold);
+    cold.CompleteNormally(CacheTaskOutcome.Correct, 17);
+    cold.Close();
+    var warm = Transport();
+    warm.NewProblem("current split");
+    warm.Send("(set-option :rlimit 5)");
+    warm.Send("(set-option :timeout 0)");
+    warm.Send("(set-option :rlimit 100)");
+    warm.Send("(assert true)");
+    await warm.SendRequest("(check-sat)");
+    Assert.False(warm.Replayed);
+    Assert.NotEqual(cold.ExecutionKey, warm.ExecutionKey);
+    warm.Close();
+  }
+
   [Fact]
   public void UsedTypesOutsideTheInitialInputAndTheirOrderChangeTheTaskKey() {
     var options = new DafnyOptions(TextReader.Null, TextWriter.Null, TextWriter.Null);
@@ -206,7 +253,11 @@ public class CachedTaskSolverTests : IDisposable {
     public override void AddErrorHandler(Action<string> handler) { }
     public override Task<SExpr> SendRequest(string request, CancellationToken cancellationToken = default) {
       if (warning != null) { ErrorHandler?.Invoke(warning); }
-      return Task.FromResult(request == "(check-sat)" ? S(response) : S(":reason-unknown", S(reason)));
+      return Task.FromResult(request switch {
+        "(check-sat)" => S(response),
+        "(get-info :rlimit)" => S(":rlimit", S("17")),
+        _ => S(":reason-unknown", S(reason))
+      });
     }
     public override Task<IReadOnlyList<SExpr>> SendRequestsAndCloseInput(IReadOnlyList<string> requests,
       CancellationToken cancellationToken = default) => throw new NotSupportedException();

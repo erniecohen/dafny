@@ -277,15 +277,59 @@ jobs:
         run: |
           solver=$(sh .github/review/setup-z3.sh)
           echo "Z3=$solver" >> "$GITHUB_ENV"
+          echo "Z3SHA=$(shasum -a 256 "$solver" | cut -c1-16)" >> "$GITHUB_ENV"
+      # The opt-in proof-result cache (https://github.com/erniecohen/dafny/issues/261), for the
+      # programs that select the refreshed type system themselves.  Pushes to review/4.11.0
+      # save it; other runs only restore it.  Its key names the solver binary's digest, so
+      # results never cross Z3 binaries; Dafny's own key covers the rest.
+      - name: Restore the proof-result cache
+        uses: actions/cache/restore@v4
+        with:
+          path: verification-cache
+          key: verification-cache-v2-${{ runner.os }}-z3-${{ env.Z3SHA }}-${{ matrix.axioms }}-${{ matrix.shard }}-${{ github.run_id }}
+          restore-keys: |
+            verification-cache-v2-${{ runner.os }}-z3-${{ env.Z3SHA }}-${{ matrix.axioms }}-${{ matrix.shard }}-
+      - name: Re-prove a sample of the restored cache with a fresh solver
+        run: |
+          if [ -d verification-cache/v1/results ]; then
+            python3 .github/review/verification-cache-audit.py replay verification-cache "$Z3" \
+              --sample 25 --seed ${{ github.run_number }}
+          else
+            echo 'No proof-result cache was restored.'
+          fi
       - name: Verify
         run: |
           L=Source/IntegrationTests/TestFiles/LitTests/LitTest
           python3 .github/review/lit-verdicts.py plan "$L" plan.tsv
           python3 .github/review/lit-verdicts.py run plan.tsv "$L" "$PWD/out/dafny/Dafny" "$Z3" \
             verdicts-${{ matrix.axioms }}-${{ matrix.shard }}.tsv --shard ${{ matrix.shard }}/4 --jobs 4 \
-            --additional-axioms ${{ matrix.axioms == 'on' }} --measurements measurements/${{ matrix.axioms }}
+            --additional-axioms ${{ matrix.axioms == 'on' }} --measurements measurements/${{ matrix.axioms }} \
+            --verification-cache "$PWD/verification-cache"
           python3 .github/review/additional-axioms.py inventory measurements/${{ matrix.axioms }} \
             resources-${{ matrix.axioms }}-${{ matrix.shard }}.json
+      # The cached programs again, now reading the cache the run above wrote: the same
+      # verdicts and per-proof outcomes and resource counts, and both runs' times.
+      - name: Re-verify the cached programs from the cache
+        run: |
+          L=Source/IntegrationTests/TestFiles/LitTests/LitTest
+          python3 .github/review/lit-verdicts.py run plan.tsv "$L" "$PWD/out/dafny/Dafny" "$Z3" \
+            cache-reuse-${{ matrix.axioms }}-${{ matrix.shard }}.tsv --shard ${{ matrix.shard }}/4 --jobs 4 \
+            --additional-axioms ${{ matrix.axioms == 'on' }} --measurements cache-reuse/${{ matrix.axioms }} \
+            --verification-cache "$PWD/verification-cache" --cached-only true > cache-reuse.log
+          python3 .github/review/lit-verdicts.py same measurements/${{ matrix.axioms }} cache-reuse/${{ matrix.axioms }} \
+            verdicts-${{ matrix.axioms }}-${{ matrix.shard }}.tsv cache-reuse-${{ matrix.axioms }}-${{ matrix.shard }}.tsv \
+            | tee cache-reuse-summary.txt
+          {
+            echo "## Proof-result cache, axioms ${{ matrix.axioms }}, shard ${{ matrix.shard }}"
+            echo
+            tail -1 cache-reuse-summary.txt
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Save the proof-result cache
+        if: github.event_name == 'push' && github.ref == 'refs/heads/review/4.11.0'
+        uses: actions/cache/save@v4
+        with:
+          path: verification-cache
+          key: verification-cache-v2-${{ runner.os }}-z3-${{ env.Z3SHA }}-${{ matrix.axioms }}-${{ matrix.shard }}-${{ github.run_id }}
       - name: Record per-program resource counts and headroom
         if: always()
         run: |
@@ -309,6 +353,16 @@ jobs:
           path: measurements
           compression-level: 9
           retention-days: 90
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: suite-cache-reuse-${{ matrix.axioms }}-${{ matrix.shard }}
+          path: |
+            cache-reuse-${{ matrix.axioms }}-${{ matrix.shard }}.tsv
+            cache-reuse-summary.txt
+            cache-reuse.log
+            cache-reuse/
+          retention-days: 30
 
   verdicts:
     if: ${{ ((github.event_name != 'pull_request' || !github.event.pull_request.draft) && (!inputs.platform_parity && ((github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'erniecohen/dafny'))) && (true)))) && needs.tree.outputs.reuse != 'true' }}
@@ -940,6 +994,11 @@ jobs:
           python3 .github/review/verification-cache-cutoff.py Binaries/net10.0/Dafny.dll "$solver" \
             Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/Inputs/git-issue-241-cache-cutoff.dfy \
             verification-cache-cutoff-linux
+          # Key coverage, planted entries and the resource-limit boundaries u, u-1, L and L+1
+          # (https://github.com/erniecohen/dafny/issues/261).
+          python3 .github/review/verification-cache-keys.py Binaries/net10.0/Dafny.dll "$solver" \
+            Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/git-issue-241-verification-cache.dfy \
+            verification-cache-keys-linux
 
   resolver-tests:
     if: ${{ ((github.event_name != 'pull_request' || !github.event.pull_request.draft) && ((github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'erniecohen/dafny'))) && !inputs.platform_parity && (!(github.event_name == 'workflow_dispatch' && (inputs.default_comparison || inputs.decreases_order_comparison) && startsWith(github.ref, 'refs/heads/scratch/'))))) && needs.tree.outputs.reuse != 'true' }}
