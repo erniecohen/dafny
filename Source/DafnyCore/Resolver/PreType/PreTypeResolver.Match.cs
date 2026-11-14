@@ -56,7 +56,7 @@ namespace Microsoft.Dafny {
     ///
     /// The solve with decisions also acts on default advice for every pending proxy, such as an integer literal elsewhere
     /// in the enclosing expression, before the enclosing context (for example a function's declared result type) has
-    /// constrained it.  With --conservative-match-inference, a partial solve without decisions is tried first, and the
+    /// constrained it.  With --conservative-match-inference (on by default), a partial solve without decisions is tried first, and the
     /// solve with decisions is used only if that leaves "preType" a proxy.  Both stages add no constraint and drop none.
     /// </summary>
     bool InsistOnKnowingPreType(IOrigin tok, PreType preType) {
@@ -125,6 +125,20 @@ namespace Microsoft.Dafny {
         return;
       }
 
+      // A parameterless ID is a constructor only if "preType" is a datatype. With --conservative-match-inference, if
+      // propagation leaves "preType" a proxy that cannot be a datatype (one of its subtypes is known not to be a
+      // datatype, and a datatype has no subtypes but itself), then the ID is a bound variable, and no default
+      // decision is needed to find that out. A nested pattern like "Some(n)" against "Some(0)" thus no longer
+      // fixes the type of an unrelated literal elsewhere in the enclosing expression.
+      if (idPattern.Arguments == null && resolver.Options.Get(CommonOptionBag.ConservativeMatchInference) &&
+          preType.Normalize() is PreTypeProxy) {
+        Constraints.PartiallySolveTypeConstraints();
+        if (preType.Normalize() is PreTypeProxy proxy && Constraints.CannotBeDatatype(proxy)) {
+          ResolveParameterlessIdPattern(idPattern, preType, inDisjunctivePattern, resolutionContext);
+          return;
+        }
+      }
+
       // Use "preType" as a guide to looking up the given ID. This requires knowing what "preType" is.
       if (!InsistOnKnowingPreType(sourceExprToken, preType)) {
         return;
@@ -140,6 +154,12 @@ namespace Microsoft.Dafny {
         return;
       } else {
         // this is an error; if tuples are involved, specialize the error message
+        if (resolver.Options.Get(CommonOptionBag.ConservativeMatchInference)) {
+          // The message names "preType".  Make the default decisions that the solve in InsistOnKnowingPreType makes
+          // without the option, so that it names the types they give, such as "(int, int)" for "(2, 3)", rather
+          // than proxies.  The program is rejected either way.
+          Constraints.PartiallySolveTypeConstraints(null, true);
+        }
         if (idPattern.Id == SystemModuleManager.TupleTypeCtorName(1)) {
           ReportError(idPattern.Origin, "parentheses are not allowed around a pattern");
         } else if (idPattern.Id.StartsWith(SystemModuleManager.TupleTypeCtorNamePrefix)) {
