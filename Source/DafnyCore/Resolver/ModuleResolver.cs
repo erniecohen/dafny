@@ -730,6 +730,11 @@ namespace Microsoft.Dafny {
       // add for the module itself
       foreach (var kv in m.TopLevels) {
         if (info.TopLevels.TryGetValue(kv.Key, out var infoValue)) {
+          if (infoValue != kv.Value && BoundedCallables.IsBoundedDecl(infoValue)) {
+            // "bounded" is a contextual name (issue 266): a declaration of the module named "bounded" hides the system's.
+            info.TopLevels[kv.Key] = kv.Value;
+            continue;
+          }
           if (infoValue != kv.Value) {
             // This only happens if one signature contains the name C as a class C (because it
             // provides C) and the other signature contains the name C as a non-null type decl
@@ -843,6 +848,9 @@ namespace Microsoft.Dafny {
             // the caller, and let the caller remap the symbol after all opened imports have been processed.
             topLevelDeclReplacement = kv.Value;
           }
+        } else if (BoundedCallables.IsBoundedDecl(sameNameSymbolInImporter)) {
+          // "bounded" is a contextual name (issue 266): an opened import's declaration named "bounded" hides the system's.
+          importerSignature.TopLevels[kv.Key] = kv.Value;
         } else {
           bool unambiguous = false;
           // keep just one if they normalize to the same entity

@@ -81,6 +81,9 @@ namespace Microsoft.Dafny.Compilers {
           Contract.Assert(nonGhostTupleTypeDecl.NonGhostDims == nonGhostTupleTypeDecl.Dims);
           return new UserDefinedType(udt.Origin, nonGhostTupleTypeDecl.Name, nonGhostTupleTypeDecl, typeArgsForNonGhostTuple);
 
+        } else if (BoundedCallables.IsBoundedDecl(udt.ResolvedClass) && udt.TypeArgs.Count == 2) {
+          // A bounded callable (issue 266) compiles to its payload: its bound and evidence are ghost.
+          return SimplifyTypeWorker(options, udt.TypeArgs[1], expandMode);
         } else if (udt.ResolvedClass is DatatypeDecl datatypeDecl && GetInnerTypeOfErasableDatatypeWrapper(options, datatypeDecl, out var innerType)) {
           var typeSubst = TypeParameter.SubstitutionMap(datatypeDecl.TypeArgs, udt.TypeArgs);
           var stype = ExpandType(innerType.Subst(typeSubst));
