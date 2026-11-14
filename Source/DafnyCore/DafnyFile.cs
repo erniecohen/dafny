@@ -284,7 +284,10 @@ public class DafnyFile {
       yield break;
     }
 
-    if (options.Get(CommonOptionBag.ModularTermination) &&
+    // Under --modular-termination the orders library of --decreases-orders is verified with the program that loads
+    // it, as its source is, instead of being admitted by a record (https://github.com/erniecohen/dafny/issues/245, M4).
+    var verifiedHere = DecreasesOrders.VerifiesOrdersLibrary(options, uri);
+    if (options.Get(CommonOptionBag.ModularTermination) && !verifiedHere &&
         !await dooFile.AdmitModularTermination(reporter, uri, options, validDooOptions, origin)) {
       yield break;
     }
@@ -298,8 +301,8 @@ public class DafnyFile {
     yield return new DafnyFile(DooFile.Extension, Canonicalize(uri.LocalPath).LocalPath, Path.GetFileName(uri.LocalPath),
       () => new FileSnapshot(new StringReader(dooFile.ProgramText), null), uri, origin, validDooOptions) {
       ShouldNotCompile = asLibrary,
-      ShouldNotVerify = true,
-      TerminationRecord = options.Get(CommonOptionBag.ModularTermination) ? dooFile.Manifest.ModularTermination : null,
+      ShouldNotVerify = !verifiedHere,
+      TerminationRecord = options.Get(CommonOptionBag.ModularTermination) && !verifiedHere ? dooFile.Manifest.ModularTermination : null,
     };
   }
 

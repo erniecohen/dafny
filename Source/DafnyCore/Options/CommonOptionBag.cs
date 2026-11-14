@@ -328,7 +328,7 @@ true - All class instances are raw pointers and need to be manually deallocated"
     "In a refining module, let a type synonym 'type O<Xs> = T<Xs>' refine an abstract type O that has members, where T is a class, trait, datatype, newtype or abstract type declared in the refining module: the members of O are merged into T, as they would be into a declaration of O itself. Disabled by default.");
 
   public static readonly Option<bool> DecreasesOrders = new("--decreases-orders", () => false,
-    "Allow a decreases-clause component 'e by O', where O is a closed ghost expression of the trait type Std.Termination.Orders.Wfo<T> from the standard library and e has type T; a call or loop iteration must make O.gt(old e, e) true or leave e unchanged. Requires --type-system-refresh and --general-traits=datatype or full. Disabled by default.");
+    "Allow a decreases-clause component 'e by O', where O is a closed ghost expression of the trait type Std.Termination.Orders.Wfo<T> from the standard library and e has type T; a call or loop iteration must make O.gt(old e, e) true or leave e unchanged. Requires --type-system-refresh and --general-traits=datatype or full. With --modular-termination, such components are also allowed in {:global} and {:callback} bounds, and the orders library is verified with the program. Disabled by default.");
 
   public static readonly Option<bool> LegacyDecreasesOrder = new("--legacy-decreases-order", () => false,
     "Use the legacy, unsound decreases-tuple comparison for migration and comparison only.") { IsHidden = true };

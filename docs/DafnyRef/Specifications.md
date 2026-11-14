@@ -416,8 +416,7 @@ calling `Wfo.gt` and `Wfo.aha`, as a function is treated as calling what its
 `requires` clauses call. Those implied calls have no arguments that could
 decrease, so the callable must not be mutually recursive with `gt`, `aha` or
 any override of them. A component with an order is not allowed in the
-`decreases` clause of an iterator, in a `{:global}` or `{:callback}` clause, or
-with `--legacy-decreases-order`.
+`decreases` clause of an iterator, or with `--legacy-decreases-order`.
 
 To build an order, prove the relation well-founded and pass it to
 `Std.Termination.Orders.Of`, whose postcondition says that the order's `gt` is
@@ -459,6 +458,30 @@ A datatype of another module may also implement `Wfo<T>` itself, giving `gt`
 and proving `aha`. Like any type that extends a trait of another module, it
 must then be marked `{:AssumeCrossModuleTermination}`, which `dafny audit`
 reports as an assumption.
+
+Under `--modular-termination`, a component `e by O` may also appear in a
+`decreases {:global}` or `decreases {:callback g}` bound ([global
+bounds](#sec-global-decreases)). Such a bound compares components by `O` as an
+ordinary clause does. That option does not load the bundled standard library,
+but it does load the orders library, and that library is verified together with
+the program that uses it rather than trusted. The bound must not reach open
+dispatch, and that includes the code of `O`:
+
+* An order used in the bounds of another module must be built by a function
+  marked `{:termination_closed}`, such as
+  `ghost function {:termination_closed} UpOrder(): Wfo<nat>`. The library's `Of`,
+  `WfoOf`, `wellFounded` and `stops` count as applications of the relations and
+  chains that they are given.
+* The well-foundedness proof must bind each chain with a quantifier, as in
+  `forall c: Chain<nat> ensures ...` or
+  `ensures forall c: Chain<nat> :: ...`, not take it as a lemma parameter. This
+  is the _binder rule_ described with global bounds. The example above passes
+  `c` to `Climbs` as a parameter, so under `--modular-termination` its `Climbs`
+  would instead state `ensures forall c: Chain<nat> :: (forall k: nat ::
+  Up(c(k), c(k + 1))) ==> c(n) >= n`.
+* The `aha` of a user implementation of `Wfo` applies its chain parameter, so
+  that code is not known. A bound with an order then reaches it, and the bound
+  is rejected. Build orders with `Of` instead.
 
 The design is described in https://github.com/erniecohen/dafny/issues/245.
 
@@ -683,7 +706,13 @@ A global bound, and a callback bound, may only use code that cannot reach a disp
 functions and methods it calls, the constants it reads, the types it mentions (their constraints,
 witnesses and component defaults) and the function values it applies must reach none, directly or
 through the code they call in turn, and a function value whose code is not known counts as reaching
-one. Across imports, the supporting operations must publish `{:termination_closed}`; a hidden
+one. The exception is the _binder rule_ (https://github.com/erniecohen/dafny/issues/245). An application `c(x)` calls nothing
+when `c` is a variable of a total arrow type `A -> B` (not `A --> B` or `A ~> B`) that is bound by a
+`forall` or `exists` expression, or by a `forall` statement in ghost code. Such a variable ranges over
+every function of its type, and all of those exist before the code that mentions them, so the
+application is a formula over them, not a call through a value that the program computed. The rule does
+not cover parameters, locals, fields, results or lambda expressions bound to a variable, and it does not
+let such a variable be passed for a parameter with a callback bound. Across imports, the supporting operations must publish `{:termination_closed}`; a hidden
 leaf body is insufficient. The value of a bound is the measure that these rules decrease, so it must not be computed by the
 code whose termination they establish.  Before this rule, the program below verified, `assert false`
 included, and when run it overflowed the stack:
