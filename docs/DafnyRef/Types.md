@@ -4061,6 +4061,9 @@ A `const` field without a RHS may be assigned only in constructors, and more pre
 only in the initialization phase of constructors. During this phase, a `const` field
 may be assigned more than once; whatever value the `const` field has at the end of the
 initialization phase is the value it will have forever thereafter.
+Since the value of a `const` field with a RHS is that of its RHS on those final values, the
+initialization phase may read such a field only if its RHS does not mention `this`, explicitly
+or implicitly (for example, by naming another field or calling an instance function).
 
 For a constructor declared as `ghost`, the initialization phase is allowed to assign
 both ghost and non-ghost fields. For such an object, values of non-ghost fields at

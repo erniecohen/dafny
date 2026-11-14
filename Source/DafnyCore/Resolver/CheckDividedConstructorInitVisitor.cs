@@ -61,6 +61,16 @@ class CheckDividedConstructorInitVisitor : ResolverTopDownVisitor<int> {
     if (expr is MemberSelectExpr) {
       var e = (MemberSelectExpr)expr;
       if (e.Member.IsInstanceIndependentConstant && Expression.AsThis(e.Obj) != null) {
+        // A constant with an initializer is a function of "this" whose value is that of its initializer
+        // in the final state of "this".  Before "new;", the fields that the initializer reads may not
+        // have their final values yet (and the run-time value of the constant is its initializer
+        // evaluated on the current ones), so the constant may be read here only if its initializer
+        // does not depend on "this" (https://github.com/erniecohen/dafny/issues/339).
+        if (!reporter.Options.Get(CommonOptionBag.LegacyFirstPhaseConstReads) &&
+            InitializerDependsOnThis((ConstantField)e.Member)) {
+          reporter.Error(MessageSource.Resolver, expr.Origin,
+            $"in the first division of the constructor body (before 'new;'), the constant '{e.Member.Name}' cannot be read, because its initializer depends on 'this'");
+        }
         return false;  // don't continue the recursion
       }
     } else if (expr is UnaryOpExpr { Op: UnaryOpExpr.Opcode.Assigned }) {
@@ -83,6 +93,10 @@ class CheckDividedConstructorInitVisitor : ResolverTopDownVisitor<int> {
     // a field of "this", we must apply the same rules to uses of the values of fields of "this".
     if (expr is ConcreteSyntaxExpression) {
     } else if (expr is ThisExpr) {
+    } else if (expr is MemberSelectExpr { Member.IsInstanceIndependentConstant: true } constRead && IsThisDotField(constRead)) {
+      // a constant with an initializer: VisitOneExpr checks it
+      VisitExpr(expr);
+      return;
     } else if (expr is MemberSelectExpr && IsThisDotField((MemberSelectExpr)expr)) {
     } else if (expr is SetDisplayExpr) {
     } else if (expr is MultiSetDisplayExpr) {
@@ -102,6 +116,26 @@ class CheckDividedConstructorInitVisitor : ResolverTopDownVisitor<int> {
       return;
     }
     expr.SubExpressions.ForEach(LiberalRHSVisit);
+  }
+  /// <summary>
+  /// Whether the initializer of "field" mentions "this", explicitly or implicitly.  An initializer that reads
+  /// another constant of "this" mentions "this" itself, so no transitive closure is needed.
+  /// </summary>
+  static bool InitializerDependsOnThis(ConstantField field) {
+    Contract.Requires(field != null && field.Rhs != null);
+    return MentionsThis(field.Rhs);
+  }
+  static bool MentionsThis(Expression expr) {
+    if (expr is ThisExpr) {
+      return true;
+    }
+    // the SubExpressions of a ConcreteSyntaxExpression are its resolved expression
+    foreach (var sub in expr.SubExpressions) {
+      if (MentionsThis(sub)) {
+        return true;
+      }
+    }
+    return false;
   }
   static bool IsThisDotField(MemberSelectExpr expr) {
     Contract.Requires(expr != null);
