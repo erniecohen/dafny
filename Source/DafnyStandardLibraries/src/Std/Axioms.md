@@ -51,3 +51,30 @@ upper bound.  `UpperBound(s, b)` holds when `b` is an upper bound of
 `s: iset<real>`.  The lemma has no preconditions; its conclusions hold only when
 `w in s` and `UpperBound(s, b)`.  [Std.RealCompleteness](RealCompleteness.md)
 builds `Sup` and `ExistsLub` on it, and is the interface to use.
+
+## `Std.Axioms.Ordinals`
+
+Two facts about `ORDINAL` that hold of the ordinals but do not follow from
+Dafny's axioms, which the natural numbers alone also satisfy:
+
+- `Infinite()`: some ordinal is not a natural number;
+- `Replacement(graph, bound)`: given the graph of a function on `ORDINAL`, an
+  `iset` of `Pair(index, value)` that is `Functional`, its values at the indexes
+  below `bound` have a strict upper bound, `StrictUpperBound(graph, bound, u)`.
+
+Both lemmas conclude with `exists`, so a function can call them and then choose
+a witness with `:|`.  [Std.Ordinal](Ordinal.md) defines `Omega`, `PlusLimit` and
+`TimesLimit` on them, as least elements.
+
+<!-- %check-verify -->
+```dafny
+import Std.Axioms.Ordinals
+
+ghost function SomeInfiniteOrdinal(): (o: ORDINAL)
+  ensures !o.IsNat
+{
+  Ordinals.Infinite();
+  var o: ORDINAL :| !o.IsNat;
+  o
+}
+```

@@ -5,21 +5,125 @@
 
 module Std.Ordinal {
 
-  ghost function {:axiom} Omega(): ORDINAL
+  // Omega, PlusLimit and TimesLimit are provided without their bodies, so an importer sees only
+  // their postconditions, as it did when they were bodyless axioms, and its proofs carry none of
+  // the definitions below.  The helpers that prove them are not exported.
+  export
+    reveals Plus, Times, Max
+    provides Omega, PlusLimit, TimesLimit, Succ, PlusDefinition, PlusStrictlyIncreasingOnRight,
+             PlusIncreasingOnLeft, SuccStrictlyIncreasing, SuccIncreasing, PlusIsAssociative,
+             TimesLeftIdentity, TimesRightIdentity, TimesStrictlyIncreasingOnRight, TimesIncreasingOnLeft,
+             TimesDistributesOnLeft, RadixStrictlyIncreasing
+
+  import Ordinals = Axioms.Ordinals
+
+  /**
+   The first infinite ordinal, `ω`: the least ordinal that is not a natural
+   number.
+   */
+  ghost function Omega(): ORDINAL
     ensures !Omega().IsNat
     ensures Omega().IsLimit
     ensures forall other: ORDINAL | other.IsLimit && other != 0 :: Omega() <= other
+  {
+    Ordinals.Infinite();
+    var o: ORDINAL :| !o.IsNat;
+    LeastInfinite(o);
+    var w: ORDINAL :| !w.IsNat && forall m: ORDINAL | m < w :: m.IsNat;
+    assert w.IsLimit by {
+      if !w.IsLimit {
+        assert !(w - 1).IsNat && w - 1 < w;
+      }
+    }
+    w
+  }
+
+  /** There is a least ordinal that is not a natural number. */
+  lemma LeastInfinite(o: ORDINAL)
+    requires !o.IsNat
+    ensures exists w: ORDINAL :: !w.IsNat && forall m: ORDINAL | m < w :: m.IsNat
+    decreases o
+  {
+    if o': ORDINAL :| o' < o && !o'.IsNat {
+      LeastInfinite(o');
+    }
+  }
+
+  /**
+   The least ordinal above every value of `graph` at an index below `bound`.
+   */
+  ghost function LeastStrictUpperBound(graph: iset<Ordinals.Pair>, bound: ORDINAL): (result: ORDINAL)
+    requires Ordinals.Functional(graph)
+    ensures Ordinals.StrictUpperBound(graph, bound, result)
+    ensures forall u: ORDINAL {:trigger Ordinals.StrictUpperBound(graph, bound, u)} |
+              Ordinals.StrictUpperBound(graph, bound, u) :: result <= u
+  {
+    Ordinals.Replacement(graph, bound);
+    var u: ORDINAL :| Ordinals.StrictUpperBound(graph, bound, u);
+    LeastStrictUpperBoundExists(graph, bound, u);
+    var result: ORDINAL :|
+      && Ordinals.StrictUpperBound(graph, bound, result)
+      && forall u': ORDINAL {:trigger Ordinals.StrictUpperBound(graph, bound, u')} |
+           Ordinals.StrictUpperBound(graph, bound, u') :: result <= u';
+    result
+  }
+
+  /** A strict upper bound of `graph` below `bound` is at least the least one. */
+  lemma LeastStrictUpperBoundExists(graph: iset<Ordinals.Pair>, bound: ORDINAL, u: ORDINAL)
+    requires Ordinals.StrictUpperBound(graph, bound, u)
+    ensures exists m: ORDINAL {:trigger Ordinals.StrictUpperBound(graph, bound, m)} ::
+              && Ordinals.StrictUpperBound(graph, bound, m)
+              && forall m': ORDINAL {:trigger Ordinals.StrictUpperBound(graph, bound, m')} |
+                   Ordinals.StrictUpperBound(graph, bound, m') :: m <= m'
+    decreases u
+  {
+    if u': ORDINAL :| u' < u && Ordinals.StrictUpperBound(graph, bound, u') {
+      LeastStrictUpperBoundExists(graph, bound, u');
+    }
+  }
 
   // Additional axioms about addition
 
   lemma {:axiom} Succ(a: ORDINAL, b: ORDINAL)
     ensures a < b <==> a + 1 <= b
 
-  ghost function {:axiom} PlusLimit(left: ORDINAL, right: ORDINAL): (result: ORDINAL)
+  /**
+   The sum of `left` and a limit `right`: the least ordinal above
+   `Plus(left, right')` for every `right'` below `right`.
+   */
+  ghost function PlusLimit(left: ORDINAL, right: ORDINAL): (result: ORDINAL)
     ensures forall right' | right' < right :: Plus(left, right') < result
     ensures forall result' {:trigger} |
               forall right' | right' < right :: Plus(left, right') < result' :: result <= result'
     decreases right, 0
+  {
+    var graph := iset right': ORDINAL | right' < right :: Ordinals.Pair(right', Plus(left, right'));
+    assert Ordinals.Functional(graph) by {
+      forall p, q | p in graph && q in graph && p.index == q.index
+        ensures p.value == q.value
+      {
+        var i: ORDINAL :| i < right && p == Ordinals.Pair(i, Plus(left, i));
+        var j: ORDINAL :| j < right && q == Ordinals.Pair(j, Plus(left, j));
+      }
+    }
+    var result := LeastStrictUpperBound(graph, right);
+    forall right' | right' < right
+      ensures Plus(left, right') < result
+    {
+      assert Ordinals.Pair(right', Plus(left, right')) in graph;
+    }
+    forall result' {:trigger} | forall right' | right' < right :: Plus(left, right') < result'
+      ensures result <= result'
+    {
+      forall p | p in graph && p.index < right
+        ensures p.value < result'
+      {
+        var i: ORDINAL :| i < right && p == Ordinals.Pair(i, Plus(left, i));
+      }
+      assert Ordinals.StrictUpperBound(graph, right, result');
+    }
+    result
+  }
 
   ghost function Plus(left: ORDINAL, right: ORDINAL): ORDINAL
     decreases right
@@ -66,10 +170,42 @@ module Std.Ordinal {
 
   // Multiplication and axioms about multiplication
 
-  ghost function {:axiom} TimesLimit(left: ORDINAL, right: ORDINAL): (result: ORDINAL)
+  /**
+   The product of `left` and a limit `right`: the least ordinal above
+   `Times(left, right')` for every `right'` below `right`.
+   */
+  ghost function TimesLimit(left: ORDINAL, right: ORDINAL): (result: ORDINAL)
     ensures forall right' | right' < right :: Times(left, right') < result
     ensures forall result' {:trigger} | (forall right' | right' < right :: Times(left, right') < result') :: result <= result'
     decreases right, 0
+  {
+    var graph := iset right': ORDINAL | right' < right :: Ordinals.Pair(right', Times(left, right'));
+    assert Ordinals.Functional(graph) by {
+      forall p, q | p in graph && q in graph && p.index == q.index
+        ensures p.value == q.value
+      {
+        var i: ORDINAL :| i < right && p == Ordinals.Pair(i, Times(left, i));
+        var j: ORDINAL :| j < right && q == Ordinals.Pair(j, Times(left, j));
+      }
+    }
+    var result := LeastStrictUpperBound(graph, right);
+    forall right' | right' < right
+      ensures Times(left, right') < result
+    {
+      assert Ordinals.Pair(right', Times(left, right')) in graph;
+    }
+    forall result' {:trigger} | forall right' | right' < right :: Times(left, right') < result'
+      ensures result <= result'
+    {
+      forall p | p in graph && p.index < right
+        ensures p.value < result'
+      {
+        var i: ORDINAL :| i < right && p == Ordinals.Pair(i, Times(left, i));
+      }
+      assert Ordinals.StrictUpperBound(graph, right, result');
+    }
+    result
+  }
 
   ghost function Times(left: ORDINAL, right: ORDINAL): (result: ORDINAL)
     decreases right

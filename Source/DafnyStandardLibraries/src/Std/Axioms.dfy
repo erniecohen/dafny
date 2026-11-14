@@ -145,4 +145,61 @@ module Std.Axioms {
       ensures w in s && UpperBound(s, b) ==>
                 forall v {:trigger UpperBound(s, v)} :: UpperBound(s, v) ==> u <= v
   }
+
+  /**
+   Infinity and replacement for `ORDINAL`.
+
+   Dafny axiomatizes `ORDINAL` only partially: a total order with the natural
+   numbers at its bottom, `.IsNat`, `.Offset`, and the addition and
+   subtraction of natural numbers.  Its well-foundedness is built into
+   `decreases`, so a least element of a nonempty set of ordinals can be
+   proved to exist.  But that there is an ordinal that is not a natural
+   number, or that a family of ordinals indexed by the ordinals below a given
+   one has an upper bound, does not follow.  The natural numbers alone
+   satisfy these axioms, and so do the ordinals below ω^ω, where the family
+   that takes `n` to ω^n has no upper bound.  Dafny's intended model of `ORDINAL` is the ordinals, where
+   both facts hold, by the axioms of infinity and of replacement of set
+   theory.
+
+   `Std.Ordinal` defines `Omega`, `PlusLimit` and `TimesLimit` from these two
+   lemmas, as least elements, and proves their postconditions.
+
+   Both lemmas are consistent with the verifier's axioms about `ORDINAL`.
+   Those axioms hold in the ordinals below any regular uncountable cardinal
+   κ, and so do both lemmas there: ω is below κ, and a family indexed by the
+   ordinals below some ordinal below κ has fewer than κ members, so it is
+   bounded below κ.  A family is given as the graph of a function, an `iset`
+   of pairs that a caller builds with a set comprehension, and the lemmas are
+   stated with `exists` rather than with an out-parameter, so that a function
+   can call them.
+   */
+  module Ordinals {
+
+    /** There is an ordinal that is not a natural number. */
+    lemma {:axiom} Infinite()
+      ensures exists o: ORDINAL :: !o.IsNat
+
+    /** A pair of ordinals: a point of the graph of a function on `ORDINAL`. */
+    datatype Pair = Pair(index: ORDINAL, value: ORDINAL)
+
+    /** `graph` has at most one value at each index. */
+    ghost predicate Functional(graph: iset<Pair>) {
+      forall p, q {:trigger p in graph, q in graph} | p in graph && q in graph && p.index == q.index ::
+        p.value == q.value
+    }
+
+    /** `u` is above every value of `graph` at an index below `bound`. */
+    ghost predicate StrictUpperBound(graph: iset<Pair>, bound: ORDINAL, u: ORDINAL) {
+      forall p {:trigger p in graph} | p in graph && p.index < bound :: p.value < u
+    }
+
+    /**
+     The values of a function at the ordinals below `bound` have a strict
+     upper bound.  In the intended model they form a set, the image of the
+     set of ordinals below `bound`, and every set of ordinals is bounded.
+     */
+    lemma {:axiom} Replacement(graph: iset<Pair>, bound: ORDINAL)
+      requires Functional(graph)
+      ensures exists u: ORDINAL {:trigger StrictUpperBound(graph, bound, u)} :: StrictUpperBound(graph, bound, u)
+  }
 }
