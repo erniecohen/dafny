@@ -481,5 +481,8 @@ git-issues/github-issue-241-cache-background.dfy
 # constructor's field (https://github.com/erniecohen/dafny/issues/327).
 git-issues/github-issue-327.dfy
 
+# Rank of arrow-typed datatype fields under --additional-axioms (https://github.com/erniecohen/dafny/issues/326).
+git-issues/github-issue-326.dfy
+
 # User-written {:auto_generated} members are kept in .doo libraries; a user-written {:opaque_reveal} trait lemma must be implemented; the auditor reports {:axiom}/{:verify false} beside a user-written {:auto_generated} (https://github.com/erniecohen/dafny/issues/325).
 git-issues/github-issue-325.dfy
