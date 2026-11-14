@@ -1,0 +1,53 @@
+name: Certified standard-library core
+# Milestone M5a of https://github.com/erniecohen/dafny/issues/211: build the certified core of the
+# standard library under --modular-termination with Z3 5.1.0, then load it into clients.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    branches: ['review/**']
+    paths:
+      - 'Source/DafnyStandardLibraries/**'
+      - 'Source/DafnyCore/ModularTerminationRecord.cs'
+      - 'Source/DafnyCore/DooFile.cs'
+      - 'Source/DafnyCore/DafnyFile.cs'
+      - 'Source/DafnyCore/Backends/Library/LibraryBackend.cs'
+      - '.github/review/modular-termination-std.py'
+      - '.github/workflows/issue211-std.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  core:
+    if: ${{ github.event_name != 'pull_request' || !github.event.pull_request.draft }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-dotnet
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Build Dafny
+        run: |
+          sh Scripts/fetch-boogie-packages.sh
+          dotnet publish Source/Dafny/Dafny.csproj -c Release -o out/dafny -p:GeneratePackageOnBuild=false
+      - name: Install Z3 5.1.0
+        id: z3
+        run: echo "path=$(sh .github/review/setup-z3.sh 5.1.0 ci-z3)" >> "$GITHUB_OUTPUT"
+      - name: Build the core and load it into clients
+        run: |
+          status=0
+          python3 .github/review/modular-termination-std.py out/dafny/Dafny '${{ steps.z3.outputs.path }}' \
+            std-core-results --cores 4 || status=$?
+          cat std-core-results/summary.md >> "$GITHUB_STEP_SUMMARY"
+          exit $status
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: std-core-results
+          path: std-core-results
+          retention-days: 30

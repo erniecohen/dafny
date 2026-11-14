@@ -319,7 +319,8 @@ public class DooFile {
     if (record == null) {
       if (file.Scheme == "dllresource") {
         return Reject("the bundled standard library is not certified under --modular-termination; " +
-                      $"use --standard-libraries:false, or a standard library rebuilt as a --modular-termination library (see {ModularTerminationRecords.IssueLink})");
+                      "use --standard-libraries:false, and pass with --library the certified standard-library core " +
+                      $"built from Source/DafnyStandardLibraries/modular-termination (see {ModularTerminationRecords.IssueLink})");
       }
       return Reject(Manifest.DooFileVersion == ModularTerminationRecords.RecordedDooFileVersion
         ? $"its manifest has no modular termination record; {ModularTerminationRecords.RebuildInstruction}"
