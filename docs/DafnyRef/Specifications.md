@@ -870,6 +870,33 @@ the global bound `n` and the ordinary decreases clause `7`.
 Without the option, `decreases {:global} E` is an ordinary decreases clause with an
 unknown attribute, as before.
 
+#### 7.1.3.3. Bounded callables: `bounded<O, F>` (experimental) {#sec-bounded-callables}
+
+Under `--modular-termination`, the system module declares the type `bounded<O, F>` of a
+_bounded callable_: a function value of the arrow type `F` together with persistent evidence that
+every call of it terminates below a ghost bound in the order `O`
+(https://github.com/erniecohen/dafny/issues/266). This version provides the type only. There is no
+way yet to form a value of it, apply one, or project its bound or its function, and each of these is
+a resolution error. So for now the type can appear only in signatures, fields and data that pass
+values along.
+
+- The order `O` is `nat` or `ORDINAL`, or a type synonym for one of them, with its built-in order.
+  `O` is non-variant: `bounded<nat, F>` and `bounded<ORDINAL, F>` are unrelated.
+- The payload `F` is an arrow type: `A ~> B`, `A --> B` or `A -> B`. A bounded type has exactly the
+  subtyping of its payload, so `bounded<nat, int -> nat>` is a subtype of
+  `bounded<nat, int -> int>`, which is a subtype of `bounded<nat, int --> int>`. A conversion the
+  other way is a subset-type check that cannot be proved.
+- A bounded type has no compiled equality, no default value and is not known to be nonempty. It
+  cannot be the element type of a compiled set or the argument of a `(0)` or `(00)` type
+  parameter. Definite assignment applies to its variables and fields. Ghost equality is allowed.
+- The compilers erase `bounded<O, F>` to `F`, with no wrapper and no run-time cost.
+- A function value that reads the heap cannot be stored in a field. This rule applies to a
+  `bounded<O, A ~> B>` field too.
+
+`bounded` is a contextual name. A module that declares a type named `bounded`, or opens an import
+that declares one, uses that declaration instead. Without the option the name is not declared,
+and programs are compiled and verified exactly as before.
+
 ### 7.1.4. Framing ([grammar](#g-frame-expression)) {#sec-frame-expression}
 
 Examples:

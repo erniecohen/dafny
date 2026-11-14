@@ -2461,7 +2461,8 @@ or the Dafny 4 syntax (`ghost function` and `function`)
   global or callback bound may only use code that cannot reach such a dispatched call. With `--show-hints`, it
   reports every call that needs one of the rules. Disabled by default. Use
   `modular-termination = true` in a project file's `[options]` section. See
-  [global bounds](#sec-global-decreases) for the rules and their limits.
+  [global bounds](#sec-global-decreases) for the rules and their limits. The option also declares the type
+  `bounded<O, F>` of [bounded callables](#sec-bounded-callables).
 
 Legacy options:
 
