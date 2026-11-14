@@ -626,8 +626,13 @@ namespace Microsoft.Dafny.Compilers {
       }
       var interfaceTree = wr.NewBlock();
 
+      var erasedInterface = "";
+      if (dt.IsRecordType && HasErasedEquality(dt)) {
+        erasedInterface = ", " + DeclareErasedEqualityInterface(dt.Ctors[0], wr);
+      }
+
       // from here on, write everything into the new block created here:
-      var btw = wr.NewNamedBlock("public{0} class {1} : {2}", dt.IsRecordType ? "" : " abstract", DtT_protected, DtTypeName(dt));
+      var btw = wr.NewNamedBlock("public{0} class {1} : {2}{3}", dt.IsRecordType ? "" : " abstract", DtT_protected, DtTypeName(dt), erasedInterface);
       wr = btw;
 
       // constructor
@@ -1073,11 +1078,52 @@ namespace Microsoft.Dafny.Compilers {
 
       int constructorIndex = 0; // used to give each constructor a different name
       foreach (var ctor in dt.Ctors.Where(ctor => !ctor.IsGhost)) {
+        var erasedInterface = HasErasedEquality(dt) ? ", " + DeclareErasedEqualityInterface(ctor, wrx) : "";
         var wr = wrx.NewNamedBlock(
-          $"public class {DtCtorDeclarationName(ctor)}{TypeParameters(nonGhostTypeArgs)} : {protectedTypeName(dt)}{typeParams}");
+          $"public class {DtCtorDeclarationName(ctor)}{TypeParameters(nonGhostTypeArgs)} : {protectedTypeName(dt)}{typeParams}{erasedInterface}");
         DatatypeFieldsAndConstructor(ctor, constructorIndex, wr);
         constructorIndex++;
       }
+    }
+
+    /// <summary>
+    /// Whether the classes of the constructors of "dt" implement an erased-equality interface, so that their
+    /// Equals methods do not depend on the type arguments a value was built with.  Two values of a datatype built at
+    /// different type arguments, such as Pair<Number, Integer>.Pair(i, j) and Pair<Integer, Number>.Pair(i, j) for
+    /// a datatype Pair<+A, +B>, are equal in Dafny when they have the same constructor and equal arguments, but they
+    /// are instances of different C# classes, so a cast of one to the class of the other fails.
+    /// </summary>
+    bool HasErasedEquality(DatatypeDecl dt) {
+      return !Options.Get(CommonOptionBag.LegacyCsDatatypeEquality) && SelectNonGhost(dt, dt.TypeArgs).Count != 0;
+    }
+
+    /// <summary>
+    /// The name of the non-generic interface through which the Equals method of a constructor class reads the
+    /// non-ghost arguments of a value of that constructor built at other type arguments.
+    /// </summary>
+    string ErasedEqualityInterfaceName(DatatypeCtor ctor) {
+      return $"_I{ctor.EnclosingDatatype.GetCompileName(Options)}_{ctor.GetCompileName(Options)}_Erased";
+    }
+
+    /// <summary>
+    /// Writes to "wr" the declaration of the erased-equality interface of "ctor":
+    ///   public interface _IDt_Ctor_Erased {
+    ///     object _field0 { get; }
+    ///     ...
+    ///   }
+    /// and returns its name.
+    /// </summary>
+    string DeclareErasedEqualityInterface(DatatypeCtor ctor, ConcreteSyntaxTree wr) {
+      var name = ErasedEqualityInterfaceName(ctor);
+      var w = wr.NewBlock($"public interface {name}");
+      var i = 0;
+      foreach (var arg in ctor.Formals) {
+        if (!arg.IsGhost) {
+          w.WriteLine($"object {FieldName(arg, i)} {{ get; }}");
+          i++;
+        }
+      }
+      return name;
     }
 
     void DatatypeFieldsAndConstructor(DatatypeCtor ctor, int constructorIndex, ConcreteSyntaxTree wr) {
@@ -1149,7 +1195,7 @@ namespace Microsoft.Dafny.Compilers {
       CompileDatatypeDowncastClone(dt, wr, nonGhostTypeArgs, ctor: ctor);
 
       // Equals method
-      {
+      if (!HasErasedEquality(dt)) {
         var w = wr.NewBlock("public override bool Equals(object other)");
         w.WriteLine($"var oth = other as {DtCtorName(ctor)}{TypeParameters(nonGhostTypeArgs)};");
         w.Write("return oth != null");
@@ -1166,6 +1212,49 @@ namespace Microsoft.Dafny.Compilers {
         }
 
         w.WriteLine(";");
+      } else {
+        // The value "other" may have been built at type arguments other than those of "this", which
+        // Dafny's equality ignores.  A value built at the same type arguments is compared as before; any
+        // other value of the same constructor is compared through the erased-equality interface.
+        //   public override bool Equals(object other) {
+        //     var oth = other as Dt_Ctor<T>;
+        //     if (oth != null) {
+        //       return true && equals(_field0, oth._field0) && ... ;
+        //     }
+        //     var erased = other as _IDt_Ctor_Erased;
+        //     return erased != null && object.Equals(_field0, erased._field0) && ... ;
+        //   }
+        //   object _IDt_Ctor_Erased._field0 => this._field0;
+        //   ...
+        var erasedInterface = ErasedEqualityInterfaceName(ctor);
+        var w = wr.NewBlock("public override bool Equals(object other)");
+        w.WriteLine($"var oth = other as {DtCtorName(ctor)}{TypeParameters(nonGhostTypeArgs)};");
+        var wSame = w.NewBlock("if (oth != null)");
+        wSame.Write("return true");
+        w.WriteLine($"var erased = other as {erasedInterface};");
+        w.Write("return erased != null");
+        i = 0;
+        foreach (var arg in ctor.Formals) {
+          if (!arg.IsGhost) {
+            var nm = FieldName(arg, i);
+            wSame.Write(IsDirectlyComparable(DatatypeWrapperEraser.SimplifyType(Options, arg.Type))
+              ? $" && this.{nm} == oth.{nm}"
+              : $" && object.Equals(this.{nm}, oth.{nm})");
+            w.Write($" && object.Equals(this.{nm}, erased.{nm})");
+            i++;
+          }
+        }
+        wSame.WriteLine(";");
+        w.WriteLine(";");
+
+        i = 0;
+        foreach (var arg in ctor.Formals) {
+          if (!arg.IsGhost) {
+            var nm = FieldName(arg, i);
+            wr.WriteLine($"object {erasedInterface}.{nm} => this.{nm};");
+            i++;
+          }
+        }
       }
 
       // GetHashCode method (Uses the djb2 algorithm)
