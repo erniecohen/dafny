@@ -718,7 +718,10 @@ with the same one), or an option whose value differs from the current one. A lib
 with it, and with one that provides the same contracts: a dependency whose method bodies changed is
 accepted, and one whose contracts changed is rejected. Under the option, Dafny also rejects a source
 file given with `--library`, a `.dll` library and the bundled standard library, which carry no record;
-`--standard-libraries:false` leaves the standard library out. Without the option, a library built with
+`--standard-libraries:false` leaves the standard library out. In its place, the part of the standard
+library that verifies with no unchecked premise can be built as a recorded library from
+`Source/DafnyStandardLibraries/modular-termination` and loaded with `--library`; its `README.md` lists the
+modules it leaves out and why. Without the option, a library built with
 it is rejected, so that its record is never ignored; libraries built without the option are read as
 before.
 

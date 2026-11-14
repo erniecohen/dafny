@@ -1,0 +1,64 @@
+# The certified core of the standard library under --modular-termination
+# (https://github.com/erniecohen/dafny/issues/211, milestone M5a).
+#
+# `dafny build --target:lib` on this project writes a .doo library with a modular
+# termination record.  The modules listed here are the part of Std that carries no
+# unchecked premise: none of them, and nothing they import, has an {:axiom}, @Axiom,
+# assume or {:extern} member.  README.md lists the modules left out, and why.
+#
+# A module joins this list only after review: a module that is not listed is not
+# certified, even when it is added to src/Std.
+
+includes = [
+  "../src/Std/Arithmetic/DivMod.dfy",
+  "../src/Std/Arithmetic/Internal/DivInternals.dfy",
+  "../src/Std/Arithmetic/Internal/DivInternalsNonlinear.dfy",
+  "../src/Std/Arithmetic/Internal/GeneralInternals.dfy",
+  "../src/Std/Arithmetic/Internal/ModInternals.dfy",
+  "../src/Std/Arithmetic/Internal/ModInternalsNonlinear.dfy",
+  "../src/Std/Arithmetic/Internal/MulInternals.dfy",
+  "../src/Std/Arithmetic/Internal/MulInternalsNonlinear.dfy",
+  "../src/Std/Arithmetic/LittleEndianNat.dfy",
+  "../src/Std/Arithmetic/Logarithm.dfy",
+  "../src/Std/Arithmetic/Mul.dfy",
+  "../src/Std/Arithmetic/Power.dfy",
+  "../src/Std/Arithmetic/Power2.dfy",
+  "../src/Std/Base64.dfy",
+  "../src/Std/BoundedInts.dfy",
+  "../src/Std/Collections/Array.dfy",
+  "../src/Std/Collections/Collections.dfy",
+  "../src/Std/Collections/Imap.dfy",
+  "../src/Std/Collections/Iset.dfy",
+  "../src/Std/Collections/Map.dfy",
+  "../src/Std/Collections/Multiset.dfy",
+  "../src/Std/Collections/Seq.dfy",
+  "../src/Std/Collections/Set.dfy",
+  "../src/Std/Collections/Tuple.dfy",
+  "../src/Std/DynamicArray.dfy",
+  "../src/Std/Functions.dfy",
+  "../src/Std/Math.dfy",
+  "../src/Std/Relations.dfy",
+  "../src/Std/Unicode/Unicode.dfy",
+  "../src/Std/Unicode/UnicodeBase.dfy",
+  "../src/Std/Wrappers.dfy",
+]
+
+[options]
+# The options of src/Std/dfyconfig.toml, unchanged, and --modular-termination.
+modular-termination = true
+# Options that help support more values of consuming context options
+# (mostly turning on any more restrictive verification)
+track-print-effects = true
+enforce-determinism = true
+reads-clauses-on-methods = true
+type-system-refresh = true
+general-traits = "datatype"
+general-newtypes = true
+
+# Options important for sustainable development
+# of the libraries themselves.
+resource-limit = 1000000
+verification-time-limit = 300
+# These give too many false positives right now, but should be enabled in the future
+warn-redundant-assumptions = false
+warn-contradictory-assumptions = false
