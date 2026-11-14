@@ -400,6 +400,16 @@ namespace Microsoft.Dafny {
         if (test != e.Test || thn != e.Thn || els != e.Els) {
           newExpr = new ITEExpr(expr.Origin, e.IsBindingGuard, test, thn, els);
         }
+      } else if (expr is DecreasesByExpr decreasesByExpr) {
+        // Keep the wrapper, so the termination check still sees the order.  The order is closed,
+        // so it needs no substitution.
+        Contract.Assert(decreasesByExpr.ResolvedExpression != null);
+        var resolvedExpression = Substitute(decreasesByExpr.ResolvedExpression);
+        return new DecreasesByExpr(expr.Origin, resolvedExpression, decreasesByExpr.Order) {
+          ResolvedExpression = resolvedExpression,
+          Type = resolvedExpression.Type
+        };
+
       } else if (expr is ConcreteSyntaxExpression concreteSyntaxExpression) {
         Contract.Assert(concreteSyntaxExpression.ResolvedExpression != null);
         var resolvedExpression = Substitute(concreteSyntaxExpression.ResolvedExpression);

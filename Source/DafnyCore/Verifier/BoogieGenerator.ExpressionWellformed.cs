@@ -1443,6 +1443,13 @@ namespace Microsoft.Dafny {
             addResultCommands = null;
             break;
           }
+        case DecreasesByExpr decreasesBy: {
+            // The order is closed (DecreasesOrders, R2), but it must still be well-formed.
+            CheckWellformed(decreasesBy.Order, wfOptions, locals, builder, etran);
+            CheckWellformedWithResult(decreasesBy.ResolvedExpression, wfOptions, locals, builder, etran, addResultCommands);
+            addResultCommands = null;
+            break;
+          }
         case ConcreteSyntaxExpression expression: {
             var e = expression;
             CheckWellformedWithResult(e.ResolvedExpression, wfOptions, locals, builder, etran, addResultCommands);

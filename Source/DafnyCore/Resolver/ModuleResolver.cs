@@ -1601,6 +1601,9 @@ namespace Microsoft.Dafny {
         //   - type bounds
         TypeCharacteristicChecker.InferAndCheck(declarations, isAnExport, reporter);
 
+        // Check the decreases components "e by O" (--decreases-orders)
+        DecreasesOrders.Check(Options, reporter, declarations);
+
         // Check that functions claiming to be abstemious really are, and check that 'older' parameters are used only when allowed
         foreach (var fn in ModuleDefinition.AllFunctions(declarations)) {
           new Abstemious(reporter).Check(fn);

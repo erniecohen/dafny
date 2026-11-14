@@ -226,6 +226,13 @@ namespace Microsoft.Dafny {
         await foreach (var targetAgnosticFile in DafnyFile.CreateAndValidate(OnDiskFileSystem.Instance, reporter, options, DafnyMain.StandardLibrariesDooUri, Token.Cli, asLibrary)) {
           dafnyFiles.Add(targetAgnosticFile);
         }
+
+        if (options.Get(CommonOptionBag.DecreasesOrders) && DecreasesOrders.TypeSystemSupportsOrders(options)) {
+          options.CliRootSourceUris.Add(DafnyMain.StandardLibrariesOrdersDooUri);
+          await foreach (var ordersFile in DafnyFile.CreateAndValidate(OnDiskFileSystem.Instance, reporter, options, DafnyMain.StandardLibrariesOrdersDooUri, Token.Cli, asLibrary)) {
+            dafnyFiles.Add(ordersFile);
+          }
+        }
       }
 
       return (ExitValue.SUCCESS, dafnyFiles, otherFiles);

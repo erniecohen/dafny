@@ -322,7 +322,7 @@ public partial class BoogieGenerator {
         decrs.Add(etran.TrExpr(e));
         var (prevVars, eInit) = TranslateToLoopEntry(loop, e, "LoopEntry");
         prevGhostLocals.AddRange(prevVars);
-        initDecrsDafny.Add(eInit);
+        initDecrsDafny.Add(DecreasesByExpr.WithOrderOf(e, eInit));
       }
       Bpl.Expr decrCheck = DecreasesCheck(toks, prevGhostLocals, decrsDafny, initDecrsDafny, decrs, initDecr,
         null, null, true, false);
@@ -381,7 +381,7 @@ public partial class BoogieGenerator {
           decrsDafny.Add(e);
           var (prevVars, eInit) = TranslateToLoopEntry(loop, e, "LoopEntry");
           prevGhostLocals.AddRange(prevVars);
-          initDecrsDafny.Add(eInit);
+          initDecrsDafny.Add(DecreasesByExpr.WithOrderOf(e, eInit));
           decrs.Add(etran.TrExpr(e));
           // need to add can calls again because the actual loop body updates the variables
           loopBodyBuilder.Add(TrAssumeCmd(e.Origin, BplImp(w, etran.CanCallAssumptionForVerification(e))));

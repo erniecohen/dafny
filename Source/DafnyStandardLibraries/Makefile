@@ -21,6 +21,18 @@ build-binary:
 build-modular-termination:
 	$(DAFNY) build -t:lib modular-termination/dfyconfig.toml --output:build/DafnyStandardLibraries-modular-termination.doo
 
+# The well-founded orders of decreases clauses (https://github.com/erniecohen/dafny/issues/245):
+# a library of its own, loaded with the standard library only under --decreases-orders.
+# See orders/README.md.
+ORDERS_DOO_SOURCE=build/DafnyStandardLibraries-orders.doo
+ORDERS_DOO_TARGET=binaries/DafnyStandardLibraries-orders.doo
+
+build-orders:
+	$(DAFNY) build -t:lib --hidden-no-verify=$(NO_VERIFY) orders/dfyconfig.toml --output:${ORDERS_DOO_SOURCE}
+
+update-orders: build-orders
+	cp ${ORDERS_DOO_SOURCE} ${ORDERS_DOO_TARGET}
+
 check-binary: build-binary
 	unzip -o ${DOO_FILE_SOURCE} -d build/current
 	unzip -o ${DOO_FILE_TARGET} -d build/previous

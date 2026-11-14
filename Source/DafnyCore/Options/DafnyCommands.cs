@@ -120,6 +120,7 @@ public static class DafnyCommands {
     CommonOptionBag.DatatypeSubsetConversions,
     CommonOptionBag.AncestorQualifiedModuleIds,
     CommonOptionBag.SynonymRefinesAbstractType,
+    CommonOptionBag.DecreasesOrders,
     CommonOptionBag.LegacyDecreasesOrder,
     CommonOptionBag.LegacyNoncanonicalMapPayloads,
 
