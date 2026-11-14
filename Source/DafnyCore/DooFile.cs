@@ -327,7 +327,7 @@ public class DooFile {
         : $"it has no modular termination record, because it was built without --modular-termination; {ModularTerminationRecords.RebuildInstruction}");
     }
     if (Manifest.DooFileVersion != ModularTerminationRecords.RecordedDooFileVersion ||
-        record.Schema != ModularTerminationManifest.CurrentSchema ||
+        !SupportedSchema(record) ||
         record.ContractSchema != ModularTerminationManifest.CurrentContractSchema) {
       return Reject($"its record has an unsupported format (doo_file_version {Manifest.DooFileVersion}, schema {record.Schema}, contract_schema {record.ContractSchema}); {ModularTerminationRecords.RebuildInstruction}");
     }
@@ -336,6 +336,9 @@ public class DooFile {
     }
     if (!record.Enabled || record.Status != ModularTerminationManifest.CompleteStatus) {
       return Reject($"its record does not state a complete verification (status '{record.Status}'); {ModularTerminationRecords.RebuildInstruction}");
+    }
+    if (record.Schema == ModularTerminationManifest.PremisesSchema && PremiseRefusal(record, options) is { } premiseRefusal) {
+      return Reject(premiseRefusal);
     }
     if (ModularTerminationRecords.UnsupportedConfiguration(options) is { } unsupported) {
       return Reject(unsupported);
@@ -388,6 +391,52 @@ public class DooFile {
       return Reject("the exports listed in its record are not the contracts of its program; the library was modified after it was built");
     }
     return true;
+  }
+
+  /// <summary>
+  /// Schema 1 is a record without premises; schema 2 (milestone M5b) one with at least one premise and the
+  /// fields that name its trust list.
+  /// </summary>
+  private static bool SupportedSchema(ModularTerminationManifest record) {
+    var hasPremiseFields = record.TrustList != null || record.TrustListSha256 != null || record.PremisesSha256 != null ||
+                           record.Premises != null;
+    return record.Schema switch {
+      ModularTerminationManifest.CurrentSchema => !hasPremiseFields,
+      ModularTerminationManifest.PremisesSchema => record.TrustList != null && record.TrustListSha256 != null &&
+                                                   record.PremisesSha256 != null && record.Premises is { Count: > 0 },
+      _ => false
+    };
+  }
+
+  /// <summary>
+  /// Why a record with trusted premises is not admitted, or null: the client must have selected the same
+  /// trust list, and each premise must be an entry of it.  The premises are bound to the program by the
+  /// producer, which matched them against the stored program (ModularTerminationProducer), and to the
+  /// record by its digest.
+  /// </summary>
+  private static string? PremiseRefusal(ModularTerminationManifest record, DafnyOptions options) {
+    var premises = record.Premises!;
+    var selected = ModularTerminationTrustList.Selected(options);
+    if (selected != record.TrustList) {
+      return $"it relies on the trusted premise {premises[0].Id} of the {record.TrustList} trust list" +
+             (premises.Count > 1 ? $" and {premises.Count - 1} more" : "") +
+             $"; use --modular-termination-trust:{record.TrustList} to admit it";
+    }
+    if (record.TrustListSha256 != ModularTerminationTrustList.Sha256(selected)) {
+      return $"it was built with a different version of the {selected} trust list; {ModularTerminationRecords.RebuildInstruction} using this one";
+    }
+    if (record.PremisesSha256 != ModularTerminationTrustList.PremisesSha256(premises) ||
+        !premises.Select(p => p.Id).SequenceEqual(premises.Select(p => p.Id).Order(StringComparer.Ordinal).Distinct())) {
+      return "its premise list does not match its digest; the library was modified after it was built";
+    }
+    foreach (var premise in premises) {
+      var entry = ModularTerminationTrustList.Find(selected, premise.Id);
+      if (entry == null || entry.Kind != premise.Kind || entry.StatementSha256 != premise.StatementSha256 ||
+          entry.ContextSha256 != premise.ContextSha256) {
+        return $"its premise {premise.Id} is not an entry of the {selected} trust list; the library was modified after it was built";
+      }
+    }
+    return null;
   }
 
   private static string? FirstContractDifference(ModularTerminationContracts computed, string storedText) {
