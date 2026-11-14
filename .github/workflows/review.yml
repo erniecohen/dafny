@@ -1061,6 +1061,13 @@ jobs:
             --logger "console;verbosity=normal" \
             --filter "FullyQualifiedName~IncrementalBitvectorMembersTest" \
             --blame-hang --blame-hang-timeout 90s --blame-hang-dump-type none
+      # https://github.com/erniecohen/dafny/issues/336: the editor's parse and resolution caches.
+      - name: Test editor parse and resolution caching
+        run: |
+          dotnet test --settings .github/review/ci.runsettings Source/DafnyLanguageServer.Test -c Release --no-build \
+            --logger "console;verbosity=normal" \
+            --filter "FullyQualifiedName~Synchronization.CachingTest" \
+            --blame-hang --blame-hang-timeout 90s --blame-hang-dump-type none
 
   finite-support:
     if: ${{ ((github.event_name != 'pull_request' || !github.event.pull_request.draft) && ((github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'erniecohen/dafny'))) && !inputs.platform_parity)) && needs.tree.outputs.reuse != 'true' }}
