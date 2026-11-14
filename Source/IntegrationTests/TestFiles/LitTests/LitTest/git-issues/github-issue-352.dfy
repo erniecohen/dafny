@@ -18,6 +18,13 @@ datatype Pair<+A, +B> = Pair(a: A, b: B)
 datatype List<+T> = Nil | Cons(head: T, tail: List<T>)
 // A type argument that C# represents by a value type, beside reference ones
 datatype Triple<+X, +A, +B> = Triple(x: X, a: A, b: B)
+// Arguments of collection types, which the comparison of values built at other type
+// arguments hands to the Equals of the runtime's collections.  The second argument keeps the
+// compiler from erasing the datatype to its collection.
+datatype Seqs<+A> = Seqs(s: seq<A>, n: int)
+datatype Sets<+A> = Sets(s: set<A>, n: int)
+datatype Multisets<+A> = Multisets(s: multiset<A>, n: int)
+datatype Maps<+K, +A> = Maps(m: map<K, A>, n: int)
 
 // The issue's two programs: crossed type arguments, compared directly or widened first
 method CrossedPair(i: Integer, j: Integer) returns (r: bool) ensures r {
@@ -51,6 +58,21 @@ method CrossedTriple(i: Integer, j: Integer) returns (r: bool) ensures r {
   var a := Triple<int, Number, Integer>.Triple(3, i, j);
   var b := Triple<int, Integer, Number>.Triple(3, i, j);
   r := a == b;
+}
+
+method CollectionFields(i: Integer, j: Integer) returns (r: bool) ensures r {
+  var s0: Seqs<Number> := Seqs<Integer>.Seqs([i, j], 0);
+  var s1: Seqs<Number> := Seqs<Number>.Seqs([i, j], 0);
+  var t0: Sets<Number> := Sets<Integer>.Sets({i, j}, 0);
+  var t1: Sets<Number> := Sets<Number>.Sets({i, j}, 0);
+  var u0: Multisets<Number> := Multisets<Integer>.Multisets(multiset{i, j}, 0);
+  var u1: Multisets<Number> := Multisets<Number>.Multisets(multiset{i, j}, 0);
+  var m0: Maps<int, Number> := Maps<int, Integer>.Maps(map[1 := i], 0);
+  var m1: Maps<int, Number> := Maps<int, Number>.Maps(map[1 := i], 0);
+  var k0: Maps<Number, Number> := Maps<Integer, Number>.Maps(map[i := j], 0);
+  var k1: Maps<Number, Number> := Maps<Number, Integer>.Maps(map[i := j], 0);
+  r := s0 == s1 && s1 == s0 && t0 == t1 && t1 == t0 && u0 == u1 && u1 == u0 &&
+       m0 == m1 && m1 == m0 && k0 == k1 && k1 == k0;
 }
 
 // Tuples, whose C# classes come from the runtime
@@ -90,8 +112,9 @@ method Main() {
   var r2 := SubPair(i, j);
   var r3 := CrossedList(i, j);
   var r4 := CrossedTriple(i, j);
-  var r5 := CrossedTuple(i, j);
-  var r6 := InSet(i, j);
-  var r7 := Differ(i, j);
-  print r0, " ", r1, " ", r2, " ", r3, " ", r4, " ", r5, " ", r6, " ", r7, "\n";
+  var r5 := CollectionFields(i, j);
+  var r6 := CrossedTuple(i, j);
+  var r7 := InSet(i, j);
+  var r8 := Differ(i, j);
+  print r0, " ", r1, " ", r2, " ", r3, " ", r4, " ", r5, " ", r6, " ", r7, " ", r8, "\n";
 }
