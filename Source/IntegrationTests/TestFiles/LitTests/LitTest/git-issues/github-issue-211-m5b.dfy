@@ -10,4 +10,4 @@
 // {:axiom}, an assume statement and a client that did not opt in, and that a premise-free library
 // is byte for byte the same with the trust list, with none, and without the option.  The audit of the
 // trusted standard-library project, modular-termination/trusted, is the regression of the list's
-// table: each of its 19 premises is admitted only while its statement and context digests match.
+// table: each of its 18 premises is admitted only while its statement and context digests match.

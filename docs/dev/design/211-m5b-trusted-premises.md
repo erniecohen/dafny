@@ -251,11 +251,14 @@ more, so every existing expectation is unchanged.
 
 The premise-free core of M5a stays as it is, so that a client can still choose an unconditional
 result. M5b adds a second project, `Source/DafnyStandardLibraries/modular-termination/trusted/`, the
-**expanded core**: the core's files, unchanged, plus `Axioms`, `RealCompleteness`, `Ordinal` and
-`Strings`, built as one library with `--modular-termination-trust:standard-library`. The M5a project
+**expanded core**: the core's files, unchanged, plus `Axioms`, `RealCompleteness` and `Ordinal`,
+built as one library with `--modular-termination-trust:standard-library`. The M5a project
 file is not touched, so the trust-dependent modules are added only where the trust option is set.
 (The first draft layered this library on the core `.doo`; a single project is simpler and gives the
-same records.) The modules that import these, `Termination`, `Frames`, `Parsers` and the Unicode
+same records.) `Strings` is left out for now: its conversion modules refine
+`Arithmetic.LittleEndianNat`, and the refined copies of the reveal lemmas of its opaque functions
+carry `{:verify false}`, which the producer refuses; its entry stays on the list. The modules that
+import these, `Termination`, `Frames`, `Parsers` and the Unicode
 encoding modules, join in later steps once each builds.
 `Actions` still waits for the bounds migration of section 9.2 of the M4b design. `JSON`,
 `UnicodeStringsWithUnicodeChar` and `TargetSpecific` stay out (section 1). The `issue211-std.yml`

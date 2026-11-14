@@ -61,7 +61,6 @@ Ordinal.dfy(69,26): Warning: TimesLimit: Declaration has explicit `{:axiom}` att
 Ordinal.dfy(99,17): Warning: TimesStrictlyIncreasingOnRight: Declaration has explicit `{:axiom}` attribute. Under --modular-termination-trust:standard-library, the trust list admits it as the trusted premise Std.Ordinal.TimesStrictlyIncreasingOnRight (lemma). Possible mitigation: Provide a proof or test.
 Ordinal.dfy(104,17): Warning: TimesIncreasingOnLeft: Declaration has explicit `{:axiom}` attribute. Under --modular-termination-trust:standard-library, the trust list admits it as the trusted premise Std.Ordinal.TimesIncreasingOnLeft (lemma). Possible mitigation: Provide a proof or test.
 Ordinal.dfy(108,17): Warning: TimesDistributesOnLeft: Declaration has explicit `{:axiom}` attribute. Under --modular-termination-trust:standard-library, the trust list admits it as the trusted premise Std.Ordinal.TimesDistributesOnLeft (lemma). Possible mitigation: Provide a proof or test.
-Strings.dfy(186,10): Warning: CharsConsistent: Declaration has explicit `{:axiom}` attribute. Under --modular-termination-trust:standard-library, the trust list admits it as the trusted premise Std.Strings.HexConversion.CharsConsistent (lemma). Possible mitigation: Provide a proof or test.
-Dafny auditor completed with 19 findings
+Dafny auditor completed with 18 findings
 
 Dafny program verifier did not attempt verification

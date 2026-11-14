@@ -820,7 +820,7 @@ premises only when it selects the same list, and then reports them in its own su
 `dafny audit`. The three ghost functions are global premises: their postconditions hold wherever the
 function is visible, not only where it is called. The project
 `Source/DafnyStandardLibraries/modular-termination/trusted` builds the standard-library core together with
-these modules.
+`Axioms`, `RealCompleteness` and `Ordinal`.
 
 Before milestone M4a, a bound could call code that reaches a dispatched call, and a program could
 prove `false` through it, as in the example above; the rule for bounds closes that.
