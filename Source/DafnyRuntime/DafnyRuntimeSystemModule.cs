@@ -576,7 +576,11 @@ namespace _System {
     T1 dtor__1 { get; }
     _ITuple2<__T0, __T1> DowncastClone<__T0, __T1>(Func<T0, __T0> converter0, Func<T1, __T1> converter1);
   }
-  public class Tuple2<T0, T1> : _ITuple2<T0, T1> {
+  public interface _ITuple2____hMake2_Erased {
+    object __0 { get; }
+    object __1 { get; }
+  }
+  public class Tuple2<T0, T1> : _ITuple2<T0, T1>, _ITuple2____hMake2_Erased {
     public readonly T0 __0;
     public readonly T1 __1;
     public Tuple2(T0 _0, T1 _1) {
@@ -589,8 +593,14 @@ namespace _System {
     }
     public override bool Equals(object other) {
       var oth = other as _System.Tuple2<T0, T1>;
-      return oth != null && object.Equals(this.__0, oth.__0) && object.Equals(this.__1, oth.__1);
+      if (oth != null) {
+        return true && object.Equals(this.__0, oth.__0) && object.Equals(this.__1, oth.__1);
+      }
+      var erased = other as _ITuple2____hMake2_Erased;
+      return erased != null && object.Equals(this.__0, erased.__0) && object.Equals(this.__1, erased.__1);
     }
+    object _ITuple2____hMake2_Erased.__0 => this.__0;
+    object _ITuple2____hMake2_Erased.__1 => this.__1;
     public override int GetHashCode() {
       ulong hash = 5381;
       hash = ((hash << 5) + hash) + 0;
@@ -678,7 +688,10 @@ namespace _System {
     T0 dtor__0 { get; }
     _ITuple1<__T0> DowncastClone<__T0>(Func<T0, __T0> converter0);
   }
-  public class Tuple1<T0> : _ITuple1<T0> {
+  public interface _ITuple1____hMake1_Erased {
+    object __0 { get; }
+  }
+  public class Tuple1<T0> : _ITuple1<T0>, _ITuple1____hMake1_Erased {
     public readonly T0 __0;
     public Tuple1(T0 _0) {
       this.__0 = _0;
@@ -689,8 +702,13 @@ namespace _System {
     }
     public override bool Equals(object other) {
       var oth = other as _System.Tuple1<T0>;
-      return oth != null && object.Equals(this.__0, oth.__0);
+      if (oth != null) {
+        return true && object.Equals(this.__0, oth.__0);
+      }
+      var erased = other as _ITuple1____hMake1_Erased;
+      return erased != null && object.Equals(this.__0, erased.__0);
     }
+    object _ITuple1____hMake1_Erased.__0 => this.__0;
     public override int GetHashCode() {
       ulong hash = 5381;
       hash = ((hash << 5) + hash) + 0;
@@ -729,7 +747,12 @@ namespace _System {
     T2 dtor__2 { get; }
     _ITuple3<__T0, __T1, __T2> DowncastClone<__T0, __T1, __T2>(Func<T0, __T0> converter0, Func<T1, __T1> converter1, Func<T2, __T2> converter2);
   }
-  public class Tuple3<T0, T1, T2> : _ITuple3<T0, T1, T2> {
+  public interface _ITuple3____hMake3_Erased {
+    object __0 { get; }
+    object __1 { get; }
+    object __2 { get; }
+  }
+  public class Tuple3<T0, T1, T2> : _ITuple3<T0, T1, T2>, _ITuple3____hMake3_Erased {
     public readonly T0 __0;
     public readonly T1 __1;
     public readonly T2 __2;
@@ -744,8 +767,15 @@ namespace _System {
     }
     public override bool Equals(object other) {
       var oth = other as _System.Tuple3<T0, T1, T2>;
-      return oth != null && object.Equals(this.__0, oth.__0) && object.Equals(this.__1, oth.__1) && object.Equals(this.__2, oth.__2);
+      if (oth != null) {
+        return true && object.Equals(this.__0, oth.__0) && object.Equals(this.__1, oth.__1) && object.Equals(this.__2, oth.__2);
+      }
+      var erased = other as _ITuple3____hMake3_Erased;
+      return erased != null && object.Equals(this.__0, erased.__0) && object.Equals(this.__1, erased.__1) && object.Equals(this.__2, erased.__2);
     }
+    object _ITuple3____hMake3_Erased.__0 => this.__0;
+    object _ITuple3____hMake3_Erased.__1 => this.__1;
+    object _ITuple3____hMake3_Erased.__2 => this.__2;
     public override int GetHashCode() {
       ulong hash = 5381;
       hash = ((hash << 5) + hash) + 0;
@@ -801,7 +831,13 @@ namespace _System {
     T3 dtor__3 { get; }
     _ITuple4<__T0, __T1, __T2, __T3> DowncastClone<__T0, __T1, __T2, __T3>(Func<T0, __T0> converter0, Func<T1, __T1> converter1, Func<T2, __T2> converter2, Func<T3, __T3> converter3);
   }
-  public class Tuple4<T0, T1, T2, T3> : _ITuple4<T0, T1, T2, T3> {
+  public interface _ITuple4____hMake4_Erased {
+    object __0 { get; }
+    object __1 { get; }
+    object __2 { get; }
+    object __3 { get; }
+  }
+  public class Tuple4<T0, T1, T2, T3> : _ITuple4<T0, T1, T2, T3>, _ITuple4____hMake4_Erased {
     public readonly T0 __0;
     public readonly T1 __1;
     public readonly T2 __2;
@@ -818,8 +854,16 @@ namespace _System {
     }
     public override bool Equals(object other) {
       var oth = other as _System.Tuple4<T0, T1, T2, T3>;
-      return oth != null && object.Equals(this.__0, oth.__0) && object.Equals(this.__1, oth.__1) && object.Equals(this.__2, oth.__2) && object.Equals(this.__3, oth.__3);
+      if (oth != null) {
+        return true && object.Equals(this.__0, oth.__0) && object.Equals(this.__1, oth.__1) && object.Equals(this.__2, oth.__2) && object.Equals(this.__3, oth.__3);
+      }
+      var erased = other as _ITuple4____hMake4_Erased;
+      return erased != null && object.Equals(this.__0, erased.__0) && object.Equals(this.__1, erased.__1) && object.Equals(this.__2, erased.__2) && object.Equals(this.__3, erased.__3);
     }
+    object _ITuple4____hMake4_Erased.__0 => this.__0;
+    object _ITuple4____hMake4_Erased.__1 => this.__1;
+    object _ITuple4____hMake4_Erased.__2 => this.__2;
+    object _ITuple4____hMake4_Erased.__3 => this.__3;
     public override int GetHashCode() {
       ulong hash = 5381;
       hash = ((hash << 5) + hash) + 0;
@@ -884,7 +928,14 @@ namespace _System {
     T4 dtor__4 { get; }
     _ITuple5<__T0, __T1, __T2, __T3, __T4> DowncastClone<__T0, __T1, __T2, __T3, __T4>(Func<T0, __T0> converter0, Func<T1, __T1> converter1, Func<T2, __T2> converter2, Func<T3, __T3> converter3, Func<T4, __T4> converter4);
   }
-  public class Tuple5<T0, T1, T2, T3, T4> : _ITuple5<T0, T1, T2, T3, T4> {
+  public interface _ITuple5____hMake5_Erased {
+    object __0 { get; }
+    object __1 { get; }
+    object __2 { get; }
+    object __3 { get; }
+    object __4 { get; }
+  }
+  public class Tuple5<T0, T1, T2, T3, T4> : _ITuple5<T0, T1, T2, T3, T4>, _ITuple5____hMake5_Erased {
     public readonly T0 __0;
     public readonly T1 __1;
     public readonly T2 __2;
@@ -903,8 +954,17 @@ namespace _System {
     }
     public override bool Equals(object other) {
       var oth = other as _System.Tuple5<T0, T1, T2, T3, T4>;
-      return oth != null && object.Equals(this.__0, oth.__0) && object.Equals(this.__1, oth.__1) && object.Equals(this.__2, oth.__2) && object.Equals(this.__3, oth.__3) && object.Equals(this.__4, oth.__4);
+      if (oth != null) {
+        return true && object.Equals(this.__0, oth.__0) && object.Equals(this.__1, oth.__1) && object.Equals(this.__2, oth.__2) && object.Equals(this.__3, oth.__3) && object.Equals(this.__4, oth.__4);
+      }
+      var erased = other as _ITuple5____hMake5_Erased;
+      return erased != null && object.Equals(this.__0, erased.__0) && object.Equals(this.__1, erased.__1) && object.Equals(this.__2, erased.__2) && object.Equals(this.__3, erased.__3) && object.Equals(this.__4, erased.__4);
     }
+    object _ITuple5____hMake5_Erased.__0 => this.__0;
+    object _ITuple5____hMake5_Erased.__1 => this.__1;
+    object _ITuple5____hMake5_Erased.__2 => this.__2;
+    object _ITuple5____hMake5_Erased.__3 => this.__3;
+    object _ITuple5____hMake5_Erased.__4 => this.__4;
     public override int GetHashCode() {
       ulong hash = 5381;
       hash = ((hash << 5) + hash) + 0;
@@ -978,7 +1038,15 @@ namespace _System {
     T5 dtor__5 { get; }
     _ITuple6<__T0, __T1, __T2, __T3, __T4, __T5> DowncastClone<__T0, __T1, __T2, __T3, __T4, __T5>(Func<T0, __T0> converter0, Func<T1, __T1> converter1, Func<T2, __T2> converter2, Func<T3, __T3> converter3, Func<T4, __T4> converter4, Func<T5, __T5> converter5);
   }
-  public class Tuple6<T0, T1, T2, T3, T4, T5> : _ITuple6<T0, T1, T2, T3, T4, T5> {
+  public interface _ITuple6____hMake6_Erased {
+    object __0 { get; }
+    object __1 { get; }
+    object __2 { get; }
+    object __3 { get; }
+    object __4 { get; }
+    object __5 { get; }
+  }
+  public class Tuple6<T0, T1, T2, T3, T4, T5> : _ITuple6<T0, T1, T2, T3, T4, T5>, _ITuple6____hMake6_Erased {
     public readonly T0 __0;
     public readonly T1 __1;
     public readonly T2 __2;
@@ -999,8 +1067,18 @@ namespace _System {
     }
     public override bool Equals(object other) {
       var oth = other as _System.Tuple6<T0, T1, T2, T3, T4, T5>;
-      return oth != null && object.Equals(this.__0, oth.__0) && object.Equals(this.__1, oth.__1) && object.Equals(this.__2, oth.__2) && object.Equals(this.__3, oth.__3) && object.Equals(this.__4, oth.__4) && object.Equals(this.__5, oth.__5);
+      if (oth != null) {
+        return true && object.Equals(this.__0, oth.__0) && object.Equals(this.__1, oth.__1) && object.Equals(this.__2, oth.__2) && object.Equals(this.__3, oth.__3) && object.Equals(this.__4, oth.__4) && object.Equals(this.__5, oth.__5);
+      }
+      var erased = other as _ITuple6____hMake6_Erased;
+      return erased != null && object.Equals(this.__0, erased.__0) && object.Equals(this.__1, erased.__1) && object.Equals(this.__2, erased.__2) && object.Equals(this.__3, erased.__3) && object.Equals(this.__4, erased.__4) && object.Equals(this.__5, erased.__5);
     }
+    object _ITuple6____hMake6_Erased.__0 => this.__0;
+    object _ITuple6____hMake6_Erased.__1 => this.__1;
+    object _ITuple6____hMake6_Erased.__2 => this.__2;
+    object _ITuple6____hMake6_Erased.__3 => this.__3;
+    object _ITuple6____hMake6_Erased.__4 => this.__4;
+    object _ITuple6____hMake6_Erased.__5 => this.__5;
     public override int GetHashCode() {
       ulong hash = 5381;
       hash = ((hash << 5) + hash) + 0;
@@ -1083,7 +1161,16 @@ namespace _System {
     T6 dtor__6 { get; }
     _ITuple7<__T0, __T1, __T2, __T3, __T4, __T5, __T6> DowncastClone<__T0, __T1, __T2, __T3, __T4, __T5, __T6>(Func<T0, __T0> converter0, Func<T1, __T1> converter1, Func<T2, __T2> converter2, Func<T3, __T3> converter3, Func<T4, __T4> converter4, Func<T5, __T5> converter5, Func<T6, __T6> converter6);
   }
-  public class Tuple7<T0, T1, T2, T3, T4, T5, T6> : _ITuple7<T0, T1, T2, T3, T4, T5, T6> {
+  public interface _ITuple7____hMake7_Erased {
+    object __0 { get; }
+    object __1 { get; }
+    object __2 { get; }
+    object __3 { get; }
+    object __4 { get; }
+    object __5 { get; }
+    object __6 { get; }
+  }
+  public class Tuple7<T0, T1, T2, T3, T4, T5, T6> : _ITuple7<T0, T1, T2, T3, T4, T5, T6>, _ITuple7____hMake7_Erased {
     public readonly T0 __0;
     public readonly T1 __1;
     public readonly T2 __2;
@@ -1106,8 +1193,19 @@ namespace _System {
     }
     public override bool Equals(object other) {
       var oth = other as _System.Tuple7<T0, T1, T2, T3, T4, T5, T6>;
-      return oth != null && object.Equals(this.__0, oth.__0) && object.Equals(this.__1, oth.__1) && object.Equals(this.__2, oth.__2) && object.Equals(this.__3, oth.__3) && object.Equals(this.__4, oth.__4) && object.Equals(this.__5, oth.__5) && object.Equals(this.__6, oth.__6);
+      if (oth != null) {
+        return true && object.Equals(this.__0, oth.__0) && object.Equals(this.__1, oth.__1) && object.Equals(this.__2, oth.__2) && object.Equals(this.__3, oth.__3) && object.Equals(this.__4, oth.__4) && object.Equals(this.__5, oth.__5) && object.Equals(this.__6, oth.__6);
+      }
+      var erased = other as _ITuple7____hMake7_Erased;
+      return erased != null && object.Equals(this.__0, erased.__0) && object.Equals(this.__1, erased.__1) && object.Equals(this.__2, erased.__2) && object.Equals(this.__3, erased.__3) && object.Equals(this.__4, erased.__4) && object.Equals(this.__5, erased.__5) && object.Equals(this.__6, erased.__6);
     }
+    object _ITuple7____hMake7_Erased.__0 => this.__0;
+    object _ITuple7____hMake7_Erased.__1 => this.__1;
+    object _ITuple7____hMake7_Erased.__2 => this.__2;
+    object _ITuple7____hMake7_Erased.__3 => this.__3;
+    object _ITuple7____hMake7_Erased.__4 => this.__4;
+    object _ITuple7____hMake7_Erased.__5 => this.__5;
+    object _ITuple7____hMake7_Erased.__6 => this.__6;
     public override int GetHashCode() {
       ulong hash = 5381;
       hash = ((hash << 5) + hash) + 0;
@@ -1199,7 +1297,17 @@ namespace _System {
     T7 dtor__7 { get; }
     _ITuple8<__T0, __T1, __T2, __T3, __T4, __T5, __T6, __T7> DowncastClone<__T0, __T1, __T2, __T3, __T4, __T5, __T6, __T7>(Func<T0, __T0> converter0, Func<T1, __T1> converter1, Func<T2, __T2> converter2, Func<T3, __T3> converter3, Func<T4, __T4> converter4, Func<T5, __T5> converter5, Func<T6, __T6> converter6, Func<T7, __T7> converter7);
   }
-  public class Tuple8<T0, T1, T2, T3, T4, T5, T6, T7> : _ITuple8<T0, T1, T2, T3, T4, T5, T6, T7> {
+  public interface _ITuple8____hMake8_Erased {
+    object __0 { get; }
+    object __1 { get; }
+    object __2 { get; }
+    object __3 { get; }
+    object __4 { get; }
+    object __5 { get; }
+    object __6 { get; }
+    object __7 { get; }
+  }
+  public class Tuple8<T0, T1, T2, T3, T4, T5, T6, T7> : _ITuple8<T0, T1, T2, T3, T4, T5, T6, T7>, _ITuple8____hMake8_Erased {
     public readonly T0 __0;
     public readonly T1 __1;
     public readonly T2 __2;
@@ -1224,8 +1332,20 @@ namespace _System {
     }
     public override bool Equals(object other) {
       var oth = other as _System.Tuple8<T0, T1, T2, T3, T4, T5, T6, T7>;
-      return oth != null && object.Equals(this.__0, oth.__0) && object.Equals(this.__1, oth.__1) && object.Equals(this.__2, oth.__2) && object.Equals(this.__3, oth.__3) && object.Equals(this.__4, oth.__4) && object.Equals(this.__5, oth.__5) && object.Equals(this.__6, oth.__6) && object.Equals(this.__7, oth.__7);
+      if (oth != null) {
+        return true && object.Equals(this.__0, oth.__0) && object.Equals(this.__1, oth.__1) && object.Equals(this.__2, oth.__2) && object.Equals(this.__3, oth.__3) && object.Equals(this.__4, oth.__4) && object.Equals(this.__5, oth.__5) && object.Equals(this.__6, oth.__6) && object.Equals(this.__7, oth.__7);
+      }
+      var erased = other as _ITuple8____hMake8_Erased;
+      return erased != null && object.Equals(this.__0, erased.__0) && object.Equals(this.__1, erased.__1) && object.Equals(this.__2, erased.__2) && object.Equals(this.__3, erased.__3) && object.Equals(this.__4, erased.__4) && object.Equals(this.__5, erased.__5) && object.Equals(this.__6, erased.__6) && object.Equals(this.__7, erased.__7);
     }
+    object _ITuple8____hMake8_Erased.__0 => this.__0;
+    object _ITuple8____hMake8_Erased.__1 => this.__1;
+    object _ITuple8____hMake8_Erased.__2 => this.__2;
+    object _ITuple8____hMake8_Erased.__3 => this.__3;
+    object _ITuple8____hMake8_Erased.__4 => this.__4;
+    object _ITuple8____hMake8_Erased.__5 => this.__5;
+    object _ITuple8____hMake8_Erased.__6 => this.__6;
+    object _ITuple8____hMake8_Erased.__7 => this.__7;
     public override int GetHashCode() {
       ulong hash = 5381;
       hash = ((hash << 5) + hash) + 0;
@@ -1326,7 +1446,18 @@ namespace _System {
     T8 dtor__8 { get; }
     _ITuple9<__T0, __T1, __T2, __T3, __T4, __T5, __T6, __T7, __T8> DowncastClone<__T0, __T1, __T2, __T3, __T4, __T5, __T6, __T7, __T8>(Func<T0, __T0> converter0, Func<T1, __T1> converter1, Func<T2, __T2> converter2, Func<T3, __T3> converter3, Func<T4, __T4> converter4, Func<T5, __T5> converter5, Func<T6, __T6> converter6, Func<T7, __T7> converter7, Func<T8, __T8> converter8);
   }
-  public class Tuple9<T0, T1, T2, T3, T4, T5, T6, T7, T8> : _ITuple9<T0, T1, T2, T3, T4, T5, T6, T7, T8> {
+  public interface _ITuple9____hMake9_Erased {
+    object __0 { get; }
+    object __1 { get; }
+    object __2 { get; }
+    object __3 { get; }
+    object __4 { get; }
+    object __5 { get; }
+    object __6 { get; }
+    object __7 { get; }
+    object __8 { get; }
+  }
+  public class Tuple9<T0, T1, T2, T3, T4, T5, T6, T7, T8> : _ITuple9<T0, T1, T2, T3, T4, T5, T6, T7, T8>, _ITuple9____hMake9_Erased {
     public readonly T0 __0;
     public readonly T1 __1;
     public readonly T2 __2;
@@ -1353,8 +1484,21 @@ namespace _System {
     }
     public override bool Equals(object other) {
       var oth = other as _System.Tuple9<T0, T1, T2, T3, T4, T5, T6, T7, T8>;
-      return oth != null && object.Equals(this.__0, oth.__0) && object.Equals(this.__1, oth.__1) && object.Equals(this.__2, oth.__2) && object.Equals(this.__3, oth.__3) && object.Equals(this.__4, oth.__4) && object.Equals(this.__5, oth.__5) && object.Equals(this.__6, oth.__6) && object.Equals(this.__7, oth.__7) && object.Equals(this.__8, oth.__8);
+      if (oth != null) {
+        return true && object.Equals(this.__0, oth.__0) && object.Equals(this.__1, oth.__1) && object.Equals(this.__2, oth.__2) && object.Equals(this.__3, oth.__3) && object.Equals(this.__4, oth.__4) && object.Equals(this.__5, oth.__5) && object.Equals(this.__6, oth.__6) && object.Equals(this.__7, oth.__7) && object.Equals(this.__8, oth.__8);
+      }
+      var erased = other as _ITuple9____hMake9_Erased;
+      return erased != null && object.Equals(this.__0, erased.__0) && object.Equals(this.__1, erased.__1) && object.Equals(this.__2, erased.__2) && object.Equals(this.__3, erased.__3) && object.Equals(this.__4, erased.__4) && object.Equals(this.__5, erased.__5) && object.Equals(this.__6, erased.__6) && object.Equals(this.__7, erased.__7) && object.Equals(this.__8, erased.__8);
     }
+    object _ITuple9____hMake9_Erased.__0 => this.__0;
+    object _ITuple9____hMake9_Erased.__1 => this.__1;
+    object _ITuple9____hMake9_Erased.__2 => this.__2;
+    object _ITuple9____hMake9_Erased.__3 => this.__3;
+    object _ITuple9____hMake9_Erased.__4 => this.__4;
+    object _ITuple9____hMake9_Erased.__5 => this.__5;
+    object _ITuple9____hMake9_Erased.__6 => this.__6;
+    object _ITuple9____hMake9_Erased.__7 => this.__7;
+    object _ITuple9____hMake9_Erased.__8 => this.__8;
     public override int GetHashCode() {
       ulong hash = 5381;
       hash = ((hash << 5) + hash) + 0;
@@ -1464,7 +1608,19 @@ namespace _System {
     T9 dtor__9 { get; }
     _ITuple10<__T0, __T1, __T2, __T3, __T4, __T5, __T6, __T7, __T8, __T9> DowncastClone<__T0, __T1, __T2, __T3, __T4, __T5, __T6, __T7, __T8, __T9>(Func<T0, __T0> converter0, Func<T1, __T1> converter1, Func<T2, __T2> converter2, Func<T3, __T3> converter3, Func<T4, __T4> converter4, Func<T5, __T5> converter5, Func<T6, __T6> converter6, Func<T7, __T7> converter7, Func<T8, __T8> converter8, Func<T9, __T9> converter9);
   }
-  public class Tuple10<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9> : _ITuple10<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9> {
+  public interface _ITuple10____hMake10_Erased {
+    object __0 { get; }
+    object __1 { get; }
+    object __2 { get; }
+    object __3 { get; }
+    object __4 { get; }
+    object __5 { get; }
+    object __6 { get; }
+    object __7 { get; }
+    object __8 { get; }
+    object __9 { get; }
+  }
+  public class Tuple10<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9> : _ITuple10<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9>, _ITuple10____hMake10_Erased {
     public readonly T0 __0;
     public readonly T1 __1;
     public readonly T2 __2;
@@ -1493,8 +1649,22 @@ namespace _System {
     }
     public override bool Equals(object other) {
       var oth = other as _System.Tuple10<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9>;
-      return oth != null && object.Equals(this.__0, oth.__0) && object.Equals(this.__1, oth.__1) && object.Equals(this.__2, oth.__2) && object.Equals(this.__3, oth.__3) && object.Equals(this.__4, oth.__4) && object.Equals(this.__5, oth.__5) && object.Equals(this.__6, oth.__6) && object.Equals(this.__7, oth.__7) && object.Equals(this.__8, oth.__8) && object.Equals(this.__9, oth.__9);
+      if (oth != null) {
+        return true && object.Equals(this.__0, oth.__0) && object.Equals(this.__1, oth.__1) && object.Equals(this.__2, oth.__2) && object.Equals(this.__3, oth.__3) && object.Equals(this.__4, oth.__4) && object.Equals(this.__5, oth.__5) && object.Equals(this.__6, oth.__6) && object.Equals(this.__7, oth.__7) && object.Equals(this.__8, oth.__8) && object.Equals(this.__9, oth.__9);
+      }
+      var erased = other as _ITuple10____hMake10_Erased;
+      return erased != null && object.Equals(this.__0, erased.__0) && object.Equals(this.__1, erased.__1) && object.Equals(this.__2, erased.__2) && object.Equals(this.__3, erased.__3) && object.Equals(this.__4, erased.__4) && object.Equals(this.__5, erased.__5) && object.Equals(this.__6, erased.__6) && object.Equals(this.__7, erased.__7) && object.Equals(this.__8, erased.__8) && object.Equals(this.__9, erased.__9);
     }
+    object _ITuple10____hMake10_Erased.__0 => this.__0;
+    object _ITuple10____hMake10_Erased.__1 => this.__1;
+    object _ITuple10____hMake10_Erased.__2 => this.__2;
+    object _ITuple10____hMake10_Erased.__3 => this.__3;
+    object _ITuple10____hMake10_Erased.__4 => this.__4;
+    object _ITuple10____hMake10_Erased.__5 => this.__5;
+    object _ITuple10____hMake10_Erased.__6 => this.__6;
+    object _ITuple10____hMake10_Erased.__7 => this.__7;
+    object _ITuple10____hMake10_Erased.__8 => this.__8;
+    object _ITuple10____hMake10_Erased.__9 => this.__9;
     public override int GetHashCode() {
       ulong hash = 5381;
       hash = ((hash << 5) + hash) + 0;
@@ -1613,7 +1783,20 @@ namespace _System {
     T10 dtor__10 { get; }
     _ITuple11<__T0, __T1, __T2, __T3, __T4, __T5, __T6, __T7, __T8, __T9, __T10> DowncastClone<__T0, __T1, __T2, __T3, __T4, __T5, __T6, __T7, __T8, __T9, __T10>(Func<T0, __T0> converter0, Func<T1, __T1> converter1, Func<T2, __T2> converter2, Func<T3, __T3> converter3, Func<T4, __T4> converter4, Func<T5, __T5> converter5, Func<T6, __T6> converter6, Func<T7, __T7> converter7, Func<T8, __T8> converter8, Func<T9, __T9> converter9, Func<T10, __T10> converter10);
   }
-  public class Tuple11<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> : _ITuple11<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> {
+  public interface _ITuple11____hMake11_Erased {
+    object __0 { get; }
+    object __1 { get; }
+    object __2 { get; }
+    object __3 { get; }
+    object __4 { get; }
+    object __5 { get; }
+    object __6 { get; }
+    object __7 { get; }
+    object __8 { get; }
+    object __9 { get; }
+    object __10 { get; }
+  }
+  public class Tuple11<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> : _ITuple11<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>, _ITuple11____hMake11_Erased {
     public readonly T0 __0;
     public readonly T1 __1;
     public readonly T2 __2;
@@ -1644,8 +1827,23 @@ namespace _System {
     }
     public override bool Equals(object other) {
       var oth = other as _System.Tuple11<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>;
-      return oth != null && object.Equals(this.__0, oth.__0) && object.Equals(this.__1, oth.__1) && object.Equals(this.__2, oth.__2) && object.Equals(this.__3, oth.__3) && object.Equals(this.__4, oth.__4) && object.Equals(this.__5, oth.__5) && object.Equals(this.__6, oth.__6) && object.Equals(this.__7, oth.__7) && object.Equals(this.__8, oth.__8) && object.Equals(this.__9, oth.__9) && object.Equals(this.__10, oth.__10);
+      if (oth != null) {
+        return true && object.Equals(this.__0, oth.__0) && object.Equals(this.__1, oth.__1) && object.Equals(this.__2, oth.__2) && object.Equals(this.__3, oth.__3) && object.Equals(this.__4, oth.__4) && object.Equals(this.__5, oth.__5) && object.Equals(this.__6, oth.__6) && object.Equals(this.__7, oth.__7) && object.Equals(this.__8, oth.__8) && object.Equals(this.__9, oth.__9) && object.Equals(this.__10, oth.__10);
+      }
+      var erased = other as _ITuple11____hMake11_Erased;
+      return erased != null && object.Equals(this.__0, erased.__0) && object.Equals(this.__1, erased.__1) && object.Equals(this.__2, erased.__2) && object.Equals(this.__3, erased.__3) && object.Equals(this.__4, erased.__4) && object.Equals(this.__5, erased.__5) && object.Equals(this.__6, erased.__6) && object.Equals(this.__7, erased.__7) && object.Equals(this.__8, erased.__8) && object.Equals(this.__9, erased.__9) && object.Equals(this.__10, erased.__10);
     }
+    object _ITuple11____hMake11_Erased.__0 => this.__0;
+    object _ITuple11____hMake11_Erased.__1 => this.__1;
+    object _ITuple11____hMake11_Erased.__2 => this.__2;
+    object _ITuple11____hMake11_Erased.__3 => this.__3;
+    object _ITuple11____hMake11_Erased.__4 => this.__4;
+    object _ITuple11____hMake11_Erased.__5 => this.__5;
+    object _ITuple11____hMake11_Erased.__6 => this.__6;
+    object _ITuple11____hMake11_Erased.__7 => this.__7;
+    object _ITuple11____hMake11_Erased.__8 => this.__8;
+    object _ITuple11____hMake11_Erased.__9 => this.__9;
+    object _ITuple11____hMake11_Erased.__10 => this.__10;
     public override int GetHashCode() {
       ulong hash = 5381;
       hash = ((hash << 5) + hash) + 0;
@@ -1773,7 +1971,21 @@ namespace _System {
     T11 dtor__11 { get; }
     _ITuple12<__T0, __T1, __T2, __T3, __T4, __T5, __T6, __T7, __T8, __T9, __T10, __T11> DowncastClone<__T0, __T1, __T2, __T3, __T4, __T5, __T6, __T7, __T8, __T9, __T10, __T11>(Func<T0, __T0> converter0, Func<T1, __T1> converter1, Func<T2, __T2> converter2, Func<T3, __T3> converter3, Func<T4, __T4> converter4, Func<T5, __T5> converter5, Func<T6, __T6> converter6, Func<T7, __T7> converter7, Func<T8, __T8> converter8, Func<T9, __T9> converter9, Func<T10, __T10> converter10, Func<T11, __T11> converter11);
   }
-  public class Tuple12<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11> : _ITuple12<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11> {
+  public interface _ITuple12____hMake12_Erased {
+    object __0 { get; }
+    object __1 { get; }
+    object __2 { get; }
+    object __3 { get; }
+    object __4 { get; }
+    object __5 { get; }
+    object __6 { get; }
+    object __7 { get; }
+    object __8 { get; }
+    object __9 { get; }
+    object __10 { get; }
+    object __11 { get; }
+  }
+  public class Tuple12<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11> : _ITuple12<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11>, _ITuple12____hMake12_Erased {
     public readonly T0 __0;
     public readonly T1 __1;
     public readonly T2 __2;
@@ -1806,8 +2018,24 @@ namespace _System {
     }
     public override bool Equals(object other) {
       var oth = other as _System.Tuple12<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11>;
-      return oth != null && object.Equals(this.__0, oth.__0) && object.Equals(this.__1, oth.__1) && object.Equals(this.__2, oth.__2) && object.Equals(this.__3, oth.__3) && object.Equals(this.__4, oth.__4) && object.Equals(this.__5, oth.__5) && object.Equals(this.__6, oth.__6) && object.Equals(this.__7, oth.__7) && object.Equals(this.__8, oth.__8) && object.Equals(this.__9, oth.__9) && object.Equals(this.__10, oth.__10) && object.Equals(this.__11, oth.__11);
+      if (oth != null) {
+        return true && object.Equals(this.__0, oth.__0) && object.Equals(this.__1, oth.__1) && object.Equals(this.__2, oth.__2) && object.Equals(this.__3, oth.__3) && object.Equals(this.__4, oth.__4) && object.Equals(this.__5, oth.__5) && object.Equals(this.__6, oth.__6) && object.Equals(this.__7, oth.__7) && object.Equals(this.__8, oth.__8) && object.Equals(this.__9, oth.__9) && object.Equals(this.__10, oth.__10) && object.Equals(this.__11, oth.__11);
+      }
+      var erased = other as _ITuple12____hMake12_Erased;
+      return erased != null && object.Equals(this.__0, erased.__0) && object.Equals(this.__1, erased.__1) && object.Equals(this.__2, erased.__2) && object.Equals(this.__3, erased.__3) && object.Equals(this.__4, erased.__4) && object.Equals(this.__5, erased.__5) && object.Equals(this.__6, erased.__6) && object.Equals(this.__7, erased.__7) && object.Equals(this.__8, erased.__8) && object.Equals(this.__9, erased.__9) && object.Equals(this.__10, erased.__10) && object.Equals(this.__11, erased.__11);
     }
+    object _ITuple12____hMake12_Erased.__0 => this.__0;
+    object _ITuple12____hMake12_Erased.__1 => this.__1;
+    object _ITuple12____hMake12_Erased.__2 => this.__2;
+    object _ITuple12____hMake12_Erased.__3 => this.__3;
+    object _ITuple12____hMake12_Erased.__4 => this.__4;
+    object _ITuple12____hMake12_Erased.__5 => this.__5;
+    object _ITuple12____hMake12_Erased.__6 => this.__6;
+    object _ITuple12____hMake12_Erased.__7 => this.__7;
+    object _ITuple12____hMake12_Erased.__8 => this.__8;
+    object _ITuple12____hMake12_Erased.__9 => this.__9;
+    object _ITuple12____hMake12_Erased.__10 => this.__10;
+    object _ITuple12____hMake12_Erased.__11 => this.__11;
     public override int GetHashCode() {
       ulong hash = 5381;
       hash = ((hash << 5) + hash) + 0;
@@ -1944,7 +2172,22 @@ namespace _System {
     T12 dtor__12 { get; }
     _ITuple13<__T0, __T1, __T2, __T3, __T4, __T5, __T6, __T7, __T8, __T9, __T10, __T11, __T12> DowncastClone<__T0, __T1, __T2, __T3, __T4, __T5, __T6, __T7, __T8, __T9, __T10, __T11, __T12>(Func<T0, __T0> converter0, Func<T1, __T1> converter1, Func<T2, __T2> converter2, Func<T3, __T3> converter3, Func<T4, __T4> converter4, Func<T5, __T5> converter5, Func<T6, __T6> converter6, Func<T7, __T7> converter7, Func<T8, __T8> converter8, Func<T9, __T9> converter9, Func<T10, __T10> converter10, Func<T11, __T11> converter11, Func<T12, __T12> converter12);
   }
-  public class Tuple13<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12> : _ITuple13<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12> {
+  public interface _ITuple13____hMake13_Erased {
+    object __0 { get; }
+    object __1 { get; }
+    object __2 { get; }
+    object __3 { get; }
+    object __4 { get; }
+    object __5 { get; }
+    object __6 { get; }
+    object __7 { get; }
+    object __8 { get; }
+    object __9 { get; }
+    object __10 { get; }
+    object __11 { get; }
+    object __12 { get; }
+  }
+  public class Tuple13<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12> : _ITuple13<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12>, _ITuple13____hMake13_Erased {
     public readonly T0 __0;
     public readonly T1 __1;
     public readonly T2 __2;
@@ -1979,8 +2222,25 @@ namespace _System {
     }
     public override bool Equals(object other) {
       var oth = other as _System.Tuple13<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12>;
-      return oth != null && object.Equals(this.__0, oth.__0) && object.Equals(this.__1, oth.__1) && object.Equals(this.__2, oth.__2) && object.Equals(this.__3, oth.__3) && object.Equals(this.__4, oth.__4) && object.Equals(this.__5, oth.__5) && object.Equals(this.__6, oth.__6) && object.Equals(this.__7, oth.__7) && object.Equals(this.__8, oth.__8) && object.Equals(this.__9, oth.__9) && object.Equals(this.__10, oth.__10) && object.Equals(this.__11, oth.__11) && object.Equals(this.__12, oth.__12);
+      if (oth != null) {
+        return true && object.Equals(this.__0, oth.__0) && object.Equals(this.__1, oth.__1) && object.Equals(this.__2, oth.__2) && object.Equals(this.__3, oth.__3) && object.Equals(this.__4, oth.__4) && object.Equals(this.__5, oth.__5) && object.Equals(this.__6, oth.__6) && object.Equals(this.__7, oth.__7) && object.Equals(this.__8, oth.__8) && object.Equals(this.__9, oth.__9) && object.Equals(this.__10, oth.__10) && object.Equals(this.__11, oth.__11) && object.Equals(this.__12, oth.__12);
+      }
+      var erased = other as _ITuple13____hMake13_Erased;
+      return erased != null && object.Equals(this.__0, erased.__0) && object.Equals(this.__1, erased.__1) && object.Equals(this.__2, erased.__2) && object.Equals(this.__3, erased.__3) && object.Equals(this.__4, erased.__4) && object.Equals(this.__5, erased.__5) && object.Equals(this.__6, erased.__6) && object.Equals(this.__7, erased.__7) && object.Equals(this.__8, erased.__8) && object.Equals(this.__9, erased.__9) && object.Equals(this.__10, erased.__10) && object.Equals(this.__11, erased.__11) && object.Equals(this.__12, erased.__12);
     }
+    object _ITuple13____hMake13_Erased.__0 => this.__0;
+    object _ITuple13____hMake13_Erased.__1 => this.__1;
+    object _ITuple13____hMake13_Erased.__2 => this.__2;
+    object _ITuple13____hMake13_Erased.__3 => this.__3;
+    object _ITuple13____hMake13_Erased.__4 => this.__4;
+    object _ITuple13____hMake13_Erased.__5 => this.__5;
+    object _ITuple13____hMake13_Erased.__6 => this.__6;
+    object _ITuple13____hMake13_Erased.__7 => this.__7;
+    object _ITuple13____hMake13_Erased.__8 => this.__8;
+    object _ITuple13____hMake13_Erased.__9 => this.__9;
+    object _ITuple13____hMake13_Erased.__10 => this.__10;
+    object _ITuple13____hMake13_Erased.__11 => this.__11;
+    object _ITuple13____hMake13_Erased.__12 => this.__12;
     public override int GetHashCode() {
       ulong hash = 5381;
       hash = ((hash << 5) + hash) + 0;
@@ -2126,7 +2386,23 @@ namespace _System {
     T13 dtor__13 { get; }
     _ITuple14<__T0, __T1, __T2, __T3, __T4, __T5, __T6, __T7, __T8, __T9, __T10, __T11, __T12, __T13> DowncastClone<__T0, __T1, __T2, __T3, __T4, __T5, __T6, __T7, __T8, __T9, __T10, __T11, __T12, __T13>(Func<T0, __T0> converter0, Func<T1, __T1> converter1, Func<T2, __T2> converter2, Func<T3, __T3> converter3, Func<T4, __T4> converter4, Func<T5, __T5> converter5, Func<T6, __T6> converter6, Func<T7, __T7> converter7, Func<T8, __T8> converter8, Func<T9, __T9> converter9, Func<T10, __T10> converter10, Func<T11, __T11> converter11, Func<T12, __T12> converter12, Func<T13, __T13> converter13);
   }
-  public class Tuple14<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13> : _ITuple14<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13> {
+  public interface _ITuple14____hMake14_Erased {
+    object __0 { get; }
+    object __1 { get; }
+    object __2 { get; }
+    object __3 { get; }
+    object __4 { get; }
+    object __5 { get; }
+    object __6 { get; }
+    object __7 { get; }
+    object __8 { get; }
+    object __9 { get; }
+    object __10 { get; }
+    object __11 { get; }
+    object __12 { get; }
+    object __13 { get; }
+  }
+  public class Tuple14<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13> : _ITuple14<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13>, _ITuple14____hMake14_Erased {
     public readonly T0 __0;
     public readonly T1 __1;
     public readonly T2 __2;
@@ -2163,8 +2439,26 @@ namespace _System {
     }
     public override bool Equals(object other) {
       var oth = other as _System.Tuple14<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13>;
-      return oth != null && object.Equals(this.__0, oth.__0) && object.Equals(this.__1, oth.__1) && object.Equals(this.__2, oth.__2) && object.Equals(this.__3, oth.__3) && object.Equals(this.__4, oth.__4) && object.Equals(this.__5, oth.__5) && object.Equals(this.__6, oth.__6) && object.Equals(this.__7, oth.__7) && object.Equals(this.__8, oth.__8) && object.Equals(this.__9, oth.__9) && object.Equals(this.__10, oth.__10) && object.Equals(this.__11, oth.__11) && object.Equals(this.__12, oth.__12) && object.Equals(this.__13, oth.__13);
+      if (oth != null) {
+        return true && object.Equals(this.__0, oth.__0) && object.Equals(this.__1, oth.__1) && object.Equals(this.__2, oth.__2) && object.Equals(this.__3, oth.__3) && object.Equals(this.__4, oth.__4) && object.Equals(this.__5, oth.__5) && object.Equals(this.__6, oth.__6) && object.Equals(this.__7, oth.__7) && object.Equals(this.__8, oth.__8) && object.Equals(this.__9, oth.__9) && object.Equals(this.__10, oth.__10) && object.Equals(this.__11, oth.__11) && object.Equals(this.__12, oth.__12) && object.Equals(this.__13, oth.__13);
+      }
+      var erased = other as _ITuple14____hMake14_Erased;
+      return erased != null && object.Equals(this.__0, erased.__0) && object.Equals(this.__1, erased.__1) && object.Equals(this.__2, erased.__2) && object.Equals(this.__3, erased.__3) && object.Equals(this.__4, erased.__4) && object.Equals(this.__5, erased.__5) && object.Equals(this.__6, erased.__6) && object.Equals(this.__7, erased.__7) && object.Equals(this.__8, erased.__8) && object.Equals(this.__9, erased.__9) && object.Equals(this.__10, erased.__10) && object.Equals(this.__11, erased.__11) && object.Equals(this.__12, erased.__12) && object.Equals(this.__13, erased.__13);
     }
+    object _ITuple14____hMake14_Erased.__0 => this.__0;
+    object _ITuple14____hMake14_Erased.__1 => this.__1;
+    object _ITuple14____hMake14_Erased.__2 => this.__2;
+    object _ITuple14____hMake14_Erased.__3 => this.__3;
+    object _ITuple14____hMake14_Erased.__4 => this.__4;
+    object _ITuple14____hMake14_Erased.__5 => this.__5;
+    object _ITuple14____hMake14_Erased.__6 => this.__6;
+    object _ITuple14____hMake14_Erased.__7 => this.__7;
+    object _ITuple14____hMake14_Erased.__8 => this.__8;
+    object _ITuple14____hMake14_Erased.__9 => this.__9;
+    object _ITuple14____hMake14_Erased.__10 => this.__10;
+    object _ITuple14____hMake14_Erased.__11 => this.__11;
+    object _ITuple14____hMake14_Erased.__12 => this.__12;
+    object _ITuple14____hMake14_Erased.__13 => this.__13;
     public override int GetHashCode() {
       ulong hash = 5381;
       hash = ((hash << 5) + hash) + 0;
@@ -2319,7 +2613,24 @@ namespace _System {
     T14 dtor__14 { get; }
     _ITuple15<__T0, __T1, __T2, __T3, __T4, __T5, __T6, __T7, __T8, __T9, __T10, __T11, __T12, __T13, __T14> DowncastClone<__T0, __T1, __T2, __T3, __T4, __T5, __T6, __T7, __T8, __T9, __T10, __T11, __T12, __T13, __T14>(Func<T0, __T0> converter0, Func<T1, __T1> converter1, Func<T2, __T2> converter2, Func<T3, __T3> converter3, Func<T4, __T4> converter4, Func<T5, __T5> converter5, Func<T6, __T6> converter6, Func<T7, __T7> converter7, Func<T8, __T8> converter8, Func<T9, __T9> converter9, Func<T10, __T10> converter10, Func<T11, __T11> converter11, Func<T12, __T12> converter12, Func<T13, __T13> converter13, Func<T14, __T14> converter14);
   }
-  public class Tuple15<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14> : _ITuple15<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14> {
+  public interface _ITuple15____hMake15_Erased {
+    object __0 { get; }
+    object __1 { get; }
+    object __2 { get; }
+    object __3 { get; }
+    object __4 { get; }
+    object __5 { get; }
+    object __6 { get; }
+    object __7 { get; }
+    object __8 { get; }
+    object __9 { get; }
+    object __10 { get; }
+    object __11 { get; }
+    object __12 { get; }
+    object __13 { get; }
+    object __14 { get; }
+  }
+  public class Tuple15<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14> : _ITuple15<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14>, _ITuple15____hMake15_Erased {
     public readonly T0 __0;
     public readonly T1 __1;
     public readonly T2 __2;
@@ -2358,8 +2669,27 @@ namespace _System {
     }
     public override bool Equals(object other) {
       var oth = other as _System.Tuple15<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14>;
-      return oth != null && object.Equals(this.__0, oth.__0) && object.Equals(this.__1, oth.__1) && object.Equals(this.__2, oth.__2) && object.Equals(this.__3, oth.__3) && object.Equals(this.__4, oth.__4) && object.Equals(this.__5, oth.__5) && object.Equals(this.__6, oth.__6) && object.Equals(this.__7, oth.__7) && object.Equals(this.__8, oth.__8) && object.Equals(this.__9, oth.__9) && object.Equals(this.__10, oth.__10) && object.Equals(this.__11, oth.__11) && object.Equals(this.__12, oth.__12) && object.Equals(this.__13, oth.__13) && object.Equals(this.__14, oth.__14);
+      if (oth != null) {
+        return true && object.Equals(this.__0, oth.__0) && object.Equals(this.__1, oth.__1) && object.Equals(this.__2, oth.__2) && object.Equals(this.__3, oth.__3) && object.Equals(this.__4, oth.__4) && object.Equals(this.__5, oth.__5) && object.Equals(this.__6, oth.__6) && object.Equals(this.__7, oth.__7) && object.Equals(this.__8, oth.__8) && object.Equals(this.__9, oth.__9) && object.Equals(this.__10, oth.__10) && object.Equals(this.__11, oth.__11) && object.Equals(this.__12, oth.__12) && object.Equals(this.__13, oth.__13) && object.Equals(this.__14, oth.__14);
+      }
+      var erased = other as _ITuple15____hMake15_Erased;
+      return erased != null && object.Equals(this.__0, erased.__0) && object.Equals(this.__1, erased.__1) && object.Equals(this.__2, erased.__2) && object.Equals(this.__3, erased.__3) && object.Equals(this.__4, erased.__4) && object.Equals(this.__5, erased.__5) && object.Equals(this.__6, erased.__6) && object.Equals(this.__7, erased.__7) && object.Equals(this.__8, erased.__8) && object.Equals(this.__9, erased.__9) && object.Equals(this.__10, erased.__10) && object.Equals(this.__11, erased.__11) && object.Equals(this.__12, erased.__12) && object.Equals(this.__13, erased.__13) && object.Equals(this.__14, erased.__14);
     }
+    object _ITuple15____hMake15_Erased.__0 => this.__0;
+    object _ITuple15____hMake15_Erased.__1 => this.__1;
+    object _ITuple15____hMake15_Erased.__2 => this.__2;
+    object _ITuple15____hMake15_Erased.__3 => this.__3;
+    object _ITuple15____hMake15_Erased.__4 => this.__4;
+    object _ITuple15____hMake15_Erased.__5 => this.__5;
+    object _ITuple15____hMake15_Erased.__6 => this.__6;
+    object _ITuple15____hMake15_Erased.__7 => this.__7;
+    object _ITuple15____hMake15_Erased.__8 => this.__8;
+    object _ITuple15____hMake15_Erased.__9 => this.__9;
+    object _ITuple15____hMake15_Erased.__10 => this.__10;
+    object _ITuple15____hMake15_Erased.__11 => this.__11;
+    object _ITuple15____hMake15_Erased.__12 => this.__12;
+    object _ITuple15____hMake15_Erased.__13 => this.__13;
+    object _ITuple15____hMake15_Erased.__14 => this.__14;
     public override int GetHashCode() {
       ulong hash = 5381;
       hash = ((hash << 5) + hash) + 0;
@@ -2523,7 +2853,25 @@ namespace _System {
     T15 dtor__15 { get; }
     _ITuple16<__T0, __T1, __T2, __T3, __T4, __T5, __T6, __T7, __T8, __T9, __T10, __T11, __T12, __T13, __T14, __T15> DowncastClone<__T0, __T1, __T2, __T3, __T4, __T5, __T6, __T7, __T8, __T9, __T10, __T11, __T12, __T13, __T14, __T15>(Func<T0, __T0> converter0, Func<T1, __T1> converter1, Func<T2, __T2> converter2, Func<T3, __T3> converter3, Func<T4, __T4> converter4, Func<T5, __T5> converter5, Func<T6, __T6> converter6, Func<T7, __T7> converter7, Func<T8, __T8> converter8, Func<T9, __T9> converter9, Func<T10, __T10> converter10, Func<T11, __T11> converter11, Func<T12, __T12> converter12, Func<T13, __T13> converter13, Func<T14, __T14> converter14, Func<T15, __T15> converter15);
   }
-  public class Tuple16<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15> : _ITuple16<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15> {
+  public interface _ITuple16____hMake16_Erased {
+    object __0 { get; }
+    object __1 { get; }
+    object __2 { get; }
+    object __3 { get; }
+    object __4 { get; }
+    object __5 { get; }
+    object __6 { get; }
+    object __7 { get; }
+    object __8 { get; }
+    object __9 { get; }
+    object __10 { get; }
+    object __11 { get; }
+    object __12 { get; }
+    object __13 { get; }
+    object __14 { get; }
+    object __15 { get; }
+  }
+  public class Tuple16<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15> : _ITuple16<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15>, _ITuple16____hMake16_Erased {
     public readonly T0 __0;
     public readonly T1 __1;
     public readonly T2 __2;
@@ -2564,8 +2912,28 @@ namespace _System {
     }
     public override bool Equals(object other) {
       var oth = other as _System.Tuple16<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15>;
-      return oth != null && object.Equals(this.__0, oth.__0) && object.Equals(this.__1, oth.__1) && object.Equals(this.__2, oth.__2) && object.Equals(this.__3, oth.__3) && object.Equals(this.__4, oth.__4) && object.Equals(this.__5, oth.__5) && object.Equals(this.__6, oth.__6) && object.Equals(this.__7, oth.__7) && object.Equals(this.__8, oth.__8) && object.Equals(this.__9, oth.__9) && object.Equals(this.__10, oth.__10) && object.Equals(this.__11, oth.__11) && object.Equals(this.__12, oth.__12) && object.Equals(this.__13, oth.__13) && object.Equals(this.__14, oth.__14) && object.Equals(this.__15, oth.__15);
+      if (oth != null) {
+        return true && object.Equals(this.__0, oth.__0) && object.Equals(this.__1, oth.__1) && object.Equals(this.__2, oth.__2) && object.Equals(this.__3, oth.__3) && object.Equals(this.__4, oth.__4) && object.Equals(this.__5, oth.__5) && object.Equals(this.__6, oth.__6) && object.Equals(this.__7, oth.__7) && object.Equals(this.__8, oth.__8) && object.Equals(this.__9, oth.__9) && object.Equals(this.__10, oth.__10) && object.Equals(this.__11, oth.__11) && object.Equals(this.__12, oth.__12) && object.Equals(this.__13, oth.__13) && object.Equals(this.__14, oth.__14) && object.Equals(this.__15, oth.__15);
+      }
+      var erased = other as _ITuple16____hMake16_Erased;
+      return erased != null && object.Equals(this.__0, erased.__0) && object.Equals(this.__1, erased.__1) && object.Equals(this.__2, erased.__2) && object.Equals(this.__3, erased.__3) && object.Equals(this.__4, erased.__4) && object.Equals(this.__5, erased.__5) && object.Equals(this.__6, erased.__6) && object.Equals(this.__7, erased.__7) && object.Equals(this.__8, erased.__8) && object.Equals(this.__9, erased.__9) && object.Equals(this.__10, erased.__10) && object.Equals(this.__11, erased.__11) && object.Equals(this.__12, erased.__12) && object.Equals(this.__13, erased.__13) && object.Equals(this.__14, erased.__14) && object.Equals(this.__15, erased.__15);
     }
+    object _ITuple16____hMake16_Erased.__0 => this.__0;
+    object _ITuple16____hMake16_Erased.__1 => this.__1;
+    object _ITuple16____hMake16_Erased.__2 => this.__2;
+    object _ITuple16____hMake16_Erased.__3 => this.__3;
+    object _ITuple16____hMake16_Erased.__4 => this.__4;
+    object _ITuple16____hMake16_Erased.__5 => this.__5;
+    object _ITuple16____hMake16_Erased.__6 => this.__6;
+    object _ITuple16____hMake16_Erased.__7 => this.__7;
+    object _ITuple16____hMake16_Erased.__8 => this.__8;
+    object _ITuple16____hMake16_Erased.__9 => this.__9;
+    object _ITuple16____hMake16_Erased.__10 => this.__10;
+    object _ITuple16____hMake16_Erased.__11 => this.__11;
+    object _ITuple16____hMake16_Erased.__12 => this.__12;
+    object _ITuple16____hMake16_Erased.__13 => this.__13;
+    object _ITuple16____hMake16_Erased.__14 => this.__14;
+    object _ITuple16____hMake16_Erased.__15 => this.__15;
     public override int GetHashCode() {
       ulong hash = 5381;
       hash = ((hash << 5) + hash) + 0;
@@ -2738,7 +3106,26 @@ namespace _System {
     T16 dtor__16 { get; }
     _ITuple17<__T0, __T1, __T2, __T3, __T4, __T5, __T6, __T7, __T8, __T9, __T10, __T11, __T12, __T13, __T14, __T15, __T16> DowncastClone<__T0, __T1, __T2, __T3, __T4, __T5, __T6, __T7, __T8, __T9, __T10, __T11, __T12, __T13, __T14, __T15, __T16>(Func<T0, __T0> converter0, Func<T1, __T1> converter1, Func<T2, __T2> converter2, Func<T3, __T3> converter3, Func<T4, __T4> converter4, Func<T5, __T5> converter5, Func<T6, __T6> converter6, Func<T7, __T7> converter7, Func<T8, __T8> converter8, Func<T9, __T9> converter9, Func<T10, __T10> converter10, Func<T11, __T11> converter11, Func<T12, __T12> converter12, Func<T13, __T13> converter13, Func<T14, __T14> converter14, Func<T15, __T15> converter15, Func<T16, __T16> converter16);
   }
-  public class Tuple17<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16> : _ITuple17<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16> {
+  public interface _ITuple17____hMake17_Erased {
+    object __0 { get; }
+    object __1 { get; }
+    object __2 { get; }
+    object __3 { get; }
+    object __4 { get; }
+    object __5 { get; }
+    object __6 { get; }
+    object __7 { get; }
+    object __8 { get; }
+    object __9 { get; }
+    object __10 { get; }
+    object __11 { get; }
+    object __12 { get; }
+    object __13 { get; }
+    object __14 { get; }
+    object __15 { get; }
+    object __16 { get; }
+  }
+  public class Tuple17<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16> : _ITuple17<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16>, _ITuple17____hMake17_Erased {
     public readonly T0 __0;
     public readonly T1 __1;
     public readonly T2 __2;
@@ -2781,8 +3168,29 @@ namespace _System {
     }
     public override bool Equals(object other) {
       var oth = other as _System.Tuple17<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16>;
-      return oth != null && object.Equals(this.__0, oth.__0) && object.Equals(this.__1, oth.__1) && object.Equals(this.__2, oth.__2) && object.Equals(this.__3, oth.__3) && object.Equals(this.__4, oth.__4) && object.Equals(this.__5, oth.__5) && object.Equals(this.__6, oth.__6) && object.Equals(this.__7, oth.__7) && object.Equals(this.__8, oth.__8) && object.Equals(this.__9, oth.__9) && object.Equals(this.__10, oth.__10) && object.Equals(this.__11, oth.__11) && object.Equals(this.__12, oth.__12) && object.Equals(this.__13, oth.__13) && object.Equals(this.__14, oth.__14) && object.Equals(this.__15, oth.__15) && object.Equals(this.__16, oth.__16);
+      if (oth != null) {
+        return true && object.Equals(this.__0, oth.__0) && object.Equals(this.__1, oth.__1) && object.Equals(this.__2, oth.__2) && object.Equals(this.__3, oth.__3) && object.Equals(this.__4, oth.__4) && object.Equals(this.__5, oth.__5) && object.Equals(this.__6, oth.__6) && object.Equals(this.__7, oth.__7) && object.Equals(this.__8, oth.__8) && object.Equals(this.__9, oth.__9) && object.Equals(this.__10, oth.__10) && object.Equals(this.__11, oth.__11) && object.Equals(this.__12, oth.__12) && object.Equals(this.__13, oth.__13) && object.Equals(this.__14, oth.__14) && object.Equals(this.__15, oth.__15) && object.Equals(this.__16, oth.__16);
+      }
+      var erased = other as _ITuple17____hMake17_Erased;
+      return erased != null && object.Equals(this.__0, erased.__0) && object.Equals(this.__1, erased.__1) && object.Equals(this.__2, erased.__2) && object.Equals(this.__3, erased.__3) && object.Equals(this.__4, erased.__4) && object.Equals(this.__5, erased.__5) && object.Equals(this.__6, erased.__6) && object.Equals(this.__7, erased.__7) && object.Equals(this.__8, erased.__8) && object.Equals(this.__9, erased.__9) && object.Equals(this.__10, erased.__10) && object.Equals(this.__11, erased.__11) && object.Equals(this.__12, erased.__12) && object.Equals(this.__13, erased.__13) && object.Equals(this.__14, erased.__14) && object.Equals(this.__15, erased.__15) && object.Equals(this.__16, erased.__16);
     }
+    object _ITuple17____hMake17_Erased.__0 => this.__0;
+    object _ITuple17____hMake17_Erased.__1 => this.__1;
+    object _ITuple17____hMake17_Erased.__2 => this.__2;
+    object _ITuple17____hMake17_Erased.__3 => this.__3;
+    object _ITuple17____hMake17_Erased.__4 => this.__4;
+    object _ITuple17____hMake17_Erased.__5 => this.__5;
+    object _ITuple17____hMake17_Erased.__6 => this.__6;
+    object _ITuple17____hMake17_Erased.__7 => this.__7;
+    object _ITuple17____hMake17_Erased.__8 => this.__8;
+    object _ITuple17____hMake17_Erased.__9 => this.__9;
+    object _ITuple17____hMake17_Erased.__10 => this.__10;
+    object _ITuple17____hMake17_Erased.__11 => this.__11;
+    object _ITuple17____hMake17_Erased.__12 => this.__12;
+    object _ITuple17____hMake17_Erased.__13 => this.__13;
+    object _ITuple17____hMake17_Erased.__14 => this.__14;
+    object _ITuple17____hMake17_Erased.__15 => this.__15;
+    object _ITuple17____hMake17_Erased.__16 => this.__16;
     public override int GetHashCode() {
       ulong hash = 5381;
       hash = ((hash << 5) + hash) + 0;
@@ -2964,7 +3372,27 @@ namespace _System {
     T17 dtor__17 { get; }
     _ITuple18<__T0, __T1, __T2, __T3, __T4, __T5, __T6, __T7, __T8, __T9, __T10, __T11, __T12, __T13, __T14, __T15, __T16, __T17> DowncastClone<__T0, __T1, __T2, __T3, __T4, __T5, __T6, __T7, __T8, __T9, __T10, __T11, __T12, __T13, __T14, __T15, __T16, __T17>(Func<T0, __T0> converter0, Func<T1, __T1> converter1, Func<T2, __T2> converter2, Func<T3, __T3> converter3, Func<T4, __T4> converter4, Func<T5, __T5> converter5, Func<T6, __T6> converter6, Func<T7, __T7> converter7, Func<T8, __T8> converter8, Func<T9, __T9> converter9, Func<T10, __T10> converter10, Func<T11, __T11> converter11, Func<T12, __T12> converter12, Func<T13, __T13> converter13, Func<T14, __T14> converter14, Func<T15, __T15> converter15, Func<T16, __T16> converter16, Func<T17, __T17> converter17);
   }
-  public class Tuple18<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17> : _ITuple18<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17> {
+  public interface _ITuple18____hMake18_Erased {
+    object __0 { get; }
+    object __1 { get; }
+    object __2 { get; }
+    object __3 { get; }
+    object __4 { get; }
+    object __5 { get; }
+    object __6 { get; }
+    object __7 { get; }
+    object __8 { get; }
+    object __9 { get; }
+    object __10 { get; }
+    object __11 { get; }
+    object __12 { get; }
+    object __13 { get; }
+    object __14 { get; }
+    object __15 { get; }
+    object __16 { get; }
+    object __17 { get; }
+  }
+  public class Tuple18<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17> : _ITuple18<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17>, _ITuple18____hMake18_Erased {
     public readonly T0 __0;
     public readonly T1 __1;
     public readonly T2 __2;
@@ -3009,8 +3437,30 @@ namespace _System {
     }
     public override bool Equals(object other) {
       var oth = other as _System.Tuple18<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17>;
-      return oth != null && object.Equals(this.__0, oth.__0) && object.Equals(this.__1, oth.__1) && object.Equals(this.__2, oth.__2) && object.Equals(this.__3, oth.__3) && object.Equals(this.__4, oth.__4) && object.Equals(this.__5, oth.__5) && object.Equals(this.__6, oth.__6) && object.Equals(this.__7, oth.__7) && object.Equals(this.__8, oth.__8) && object.Equals(this.__9, oth.__9) && object.Equals(this.__10, oth.__10) && object.Equals(this.__11, oth.__11) && object.Equals(this.__12, oth.__12) && object.Equals(this.__13, oth.__13) && object.Equals(this.__14, oth.__14) && object.Equals(this.__15, oth.__15) && object.Equals(this.__16, oth.__16) && object.Equals(this.__17, oth.__17);
+      if (oth != null) {
+        return true && object.Equals(this.__0, oth.__0) && object.Equals(this.__1, oth.__1) && object.Equals(this.__2, oth.__2) && object.Equals(this.__3, oth.__3) && object.Equals(this.__4, oth.__4) && object.Equals(this.__5, oth.__5) && object.Equals(this.__6, oth.__6) && object.Equals(this.__7, oth.__7) && object.Equals(this.__8, oth.__8) && object.Equals(this.__9, oth.__9) && object.Equals(this.__10, oth.__10) && object.Equals(this.__11, oth.__11) && object.Equals(this.__12, oth.__12) && object.Equals(this.__13, oth.__13) && object.Equals(this.__14, oth.__14) && object.Equals(this.__15, oth.__15) && object.Equals(this.__16, oth.__16) && object.Equals(this.__17, oth.__17);
+      }
+      var erased = other as _ITuple18____hMake18_Erased;
+      return erased != null && object.Equals(this.__0, erased.__0) && object.Equals(this.__1, erased.__1) && object.Equals(this.__2, erased.__2) && object.Equals(this.__3, erased.__3) && object.Equals(this.__4, erased.__4) && object.Equals(this.__5, erased.__5) && object.Equals(this.__6, erased.__6) && object.Equals(this.__7, erased.__7) && object.Equals(this.__8, erased.__8) && object.Equals(this.__9, erased.__9) && object.Equals(this.__10, erased.__10) && object.Equals(this.__11, erased.__11) && object.Equals(this.__12, erased.__12) && object.Equals(this.__13, erased.__13) && object.Equals(this.__14, erased.__14) && object.Equals(this.__15, erased.__15) && object.Equals(this.__16, erased.__16) && object.Equals(this.__17, erased.__17);
     }
+    object _ITuple18____hMake18_Erased.__0 => this.__0;
+    object _ITuple18____hMake18_Erased.__1 => this.__1;
+    object _ITuple18____hMake18_Erased.__2 => this.__2;
+    object _ITuple18____hMake18_Erased.__3 => this.__3;
+    object _ITuple18____hMake18_Erased.__4 => this.__4;
+    object _ITuple18____hMake18_Erased.__5 => this.__5;
+    object _ITuple18____hMake18_Erased.__6 => this.__6;
+    object _ITuple18____hMake18_Erased.__7 => this.__7;
+    object _ITuple18____hMake18_Erased.__8 => this.__8;
+    object _ITuple18____hMake18_Erased.__9 => this.__9;
+    object _ITuple18____hMake18_Erased.__10 => this.__10;
+    object _ITuple18____hMake18_Erased.__11 => this.__11;
+    object _ITuple18____hMake18_Erased.__12 => this.__12;
+    object _ITuple18____hMake18_Erased.__13 => this.__13;
+    object _ITuple18____hMake18_Erased.__14 => this.__14;
+    object _ITuple18____hMake18_Erased.__15 => this.__15;
+    object _ITuple18____hMake18_Erased.__16 => this.__16;
+    object _ITuple18____hMake18_Erased.__17 => this.__17;
     public override int GetHashCode() {
       ulong hash = 5381;
       hash = ((hash << 5) + hash) + 0;
@@ -3201,7 +3651,28 @@ namespace _System {
     T18 dtor__18 { get; }
     _ITuple19<__T0, __T1, __T2, __T3, __T4, __T5, __T6, __T7, __T8, __T9, __T10, __T11, __T12, __T13, __T14, __T15, __T16, __T17, __T18> DowncastClone<__T0, __T1, __T2, __T3, __T4, __T5, __T6, __T7, __T8, __T9, __T10, __T11, __T12, __T13, __T14, __T15, __T16, __T17, __T18>(Func<T0, __T0> converter0, Func<T1, __T1> converter1, Func<T2, __T2> converter2, Func<T3, __T3> converter3, Func<T4, __T4> converter4, Func<T5, __T5> converter5, Func<T6, __T6> converter6, Func<T7, __T7> converter7, Func<T8, __T8> converter8, Func<T9, __T9> converter9, Func<T10, __T10> converter10, Func<T11, __T11> converter11, Func<T12, __T12> converter12, Func<T13, __T13> converter13, Func<T14, __T14> converter14, Func<T15, __T15> converter15, Func<T16, __T16> converter16, Func<T17, __T17> converter17, Func<T18, __T18> converter18);
   }
-  public class Tuple19<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18> : _ITuple19<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18> {
+  public interface _ITuple19____hMake19_Erased {
+    object __0 { get; }
+    object __1 { get; }
+    object __2 { get; }
+    object __3 { get; }
+    object __4 { get; }
+    object __5 { get; }
+    object __6 { get; }
+    object __7 { get; }
+    object __8 { get; }
+    object __9 { get; }
+    object __10 { get; }
+    object __11 { get; }
+    object __12 { get; }
+    object __13 { get; }
+    object __14 { get; }
+    object __15 { get; }
+    object __16 { get; }
+    object __17 { get; }
+    object __18 { get; }
+  }
+  public class Tuple19<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18> : _ITuple19<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18>, _ITuple19____hMake19_Erased {
     public readonly T0 __0;
     public readonly T1 __1;
     public readonly T2 __2;
@@ -3248,8 +3719,31 @@ namespace _System {
     }
     public override bool Equals(object other) {
       var oth = other as _System.Tuple19<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18>;
-      return oth != null && object.Equals(this.__0, oth.__0) && object.Equals(this.__1, oth.__1) && object.Equals(this.__2, oth.__2) && object.Equals(this.__3, oth.__3) && object.Equals(this.__4, oth.__4) && object.Equals(this.__5, oth.__5) && object.Equals(this.__6, oth.__6) && object.Equals(this.__7, oth.__7) && object.Equals(this.__8, oth.__8) && object.Equals(this.__9, oth.__9) && object.Equals(this.__10, oth.__10) && object.Equals(this.__11, oth.__11) && object.Equals(this.__12, oth.__12) && object.Equals(this.__13, oth.__13) && object.Equals(this.__14, oth.__14) && object.Equals(this.__15, oth.__15) && object.Equals(this.__16, oth.__16) && object.Equals(this.__17, oth.__17) && object.Equals(this.__18, oth.__18);
+      if (oth != null) {
+        return true && object.Equals(this.__0, oth.__0) && object.Equals(this.__1, oth.__1) && object.Equals(this.__2, oth.__2) && object.Equals(this.__3, oth.__3) && object.Equals(this.__4, oth.__4) && object.Equals(this.__5, oth.__5) && object.Equals(this.__6, oth.__6) && object.Equals(this.__7, oth.__7) && object.Equals(this.__8, oth.__8) && object.Equals(this.__9, oth.__9) && object.Equals(this.__10, oth.__10) && object.Equals(this.__11, oth.__11) && object.Equals(this.__12, oth.__12) && object.Equals(this.__13, oth.__13) && object.Equals(this.__14, oth.__14) && object.Equals(this.__15, oth.__15) && object.Equals(this.__16, oth.__16) && object.Equals(this.__17, oth.__17) && object.Equals(this.__18, oth.__18);
+      }
+      var erased = other as _ITuple19____hMake19_Erased;
+      return erased != null && object.Equals(this.__0, erased.__0) && object.Equals(this.__1, erased.__1) && object.Equals(this.__2, erased.__2) && object.Equals(this.__3, erased.__3) && object.Equals(this.__4, erased.__4) && object.Equals(this.__5, erased.__5) && object.Equals(this.__6, erased.__6) && object.Equals(this.__7, erased.__7) && object.Equals(this.__8, erased.__8) && object.Equals(this.__9, erased.__9) && object.Equals(this.__10, erased.__10) && object.Equals(this.__11, erased.__11) && object.Equals(this.__12, erased.__12) && object.Equals(this.__13, erased.__13) && object.Equals(this.__14, erased.__14) && object.Equals(this.__15, erased.__15) && object.Equals(this.__16, erased.__16) && object.Equals(this.__17, erased.__17) && object.Equals(this.__18, erased.__18);
     }
+    object _ITuple19____hMake19_Erased.__0 => this.__0;
+    object _ITuple19____hMake19_Erased.__1 => this.__1;
+    object _ITuple19____hMake19_Erased.__2 => this.__2;
+    object _ITuple19____hMake19_Erased.__3 => this.__3;
+    object _ITuple19____hMake19_Erased.__4 => this.__4;
+    object _ITuple19____hMake19_Erased.__5 => this.__5;
+    object _ITuple19____hMake19_Erased.__6 => this.__6;
+    object _ITuple19____hMake19_Erased.__7 => this.__7;
+    object _ITuple19____hMake19_Erased.__8 => this.__8;
+    object _ITuple19____hMake19_Erased.__9 => this.__9;
+    object _ITuple19____hMake19_Erased.__10 => this.__10;
+    object _ITuple19____hMake19_Erased.__11 => this.__11;
+    object _ITuple19____hMake19_Erased.__12 => this.__12;
+    object _ITuple19____hMake19_Erased.__13 => this.__13;
+    object _ITuple19____hMake19_Erased.__14 => this.__14;
+    object _ITuple19____hMake19_Erased.__15 => this.__15;
+    object _ITuple19____hMake19_Erased.__16 => this.__16;
+    object _ITuple19____hMake19_Erased.__17 => this.__17;
+    object _ITuple19____hMake19_Erased.__18 => this.__18;
     public override int GetHashCode() {
       ulong hash = 5381;
       hash = ((hash << 5) + hash) + 0;
@@ -3449,7 +3943,29 @@ namespace _System {
     T19 dtor__19 { get; }
     _ITuple20<__T0, __T1, __T2, __T3, __T4, __T5, __T6, __T7, __T8, __T9, __T10, __T11, __T12, __T13, __T14, __T15, __T16, __T17, __T18, __T19> DowncastClone<__T0, __T1, __T2, __T3, __T4, __T5, __T6, __T7, __T8, __T9, __T10, __T11, __T12, __T13, __T14, __T15, __T16, __T17, __T18, __T19>(Func<T0, __T0> converter0, Func<T1, __T1> converter1, Func<T2, __T2> converter2, Func<T3, __T3> converter3, Func<T4, __T4> converter4, Func<T5, __T5> converter5, Func<T6, __T6> converter6, Func<T7, __T7> converter7, Func<T8, __T8> converter8, Func<T9, __T9> converter9, Func<T10, __T10> converter10, Func<T11, __T11> converter11, Func<T12, __T12> converter12, Func<T13, __T13> converter13, Func<T14, __T14> converter14, Func<T15, __T15> converter15, Func<T16, __T16> converter16, Func<T17, __T17> converter17, Func<T18, __T18> converter18, Func<T19, __T19> converter19);
   }
-  public class Tuple20<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19> : _ITuple20<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19> {
+  public interface _ITuple20____hMake20_Erased {
+    object __0 { get; }
+    object __1 { get; }
+    object __2 { get; }
+    object __3 { get; }
+    object __4 { get; }
+    object __5 { get; }
+    object __6 { get; }
+    object __7 { get; }
+    object __8 { get; }
+    object __9 { get; }
+    object __10 { get; }
+    object __11 { get; }
+    object __12 { get; }
+    object __13 { get; }
+    object __14 { get; }
+    object __15 { get; }
+    object __16 { get; }
+    object __17 { get; }
+    object __18 { get; }
+    object __19 { get; }
+  }
+  public class Tuple20<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19> : _ITuple20<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19>, _ITuple20____hMake20_Erased {
     public readonly T0 __0;
     public readonly T1 __1;
     public readonly T2 __2;
@@ -3498,8 +4014,32 @@ namespace _System {
     }
     public override bool Equals(object other) {
       var oth = other as _System.Tuple20<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19>;
-      return oth != null && object.Equals(this.__0, oth.__0) && object.Equals(this.__1, oth.__1) && object.Equals(this.__2, oth.__2) && object.Equals(this.__3, oth.__3) && object.Equals(this.__4, oth.__4) && object.Equals(this.__5, oth.__5) && object.Equals(this.__6, oth.__6) && object.Equals(this.__7, oth.__7) && object.Equals(this.__8, oth.__8) && object.Equals(this.__9, oth.__9) && object.Equals(this.__10, oth.__10) && object.Equals(this.__11, oth.__11) && object.Equals(this.__12, oth.__12) && object.Equals(this.__13, oth.__13) && object.Equals(this.__14, oth.__14) && object.Equals(this.__15, oth.__15) && object.Equals(this.__16, oth.__16) && object.Equals(this.__17, oth.__17) && object.Equals(this.__18, oth.__18) && object.Equals(this.__19, oth.__19);
+      if (oth != null) {
+        return true && object.Equals(this.__0, oth.__0) && object.Equals(this.__1, oth.__1) && object.Equals(this.__2, oth.__2) && object.Equals(this.__3, oth.__3) && object.Equals(this.__4, oth.__4) && object.Equals(this.__5, oth.__5) && object.Equals(this.__6, oth.__6) && object.Equals(this.__7, oth.__7) && object.Equals(this.__8, oth.__8) && object.Equals(this.__9, oth.__9) && object.Equals(this.__10, oth.__10) && object.Equals(this.__11, oth.__11) && object.Equals(this.__12, oth.__12) && object.Equals(this.__13, oth.__13) && object.Equals(this.__14, oth.__14) && object.Equals(this.__15, oth.__15) && object.Equals(this.__16, oth.__16) && object.Equals(this.__17, oth.__17) && object.Equals(this.__18, oth.__18) && object.Equals(this.__19, oth.__19);
+      }
+      var erased = other as _ITuple20____hMake20_Erased;
+      return erased != null && object.Equals(this.__0, erased.__0) && object.Equals(this.__1, erased.__1) && object.Equals(this.__2, erased.__2) && object.Equals(this.__3, erased.__3) && object.Equals(this.__4, erased.__4) && object.Equals(this.__5, erased.__5) && object.Equals(this.__6, erased.__6) && object.Equals(this.__7, erased.__7) && object.Equals(this.__8, erased.__8) && object.Equals(this.__9, erased.__9) && object.Equals(this.__10, erased.__10) && object.Equals(this.__11, erased.__11) && object.Equals(this.__12, erased.__12) && object.Equals(this.__13, erased.__13) && object.Equals(this.__14, erased.__14) && object.Equals(this.__15, erased.__15) && object.Equals(this.__16, erased.__16) && object.Equals(this.__17, erased.__17) && object.Equals(this.__18, erased.__18) && object.Equals(this.__19, erased.__19);
     }
+    object _ITuple20____hMake20_Erased.__0 => this.__0;
+    object _ITuple20____hMake20_Erased.__1 => this.__1;
+    object _ITuple20____hMake20_Erased.__2 => this.__2;
+    object _ITuple20____hMake20_Erased.__3 => this.__3;
+    object _ITuple20____hMake20_Erased.__4 => this.__4;
+    object _ITuple20____hMake20_Erased.__5 => this.__5;
+    object _ITuple20____hMake20_Erased.__6 => this.__6;
+    object _ITuple20____hMake20_Erased.__7 => this.__7;
+    object _ITuple20____hMake20_Erased.__8 => this.__8;
+    object _ITuple20____hMake20_Erased.__9 => this.__9;
+    object _ITuple20____hMake20_Erased.__10 => this.__10;
+    object _ITuple20____hMake20_Erased.__11 => this.__11;
+    object _ITuple20____hMake20_Erased.__12 => this.__12;
+    object _ITuple20____hMake20_Erased.__13 => this.__13;
+    object _ITuple20____hMake20_Erased.__14 => this.__14;
+    object _ITuple20____hMake20_Erased.__15 => this.__15;
+    object _ITuple20____hMake20_Erased.__16 => this.__16;
+    object _ITuple20____hMake20_Erased.__17 => this.__17;
+    object _ITuple20____hMake20_Erased.__18 => this.__18;
+    object _ITuple20____hMake20_Erased.__19 => this.__19;
     public override int GetHashCode() {
       ulong hash = 5381;
       hash = ((hash << 5) + hash) + 0;
