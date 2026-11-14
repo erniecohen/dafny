@@ -41,10 +41,13 @@ whose verdict changed, why. `run` accepts --additional-axioms true and
 `run --verification-cache DIR` adds `--verification-cache DIR` to the programs that
 select the refreshed type system themselves (the option requires it), and runs them
 with only the environment variables in CACHE_ENVIRONMENT, since the cache keys the
-solver's environment; every other program runs as before.  `--cached-only true` runs
-only those programs.  `same <measurements> <measurements'> <verdicts> <verdicts'>`
-checks that the programs of the second run have the verdicts and the per-proof
-outcomes and resource counts of the first, and prints both runs' times
+solver's environment, and with PATH reduced to the directory of `dotnet` and the system
+directories, so that a runner's own tool directories do not reach the key; every other
+program runs as before.  `--cached-only true` runs only those programs.
+`same <measurements> <measurements'> <verdicts> <verdicts'>` checks that the programs of
+the second run have the verdicts and the per-proof outcomes and resource counts of the
+first, and prints both runs' times.  `cache-stats <measurements> <verdicts>` prints the
+cached programs' time, cache hits and solver starts of one run
 (https://github.com/erniecohen/dafny/issues/261).
 """
 import concurrent.futures
@@ -53,6 +56,7 @@ import os
 from pathlib import Path
 import re
 import shlex
+import shutil
 import subprocess
 import sys
 import time
@@ -61,7 +65,15 @@ DIRS = ['dafny0', 'dafny1', 'dafny2', 'dafny3', 'dafny4', 'git-issues']
 FIXED = ['--resource-limit', '16000000', '--verification-time-limit', '0',
          '--boogie', '/normalizeDeclarationOrder:0', '--cores', '1', '--allow-warnings']
 TIMEOUT = 900  # seconds, per program; a program that takes longer is reported as TIMEOUT
-CACHE_ENVIRONMENT = ('HOME', 'PATH', 'TMPDIR', 'DOTNET_ROOT', 'DOTNET_CLI_TELEMETRY_OPTOUT')
+CACHE_ENVIRONMENT = ('HOME', 'TMPDIR', 'DOTNET_ROOT', 'DOTNET_CLI_TELEMETRY_OPTOUT')
+SYSTEM_PATH = ['/usr/bin', '/bin', '/usr/sbin', '/sbin']
+
+
+def cache_environment():
+    env = {k: os.environ[k] for k in CACHE_ENVIRONMENT if k in os.environ}
+    dotnet = shutil.which('dotnet')
+    env['PATH'] = os.pathsep.join(([str(Path(dotnet).parent)] if dotnet else []) + SYSTEM_PATH)
+    return env
 DROP = re.compile(r'--(target|output|compile-verbose|build|no-verify|spill-translation|unicode-char)(=|$)')
 
 
@@ -167,7 +179,7 @@ def verify(args):
         extra += ['--verification-cache', str(Path(cache).resolve())]
         if dest:
             extra += ['--pipeline-profile', str(dest / 'profile.jsonl')]
-        env = {k: os.environ[k] for k in CACHE_ENVIRONMENT if k in os.environ}
+        env = cache_environment()
     # Put observations before the original options: a missing argument in an old
     # RUN line must retain its diagnostic rather than consume an added option.
     cmd = [dafny, 'verify', path, '--solver-path', z3] + fixed + extra + own
@@ -297,6 +309,28 @@ def same(first_measurements, second_measurements, first, second):
     return len(differ)
 
 
+def cache_stats(measurements, verdicts):
+    """One run's programs that used the cache: their time and the cache's counters."""
+    rows = load(verdicts)
+    n, secs, counts = 0, 0.0, {'tasks': 0, 'hits': 0, 'solverStarts': 0, 'imagesHashed': 0}
+    for k, row in rows.items():
+        profile = Path(measurements) / k / 'profile.jsonl'
+        if not profile.exists():
+            continue
+        n += 1
+        secs += float(row[4] or 0)
+        for line in profile.read_text().splitlines():
+            event = json.loads(line) if line.strip() else {}
+            if event.get('ev') == 'result-task':
+                counts['tasks'] += 1
+            if event.get('ev') == 'result-cache':
+                for c in ('hits', 'solverStarts', 'imagesHashed'):
+                    counts[c] += event.get(c, 0)
+    print('%d cached programs, verifier time %.1f s; %d tasks, %d cache hits, %d solver starts, '
+          '%d execution images hashed' % (n, secs, counts['tasks'], counts['hits'], counts['solverStarts'],
+                                          counts['imagesHashed']))
+
+
 def compare(expected, actual):
     a, b = load(expected), load(actual)
     n = 0
@@ -325,6 +359,8 @@ if __name__ == '__main__':
             cached_only=opts.get('--cached-only', 'false') == 'true')
     elif cmd == 'same':
         sys.exit(1 if same(*args) else 0)
+    elif cmd == 'cache-stats':
+        cache_stats(*args)
     elif cmd == 'summary':
         summary(args)
     elif cmd == 'expected':
