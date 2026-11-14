@@ -316,9 +316,11 @@ jobs:
             python3 .github/review/lit-verdicts.py cache-stats measurements/${{ matrix.axioms }} \
               verdicts-${{ matrix.axioms }}-${{ matrix.shard }}.tsv || echo 'unavailable'
           } >> "$GITHUB_STEP_SUMMARY"
-      # The cached programs again, now reading the cache the run above wrote: the same
-      # verdicts and per-proof outcomes and resource counts, and both runs' times.
+      # On pushes to review/4.11.0, whose cache is saved: the cached programs again, now
+      # reading the cache the run above wrote, with the same verdicts and per-proof outcomes
+      # and resource counts, and both runs' times.  Pull requests skip it to save runner time.
       - name: Re-verify the cached programs from the cache
+        if: github.event_name == 'push' && github.ref == 'refs/heads/review/4.11.0'
         run: |
           L=Source/IntegrationTests/TestFiles/LitTests/LitTest
           python3 .github/review/lit-verdicts.py run plan.tsv "$L" "$PWD/out/dafny/Dafny" "$Z3" \
