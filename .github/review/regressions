@@ -493,6 +493,12 @@ git-issues/github-issue-325.dfy
 # subset-type or newtype constraint or witness, a default value, an iterator body) no longer
 # crashes the verifier (https://github.com/erniecohen/dafny/issues/315).
 git-issues/github-issue-315.dfy
+
+# Std.Axioms: function extensionality for total arrows on int, real, bool, ORDINAL, (int, int)
+# and the empty domain, and the completeness of real, moved there from Std.RealCompleteness
+# (https://github.com/erniecohen/dafny/issues/34).
+git-issues/github-issue-34.dfy
+
 # A library (.doo) and --print keep the opaque modifier of constants
 # (https://github.com/erniecohen/dafny/issues/337).
 git-issues/github-issue-337.dfy
