@@ -2404,17 +2404,18 @@ or the Dafny 4 syntax (`ghost function` and `function`)
   section.
 
 * `--conservative-match-inference` - with the refreshed type system
-  (`--type-system-refresh`), infer the type of the source of a `match` by
-  propagating the constraints already known before making any default type
+  (`--type-system-refresh`), infer the type of the source of a `match`, and
+  decide whether an identifier in a pattern is a constructor or a bound variable,
+  by propagating the constraints already known before making any default type
   decision. Without it, resolving a `match` whose source type is not yet known can
   give an earlier integer literal its default type `int` before the enclosing
   context, such as a function's declared result type, is seen; for example,
   `if x == 0 then Some(0) else var d := foo(x); match d ...` in a function whose
-  result type is `Option<int32>` is then rejected. Disabled by default, and it has
-  no effect on the legacy resolver. Use `conservative-match-inference = true` in a
-  project file's `[options]` section; `--conservative-match-inference:false`
-  overrides that setting. See the [match expression](#sec-match-expression) for
-  what it does not fix.
+  result type is `Option<int32>` is then rejected. Enabled by default;
+  `--conservative-match-inference:false` restores the earlier inference, and
+  `conservative-match-inference = false` does the same in a project file's
+  `[options]` section. It has no effect on the legacy resolver. See the
+  [match expression](#sec-match-expression) for what it does not fix.
 
 * `--ancestor-qualified-module-ids` - let a `refines` clause or `import` whose
   qualified module name starts with modules that enclose it, as in

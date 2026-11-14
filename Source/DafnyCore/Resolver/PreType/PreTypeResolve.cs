@@ -583,12 +583,41 @@ namespace Microsoft.Dafny {
         return true;
       }
       if (!allowConversion) {
-        return false;
+        return IsComponentwiseComparable(aa, bb);
       }
       if (IsConversionCompatible(aa, bb) || IsConversionCompatible(bb, aa)) {
         return true;
       }
       return false;
+    }
+
+    /// <summary>
+    /// Returns whether "a" and "b" have the same head and comparable type arguments: the same argument at every
+    /// non-variant type parameter, and comparable arguments (CheckComparableTypes without conversion) at every co- or
+    /// contravariant one.  The arguments need not be related in the same direction: (Number, Integer) and
+    /// (Integer, Number) are comparable, since both are subtypes of (Number, Number).
+    ///
+    /// During inference, ApproximateComparableConstraints already constrains types with the same head this way; this
+    /// makes the final confirmation agree with it.  Two pre-types comparable in this sense have a common supertype
+    /// and a common subtype, by induction: take a common supertype at each covariant argument, a common subtype at
+    /// each contravariant argument, and the shared argument at each non-variant one.
+    /// </summary>
+    bool IsComponentwiseComparable(DPreType a, DPreType b) {
+      if (a.Decl != b.Decl || a.Arguments.Count != b.Arguments.Count || a.Decl.TypeArgs.Count != a.Arguments.Count) {
+        return false;
+      }
+      for (var i = 0; i < a.Arguments.Count; i++) {
+        var argA = a.Arguments[i];
+        var argB = b.Arguments[i];
+        if (a.Decl.TypeArgs[i].Variance == TypeParameter.TPVariance.Non) {
+          if (!PreType.Same(argA, argB)) {
+            return false;
+          }
+        } else if (!CheckComparableTypes(argA, argB, false)) {
+          return false;
+        }
+      }
+      return true;
     }
 
     bool IsConversionCompatible(DPreType fromType, DPreType toType) {

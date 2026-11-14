@@ -716,3 +716,37 @@ needed.  Its kind is **weakens only**: it rejects programs and adds no fact or a
 that does not make such a read is unchanged.  The hidden `--legacy-first-phase-const-reads`
 option restores the old rule for comparison and migration.  The regression is
 `git-issues/github-issue-339.dfy`; the release note is `docs/dev/news/339.fix`.
+
+## Comparing crossed component types ([issue 47](https://github.com/erniecohen/dafny/issues/47))
+
+With `--type-system-refresh`, `==`, `!=`, `in`, `!in` and prefix equality required, in their final
+check, that one operand's type be a supertype of the other's, so `(Number, Integer) == (Integer,
+Number)`, with `Number` and `Integer` subtypes of one trait, was rejected, though inference had
+already found the two comparable and the legacy resolver accepts it.  The check now also accepts
+two types with the same type constructor whose arguments agree exactly at each non-variant
+parameter and are comparable, recursively, at each co- or contravariant one.  Such types have a
+common supertype and a common subtype, built argument by argument, so a value can belong to both
+and the comparison is meaningful.  It is a **false-rejection fix** of the refreshed resolver: it
+accepts more programs and adds no fact or axiom; the legacy resolver and `as`/`is` are unchanged.
+The regression is `git-issues/github-issue-47.dfy`, with negative controls that are still
+rejected; the release note is `docs/dev/news/47.fix`.
+
+## Match inference on by default ([issue 48](https://github.com/erniecohen/dafny/issues/48))
+
+With `--type-system-refresh`, resolving a pattern whose type was not yet known solved the type
+constraints with default decisions, which gave a pending literal elsewhere in the enclosing
+expression, such as the `0` of an earlier `if x == 0 then Some(0)`, the type `int` before the
+declared result type `Option<int32>` could give it `int32`.  `--conservative-match-inference`,
+which propagated without decisions first, fixed this for a match source of unknown type, and is
+now **on by default**; `--conservative-match-inference:false` restores the earlier inference.  It
+also now decides without default decisions that an identifier without arguments in a pattern is a
+bound variable when, after propagation, its type has a subtype that is not a datatype, or advice
+that only a number, `bool` or `char` type satisfies; a datatype has no subtypes but itself, so the
+identifier cannot be a constructor.  That fixes `var d := Some(0); match d case Some(n) => ...`
+too.  It is a **false-rejection fix** of the refreshed resolver: it adds and removes no type
+constraint, only defers default decisions, so a literal's newtype constraint is still checked by
+the verifier, and a value already of type `int`, of another newtype or of `bool` is still
+rejected.  The legacy resolver ignores the option.  When a pattern does not match its source, the
+default decisions are made before the error is reported, so that the message names the types
+they give.  The regression is `git-issues/github-issue-48.dfy`; the release note is
+`docs/dev/news/conservative-match-inference-default.fix`.

@@ -1,0 +1,46 @@
+legacy resolve
+
+Dafny program verifier did not attempt verification
+refreshed run
+
+Dafny program verifier finished with 7 verified, 0 errors
+Option.Some(0) Option.None Option.Some(1)
+refreshed resolve, --conservative-match-inference:false
+github-issue-48.dfy(38,9): Error: Function body type mismatch (expected Option<int32>, got Option<?26>) (covariant type parameter 'U' would require int32 :> int)
+github-issue-48.dfy(47,9): Error: Function body type mismatch (expected Option<int32>, got Option<?48>) (covariant type parameter 'U' would require int32 :> int)
+2 resolution/type errors detected in github-issue-48.dfy
+constructor patterns
+
+Dafny program verifier finished with 1 verified, 0 errors
+
+Dafny program verifier finished with 1 verified, 0 errors
+negative controls
+github-issue-48-negative.dfy(8,9): Error: Function body type mismatch (expected Option<int32>, got Option<int>) (covariant type parameter would require int <: int32)
+github-issue-48-negative.dfy(17,9): Error: Function body type mismatch (expected Option<int32>, got Option<other32>) (covariant type parameter would require other32 <: int32)
+github-issue-48-negative.dfy(26,9): Error: Function body type mismatch (expected Option<int32>, got Option<bool>) (covariant type parameter would require bool <: int32)
+github-issue-48-negative.dfy(31,23): Error: incorrect argument type for datatype constructor parameter 'val' (expected bool, found int)
+github-issue-48-negative.dfy(35,9): Error: Function body type mismatch (expected Box<int32>, got Box<int>) (non-variant type parameter would require int32 = int)
+github-issue-48-negative.dfy(45,16): Error: incorrect argument type for datatype constructor parameter 'val' (expected Option<int32>, found int)
+6 resolution/type errors detected in github-issue-48-negative.dfy
+github-issue-48-negative.dfy(8,9): Error: Function body type mismatch (expected Option<int32>, got Option<?17>) (covariant type parameter 'U' would require int32 :> int)
+github-issue-48-negative.dfy(17,9): Error: Function body type mismatch (expected Option<int32>, got Option<?36>) (covariant type parameter 'U' would require int32 :> other32)
+github-issue-48-negative.dfy(27,22): Error: boolean literal used as if it had type int32
+github-issue-48-negative.dfy(35,9): Error: Function body type mismatch (expected int32, got int)
+github-issue-48-negative.dfy(45,16): Error: integer literal used as if it had type Option<int32>
+5 resolution/type errors detected in github-issue-48-negative.dfy
+range controls
+github-issue-48-range.dfy(7,22): Error: result of operation might violate newtype constraint for 'int32'
+github-issue-48-range.dfy(19,23): Error: result of operation might violate newtype constraint for 'int32'
+
+Dafny program verifier finished with 1 verified, 2 errors
+github-issue-48-range.dfy(7,22): Error: result of operation might violate newtype constraint for 'int32'
+github-issue-48-range.dfy(19,23): Error: result of operation might violate newtype constraint for 'int32'
+
+Dafny program verifier finished with 1 verified, 2 errors
+false control
+github-issue-48-false.dfy(15,0): Error: a postcondition could not be proved on this return path
+github-issue-48-false.dfy(14,17): Related location: this is the postcondition that could not be proved
+github-issue-48-false.dfy(20,0): Error: a postcondition could not be proved on this return path
+github-issue-48-false.dfy(19,10): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 3 verified, 2 errors

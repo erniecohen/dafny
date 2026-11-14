@@ -43,6 +43,13 @@ namespace Microsoft.Dafny {
 
     public abstract string WhatString { get; }
 
+    /// <summary>
+    /// Whether the pre-type this advice is for is also confirmed to be in a family that has no datatypes: the
+    /// int, real, bool or char family, or the bitvectors.  That is the case for the advice given to literals and
+    /// to the results and operands of the arithmetic and logical operators.
+    /// </summary>
+    public virtual bool ExcludesDatatypes => false;
+
     public bool Apply(PreTypeResolver preTypeResolver) {
       if (PreType.Normalize() is PreTypeProxy proxy) {
         ActOnAdvice(proxy, preTypeResolver);
@@ -98,6 +105,10 @@ namespace Microsoft.Dafny {
     private readonly Target what;
 
     public override string WhatString => what == Target.Object ? PreType.TypeNameObjectQ : what.ToString().ToLower();
+
+    // Every piece of Int, Real, Bool or Char advice is added together with a confirmation of the corresponding
+    // family (or of bool-or-bitvector, for logical negation).
+    public override bool ExcludesDatatypes => what is Target.Int or Target.Real or Target.Bool or Target.Char;
 
     public CommonAdvice(PreType preType, Target advice)
       : base(preType) {

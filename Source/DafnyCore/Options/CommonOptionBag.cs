@@ -318,8 +318,8 @@ true - All class instances are raw pointers and need to be manually deallocated"
   public static readonly Option<bool> ContextualQuantifierDomains = new("--contextual-quantifier-domains", () => false,
     "With the refreshed type system, infer an omitted bound variable type of a forall or exists expression from the declared type of the function parameters it is passed to, when every use of the variable is such an argument and all those parameters have the same type. Disabled by default.");
 
-  public static readonly Option<bool> ConservativeMatchInference = new("--conservative-match-inference", () => false,
-    "With the refreshed type system, infer the type of a match source by propagation before making default type decisions, so that an earlier literal can still take its type from the enclosing context. Disabled by default.");
+  public static readonly Option<bool> ConservativeMatchInference = new("--conservative-match-inference", () => true,
+    "With the refreshed type system, infer the type of a match source, and decide whether a pattern identifier is a constructor or a bound variable, by propagation before making default type decisions, so that an earlier literal can still take its type from the enclosing context. Enabled by default; '--conservative-match-inference:false' restores the earlier inference. No effect on the legacy resolver.");
 
   public static readonly Option<bool> AncestorQualifiedModuleIds = new("--ancestor-qualified-module-ids", () => false,
     "Let a refines clause or import whose qualified module name starts with modules that enclose it, as in 'module A.C refines A.B', depend on the module it names instead of on the enclosing module, which is otherwise reported as a cycle. Disabled by default.");
