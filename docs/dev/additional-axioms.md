@@ -1070,3 +1070,23 @@ that must not verify, and the seq-field baseline and the
 `{:termination false}` interaction. The positive file has 19 verified
 declarations with the option on and 16 errors with it off; every vacuity control
 fails in both settings.
+
+## Rank of trait-typed datatype fields (#317)
+
+https://github.com/erniecohen/dafny/issues/317. For a field of an inductive
+datatype constructor whose type is a trait that is not a reference type, the
+option adds, in `BoogieGenerator.DataTypes.cs`, the axiom that a type-parameter
+field already has: `BoxRank(field) < DtRank(#C(params))`, triggered on the
+constructor term. The field's value is boxed, as a type-parameter field's is. Its
+kind is **asserts**. It holds in the model above with `BoxRank($Box(v))`
+interpreted as `DtRank(v)` for a datatype value, `Seq#Rank(v)` for a sequence
+and `0` for any other value: a datatype or sequence value in the field is a
+child of the constructor value, and any other value is a leaf. The fact is used
+by `--trait-rank-decreases`, which makes such trait values comparable in
+`decreases` clauses; without that option it relates the field to the
+constructor only through a downcast (`x.next as L < x`). The argument, including
+cycles through two datatypes that extend one trait and implementations of the
+trait by classes and codatatypes, is in
+[`docs/dev/design/317-datatype-trait-decreases.md`](design/317-datatype-trait-decreases.md).
+The regression is `git-issues/github-issue-317.dfy`, whose `downcast` fixture
+runs this axiom alone with an `ensures false` vacuity control.
