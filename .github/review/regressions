@@ -477,6 +477,10 @@ git-issues/github-issue-211-m3-4.dfy
 # the same outcome and resource count of every check as without it.
 git-issues/github-issue-241-cache-background.dfy
 
+# The refreshed resolver gives a variable bound by a match case pattern the declared type of the
+# constructor's field (https://github.com/erniecohen/dafny/issues/327).
+git-issues/github-issue-327.dfy
+
 # A proof-form forall statement outside a method or function body (a constant initializer, a
 # subset-type or newtype constraint or witness, a default value, an iterator body) no longer
 # crashes the verifier (https://github.com/erniecohen/dafny/issues/315).

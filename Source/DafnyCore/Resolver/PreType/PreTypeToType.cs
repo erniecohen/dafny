@@ -377,7 +377,9 @@ class PreTypeToTypeVisitor : ASTVisitor<IASTVisitorContext> {
         break;
       case IdPattern idPattern:
         if (idPattern.BoundVar != null) {
-          PreType2TypeUtil.Combine(idPattern.BoundVar.Type, idPattern.BoundVar.PreType, false);
+          // The type of a variable bound by a case pattern is refined by the flow that TypeRefinementVisitor sets up from
+          // the match source (for a constructor argument, the declared type of the constructor's formal).
+          PreType2TypeUtil.Combine(idPattern.BoundVar.Type, idPattern.BoundVar.PreType, true);
         }
         if (idPattern.ResolvedLit != null) {
           PostVisitOneExpression(idPattern.ResolvedLit, context);
