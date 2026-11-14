@@ -140,7 +140,8 @@ def cached(opts, cache):
 
 
 def verify(args):
-    litdir, dafny, z3, path, opts, additional_axioms, measurements, cache = args
+    litdir, dafny, z3, path, opts, additional_axioms, measurements, *rest = args
+    cache = rest[0] if rest else None
     own = shlex.split(opts)
     names = {t.split('=')[0].split(':')[0] for t in own if t.startswith('--')}
     # A precompiled library (--standard-libraries, a .doo) records the --boogie
