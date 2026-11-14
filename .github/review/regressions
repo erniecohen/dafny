@@ -503,6 +503,10 @@ git-issues/github-issue-211-m5a.dfy
 # (https://github.com/erniecohen/dafny/issues/34).
 git-issues/github-issue-34.dfy
 
+# A library (.doo) and --print keep the opaque modifier of constants
+# (https://github.com/erniecohen/dafny/issues/337).
+git-issues/github-issue-337.dfy
+
 # Before `new;`, a constructor may not read a constant whose initializer depends on `this`; the
 # old rule proved false (https://github.com/erniecohen/dafny/issues/339).
 git-issues/github-issue-339.dfy
