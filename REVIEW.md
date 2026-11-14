@@ -691,3 +691,17 @@ needed.  Its kind is **weakens only**: it rejects programs and adds no fact or a
 that does not make such a read is unchanged.  The hidden `--legacy-first-phase-const-reads`
 option restores the old rule for comparison and migration.  The regression is
 `git-issues/github-issue-339.dfy`; the release note is `docs/dev/news/339.fix`.
+
+## Comparing crossed component types ([issue 47](https://github.com/erniecohen/dafny/issues/47))
+
+With `--type-system-refresh`, `==`, `!=`, `in`, `!in` and prefix equality required, in their final
+check, that one operand's type be a supertype of the other's, so `(Number, Integer) == (Integer,
+Number)`, with `Number` and `Integer` subtypes of one trait, was rejected, though inference had
+already found the two comparable and the legacy resolver accepts it.  The check now also accepts
+two types with the same type constructor whose arguments agree exactly at each non-variant
+parameter and are comparable, recursively, at each co- or contravariant one.  Such types have a
+common supertype and a common subtype, built argument by argument, so a value can belong to both
+and the comparison is meaningful.  It is a **false-rejection fix** of the refreshed resolver: it
+accepts more programs and adds no fact or axiom; the legacy resolver and `as`/`is` are unchanged.
+The regression is `git-issues/github-issue-47.dfy`, with negative controls that are still
+rejected; the release note is `docs/dev/news/47.fix`.
