@@ -32,4 +32,11 @@ public class CompilationData(
   /// .doo library, by module name.  A library built from this compilation records them as its imports.
   /// </summary>
   public IReadOnlyList<DafnyCore.ModularTerminationContractRef> ModularTerminationImports { get; set; } = [];
+
+  /// <summary>
+  /// Under --modular-termination, the trusted premises recorded by the admitted .doo libraries, with the
+  /// library each comes from and its trust list (https://github.com/erniecohen/dafny/issues/211, M5b).
+  /// </summary>
+  public IReadOnlyList<(string Library, string TrustList, DafnyCore.ModularTerminationPremise Premise)>
+    ModularTerminationPremises { get; set; } = [];
 }

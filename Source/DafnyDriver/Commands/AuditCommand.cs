@@ -10,7 +10,9 @@ static class AuditCommand {
   public static IEnumerable<Option> Options => new Option[] {
     Auditor.Auditor.ReportFileOption,
     Auditor.Auditor.ReportFormatOption,
-    Auditor.Auditor.CompareReportOption
+    Auditor.Auditor.CompareReportOption,
+    // Under --modular-termination, admitting a library checks the Z3 binary that verified it.
+    BoogieOptionBag.SolverPath
   }.Concat(DafnyCommands.ResolverOptions);
 
   public static Command Create() {

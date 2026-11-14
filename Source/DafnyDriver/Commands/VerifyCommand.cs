@@ -279,6 +279,9 @@ public static class VerifyCommand {
     }
 
     await trailer.WriteLineAsync();
+    if (cliCompilation.TrustedPremisesSummary is { } premises) {
+      await trailer.WriteLineAsync(premises);
+    }
   }
 
   public static void ReportVerificationDiagnostics(CliCompilation compilation, IObservable<CanVerifyResult> verificationResults) {
