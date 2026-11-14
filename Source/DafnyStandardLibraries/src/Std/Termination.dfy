@@ -122,13 +122,28 @@ module Std.Termination {
       PlusStrictlyIncreasingOnRight(maxLeft, |right| as ORDINAL + 1, |left| as ORDINAL + 1);
     }
 
+    // MaxOrdinal(parent, s) is 0 or the ordinal of an element of s.
+    static lemma MaxOrdinalAttained(parent: TerminationMetric, s: multiset<TerminationMetric>)
+      requires forall o <- s :: parent decreases to o
+      decreases |s|
+      ensures MaxOrdinal(parent, s) == 0 || exists o <- s :: MaxOrdinal(parent, s) == o.Ordinal()
+    {
+      reveal MaxOrdinal();
+      if s != multiset{} {
+        var x := ExtractFromNonEmptyMultiset(s);
+        var rest := s - multiset{x};
+        MaxOrdinalAttained(parent, rest);
+        assert MaxOrdinal(parent, s) == Max(x.Ordinal(), MaxOrdinal(parent, rest));
+      }
+    }
+
     static lemma MaxOrdinalNonIncreases(parent: TerminationMetric, left: multiset<TerminationMetric>, right: multiset<TerminationMetric>)
       requires forall o <- left :: parent decreases to o
       requires forall o <- right :: parent decreases to o
       requires left > right
       ensures MaxOrdinal(parent, left) >= MaxOrdinal(parent, right)
     {
-      reveal MaxOrdinal();
+      MaxOrdinalAttained(parent, right);
     }
 
     static lemma MaxOrdinalDecreasesIfAllDecrease(parent: TerminationMetric, left: multiset<TerminationMetric>, right: multiset<TerminationMetric>)
@@ -137,7 +152,7 @@ module Std.Termination {
       requires left > right
       ensures MaxOrdinal(parent, left) >= MaxOrdinal(parent, right)
     {
-      reveal MaxOrdinal();
+      MaxOrdinalAttained(parent, right);
     }
 
     lemma SetDecreasesTo(other: TerminationMetric)
