@@ -813,7 +813,8 @@ When a program loads such a library under the option, Dafny recomputes these has
 from the library's program, and rejects the library, naming the mismatch, when any differs: its program,
 its contracts, its record (missing, incomplete, of an unknown format or not matching its own hash), the
 build of Dafny or its prelude, the Z3 binary that the current run uses (the library must be checked
-with the same one), or an option whose value differs from the current one. A library verified against another must be loaded
+with the same one; every command that loads libraries, `dafny resolve`, `dafny audit`, `dafny doc`,
+`dafny extract` and `dafny format` included, takes `--solver-path` to name it), or an option whose value differs from the current one. A library verified against another must be loaded
 with it, and with one that provides the same contracts: a dependency whose method bodies changed is
 accepted, and one whose contracts changed is rejected. Under the option, Dafny also rejects a source
 file given with `--library`, a `.dll` library and the bundled standard library, which carry no record;
