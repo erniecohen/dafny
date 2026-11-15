@@ -1,0 +1,12 @@
+
+Dafny program verifier finished with 11 verified, 0 errors
+
+Dafny program verifier finished with 3 verified, 0 errors
+Dafny auditor completed with 0 findings
+
+Dafny program verifier did not attempt verification
+github-issue-371-user.dfy(5,14): Warning: This ensures clause is part of a bodyless method. Add the {:axiom} attribute to it or the enclosing method to suppress this warning
+
+Dafny program verifier finished with 1 verified, 0 errors
+CLI: Error: cannot build a library under --modular-termination: github-issue-371-user.dfy(4,10) has an assumption that 'dafny audit' reports: Ghost declaration has no body and has an ensures clause. A library built with --modular-termination records that its own program was completely verified; build it without --no-verify, --boogie arguments, {:verify false}, {:only}, decreases *, assumptions (anything 'dafny audit' reports, bodyless members, --allow-axioms) or {:extern}, and with every verification task succeeding
+Translation was aborted because errors were found
