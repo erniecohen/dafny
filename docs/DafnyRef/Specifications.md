@@ -853,7 +853,9 @@ premises only when it selects the same list, and then reports them in its own su
 
 A module of the library may refine another one that has opaque functions: the copies that the
 refinement makes of the reveal lemmas Dafny generates for them are generated too, and their
-`{:verify false}` is not refused.
+`{:verify false}` is not refused. The library may also declare an `opaque const`: the reveal lemma
+Dafny generates for it states the constant's definition and has no body, and it is not counted as a
+premise, nor are the copies a refinement makes of it.
 
 Before milestone M4a, a bound could call code that reaches a dispatched call, and a program could
 prove `false` through it, as in the example above; the rule for bounds closes that.

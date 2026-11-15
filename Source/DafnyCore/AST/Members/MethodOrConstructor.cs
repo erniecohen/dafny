@@ -53,7 +53,11 @@ public abstract class MethodOrConstructor : MethodOrFunction, TypeParameter.Pare
       yield return a;
     }
 
-    if (Body is null && !IsVirtual && HasPostcondition && EnclosingClass.EnclosingModuleDefinition.ModuleKind == ModuleKindEnum.Concrete && !HasExternAttribute && !HasAxiomAttribute) {
+    // The reveal lemma Dafny generates for an opaque const has no body and states the constant's
+    // definition, which holds without it, so it is not an assumption; a copy of it that a refinement
+    // makes is generated too (https://github.com/erniecohen/dafny/issues/371).
+    if (Body is null && !IsVirtual && HasPostcondition && EnclosingClass.EnclosingModuleDefinition.ModuleKind == ModuleKindEnum.Concrete && !HasExternAttribute && !HasAxiomAttribute &&
+        !OpaqueMemberRewriter.IsGeneratedRevealLemma(this)) {
       yield return new Assumption(this, Origin, AssumptionDescription.NoBody(IsGhost));
     }
 
