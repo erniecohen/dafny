@@ -321,7 +321,8 @@ build('iterator', source('iterator'), expected_exit=3,
       diagnostic="declares iterator 'Gen'; iterators are not yet supported under --modular-termination")
 
 # The one exemption from the inventory: {:termination false} on a trait is checked under the option.
-build('termination-false', str(sources / 'github-issue-211-m4b-good.dfy'))
+# The warning about {:termination false}, on by default, is not what this checks.
+build('termination-false', str(sources / 'github-issue-211-m4b-good.dfy'), '--warn-unchecked-termination=false')
 
 print('M3-4 termination records: %d checks, %s' % (counter[0], 'all passed' if not failures else 'FAILED'))
 for failure in failures:
