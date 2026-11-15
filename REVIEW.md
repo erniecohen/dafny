@@ -427,6 +427,21 @@ verifier know.  Each follow-up commit gives its fix's reason.
 
 ## The version, and how to check it
 
+Since 2026-11-14 the hash covers every product file, those the fork added as well as
+those v4.11.0 already has, and leaves out the paths that are not product (tests,
+`docs`, `.github`, `friction` and the documents at the top of the tree):
+
+    git diff --no-renames --abbrev=7 v4.11.0 <last product commit> -- . \
+      ':(exclude)Source/IntegrationTests' ':(exclude)docs' ':(exclude).github' \
+      ':(exclude)friction' ':(exclude)REVIEW.md' ':(exclude)ROADMAP.md' \
+      ':(exclude)AGENTS.md' ':(exclude)CLAUDE.md' | sha256sum
+
+`.github/review/version.sh` computes it.  The earlier hash, of
+`git diff --diff-filter=M`, saw only files that v4.11.0 already has, so a change
+confined to a file the fork added kept the version: two different products were
+both `4.11.0+fcb2042d.review.e35c4989`.  The versions below were computed the
+earlier way.
+
 `d2070b81` is the first 8 hex digits of the sha256 of the change that the
 product commits make to files that v4.11.0 already has:
 

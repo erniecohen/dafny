@@ -9,9 +9,10 @@
 # file the build compiles.  The revision is then <the release's commit, 8 digits>
 # .review.<hash>, where <hash> is the first 8 hex digits of the sha256 of
 #
-#   git diff --diff-filter=M --abbrev=7 <tag> <last product commit>
+#   git diff --abbrev=7 <tag> <last product commit> -- <product files>
 #
-# and the script fails if any commit after the last product commit changes a product
+# the whole change to the product files, those the fork added as well as those it
+# modified, and the script fails if any commit after the last product commit changes a product
 # file: such a change needs a new product commit named here, and so a new version.
 # REVIEW.md says why.  Elsewhere the revision is the commit.
 set -eu
@@ -23,15 +24,17 @@ if [ -f .github/review/base ]; then
   git cat-file -e "$product^{commit}" 2>/dev/null || git fetch --quiet --no-tags --depth=1 origin "$product"
   # Not product: tests, documents and CI, the friction cases, and the documents at the top
   # of the tree.
-  changed=$(git diff --name-only "$product" HEAD -- . \
-    ':(exclude)Source/IntegrationTests' ':(exclude)docs' ':(exclude).github' ':(exclude)friction' \
-    ':(exclude)REVIEW.md' ':(exclude)ROADMAP.md' ':(exclude)AGENTS.md' ':(exclude)CLAUDE.md')
+  set -- . ':(exclude)Source/IntegrationTests' ':(exclude)docs' ':(exclude).github' ':(exclude)friction' \
+    ':(exclude)REVIEW.md' ':(exclude)ROADMAP.md' ':(exclude)AGENTS.md' ':(exclude)CLAUDE.md'
+  changed=$(git diff --name-only "$product" HEAD -- "$@")
   if [ -n "$changed" ]; then
     echo "product files changed after $product, the last product commit in .github/review/base:" >&2
     echo "$changed" >&2
     exit 1
   fi
-  hash=$(git diff --no-ext-diff --no-color --diff-filter=M --abbrev=7 "$base" "$product" | shasum -a 256 | cut -c1-8)
+  # Every product file counts, added ones too: with only the files that the tag already has,
+  # a change confined to a file the fork added kept the version, so two products shared one.
+  hash=$(git diff --no-ext-diff --no-color --no-renames --abbrev=7 "$base" "$product" -- "$@" | shasum -a 256 | cut -c1-8)
   revision="$(git rev-parse --short=8 "$base^{commit}").review.$hash"
 else
   revision=$(git rev-parse --short=8 HEAD)
