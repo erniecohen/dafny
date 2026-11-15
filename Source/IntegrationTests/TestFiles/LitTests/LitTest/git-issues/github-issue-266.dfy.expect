@@ -1,0 +1,95 @@
+positive, both resolvers
+
+Dafny program verifier finished with 9 verified, 0 errors
+
+Dafny program verifier finished with 9 verified, 0 errors
+false controls: one reachable assert false per family, both resolvers
+github-issue-266-false.dfy(18,4): Error: assertion might not hold
+github-issue-266-false.dfy(23,4): Error: assertion might not hold
+github-issue-266-false.dfy(28,64): Error: assertion might not hold
+github-issue-266-false.dfy(33,50): Error: assertion might not hold
+
+Dafny program verifier finished with 1 verified, 4 errors
+github-issue-266-false.dfy(18,4): Error: assertion might not hold
+github-issue-266-false.dfy(23,4): Error: assertion might not hold
+github-issue-266-false.dfy(28,64): Error: assertion might not hold
+github-issue-266-false.dfy(33,50): Error: assertion might not hold
+
+Dafny program verifier finished with 1 verified, 4 errors
+conversions that are not subtypes, both resolvers
+github-issue-266-verify.dfy(4,9): Error: value of expression (of type 'bounded<nat, int -> int>') is not known to be an instance of type 'bounded<nat, int -> nat>'
+github-issue-266-verify.dfy(7,9): Error: value of expression (of type 'bounded<nat, int --> int>') is not known to be an instance of type 'bounded<nat, int -> int>'
+github-issue-266-verify.dfy(10,9): Error: value of expression (of type 'bounded<nat, int ~> int>') is not known to be an instance of type 'bounded<nat, int --> int>'
+
+Dafny program verifier finished with 0 verified, 3 errors
+github-issue-266-verify.dfy(4,9): Error: value of expression (of type 'bounded<nat, int -> int>') is not known to be an instance of type 'bounded<nat, int -> nat>'
+github-issue-266-verify.dfy(7,9): Error: value of expression (of type 'bounded<nat, int --> int>') is not known to be an instance of type 'bounded<nat, int -> int>'
+github-issue-266-verify.dfy(10,9): Error: value of expression (of type 'bounded<nat, int ~> int>') is not known to be an instance of type 'bounded<nat, int --> int>'
+
+Dafny program verifier finished with 0 verified, 3 errors
+no default value, both resolvers
+github-issue-266-init.dfy(5,9): Error: variable 'x', which is subject to definite-assignment rules, might be uninitialized here
+github-issue-266-init.dfy(7,62): Error: field 'f', which is subject to definite-assignment rules, might be uninitialized at this point in the constructor body
+github-issue-266-init.dfy(8,58): Error: cannot establish the existence of LHS values that satisfy the such-that predicate. Note, no trigger was found for the such-that predicate, which may be the reason the proof failed. To give a trigger explicitly, use the {:trigger} attribute. For more information, see the section on quantifier instantiation rules in the reference manual.
+
+Dafny program verifier finished with 0 verified, 3 errors
+github-issue-266-init.dfy(5,9): Error: variable 'x', which is subject to definite-assignment rules, might be uninitialized here
+github-issue-266-init.dfy(7,62): Error: field 'f', which is subject to definite-assignment rules, might be uninitialized at this point in the constructor body
+github-issue-266-init.dfy(8,58): Error: cannot establish the existence of LHS values that satisfy the such-that predicate. Note, no trigger was found for the such-that predicate, which may be the reason the proof failed. To give a trigger explicitly, use the {:trigger} attribute. For more information, see the section on quantifier instantiation rules in the reference manual.
+
+Dafny program verifier finished with 0 verified, 3 errors
+resolution errors, both resolvers
+github-issue-266-resolve.dfy(5,10): Error: non-function expression (of type bounded<nat, int -> int>) is called with parameters
+github-issue-266-resolve.dfy(6,15): Error: member 'bound' does not exist in abstract type 'bounded'
+github-issue-266-resolve.dfy(7,15): Error: member 'erase' does not exist in abstract type 'bounded'
+github-issue-266-resolve.dfy(8,6): Error: RHS (of type int -> int) not assignable to LHS (of type bounded<nat, int -> int>)
+github-issue-266-resolve.dfy(9,6): Error: RHS (of type ? -> ?) not assignable to LHS (of type bounded<nat, int -> int>)
+github-issue-266-resolve.dfy(12,6): Error: RHS (of type bounded<nat, int -> int>) not assignable to LHS (of type bounded<ORDINAL, int -> int>) (nonvariance for type parameter at index 0 expects ORDINAL = nat)
+6 resolution/type errors detected in github-issue-266-resolve.dfy
+github-issue-266-resolve.dfy(5,10): Error: non-function expression (of type bounded<nat, int -> int>) is called with parameters
+github-issue-266-resolve.dfy(6,15): Error: member 'bound' does not exist in abstract type 'bounded'
+github-issue-266-resolve.dfy(7,15): Error: member 'erase' does not exist in abstract type 'bounded'
+github-issue-266-resolve.dfy(8,6): Error: RHS (of type int -> int) not assignable to LHS (of type bounded<nat, int -> int>)
+github-issue-266-resolve.dfy(9,6): Error: RHS (of type ?6 -> ?6) not assignable to LHS (of type bounded<nat, int -> int>)
+github-issue-266-resolve.dfy(12,6): Error: RHS (of type bounded<nat, int -> int>) not assignable to LHS (of type bounded<ORDINAL, int -> int>) (non-variant type parameter 'O' would require ORDINAL = nat)
+6 resolution/type errors detected in github-issue-266-resolve.dfy
+formation and characteristic errors, both resolvers
+github-issue-266-chars.dfy(7,18): Error: the order of a bounded type must be nat or ORDINAL (got int)
+github-issue-266-chars.dfy(7,47): Error: the order of a bounded type must be nat or ORDINAL (got Small)
+github-issue-266-chars.dfy(7,69): Error: the order of a bounded type must be nat or ORDINAL (got real)
+github-issue-266-chars.dfy(8,23): Error: the order of a bounded type must be nat or ORDINAL (got O)
+github-issue-266-chars.dfy(8,50): Error: the payload of a bounded type must be an arrow type (got G)
+github-issue-266-chars.dfy(9,20): Error: the payload of a bounded type must be an arrow type (got int)
+github-issue-266-chars.dfy(9,42): Error: the payload of a bounded type must be an arrow type (got seq<F>)
+github-issue-266-chars.dfy(10,15): Error: the order of a bounded type must be nat or ORDINAL (got int)
+github-issue-266-chars.dfy(12,7): Error: == can only be applied to expressions of types that support equality (got bounded<nat, int -> int>)
+github-issue-266-chars.dfy(17,59): Error: type parameter (T) passed to function Auto must support auto-initialization (got bounded<nat, int -> int>)
+github-issue-266-chars.dfy(18,72): Error: type parameter (T) passed to function Nonempty must be nonempty (got bounded<nat, int -> int>)
+github-issue-266-chars.dfy(19,48): Error: set argument type must support equality (got bounded<nat, int -> int>)
+github-issue-266-chars.dfy(19,53): Error: set argument type must support equality (got bounded<nat, int -> int>)
+13 resolution/type errors detected in github-issue-266-chars.dfy
+github-issue-266-chars.dfy(7,18): Error: the order of a bounded type must be nat or ORDINAL (got int)
+github-issue-266-chars.dfy(7,47): Error: the order of a bounded type must be nat or ORDINAL (got Small)
+github-issue-266-chars.dfy(7,69): Error: the order of a bounded type must be nat or ORDINAL (got real)
+github-issue-266-chars.dfy(8,23): Error: the order of a bounded type must be nat or ORDINAL (got O)
+github-issue-266-chars.dfy(8,50): Error: the payload of a bounded type must be an arrow type (got G)
+github-issue-266-chars.dfy(9,20): Error: the payload of a bounded type must be an arrow type (got int)
+github-issue-266-chars.dfy(9,42): Error: the payload of a bounded type must be an arrow type (got seq<F>)
+github-issue-266-chars.dfy(10,15): Error: the order of a bounded type must be nat or ORDINAL (got int)
+github-issue-266-chars.dfy(12,7): Error: == can only be applied to expressions of types that support equality (got bounded<nat, int -> int>)
+github-issue-266-chars.dfy(17,59): Error: type parameter (T) passed to function Auto must support auto-initialization (got bounded<nat, int ~> int>)
+github-issue-266-chars.dfy(18,72): Error: type parameter (T) passed to function Nonempty must be nonempty (got bounded<nat, int -> int>)
+github-issue-266-chars.dfy(19,48): Error: set argument type must support equality (got bounded<nat, int -> int>)
+github-issue-266-chars.dfy(19,53): Error: set argument type must support equality (got bounded<nat, int -> int>)
+13 resolution/type errors detected in github-issue-266-chars.dfy
+without --modular-termination, both resolvers
+github-issue-266-off.dfy(2,12): Error: Type or type parameter is not declared in this scope: bounded (did you forget to qualify a name or declare a module import 'opened'?) (note that names in outer modules are not visible in contained modules)
+1 resolution/type errors detected in github-issue-266-off.dfy
+github-issue-266-off.dfy(2,12): Error: Type or type parameter is not declared in this scope: bounded (did you forget to qualify a name or declare a module import 'opened'?) (note that names in outer modules are not visible in contained modules)
+1 resolution/type errors detected in github-issue-266-off.dfy
+erasure
+
+Dafny program verifier did not attempt verification
+erased
+
+Dafny program verifier did not attempt verification

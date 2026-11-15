@@ -71,7 +71,8 @@ public class SystemModuleManager {
             Concat(ArrowTypeDecls.Keys.OrderBy(x => x)).
             Concat(PartialArrowTypeDecls.Keys.OrderBy(x => x)).
             Concat(TotalArrowTypeDecls.Keys.OrderBy(x => x)).
-            Concat(tupleInts.OrderBy(x => x));
+            Concat(tupleInts.OrderBy(x => x)).
+            Concat(BoundedDecl != null ? [-1] : []);
         var bytes = ints.SelectMany(BitConverter.GetBytes).ToArray();
         hash = SHA256.Create()!.ComputeHash(bytes);
       }
@@ -95,6 +96,7 @@ public class SystemModuleManager {
     StringDecl = source.StringDecl;
     NatDecl = source.NatDecl;
     ObjectDecl = source.ObjectDecl;
+    BoundedDecl = source.BoundedDecl;
     ORDINAL_Offset = source.ORDINAL_Offset;
     MergeResolutionView(source);
   }
@@ -204,6 +206,10 @@ public class SystemModuleManager {
   public readonly SubsetTypeDecl NatDecl;
   public UserDefinedType Nat() { return new UserDefinedType(Token.NoToken, "nat", NatDecl, []); }
   public readonly TraitDecl ObjectDecl;
+  /// <summary>
+  /// The abstract type "bounded&lt;O, F&gt;" of bounded callables (issue 266), declared only under --modular-termination.
+  /// </summary>
+  public readonly AbstractTypeDecl BoundedDecl;
   public UserDefinedType ObjectQ() {
     Contract.Assume(ObjectDecl != null);
     return new UserDefinedType(Token.NoToken, "object?", null) { ResolvedClass = ObjectDecl };
@@ -237,6 +243,10 @@ public class SystemModuleManager {
     // create trait 'object'
     ObjectDecl = new TraitDecl(SourceOrigin.NoToken, new Name("object"), SystemModule, [], [], DontCompile(), false, []);
     SystemModule.SourceDecls.Add(ObjectDecl);
+    if (options.Get(CommonOptionBag.ModularTermination)) {
+      BoundedDecl = BoundedCallables.CreateDecl(SystemModule, DontCompile());
+      SystemModule.SourceDecls.Add(BoundedDecl);
+    }
     // add one-dimensional arrays, since they may arise during type checking
     // Arrays of other dimensions may be added during parsing as the parser detects the need for these
     UserDefinedType tmp = ArrayType(1, Type.Int, true);

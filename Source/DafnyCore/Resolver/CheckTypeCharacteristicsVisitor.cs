@@ -15,6 +15,9 @@ class CheckTypeCharacteristicsVisitor : ResolverTopDownVisitor<bool> {
     Contract.Requires(reporter != null);
   }
 
+  // The bounded types (issue 266) already checked, by the origin of the type, so that each is reported once.
+  private readonly HashSet<IOrigin> boundedTypesChecked = new();
+
 
   public static bool CanCompareWith(Expression expr) {
     Contract.Requires(expr != null);
@@ -313,6 +316,9 @@ class CheckTypeCharacteristicsVisitor : ResolverTopDownVisitor<bool> {
     } else if (type is UserDefinedType) {
       var udt = (UserDefinedType)type;
       Contract.Assert(udt.ResolvedClass != null);
+      if (BoundedCallables.IsBoundedDecl(udt.ResolvedClass)) {
+        BoundedCallables.CheckInstantiation(reporter, tok, udt, boundedTypesChecked);
+      }
       var formalTypeArgs = udt.ResolvedClass.TypeArgs;
       Contract.Assert(formalTypeArgs != null);
       CheckTypeInstantiation(udt.Origin, "type", udt.ResolvedClass.Name, formalTypeArgs, udt.TypeArgs, inGhostContext);
@@ -371,7 +377,8 @@ class CheckTypeCharacteristicsVisitor : ResolverTopDownVisitor<bool> {
       return false;
     }
     var cl = (actual.Normalize() as UserDefinedType)?.ResolvedClass;
-    var tp = (TopLevelDecl)(cl as TypeParameter) ?? cl as AbstractTypeDecl;
+    // The system's bounded type (issue 266) cannot be redeclared, so it gets no hint.
+    var tp = (TopLevelDecl)(cl as TypeParameter) ?? (BoundedCallables.IsBoundedDecl(cl) ? null : cl as AbstractTypeDecl);
     if (formal.HasCompiledValue && (inGhostContext ? !actual.IsNonempty : !actual.HasCompilableValue)) {
       whatIsNeeded = "support auto-initialization";
       hint = tp == null ? "" :
@@ -403,6 +410,10 @@ class CheckTypeCharacteristicsVisitor : ResolverTopDownVisitor<bool> {
     Contract.Requires(argType != null);
     argType = argType.Normalize();
     var cl = (argType as UserDefinedType)?.ResolvedClass;
+    if (BoundedCallables.IsBoundedDecl(cl)) {
+      // The system's bounded type (issue 266) cannot be redeclared, so it gets no hint.
+      return "";
+    }
     var tp = (TopLevelDecl)(cl as TypeParameter) ?? cl as AbstractTypeDecl;
     if (tp != null) {
       return string.Format(" (perhaps try declaring {2} '{0}' on line {1} as '{0}(==)', which says it can only be instantiated with a type that supports equality)", tp.Name, tp.Origin.line, tp.WhatKind);

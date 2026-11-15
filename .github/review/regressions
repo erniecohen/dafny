@@ -542,3 +542,6 @@ git-issues/github-issue-350.dfy
 # Std.Ordinal's Omega, PlusLimit and TimesLimit are proved from the lemmas Std.Axioms.Ordinals.Infinite
 # and Replacement, not bodyless {:axiom} ghost functions (https://github.com/erniecohen/dafny/issues/354).
 git-issues/github-issue-354.dfy
+
+# Bounded callables, milestone 1: the type bounded<O, F> under --modular-termination, its formation and characteristic rules, and its erasure (https://github.com/erniecohen/dafny/issues/266).
+git-issues/github-issue-266.dfy
