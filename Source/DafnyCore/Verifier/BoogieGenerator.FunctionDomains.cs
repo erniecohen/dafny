@@ -23,7 +23,10 @@ namespace Microsoft.Dafny;
 //    that type, and every box unboxes to some value of it, so its value at any box is its
 //    value at a box in the domain;
 //  - F#Handle applies F to the unboxed arguments, and F is constrained only through
-//    F#canCall, which the translator assumes only for arguments in F's domain.
+//    F#canCall, which the translator assumes only for arguments in F's domain.  This does
+//    not hold for the .requires and .reads members of an arrow type: their "F" is the
+//    Requires or Reads selector itself, which is constrained at every box.  Their handles
+//    keep guarded selectors.
 // Restrict and ExactDom, declared in the standard library with {:functionDomain}, are
 // interpreted here.
 public partial class BoogieGenerator {

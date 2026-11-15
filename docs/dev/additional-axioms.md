@@ -1125,7 +1125,11 @@ With `--additional-axioms` (or `--function-extensionality-axiom`), in
   types. `F` itself is constrained only by axioms guarded by `F#canCall` or by its
   formals' types, so its values outside its domain are free. Guarding these
   axioms forces each application to prove a subset-type constraint on its
-  arguments.
+  arguments. The `.requires` and `.reads` members of an arrow type are the
+  exception, and their handles keep guarded selectors: their "function" is the
+  Requires or Reads selector itself, which is constrained at every box. With
+  unguarded selectors, `f.requires == F` for a total `f` makes `F#requires` true
+  outside `F`'s domain, and so `F`'s postcondition hold there.
 - `$ExactDom1(a, f) <==> (forall bx :: $FunDom1(f, bx) <==> $IsBox(bx, a))`: the
   domain is compared as a set of boxes, never as a `Ty` term. Distinct `Ty` terms
   can have the same boxes: `type MyInt = x: int | true` has a tag different from
@@ -1161,9 +1165,11 @@ With `--additional-axioms` (or `--function-extensionality-axiom`), in
 
 A function value of one argument is a pair of a box set `D` (its domain) and the
 three maps on `D`. Outside `D`, its parts are given by a fixed extension of the
-pair: if `D` is the boxes of `int`, `real`, `bool` or `ORDINAL`, its parts at a box
-are its parts at the box of that box's unboxing; otherwise application is a fixed
-box, the precondition is false and the reads set is empty. `TagHandle1(d, h, r,
+pair: at a box `b` whose unboxing to the representation type of `D`'s type,
+boxed again, lies in `D`, its parts are its parts at that box; at any other box,
+application is a fixed box, the precondition is false and the reads set is empty.
+If `D` is the boxes of `int`, `real`, `bool` or `ORDINAL`, the first case covers
+every box. `TagHandle1(d, h, r,
 rd)` and `BasicHandle1(d, h, r, rd)` are `(boxes of d, the three maps restricted to
 it)`; `HandleN` values keep their meaning as in the original model. The guarded
 selector axioms hold by construction, and so do `BasicHandle1`'s unguarded ones,

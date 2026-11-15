@@ -105,3 +105,15 @@ lemma VacuityIntLambdas() {
   assert h == Inc;
   assert false; // error
 }
+
+// The handle of an arrow's .requires member is true at every box, so its selectors
+// must hold only inside the domain.  Otherwise equating it with a declared function
+// forces that function's precondition, and so its postcondition, outside its domain.
+function Pos(x: nat): bool ensures x >= 0 { true }
+lemma VacuityRequiresHandle() {
+  var f: nat -> bool := Pos;
+  var r: nat -> bool := f.requires;
+  FunExt<nat, bool>(r, Pos);
+  assert r == Pos;
+  assert false; // error
+}

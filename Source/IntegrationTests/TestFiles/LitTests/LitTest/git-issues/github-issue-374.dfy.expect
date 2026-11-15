@@ -53,8 +53,9 @@ github-issue-374-negative.dfy(79,2): Error: assertion might not hold
 github-issue-374-negative.dfy(86,2): Error: assertion might not hold
 github-issue-374-negative.dfy(94,2): Error: assertion might not hold
 github-issue-374-negative.dfy(106,2): Error: assertion might not hold
+github-issue-374-negative.dfy(118,2): Error: assertion might not hold
 
-Dafny program verifier finished with 0 verified, 12 errors
+Dafny program verifier finished with 1 verified, 13 errors
 github-issue-374-negative.dfy(12,2): Error: assertion might not hold
 github-issue-374-negative.dfy(18,2): Error: assertion might not hold
 github-issue-374-negative.dfy(25,0): Error: a postcondition could not be proved on this return path
@@ -68,8 +69,9 @@ github-issue-374-negative.dfy(79,2): Error: assertion might not hold
 github-issue-374-negative.dfy(86,2): Error: assertion might not hold
 github-issue-374-negative.dfy(94,2): Error: assertion might not hold
 github-issue-374-negative.dfy(106,2): Error: assertion might not hold
+github-issue-374-negative.dfy(118,2): Error: assertion might not hold
 
-Dafny program verifier finished with 0 verified, 12 errors
+Dafny program verifier finished with 1 verified, 13 errors
 github-issue-374-axiom.dfy(12,2): Error: assertion might not hold
 github-issue-374-axiom.dfy(18,0): Error: a postcondition could not be proved on this return path
 github-issue-374-axiom.dfy(17,12): Related location: this is the postcondition that could not be proved
