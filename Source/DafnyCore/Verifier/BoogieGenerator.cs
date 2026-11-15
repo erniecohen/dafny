@@ -3567,12 +3567,21 @@ namespace Microsoft.Dafny {
     /// <summary>
     ///   If the type is not normally boxed, insert a box around it.
     ///   For lambda functions.
+    ///
+    ///   A value of type ORDINAL has the Boogie type Box without being a boxed
+    ///   value, so it is always boxed here: "ApplyBox" would leave an ORDINAL
+    ///   whose translation is typed Box unboxed, while the other side of an
+    ///   arrow ("UnboxUnlessInherentlyBoxed", and the preconditions and reads
+    ///   of the application) treats it as boxed
+    ///   (https://github.com/erniecohen/dafny/issues/363).
     /// </summary>
     public Bpl.Expr BoxIfNotNormallyBoxed(Bpl.IToken tok, Bpl.Expr e, Type t) {
-      if (!ModeledAsBoxType(t)) {
-        return ApplyBox(tok, e);
-      } else {
+      if (ModeledAsBoxType(t)) {
         return e;
+      } else if (IsBoxTypedWithoutBeingBoxed(t)) {
+        return FunctionCall(tok, BuiltinFunction.Box, null, e);
+      } else {
+        return ApplyBox(tok, e);
       }
     }
 
@@ -3625,6 +3634,15 @@ namespace Microsoft.Dafny {
         return BoxIfNecessary(tok, obj, fromType);
       }
       return obj;
+    }
+
+    /// <summary>
+    ///   Returns whether values of "t" have the Boogie type Box although "t" is not modeled
+    ///   as a box type: this is ORDINAL, whose Boogie type ORDINAL is a synonym of Box.
+    /// </summary>
+    public static bool IsBoxTypedWithoutBeingBoxed(Type t) {
+      Contract.Requires(t != null);
+      return NormalizeToVerificationTypeRepresentation(t) is BigOrdinalType;
     }
 
     public static bool ModeledAsBoxType(Type t) {

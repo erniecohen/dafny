@@ -70,6 +70,9 @@ env:
   # Four jobs can share the self-hosted pool without using more than four cores each.
   DOTNET_PROCESSOR_COUNT: '4'
   DOTNET_NOLOGO: 'true'
+  # Self-hosted runners: no build process outlives the job (MSBuild nodes, Gradle daemons).
+  MSBUILDDISABLENODEREUSE: '1'
+  GRADLE_OPTS: -Dorg.gradle.daemon=false
   DOTNET_CLI_TELEMETRY_OPTOUT: 'true'
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 'true'
   COPYFILE_DISABLE: '1'
