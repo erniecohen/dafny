@@ -34,6 +34,7 @@ cli	emit-uncompilable-code	--emit-uncompilable-code	System.CommandLine.Option`1[
 cli	enforce-determinism	--enforce-determinism	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	error-limit	--error-limit	System.CommandLine.Option`1[System.Int32]	execution	effective prover interfaces/options plus exact SMT command stream; overrides retained
 cli	expected-coverage-report	--coverage-report,--expected-coverage-report	System.CommandLine.Option`1[System.String]	command-setup	setup or another command; executes before/outside proof transport
+cli	extended-newtype-bases	--extended-newtype-bases	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	extract-counterexample	--extract-counterexample	System.CommandLine.Option`1[System.Boolean]	command-setup	setup or another command; executes before/outside proof transport
 cli	file-name	--file-name	System.CommandLine.Option`1[System.String]	command-setup	setup or another command; executes before/outside proof transport
 cli	filter-position	--filter-position	System.CommandLine.Option`1[System.String]	selection	selects current task inventory; each selected task is independently prepared
