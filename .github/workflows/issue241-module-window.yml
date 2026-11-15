@@ -21,6 +21,9 @@ concurrency:
   cancel-in-progress: true
 env:
   DOTNET_NOLOGO: 'true'
+  # Self-hosted runners: no build process outlives the job (MSBuild nodes, Gradle daemons).
+  MSBUILDDISABLENODEREUSE: '1'
+  GRADLE_OPTS: -Dorg.gradle.daemon=false
   DOTNET_CLI_TELEMETRY_OPTOUT: 'true'
   Z3_ZIP: https://github.com/Z3Prover/z3/releases/download/z3-5.1.0/z3-5.1.0-x64-glibc-2.39.zip
   Z3_SHA256: f47be8d27d3230e823bf1eeede2fe0abaca55bb78d0b59974370e6689a92284a
