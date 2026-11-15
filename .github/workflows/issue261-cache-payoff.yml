@@ -47,7 +47,7 @@ jobs:
   measure:
     # The fork's self-hosted runners share one machine, so the corpora are measured one at a time,
     # and each timed run records the other jobs active on those runners (and is repeated if any).
-    if: github.repository == 'erniecohen/dafny'
+    if: ${{ github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
     runs-on: [self-hosted, macOS, ARM64, mac-studio]
     timeout-minutes: 300
     env:
@@ -62,6 +62,7 @@ jobs:
         shell: bash
     steps:
       - name: Yield to interactive work
+        if: runner.os == 'macOS'
         run: |
           case "$(ps -o comm= -p "$PPID")" in
             */Runner.Worker|Runner.Worker) ;;
