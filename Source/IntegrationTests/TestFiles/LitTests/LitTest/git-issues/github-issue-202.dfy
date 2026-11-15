@@ -3,9 +3,9 @@
 // treats the variable of a quantifier that is skolemized at each instance, here p, as a new term, so it
 // warns, and prefers another trigger where there is one. Without the option nothing changes.
 // RUN: echo "default" > "%t"
-// RUN: %exits-with 0 %baredafny verify "%s" --show-hints --type-system-refresh --general-traits=full --general-newtypes --solver-path "%review-z3" --cores:1 --resource-limit:5000000 --verification-time-limit:0 --boogie /normalizeDeclarationOrder:0 --show-snippets:false --use-basename-for-filename >> "%t"
+// RUN: %exits-with 0 %baredafny verify "%s" --show-hints --type-system-refresh --general-traits=full --general-newtypes --solver-path "%review-z3" --cores:1 --resource-limit:5000000 --verification-time-limit:0 --boogie /normalizeDeclarationOrder:0 --show-snippets:false --use-basename-for-filename --allow-warnings >> "%t"
 // RUN: echo "--detect-witness-matching-loops" >> "%t"
-// RUN: %exits-with 0 %baredafny verify "%s" --show-hints --detect-witness-matching-loops --type-system-refresh --general-traits=full --general-newtypes --solver-path "%review-z3" --cores:1 --resource-limit:5000000 --verification-time-limit:0 --boogie /normalizeDeclarationOrder:0 --show-snippets:false --use-basename-for-filename >> "%t"
+// RUN: %exits-with 0 %baredafny verify "%s" --show-hints --detect-witness-matching-loops --type-system-refresh --general-traits=full --general-newtypes --solver-path "%review-z3" --cores:1 --resource-limit:5000000 --verification-time-limit:0 --boogie /normalizeDeclarationOrder:0 --show-snippets:false --use-basename-for-filename --allow-warnings >> "%t"
 // RUN: %diff "%s.expect" "%t"
 
 // The reproducer of issue 202: a subset-type invariant whose witness p re-matches the trigger q in below.

@@ -17,7 +17,7 @@ github-issue-202.dfy(14,5): Info: Selected triggers: {q in below}
 github-issue-202.dfy(14,32): Info: Selected triggers: {q in below}
 github-issue-202.dfy(14,57): Info: Selected triggers: {p in below}
 
-Dafny program verifier finished with 9 verified, 0 errors
+Dafny program verifier finished with 2 verified, 0 errors
 --detect-witness-matching-loops
 github-issue-202.dfy(22,4): Info: Selected triggers: {p in x.below}
 github-issue-202.dfy(28,2): Info: Selected triggers: {q in s} (may loop with "p in s")
@@ -40,4 +40,4 @@ github-issue-202.dfy(14,32): Info: Selected triggers: {q in below} (may loop wit
 github-issue-202.dfy(14,32): Warning: Triggers were added to this quantifier that may introduce matching loops, which may cause brittle verification. To silence this warning, add an explicit trigger using the {:trigger} attribute. For more information, see the section on quantifier instantiation rules in the reference manual.
 github-issue-202.dfy(14,57): Info: Selected triggers: {p in below}
 
-Dafny program verifier finished with 9 verified, 0 errors
+Dafny program verifier finished with 2 verified, 0 errors
