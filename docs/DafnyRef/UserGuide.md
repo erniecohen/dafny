@@ -2703,6 +2703,20 @@ and what information it produces about the verification process.
   changes proof costs. See
   [the soundness note](../dev/additional-axioms.md#call-permissions-of-the-checked-conjuncts-of-an-inlined-body-198).
 
+* `--detect-witness-matching-loops` - in the matching-loop detection of
+  automatically selected triggers, treat a variable bound by a nested
+  existential as a new term, since each instance of the enclosing quantifier
+  yields a fresh witness for it. For example,
+  `forall q | q in s :: exists p :: p in s && q < p` is reported as a matching
+  loop: the witness `p` of the instance at `q` matches the trigger `q in s`
+  again. Without the option, `p in s` counts as a harmless renaming of the
+  trigger. A variable counts when its quantifier is an existential in positive
+  position, or a universal in negative position, in the enclosing quantifier's
+  body, or where the position is mixed. A trigger that does not loop is
+  preferred where one exists. Disabled by default;
+  `detect-witness-matching-loops = true` in a project file's `[options]`
+  section.
+
 * `--statement-expression-conclusions` - in the condition of an `assert`
   statement, use the conclusion of a statement expression `S; E` (the
   condition of an `assert`, `assume` or `expect` statement, the result of a
