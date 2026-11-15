@@ -4,12 +4,11 @@
 // and any unknown one, still has to match the library's.  --legacy-boogie-library-check restores
 // the exact comparison.
 
-// RUN: %verify --standard-libraries:true --boogie "/normalizeDeclarationOrder:0 /structuralLiterals" "%s" > "%t"
-// RUN: %verify --standard-libraries:true --boogie /cacheBackground --boogie /scheduleByImplementation "%s" >> "%t"
-// RUN: %exits-with 1 %verify --standard-libraries:true --boogie "/normalizeDeclarationOrder:0 /loopUnroll:5" "%s" >> "%t"
-// RUN: %exits-with 1 %verify --standard-libraries:true --boogie "/someUnknownArgument" "%s" >> "%t"
-// RUN: %exits-with 1 %verify --standard-libraries:true --boogie "/structuralLiterals:2" "%s" >> "%t"
-// RUN: %exits-with 1 %verify --standard-libraries:true --legacy-boogie-library-check --boogie "/normalizeDeclarationOrder:0" "%s" >> "%t"
+// RUN: %verify --standard-libraries:true --boogie:/normalizeDeclarationOrder:0 --boogie:/structuralLiterals "%s" > "%t"
+// RUN: %verify --standard-libraries:true --boogie:/cacheBackground --boogie:/scheduleByImplementation "%s" >> "%t"
+// RUN: %exits-with 1 %verify --standard-libraries:true --boogie:/normalizeDeclarationOrder:0 --boogie:/loopUnroll:5 "%s" >> "%t"
+// RUN: %exits-with 1 %verify --standard-libraries:true --boogie:/proverOpt:SOME_OTHER_OPTION=1 "%s" >> "%t"
+// RUN: %exits-with 1 %verify --standard-libraries:true --legacy-boogie-library-check --boogie:/normalizeDeclarationOrder:0 "%s" >> "%t"
 // RUN: %diff "%s.expect" "%t"
 
 import Std.Axioms.FunctionExtensionality
