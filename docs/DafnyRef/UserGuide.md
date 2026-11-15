@@ -2692,6 +2692,17 @@ and what information it produces about the verification process.
   because it can change proof costs. See
   [the soundness note](../dev/additional-axioms.md).
 
+* `--inlined-body-call-permissions` - when a call to a function with a body
+  is checked by inlining the body conjunct by conjunct (for example a
+  precondition `t.P(n)` where `P` is `a.P(n) && b.P(n)`), give each conjunct
+  the call permissions of the body at its own fuel layer, so that a later
+  conjunct no longer depends on unrelated terms unfolding an earlier one. It
+  adds no fact beyond the function's definition axiom. Disabled by default;
+  `inlined-body-call-permissions = true` in a project file's `[options]`
+  section. It has its own option, not `--additional-axioms`, because it
+  changes proof costs. See
+  [the soundness note](../dev/additional-axioms.md#call-permissions-of-the-checked-conjuncts-of-an-inlined-body-198).
+
 * `--statement-expression-conclusions` - in the condition of an `assert`
   statement, use the conclusion of a statement expression `S; E` (the
   condition of an `assert`, `assume` or `expect` statement, the result of a

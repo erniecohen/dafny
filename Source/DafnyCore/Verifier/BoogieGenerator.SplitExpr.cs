@@ -600,15 +600,16 @@ namespace Microsoft.Dafny {
     /// one layer lower, which often cannot be unfolded. So the later conjunct verified only when
     /// some unrelated term happened to unfold "a.P()".
     ///
-    /// This returns the body's #canCall assumptions, translated at the layer of the checked
-    /// conjuncts, as their antecedent; or null when the option is off or there are none.
+    /// Under --inlined-body-call-permissions, this returns the body's #canCall assumptions,
+    /// translated at the layer of the checked conjuncts, as their antecedent; or null when the
+    /// option is off or there are none.
     /// They are an instance of the existing definition axiom of the inlined function,
     ///   F#canCall(args) ==> BODY-can-make-its-calls(ly) && F(Succ(ly), args) == BODY(ly),
     /// at the same args, with ly the layer of the checked conjuncts; each checked conjunct is
     /// already guarded by F#canCall(args). So this assumes nothing beyond that axiom.
     /// </summary>
     private Bpl.Expr InlinedBodyCanCall(Expression typeSpecializedBody, ExpressionTranslator etran) {
-      if (!options.Get(CommonOptionBag.AdditionalAxioms)) {
+      if (!options.Get(CommonOptionBag.InlinedBodyCallPermissions)) {
         return null;
       }
       var canCall = etran.LayerOffset(1).CanCallAssumption(typeSpecializedBody);

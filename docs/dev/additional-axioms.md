@@ -663,8 +663,10 @@ and `CanCallAssumption` of `a.scoped(n) && b.scoped(n)` is
 unrelated term in the same verification condition happened to unfold the first;
 reversing the conjuncts moves the failure to the new second one.
 
-With the option, each checked conjunct gets the body's call permissions at the
-layer of the conjuncts as an antecedent:
+This member has its own default-off option, `--inlined-body-call-permissions` (also
+`inlined-body-call-permissions = true` in a project file's `[options]`), not the shared
+`--additional-axioms`, because of its measured cost (below). With it, each checked
+conjunct gets the body's call permissions at the layer of the conjuncts as an antecedent:
 
 ```boogie
 F#canCall(args) ==> F($LS($LZ), args) || (CanCallAssumption(BODY, $LS($LZ)) ==> c)
@@ -687,16 +689,28 @@ consequence of what is already known.
 
 **Cost.** The antecedent is added to every checked conjunct of every inlined body whose
 call permissions are not trivially `true`, so the verification conditions of such
-callers change, not only those that failed. COST
+callers change, not only those that failed. Measured in CI (Z3 5.1.0 for the suite and both Z3
+versions for the standard library, resource units) by putting the change behind the shared
+option, so that the paired runs with `--additional-axioms` compared the family with and without
+it: with the option off, every count of the suite and of both library gates was identical. With
+it on, the suite's matched valid batches went from 1,060,715,235 to 1,041,521,618 (-1.8%; 772 of
+8,121 batches moved, by -85% to +71% per program), and `dafny1/SchorrWaite-stages.dfy`
+`M2.SchorrWaite (correctness)` went from verified to out of resource. The standard library went
+up 3.5% (Z3 4.12.1, no verdict moved) and 3.1% (Z3 5.1.0), where `Std.Base64.EncodeDecodeValid`,
+`Std.Collections.Seq.MergeSortedWith (well-formedness)` and `Std.Collections.Seq.SortedUnique`
+went from verified to out of resource. Four regressed verdicts and no improved one is a
+performance effect that would change what the shared option proves, so the member has its own
+option, and the gates' expected verdicts are unchanged. A cheaper variant, giving each conjunct
+only the permissions of the conjuncts before it, is not explored.
 
 **Controls.** `git-issues/github-issue-198.dfy` runs, with the option on and in both
-resolvers, the issue's two forms and their three-child, reversed-conjunct, method and
+resolvers (and once also with `--additional-axioms`), the issue's two forms and their three-child, reversed-conjunct, method and
 lemma variants (`Inputs/github-issue-198-forms.dfy`), the same declarations in reverse
 order (`Inputs/github-issue-198-reversed.dfy`), and two controls that must still fail
 (`Inputs/github-issue-198-controls.dfy`): a term with a leaf `Var(2)` against a
 two-element sequence, which must fail its precondition, and a lemma that calls `size`
-and then asserts `false`. With the option off, five of the fifteen positive declarations
-fail, in both orders and both resolvers.
+and then asserts `false`. With the option off, four or five of the fifteen positive
+declarations fail, depending on the other options.
 
 ## Standing CI for the shared option (#50)
 
