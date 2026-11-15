@@ -24,6 +24,9 @@ concurrency:
 env:
   DOTNET_PROCESSOR_COUNT: '4'
   DOTNET_NOLOGO: 'true'
+  # Self-hosted runners: no build process outlives the job (MSBuild nodes, Gradle daemons).
+  MSBUILDDISABLENODEREUSE: '1'
+  GRADLE_OPTS: -Dorg.gradle.daemon=false
   DOTNET_CLI_TELEMETRY_OPTOUT: 'true'
 
 jobs:
