@@ -249,6 +249,7 @@ namespace Microsoft.Dafny {
       result.TerminationContract = member.TerminationContract;
       if (!isReference && !ReferenceEquals(member, result)) {
         operatorClones?.Register(member, result);
+        OpaqueMemberRewriter.RecordCopy(member, result);
       }
       return result;
     }

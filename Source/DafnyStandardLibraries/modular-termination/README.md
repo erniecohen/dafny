@@ -63,27 +63,28 @@ the design's section 9.2 describes.
 ## The expanded core, with the standard-library trust list
 
 Milestone M5b ([design](../../../docs/dev/design/211-m5b-trusted-premises.md)) adds a project,
-`trusted/dfyconfig.toml`, that builds the core together with `Axioms`, `RealCompleteness` and
-`Ordinal`, whose only unchecked premises are 17 of the 18 entries of the standard-library trust list
+`trusted/dfyconfig.toml`, that builds the core together with `Axioms`, `RealCompleteness`,
+`Ordinal` and `Strings`, whose only unchecked premises are the 18 entries of the standard-library trust list
 compiled into Dafny (`Source/DafnyCore/ModularTerminationTrust.cs`):
 
 | Module | Trusted premises |
 |---|---|
 | `Axioms` | the six `FunctionExtensionality` lemmas, `Ordinals.Infinite`, `Ordinals.Replacement` and `Reals.Complete` |
 | `Ordinal` | eight lemmas |
+| `Strings` | `HexConversion.CharsConsistent` |
 
 Each entry names a declaration and holds a digest of its statement and a digest of its context, the
 contracts of the modules it can see; editing either one makes the entry no longer match, and the build
 refuses it.  Any other premise is refused as before.
 
-`Strings` is left out of the expanded core, although its only premise,
-`HexConversion.CharsConsistent`, is the 18th entry of the list: its conversion modules refine the
-abstract module `Arithmetic.LittleEndianNat`, and the copies that refinement makes of the reveal
-lemmas of its opaque functions (`SeqExtend` is the first) carry `{:verify false}`, which a recorded
-library refuses.  Everything that imports `Strings` stays out with it.  The other three modules
-have no premise but the listed ones, and `Ordinal` and `RealCompleteness` import only `Axioms`.  Every premise is a lemma, so
+`Strings`'s conversion modules refine the abstract module `Arithmetic.LittleEndianNat`.  The copies
+that refinement makes of the reveal lemmas Dafny generates for that module's opaque functions are
+recognised as generated, so their `{:verify false}` is not refused as a user's
+(https://github.com/erniecohen/dafny/issues/357).  The modules that import `Strings` stay out for
+now.  The four modules have no premise but the listed ones; `Ordinal` and `RealCompleteness` import
+only `Axioms`, and `Strings` imports only modules of the core.  Every premise is a lemma, so
 its conclusions hold only where it is called; `Omega`, `PlusLimit` and `TimesLimit` are ghost functions
-with proved postconditions, exported without their bodies,, defined from the two `Ordinals` lemmas
+with proved postconditions, exported without their bodies, defined from the two `Ordinals` lemmas
 (https://github.com/erniecohen/dafny/issues/354).
 
     dafny build --target:lib trusted/dfyconfig.toml --output:DafnyStandardLibraries-trusted.doo

@@ -8,10 +8,8 @@
 #   - Axioms: the {:axiom} lemmas of function extensionality, of infinity and replacement for
 #     ORDINAL, and of the completeness of real;
 #   - RealCompleteness: imports Axioms;
-#   - Ordinal: eight {:axiom} lemmas about ordinal arithmetic, and imports Axioms.
-#
-# Strings is left out: its conversion modules refine Arithmetic.LittleEndianNat, and the copies
-# of that module's opaque functions are refused as {:verify false} (see ../README.md).
+#   - Ordinal: eight {:axiom} lemmas about ordinal arithmetic, and imports Axioms;
+#   - Strings: the @Axiom lemma HexConversion.CharsConsistent.
 #
 # `dafny build --target:lib` on this project writes a .doo library whose record lists each of
 # these premises, under the trust list's digests of its statement and context.  A client admits
@@ -50,6 +48,7 @@ includes = [
   "../../src/Std/Ordinal.dfy",
   "../../src/Std/RealCompleteness.dfy",
   "../../src/Std/Relations.dfy",
+  "../../src/Std/Strings.dfy",
   "../../src/Std/Unicode/Unicode.dfy",
   "../../src/Std/Unicode/UnicodeBase.dfy",
   "../../src/Std/Wrappers.dfy",
