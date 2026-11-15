@@ -15,7 +15,7 @@ public class Abstemious {
     if (fn.Body != null) {
       var abstemious = true;
       if (Attributes.ContainsBool(fn.Attributes, "abstemious", ref abstemious) && abstemious) {
-        if (CoCallResolution.GuaranteedCoCtors(fn) == 0) {
+        if (CoCallResolution.GuaranteedCoCtors(fn, reporter.Options.Get(CommonOptionBag.ExtendedNewtypeBases)) == 0) {
           reporter.Error(MessageSource.Resolver, ErrorId.r_abstemious_needs_conconstructor, fn, "the value returned by an abstemious function must come from invoking a co-constructor");
         } else {
           CheckDestructsAreAbstemiousCompliant(fn.Body);
@@ -24,13 +24,22 @@ public class Abstemious {
     }
   }
 
+  private Expression StripCoDatatypeViews(Expression expr) {
+    expr = Expression.StripParens(expr).Resolved;
+    while (expr is ConversionExpr conversion && NewtypeOperationView.IsCoDatatypeIdentityConversion(
+             conversion, reporter.Options.Get(CommonOptionBag.ExtendedNewtypeBases))) {
+      expr = Expression.StripParens(conversion.E).Resolved;
+    }
+    return expr;
+  }
+
   private void CheckDestructsAreAbstemiousCompliant(Expression expr) {
     Contract.Assert(expr != null);
     expr = expr.Resolved;
     if (expr is MemberSelectExpr) {
       var e = (MemberSelectExpr)expr;
       if (e.Member.EnclosingClass is CoDatatypeDecl) {
-        var ide = Expression.StripParens(e.Obj).Resolved as IdentifierExpr;
+        var ide = StripCoDatatypeViews(e.Obj) as IdentifierExpr;
         if (ide != null && ide.Var is Formal) {
           // cool
         } else {
@@ -39,8 +48,8 @@ public class Abstemious {
         return;
       }
     } else if (expr is NestedMatchExpr nestedMatchExpr) {
-      if (nestedMatchExpr.Source.Type.IsCoDatatype) {
-        var ide = Expression.StripParens(nestedMatchExpr.Source).Resolved as IdentifierExpr;
+      if (NewtypeOperationView.IsCoDatatype(nestedMatchExpr.Source.Type, reporter.Options.Get(CommonOptionBag.ExtendedNewtypeBases))) {
+        var ide = StripCoDatatypeViews(nestedMatchExpr.Source) as IdentifierExpr;
         if (ide != null && ide.Var is Formal) {
           // cool; fall through to check match branches
         } else {
@@ -50,8 +59,8 @@ public class Abstemious {
       }
     } else if (expr is MatchExpr) {
       var e = (MatchExpr)expr;
-      if (e.Source.Type.IsCoDatatype) {
-        var ide = Expression.StripParens(e.Source).Resolved as IdentifierExpr;
+      if (NewtypeOperationView.IsCoDatatype(e.Source.Type, reporter.Options.Get(CommonOptionBag.ExtendedNewtypeBases))) {
+        var ide = StripCoDatatypeViews(e.Source) as IdentifierExpr;
         if (ide != null && ide.Var is Formal) {
           // cool; fall through to check match branches
         } else {
@@ -62,7 +71,7 @@ public class Abstemious {
     } else if (expr is BinaryExpr) {
       var e = (BinaryExpr)expr;
       if (e.ResolvedOp == BinaryExpr.ResolvedOpcode.EqCommon || e.ResolvedOp == BinaryExpr.ResolvedOpcode.NeqCommon) {
-        if (e.E0.Type.IsCoDatatype) {
+        if (NewtypeOperationView.IsCoDatatype(e.E0.Type, reporter.Options.Get(CommonOptionBag.ExtendedNewtypeBases))) {
           reporter.Error(MessageSource.Resolver, ErrorId.r_bad_astemious_codatatype_equality, expr, "an abstemious function is not allowed to check codatatype equality");
           return;
         }

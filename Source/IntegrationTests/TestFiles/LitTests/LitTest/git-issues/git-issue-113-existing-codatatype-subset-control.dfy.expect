@@ -1,0 +1,3 @@
+git-issue-113-existing-codatatype-subset-control.dfy(8,45): Error: cannot prove termination; try supplying a decreases clause (note that the call is not sufficiently guarded to be used co-recursively)
+
+Dafny program verifier finished with 1 verified, 1 error

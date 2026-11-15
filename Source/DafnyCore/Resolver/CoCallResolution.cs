@@ -8,13 +8,15 @@ namespace Microsoft.Dafny;
 class CoCallResolution {
   readonly Function currentFunction;
   readonly bool dealsWithCodatatypes;
+  readonly bool extendedNewtypeBases;
   public bool HasIntraClusterCallsInDestructiveContexts = false;
   public readonly List<CoCallInfo> FinalCandidates = [];
 
-  public CoCallResolution(Function currentFunction, bool dealsWithCodatatypes) {
+  public CoCallResolution(Function currentFunction, bool dealsWithCodatatypes, bool extendedNewtypeBases = false) {
     Contract.Requires(currentFunction != null);
     this.currentFunction = currentFunction;
     this.dealsWithCodatatypes = dealsWithCodatatypes;
+    this.extendedNewtypeBases = extendedNewtypeBases;
   }
 
   /// <summary>
@@ -60,6 +62,18 @@ class CoCallResolution {
     Contract.Requires(0 <= destructionLevel);
     Contract.Requires(coCandidates != null);
     expr = expr.Resolved;
+    if (expr is ConversionExpr conversion &&
+        NewtypeOperationView.IsCoDatatypeIdentityConversion(conversion, extendedNewtypeBases)) {
+      CheckCoCalls(conversion.E, destructionLevel, coContext, coCandidates, functionYouMayWishWereAbstemious);
+      return;
+    }
+    if (expr is ConversionExpr refiningConversion &&
+        NewtypeOperationView.IsCoDatatypeRefiningConversion(refiningConversion, extendedNewtypeBases)) {
+      // A destination predicate may observe arbitrarily deeply. Infinity also
+      // prevents a constructor nested inside the cast from recreating a guard.
+      CheckCoCalls(refiningConversion.E, int.MaxValue, null, coCandidates);
+      return;
+    }
     if (expr is DatatypeValue) {
       var e = (DatatypeValue)expr;
       if (e.Ctor.EnclosingDatatype is CoDatatypeDecl) {
@@ -96,6 +110,15 @@ class CoCallResolution {
       }
     } else if (expr is NestedMatchExpr) {
       var e = (NestedMatchExpr)expr;
+      if (extendedNewtypeBases) {
+        // Matching a codata source is destructive. Do not first record a source
+        // call as guarded and later overwrite it while traversing it again.
+        CheckCoCalls(e.Source, int.MaxValue, null, coCandidates);
+        foreach (var kase in e.Cases) {
+          CheckCoCalls(kase.Body, destructionLevel, coContext, coCandidates);
+        }
+        return;
+      }
       foreach (var child in e.SubExpressions) {
         CheckCoCalls(child, destructionLevel, coContext, coCandidates);
       }
@@ -123,7 +146,7 @@ class CoCallResolution {
       Contract.Assert(e.Args.Count == e.Function.Ins.Count);
       for (var i = 0; i < e.Args.Count; i++) {
         var arg = e.Args[i];
-        if (!e.Function.Ins[i].Type.IsCoDatatype) {
+        if (!NewtypeOperationView.IsCoDatatype(e.Function.Ins[i].Type, extendedNewtypeBases)) {
           CheckCoCalls(arg, int.MaxValue, null, coCandidates);
         } else if (abstemious) {
           CheckCoCalls(arg, 0, coContext, coCandidates);
@@ -135,7 +158,7 @@ class CoCallResolution {
       // Second, investigate the possibility that this call itself may be a candidate co-call
       if (e.Name != "requires" && ModuleDefinition.InSameSCC(currentFunction, e.Function)) {
         // This call goes to another function in the same recursive cluster
-        if (destructionLevel != 0 && GuaranteedCoCtors(e.Function) <= destructionLevel) {
+        if (destructionLevel != 0 && GuaranteedCoCtors(e.Function, extendedNewtypeBases) <= destructionLevel) {
           // a potentially destructive context
           HasIntraClusterCallsInDestructiveContexts = true;  // this says we found an intra-cluster call unsuitable for recursion, if there were any co-recursive calls
           if (!dealsWithCodatatypes) {
@@ -170,6 +193,8 @@ class CoCallResolution {
           } else {
             e.CoCall = FunctionCallExpr.CoCallResolution.NoBecauseFunctionHasPostcondition;
           }
+        } else if (NewtypeOperationView.HasConstrainedCoDatatypeResult(e.Type, extendedNewtypeBases)) {
+          e.CoCall = FunctionCallExpr.CoCallResolution.NoBecauseFunctionHasConstrainedReturnType;
         } else {
           // e.CoCall is not filled in here, but will be filled in when the list of candidates are processed
           coCandidates.Add(new CoCallInfo(e, coContext));
@@ -227,22 +252,26 @@ class CoCallResolution {
     }
   }
 
-  public static int GuaranteedCoCtors(Function function) {
+  public static int GuaranteedCoCtors(Function function, bool extendedNewtypeBases = false) {
     Contract.Requires(function != null);
-    return function.Body != null ? GuaranteedCoCtorsAux(function.Body) : 0;
+    return function.Body != null ? GuaranteedCoCtorsAux(function.Body, extendedNewtypeBases) : 0;
   }
 
-  private static int GuaranteedCoCtorsAux(Expression expr) {
+  private static int GuaranteedCoCtorsAux(Expression expr, bool extendedNewtypeBases) {
     Contract.Requires(expr != null);
     expr = expr.Resolved;
+    if (expr is ConversionExpr conversion &&
+        NewtypeOperationView.IsCoDatatypeIdentityConversion(conversion, extendedNewtypeBases)) {
+      return GuaranteedCoCtorsAux(conversion.E, extendedNewtypeBases);
+    }
     if (expr is DatatypeValue) {
       var e = (DatatypeValue)expr;
       if (e.Ctor.EnclosingDatatype is CoDatatypeDecl) {
         var minOfArgs = int.MaxValue;  // int.MaxValue means: not yet encountered a formal whose type is a co-datatype
         Contract.Assert(e.Arguments.Count == e.Ctor.Formals.Count);
         for (var i = 0; i < e.Arguments.Count; i++) {
-          if (e.Ctor.Formals[i].Type.IsCoDatatype) {
-            var n = GuaranteedCoCtorsAux(e.Arguments[i]);
+          if (NewtypeOperationView.IsCoDatatype(e.Ctor.Formals[i].Type, extendedNewtypeBases)) {
+            var n = GuaranteedCoCtorsAux(e.Arguments[i], extendedNewtypeBases);
             minOfArgs = Math.Min(minOfArgs, n);
           }
         }
@@ -250,26 +279,26 @@ class CoCallResolution {
       }
     } else if (expr is ITEExpr) {
       var e = (ITEExpr)expr;
-      var thn = GuaranteedCoCtorsAux(e.Thn);
-      var els = GuaranteedCoCtorsAux(e.Els);
+      var thn = GuaranteedCoCtorsAux(e.Thn, extendedNewtypeBases);
+      var els = GuaranteedCoCtorsAux(e.Els, extendedNewtypeBases);
       return thn < els ? thn : els;
     } else if (expr is NestedMatchExpr nestedMatchExpr) {
-      var childValues = nestedMatchExpr.Cases.Select(child => GuaranteedCoCtorsAux(child.Body)).ToList();
+      var childValues = nestedMatchExpr.Cases.Select(child => GuaranteedCoCtorsAux(child.Body, extendedNewtypeBases)).ToList();
       return childValues.Any() ? childValues.Min() : 0;
     } else if (expr is MatchExpr) {
       var e = (MatchExpr)expr;
       var min = int.MaxValue;
       foreach (var kase in e.Cases) {
-        var n = GuaranteedCoCtorsAux(kase.Body);
+        var n = GuaranteedCoCtorsAux(kase.Body, extendedNewtypeBases);
         min = Math.Min(min, n);
       }
       return min == int.MaxValue ? 0 : min;
     } else if (expr is LetExpr) {
       var e = (LetExpr)expr;
-      return GuaranteedCoCtorsAux(e.Body);
+      return GuaranteedCoCtorsAux(e.Body, extendedNewtypeBases);
     } else if (expr is IdentifierExpr) {
       var e = (IdentifierExpr)expr;
-      if (e.Type.IsCoDatatype && e.Var is Formal) {
+      if (NewtypeOperationView.IsCoDatatype(e.Type, extendedNewtypeBases) && e.Var is Formal) {
         // even though this is not a co-constructor, count this as 1, since that's what we would have done if it were, e.g., "Cons(s.head, s.tail)" instead of "s"
         return 1;
       }

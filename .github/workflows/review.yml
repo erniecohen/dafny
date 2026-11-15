@@ -896,11 +896,11 @@ jobs:
         run: sh Scripts/fetch-boogie-packages.sh
       - name: Build the test harness
         run: dotnet build Source/IntegrationTests -c Release
-      - name: Cardinality resolver and translation admission tests
+      - name: Cardinality and extended-newtype lifecycle tests
         run: |
-          dotnet test --settings .github/review/ci.runsettings Source/DafnyCore.Test -c Release --filter 'FullyQualifiedName~Cardinality|FullyQualifiedName~NewtypeReferenceCharacteristicTests'
-          dotnet test --settings .github/review/ci.runsettings Source/DafnyLanguageServer.Test -c Release --filter FullyQualifiedName~Cardinality
-          dotnet test --settings .github/review/ci.runsettings Source/IntegrationTests -c Release --no-build --filter FullyQualifiedName~CardinalityEmissionTests
+          dotnet test --settings .github/review/ci.runsettings Source/DafnyCore.Test -c Release --filter 'FullyQualifiedName~Cardinality|FullyQualifiedName~ExtendedNewtype|FullyQualifiedName~NewtypeReferenceCharacteristicTests'
+          dotnet test --settings .github/review/ci.runsettings Source/DafnyLanguageServer.Test -c Release --filter 'FullyQualifiedName~Cardinality|FullyQualifiedName~ExtendedNewtypeCachingTest'
+          dotnet test --settings .github/review/ci.runsettings Source/IntegrationTests -c Release --no-build --filter 'FullyQualifiedName~CardinalityEmissionTests|FullyQualifiedName~ExtendedNewtypeOptionTests'
       - uses: actions/setup-node@v4
         with:
           node-version: '16.0.0'

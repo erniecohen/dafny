@@ -1,0 +1,185 @@
+{
+  "assert": {
+    "removed": [],
+    "added": [
+      {
+        "statement": "assert true;",
+        "multiplicity": 1
+      }
+    ]
+  },
+  "assume": {
+    "removed": [
+      {
+        "statement": "assume $IsAlloc(##v#0, Tclass._System.___hTotalFunc1(Tclass._module.Token(), TSeq(Tclass._module.Tag())), $Heap);",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume $IsAlloc(##v#0_0, Tclass._System.___hTotalFunc1(Tclass._module.Token(), TSeq(Tclass._module.Tag())), $Heap);",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/B.dfy(10,58): initial state\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/B.dfy(11,36): initial state\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/B.dfy(12,43)\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/B.dfy(13,33)\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/B.dfy(18,0): initial state\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/B.dfy(19,24)\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/B.dfy(20,43)\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/B.dfy(21,12)\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/B.dfy(22,15)\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/B.dfy(23,2): after some loop iterations\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/B.dfy(28,41)\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/B.dfy(29,32)\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/B.dfy(30,38)\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/B.dfy(32,35)\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/B.dfy(33,14)\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/B.dfy(36,14): initial state\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/B.dfy(37,24)\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/B.dfy(39,27)\"} true;",
+        "multiplicity": 1
+      }
+    ],
+    "added": [
+      {
+        "statement": "assume $IsAlloc(##v#0, Tclass._module.Value(), $Heap);",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume $IsAlloc(##v#0_0, Tclass._module.Value(), $Heap);",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume false;",
+        "multiplicity": 2
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/N.dfy(10,58): initial state\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/N.dfy(11,36): initial state\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/N.dfy(12,43)\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/N.dfy(13,33)\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/N.dfy(18,0): initial state\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/N.dfy(19,24)\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/N.dfy(20,43)\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/N.dfy(21,12)\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/N.dfy(22,15)\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/N.dfy(23,2): after some loop iterations\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/N.dfy(28,41)\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/N.dfy(29,32)\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/N.dfy(30,38)\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/N.dfy(32,35)\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/N.dfy(33,14)\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/N.dfy(36,14): initial state\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/N.dfy(37,24)\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/N.dfy(39,27)\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/N.dfy(7,8): initial state\"} true;",
+        "multiplicity": 1
+      }
+    ]
+  }
+}

@@ -934,7 +934,8 @@ namespace Microsoft.Dafny {
       private Expr TranslateTernaryExpr(TernaryExpr ternaryExpr) {
         var e = ternaryExpr;
         var e0 = TrExpr(e.E0);
-        if (!e.E0.Type.IsBigOrdinalType) {
+        if (!(e.E0.Type.IsBigOrdinalType || options.Get(CommonOptionBag.ExtendedNewtypeBases) &&
+              NewtypeOperationView.IsOrdinal(e.E0.Type))) {
           e0 = FunctionCall(e0.tok, "ORD#FromNat", Predef.BigOrdinalType, e0);
         }
         var e1 = TrExpr(e.E1);
@@ -942,8 +943,8 @@ namespace Microsoft.Dafny {
         switch (e.Op) {
           case TernaryExpr.Opcode.PrefixEqOp:
           case TernaryExpr.Opcode.PrefixNeqOp:
-            var e1type = e.E1.Type.NormalizeExpand();
-            var e2type = e.E2.Type.NormalizeExpand();
+            var e1type = NewtypeOperationView.CoDatatypeType(e.E1.Type, options.Get(CommonOptionBag.ExtendedNewtypeBases));
+            var e2type = NewtypeOperationView.CoDatatypeType(e.E2.Type, options.Get(CommonOptionBag.ExtendedNewtypeBases));
             var cot = e1type.AsCoDatatype;
             Contract.Assert(cot != null);  // the argument types of prefix equality (and prefix disequality) are codatatypes
             var r = BoogieGenerator.CoEqualCall(cot, e1type.TypeArgs, e2type.TypeArgs, e0, this.layerInterCluster.LayerN((int)FuelSetting.FuelAmount.HIGH), e1, e2);
@@ -1183,7 +1184,8 @@ namespace Microsoft.Dafny {
           var n = Microsoft.BaseTypes.BigNum.FromBigInt((BigInteger)e.Value);
           if (e.Type.NormalizeToAncestorType() is BitvectorType bitvectorType) {
             return MaybeLit(BoogieGenerator.BplBvLiteralExpr(GetToken(e), n, bitvectorType));
-          } else if (e.Type.IsBigOrdinalType) {
+          } else if (e.Type.IsBigOrdinalType || options.Get(CommonOptionBag.ExtendedNewtypeBases) &&
+                   NewtypeOperationView.IsOrdinal(e.Type)) {
             var fromNat = FunctionCall(GetToken(literalExpr), "ORD#FromNat", Predef.BigOrdinalType, Boogie.Expr.Literal(n));
             return MaybeLit(fromNat, Predef.BigOrdinalType);
           } else {

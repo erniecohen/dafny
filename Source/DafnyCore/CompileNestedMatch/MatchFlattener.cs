@@ -79,6 +79,29 @@ public class MatchFlattener : IRewriter {
   }
 
 
+  // Classify only datatype operations by their visible base. Nominal source
+  // expressions remain intact for patterns that bind the whole value.
+  private Type DatatypeOperationType(Type type) {
+    var nominalType = type.NormalizeExpand();
+    if (Options.Get(CommonOptionBag.ExtendedNewtypeBases) &&
+        NewtypeOperationView.Get(type).BaseType is { IsDatatype: true } baseType) {
+      return baseType;
+    }
+    return nominalType;
+  }
+
+  private Expression DatatypeOperationExpression(Expression expression) {
+    var baseType = DatatypeOperationType(expression.Type);
+    if (baseType.Equals(expression.Type.NormalizeExpand())) {
+      return expression;
+    }
+    // Match flattening runs after type resolution and before verification. This
+    // explicit unwrap is checked by the ordinary conversion well-formedness path.
+    return new ConversionExpr(expression.Origin, expression, baseType) {
+      Type = baseType
+    };
+  }
+
   private Expression CompileNestedMatchExpr(NestedMatchExpr nestedMatchExpr) {
     var cases = nestedMatchExpr.Cases.SelectMany(FlattenNestedMatchCaseExpr).ToList();
     var state = new MatchCompilationState(nestedMatchExpr, cases, resolutionContext);
@@ -87,14 +110,14 @@ public class MatchFlattener : IRewriter {
 
     CaseBody compiledMatch = CompilePatternPaths(state, new HoleCtx(), LinkedLists.Create(nestedMatchExpr.Source), paths);
     if (compiledMatch is null) {
-      if (nestedMatchExpr.Source.Type.AsDatatype == null) {
+      if (DatatypeOperationType(nestedMatchExpr.Source.Type).AsDatatype == null) {
         var havoc = LetExpr.Havoc(nestedMatchExpr.Origin, nestedMatchExpr.Type);
         return new StmtExpr(nestedMatchExpr.Origin, AssertStmt.CreateErrorAssert(nestedMatchExpr, NoCasesMessage), havoc) {
           Type = nestedMatchExpr.Type
         };
       }
 
-      return new MatchExpr(nestedMatchExpr.Origin, nestedMatchExpr.Source, [],
+      return new MatchExpr(nestedMatchExpr.Origin, DatatypeOperationExpression(nestedMatchExpr.Source), [],
         nestedMatchExpr.UsesOptionalBraces) {
         Type = nestedMatchExpr.Type
       };
@@ -122,11 +145,11 @@ public class MatchFlattener : IRewriter {
     var compiledMatch = CompilePatternPaths(state, new HoleCtx(), LinkedLists.Create(nestedMatchStmt.Source), paths);
     if (compiledMatch is null) {
       // Happens only if the nested match has no cases
-      if (nestedMatchStmt.Source.Type.AsDatatype == null) {
+      if (DatatypeOperationType(nestedMatchStmt.Source.Type).AsDatatype == null) {
         return AssertStmt.CreateErrorAssert(nestedMatchStmt, NoCasesMessage);
       }
 
-      return new MatchStmt(nestedMatchStmt.Origin, nestedMatchStmt.Source, [], nestedMatchStmt.UsesOptionalBraces, nestedMatchStmt.Attributes);
+      return new MatchStmt(nestedMatchStmt.Origin, DatatypeOperationExpression(nestedMatchStmt.Source), [], nestedMatchStmt.UsesOptionalBraces, nestedMatchStmt.Attributes);
     }
 
     if (compiledMatch.Node is Statement statement) {
@@ -236,7 +259,7 @@ public class MatchFlattener : IRewriter {
     Expression currMatchee = consMatchees.Head;
 
     // Get the datatype of the matchee
-    var currMatcheeType = currMatchee.Type.NormalizeExpand();
+    var currMatcheeType = DatatypeOperationType(currMatchee.Type);
 
     var dtd = currMatcheeType.AsDatatype;
 
@@ -399,12 +422,12 @@ public class MatchFlattener : IRewriter {
         args.Add(literalExpr);
         c.Attributes = new Attributes("split", args, c.Attributes);
       }
-      var newMatchStmt = new MatchStmt(nestedMatchStmt.Origin, headMatchee, newMatchCaseStmts, true, mti.Attributes, context);
+      var newMatchStmt = new MatchStmt(nestedMatchStmt.Origin, DatatypeOperationExpression(headMatchee), newMatchCaseStmts, true, mti.Attributes, context);
       newMatchStmt.IsGhost |= mti.CodeContext.IsGhost;
       return new CaseBody(null, newMatchStmt);
     }
 
-    var newMatchExpr = new MatchExpr(mti.Tok, headMatchee, newMatchCases.ConvertAll(x => (MatchCaseExpr)x), true, context);
+    var newMatchExpr = new MatchExpr(mti.Tok, DatatypeOperationExpression(headMatchee), newMatchCases.ConvertAll(x => (MatchCaseExpr)x), true, context);
     newMatchExpr.Type = ((NestedMatchExpr)mti.Match).Type;
     return new CaseBody(null, newMatchExpr);
   }
@@ -540,7 +563,7 @@ public class MatchFlattener : IRewriter {
     };
 
     var contextStr = context.FillHole(new IdCtx($"c: {matchee.Type}", [])).AbstractAllHoles().ToString();
-    var errorMessage = mti.Match.Source.Type.AsDatatype == null
+    var errorMessage = DatatypeOperationType(mti.Match.Source.Type).AsDatatype == null
       ? $"missing case in match {mti.Match.MatchTypeName}: not all possibilities for selector of type {matchee.Type} have been covered"
       : $"missing case in match {mti.Match.MatchTypeName}: {contextStr} (not all possibilities for constant 'c' have been covered)";
 

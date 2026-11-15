@@ -1,0 +1,10 @@
+git-issue-113-extended-newtypes-arrow-proof-negative.dfy(12,13): Error: function precondition could not be proved
+git-issue-113-extended-newtypes-arrow-proof-negative.dfy(25,2): Error: insufficient reads clause to invoke function
+git-issue-113-extended-newtypes-arrow-proof-negative.dfy(29,15): Error: result of operation might violate subset type constraint for '_#TotalFunc1'
+git-issue-113-extended-newtypes-arrow-proof-negative.dfy(33,15): Error: result of operation might violate subset type constraint for '_#PartialFunc1'
+git-issue-113-extended-newtypes-arrow-proof-negative.dfy(37,33): Error: result of operation might violate newtype constraint for 'AtZero'
+git-issue-113-extended-newtypes-arrow-proof-negative.dfy(43,2): Error: assertion might not hold
+git-issue-113-extended-newtypes-arrow-proof-negative.dfy(49,2): Error: assertion might not hold
+git-issue-113-extended-newtypes-arrow-proof-negative.dfy(54,13): Error: variable 'impossible', which is subject to definite-assignment rules, might be uninitialized here
+
+Dafny program verifier finished with 1 verified, 8 errors
