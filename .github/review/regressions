@@ -701,3 +701,6 @@ git-issues/github-issue-198.dfy
 
 # Under --quantified-check-call-facts, a universally quantified postcondition or assert condition whose body the solver simplifies until no trigger term remains, as abs(l[i] - l[i]) <= d, keeps the call facts of its body, and wrong bounds, assert false and calls outside their precondition still fail (https://github.com/erniecohen/dafny/issues/196).
 git-issues/github-issue-196.dfy
+
+# A cast through a chain of forty newtypes translates as before and keeps its verdicts, now that the translator remembers the ancestor of each type it converts (https://github.com/erniecohen/dafny/issues/378).
+git-issues/github-issue-378.dfy
