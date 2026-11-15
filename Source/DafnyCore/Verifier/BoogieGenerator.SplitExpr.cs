@@ -547,9 +547,13 @@ namespace Microsoft.Dafny {
             var ss = new List<SplitExprInfo>();
             TrSplitExpr(context, typeSpecializedBody, ss, true, functionHeight, applyInduction, etran);
             var needsTokenAdjust = TrSplitNeedsTokenAdjustment(typeSpecializedBody);
+            var bodyCanCall = InlinedBodyCanCall(typeSpecializedBody, etran);
             foreach (var s in ss) {
               if (s.IsChecked) {
                 var unboxedConjunct = CondApplyUnbox(s.E.tok, s.E, typeSpecializedResultType, expr.Type);
+                if (bodyCanCall != null) {
+                  unboxedConjunct = BplImp(bodyCanCall, unboxedConjunct);
+                }
                 var bodyOrConjunct = BplOr(fargs, unboxedConjunct);
                 var tok = needsTokenAdjust
                   ? (IOrigin)new ForceCheckOrigin(typeSpecializedBody.Origin)
@@ -587,6 +591,30 @@ namespace Microsoft.Dafny {
       return false;
     }
 
+
+    /// <summary>
+    /// Issue 198. The checked conjuncts of an inlined body are checked one at a time, without
+    /// the earlier ones as assumptions ({:subsumption 0}). A call in a later conjunct, such as
+    /// "b.P()" in "a.P() && b.P()", unfolds only under its #canCall, and the definition axiom
+    /// supplies that #canCall only under the short-circuit guard "a.P()" at the caller's layer,
+    /// one layer lower, which often cannot be unfolded. So the later conjunct verified only when
+    /// some unrelated term happened to unfold "a.P()".
+    ///
+    /// Under --inlined-body-call-permissions, this returns the body's #canCall assumptions,
+    /// translated at the layer of the checked conjuncts, as their antecedent; or null when the
+    /// option is off or there are none.
+    /// They are an instance of the existing definition axiom of the inlined function,
+    ///   F#canCall(args) ==> BODY-can-make-its-calls(ly) && F(Succ(ly), args) == BODY(ly),
+    /// at the same args, with ly the layer of the checked conjuncts; each checked conjunct is
+    /// already guarded by F#canCall(args). So this assumes nothing beyond that axiom.
+    /// </summary>
+    private Bpl.Expr InlinedBodyCanCall(Expression typeSpecializedBody, ExpressionTranslator etran) {
+      if (!options.Get(CommonOptionBag.InlinedBodyCallPermissions)) {
+        return null;
+      }
+      var canCall = etran.LayerOffset(1).CanCallAssumption(typeSpecializedBody);
+      return canCall is Bpl.LiteralExpr { IsTrue: true } ? null : canCall;
+    }
 
     private bool CanSafelyInline(FunctionCallExpr fexp, Function f) {
       var visitor = new TriggersExplorer();

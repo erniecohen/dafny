@@ -166,6 +166,30 @@ program, positive and `ensures false` fixtures under both resolvers and both set
 fixture per circular route, with a false-derivation attempt, with the option on.  The release
 note is `docs/dev/news/326.feat`.
 
+## Opt-in inlined-body call permissions ([issue 198](https://github.com/erniecohen/dafny/issues/198))
+
+A checked call `F(args)` of a function with a body is split into one assertion per checked
+conjunct of the inlined body, `F#canCall(args) ==> F($LS($LZ), args) || c`, with
+`{:subsumption 0}`.  A call in a later conjunct, such as `b.scoped(n)` in
+`a.scoped(n) && b.scoped(n)`, unfolds only under its `#canCall`, which the definition axiom
+supplies only under the guard `a.scoped(n)` at the caller's layer `$LZ`, where it does not unfold.
+So `size(Bin(op,Var(0),Var(1)),[x,y])` with `requires t.scoped(|s|)` was proved only when an
+unrelated term unfolded the first conjunct, and which of two equivalent declarations failed moved
+with their order.  With `--inlined-body-call-permissions` (default false; also
+`inlined-body-call-permissions = true` in `dfyconfig.toml`), `InlinedBodyCanCall` (`BoogieGenerator.SplitExpr.cs`)
+puts the body's `CanCallAssumption` at the conjuncts' layer `$LS($LZ)` as each checked conjunct's
+antecedent.  Its kind is **neither**: the antecedent is the existing definition axiom of `F` at the
+same `args` and `ly := $LS($LZ)`, and each assertion is already guarded by `F#canCall(args)`, so it
+assumes nothing new
+([`docs/dev/additional-axioms.md`](docs/dev/additional-axioms.md#call-permissions-of-the-checked-conjuncts-of-an-inlined-body-198)).
+It has its own option, not `--additional-axioms`: under the shared option it moved one suite
+program and three Z3 5.1.0 standard-library rows from verified to out of resource, and raised the
+library's resource count by about 3%, so no gate runs with it on.  The option is tested before
+anything is built, so with it off the translation is unchanged.  The
+regression is `git-issues/github-issue-198.dfy`: the issue's forms and their variants in two
+declaration orders under both resolvers, and a precondition and an `assert false` control that must
+still fail.  The release note is `docs/dev/news/198.feat`.
+
 ## Datatypes and the traits they extend in one decreases order ([issue 317](https://github.com/erniecohen/dafny/issues/317))
 
 A trait that does not extend `object` had no order in `decreases` clauses, so in a datatype that
