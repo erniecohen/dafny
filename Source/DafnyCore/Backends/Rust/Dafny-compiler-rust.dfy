@@ -82,11 +82,15 @@ module {:extern "DCOMP"} DafnyToRustCompiler {
       this.pointerType := pointerType;
       this.rootType := rootType;
       this.syncType := syncType;
+      // Before `new;`, `this` may not be read, so the constants thisFile and rcNew
+      // cannot be used here; recompute their values from the parameters.
+      var thisFilePath: R.Path := if rootType.RootCrate? then R.crate else R.crate.MSel(rootType.moduleName);
       this.error := None; // If error, then the generated code contains <i>Unsupported: .*</i>
       this.optimizations := [
         ExpressionOptimization.apply,
-        FactorPathsOptimization.apply(thisFile)];
-      var thisAsSelf := rcNew(R.self.Clone());
+        FactorPathsOptimization.apply(thisFilePath)];
+      var rcExprLocal := (if syncType.NoSync? then R.RcPath else R.ArcPath).AsExpr();
+      var thisAsSelf := rcExprLocal.FSel("new").Apply([R.self.Clone()]);
       this.rcDatatypeThis := thisAsSelf;
       this.borrowedRcDatatypeThis := R.Borrow(thisAsSelf);
       new;
