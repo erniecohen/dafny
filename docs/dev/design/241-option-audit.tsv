@@ -46,6 +46,7 @@ cli	function-syntax	--function-syntax	System.CommandLine.Option`1[System.String]
 cli	general-newtypes	--general-newtypes	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	general-traits	--general-traits	System.CommandLine.Option`1[Microsoft.Dafny.CommonOptionBag+GeneralTraitsOptions]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	go-module-name	--go-module-name	System.CommandLine.Option`1[System.String]	command-setup	setup or another command; executes before/outside proof transport
+cli	detect-witness-matching-loops	--detect-witness-matching-loops	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	inlined-body-call-permissions	--inlined-body-call-permissions	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	heap-free-lambda-facts	--heap-free-lambda-facts	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	help	--help,-?,-h,/?,/h	System.CommandLine.Help.HelpOption	command-setup	setup or another command; executes before/outside proof transport

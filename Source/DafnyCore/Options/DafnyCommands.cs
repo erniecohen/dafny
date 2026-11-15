@@ -54,6 +54,7 @@ public static class DafnyCommands {
     CommonOptionBag.MapComprehensionDomainTriggers,
     CommonOptionBag.HeapFreeLambdaFacts,
     CommonOptionBag.InlinedBodyCallPermissions,
+    CommonOptionBag.DetectWitnessMatchingLoops,
     CommonOptionBag.StatementExpressionConclusions,
     CommonOptionBag.QuantifiedCheckCallFacts,
     CommonOptionBag.TraitRankDecreases,
