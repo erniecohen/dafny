@@ -545,3 +545,6 @@ git-issues/github-issue-354.dfy
 
 # Bounded callables, milestone 1: the type bounded<O, F> under --modular-termination, its formation and characteristic rules, and its erasure (https://github.com/erniecohen/dafny/issues/266).
 git-issues/github-issue-266.dfy
+
+# Applications of lambdas and function values over ORDINAL beta-reduce, and forall statements assign ORDINAL fields (https://github.com/erniecohen/dafny/issues/363).
+git-issues/github-issue-363.dfy
