@@ -1,0 +1,26 @@
+positive, both resolvers
+
+Dafny program verifier finished with 15 verified, 0 errors
+
+Dafny program verifier finished with 15 verified, 0 errors
+controls, both resolvers
+github-issue-363-negative.dfy(10,0): Error: a postcondition could not be proved on this return path
+github-issue-363-negative.dfy(9,33): Related location: this is the postcondition that could not be proved
+github-issue-363-negative.dfy(14,0): Error: a postcondition could not be proved on this return path
+github-issue-363-negative.dfy(13,29): Related location: this is the postcondition that could not be proved
+github-issue-363-negative.dfy(18,0): Error: a postcondition could not be proved on this return path
+github-issue-363-negative.dfy(17,22): Related location: this is the postcondition that could not be proved
+github-issue-363-negative.dfy(22,0): Error: a postcondition could not be proved on this return path
+github-issue-363-negative.dfy(21,10): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 0 verified, 4 errors
+github-issue-363-negative.dfy(10,0): Error: a postcondition could not be proved on this return path
+github-issue-363-negative.dfy(9,33): Related location: this is the postcondition that could not be proved
+github-issue-363-negative.dfy(14,0): Error: a postcondition could not be proved on this return path
+github-issue-363-negative.dfy(13,29): Related location: this is the postcondition that could not be proved
+github-issue-363-negative.dfy(18,0): Error: a postcondition could not be proved on this return path
+github-issue-363-negative.dfy(17,22): Related location: this is the postcondition that could not be proved
+github-issue-363-negative.dfy(22,0): Error: a postcondition could not be proved on this return path
+github-issue-363-negative.dfy(21,10): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 0 verified, 4 errors

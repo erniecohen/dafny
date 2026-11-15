@@ -25,6 +25,9 @@ concurrency:
 
 env:
   DOTNET_NOLOGO: 'true'
+  # Self-hosted runners: no build process outlives the job (MSBuild nodes, Gradle daemons).
+  MSBUILDDISABLENODEREUSE: '1'
+  GRADLE_OPTS: -Dorg.gradle.daemon=false
   DOTNET_CLI_TELEMETRY_OPTOUT: 'true'
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 'true'
   # As in review.yml.
