@@ -555,5 +555,8 @@ git-issues/github-issue-363.dfy
 # Under --modular-termination, the copies a refinement makes of generated reveal lemmas are generated too, so a library may refine a module with opaque functions; Std.Strings joins the trusted standard-library core (https://github.com/erniecohen/dafny/issues/357).
 git-issues/github-issue-357.dfy
 
+# A let-such-that condition that reads no heap but contains a lambda calling a function no longer crashes the verifier with an undeclared $heap (https://github.com/erniecohen/dafny/issues/362).
+git-issues/github-issue-362.dfy
+
 # Under --modular-termination, the reveal lemma Dafny generates for an opaque const is generated, in a concrete module and in the copies a refinement makes, so neither the library build nor 'dafny audit' counts it as a bodyless lemma with a postcondition (https://github.com/erniecohen/dafny/issues/371).
 git-issues/github-issue-371.dfy
