@@ -401,7 +401,9 @@ git-issues/git-issue-193-reference-laws.dfy
 # Distinct opaque nullable and non-null type constructors (https://github.com/erniecohen/dafny/issues/268).
 git-issues/github-issue-268.dfy
 
-# Persistent per-task solver replay (https://github.com/erniecohen/dafny/issues/241).
+# Persistent per-task solver replay (https://github.com/erniecohen/dafny/issues/241), with
+# the resource limit compared with each result's resource use rather than keyed
+# (https://github.com/erniecohen/dafny/issues/261).
 git-issues/git-issue-241-verification-cache.dfy
 # Default dependency-local translation (https://github.com/erniecohen/dafny/issues/241).
 git-issues/git-issue-241-history-free-translation.dfy
@@ -464,3 +466,97 @@ git-issues/github-issue-281-hide.dfy
 # Caller type scopes across inline module resolution (--resolution-threads 0):
 # DafnyCore.Test ResolutionPipelineTests.ResolutionEndsWithCallerScopesDisabled and
 # ModuleErrorLeavesCallerScopesAsScheduledResolutionDoes, run by the worker-resolution CI step.
+
+# Termination records in .doo libraries under --modular-termination, milestone M3-4 (https://github.com/erniecohen/dafny/issues/211): tampered, missing and mismatched records and contracts are rejected.
+git-issues/github-issue-211-m3-4.dfy
+# Canonical builtins of a reused resolution view are set up once, and Debug contract
+# assertions hold in the resolution and cardinality tests: DafnyCore.Test
+# PipelineProfileResolutionTests.ReusedViewSetsUpEachBuiltinOnce and
+# CacheHitsHaveExplicitEventsAndNoReplayedPhases, and CardinalityProfileTests, run in
+# Debug by the regressions job.
+
+# Boogie /cacheBackground (https://github.com/erniecohen/dafny/issues/241): the same report and
+# the same outcome and resource count of every check as without it.
+git-issues/github-issue-241-cache-background.dfy
+
+# The refreshed resolver gives a variable bound by a match case pattern the declared type of the
+# constructor's field (https://github.com/erniecohen/dafny/issues/327).
+git-issues/github-issue-327.dfy
+
+# Rank of arrow-typed datatype fields under --additional-axioms (https://github.com/erniecohen/dafny/issues/326).
+git-issues/github-issue-326.dfy
+
+# User-written {:auto_generated} members are kept in .doo libraries; a user-written {:opaque_reveal} trait lemma must be implemented; the auditor reports {:axiom}/{:verify false} beside a user-written {:auto_generated} (https://github.com/erniecohen/dafny/issues/325).
+git-issues/github-issue-325.dfy
+
+# A proof-form forall statement outside a method or function body (a constant initializer, a
+# subset-type or newtype constraint or witness, a default value, an iterator body) no longer
+# crashes the verifier (https://github.com/erniecohen/dafny/issues/315).
+git-issues/github-issue-315.dfy
+
+# Certified standard-library core under --modular-termination, milestone M5a: the core resolves
+# and dafny audit finds nothing in it (https://github.com/erniecohen/dafny/issues/211).
+git-issues/github-issue-211-m5a.dfy
+
+# The standard-library trust list under --modular-termination, milestone M5b: a library records only
+# listed premises whose statement and context digests match, a client admits it only when it opted in,
+# and a premise-free library is byte for byte the same as before (https://github.com/erniecohen/dafny/issues/211).
+git-issues/github-issue-211-m5b.dfy
+
+# Std.Axioms: function extensionality for total arrows on int, real, bool, ORDINAL, (int, int)
+# and the empty domain, and the completeness of real, moved there from Std.RealCompleteness
+# (https://github.com/erniecohen/dafny/issues/34).
+git-issues/github-issue-34.dfy
+
+# A library (.doo) and --print keep the opaque modifier of constants
+# (https://github.com/erniecohen/dafny/issues/337).
+git-issues/github-issue-337.dfy
+
+# Before `new;`, a constructor may not read a constant whose initializer depends on `this`; the
+# old rule proved false (https://github.com/erniecohen/dafny/issues/339).
+git-issues/github-issue-339.dfy
+
+# Datatype and trait in one decreases order under --trait-rank-decreases, and the rank of trait-typed datatype
+# fields under --additional-axioms (https://github.com/erniecohen/dafny/issues/317).
+git-issues/github-issue-317.dfy
+
+# With --type-system-refresh, == and in accept same-constructor types whose co- and contravariant
+# arguments are comparable component by component, as the legacy resolver does
+# (https://github.com/erniecohen/dafny/issues/47).
+git-issues/github-issue-47.dfy
+
+# --conservative-match-inference is on by default; with it, a pattern identifier whose type cannot
+# be a datatype is a bound variable without default type decisions, so an earlier newtype literal
+# keeps its contextual type (https://github.com/erniecohen/dafny/issues/48).
+git-issues/github-issue-48.dfy
+
+# Well-founded orders in decreases clauses, "e by O" with --decreases-orders, also in the bounds of --modular-termination (https://github.com/erniecohen/dafny/issues/245).
+git-issues/github-issue-245.dfy
+
+# == on datatype values built at different type arguments is true in compiled C#, as verified (https://github.com/erniecohen/dafny/issues/352).
+git-issues/github-issue-352.dfy
+
+# Comparing two values of a trait that is not a reference type in a decreases clause no longer crashes the verifier (https://github.com/erniecohen/dafny/issues/350).
+git-issues/github-issue-350.dfy
+
+# Std.Ordinal's Omega, PlusLimit and TimesLimit are proved from the lemmas Std.Axioms.Ordinals.Infinite
+# and Replacement, not bodyless {:axiom} ghost functions (https://github.com/erniecohen/dafny/issues/354).
+git-issues/github-issue-354.dfy
+
+# Bounded callables, milestone 1: the type bounded<O, F> under --modular-termination, its formation and characteristic rules, and its erasure (https://github.com/erniecohen/dafny/issues/266).
+git-issues/github-issue-266.dfy
+
+# Every command that loads libraries under --modular-termination (resolve, audit, doc, extract, format, verify, translate) takes --solver-path, and admits a library verified with that Z3 and refuses it with another (https://github.com/erniecohen/dafny/issues/358).
+git-issues/github-issue-358.dfy
+
+# Applications of lambdas and function values over ORDINAL beta-reduce, and forall statements assign ORDINAL fields (https://github.com/erniecohen/dafny/issues/363).
+git-issues/github-issue-363.dfy
+
+# Under --modular-termination, the copies a refinement makes of generated reveal lemmas are generated too, so a library may refine a module with opaque functions; Std.Strings joins the trusted standard-library core (https://github.com/erniecohen/dafny/issues/357).
+git-issues/github-issue-357.dfy
+
+# A let-such-that condition that reads no heap but contains a lambda calling a function no longer crashes the verifier with an undeclared $heap (https://github.com/erniecohen/dafny/issues/362).
+git-issues/github-issue-362.dfy
+
+# Under --modular-termination, the reveal lemma Dafny generates for an opaque const is generated, in a concrete module and in the copies a refinement makes, so neither the library build nor 'dafny audit' counts it as a bodyless lemma with a postcondition (https://github.com/erniecohen/dafny/issues/371).
+git-issues/github-issue-371.dfy

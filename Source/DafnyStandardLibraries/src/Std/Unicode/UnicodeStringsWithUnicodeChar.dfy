@@ -13,22 +13,15 @@ module Std.Unicode.UnicodeStringsWithUnicodeChar refines AbstractUnicodeStrings 
   import Base
   import Utf8EncodingForm
   import Utf16EncodingForm
+  import CharAsBv24
 
-  @IsolateAssertions
   lemma CharIsUnicodeScalarValue(c: char)
     ensures
       && var asBits := c as int as bv24;
       && asBits <= 0x10_FFFF
       && (0 <= asBits < Base.HIGH_SURROGATE_MIN || Base.LOW_SURROGATE_MAX < asBits)
   {
-    assert c as int < 0x11_0000;
-    // This seems to be just too expensive to verify for such a wide bit-vector type,
-    // but is clearly true given the above.
-    assume {:axiom} c as int as bv24 < 0x11_0000 as bv24;
-    var asBits := c as int as bv24;
-    assert asBits < 0x11_0000 as bv24;
-    assert (asBits < Base.HIGH_SURROGATE_MIN || asBits > Base.LOW_SURROGATE_MAX);
-    assert asBits <= 0x10_FFFF;
+    CharAsBv24.CharIsUnicodeScalarValue(c);
   }
 
   lemma UnicodeScalarValueIsChar(sv: Base.ScalarValue)
@@ -82,5 +75,31 @@ module Std.Unicode.UnicodeStringsWithUnicodeChar refines AbstractUnicodeStrings 
     var utf32 :- Utf16EncodingForm.DecodeCodeUnitSequenceChecked(asCodeUnits);
     var asChars := Seq.Map(CharFromUnicodeScalarValue, utf32);
     Success(asChars)
+  }
+}
+
+/**
+  * The bit-vector half of `UnicodeStringsWithUnicodeChar.CharIsUnicodeScalarValue`.
+  * It is a module of its own for the arithmetic solver: Z3 5.1.0 runs out of resources
+  * on it with the default one.
+  */
+module {:z3ArithmeticSolver 6} Std.Unicode.CharAsBv24 {
+  import Base
+
+  @IsolateAssertions
+  lemma CharIsUnicodeScalarValue(c: char)
+    ensures
+      && var asBits := c as int as bv24;
+      && asBits <= 0x10_FFFF
+      && (0 <= asBits < Base.HIGH_SURROGATE_MIN || Base.LOW_SURROGATE_MAX < asBits)
+  {
+    assert c as int < 0x11_0000;
+    // This seems to be just too expensive to verify for such a wide bit-vector type,
+    // but is clearly true given the above.
+    assume {:axiom} c as int as bv24 < 0x11_0000 as bv24;
+    var asBits := c as int as bv24;
+    assert asBits < 0x11_0000 as bv24;
+    assert (asBits < Base.HIGH_SURROGATE_MIN || asBits > Base.LOW_SURROGATE_MAX);
+    assert asBits <= 0x10_FFFF;
   }
 }

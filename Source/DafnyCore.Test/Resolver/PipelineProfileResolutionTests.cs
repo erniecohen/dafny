@@ -80,6 +80,35 @@ public class PipelineProfileResolutionTests {
     Assert.False(PipelineProfile.RecordingModulePhases);
   }
 
+  // A reused resolution view sets up each canonical builtin once (https://github.com/erniecohen/dafny/issues/323).
+  // Registering "object" again replaced its non-null type, which earlier resolutions still hold.
+  [Theory]
+  [InlineData(0, false)]
+  [InlineData(2, false)]
+  [InlineData(0, true)]
+  [InlineData(2, true)]
+  public async Task ReusedViewSetsUpEachBuiltinOnce(int threads, bool refresh) {
+    const string api = "module A { function F(o: object): object { o } function T(): (int, bool) { (1, true) } }\n";
+    var cache = new OutputCache();
+    var before = await Parse(api + "module B { import A method M(o: object) { var t := A.T(); assert t.0 == 1; } }",
+      threads, refresh);
+    await new ReusingResolver(before, cache).Resolve(CancellationToken.None);
+    var nonNullObject = before.SystemModuleManager.ObjectDecl.NonNullTypeDecl;
+    var pair = before.SystemModuleManager.TupleType(Token.NoToken, 2, false);
+    var discriminator = pair.Ctors[0].QueryField;
+    // The second program adds builtins (a triple, a ternary arrow) and reuses module A.
+    var after = await Parse(api + "module B { import A method N(o: object, f: (int, int, int) -> bool) " +
+      "{ var x: object := A.F(o); var t := A.T(); var u := (1, 2, 3); assert t.0 == 1; } }", threads, refresh);
+    await new ReusingResolver(after, cache).Resolve(CancellationToken.None);
+    Assert.False(before.Reporter.HasErrors);
+    Assert.False(after.Reporter.HasErrors);
+    Assert.Same(nonNullObject, after.SystemModuleManager.ObjectDecl.NonNullTypeDecl);
+    Assert.Same(pair, after.SystemModuleManager.TupleType(Token.NoToken, 2, false));
+    Assert.Same(discriminator, pair.Ctors[0].QueryField);
+    Assert.True(after.SystemModuleManager.systemNameInfo.TopLevels.ContainsKey(ArrowType.ArrowTypeName(3)));
+    Assert.False(before.SystemModuleManager.systemNameInfo.TopLevels.ContainsKey(ArrowType.ArrowTypeName(3)));
+  }
+
   [Theory]
   [InlineData(0, false)]
   [InlineData(2, false)]

@@ -172,10 +172,12 @@ unbounded_warm = run("unbounded-warm", unbounded_cache, resource_limit="0")
 same_report(unbounded_cold, unbounded_warm)
 assert unbounded_warm["stats"]["hits"] == 1 and unbounded_warm["stats"]["solverStarts"] == 2, unbounded_warm["stats"]
 
-# Resource settings are part of the descriptor, rather than an eligibility-only flag.
+# The resource limit is not keyed: a lower limit that still covers every task's resource use
+# reuses all three results, with the same report and keys as the run that produced them.
 changed_limit = run("limit", destination / "oracle", resource_limit="15999999")
-assert changed_limit["stats"]["hits"] == 0 and changed_limit["stats"]["solverStarts"] == 3
-assert not set(changed_limit["keys"]) & set(oracle["keys"])
+same_report(oracle, changed_limit)
+assert changed_limit["stats"]["hits"] == 3 and changed_limit["stats"]["solverStarts"] == 0, changed_limit["stats"]
+assert changed_limit["keys"] == oracle["keys"]
 
 # Disabled caching constructs no result table and preserves the old CSV schema.
 disabled_dir = destination / "disabled"

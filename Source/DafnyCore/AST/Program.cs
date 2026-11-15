@@ -77,6 +77,13 @@ public class Program : NodeWithoutOrigin {
   /// </summary>
   public Program AfterParsingClone { get; set; }
 
+  /// <summary>
+  /// Set by a library build under --modular-termination once verification has ended: the evidence
+  /// LibraryBackend needs to record the library's termination contracts.  Never cloned or serialized.
+  /// </summary>
+  [JsonIgnore]
+  public DafnyCore.ModularTerminationCompletion ModularTerminationCompletion { get; set; }
+
   public Program(string name, LiteralModuleDecl module, SystemModuleManager systemModuleManager, ErrorReporter reporter,
     CompilationData compilation) {
     Contract.Requires(name != null);

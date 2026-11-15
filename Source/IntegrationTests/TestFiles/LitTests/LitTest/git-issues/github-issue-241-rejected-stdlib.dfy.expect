@@ -13,6 +13,7 @@
 (0,-1): Error: use of --general-newtypes requires --type-system-refresh
 (0,-1): Error: use of --general-newtypes requires --type-system-refresh
 (0,-1): Error: use of --general-newtypes requires --type-system-refresh
+(0,-1): Error: use of --general-newtypes requires --type-system-refresh
 Source/DafnyStandardLibraries/src/Std/JSON/ZeroCopy/Deserializer.dfy(13,9): Error: not resolving module 'Deserializer' because there were errors in resolving its nested module 'Core'
    |
 13 |   module Core {
@@ -21,4 +22,4 @@ Source/DafnyStandardLibraries/src/Std/JSON/ZeroCopy/Deserializer.dfy(13,9): Erro
 (0,-1): Error: use of --general-newtypes requires --type-system-refresh
 (0,-1): Error: use of --general-newtypes requires --type-system-refresh
 (0,-1): Error: use of --general-newtypes requires --type-system-refresh
-19 resolution/type errors detected in dfyconfig.toml
+20 resolution/type errors detected in dfyconfig.toml

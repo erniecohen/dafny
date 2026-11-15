@@ -10,8 +10,8 @@ static class AuditCommand {
   public static IEnumerable<Option> Options => new Option[] {
     Auditor.Auditor.ReportFileOption,
     Auditor.Auditor.ReportFormatOption,
-    Auditor.Auditor.CompareReportOption
-  }.Concat(DafnyCommands.ResolverOptions);
+    Auditor.Auditor.CompareReportOption,
+  }.Concat(DafnyCommands.ResolverOptions).Concat(DafnyCommands.LibraryAdmissionOptions);
 
   public static Command Create() {
     var result = new Command("audit", "Report issues in the Dafny code that might limit the soundness claims of verification, emitting them as warnings or in a report document.");

@@ -510,6 +510,9 @@ public class ProgramResolver {
 
   protected virtual Dictionary<TopLevelDeclWithMembers, Dictionary<string, MemberDecl>> ResolveSystemModule(Program program) {
     var systemModuleResolver = new ModuleResolver(this, Options);
+    if (SystemModuleManager.ResolvedSystem is { } previous) {
+      return ResolveAddedSystemDeclarations(systemModuleResolver, previous);
+    }
 
     SystemModuleManager.systemNameInfo = SystemModuleManager.SystemModule.RegisterTopLevelDecls(systemModuleResolver, false);
     systemModuleResolver.moduleInfo = SystemModuleManager.systemNameInfo;
@@ -539,7 +542,73 @@ public class ProgramResolver {
       ModuleDefinition.AllDeclarationsAndNonNullTypeDecls(systemModuleClassesWithNonNullTypes).ToList(),
       new Graph<IndDatatypeDecl>(), new Graph<CoDatatypeDecl>(), SystemModuleManager.SystemModule.Name, false);
 
+    if (SystemModuleManager.ResolutionCatalog != null) {
+      // Only a resolution view can be continued by a later resolution (CreateResolutionView).
+      SystemModuleManager.ResolvedSystem = new(SystemModuleManager.systemNameInfo,
+        SystemModuleManager.SystemModule.TopLevelDecls.ToHashSet<TopLevelDecl>(ReferenceEqualityComparer.Instance),
+        systemModuleResolver.moduleClassMembers);
+    }
     return systemModuleResolver.moduleClassMembers;
+  }
+
+  /// <summary>
+  /// A resolution view that an editor cache reuses keeps the canonical builtins that an earlier
+  /// resolution already registered and resolved. Setting those up again would replace parts of them
+  /// that earlier resolutions, and the module outputs cached from them, still hold (the non-null type
+  /// of "object", self-synonyms, datatype discriminators). So only the builtins that this view adds
+  /// are set up here, as ResolveSystemModule sets up all of them, and the signature and members
+  /// extend those of the earlier resolution.
+  /// </summary>
+  private Dictionary<TopLevelDeclWithMembers, Dictionary<string, MemberDecl>> ResolveAddedSystemDeclarations(
+    ModuleResolver systemModuleResolver, SystemModuleManager.ResolvedSystemModule previous) {
+    var system = SystemModuleManager.SystemModule;
+    var added = system.TopLevelDecls.Where(d => !previous.Declarations.Contains(d)).ToList();
+    var addedModule = new ModuleDefinition(SourceOrigin.NoToken, new Name(system.Name), [], ModuleKindEnum.Concrete,
+      false, null, null, null, added);
+    addedModule.ShareVisibilityScope(system);
+    var addedSignature = addedModule.RegisterTopLevelDecls(systemModuleResolver, false);
+
+    var signature = new ModuleSignature {
+      ModuleDef = system,
+      IsAbstract = previous.Signature.IsAbstract,
+      VisibilityScope = previous.Signature.VisibilityScope
+    };
+    foreach (var part in new[] { previous.Signature, addedSignature }) {
+      foreach (var pair in part.TopLevels) { signature.TopLevels[pair.Key] = pair.Value; }
+      foreach (var pair in part.Ctors) { signature.Ctors[pair.Key] = pair.Value; }
+      foreach (var pair in part.StaticMembers) { signature.StaticMembers[pair.Key] = pair.Value; }
+      foreach (var pair in part.ExportSets) { signature.ExportSets[pair.Key] = pair.Value; }
+      foreach (var pair in part.ShadowedImportedModules) { signature.ShadowedImportedModules[pair.Key] = pair.Value; }
+    }
+    SystemModuleManager.systemNameInfo = signature;
+    systemModuleResolver.moduleInfo = signature;
+
+    systemModuleResolver.RevealAllInScope(added, signature.VisibilityScope);
+    // The value types are not added builtins: the resolution this view continues resolved them.
+
+    if (Options.Get(CommonOptionBag.TypeSystemRefresh)) {
+      PreTypeResolver.ResolveDeclarations(added.Where(d => d is not ClassDecl).ToList(), systemModuleResolver, true);
+    }
+
+    var addedClassesWithNonNullTypes = added.Where(d => (d as ClassLikeDecl)?.NonNullTypeDecl != null).ToList();
+    foreach (var cl in addedClassesWithNonNullTypes) {
+      var d = ((ClassLikeDecl)cl).NonNullTypeDecl;
+      systemModuleResolver.allTypeParameters.PushMarker();
+      systemModuleResolver.ResolveTypeParameters(d.TypeArgs, true, d);
+      systemModuleResolver.ResolveType(d.Origin, d.Rhs, d, ResolveTypeOptionEnum.AllowPrefix, d.TypeArgs);
+      systemModuleResolver.allTypeParameters.PopMarker();
+    }
+
+    systemModuleResolver.ResolveTopLevelDecls_Core(
+      ModuleDefinition.AllDeclarationsAndNonNullTypeDecls(addedClassesWithNonNullTypes).ToList(),
+      new Graph<IndDatatypeDecl>(), new Graph<CoDatatypeDecl>(), system.Name, false);
+
+    var classMembers = new Dictionary<TopLevelDeclWithMembers, Dictionary<string, MemberDecl>>(previous.ClassMembers);
+    foreach (var pair in systemModuleResolver.moduleClassMembers) { classMembers[pair.Key] = pair.Value; }
+    var declarations = new HashSet<TopLevelDecl>(previous.Declarations, ReferenceEqualityComparer.Instance);
+    declarations.UnionWith(added);
+    SystemModuleManager.ResolvedSystem = new(signature, declarations, classMembers);
+    return classMembers;
   }
 
   protected virtual ModuleResolutionResult ResolveModuleDeclaration(CompilationData compilation, ModuleDecl decl) {

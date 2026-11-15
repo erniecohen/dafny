@@ -131,7 +131,8 @@ public static class VerifyCommand {
       PipelineProfile.For(options)?.Point("result-cache", new Dictionary<string, object?> {
         ["solverStarts"] = cache.SolverStarts, ["solverVersionProbes"] = options.VerificationCacheVersionProbes, ["hits"] = cache.Hits,
         ["publications"] = cache.Publications, ["fallbacks"] = cache.Fallbacks, ["conflicts"] = cache.Conflicts,
-        ["bypassReason"] = cache.LastBypassReason
+        ["bypassReason"] = cache.LastBypassReason, ["imagesHashed"] = Caching.TaskCacheSession.ImagesHashed,
+        ["imageDigestsRemembered"] = Caching.TaskCacheSession.ImageDigestsRemembered
       });
     }
     PipelineProfile.For(options)?.Finish("verify");
@@ -278,6 +279,9 @@ public static class VerifyCommand {
     }
 
     await trailer.WriteLineAsync();
+    if (cliCompilation.TrustedPremisesSummary is { } premises) {
+      await trailer.WriteLineAsync(premises);
+    }
   }
 
   public static void ReportVerificationDiagnostics(CliCompilation compilation, IObservable<CanVerifyResult> verificationResults) {

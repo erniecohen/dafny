@@ -146,6 +146,51 @@ Z3 5.1.0 (`Sequences.Elements` well-formedness to out of resource, `DecodeValidP
 well-formedness to correct); the commit that updates their expected verdicts gives the counts.
 With the option off, no verdict of the suite or of the standard library moves.
 
+## Rank of arrow-typed datatype fields under `--additional-axioms` ([issue 326](https://github.com/erniecohen/dafny/issues/326))
+
+The existing field rank axioms put the elements of a `seq`, `set` or `multiset` field and the keys
+and values of a `map` field below the constructor value, but nothing related an application of a
+function-typed field to it, so `function Count(o: Ord): nat` over
+`datatype Ord = Zero | Succ(Ord) | Lim(f: nat -> Ord)` failed its termination check at `Count(f(0))`.
+With `--additional-axioms`, `AddArrowFieldRankAxioms` (`BoogieGenerator.DataTypes.cs`) adds, for
+a field of type `A -> T`, `RANK(ApplyN(.., h, f, bx..)) < DtRank(#C(..f..))` under
+`$IsGoodHeap(h)`, `$Is(f, TotalFuncN(..))` and the arguments' types, for a datatype,
+type-parameter, `seq`, `map` or `imap` result, triggered on the application and the constructor
+term; for `A --> T` the antecedent also has `RequiresN`.  `~>` fields and codatatype fields get
+nothing.  Its kind is **asserts**.  The model is the well-founded (possibly infinitely branching)
+tree model with ordinal ranks that the existing `imap` field axioms already need
+([`docs/dev/additional-axioms.md`](docs/dev/additional-axioms.md#rank-of-arrow-typed-datatype-fields-326)),
+which also lists each circular-construction route and why it is rejected.  With the option off
+the translation is unchanged.  The regression is `git-issues/github-issue-326.dfy`: the issue's
+program, positive and `ensures false` fixtures under both resolvers and both settings, and one
+fixture per circular route, with a false-derivation attempt, with the option on.  The release
+note is `docs/dev/news/326.feat`.
+
+## Datatypes and the traits they extend in one decreases order ([issue 317](https://github.com/erniecohen/dafny/issues/317))
+
+A trait that does not extend `object` had no order in `decreases` clauses, so in a datatype that
+extends it, `decreases this` could not be compared with `decreases this` of a trait member called
+on a trait-typed field, and the termination check was `assert false`.  With the new option
+`--trait-rank-decreases` (`BoogieGenerator.Decreases.cs`), the values of such traits join the
+structural-rank family of sequences and inductive datatypes through `BoxRank`:
+`CompatibleDecreasesTypesForComparison` accepts the pairs, `RankFunction` returns `BoxRank`, and
+`ComputeLessEq` compares two trait values by `BoxRank`.  The comparison takes its types from the
+callee's decreases expressions as translated, since a trait-typed formal can receive a datatype
+argument.  It is a change to the language's termination order, so it has its own option, and it
+has no effect with `--legacy-decreases-order`.  With `--additional-axioms`, a trait-typed field of
+an inductive datatype constructor gets the type-parameter field axiom
+`BoxRank(field) < DtRank(#C(..))` (`BoogieGenerator.DataTypes.cs`); its kind is **asserts**.  The
+model interprets `BoxRank` of a boxed datatype value or sequence as its rank and of any other
+value as `0`; every rank axiom holds there, and the comparisons are ordinal comparisons of that
+rank, a well-founded component pair that the existing tuple argument lifts
+([`docs/dev/design/317-datatype-trait-decreases.md`](docs/dev/design/317-datatype-trait-decreases.md),
+which also covers cycles through two datatypes and implementations by classes and codatatypes).
+Inference is unchanged: a trait member without a `decreases` clause still needs `decreases this`.
+With both options off the translation is unchanged.  The regression is
+`git-issues/github-issue-317.dfy`: the issue's program, positive, false-control and downcast
+fixtures with each option off and on, trait-value pairs with the option on, and the positive file
+under `--legacy-decreases-order`.  The release note is `docs/dev/news/317.feat`.
+
 ## Review follow-up (https://github.com/erniecohen/dafny/issues/23)
 
 The glued-map elements guard now uses the glued map's domain. The domain axiom
@@ -209,8 +254,8 @@ that runs Boogie's own test jobs and packs Boogie's NuGet packages.  The same fi
 is offered to Boogie's master as
 [boogie-org/boogie#1169](https://github.com/boogie-org/boogie/pull/1169).
 
-This branch builds against that fork's release `v3.5.5+review.bdb7f929`, whose
-packages have the version `3.5.5-review.bdb7f929`.  The release carries them with
+This branch builds against that fork's release `v3.5.5+review.dcd726f6`, whose
+packages have the version `3.5.5-review.dcd726f6`.  The release carries them with
 their sha256 sums, and its `REVIEW.md` says what the fork changes and how its
 version is computed.  Besides that fix, it brings:
 
@@ -244,6 +289,15 @@ version is computed.  Besides that fix, it brings:
   verdicts.  Pass them with `--boogie "/cacheUsedTypes /lockFreeExpansion"`; a
   program that loads the standard library cannot yet, because its `.doo` records
   the `--boogie` options it was built with and refuses others.
+- **`/cacheBackground` and `/scheduleByImplementation`, off by default**
+  ([#241](https://github.com/erniecohen/dafny/issues/241)).  Under
+  `/cacheBackground`, a prover whose next split has the same pruned declarations,
+  in the same order, seed, type encoding types and SMT options as the context it
+  holds restarts that context instead of setting it up again; each solver gets the
+  same commands in the same order, so resource counts do not change.
+  `/scheduleByImplementation` lets an implementation's splits run one after the
+  other on one prover, so that more contexts are restarted; it changes which
+  solver process verifies which split, so resource counts can differ.
 - **Canonical native-result map payloads**, on by default
   ([#284](https://github.com/erniecohen/dafny/issues/284)): the same-index
   read-over-write axiom requires a native payload's box/unbox round trip to
@@ -262,10 +316,10 @@ version is computed.  Besides that fix, it brings:
   restores the old deadline for comparison, passed through Dafny's `--boogie`.
 
 `a48933e` made this branch build against the fork's packages, at
-`3.5.5-review.37e4435d`.  It now builds against `3.5.5-review.bdb7f929`:
+`3.5.5-review.37e4435d`.  It now builds against `3.5.5-review.dcd726f6`:
 
 - `Source/DafnyCore/DafnyCore.csproj` names `Boogie.ExecutionEngine`
-  `3.5.5-review.bdb7f929`, and `dotnet-tools.json` names the `boogie` tool at the
+  `3.5.5-review.dcd726f6`, and `dotnet-tools.json` names the `boogie` tool at the
   same version;
 - `nuget.config` adds a local package source, `Binaries/boogie-packages`, and maps
   every Boogie package to it and to nothing else, so a missing package stops the
@@ -299,6 +353,15 @@ changes only a test of Boogie's.  `/typeEncoding:a`, the default, sends the solv
 same text as before.  Its tests are `git-issues/github-issue-281-empty-quantifier.dfy` and
 `git-issues/github-issue-281-hide.dfy`, each run under `:m` and `:a` against one
 expected output.  Its release note is `docs/dev/news/281-typeencoding-m.fix`.
+
+The move from `bdb7f929` to `dcd726f6` is a product change, and so a new version.
+It brings `/cacheBackground` and `/scheduleByImplementation`, from
+[erniecohen/boogie#6](https://github.com/erniecohen/boogie/pull/6); with both off, the
+solver gets the same text as before.  Its test,
+`git-issues/github-issue-241-cache-background.dfy`, verifies a program with every
+assertion its own split on one core, with and without `/cacheBackground`, and requires
+the same report and, from the CSV log, the same outcome and resource count for every
+check.  Its release note is `docs/dev/news/241-boogie-cache-background.feat`.
 
 **To build this branch, run `sh Scripts/fetch-boogie-packages.sh` once first.**
 CI does so in every job that builds.
@@ -363,6 +426,21 @@ when the offset of `o` is at least `m`) it already says what the fix makes the
 verifier know.  Each follow-up commit gives its fix's reason.
 
 ## The version, and how to check it
+
+Since 2026-11-14 the hash covers every product file, those the fork added as well as
+those v4.11.0 already has, and leaves out the paths that are not product (tests,
+`docs`, `.github`, `friction` and the documents at the top of the tree):
+
+    git diff --no-renames --abbrev=7 v4.11.0 <last product commit> -- . \
+      ':(exclude)Source/IntegrationTests' ':(exclude)docs' ':(exclude).github' \
+      ':(exclude)friction' ':(exclude)REVIEW.md' ':(exclude)ROADMAP.md' \
+      ':(exclude)AGENTS.md' ':(exclude)CLAUDE.md' | sha256sum
+
+`.github/review/version.sh` computes it.  The earlier hash, of
+`git diff --diff-filter=M`, saw only files that v4.11.0 already has, so a change
+confined to a file the fork added kept the version: two different products were
+both `4.11.0+fcb2042d.review.e35c4989`.  The versions below were computed the
+earlier way.
 
 `d2070b81` is the first 8 hex digits of the sha256 of the change that the
 product commits make to files that v4.11.0 already has:
@@ -621,3 +699,69 @@ decomposition facts explicitly, use existing encoding identities while keeping
 bitvector definitions opaque, and separate parser and encoding proof steps.
 They preserve the specifications and existing resource limits. Every additional
 assertion and lemma call is verified; they introduce no axiom or assumption.
+
+## User-written `{:auto_generated}` and `{:opaque_reveal}` ([issue 325](https://github.com/erniecohen/dafny/issues/325))
+
+Dafny marks the declarations it generates, such as the reveal lemmas of opaque members, with
+`{:auto_generated}` and `{:opaque_reveal}`, but a user can write those attributes too. Three
+places read the attributes as proof that Dafny generated a declaration. The library printer left
+every `{:auto_generated}` member out of a `.doo`, so a user-written member that shadowed an
+imported name disappeared and a client proved `false` from the stored contracts. The trait check
+let a class leave a `{:opaque_reveal}` trait lemma unimplemented, so a call to it assumed its
+postcondition. The auditor did not report `{:axiom}` or `{:verify false}` beside
+`{:auto_generated}`. All three now ask `Declaration.IsGeneratedByDafny`: the attribute and an
+origin that only Dafny makes. Its kind is **weakens only**; no fact or axiom is added, and a
+program that does not write these attributes is unchanged. The hidden
+`--legacy-auto-generated-attributes` option restores the old behaviour of all three for comparison
+and migration. The regression is `git-issues/github-issue-325.dfy`; the release note is
+`docs/dev/news/325.fix`.
+
+## Constants read before `new;` ([issue 339](https://github.com/erniecohen/dafny/issues/339))
+
+The resolver let the first division of a constructor body read any `const` field with an
+initializer, on the premise that such a constant does not depend on the object.  It can:
+`const s: D := t` reads the field `t`.  The verifier translates the read as the constant's
+function of `this`, whose definition axiom equates it with the initializer on the fields' final
+values, while before `new;` a field still holds a value that can change, so `t := One(s)` made
+`s == t` and `t == One(s)` both hold and proved `false`.  `CheckDividedConstructorInitVisitor` now
+reports a read of `this.c` before `new;`, in any context, when `c`'s initializer mentions `this`,
+explicitly or implicitly (another field or constant of `this`, an instance function, `this`
+itself).  An initializer that reads another constant mentions `this` itself, so no closure is
+needed.  Its kind is **weakens only**: it rejects programs and adds no fact or axiom; a program
+that does not make such a read is unchanged.  The hidden `--legacy-first-phase-const-reads`
+option restores the old rule for comparison and migration.  The regression is
+`git-issues/github-issue-339.dfy`; the release note is `docs/dev/news/339.fix`.
+
+## Comparing crossed component types ([issue 47](https://github.com/erniecohen/dafny/issues/47))
+
+With `--type-system-refresh`, `==`, `!=`, `in`, `!in` and prefix equality required, in their final
+check, that one operand's type be a supertype of the other's, so `(Number, Integer) == (Integer,
+Number)`, with `Number` and `Integer` subtypes of one trait, was rejected, though inference had
+already found the two comparable and the legacy resolver accepts it.  The check now also accepts
+two types with the same type constructor whose arguments agree exactly at each non-variant
+parameter and are comparable, recursively, at each co- or contravariant one.  Such types have a
+common supertype and a common subtype, built argument by argument, so a value can belong to both
+and the comparison is meaningful.  It is a **false-rejection fix** of the refreshed resolver: it
+accepts more programs and adds no fact or axiom; the legacy resolver and `as`/`is` are unchanged.
+The regression is `git-issues/github-issue-47.dfy`, with negative controls that are still
+rejected; the release note is `docs/dev/news/47.fix`.
+
+## Match inference on by default ([issue 48](https://github.com/erniecohen/dafny/issues/48))
+
+With `--type-system-refresh`, resolving a pattern whose type was not yet known solved the type
+constraints with default decisions, which gave a pending literal elsewhere in the enclosing
+expression, such as the `0` of an earlier `if x == 0 then Some(0)`, the type `int` before the
+declared result type `Option<int32>` could give it `int32`.  `--conservative-match-inference`,
+which propagated without decisions first, fixed this for a match source of unknown type, and is
+now **on by default**; `--conservative-match-inference:false` restores the earlier inference.  It
+also now decides without default decisions that an identifier without arguments in a pattern is a
+bound variable when, after propagation, its type has a subtype that is not a datatype, or advice
+that only a number, `bool` or `char` type satisfies; a datatype has no subtypes but itself, so the
+identifier cannot be a constructor.  That fixes `var d := Some(0); match d case Some(n) => ...`
+too.  It is a **false-rejection fix** of the refreshed resolver: it adds and removes no type
+constraint, only defers default decisions, so a literal's newtype constraint is still checked by
+the verifier, and a value already of type `int`, of another newtype or of `bool` is still
+rejected.  The legacy resolver ignores the option.  When a pattern does not match its source, the
+default decisions are made before the error is reported, so that the message names the types
+they give.  The regression is `git-issues/github-issue-48.dfy`; the release note is
+`docs/dev/news/conservative-match-inference-default.fix`.

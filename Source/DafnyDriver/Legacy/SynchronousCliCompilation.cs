@@ -228,6 +228,14 @@ namespace Microsoft.Dafny {
         }
       }
 
+      if (DecreasesOrders.LoadsOrdersLibrary(options)) {
+        options.CliRootSourceUris.Add(DafnyMain.StandardLibrariesOrdersDooUri);
+        var reporter = new ConsoleErrorReporter(options);
+        await foreach (var ordersFile in DafnyFile.CreateAndValidate(OnDiskFileSystem.Instance, reporter, options, DafnyMain.StandardLibrariesOrdersDooUri, Token.Cli, !options.Get(CommonOptionBag.TranslateStandardLibrary))) {
+          dafnyFiles.Add(ordersFile);
+        }
+      }
+
       return (ExitValue.SUCCESS, dafnyFiles, otherFiles);
     }
 
@@ -310,6 +318,25 @@ namespace Microsoft.Dafny {
           string baseName = Cce.NonNull(Path.GetFileName(dafnyFileNames[^1]));
           (verified, outcome, moduleStats) =
             await BoogieAsync(dafnyProgram.Reporter, options, baseName, boogiePrograms, programId);
+
+          if (options.Get(CommonOptionBag.ModularTermination) && options.Backend is LibraryBackend) {
+            dafnyProgram.ModularTerminationCompletion =
+              await DafnyCore.ModularTerminationProducer.Complete(dafnyProgram, boogiePrograms, outcome, verified, dafnyFiles);
+            if (options.UserConstrainedProcsToCheck &&
+                dafnyProgram.ModularTerminationCompletion.Failure is { } failure) {
+              // A build restricted to some procedures writes no library; say why it cannot have a record.
+              dafnyProgram.Reporter.Error(MessageSource.Compiler, "modular_termination_record", Token.Cli,
+                DafnyCore.ModularTerminationRecords.RecordFailureMessage(failure));
+            }
+          }
+          if (options.Get(CommonOptionBag.ModularTermination)) {
+            var completion = dafnyProgram.ModularTerminationCompletion;
+            IReadOnlyList<DafnyCore.ModularTerminationPremise> own = completion is { Failure: null } ? completion.Premises : [];
+            if (DafnyCore.ModularTerminationTrustList.Summary(own, completion?.TrustList,
+                  dafnyProgram.Compilation.ModularTerminationPremises) is { } summary) {
+              await options.OutputWriter.Status(summary);
+            }
+          }
 
           if (options.TrackVerificationCoverage) {
             ProofDependencyWarnings.WarnAboutSuspiciousDependenciesUsingStoredPartialResults(options,

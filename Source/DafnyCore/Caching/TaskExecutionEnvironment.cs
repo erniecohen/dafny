@@ -10,6 +10,7 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Microsoft.Boogie;
 using Microsoft.Boogie.SMTLib;
 using BplType = Microsoft.Boogie.Type;
@@ -24,6 +25,10 @@ internal sealed class TaskExecutionEnvironment(DafnyOptions options) {
   private static readonly HashSet<string> ReportBindings = new(StringComparer.Ordinal) {
     "OutputWriter", "XmlSink"
   };
+  // The effective resource limit is not part of a task key. The transport abstracts it from the
+  // solver input and compares it with each stored result's own limit and resource use instead.
+  private const string ResourceLimit = "ResourceLimit";
+  private const string TaskResourceLimit = "task-resource-limit";
   private static readonly HashSet<string> VerifiedTransport = new(StringComparer.Ordinal) {
     "CreateSolver", "TheProverFactory"
   };
@@ -39,9 +44,11 @@ internal sealed class TaskExecutionEnvironment(DafnyOptions options) {
         reason = "unsupported factory, adaptive diagnostics or external side effects";
         return null;
       }
-      var identity = ToolchainIdentity(solver);
+      var roots = ImageRoots.For(solver.ExecutablePath());
+      var identity = ToolchainIdentity(solver, roots);
       var manifest = new SortedDictionary<string, object?>(StringComparer.Ordinal) {
-        ["abi"] = "dafny-task-transport-v1",
+        // v2: paths under the Dafny, .NET and solver installations are named by placeholder.
+        ["abi"] = "dafny-task-transport-v2",
         ["toolchain"] = JsonSerializer.Deserialize<SortedDictionary<string, string>>(identity)
       };
       // Enumerate the complete interfaces used by the pinned Boogie prover, including inherited
@@ -51,25 +58,45 @@ internal sealed class TaskExecutionEnvironment(DafnyOptions options) {
         var name = property.DeclaringType!.FullName + "." + property.Name;
         if (ReportBindings.Contains(property.Name)) { manifest[name] = "current-report-binding"; continue; }
         if (VerifiedTransport.Contains(property.Name)) { manifest[name] = "verified-transport"; continue; }
+        if (property.Name == ResourceLimit) { manifest[name] = TaskResourceLimit; continue; }
         manifest[name] = Encode(property.GetValue(library));
       }
       foreach (var field in solver.GetType().GetFields(BindingFlags.Instance | BindingFlags.Public).OrderBy(f => f.Name)) {
         if (field.Name == "UsedTypes") { continue; }
-        manifest["solver." + field.Name] = Encode(field.GetValue(solver));
+        manifest["solver." + field.Name] = field.Name == ResourceLimit ? TaskResourceLimit : Encode(field.GetValue(solver));
       }
       foreach (var property in solver.GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public).OrderBy(p => p.Name)) {
         if (property.Name is "LibOptions" or "Help") { continue; }
-        manifest["solver." + property.Name] = Encode(property.GetValue(solver));
+        manifest["solver." + property.Name] = property.Name == ResourceLimit ? TaskResourceLimit : Encode(property.GetValue(solver));
       }
       // UsedTypes inspects all nonimplementation declarations plus this implementation. Preserve
       // the resulting order explicitly, even when a type does not occur in the pruned VC text.
       manifest["solver.OrderedUsedTypes"] = EncodeUsedTypes(solver.UsedTypes, options);
       reason = null;
-      return JsonSerializer.SerializeToUtf8Bytes(manifest);
+      // Option values such as the solver path name those installations too.
+      return JsonSerializer.SerializeToUtf8Bytes(Relocate(JsonSerializer.SerializeToNode(manifest), roots));
     } catch (Exception e) when (e is NotSupportedException or IOException or UnauthorizedAccessException or
                                ArgumentException or TargetInvocationException or InvalidOperationException) {
       reason = e.Message;
       return null;
+    }
+  }
+
+  /// <summary>A copy of <paramref name="node"/> with every string value relocated; names are kept.</summary>
+  internal static JsonNode? Relocate(JsonNode? node, ImageRoots roots) {
+    switch (node) {
+      case JsonObject obj:
+        var relocated = new JsonObject();
+        foreach (var (name, child) in obj) { relocated[name] = Relocate(child, roots); }
+        return relocated;
+      case JsonArray array:
+        var items = new JsonArray();
+        foreach (var child in array) { items.Add(Relocate(child, roots)); }
+        return items;
+      case JsonValue value when value.TryGetValue<string>(out var text):
+        return JsonValue.Create(roots.Relocate(text));
+      default:
+        return node?.DeepClone();
     }
   }
 
@@ -96,7 +123,7 @@ internal sealed class TaskExecutionEnvironment(DafnyOptions options) {
     throw new NotSupportedException("unclassified execution option type " + type.FullName);
   }
 
-  private byte[] ToolchainIdentity(SMTLibSolverOptions solver) {
+  private byte[] ToolchainIdentity(SMTLibSolverOptions solver, ImageRoots roots) {
     using (var executable = File.OpenRead(solver.ExecutablePath())) {
       Span<byte> magic = stackalloc byte[4];
       if (executable.Read(magic) != 4 ||
@@ -106,11 +133,11 @@ internal sealed class TaskExecutionEnvironment(DafnyOptions options) {
         throw new NotSupportedException("solver launch scripts require a dependency manifest");
       }
     }
-    var manifest = ExecutionImageIdentity.Read(solver.ExecutablePath());
+    var manifest = ExecutionImageIdentity.Read(solver.ExecutablePath(), options.Get(CommonOptionBag.VerificationCache));
     // Public Z3 5.1.0 release profiles used by this fork's CI. Native executable magic
     // and a version string cannot establish that an arbitrary launcher reads no files.
     // https://github.com/Z3Prover/z3/releases/tag/z3-5.1.0
-    if (!manifest.TryGetValue(Path.GetFullPath(solver.ExecutablePath()), out var solverHash) ||
+    if (!manifest.TryGetValue(roots.Relocate(Path.GetFullPath(solver.ExecutablePath())), out var solverHash) ||
         solverHash is not ("164c85de5f5dcb7d57cbab64b1a11580a982c1658384120b2b65358f41847418" or
                           "b4e0b3483ce37817230b20d6cad48390eb6a3aefde1d93342ad6dc763f24bc23")) {
       throw new NotSupportedException("unaudited native solver execution profile");
@@ -120,7 +147,9 @@ internal sealed class TaskExecutionEnvironment(DafnyOptions options) {
     manifest["architecture"] = RuntimeInformation.ProcessArchitecture.ToString();
     foreach (DictionaryEntry entry in System.Environment.GetEnvironmentVariables()) {
       // Solver environment is part of identity; retain only digests, never secret values.
-      manifest["env:" + (string)entry.Key] = CacheDigest.Blob(Encoding.UTF8.GetBytes((string)entry.Value!));
+      // A path under the Dafny, .NET or solver installation, as in PATH or DOTNET_ROOT, is
+      // named by its placeholder before it is digested.
+      manifest["env:" + (string)entry.Key] = CacheDigest.Blob(Encoding.UTF8.GetBytes(roots.Relocate((string)entry.Value!)));
     }
     return JsonSerializer.SerializeToUtf8Bytes(manifest);
   }

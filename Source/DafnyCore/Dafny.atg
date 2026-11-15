@@ -2880,12 +2880,32 @@ LoopSpec<.List<AttributedExpression> invariants, List<Expression> decreases, ref
 /*------------------------------------------------------------------------*/
 DecreasesList<.List<Expression> decreases, bool allowWildcard, bool allowLambda.>
 = (. Expression e; .)
-  PossiblyWildExpression<out e, allowLambda, allowWildcard>       (. decreases.Add(e); .)
-  { "," PossiblyWildExpression<out e, allowLambda, allowWildcard> (. decreases.Add(e); .)
+  PossiblyWildExpression<out e, allowLambda, allowWildcard>
+  [ DecreasesOrder<ref e> ]                                       (. decreases.Add(e); .)
+  { "," PossiblyWildExpression<out e, allowLambda, allowWildcard>
+    [ DecreasesOrder<ref e> ]                                     (. decreases.Add(e); .)
   }
   (. if (allowWildcard && decreases.Count > 1 && decreases.Exists(e => e is WildcardExpr)) {
        SemErr(ErrorId.p_no_decreases_expressions_with_star, e.Origin, "A 'decreases' clause that contains '*' is not allowed to contain any other expressions");
      }
+  .)
+  .
+
+/*------------------------------------------------------------------------*/
+/* "e by O": the decreases component e is compared by the well-founded order O (--decreases-orders) */
+DecreasesOrder<ref Expression e>
+= (. Expression order; .)
+  "by"                                          (. var byTok = t; .)
+  Expression<out order, false, true>
+  (. if (!theOptions.Get(CommonOptionBag.DecreasesOrders)) {
+       SemErr(ErrorId.p_decreases_order_needs_option, new SourceOrigin(byTok, t), "a decreases component of the form 'e by O' requires the option --decreases-orders");
+     } else if (!DecreasesOrders.TypeSystemSupportsOrders(theOptions)) {
+       SemErr(ErrorId.p_decreases_order_needs_option, new SourceOrigin(byTok, t), "a decreases component of the form 'e by O' requires --type-system-refresh and --general-traits=datatype, since the orders are values of the trait Std.Termination.Orders.Wfo");
+     }
+     if (e is WildcardExpr) {
+       SemErr(ErrorId.p_decreases_order_needs_option, new SourceOrigin(byTok, t), "'*' in a decreases clause cannot be given an order");
+     }
+     e = new DecreasesByExpr(new SourceOrigin(e.StartToken, t), e, order);
   .)
   .
 

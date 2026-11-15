@@ -30,6 +30,16 @@ public class SystemModuleManager {
 
   public ModuleSignature systemNameInfo;
 
+  /// <summary>
+  /// The resolution of this manager's system module: its signature, the declarations it set up and
+  /// their members. A resolution view that continues this one sets up only the builtins it adds, so
+  /// that each canonical builtin declaration is registered and resolved exactly once.
+  /// </summary>
+  internal sealed record ResolvedSystemModule(ModuleSignature Signature, IReadOnlySet<TopLevelDecl> Declarations,
+    Dictionary<TopLevelDeclWithMembers, Dictionary<string, MemberDecl>> ClassMembers);
+
+  internal ResolvedSystemModule ResolvedSystem { get; set; }
+
   public int MaxNonGhostTupleSizeUsed { get; private set; }
   public IOrigin MaxNonGhostTupleSizeToken { get; private set; }
 
@@ -61,7 +71,8 @@ public class SystemModuleManager {
             Concat(ArrowTypeDecls.Keys.OrderBy(x => x)).
             Concat(PartialArrowTypeDecls.Keys.OrderBy(x => x)).
             Concat(TotalArrowTypeDecls.Keys.OrderBy(x => x)).
-            Concat(tupleInts.OrderBy(x => x));
+            Concat(tupleInts.OrderBy(x => x)).
+            Concat(BoundedDecl != null ? [-1] : []);
         var bytes = ints.SelectMany(BitConverter.GetBytes).ToArray();
         hash = SHA256.Create()!.ComputeHash(bytes);
       }
@@ -85,6 +96,7 @@ public class SystemModuleManager {
     StringDecl = source.StringDecl;
     NatDecl = source.NatDecl;
     ObjectDecl = source.ObjectDecl;
+    BoundedDecl = source.BoundedDecl;
     ORDINAL_Offset = source.ORDINAL_Offset;
     MergeResolutionView(source);
   }
@@ -96,7 +108,7 @@ public class SystemModuleManager {
   /// </summary>
   public SystemModuleManager CreateResolutionView(SystemModuleManager parsed) {
     var catalog = ResolutionCatalog ?? new ResolutionBuiltinCatalog(this);
-    var view = new SystemModuleManager(this, catalog);
+    var view = new SystemModuleManager(this, catalog) { ResolvedSystem = ResolvedSystem };
     foreach (var arity in parsed.ArrowTypeDecls.Keys) { view.CreateArrowTypeDecl(arity); }
     foreach (var dimensions in parsed.arrayTypeDecls.Keys) {
       var (_, modify) = ArrayType(Token.NoToken, dimensions, null, true);
@@ -194,6 +206,10 @@ public class SystemModuleManager {
   public readonly SubsetTypeDecl NatDecl;
   public UserDefinedType Nat() { return new UserDefinedType(Token.NoToken, "nat", NatDecl, []); }
   public readonly TraitDecl ObjectDecl;
+  /// <summary>
+  /// The abstract type "bounded&lt;O, F&gt;" of bounded callables (issue 266), declared only under --modular-termination.
+  /// </summary>
+  public readonly AbstractTypeDecl BoundedDecl;
   public UserDefinedType ObjectQ() {
     Contract.Assume(ObjectDecl != null);
     return new UserDefinedType(Token.NoToken, "object?", null) { ResolvedClass = ObjectDecl };
@@ -227,6 +243,10 @@ public class SystemModuleManager {
     // create trait 'object'
     ObjectDecl = new TraitDecl(SourceOrigin.NoToken, new Name("object"), SystemModule, [], [], DontCompile(), false, []);
     SystemModule.SourceDecls.Add(ObjectDecl);
+    if (options.Get(CommonOptionBag.ModularTermination)) {
+      BoundedDecl = BoundedCallables.CreateDecl(SystemModule, DontCompile());
+      SystemModule.SourceDecls.Add(BoundedDecl);
+    }
     // add one-dimensional arrays, since they may arise during type checking
     // Arrays of other dimensions may be added during parsing as the parser detects the need for these
     UserDefinedType tmp = ArrayType(1, Type.Int, true);

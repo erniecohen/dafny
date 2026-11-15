@@ -148,7 +148,8 @@ module Std.Arithmetic.Mul {
   lemma LemmaMulOrderingAuto()
     ensures forall x: int, y: int {:trigger x * y} :: (0 != x && 0 != y && x * y >= 0) ==> x * y >= x && x * y >= y
   {
-    forall x: int, y: int | 0 != x && 0 != y && x * y >= 0
+    // "0 <= x * y", as LemmaMulOrdering requires: Z3 5.1.0 gives up on "x * y >= 0" here.
+    forall x: int, y: int | 0 != x && 0 != y && 0 <= x * y
       ensures x * y >= x && x * y >= y
     {
       LemmaMulOrdering(x, y);

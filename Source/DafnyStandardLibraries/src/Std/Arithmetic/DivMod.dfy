@@ -923,8 +923,13 @@ module Std.Arithmetic.DivMod {
     requires 0 < d
     ensures x / d + j == (x + j * d) / d
   {
-    LemmaDivAuto(d);
-    LemmaMulInductionAuto(j, u => x / d  + u == (x + u * d) / d);
+    // x == q * d + r with 0 <= r < d, so x + j * d == (q + j) * d + r.
+    var q, r := x / d, x % d;
+    LemmaFundamentalDivMod(x, d);
+    ModINL.LemmaModRange(x, d);
+    LemmaMulIsCommutative(d, q);
+    LemmaMulIsDistributiveAddOtherWay(d, q, j);
+    LemmaFundamentalDivModConverse(x + j * d, d, q + j, r);
   }
 
   lemma LemmaHoistOverDenominatorAuto()

@@ -173,7 +173,7 @@ public static class BoogieOptionBag {
     OptionRegistry.RegisterOption(SolverResourceLimit, OptionScope.Cli);
   }
 
-  private static IReadOnlyList<string> SplitArguments(string commandLine) {
+  public static IReadOnlyList<string> SplitArguments(string commandLine) {
     if (string.IsNullOrEmpty(commandLine)) {
       return Array.Empty<string>();
     }

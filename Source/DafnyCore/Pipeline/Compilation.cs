@@ -208,6 +208,13 @@ public class Compilation : IDisposable {
       }
     }
 
+    if (DecreasesOrders.LoadsOrdersLibrary(Options)) {
+      await foreach (var file in DafnyFile.CreateAndValidate(fileSystem, errorReporter, Options,
+                       DafnyMain.StandardLibrariesOrdersDooUri, Project.StartingToken, !Options.Get(CommonOptionBag.TranslateStandardLibrary))) {
+        result.Add(file);
+      }
+    }
+
     var libraryPaths = CommonOptionBag.SplitOptionValueIntoFiles(Options.GetOrOptionDefault(CommonOptionBag.Libraries).Select(f => f.FullName));
     foreach (var library in libraryPaths) {
       await foreach (var file in DafnyFile.CreateAndValidate(fileSystem, errorReporter, Options, new Uri(library), Project.StartingToken, true)) {

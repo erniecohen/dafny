@@ -122,6 +122,14 @@ public static class ModularTermination {
   }
 
   /// <summary>
+  /// Whether "type" is a total arrow type "A -> B", rather than a partial "A --> B" or general "A ~> B" one.
+  /// </summary>
+  public static bool IsTotalArrow(Type type) {
+    return type.NormalizeExpandKeepConstraints() is UserDefinedType { ResolvedClass: SubsetTypeDecl { Name: var name } } &&
+           ArrowType.IsTotalArrowTypeName(name);
+  }
+
+  /// <summary>
   /// The global decreases clauses among the given attributes, last-written first.
   /// </summary>
   public static IEnumerable<Attributes> GlobalClauses(Attributes? attrs) {
@@ -224,13 +232,27 @@ public class ModularTerminationAnalysis {
   // The callees of each node, and, for a node that makes an open dispatch itself, a description of the first one.
   private readonly Dictionary<Declaration, HashSet<Declaration>> edges = new();
   private readonly Dictionary<Declaration, string> directDispatch = new();
+  private readonly List<MemberDecl> orderImplementations = [];
+  private readonly HashSet<IVariable> logicalBinders = [];
 
   /// <summary>
   /// The analysis of the program, computed once, the first time it is asked for.  Use it only once the
   /// program is fully resolved.
   /// </summary>
   public static ModularTerminationAnalysis Of(Program program) {
-    return Cache.GetValue(program, p => new ModularTerminationAnalysis(p));
+    return Cache.GetValue(program, p => {
+      // The analysis is computed the first time some module's translation asks for it, while that module's
+      // visibility scope is current, but it visits every module of the program.  Normalizing a type from a module
+      // that scope cannot see (for instance one an export set only provides) fails a visibility assertion, so the
+      // analysis runs with no scope, which sees every declaration as it is.
+      var saved = Type.SaveScopes();
+      Type.ResetScopes();
+      try {
+        return new ModularTerminationAnalysis(p);
+      } finally {
+        Type.RestoreScopes(saved);
+      }
+    });
   }
 
   public ModularTerminationAnalysis(Program program) {
@@ -245,6 +267,41 @@ public class ModularTerminationAnalysis {
       }
       interfaceScopes[module] = scope;
     }
+    // The implementations of Wfo.gt and Wfo.aha that a component "e by O" may run, other than those of the orders
+    // library's WfoOf: the only code those run is the relation that WfoOf holds, which was applied where the WfoOf
+    // was made (see EdgeCollector), in code that O, a closed term, reaches.
+    foreach (var cl in program.Modules().SelectMany(m => m.TopLevelDecls).OfType<TopLevelDeclWithMembers>()) {
+      if (DecreasesOrders.IsLibraryWfoOf(cl)) {
+        continue;
+      }
+      foreach (var member in cl.Members) {
+        for (var parent = member.OverriddenMember; parent != null; parent = parent.OverriddenMember) {
+          if (parent.EnclosingClass is TraitDecl trait && DecreasesOrders.IsStandardLibraryWfo(trait) &&
+              parent.Name is DecreasesOrders.GtName or DecreasesOrders.AhaName) {
+            orderImplementations.Add(member);
+            break;
+          }
+        }
+      }
+    }
+    // The binder rule (https://github.com/erniecohen/dafny/issues/245, M4): a variable of a total arrow type bound
+    // by a forall or exists expression, or by a ghost forall statement, ranges over every function of its type, all of
+    // which exist before the code being analyzed.  Applying it is a formula over those functions, not a call, so it
+    // is not a function value whose code is not known.  A quantifier over an arrow type has no bounds, so the resolver
+    // admits such an expression only in a ghost context.
+    program.Visit((INode node) => {
+      var binders = node switch {
+        QuantifierExpr quantifier => quantifier.BoundVars,
+        ForallStmt { IsGhost: true } forall => forall.BoundVars,
+        _ => null
+      };
+      foreach (var binder in binders ?? []) {
+        if (ModularTermination.IsTotalArrow(binder.Type)) {
+          logicalBinders.Add(binder);
+        }
+      }
+      return true;
+    });
     var callers = new Dictionary<Declaration, List<Declaration>>();
     var work = new Stack<Declaration>();
     void AddNode(Declaration node, System.Action<EdgeCollector> visit) {
@@ -438,6 +495,11 @@ public class ModularTerminationAnalysis {
     KnownCode,
     /// <summary>An in-parameter of the enclosing callable that has a callback bound (M3b).</summary>
     CallbackParameter,
+    /// <summary>
+    /// A variable of a total arrow type bound by a quantifier or a ghost forall statement (the binder rule of issue 245
+    /// M4): applying it calls nothing.  It is not a value that may be passed for a parameter with a callback bound.
+    /// </summary>
+    Binder,
     /// <summary>Any other value: its code is not known, so it has no bound (TOP).</summary>
     Unknown
   }
@@ -449,6 +511,8 @@ public class ModularTerminationAnalysis {
     switch (value.Resolved) {
       case LambdaExpr:
         return FunctionValueKind.Lambda;
+      case IdentifierExpr { Var: { } binder } when logicalBinders.Contains(binder):
+        return FunctionValueKind.Binder;
       case IdentifierExpr { Var: Formal f } when enclosing != null && enclosing.Ins.IndexOf(f) is var i and >= 0 &&
                                                   ModularTermination.HasCallbackBound(enclosing, i):
         return FunctionValueKind.CallbackParameter;
@@ -568,6 +632,17 @@ public class ModularTerminationAnalysis {
         Mention(type);
       }
       switch (expr) {
+        // The orders library's Of(r) and WfoOf(r) make the order whose gt and aha run r and nothing else, and its
+        // wellFounded(r) and stops(r, c) run only r and c: each is an application of its arguments of arrow type
+        // (https://github.com/erniecohen/dafny/issues/245, M4).
+        case FunctionCallExpr call when call.Function != null && DecreasesOrders.AppliesOnlyItsArguments(call.Function):
+          foreach (var arg in call.Args.Where(a => a.Type.NormalizeExpand().IsArrowType)) {
+            Apply(arg);
+          }
+          break;
+        case DatatypeValue value when value.Ctor != null && DecreasesOrders.IsLibraryWfoOf(value.Ctor.EnclosingDatatype):
+          Apply(value.Arguments[0]);
+          break;
         case FunctionCallExpr call when call.Function != null:
           if (ModularTermination.IsArrowMember(call.Function)) {
             Apply(call.Receiver);
@@ -584,6 +659,12 @@ public class ModularTerminationAnalysis {
         case SeqConstructionExpr seq:
           Apply(seq.Initializer);
           break;
+        case DecreasesByExpr decreasesBy when DecreasesOrders.WfoTrait(decreasesBy.Order.Type) != null:
+          // A component "e by O" is an implied call of Wfo.gt and Wfo.aha (R3 of DecreasesOrders) on the value of O.
+          foreach (var implementation in analysis.orderImplementations) {
+            Call(implementation);
+          }
+          break;
       }
     }
 
@@ -597,6 +678,9 @@ public class ModularTerminationAnalysis {
         return;
       }
       if (value.Resolved is MemberSelectExpr { Member: Function g } && !ModularTermination.IsArrowMember(g)) {
+        return;
+      }
+      if (value.Resolved is IdentifierExpr { Var: { } binder } && analysis.logicalBinders.Contains(binder)) {
         return;
       }
       Dispatch("a call through a function value whose code is not known");
@@ -772,6 +856,7 @@ public class ModularTerminationRewriter : IRewriter {
   }
 
   internal override void PostResolve(Program program) {
+    CheckLibraryRefinements(program);
     var analysis = new ModularTerminationAnalysis(program);
     var checkedClauses = new HashSet<(Attributes, ModuleDefinition)>();
     foreach (var module in program.Modules()) {
@@ -801,6 +886,31 @@ public class ModularTerminationRewriter : IRewriter {
           classifier.Visit(callable.Ins.Where(f => f.DefaultValue != null).Select(f => f.DefaultValue));
         }
       }
+    }
+  }
+
+  /// <summary>
+  /// A module that refines or replaces a module of a library inherits that module's bodies, which are
+  /// not part of the library's termination contracts (https://github.com/erniecohen/dafny/issues/211,
+  /// milestone M3-4): a changed body would leave the contract, and so the record of a library built
+  /// against it, unchanged.  Until contracts or records cover inherited bodies, such a module is rejected.
+  /// </summary>
+  private void CheckLibraryRefinements(Program program) {
+    var urisToVerify = program.Compilation.UrisToVerify;
+    if (urisToVerify == null) {
+      return;
+    }
+    foreach (var module in program.Modules()) {
+      if (module.Implements is not { } implements || implements.Target.Def is not { } target ||
+          module.Origin?.Uri == null || !urisToVerify.Contains(module.Origin.Uri) ||
+          target.Origin?.Uri == null || urisToVerify.Contains(target.Origin.Uri)) {
+        continue;
+      }
+      var verb = implements.Kind == ImplementationKind.Refinement ? "refines" : "replaces";
+      Reporter.Error(MessageSource.Resolver, module.NameNode.Origin,
+        $"modular termination: module '{module.Name}' {verb} module '{target.FullDafnyName}' of a library; " +
+        "under --modular-termination a module cannot refine or replace a library module, since the bodies it " +
+        "would inherit are not part of the library's termination contracts");
     }
   }
 
@@ -1102,6 +1212,10 @@ public class ModularTerminationRewriter : IRewriter {
           reporter.Info(MessageSource.Resolver, origin,
             $"modular termination: in {CallerName}, {what} needs the smaller-bound rule; holds: the value is known code that reaches no dispatched call");
           break;
+        case ModularTerminationAnalysis.FunctionValueKind.Binder:
+          reporter.Info(MessageSource.Resolver, origin,
+            $"modular termination: in {CallerName}, {what} needs the smaller-bound rule; holds: the value is a variable bound by a quantifier, which ranges over functions that exist already, so applying it calls nothing");
+          break;
         case ModularTerminationAnalysis.FunctionValueKind.CallbackParameter:
           reporter.Info(MessageSource.Resolver, origin,
             $"modular termination: in {CallerName}, {what} needs the smaller-bound rule; " +
@@ -1140,7 +1254,7 @@ public class ModularTerminationRewriter : IRewriter {
         if (kind == ModularTerminationAnalysis.FunctionValueKind.CallbackParameter && insideLambda.Contains(site)) {
           kind = ModularTerminationAnalysis.FunctionValueKind.Unknown;
         }
-        if (kind == ModularTerminationAnalysis.FunctionValueKind.Unknown) {
+        if (kind is ModularTerminationAnalysis.FunctionValueKind.Unknown or ModularTerminationAnalysis.FunctionValueKind.Binder) {
           reporter.Error(MessageSource.Resolver, args[i].Origin,
             $"modular termination: in {CallerName}, the value passed for parameter '{callable.Ins[i].Name}' of '{QualifiedName(callee)}', " +
             "which has a 'decreases {:callback}' bound, must be a lambda expression, a parameter with such a bound (outside a lambda), " +

@@ -103,6 +103,54 @@ public class Auditor : IRewriter {
     }
   }
 
+  private static string GlobalNote(string kind) =>
+    kind == ModularTerminationTrustList.GhostFunctionKind
+      ? ", a global premise: its postconditions hold wherever the function is visible, not only at a call"
+      : "";
+
+  /// <summary>
+  /// Under --modular-termination with a trust list, adds to each {:axiom} finding whether the trust list
+  /// admits it as a premise of a library record, and if not, why.  Audit never hides a premise.
+  /// </summary>
+  private Func<Assumption, Assumption>? TrustAnnotation(Program program) {
+    var trustList = ModularTerminationTrustList.Selected(program.Options);
+    if (trustList == null) {
+      return null;
+    }
+    IReadOnlyDictionary<MemberDecl, ModularTerminationPremise> premises = new Dictionary<MemberDecl, ModularTerminationPremise>();
+    string? unavailable = null;
+    if (program.AfterParsingClone == null || program.Options.Get(CommonOptionBag.UserDefinedOperators)) {
+      unavailable = "its retained program is not available";
+    } else {
+      var programText = new DooFile(program.AfterParsingClone).ProgramText;
+      var (evaluation, error) = ModularTerminationTrustList.Evaluation.Compute(program, programText,
+        new Uri("transcript:///modular-termination-audit.dfy")).GetAwaiter().GetResult();
+      if (evaluation == null) {
+        unavailable = $"its retained program does not parse: {error}";
+      } else {
+        premises = evaluation.Premises;
+      }
+    }
+    var option = $"--modular-termination-trust:{trustList}";
+    return assumption => {
+      if (assumption.desc != AssumptionDescription.HasAxiomAttribute) {
+        return assumption;
+      }
+      string note;
+      if (assumption.decl is MemberDecl member && premises.TryGetValue(member, out var premise)) {
+        note = ModularTerminationTrustList.Evaluation.Mismatch(program.Options, premise) is { } mismatch
+          ? $"Under {option}, {mismatch}, so it refuses a library record."
+          : $"Under {option}, the trust list admits it as the trusted premise {premise.Id} ({premise.Kind}{GlobalNote(premise.Kind)}).";
+      } else if (unavailable != null && ModularTerminationTrustList.CandidateId(assumption.decl) is { } id &&
+                 ModularTerminationTrustList.Find(trustList, id) != null) {
+        note = $"Under {option}, its digests cannot be computed: {unavailable}.";
+      } else {
+        note = $"Under {option}, it is not on the trust list, so it refuses a library record.";
+      }
+      return assumption with { desc = assumption.desc with { Issue = assumption.desc.Issue + " " + note } };
+    };
+  }
+
   private static Regex TableRegex = new Regex(@"\{\{TABLE\}\}\r?\n");
 
   private string GenerateHtmlReport(AuditReport report) {
@@ -118,7 +166,7 @@ public class Auditor : IRewriter {
   }
 
   internal override void PostResolve(Program program) {
-    var report = AuditReport.BuildReport(program);
+    var report = AuditReport.BuildReport(program, TrustAnnotation(program));
 
     if (reportFileName is null && reportFormat is null) {
       foreach (var (_, assumptions) in report.AllAssumptions()) {
@@ -155,6 +203,13 @@ public class Auditor : IRewriter {
     }
 
     var findingCount = report.AllAssumptions().SelectMany(d => d.Value).Count();
+    // Under --modular-termination, the trusted premises recorded by the admitted libraries.
+    foreach (var (library, trustList, premise) in program.Compilation.ModularTerminationPremises) {
+      Reporter.Warning(MessageSource.Verifier, "", Token.Cli,
+        $"{library}: the library relies on the trusted premise {premise.Id} ({premise.Kind}{GlobalNote(premise.Kind)}) " +
+        $"of the {trustList} trust list, admitted under --modular-termination-trust:{trustList}");
+      findingCount++;
+    }
     _ = Options.OutputWriter.Status($"Dafny auditor completed with {findingCount} findings");
   }
 }

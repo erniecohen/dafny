@@ -392,7 +392,100 @@ comparison for migration and comparison only. It applies to ordinary and modular
 checks; `--modular-termination` itself remains opt-in. The repair is described in
 https://github.com/erniecohen/dafny/issues/264.
 
-#### 7.1.3.1. Global bounds: `decreases {:global}` (experimental) {#sec-global-decreases}
+#### 7.1.3.1. Well-founded orders: `decreases e by O` (experimental) {#sec-decreases-by}
+
+With the option `--decreases-orders` (off by default), a component of the
+`decreases` clause of a function, method or loop may name the well-founded order
+that compares it: `decreases e by O`. The option needs `--type-system-refresh`
+and `--general-traits=datatype` (or `full`), and loads the standard library's
+module `Std.Termination.Orders`. `O` must have exactly its trait type
+`Std.Termination.Orders.Wfo<T>`, and `e` must have exactly the type `T`. A value
+of `Wfo<T>` has a relation `gt(x, y)` (`x` is greater than `y`) and a member
+`aha` whose postcondition proves `gt` well-founded: every infinite sequence `c`
+of values of `T` has an `n` with `!gt(c(n), c(n + 1))`. For the component, the
+strict relation is `O.gt(old, new)`, where `old` is the value of `e` for the
+caller (or at the start of the loop iteration) and `new` is its value for the
+callee (or at the end of the iteration), and the weak relation is equality. The
+component then takes part in the tuple comparison above like any other.
+
+`O` must be closed: it may not mention local variables, parameters, `this` or
+the heap, so that caller and callee see the same order. A call between two
+callables compares a component by an order only if both clauses give that
+component the same order. A callable with a component `e by O` is treated as
+calling `Wfo.gt` and `Wfo.aha`, as a function is treated as calling what its
+`requires` clauses call. Those implied calls have no arguments that could
+decrease, so the callable must not be mutually recursive with `gt`, `aha` or
+any override of them. A component with an order is not allowed in the
+`decreases` clause of an iterator, or with `--legacy-decreases-order`.
+
+To build an order, prove the relation well-founded and pass it to
+`Std.Termination.Orders.Of`, whose postcondition says that the order's `gt` is
+the relation:
+
+<!-- %check-verify %options --standard-libraries --type-system-refresh --general-traits=datatype --decreases-orders -->
+```dafny
+import opened Std.Termination.Orders
+
+ghost predicate Up(x: nat, y: nat) { x < y <= 100 }
+
+lemma UpWellFounded() ensures wellFounded<nat>(Up) {
+  forall c: Chain<nat> ensures stops<nat>(Up, c) {
+    if forall n: nat :: Up(c(n), c(n + 1)) {
+      Climbs(c, 101);
+      assert Up(c(101), c(102));
+    }
+  }
+}
+
+lemma Climbs(c: Chain<nat>, n: nat)
+  requires forall k: nat :: Up(c(k), c(k + 1))
+  ensures c(n) >= n
+{
+  if n > 0 { Climbs(c, n - 1); }
+}
+
+ghost function UpOrder(): Wfo<nat> { UpWellFounded(); Of(Up) }
+
+function CountUp(i: nat): nat
+  requires i <= 100
+  decreases i by UpOrder()
+{
+  if i == 100 then 0 else 1 + CountUp(i + 1)
+}
+```
+
+A datatype of another module may also implement `Wfo<T>` itself, giving `gt`
+and proving `aha`. Like any type that extends a trait of another module, it
+must then be marked `{:AssumeCrossModuleTermination}`, which `dafny audit`
+reports as an assumption.
+
+Under `--modular-termination`, a component `e by O` may also appear in a
+`decreases {:global}` or `decreases {:callback g}` bound ([global
+bounds](#sec-global-decreases)). Such a bound compares components by `O` as an
+ordinary clause does. That option does not load the bundled standard library,
+but it does load the orders library, and that library is verified together with
+the program that uses it rather than trusted. The bound must not reach open
+dispatch, and that includes the code of `O`:
+
+* An order used in the bounds of another module must be built by a function
+  marked `{:termination_closed}`, such as
+  `ghost function {:termination_closed} UpOrder(): Wfo<nat>`. The library's `Of`,
+  `WfoOf`, `wellFounded` and `stops` count as applications of the relations and
+  chains that they are given.
+* The well-foundedness proof must bind each chain with a quantifier, as in
+  `forall c: Chain<nat> ensures ...` or
+  `ensures forall c: Chain<nat> :: ...`, not take it as a lemma parameter. This
+  is the _binder rule_ described with global bounds. The example above passes
+  `c` to `Climbs` as a parameter, so under `--modular-termination` its `Climbs`
+  would instead state `ensures forall c: Chain<nat> :: (forall k: nat ::
+  Up(c(k), c(k + 1))) ==> c(n) >= n`.
+* The `aha` of a user implementation of `Wfo` applies its chain parameter, so
+  that code is not known. A bound with an order then reaches it, and the bound
+  is rejected. Build orders with `Of` instead.
+
+The design is described in https://github.com/erniecohen/dafny/issues/245.
+
+#### 7.1.3.2. Global bounds: `decreases {:global}` (experimental) {#sec-global-decreases}
 
 The module and call-graph components that Dafny prepends to a decreases tuple order only
 the calls that some module can see.  A call to a bodyless member of a trait is dispatched
@@ -606,14 +699,20 @@ Inside a lambda expression, the bound of the member it belongs to is the value o
 also where the lambda's body is checked in a heap of its own.
 
 The intended composition argument combines outer-bound descent with the ordinary termination
-discipline. The option remains experimental: the separate comparison repair and checked-library
-admission work must complete before it establishes termination of every accepted composition.
+discipline. The option remains experimental: the separate comparison repair and the remaining
+library-openness work must complete before it establishes termination of every accepted composition.
 
 A global bound, and a callback bound, may only use code that cannot reach a dispatched call: the
 functions and methods it calls, the constants it reads, the types it mentions (their constraints,
 witnesses and component defaults) and the function values it applies must reach none, directly or
 through the code they call in turn, and a function value whose code is not known counts as reaching
-one. Across imports, the supporting operations must publish `{:termination_closed}`; a hidden
+one. The exception is the _binder rule_ (https://github.com/erniecohen/dafny/issues/245). An application `c(x)` calls nothing
+when `c` is a variable of a total arrow type `A -> B` (not `A --> B` or `A ~> B`) that is bound by a
+`forall` or `exists` expression, or by a `forall` statement in ghost code. Such a variable ranges over
+every function of its type, and all of those exist before the code that mentions them, so the
+application is a formula over them, not a call through a value that the program computed. The rule does
+not cover parameters, locals, fields, results or lambda expressions bound to a variable, and it does not
+let such a variable be passed for a parameter with a callback bound. Across imports, the supporting operations must publish `{:termination_closed}`; a hidden
 leaf body is insufficient. The value of a bound is the measure that these rules decrease, so it must not be computed by the
 code whose termination they establish.  Before this rule, the program below verified, `assert false`
 included, and when run it overflowed the stack:
@@ -675,6 +774,89 @@ It also rejects some programs that terminate:
   program that reaches Dafny through another front end, serialized, keeps them as ordinary decreases
   clauses with argument-less `{:global}` attributes or one-argument `{:callback g}` attributes.
 
+Under the option, a library is admitted only as a `.doo` file built with
+`dafny build --target:lib --modular-termination`. Such a build writes a termination record into the
+library: a hash of its program, of the build of Dafny that verified it (its Dafny and Boogie
+assemblies and the prelude file it read), and of the options that change what a proof means (each also
+listed by name), the version and a hash of the Z3 binary that verified it, and the termination contract
+of each module it defines. A contract is the module's interface: its declarations with the bodies of methods, lemmas,
+iterators and by-method implementations left out; function bodies stay, since a client may reveal them.
+The record also lists the contracts of the libraries the build was verified against, and ends with a
+hash of the whole record. The build writes a library only when its whole program was verified, every
+verification task conclusively, without `--no-verify`, `--boogie` arguments, `{:verify false}`, `{:only}`,
+`decreases *` or included files that were not verified, and without unchecked premises. These are
+every assumption that `dafny audit` reports in the library's own files (such as `assume` statements,
+`{:axiom}`, `{:extern}` members with contracts, `@AssumeCrossModuleTermination`, `forall` statements
+and loops without a body, and bodyless members with a postcondition), together with `assume` anywhere in
+the program, members without a body other than instance members of traits and members of abstract
+modules, `{:extern}` members, and `--allow-axioms`. Only one assumption that `dafny audit` reports is
+accepted: `{:termination false}` on a trait, which under the option is checked against the global
+bounds. The reveal lemma that Dafny generates for an opaque function states the function's definition
+and is not an assumption; it is recognised as the lemma Dafny generated, not by its attributes. The
+attributes `{:auto_generated}` and `{:opaque_reveal}`, which mark declarations that Dafny generates, may
+not be written in a library's sources. Iterators are not yet supported: `dafny audit` reports the members
+that Dafny generates for an iterator as axioms, and the build refuses a library that declares one. The
+build reports the first of these it finds and writes nothing. `--allow-warnings` does not hide them; it is
+recorded with the other options.
+
+Under the option, a module cannot refine or replace a module of a library: it would inherit bodies
+that are not part of the library's contracts, so a change to them would not be detected.
+
+Under the option, `--boogie` arguments are refused, both when a library is built and when one is loaded:
+many of them (such as `/loopUnroll`, `/noVerify`, `/proc` and some `/proverOpt` settings) can make a
+program verify that is not proved. Only arguments on a reviewed list of ones that cannot weaken a proof
+are allowed, and that list is empty for now. The options are recorded with their values as given. Two libraries that both declare
+top-level members outside any module, in the default module, cannot be loaded together, since both
+provide the module `_default`.
+
+When a program loads such a library under the option, Dafny recomputes these hashes and the contracts
+from the library's program, and rejects the library, naming the mismatch, when any differs: its program,
+its contracts, its record (missing, incomplete, of an unknown format or not matching its own hash), the
+build of Dafny or its prelude, the Z3 binary that the current run uses (the library must be checked
+with the same one; every command that loads libraries, `dafny resolve`, `dafny audit`, `dafny doc`,
+`dafny extract` and `dafny format` included, takes `--solver-path` to name it), or an option whose value differs from the current one. A library verified against another must be loaded
+with it, and with one that provides the same contracts: a dependency whose method bodies changed is
+accepted, and one whose contracts changed is rejected. Under the option, Dafny also rejects a source
+file given with `--library`, a `.dll` library and the bundled standard library, which carry no record;
+`--standard-libraries:false` leaves the standard library out. In its place, the part of the standard
+library that verifies with no unchecked premise can be built as a recorded library from
+`Source/DafnyStandardLibraries/modular-termination` and loaded with `--library`; its `README.md` lists the
+modules it leaves out and why. Without the option, a library built with
+it is rejected, so that its record is never ignored; libraries built without the option are read as
+before.
+
+The record certifies the program stored in the library, which is the program Dafny parsed from the
+library's sources, printed back. After verifying the sources, the build checks that the stored program
+parses and prints back to the same text, then parses, resolves and verifies the stored program again,
+with the same libraries and options, and takes its assumption check, its inventory of verified
+implementations, its contracts and its imports from that program. The library is written only when
+that second verification is also complete and conclusive, so a difference between the printed and the
+verified program cannot reach a record. The second verification roughly doubles the verification cost
+of a library build.
+
+The record shows that the library was built by this build of Dafny, from this program, under these
+options; it is checked, not signed, so a library whose record was rewritten as a whole, with every hash
+recomputed, is trusted like any other input of the build.
+
+A library may also record named trusted premises, with the option
+`--modular-termination-trust:standard-library` (the default is `none`, under which nothing changes).
+Dafny compiles in one trust list, `standard-library`: 18 `{:axiom}` lemmas of the
+standard library's `Axioms`, `Ordinal` and `Strings` modules, each with a reviewed reason and with
+digests of its statement and of its context (the contracts of the modules it can see). Under the option,
+a build accepts an `{:axiom}` declaration only when it is an entry of the list and both digests match,
+records each such premise in the library, and says in its verification summary how many trusted premises
+its results assume; every other assumption is refused as before. A client admits a library that records
+premises only when it selects the same list, and then reports them in its own summary and in
+`dafny audit`. Every entry is a lemma, so its conclusion enters a proof only where it is called. The project
+`Source/DafnyStandardLibraries/modular-termination/trusted` builds the standard-library core together with
+`Axioms`, `RealCompleteness`, `Ordinal` and `Strings`, and its record lists all 18 premises.
+
+A module of the library may refine another one that has opaque functions: the copies that the
+refinement makes of the reveal lemmas Dafny generates for them are generated too, and their
+`{:verify false}` is not refused. The library may also declare an `opaque const`: the reveal lemma
+Dafny generates for it states the constant's definition and has no body, and it is not counted as a
+premise, nor are the copies a refinement makes of it.
+
 Before milestone M4a, a bound could call code that reaches a dispatched call, and a program could
 prove `false` through it, as in the example above; the rule for bounds closes that.
 
@@ -693,6 +875,33 @@ the global bound `n` and the ordinary decreases clause `7`.
 
 Without the option, `decreases {:global} E` is an ordinary decreases clause with an
 unknown attribute, as before.
+
+#### 7.1.3.3. Bounded callables: `bounded<O, F>` (experimental) {#sec-bounded-callables}
+
+Under `--modular-termination`, the system module declares the type `bounded<O, F>` of a
+_bounded callable_: a function value of the arrow type `F` together with persistent evidence that
+every call of it terminates below a ghost bound in the order `O`
+(https://github.com/erniecohen/dafny/issues/266). This version provides the type only. There is no
+way yet to form a value of it, apply one, or project its bound or its function, and each of these is
+a resolution error. So for now the type can appear only in signatures, fields and data that pass
+values along.
+
+- The order `O` is `nat` or `ORDINAL`, or a type synonym for one of them, with its built-in order.
+  `O` is non-variant: `bounded<nat, F>` and `bounded<ORDINAL, F>` are unrelated.
+- The payload `F` is an arrow type: `A ~> B`, `A --> B` or `A -> B`. A bounded type has exactly the
+  subtyping of its payload, so `bounded<nat, int -> nat>` is a subtype of
+  `bounded<nat, int -> int>`, which is a subtype of `bounded<nat, int --> int>`. A conversion the
+  other way is a subset-type check that cannot be proved.
+- A bounded type has no compiled equality, no default value and is not known to be nonempty. It
+  cannot be the element type of a compiled set or the argument of a `(0)` or `(00)` type
+  parameter. Definite assignment applies to its variables and fields. Ghost equality is allowed.
+- The compilers erase `bounded<O, F>` to `F`, with no wrapper and no run-time cost.
+- A function value that reads the heap cannot be stored in a field. This rule applies to a
+  `bounded<O, A ~> B>` field too.
+
+`bounded` is a contextual name. A module that declares a type named `bounded`, or opens an import
+that declares one, uses that declaration instead. Without the option the name is not declared,
+and programs are compiled and verified exactly as before.
 
 ### 7.1.4. Framing ([grammar](#g-frame-expression)) {#sec-frame-expression}
 

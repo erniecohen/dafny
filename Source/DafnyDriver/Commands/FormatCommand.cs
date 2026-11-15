@@ -26,7 +26,7 @@ public static class FormatCommand {
   public static IEnumerable<Option> Options => new Option[] {
     CheckOption,
     FormatPrint,
-  }.Concat(DafnyCommands.ParserOptions);
+  }.Concat(DafnyCommands.ParserOptions).Concat(DafnyCommands.LibraryAdmissionOptions);
 
   public static readonly Option<bool> CheckOption = new("--check", () => false, @"
 Instead of formatting files, verify that all files are already

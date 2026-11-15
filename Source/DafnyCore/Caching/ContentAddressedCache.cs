@@ -5,7 +5,7 @@ using System.Text.Json;
 
 namespace Microsoft.Dafny.Caching;
 
-internal enum CacheTable { Translation, VerificationResult, SolverIdentity }
+internal enum CacheTable { Translation, VerificationResult, SolverIdentity, ImageDigest }
 internal enum CachePublication { Stored, AlreadyPresent, Unavailable, Conflict }
 
 /// <summary>
@@ -187,6 +187,7 @@ internal sealed class ContentAddressedCache {
     CacheTable.Translation => "translations",
     CacheTable.VerificationResult => "results",
     CacheTable.SolverIdentity => "solver-identities",
+    CacheTable.ImageDigest => "image-digests",
     _ => throw new ArgumentOutOfRangeException(nameof(table))
   };
 

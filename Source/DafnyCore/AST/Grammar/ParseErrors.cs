@@ -144,7 +144,8 @@ public class ParseErrors {
     p_decreases_without_to,
     p_binding_in_decreases_to,
     p_ghost_in_decreases_to,
-    p_needs_referrers
+    p_needs_referrers,
+    p_decreases_order_needs_option
   }
 
   static ParseErrors() {
@@ -820,6 +821,14 @@ is legal, but not at all recommended.
       OneAction("replace with 'to'", range, "to", false),
       OneAction("replace with 'downto'", range, "downto", false)
     ]);
+
+    Add(ErrorId.p_decreases_order_needs_option,
+    @"
+A component `e by O` of a `decreases` clause compares `e` by the well-founded order `O`,
+a value of the trait `Std.Termination.Orders.Wfo<T>` from the standard library.
+It requires the options `--decreases-orders`, `--type-system-refresh` and `--general-traits=datatype` (or `full`),
+and it cannot be given to `*`.
+".TrimStart());
 
     Add(ErrorId.p_no_decreases_expressions_with_star,
     @"

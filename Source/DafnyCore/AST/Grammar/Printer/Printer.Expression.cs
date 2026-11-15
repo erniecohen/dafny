@@ -1542,6 +1542,12 @@ namespace Microsoft.Dafny {
           wr.Write(")");
         }
 
+      } else if (expr is DecreasesByExpr decreasesByExpr) {
+        // "e by O" occurs only as a whole component of a decreases clause
+        PrintExpr(decreasesByExpr.E, 0, false, false, false, indent);
+        wr.Write(" by ");
+        PrintExpr(decreasesByExpr.Order, 0, false, isRightmost, isFollowedBySemicolon, indent);
+
       } else if (expr is ParensExpression) {
         var e = (ParensExpression)expr;
         // printing of parentheses is done optimally, not according to the parentheses in the given program

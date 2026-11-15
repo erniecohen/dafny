@@ -466,7 +466,13 @@ public partial class BoogieGenerator {
     GetObjFieldDetails(lhs, prevEtran, out var obj, out var field);
     var xHeapOF = ReadHeap(tok, etran.HeapExpr, obj, field);
 
-    g = BoxIfNotNormallyBoxed(rhs.Origin, g, rhs.Type);
+    // The heap stores a value whose Boogie type is Box, an ORDINAL among them, as
+    // it is (see "UpdateHeap" and the field reads in the expression translator).
+    // "ApplyBox" alone looks only at the Boogie expression, and boxed an ORDINAL
+    // right-hand side such as "o + 1" (https://github.com/erniecohen/dafny/issues/363).
+    if (!ModeledAsBoxType(rhs.Type) && !IsBoxTypedWithoutBeingBoxed(rhs.Type)) {
+      g = ApplyBox(rhs.Origin, g);
+    }
 
     Bpl.Trigger tr = null;
     var argsEtran = etran.WithNoLits();

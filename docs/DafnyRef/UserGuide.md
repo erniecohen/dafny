@@ -308,12 +308,28 @@ Various options control the verification process, in addition to all those descr
   declaration hashes for each task. The enabled session supersedes a legacy
   `/deterministicLiteralHashes:0` override; disabling the cache preserves that setting. Unchanged complete solver inputs, execution options, ordered type
   inputs, and solver/runtime dependency bytes can reuse a completed result.
-  Valid results are reusable with a time limit; errors and resource exhaustion
-  require a positive resource limit and no elapsed-time limit. Replayed JSON
+  The resource limit is not part of the key. Each result keeps the resource use
+  `u` the solver reported and the limit `L` it was produced under, and a run with
+  limit `L'` reuses it only where a fresh run would give the same verdict and
+  resource count: a valid
+  result when there is no limit or `L' >= u`; errors when `L' >= u` (or, if the
+  solver stopped at its limit while searching for them, only when `L' = L`); and
+  resource exhaustion at `L` only when `L' = L`. Errors and resource exhaustion
+  require a positive resource limit; under an elapsed-time limit only valid
+  results are reused, and the time limit is part of the key. Replayed JSON
   timing fields carry `timingReplayed: true`; CSV adds `TimingReplayed`. Durations
   describe the current invocation, not a new solver measurement. Unsupported
   execution profiles run normally. The initial native profile supports macOS
   and Linux; custom loading environments and solver launcher scripts bypass.
+  Paths under Dafny's own installation, the .NET runtime and the solver's
+  directory enter the key as placeholders, so the same build in another directory
+  or on another machine reuses the cache; the bytes of every image are still
+  hashed into the key. Each image's digest is remembered in `DIR` under its
+  absolute path, size, modification and status-change times, device and inode,
+  and is recomputed when any of these differ or the entry is unreadable. This is
+  weaker than hashing the bytes on every run: a rewrite that kept all of these
+  would be missed. An ordinary process cannot set the status-change time, and the
+  images are read-only system files and build outputs, so the cache relies on it.
   Only trusted local writers may share a cache. Remove `DIR/v1` to evict it;
   there is no automatic disk eviction. This option is off by default and can
   also be set in `dfyconfig.toml`.
@@ -333,6 +349,22 @@ Various options control the verification process, in addition to all those descr
   to 256 entries and 512 MiB of retained text; graph memory is additional.
   Modular termination, counterexample extraction and unsupported graph metadata
   recompute through the default materialization path.
+
+- `--boogie /cacheBackground` is an opt-in Boogie option
+  ([#241](https://github.com/erniecohen/dafny/issues/241)). When a split has the
+  same pruned declarations, in the same order, and the same random seed, type
+  encoding types and SMT options as the context its prover holds, the prover
+  restarts that context instead of setting it up again: it resends the commands
+  that set it up, without translating, erasing and printing the declarations
+  again. Each solver gets the same commands, in the same order, as without the
+  option, so verdicts and resource counts do not change. The separate opt-in
+  `--boogie /scheduleByImplementation` lets an implementation's splits run one
+  after the other on one prover, so that more contexts are restarted; it changes
+  which solver process verifies which split, and after which others, so resource
+  counts can differ from a run without it. Pass both with
+  `--boogie "/cacheBackground /scheduleByImplementation"`. A program that uses
+  `--standard-libraries` cannot pass them yet, because the library refuses
+  `--boogie` options other than its own.
 
 - What is verified
    - `--verify-included-files` (when enabled, all included files are verified, except library files, otherwise just those files on the command-line)
@@ -2372,17 +2404,18 @@ or the Dafny 4 syntax (`ghost function` and `function`)
   section.
 
 * `--conservative-match-inference` - with the refreshed type system
-  (`--type-system-refresh`), infer the type of the source of a `match` by
-  propagating the constraints already known before making any default type
+  (`--type-system-refresh`), infer the type of the source of a `match`, and
+  decide whether an identifier in a pattern is a constructor or a bound variable,
+  by propagating the constraints already known before making any default type
   decision. Without it, resolving a `match` whose source type is not yet known can
   give an earlier integer literal its default type `int` before the enclosing
   context, such as a function's declared result type, is seen; for example,
   `if x == 0 then Some(0) else var d := foo(x); match d ...` in a function whose
-  result type is `Option<int32>` is then rejected. Disabled by default, and it has
-  no effect on the legacy resolver. Use `conservative-match-inference = true` in a
-  project file's `[options]` section; `--conservative-match-inference:false`
-  overrides that setting. See the [match expression](#sec-match-expression) for
-  what it does not fix.
+  result type is `Option<int32>` is then rejected. Enabled by default;
+  `--conservative-match-inference:false` restores the earlier inference, and
+  `conservative-match-inference = false` does the same in a project file's
+  `[options]` section. It has no effect on the legacy resolver. See the
+  [match expression](#sec-match-expression) for what it does not fix.
 
 * `--ancestor-qualified-module-ids` - let a `refines` clause or `import` whose
   qualified module name starts with modules that enclose it, as in
@@ -2404,6 +2437,15 @@ or the Dafny 4 syntax (`ghost function` and `function`)
   `synonym-refines-abstract-type = true` in a project file's `[options]` section. See
   [type refinement](#sec-module-refinement).
 
+* `--decreases-orders` - (experimental) accept a decreases component `e by O`, where `O`
+  is a closed ghost expression of the standard library's trait type
+  `Std.Termination.Orders.Wfo<T>` and `e` has type `T`. A call or loop iteration must make
+  `O.gt(old e, e)` true, or leave `e` unchanged. Requires `--type-system-refresh` and
+  `--general-traits=datatype` (or `full`). With `--modular-termination`, such components are
+  also allowed in `{:global}` and `{:callback}` bounds, and the orders library is loaded and
+  verified with the program. Disabled by default. Use `decreases-orders = true` in a project file's
+  `[options]` section. See [well-founded orders](#sec-decreases-by).
+
 * `--modular-termination` - (experimental; it does not yet establish termination in every
   program) accept `decreases {:global}` clauses, and reject a call dispatched to a
   bodyless member of a trait whose implementations may lie in other modules unless it
@@ -2419,7 +2461,8 @@ or the Dafny 4 syntax (`ghost function` and `function`)
   global or callback bound may only use code that cannot reach such a dispatched call. With `--show-hints`, it
   reports every call that needs one of the rules. Disabled by default. Use
   `modular-termination = true` in a project file's `[options]` section. See
-  [global bounds](#sec-global-decreases) for the rules and their limits.
+  [global bounds](#sec-global-decreases) for the rules and their limits. The option also declares the type
+  `bounded<O, F>` of [bounded callables](#sec-bounded-callables).
 
 Legacy options:
 
@@ -2634,6 +2677,9 @@ and what information it produces about the verification process.
   For a source lambda with a declared precondition, it also exposes the necessary
   direction of that precondition under the lambda's type, allocation and heap
   requirements. This applies to stored and returned lambda values.
+  An application of a function stored in a field of type `A -> T` of an inductive
+  datatype value, or of type `A --> T` where its precondition holds, is also
+  strictly below that value in the termination order.
   See [the soundness, trigger and solver-limit note](../dev/additional-axioms.md).
 
 * `--heap-free-lambda-facts` - check a lambda without a reads clause, whose
@@ -2662,6 +2708,20 @@ and what information it produces about the verification process.
   if-then-else expressions. Disabled by default;
   `statement-expression-conclusions = true` in a project file's `[options]`
   section. It can change proof costs.
+
+* `--trait-rank-decreases` - in `decreases` clauses, order the values of a
+  trait that is not a reference type (one that does not extend `object`) by
+  structural rank, together with inductive datatypes and sequences. A
+  datatype that extends such a trait can then call a trait member on one of
+  its trait-typed fields: `decreases this` of the datatype is compared with
+  `decreases this` of the trait member, and two values of the trait can be
+  compared with each other. That a trait-typed field of an inductive datatype
+  value is below that value is an axiom of `--additional-axioms`, so most
+  programs need both options. Trait members without a `decreases` clause
+  still get no inferred `decreases this`; write it. No effect with
+  `--legacy-decreases-order`. Disabled by default;
+  `trait-rank-decreases = true` in a project file's `[options]` section. See
+  [the design note](../dev/design/317-datatype-trait-decreases.md).
 
 * `--manual-lemma-induction` - disables automatic inducntion for lemmas
 

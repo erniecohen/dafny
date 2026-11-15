@@ -1289,10 +1289,11 @@ body of any match alternative; they may also be needed for disambiguation if
 there are nested match expressions.
 
 With `--type-system-refresh`, the resolver must know the type of the selector
-when it resolves the patterns. If the selector's type is not yet known, it solves
-the type constraints collected so far, and that solve also gives any pending
-literal its default type, such as `int` for an integer literal, even one in an
-earlier branch whose type the enclosing context would later fix. So in
+when it resolves the patterns. With `--conservative-match-inference:false`, if the
+selector's type is not yet known, it solves the type constraints collected so far,
+and that solve also gives any pending literal its default type, such as `int` for
+an integer literal, even one in an earlier branch whose type the enclosing context
+would later fix. So in
 <!-- %no-check -->
 ```dafny
 newtype int32 = x: int | -0x8000_0000 <= x <= 0x7fff_ffff
@@ -1307,21 +1308,24 @@ function goo(x: int32): Option<int32> {
 }
 ```
 the first `Some(0)` becomes an `Option<int>`, and the body is rejected. With
-`--conservative-match-inference`, the resolver first tries to determine the
-selector's type by propagation alone, without default decisions; here that gives
-`d` the type `Option<int32>`, and the first `0` then takes the type `int32` from
-the declared result type. Only if propagation leaves the selector's type unknown
-does the resolver make default decisions, as it does without the option. The
-option adds and removes no type constraint: a value whose type is already `int`,
-another newtype, or `bool` is still rejected, and a literal's type does not prove
-that its value satisfies the newtype's constraint, which is still checked by the
-verifier.
+`--conservative-match-inference`, which is on by default, the resolver first tries
+to determine the selector's type by propagation alone, without default decisions;
+here that gives `d` the type `Option<int32>`, and the first `0` then takes the
+type `int32` from the declared result type. In the same way, an identifier without
+arguments in a pattern, such as the `n` of `Some(n)`, is a bound variable when
+propagation shows that the type it matches is not a datatype, for example when
+the selector is `Some(0)`, so `var d := Some(0); match d case Some(n) => ...` no
+longer fixes the type of an earlier literal either. Only if propagation leaves the
+type unknown does the resolver make default decisions, as it does with
+`--conservative-match-inference:false`. The option adds and removes no type
+constraint: a value whose type is already `int`, another newtype, or `bool` is
+still rejected, and a literal's type does not prove that its value satisfies the
+newtype's constraint, which is still checked by the verifier.
 
-The option does not help when the selector's type itself needs a default
-decision, because that decision is made for the earlier literal too: for example,
-when the selector is a constructor application whose argument type is not yet
-known (`var d := Some(0); match d`). In such cases, annotate the selector or the
-earlier literal, for example `Some(0 as int32)`.
+The option does not help when the type at a pattern is still unknown after
+propagation and nothing known about it excludes a datatype, because the default
+decisions made then apply to the earlier literal too. In such cases, annotate the
+selector or the earlier literal, for example `Some(0 as int32)`.
 
 ### 9.31.4. Quantifier Expression ([grammar](#g-quantifier-expression)) {#sec-quantifier-expression}
 

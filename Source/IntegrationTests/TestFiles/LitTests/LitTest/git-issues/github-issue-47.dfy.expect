@@ -1,0 +1,30 @@
+legacy run
+
+Dafny program verifier finished with 5 verified, 0 errors
+true false true true true false
+refreshed run
+
+Dafny program verifier finished with 5 verified, 0 errors
+true false true true true false
+negative controls (legacy)
+github-issue-47-negative.dfy(14,9): Error: arguments must have comparable types (got (int, Integer) and (bool, Number))
+github-issue-47-negative.dfy(19,9): Error: arguments must have comparable types (got (Left, Both) and (Right, Both))
+github-issue-47-negative.dfy(24,9): Error: arguments must have comparable types (got Box<(Number, Integer)> and Box<(Integer, Number)>) (covariant type parameter 1 would require Number <: Integer)
+github-issue-47-negative.dfy(27,9): Error: arguments must have comparable types (got Cell<Number> and Cell<Integer>)
+github-issue-47-negative.dfy(32,9): Error: arguments must have comparable types (got Pair<Box<Number>, Integer> and Pair<Box<Integer>, Number>)
+github-issue-47-negative.dfy(30,36): Error: RHS (of type Pair<Box<Integer>, Integer>) not assignable to LHS (of type Pair<Box<Number>, Integer>) (covariance for type parameter at index 0 expects Box<Number> :> Box<Integer>) (non-variant type parameter would require Number = Integer)
+github-issue-47-negative.dfy(37,9): Error: arguments must have comparable types (got (Number, Integer) and (Integer, Number, Number))
+7 resolution/type errors detected in github-issue-47-negative.dfy
+negative controls (refreshed)
+github-issue-47-negative.dfy(14,9): Error: arguments must have comparable types (got (int, Integer) and (bool, Number))
+github-issue-47-negative.dfy(19,9): Error: arguments must have comparable types (got (Left, Both) and (Right, Both))
+github-issue-47-negative.dfy(24,9): Error: arguments must have comparable types (got Box<(Number, Integer)> and Box<(Integer, Number)>)
+github-issue-47-negative.dfy(27,9): Error: arguments must have comparable types (got Cell<Number> and Cell<Integer>)
+github-issue-47-negative.dfy(32,9): Error: arguments must have comparable types (got Pair<Box<Number>, Integer> and Pair<Box<Integer>, Number>)
+github-issue-47-negative.dfy(37,9): Error: arguments must have comparable types (got (Number, Integer) and (Integer, Number, Number))
+6 resolution/type errors detected in github-issue-47-negative.dfy
+false control
+github-issue-47-false.dfy(10,2): Error: assertion might not hold
+github-issue-47-false.dfy(17,2): Error: assertion might not hold
+
+Dafny program verifier finished with 0 verified, 2 errors

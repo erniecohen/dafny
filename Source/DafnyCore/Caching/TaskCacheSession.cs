@@ -35,6 +35,9 @@ public sealed class TaskCacheSession {
   public long Publications => Interlocked.Read(ref publications);
   public long Fallbacks => Interlocked.Read(ref fallbacks);
   public long Conflicts => Interlocked.Read(ref conflicts);
+  /// <summary>Execution images whose bytes this process hashed, and whose digests it took from the memo.</summary>
+  public static int ImagesHashed => ExecutionImageIdentity.ImagesHashed;
+  public static int ImageDigestsRemembered => ExecutionImageIdentity.ImageDigestsRemembered;
   public string? LastBypassReason { get; internal set; }
   private readonly TaskExecutionEnvironment environment;
 

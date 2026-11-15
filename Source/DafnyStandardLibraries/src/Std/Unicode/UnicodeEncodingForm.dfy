@@ -130,6 +130,7 @@ abstract module Std.Unicode.UnicodeEncodingForm {
     * Returns the unique partition of the given code unit sequence into minimal well-formed code unit subsequences,
     * or Failure(CodeUnitSeq) if no such partition exists, where the resulting sequence is the suffix it could not partition.
     */
+  @IsolateAssertions
   function PartitionCodeUnitSequenceChecked(s: CodeUnitSeq): (maybeParts: Result<seq<MinimalWellFormedCodeUnitSeq>, CodeUnitSeq>)
     ensures maybeParts.Success? ==> Seq.Flatten(maybeParts.Extract()) == s
     decreases |s|

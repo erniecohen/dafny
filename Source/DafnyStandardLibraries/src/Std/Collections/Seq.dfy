@@ -1051,12 +1051,42 @@ module Std.Collections.Seq {
       assert multiset(ys) == multiset{};
       assert ys == [];
     } else {
+      SortedUniqueHead(xs, ys, R);
       assert xs == [xs[0]] + xs[1..];
       assert ys == [ys[0]] + ys[1..];
       assert multiset(xs[1..]) == multiset(xs) - multiset{xs[0]};
       assert multiset(ys[1..]) == multiset(ys) - multiset{ys[0]};
       assert multiset(xs[1..]) == multiset(ys[1..]);
+      LemmaSortedByTail(xs, R);
+      LemmaSortedByTail(ys, R);
       SortedUnique(xs[1..], ys[1..], R);
+    }
+  }
+
+  /* Two nonempty sequences sorted by the same total order and with the same elements have the same first element. */
+  lemma SortedUniqueHead<T(!new)>(xs: seq<T>, ys: seq<T>, R: (T, T) -> bool)
+    requires SortedBy(R, xs)
+    requires SortedBy(R, ys)
+    requires TotalOrdering(R)
+    requires multiset(xs) == multiset(ys)
+    requires xs != []
+    ensures ys != [] && xs[0] == ys[0]
+  {
+    assert xs[0] in multiset(ys);
+    assert ys[0] in multiset(xs);
+    var k :| 0 <= k < |ys| && ys[k] == xs[0];
+    var l :| 0 <= l < |xs| && xs[l] == ys[0];
+    assert R(ys[0], xs[0]) by { assert k == 0 || R(ys[0], ys[k]); }
+    assert R(xs[0], ys[0]) by { assert l == 0 || R(xs[0], xs[l]); }
+  }
+
+  lemma LemmaSortedByTail<T>(xs: seq<T>, R: (T, T) -> bool)
+    requires SortedBy(R, xs)
+    requires xs != []
+    ensures SortedBy(R, xs[1..])
+  {
+    forall i, j | 0 <= i < j < |xs[1..]| ensures R(xs[1..][i], xs[1..][j]) {
+      assert xs[1..][i] == xs[i + 1] && xs[1..][j] == xs[j + 1];
     }
   }
 
