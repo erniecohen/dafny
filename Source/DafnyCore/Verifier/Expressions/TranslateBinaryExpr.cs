@@ -74,6 +74,9 @@ public partial class BoogieGenerator {
           if (binaryExpr.E0.Type.IsIndDatatype && binaryExpr.E1.Type.IsIndDatatype) {
             return BoogieGenerator.TypeSpecificEqual(GetToken(binaryExpr), binaryExpr.E0.Type, e0, e1);
           }
+          if (BoogieGenerator.FunctionEquality(GetToken(binaryExpr), binaryExpr.E0.Type, binaryExpr.E1.Type, e0, e1) is { } funEq) {
+            return funEq;
+          }
           typ = Boogie.Type.Bool;
           bOpcode = BinaryOperator.Opcode.Eq;
           break;
@@ -95,6 +98,9 @@ public partial class BoogieGenerator {
           if (binaryExpr.E0.Type.IsIndDatatype && binaryExpr.E1.Type.IsIndDatatype) {
             var eq = BoogieGenerator.TypeSpecificEqual(GetToken(binaryExpr), binaryExpr.E0.Type, e0, e1);
             return Expr.Unary(GetToken(binaryExpr), UnaryOperator.Opcode.Not, eq);
+          }
+          if (BoogieGenerator.FunctionEquality(GetToken(binaryExpr), binaryExpr.E0.Type, binaryExpr.E1.Type, e0, e1) is { } funNeq) {
+            return Expr.Unary(GetToken(binaryExpr), UnaryOperator.Opcode.Not, funNeq);
           }
           typ = Boogie.Type.Bool;
           bOpcode = BinaryOperator.Opcode.Neq;

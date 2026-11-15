@@ -676,9 +676,18 @@ public partial class BoogieGenerator {
         boxed_func_args.Add(boxed);
       }
 
+      var handleVars = new List<Bpl.Variable>(vars);
       var h = BplBoundVar("$heap", Predef.HeapType, vars);
 
       int arity = f.Ins.Count;
+      // With domain tags (issue 374), the selectors of F#Handle hold only inside its domain.
+      Func<Bpl.Expr, Bpl.Expr> InDomain = FunctionDomainTags
+        ? body => BplImp(FunctionHandleDomainGuard(f, lhs_args), body)
+        : body => body;
+      if (FunctionDomainTags) {
+        AddFunctionHandleDomainAxiom(f, FunctionCall(f.Origin, name, Predef.HandleType, SnocSelf(SnocPrevH(args))),
+          handleVars, bvars, lhs_args);
+      }
 
       {
         // Apply(Ty.., F#Handle( Ty1, ..., TyN, Layer, self), Heap, arg1, ..., argN)
@@ -692,7 +701,7 @@ public partial class BoogieGenerator {
         var rhs_boxed = BoxIfNotNormallyBoxed(rhs.tok, rhs, f.ResultType);
 
         AddOtherDefinition(GetOrCreateFunction(f), (new Axiom(f.Origin,
-          BplForall(Concat(vars, bvars), BplTrigger(lhs), Bpl.Expr.Eq(lhs, rhs_boxed)))));
+          BplForall(Concat(vars, bvars), BplTrigger(lhs), InDomain(Bpl.Expr.Eq(lhs, rhs_boxed))))));
       }
 
       {
@@ -709,17 +718,17 @@ public partial class BoogieGenerator {
         Bpl.Expr rhs;
         if (f.EnclosingClass is ArrowTypeDecl && f.Name == "requires") {
           AddOtherDefinition(GetOrCreateFunction(f), new Axiom(f.Origin,
-              BplForall(Concat(vars, bvars), BplTrigger(lhs), Bpl.Expr.Eq(lhs, Bpl.Expr.True))));
+              BplForall(Concat(vars, bvars), BplTrigger(lhs), InDomain(Bpl.Expr.Eq(lhs, Bpl.Expr.True)))));
         } else if (f.EnclosingClass is ArrowTypeDecl && f.Name == "reads") {
           var args_h = f.ReadsHeap ? Snoc(SnocPrevH(argsRequires), h) : argsRequires;
           var pre = FunctionCall(f.Origin, Requires(arity), Bpl.Type.Bool, Concat(SnocSelf(args_h), lhs_args));
           AddOtherDefinition(GetOrCreateFunction(f), (new Axiom(f.Origin,
-            BplForall(Concat(vars, bvars), BplTrigger(lhs), Bpl.Expr.Eq(lhs, pre)))));
+            BplForall(Concat(vars, bvars), BplTrigger(lhs), InDomain(Bpl.Expr.Eq(lhs, pre))))));
         } else {
           var args_h = f.ReadsHeap ? Snoc(SnocPrevH(argsRequires), h) : argsRequires;
           rhs = FunctionCall(f.Origin, RequiresName(f), Bpl.Type.Bool, Concat(SnocSelf(args_h), rhs_args));
           AddOtherDefinition(GetOrCreateFunction(f), new Axiom(f.Origin,
-            BplForall(Concat(vars, bvars), BplTrigger(lhs), Bpl.Expr.Eq(lhs, rhs))));
+            BplForall(Concat(vars, bvars), BplTrigger(lhs), InDomain(Bpl.Expr.Eq(lhs, rhs)))));
         }
 
 
@@ -819,7 +828,9 @@ public partial class BoogieGenerator {
         var tr = BplTriggerHeap(this, f.Origin, lhs, f.ReadsHeap ? null : h);
 
         AddOtherDefinition(GetOrCreateFunction(f), (new Axiom(f.Origin,
-          BplForall(Concat(vars, func_vars), tr, Bpl.Expr.Eq(lhs, rhs_unboxed)))));
+          BplForall(Concat(vars, func_vars), tr, FunctionDomainTags
+            ? BplImp(FunctionHandleDomainGuard(f, boxed_func_args), Bpl.Expr.Eq(lhs, rhs_unboxed))
+            : Bpl.Expr.Eq(lhs, rhs_unboxed)))));
       }
 
       {
