@@ -1090,3 +1090,97 @@ trait by classes and codatatypes, is in
 [`docs/dev/design/317-datatype-trait-decreases.md`](design/317-datatype-trait-decreases.md).
 The regression is `git-issues/github-issue-317.dfy`, whose `downcast` fixture
 runs this axiom alone with an `ensures false` vacuity control.
+
+## Function domains and extensionality (#374)
+
+https://github.com/erniecohen/dafny/issues/374. A function value in the verifier
+is a handle, and its application, precondition and reads parts are defined at every
+box, not only at values of its parameter types. A lambda's application unboxes any
+box to its representation type, so two lambdas over a datatype `D` that agree on
+every `D` value still differ at a box of another datatype. Extensionality over `D`
+contradicts that and proves `false`, even if it requires the two values to have
+the same parameter type, because the existing selector axioms hold at every box.
+
+### Encoding
+
+With `--additional-axioms` (or `--function-extensionality-axiom`), in
+`BoogieGenerator.FunctionDomains.cs`:
+
+- A lambda's handle is `TagHandleN(d_1, ..., d_N, h, r, rd)`, where `d_i` is the
+  `Ty` of its i-th parameter. Its selector axioms hold only where every
+  argument `bx_i` satisfies `$IsBox(bx_i, d_i)`, and `$FunDomN(TagHandleN(...),
+  bx...) <==> $IsBox(bx_1, d_1) && ...`. A handle built by `HandleN` keeps the
+  original axioms. With the option off the translator does not emit `TagHandleN`,
+  so the Boogie program is unchanged.
+- The Apply, Requires and reverse axioms of a named function's `F#Handle` hold
+  only on its formals' types (its Reads axiom already did), and its domain is
+  stated the same way.
+- `$ExactDom1(a, f) <==> (forall bx :: $FunDom1(f, bx) <==> $IsBox(bx, a))`: the
+  domain is compared as a set of boxes, never as a `Ty` term. Distinct `Ty` terms
+  can have the same boxes: `type MyInt = x: int | true` has a tag different from
+  `TInt`, but a lambda over `MyInt` is an `int -> int`.
+- For `T` among `int`, `real`, `bool` and `ORDINAL`, `$Is(f, T -> B) ==>
+  $ExactDom1(T, f)`. In the verifier's model every box of the representation
+  type is a value of `T`, and no Dafny type has a box set that strictly contains
+  `T`'s.
+- Two declarations marked `{:functionDomain "restrict"}` and
+  `{:functionDomain "exactDom"}` get these axioms, and are checked to be static,
+  body-less ghost functions of the default class with signatures
+  `Restrict<A, B>(f: A -> B): A -> B` and `ExactDom<A, B>(f: A -> B): bool`:
+  - `$FunDom1(Restrict(A, B, f), bx) <==> $IsBox(bx, A)`, and `Restrict(A, B, f)`
+    agrees with `f` on `A` in application, precondition and reads;
+  - `$ExactDom1(A, f) ==> Restrict(A, B, f) == f`;
+  - `ExactDom(A, B, f) <==> $ExactDom1(A, f)`.
+  With the option off they are opaque functions, so a program that does not
+  declare them is unaffected either way.
+- With `--additional-axioms` alone, extensionality is a lemma the program states
+  and calls (`FunExt` in `git-issues/Inputs/github-issue-374-decls.dfy`): there is
+  no extensionality axiom.
+- With `--function-extensionality-axiom`, which also turns the tags on, `==` and
+  `!=` between total arrows of one argument translate to `$FunEq1(a, b, f, g)`
+  instead of Boogie's `==`, with `$FunEq1(a, b, f, g) <==> f == g` and, triggered
+  on `$FunEq1`,
+  `$Is(f, a -> b) && $Is(g, a -> b) && $ExactDom1(a, f) && $ExactDom1(a, g) &&
+  (forall bx :: $IsBox(bx, a) ==> Apply1(a, b, $OneHeap, f, bx) == Apply1(a, b,
+  $OneHeap, g, bx)) ==> $FunEq1(a, b, f, g)`, as `Set#Equal` is used for sets.
+  Its trigger is an equality between the functions themselves; an equality of
+  sequences, sets or maps of functions needs the functions' equality first.
+
+### Model
+
+A function value of one argument is a pair of a box set `D` (its domain) and the
+three maps on `D`. Outside `D`, application is a fixed box, the precondition is
+false and the reads set is empty. `TagHandle1(d, h, r, rd)` is `(boxes of d, the
+three maps restricted to it)`; `HandleN` values keep their meaning as in the
+original model. The guarded selector axioms and the `F#Handle` axioms hold by
+construction. `$Is(f, A -> B)` holds when application is total on `A` and maps
+`A` into `B`, as before; it says nothing about boxes outside `A`. `Restrict(A, B,
+f)` is `(boxes of A, f's maps restricted to it)`. If `D` is exactly the boxes of
+`A`, restricting changes nothing, which is the `$ExactDom1` axiom. Two values with
+the same domain whose applications agree on it are the same pair, because the
+precondition of a total arrow is true on `A` and its reads set is empty. That is
+the extensionality axiom, at `$OneHeap`, which is where total arrows are applied.
+
+Application does not depend on the type arguments of `Apply1`, and a total
+arrow's values do not depend on the heap. Two existing limits apply, and they
+bound the argument:
+
+- It is relative to the handles the translator emits, as the existing handle
+  axioms are: a handle built from an arbitrary map can contradict the frame axiom
+  with the option off.
+- A lambda of an arrow type with empty reads, whose body uses `allocated`, can
+  depend on the heap, which the model above excludes.
+
+### Controls
+
+`git-issues/github-issue-374.dfy` runs the positive program with the option off
+(every `FunExt` precondition fails), with `--additional-axioms` and with
+`--function-extensionality-axiom`; the negatives in
+`Inputs/github-issue-374-negative.dfy` (the counterexample's full values, a
+lambda over `int` viewed as `nat -> int`, a type-parameter domain, and `assert
+false` after each live fact, including restrictions of datatype lambdas that differ
+at a box of another datatype) under both; and `Inputs/github-issue-374-axiom.dfy`,
+whose equalities fail under `--additional-axioms` alone and hold with the axiom.
+`git-issues/github-issue-34.dfy` (`Std.Axioms.FunctionExtensionality`) is
+unchanged under both options. Under the axiom, its control that an uncalled
+lemma cannot prove `f == g` becomes provable, as intended.

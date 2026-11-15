@@ -560,3 +560,9 @@ git-issues/github-issue-362.dfy
 
 # Under --modular-termination, the reveal lemma Dafny generates for an opaque const is generated, in a concrete module and in the copies a refinement makes, so neither the library build nor 'dafny audit' counts it as a bodyless lemma with a postcondition (https://github.com/erniecohen/dafny/issues/371).
 git-issues/github-issue-371.dfy
+
+# Function domains: under --additional-axioms lambdas carry their parameter types as domain tags,
+# {:functionDomain} declarations give Restrict and ExactDom, and --function-extensionality-axiom makes
+# total functions of one argument with the same exact domain equal when they agree on it
+# (https://github.com/erniecohen/dafny/issues/374).
+git-issues/github-issue-374.dfy
