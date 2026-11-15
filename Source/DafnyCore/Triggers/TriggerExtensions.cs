@@ -87,21 +87,25 @@ namespace Microsoft.Dafny.Triggers {
              expr1.SubExpressions.SequenceEqual(expr2.SubExpressions, new PredicateEqualityComparer<Expression>(ExpressionEq));
     }
 
-    internal static bool ExpressionEqModuloExpressionsNotInvolvingBoundVariables(this Expression expr1, Expression expr2, ISet<BoundVar> boundVars, DafnyOptions options) {
+    internal static bool ExpressionEqModuloExpressionsNotInvolvingBoundVariables(this Expression expr1, Expression expr2, ISet<BoundVar> boundVars, DafnyOptions options, ISet<IVariable> witnessVars = null) {
       expr1 = expr1.Resolved;
       expr2 = expr2.Resolved;
 
       if (expr1 is IdentifierExpr) {
-        if (expr2 is IdentifierExpr) {
-          return true;
+        if (expr2 is IdentifierExpr id2) {
+          // A witness variable is a fresh term at each instantiation, not a variable (issue 202).
+          return witnessVars == null || !witnessVars.Contains(id2.Var);
         } else {
           var freeInE2 = FreeVariablesUtil.ComputeFreeVariables(options, expr2);
+          if (witnessVars != null && freeInE2.Overlaps(witnessVars)) {
+            return false;
+          }
           freeInE2.IntersectWith(boundVars);
           return !freeInE2.Any();
         }
       }
 
-      Func<Expression, Expression, bool> comparer = (e1, e2) => ExpressionEqModuloExpressionsNotInvolvingBoundVariables(e1, e2, boundVars, options);
+      Func<Expression, Expression, bool> comparer = (e1, e2) => ExpressionEqModuloExpressionsNotInvolvingBoundVariables(e1, e2, boundVars, options, witnessVars);
       return ShallowEq_Top(expr1, expr2) && expr1.SubExpressions.SequenceEqual(expr2.SubExpressions, new PredicateEqualityComparer<Expression>(comparer));
     }
 
