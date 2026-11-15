@@ -35,7 +35,7 @@ The consequences, each argued below:
 | When checked, objects | Once, at `new;` (explicit or implicit), against the values the constructor assigned.  Never again: the invariant cannot change. |
 | When checked, datatypes | At every constructor application and every update expression.  An intermediate value that breaks the invariant is rejected. |
 | Inhabitance | A datatype with an invariant is possibly empty unless it declares a `witness`.  Reference types are unaffected. |
-| Quantifying over the type | Allowed everywhere except in the invariant's own dependency cone, where a quantifier over the type must be bounded by a collection. |
+| Quantifying over the type | Objects: an invariant cannot, because that reads the allocation state.  Datatypes: allowed everywhere except in the invariant's own dependency cone, where a quantifier over the type must be bounded by a collection. |
 | `extends`, refinement | Invariants accumulate by conjunction.  There is no syntax that weakens, so "only strengthened" holds by construction; the obligations are at construction sites. |
 | Encoding | Per-type axioms only.  No prelude change.  A program without invariants gets the same Boogie as today. |
 | Option | `--member-invariants`, default off, requires `--type-system-refresh`. |
@@ -48,9 +48,10 @@ The plan differs from the upstream proposal in three places, on purpose:
 2. **Datatypes have no implicit raw type.**  The proposal's
    `this.(x := x+1).(y := y+1)` is rejected; `this.(x := x+1, y := y+1)` is
    accepted (section 3.5).
-3. **The invariant must be independent of the extension of its own type**
-   (section 3.3).  The proposal does not mention this.  Without it the feature
-   proves `false`.
+3. **An invariant may not refer to the set of values of its own type**
+   (section 3.3).  For objects this is the empty-reads decision and nothing
+   more.  For datatypes it is a new condition: without it, the type's defining
+   axiom can be inconsistent.
 
 ## 2. Syntax and placement
 
@@ -160,79 +161,171 @@ an invariant with an empty frame the question has a one-word answer: always.
 No method can break it, so no method needs to re-establish it, and it is the
 same in every heap, so two-state reasoning has nothing to say about it.
 
-### 3.3 Extension independence: the condition the feature needs
+### 3.3 An invariant may not refer to the set of values of its own type
 
-Checking an invariant once and assuming it forever is sound only if whether a
-value satisfies the invariant does not depend on which *other* values of the
-type exist.  Otherwise the definition of the type refers to itself
-non-monotonically, and the check can be passed vacuously:
+An invariant that quantifies over its own type says something about which
+*other* values of the type exist.  That is a problem for two different reasons,
+one for objects and one for datatypes.  They have different remedies.
+
+**A correction to the first version of this plan.**  It motivated this section
+with
 
 ```dafny
 class Liar {
   const x: int
-  invariant forall c: Liar :: c.x != x       // rejected by this plan
-  constructor (x: int) { this.x := x; }
+  invariant forall c: Liar :: c.x != x
 }
-method M() { var c := new Liar(0); assert false; }
 ```
 
-If this were accepted, the verifier would reason at `new;` as follows.  Every
-existing `Liar` object `c` satisfies its invariant, which, instantiated with
-`c` itself, says `c.x != c.x`.  So there are no `Liar` objects, the quantifier
-is vacuously true, and the check passes.  The new object then becomes a `Liar`,
-the axiom applies to it, and everything after the `new` is provable.  The same
-paradox can be routed through a second type, a supertype, a type parameter, an
-overridden function or a stored function value:
+and claimed that accepting it proves `false`.  That claim was wrong.  The
+invariant is false at `c == this`, so it is equivalent to `invariant false`.  A
+correct check at `new;` treats the new object as a member of its type, rejects
+every constructor, and leaves a class nobody can construct, which is sound.
+The example proves `false` only under a *naive* check, one that evaluates the
+quantifier over the objects that existed before and leaves the new one out.
+What the example shows is a requirement on the check (section 3.4).  It does
+not show that a rule is needed.  The two real issues follow.
+
+#### Objects: quantifying over a reference type reads the allocation state
+
+In Dafny a quantifier over a reference type ranges over the allocated objects
+of that type.  So `forall c: C :: ...` depends on the heap, namely on its
+allocation state.  By the empty-reads decision (section 3.2) it is out of
+bounds, for the same reason as reading a mutable field.
+
+It is also the same hazard as reading a mutable field: the invariant is not
+stable.
 
 ```dafny
-trait P { const k: int }
-class C { const n: int   invariant forall p: P :: p.k != n }   // rejected
-class E extends P { const c: C   invariant k == c.n  ... }
+class Max {
+  const x: int
+  invariant forall c: Max :: c.x <= x        // "my x is the maximum"
+}
 ```
 
-So the invariant of `X` must be definable without reference to the extension of
-`X`.  Define:
+This holds of the first `Max` object, with the new object included in the
+range.  The next allocation, with a larger `x`, makes it false of the first.
+No check at the second `new;` looks at the first object.
 
-- **The cone of `X`'s invariant**: the invariant expressions of `X`, and the
+No new rule is needed.  The resolver already has this one for function
+definitions: a quantifier or comprehension "is not allowed to depend on the set
+of allocated references", and every bound variable whose type may involve
+references must have a bound that is independent of allocation
+(`Source/DafnyCore/Resolver/BoundsDiscovery/BoundsDiscovery.cs`, using
+`Type.MayInvolveReferences`).  An invariant is resolved as such a context.
+Then:
+
+- `forall c: C :: ...` in an invariant is rejected, with the existing message.
+- So is an unbounded quantifier over a trait, over `object`, over a datatype
+  with a reference component, and over a type parameter not declared `(!new)`.
+- A quantifier bounded by a collection, such as `forall k <- kids :: ...`, is
+  accepted.  It ranges over a component, not over the heap.
+- Every function the invariant calls is already under the same rule, and so is
+  every override of every function it calls.  Dynamic dispatch is therefore
+  not a way around it, and an object invariant may call a function on a
+  trait-typed component.
+
+So no function, however reached, can observe which objects of a reference type
+exist.  An object invariant is a property of the object's components alone,
+and stays true.
+
+One point needs a test in stage 3 rather than an argument: a lambda written in
+a *method* is not a function definition.  If its body may quantify over a
+reference type, then a value of a reads-free arrow type stored in a component
+could carry such a quantifier into an invariant.  Either the existing rule
+already covers lambda bodies, or it must be extended to them when the lambda's
+type has no reads.
+
+#### Datatypes: a reference to the type's own extension is a recursive definition
+
+A datatype with no reference components is not allocated.  A quantifier over it
+reads no state, and the existing rule allows it in any function.  Stability is
+not at issue.  Consistency is.
+
+The meaning of the type is the `$Is` equivalence of section 5.1,
+
+```
+K(a) ∈ D  ⟺  a ∈ T  ∧  Inv_K(a)
+```
+
+If `Inv_K` quantifies over `D`, this is a recursive definition of the set `D`,
+and it may have no solution:
+
+```dafny
+datatype D = D(f: int) {
+  invariant f == 0 ==> !(exists e: D :: e.f == 0)
+}
+```
+
+`D(0)` is in `D` exactly if no value of `D` has `f == 0`, that is, exactly if
+`D(0)` is not in `D`.  This is not an empty type.  The equivalence itself is
+inconsistent, so `false` follows wherever the axiom is in scope, with no
+constructor application in sight.
+
+There are two principled conditions.
+
+- **(a) Ban the reference.**  The invariant, and everything it reaches, may not
+  refer to the extension of a type that depends on `D`.  Membership of `K(a)`
+  then depends on `D` only through the arguments `a`, which are smaller.  The
+  definition is by recursion on structure and has exactly one solution.
+- **(b) Allow positive occurrences, read as a least fixed point.**  If every
+  reference to the extension of `D` is monotone, the operator has a least
+  fixed point, and that is a model of the equivalence.  A monotone occurrence
+  is an `exists e: D` in a positive position, or a `forall e: D` in a negative
+  one.
+
+**Recommendation: (a).**
+
+- The useful quantifier is `forall e: D :: ...` in a positive position, and
+  that one is *anti*-monotone: a larger `D` makes it harder to satisfy.
+  Condition (b) admits "some other value of the type exists", which few
+  invariants want to say, and still rejects "every value of the type ...".
+- Under (b) the equivalence has several solutions and the axiom does not say
+  which one is meant.  Facts that hold only of the least one would need an
+  induction principle the verifier does not have.
+- (b) needs polarity tracked through every function in the cone.  Dafny does
+  this for extreme predicates, but only inside one body.
+- (a) loses nothing later.  (b) can be added for existentials if a use appears.
+
+The precise form of (a).  Define:
+
+- **The cone of `D`'s invariant**: the invariant expressions of `D`, and the
   bodies *and specifications* of every function, constant initializer, subset
-  type and newtype constraint reachable from them through calls and uses.
-- **`X`-dependent types**: `X`; every type whose declaration mentions an
-  `X`-dependent type in a component, parent, constraint, type argument or
-  invariant cone; every trait and `object`, because a trait is open and may
-  later acquire an `X`-dependent subtype; and every type parameter, because it
-  may be instantiated with one.
+  type constraint and newtype constraint reachable from them through calls and
+  uses.
+- **`D`-dependent types**: `D`, and every type built from a `D`-dependent type:
+  as a datatype component, a type argument, the base of a subset type or
+  newtype, or the argument or result of an arrow.
 
-**Rule E.**  Within the cone of `X`'s invariant:
+**Condition D.**  Within the cone of `D`'s invariant:
 
-1. A bound variable (of a quantifier, a comprehension, or `:|`) whose type
-   mentions an `X`-dependent type must have a *collection bound*: the resolver
-   must find that it ranges over the elements of a set, sequence, multiset or
-   map.  `forall k <- kids :: k.size < size` is fine; `forall k: C :: ...` is
-   not.
-2. No type test `e is U` for an `X`-dependent `U`.  (`as` is a checked
+1. A bound variable (of a quantifier, a comprehension, or `:|`) whose type is
+   `D`-dependent must have a *collection bound*: the resolver must find that it
+   ranges over the elements of a set, sequence, multiset or map.
+   `forall k <- kids :: k.size < size` is fine; `forall k: D :: ...` is not.
+2. No type test `e is U` for a `D`-dependent `U`.  (`as` is a checked
    conversion and is fine.)
-3. No dynamically bound call: no call of an instance function on a receiver of
-   trait type, and no application of a function value other than a lambda
-   expression or a named function applied on the spot.
-4. A call of a generic function may pass an `X`-dependent type argument only for
+3. A call of a generic function may pass a `D`-dependent type argument only for
    a type parameter the callee does not quantify over without a bound.  This
-   needs a per-function, per-type-parameter flag, computed bottom-up.  The first
-   stage may approximate it by rejecting every such type argument.
+   needs a per-function, per-type-parameter flag, computed bottom-up.  The
+   first stage may approximate it by rejecting every such type argument.
+4. No application of a function value other than a lambda expression or a
+   named function applied on the spot.  A stored function is a body the cone
+   cannot see.  I have no example in which this clause is what prevents an
+   inconsistency; it is there because the argument of section 5.2 needs the
+   cone to be complete.
 
-A function *parameter* of type `X` is not a dependency.  `Inv` may call
-`f(tail)`, and `f` may assume the invariant of its argument: the argument is a
-component, already a member, and smaller.
+Three remarks.
 
-Clause 3 is the same problem as
-[issue 211](https://github.com/erniecohen/dafny/issues/211): an override in a
-later module can close a cycle the earlier module cannot see.  Here the cycle is
-"override quantifies over `X`, `X`'s invariant calls the overridden function".
-The plan forbids dynamic binding in the cone until that issue has a sound
-discipline, and then reuses it: a quantifier over `X` becomes an edge to
-`Inv(X)` in whatever order
-[issue 211](https://github.com/erniecohen/dafny/issues/211),
-[issue 266](https://github.com/erniecohen/dafny/issues/266) and
-[issue 245](https://github.com/erniecohen/dafny/issues/245) settle on.
+- A function *parameter* of type `D` is not a reference to the extension.
+  `Inv` may call `f(tail)`, and `f` may assume the invariant of its argument:
+  the argument is a component, already a member, and smaller.
+- Condition D has work to do only when `D` involves no references.  If it does,
+  the existing rule already forbids every function from quantifying over it.
+  In particular a component of trait type makes the datatype
+  reference-involving, so dynamic dispatch needs no clause here.
+- The cone is closed under refinement by re-checking: a refinement that gives a
+  body to a function in the cone is checked in the refining module.
 
 ### 3.4 Objects: assumed everywhere, checked at `new;`
 
@@ -241,8 +334,8 @@ invariants of that type and of its ancestors.  This holds for `C` and for
 non-null values of `C?`; there is no type of raw `C` objects.  It holds for
 parameters, results, bound variables, heap reads, and for `this` in every
 member except in the first division of a constructor and in the invariant
-itself.  It holds for references that are not allocated in the current heap
-too: `forall c: C :: ...` ranges over objects that satisfy the invariant.
+itself.  It does not depend on allocation: a function's parameter is not known
+to be allocated in any particular heap, and has the invariant all the same.
 
 A consequence worth having: `o is C` remains a run-time test of the dynamic
 type alone, and still yields the invariant.  No object of dynamic type `C` ever
@@ -250,7 +343,19 @@ fails it.
 
 **Checked.**  At `new;`, the point where a constructor publishes `this`.  An
 omitted `new;` is at the end of the body, which is the upstream proposal's
-"constructor exit".  The check is on the values assigned in the first division.
+"constructor exit".
+
+What is checked is that the invariant holds of the new object *as a member of
+its type*: the state in which the invariant is evaluated includes the object
+being published.  Section 3.3 explains why that matters.  Because an object
+invariant cannot quantify over reference types, the only way it can speak of
+the new object is through its components.  So the check reduces to the
+invariant applied to the values assigned in the first division, and that is
+how it is emitted (section 5.1).  If quantifiers over reference types were
+ever admitted in invariants, the check would have to put the new object in
+their range explicitly; evaluating them over the earlier objects only is the
+naive check, and it is unsound.
+
 A component left unassigned is arbitrary, so the invariant must hold for every
 value of its type.
 
@@ -383,17 +488,25 @@ members of `T_` mention `T`, and the constraint of `T` calls a member of `T_`,
 so the cycle is easy to close.
 
 With member invariants the dependency is narrower and exact.  The only thing
-that depends on the *extension* of `D` is an unbounded binder or a type test
-over a `D`-dependent type.  The only thing whose meaning must not depend on
-that extension is the cone of `D`'s invariant.  So:
+that refers to the *extension* of a datatype `D` is an unbounded binder or a
+type test over a `D`-dependent type.  The only thing that must not refer to it
+is the cone of `D`'s invariant (Condition D, section 3.3).  So, for a datatype
+with no reference components:
 
 - A member of `D` that is not in the cone may quantify over `D` freely.
 - A member in the cone may quantify over `D` when the quantifier is bounded by
   a collection.
-- An unbounded quantifier over `D` in the cone is the liar of section 3.3 and
-  is rejected, with a message that names the path from the invariant.
+- An unbounded quantifier over `D` in the cone makes the type's definition
+  recursive in its own extension and is rejected, with a message that names
+  the path from the invariant.
 
 A function that merely takes or returns `D` is not in a cycle with anything.
+
+For a class, a trait, or a datatype with reference components, nothing changes
+from today.  A function cannot quantify over such a type without a bound, with
+or without invariants, because that reads the allocation state.  A method, a
+lemma or a two-state function can, and may do so whether or not the type has
+an invariant.
 
 ## 4. Inheritance and refinement
 
@@ -416,10 +529,13 @@ all its ancestors' invariants and its own.
   invariant is exported exactly when the type is revealed.  A type that is only
   provided shows neither its components nor its invariant.
 - **Across modules.**  A class in one module may extend a trait with an
-  invariant in another.  The invariant is in the earlier module, and by Rule E
-  its cone cannot reach an override, so the later class cannot change its
-  meaning.  This feature therefore adds no new instance of the hole described
-  in [issue 211](https://github.com/erniecohen/dafny/issues/211).
+  invariant in another.  The invariant may call a function that the later
+  class overrides.  That is harmless here: the override reads nothing and
+  cannot observe which objects exist (section 3.3), so it cannot make the
+  invariant unstable.  Whether the override *terminates* is the question of
+  [issue 211](https://github.com/erniecohen/dafny/issues/211), unchanged by
+  this feature: an invariant is not callable, so it adds no edge to any call
+  cycle.
 
 ### 4.2 Refinement
 
@@ -438,8 +554,8 @@ bodies included.**  So:
   re-checked;
 - every inherited invariant is still there, so everything `M0` proved from it
   still holds in `M1`;
-- Rule E is re-checked in `M1`, where a refinement may have given a body to a
-  function in the cone.
+- Condition D is re-checked in `M1`, where a refinement may have given a body
+  to a function in the cone.
 
 If an inherited body no longer verifies, the refinement is wrong, and the error
 says so.  Nothing is assumed.
@@ -529,43 +645,55 @@ Ancestors need no axiom of their own for a class.  `$Is(o, C?)` already implies
 
 ### 5.2 Why it is consistent
 
-Fix a program that satisfies Rule E, and order its types so that every type
-comes after the types its invariant cone depends on in extension.  Rule E says
-such an order exists.  Build a model by stages along it.
+Fix a program that meets the reads restrictions and Condition D.  Build a model
+in two steps.
 
-- **Datatypes.**  `D` is the least fixpoint of
-  `K(a) ∈ D ⟺ a ∈ T ∧ Inv_K(a)`.  The operator is monotone.  Membership of the
-  arguments in `D` is a positive occurrence.  By Rule E, `Inv_K(a)` has the
-  same truth value whatever `D` is taken to be: it looks at `D` only through
-  its arguments, or through quantifiers bounded by collections inside them,
-  which are already fixed.  Datatype values are well-founded, since Dafny's
-  rank axioms already require it, so the least fixpoint is the set the `$Is`
-  equivalence describes.  The definition axiom for `D.K#Inv` is an ordinary
-  definition of a new function symbol, guarded by the argument types.
-- **Classes.**  Take the references of dynamic type `C` to be: for each tuple
-  of component values in their types that satisfies the conjoined invariant,
-  infinitely many references carrying those values, built by the same
-  induction.  A component may itself be a `C` object; it comes from an earlier
-  stage.  The consequence axiom holds by construction.  Extension independence
-  is what makes "satisfies the invariant" a property of the tuple alone, and
-  so makes the construction well-defined.
-- **Traits.**  The references of trait type `T` are those of the classes that
+**Step 1: datatypes with no reference components.**  Order them so that each
+comes after every type whose extension its invariant cone refers to.  Condition
+D says a type's cone does not refer to its own extension or to that of a type
+built from it, so such an order exists.  Take the types in that order.  For
+`D`, the extensions the cone refers to are already fixed, so `Inv_K(a)` is a
+fixed predicate of the arguments.  Define `D` by recursion on the structure of
+values: `K(a) ∈ D ⟺ a ∈ T ∧ Inv_K(a)`.  Datatype values are well-founded, which
+Dafny's rank axioms already require, so the recursion has exactly one solution,
+and it satisfies the `$Is` equivalence.  The definition axiom for `D.K#Inv` is
+an ordinary definition of a new function symbol, guarded by the argument types.
+
+**Step 2: classes, traits and the datatypes that contain references.**  By the
+existing rule, no function quantifies over any of these types without a bound.
+So no invariant, here or in step 1, refers to their extensions, and each
+invariant is a fixed predicate of component values.
+
+- *Classes.*  Take the references of dynamic type `C` to be: for each tuple of
+  component values in their types that satisfies the conjoined invariant,
+  infinitely many references carrying those values.  A component may itself be
+  a `C` object.  Build by stages, each stage using the references of the
+  earlier ones as components.  The consequence axiom holds by construction.
+- *Traits.*  The references of trait type `T` are those of the classes that
   extend it.  Each class's invariant includes `T`'s conjuncts, so `T`'s
   consequence axiom holds.
-- **Unsatisfiable invariants.**  If no tuple satisfies the invariant, the model
-  has no reference of that dynamic type, and the datatype is the empty set.
-  Both are models.  Nothing else in the emitted Boogie says such a value
-  exists; see the hazards below.
+- *Datatypes with reference components.*  As in step 1, by recursion on
+  structure, interleaved with the stages for classes.
 
-**The check is not vacuous.**  At `new;` the model contains a reference with
-the constructor's component values exactly when those values satisfy the
-invariant.  The assertion is over the surrogates.  It is provable only if it
-holds in every model, including the one just built, where it is true exactly
-when the tuple satisfies the invariant.  After a successful check, the
-assumption that `this` is a fresh `C` reference with those values is satisfied
-in that model.  This is the step that fails for the liar: with a self-referring
-invariant the model's `C` is not determined by the tuples, and the argument
-does not start.
+**Unsatisfiable invariants.**  If no tuple satisfies the invariant, the model
+has no reference of that dynamic type, or the datatype is the empty set.  Both
+are models, and both are sound: `invariant false` gives a type with no values,
+not an inconsistency.  Nothing else in the emitted Boogie says such a value
+exists; see the hazards below.
+
+**The check at `new;` is the right check.**  The model contains a reference
+with the constructor's component values exactly when those values satisfy the
+invariant.  The assertion over the surrogates is provable only if it holds in
+every model, including this one, where it is true exactly when the tuple
+satisfies the invariant.  After a successful check, the assumption that `this`
+is a fresh `C` reference with those values is satisfied in the model.  The
+argument uses the fact that the invariant is a predicate of the tuple.  That
+is why the check may be made on the tuple and still be the check "with the new
+object included" that section 3.4 requires.
+
+**What Condition D buys.**  Without it, step 1 can fail outright: for the
+datatype liar of section 3.3 there is no set `D` satisfying the equivalence,
+so there is no model at all.
 
 The axioms assert no new fact about existing programs.  The obligations only
 add checks.  The one assumption that carries weight is the existing one, that
@@ -626,10 +754,13 @@ invariant must be usable in functions.  It is sound because the model fixes the
 components of all references at once, in the way `const` fields are already
 modelled.
 
-**Extension dependence.**  Section 3.3.  This is the hazard that is new with
-this feature, and Rule E is the part of the design that most needs review.  It
-is a sufficient condition and is conservative.  Each relaxation, starting with
-dynamic dispatch, needs its own argument.
+**Reference to the type's own extension.**  Section 3.3.  For objects it is an
+unstable read of the allocation state, and the existing rule against
+allocation-dependent functions excludes it.  For datatypes it can make the
+defining equivalence inconsistent, and Condition D excludes it.  Condition D is
+the one new semantic restriction in this plan and the part that most needs
+review.  It is a sufficient condition, and its clauses 3 and 4 are
+conservative.
 
 **Trigger cost.**  The class consequence axiom triggers on `$Is(o, Tclass.C?)`,
 which is a common term.  It appears only for classes with invariants, but its
@@ -726,6 +857,17 @@ datatype Tree = Node(size: nat, kids: seq<Tree>) {
 }
 ```
 
+```dafny
+// An object invariant through a trait-typed component: dynamic dispatch is fine.
+trait Shape { predicate Fits(n: int) }               // no reads clause
+class Box {
+  const s: Shape
+  const n: int
+  invariant s.Fits(n)
+  constructor (s: Shape, n: int) requires s.Fits(n) { this.s := s; this.n := n; }
+}
+```
+
 ### 6.2 Rejected by the resolver
 
 ```dafny
@@ -742,17 +884,14 @@ class C {
   invariant twice >= 0         // error: 'twice' has an initializer; it is not a component
 }
 
-class Liar {
+class Max {
   const x: int
-  invariant forall c: Liar :: c.x != x      // error: unbounded quantifier over a type that depends on
-}                                           //        'Liar' in the invariant of 'Liar'
+  invariant forall c: Max :: c.x <= x       // error (the existing one): a forall expression is not allowed to
+}                                           //   depend on the set of allocated references
 
-trait Shape { predicate Fits(n: int) }
-class Box {
-  const s: Shape
-  const n: int
-  invariant s.Fits(n)          // error: dynamically bound call in an invariant (see issue 211)
-}
+datatype Liar = Liar(f: int) {
+  invariant f == 0 ==> !(exists e: Liar :: e.f == 0)
+}                                           // error: the invariant of 'Liar' refers to the set of values of 'Liar'
 
 newtype Even = x: int | x % 2 == 0 {
   invariant x >= 0             // error: a newtype states its constraint in its declaration
@@ -803,9 +942,15 @@ class Bad { const k: int  invariant k > 0
 `Bad` pins the order of the check and the assumption inside `new;`.  With the
 two swapped, it would verify with no error at all.
 
-`V5` is the liar of section 3.3 with Rule E disabled by a test-only switch.  Its
-`assert false` must verify.  It records why the rule exists, and that the
-vacuity tests can tell the difference.
+`V5` is the datatype `Liar` of section 6.2 with Condition D disabled by a
+test-only switch, and a method `method V5() { assert false; }` that mentions
+the type.  Its `assert false` must verify.  It records why the condition
+exists, and that the vacuity tests can tell the difference.
+
+`V6` is `class F { const x: int  invariant false  constructor () { new; } }`.
+It must report an error at `new;`, and a method that takes an `F` must be
+accepted.  It records that an unsatisfiable object invariant is sound: the
+class simply cannot be constructed.
 
 ## 7. Implementation sketch
 
@@ -842,13 +987,16 @@ serialization used for `.doo` files need the new nodes.
 - A new pass modelled on
   `Source/DafnyCore/Resolver/CheckDividedConstructorInitVisitor.cs`: the "`this`
   only as a component receiver" rule, and the syntactic reads restrictions.
+- `Source/DafnyCore/Resolver/BoundsDiscovery/BoundsDiscovery.cs`: make an
+  invariant a context that is not allowed to depend on the allocation state.
+  This is the whole of the restriction for objects.
 - `Source/DafnyCore/Resolver/CallGraphBuilder.cs` and
-  `Source/DafnyCore/Resolver/ModuleResolver.cs`: Rule E.  Add an edge from each
-  callable to `Inv(X)` for every unbounded binder or type test over an
-  `X`-dependent type.  Report any cycle through `Inv(X)`, reusing
-  `ReportCallGraphCycleError`.  Reject dynamic calls and open types in the cone
-  directly.  Compute the per-type-parameter "quantifies without a bound" flag
-  on functions.
+  `Source/DafnyCore/Resolver/ModuleResolver.cs`: Condition D, for datatypes.
+  Add an edge from each callable to `Inv(D)` for every unbounded binder or type
+  test over a `D`-dependent type.  Report any cycle through `Inv(D)`, reusing
+  `ReportCallGraphCycleError`.  Reject applications of stored function values
+  in the cone directly.  Compute the per-type-parameter "quantifies without a
+  bound" flag on functions.
 - `Source/DafnyCore/AST/Types/Types.cs`: `GetAutoInit` for datatypes with
   invariants.
 - `Source/DafnyCore/Resolver/ModuleResolver.cs`: "a class with an invariant
@@ -898,12 +1046,12 @@ the option off.
 | Stage | Content | Exit test |
 |---|---|---|
 | 0 | Option, grammar, AST, printer, cloner.  The resolver rejects every invariant with "not yet supported". | Round-trip printing; the diagnostic with the option off is unchanged. |
-| 1 | **Datatypes, non-generic, no parents.**  Component rule, reads rule, Rule E in its conservative form (clause 4 rejects every dependent type argument), `D.K#Inv`, the `$Is` conjunct, construction obligations, witnesses and `GetAutoInit`. | Sections 6.1 (datatype examples), 6.2, 6.3, and controls V1, V4, V5. |
+| 1 | **Datatypes, non-generic, no parents.**  Component rule, reads rule, the invariant as an allocation-independent context, Condition D in its conservative form (clause 3 rejects every dependent type argument), `D.K#Inv`, the `$Is` conjunct, construction obligations, witnesses and `GetAutoInit`. | Sections 6.1 (datatype examples), 6.2, 6.3, and controls V1, V4, V5. |
 | 2 | **Emptiness audit.**  Every consumer of "is this type inhabited" for datatypes.  Generic datatypes. | A test for each row of the vacuous-types table. |
-| 3 | **Classes.**  `C#Inv`, the consequence axiom, the check at `new;`, the constructor requirement, audit reporting.  Measure the trigger cost. | Control V2 and the `Bad` test; the `Buffer` example. |
+| 3 | **Classes.**  `C#Inv`, the consequence axiom, the check at `new;`, the constructor requirement, audit reporting.  The test for lambda bodies (section 3.3).  Measure the trigger cost. | Controls V2 and V6, the `Bad` test; the `Buffer`, `Box` and `Max` examples. |
 | 4 | **Traits and `extends`.**  Inherited invariants, the conjunction at `new;`, export visibility.  General traits extended by datatypes. | Control V3; a cross-module extension test. |
 | 5 | **Refinement.**  Added invariants, replaced witnesses, the re-verification test of section 4.2. | The `M0`/`M1` example; a refinement that must fail at an inherited `new;`. |
-| 6 | **Relaxations**, each with its own argument: the exact clause 4; dynamic dispatch in the cone, after [issue 211](https://github.com/erniecohen/dafny/issues/211); codatatypes. | Per relaxation. |
+| 6 | **Relaxations**, each with its own argument: the exact clause 3; stored function values in a datatype's cone; positive existentials under a least-fixed-point reading; codatatypes. | Per relaxation. |
 
 ## 8. Open questions for the owner
 
@@ -928,13 +1076,14 @@ Each has a recommendation.  The plan above assumes the recommendation.
    invariant; and reading initialized consts whose initializers are
    well-formed without the invariant.
 
-4. **Rule E as stated, with dynamic dispatch and stored function values banned
-   from the cone?**
-   *Recommend yes.*  The bans cost real expressiveness.  A class holding a
-   trait-typed component cannot state an invariant through that component's
-   functions.  The alternative is unsound, and the principled relaxation is the
-   same mechanism
-   [issue 211](https://github.com/erniecohen/dafny/issues/211) needs.
+4. **Datatype invariants that refer to the type's own extension: ban, or allow
+   monotone occurrences with a least-fixed-point reading?**
+   *Recommend ban (Condition D).*  The monotone reading admits positive
+   existentials only, not the `forall` an invariant would want, and leaves the
+   axiom with several solutions.  Within the ban, clause 4 (no stored function
+   values in the cone) is conservative and unsupported by a counterexample; the
+   owner may prefer to drop it.  For objects there is no question to answer:
+   the restriction is the empty-reads decision.
 
 5. **A datatype with an invariant and no `witness`: possibly empty, or an
    error?**
@@ -990,9 +1139,8 @@ parents.**
   constructor.
 - The obligation sits where a function precondition would.
 - Witnesses reuse the possibly-empty machinery.
-- Rule E is needed in full from the first day, in its conservative form.  It is
-  the part to review hardest, and datatypes are the smallest setting in which
-  to review it.
+- Condition D is needed from the first day, in its conservative form.  It is
+  the part to review hardest.
 - None of it touches the heap, `new;`, inheritance or refinement.
 
 It depends on the owner's answers to questions 1, 3, 4 and 5 only.  Classes
