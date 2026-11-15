@@ -104,8 +104,9 @@ namespace Microsoft.Dafny {
       if (splitChecksFollowCanCalls && options.Get(CommonOptionBag.QuantifiedCheckCallFacts) &&
           expression is ForallExpr { SplitQuantifier: null } forall && check is Bpl.ForallExpr checkedForall &&
           QuantifiedBodyCanCalls(forall, checkedForall.Dummies, etran) is { } bodyCanCalls) {
-        // The call facts of the body, as an antecedent of the checked body (erniecohen/dafny#196).  The
-        // caller assumed CanCallAssumption(expression), which is a quantifier with the same bound variables,
+        // The call facts of the body, as an antecedent of the checked body
+        // (https://github.com/erniecohen/dafny/issues/196).  The caller assumed
+        // CanCallAssumption(expression), which is a quantifier with the same bound variables,
         // bodyCanCalls as its body and the triggers of the quantifier.  An instance of the checked quantifier
         // that the solver simplifies until no trigger term remains (abs(l[i] - l[i]) becomes abs(0.0))
         // would not get the call facts from that quantifier; here it carries them along.
