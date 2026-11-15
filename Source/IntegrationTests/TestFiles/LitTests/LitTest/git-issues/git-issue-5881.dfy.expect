@@ -1,0 +1,49 @@
+original-false-verify
+git-issue-5881-original.dfy(4,16): Error: type cast to trait type 'IntOps<T>' must be from an expression assignable to it (got 'Unique<O>')
+1 resolution/type errors detected in git-issue-5881-original.dfy
+original-false-build
+git-issue-5881-original.dfy(4,16): Error: type cast to trait type 'IntOps<T>' must be from an expression assignable to it (got 'Unique<O>')
+1 resolution/type errors detected in git-issue-5881-original.dfy
+original-true-verify
+
+Dafny program verifier finished with 0 verified, 0 errors
+original-true-build
+
+Dafny program verifier finished with 0 verified, 0 errors
+plain-subset-false-run
+
+Dafny program verifier finished with 1 verified, 0 errors
+4
+plain-subset-true-run
+
+Dafny program verifier finished with 1 verified, 0 errors
+4
+nested-subset-false-run
+
+Dafny program verifier finished with 1 verified, 0 errors
+4
+nested-subset-true-run
+
+Dafny program verifier finished with 1 verified, 0 errors
+4
+trait-subset-false-run
+git-issue-5881-trait-subset.dfy(4,68): Error: type cast to trait type 'Ops' must be from an expression assignable to it (got 'Unique<O>')
+1 resolution/type errors detected in git-issue-5881-trait-subset.dfy
+trait-subset-true-run
+
+Dafny program verifier finished with 2 verified, 0 errors
+4
+bad-subset-false-run
+git-issue-5881-bad-subset.dfy(3,44): Error: value does not satisfy the subset constraints of 'Positive'
+
+Dafny program verifier finished with 1 verified, 1 error
+bad-subset-true-run
+git-issue-5881-bad-subset.dfy(3,40): Error: value of expression (of type 'Box<int>') is not known to be an instance of type 'Box<Positive>'
+
+Dafny program verifier finished with 1 verified, 1 error
+bad-trait-false-run
+git-issue-5881-bad-trait.dfy(2,42): Error: type cast to trait type 'Ops' must be from an expression assignable to it (got 'O')
+1 resolution/type errors detected in git-issue-5881-bad-trait.dfy
+bad-trait-true-run
+git-issue-5881-bad-trait.dfy(2,42): Error: type cast to trait type 'Ops' must be from an expression of a compatible type (got 'O')
+1 resolution/type errors detected in git-issue-5881-bad-trait.dfy

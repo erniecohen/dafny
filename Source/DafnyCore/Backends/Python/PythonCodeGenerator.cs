@@ -129,6 +129,57 @@ namespace Microsoft.Dafny.Compilers {
       return mw.NewBlockPy($"def StaticMain({argsParameterName}):");
     }
 
+    protected override void OrganizeModules(Program program, out List<ModuleDefinition> modules) {
+      base.OrganizeModules(program, out modules);
+      if (!Options.Get(CommonOptionBag.PythonReorderReplacements) || program.Replacements.Count == 0) {
+        return;
+      }
+
+      var available = modules.ToHashSet();
+      var ordered = new List<ModuleDefinition>();
+      var visited = new HashSet<ModuleDefinition>();
+      var active = new HashSet<ModuleDefinition>();
+      var cyclic = false;
+
+      void Visit(ModuleDefinition module) {
+        if (!module.CanCompile() || !available.Contains(module) || visited.Contains(module)) {
+          return;
+        }
+        if (!active.Add(module)) {
+          Reporter.Error(MessageSource.Compiler, module.Origin,
+            "Python compilation dependencies contain a cycle through module '{0}' after applying replacements", module.Name);
+          cyclic = true;
+          return;
+        }
+
+        void VisitDependency(ModuleDefinition dependency) {
+          if (dependency != null) {
+            Visit(program.Replacements.GetValueOrDefault(dependency, dependency));
+          }
+        }
+
+        foreach (var declaration in module.TopLevelDecls) {
+          if (declaration is AliasModuleDecl alias) {
+            VisitDependency(alias.Dereference());
+          } else if (declaration is LiteralModuleDecl literal) {
+            VisitDependency(literal.ModuleDef);
+          }
+        }
+        // A replacement's implementation edge points back to its own compiled module.
+        if (module.Implements is { Kind: ImplementationKind.Refinement } refinement) {
+          VisitDependency(refinement.Target.Def);
+        }
+        active.Remove(module);
+        visited.Add(module);
+        ordered.Add(module);
+      }
+
+      foreach (var module in modules) {
+        Visit(module);
+      }
+      modules = cyclic ? new List<ModuleDefinition>() : ordered;
+    }
+
     protected override ConcreteSyntaxTree CreateModule(ModuleDefinition module, string moduleName, bool isDefault,
       ModuleDefinition externModule,
       string libraryName, Attributes moduleAttributes, ConcreteSyntaxTree wr) {
@@ -210,7 +261,7 @@ namespace Microsoft.Dafny.Compilers {
           // Non-nested externs can be aliased (since, in 2., `Y` does not have `.`s).
           //
           // There are several possible paths to supporting these features together:
-          // - Modify behavior in 1 to apply prefixes (python-module-name/outer-module) to externs.
+          // - Modify behavior in 1 to apply prefixe (python-module-name/outer-module) to externs.
           //   This is out of scope for python-module-name, since the outer-module prefix also does not apply to externs.
           //   These are both "prefixes", and I expect any solution for python-module-name should also apply to outer-module.
           // - Modify nested extern behavior to replace `.`s with `_`s, similar to nested non-externs.
@@ -1358,7 +1409,7 @@ namespace Microsoft.Dafny.Compilers {
       if (dt is not TupleTypeDecl) {
         wr.Write($"{DtCtorDeclarationName(ctor, dt.EnclosingModuleDefinition != enclosingModule)}");
       } else if (ctor.Destructors.Count(d => !d.IsGhost) == 1) {
-        // 1-tuples need this for disambiguation
+        // 1-tuples need this this for disambiguation
         arguments += ",";
       }
       var sep = typeDescriptorArguments.Length != 0 && arguments.Length != 0 ? ", " : "";

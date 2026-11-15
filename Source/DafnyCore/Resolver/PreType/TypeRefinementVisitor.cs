@@ -90,6 +90,7 @@ public class TypeRefinementVisitor : ASTVisitor<IASTVisitorContext> {
 
     } else if (expr is NestedMatchExpr matchExpr) {
       foreach (var kase in matchExpr.Cases) {
+        VisitMatchCasePattern(kase.Pat, () => TypeRefinementWrapper.NormalizeSansBottom(matchExpr.Source));
         flows.Add(new FlowBetweenExpressions(expr, kase.Body, "case"));
       }
 
@@ -142,7 +143,7 @@ public class TypeRefinementVisitor : ASTVisitor<IASTVisitorContext> {
         flows.Add(new FlowBetweenComputedTypes(() => {
           var typeMap = TypeParameter.SubstitutionMap(datatypeDecl.TypeArgs, datatypeValue.InferredTypeArgs);
           return (TypeRefinementWrapper.NormalizeSansBottom(formal).Subst(typeMap), TypeRefinementWrapper.NormalizeSansBottom(actual));
-        }, datatypeValue.Origin, $"{ctor.Name}({formal.Name} := ...)"));
+        }, datatypeValue.Origin, $"{ctor.Name}({formal.Name} := ...)", isConstructorArgument: true));
       }
       flows.Add(new FlowFromComputedType(expr,
         () => new UserDefinedType(expr.Origin, datatypeDecl.Name, datatypeDecl, datatypeValue.InferredTypeArgs),
@@ -260,7 +261,7 @@ public class TypeRefinementVisitor : ASTVisitor<IASTVisitorContext> {
           //
           // Note about intersection: In general, let set<C> be the result of combining the operands set<A> and set<B>
           // of intersection. To be precise, we would need C to be a type that conjoins the constraints of A and B.
-          // We don't have such a type, so we instead (approximate the other direction and) let C be the join of A and B.
+          // We don't have such a time, so we instead (approximate the other direction and) let C be the join of A and B.
           flows.Add(new FlowBetweenExpressions(expr, binaryExpr.E0, BinaryExpr.OpcodeString(binaryExpr.Op)));
           flows.Add(new FlowBetweenExpressions(expr, binaryExpr.E1, BinaryExpr.OpcodeString(binaryExpr.Op)));
           break;
@@ -374,9 +375,50 @@ public class TypeRefinementVisitor : ASTVisitor<IASTVisitorContext> {
 
   }
 
+  /// <summary>
+  /// Sets up the flows into the variables bound by a case pattern of a "match" expression or statement. A variable
+  /// bound at the top of the pattern gets the type of the match source; a variable bound to a constructor argument gets
+  /// the declared type of the constructor's formal, with the type arguments of the source substituted for those of the
+  /// datatype, as for a let-pattern (see VisitPattern above).
+  /// </summary>
+  private void VisitMatchCasePattern(ExtendedPattern pattern, Func<Type> getPatternRhsType) {
+    switch (pattern) {
+      case DisjunctivePattern disjunctivePattern:
+        foreach (var alternative in disjunctivePattern.Alternatives) {
+          VisitMatchCasePattern(alternative, getPatternRhsType);
+        }
+        break;
+      case IdPattern idPattern:
+        if (idPattern.BoundVar != null) {
+          flows.Add(new FlowIntoVariableFromComputedType(idPattern.BoundVar, getPatternRhsType, idPattern.Origin, "case"));
+        }
+        if (idPattern.Arguments != null && idPattern.Ctor != null) {
+          var ctor = idPattern.Ctor;
+          Contract.Assert(idPattern.Arguments.Count == ctor.Formals.Count);
+          for (var i = 0; i < idPattern.Arguments.Count; i++) {
+            var argumentIndex = i;
+            VisitMatchCasePattern(idPattern.Arguments[i], () => {
+              var sourceType = getPatternRhsType().NormalizeExpand();
+              Contract.Assert(sourceType.IsDatatype);
+              Contract.Assert(sourceType.TypeArgs.Count == ctor.EnclosingDatatype.TypeArgs.Count);
+              var typeMap = TypeParameter.SubstitutionMap(ctor.EnclosingDatatype.TypeArgs, sourceType.TypeArgs);
+              return ctor.Formals[argumentIndex].Type.Subst(typeMap);
+            });
+          }
+        }
+        break;
+      default:
+        break;
+    }
+  }
+
   protected override void PostVisitOneStatement(Statement stmt, IASTVisitorContext context) {
     if (stmt is VarDeclPattern varDeclPattern) {
       VisitPattern(varDeclPattern.LHS, () => TypeRefinementWrapper.NormalizeSansBottom(varDeclPattern.RHS), context);
+    } else if (stmt is NestedMatchStmt nestedMatchStmt) {
+      foreach (var kase in nestedMatchStmt.Cases) {
+        VisitMatchCasePattern(kase.Pat, () => TypeRefinementWrapper.NormalizeSansBottom(nestedMatchStmt.Source));
+      }
     } else if (stmt is SingleAssignStmt { Lhs: IdentifierExpr lhsIdentifierExpr } assignStmt) {
       if (assignStmt is { Rhs: ExprRhs exprRhs }) {
         flows.Add(new FlowIntoVariable(lhsIdentifierExpr.Var, exprRhs.Expr, assignStmt.Origin, $"{lhsIdentifierExpr.Var.Name} :="));
@@ -455,7 +497,8 @@ public class TypeRefinementVisitor : ASTVisitor<IASTVisitorContext> {
   }
 
   public void Solve(ErrorReporter reporter, bool debugPrint) {
-    var context = new FlowContext(systemModuleManager, reporter, debugPrint);
+    var context = new FlowContext(systemModuleManager, reporter, debugPrint,
+      InvariantConstructorInference: systemModuleManager.Options.Get(CommonOptionBag.InvariantConstructorInference));
     bool anythingChanged;
     do {
       anythingChanged = false;

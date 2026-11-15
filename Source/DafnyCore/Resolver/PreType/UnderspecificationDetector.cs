@@ -6,6 +6,7 @@
 //-----------------------------------------------------------------------------
 
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Numerics;
 using System.Diagnostics.Contracts;
@@ -244,6 +245,9 @@ namespace Microsoft.Dafny {
         s.LocalVars.ForEach(local => CheckPreTypeIsDetermined(local.Origin, local.PreType, "local variable"));
         s.LocalVars.ForEach(local => CheckTypeArgsContainNoOrdinal(local.Origin, local.PreType));
 
+      } else if (stmt is NestedMatchStmt nestedMatchStmt) {
+        CheckCasePatterns(nestedMatchStmt);
+
       } else if (stmt is ForallStmt) {
         var s = (ForallStmt)stmt;
         s.BoundVars.ForEach(bv => CheckPreTypeIsDetermined(bv.Origin, bv.PreType, "bound variable"));
@@ -275,6 +279,36 @@ namespace Microsoft.Dafny {
     }
 
     protected override void VisitOneExpr(Expression expr) {
+      if (expr is OperatorSyntaxExpr op) {
+        if (op.ResolvedExpression == null) {
+          cus.ReportError(op.Origin, "operator receiver type is not determined; annotate it or use a named call");
+          return;
+        }
+        try {
+          var operands = op.Operands.ToList();
+          var saved = op.ReplaySelection();
+          OperatorSelection selection;
+          if (op.ResolvedExpression is FunctionCallExpr call) {
+            selection = new MemberOperatorSelection(call.Function, OperatorTypeView.Freeze(operands[0].PreType),
+              new OperatorDescriptor(op.Symbol, operands.Count));
+          } else {
+            var opcode = op.Syntax is BinaryExpr b ? ResolveOp(b.Op, b.E0.PreType, b.E1.PreType) : (BinaryExpr.ResolvedOpcode?)null;
+            var family = op.Syntax is NegationExpression ? PreTypeResolver.AncestorName(operands[0].PreType) : null;
+            var views = operands.Select(e => OperatorTypeView.Freeze(e.PreType)).ToImmutableArray();
+            if (saved is IntrinsicOperatorSelection old &&
+                (old.Opcode != opcode || old.UnaryFamily != family || old.Operands.Length != operands.Count ||
+                 !old.Operands.Zip(operands).All(p => p.First.Matches(p.Second.PreType)))) {
+              cus.ReportError(op.Origin, "operator selection cannot be transported into this intrinsic view");
+              return;
+            }
+            selection = new IntrinsicOperatorSelection(opcode, family, views);
+          }
+          op.FreezeSelection(selection);
+        } catch (System.InvalidOperationException exception) {
+          cus.ReportError(op.Origin, exception.Message);
+        }
+        return;
+      }
       if (expr is DefaultValueExpression) {
         // skip this during underspecification detection, since it has yet to be filled in
         return;
@@ -282,7 +316,13 @@ namespace Microsoft.Dafny {
 
       var familyDeclName = PreTypeResolver.AncestorName(expr.PreType);
 
-      if (expr is LiteralExpr) {
+      if (expr is NestedMatchExpr nestedMatchExpr) {
+        CheckCasePatterns(nestedMatchExpr);
+      }
+
+      if (expr is StaticReceiverExpr stexpr) {
+        CheckPreTypeIsDetermined(stexpr.Origin, stexpr.PreType, "static receiver");
+      } else if (expr is LiteralExpr) {
         var e = (LiteralExpr)expr;
         if (PreTypeResolver.IsBitvectorName(familyDeclName) || familyDeclName == PreType.TypeNameORDINAL) {
           var n = (BigInteger)e.Value;
@@ -299,10 +339,6 @@ namespace Microsoft.Dafny {
             cus.ReportError(ResolutionErrors.ErrorId.r_no_unary_minus_in_case_patterns, e.Origin,
               "unary minus (-{0}, type {1}) not allowed in case pattern", absN, e.PreType);
           }
-        }
-
-        if (expr is StaticReceiverExpr stexpr) {
-          CheckPreTypeIsDetermined(stexpr.Origin, stexpr.PreType, "static receiver");
         }
 
       } else if (expr is ComprehensionExpr) {
@@ -530,6 +566,20 @@ namespace Microsoft.Dafny {
     static bool OperatesOnIndDatatype(PreType left, PreType right) {
       return (left is DPreType dpLeft && PreTypeResolver.AncestorPreType(dpLeft)?.Decl is IndDatatypeDecl) ||
              (right is DPreType dpRight && PreTypeResolver.AncestorPreType(dpRight)?.Decl is IndDatatypeDecl);
+    }
+
+    /// <summary>
+    /// The variables that the case patterns of a match bind are not expressions, so they are not visited otherwise.
+    /// A type that the user gives for such a variable may leave type arguments to inference, as in "case C(x: T) =>".
+    /// </summary>
+    void CheckCasePatterns(INestedMatch nestedMatch) {
+      foreach (var caze in nestedMatch.Cases) {
+        foreach (var idPattern in caze.Pat.DescendantsAndSelf.OfType<IdPattern>()) {
+          if (idPattern.BoundVar is { } bv) {
+            CheckPreTypeIsDetermined(bv.Origin, bv.PreType, "bound variable");
+          }
+        }
+      }
     }
 
     void CheckVariable(IVariable v, string whatIsBeingChecked) {

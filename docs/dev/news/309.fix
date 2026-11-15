@@ -1,0 +1,1 @@
+Under `--type-system-refresh`, a match pattern variable whose given type leaves an uninferable type argument, as in `case C(x: T) =>` for a generic `T`, is reported as underspecified instead of crashing the resolver.

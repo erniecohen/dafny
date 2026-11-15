@@ -1,0 +1,5 @@
+
+Dafny program verifier did not attempt verification
+github-issue-46-range.dfy(2,26): Error: literal (2) is too large for the bitvector type bv1
+github-issue-46-range.dfy(3,27): Error: literal (256) is too large for the bitvector type bv8
+2 resolution/type errors detected in github-issue-46-range.dfy

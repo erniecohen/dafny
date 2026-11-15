@@ -1,0 +1,1 @@
+Report unresolved destinations in assign-or-return statements instead of crashing, in both resolver modes.

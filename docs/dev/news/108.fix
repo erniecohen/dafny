@@ -1,0 +1,1 @@
+The Reference Manual now documents bit-vector division and remainder, including their precedence, unsigned semantics, and nonzero-divisor requirement.

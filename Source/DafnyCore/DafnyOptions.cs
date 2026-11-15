@@ -342,6 +342,8 @@ namespace Microsoft.Dafny {
       Prune = true;
       TypeEncodingMethod = Bpl.CoreOptions.TypeEncoding.Arguments;
       NormalizeNames = true;
+      // Numeric declaration hashes must depend on content, not the CLR process seed.
+      DeterministicLiteralHashes = true;
       EmitDebugInformation = false;
       Backend = new CsharpBackend(this);
       Printer = new NullPrinter();
@@ -452,14 +454,26 @@ namespace Microsoft.Dafny {
     [CanBeNull] private TestGenerationOptions testGenOptions = null;
     public bool ExtractCounterexample = false;
 
+    // Reporting data for this compilation, never a resolution input. A stable
+    // Boogie state name is rebound to its current source coordinates here.
+    private readonly ConcurrentDictionary<string, string> capturedStateDescriptions = new();
+
+    internal void RecordCapturedStateDescription(string name, string description) {
+      capturedStateDescriptions[name] = description;
+    }
+
+    public string CapturedStateDescription(string name) => capturedStateDescriptions.GetValueOrDefault(name, name);
+
     public bool ShowProofObligationExpressions = false;
 
     public bool AuditProgram = false;
 
-    public static string DefaultZ3Version = "4.16.0";
+    public static string DefaultZ3Version = "4.12.1";
     // Not directly user-configurable, only recorded once we discover it
     public string SolverIdentifier { get; private set; }
     public Version SolverVersion { get; set; }
+    public int VerificationCacheVersionProbes { get; private set; }
+    public bool VerificationCacheBatchMode { get; set; }
 
     public static readonly ReadOnlyCollection<Plugin> DefaultPlugins =
       new(new[] { SinglePassCodeGenerator.Plugin, InternalDocstringRewritersPluginConfiguration.Plugin });
@@ -1176,7 +1190,7 @@ namespace Microsoft.Dafny {
     private static ConcurrentDictionary<string, Version> z3VersionPerPath = new();
     /// <summary>
     /// Dafny releases come with their own copy of Z3, to save users the trouble of having to install extra dependencies.
-    /// For this to work, Dafny first tries any prover path explicitly provided by the user, then looks for the copy
+    /// For this to work, Dafny first tries any prover path explicitly provided by the user, then looks for for the copy
     /// distributed with Dafny, and finally looks in any directory in the system PATH environment variable.
     /// </summary>
     private Version SetZ3ExecutablePath(ErrorReporter errorReporter, IOrigin token) {
@@ -1227,7 +1241,9 @@ namespace Microsoft.Dafny {
 
       if (confirmedProverPath is not null) {
         ProverOptions.Add($"{pp}{confirmedProverPath}");
-        return z3VersionPerPath.GetOrAdd(confirmedProverPath, GetZ3Version);
+        return string.IsNullOrEmpty(Get(CommonOptionBag.VerificationCache)) || VerificationCacheBatchMode
+          ? z3VersionPerPath.GetOrAdd(confirmedProverPath, GetZ3Version)
+          : Caching.SolverVersionCache.ReadOrProbe(Get(CommonOptionBag.VerificationCache), confirmedProverPath, path => { VerificationCacheVersionProbes++; return GetZ3Version(path); });
       }
 
       errorReporter.Error(MessageSource.Verifier, DafnyProject.StartingToken, "Z3 is not found. " + nextStepsMessage);
@@ -1306,7 +1322,22 @@ namespace Microsoft.Dafny {
       if (3 <= ArithMode) {
         SetZ3Option("smt.arith.nl", "false");
       }
+
+      // Z3's preprocessing step that refines injectivity axioms is unsound for a quantifier
+      // whose antecedent repeats a bound variable that the conclusion does not mention
+      // (Z3Prover/z3#11435), which an ordinary Dafny precondition can supply.  Every
+      // Z3 that Dafny supports has the option.  BoogieGenerator gives each implementation
+      // the same value as an smt_option, so the two paths agree.
+      SetZ3Option(RefineInjAxiomsOption, "false");
     }
+
+    public const string RefineInjAxiomsOption = "smt.refine_inj_axioms";
+
+    /// The value of smt.refine_inj_axioms that Z3 is given: the last one passed with
+    /// --solver-option O:smt.refine_inj_axioms=..., and otherwise false.
+    public string RefineInjAxiomsValue =>
+      ProverOptions.LastOrDefault(o => o.StartsWith($"O:{RefineInjAxiomsOption}="))?
+        .Substring($"O:{RefineInjAxiomsOption}=".Length) ?? "false";
 
     protected override string HelpBody => DafnyHelpBody + BoogieHelpBody;
 

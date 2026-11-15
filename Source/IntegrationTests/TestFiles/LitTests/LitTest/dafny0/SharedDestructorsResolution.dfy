@@ -98,3 +98,11 @@ module Module1 {
     | Same1(y: int, y: int)  // error: duplicate destructor name in the same constructor
     | Same2(z: int, ghost z: bool)  // error: duplicate destructor name in the same constructor
 }
+
+module Module2 {
+  datatype Kt =
+    Kt0(x: int) |
+    Kt1(ghost x: int) |  // error: duplicated destructors must agree on ghost/non-ghost
+    Kt2(ghost g: int) |
+    Kt3(g: int)  // error: duplicated destructors must agree on ghost/non-ghost
+}

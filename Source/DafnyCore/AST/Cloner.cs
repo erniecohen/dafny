@@ -14,6 +14,15 @@ namespace Microsoft.Dafny {
   }
 
   public class Cloner {
+    private OperatorCloneContext operatorClones;
+    public OperatorCloneContext OperatorClones => operatorClones ??= CreateOperatorCloneContext();
+    protected OperatorCloneContext ExistingOperatorClones => operatorClones;
+    protected virtual OperatorCloneContext CreateOperatorCloneContext() => new();
+    protected void EnsureOperatorClones(ModuleDefinition source) {
+      if (source?.EnclosingLiteralModuleDecl?.Options.Get(CommonOptionBag.UserDefinedOperators) == true) {
+        _ = OperatorClones;
+      }
+    }
     public bool CloneResolvedFields { get; }
     private readonly Dictionary<Statement, Statement> statementClones = new();
     private readonly Dictionary<IVariable, IVariable> clones = new();
@@ -64,7 +73,9 @@ namespace Microsoft.Dafny {
       Contract.Requires(d != null);
       Contract.Requires(newParent != null);
 
+      EnsureOperatorClones(d.EnclosingModuleDefinition);
       var clone = CloneDeclarationSyntax(d, newParent);
+      clone.TerminationContract = d.TerminationContract;
       var parentObligations = d.CardinalityParentObligations;
       // Iterator syntax has no parent-trait list, and its clone constructor omits
       // Traits. A parent introduced by kind-changing refinement must still survive.
@@ -74,6 +85,7 @@ namespace Microsoft.Dafny {
       clone.CardinalityParentObligations = parentObligations.Select(CloneType).ToImmutableArray();
       // A generic clone may create a distinct refinement specialization. Only
       // a pure view cloner is allowed to identify it with the source declaration.
+      operatorClones?.Register(d, clone);
       return clone;
     }
 
@@ -213,13 +225,20 @@ namespace Microsoft.Dafny {
     }
 
     public TypeParameter CloneTypeParam(TypeParameter tp) {
-      return (TypeParameter)typeParameterClones.GetOrCreate(tp,
+      var result = (TypeParameter)typeParameterClones.GetOrCreate(tp,
         () => new TypeParameter(Origin(tp.Origin), tp.NameNode.Clone(this), tp.VarianceSyntax,
           CloneTPChar(tp.Characteristics), tp.TypeBounds.ConvertAll(CloneType), tp.Attributes));
+      operatorClones?.Register(tp, result);
+      return result;
     }
 
     public virtual MemberDecl CloneMember(MemberDecl member, bool isReference) {
-      return memberClones.GetOrCreate(member, () => {
+      EnsureOperatorClones(member.EnclosingClass?.EnclosingModuleDefinition);
+      if (!isReference && operatorClones != null && memberClones.TryGetValue(member, out var cached) &&
+          ReferenceEquals(cached, member)) {
+        memberClones.Remove(member);
+      }
+      var result = memberClones.GetOrCreate(member, () => {
         if (isReference) {
           return member;
         }
@@ -233,6 +252,12 @@ namespace Microsoft.Dafny {
           return CloneMethod(m);
         }
       });
+      result.TerminationContract = member.TerminationContract;
+      if (!isReference && !ReferenceEquals(member, result)) {
+        operatorClones?.Register(member, result);
+        OpaqueMemberRewriter.RecordCopy(member, result);
+      }
+      return result;
     }
 
     public virtual Type CloneType(Type t) {
@@ -530,34 +555,35 @@ namespace Microsoft.Dafny {
       }
 
       var newNameNode = new Name(Origin(f.NameNode.Origin), newName);
+      var signatureEllipsis = f.SignatureEllipsis == null ? null : Origin(f.SignatureEllipsis);
 
       if (f is Predicate) {
         return new Predicate(Origin(f.Origin), newNameNode, f.HasStaticKeyword, f.IsGhost, f.IsOpaque, tps, formals,
           result,
           req, reads, ens, decreases, body, Predicate.BodyOriginKind.OriginalOrInherited,
           f.ByMethodTok == null ? null : Origin(f.ByMethodTok), byMethodBody,
-          CloneAttributes(f.Attributes), null);
+          CloneAttributes(f.Attributes), signatureEllipsis);
       } else if (f is LeastPredicate) {
         return new LeastPredicate(Origin(f.Origin), newNameNode, f.HasStaticKeyword, f.IsOpaque,
           ((LeastPredicate)f).TypeOfK, tps, formals, result,
-          req, reads, ens, body, CloneAttributes(f.Attributes), null);
+          req, reads, ens, body, CloneAttributes(f.Attributes), signatureEllipsis);
       } else if (f is GreatestPredicate greatestPredicate) {
         return new GreatestPredicate(Origin(f.Origin), newNameNode, f.HasStaticKeyword, f.IsOpaque,
           ((GreatestPredicate)f).TypeOfK, tps, formals, result,
-          req, reads, ens, body, CloneAttributes(f.Attributes), null);
+          req, reads, ens, body, CloneAttributes(f.Attributes), signatureEllipsis);
       } else if (f is TwoStatePredicate) {
         return new TwoStatePredicate(Origin(f.Origin), newNameNode, f.HasStaticKeyword, f.IsOpaque, tps, formals,
           result,
-          req, reads, ens, decreases, body, CloneAttributes(f.Attributes), null);
+          req, reads, ens, decreases, body, CloneAttributes(f.Attributes), signatureEllipsis);
       } else if (f is TwoStateFunction) {
         return new TwoStateFunction(Origin(f.Origin), newNameNode, f.HasStaticKeyword, f.IsOpaque, tps, formals,
           result, CloneType(f.ResultType),
-          req, reads, ens, decreases, body, CloneAttributes(f.Attributes), null);
+          req, reads, ens, decreases, body, CloneAttributes(f.Attributes), signatureEllipsis);
       } else {
         return new Function(Origin(f.Origin), newNameNode, f.HasStaticKeyword, f.IsGhost, f.IsOpaque, tps, formals,
           result, CloneType(f.ResultType),
           req, reads, ens, decreases, body, f.ByMethodTok == null ? null : Origin(f.ByMethodTok), byMethodBody,
-          CloneAttributes(f.Attributes), null);
+          CloneAttributes(f.Attributes), signatureEllipsis);
       }
     }
 

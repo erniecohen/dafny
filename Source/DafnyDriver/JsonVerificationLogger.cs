@@ -56,6 +56,7 @@ public class JsonVerificationLogger : IVerificationResultFormatLogger {
       ["resourceCount"] = vcResult.ResourceCount,
       ["assertions"] = new JsonArray(vcResult.Asserts.Select(SerializeAssertion).ToArray()),
     };
+    if (taskResult.Task is Caching.IReplayedVerificationTask { IsReplayed: true }) { result["timingReplayed"] = true; }
     if (taskResult.Task != null && taskResult.Task.Split.RandomSeed != 0) {
       result["randomSeed"] = taskResult.Task.Split.RandomSeed.ToString();
     }
@@ -79,7 +80,8 @@ public class JsonVerificationLogger : IVerificationResultFormatLogger {
     return outcome.ToString();
   }
 
-  private JsonNode SerializeVerificationResult(VerificationScope scope, IReadOnlyList<VerificationTaskResult> results) {
+  private JsonNode SerializeVerificationResult(VerificationScope scope, IReadOnlyList<VerificationTaskResult> results,
+    ProofDependencyManager dependencyManager) {
     var trackProofDependencies =
       results.All(o => o.Result.Outcome == SolverOutcome.Valid) &&
       results.Any(vcResult => vcResult.Result.CoveredElements.Any());
@@ -92,6 +94,7 @@ public class JsonVerificationLogger : IVerificationResultFormatLogger {
       ["resourceCount"] = results.Sum(r => r.Result.ResourceCount),
       ["vcResults"] = new JsonArray(results.Select(r => SerializeVcResult(dependencyManager, potentialDependencies, r)).ToArray())
     };
+    if (results.Any(r => r.Task is Caching.IReplayedVerificationTask { IsReplayed: true })) { result["timingReplayed"] = true; }
     if (potentialDependencies is not null) {
       result["programElements"] = new JsonArray(potentialDependencies.Select(SerializeProofDependency).ToArray());
     }
@@ -138,7 +141,8 @@ public class JsonVerificationLogger : IVerificationResultFormatLogger {
   }
 
   public void LogScopeResults(VerificationScopeResult scopeResult) {
-    verificationResultNode.Add(SerializeVerificationResult(scopeResult.Scope, scopeResult.Results.ToList()));
+    verificationResultNode.Add(SerializeVerificationResult(scopeResult.Scope, scopeResult.Results.ToList(),
+      scopeResult.ProofDependencies ?? dependencyManager));
   }
 
   private readonly IList<JsonNode> verificationResultNode = new List<JsonNode>();

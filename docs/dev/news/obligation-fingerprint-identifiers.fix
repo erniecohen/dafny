@@ -1,0 +1,1 @@
+Correct the assertion-equivalence test oracle to distinguish bound identifiers, free identifiers and renamed preparation temporaries. This changes structural comparison tests, not verifier translation.

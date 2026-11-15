@@ -12,4 +12,5 @@ public record CliCanVerifyState {
   public int CompletedCount = 0;
   public readonly ConcurrentQueue<(IVerificationTask Task, Completed Result)> CompletedParts = new();
   public int TaskCount;
+  public Microsoft.Dafny.ProofDependencyManager? ProofDependencies;
 }

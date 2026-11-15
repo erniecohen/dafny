@@ -1,0 +1,2 @@
+# This test compares platform-specific resource counts and declares UNSUPPORTED: macosx.
+dafny0/CoinductiveProofs.dfy

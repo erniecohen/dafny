@@ -32,7 +32,8 @@ public static class ExtractCommand {
   private static IReadOnlyList<Option> ExtractOptions =>
     new Option[] { }.
       Concat(DafnyCommands.ConsoleOutputOptions).
-      Concat(DafnyCommands.ResolverOptions);
+      Concat(DafnyCommands.ResolverOptions).
+      Concat(DafnyCommands.LibraryAdmissionOptions);
 
   public static async Task<int> HandleExtraction(DafnyOptions options) {
     if (options.Get(CommonOptionBag.VerificationCoverageReport) != null) {

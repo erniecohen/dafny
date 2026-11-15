@@ -1,0 +1,7 @@
+// CHECK-NOT: ^(?!git\-issue\-82\-reads\-unavailable\-negative\.dfy\(9,[0-9]+\): Error: function precondition could not be proved$).*Error:|(?i:out of resource|timed out|timeout|inconclusive)
+// CHECK: ^git\-issue\-82\-reads\-unavailable\-negative\.dfy\(9,[0-9]+\): Error: function precondition could not be proved$
+// CHECK-NOT: ^(?!git\-issue\-82\-reads\-unavailable\-negative\.dfy\(9,[0-9]+\): Error: function precondition could not be proved$).*Error:|(?i:out of resource|timed out|timeout|inconclusive)
+// CHECK: ^git\-issue\-82\-reads\-unavailable\-negative\.dfy\(9,[0-9]+\): Error: function precondition could not be proved$
+// CHECK-NOT: Error:|(?i:out of resource|timed out|timeout|inconclusive)
+// CHECK: ^Dafny program verifier finished with [0-9]+ verified, 2 errors$
+// CHECK-NOT: Error:|(?i:out of resource|timed out|timeout|inconclusive)

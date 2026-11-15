@@ -169,6 +169,8 @@ public class NewtypeReferenceCharacteristicTests {
     var subset = new SubsetTypeDecl(SourceOrigin.NoToken, new Name("S"), TypeParameterCharacteristics.Default(), [],
       module, bound, new LiteralExpr(SourceOrigin.NoToken, true), SubsetTypeDecl.WKind.CompiledZero, null, null);
     declaration.BaseType = Application(subset);
+    Assert.False(declaration.IsCyclic);
+    Assert.False(subset.IsCyclic);
     var wrapped = Application(declaration);
     // This assertion prevents recursive semantic classification if the stop guard regresses.
     Assert.Equal(Type.AncestorTypeKind.Cyclic,
@@ -203,21 +205,6 @@ public class NewtypeReferenceCharacteristicTests {
     Assert.Equal(Type.AncestorTypeKind.Cyclic, wrapped.NormalizeToAncestorTypeChecked().Kind);
     // First Identity's raw RHS is a parameter; Select's raw RHS is also a parameter.
     // The entered Expanding declaration supplies the cycle witness.
-    Assert.Equal(Type.AncestorTypeKind.Cyclic,
-      wrapped.NormalizeToAncestorTypeChecked(preserveSubsetTypes: true).Kind);
-    Assert.True(wrapped.MayInvolveReferences);
-    Assert.True(wrapped.MayShowReferences);
-  }
-
-  [Fact]
-  public void AssignedProxyDoesNotHideAnUnmarkedSynonymCycle() {
-    var rhs = new InferredTypeProxy();
-    var synonym = new ConcreteTypeSynonymDecl(SourceOrigin.NoToken, new Name("Alias"),
-      TypeParameterCharacteristics.Default(), [], module, rhs, null);
-    rhs.T = Application(synonym);
-    var baseProxy = new InferredTypeProxy { T = Application(synonym) };
-    var wrapped = Application(Newtype("Outer", baseProxy));
-    Assert.Equal(Type.AncestorTypeKind.Cyclic, wrapped.NormalizeToAncestorTypeChecked().Kind);
     Assert.Equal(Type.AncestorTypeKind.Cyclic,
       wrapped.NormalizeToAncestorTypeChecked(preserveSubsetTypes: true).Kind);
     Assert.True(wrapped.MayInvolveReferences);

@@ -1,0 +1,16 @@
+Legacy resolver
+
+Dafny program verifier finished with 9 verified, 0 errors
+[0, 7, 0] [5, 5, 5]
+[11, 7, 13]
+0430 9
+8 1
+Result.Failure("stop")
+Refreshed resolver
+
+Dafny program verifier finished with 9 verified, 0 errors
+[0, 7, 0] [5, 5, 5]
+[11, 7, 13]
+0430 9
+8 1
+Result.Failure("stop")

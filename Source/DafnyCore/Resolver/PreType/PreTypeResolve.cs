@@ -61,6 +61,20 @@ namespace Microsoft.Dafny {
     public readonly PreTypeConstraints Constraints;
 
     TopLevelDecl BuiltInTypeDecl(string name) {
+      if (resolver.SystemModuleManager.ResolutionCatalog is { } catalog) {
+        var declaration = catalog.Pretype(name, () => BuiltInTypeDeclCore(name));
+        preTypeInferenceModuleState.PreTypeBuiltins[name] = declaration;
+        if (IsBitvectorName(name, out _)) {
+          resolver.SystemModuleManager.RecordBuiltin(declaration);
+          resolver.ProgramResolver.AddSystemClass((TopLevelDeclWithMembers)declaration,
+            ((TopLevelDeclWithMembers)declaration).Members.ToDictionary(m => m.Name));
+        }
+        return declaration;
+      }
+      return BuiltInTypeDeclCore(name);
+    }
+
+    private TopLevelDecl BuiltInTypeDeclCore(string name) {
       Contract.Requires(name != null);
       if (preTypeInferenceModuleState.PreTypeBuiltins.TryGetValue(name, out var decl)) {
         return decl;
@@ -82,29 +96,9 @@ namespace Microsoft.Dafny {
         }
         return bvDecl;
       } else {
-        // If looking for fp32 or fp64, ensure it's in the preTypeBuiltins cache
-        if (name is "fp32" or "fp64") {
-          if (!preTypeInferenceModuleState.PreTypeBuiltins.ContainsKey(name)) {
-            var variety = name == "fp32" ? ValuetypeVariety.Fp32 : ValuetypeVariety.Fp64;
-            var floatDecl = resolver.ProgramResolver.SystemModuleManager.valuetypeDecls[(int)variety];
-
-            if (name == "fp32") {
-              resolver.ProgramResolver.SystemModuleManager.EnsureFloatTypesInitialized(resolver.ProgramResolver);
-            } else {
-              resolver.ProgramResolver.SystemModuleManager.EnsureFp64TypeInitialized(resolver.ProgramResolver);
-            }
-
-            preTypeInferenceModuleState.PreTypeBuiltins.Add(name, floatDecl);
-            FillInPreTypesInSignature(floatDecl);
-            foreach (var member in floatDecl.Members) {
-              FillInPreTypesInSignature(member);
-            }
-          }
-          return preTypeInferenceModuleState.PreTypeBuiltins.GetValueOrDefault(name);
-        }
         decl = null;
         foreach (var valueTypeDecl in resolver.ProgramResolver.SystemModuleManager.valuetypeDecls) {
-          if (valueTypeDecl != null && valueTypeDecl.Name == name) {
+          if (valueTypeDecl.Name == name) {
             // bool, int, real, ORDINAL, map, imap
             decl = valueTypeDecl;
             break;
@@ -126,9 +120,7 @@ namespace Microsoft.Dafny {
           }
         }
       }
-      if (decl != null && !preTypeInferenceModuleState.PreTypeBuiltins.ContainsKey(name)) {
-        preTypeInferenceModuleState.PreTypeBuiltins.Add(name, decl);
-      }
+      preTypeInferenceModuleState.PreTypeBuiltins.Add(name, decl);
       return decl;
     }
 
@@ -250,10 +242,6 @@ namespace Microsoft.Dafny {
         decl = BuiltInTypeDecl(PreType.TypeNameInt);
       } else if (type is RealType) {
         decl = BuiltInTypeDecl(PreType.TypeNameReal);
-      } else if (type is Fp32Type) {
-        decl = BuiltInTypeDecl(PreType.TypeNameFp32);
-      } else if (type is Fp64Type) {
-        decl = BuiltInTypeDecl(PreType.TypeNameFp64);
       } else if (type is FieldType) {
         decl = BuiltInTypeDecl(PreType.TypeNameField);
       } else if (type is BigOrdinalType) {
@@ -271,7 +259,6 @@ namespace Microsoft.Dafny {
         decl = BuiltInArrowTypeDecl(at.Arity);
       } else if (type is UserDefinedType udt) {
         decl = udt.ResolvedClass;
-        Contract.Assert(decl != null);
       } else {
         Contract.Assert(false); throw new Cce.UnreachableException();  // unexpected type
       }
@@ -621,7 +608,7 @@ namespace Microsoft.Dafny {
     }
 
     private void AddComparableTypesDefault(PreType a, PreType b) {
-      // The "comparable types" constraint may be useful as a bound if nothing else is known about a proxy.
+      // The "comparable types" constraint may be useful as a bound if nothing else is known about a proxy. 
       if (a.Normalize() is PreTypeProxy aPreTypeProxy) {
         Constraints.AddCompatibleBounds(aPreTypeProxy, b);
       }
@@ -662,12 +649,41 @@ namespace Microsoft.Dafny {
         return true;
       }
       if (!allowConversion) {
-        return false;
+        return IsComponentwiseComparable(aa, bb);
       }
       if (IsConversionCompatible(aa, bb) || IsConversionCompatible(bb, aa)) {
         return true;
       }
       return false;
+    }
+
+    /// <summary>
+    /// Returns whether "a" and "b" have the same head and comparable type arguments: the same argument at every
+    /// non-variant type parameter, and comparable arguments (CheckComparableTypes without conversion) at every co- or
+    /// contravariant one.  The arguments need not be related in the same direction: (Number, Integer) and
+    /// (Integer, Number) are comparable, since both are subtypes of (Number, Number).
+    ///
+    /// During inference, ApproximateComparableConstraints already constrains types with the same head this way; this
+    /// makes the final confirmation agree with it.  Two pre-types comparable in this sense have a common supertype
+    /// and a common subtype, by induction: take a common supertype at each covariant argument, a common subtype at
+    /// each contravariant argument, and the shared argument at each non-variant one.
+    /// </summary>
+    bool IsComponentwiseComparable(DPreType a, DPreType b) {
+      if (a.Decl != b.Decl || a.Arguments.Count != b.Arguments.Count || a.Decl.TypeArgs.Count != a.Arguments.Count) {
+        return false;
+      }
+      for (var i = 0; i < a.Arguments.Count; i++) {
+        var argA = a.Arguments[i];
+        var argB = b.Arguments[i];
+        if (a.Decl.TypeArgs[i].Variance == TypeParameter.TPVariance.Non) {
+          if (!PreType.Same(argA, argB)) {
+            return false;
+          }
+        } else if (!CheckComparableTypes(argA, argB, false)) {
+          return false;
+        }
+      }
+      return true;
     }
 
     bool IsConversionCompatible(DPreType fromType, DPreType toType) {
@@ -708,26 +724,6 @@ namespace Microsoft.Dafny {
             (toFamily is PreType.TypeNameInt or PreType.TypeNameReal or PreType.TypeNameChar or PreType.TypeNameORDINAL)) {
           return true;
         }
-      }
-
-      // fp32 conversions
-      if (toFamily == PreType.TypeNameFp32) {
-        // Conversions TO fp32 are allowed from int, real, fp32, and fp64
-        return fromFamily is PreType.TypeNameInt or PreType.TypeNameReal or PreType.TypeNameFp32 or PreType.TypeNameFp64;
-      }
-      if (fromFamily == PreType.TypeNameFp32) {
-        // Conversions FROM fp32 are allowed to int, real, fp32, and fp64
-        return toFamily is PreType.TypeNameInt or PreType.TypeNameReal or PreType.TypeNameFp32 or PreType.TypeNameFp64;
-      }
-
-      // fp64 conversions
-      if (toFamily == PreType.TypeNameFp64) {
-        // Conversions TO fp64 are allowed from int, real, fp32, and fp64
-        return fromFamily is PreType.TypeNameInt or PreType.TypeNameReal or PreType.TypeNameFp32 or PreType.TypeNameFp64;
-      }
-      if (fromFamily == PreType.TypeNameFp64) {
-        // Conversions FROM fp64 are allowed to int, real, fp32, and fp64
-        return toFamily is PreType.TypeNameInt or PreType.TypeNameReal or PreType.TypeNameFp32 or PreType.TypeNameFp64;
       }
 
       return false;
@@ -840,6 +836,13 @@ namespace Microsoft.Dafny {
         ResolvePreTypeSignature(d, preTypeInferenceModuleState, resolver);
       }
 
+      if (resolver.Options.Get(CommonOptionBag.UserDefinedOperators)) {
+        var operatorErrorCount = resolver.Reporter.ErrorCount;
+        OperatorResolution.Validate(declarations, resolver);
+        if (resolver.Reporter.ErrorCount != operatorErrorCount) {
+          return;
+        }
+      }
       if (!firstPhaseOnly) {
         var basicPreTypeResolver = new PreTypeResolver(resolver, preTypeInferenceModuleState);
         foreach (var d in allDeclarations) {

@@ -1,0 +1,64 @@
+original (refresh:false, axioms:false, keys:false)
+git-issue-1962-original.dfy(3,2): Error: assertion might not hold
+
+Dafny program verifier finished with 0 verified, 1 error
+original (refresh:false, axioms:false, keys:true)
+
+Dafny program verifier finished with 1 verified, 0 errors
+positive (refresh:false, axioms:false, keys:true)
+
+Dafny program verifier finished with 11 verified, 0 errors
+negative (refresh:false, axioms:false, keys:true)
+git-issue-1962-negative.dfy(3,2): Error: assertion might not hold
+git-issue-1962-negative.dfy(10,2): Error: assertion might not hold
+git-issue-1962-negative.dfy(14,2): Error: assertion might not hold
+
+Dafny program verifier finished with 0 verified, 3 errors
+original (refresh:false, axioms:true, keys:false)
+git-issue-1962-original.dfy(3,2): Error: assertion might not hold
+
+Dafny program verifier finished with 0 verified, 1 error
+original (refresh:false, axioms:true, keys:true)
+
+Dafny program verifier finished with 1 verified, 0 errors
+positive (refresh:false, axioms:true, keys:true)
+
+Dafny program verifier finished with 11 verified, 0 errors
+negative (refresh:false, axioms:true, keys:true)
+git-issue-1962-negative.dfy(3,2): Error: assertion might not hold
+git-issue-1962-negative.dfy(10,2): Error: assertion might not hold
+git-issue-1962-negative.dfy(14,2): Error: assertion might not hold
+
+Dafny program verifier finished with 0 verified, 3 errors
+original (refresh:true, axioms:false, keys:false)
+git-issue-1962-original.dfy(3,2): Error: assertion might not hold
+
+Dafny program verifier finished with 0 verified, 1 error
+original (refresh:true, axioms:false, keys:true)
+
+Dafny program verifier finished with 1 verified, 0 errors
+positive (refresh:true, axioms:false, keys:true)
+
+Dafny program verifier finished with 11 verified, 0 errors
+negative (refresh:true, axioms:false, keys:true)
+git-issue-1962-negative.dfy(3,2): Error: assertion might not hold
+git-issue-1962-negative.dfy(10,2): Error: assertion might not hold
+git-issue-1962-negative.dfy(14,2): Error: assertion might not hold
+
+Dafny program verifier finished with 0 verified, 3 errors
+original (refresh:true, axioms:true, keys:false)
+git-issue-1962-original.dfy(3,2): Error: assertion might not hold
+
+Dafny program verifier finished with 0 verified, 1 error
+original (refresh:true, axioms:true, keys:true)
+
+Dafny program verifier finished with 1 verified, 0 errors
+positive (refresh:true, axioms:true, keys:true)
+
+Dafny program verifier finished with 11 verified, 0 errors
+negative (refresh:true, axioms:true, keys:true)
+git-issue-1962-negative.dfy(3,2): Error: assertion might not hold
+git-issue-1962-negative.dfy(10,2): Error: assertion might not hold
+git-issue-1962-negative.dfy(14,2): Error: assertion might not hold
+
+Dafny program verifier finished with 0 verified, 3 errors

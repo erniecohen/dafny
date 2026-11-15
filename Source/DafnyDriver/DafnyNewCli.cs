@@ -65,7 +65,8 @@ public static class DafnyNewCli {
   }
 
   public delegate Task<int> ContinueWithOptions(DafnyOptions dafnyOptions, InvocationContext context);
-  public static void SetHandlerUsingDafnyOptionsContinuation(Command command, ContinueWithOptions continuation) {
+  public static void SetHandlerUsingDafnyOptionsContinuation(Command command, ContinueWithOptions continuation,
+    Func<Option, DafnyOptions, bool>? useProjectOption = null) {
 
     async Task Handle(InvocationContext context) {
       WritersConsole console = (WritersConsole)context.Console;
@@ -116,11 +117,22 @@ public static class DafnyNewCli {
         dafnyOptions.DafnyProject = project;
       }
 
+      // Process the opt-in before options whose project values depend on it.
+      if (command.Options.Contains(CommonOptionBag.ProjectOutput)) {
+        ProcessOption(context, CommonOptionBag.ProjectOutput, dafnyOptions);
+      }
+
       foreach (var option in command.Options) {
         if (option == CommonOptionBag.UseBaseFileName || option == DafnyProject.FindProjectOption) {
           continue;
         }
-        ProcessOption(context, option, dafnyOptions);
+        try {
+          ProcessOption(context, option, dafnyOptions, useProjectOption?.Invoke(option, dafnyOptions) ?? true);
+        } catch (ArgumentException e) {
+          context.ExitCode = (int)ExitValue.PREPROCESSING_ERROR;
+          await dafnyOptions.OutputWriter.Status($"Invalid value for option {option.Name}: {e.Message}");
+          return;
+        }
       }
 
       foreach (var option in command.Options) {
@@ -134,8 +146,37 @@ public static class DafnyNewCli {
         }
       }
 
+      if (dafnyOptions.Get(CommonOptionBag.VerificationCache) != null &&
+          !dafnyOptions.Get(CommonOptionBag.TypeSystemRefresh)) {
+        await dafnyOptions.OutputWriter.Status("Error: --verification-cache requires --type-system-refresh");
+        context.ExitCode = (int)ExitValue.DAFNY_ERROR;
+        return;
+      }
+
+      if (dafnyOptions.Get(CommonOptionBag.TranslationCache) &&
+          !dafnyOptions.Get(CommonOptionBag.TypeSystemRefresh)) {
+        await dafnyOptions.OutputWriter.Status("Error: --translation-cache requires --type-system-refresh");
+        context.ExitCode = (int)ExitValue.DAFNY_ERROR;
+        return;
+      }
+
       dafnyOptions.ApplyDefaultOptionsWithoutSettingsDefault();
       dafnyOptions.UsingNewCli = true;
+
+      // Validate the effective options after CLI/project precedence is applied,
+      // before parsing or resolving source. This is a rejected configuration,
+      // with the same exit code as other Dafny front-end errors.
+      var resolutionThreadsResult = context.ParseResult.FindResultFor(CommonOptionBag.ResolutionThreads);
+      var resolutionThreadsRequested = resolutionThreadsResult?.Token is not null ||
+        dafnyOptions.DafnyProject?.Options.ContainsKey(CommonOptionBag.ResolutionThreads.Name) == true;
+      // A default-worker implementation can use this same resolver without an
+      // explicit opt-in. It must still report ordinary legacy resolution errors.
+      if (resolutionThreadsRequested && dafnyOptions.Get(CommonOptionBag.ResolutionThreads) > 0 &&
+          !dafnyOptions.Get(CommonOptionBag.TypeSystemRefresh)) {
+        await dafnyOptions.OutputWriter.Status("Error: --resolution-threads requires --type-system-refresh.");
+        context.ExitCode = (int)ExitValue.DAFNY_ERROR;
+        return;
+      }
 
       if (dafnyOptions.Get(CommonOptionBag.WaitForDebugger)) {
         while (!Debugger.IsAttached) {
@@ -149,11 +190,26 @@ public static class DafnyNewCli {
     command.SetHandler(Handle);
   }
 
-  private static void ProcessOption(InvocationContext context, Option option, DafnyOptions dafnyOptions) {
+  private static void ProcessOption(InvocationContext context, Option option, DafnyOptions dafnyOptions,
+    bool useProjectOption = true) {
     var options = dafnyOptions.Options;
     var result = context.ParseResult.FindResultFor(option);
+    if (option == CommonOptionBag.Output && dafnyOptions.Get(CommonOptionBag.ProjectOutput)) {
+      object? rawValue = null;
+      if (result != null && !Equals(result.Token, null)) {
+        rawValue = result.Tokens[0].Value;
+      } else {
+        dafnyOptions.DafnyProject?.Options.TryGetValue(option.Name, out rawValue);
+      }
+      // Full-path conversion turns an empty value or . / .. into a directory name.
+      if (rawValue is string path && (path.Length == 0 || Path.GetFileName(path) is "." or "..")) {
+        throw new ArgumentException("Invalid output filename: specify a filename with a nonempty stem, not a directory.");
+      }
+    }
     object? projectFileValue = null;
-    var hasProjectFileValue = dafnyOptions.DafnyProject?.TryGetValue(option, out projectFileValue) ?? false;
+    var hasProjectFileValue = useProjectOption &&
+      (option != CommonOptionBag.Output || result == null || Equals(result.Token, null)) &&
+      (dafnyOptions.DafnyProject?.TryGetValue(option, out projectFileValue) ?? false);
     object value;
     if (option.Arity.MaximumNumberOfValues <= 1) {
       // If multiple values aren't allowed, CLI options take precedence over project file options

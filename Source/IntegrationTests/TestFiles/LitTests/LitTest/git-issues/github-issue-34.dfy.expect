@@ -1,0 +1,16 @@
+
+Dafny program verifier finished with 12 verified, 0 errors
+github-issue-34-negative.dfy(11,0): Error: a postcondition could not be proved on this return path
+github-issue-34-negative.dfy(10,12): Related location: this is the postcondition that could not be proved
+github-issue-34-negative.dfy(20,2): Error: assertion might not hold
+github-issue-34-negative.dfy(25,2): Error: assertion might not hold
+github-issue-34-negative.dfy(30,2): Error: assertion might not hold
+github-issue-34-negative.dfy(47,5): Error: a precondition for this call could not be proved
+github-issue-34-negative.dfy(37,11): Related location: this is the precondition that could not be proved
+github-issue-34-negative.dfy(53,8): Error: value does not satisfy the subset constraints of 'int -> int' (possible cause: it may be partial or have read effects)
+github-issue-34-negative.dfy(61,8): Error: value does not satisfy the subset constraints of 'int -> int' (possible cause: it may be partial or have read effects)
+github-issue-34-negative.dfy(69,2): Error: assertion might not hold
+
+Dafny program verifier finished with 1 verified, 8 errors
+
+Dafny program verifier finished with 1 verified, 0 errors

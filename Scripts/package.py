@@ -19,8 +19,8 @@ import ntpath
 
 # Configuration
 
-Z3_VERSIONS = [ "4.12.1", "4.16.0" ]
-Z3_URL_BASE = "https://github.com/dafny-lang/solver-builds/releases/download/snapshot-2026-04-03"
+Z3_VERSIONS = [ "4.12.1", "4.14.1" ]
+Z3_URL_BASE = "https://github.com/dafny-lang/solver-builds/releases/download/snapshot-2025-07-02"
 
 ## How many times we allow ourselves to try to download Z3
 Z3_MAX_DOWNLOAD_ATTEMPTS = 5
@@ -83,20 +83,12 @@ class Release:
     def get_z3_zips(self):
         z3_zips = [ "z3-{}-{}-{}-bin.zip".format(z3_version, self.platform, self.os) for z3_version in Z3_VERSIONS ]
 
-        # Z3 4.16.0 was built on newer runners than 4.12.1
-        for i in range(len(Z3_VERSIONS)):
-            if "4.16.0" in z3_zips[i]:
-                z3_zips[i] = z3_zips[i].replace("macos-14", "macos-15")
-                z3_zips[i] = z3_zips[i].replace("ubuntu-22.04", "ubuntu-24.04")
-
-        # Z3 4.12.1 has no arm64 windows build; use x64 (works under emulation)
-        # Z3 4.16.0 has a native arm64 build from windows-11-arm runner
-        if self.platform == "arm64" and "windows" in self.os:
+        # There are no arm macOS builds for Z3 4.8.*
+        # x64 one will work just fine though
+        if self.platform == "arm64" and "macos" in self.os:
             for i in range(len(Z3_VERSIONS)):
-                if "4.12.1" in z3_zips[i]:
+                if "4.8." in z3_zips[i]:
                     z3_zips[i] = z3_zips[i].replace("arm64", "x64")
-                else:
-                    z3_zips[i] = z3_zips[i].replace("windows-2022", "windows-11-arm")
 
         return z3_zips
 
@@ -295,11 +287,10 @@ def main():
 
     # Z3
     flush("* Downloading Z3 releases")
-    releases = [ Release("macos-14",       "x64", args.version, args.out),
-                 Release("macos-14",     "arm64", args.version, args.out),
+    releases = [ Release("macos-13",       "x64", args.version, args.out),
+                 Release("macos-13",     "arm64", args.version, args.out),
                  Release("ubuntu-22.04",   "x64", args.version, args.out),
-                 Release("windows-2022",   "x64", args.version, args.out),
-                 Release("windows-2022", "arm64", args.version, args.out) ]
+                 Release("windows-2022",   "x64", args.version, args.out) ]
     if args.os:
         releases = list(filter(lambda release: release.os_name == args.os, releases))
     if args.platform:

@@ -86,6 +86,26 @@ namespace Microsoft.Dafny.LanguageServer.IntegrationTest.Lookup {
     }
 
     [Fact]
+    public async Task OperatorHoverDistinguishesRankFromAnOrdinaryFallbackCall() {
+      await SetUp(options => {
+        options.Set(CommonOptionBag.UserDefinedOperators, true);
+        options.Set(CommonOptionBag.TypeSystemRefresh, true);
+      });
+      var source = """
+        datatype D = D {
+          predicate {:operator "<"} less(b: D) { true }
+          function {:operator "+"} plus(b: D): D { b }
+        }
+        ghost predicate p(x: D) { x < x }
+        function q(x: D): D { x + x }
+        """;
+      var document = await CreateOpenAndWaitForResolve(source);
+      var lines = source.Split('\n');
+      await AssertHoverContains(document, new Position(4, lines[4].IndexOf('<')), "Intrinsic datatype rank comparison");
+      await AssertHoverContains(document, new Position(5, lines[5].IndexOf('+')), "ordinary fallback call to `D.plus`");
+    }
+
+    [Fact]
     public async Task Crash() {
       var source = @"
 module M {

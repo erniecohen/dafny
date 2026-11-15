@@ -1,0 +1,15 @@
+// Opt-in --contextual-quantifier-domains: a forall or exists bound variable used only as an argument
+// of subset type T gets type T (https://github.com/erniecohen/dafny/issues/200).
+// RUN: echo "positive (legacy)" > "%t"
+// RUN: %exits-with 0 %baredafny verify --type-system-refresh:false --use-basename-for-filename --show-snippets:false "%S/Inputs/github-issue-200-positive.dfy" >> "%t"
+// RUN: echo "positive (refreshed, off)" >> "%t"
+// RUN: %exits-with 4 %baredafny verify --type-system-refresh:true --use-basename-for-filename --show-snippets:false "%S/Inputs/github-issue-200-positive.dfy" >> "%t"
+// RUN: echo "positive (refreshed, on)" >> "%t"
+// RUN: %exits-with 0 %baredafny verify --type-system-refresh:true --contextual-quantifier-domains --use-basename-for-filename --show-snippets:false "%S/Inputs/github-issue-200-positive.dfy" >> "%t"
+// RUN: echo "control (legacy)" >> "%t"
+// RUN: %exits-with 4 %baredafny verify --type-system-refresh:false --use-basename-for-filename --show-snippets:false "%S/Inputs/github-issue-200-control.dfy" >> "%t"
+// RUN: echo "control (refreshed, off)" >> "%t"
+// RUN: %exits-with 4 %baredafny verify --type-system-refresh:true --use-basename-for-filename --show-snippets:false "%S/Inputs/github-issue-200-control.dfy" >> "%t"
+// RUN: echo "control (refreshed, on)" >> "%t"
+// RUN: %exits-with 4 %baredafny verify --type-system-refresh:true --contextual-quantifier-domains --use-basename-for-filename --show-snippets:false "%S/Inputs/github-issue-200-control.dfy" >> "%t"
+// RUN: %diff "%s.expect" "%t"

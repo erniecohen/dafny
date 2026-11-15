@@ -46,9 +46,13 @@ public partial class BoogieGenerator {
       foreach (AttributedExpression ensures in ConjunctsOf(f.Ens)) {
         var functionHeight = generator.currentModule.CallGraph.GetSCCRepresentativePredecessorCount(f);
         var splits = new List<SplitExprInfo>();
-        bool splitHappened /*we actually don't care*/ = generator.TrSplitExpr(context, ensures.E, splits, true, functionHeight, true, etran);
+        if (generator.options.Get(CommonOptionBag.ConsistentObligationChecks)) {
+          splits.AddRange(generator.LowerProposition(context, ensures.E, etran, heightLimit: functionHeight).Pieces);
+        } else {
+          generator.TrSplitExpr(context, ensures.E, splits, true, functionHeight, true, etran);
+        }
         var (errorMessage, successMessage) = generator.CustomErrorMessage(ensures.Attributes);
-        var canCalls = etran.CanCallAssumption(ensures.E, new CanCallOptions(true, f));
+        var canCalls = etran.CanCallAssumptionForVerification(ensures.E, new CanCallOptions(true, f));
         generator.AddEnsures(ens, generator.FreeEnsures(ensures.E.Origin, canCalls, null, true));
         foreach (var s in splits) {
           if (s.IsChecked && !s.Tok.IsInherited(generator.currentModule)) {
@@ -92,9 +96,7 @@ public partial class BoogieGenerator {
 
       builder.AddCaptureState(f.Origin, false, "initial state");
 
-      if (etran.readsFrame != null) {
-        generator.DefineFrame(f.Origin, etran.ReadsFrame(f.Origin), f.Reads.Expressions, builder, locals, null);
-      }
+      generator.DefineFrame(f.Origin, etran.ReadsFrame(f.Origin), f.Reads.Expressions, builder, locals, null);
       generator.InitializeFuelConstant(f.Origin, builder, etran);
 
       var delayer = new ReadsCheckDelayer(etran, null, locals, builderInitializationArea, builder);
@@ -105,11 +107,11 @@ public partial class BoogieGenerator {
           var e = formal.DefaultValue;
           generator.CheckWellformed(e, wfo, locals, builder,
             etran.WithReadsFrame(etran.readsFrame, null)); // No frame scope for default values
-          builder.Add(new AssumeCmd(e.Origin, etran.CanCallAssumption(e)));
-          generator.CheckSubrange(e.Origin, etran.TrExpr(e), e.Type, formal.Type, e, builder);
+          builder.Add(new AssumeCmd(e.Origin, etran.CanCallAssumptionForVerification(e)));
+          generator.CheckSubrange(e.Origin, etran.TrExpr(e), e.Type, formal.Type, e, builder, etran: etran);
 
           if (formal.IsOld) {
-            Expr wh = generator.GetWhereClause(e.Origin, etran.TrExpr(e), e.Type, etran.Old, ISALLOC, true);
+            Expr wh = generator.AllocationObligation(e.Origin, etran.TrExpr(e), e.Type, etran.Old);
             if (wh != null) {
               var desc = new IsAllocated("default value", "in the two-state function's previous state", e);
               builder.Add(generator.Assert(generator.GetToken(e), wh, desc, builder.Context));
@@ -147,6 +149,14 @@ public partial class BoogieGenerator {
       builder.Add(new CommentCmd("Check well-formedness of the decreases clause"));
       foreach (Expression p in f.Decreases.Expressions) {
         generator.CheckWellformed(p, new WFOptions(null, false), locals, builder, etran);
+      }
+      if (generator.options.Get(CommonOptionBag.ModularTermination)) {
+        foreach (var p in ModularTermination.DeclaredGlobalBound(f) ?? []) {
+          generator.CheckWellformed(p, new WFOptions(null, false), locals, builder, etran);
+        }
+        foreach (var p in ModularTermination.CallbackClauses(f.Decreases.Attributes).SelectMany(a => a.Args.Skip(1))) {
+          generator.CheckWellformed(p, new WFOptions(null, false), locals, builder, etran);
+        }
       }
 
       var implementationParameters = Bpl.Formal.StripWhereClauses(procedureParameters);
@@ -215,7 +225,6 @@ public partial class BoogieGenerator {
       bodyCheckBuilder.Add(new CommentCmd("Check well-formedness of body and result subset type constraint"));
       if (f.Body != null && generator.RevealedInScope(f)) {
         var doReadsChecks = etran.readsFrame != null;
-        Contract.Assert(!(f.ReadsDoubleStar && doReadsChecks));
         var wfo = new WFOptions(null, doReadsChecks, doReadsChecks, false);
 
         void CheckPostcondition(BoogieStmtListBuilder innerBuilder, Expression innerBody) {
@@ -237,13 +246,11 @@ public partial class BoogieGenerator {
 
         generator.CheckWellformedWithResult(f.Body, wfo, locals, bodyCheckBuilder, etran, CheckPostcondition);
 
-        if (doReadsChecks) {
-          // var b$reads_guards#0 : bool  ...
-          locals.AddRange(wfo.Locals.Values);
-          // b$reads_guards#0 := true   ...
-          foreach (var cmd in wfo.AssignLocals) {
-            builderInitializationArea.Add(cmd);
-          }
+        // var b$reads_guards#0 : bool  ...
+        locals.AddRange(wfo.Locals.Values);
+        // b$reads_guards#0 := true   ...
+        foreach (var cmd in wfo.AssignLocals) {
+          builderInitializationArea.Add(cmd);
         }
       }
       bodyCheckBuilder.Add(TrAssumeCmd(f.Origin, Expr.False));

@@ -37,6 +37,8 @@ public class Program : NodeWithoutOrigin {
   public IEnumerable<ModuleDefinition> CompileModules => new[] { SystemModuleManager.SystemModule }.Concat(Modules());
   // Contains the definitions to be used for compilation.
 
+  internal Dictionary<ModuleDecl, string> ResolutionKeys { get; set; } = new();
+
   public Method MainMethod; // Method to be used as main if compiled
   public LiteralModuleDecl DefaultModule;
   public IList<FileModuleDefinition> Files { get; } = new List<FileModuleDefinition>();
@@ -52,6 +54,10 @@ public class Program : NodeWithoutOrigin {
   internal CardinalityValidationResult? CardinalityValidationReceipt { get; set; }
 
   public ProofDependencyManager ProofDependencyManager { get; set; } = new();
+
+  // CLI batches capture this before translating their first request.
+  [JsonIgnore]
+  public string? PreludeText { get; set; }
 
   /// <summary>
   /// Serializing the state of the Program passed to this backend,
@@ -70,6 +76,13 @@ public class Program : NodeWithoutOrigin {
   /// especially parallel processing.
   /// </summary>
   public Program AfterParsingClone { get; set; }
+
+  /// <summary>
+  /// Set by a library build under --modular-termination once verification has ended: the evidence
+  /// LibraryBackend needs to record the library's termination contracts.  Never cloned or serialized.
+  /// </summary>
+  [JsonIgnore]
+  public DafnyCore.ModularTerminationCompletion ModularTerminationCompletion { get; set; }
 
   public Program(string name, LiteralModuleDecl module, SystemModuleManager systemModuleManager, ErrorReporter reporter,
     CompilationData compilation) {

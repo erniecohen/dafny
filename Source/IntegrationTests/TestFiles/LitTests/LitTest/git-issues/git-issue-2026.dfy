@@ -1,5 +1,4 @@
-// RUN: %exits-with 4 %verify --extract-counterexample "%s" > "%t".raw
-// RUN: grep -E "Error:|Related counterexample|Dafny program verifier finished" "%t".raw > "%t"
+// RUN: %exits-with 4 %verify --extract-counterexample "%s" > "%t"
 // RUN: %diff "%s.expect" "%t"
 
 // NB: with recent Z3 versions (e.g., 4.12.1), this program no longer

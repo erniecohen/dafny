@@ -1,0 +1,14 @@
+Legacy resolver
+github-issue-310-errors.dfy(24,3): Error: cannot assign to a range of array elements (try the 'forall' statement)
+github-issue-310-errors.dfy(25,3): Error: cannot assign to a range of array elements (try the 'forall' statement)
+github-issue-310-errors.dfy(26,3): Error: cannot assign to a range of array elements (try the 'forall' statement)
+github-issue-310-errors.dfy(27,3): Error: cannot assign to a range of array elements (try the 'forall' statement)
+github-issue-310-errors.dfy(28,3): Error: cannot assign to a range of array elements (try the 'forall' statement)
+5 resolution/type errors detected in github-issue-310-errors.dfy
+Refreshed resolver
+github-issue-310-errors.dfy(24,3): Error: cannot assign to a range of array elements (try the 'forall' statement)
+github-issue-310-errors.dfy(25,3): Error: cannot assign to a range of array elements (try the 'forall' statement)
+github-issue-310-errors.dfy(26,3): Error: cannot assign to a range of array elements (try the 'forall' statement)
+github-issue-310-errors.dfy(27,3): Error: cannot assign to a range of array elements (try the 'forall' statement)
+github-issue-310-errors.dfy(28,3): Error: cannot assign to a range of array elements (try the 'forall' statement)
+5 resolution/type errors detected in github-issue-310-errors.dfy

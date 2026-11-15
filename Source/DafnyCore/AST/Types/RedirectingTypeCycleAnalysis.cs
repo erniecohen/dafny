@@ -154,6 +154,19 @@ public static class RedirectingTypeCycleAnalysis {
     return Analyze(new[] { root }, scope).FindCycles().FirstOrDefault()?.Witness;
   }
 
+  public static void MarkCyclic(IEnumerable<RedirectingTypeDecl> declarations) {
+    foreach (var declaration in declarations) {
+      switch (declaration) {
+        case NewtypeDecl newtype:
+          newtype.IsCyclic = true;
+          break;
+        case TypeSynonymDecl synonym:
+          synonym.IsCyclic = true;
+          break;
+      }
+    }
+  }
+
   internal static IEnumerable<RedirectingTypeDecl> Ordered(IEnumerable<RedirectingTypeDecl> declarations) {
     // Empty and singleton dependency sets have no order to establish.
     if (declarations is IReadOnlyCollection<RedirectingTypeDecl> { Count: < 2 }) {

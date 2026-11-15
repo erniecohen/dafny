@@ -1,0 +1,1 @@
+Fix a resolver crash when cloning a such-that assignment with missing bounds inside a match case.

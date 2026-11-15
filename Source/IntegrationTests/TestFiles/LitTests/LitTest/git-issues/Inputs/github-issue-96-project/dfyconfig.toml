@@ -1,0 +1,6 @@
+includes = ["../github-issue-96-positive.dfy"]
+
+[options]
+statement-expression-conclusions = true
+allow-axioms = true
+allow-warnings = true

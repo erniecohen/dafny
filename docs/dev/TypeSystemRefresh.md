@@ -16,6 +16,46 @@ The "type system refresh" is a reimplementation of Dafny's name resolution, type
 
     This makes inference more predictable. It also removes the risk that, say, an intended quantifier `forall x: int :: P(x)` is instead inferred to be the logically weaker `forall x: nat :: P(x)`.
 
+    The fork's opt-in `--contextual-lambda-domains` supplies declared parameter
+    types to lambdas that directly form a named function's body. It uses only
+    domains with the same inferred base type, preserves explicit annotations,
+    and leaves other bound-variable inference unchanged. This is checking against
+    the named function's declared arrow domain: the ordinary lambda well-formedness
+    checks still verify every body application and result on that domain. It adds
+    no verifier axioms or unchecked subset constraints.
+
+    The fork's opt-in `--contextual-quantifier-domains` gives an omitted bound
+    variable of a `forall` or `exists` expression the declared type `S` of the
+    function parameters it is passed to, when every occurrence of the variable is
+    such a direct argument of a function without type parameters, all those
+    parameters have type `S`, and `S` has the variable's base type. The result is
+    the program with `x: S` written; it adds no verifier axiom or assumption, but
+    it changes the quantifier's domain, which is why it is opt-in
+    ([issue 200](https://github.com/erniecohen/dafny/issues/200)).
+
+    The fork's opt-in `--invariant-constructor-inference` changes the type
+    refinement flows into the arguments of a datatype constructor. A flow into a
+    non-variant position of a formal, such as `T` in `tl: List<T>`, sets the
+    constructor's type argument to the actual's type and pins it; covariant flows,
+    such as from `hd: T`, then do not widen a pinned type argument. A pinned type
+    argument still moves up its tower of subset types if a non-variant source does,
+    so the refinement loop terminates. It adds and removes no proof obligation
+    kind: each actual argument is checked against the formal with the chosen type
+    argument ([issue 101](https://github.com/erniecohen/dafny/issues/101)).
+
+    The fork's `--conservative-match-inference`, on by default, changes when the
+    refreshed resolver makes default type decisions while resolving a `match`
+    whose source type is not yet known: it first propagates the known constraints
+    without decisions, and makes decisions only if the source type is still
+    unknown. A parameterless pattern identifier whose type, after propagation, has
+    a subtype that is not a datatype (or advice that excludes datatypes) is a bound
+    variable without any decision, since a datatype has no subtypes but itself. It
+    adds and removes no constraint. It fixes an earlier literal being given the
+    type `int` before the enclosing context fixes it
+    ([issue 48](https://github.com/erniecohen/dafny/issues/48)), but not when the
+    type at a pattern stays unknown after propagation.
+    `--conservative-match-inference:false` restores the earlier inference.
+
     (This design may soon change in one place, namely when a lambda expressions is known to be used in a limited number of places. This happens in array initializers and sequence comprehensions, where it would be friendly to try to infer the bound variable to be of type `nat` rather than `int`.)
 
 The new type system also fixes a number of bugs in the previous type system. Among them are bugs having to do with cyclic dependencies among declarations, which the new type system is equipped to handle.

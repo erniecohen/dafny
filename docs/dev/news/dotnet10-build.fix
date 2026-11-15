@@ -1,0 +1,1 @@
+Dafny and its test tools now build and run on .NET 10. Generated C# programs retain their existing .NET 8 target.

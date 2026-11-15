@@ -9,6 +9,33 @@ using static Microsoft.Dafny.ParseErrors;
 namespace Microsoft.Dafny;
 
 public partial class Parser {
+  private Expression SourceBinary(IOrigin origin, BinaryExpr.Opcode op, Expression left, Expression right) =>
+    OperatorSyntaxExpr.Binary(theOptions.Get(CommonOptionBag.UserDefinedOperators), origin, op, left, right);
+
+  private Expression SourceNegation(IOrigin origin, Expression operand) {
+    var intrinsic = new NegationExpression(origin, operand);
+    return theOptions.Get(CommonOptionBag.UserDefinedOperators) ? new OperatorSyntaxExpr(origin, intrinsic) : intrinsic;
+  }
+
+  // Module attributes still go through legacy resolution even under refresh. A syntax
+  // cloner visits lambda attributes, statement expressions and other pre-resolution syntax.
+  private sealed class IntrinsicAttributeCloner : Cloner {
+    public override Expression CloneExpr(Expression expression) {
+      if (expression is OperatorSyntaxExpr op) {
+        return base.CloneExpr(op.Syntax);
+      }
+      var clone = base.CloneExpr(expression);
+      if (clone is ChainingExpression chain) {
+        chain.UseUserOperators = false;
+        chain.Rebuild();
+      }
+      return clone;
+    }
+  }
+
+  private static Attributes IntrinsicModuleAttributes(Attributes attributes) =>
+    new IntrinsicAttributeCloner().CloneAttributes(attributes);
+
 
   public Parser(DafnyOptions options, Scanner/*!*/ scanner, Errors/*!*/ errors, CancellationToken cancellationToken)
     : this(scanner, errors, cancellationToken)  // the real work
@@ -42,7 +69,7 @@ public partial class Parser {
 
   bool IsQuantifierVariableDecl(QuantifiedVar previousVar) {
     // Introducing per-quantified variable ranges creates some ambiguities in the grammar,
-    // since before that the range would terminate the quantified domain. For example, the following statement:
+    // since before that the range would terminate the quantifed domain. For example, the following statement:
     //
     // print set x | E, y;
     //
@@ -305,6 +332,29 @@ public partial class Parser {
     return false;
   }
 
+  /// <summary>
+  /// Under --modular-termination, returns the {:global} attribute, without arguments, that the
+  /// current decreases clause added in front of "before", so that the clause's expressions become
+  /// its arguments: the clause's global bound.  The same for a {:callback f} attribute with its one
+  /// argument, whose expressions become the callback bound of f.  Returns null otherwise, and always when the option
+  /// is off, so that the clause is then parsed as it always was.
+  /// </summary>
+  Attributes GlobalDecreasesAttribute(Attributes current, Attributes before) {
+    if (!theOptions.Get(CommonOptionBag.ModularTermination)) {
+      return null;
+    }
+    for (var a = current; a != null && a != before; a = a.Prev) {
+      if (a.Name == ModularTermination.GlobalAttributeName && a.Args.Count == 0 && a is not UserSuppliedAtAttribute) {
+        return a;
+      }
+      // "decreases {:callback f} E" (milestone M3b): the clause's expressions follow the parameter.
+      if (a.Name == ModularTermination.CallbackAttributeName && a.Args.Count == 1 && a is not UserSuppliedAtAttribute) {
+        return a;
+      }
+    }
+    return null;
+  }
+
   bool AcceptReferrers() {
     return theOptions.Get(CommonOptionBag.Referrers);
   }
@@ -359,7 +409,7 @@ public partial class Parser {
         identCount++;
         x = scanner.Peek();
         if (x.kind == _colon) {
-          // a colon belongs only in a lambda signature, so this must be a lambda (or something ill-formed)
+          // a colon belongs only in a lamdba signature, so this must be a lambda (or something ill-formed)
           return true;
         }
       }
@@ -571,8 +621,6 @@ public partial class Parser {
       case _nat:
       case _int:
       case _real:
-      case _fp32:
-      case _fp64:
       case _ORDINAL:
       case _string:
       case _object_q:

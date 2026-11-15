@@ -293,22 +293,6 @@ module MissingPredicateParens2 {
   }
 }
 
-// ---------------------- use of * or ** in wrong places -----------------------------------
-
-method LambdaStarStar() {
-  var f := (x: object) reads ** => 3; // error: ** cannot be used here
-}
-
-iterator IteratorStar()
-  reads * // error: * cannot be used here
-{
-}
-
-iterator IteratorStarStar()
-  reads ** // error: ** cannot be used here
-{
-}
-
 // ---------------------- invalid newtype definition -----------------------------------
 
 newtype T {} // error: newtype is expected to have an '='

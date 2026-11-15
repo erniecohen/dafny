@@ -1,0 +1,1 @@
+Add an optional, verified integer reference model for bounded-integer bitwise operations, with a little-endian Boolean sequence view, bijections, pointwise laws, and scalar client lemmas. This source-only mathematical companion adds no language surface, solver facts, or changes to the packaged standard libraries. See https://github.com/erniecohen/dafny/issues/193.

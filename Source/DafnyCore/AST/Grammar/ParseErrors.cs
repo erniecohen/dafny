@@ -58,7 +58,6 @@ public class ParseErrors {
     p_extraneous_k,
     p_constructors_have_no_out_parameters,
     p_reads_star_must_be_alone,
-    p_reads_star_star_must_be_alone,
     p_no_defaults_for_out_parameters,
     p_set_only_one_type_parameter,
     p_iset_only_one_type_parameter,
@@ -87,7 +86,6 @@ public class ParseErrors {
     p_no_return_type_for_predicate,
     p_no_wild_expression,
     p_no_wild_frame_expression,
-    p_no_double_wild_frame_expression,
     p_missing_semicolon,
     p_invalid_colon,
     p_initializing_display_only_for_1D_arrays,
@@ -146,7 +144,8 @@ public class ParseErrors {
     p_decreases_without_to,
     p_binding_in_decreases_to,
     p_ghost_in_decreases_to,
-    p_needs_referrers
+    p_needs_referrers,
+    p_decreases_order_needs_option
   }
 
   static ParseErrors() {
@@ -318,13 +317,13 @@ It is only allowed to add members to the body of the datatype.
     Add(ErrorId.p_module_level_function_always_static,
     @"
 All names declared in a module (outside a class-like entity) are implicitly `static`.
-Dafny does not allow them to be explicitly, redundantly, declared `static`.
+Dafny does not allow them to be explictly, redundantly, declared `static`.
 ".TrimStart(), Remove(true));
 
     Add(ErrorId.p_module_level_method_always_static,
     @"
 All names declared in a module (outside a class-like entity) are implicitly `static`.
-Dafny does not allow them to be explicitly, redundantly, declared `static`.
+Dafny does not allow them to be explictly, redundantly, declared `static`.
 ".TrimStart(), Remove(true));
 
     Add(ErrorId.p_const_decl_missing_identifier,
@@ -336,7 +335,7 @@ To correct the error, add an identifier and either or both a type and initializi
     Add(ErrorId.p_module_level_const_always_static,
     @"
 All names declared in a module (outside a class-like entity) are implicitly `static`.
-Dafny does not allow them to be explicitly, redundantly, declared `static`.
+Dafny does not allow them to be explictly, redundantly, declared `static`.
 ".TrimStart(), Remove(true));
 
     Add(ErrorId.p_bad_const_initialize_op,
@@ -531,18 +530,6 @@ So it does not make sense to list `*` along with something more specific.
 If you mean that the function should be able to read anything, just list `*`.
 Otherwise, omit the `*` and list expressions containing all the objects that are read.
 ".TrimStart(), range => [OneAction("remove *", IncludeComma(range), "", true)]);
-
-    Add(ErrorId.p_reads_star_star_must_be_alone,
-      @"
-A reads clause lists the objects whose fields the function is allowed to read (or expressions 
-containing such objects). This equips the verifier with the knowledge that any heap
-modifications outside the reads set do not affect the result value of the function.
-`reads **` declares that the function may depend on anything in the heap; it even allows the function
-to depend on which objects are allocated (that is, the function may even depend on the _allocation state_).
-It does not make sense to list `**` along with something more specific.
-If you mean that the function is allowed to depend on anything in the heap, including the allocation state, then just list `**`.
-Otherwise, omit the `**` and list expressions containing all the objects that are read.
-".TrimStart(), range => [OneAction("remove **", IncludeComma(range), "", true)]);
 
     Add(ErrorId.p_no_defaults_for_out_parameters,
     @"
@@ -762,15 +749,6 @@ Such a clause is not allowed in an iterator specification.
 Insert a specific reads expression.
 ".TrimStart());
 
-    Add(ErrorId.p_no_double_wild_frame_expression,
-      @"
-A `reads **` clause on a function says that the function is allowed to depend on anything in
-the heap; it even allows the function to depend on which objects are allocated (this is called
-the heap's _allocation state_).
-This is not supported for anonymous functions (aka lambda expressions) or iterators.
-Insert a specific reads expression.
-".TrimStart());
-
     Add(ErrorId.p_invalid_colon,
     @"
 In this situation the parser sees the identifier (x) and the following colon.
@@ -843,6 +821,14 @@ is legal, but not at all recommended.
       OneAction("replace with 'to'", range, "to", false),
       OneAction("replace with 'downto'", range, "downto", false)
     ]);
+
+    Add(ErrorId.p_decreases_order_needs_option,
+    @"
+A component `e by O` of a `decreases` clause compares `e` by the well-founded order `O`,
+a value of the trait `Std.Termination.Orders.Wfo<T>` from the standard library.
+It requires the options `--decreases-orders`, `--type-system-refresh` and `--general-traits=datatype` (or `full`),
+and it cannot be given to `*`.
+".TrimStart());
 
     Add(ErrorId.p_no_decreases_expressions_with_star,
     @"

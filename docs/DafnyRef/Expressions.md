@@ -323,7 +323,7 @@ with the result being of the given type. The following combinations
 of conversions are permitted:
 
 * Any type to itself
-* Any int-based or real-based numeric type or bit-vector type to another int-based or real-based numeric type or bit-vector type
+* Any int or real based numeric type or bit-vector type to another int or real based numeric type or bit-vector type
 * Any base type to a subset or newtype with that base
 * Any subset or newtype to its base type or a subset or newtype of the same base
 * Any type to a subset or newtype that has the type as its base
@@ -334,6 +334,16 @@ Some of the conversions above are already implicitly allowed, without the
 `as` operation, such as from a subset type to its base. In any case, it
 must be able to be proved that the value of the given expression is a
 legal value of the given type. For example, `5 as MyType` is permitted (by the verifier) only if `5` is a legitimate value of`MyType` (which must be a numeric type).
+
+With the legacy type system (`--type-system-refresh:false`),
+`--datatype-subset-conversions` enables explicit conversions to subsets of
+inductive datatypes. The source must be assignment-compatible with the
+destination's underlying datatype, including its type arguments, and the verifier
+checks the destination's membership and every subset constraint. This option is
+disabled by default. The refreshed type system already supports these conversions.
+The option does not cover a conversion whose destination is a datatype itself
+rather than a subset of one (`D(1) as D`), or a subset of a codatatype; the legacy
+type system still rejects those.
 
 The `as` operation is like a grammatical suffix or postfix operation.
 However, note that the unary operations bind more tightly than does `as`.
@@ -348,7 +358,7 @@ whether a trait value is of a particular class type. That is, the expression
 in effect checks the allocated type of a trait.
 
 The RHS type of an `is` expression can always be a supertype of the type of the LHS
-expression, in which case the result is trivially true. 
+expression, in which case the result is trivally true. 
 Other than that, the RHS must be based on a reference type and the
 LHS expression must be assignable to the RHS type. Furthermore, in order to be
 compilable, the RHS type must not be a subset type other than a non-null reference
@@ -392,9 +402,9 @@ Examples:
 A unary expression applies 
 
 - logical complement (`!` -- [Section 5.2.1](#sec-booleans)),
-- bit-wise complement (`!` -- [Section 5.2.4](#sec-bit-vector-types)),
+- bit-wise complement (`!` -- [Section 5.2.3](#sec-bit-vector-types)),
 - numeric negation (`-` -- [Section 5.2.2](#sec-numeric-types)), or
-- bit-vector negation (`-` -- [Section 5.2.4](#sec-bit-vector-types))
+- bit-vector negation (`-` -- [Section 5.2.3](#sec-bit-vector-types))
 
 to its operand.
 
@@ -453,6 +463,14 @@ as the following lambda expression:
 ```dafny
 x => x + 1
 ```
+
+With `--type-system-refresh --contextual-lambda-domains`, an omitted parameter
+of a lambda that directly forms a named function's body is inferred from that
+function's declared arrow domain. For example, in
+`function Identity(f: nat->nat): nat->nat { x => f(x) }`, `x` has type `nat`.
+This option is disabled by default. Explicit parameter types are preserved;
+quantifiers, comprehensions, and lambdas without this checking context continue
+to infer base types. It does not change the legacy resolver.
 
 The _specification_ is a list of clauses `requires E` or
 `reads W`, where `E` is a boolean expression and `W` is a frame
@@ -941,6 +959,13 @@ method, then [`old(allocated(d))`](#sec-old-expression) is `false`.
 If the expression `e` is of a reference type, then `!old(allocated(e))`
 is the same as [`fresh(e)`](#sec-fresh-expression).
 
+A function value can capture object references and previous or labeled heap states.
+Its allocation depends on those captures: captured references must be allocated
+in the heap being considered, and captured heap states must be that heap or precede
+it. An empty reads frame alone does not establish allocation of a function value.
+A pure application whose function and arguments are allocated in the invocation
+heap, and whose precondition holds, produces a result allocated in that heap.
+
 
 ## 9.25. Unchanged Expressions ([grammar](#g-unchanged-expression)) {#sec-unchanged-expression}
 
@@ -1263,6 +1288,45 @@ Those braces are required if lemma or lambda expressions are used in the
 body of any match alternative; they may also be needed for disambiguation if
 there are nested match expressions.
 
+With `--type-system-refresh`, the resolver must know the type of the selector
+when it resolves the patterns. With `--conservative-match-inference:false`, if the
+selector's type is not yet known, it solves the type constraints collected so far,
+and that solve also gives any pending literal its default type, such as `int` for
+an integer literal, even one in an earlier branch whose type the enclosing context
+would later fix. So in
+<!-- %no-check -->
+```dafny
+newtype int32 = x: int | -0x8000_0000 <= x <= 0x7fff_ffff
+datatype Option<+U> = None | Some(val: U)
+function foo(x: int32): Option<int32>
+function goo(x: int32): Option<int32> {
+  if x == 0 then Some(0) else
+  var d := foo(x);
+  match d
+  case None => None
+  case Some(n) => Some(0)
+}
+```
+the first `Some(0)` becomes an `Option<int>`, and the body is rejected. With
+`--conservative-match-inference`, which is on by default, the resolver first tries
+to determine the selector's type by propagation alone, without default decisions;
+here that gives `d` the type `Option<int32>`, and the first `0` then takes the
+type `int32` from the declared result type. In the same way, an identifier without
+arguments in a pattern, such as the `n` of `Some(n)`, is a bound variable when
+propagation shows that the type it matches is not a datatype, for example when
+the selector is `Some(0)`, so `var d := Some(0); match d case Some(n) => ...` no
+longer fixes the type of an earlier literal either. Only if propagation leaves the
+type unknown does the resolver make default decisions, as it does with
+`--conservative-match-inference:false`. The option adds and removes no type
+constraint: a value whose type is already `int`, another newtype, or `bool` is
+still rejected, and a literal's type does not prove that its value satisfies the
+newtype's constraint, which is still checked by the verifier.
+
+The option does not help when the type at a pattern is still unknown after
+propagation and nothing known about it excludes a datatype, because the default
+decisions made then apply to the earlier literal too. In such cases, annotate the
+selector or the earlier literal, for example `Some(0 as int32)`.
+
 ### 9.31.4. Quantifier Expression ([grammar](#g-quantifier-expression)) {#sec-quantifier-expression}
 
 Examples:
@@ -1359,7 +1423,16 @@ default to `true`. See also [Section 2.7.4](#sec-quantifier-domains) for more de
 
 If a finite set was specified ("set" keyword used), Dafny must be able to prove that the
 result is finite otherwise the set comprehension expression will not be
-accepted.
+accepted. A datatype-rank comparison, such as `d < upper`, does not
+establish a finite bound: there can be infinitely many datatype values below
+one rank. Use another finite bound, such as `d in aFiniteSet`, when the
+result type is not itself a finite carrier. The same restriction applies
+to finite map comprehensions. Infinite `iset` and `imap` comprehensions do
+not need this bound. The result carrier itself must be finite for this
+exception to apply: although each `map<bool, int>` has at most two keys,
+there are infinitely many such map values. A set comprehension producing
+those maps, or a map comprehension using them as keys, still needs finite
+witness bounds.
 
 Set comprehensions involving reference types such as
 
@@ -1543,6 +1616,16 @@ method test()
 }
 ```
 `m` maps `2` to `3`, `4` to `6`, and so on.
+
+The opt-in verification option `--map-comprehension-domain-triggers` also uses a
+comprehension's explicit or inferred triggers for the existential that defines
+membership in its domain. This applies to both `map` and `imap` comprehensions
+with general key expressions, such as `map i | 0 <= i < n :: ofs + i := e[i]`.
+A ground term matching the trigger, such as `e[j]`, can then help prove
+`ofs + j in m`. The option defaults to `false` and does not change the meaning
+of a comprehension or the translation of a simple bound-variable key.
+It can also be set as `map-comprehension-domain-triggers = true` in the
+`[options]` section of a project file.
 
 ## 9.32. Name Segment ([grammar](#g-name-segment)) {#sec-name-segment}
 
@@ -1810,7 +1893,7 @@ a, b
 ```
 
 An expression list is a comma-separated sequence of expressions, used, for example,
-as actual arguments in a method or function call or in parallel assignment.
+as actual araguments in a method or function call or in parallel assignment.
 
 ## 9.36. Parameter Bindings ([grammar](#g-parameter-bindings)) {#sec-parameter-bindings}
 
@@ -1882,7 +1965,9 @@ this ordering. (The parentheses can be omitted if there is exactly 1 left-hand s
 and exactly 1 right-hand side.) For example, the following assertions are valid:
 <!-- %check-verify -->
 ```dafny
-method M(x: int, y: int) {
+method M(x: int, y: int)
+  requires 0 <= x
+{
   assert 1 decreases to 0;
   assert (true, false decreases to false, true);
   assert (x, y decreases to x - 1, y);
@@ -1898,7 +1983,15 @@ method M(x: int, y: int) {
 ```
 
 The `decreases to` operator is strict, that is, it means "strictly greater than".
-The `nonincreases to` operator is the non-strict ("greater than or equal") version of it.
+The `nonincreases to` operator uses the compatible weak tuple comparison described
+in [the decreases-clause rules](#sec-decreases-clause). In particular, a fractional
+real decrease with an unchanged suffix is weak nonincrease, while a suffix increase
+requires an earlier strict decrease. Numeric lower bounds apply here too: an old
+negative component can stay unchanged, but cannot decrease again.
+For example, `0 decreases to -1` holds, while `-1 decreases to -2` and
+`-1 nonincreases to -2` do not. This is a behavior change from the legacy
+ordering expressions, which omitted the numeric lower bound. A tuple's
+earlier strict decrease can still allow a later component to increase.
 
 ## 9.39. Compile-Time Constants {#sec-compile-time-constants}
 
@@ -1953,3 +2046,38 @@ The following is a list of expressions that can only appear in specification con
 * [Assert and calc expressions](#sec-statement-in-an-expression)
 * [Hash Calls](#sec-hash-call)
 * [Termination ordering expression](#sec-termination-ordering-expressions)
+
+## Experimental user-defined operators {#sec-user-defined-operators}
+
+With `--user-defined-operators --type-system-refresh`, source arithmetic and
+comparison expressions first select an applicable built-in operation. Otherwise,
+they select the unique directly declared function operator at the static left
+operand's concrete class or inductive datatype type (the only operand for unary
+minus). Selection uses no right-operand search, implicit user conversion, or
+expected-result overload search. An undetermined receiver requires an annotation
+or a named call. Transparent aliases and visible subsets use the underlying
+nominal owner's operators. Ordinary numeric-newtype arithmetic stays intrinsic.
+
+A selected user operation has exactly the meaning and checks of its named call:
+preconditions, receiver non-nullness, reads, ghost restrictions, opacity, ordinary
+type substitution and termination all apply. No algebraic laws or special
+compiler behavior follow from its symbol or member name. For example,
+`a * b + c <= d` on a rational datatype can mean
+`a.times(b).plus(c).le(d)`. No new precedence or associativity rules are added.
+A comparison chain remains the short-circuit conjunction of its adjacent edges;
+it supplies no transitivity law for user comparisons.
+
+Explicit `==`/`!=`, collection identity, equality-support characteristics,
+generated termination orders and `calc` connectors remain intrinsic. Datatype
+`<` and `>` keep their existing rank interpretation when applicable, including
+the restriction on using rank comparisons in compiled code. Such a compilation
+failure does not retry a declared predicate. Datatype `<=` and `>=` have no
+intrinsic rank interpretation, so they may use fallback predicates.
+
+Module-attribute arguments retain intrinsic operator syntax because that phase
+uses legacy resolution; explicit named calls are available there. This milestone
+supports fully checked source modules, concrete imports and consistent revealed
+exports. It rejects feature-bearing refinement/replacement or abstract-signature
+imports and opaque export views that hide a saved owner, member or intrinsic
+meaning. A saved selection is replayed through clones, never looked up afresh.
+Compound assignment and `builtin.<op>(...)` are not introduced.

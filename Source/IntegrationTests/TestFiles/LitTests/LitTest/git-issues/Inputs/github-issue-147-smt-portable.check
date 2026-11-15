@@ -1,0 +1,7 @@
+// SMT for rotations only at widths 0, 3, 6 and 12: shifts reach the solver, and no extended
+// rotation and no bitvector sort of width 0 does.  The positive checks make an empty log fail.
+// CHECK-NOT: ext_rotate|\(_ BitVec 0\)
+// CHECK: bvlshr
+// CHECK-NOT: ext_rotate|\(_ BitVec 0\)
+// CHECK: \(check-sat\)
+// CHECK-NOT: ext_rotate|\(_ BitVec 0\)

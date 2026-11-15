@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
 using Microsoft.Dafny.LanguageServer.IntegrationTest.Util;
+using Microsoft.Dafny.LanguageServer.Workspace.Notifications;
 using OmniSharp.Extensions.LanguageServer.Protocol.Document;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
 using Xunit;
@@ -22,6 +23,25 @@ const i := 0
 
       var documentItem = await CreateOpenAndWaitForResolve(source);
       await Assert.ThrowsAnyAsync<Exception>(() => RequestRename(documentItem, new Position(0, 6), "j"));
+    }
+
+    [Fact]
+    public async Task OperatorSymbolsAreReferencesButAreNeverRenamed() {
+      await SetUp(options => {
+        options.ProverOptions.Add("SOLVER=noop");
+        options.Set(CommonOptionBag.UserDefinedOperators, true);
+        options.Set(CommonOptionBag.TypeSystemRefresh, true);
+      });
+      var tempDir = GetFreshTempPath();
+      CreateAndOpenTestDocument("[options]\nuser-defined-operators = true\ntype-system-refresh = true\n",
+        Path.Combine(tempDir, DafnyProject.FileName));
+      await AssertRangesRenamed("""
+        datatype D = D(n: int) {
+          function {:operator "*"} [>><times<](b: D): D { D(n * b.n) }
+        }
+        function f(x: D, y: D): D { x * y }
+        function g(x: D, y: D): D { x.[>times<](y) }
+        """, tempDir, "multiply");
     }
 
     [Fact]
@@ -171,7 +191,12 @@ abstract module B { import [>><A<] }
 
     private async Task<WorkspaceEdit> RequestRename(
       TextDocumentItem documentItem, Position position, string newName) {
-      await AssertNoResolutionErrors(documentItem);
+      // Configuration failures can be attached to the project file, so include
+      // all retained diagnostics rather than only those published for this source.
+      var state = await Projects.GetResolvedDocumentAsyncNormalizeUri(documentItem);
+      Assert.NotNull(state);
+      Assert.True(state.Status == CompilationStatus.ResolutionSucceeded,
+        string.Join("\n", state.GetAllDiagnostics().Select(d => $"{d.Uri}: {d.Diagnostic.Message}")));
       return await client.RequestRename(
         new RenameParams {
           TextDocument = documentItem.Uri,

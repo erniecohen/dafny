@@ -1,0 +1,10 @@
+// BPL for width 12, not a power of two: both rotations are inline definitions by shifts.
+// CHECK-NOT: bvbuiltin "ext_rotate_(left|right)"\} (Left|Right)Rotate_bv12\(
+// CHECK: ^function \{:inline\} LeftRotate_bv12\(x: bv12, n: bv12\) : bv12
+// CHECK-NEXT: ^\{
+// CHECK-NEXT: ^  or_bv12\(LeftShift_bv12\(x, n\), RightShift_bv12\(x, sub_bv12\(12bv12, n\)\)\)
+// CHECK-NOT: bvbuiltin "ext_rotate_(left|right)"\} (Left|Right)Rotate_bv12\(
+// CHECK: ^function \{:inline\} RightRotate_bv12\(x: bv12, n: bv12\) : bv12
+// CHECK-NEXT: ^\{
+// CHECK-NEXT: ^  or_bv12\(RightShift_bv12\(x, n\), LeftShift_bv12\(x, sub_bv12\(12bv12, n\)\)\)
+// CHECK-NOT: bvbuiltin "ext_rotate_(left|right)"\} (Left|Right)Rotate_bv12\(

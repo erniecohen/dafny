@@ -1,0 +1,6 @@
+github-issue-27-duplicates.dfy(3,12): Error: Duplicate member name: P
+github-issue-27-duplicates.dfy(7,8): Error: Duplicate member name: Lemma
+2 resolution/type errors detected in github-issue-27-duplicates.dfy
+github-issue-27-duplicates.dfy(3,12): Error: Duplicate member name: P
+github-issue-27-duplicates.dfy(7,8): Error: Duplicate member name: Lemma
+2 resolution/type errors detected in github-issue-27-duplicates.dfy

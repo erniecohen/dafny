@@ -89,8 +89,6 @@ TOKENS
   int = "int".
   nat = "nat".
   real = "real".
-  fp32 = "fp32".
-  fp64 = "fp64".
   ORDINAL = "ORDINAL".
   object = "object". // Keeping object and object? as literals simplifies ident
   object_q = "object?".
@@ -356,6 +354,9 @@ ModuleDefinition<DeclModifierData dmod, ModuleDefinition parent, out ModuleDecl 
    (. CheckNoAttributes(ref attrs); .)
     (.
       module.SetOrigin(new SourceOrigin(dmod.FirstToken, t, name.ReportingRange));
+      if (theOptions.Get(CommonOptionBag.UserDefinedOperators)) {
+        module.Attributes = IntrinsicModuleAttributes(module.Attributes);
+      }
       submodule = new LiteralModuleDecl(theOptions, module, parent, Guid.NewGuid());
       submodule.SetOrigin(module.Origin);
       theOptions = dafnyOptionsBackup;
@@ -1333,27 +1334,28 @@ ModifiesClause<.ref List<FrameExpression> mod, ref Attributes attrs,
 
 /*------------------------------------------------------------------------*/
 DecreasesClause<.List<Expression> decreases, ref Attributes attrs,
-                 bool allowWildcard, bool allowLambda.>
-= "decreases"
+                 bool allowWildcard, bool allowLambda, bool allowGlobal.>
+= "decreases"                                  (. var attrsBefore = attrs; .)
   { Attribute<ref attrs> }
-  DecreasesList<decreases, allowWildcard, allowLambda>
+  (. /* Under --modular-termination, "decreases {:global} E" is a global bound, kept as the
+        arguments of its {:global} attribute and apart from the ordinary decreases list. */
+     var globalClause = allowGlobal ? GlobalDecreasesAttribute(attrs, attrsBefore) : null;
+  .)
+  DecreasesList<(globalClause == null ? decreases : globalClause.Args), allowWildcard && globalClause == null, allowLambda>
   OldSemi
   .
 
 /*------------------------------------------------------------------------*/
 ReadsClause<.List<FrameExpression/*!*/>/*!*/ reads, ref Attributes attrs,
-                  bool allowLemma, bool allowLambda, bool allowWild, bool allowDoubleWild.>
+                  bool allowLemma, bool allowLambda, bool allowWild.>
 = "reads"
   (. FrameExpression fe; .)
   { Attribute<ref attrs> }
-  PossiblyWildFrameExpression<out fe, allowLemma, allowLambda, allowWild, allowDoubleWild>          (. reads.Add(fe); .)
-  { "," PossiblyWildFrameExpression<out fe, allowLemma, allowLambda, allowWild, allowDoubleWild>    (. reads.Add(fe); .)
+  PossiblyWildFrameExpression<out fe, allowLemma, allowLambda, allowWild>          (. reads.Add(fe); .)
+  { "," PossiblyWildFrameExpression<out fe, allowLemma, allowLambda, allowWild>    (. reads.Add(fe); .)
   }
   (. if (allowWild && reads.Count > 1 && reads.Exists(fe => fe.E is WildcardExpr)) {
        SemErr(ErrorId.p_reads_star_must_be_alone, reads.First(fe => fe.E is WildcardExpr).Origin, "A 'reads' clause that contains '*' is not allowed to contain any other expressions");
-     }
-     if (allowDoubleWild && reads.Count > 1 && reads.Exists(fe => fe.E is DoubleWildcardExpr)) {
-       SemErr(ErrorId.p_reads_star_star_must_be_alone, reads.First(fe => fe.E is DoubleWildcardExpr).Origin, "A 'reads' clause that contains '**' is not allowed to contain any other expressions");
      }
   .)
   OldSemi
@@ -1379,11 +1381,11 @@ MethodSpec<.bool isGhost, List<AttributedExpression> req, List<FrameExpression> 
      Contract.Requires(Cce.NonNullElements(decreases));
   .)
   SYNC
-  { ReadsClause<reads, ref readsAttrs, false, false, true, false>
+  { ReadsClause<reads, ref readsAttrs, false, false, true>
   | ModifiesClause<ref mod, ref modAttrs, false, performThisDeprecatedCheck>
   | RequiresClause<req, true>
   | EnsuresClause<ens, false>
-  | DecreasesClause<decreases, ref decAttrs, !isGhost, false>
+  | DecreasesClause<decreases, ref decAttrs, !isGhost, false, true>
   }
   .
 
@@ -1394,7 +1396,7 @@ IteratorSpec<.List<FrameExpression/*!*/>/*!*/ reads, List<FrameExpression/*!*/>/
               ref Attributes readsAttrs, ref Attributes modAttrs, ref Attributes decrAttrs.>
 =
   SYNC
-  { ReadsClause<reads, ref readsAttrs, false, false, false, false>
+  { ReadsClause<reads, ref readsAttrs, false, false, false>
   | ModifiesClause<ref mod, ref modAttrs, false, false>
   | (. bool isYield = false; .)
     [ "yield"                                                (. isYield = true; .)
@@ -1402,7 +1404,7 @@ IteratorSpec<.List<FrameExpression/*!*/>/*!*/ reads, List<FrameExpression/*!*/>/
     ( RequiresClause<(isYield?yieldReq:req), !isYield>
     | EnsuresClause<(isYield?yieldEns:ens), false>
     )
-  | DecreasesClause<decreases, ref decrAttrs, false, false>
+  | DecreasesClause<decreases, ref decrAttrs, false, false, false>
   }
   .
 
@@ -1498,8 +1500,6 @@ TypeAndToken<out Token tok, out Type ty, bool inExpressionContext>
   | "int"                           (. tok = t; startToken = t; ty = new IntType(); ty.SetOrigin(t); .)
   | "nat"                           (. tok = t; startToken = t; ty = new UserDefinedType(tok, tok.val, null); .)
   | "real"                          (. tok = t; startToken = t; ty = new RealType(); ty.SetOrigin(t); .)
-  | "fp32"                          (. tok = t; startToken = t; ty = new Fp32Type(); ty.SetOrigin(t); .)
-  | "fp64"                          (. tok = t; startToken = t; ty = new Fp64Type(); ty.SetOrigin(t); .)
   | IF(la.val == "field" && AcceptReferrers())
     "field"                         (. tok = t; startToken = t; ty = new FieldType(); ty.SetOrigin(t); .)
   | "ORDINAL"                       (. tok = t; startToken = t; ty = new BigOrdinalType(); ty.SetOrigin(t); .)
@@ -2039,7 +2039,7 @@ FunctionSpec<.List<AttributedExpression> reqs, List<FrameExpression> reads, List
   .)
   SYNC
   { RequiresClause<reqs, true>
-  | ReadsClause<reads, ref readsAttrs, false, false, true, true>
+  | ReadsClause<reads, ref readsAttrs, false, false, true>
   | EnsuresClause<ens, false>
   | (. var decreasesToken = la;
        var decreasesForbidden = decreases == null;
@@ -2047,7 +2047,7 @@ FunctionSpec<.List<AttributedExpression> reqs, List<FrameExpression> reads, List
          decreases = new List<Expression/*!*/>();
        }
     .)
-    DecreasesClause<decreases, ref decAttrs, false, false>
+    DecreasesClause<decreases, ref decAttrs, false, false, true>
     (. if (decreasesForbidden) {
        var erange = new SourceOrigin(decreasesToken, t);
        SemErr(ErrorId.p_no_decreases_for_extreme_predicates, erange, "'decreases' clauses are meaningless for least and greatest predicates, so they are not allowed");
@@ -2095,7 +2095,7 @@ PossiblyWildExpression<out Expression e, bool allowLambda, bool allowWild>
 
 /*------------------------------------------------------------------------*/
 PossiblyWildFrameExpression<out FrameExpression fe, bool allowLemma,
-                            bool allowLambda, bool allowWild, bool allowDoubleWild>
+                            bool allowLambda, bool allowWild>
 = (. Contract.Ensures(Contract.ValueAtReturn(out fe) != null); fe = dummyFrameExpr; .)
   /* A reads clause can list a wildcard, which allows the enclosing function to
    * read anything.  In many cases, and in particular in all cases where
@@ -2106,11 +2106,6 @@ PossiblyWildFrameExpression<out FrameExpression fe, bool allowLemma,
   ( "*"                        (. fe = new FrameExpression(t, new WildcardExpr(t), null);
                                   if (!allowWild) {
                                      SemErr(ErrorId.p_no_wild_frame_expression, t, "A '*' frame expression is not permitted here");
-                                  }
-                               .)
-  | "**"                       (. fe = new FrameExpression(t, new DoubleWildcardExpr(t), null);
-                                  if (!allowDoubleWild) {
-                                     SemErr(ErrorId.p_no_double_wild_frame_expression, t, "A '**' frame expression is not permitted here");
                                   }
                                .)
   | FrameExpression<out fe, allowLemma, allowLambda>
@@ -2876,7 +2871,7 @@ LoopSpec<.List<AttributedExpression> invariants, List<Expression> decreases, ref
 = { SYNC
     InvariantClause<invariants>
   | SYNC
-    DecreasesClause<decreases, ref decAttrs, true, true>
+    DecreasesClause<decreases, ref decAttrs, true, true, false>
   | SYNC
     ModifiesClause<ref mod, ref modAttrs, true, false>
   }
@@ -2885,12 +2880,32 @@ LoopSpec<.List<AttributedExpression> invariants, List<Expression> decreases, ref
 /*------------------------------------------------------------------------*/
 DecreasesList<.List<Expression> decreases, bool allowWildcard, bool allowLambda.>
 = (. Expression e; .)
-  PossiblyWildExpression<out e, allowLambda, allowWildcard>       (. decreases.Add(e); .)
-  { "," PossiblyWildExpression<out e, allowLambda, allowWildcard> (. decreases.Add(e); .)
+  PossiblyWildExpression<out e, allowLambda, allowWildcard>
+  [ DecreasesOrder<ref e> ]                                       (. decreases.Add(e); .)
+  { "," PossiblyWildExpression<out e, allowLambda, allowWildcard>
+    [ DecreasesOrder<ref e> ]                                     (. decreases.Add(e); .)
   }
   (. if (allowWildcard && decreases.Count > 1 && decreases.Exists(e => e is WildcardExpr)) {
        SemErr(ErrorId.p_no_decreases_expressions_with_star, e.Origin, "A 'decreases' clause that contains '*' is not allowed to contain any other expressions");
      }
+  .)
+  .
+
+/*------------------------------------------------------------------------*/
+/* "e by O": the decreases component e is compared by the well-founded order O (--decreases-orders) */
+DecreasesOrder<ref Expression e>
+= (. Expression order; .)
+  "by"                                          (. var byTok = t; .)
+  Expression<out order, false, true>
+  (. if (!theOptions.Get(CommonOptionBag.DecreasesOrders)) {
+       SemErr(ErrorId.p_decreases_order_needs_option, new SourceOrigin(byTok, t), "a decreases component of the form 'e by O' requires the option --decreases-orders");
+     } else if (!DecreasesOrders.TypeSystemSupportsOrders(theOptions)) {
+       SemErr(ErrorId.p_decreases_order_needs_option, new SourceOrigin(byTok, t), "a decreases component of the form 'e by O' requires --type-system-refresh and --general-traits=datatype, since the orders are values of the trait Std.Termination.Orders.Wfo");
+     }
+     if (e is WildcardExpr) {
+       SemErr(ErrorId.p_decreases_order_needs_option, new SourceOrigin(byTok, t), "'*' in a decreases clause cannot be given an order");
+     }
+     e = new DecreasesByExpr(new SourceOrigin(e.StartToken, t), e, order);
   .)
   .
 
@@ -3496,7 +3511,7 @@ RelationalExpression<out Expression e, bool allowLemma, bool allowLambda, bool a
                                    (. startToken = e0.StartToken;
                                       var origin = new SourceOrigin(startToken, t, x);
                                       if (k == null) {
-                                        e = new BinaryExpr(origin, op, e0, e1);
+                                        e = SourceBinary(origin, op, e0, e1);
                                       } else {
                                         Contract.Assert(op == BinaryExpr.Opcode.Eq || op == BinaryExpr.Opcode.Neq);
                                         e = new TernaryExpr(origin, op == BinaryExpr.Opcode.Eq ? TernaryExpr.Opcode.PrefixEqOp : TernaryExpr.Opcode.PrefixNeqOp, k, e0, e1);
@@ -3559,7 +3574,7 @@ RelationalExpression<out Expression e, bool allowLemma, bool allowLambda, bool a
     }
   ]
   (. if (chain != null && kind != 3) {
-       e = new ChainingExpression(opLocs[0], chain, ops, opLocs, prefixLimits);
+       e = new ChainingExpression(opLocs[0], chain, ops, opLocs, prefixLimits, theOptions.Get(CommonOptionBag.UserDefinedOperators));
      }
      e.SetOrigin(new SourceOrigin(startToken, t, e.Center));
   .)
@@ -3624,7 +3639,7 @@ ShiftTerm<out Expression e0, bool allowLemma, bool allowLambda, bool allowBitwis
     )
     Term<out e1, allowLemma, allowLambda, allowBitwiseOps> (.
       var startToken = e0.StartToken;
-      e0 = new BinaryExpr(new SourceOrigin(startToken, t, x), op, e0, e1);
+      e0 = SourceBinary(new SourceOrigin(startToken, t, x), op, e0, e1);
      .)
   }
   .
@@ -3637,7 +3652,7 @@ Term<out Expression e0, bool allowLemma, bool allowLambda, bool allowBitwiseOps>
     AddOp<out x, out op>
     Factor<out e1, allowLemma, allowLambda, allowBitwiseOps>
     (. var startToken = e0.StartToken;
-       e0 = new BinaryExpr(new SourceOrigin(startToken, t, x), op, e0, e1);
+       e0 = SourceBinary(new SourceOrigin(startToken, t, x), op, e0, e1);
     .)
   }
   .
@@ -3659,7 +3674,7 @@ Factor<out Expression e0, bool allowLemma, bool allowLambda, bool allowBitwiseOp
     BitvectorFactor<out e1, allowLemma, allowLambda, allowBitwiseOps>
     (. 
       var startToken = e0.StartToken;
-      e0 = new BinaryExpr(new SourceOrigin(startToken, t, x), op, e0, e1);
+      e0 = SourceBinary(new SourceOrigin(startToken, t, x), op, e0, e1);
     .)
   }
   .
@@ -3682,11 +3697,11 @@ BitvectorFactor<out Expression e0, bool allowLemma, bool allowLambda, bool allow
     | "|"                                                (. op = BinaryExpr.Opcode.BitwiseOr; x = t; .)
     | "^"                                                (. op = BinaryExpr.Opcode.BitwiseXor; x = t; .)
     )
-    AsExpression<out e1, allowLemma, allowLambda, allowBitwiseOps>   (. var startToken = e0.StartToken; e0 = new BinaryExpr(new SourceOrigin(startToken, t, x), op, e0, e1); .)
+    AsExpression<out e1, allowLemma, allowLambda, allowBitwiseOps>   (. var startToken = e0.StartToken; e0 = SourceBinary(new SourceOrigin(startToken, t, x), op, e0, e1); .)
     { IF(IsBitwiseOp())
       ( "&" | "|" | "^" )                                (. if (x.kind != t.kind && !ambig) { ambig = true; SemErr(ErrorId.p_ambiguous_bitop, t, "Ambiguous use of &, |, ^. Use parentheses to disambiguate."); }
                                                             x = t; .)
-      AsExpression<out e1, allowLemma, allowLambda, allowBitwiseOps> (. startToken = e0.StartToken; e0 = new BinaryExpr(new SourceOrigin(startToken, t, x), op, e0, e1); .)
+      AsExpression<out e1, allowLemma, allowLambda, allowBitwiseOps> (. startToken = e0.StartToken; e0 = SourceBinary(new SourceOrigin(startToken, t, x), op, e0, e1); .)
     }
   ]
   .
@@ -3708,11 +3723,9 @@ AsExpression<out Expression e, bool allowLemma, bool allowLambda, bool allowBitw
 UnaryExpression<out Expression e, bool allowLemma, bool allowLambda, bool allowBitwiseOps>
 = (. Contract.Ensures(Contract.ValueAtReturn(out e) != null); Token/*!*/ x;  e = dummyExpr; .)
   ( "-"                                             (. x = t; .)
-    UnaryExpression<out e, allowLemma, allowLambda, allowBitwiseOps>  (. e = new NegationExpression(new SourceOrigin(x, t, x), e); .)
+    UnaryExpression<out e, allowLemma, allowLambda, allowBitwiseOps>  (. e = SourceNegation(new SourceOrigin(x, t, x), e); .)
   | NegOp                                           (. x = t; .)
     UnaryExpression<out e, allowLemma, allowLambda, allowBitwiseOps>  (. e = new UnaryOpExpr(new SourceOrigin(x, t, x), UnaryOpExpr.Opcode.Not, e); .)
-  | "~"                                             (. x = t; .)
-    UnaryExpression<out e, allowLemma, allowLambda, allowBitwiseOps>  (. e = new ApproximateExpr(new SourceOrigin(x, t, x), e); .)
   | PrimaryExpression<out e, allowLemma, allowLambda, allowBitwiseOps>
   )
   .
@@ -3797,9 +3810,9 @@ LiteralExpression<out Expression e>
   ( "false"                                    (. e = new LiteralExpr(t, false); .)
   | "true"                                     (. e = new LiteralExpr(t, true); .)
   | "null"                                     (. e = new LiteralExpr(t); .)
-  | IF(la.kind == _digits && scanner.Peek().kind == _dot) Dec<out d> (. e = new DecimalLiteralExpr(t, d); .)
+  | IF(la.kind == _digits && scanner.Peek().kind == _dot) Dec<out d> (. e = new LiteralExpr(t, d); .)
   | Nat<out n>                                 (. e = new LiteralExpr(t, n); .)
-  | Dec<out d>                                 (. e = new DecimalLiteralExpr(t, d); .)
+  | Dec<out d>                                 (. e = new LiteralExpr(t, d); .)
   | charToken                                  (. string s = t.val.Substring(1, t.val.Length - 2);
                                                   Util.ValidateEscaping(theOptions, t, s, false, errors);
                                                   if (Util.UnescapedCharacters(theOptions, s, false).Count() > 1) {
@@ -3821,7 +3834,7 @@ PossiblyNegatedLiteralExpr<out Expression e>
   .)
   ( "-"                                        (. var x = t; .)
     ( Nat<out n>                               (. e = new NegationExpression(x, new LiteralExpr(t, n)); .)
-    | Dec<out d>                               (. e = new NegationExpression(x, new DecimalLiteralExpr(t, d)); .)
+    | Dec<out d>                               (. e = new NegationExpression(x, new LiteralExpr(t, d)); .)
     )
   | LiteralExpression<out e>
   )
@@ -3856,7 +3869,7 @@ LambdaExpression<out Expression e, bool allowLemma, bool allowBitwiseOps>
 
 // Coco says LambdaSpec is deletable. This is OK (it might be empty).
 LambdaSpec<.ref List<FrameExpression> reads, ref Attributes readsAttrs, ref Expression req.>
-= { ReadsClause<reads, ref readsAttrs, true, false, true, false>
+= { ReadsClause<reads, ref readsAttrs, true, false, true>
   | "requires"                             (. Expression ee; .)
     Expression<out ee, true, false>        (. req = req == null ? ee : new BinaryExpr(new SourceOrigin(req.StartToken, ee.EndToken, req.Center), BinaryExpr.Opcode.And, req, ee); .)
   }
@@ -4739,9 +4752,6 @@ Ident<out Token/*!*/ x>
   | "reveal"     (. t.kind = _ident; .) // convert it to an ident
   | "field"      (. t.kind = _ident; .) // convert it to an ident
   | "locals"     (. t.kind = _ident; .) // convert it to an ident
-  // Allow fp32 and fp64 as identifier for static member access (fp32.NaN, fp64.NaN, etc.)
-  | "fp32"       (. t.kind = _ident; .) // convert it to an ident
-  | "fp64"       (. t.kind = _ident; .) // convert it to an ident
   )
   (. x = t; .)
   .

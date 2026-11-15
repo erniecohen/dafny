@@ -1,0 +1,1 @@
+Add the opt-in `--map-comprehension-domain-triggers` option to use explicit and inferred triggers for membership proofs in general map and imap comprehensions. The option is off by default.

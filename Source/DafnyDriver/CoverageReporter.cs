@@ -80,6 +80,27 @@ public class CoverageReporter {
     await SerializeCoverageReports(coverageReport, coverageReportDir);
   }
 
+  public async Task SerializeBatchVerificationCoverageReport(Program dafnyProgram,
+    IEnumerable<(ProofDependencyManager Manager, IEnumerable<TrackedNodeComponent> Used)> requests,
+    string coverageReportDir) {
+    var coverage = new Dictionary<(TokenRange Range, string Description, System.Type Kind), bool>();
+    foreach (var (manager, components) in requests) {
+      var used = components.Select(manager.GetFullIdDependency).ToHashSet();
+      foreach (var dependency in manager.GetAllPotentialDependencies()) {
+        if (dependency is FunctionDefinitionDependency) {
+          continue;
+        }
+        var key = (dependency.Range, dependency.Description, dependency.GetType());
+        coverage[key] = coverage.GetValueOrDefault(key) || used.Contains(dependency);
+      }
+    }
+    var report = new CoverageReport("Verification coverage", "Proof Dependencies", "_verification", dafnyProgram);
+    foreach (var (key, used) in coverage.OrderBy(pair => pair.Key.Range.StartToken)) {
+      report.LabelCode(key.Range, used ? CoverageLabel.FullyCovered : CoverageLabel.NotCovered);
+    }
+    await SerializeCoverageReports(report, coverageReportDir);
+  }
+
   public async Task Merge(List<string> coverageReportsToMerge, string coverageReportOutDir) {
     List<CoverageReport> reports = [];
     var mergedReport = new CoverageReport("Combined Coverage Report", "Locations", "_combined", null);

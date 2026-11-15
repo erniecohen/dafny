@@ -1,4 +1,6 @@
+using System.Collections.Generic;
 using System.Diagnostics.Contracts;
+using System.Linq;
 
 namespace Microsoft.Dafny;
 
@@ -7,6 +9,7 @@ public enum CallingPosition { Positive, Negative, Neither }
 class FindFriendlyCallsVisitor : ResolverTopDownVisitor<CallingPosition> {
   public readonly bool IsCoContext;
   public readonly bool ContinuityIsImportant;
+  protected bool InsideOrdinalUnsafeQuantifier;
   public FindFriendlyCallsVisitor(ErrorReporter reporter, bool co, bool continuityIsImportant)
     : base(reporter) {
     Contract.Requires(reporter != null);
@@ -90,16 +93,24 @@ class FindFriendlyCallsVisitor : ResolverTopDownVisitor<CallingPosition> {
       var e = (QuantifierExpr)expr;
       Contract.Assert(e.SplitQuantifier == null); // No split quantifiers during resolution
       var cpos = IsCoContext ? cp : Invert(cp);
-      if (ContinuityIsImportant) {
-        if ((cpos == CallingPosition.Positive && e is ExistsExpr) || (cpos == CallingPosition.Negative && e is ForallExpr)) {
-          if (e.Bounds.Exists(bnd => bnd == null || (bnd.Virtues & BoundedPool.PoolVirtues.Finite) == 0)) {
-            // To ensure continuity of extreme predicates, don't allow calls under an existential (resp. universal) quantifier
-            // for greatest (resp. least) predicates).
+      var previousOrdinalUnsafeQuantifier = InsideOrdinalUnsafeQuantifier;
+      if ((cpos == CallingPosition.Positive && e is ExistsExpr) || (cpos == CallingPosition.Negative && e is ForallExpr)) {
+        for (var i = 0; i < e.BoundVars.Count; i++) {
+          var bound = e.Bounds?[i];
+          var finite = bound != null && (bound.Virtues & BoundedPool.PoolVirtues.Finite) != 0;
+          if (ContinuityIsImportant ? !finite :
+              !(finite && bound is not DatatypeInclusionBoundedPool) &&
+              !HasSetSizedDomain(e.BoundVars[i].Type, new HashSet<DatatypeDecl>())) {
+            // Natural indexing requires finite branching. Ordinal indexing permits set-sized
+            // branching, but not quantification over all ordinals (even nested inside a type).
             cp = CallingPosition.Neither;
+            InsideOrdinalUnsafeQuantifier |= !ContinuityIsImportant;
+            break;
           }
         }
       }
       Visit(e.LogicalBody(), cp);
+      InsideOrdinalUnsafeQuantifier = previousOrdinalUnsafeQuantifier;
       return false;
     } else if (expr is StmtExpr) {
       var e = (StmtExpr)expr;
@@ -114,4 +125,34 @@ class FindFriendlyCallsVisitor : ResolverTopDownVisitor<CallingPosition> {
     cp = CallingPosition.Neither;
     return true;
   }
+
+  // A sufficient, deliberately conservative test. Unknown and hidden types might contain
+  // ordinals. A datatype rank bound is not a finite domain: equally ranked constructors
+  // may contain arbitrarily large ordinals, so callers must not rely on that pool here.
+  private static bool HasSetSizedDomain(Type type, HashSet<DatatypeDecl> visited) {
+    type = type.NormalizeToAncestorType();
+    if (type.IsRefType) {
+      return true;
+    }
+    if (type is BasicType) {
+      return !type.IsBigOrdinalType;
+    }
+    // Check actual arguments before the declaration cycle guard, including polymorphic recursion.
+    if (!type.TypeArgs.All(argument => HasSetSizedDomain(argument, visited))) {
+      return false;
+    }
+    if (type is CollectionType or MapType or ArrowType) {
+      return true;
+    }
+    if (type is UserDefinedType { ResolvedClass: DatatypeDecl datatype }) {
+      if (!visited.Add(datatype)) {
+        return true;
+      }
+      var substitution = TypeParameter.SubstitutionMap(datatype.TypeArgs, type.TypeArgs);
+      return datatype.Ctors.All(ctor => ctor.Formals.All(formal =>
+        HasSetSizedDomain(formal.Type.Subst(substitution), visited)));
+    }
+    return false;
+  }
+
 }

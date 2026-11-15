@@ -3,12 +3,17 @@
 Thanks for contributing to Dafny!  Github is the right place to discuss feature requests, report issues with Dafny, or contact the Dafny developers.
 Dafny is an Open Source project and welcomes contributions.
 
+The fork's build and test tools require the .NET 10 SDK. Generated C# programs
+continue to target .NET 8; the .NET 10 SDK can build them, and their existing
+runtime requirements still apply. CI uses an isolated .NET 10 SDK installation
+with the .NET 8 runtime, and checks that no .NET 8 SDK is available to the build.
+
 ## Reporting issues
 
 Before reporting an issue here, consider whether it would be better handled in one of the following places:
 
 - [Stack Overflow](https://stackoverflow.com/questions/tagged/dafny), an online Q&A website, for help with writing and proving Dafny programs.
-- [`dafny-lang/ide-vscode`](https://github.com/dafny-lang/ide-vscode), Dafny's VSCode plugin, for issues or feature requests specific to the plugin itself. Issues with the LSP should be reported to [`dafny-lang/dafny`](https://github.com/dafny-lang/dafny/issues).
+- [`dafny-lang/ide-vscode`](https://github.com/dafny-lang/ide-vscode), Dafny's VSCode plugin, for issues or feature requests specific to the plugin itself. Issues with the LSP should be reported to [`dafny-lang/dafny](https://github.com/dafny-lang/dafny/issues).
 - [`boogie-org/boogie-friends`](https://github.com/boogie-org/boogie-friends/), Dafny's Emacs mode, for Emacs-specific problems.
 - [`boogie-org/boogie`](https://github.com/boogie-org/boogie), Dafny's intermediate verification language, for questions and issues specific to Boogie.
 
@@ -38,7 +43,7 @@ is properly working.
 
   - Dafny's integration tests are in [this directory](Source/IntegrationTests/TestFiles/LitTests/LitTest).  PRs that fix issues reported on GitHub should include a test under [`git-issues/`](Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/).
 
-    Each `.dfy` file in this directory is a test, with a  [`lit`](https://llvm.org/docs/CommandGuide/lit.html) header describing how to run it and a `.expect` file indicating the expected output.  See [this README.md file](Source/IntegrationTests/TestFiles/LitTests/LitTest/README.md) for more info on running Dafny's integration tests.
+    Each `.dfy` file in this directory is a test, with a  [`lit`](https://llvm.org/docs/CommandGuide/lit.html) header describing how to run it and a `.expect` file indicating the expected output.  See [this README.md file](Source/IntegrationTests/TestFiles/LitTests/LitTest/README.md) for more info on running Dafny' integration tests.
 
   - Dafny's unit tests are in various `*.Test` directories in [`Source`](./Source).
 
@@ -85,7 +90,7 @@ Subsequent CI runs should pick up the successful `deep-tests` run and make the `
 ### How can I write portions of Dafny in Dafny itself?
 
 Since https://github.com/dafny-lang/dafny/pull/2399, it is possible to add \*.dfy files next to other source files.
-The plugin `dafny-msbuild` takes all the dafny files and compiles them into a single file `Source/DafnyCore/obj/Debug/net8.0/GeneratedFromDafny.cs`
+The plugin `dafny-msbuild` takes all the dafny files and compiles them into a single file `Source/DafnyCore/obj/Debug/net10.0/GeneratedFromDafny.cs`
 that is automatically included in the build process. This file contains also the Dafny run-time in C#.
 One example of such file is `Source/DafnyCore/AST/Formatting.dfy`, and you can use it as a starting point.
 

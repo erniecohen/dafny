@@ -1,0 +1,1 @@
+The auditor no longer reports bodyless instance members of traits as missing-body assumptions. Static members and explicit assumptions remain audited.

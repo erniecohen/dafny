@@ -1,0 +1,4 @@
+
+Dafny program verifier did not attempt verification
+github-issue-29-cycle.dfy(2,7): Error: Python compilation dependencies contain a cycle through module 'Client' after applying replacements
+Translation was aborted because errors were found

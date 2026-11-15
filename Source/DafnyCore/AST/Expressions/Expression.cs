@@ -247,8 +247,7 @@ public abstract class Expression : NodeWithOrigin {
     Contract.Requires(e1 != null);
     Contract.Requires(
       (e0.Type.IsNumericBased(Type.NumericPersuasion.Int) && e1.Type.IsNumericBased(Type.NumericPersuasion.Int)) ||
-      (e0.Type.IsNumericBased(Type.NumericPersuasion.Real) && e1.Type.IsNumericBased(Type.NumericPersuasion.Real)) ||
-      (e0.Type.IsNumericBased(Type.NumericPersuasion.Float) && e1.Type.IsNumericBased(Type.NumericPersuasion.Float)));
+      (e0.Type.IsNumericBased(Type.NumericPersuasion.Real) && e1.Type.IsNumericBased(Type.NumericPersuasion.Real)));
     Contract.Ensures(Contract.Result<Expression>() != null);
     return new BinaryExpr(e0.Origin, BinaryExpr.Opcode.Add, e0, e1) {
       ResolvedOp = BinaryExpr.ResolvedOpcode.Add,
@@ -264,8 +263,7 @@ public abstract class Expression : NodeWithOrigin {
     Contract.Requires(e1 != null);
     Contract.Requires(
       (e0.Type.IsNumericBased(Type.NumericPersuasion.Int) && e1.Type.IsNumericBased(Type.NumericPersuasion.Int)) ||
-      (e0.Type.IsNumericBased(Type.NumericPersuasion.Real) && e1.Type.IsNumericBased(Type.NumericPersuasion.Real)) ||
-      (e0.Type.IsNumericBased(Type.NumericPersuasion.Float) && e1.Type.IsNumericBased(Type.NumericPersuasion.Float)));
+      (e0.Type.IsNumericBased(Type.NumericPersuasion.Real) && e1.Type.IsNumericBased(Type.NumericPersuasion.Real)));
     Contract.Ensures(Contract.Result<Expression>() != null);
     return new BinaryExpr(e0.Origin, BinaryExpr.Opcode.Mul, e0, e1) {
       ResolvedOp = BinaryExpr.ResolvedOpcode.Mul,
@@ -283,7 +281,6 @@ public abstract class Expression : NodeWithOrigin {
     Contract.Requires(
       (e0.Type.IsNumericBased(Type.NumericPersuasion.Int) && e1.Type.IsNumericBased(Type.NumericPersuasion.Int)) ||
       (e0.Type.IsNumericBased(Type.NumericPersuasion.Real) && e1.Type.IsNumericBased(Type.NumericPersuasion.Real)) ||
-      (e0.Type.IsNumericBased(Type.NumericPersuasion.Float) && e1.Type.IsNumericBased(Type.NumericPersuasion.Float)) ||
       (e0.Type.IsBitVectorType && e1.Type.IsBitVectorType) ||
       (e0.Type.IsCharType && e1.Type.IsCharType));
     Contract.Ensures(Contract.Result<Expression>() != null);
@@ -293,8 +290,6 @@ public abstract class Expression : NodeWithOrigin {
       toType = Type.Int;
     } else if (e0.Type.IsNumericBased(Type.NumericPersuasion.Real)) {
       toType = Type.Real;
-    } else if (e0.Type.IsNumericBased(Type.NumericPersuasion.Float)) {
-      toType = e0.Type; // Keep as fp64 (no conversion needed)
     } else {
       Contract.Assert(e0.Type.IsBitVectorType || e0.Type.IsCharType);
       toType = Type.Int; // convert char and bitvectors to int
@@ -325,7 +320,6 @@ public abstract class Expression : NodeWithOrigin {
     Contract.Requires(
       (e0.Type.IsNumericBased(Type.NumericPersuasion.Int) && e1.Type.IsNumericBased(Type.NumericPersuasion.Int)) ||
       (e0.Type.IsNumericBased(Type.NumericPersuasion.Real) && e1.Type.IsNumericBased(Type.NumericPersuasion.Real)) ||
-      (e0.Type.IsNumericBased(Type.NumericPersuasion.Float) && e1.Type.IsNumericBased(Type.NumericPersuasion.Float)) ||
       (e0.Type.IsBigOrdinalType && e1.Type.IsBigOrdinalType));
     Contract.Ensures(Contract.Result<Expression>() != null);
     return new BinaryExpr(e0.Origin, BinaryExpr.Opcode.Sub, e0, e1) {
@@ -642,7 +636,6 @@ public abstract class Expression : NodeWithOrigin {
     Contract.Requires(
       (e0.Type.IsNumericBased(Type.NumericPersuasion.Int) && e1.Type.IsNumericBased(Type.NumericPersuasion.Int)) ||
       (e0.Type.IsNumericBased(Type.NumericPersuasion.Real) && e1.Type.IsNumericBased(Type.NumericPersuasion.Real)) ||
-      (e0.Type.IsNumericBased(Type.NumericPersuasion.Float) && e1.Type.IsNumericBased(Type.NumericPersuasion.Float)) ||
       (e0.Type.IsBitVectorType && e1.Type.IsBitVectorType) ||
       (e0.Type.IsCharType && e1.Type.IsCharType) ||
       (e0.Type.IsBigOrdinalType && e1.Type.IsBigOrdinalType));
@@ -663,7 +656,6 @@ public abstract class Expression : NodeWithOrigin {
     Contract.Requires(
       (e0.Type.IsNumericBased(Type.NumericPersuasion.Int) && e1.Type.IsNumericBased(Type.NumericPersuasion.Int)) ||
       (e0.Type.IsNumericBased(Type.NumericPersuasion.Real) && e1.Type.IsNumericBased(Type.NumericPersuasion.Real)) ||
-      (e0.Type.IsNumericBased(Type.NumericPersuasion.Float) && e1.Type.IsNumericBased(Type.NumericPersuasion.Float)) ||
       (e0.Type.IsBitVectorType && e1.Type.IsBitVectorType) ||
       (e0.Type.IsCharType && e1.Type.IsCharType) ||
       (e0.Type.IsBigOrdinalType && e1.Type.IsBigOrdinalType));
@@ -798,16 +790,10 @@ public abstract class Expression : NodeWithOrigin {
   /// Wrap the resolved call in the usual unresolved structure, in case the expression is cloned and re-resolved.
   /// </summary>
   public static Expression WrapResolvedCall(FunctionCallExpr call, SystemModuleManager systemModuleManager) {
-    Dictionary<TypeParameter, Type> subst;
-
-    if (call.Receiver.Type.NormalizeExpand() is UserDefinedType receiverType) {
-      subst = TypeParameter.SubstitutionMap(receiverType.ResolvedClass.TypeArgs, receiverType.TypeArgs);
-      subst = ModuleResolver.AddParentTypeParameterSubstitutions(subst, receiverType);
-    } else {
-      // For basic types like Fp64Type, there are no type parameters
-      subst = new Dictionary<TypeParameter, Type>();
-    }
-
+    // Wrap the resolved call in the usual unresolved structure, in case the expression is cloned and re-resolved.
+    var receiverType = (UserDefinedType)call.Receiver.Type.NormalizeExpand();
+    var subst = TypeParameter.SubstitutionMap(receiverType.ResolvedClass.TypeArgs, receiverType.TypeArgs);
+    subst = ModuleResolver.AddParentTypeParameterSubstitutions(subst, receiverType);
     var exprDotName = new ExprDotName(call.Origin, call.Receiver, call.Function.NameNode, call.TypeApplication_JustFunction) {
       Type = ModuleResolver.SelectAppropriateArrowTypeForFunction(call.Function, subst, systemModuleManager)
     };

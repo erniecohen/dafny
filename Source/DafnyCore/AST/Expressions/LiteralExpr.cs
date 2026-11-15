@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Numerics;
-using Microsoft.BaseTypes;
+
 
 namespace Microsoft.Dafny;
 
@@ -22,7 +22,7 @@ public class LiteralExpr : Expression, ICloneable<LiteralExpr> {
   ///   * a string for a string literal
   ///     This case always uses the subclass StringLiteralExpr.
   ///     Note, the string is stored with all escapes as characters.  For example, the input string "hello\n" is
-  ///     stored in a LiteralExpr as being 7 characters long, whereas the Dafny (and C#) length of this string is 6.
+  ///     stored in a LiteralExpr has being 7 characters long, whereas the Dafny (and C#) length of this string is 6.
   ///     This simplifies printing of the string, both when pretty printed as a Dafny expression and when being
   ///     compiled into C# code.  The parser checks the validity of the escape sequences and the verifier deals
   ///     with turning them into single characters.
@@ -143,39 +143,6 @@ public class CharLiteralExpr : LiteralExpr, ICloneable<CharLiteralExpr> {
 
   public new CharLiteralExpr Clone(Cloner cloner) {
     return new CharLiteralExpr(cloner, this);
-  }
-}
-
-public class DecimalLiteralExpr : LiteralExpr, ICloneable<DecimalLiteralExpr> {
-  /// <summary>
-  /// If this literal is assigned to a floating-point type during resolution,
-  /// this field stores the computed BigFloat value to avoid recomputation.
-  /// Null if not yet resolved or if assigned to a real type.
-  /// </summary>
-  public BigFloat? ResolvedFloatValue { get; set; }
-
-  /// <summary>
-  /// True if this literal is part of an approximate literal expression (~prefix).
-  /// Used to skip exact representability checks.
-  /// </summary>
-  public bool IsApproximate { get; set; }
-
-  [SyntaxConstructor]
-  public DecimalLiteralExpr(IOrigin origin, object value)
-    : base(origin, value) {
-    Contract.Requires(value is BigDec);
-  }
-
-  public DecimalLiteralExpr(IOrigin origin, BigDec value)
-    : base(origin, value) {
-  }
-
-  private DecimalLiteralExpr(Cloner cloner, DecimalLiteralExpr original) : base(cloner, original) {
-    ResolvedFloatValue = original.ResolvedFloatValue;
-  }
-
-  public new DecimalLiteralExpr Clone(Cloner cloner) {
-    return new DecimalLiteralExpr(cloner, this);
   }
 }
 

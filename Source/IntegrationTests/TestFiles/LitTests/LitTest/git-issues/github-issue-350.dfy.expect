@@ -1,0 +1,41 @@
+type-system-refresh:true
+github-issue-350.dfy(28,3): Error: decreases clause might not decrease
+github-issue-350.dfy(50,2): Error: decreases expression might not decrease
+github-issue-350.dfy(57,6): Error: decreases clause might not decrease
+
+Dafny program verifier finished with 3 verified, 3 errors
+type-system-refresh:true --legacy-decreases-order
+github-issue-350.dfy(28,3): Error: decreases clause might not decrease
+github-issue-350.dfy(50,2): Error: decreases expression might not decrease
+github-issue-350.dfy(57,6): Error: decreases clause might not decrease
+
+Dafny program verifier finished with 3 verified, 3 errors
+type-system-refresh:true --trait-rank-decreases
+github-issue-350.dfy(28,3): Error: decreases clause might not decrease
+github-issue-350.dfy(50,2): Error: decreases expression might not decrease
+github-issue-350.dfy(57,6): Error: decreases clause might not decrease
+
+Dafny program verifier finished with 3 verified, 3 errors
+type-system-refresh:false
+github-issue-350.dfy(28,3): Error: decreases clause might not decrease
+github-issue-350.dfy(50,2): Error: decreases expression might not decrease
+github-issue-350.dfy(57,6): Error: decreases clause might not decrease
+
+Dafny program verifier finished with 3 verified, 3 errors
+type-system-refresh:false --legacy-decreases-order
+github-issue-350.dfy(28,3): Error: decreases clause might not decrease
+github-issue-350.dfy(50,2): Error: decreases expression might not decrease
+github-issue-350.dfy(57,6): Error: decreases clause might not decrease
+
+Dafny program verifier finished with 3 verified, 3 errors
+type-system-refresh:false --trait-rank-decreases
+github-issue-350.dfy(28,3): Error: decreases clause might not decrease
+github-issue-350.dfy(50,2): Error: decreases expression might not decrease
+github-issue-350.dfy(57,6): Error: decreases clause might not decrease
+
+Dafny program verifier finished with 3 verified, 3 errors
+type-system-refresh:true general-traits=legacy (A is a reference type)
+github-issue-350.dfy(28,3): Error: decreases clause might not decrease
+github-issue-350.dfy(57,6): Error: decreases clause might not decrease
+
+Dafny program verifier finished with 4 verified, 2 errors

@@ -1,0 +1,200 @@
+original (axioms:false, Z3 5.1.0, type-system-refresh:false)
+github-issue-36-original.dfy(6,2): Error: assertion might not hold
+
+Dafny program verifier finished with 3 verified, 1 error
+positive (axioms:false, Z3 5.1.0, type-system-refresh:false)
+github-issue-36-positive.dfy(8,2): Error: assertion might not hold
+github-issue-36-positive.dfy(14,11): Error: assertion might not hold
+github-issue-36-positive.dfy(14,21): Error: assertion might not hold
+github-issue-36-positive.dfy(21,2): Error: assertion might not hold
+github-issue-36-positive.dfy(27,2): Error: assertion might not hold
+github-issue-36-positive.dfy(33,2): Error: assertion might not hold
+github-issue-36-positive.dfy(39,2): Error: assertion might not hold
+github-issue-36-positive.dfy(57,4): Error: assertion might not hold
+github-issue-36-positive.dfy(63,2): Error: assertion might not hold
+github-issue-36-positive.dfy(71,13): Error: assertion might not hold
+github-issue-36-positive.dfy(71,27): Error: assertion might not hold
+
+Dafny program verifier finished with 3 verified, 11 errors
+negative (axioms:false, Z3 5.1.0, type-system-refresh:false)
+github-issue-36-negative.dfy(8,2): Error: assertion might not hold
+github-issue-36-negative.dfy(14,2): Error: assertion might not hold
+github-issue-36-negative.dfy(19,18): Error: function precondition could not be proved
+github-issue-36-negative.dfy(2,43): Related location: this proposition could not be proved
+github-issue-36-negative.dfy(23,8): Error: cannot establish the existence of LHS values that satisfy the such-that predicate. Note, no trigger was found for the such-that predicate, which may be the reason the proof failed. To give a trigger explicitly, use the {:trigger} attribute. For more information, see the section on quantifier instantiation rules in the reference manual.
+github-issue-36-negative.dfy(28,2): Error: assertion might not hold
+github-issue-36-negative.dfy(33,2): Error: assertion might not hold
+github-issue-36-negative.dfy(43,2): Error: assertion might not hold
+github-issue-36-negative.dfy(49,11): Error: function precondition could not be proved
+
+Dafny program verifier finished with 2 verified, 8 errors
+original (axioms:true, Z3 5.1.0, type-system-refresh:false)
+
+Dafny program verifier finished with 4 verified, 0 errors
+positive (axioms:true, Z3 5.1.0, type-system-refresh:false)
+
+Dafny program verifier finished with 12 verified, 0 errors
+negative (axioms:true, Z3 5.1.0, type-system-refresh:false)
+github-issue-36-negative.dfy(8,2): Error: assertion might not hold
+github-issue-36-negative.dfy(14,2): Error: assertion might not hold
+github-issue-36-negative.dfy(19,18): Error: function precondition could not be proved
+github-issue-36-negative.dfy(2,43): Related location: this proposition could not be proved
+github-issue-36-negative.dfy(23,8): Error: cannot establish the existence of LHS values that satisfy the such-that predicate. Note, no trigger was found for the such-that predicate, which may be the reason the proof failed. To give a trigger explicitly, use the {:trigger} attribute. For more information, see the section on quantifier instantiation rules in the reference manual.
+github-issue-36-negative.dfy(28,2): Error: assertion might not hold
+github-issue-36-negative.dfy(33,2): Error: assertion might not hold
+github-issue-36-negative.dfy(43,2): Error: assertion might not hold
+github-issue-36-negative.dfy(49,11): Error: function precondition could not be proved
+
+Dafny program verifier finished with 2 verified, 8 errors
+original (axioms:false, Z3 4.12.1, type-system-refresh:false)
+github-issue-36-original.dfy(6,2): Error: assertion might not hold
+
+Dafny program verifier finished with 3 verified, 1 error
+positive (axioms:false, Z3 4.12.1, type-system-refresh:false)
+github-issue-36-positive.dfy(8,2): Error: assertion might not hold
+github-issue-36-positive.dfy(14,11): Error: assertion might not hold
+github-issue-36-positive.dfy(14,21): Error: assertion might not hold
+github-issue-36-positive.dfy(21,2): Error: assertion might not hold
+github-issue-36-positive.dfy(27,2): Error: assertion might not hold
+github-issue-36-positive.dfy(33,2): Error: assertion might not hold
+github-issue-36-positive.dfy(39,2): Error: assertion might not hold
+github-issue-36-positive.dfy(57,4): Error: assertion might not hold
+github-issue-36-positive.dfy(63,2): Error: assertion might not hold
+github-issue-36-positive.dfy(71,13): Error: assertion might not hold
+github-issue-36-positive.dfy(71,27): Error: assertion might not hold
+
+Dafny program verifier finished with 3 verified, 11 errors
+negative (axioms:false, Z3 4.12.1, type-system-refresh:false)
+github-issue-36-negative.dfy(8,2): Error: assertion might not hold
+github-issue-36-negative.dfy(14,2): Error: assertion might not hold
+github-issue-36-negative.dfy(19,18): Error: function precondition could not be proved
+github-issue-36-negative.dfy(2,43): Related location: this proposition could not be proved
+github-issue-36-negative.dfy(23,8): Error: cannot establish the existence of LHS values that satisfy the such-that predicate. Note, no trigger was found for the such-that predicate, which may be the reason the proof failed. To give a trigger explicitly, use the {:trigger} attribute. For more information, see the section on quantifier instantiation rules in the reference manual.
+github-issue-36-negative.dfy(28,2): Error: assertion might not hold
+github-issue-36-negative.dfy(33,2): Error: assertion might not hold
+github-issue-36-negative.dfy(43,2): Error: assertion might not hold
+github-issue-36-negative.dfy(49,11): Error: function precondition could not be proved
+
+Dafny program verifier finished with 2 verified, 8 errors
+original (axioms:true, Z3 4.12.1, type-system-refresh:false)
+
+Dafny program verifier finished with 4 verified, 0 errors
+positive (axioms:true, Z3 4.12.1, type-system-refresh:false)
+
+Dafny program verifier finished with 12 verified, 0 errors
+negative (axioms:true, Z3 4.12.1, type-system-refresh:false)
+github-issue-36-negative.dfy(8,2): Error: assertion might not hold
+github-issue-36-negative.dfy(14,2): Error: assertion might not hold
+github-issue-36-negative.dfy(19,18): Error: function precondition could not be proved
+github-issue-36-negative.dfy(2,43): Related location: this proposition could not be proved
+github-issue-36-negative.dfy(23,8): Error: cannot establish the existence of LHS values that satisfy the such-that predicate. Note, no trigger was found for the such-that predicate, which may be the reason the proof failed. To give a trigger explicitly, use the {:trigger} attribute. For more information, see the section on quantifier instantiation rules in the reference manual.
+github-issue-36-negative.dfy(28,2): Error: assertion might not hold
+github-issue-36-negative.dfy(33,2): Error: assertion might not hold
+github-issue-36-negative.dfy(43,2): Error: assertion might not hold
+github-issue-36-negative.dfy(49,11): Error: function precondition could not be proved
+
+Dafny program verifier finished with 2 verified, 8 errors
+original (axioms:false, Z3 5.1.0, type-system-refresh:true)
+github-issue-36-original.dfy(6,2): Error: assertion might not hold
+
+Dafny program verifier finished with 3 verified, 1 error
+positive (axioms:false, Z3 5.1.0, type-system-refresh:true)
+github-issue-36-positive.dfy(8,2): Error: assertion might not hold
+github-issue-36-positive.dfy(14,11): Error: assertion might not hold
+github-issue-36-positive.dfy(14,21): Error: assertion might not hold
+github-issue-36-positive.dfy(21,2): Error: assertion might not hold
+github-issue-36-positive.dfy(27,2): Error: assertion might not hold
+github-issue-36-positive.dfy(33,2): Error: assertion might not hold
+github-issue-36-positive.dfy(39,2): Error: assertion might not hold
+github-issue-36-positive.dfy(57,4): Error: assertion might not hold
+github-issue-36-positive.dfy(63,2): Error: assertion might not hold
+github-issue-36-positive.dfy(71,13): Error: assertion might not hold
+github-issue-36-positive.dfy(71,27): Error: assertion might not hold
+
+Dafny program verifier finished with 3 verified, 11 errors
+negative (axioms:false, Z3 5.1.0, type-system-refresh:true)
+github-issue-36-negative.dfy(8,2): Error: assertion might not hold
+github-issue-36-negative.dfy(14,2): Error: assertion might not hold
+github-issue-36-negative.dfy(19,18): Error: function precondition could not be proved
+github-issue-36-negative.dfy(2,43): Related location: this proposition could not be proved
+github-issue-36-negative.dfy(23,8): Error: cannot establish the existence of LHS values that satisfy the such-that predicate. Note, no trigger was found for the such-that predicate, which may be the reason the proof failed. To give a trigger explicitly, use the {:trigger} attribute. For more information, see the section on quantifier instantiation rules in the reference manual.
+github-issue-36-negative.dfy(28,2): Error: assertion might not hold
+github-issue-36-negative.dfy(33,2): Error: assertion might not hold
+github-issue-36-negative.dfy(43,2): Error: assertion might not hold
+github-issue-36-negative.dfy(49,11): Error: function precondition could not be proved
+
+Dafny program verifier finished with 2 verified, 8 errors
+original (axioms:true, Z3 5.1.0, type-system-refresh:true)
+
+Dafny program verifier finished with 4 verified, 0 errors
+positive (axioms:true, Z3 5.1.0, type-system-refresh:true)
+
+Dafny program verifier finished with 12 verified, 0 errors
+negative (axioms:true, Z3 5.1.0, type-system-refresh:true)
+github-issue-36-negative.dfy(8,2): Error: assertion might not hold
+github-issue-36-negative.dfy(14,2): Error: assertion might not hold
+github-issue-36-negative.dfy(19,18): Error: function precondition could not be proved
+github-issue-36-negative.dfy(2,43): Related location: this proposition could not be proved
+github-issue-36-negative.dfy(23,8): Error: cannot establish the existence of LHS values that satisfy the such-that predicate. Note, no trigger was found for the such-that predicate, which may be the reason the proof failed. To give a trigger explicitly, use the {:trigger} attribute. For more information, see the section on quantifier instantiation rules in the reference manual.
+github-issue-36-negative.dfy(28,2): Error: assertion might not hold
+github-issue-36-negative.dfy(33,2): Error: assertion might not hold
+github-issue-36-negative.dfy(43,2): Error: assertion might not hold
+github-issue-36-negative.dfy(49,11): Error: function precondition could not be proved
+
+Dafny program verifier finished with 2 verified, 8 errors
+original (axioms:false, Z3 4.12.1, type-system-refresh:true)
+github-issue-36-original.dfy(6,2): Error: assertion might not hold
+
+Dafny program verifier finished with 3 verified, 1 error
+positive (axioms:false, Z3 4.12.1, type-system-refresh:true)
+github-issue-36-positive.dfy(8,2): Error: assertion might not hold
+github-issue-36-positive.dfy(14,11): Error: assertion might not hold
+github-issue-36-positive.dfy(14,21): Error: assertion might not hold
+github-issue-36-positive.dfy(21,2): Error: assertion might not hold
+github-issue-36-positive.dfy(27,2): Error: assertion might not hold
+github-issue-36-positive.dfy(33,2): Error: assertion might not hold
+github-issue-36-positive.dfy(39,2): Error: assertion might not hold
+github-issue-36-positive.dfy(57,4): Error: assertion might not hold
+github-issue-36-positive.dfy(63,2): Error: assertion might not hold
+github-issue-36-positive.dfy(71,13): Error: assertion might not hold
+github-issue-36-positive.dfy(71,27): Error: assertion might not hold
+
+Dafny program verifier finished with 3 verified, 11 errors
+negative (axioms:false, Z3 4.12.1, type-system-refresh:true)
+github-issue-36-negative.dfy(8,2): Error: assertion might not hold
+github-issue-36-negative.dfy(14,2): Error: assertion might not hold
+github-issue-36-negative.dfy(19,18): Error: function precondition could not be proved
+github-issue-36-negative.dfy(2,43): Related location: this proposition could not be proved
+github-issue-36-negative.dfy(23,8): Error: cannot establish the existence of LHS values that satisfy the such-that predicate. Note, no trigger was found for the such-that predicate, which may be the reason the proof failed. To give a trigger explicitly, use the {:trigger} attribute. For more information, see the section on quantifier instantiation rules in the reference manual.
+github-issue-36-negative.dfy(28,2): Error: assertion might not hold
+github-issue-36-negative.dfy(33,2): Error: assertion might not hold
+github-issue-36-negative.dfy(43,2): Error: assertion might not hold
+github-issue-36-negative.dfy(49,11): Error: function precondition could not be proved
+
+Dafny program verifier finished with 2 verified, 8 errors
+original (axioms:true, Z3 4.12.1, type-system-refresh:true)
+
+Dafny program verifier finished with 4 verified, 0 errors
+positive (axioms:true, Z3 4.12.1, type-system-refresh:true)
+
+Dafny program verifier finished with 12 verified, 0 errors
+negative (axioms:true, Z3 4.12.1, type-system-refresh:true)
+github-issue-36-negative.dfy(8,2): Error: assertion might not hold
+github-issue-36-negative.dfy(14,2): Error: assertion might not hold
+github-issue-36-negative.dfy(19,18): Error: function precondition could not be proved
+github-issue-36-negative.dfy(2,43): Related location: this proposition could not be proved
+github-issue-36-negative.dfy(23,8): Error: cannot establish the existence of LHS values that satisfy the such-that predicate. Note, no trigger was found for the such-that predicate, which may be the reason the proof failed. To give a trigger explicitly, use the {:trigger} attribute. For more information, see the section on quantifier instantiation rules in the reference manual.
+github-issue-36-negative.dfy(28,2): Error: assertion might not hold
+github-issue-36-negative.dfy(33,2): Error: assertion might not hold
+github-issue-36-negative.dfy(43,2): Error: assertion might not hold
+github-issue-36-negative.dfy(49,11): Error: function precondition could not be proved
+
+Dafny program verifier finished with 2 verified, 8 errors
+runtime (type-system-refresh:false)
+
+Dafny program verifier finished with 1 verified, 0 errors
+7
+runtime (type-system-refresh:true)
+
+Dafny program verifier finished with 1 verified, 0 errors
+7

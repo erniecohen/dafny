@@ -1,0 +1,9 @@
+github-issue-35.dfy(23,15): Warning: StaticLemma: Ghost declaration has no body and has an ensures clause. Possible mitigation: Provide a body or add `{:axiom}`.
+github-issue-35.dfy(24,24): Warning: StaticFunction: Ghost declaration has no body and has an ensures clause. Possible mitigation: Provide a body or add `{:axiom}`.
+github-issue-35.dfy(29,8): Warning: ClassLemma: Ghost declaration has no body and has an ensures clause. Possible mitigation: Provide a body or add `{:axiom}`.
+github-issue-35.dfy(30,17): Warning: ClassFunction: Ghost declaration has no body and has an ensures clause. Possible mitigation: Provide a body or add `{:axiom}`.
+github-issue-35.dfy(35,17): Warning: AxiomLemma: Declaration has explicit `{:axiom}` attribute. Possible mitigation: Provide a proof or test.
+github-issue-35.dfy(36,26): Warning: AxiomFunction: Declaration has explicit `{:axiom}` attribute. Possible mitigation: Provide a proof or test.
+Dafny auditor completed with 6 findings
+
+Dafny program verifier did not attempt verification

@@ -24,6 +24,7 @@ namespace Microsoft.Dafny {
     private readonly DafnyOptions options;
     public readonly Model Model;
     public readonly List<PartialState> States = [];
+    internal string CapturedStateDescription(string name) => options.CapturedStateDescription(name);
     public static readonly UserDefinedType UnknownType =
       new(new Token(), "?", null);
     private readonly ModelFuncWrapper fSelect, fSetMember, fSeqLength, fSeqIndex, fBox,
@@ -638,7 +639,7 @@ namespace Microsoft.Dafny {
               foreach (var fieldName in GetFieldNames(tpl.Args[1])) {
                 if (fieldName != "alloc") {
                   var field = PartialValue.Get(UnboxNotNull(tpl.Result), state);
-                  // make sure the field in question is not an array index
+                  // make sure the field in quetion is not an array index
                   if (fieldName.Contains("#")) {
                     continue;
                   }

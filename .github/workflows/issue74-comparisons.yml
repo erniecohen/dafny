@@ -1,0 +1,129 @@
+name: Issue 74 comparisons of focused-tested builds
+on:
+  push:
+    branches: ['scratch/issue74/comparisons-register']
+  workflow_dispatch:
+    inputs:
+      build_run:
+        description: Completed focused validation run with issue74-builds artifact
+        type: string
+        required: true
+      source_sha:
+        description: Exact candidate source SHA recorded in that build artifact
+        type: string
+        required: true
+permissions:
+  contents: read
+  actions: read
+jobs:
+  corpus:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_sha }}
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - uses: actions/download-artifact@v4
+        with:
+          name: issue74-builds
+          run-id: ${{ inputs.build_run }}
+          github-token: ${{ github.token }}
+          path: build-artifact
+      - name: Unpack and pin solver
+        env:
+          TESTED_SHA: ${{ inputs.source_sha }}
+        run: |
+          mkdir out && tar -C out -xzf build-artifact/builds.tar.gz
+          test "$(cat out/candidate-source.txt)" = "$TESTED_SHA"
+          curl -fsSLo z3.zip https://github.com/Z3Prover/z3/releases/download/z3-5.1.0/z3-5.1.0-x64-glibc-2.39.zip
+          echo 'f47be8d27d3230e823bf1eeede2fe0abaca55bb78d0b59974370e6689a92284a  z3.zip' | sha256sum -c -
+          unzip -q z3.zip
+      - name: Compare off input and resources and enabled suite against merged baseline
+        run: python3 .github/review/issue74-corpus.py --baseline "$PWD/out/baseline/Dafny" --candidate "$PWD/out/candidate/Dafny" --z3 "$PWD/z3-5.1.0-x64-glibc-2.39/bin/z3" --output corpus --shard ${{ matrix.shard }}/4 --jobs 4
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: issue74-corpus-${{ matrix.shard }}
+          path: corpus
+          retention-days: 90
+  stdlib:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    strategy:
+      fail-fast: false
+      matrix:
+        solver: ['4.12.1', '5.1.0']
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_sha }}
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - uses: actions/download-artifact@v4
+        with:
+          name: issue74-builds
+          run-id: ${{ inputs.build_run }}
+          github-token: ${{ github.token }}
+          path: build-artifact
+      - name: Unpack and pin solver
+        env:
+          TESTED_SHA: ${{ inputs.source_sha }}
+        run: |
+          mkdir out && tar -C out -xzf build-artifact/builds.tar.gz
+          test "$(cat out/candidate-source.txt)" = "$TESTED_SHA"
+          if [ '${{ matrix.solver }}' = 5.1.0 ]; then
+            curl -fsSLo z3.zip https://github.com/Z3Prover/z3/releases/download/z3-5.1.0/z3-5.1.0-x64-glibc-2.39.zip
+            echo 'f47be8d27d3230e823bf1eeede2fe0abaca55bb78d0b59974370e6689a92284a  z3.zip' | sha256sum -c -
+            unzip -q z3.zip
+            echo "Z3=$PWD/z3-5.1.0-x64-glibc-2.39/bin/z3" >> "$GITHUB_ENV"
+          else
+            curl -fsSLo z3.zip https://github.com/dafny-lang/solver-builds/releases/download/snapshot-2026-04-03/z3-4.12.1-x64-ubuntu-24.04-bin.zip
+            echo 'e07d4193d8e1851114fe4d507332a43576639f4aeaa33c7df15c36426d3cbf3b  z3.zip' | sha256sum -c -
+            mkdir z3h && unzip -q z3.zip -d z3h
+            echo "Z3=$PWD/z3h/z3-4.12.1" >> "$GITHUB_ENV"
+          fi
+      - name: Compare source library outcomes and costs with repeat controls
+        run: |
+          python3 .github/review/issue74-stdlib.py --baseline "$PWD/out/baseline/Dafny" --candidate "$PWD/out/candidate/Dafny" --z3 "$Z3" --output stdlib
+          python3 .github/review/issue33-translation.py --baseline "$PWD/out/baseline/Dafny" --candidate "$PWD/out/candidate/Dafny" --output translation
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: issue74-stdlib-${{ matrix.solver }}
+          path: |
+            stdlib
+            translation
+          retention-days: 90
+  audit:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        solver: ['4.12.1', '5.1.0']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: issue74-targeted-${{ matrix.solver }}
+          run-id: ${{ inputs.build_run }}
+          github-token: ${{ github.token }}
+          path: focused-inputs
+      - name: Audit actual focused queries with the current observational parser
+        run: python3 .github/review/issue74-smt-audit.py --input focused-inputs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: issue74-local-smt-audit-${{ matrix.solver }}
+          path: focused-inputs/smt-audit.json
+          retention-days: 90

@@ -16,7 +16,12 @@ public class ModuleQualifiedId : NodeWithoutOrigin, IHasReferences {
   // Note also that the resolution of the root depends on the syntactice location
   // of the qualified id; the resolution of subsequent ids depends on the
   // default export set of the previous id.
-  [FilledInDuringResolution] public ModuleDecl Root { get; set; } // the module corresponding to Path[0].val
+  [FilledInDuringResolution] public ModuleDecl Root { get; set; } // the module corresponding to Path[RootIndex].val
+  // Index in Path of the component that Root resolves. It is 0, except when the leading components
+  // name modules that enclose the qualified id: then Root is the first component that does not
+  // (see ProgramResolver.SkipEnclosingModules), and only the components after it are looked up
+  // through default exports.
+  [FilledInDuringResolution] public int RootIndex { get; set; }
   [FilledInDuringResolution] public ModuleDecl Decl { get; private set; } // the module corresponding to the full path
   [FilledInDuringResolution] public ModuleDefinition Def { get; private set; } // the module definition corresponding to the full path
   [FilledInDuringResolution] public ModuleSignature Sig { get; set; } // the module signature corresponding to the full path
@@ -34,6 +39,8 @@ public class ModuleQualifiedId : NodeWithoutOrigin, IHasReferences {
   public ModuleQualifiedId(Cloner cloner, ModuleQualifiedId original) {
     Path = original.Path.Select(n => n.Clone(cloner)).ToList();
     Origin = cloner.Origin(original.Origin);
+    // RootIndex describes Root, which some clones copy even when !CloneResolvedFields (AliasModuleDecl)
+    RootIndex = original.RootIndex;
     if (cloner.CloneResolvedFields) {
       Root = original.Root;
     }
@@ -103,7 +110,7 @@ public class ModuleQualifiedId : NodeWithoutOrigin, IHasReferences {
     }
 
     var decl = Root;
-    for (int k = 1; k < Path.Count; k++) {
+    for (int k = RootIndex + 1; k < Path.Count; k++) {
       ModuleSignature p;
       if (decl is LiteralModuleDecl literalModuleDecl) {
         p = literalModuleDecl.DefaultExport;

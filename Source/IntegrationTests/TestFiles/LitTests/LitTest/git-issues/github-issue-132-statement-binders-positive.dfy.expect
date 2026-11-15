@@ -1,0 +1,12 @@
+refresh=false axioms=false
+
+Dafny program verifier finished with 7 verified, 0 errors
+refresh=false axioms=true
+
+Dafny program verifier finished with 7 verified, 0 errors
+refresh=true axioms=false
+
+Dafny program verifier finished with 7 verified, 0 errors
+refresh=true axioms=true
+
+Dafny program verifier finished with 7 verified, 0 errors

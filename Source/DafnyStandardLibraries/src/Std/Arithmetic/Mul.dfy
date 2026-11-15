@@ -145,16 +145,14 @@ module Std.Arithmetic.Mul {
 
   /* the product of two positive integers is always greater than the individual value of either 
   multiplied integer */
-  @ResourceLimit("5e7")
   lemma LemmaMulOrderingAuto()
     ensures forall x: int, y: int {:trigger x * y} :: (0 != x && 0 != y && x * y >= 0) ==> x * y >= x && x * y >= y
   {
-    forall x: int, y: int | 0 != x && 0 != y && x * y >= 0
+    // "0 <= x * y", as LemmaMulOrdering requires: Z3 5.1.0 gives up on "x * y >= 0" here.
+    forall x: int, y: int | 0 != x && 0 != y && 0 <= x * y
       ensures x * y >= x && x * y >= y
     {
-      var p := x * y;
-      assert p >= 0;
-      MulINL.LemmaMulOrdering(x, y);
+      LemmaMulOrdering(x, y);
     }
   }
 
@@ -287,7 +285,7 @@ module Std.Arithmetic.Mul {
     }
   }
 
-  /* if two separate integers are each multiplied by a common integer and the products are equal, the 
+  /* if two seperate integers are each multiplied by a common integer and the products are equal, the 
     two original integers are equal */
   lemma LemmaMulEqualityConverse(m: int, x: int, y: int)
     requires m != 0
@@ -300,7 +298,7 @@ module Std.Arithmetic.Mul {
     LemmaMulInductionAuto(m, u => x < y && 0 > u ==> x * u > y * u);
   }
 
-  /* if any two separate integers are each multiplied by a common integer and the products are equal, the 
+  /* if any two seperate integers are each multiplied by a common integer and the products are equal, the 
   two original integers are equal */
   lemma LemmaMulEqualityConverseAuto()
     ensures forall m: int, x: int, y: int {:trigger m * x, m * y} :: (m != 0 && m * x == m * y) ==> x == y

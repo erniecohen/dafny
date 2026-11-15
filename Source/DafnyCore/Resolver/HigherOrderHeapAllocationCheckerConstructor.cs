@@ -74,7 +74,7 @@ class HigherOrderHeapAllocationCheckerConstructor : ASTVisitor<IASTVisitorContex
 
   protected override bool VisitOneStatement(Statement stmt, IASTVisitorContext context) {
 
-    // Assignments to constant fields in constructors boil down to an assignment.
+    // Assigments to constant fields in constructors boil down to an assignment.
     if (stmt is SingleAssignStmt assign) {
 
       var lhs = assign.Lhs;

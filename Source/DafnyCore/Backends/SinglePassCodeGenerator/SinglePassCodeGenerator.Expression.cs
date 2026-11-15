@@ -103,25 +103,17 @@ namespace Microsoft.Dafny.Compilers {
                 var tas = TypeArgumentInstantiation.ListFromClass(field.EnclosingClass, typeArgs);
                 EmitTypeDescriptorsActuals(tas, e.Origin, wr.ForkInParens());
               } else {
-                // Special handling for static special fields (like fp64.NaN)
-                if (field.IsStatic && field is SpecialField && preStr != "") {
-                  // GetSpecialFieldInfo already provided the complete reference in preStr
-                } else {
-                  void WriteObj(ConcreteSyntaxTree w) {
-                    if (field.IsStatic) {
-                      w.Write("{0}", TypeName_Companion(e.Obj.Type, w, e.Origin, field));
-                    } else {
-                      w = EmitCoercionIfNecessary(e.Obj.Type, UserDefinedType.UpcastToMemberEnclosingType(e.Obj.Type, e.Member),
-                        e.Origin, w);
-                      TrParenExpr(e.Obj, w, inLetExprBody, wStmts);
-                    }
-                  }
-
-                  var typeArgs = CombineAllTypeArguments(e.Member, e.TypeApplicationAtEnclosingClass,
-                    e.TypeApplicationJustMember);
-                  EmitMemberSelect(WriteObj, e.Obj.Type, e.Member, typeArgs, e.TypeArgumentSubstitutionsWithParents(),
-                    selectExpr.Type).EmitRead(wr);
+                void WriteObj(ConcreteSyntaxTree w) {
+                  //Contract.Assert(!sf.IsStatic);
+                  w = EmitCoercionIfNecessary(e.Obj.Type, UserDefinedType.UpcastToMemberEnclosingType(e.Obj.Type, e.Member),
+                    e.Origin, w);
+                  TrParenExpr(e.Obj, w, inLetExprBody, wStmts);
                 }
+
+                var typeArgs = CombineAllTypeArguments(e.Member, e.TypeApplicationAtEnclosingClass,
+                  e.TypeApplicationJustMember);
+                EmitMemberSelect(WriteObj, e.Obj.Type, e.Member, typeArgs, e.TypeArgumentSubstitutionsWithParents(),
+                  selectExpr.Type).EmitRead(wr);
               }
 
               wr.Write(postStr);
@@ -381,7 +373,7 @@ namespace Microsoft.Dafny.Compilers {
               //        var x,y;
               //        // Embark on computation that fills in x,y according to Constraint; the computation stops when the first
               //        // such value is found, but since the verifier checks that x,y follows uniquely from Constraint, this is
-              //        // not a source of nondeterminism.
+              //        // not a source of nondeterminancy.
               //        return E;
               //      })
               Contract.Assert(e.RHSs.Count == 1); // checked by resolution

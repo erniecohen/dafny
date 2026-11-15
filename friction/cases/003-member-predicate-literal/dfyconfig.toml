@@ -1,0 +1,7 @@
+base = "../../dfyconfig.toml"
+includes = ["repro.dfy"]
+
+[options]
+type-system-refresh = true
+general-traits = "full"
+general-newtypes = true

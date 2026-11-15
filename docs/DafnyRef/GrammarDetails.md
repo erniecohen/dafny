@@ -16,7 +16,7 @@ parameterized by boolean parameters that control variations of the
 production rules, such as whether a particular alternative is permitted or
 not. Using such attributes allows combining non-terminals with quite
 similar production rules, making a simpler, more compact and more
-readable grammar.
+readable grammer.
 
 The grammar rules presented here replicate those in the source
 code, but omit semantic actions, error recovery markers, and
@@ -103,7 +103,7 @@ reservedword =
     "const" | "constructor" | "continue" |
     "datatype" | "decreases" |
     "else" | "ensures" | "exists" | "expect" | "export" | "extends" |
-    "false" | "for" | "forall" | "fp32" | "fp64" | "fresh" | "function" | "ghost" |
+    "false" | "for" | "forall" | "fresh" | "function" | "ghost" |
     "if" | "imap" | "import" | "in" | "include" |
     "int" | "invariant" | "is" | "iset" | "iterator" |
     "label" | "lemma" | "map" | "match" | "method" |
@@ -296,7 +296,7 @@ ExportSignature = TypeNameOrCtorSuffix [ "." TypeNameOrCtorSuffix ]
 Type = DomainType_ | ArrowType_
 
 DomainType_ =
-  ( BoolType_ | CharType_ | IntType_ | RealType_ | FloatType_
+  ( BoolType_ | CharType_ | IntType_ | RealType_
   | OrdinalType_ | BitVectorType_ | ObjectType_
   | FiniteSetType_ | InfiniteSetType_
   | MultisetType_
@@ -322,7 +322,6 @@ NameSegmentForTypeName = Ident [ GenericInstantiation ]
 BoolType_ = "bool"
 IntType_ = "int"
 RealType_ = "real"
-FloatType_ = "fp32" | "fp64"
 BitVectorType_ = bvToken
 OrdinalType_ = "ORDINAL"
 CharType_ = "char"
@@ -686,7 +685,7 @@ MethodSpec =
 ````grammar
 FunctionSpec =
   { RequiresClause(allowLabel: true)
-  | ReadsClause(allowLemma: false, allowLambda: false, allowWild: true, allowDoubleWild: true)
+  | ReadsClause(allowLemma: false, allowLambda: false, allowWild: true)
   | EnsuresClause(allowLambda: false)
   | DecreasesClause(allowWildcard: false, allowLambda: false)
   }
@@ -697,7 +696,7 @@ FunctionSpec =
 
 ````grammar
 LambdaSpec =
-  { ReadsClause(allowLemma: true, allowLambda: false, allowWild: true, allowDoubleWild: false)
+  { ReadsClause(allowLemma: true, allowLambda: false, allowWild: true)
   | "requires" Expression(allowLemma: false, allowLambda: false)
   }
 ````
@@ -708,7 +707,7 @@ LambdaSpec =
 ````grammar
 IteratorSpec =
   { ReadsClause(allowLemma: false, allowLambda: false,
-                allowWild: false, allowDoubleWild: false)
+                                  allowWild: false)
   | ModifiesClause(allowLambda: false)
   | [ "yield" ] RequiresClause(allowLabel: !isYield)
   | [ "yield" ] EnsuresClause(allowLambda: false)
@@ -753,8 +752,11 @@ DecreasesClause(allowWildcard, allowLambda) =
   "decreases" { Attribute } DecreasesList(allowWildcard, allowLambda)
 
 DecreasesList(allowWildcard, allowLambda) =
-  PossiblyWildExpression(allowLambda, allowWildcard)
-  { "," PossiblyWildExpression(allowLambda, allowWildcard) }
+  PossiblyWildExpression(allowLambda, allowWildcard) [ DecreasesOrder ]
+  { "," PossiblyWildExpression(allowLambda, allowWildcard) [ DecreasesOrder ] }
+
+DecreasesOrder =  // requires --decreases-orders
+  "by" Expression(allowLemma: false, allowLambda: true)
 
 PossiblyWildExpression(allowLambda, allowWild) =
   ( "*"  // if allowWild is false, using '*' provokes an error
@@ -785,10 +787,10 @@ InvariantClause_ =
 ([discussion](#sec-reads-clause)) 
 
 ````grammar
-ReadsClause(allowLemma, allowLambda, allowWild, allowDoubleWild) =
+ReadsClause(allowLemma, allowLambda, allowWild) =
   "reads" { Attribute }
-  PossiblyWildFrameExpression(allowLemma, allowLambda, allowWild, allowDoubleWild)
-  { "," PossiblyWildFrameExpression(allowLemma, allowLambda, allowWild, allowDoubleWild) }
+  PossiblyWildFrameExpression(allowLemma, allowLambda, allowWild)
+  { "," PossiblyWildFrameExpression(allowLemma, allowLambda, allowWild) }
 ````
 
 #### 17.2.5.12. Frame expressions {#g-frame-expression}
@@ -802,9 +804,8 @@ FrameExpression(allowLemma, allowLambda) =
 
 FrameField = "`" IdentOrDigits
 
-PossiblyWildFrameExpression(allowLemma, allowLambda, allowWild, allowDoubleWild) =
+PossiblyWildFrameExpression(allowLemma, allowLambda, allowWild) =
   ( "*"  // error if !allowWild and '*'
-  | "**"  // error if !allowDoubleWild and '**'
   | FrameExpression(allowLemma, allowLambda)
   )
 ````
@@ -1414,10 +1415,8 @@ ConstAtomExpression =
 
 ````grammar
 LiteralExpression =
- ( "false" | "true" | "null" | Nat | Dec | ApproxLiteral |
+ ( "false" | "true" | "null" | Nat | Dec |
    charToken | stringToken )
-
-ApproxLiteral = "~" [ "-" ] Dec
 
 Nat = ( digits | hexdigits )
 

@@ -81,7 +81,7 @@ public class ExceptionTests : ClientBasedLanguageServerTest {
     ApplyChange(ref documentItem, new Range(0, 0, 0, 0), " ");
     var recoveredDiagnostics = await GetLastDiagnostics(documentItem);
     Assert.Single(recoveredDiagnostics);
-    Assert.True(recoveredDiagnostics[0].Message.Contains("not be proved"), recoveredDiagnostics[0].Message);
+    Assert.True(recoveredDiagnostics[0].Message.Contains("might not"), recoveredDiagnostics[0].Message);
   }
 
   class CrashingVerifier : IProgramVerifier {
@@ -93,7 +93,7 @@ public class ExceptionTests : ClientBasedLanguageServerTest {
       this.verifier = verifier;
     }
 
-    public Task<IReadOnlyList<IVerificationTask>> GetVerificationTasksAsync(ExecutionEngine engine,
+    public Task<ModuleVerificationTasks> GetVerificationTasksAsync(ExecutionEngine engine,
       ResolutionResult resolution, ModuleDefinition moduleDefinition, CancellationToken cancellationToken) {
 
       if (tests.CrashOnPrepareVerification) {

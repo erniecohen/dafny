@@ -1,0 +1,66 @@
+maps (refresh:false, keys:false)
+github-issue-192-maps.dfy(2,86): Error: a postcondition could not be proved on this return path
+github-issue-192-maps.dfy(2,81): Related location: this is the postcondition that could not be proved
+github-issue-192-maps.dfy(3,79): Error: a postcondition could not be proved on this return path
+github-issue-192-maps.dfy(3,74): Related location: this is the postcondition that could not be proved
+github-issue-192-maps.dfy(5,75): Error: a postcondition could not be proved on this return path
+github-issue-192-maps.dfy(5,70): Related location: this is the postcondition that could not be proved
+github-issue-192-maps.dfy(8,69): Error: a postcondition could not be proved on this return path
+github-issue-192-maps.dfy(8,64): Related location: this is the postcondition that could not be proved
+github-issue-192-maps.dfy(9,72): Error: a postcondition could not be proved on this return path
+github-issue-192-maps.dfy(9,67): Related location: this is the postcondition that could not be proved
+github-issue-192-maps.dfy(10,75): Error: a postcondition could not be proved on this return path
+github-issue-192-maps.dfy(10,70): Related location: this is the postcondition that could not be proved
+github-issue-192-maps.dfy(11,74): Error: a postcondition could not be proved on this return path
+github-issue-192-maps.dfy(11,69): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 12 verified, 7 errors
+maps (refresh:false, keys:true)
+
+Dafny program verifier finished with 19 verified, 0 errors
+multiset (refresh:false, keys:false)
+github-issue-192-multiset.dfy(2,54): Error: a postcondition could not be proved on this return path
+github-issue-192-multiset.dfy(2,49): Related location: this is the postcondition that could not be proved
+github-issue-192-multiset.dfy(3,69): Error: a postcondition could not be proved on this return path
+github-issue-192-multiset.dfy(3,64): Related location: this is the postcondition that could not be proved
+github-issue-192-multiset.dfy(5,84): Error: a postcondition could not be proved on this return path
+github-issue-192-multiset.dfy(5,71): Related location: this is the postcondition that could not be proved
+github-issue-192-multiset.dfy(6,68): Error: a postcondition could not be proved on this return path
+github-issue-192-multiset.dfy(6,63): Related location: this is the postcondition that could not be proved
+github-issue-192-multiset.dfy(8,53): Error: a postcondition could not be proved on this return path
+github-issue-192-multiset.dfy(8,48): Related location: this is the postcondition that could not be proved
+github-issue-192-multiset.dfy(10,96): Error: a postcondition could not be proved on this return path
+github-issue-192-multiset.dfy(10,87): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 8 verified, 6 errors
+multiset (refresh:false, keys:true)
+
+Dafny program verifier finished with 14 verified, 0 errors
+multiset (refresh:true, keys:true)
+
+Dafny program verifier finished with 13 verified, 0 errors
+negative (refresh:false, keys:false)
+github-issue-192-negative.dfy(3,33): Error: a postcondition could not be proved on this return path
+github-issue-192-negative.dfy(3,27): Related location: this is the postcondition that could not be proved
+github-issue-192-negative.dfy(12,2): Error: assertion might not hold
+github-issue-192-negative.dfy(17,0): Error: a postcondition could not be proved on this return path
+github-issue-192-negative.dfy(16,10): Related location: this is the postcondition that could not be proved
+github-issue-192-negative.dfy(18,68): Error: a postcondition could not be proved on this return path
+github-issue-192-negative.dfy(18,63): Related location: this is the postcondition that could not be proved
+github-issue-192-negative.dfy(19,73): Error: a postcondition could not be proved on this return path
+github-issue-192-negative.dfy(19,67): Related location: this is the postcondition that could not be proved
+github-issue-192-negative.dfy(20,2): Error: assertion might not hold
+
+Dafny program verifier finished with 3 verified, 6 errors
+negative (refresh:false, keys:true)
+github-issue-192-negative.dfy(3,33): Error: a postcondition could not be proved on this return path
+github-issue-192-negative.dfy(3,27): Related location: this is the postcondition that could not be proved
+github-issue-192-negative.dfy(12,2): Error: assertion might not hold
+github-issue-192-negative.dfy(17,0): Error: a postcondition could not be proved on this return path
+github-issue-192-negative.dfy(16,10): Related location: this is the postcondition that could not be proved
+github-issue-192-negative.dfy(18,68): Error: a postcondition could not be proved on this return path
+github-issue-192-negative.dfy(18,63): Related location: this is the postcondition that could not be proved
+github-issue-192-negative.dfy(19,73): Error: a postcondition could not be proved on this return path
+github-issue-192-negative.dfy(19,67): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 3 verified, 5 errors

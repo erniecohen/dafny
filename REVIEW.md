@@ -1,0 +1,767 @@
+# review/4.11.0: Dafny 4.11.0 with soundness fixes
+
+This branch is Dafny 4.11.0 (tag `v4.11.0`, commit `fcb2042`) with fixes for
+eight soundness issues filed against dafny-lang/dafny, one commit per fix, and
+it builds against Boogie 3.5.5 with a fix for a ninth, filed against
+boogie-org/boogie.  Since `4.11.0+fcb2042d.review.256a1ab3` it also has fixes
+for twelve issues filed here: one more soundness fix, crash and non-termination
+fixes, a diagnostic fix and an auditor fix, one pull request each (below).
+A build of it reports the version `4.11.0+fcb2042d.review.d2070b81`, and the tag
+of the same name with a `v` marks it: `v4.11.0+fcb2042d.review.d2070b81`.
+
+It is the shipped line.  Improvements go to the branch `dev`, which follows
+upstream's `master`, and come back here only after they pass the tests.
+
+Where the fork is going is in [`ROADMAP.md`](ROADMAP.md); the work itself is in
+[the issues](https://github.com/erniecohen/dafny/issues).  How to work here, for
+anyone, human or AI, is in [`AGENTS.md`](AGENTS.md).
+
+## The fixes
+
+| fix | test and release note | issue | what it changes | kind |
+|---|---|---|---|---|
+| `b6116c9` | (upstream's, in the fix) | [#6366](https://github.com/dafny-lang/dafny/issues/6366), fixed upstream by [#6367](https://github.com/dafny-lang/dafny/pull/6367) after 4.11.0 | An automatic induction hypothesis, and the range of a forall call statement, assume their call permissions only under the bound variables' type antecedent.  Upstream's commit, cherry-picked with its author. | weakens only |
+| `cf5fdba`, refined by `5fc27c0` | `b7231f8`, `f102115` | [#6531](https://github.com/dafny-lang/dafny/issues/6531) | The equality axiom of a datatype with a single constructor gets the antecedent `Ctor?(a) && Ctor?(b)` in its direction "equal fields imply `Dt#Equal`", which ranged over every datatype value.  The other direction, "`Dt#Equal` implies equal fields", holds of every value, since `Dt#Equal` is equality, and stays unguarded.  `cf5fdba` guarded both directions; `5fc27c0` guards only the false one, as the pull request [dafny-lang/dafny#6540](https://github.com/dafny-lang/dafny/pull/6540) does, because guarding both made some proofs that compare tuples hundreds of times dearer. | weakens only: it still only adds a guard, now to one direction of the axiom |
+| `f621876` | `251fbd1` | [#6537](https://github.com/dafny-lang/dafny/issues/6537) | Membership in `Map#Items` and `IMap#Items` gets a first conjunct: the item is a pair. | **asserts** that every item is a pair |
+| `007b409` | `9e7df43` | [#6533](https://github.com/dafny-lang/dafny/issues/6533) | The assumption after a forall statement that assigns to the heap puts the bound variables' type antecedent outermost, around the call facts of its range. | weakens only |
+| `5ecb3b4` | `c0713af` | [#6532](https://github.com/dafny-lang/dafny/issues/6532) | `BplForallTrim` keeps a bound variable whose type may be empty, under an `exists` guard, instead of dropping it.  Also substitutes the type arguments in the call facts of a constant field's right-hand side, which the first change exposed. | weakens only |
+| `2ce2b7a` | `ca79a16` | [#6534](https://github.com/dafny-lang/dafny/issues/6534) | Deletes the unguarded `$Box($Unbox(x): T) == x`. | **asserts** `$IsBox`-guarded inverses for `ORDINAL` and `Field`, and `$IsBox` of the value a field holds in the heap |
+| `b0f99c7` | `d67ac3e` | [#6535](https://github.com/dafny-lang/dafny/issues/6535) | `Map#Elements(Map#Glue(a, b, t)) == b` becomes pointwise inside the domain `a`; the same for `IMap#Glue`. | weakens only |
+| `7512bd5` | `0861414` | [#6536](https://github.com/dafny-lang/dafny/issues/6536) | The guard of the ORDINAL `(o - m) + n` axiom, `n <= ORD#Offset(o) + m`, becomes `m <= ORD#Offset(o)`. | **asserts**: the axiom now also applies where it is true and did not before (`m <= Offset(o) < n - m`) |
+| `a48933e` | `3ff7e36` | [boogie-org/boogie#1168](https://github.com/boogie-org/boogie/issues/1168) | Dafny builds against Boogie `3.5.5-review.37e4435d`, Boogie 3.5.5 with the fix (below).  Under the arguments type encoding, which Dafny uses, Boogie no longer emits the reverse casts `B_2_U(U_2_B(x)) == x`, no longer retypes a quantifier's `int` or `bool` variables to `U` for its triggers, and passes a value of a built-in type to a `U` position as a cast. | weakens only: it removes axioms, and the cast rewrites a term to one of the same value |
+
+Issue numbers are dafny-lang/dafny's, except boogie-org/boogie#1168.  "Weakens
+only" means that the fix removes an axiom or an assumption, or puts a guard on
+one.  "Asserts" means that it also states a fact that was not stated before;
+those parts are the ones a reviewer should check.  Each commit message says
+what its fix changes and why.
+
+## The fixes since 256a1ab3
+
+Each is one squash-merged pull request here, with its regression test
+`git-issues/github-issue-<issue>.dfy` and its release note
+`docs/dev/news/<issue>.fix` in the same commit.  Issue numbers are this
+repository's.  A crash, non-termination or diagnostic fix changes only programs
+that crashed, hung or were diagnosed; it changes no verdict of a program that
+already worked, as `AGENTS.md` requires.
+
+| fix | issue | what it changes | kind |
+|---|---|---|---|
+| `36811f3` (#52) | [#40](https://github.com/erniecohen/dafny/issues/40) | Cloning a such-that assignment with missing bounds inside a `match` case no longer crashes the resolver. | crash |
+| `8ef1431` (#53) | [#41](https://github.com/erniecohen/dafny/issues/41) | Allocating an object with a named constructor inside a `match` case no longer crashes the resolver. | crash |
+| `d7b2b63` (#54) | [#42](https://github.com/erniecohen/dafny/issues/42) | Ghost inference covers locals initialized by `decreases to` and `nonincreases to` expressions, which crashed the resolver. | crash |
+| `da1d421` (#55) | [#35](https://github.com/erniecohen/dafny/issues/35) | The auditor no longer reports bodyless instance members of traits as missing-body assumptions; static members and explicit assumptions are still audited. | auditor output |
+| `64e5544` (#56) | [#46](https://github.com/erniecohen/dafny/issues/46) | Selecting a static member of a bitvector-based newtype under `--type-system-refresh` and `--general-newtypes` no longer crashes the resolver. | crash |
+| `3ab6f38` (#57) | [#37](https://github.com/erniecohen/dafny/issues/37) | Type errors involving ambiguous arrow types show arrow syntax instead of internal type names. | diagnostic text |
+| `cc10f9a` (#58) | [#43](https://github.com/erniecohen/dafny/issues/43) | An undeclared destination of a `:-` statement is reported instead of crashing, in both resolvers. | crash |
+| `d24ac25` (#59) | [#45](https://github.com/erniecohen/dafny/issues/45) | The refreshed resolver resolves a datatype's signature before matching a qualified constructor's arguments, which crashed. | crash |
+| `b796eff` (#60) | [#25](https://github.com/erniecohen/dafny/issues/25) | Refining a module with a `:|` whose constraint calls a function no longer crashes: the substituted trigger keeps its parsed form and heap label. | crash |
+| `7959732` (#61) | [#39](https://github.com/erniecohen/dafny/issues/39) | The receiver of a static call written through an object, as in `(assert false; c).f()`, is checked inside a `match`, a quantifier, a set or map comprehension and a lambda, as it is elsewhere; cloning and substitution dropped it. | **soundness**, weakens only: it restores well-formedness checks and asserts nothing |
+| `9af9f84` (#62) | [#44](https://github.com/erniecohen/dafny/issues/44), program (a) | A cyclic type synonym used by a later datatype or codatatype is reported instead of making the resolver run forever. | non-termination |
+| `b97a6fe` (#64) | [#26](https://github.com/erniecohen/dafny/issues/26) | The existence check of a `:|` that binds many variables no longer overflows the stack: a long disjunction is balanced, and at most 20,000 partial guesses are kept. | crash; weakens only, since a dropped disjunct only strengthens the check |
+
+The fix for #39 moves one verdict of the suite, `dafny2/SnapshotableTrees.dfy`,
+from 102 to 103 verified with the same errors: a `reveal` inside a `match` case
+now has its receiver checked, which adds one proved assertion batch.  No other
+fix moves a verdict of the suite or of the standard library.  #63 moved a test
+input under `Inputs/` and changed no product file.
+
+## Self calls in a function's own postcondition ([#166](https://github.com/erniecohen/dafny/issues/166))
+
+A function's own postcondition is checked under a call-permission premise that keeps the
+self-call allowance: a self call `F(i)` contributes `i == i || F#canCall(i)`, so the check
+cannot assume F's own, unproved, contract.  Two call sites dropped the caller's options under
+default options and assumed an unconditional `F#canCall(i)` instead: the body of an exact let,
+and the application of a `seq(n, init)` initializer.  So
+`ghost function F(i: int): int ensures var unused := 1; F(i) == 0 { 1 }` verified, as did
+`ensures seq(1, j => F(i))[0] == 0`, and a lemma then proved `false`.  The fixes, in
+`Source/DafnyCore/Verifier/BoogieGenerator.LetExpr.cs` (`LetCanCallAssumption`) and
+`BoogieGenerator.ExpressionTranslator.cs` (`CanCallAssumption`, the `SeqConstructionExpr`
+case), pass the caller's options at both sites, without the arrow allocation facts that those
+sites omitted before.  Their kind is **weakens only**: the assumed premise becomes the existing
+allowance, and no fact or axiom is added; `--consistent-obligation-checks` is unchanged.  The
+third site of the same shape, a constant field's right-hand side, cannot carry such a self
+call: the resolver rejects the cycle it needs.  The regression is
+`git-issues/github-issue-166.dfy`, which runs the issue's program, nested, used and pattern
+exact lets, the `seq` initializer, valid contracts and a false control under all four
+combinations of `--type-system-refresh` and `--additional-axioms`; the release note is
+`docs/dev/news/166.fix`.  No verdict of the suite or of the standard library moves.
+
+## Bitvector rotations ([#147](https://github.com/erniecohen/dafny/issues/147))
+
+Z3 5.1.0 composes the counts of nested `ext_rotate_left`/`ext_rotate_right` modulo `2^W`
+instead of modulo `W`, which is unsound when the width `W` is not a power of two: Dafny
+4.11.0 with Z3 5.1.0 proves `x.RotateRight(a).RotateLeft(b) == 4` for `x == 1 as bv3`,
+`a == 3`, `b == 0`, where the value is 1.  The fix, in
+`Source/DafnyCore/Verifier/BoogieGenerator.cs` (`AddBitvectorRotateFunction`), defines
+`LeftRotate_bvW` and `RightRotate_bvW` by shifts at positive widths that are not powers of
+two, and keeps the native operators at width 0 and at powers of two.  Its kind is **asserts**: at
+those widths it drops `ext_rotate_*` and asserts the definition by shifts as the meaning of the two
+function symbols, which a reviewer must check.  The argument,
+the regression `git-issues/github-issue-147.dfy` (with `github-issue-147-emission.dfy`), the
+validation and the cost are in
+[`docs/dev/bitvector-rotation-soundness.md`](docs/dev/bitvector-rotation-soundness.md); the
+release note is `docs/dev/news/147.fix`.
+
+## Opt-in statement-expression conclusions ([#96](https://github.com/erniecohen/dafny/issues/96))
+
+`--statement-expression-conclusions` (default false; also `statement-expression-conclusions =
+true` in `dfyconfig.toml`) is a completeness option.  In the condition of an `assert` statement,
+it translates a Boolean statement expression `S; E` under quantifiers and connectives as
+`C ==> E` (`C && E` at negative polarity), `C` being the statement's conclusion.  Before, only
+`S; E` at the top of the condition got `C`, so `assert forall n: nat :: assume false; false`
+failed.  Its kind is **neither**: it adds no axiom and no assumption, and replaces the checked
+condition by one with the same value wherever the condition's well-formedness check, made just
+before in the same state, has established `C`.  It applies only in the current heap: not inside
+`old`, `old@L`, `unchanged` or `fresh`, lambdas, set and map comprehensions, let-such-that and
+binding-guard if-then-else, nor to an assert statement inside a statement expression.  The
+first version of the pull request also rewrote quantifiers under `old` and proved
+`ensures false`.  Postconditions, invariants, preconditions and inlined function bodies are not
+rewritten.  `docs/dev/statement-expression-conclusions.md` has the argument and the exclusions.
+With the option off, the Boogie program is unchanged and no verdict of the suite or of the
+standard library moves.  The regression is `git-issues/github-issue-96.dfy`; CI's job
+`Statement-expression conclusions (opt-in, #96)` runs its fixtures with the option on and off.
+The release note is `docs/dev/news/1371.feat`.
+
+## Declared lambda preconditions under `--additional-axioms` ([#97](https://github.com/erniecohen/dafny/issues/97))
+
+Dafny's `RequiresN` schema for a lambda value gives only the sufficient direction of its declared
+precondition, `r[heap, args] ==> RequiresN(..., HandleN(h, r, rd), args)`, so
+`const f := (x: int) requires p(x) => x` could not prove `f.requires(x) ==> p(x)`.  With
+`--additional-axioms`, `LambdaCanCallAssumption` (`BoogieGenerator.ExpressionTranslator.cs`) adds,
+beside a source lambda's existing guarded facts and under the same family, formal type and
+allocation, good-heap and formation-heap guards, plus guards on its captured values and heaps,
+`RequiresN(...) <==> Range`, triggered only on the requires selector.  It binds the same variables
+as the existing quantifier, including the selector type variables that `--heap-free-lambda-facts`
+introduces.  Its kind is **asserts**: the necessary direction is a new fact.  It holds in the model
+that interprets `RequiresN` of a handle as exactly its stored precondition map, which satisfies
+the native schema and its frame and arrow-type schemas, and in which the stored map
+`FormalTypes && (CanCall(range) ==> Range)` equals `Range` under the guards
+([`docs/dev/additional-axioms.md`](docs/dev/additional-axioms.md#declared-preconditions-of-source-lambda-values-97)).
+With the option off the translation is unchanged.  The regression is
+`git-issues/github-issue-97.dfy`: the issue's program, positive, negative and `assert false`
+fixtures under both resolvers and both settings of the option, and with `--heap-free-lambda-facts`;
+the release note is `docs/dev/news/97.fix`.  With the option on, two standard-library rows move under
+Z3 5.1.0 (`Sequences.Elements` well-formedness to out of resource, `DecodeValidPartialsFrom2PaddedSeq`
+well-formedness to correct); the commit that updates their expected verdicts gives the counts.
+With the option off, no verdict of the suite or of the standard library moves.
+
+## Rank of arrow-typed datatype fields under `--additional-axioms` ([issue 326](https://github.com/erniecohen/dafny/issues/326))
+
+The existing field rank axioms put the elements of a `seq`, `set` or `multiset` field and the keys
+and values of a `map` field below the constructor value, but nothing related an application of a
+function-typed field to it, so `function Count(o: Ord): nat` over
+`datatype Ord = Zero | Succ(Ord) | Lim(f: nat -> Ord)` failed its termination check at `Count(f(0))`.
+With `--additional-axioms`, `AddArrowFieldRankAxioms` (`BoogieGenerator.DataTypes.cs`) adds, for
+a field of type `A -> T`, `RANK(ApplyN(.., h, f, bx..)) < DtRank(#C(..f..))` under
+`$IsGoodHeap(h)`, `$Is(f, TotalFuncN(..))` and the arguments' types, for a datatype,
+type-parameter, `seq`, `map` or `imap` result, triggered on the application and the constructor
+term; for `A --> T` the antecedent also has `RequiresN`.  `~>` fields and codatatype fields get
+nothing.  Its kind is **asserts**.  The model is the well-founded (possibly infinitely branching)
+tree model with ordinal ranks that the existing `imap` field axioms already need
+([`docs/dev/additional-axioms.md`](docs/dev/additional-axioms.md#rank-of-arrow-typed-datatype-fields-326)),
+which also lists each circular-construction route and why it is rejected.  With the option off
+the translation is unchanged.  The regression is `git-issues/github-issue-326.dfy`: the issue's
+program, positive and `ensures false` fixtures under both resolvers and both settings, and one
+fixture per circular route, with a false-derivation attempt, with the option on.  The release
+note is `docs/dev/news/326.feat`.
+
+## Datatypes and the traits they extend in one decreases order ([issue 317](https://github.com/erniecohen/dafny/issues/317))
+
+A trait that does not extend `object` had no order in `decreases` clauses, so in a datatype that
+extends it, `decreases this` could not be compared with `decreases this` of a trait member called
+on a trait-typed field, and the termination check was `assert false`.  With the new option
+`--trait-rank-decreases` (`BoogieGenerator.Decreases.cs`), the values of such traits join the
+structural-rank family of sequences and inductive datatypes through `BoxRank`:
+`CompatibleDecreasesTypesForComparison` accepts the pairs, `RankFunction` returns `BoxRank`, and
+`ComputeLessEq` compares two trait values by `BoxRank`.  The comparison takes its types from the
+callee's decreases expressions as translated, since a trait-typed formal can receive a datatype
+argument.  It is a change to the language's termination order, so it has its own option, and it
+has no effect with `--legacy-decreases-order`.  With `--additional-axioms`, a trait-typed field of
+an inductive datatype constructor gets the type-parameter field axiom
+`BoxRank(field) < DtRank(#C(..))` (`BoogieGenerator.DataTypes.cs`); its kind is **asserts**.  The
+model interprets `BoxRank` of a boxed datatype value or sequence as its rank and of any other
+value as `0`; every rank axiom holds there, and the comparisons are ordinal comparisons of that
+rank, a well-founded component pair that the existing tuple argument lifts
+([`docs/dev/design/317-datatype-trait-decreases.md`](docs/dev/design/317-datatype-trait-decreases.md),
+which also covers cycles through two datatypes and implementations by classes and codatatypes).
+Inference is unchanged: a trait member without a `decreases` clause still needs `decreases this`.
+With both options off the translation is unchanged.  The regression is
+`git-issues/github-issue-317.dfy`: the issue's program, positive, false-control and downcast
+fixtures with each option off and on, trait-value pairs with the option on, and the positive file
+under `--legacy-decreases-order`.  The release note is `docs/dev/news/317.feat`.
+
+## Review follow-up (https://github.com/erniecohen/dafny/issues/23)
+
+The glued-map elements guard now uses the glued map's domain. The domain axiom
+makes this equivalent to the old guard on the input domain; no new fact is
+asserted. Both the core and generated preludes use it. The datatype-equality
+refactor selects the existing trigger and body in one conditional, preserving
+the asymmetric guard. Its equivalence is checked by comparing the generated
+Boogie on suite samples with one fixed prelude.
+
+The `github-issue-23-*` regressions cover the reviewer-supplied Box/Unbox
+contradiction, ORDINAL subset inverse, undefined ORDINAL subtraction, empty-type
+lambda, generic constant initializer and simplified glue example, in both
+resolver modes. They also retain the exact `Pos`/`F` lambda cost example.
+Unlike the older reviewed implementation, the finite-support repair
+(https://github.com/erniecohen/dafny/commit/854f5a65a50658c8c415629d67d0b1bd34860fed)
+uses `LambdaCanCallAssumption`, which
+exports source lambda facts under the formal type and allocation guards and
+matches them at the source family's selectors. At `f(5)` the actual argument
+satisfies `Pos`; it need not have a declared witness to instantiate those facts.
+This is a difference between encodings, not evidence that a `witness *` type is
+always inhabited. The `ViaLambda` negative control keeps the empty-domain case.
+
+`.github/workflows/issue23.yml` records a CI-only A/B probe: one fixed baseline
+binary and the same source inputs with only the two prelude guards changed,
+Z3 5.1.0, the suite's normal 16M limit and the library's own limits with
+`/deterministicLiteralHashes:1 /restartProver`. Full source, per-VC logs and
+verdicts are retained. Probe completion alone is not an acceptance gate: its
+recorded exits, verdict differences, resource counts and exact Boogie comparison
+must be inspected alongside the normal review gates.
+
+## Compatible decreases comparison ([issue 264](https://github.com/erniecohen/dafny/issues/264))
+
+The default termination check now lifts compatible strict/weak component orders
+right to left, with TOP padding. A fractional real decrease or an equal
+sequence/datatype rank cannot discard an increasing suffix. Numeric lower
+bounds are inside the component relations, retaining negative terminal values.
+Calls, loops, overrides, termination-ordering expressions, and the experimental
+modular global/callback checks share the construction. No new primitive axiom
+is added; the loop's assumed weak summary follows from the component laws, and
+the changed induction hypotheses follow from the well-founded strict lift.
+The [soundness argument](docs/dev/decreases-order.md) covers each component
+family and the lift.
+
+This soundness fix ships enabled by explicit owner decision. The hidden
+`--legacy-decreases-order` switch restores the former, unsound translation for
+comparison and migration. `--modular-termination` remains opt-in. The regression
+is `git-issues/git-issue-264.dfy`. Actions records default/legacy verdict and
+resource comparisons for the suite and standard library, and byte identity
+between the pre-fix product and candidate legacy mode. The [comparison results
+and proof annotations](docs/dev/decreases-order-results.md) list every changed
+declaration outcome and explain the baseline updates.
+
+## Boogie
+
+Boogie's unguarded reverse casts,
+[boogie-org/boogie#1168](https://github.com/boogie-org/boogie/issues/1168), are
+fixed in Boogie.  The public fork [erniecohen/boogie](https://github.com/erniecohen/boogie)
+carries the fix on its branch `review/3.5.5`, which is v3.5.5 with the fix commit
+(its message says what changes and why the result is sound), its tests, and CI
+that runs Boogie's own test jobs and packs Boogie's NuGet packages.  The same fix
+is offered to Boogie's master as
+[boogie-org/boogie#1169](https://github.com/boogie-org/boogie/pull/1169).
+
+This branch builds against that fork's release `v3.5.5+review.dcd726f6`, whose
+packages have the version `3.5.5-review.dcd726f6`.  The release carries them with
+their sha256 sums, and its `REVIEW.md` says what the fork changes and how its
+version is computed.  Besides that fix, it brings:
+
+- **Printer fixes, on by default**, so that a printed program (`--bprint`, which is
+  Boogie's `/print`) parses back into the program that was printed.  The printer
+  keeps the parentheses that its parser needs
+  ([#180](https://github.com/erniecohen/dafny/issues/180)): it printed
+  `a && (b && c)` as `a && b && c`, which parses as `(a && b) && c`, and
+  `2 * (3 div 2)` as `2 * 3 div 2`, which means `(2 * 3) div 2`.  It writes
+  `hideable` before a hideable axiom, which Dafny's function and constant
+  definition axioms are
+  ([#182](https://github.com/erniecohen/dafny/issues/182)); without it, `hide`
+  pruned nothing in a printed program, which could then prove what Dafny does not.
+  And it writes the attributes of an if command and of an assignment, such as
+  `{:allow_path_isolation}` and `{:id}`
+  ([#183](https://github.com/erniecohen/dafny/issues/183)).  Only printed text
+  changes: Dafny sends the solver what it sent before.
+- **Options that are off by default**, and that Dafny does not set:
+  `/deterministicLiteralHashes:1`, `/printDefinitionAxiomsInPlace`, `/verifyAsTasks`
+  and `/structuralLiterals`.  The fork's `REVIEW.md` describes them.
+- **A fix to a prover's cached background**
+  ([#241](https://github.com/erniecohen/dafny/issues/241)): a `Reset` after a
+  `FullReset` sent the first context's background instead of the current one's.
+  Dafny's task pipeline targets the prover for every split and never reaches that
+  path, so its queries do not change.
+- **Two more options that are off by default**, `/cacheUsedTypes` and
+  `/lockFreeExpansion` ([#241](https://github.com/erniecohen/dafny/issues/241)),
+  which take work out of setting up a prover for each split and change no byte
+  that the solver gets.  On Std with 4 cores they cut CPU by 13.7 to 16.4% with
+  a no-op solver and wall time by 8.6 to 9.4% with Z3 4.12.1, with the same
+  verdicts.  Pass them with `--boogie "/cacheUsedTypes /lockFreeExpansion"`; a
+  program that loads the standard library cannot yet, because its `.doo` records
+  the `--boogie` options it was built with and refuses others.
+- **`/cacheBackground` and `/scheduleByImplementation`, off by default**
+  ([#241](https://github.com/erniecohen/dafny/issues/241)).  Under
+  `/cacheBackground`, a prover whose next split has the same pruned declarations,
+  in the same order, seed, type encoding types and SMT options as the context it
+  holds restarts that context instead of setting it up again; each solver gets the
+  same commands in the same order, so resource counts do not change.
+  `/scheduleByImplementation` lets an implementation's splits run one after the
+  other on one prover, so that more contexts are restarted; it changes which
+  solver process verifies which split, so resource counts can differ.
+- **Canonical native-result map payloads**, on by default
+  ([#284](https://github.com/erniecohen/dafny/issues/284)): the same-index
+  read-over-write axiom requires a native payload's box/unbox round trip to
+  preserve the stored value. This weakens the inconsistent row without adding
+  an axiom. The hidden `--legacy-noncanonical-map-payloads` switch restores the
+  old row for comparison and migration.
+- **A pooled-solver idle-handshake repair**, on by default
+  ([#287](https://github.com/erniecohen/dafny/issues/287)): a healthy solver no
+  longer gets retired merely because its idle handshake exceeds 100 ms. The
+  default safeguard is 300 seconds; dead or broken transports still retire
+  promptly. No verification condition changes, but retaining physical solvers
+  changes their pooled history and can change later batches' resource counts
+  and outcomes at a resource limit. No fixed RU decrease is promised.
+  Restart-per-batch measurements should be unaffected by that history change;
+  native pooled runs can move. Boogie's hidden `/legacySolverIdleTimeout:1`
+  restores the old deadline for comparison, passed through Dafny's `--boogie`.
+
+`a48933e` made this branch build against the fork's packages, at
+`3.5.5-review.37e4435d`.  It now builds against `3.5.5-review.dcd726f6`:
+
+- `Source/DafnyCore/DafnyCore.csproj` names `Boogie.ExecutionEngine`
+  `3.5.5-review.dcd726f6`, and `dotnet-tools.json` names the `boogie` tool at the
+  same version;
+- `nuget.config` adds a local package source, `Binaries/boogie-packages`, and maps
+  every Boogie package to it and to nothing else, so a missing package stops the
+  restore instead of falling back to nuget.org's 3.5.5;
+- `Scripts/fetch-boogie-packages.sh` downloads the 14 packages from the release
+  into that folder and checks each against `Scripts/boogie-packages.sha256`, which
+  is the release's `SHA256SUMS`.
+
+The move from `37e4435d` to `a7d160a7` is a product change, and so a new version.
+It moves no verdict of the suite or of the standard library.  Its test,
+`git-issues/github-issue-182.dfy`, prints a program that uses `hide *` and verifies
+the printed program with Boogie, which now reports the error that Dafny reports,
+where it used to verify the program.  Its release note is
+`docs/dev/news/boogie-printed-programs.fix`.
+
+The move from `a7d160a7` to `c5a9f2ef` is also a product change.  Its test,
+`git-issues/github-issue-241-split-setup.dfy`, verifies a program with every
+assertion its own split, with and without both new options, and requires the same
+report and the same SMT-Lib text sent to the solver.  Its release note is
+`docs/dev/news/241-boogie-split-setup.feat`.
+
+The move from `27e27ebc` to `bdb7f929` is a product change, and so a new version.
+It brings the repairs for `/typeEncoding:m`
+([#281](https://github.com/erniecohen/dafny/issues/281)), from
+[erniecohen/boogie#7](https://github.com/erniecohen/boogie/pull/7).  Boogie's
+monomorphizer now drops a quantifier that binds nothing, as the other encodings do, and
+keeps the `hideable` mark when it splits or instantiates an axiom; its pruning treats
+`reveal` of a declared function as revealing that function's instances.  The release also
+carries [erniecohen/boogie#10](https://github.com/erniecohen/boogie/pull/10), which
+changes only a test of Boogie's.  `/typeEncoding:a`, the default, sends the solver the
+same text as before.  Its tests are `git-issues/github-issue-281-empty-quantifier.dfy` and
+`git-issues/github-issue-281-hide.dfy`, each run under `:m` and `:a` against one
+expected output.  Its release note is `docs/dev/news/281-typeencoding-m.fix`.
+
+The move from `bdb7f929` to `dcd726f6` is a product change, and so a new version.
+It brings `/cacheBackground` and `/scheduleByImplementation`, from
+[erniecohen/boogie#6](https://github.com/erniecohen/boogie/pull/6); with both off, the
+solver gets the same text as before.  Its test,
+`git-issues/github-issue-241-cache-background.dfy`, verifies a program with every
+assertion its own split on one core, with and without `/cacheBackground`, and requires
+the same report and, from the CSV log, the same outcome and resource count for every
+check.  Its release note is `docs/dev/news/241-boogie-cache-background.feat`.
+
+**To build this branch, run `sh Scripts/fetch-boogie-packages.sh` once first.**
+CI does so in every job that builds.
+
+## Tests, release notes and the manual
+
+Each fix after the first has a follow-up commit, as in upstream's pull
+requests:
+
+- a regression test, `Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/git-issue-<issue>.dfy`
+  with its `.expect`, named as upstream's own fix for #6366 named its test;
+- a release-note fragment, `docs/dev/news/<issue>.fix`, as `docs/dev/README.md`
+  describes.
+
+For boogie-org/boogie#1168, `3ff7e36` adds the test
+`git-issues/boogie-issue-1168.dfy` and the release note
+`docs/dev/news/boogie-1168.fix`, named by description, since the issue number is
+Boogie's.
+
+For #6531, #6532, #6533, #6534 and #6535 the regression tests include source
+programs that prove `false` under the old encoding and are refused now. In
+`github-issue-23-box-bad.dfy`, `Opt<int>` and `Opt<bool>` share the datatype sort;
+three distinct integer payloads are unboxed as booleans, and the unguarded
+Box/Unbox inverse identifies two of their boxes. The guarded inverse also has
+preservation tests for field values and `set<ORDINAL>` subset membership, and a
+vacuity control. For #6536, the undefined constant expression `((0 as ORDINAL) - 1) + 1`
+reaches the solver: the old axiom proved its postcondition despite its
+well-formedness error, whereas the corrected guard rejects both. The existing
+defined-arithmetic tests still verify. For #6537 the test checks facts about
+items that 4.11.0 did not prove. For boogie-org/boogie#1168 the test checks proofs
+about values read from arrays, sequences, maps, fields and sets, which relied on
+the reverse casts: they verify under 4.11.0 and with the fix, and fail when the
+reverse casts are dropped without the fix's casts.
+Boogie's own tests for the fix, on its branch `review/3.5.5`, include the issue's
+program, on which Boogie 3.5.5 proves `assert false`.
+
+Three of upstream's tests record the verifier's resource counts in their
+expected output (`dafny0/CoinductiveProofs.dfy`, `dafny0/SubsetTypes.dfy`,
+`dafny1/SchorrWaite.dfy`).  The fixes for #6534 and #6536 move those counts,
+though not any verification result, and `7b6dba7` updates the expected outputs.
+The Boogie fix moves those counts again, and `74581b2` updates them the same way.
+Otherwise upstream's own harness gives the same outcome with and without the
+eight Dafny fixes for every test under `dafny0` to `dafny4`, `git-issues` and
+`logger` (run with the C# backend only).
+
+The Boogie fix changes how much work some proofs take.  Upstream's harness was
+run for it on the tests named in `.github/review/regressions` only, not on every
+test.  There it cost one proof in `dafny4/GHC-MergeSort.dfy`, which was already
+dear, and `cf5c56e` repairs it with one assertion, as upstream's own fix for #6366
+added hints to that file.  In the suite, at its resource limit, it moves the
+verdicts of a few programs, none by a new error: `15d1b11` updates the expected
+verdicts, and its message says why each one moved.
+
+The refinement of the fix for #6531, `5fc27c0`, moves no verdict of the suite
+and none of the resource counts those three tests record, and `git-issue-6531`
+is still refused.
+
+None of the fixes changes the Reference Manual or the command-line help.  They
+change the verifier's encoding, not the language or its options, and where the
+manual speaks to the point (`m.Items` is a set of pairs; `o - m` is defined only
+when the offset of `o` is at least `m`) it already says what the fix makes the
+verifier know.  Each follow-up commit gives its fix's reason.
+
+## The version, and how to check it
+
+Since 2026-11-14 the hash covers every product file, those the fork added as well as
+those v4.11.0 already has, and leaves out the paths that are not product (tests,
+`docs`, `.github`, `friction` and the documents at the top of the tree):
+
+    git diff --no-renames --abbrev=7 v4.11.0 <last product commit> -- . \
+      ':(exclude)Source/IntegrationTests' ':(exclude)docs' ':(exclude).github' \
+      ':(exclude)friction' ':(exclude)REVIEW.md' ':(exclude)ROADMAP.md' \
+      ':(exclude)AGENTS.md' ':(exclude)CLAUDE.md' | sha256sum
+
+`.github/review/version.sh` computes it.  The earlier hash, of
+`git diff --diff-filter=M`, saw only files that v4.11.0 already has, so a change
+confined to a file the fork added kept the version: two different products were
+both `4.11.0+fcb2042d.review.e35c4989`.  The versions below were computed the
+earlier way.
+
+`d2070b81` is the first 8 hex digits of the sha256 of the change that the
+product commits make to files that v4.11.0 already has:
+
+    git diff --diff-filter=M --abbrev=7 v4.11.0 b97a6fe | sha256sum
+
+`b97a6fe`, the fix for #26, is the last product commit.  `.github/review/base`
+names `ada0d09`, the same product tree on that pull request's branch before it
+was squash-merged; the two give the same hash.  Before the twelve fixes since,
+the version was `256a1ab3`, as follows.
+
+`256a1ab3` is the first 8 hex digits of the sha256 of the change that the
+product commits make to files that v4.11.0 already has:
+
+    git diff --diff-filter=M --abbrev=7 v4.11.0 5fc27c0 | sha256sum
+
+`5fc27c0` is the last product commit, the last commit that changes a file
+the build compiles; here it is the refinement of the fix for #6531, which came
+after `a48933e`, the commit that moves Dafny to the fixed Boogie.  Before them,
+the line was `4.11.0+fcb2042d.review.c47a78b3`, whose last product commit was
+`7512bd5`, the last of the eight fix commits; that build was first named by
+applying the eight fixes to a fresh repository of v4.11.0's tree with
+`git apply` and hashing `git diff`.
+That diff leaves out the files the fixes add, which stay untracked, and
+abbreviates object ids to 7 digits; the command above computes the same thing
+from a clone of this repository that has the tag `v4.11.0`.  (In a very large
+clone git may lengthen an abbreviation that would be ambiguous; a shallow fetch
+avoids that.)
+
+**The version names the product, the source that is compiled.**  The commits
+after `b97a6fe` add or update tests, release notes, documents and CI.  They
+change no product file, so the version stays.  The rule on this branch:
+
+- a commit that changes or adds a product file is a new last product commit,
+  and gets a new version and a new tag;
+- any other commit keeps them.
+
+The product is everything outside `Source/IntegrationTests/`, `docs/`,
+`.github/`, `friction/`, this file, and the other documents at the top of the
+tree: `ROADMAP.md`, `AGENTS.md` and `CLAUDE.md`.  `.github/review/base` names the base
+and the last product commit, and CI's `.github/review/version.sh` computes the
+version from them and fails if a later commit changes a product file.  By hand,
+this prints nothing:
+
+    git diff --name-only b97a6fe <commit> -- . ':!Source/IntegrationTests' ':!docs' ':!.github' \
+      ':!friction' ':!REVIEW.md' ':!ROADMAP.md' ':!AGENTS.md' ':!CLAUDE.md'
+
+A release binary built from the tag prints the version with `dafny --version`.
+It is built with `-p:SourceRevisionId=fcb2042d.review.d2070b81`.  The version
+names the Boogie packages by their version, and `Scripts/boogie-packages.sha256`
+names their bytes.
+
+## Friction cases
+
+`friction/` holds small Dafny programs that show where a proof is much harder
+than it should be, as candidates for fixes here and as regression checks once
+fixed, and tips: workarounds for non-obvious blockers that are accepted as
+they are.  Its runner, `friction/run`, checks every case against a given
+Dafny binary.  `friction/README.md` describes the cases and how to add one.
+The directory belongs to this fork's line only; it is not product, and pull
+requests to upstream, which branch from `master`, never carry it.
+
+## CI
+
+`.github/workflows/review.yml` replaces upstream's workflows on this branch and
+on `dev`, which exercise every compiler backend.  On this branch it fetches the
+Boogie packages, builds Dafny, runs the programs of Dafny's own test suite that
+verify (under `LitTest/dafny0` to `dafny4` and `git-issues`) at a resource limit
+of 16,000,000 with Z3 5.1.0, taken from Z3's public GitHub release by checksum,
+and reports each program's verdict.  It verifies Dafny's standard library,
+`Source/DafnyStandardLibraries`, as the library's Makefile's `verify` target does,
+once with Z3 5.1.0 and once with the Z3 that the tree's own tests expect (4.12.1 on
+this branch), and reports each declaration's verdict.  It also runs the tests named in `.github/review/regressions` in
+upstream's own harness.  On a tag it attaches self-contained binaries for `linux-x64` and `osx-arm64`
+to a GitHub release, with their sha256 sums.  The `osx-arm64` binary and the release
+itself are built on the self-hosted Apple-silicon pool (label `mac-studio`).
+The framework-dependent build, artifact reports and portable regression tests
+also use this pool, together with JavaScript runtime tests, resolver matrix and unit tests,
+finite-support controls, statement-expression controls and verification-batch controls. The test `dafny0/CoinductiveProofs.dfy` declares macOS
+unsupported because its expected resource counts differ, so it stays in a
+separate hosted Linux job. `.github/review/regression-filter.py` partitions the
+standing manifest without dropping or duplicating entries. Every
+self-hosted job has an explicit repository/event guard: only pushes, manual
+runs, or pull requests whose head repository is `erniecohen/dafny` are admitted.
+
+CI verifies a git tree once.  Both `review.yml` and `obligation-proofs.yml` start with
+a job `tree` that takes `git rev-parse HEAD^{tree}` (for a pull request, the tree of the
+merge commit that is checked out) and looks for the artifact `verified-<workflow>-<tree>`,
+which a run leaves when all its verification jobs succeeded.  It reuses the marker only if
+its run, in this repository on a head of this repository, is of the same workflow, has
+completed, and succeeded (`.github/review/tree-reuse.py`, tested by `test_tree_reuse.py`).
+Then the verifier jobs skip, and the step summary of `tree` links the run it reused.  So the
+push of a squash-merge commit whose tree the pull request already verified, and the release tag of
+a tree that a push already verified, do not verify again; on a tag, only the build and the
+binaries run.  The job `verdict` is the aggregate result: it succeeds when every job
+succeeded or was skipped for reuse, and a release requires it.  A pull request reuses only pull
+request runs, a manual run on a branch and a pull request from a fork never reuse, and a tree that
+differs only in `.github/review/base` is a different tree, because the stamp is the version that
+the build checks.  Markers are kept for 90 days; without one everything runs.
+Fork pull requests skip these jobs. The obligation-proof matrix, resolution-only
+census and pipeline probe have separate hosted fallbacks for other events,
+including the obligation matrix's weekly schedule.
+
+The suite verdict gates (all shards, additional axioms off/on) and the Z3
+4.12.1 library gates use the guarded Mac pool. Their fixed-source verdicts
+matched hosted Linux; the owner approved their measured resource differences
+on 2026-11-11. The library job reads the build's harness solver version and
+admits only 4.12.1 to that pool; a future harness solver stays hosted until
+separately qualified. Z3 5.1.0 library gates remain on Linux because
+`Std.Arithmetic.DivMod.LemmaMultiplyDivideLe` changes from `OutOfResource` on
+Linux to `Correct` on macOS at the library's existing 1,000,000 RU limit.
+
+Each suite/library job records per-program totals, maximum batch RU,
+every batch's resource use and applicable limit, and actual solver binary and
+archive hashes in its verdict artifact. Job summaries list every batch using
+at least 75% of a finite limit, including overruns. A program's total can span
+multiple batches and is never compared with a single batch's limit. Literal
+member-level limits (both attribute syntaxes), legacy limits, and resource-limit
+multipliers are accounted for; unsupported limit syntax is reported rather
+than guessed. These observations do not add resource thresholds to the gates.
+
+A manual `review.yml` run with `platform_parity: true` builds both platforms
+at the dispatch's exact commit, runs every suite shard with additional axioms
+off/on, and verifies the library under both solvers in both modes. It records
+regression and resolver test results too. The `platform-parity-report`
+artifact compares verdict columns, resource counts, proof batches, coverage
+and job wall times; missing observations are incomplete evidence. Further
+platform migrations with resource-only differences require an owner decision;
+verdict differences retain the corresponding Linux gate. The frozen
+repeated-default-comparison experiment stays on Linux because it pins a Linux
+runtime and measures that environment. Self-contained `linux-x64` binaries
+also stay on Linux for their execution smoke test.
+
+Jobs in the shared pool set `DOTNET_PROCESSOR_COUNT=4`; suite shards use four
+single-core verifier processes and library jobs use `--cores 4`. This bounds
+ordinary .NET scheduling to four processors per runner. Every job that can
+use the Mac pool first sets its own ephemeral `Runner.Worker` and initial shell
+to nice 10, before checkout; subsequent actions and verifier processes inherit
+that niceness. The step verifies both values and never changes the listener,
+runner installation or service configuration. The test runsettings
+limit xUnit to two concurrent tests, since each lit test normally uses two
+verifier cores. Solver
+archives for both platforms and harness versions 4.12.1 and 4.16.0 are pinned
+in `.github/review/setup-z3.sh`. CI installs Java explicitly, and the shared
+framework-dependent artifact launches its managed assembly through `dotnet`
+on either operating system. No product source or verdict baseline changes.
+Published builds normalize source paths, and archives omit Apple metadata and
+extended ZIP attributes.
+See https://github.com/erniecohen/dafny/issues/256.
+`.github/review/release-macos.sh` remains as a manual fallback.
+
+### Expected verdicts
+
+`.github/review/expected-verdicts.tsv` holds the verdict the suite expects for
+each program: its exit code, the verifier's summary line (proofs verified,
+errors, proofs out of resource) and the lines with errors.  The job `Verdicts`
+fails when any verdict changes, or a program is added or removed.  A program's
+time and the resources its finished proofs use are not part of its verdict, so
+a change in them alone does not fail it; a proof that stops finishing within
+the resource limit does.
+
+To change the file on purpose:
+
+1. Push the change.  The job `Verdicts` fails and lists each program whose
+   verdict moved, with the expected and the new verdict.
+2. Take `expected-verdicts.tsv` from that run's artifact `verdicts-off` (or write it
+   with `python3 .github/review/lit-verdicts.py expected verdicts.tsv`), and
+   replace `.github/review/expected-verdicts.tsv` with it.
+3. Commit it on its own.  The commit message must say, for each program whose
+   verdict changed, why: which change made a proof finish or stop finishing,
+   or that the program itself changed.  A verdict is never updated without a
+   reason on record.
+
+### Expected standard-library verdicts
+
+`.github/review/expected-std-verdicts-z3-5.1.0.tsv` and
+`expected-std-verdicts-z3-4.12.1.tsv` hold the verdict the job `Standard library`
+expects for each of the library's declarations under that Z3: its outcome
+(`Correct`, `Errors`, `OutOfResource`, ...), and for each part of the run (the
+library, and its target-specific files for each target language) the exit code,
+the summary line and the lines with errors.  They are updated as the suite's
+expected verdicts are, from the run's artifact `std-verdicts-off-z3-<version>`, with a
+reason for every row that changes.
+
+The library runs with its own resource limits and without a time limit, in
+Boogie's default declaration order, as upstream verifies it.  Dafny does not
+verify the library again when a program uses it (`--standard-libraries` loads its
+prebuilt binary), so these verdicts say whether the library's proofs still go
+through on this line, not whether a program that uses the library verifies.  Not
+all of them do, and most of those that do not are Z3 5.1.0's: unmodified 4.11.0
+verifies every declaration with Z3 4.12.1, and leaves 29 unverified with Z3 5.1.0,
+27 of them because a proof runs out of its resource limit.
+
+Boogie's default order sorts declarations by a content hash that, for numeric
+literals, came from .NET's process-randomized hashing, so a proof close to its limit
+could change its verdict between runs of the same tree
+([#186](https://github.com/erniecohen/dafny/issues/186)).  The job therefore
+verifies the library part with `--boogie /deterministicLiteralHashes:1`, the same
+normalization with deterministic literal hashes, and the expected files were
+recorded under it.  It also passes `/restartProver`, which gives each proof batch a
+fresh solver process: under Z3 5.1.0 (with `--cores 4`) a batch's resource count depended on which
+batches the reused process had checked before it (one batch,
+`MulInternalsNonlinear.LemmaMulIsAssociative`, moved by up to 0.17%), so the
+resource fingerprint took 7 distinct values in 12 runs
+([#30](https://github.com/erniecohen/dafny/issues/30)).  In 6 runs with it and 12 without (Z3 5.1.0,
+axioms off), that count was the only difference, and no verdict differed.  The
+gate's resource counts are therefore measured under `/restartProver` and are not
+those of a user's run, which reuses processes; the `process-history` workflow
+(weekly, and on demand) verifies the library three times without it and reports the
+distinct count vectors and each differing declaration's spread and distance to the
+limit.  The target-specific parts cannot take Boogie options, which
+must equal those the library's binary was built with; all 82 of their declarations
+verify (`Correct`) in every expected file.  Their counts are in the resource
+fingerprint, and so still reuse processes, but none of them differed in the 12 runs
+without `/restartProver`.  The suite already runs with
+`/normalizeDeclarationOrder:0`, on which `/deterministicLiteralHashes:1` has no
+effect; it also reuses a process within each program (`--cores 1`), but its gate
+compares verdicts only, and its counts were not measured for this.
+
+
+### Additional axioms enabled
+
+The suite and source-library gates also run with `--additional-axioms`, using
+separate expected verdicts and recording paired OFF/ON resource counts. See
+[the standing axiom CI documentation](docs/dev/additional-axioms.md#standing-ci-for-the-shared-option-50)
+for scope, retained negative/vacuity controls, resource-order caveats and the
+scratch-only baseline-capture procedure. The OFF verdict files remain unchanged.
+
+## Guarded character representations
+
+The character reverse round trip is restricted to `$Is(ch,TChar)`, and character
+membership is defined by a valid integer value and a successful reverse round
+trip. The valid-integer forward round trip is unchanged. Redirecting character
+types retain their parent membership requirement, including in visible-type
+obligation checks. The hidden `--legacy-unguarded-char` option restores the old
+translation for comparison and migration.
+
+This only weakens the old conjunction of character axioms: the old unconditional
+reverse round trip and universal membership imply all three repaired clauses.
+For a concrete model of the repaired character fragment, take the erased carrier
+to be the integers, both character conversions to be identity, and membership
+to be the existing valid-range predicate. The range is the BMP in the legacy
+character mode, and Unicode scalar values in Unicode mode. The carrier remains
+infinite; invalid raw values need not be characters. The executable model in
+`git-issues/Inputs/issue-284-char-model.smt2` checks this interpretation and typed
+negative contexts in both modes. It models this fragment, not the entire Dafny
+prelude or Boogie encoding.
+
+The four character-range lemmas, checked subset introduction, a failing false
+assertion, and Unicode surrogate exclusion are regression controls. See
+https://github.com/erniecohen/dafny/issues/284 for the scope and the original
+inconsistency argument.
+
+The accompanying library proof changes establish padding-prefix and sequence
+decomposition facts explicitly, use existing encoding identities while keeping
+bitvector definitions opaque, and separate parser and encoding proof steps.
+They preserve the specifications and existing resource limits. Every additional
+assertion and lemma call is verified; they introduce no axiom or assumption.
+
+## User-written `{:auto_generated}` and `{:opaque_reveal}` ([issue 325](https://github.com/erniecohen/dafny/issues/325))
+
+Dafny marks the declarations it generates, such as the reveal lemmas of opaque members, with
+`{:auto_generated}` and `{:opaque_reveal}`, but a user can write those attributes too. Three
+places read the attributes as proof that Dafny generated a declaration. The library printer left
+every `{:auto_generated}` member out of a `.doo`, so a user-written member that shadowed an
+imported name disappeared and a client proved `false` from the stored contracts. The trait check
+let a class leave a `{:opaque_reveal}` trait lemma unimplemented, so a call to it assumed its
+postcondition. The auditor did not report `{:axiom}` or `{:verify false}` beside
+`{:auto_generated}`. All three now ask `Declaration.IsGeneratedByDafny`: the attribute and an
+origin that only Dafny makes. Its kind is **weakens only**; no fact or axiom is added, and a
+program that does not write these attributes is unchanged. The hidden
+`--legacy-auto-generated-attributes` option restores the old behaviour of all three for comparison
+and migration. The regression is `git-issues/github-issue-325.dfy`; the release note is
+`docs/dev/news/325.fix`.
+
+## Constants read before `new;` ([issue 339](https://github.com/erniecohen/dafny/issues/339))
+
+The resolver let the first division of a constructor body read any `const` field with an
+initializer, on the premise that such a constant does not depend on the object.  It can:
+`const s: D := t` reads the field `t`.  The verifier translates the read as the constant's
+function of `this`, whose definition axiom equates it with the initializer on the fields' final
+values, while before `new;` a field still holds a value that can change, so `t := One(s)` made
+`s == t` and `t == One(s)` both hold and proved `false`.  `CheckDividedConstructorInitVisitor` now
+reports a read of `this.c` before `new;`, in any context, when `c`'s initializer mentions `this`,
+explicitly or implicitly (another field or constant of `this`, an instance function, `this`
+itself).  An initializer that reads another constant mentions `this` itself, so no closure is
+needed.  Its kind is **weakens only**: it rejects programs and adds no fact or axiom; a program
+that does not make such a read is unchanged.  The hidden `--legacy-first-phase-const-reads`
+option restores the old rule for comparison and migration.  The regression is
+`git-issues/github-issue-339.dfy`; the release note is `docs/dev/news/339.fix`.
+
+## Comparing crossed component types ([issue 47](https://github.com/erniecohen/dafny/issues/47))
+
+With `--type-system-refresh`, `==`, `!=`, `in`, `!in` and prefix equality required, in their final
+check, that one operand's type be a supertype of the other's, so `(Number, Integer) == (Integer,
+Number)`, with `Number` and `Integer` subtypes of one trait, was rejected, though inference had
+already found the two comparable and the legacy resolver accepts it.  The check now also accepts
+two types with the same type constructor whose arguments agree exactly at each non-variant
+parameter and are comparable, recursively, at each co- or contravariant one.  Such types have a
+common supertype and a common subtype, built argument by argument, so a value can belong to both
+and the comparison is meaningful.  It is a **false-rejection fix** of the refreshed resolver: it
+accepts more programs and adds no fact or axiom; the legacy resolver and `as`/`is` are unchanged.
+The regression is `git-issues/github-issue-47.dfy`, with negative controls that are still
+rejected; the release note is `docs/dev/news/47.fix`.
+
+## Match inference on by default ([issue 48](https://github.com/erniecohen/dafny/issues/48))
+
+With `--type-system-refresh`, resolving a pattern whose type was not yet known solved the type
+constraints with default decisions, which gave a pending literal elsewhere in the enclosing
+expression, such as the `0` of an earlier `if x == 0 then Some(0)`, the type `int` before the
+declared result type `Option<int32>` could give it `int32`.  `--conservative-match-inference`,
+which propagated without decisions first, fixed this for a match source of unknown type, and is
+now **on by default**; `--conservative-match-inference:false` restores the earlier inference.  It
+also now decides without default decisions that an identifier without arguments in a pattern is a
+bound variable when, after propagation, its type has a subtype that is not a datatype, or advice
+that only a number, `bool` or `char` type satisfies; a datatype has no subtypes but itself, so the
+identifier cannot be a constructor.  That fixes `var d := Some(0); match d case Some(n) => ...`
+too.  It is a **false-rejection fix** of the refreshed resolver: it adds and removes no type
+constraint, only defers default decisions, so a literal's newtype constraint is still checked by
+the verifier, and a value already of type `int`, of another newtype or of `bool` is still
+rejected.  The legacy resolver ignores the option.  When a pattern does not match its source, the
+default decisions are made before the error is reported, so that the message names the types
+they give.  The regression is `git-issues/github-issue-48.dfy`; the release note is
+`docs/dev/news/conservative-match-inference-default.fix`.

@@ -1,0 +1,7 @@
+Add the default-off --user-defined-operators option for fallback arithmetic and
+comparison function operators declared directly on concrete classes and
+inductive datatypes. Requires --type-system-refresh. Uses are ordinary calls;
+equality and inequality remain intrinsic. The initial milestone supports fully
+checked source and revealed exports, and rejects override mode, compounds,
+trait/newtype/codatatype operators, feature-bearing refinement/abstract views,
+and library/precompiled input reuse.

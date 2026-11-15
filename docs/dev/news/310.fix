@@ -1,0 +1,1 @@
+Under `--type-system-refresh`, a `:-` statement whose first destination is an array element or a multidimensional array element no longer crashes the resolver, and a range of array elements given as its destination is reported as the legacy resolver reports it.

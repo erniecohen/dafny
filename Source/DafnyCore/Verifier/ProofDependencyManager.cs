@@ -17,16 +17,41 @@ namespace Microsoft.Dafny {
     public Dictionary<string, ProofDependency> ProofDependenciesById { get; } = new();
     public readonly Dictionary<string, (Declaration Decl, HashSet<ProofDependency> Deps)> idsByMemberName = new();
     private UInt64 proofDependencyIdCount = 0;
+    private readonly string idPrefix = "";
+
+    public ProofDependencyManager() { }
+
+    private ProofDependencyManager(ProofDependencyManager shared, string moduleName) {
+      ProofDependenciesById = shared.ProofDependenciesById;
+      idsByMemberName = shared.idsByMemberName;
+      SyncRoot = shared.SyncRoot;
+      idPrefix = $"{moduleName.Length}${moduleName}$";
+    }
+
+    // A private producer's proof inventory must not renumber client obligations.
+    // Keep the reporting tables shared, but scope on-mode translation state to a module.
+    public ProofDependencyManager ForModule(string moduleName) => new(this, moduleName);
+
+    /// <summary>
+    /// Guards the two maps above.  With --verification-module-window K > 1 a later module is
+    /// translated, which adds ids, while an earlier module's results are being reported, which
+    /// reads them; readers that run during verification take this lock around their reads.  The
+    /// maps stay ordinary dictionaries, whose insertion order the coverage report relies on.
+    /// </summary>
+    public object SyncRoot { get; } = new();
     private string currentDeclarationString;
     private Declaration currentDeclaration;
 
     public string GetProofDependencyId(ProofDependency dep) {
-      var idString = $"id{proofDependencyIdCount}";
-      ProofDependenciesById[idString] = dep;
-      proofDependencyIdCount++;
-      var (_, currentSet) = idsByMemberName.GetOrCreate(currentDeclarationString, () => (currentDeclaration, new HashSet<ProofDependency>()));
-      currentSet.Add(dep);
-      return idString;
+      lock (SyncRoot) {
+        var idString = ModuleNamingScope.Current is { } scope
+          ? $"id{scope.Prefix}{scope.Next("proof-dependency")}" : $"{idPrefix}id{proofDependencyIdCount}";
+        ProofDependenciesById[idString] = dep;
+        if (ModuleNamingScope.Current == null) { proofDependencyIdCount++; }
+        var (_, currentSet) = idsByMemberName.GetOrCreate(currentDeclarationString, () => (currentDeclaration, new HashSet<ProofDependency>()));
+        currentSet.Add(dep);
+        return idString;
+      }
     }
 
     public void SetCurrentDefinition(string verificationScopeId, Declaration decl) {

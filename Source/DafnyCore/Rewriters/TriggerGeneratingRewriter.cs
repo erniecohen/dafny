@@ -22,6 +22,6 @@ public class TriggerGeneratingRewriter : IRewriter {
       quantifierCollection.CommitTriggers(systemModuleManager);
     }
 
-    finder.ApplyPostActions();
+    finder.ApplyPostActions(systemModuleManager);
   }
 }

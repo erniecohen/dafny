@@ -11,7 +11,7 @@ public partial class BoogieGenerator {
 
     private Expr TranslateBinaryExpr(BinaryExpr binaryExpr) {
       var e0Type = binaryExpr.E0.Type.NormalizeToAncestorType(); // used when making decisions about what Boogie operator/functions to use
-      bool isReal = e0Type.IsNumericBased(Type.NumericPersuasion.Real) || e0Type.IsNumericBased(Type.NumericPersuasion.Float);
+      bool isReal = e0Type.IsNumericBased(Type.NumericPersuasion.Real);
       int bvWidth = e0Type.IsBitVectorType ? e0Type.AsBitVectorType.Width : -1;  // -1 indicates "not a bitvector type"
       Expr e0 = TrExpr(binaryExpr.E0);
       if (binaryExpr.ResolvedOp == BinaryExpr.ResolvedOpcode.InSet) {
@@ -176,7 +176,7 @@ public partial class BoogieGenerator {
           } else if (!isReal && (options.ArithMode == 2 || 5 <= options.ArithMode)) {
             return TrToFunctionCall(GetToken(binaryExpr), "Add", Boogie.Type.Int, oe0, oe1, liftLit);
           } else {
-            typ = binaryExpr.Type.IsFloatingPointType ? BoogieGenerator.BplFloatType(binaryExpr.Type) : (isReal ? Boogie.Type.Real : Boogie.Type.Int);
+            typ = isReal ? Boogie.Type.Real : Boogie.Type.Int;
             bOpcode = BinaryOperator.Opcode.Add;
             break;
           }
@@ -192,7 +192,7 @@ public partial class BoogieGenerator {
           } else if (!isReal && (options.ArithMode == 2 || 5 <= options.ArithMode)) {
             return TrToFunctionCall(GetToken(binaryExpr), "Sub", Boogie.Type.Int, oe0, oe1, liftLit);
           } else {
-            typ = binaryExpr.Type.IsFloatingPointType ? BoogieGenerator.BplFloatType(binaryExpr.Type) : (isReal ? Boogie.Type.Real : Boogie.Type.Int);
+            typ = isReal ? Boogie.Type.Real : Boogie.Type.Int;
             bOpcode = BinaryOperator.Opcode.Sub;
             break;
           }
@@ -204,7 +204,7 @@ public partial class BoogieGenerator {
           } else if (!isReal && options.ArithMode != 0 && options.ArithMode != 3) {
             return TrToFunctionCall(GetToken(binaryExpr), "Mul", Boogie.Type.Int, oe0, oe1, liftLit);
           } else {
-            typ = binaryExpr.Type.IsFloatingPointType ? BoogieGenerator.BplFloatType(binaryExpr.Type) : (isReal ? Boogie.Type.Real : Boogie.Type.Int);
+            typ = isReal ? Boogie.Type.Real : Boogie.Type.Int;
             bOpcode = BinaryOperator.Opcode.Mul;
             break;
           }
@@ -216,7 +216,7 @@ public partial class BoogieGenerator {
           } else if (!isReal && options.ArithMode != 0 && options.ArithMode != 3) {
             return TrToFunctionCall(GetToken(binaryExpr), "Div", Boogie.Type.Int, e0, oe1, liftLit);
           } else if (isReal) {
-            typ = binaryExpr.Type.IsFloatingPointType ? BoogieGenerator.BplFloatType(binaryExpr.Type) : Boogie.Type.Real;
+            typ = Boogie.Type.Real;
             bOpcode = BinaryOperator.Opcode.RealDiv;
             break;
           } else {
@@ -232,7 +232,7 @@ public partial class BoogieGenerator {
           } else if (!isReal && options.ArithMode != 0 && options.ArithMode != 3) {
             return TrToFunctionCall(GetToken(binaryExpr), "Mod", Boogie.Type.Int, e0, oe1, liftLit);
           } else {
-            typ = binaryExpr.Type.IsFloatingPointType ? BoogieGenerator.BplFloatType(binaryExpr.Type) : (isReal ? Boogie.Type.Real : Boogie.Type.Int);
+            typ = isReal ? Boogie.Type.Real : Boogie.Type.Int;
             bOpcode = BinaryOperator.Opcode.Mod;
             break;
           }
@@ -559,8 +559,13 @@ public partial class BoogieGenerator {
         //     CorrectType(elmt) && R[xs := elmt]
         if (compr.TermIsSimple && extractObjectFromMemoryLocation == null) {
           // CorrectType(elmt) && R[xs := elmt]
-          // Note, we can always use NOALLOC here.
-          Expr typeAntecedent = BoogieGenerator.GetWhereClause(GetToken(compr), elmt, compr.BoundVars[0].Type, this, NOALLOC) ?? Expr.True;
+          // Use the characteristic map's allocation policy so direct membership
+          // agrees with membership in a materialized value of this comprehension.
+          var freeOfAlloc = BoundedPool.HasBounds(compr.Bounds,
+            BoundedPool.PoolVirtues.IndependentOfAlloc_or_ExplicitAlloc);
+          var useAlloc = freeOfAlloc == null || freeOfAlloc[0] ? NOALLOC : ISALLOC;
+          Expr typeAntecedent = BoogieGenerator.GetWhereClause(GetToken(compr), elmt,
+            compr.BoundVars[0].Type, this, useAlloc) ?? Expr.True;
           var range = Substitute(compr.Range, compr.BoundVars[0], new BoogieWrapper(elmt, compr.BoundVars[0].Type));
           return BplAnd(typeAntecedent, TrExpr(range));
         } else {
@@ -576,7 +581,7 @@ public partial class BoogieGenerator {
       }
 
       if (extractObjectFromMemoryLocation != null) {
-        // Translate "elmt in s" into "exists xs :: xs in s && elmt == xs.0"
+        // Translate "elmt in s" into "exists xs :: xs in s && elem == xs.0"
         // with extractObjectFromMemoryLocation = (xs) => xs.0
         var xs = new BoundVariable(GetToken(s), new TypedIdent(tok, "xs", BoogieGenerator.TrType(s.Type.AsSetType.Arg)));
         var xsExpr = new Boogie.IdentifierExpr(xs.tok, xs);

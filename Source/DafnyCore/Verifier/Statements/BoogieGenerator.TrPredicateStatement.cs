@@ -147,10 +147,30 @@ namespace Microsoft.Dafny {
       ExpressionTranslator etran, BoogieStmtListBuilder proofBuilder) {
 
       var (errorMessage, successMessage) = CustomErrorMessage(stmt.Attributes);
-      var splits = TrSplitExpr(proofBuilder.Context, stmt.Expr, etran, true, out var splitHappened);
+      bool splitHappened;
+      List<SplitExprInfo> splits;
+      // Under --statement-expression-conclusions, the checked condition keeps the conclusions of the
+      // statement expressions inside it (StatementConclusionSubstituter).  TrAssertStmt checked the
+      // well-formedness of stmt.Expr just before, with this etran, which is what makes them hold.
+      // Only for an assert statement of a body, in the current heap: not inside old, and not inside
+      // the statement of a statement expression, which may run in another heap.
+      var condition = stmt.Expr;
+      if (options.Get(CommonOptionBag.StatementExpressionConclusions) && !etran.UsesOldHeap &&
+          statementExpressionDepth == 0 && StatementConclusionSubstituter.Applies(condition)) {
+        condition = StatementConclusionSubstituter.Rewrite(condition, true);
+      }
+      if (options.Get(CommonOptionBag.ConsistentObligationChecks)) {
+        var lowering = LowerProposition(proofBuilder.Context, condition, etran,
+          preparation: ObligationPreparation.CheckedExpression);
+        splits = lowering.Pieces.ToList();
+        splitHappened = lowering.SplitHappened;
+      } else {
+        splits = TrSplitExpr(proofBuilder.Context, condition, etran, true, out splitHappened);
+      }
       if (!splitHappened) {
         var desc = new AssertStatementDescription(stmt, errorMessage, successMessage);
-        proofBuilder.Add(Assert(stmt.Origin, etran.TrExpr(stmt.Expr), desc, stmt.Origin, proofBuilder.Context,
+        proofBuilder.Add(Assert(stmt.Origin,
+          options.Get(CommonOptionBag.ConsistentObligationChecks) ? splits[0].E : etran.TrExpr(condition), desc, stmt.Origin, proofBuilder.Context,
           etran.TrAttributes(stmt.Attributes, null)));
       } else {
         foreach (var split in splits) {

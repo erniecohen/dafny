@@ -1,0 +1,298 @@
+--- a/Source/DafnyLanguageServer/Language/CachingResolver.cs
++++ b/Source/DafnyLanguageServer/Language/CachingResolver.cs
+@@ -22,16 +22,19 @@
+   private readonly ILogger<CachingResolver> logger;
+   private readonly Dictionary<ModuleDecl, byte[]> hashes = new();
+   private readonly ResolutionCache cache;
++  private readonly ContentResolutionSession? contentSession;
+   private readonly TelemetryPublisherBase telemetryPublisher;
+ 
+   public CachingResolver(
+     Program program,
+     ILogger<CachingResolver> logger,
+     TelemetryPublisherBase telemetryPublisher,
+-    ResolutionCache cache)
++    ResolutionCache cache,
++    ContentResolutionSession? contentSession = null)
+     : base(program) {
+     this.logger = logger;
+     this.cache = cache;
++    this.contentSession = contentSession;
+     this.telemetryPublisher = telemetryPublisher;
+   }
+ 
+@@ -45,6 +48,9 @@
+   }
+ 
+   protected override Dictionary<TopLevelDeclWithMembers, Dictionary<string, MemberDecl>> ResolveSystemModule(Program program) {
++    if (contentSession != null) {
++      return base.ResolveSystemModule(program);
++    }
+     if (cache.Builtins == null || !new HashEquality().Equals(cache.Builtins.MyHash, program.SystemModuleManager.MyHash)) {
+       var systemClassMembers = base.ResolveSystemModule(program);
+       cache.Builtins = program.SystemModuleManager;
+@@ -62,10 +68,19 @@
+     base.AddSystemClass(declaration, members);
+     // Bitvector types can be added after ResolveSystemModule. Their declarations are
+     // cached in Builtins, so retain their member tables for the next resolution too.
+-    cache.SystemClassMembers![declaration] = members;
++    if (contentSession == null) {
++      cache.SystemClassMembers![declaration] = members;
++    }
+   }
+ 
+   protected override ModuleResolutionResult ResolveModuleDeclaration(CompilationData compilation, ModuleDecl decl) {
++    if (contentSession != null) {
++      // Separate typed snapshots: a content hit must not return the old cache's
++      // mutable AST, scopes, reporters or pointers into another compilation.
++      var prerequisites = dependencies.FindVertex(decl).Successors.Select(v => v.N).ToArray();
++      return contentSession.Resolve(this, compilation, decl, prerequisites,
++        () => base.ResolveModuleDeclaration(compilation, decl));
++    }
+     var hash = GetHash(decl);
+     hashes[decl] = hash;
+ 
+--- /dev/null
++++ b/Source/DafnyCore/Resolver/ContentAddressed/ContentResolutionSession.cs
+@@ -0,0 +1,241 @@
++#nullable enable
++using System;
++using System.Collections.Generic;
++using System.IO;
++using System.Linq;
++using System.Security.Cryptography;
++using System.Text;
++using System.Threading;
++
++namespace Microsoft.Dafny;
++
++// PROPOSAL ONLY: this seam is not wired to a CLI option. A complete, reviewed
++// typed codec and immutable input capture are prerequisites to enabling it.
++// Target is a coordinator-only coverage witness; it is NEVER serialized/hashed.
++public sealed record ResolutionPrerequisite(ModuleDecl Target, string Role, int Slot,
++  string LogicalIdentity, byte[] LocalResolutionKey);
++
++// Every byte array is an immutable, canonical digest produced before any module
++// is resolved, except prerequisites, supplied after their completion. Source
++// owns nested-module declaration syntax but substitutes handles for their bodies.
++// SourceMap includes retained diagnostic origins, linter trivia and root/include
++// provenance. Options includes effective legacy and modern option values.
++public sealed record ResolutionInputs(string LogicalIdentity, string Resolver,
++  byte[] Producer, byte[] Source, byte[] SourceMap, byte[] LexicalBindings,
++  byte[] Options, byte[] BuiltinDefinitions, byte[] ProgramPrepassContribution,
++  byte[] VerificationMembership, IReadOnlyList<ResolutionPrerequisite> Prerequisites) {
++
++  public ResolutionInputs Freeze() => this with {
++    Producer = Producer.ToArray(), Source = Source.ToArray(), SourceMap = SourceMap.ToArray(),
++    LexicalBindings = LexicalBindings.ToArray(), Options = Options.ToArray(),
++    BuiltinDefinitions = BuiltinDefinitions.ToArray(),
++    ProgramPrepassContribution = ProgramPrepassContribution.ToArray(),
++    VerificationMembership = VerificationMembership.ToArray(),
++    Prerequisites = Prerequisites.Select(p => p with {
++      LocalResolutionKey = p.LocalResolutionKey.ToArray()
++    }).ToArray()
++  };
++
++  // Multiple views/aliases may witness one successor. Every graph successor must
++  // occur, no extra target may occur, and its key must be the coordinator's key.
++  public bool CoversExactly(IReadOnlyDictionary<ModuleDecl, byte[]> expected) {
++    var witnessed = new HashSet<ModuleDecl>(ReferenceEqualityComparer.Instance);
++    foreach (var prerequisite in Prerequisites) {
++      if (!expected.TryGetValue(prerequisite.Target, out var key) ||
++          !CryptographicOperations.FixedTimeEquals(key, prerequisite.LocalResolutionKey)) {
++        return false;
++      }
++      witnessed.Add(prerequisite.Target);
++    }
++    return witnessed.Count == expected.Count;
++  }
++
++  // This is L(m), the pre-global local-resolution descriptor. R(m) is finalized
++  // below after current whole-program passes produce the G(m) projection.
++  public byte[] Encode() {
++    using var stream = new MemoryStream();
++    using var writer = new BinaryWriter(stream, Encoding.UTF8, true);
++    // BinaryWriter integer fields are little-endian. Every byte string is framed.
++    void Bytes(byte[] value) {
++      writer.Write(value.Length);
++      writer.Write(value);
++    }
++    void Text(string value) => Bytes(Encoding.UTF8.GetBytes(value));
++    Text("dafny/local-resolution-input/v1");
++    Text(LogicalIdentity);
++    Text(Resolver);
++    foreach (var hash in new[] { Producer, Source, SourceMap, LexicalBindings,
++               Options, BuiltinDefinitions, ProgramPrepassContribution,
++               VerificationMembership }) {
++      if (hash.Length != 32) {
++        throw new InvalidDataException("resolution manifest digest length");
++      }
++      Bytes(hash);
++    }
++    var ordered = Prerequisites.OrderBy(p => p.Role, StringComparer.Ordinal)
++      .ThenBy(p => p.Slot).ThenBy(p => p.LogicalIdentity, StringComparer.Ordinal).ToArray();
++    writer.Write(ordered.Length);
++    var previous = new HashSet<(string, int, string)>();
++    foreach (var edge in ordered) {
++      if (edge.LocalResolutionKey.Length != 32 ||
++          !previous.Add((edge.Role, edge.Slot, edge.LogicalIdentity))) {
++        throw new InvalidDataException("invalid resolution prerequisite");
++      }
++      Text(edge.Role);
++      writer.Write(edge.Slot);
++      Text(edge.LogicalIdentity);
++      Bytes(edge.LocalResolutionKey);
++    }
++    writer.Flush();
++    return stream.ToArray();
++  }
++}
++
++public static class FinalResolutionKey {
++  // G contains a versioned canonical *per-module* projection, not a whole-program
++  // digest: e.g. open-dispatch classifications actually queried by translation,
++  // postpass-generated local AST and the admitted translator profile. Includes
++  // negative answers. This layer must not be recursively used in L's DAG edges.
++  public static byte[] FinalizeKey(byte[] localKey, byte[] globalProjection) {
++    if (localKey.Length != 32) {
++      throw new InvalidDataException("local resolution digest length");
++    }
++    using var stream = new MemoryStream();
++    using var writer = new BinaryWriter(stream, Encoding.UTF8, true);
++    var domain = Encoding.UTF8.GetBytes("dafny/final-resolution/v1");
++    writer.Write(domain.Length);
++    writer.Write(domain);
++    writer.Write(localKey.Length);
++    writer.Write(localKey);
++    writer.Write(globalProjection.Length);
++    writer.Write(globalProjection);
++    writer.Flush();
++    return SHA256.HashData(stream.ToArray());
++  }
++}
++
++// Local snapshots are indexed by L. The owner-visible translation table is
++// indexed by finalized R=FinalizeKey(L,G), after current global admission.
++public interface IResolutionSnapshotStore {
++  // Reads only from the configured trusted producer namespace; verifies the
++  // envelope, payload digest, schema, full input bytes and size bounds. I/O,
++  // corruption, policy denial and races return false without user diagnostics.
++  bool TryRead(byte[] key, byte[] input, out byte[] snapshot);
++
++  // Same-directory temp + flush + atomic create-if-absent. A conflicting value
++  // is quarantined, never overwritten. No user-visible cache-status output.
++  void TryPublish(byte[] key, byte[] input, byte[] snapshot);
++}
++
++public interface IPreparedResolutionSnapshot {
++  // Prepared graph is detached; preparation changes no current compilation.
++  // Commit is a no-fail coordinator operation: intern/rebind builtins, apply
++  // visibility deltas and other journalled effects, then return fresh objects.
++  // ProgramResolver publishes signatures/class tables/diagnostics as on cold.
++  ModuleResolutionResult Commit();
++}
++
++public interface IResolutionSnapshotCodec {
++  // The implementation must freeze syntax before resolution, label every graph
++  // successor with its semantic role/slot and retain the selected export view.
++  // It fingerprints reviewed built-in plugins (DefaultPlugins is nonempty),
++  // rejects unclassified external AdditionalPlugins/AdditionalPluginArguments
++  // and unsupported options/node kinds. It may not use
++  // CloneId, object hash codes, process ids or SystemModuleManager.MyHash.
++  bool TryCaptureInput(ProgramResolver resolver, ModuleDecl declaration,
++    IReadOnlyDictionary<ModuleDecl, byte[]> prerequisiteLocalKeys,
++    out ResolutionInputs input);
++
++  // Validate all node tags/references, solved types, module/facade identities,
++  // origins, scopes and effects before returning a prepared publication.
++  // Refresh EnclosingModule and Height bindings; never deserialize a reporter,
++  // CLR object graph, global validation receipt, or mutable translator state.
++  bool TryPrepare(ProgramResolver resolver, CompilationData compilation,
++    ModuleDecl declaration, byte[] input, byte[] snapshot,
++    out IPreparedResolutionSnapshot prepared);
++
++  // Capture immediately after ResolveModuleDeclaration and BEFORE global
++  // postpasses/translation; reject incomplete/error/cancelled resolution for v1.
++  bool TryEncode(ProgramResolver resolver, ModuleDecl declaration,
++    ModuleResolutionResult result, byte[] input, out byte[] snapshot);
++}
++
++public sealed class ContentResolutionSession {
++  private readonly IResolutionSnapshotStore store;
++  private readonly IResolutionSnapshotCodec codec;
++  private readonly Dictionary<ModuleDecl, byte[]> completedLocalKeys =
++    new(ReferenceEqualityComparer.Instance);
++  private readonly CancellationToken cancellationToken;
++  private readonly Func<bool> isCurrentGeneration;
++
++  public ContentResolutionSession(IResolutionSnapshotStore store,
++    IResolutionSnapshotCodec codec, CancellationToken cancellationToken,
++    Func<bool> isCurrentGeneration) {
++    this.store = store;
++    this.codec = codec;
++    this.cancellationToken = cancellationToken;
++    this.isCurrentGeneration = isCurrentGeneration;
++  }
++
++  private void CheckCurrent() {
++    cancellationToken.ThrowIfCancellationRequested();
++    if (!isCurrentGeneration()) {
++      throw new OperationCanceledException("Obsolete compilation generation");
++    }
++  }
++
++  public byte[] GetCompletedLocalKey(ModuleDecl declaration) =>
++    completedLocalKeys[declaration].ToArray();
++
++  // Session is scoped to one Compilation and currently invoked by its serial
++  // coordinator. Parallel workers publish through that coordinator in a later PR.
++  public ModuleResolutionResult Resolve(ProgramResolver resolver,
++    CompilationData compilation, ModuleDecl declaration,
++    IReadOnlyList<ModuleDecl> prerequisites, Func<ModuleResolutionResult> cold) {
++    CheckCurrent();
++    var keys = new Dictionary<ModuleDecl, byte[]>(ReferenceEqualityComparer.Instance);
++    foreach (var dependency in prerequisites) {
++      if (!completedLocalKeys.TryGetValue(dependency, out var key)) {
++        // A non-cacheable dependency propagates; never silently fall back to a
++        // CloneId key or treat an absent prerequisite as the empty signature.
++        return cold();
++      }
++      keys.Add(dependency, key.ToArray());
++    }
++    var codecKeys = keys.ToDictionary(p => p.Key, p => p.Value.ToArray(),
++      (IEqualityComparer<ModuleDecl>)ReferenceEqualityComparer.Instance);
++    if (!codec.TryCaptureInput(resolver, declaration, codecKeys, out var input)) {
++      return cold();
++    }
++    byte[]? bytes = null;
++    try {
++      input = input.Freeze();
++      if (input.CoversExactly(keys)) {
++        bytes = input.Encode();
++      }
++    } catch (InvalidDataException) {
++      // Invalid descriptors miss; exceptions from cold resolution must propagate.
++    }
++    if (bytes == null) {
++      return cold();
++    }
++    var localKey = SHA256.HashData(bytes);
++    if (store.TryRead(localKey, bytes, out var snapshot) &&
++        codec.TryPrepare(resolver, compilation, declaration, bytes, snapshot,
++          out var prepared)) {
++      CheckCurrent();
++      // The coordinator serializes this publication with generation changes.
++      var loaded = prepared.Commit();
++      completedLocalKeys.Add(declaration, localKey.ToArray());
++      return loaded;
++    }
++
++    var result = cold(); // ordinary diagnostics/errors/cancellation remain ordinary
++    if (codec.TryEncode(resolver, declaration, result, bytes, out snapshot)) {
++      CheckCurrent();
++      store.TryPublish(localKey, bytes, snapshot);
++      completedLocalKeys.Add(declaration, localKey.ToArray());
++    }
++    return result;
++  }
++}

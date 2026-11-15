@@ -12,7 +12,7 @@ public interface IHasNavigationToken : INode {
   TokenRange NavigationRange { get; }
 }
 
-public record Reference(TokenRange Referer, IHasNavigationToken Referred);
+public record Reference(TokenRange Referer, IHasNavigationToken Referred, bool IsTextual = true);
 public interface IHasReferences : INode {
   public IEnumerable<Reference> GetReferences();
 }

@@ -1,7 +1,9 @@
 // RUN: %testDafnyForEachResolver --expect-exit-code=4 "%s"
 
 
-method GoodInstances(x: int, y: int) {
+method GoodInstances(x: int, y: int)
+  requires 0 <= x && 0 <= y
+{
   assert true decreases to false;
   assert 1 decreases to 0;
   assert x decreases to x - 1;
@@ -44,7 +46,9 @@ method BadInstance6() {
 
 datatype Color = Red | Green | Blue
 
-method Tuples(x: int) {
+method Tuples(x: int)
+  requires 0 <= x
+{
   if
   case true =>
     assert (Red, Green) decreases to Red;
@@ -58,6 +62,15 @@ method Tuples(x: int) {
     assert x decreases to (x - 1, Blue); // error
   case true =>
     assert (x decreases to x - 1, Blue);
+}
+
+method BadNegativeInstances(x: int, y: int)
+  requires x < 0 && y < 0
+{
+  if
+  case true => assert x decreases to x - 1; // error: negative old value
+  case true => assert (x, y decreases to x, y - 1); // error: negative suffix
+  case true => assert x nonincreases to x - 1; // error: negative old value
 }
 
 method Empties() {

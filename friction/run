@@ -1,0 +1,198 @@
+#!/usr/bin/env python3
+"""Recheck every friction case against what its case.md records.
+
+usage: friction/run DAFNY [--solver-path Z3] [--cores N] [CASE-PREFIX ...]
+
+DAFNY is the Dafny to check: the path of a `dafny` binary, or a command line
+such as "dotnet /path/to/Dafny.dll". --solver-path is passed on to Dafny;
+without it Dafny uses the Z3 it finds itself. --cores (default 2) is passed to
+`dafny verify`. CASE-PREFIX selects the cases whose directory name starts with
+it (`003`, `007-exist`); without one, every case runs.
+
+For each case, the case's dfyconfig.toml (the reproducer) is verified, and
+workaround.dfy too when present, under the same options. The fenced ```check
+block of case.md says what the reproducer is recorded to show; README.md
+lists its lines. Per case the runner prints REPRODUCES, TIP-HOLDS,
+CONTEXT-ONLY or CHANGED, the workaround's exit code, the outcome and resource
+units of every declaration, and a machine-readable `RESULT {...}` line.
+
+Exit status: 0 if every case behaves as recorded, 1 if any is CHANGED.
+"""
+import argparse
+import json
+import os
+import re
+import shlex
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent
+WALL_CAP = int(os.environ.get('FRICTION_WALL_CAP', '1800'))  # seconds per run; a safety cap only
+
+
+def dafny_cmd(dafny):
+    if Path(dafny).exists() or ' ' not in dafny:
+        return [dafny]
+    return shlex.split(dafny)
+
+
+def workaround_project(case, logdir):
+    # The case's own options, with workaround.dfy in place of repro.dfy. The
+    # project file is generated so that the case directory keeps one
+    # dfyconfig.toml, the name the Dafny IDE recognises.
+    d = Path(logdir) / ('workaround-' + case.name)
+    d.mkdir()
+    (d / 'dfyconfig.toml').write_text(
+        f'base = {json.dumps(str(case / "dfyconfig.toml"))}\n'
+        f'includes = [{json.dumps(str(case / "workaround.dfy"))}]\n'
+        f'excludes = [{json.dumps(str(case / "repro.dfy"))}]\n')
+    return d / 'dfyconfig.toml'
+
+
+def run_dafny(args, project, logdir, tag):
+    log = Path(logdir) / (tag + '.json')
+    cmd = dafny_cmd(args.dafny) + ['verify', os.path.relpath(project, ROOT),
+                                   '--cores', str(args.cores),
+                                   '--log-format', 'json;LogFileName=' + str(log)]
+    if args.solver_path:
+        cmd += ['--solver-path', args.solver_path]
+    try:
+        p = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True, timeout=WALL_CAP)
+        code, out = p.returncode, p.stdout + p.stderr
+    except subprocess.TimeoutExpired as e:
+        partial = e.stdout or ''
+        code, out = 'wall-cap', partial.decode() if isinstance(partial, bytes) else partial
+    decls = {}
+    if log.exists():
+        try:
+            data = json.loads(log.read_text())
+        except json.JSONDecodeError:
+            data = {'verificationResults': []}
+        for r in data.get('verificationResults', []):
+            name = re.sub(r' \((correctness|well-formedness)\)$', '', r['name'])
+            d = decls.setdefault(name, {'outcomes': [], 'ru': 0})
+            d['outcomes'].append(r['outcome'])
+            d['ru'] += int(r.get('resourceCount') or 0)
+    return code, out, decls
+
+
+def parse_checks(case_md):
+    m = re.search(r'```check\n(.*?)```', case_md.read_text(), re.S)
+    if not m:
+        return None
+    return [shlex.split(line) for line in m.group(1).splitlines()
+            if line.strip() and not line.strip().startswith('#')]
+
+
+def outcome(decls, name):
+    d = decls.get(name)
+    if d is None:
+        return None
+    if 'Errors' in d['outcomes']:
+        return 'failed'
+    if 'OutOfResource' in d['outcomes'] or 'TimedOut' in d['outcomes']:
+        return 'outofresource'
+    if all(o == 'Correct' for o in d['outcomes']):
+        return 'verified'
+    return 'inconclusive'
+
+
+def holds(check, code, out, decls):
+    op = check[0]
+    if op == 'exit':
+        return str(code) == check[1], f'exit {code}'
+    if op == 'message':
+        return check[1] in out, 'message missing: ' + check[1]
+    if op == 'absent':
+        return check[1] not in out, 'message present: ' + check[1]
+    if op in ('verified', 'failed', 'outofresource'):
+        got = outcome(decls, check[1])
+        return got == op, f'{check[1]} {got}'
+    if op == 'failed-any':
+        got = [outcome(decls, n) for n in check[1:]]
+        return 'failed' in got, 'none failed: ' + ' '.join(map(str, got))
+    if op == 'ru':
+        name, rel, n = check[1], check[2], int(check[3])
+        if name not in decls:
+            return False, f'{name} not run'
+        ru = decls[name]['ru']
+        return (ru >= n if rel == '>=' else ru <= n), f'{name} {ru} RU'
+    if op == 'ratio':
+        a, b, k = check[1], check[2], float(check[4])
+        if a not in decls or b not in decls or not decls[b]['ru']:
+            return False, 'ratio not measurable'
+        r = decls[a]['ru'] / decls[b]['ru']
+        return r >= k, f'ratio {r:.2f}'
+    if op in ('workaround-exit', 'context-only'):
+        return True, ''
+    return False, 'unknown check ' + op
+
+
+def main():
+    ap = argparse.ArgumentParser(description='Recheck the friction cases with a given Dafny.')
+    ap.add_argument('dafny', help='path of a dafny binary, or a command line that runs Dafny')
+    ap.add_argument('--solver-path', help='the Z3 binary to pass to Dafny')
+    ap.add_argument('--cores', type=int, default=2, help='passed to dafny verify (default 2)')
+    ap.add_argument('cases', nargs='*', metavar='CASE-PREFIX')
+    args = ap.parse_intermixed_args()
+
+    cases = sorted(p for p in (ROOT / 'cases').iterdir() if (p / 'case.md').exists())
+    if args.cases:
+        cases = [c for c in cases if any(c.name.startswith(w) for w in args.cases)]
+    version = subprocess.run(dafny_cmd(args.dafny) + ['--version'],
+                             capture_output=True, text=True).stdout.strip()
+    solver = 'Dafny default'
+    if args.solver_path:
+        z3 = subprocess.run([args.solver_path, '--version'], capture_output=True, text=True).stdout.strip()
+        solver = z3 or args.solver_path
+    print(f'dafny {version}; solver: {solver}')
+    all_ok = True
+    with tempfile.TemporaryDirectory() as logdir:
+        for case in cases:
+            text = (case / 'case.md').read_text()
+            checks = parse_checks(case / 'case.md')
+            status = re.search(r'^- \*\*Status:\*\* *(\w+)', text, re.M)
+            status = status.group(1) if status else '?'
+            if checks is None:
+                print(f'{case.name}  [{status}]  NO-CHECKS')
+                all_ok = False
+                continue
+            code, out, decls = run_dafny(args, case / 'dfyconfig.toml', logdir, case.name)
+            misses = [why for ok, why in (holds(c, code, out, decls) for c in checks) if not ok]
+            line_misses = list(misses)
+            wpart = ''
+            if (case / 'workaround.dfy').exists():
+                want = next((c[1] for c in checks if c[0] == 'workaround-exit'), '0')
+                wcode, wout, _ = run_dafny(args, workaround_project(case, logdir), logdir,
+                                           case.name + '-workaround')
+                wpart = f'; workaround exit {wcode}' + ('' if str(wcode) == want else f' (expected {want})')
+                if str(wcode) != want:
+                    misses.append('workaround')
+                    print(wout.rstrip())
+            if misses:
+                verdict = 'CHANGED'
+            elif status == 'tip':
+                verdict = 'TIP-HOLDS'
+            elif ['context-only'] in checks:
+                verdict = 'CONTEXT-ONLY'
+            else:
+                verdict = 'REPRODUCES'
+            print(f'{case.name}  [{status}]  {verdict}  repro exit {code}{wpart}')
+            for name, d in sorted(decls.items()):
+                print(f'    {name}: {outcome(decls, name)} {d["ru"]} RU')
+            if misses:
+                all_ok = False
+                print('    not as recorded: ' + '; '.join(misses))
+                if line_misses:
+                    print('    ' + '\n    '.join(out.strip().splitlines()[-40:]))
+            print('RESULT ' + json.dumps({'case': case.name, 'status': status, 'verdict': verdict,
+                                          'exit': code, 'misses': misses,
+                                          'decls': {n: {'outcome': outcome(decls, n), 'ru': d['ru']}
+                                                    for n, d in decls.items()}}), flush=True)
+    return 0 if all_ok else 1
+
+
+if __name__ == '__main__':
+    sys.exit(main())

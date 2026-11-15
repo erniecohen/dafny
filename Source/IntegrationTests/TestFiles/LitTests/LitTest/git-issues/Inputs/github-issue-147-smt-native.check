@@ -1,0 +1,6 @@
+// SMT for rotations only at widths 1, 32 and 64: the extended rotations reach the solver.
+// CHECK-NOT: \(_ BitVec 0\)
+// CHECK: ext_rotate_(left|right)
+// CHECK-NOT: \(_ BitVec 0\)
+// CHECK: \(check-sat\)
+// CHECK-NOT: \(_ BitVec 0\)

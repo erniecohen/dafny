@@ -1,0 +1,14 @@
+github-issue-315.dfy(29,51): Error: possible violation of postcondition of forall statement
+github-issue-315.dfy(30,61): Error: possible violation of postcondition of forall statement
+github-issue-315.dfy(31,60): Error: possible violation of postcondition of forall statement
+github-issue-315.dfy(32,53): Error: possible violation of postcondition of forall statement
+github-issue-315.dfy(34,69): Error: possible violation of postcondition of forall statement
+github-issue-315.dfy(35,55): Error: possible violation of postcondition of forall statement
+github-issue-315.dfy(36,57): Error: possible violation of postcondition of forall statement
+github-issue-315.dfy(37,54): Error: possible violation of postcondition of forall statement
+github-issue-315.dfy(38,56): Error: possible violation of postcondition of forall statement
+github-issue-315.dfy(39,51): Error: possible violation of postcondition of forall statement
+github-issue-315.dfy(42,48): Error: assertion might not hold
+github-issue-315.dfy(43,49): Error: assertion might not hold
+
+Dafny program verifier finished with 16 verified, 12 errors

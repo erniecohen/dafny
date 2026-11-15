@@ -64,7 +64,7 @@ public class Function : MethodOrFunction, TypeParameter.ParentType, ICallable, I
       yield return a;
     }
 
-    if (Body is null && HasPostcondition && EnclosingClass.EnclosingModuleDefinition.ModuleKind == ModuleKindEnum.Concrete && !HasExternAttribute && !HasAxiomAttribute) {
+    if (Body is null && !IsVirtual && HasPostcondition && EnclosingClass.EnclosingModuleDefinition.ModuleKind == ModuleKindEnum.Concrete && !HasExternAttribute && !HasAxiomAttribute) {
       yield return new Assumption(this, Origin, AssumptionDescription.NoBody(IsGhost));
     }
 
@@ -236,7 +236,7 @@ public class Function : MethodOrFunction, TypeParameter.ParentType, ICallable, I
     Attributes? attributes, IOrigin? signatureEllipsis)
     : base(origin, nameNode, isGhost, attributes, signatureEllipsis, typeArgs, ins, req, ens, reads, decreases) {
 
-    Contract.Requires(byMethodBody == null || (!isGhost && body != null)); // function-by-method has a ghost expr and non-ghost stmt, but to callers appears like a function-method
+    Contract.Requires(byMethodBody == null || (!isGhost && body != null)); // function-by-method has a ghost expr and non-ghost stmt, but to callers appears like a functiion-method
     this.IsFueled = false;  // Defaults to false.  Only set to true if someone mentions this function in a fuel annotation
     this.Result = result;
     this.ResultType = result != null ? result.Type : resultType;
@@ -292,12 +292,6 @@ public class Function : MethodOrFunction, TypeParameter.ParentType, ICallable, I
   [Pure]
   public bool IsFuelAware() { return IsRecursive || IsFueled || (OverriddenFunction != null && OverriddenFunction.IsFuelAware()); }
   public virtual bool ReadsHeap { get { return Reads.Expressions!.Count != 0; } }
-
-  public bool ReadsDoubleStar => FrameReadsDoubleStar(Reads.Expressions!);
-
-  public static bool FrameReadsDoubleStar(List<FrameExpression> frame) {
-    return frame.Exists(fe => fe.E is DoubleWildcardExpr);
-  }
 
   public static Option<string> FunctionSyntaxOption = new("--function-syntax",
     () => "4",

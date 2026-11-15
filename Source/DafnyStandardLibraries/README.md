@@ -47,6 +47,7 @@ The sections below describe how to use each library:
 
 - [Std.Actions](src/Std/Actions/Actions.md) -- utilities for abstract imperative actions, including enumerating and streaming values
 - [Std.Arithmetic](src/Std/Arithmetic/README.md) -- utilities and lemmas related to basic operations, such as multiplication and exponentiation
+- [Std.Axioms](src/Std/Axioms.md) -- trusted facts that Dafny cannot prove, such as function extensionality, each used only where it is called
 - [Std.Base64](src/Std/Base64.md) -- base-64 encoding and decoding
 - [Std.BoundedInts](src/Std/BoundedInts.md) -- definitions of types and constants for fixed-bit-width integers
 - [Std.Collections](src/Std/Collections/Collections.md) -- properties of the built-in collection types (seq, set, iset, map, imap, array)
@@ -58,10 +59,10 @@ The sections below describe how to use each library:
 - [Std.JSON](src/Std/JSON/JSON.md) -- JSON serialization and deserialization
 - [Std.Math](src/Std/Math.md) -- common mathematical functions, such as Min and Abs
 - [Std.Ordinal](src/Std/Ordinal.md) -- operations and properties of the ORDINAL type
+- [Std.RealCompleteness](src/Std/RealCompleteness.md) -- least upper bounds of sets of reals (the completeness of `real`)
 - [Std.Parsers](src/Std/Parsers/README.md) -- parser combinators
 - [Std.Relations](src/Std/Relations.md) -- properties of relations
 - [Std.Strings](src/Std/Strings.md) -- utilities for strings, especially converting to and from string representations of common types
-- [Std.Statistics](src/Std/Statistics.md) -- utilities for statistical computations such as mean, median, mode, range, variance, and standard deviation
 - [Std.Termination](src/Std/Termination.md) -- a datatype for representing Dafny decreases clauses and extensions
 - [Std.Unicode](src/Std/Unicode/Unicode.md) -- implementations of basic algorithms from Unicode 15.0
 - [Std.Wrappers](src/Std/Wrappers.md) -- simple datatypes to support common patterns, such as optional values or the result of operations that can fail

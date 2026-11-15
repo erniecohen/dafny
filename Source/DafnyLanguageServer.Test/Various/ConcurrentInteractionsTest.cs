@@ -108,7 +108,7 @@ method Multiply(x: bv10, y: bv10) returns (product: bv10)
       var diagnostics = await GetLatestDiagnosticsParams(documentItem, CancellationToken);
       Assert.Equal(documentItem.Version, diagnostics.Version);
       Assert.Single(diagnostics.Diagnostics);
-      AssertM.Equal("assertion could not be proved", diagnostics.Diagnostics.First().Message, "actual diagnostic message was: " + diagnostics.Diagnostics.First().Message);
+      AssertM.Equal("assertion might not hold", diagnostics.Diagnostics.First().Message, "actual diagnostic message was: " + diagnostics.Diagnostics.First().Message);
     }
 
     [Fact]
@@ -168,7 +168,7 @@ method Multiply(x: bv10, y: bv10) returns (product: bv10)
     public async Task CanLoadMultipleDocumentsConcurrently() {
       // The current implementation of DafnyLangParser, DafnyLangSymbolResolver, and DafnyProgramVerifier are only mutual
       // exclusive to themselves. This "stress test" ensures that loading multiple documents at once is possible.
-      // To be more specific, this test should ensure that there is no state discarded/overridden between the three steps within
+      // To be more specific, this test should ensure that there is no state discarded/overriden between the three steps within
       // the Dafny Compiler itself.
       int documentsToLoadConcurrently = 50;
       var source = @"

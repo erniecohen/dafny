@@ -1,0 +1,6 @@
+// BPL for width 32, a power of two: both rotations keep the native operators.
+// CHECK-NOT: \{:inline\} (Left|Right)Rotate_bv32\(
+// CHECK: ^function \{:bvbuiltin "ext_rotate_left"\} LeftRotate_bv32\(bv32, bv32\) : bv32;
+// CHECK-NOT: \{:inline\} (Left|Right)Rotate_bv32\(
+// CHECK: ^function \{:bvbuiltin "ext_rotate_right"\} RightRotate_bv32\(bv32, bv32\) : bv32;
+// CHECK-NOT: \{:inline\} (Left|Right)Rotate_bv32\(

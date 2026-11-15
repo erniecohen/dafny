@@ -1,0 +1,7 @@
+// BPL for width 0: the existing inline definitions, unchanged.
+// CHECK: ^function \{:inline\} LeftRotate_bv0\(Bv0, Bv0\) : Bv0
+// CHECK-NEXT: ^\{
+// CHECK-NEXT: ^  0
+// CHECK: ^function \{:inline\} RightRotate_bv0\(Bv0, Bv0\) : Bv0
+// CHECK-NEXT: ^\{
+// CHECK-NEXT: ^  0

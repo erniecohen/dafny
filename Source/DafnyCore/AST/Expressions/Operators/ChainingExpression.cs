@@ -13,6 +13,7 @@ public class ChainingExpression : ConcreteSyntaxExpression, ICloneable<ChainingE
   public List<IOrigin> OperatorLocs;
   public List<Expression?> PrefixLimits;
   public Expression E;
+  public bool UseUserOperators;
 
   public ChainingExpression Clone(Cloner cloner) {
     return new ChainingExpression(cloner, this);
@@ -23,11 +24,12 @@ public class ChainingExpression : ConcreteSyntaxExpression, ICloneable<ChainingE
     Operators = original.Operators;
     OperatorLocs = original.OperatorLocs.Select(cloner.Origin).ToList();
     PrefixLimits = original.PrefixLimits.Select(cloner.CloneExpr).ToList();
-    E = ComputeDesugaring(Operands, Operators, OperatorLocs, PrefixLimits);
+    UseUserOperators = original.UseUserOperators;
+    E = UseUserOperators ? cloner.CloneExpr(original.E) : ComputeDesugaring(Operands, Operators, OperatorLocs, PrefixLimits);
   }
 
   [SyntaxConstructor]
-  public ChainingExpression(IOrigin origin, List<Expression> operands, List<BinaryExpr.Opcode> operators, List<IOrigin> operatorLocs, List<Expression?> prefixLimits)
+  public ChainingExpression(IOrigin origin, List<Expression> operands, List<BinaryExpr.Opcode> operators, List<IOrigin> operatorLocs, List<Expression?> prefixLimits, bool useUserOperators = false)
     : base(origin) {
     Contract.Requires(1 <= operators.Count);
     Contract.Requires(operands.Count == operators.Count + 1);
@@ -39,10 +41,13 @@ public class ChainingExpression : ConcreteSyntaxExpression, ICloneable<ChainingE
     Operators = operators;
     OperatorLocs = operatorLocs;
     PrefixLimits = prefixLimits;
+    UseUserOperators = useUserOperators;
     E = ComputeDesugaring(operands, operators, operatorLocs, prefixLimits);
   }
 
-  private static Expression ComputeDesugaring(List<Expression> operands, List<BinaryExpr.Opcode> operators, List<IOrigin> operatorLocs, List<Expression?> prefixLimits) {
+  public void Rebuild() => E = ComputeDesugaring(Operands, Operators, OperatorLocs, PrefixLimits);
+
+  private Expression ComputeDesugaring(List<Expression> operands, List<BinaryExpr.Opcode> operators, List<IOrigin> operatorLocs, List<Expression?> prefixLimits) {
     Expression? desugaring;
     // Compute the desugaring
     if (operators[0] == BinaryExpr.Opcode.Disjoint) {
@@ -67,7 +72,7 @@ public class ChainingExpression : ConcreteSyntaxExpression, ICloneable<ChainingE
         var e1 = operands[i + 1];
         Expression e;
         if (k == null) {
-          e = new BinaryExpr(opTok, op, e0, e1);
+          e = OperatorSyntaxExpr.Binary(UseUserOperators, opTok, op, e0, e1);
         } else {
           e = new TernaryExpr(opTok,
             op == BinaryExpr.Opcode.Eq ? TernaryExpr.Opcode.PrefixEqOp : TernaryExpr.Opcode.PrefixNeqOp, k, e0,

@@ -15,6 +15,24 @@ verify:
 build-binary:
 	$(DAFNY) build -t:lib --hidden-no-verify=$(NO_VERIFY) src/Std/dfyconfig.toml --output:${DOO_FILE_SOURCE}
 
+# The certified core under --modular-termination (https://github.com/erniecohen/dafny/issues/211):
+# a library with a modular termination record, tied to this build of Dafny and its Z3.
+# See modular-termination/README.md.
+build-modular-termination:
+	$(DAFNY) build -t:lib modular-termination/dfyconfig.toml --output:build/DafnyStandardLibraries-modular-termination.doo
+
+# The well-founded orders of decreases clauses (https://github.com/erniecohen/dafny/issues/245):
+# a library of its own, loaded with the standard library only under --decreases-orders.
+# See orders/README.md.
+ORDERS_DOO_SOURCE=build/DafnyStandardLibraries-orders.doo
+ORDERS_DOO_TARGET=binaries/DafnyStandardLibraries-orders.doo
+
+build-orders:
+	$(DAFNY) build -t:lib --hidden-no-verify=$(NO_VERIFY) orders/dfyconfig.toml --output:${ORDERS_DOO_SOURCE}
+
+update-orders: build-orders
+	cp ${ORDERS_DOO_SOURCE} ${ORDERS_DOO_TARGET}
+
 check-binary: build-binary
 	unzip -o ${DOO_FILE_SOURCE} -d build/current
 	unzip -o ${DOO_FILE_TARGET} -d build/previous
@@ -38,6 +56,7 @@ test-cs:
 	$(DAFNY) test $(VERIFY_OPTIONS) -t:cs examples/dfyconfig.toml examples/BoundedInts/NonDefault.cs --output:build/stdlibexamples --coverage-report:build/testcoverage
 	$(DAFNY) test $(VERIFY_OPTIONS) -t:cs examples/nondeterministic/dfyconfig.toml --output:build/stdlibexamples_nondeterministic --coverage-report:build/nondeterministic_testcoverage
 	TARGETLANG=cs make -C src/Std/TargetSpecific test
+
 test-java:
 	$(DAFNY) test $(VERIFY_OPTIONS) -t:java examples/dfyconfig.toml examples/BoundedInts/Externs/NonDefault.java --output:build/stdlibexamples
 # Iterators aren't supported on Java so we can't test the nondeterministic examples

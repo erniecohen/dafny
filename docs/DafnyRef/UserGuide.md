@@ -88,19 +88,13 @@ on the command-line or referenced, recursively, by `include` directives
 within those files. It does not matter if files are repeated either as
 includes or on the command-line.[^fn-duplicate-files]
 
-Note however that although the complete set of files, command-line plus
-included files, make up the program, by default, only those files listed on
-the command-line are verified. To do a complete verification, each file
-must be verified; it may well happen that a verification failure in one
-file (which is not on the command-line and thus not checked) may hide a
-verification failure in a file that is being checked.
-Thus it is important to eventually check all files, preferably in an order
-in which the files without dependencies are checked first, then those that
-depend on them, etc., until all files are checked.
-The `--verify-included-files` option (`-verifyAllModules` in legacy mode) will cause all modules, whether the result of include directives or not,
-to be verified.
+All files recursively included are always parsed and type-checked.
+However, which files are verified, built, run, or processed by other
+dafny commands depends on the individual command. 
+These commands are described in [Section 13.6.1](#sec-dafny-commands).
 
-[^fn-duplicate-files]: File names are considered equal if they have the same absolute path, compared as case-sensitive strings (regardless of whether the underlying file-system is case sensitive).  Using symbolic links may make the same file have a different absolute path; this will generally cause duplicate declaration errors.
+[^fn-duplicate-files]: Files may be included more than once or both included and listed on the command line. Duplicate inclusions are detected and each file processed only once.
+For the purpose of detecting duplicates, file names are considered equal if they have the same absolute path, compared as case-sensitive strings (regardless of whether the underlying file-system is case sensitive).  Using symbolic links may make the same file have a different absolute path; this will generally cause duplicate declaration errors.
 
 ### 13.3.1. Dafny Verification Artifacts: the Library Backend and .doo Files {#sec-doo-files}
 
@@ -183,7 +177,7 @@ improves readability but does not alter program semantics.
 `dafny` is a conventional command-line tool, operating just like other
 command-line tools in Windows and Unix-like systems.
 In general, the format of a command-line is determined by the shell program that is executing the command-line 
-(e.g., bash, the Windows shell, COMMAND, etc.), 
+(.e.g., bash, the windows shell, COMMAND, etc.), 
 but is expected to be a series of space-separated "words", each representing a command, option, option argument, file, or folder. 
 
 ### 13.6.1. dafny commands {#sec-dafny-commands}
@@ -276,8 +270,8 @@ The options relevant to this command are
 - those that affect the syntax of Dafny, such as
    - `--prelude`
    - `--unicode-char`
-   - `--function-syntax`
-   - `--quantifier-syntax`
+   - `--function-syntax` <version>
+   - `--quantifier-syntax` <version>
    - `--track-print-effects`
    - `--warn-shadowing`
    - `--warn-missing-constructor-parentheses`
@@ -285,8 +279,7 @@ The options relevant to this command are
 
 #### 13.6.1.3. `dafny verify` {#sec-dafny-verify}
 
-The `dafny verify` command performs the [`dafny resolve`](#sec-dafny-resolve) checks and then attempts to verify each method in the files listed on the command line. Although the Dafny program being considered
-consists of the listed files and any included files (recursively), by default only listed files are verified.
+The `dafny verify` command performs the [`dafny resolve`](#sec-dafny-resolve) checks and then attempts to verify each declaration in the program.
 
 A guide to controlling and aiding the verification process is given in [a later section](#sec-verification).
 
@@ -309,16 +302,144 @@ programs together in a single run of `dafny`.
 
 Various options control the verification process, in addition to all those described for [`dafny resolve`](#sec-dafny-resolve).
 
+- `--verification-cache DIR` opts into a persistent cache for individual prepared
+  verification tasks. It requires `--type-system-refresh`; selecting the legacy
+  type system is an option error (exit 2). It uses a fresh solver history and deterministic numeric
+  declaration hashes for each task. The enabled session supersedes a legacy
+  `/deterministicLiteralHashes:0` override; disabling the cache preserves that setting. Unchanged complete solver inputs, execution options, ordered type
+  inputs, and solver/runtime dependency bytes can reuse a completed result.
+  The resource limit is not part of the key. Each result keeps the resource use
+  `u` the solver reported and the limit `L` it was produced under, and a run with
+  limit `L'` reuses it only where a fresh run would give the same verdict and
+  resource count: a valid
+  result when there is no limit or `L' >= u`; errors when `L' >= u` (or, if the
+  solver stopped at its limit while searching for them, only when `L' = L`); and
+  resource exhaustion at `L` only when `L' = L`. Errors and resource exhaustion
+  require a positive resource limit; under an elapsed-time limit only valid
+  results are reused, and the time limit is part of the key. Replayed JSON
+  timing fields carry `timingReplayed: true`; CSV adds `TimingReplayed`. Durations
+  describe the current invocation, not a new solver measurement. Unsupported
+  execution profiles run normally. The initial native profile supports macOS
+  and Linux; custom loading environments and solver launcher scripts bypass.
+  Paths under Dafny's own installation, the .NET runtime and the solver's
+  directory enter the key as placeholders, so the same build in another directory
+  or on another machine reuses the cache; the bytes of every image are still
+  hashed into the key. Each image's digest is remembered in `DIR` under its
+  absolute path, size, modification and status-change times, device and inode,
+  and is recomputed when any of these differ or the entry is unreadable. This is
+  weaker than hashing the bytes on every run: a rewrite that kept all of these
+  would be missed. An ordinary process cannot set the status-change time, and the
+  images are read-only system files and build outputs, so the cache relies on it.
+  Only trusted local writers may share a cache. Remove `DIR/v1` to evict it;
+  there is no automatic disk eviction. This option is off by default and can
+  also be set in `dfyconfig.toml`.
+- `--resolution-threads N` uses N workers for dependency-ready module resolution.
+  It requires `--type-system-refresh`; an incompatible configuration is rejected
+  before parsing with exit code 2. The effective CLI or project-file options apply.
+  Scheduling is opt-in and N must be positive when specified. Sequential and
+  parallel resolution use the same module-scoped names, dependency heights and
+  builtin inventories; changing N does not select a different translation scheme.
+
+- `--translation-cache` requires `--type-system-refresh`; a legacy-type-system
+  request is rejected during option validation with exit code 2. It reuses module
+  translations within one process, for
+  example across batch verification requests. It uses the same names and
+  translation scheme as the default translator and does not select a resolution
+  worker count. It stores no files or verification results. The table is bounded
+  to 256 entries and 512 MiB of retained text; graph memory is additional.
+  Modular termination, counterexample extraction and unsupported graph metadata
+  recompute through the default materialization path.
+
+- `--boogie /cacheBackground` is an opt-in Boogie option
+  ([#241](https://github.com/erniecohen/dafny/issues/241)). When a split has the
+  same pruned declarations, in the same order, and the same random seed, type
+  encoding types and SMT options as the context its prover holds, the prover
+  restarts that context instead of setting it up again: it resends the commands
+  that set it up, without translating, erasing and printing the declarations
+  again. Each solver gets the same commands, in the same order, as without the
+  option, so verdicts and resource counts do not change. The separate opt-in
+  `--boogie /scheduleByImplementation` lets an implementation's splits run one
+  after the other on one prover, so that more contexts are restarted; it changes
+  which solver process verifies which split, and after which others, so resource
+  counts can differ from a run without it. Pass both with
+  `--boogie "/cacheBackground /scheduleByImplementation"`. A program that uses
+  `--standard-libraries` cannot pass them yet, because the library refuses
+  `--boogie` options other than its own.
+
 - What is verified
    - `--verify-included-files` (when enabled, all included files are verified, except library files, otherwise just those files on the command-line)
    - `--relax-definite-assignment`
    - `--track-print-effects`
    - `--disable-nonlinear-arithmetic`
    - `--filter-symbol`
+   - `--filter-position`
+   - `--filter-position-batch`
+
+The opt-in `--filter-position-batch` option accepts one position filter per occurrence:
+
+```sh
+dafny verify dfyconfig.toml --filter-position-batch first.dfy --filter-position-batch second.dfy:5-7
+```
+
+Dafny parses and resolves the whole program once, then verifies these requests in
+order. Each filter uses the syntax of `--filter-position` and is also restricted
+by `--filter-symbol`, if supplied. `--filter-position-batch` cannot be combined
+with `--filter-position`. Duplicate or overlapping filters run their selected
+proofs again; they do not reuse a previous verification result. Each request has
+a separate summary, and `--log-format` collects all requests into one log, including repeated rows for repeated proofs. The exit code is
+unsuccessful if any request fails, even if later requests succeed. Parsing or
+resolution errors prevent every request from running.
+
+All requests use the sources, project configuration, libraries, plugins and
+proof options loaded for this invocation. The prelude is captured before the first
+request; later edits or deletion do not change the batch. Proof dependencies and
+warnings are isolated per request, and combined coverage includes every request.
+Cancellation or a solver exception aborts the batch before a later request starts.
+Files edited after they have been read
+are not reloaded between requests. To use changed inputs or options, start a new
+invocation; every invocation parses and resolves again. No cache is persisted.
+As with a single position filter, a successful batch verifies only its selected
+proofs and does not establish that the whole project is verified.
 
 - Control of the proof engine
+   - `--manual-lemma-induction`
    - `--verification-time-limit`
    - `--boogie`
+   - `--solver-path`
+   - `--arithmetic-solver`
+
+- Scheduling
+   - `--verification-module-window`
+   - `--verification-module-window-memory`
+
+By default `dafny verify` verifies one module at a time: it starts every symbol of a
+module, waits until all of them have finished, and only then translates and starts
+the next module, so cores can sit idle while the last proofs of a module finish.
+The opt-in `--verification-module-window K`, for K greater than 1, keeps up to K
+modules in verification at once: a later module is translated and its proofs are
+started while earlier modules are still being verified, and another module is
+admitted whenever one finishes. The number of proofs that run at once is still set
+by `--cores`. Modules are translated and their proofs are started in the same order
+as with K = 1, and results, diagnostics (including those raised while translating a
+module), the "Verified n/m symbols" status lines, logs and the exit code are reported
+in the same order, as K = 1 reports them: a module's results wait until every earlier
+module's results have been reported. The per-batch lines of `--progress Batch` are
+printed as batches finish, so with K > 1 they can interleave across modules. At most
+2K modules are admitted but not yet reported, at most K of them still in verification.
+
+Memory is the cost: a module's translation and results are kept until it has been
+reported. `--verification-module-window-memory N` admits another module only while
+the managed heap, including garbage not yet collected, is below N MiB (by default,
+half of the memory available to the process), or when no other module is waiting
+to be reported. If verification stops early, because of a solver failure, an
+internal error or cancellation, the proofs of modules admitted ahead of their turn
+are cancelled and their results and diagnostics are not reported, as with K = 1,
+which never starts them.
+
+A proof's verdict and resource count do not depend on K: each proof sends the solver
+the same commands. A proof limited by `--verification-time-limit`, though, can
+finish just before or just after its limit depending on how busy the machine is, as
+it can with a different `--cores`.
 
 
 #### 13.6.1.4. `dafny translate <language>` {#sec-dafny-translate}
@@ -365,7 +486,7 @@ As with `dafny translate`, all the previous phases are also executed, including 
 By default, the generated file is in the same directory and has the same name with a different extension as the first
 .dfy file on the command line. This location and name can be set by the `--output` option.
 
-The location of the `Main` entry point is described [here](#sec-user-guide-main).
+The location of the `Main` entry point is described [here](#sec-user-guide-main}.
 
 There are no additional options for `dafny build` beyond those for `dafny translate` and the previous compiler phases.
 
@@ -381,12 +502,22 @@ Note that `dafny run` is engineered to quickly compile and launch the program;
 
 The form of the `dafny run` command-line is slightly different than for other commands.
 - It permits just one `.dfy` file, which must be the file containing the `Main` entry point;
-the location of the `Main` entry point is described [here](#sec-user-guide-main).
+the location of the `Main` entry point is described [here](#sec-user-guide-main}.
 - Other files are included in the program either by `include` directives within that one file or by 
 the `--input` option on the command-line. 
 - Anything that is not an option and is not that one dfy file
 is an argument to the program being run (and not to dafny itself).
 - If the `--` option is used, then anything after that option is a command-line argument to the program being run.
+
+The `--output` (or `-o`) option sets the output filename and location, as for `dafny build`.
+To use `[options] output` from a project file when running, enable `--project-output`
+or set `project-output = true` in the project file. This option defaults to false;
+without it, `run` retains its usual filename derived from the source file.
+Command-line `--output` takes precedence over the project setting.
+`output = "bin/result"` names files using `result` inside `bin`; `output = "bin"`
+names files using `bin` in the project directory. It does not select an output directory.
+`--project-output` also rejects compiler output paths without a filename stem,
+such as empty values, `.`, `..`, `bin/` and `.cs`, in `build`, `run` and `test`.
 
 During development, users must use `dafny run --allow-warnings` if they want to run their Dafny code when it contains warnings.
 
@@ -478,7 +609,9 @@ To improve assurance, provide a body that proves the conclusion.
 This is equivalent to an assumption of any loop invariants in the code after the loop.
 To improve assurance, provide a body that establishes any stated invariants.
 
-* Any declaration with no body and at least one `ensures` clause.
+* Any declaration with no body and at least one `ensures` clause, except instance members of traits and declarations in abstract modules.
+A bodyless instance member of a trait specifies a contract that implementations must satisfy; it does not introduce a missing-body assumption.
+Static trait members remain subject to this check. Explicit `{:axiom}` and `{:extern}` attributes are still audited.
 Any code that calls this declaration will assume that all `ensures` clauses are true after it returns.
 To improve assurance, provide a body that proves that any `ensures` clauses hold.
 
@@ -513,7 +646,7 @@ In particular, it accepts the `--target` option that specifies the programming l
 - `--output` - gives the folder and filename root for compilation artifacts
 - `--methods-to-test` - the value is a (.NET) regular expression that is matched against the fully
   qualified name of the method; only those methods that match are tested
-- `--coverage-report` - the value is a directory in which Dafny will save an HTML coverage report highlighting parts of
+- `--coverage-report` - the value is a directory in which Dafny will save an html coverage report highlighting parts of
   the program that execution of the tests covered.
 
 The order in which the tests are run is not specified.
@@ -739,7 +872,7 @@ The following is a list of command-line-options supported by Dafny during test g
   maps and sets that test generation will consider as valid test inputs. This can sometimes be necessary to 
   prevent test generation from creating unwieldy tests with excessively long strings or large maps. This option is
   disabled by default
-- `--coverage-report` - the value is a directory in which Dafny will save an HTML coverage report highlighting parts of
+- `--coverage-report` - the value is a directory in which Dafny will save an html coverage report highlighting parts of
   the program that the generated tests are expected to cover.
 - `--print-bpl` - the value is the name of the file to which Dafny will save the Boogie code used for generating tests.
   This options is mostly useful for debugging test generation functionality itself.
@@ -797,8 +930,9 @@ _This command is under development and not yet functional._
 #### 13.6.1.17. Plugins
 
 This execution mode is not a command, per se, but rather a command-line option that enables executing plugins to the dafny tool.
+Plugins may be either standalone tools or be additions to existing commands.
 
-The form of the command-line is `dafny --plugin:<path-to-one-assembly[,argument]*>`
+The form of the command-line is `dafny --plugin:<path-to-one-assembly[,argument]*>` or `dafny <command> --plugin:<path-to-one-assembly[,argument]*>`
 where the argument to `--plugin` gives the path to the compiled assembly of the plugin and the arguments to be provided to the plugin.
 
 More on writing and building plugins can be found [in this section](#sec-plugins).
@@ -878,12 +1012,11 @@ It's not possible to use Dafny project files in combination with the legacy CLI 
 
 ## 13.7. Verification {#sec-verification}
 
-In this section, we suggest a methodology to figure out [why Dafny cannot prove a single assertion](#sec-verification-debugging), we propose techniques to deal with [assertions that slow a proof down](#sec-verification-debugging-slow), we explain how to [verify assertions in parallel or in a focused way](#sec-assertion-batches), and we also give some more examples of [useful options and attributes to control verification](#sec-command-line-options-and-attributes-for-verification).
+In this section, we suggest a methodology to figure out [why a single assertion might not hold](#sec-verification-debugging), we propose techniques to deal with [assertions that slow a proof down](#sec-verification-debugging-slow), we explain how to [verify assertions in parallel or in a focused way](#sec-assertion-batches), and we also give some more examples of [useful options and attributes to control verification](#sec-command-line-options-and-attributes-for-verification).
 
 ### 13.7.1. Verification debugging when verification fails {#sec-verification-debugging}
 
-Let's assume one assertion is failing ("assertion could not be proved" or "postcondition could not be proved"). What should you do next?
-First, it's good to know that if an assertion is failing, it means that the assertion might not hold or that Dafny would require more proof hints, which can be found in a mechanical way.
+Let's assume one assertion is failing ("assertion might not hold" or "postcondition might not hold"). What should you do next?
 
 The following section is textual description of the animation below, which illustrates the principle of debugging an assertion by computing the weakest precondition:  
 ![weakestpreconditionDemo](https://user-images.githubusercontent.com/3601079/157976402-83fe4d37-8042-40fc-940f-bcfc235c7d2b.gif)
@@ -898,7 +1031,7 @@ method FailingPostcondition(b: bool) returns (i: int)
   var j := if !b then 3 else 1;
   if b {
     return j;
-  }//^^^^^^^ a postcondition could not be proved on this return path
+  }//^^^^^^^ a postcondition might not hold on this return path.
   i := 2;
 }
 ```
@@ -912,7 +1045,7 @@ method FailingPostcondition(b: bool) returns (i: int)
   if b {
     i := j;
     return;
-  }//^^^^^^^ a postcondition could not be proved on this return path
+  }//^^^^^^^ a postcondition might not hold on this return path.
   i := 2;
 }
 ```
@@ -925,7 +1058,7 @@ method FailingPostcondition(b: bool) returns (i: int)
   var j := if !b then 3 else 1;
   if b {
     i := j;
-    assert 2 <= i; // could not prove this assertion
+    assert 2 <= i; // This assertion might not hold
     return;
   }
   i := 2;
@@ -944,14 +1077,14 @@ method FailingPostcondition(b: bool) returns (i: int)
   var j := if !b then 3 else 1;
   if b {
     i := j;
-    assert 2 <= i; // could not prove this assertion
+    assert 2 <= i; // This assertion might not hold
     return;
   }
   i := 2;
 }
 ```
-To debug why Dafny cannot prove this assert, we need to _move this assert up_, which is similar to [_computing the weakest precondition_](https://en.wikipedia.org/wiki/Predicate_transformer_semantics#Weakest_preconditions).
-For example, if we have `x := Y; assert F;` and Dafny cannot prove `assert F;`, the weakest precondition for it to hold before `x := Y;` can be written as the assertion `assert F[x:= Y];`, where we replace every occurrence of `x` in `F` into `Y`.
+To debug why this assert might not hold, we need to _move this assert up_, which is similar to [_computing the weakest precondition_](https://en.wikipedia.org/wiki/Predicate_transformer_semantics#Weakest_preconditions).
+For example, if we have `x := Y; assert F;` and the `assert F;` might not hold, the weakest precondition for it to hold before `x := Y;` can be written as the assertion `assert F[x:= Y];`, where we replace every occurrence of `x` in `F` into `Y`.
 Let's do it in our example:
 <!-- %check-verify UserGuide.5.expect -->
 ```dafny
@@ -960,7 +1093,7 @@ method FailingPostcondition(b: bool) returns (i: int)
 {
   var j := if !b then 3 else 1;
   if b {
-    assert 2 <= j; // could not prove this assertion
+    assert 2 <= j; // This assertion might not hold
     i := j;
     assert 2 <= i;
     return;
@@ -977,7 +1110,7 @@ method FailingPostcondition(b: bool) returns (i: int)
   ensures 2 <= i
 {
   var j := if !b then 3 else 1;
-  assert b  ==>  2 <= j;  // could not prove this assertion
+  assert b  ==>  2 <= j;  // This assertion might not hold
   if b {
     assert 2 <= j;
     i := j;
@@ -994,7 +1127,7 @@ Now, either the error is obvious, or we can one more time replace `j` by its val
 method FailingPostcondition(b: bool) returns (i: int)
   ensures 2 <= i
 {
-  assert b  ==>  2 <= (if !b then 3 else 1);  // could not prove this assertion
+  assert b  ==>  2 <= (if !b then 3 else 1);  // This assertion might not hold
   var j := if !b then 3 else 1;
   assert b  ==>  2 <= j;
   if b {
@@ -1048,7 +1181,7 @@ This list is not exhaustive but can definitely be useful to provide the next ste
 #### 13.7.1.4. Counterexamples {#sec-counterexamples}
 
 When verification fails, we can rerun Dafny with `--extract-counterexample` flag to get a counterexample that can potentially explain the proof failure.
-Note that Dafny cannot guarantee that the counterexample it reports provably violates the assertion it was generated for (see [^smt-encoding])
+Note that Danfy cannot guarantee that the counterexample it reports provably violates the assertion it was generated for (see [^smt-encoding])
 The counterexample takes the form of assumptions that can be inserted into the code to describe the potential conditions under which the given assertion is violated. 
 This output should be inspected manually and treated as a hint.
 
@@ -1832,6 +1965,11 @@ Note that all input `.dfy` files and any needed runtime library code are combine
 which is then compiled by `dotnet` to a `.dll`.
 
 
+The opt-in option `--cs-replacement-types` uses the replacement module's concrete
+representation when C# code refers to an abstract type in the replaced module.
+This includes client signatures, type descriptors, and default values. The option
+is false by default and affects C# compilation only; it does not change verification.
+
 Examples of how to integrate C# libraries and source code with Dafny source code
 are contained in [this separate document](integration-cs/IntegrationCS).
 
@@ -1909,6 +2047,14 @@ The build and run steps are
 
 In one step:
 - `dafny run --target:py A.dfy`
+
+The opt-in option `--python-reorder-replacements` orders generated Python modules
+by their compilation dependencies after applying module replacements. Use it when
+a module consumes a replaceable module whose implementation would otherwise be
+emitted later. Dependencies of the implementation are emitted first as well.
+The option is disabled by default because changing module import order can change
+initialization order. A cycle introduced by replacement is reported as a
+compilation error when this option is enabled.
 
 Examples of how to integrate Python libraries and source code with Dafny source
 are contained in [this separate document](integration-py/IntegrationPython).
@@ -2034,6 +2180,47 @@ not tied to the local environment (which is a help in testing)
 in the neighborhood of the error; the error location (file, line, column) is always given
 
 * `--solver-log <file>` - [verification only] the file in which to place the SMT text sent to the solver
+
+* `--pipeline-profile <file>` - [verification and resolution] (experimental) write timing
+  events of the verification pipeline to `<file>`, one JSON object per line: a
+  manifest of the run (version, arguments, runtime, GC mode, core count); spans for
+  finding the root files, parsing, cloning the parsed program and resolution; per
+  module, the wait for the translator lock, reading the prelude, translation to
+  Boogie and Boogie's preparation of the module's tasks; per verification task, the
+  times it was submitted, started by a solver and completed, with its outcome and
+  resource count; for the command-line verifier, when each module's symbols were
+  started and finished and its cache released; and a final summary. Each span also
+  records the process-wide change in allocated bytes, garbage collections, GC pause
+  time and process CPU time over its interval. Times are milliseconds on a
+  monotonic clock. The option only adds the file: Dafny's other output, and what it
+  sends to the solver, are the same with and without it. The driver
+  `.github/review/pipeline-profile.py` in Dafny's repository summarizes a profile.
+  `dafny resolve` accepts the option too. Both commands also write front-end
+  events, each with the wall time, the CPU time and the allocated bytes of the
+  thread that ran it, and the process's GC pause time: one per file parsed (or
+  `.doo` file read); the module dependency graph (imports, refinement, exports and
+  nesting); one per module declaration resolved, with the time of each phase of its
+  resolution (registration/export, setup, member signatures, module attributes,
+  bodies, and accessible members are separate; export-view resolution uses the
+  distinct `exportViewSetup`, `exportSignature`, `exportModuleAttributes`,
+  `exportBody` and `exportAccessibleMembers` phases); one per global resolution
+  pass; and one per module translated to Boogie. Three hidden options extend it for
+  measurements: `--pipeline-profile-heap`
+  forces a full compacting garbage collection after parsing, after resolution and
+  when each module's results are reported, and records the live heap (this changes
+  timing); `--pipeline-profile-gc-events` records each collection and each pause
+  from the runtime's GC events; and `--pipeline-profile-hold <directory>` waits at
+  each of those heap points for a driver to take a heap dump. The driver
+  `.github/review/frontend-profile.py` runs and analyzes these measurements.
+  Module resolution events are measured on the worker performing the resolution
+  or cache lookup, at both zero and positive `--resolution-threads`. Their `id`
+  refers to canonical graph order; the events themselves arrive in worker
+  completion order. `cached: true` reports reuse without replaying the original
+  phases. `status` distinguishes completed lookup/resolution (including diagnostic
+  errors), cancellation and failure; interrupted lookups have `cached: null`.
+  Thread-local phases are cleared after every attempt. Simultaneous workers'
+  wall intervals overlap, so the driver's serial global-work subtraction and
+  ideal parallel bound are omitted for profiles with positive resolution threads.
 
 * `--log-format <configuration>` - [verification only] (was `-verificationLogger:<configuration string>`)
   log verification
@@ -2187,6 +2374,96 @@ or the Dafny 4 syntax (`ghost function` and `function`)
   The legacy option was `-unicodeChar:<n>` with values 0 and 1 for
   false and true above.
 
+* `--invariant-constructor-inference` - with the refreshed type system
+  (`--type-system-refresh`), let an argument of a datatype constructor whose
+  formal type uses a type parameter in a non-variant position fix that type
+  argument. For example, with `datatype List<T> = Nil | Cons(hd: T, tl: List<T>)`,
+  `h: int` and `ts: List<Pos>`, the constructor in `Cons(h, ts)` gets the type
+  argument `Pos` from `ts`, so `h` is checked to be a `Pos`. Without it the type
+  argument is widened to `int` from `h`, and `ts` must then be proved to be a
+  `List<int>`, which the verifier cannot prove without induction. Every argument
+  is still checked against the chosen type; a type parameter declared covariant
+  (`+T`) is not affected. Disabled by default, and it has no effect on the legacy
+  resolver. Use `invariant-constructor-inference = true` in a project file's
+  `[options]` section.
+
+* `--contextual-quantifier-domains` - with the refreshed type system
+  (`--type-system-refresh`), infer the omitted type of a bound variable of a
+  `forall` or `exists` expression from the function parameters it is passed to.
+  If every use of the variable is as a direct argument of a call to a function
+  without type parameters, and all those parameters are declared with the same
+  type `S`, which has the variable's inferred base type, the variable gets type
+  `S`, as if it were written `x: S`. For example, with
+  `type T = d: D | d.s != iset{}` and `predicate Q(F: iset<T>, b: T)`,
+  `exists b :: Q(F, b)` ranges over `T`. Without it the variable gets the base
+  type `D`, and the call must then prove that `b` is a `T`. Any other use of the
+  variable, such as `b.s`, keeps the base type. This changes what the quantifier
+  ranges over, and so it can change the verdict of a program. Disabled by
+  default, and it has no effect on the legacy resolver. Use
+  `contextual-quantifier-domains = true` in a project file's `[options]`
+  section.
+
+* `--conservative-match-inference` - with the refreshed type system
+  (`--type-system-refresh`), infer the type of the source of a `match`, and
+  decide whether an identifier in a pattern is a constructor or a bound variable,
+  by propagating the constraints already known before making any default type
+  decision. Without it, resolving a `match` whose source type is not yet known can
+  give an earlier integer literal its default type `int` before the enclosing
+  context, such as a function's declared result type, is seen; for example,
+  `if x == 0 then Some(0) else var d := foo(x); match d ...` in a function whose
+  result type is `Option<int32>` is then rejected. Enabled by default;
+  `--conservative-match-inference:false` restores the earlier inference, and
+  `conservative-match-inference = false` does the same in a project file's
+  `[options]` section. It has no effect on the legacy resolver. See the
+  [match expression](#sec-match-expression) for what it does not fix.
+
+* `--ancestor-qualified-module-ids` - let a `refines` clause or `import` whose
+  qualified module name starts with modules that enclose it, as in
+  `module A.C refines A.B`, depend on the module it names instead of on the
+  enclosing module. Without it, such a name always makes a cycle, since a module
+  depends on the modules nested in it, and the program is rejected. With it, the
+  leading names of enclosing modules are skipped, and the next name is looked up
+  among the modules declared in the enclosing module, as the name alone would be
+  inside it, without consulting that module's export sets; refining or importing
+  an enclosing module itself is still a cycle. Disabled by default. Use
+  `ancestor-qualified-module-ids = true` in a project file's `[options]` section.
+  See [module ordering](#sec-module-ordering).
+
+* `--synonym-refines-abstract-type` - let a type synonym `type T<Xs> = U<Xs>` in a
+  refining module refine an abstract type `T` that has members, where `U` is a class,
+  trait, datatype, newtype or abstract type declared in the refining module. The members
+  of `T` are merged into `U`, under the checks of any other refinement of `T`. Without it,
+  the synonym is rejected because it cannot declare members. Disabled by default. Use
+  `synonym-refines-abstract-type = true` in a project file's `[options]` section. See
+  [type refinement](#sec-module-refinement).
+
+* `--decreases-orders` - (experimental) accept a decreases component `e by O`, where `O`
+  is a closed ghost expression of the standard library's trait type
+  `Std.Termination.Orders.Wfo<T>` and `e` has type `T`. A call or loop iteration must make
+  `O.gt(old e, e)` true, or leave `e` unchanged. Requires `--type-system-refresh` and
+  `--general-traits=datatype` (or `full`). With `--modular-termination`, such components are
+  also allowed in `{:global}` and `{:callback}` bounds, and the orders library is loaded and
+  verified with the program. Disabled by default. Use `decreases-orders = true` in a project file's
+  `[options]` section. See [well-founded orders](#sec-decreases-by).
+
+* `--modular-termination` - (experimental; it does not yet establish termination in every
+  program) accept `decreases {:global}` clauses, and reject a call dispatched to a
+  bodyless member of a trait whose implementations may lie in other modules unless it
+  goes to a smaller `decreases {:global}` bound, and a call to known code that can reach
+  such a dispatched call unless it goes to a bound that is not larger. A helper that
+  forwards a dispatched call therefore needs a bound of its own. Code without a bound that
+  can reach such a dispatched call (a type's constraint, witness or component defaults, or a
+  constant's initializer) counts as called wherever a member mentions the type or reads the
+  constant, so a member with a bound may not do so. A call through a function value whose
+  code is not known (not a lambda expression, nor a function that reaches no dispatched call)
+  has no bound either; `decreases {:callback g} E` gives an in-parameter `g` the bound `E`,
+  which an application of `g` must be below and the value passed for `g` must run under. A
+  global or callback bound may only use code that cannot reach such a dispatched call. With `--show-hints`, it
+  reports every call that needs one of the rules. Disabled by default. Use
+  `modular-termination = true` in a project file's `[options]` section. See
+  [global bounds](#sec-global-decreases) for the rules and their limits. The option also declares the type
+  `bounded<O, F>` of [bounded callables](#sec-bounded-callables).
+
 Legacy options:
 
 * `-noIncludes` - ignore `include` directives in the program.
@@ -2280,6 +2557,22 @@ warnings as errors.
 
 * `--warn-missing-constructor-parentheses` - warn if a constructor name in a pattern might be misinterpreted
 
+* `--warn-unchecked-termination` - warn about each trait with `{:termination false}` and each
+  class or trait with `@AssumeCrossModuleTermination`. Calls dispatched through such a trait are
+  not checked for termination (see [global bounds](#sec-global-decreases)), so they can recurse
+  forever and still verify, and a program can prove `false` through them; `dafny audit` reports
+  the same declarations. The warning works as the one for an `assume` statement without
+  `{:axiom}` does: like any warning, it fails the command unless `--allow-warnings` is given;
+  `{:axiom}` on the declaration, as in `trait {:termination false} {:axiom} T`, acknowledges the
+  assumption and suppresses the warning, and so does `--allow-axioms`. Only declarations that
+  the run verifies are reported: not those of a library (`--library`, `--standard-libraries` or a
+  `.doo` file) or of an included file (unless `--verify-included-files`), which the user cannot
+  annotate, and a declaration that a refining module inherits is reported once, where it is
+  written. Under
+  `--modular-termination` the warning stays, since that option checks these calls only in the
+  code verified with it. Disabled by default. Use `warn-unchecked-termination = true` in a
+  project file's `[options]` section.
+
 Legacy options
 
 * `-deprecation:<n>` - control warnings about deprecated features. The
@@ -2345,13 +2638,114 @@ and what information it produces about the verification process.
   by placing the attribute [`{:disable-nonlinear-arithmetic}`](#sec-disable-nonlinear-arithmetic) after the module keyword.
   The attribute optionally takes the value `false` to enable nonlinear arithmetic.
 
-* `--manual-lemma-induction` - disables automatic induction for lemmas
+* `--arithmetic-solver N` - select Z3's arithmetic solver for modules without an
+  explicit [`{:z3ArithmeticSolver N}`](#sec-z3-arithmetic-solver) attribute.
+  The default is 2; values from 0 through 6 are accepted. Solver 6 can help with
+  some nonlinear arithmetic proofs, but changing solvers can change verification
+  results and resource use. See [Z3's parameter reference](https://microsoft.github.io/z3guide/programming/Parameters/)
+  for the meanings of the other values. In a project file, use
+  `arithmetic-solver = 6` in the `[options]` section. A command-line value takes
+  precedence over the project file; an explicit module attribute takes precedence
+  over either. The selected value is emitted on each verification implementation,
+  so it also takes precedence over `--solver-option O:smt.arith.solver=N` or the
+  corresponding `--boogie /proverOpt:O:smt.arith.solver=N` option.
+
+* `--additional-axioms` - enable the fork's additional verifier axioms. This
+  shared option is disabled by default. It currently supplies the bounded
+  integer/bitvector round trip: for `0 <= a < 2^N`, `(a as bvN) as int == a`.
+  It does not relax conversion fit checks. Additional axioms can change proof
+  costs and stability. Use `additional-axioms = true` in a project file's
+  `[options]` section; `--additional-axioms=false` overrides that setting.
+  This setting also applies to editor verification and is distinct from
+  `--allow-axioms`, which controls warnings about assumptions in user code.
+  It also exposes existing identities for concrete native integer literals used
+  as function-call arguments in local verification assumptions, preserving those
+  arguments and conversion checks. Shared function/type axioms are unchanged.
+  The unchanged round-trip and shift-by-zero examples pass the pinned Z3 4.12.1
+  and 5.1.0 gates in both resolver modes. Other proof costs remain solver-dependent.
+  It also assumes that heap succession is reflexive at the previous heap of a
+  two-state function used as a value, so that the value can be applied where that
+  heap is the current one, and it instantiates the existing allocation axiom of a
+  function that reads no heap and takes no references where the function is
+  applied, so that the members of its result are known to be allocated.
+  After an assign-such-that statement it also makes checked call permissions
+  available for the selected values, so predicates in the constraint can unfold.
+  Existing well-formedness, precondition and existence checks are preserved.
+  When a function with a body overrides a trait function from another module, it
+  also states the override axiom at the layer that calls use, so that a fact about
+  the overriding function reaches the trait function without a cast to the trait.
+  For a source lambda with a declared precondition, it also exposes the necessary
+  direction of that precondition under the lambda's type, allocation and heap
+  requirements. This applies to stored and returned lambda values.
+  An application of a function stored in a field of type `A -> T` of an inductive
+  datatype value, or of type `A --> T` where its precondition holds, is also
+  strictly below that value in the termination order.
+  See [the soundness, trigger and solver-limit note](../dev/additional-axioms.md).
+
+* `--heap-free-lambda-facts` - check a lambda without a reads clause, whose
+  body observes neither the heap nor allocation, in every heap and without
+  assuming its parameters allocated, and let the calls in its body unfold
+  wherever it is applied: for example when the lambda is checked against an
+  arrow type whose result is a subset type, or applied to a parameter that is a
+  function. Disabled by default; `heap-free-lambda-facts = true` in a project
+  file's `[options]` section. It has its own option, not `--additional-axioms`,
+  because it can change proof costs. See
+  [the soundness note](../dev/additional-axioms.md).
+
+* `--statement-expression-conclusions` - in the condition of an `assert`
+  statement, use the conclusion of a statement expression `S; E` (the
+  condition of an `assert`, `assume` or `expect` statement, the result of a
+  `calc`, the conclusion of an `assert ... by`) as a fact for `E` also when
+  `S; E` occurs under quantifiers and logical connectives. Without it, only a
+  statement expression at the top of the condition (or of one of its
+  conjuncts) gets the fact, so that, for example,
+  `assert forall n: nat :: assume false; false` fails. The statement is still
+  checked as before; the fact holds wherever `E` is evaluated because the
+  well-formedness check of the condition, just before, establishes it there.
+  Postconditions, invariants and preconditions are not affected, and neither
+  are statement expressions inside `old`, `unchanged`, `fresh`, lambdas, set
+  and map comprehensions, let-such-that expressions and binding-guard
+  if-then-else expressions. Disabled by default;
+  `statement-expression-conclusions = true` in a project file's `[options]`
+  section. It can change proof costs.
+
+* `--trait-rank-decreases` - in `decreases` clauses, order the values of a
+  trait that is not a reference type (one that does not extend `object`) by
+  structural rank, together with inductive datatypes and sequences. A
+  datatype that extends such a trait can then call a trait member on one of
+  its trait-typed fields: `decreases this` of the datatype is compared with
+  `decreases this` of the trait member, and two values of the trait can be
+  compared with each other. That a trait-typed field of an inductive datatype
+  value is below that value is an axiom of `--additional-axioms`, so most
+  programs need both options. Trait members without a `decreases` clause
+  still get no inferred `decreases this`; write it. No effect with
+  `--legacy-decreases-order`. Disabled by default;
+  `trait-rank-decreases = true` in a project file's `[options]` section. See
+  [the design note](../dev/design/317-datatype-trait-decreases.md).
+
+* `--manual-lemma-induction` - disables automatic inducntion for lemmas
 
 * `--isolate-assertions` - verify assertions individually
+* `--datatype-subset-conversions` - allow explicit conversions to subsets of
+  inductive datatypes with the legacy type system. The source must be
+  assignment-compatible and the destination constraints must verify. Disabled by
+  default; use `datatype-subset-conversions = true` in a project file's `[options]`.
+* `--consistent-obligation-checks` - prepare and check matching implicit obligations once using the existing local assertion machinery and fuel rules (experimental, disabled by default; also a project-file option).
+
+Native-result map read-over-write axioms require canonical stored payloads in
+the arguments type encoding. The hidden `--legacy-noncanonical-map-payloads`
+switch restores the previous inconsistent axiom for comparison and migration
+only, and is not suitable for trusted verification.
+
+The character representation axioms use character membership as a guard in both
+`--unicode-char` modes. The hidden `--legacy-unguarded-char` switch restores the
+previous unguarded axioms and character refinement translation for comparison
+and migration only. Those axioms are inconsistent under the arguments type
+encoding; the switch is not suitable for trusted verification.
 
 * `--extract-counterexample` - if verification fails, report a potential
   counterexample as a set of assumptions that can be inserted into the code.
-  Note that Dafny cannot guarantee that the counterexample
+  Note that Danfy cannot guarantee that the counterexample
   it reports provably violates the assertion or that the assumptions are not
   mutually inconsistent (see [^smt-encoding]), so this output should be inspected manually and treated as a hint.
 
@@ -2673,7 +3067,7 @@ terminology.
 
 * `--solver-path` - specifies a custom SMT solver to use
 
-* `--solver-plugin` - specifies a plugin to use as the SMT solver, instead of an external process
+* `--solver-plugin` - specifies a plugin to use as the SMT solver, instead of an external pdafny translaterocess
 
 * `--boogie` - arguments to send to boogie
 
@@ -2755,6 +3149,7 @@ PROVER_OPTIONS="\
   /proverOpt:O:smt.qi.eager_threshold=100 \
   /proverOpt:O:smt.delay_units=true \
   /proverOpt:O:smt.arith.solver=2 \
+  /proverOpt:O:smt.refine_inj_axioms=false \
   "
 
 "$DOTNET" "$BOOGIE" $BOOGIE_OPTIONS $PROVER_OPTIONS "$@"
@@ -2784,3 +3179,26 @@ for values of inputs to a method that cause the program to execute specific bloc
 A detailed description of how to do this is given in
 [a separate document](https://github.com/dafny-lang/dafny/blob/master/Source/DafnyTestGeneration/README.md).
 
+
+### Experimental source operator option
+
+`--user-defined-operators` is disabled by default and requires
+`--type-system-refresh`. It is listed by `dafny verify --help-internal` and enables the initial
+[user-defined function operator milestone](#sec-user-defined-operators).
+A project can select it in `dfyconfig.toml`:
+
+```toml
+[options]
+user-defined-operators = true
+type-system-refresh = true
+```
+
+An explicit command-line `--user-defined-operators:false` overrides that setting.
+The option is not allowed in a module's `{:options}` attribute.
+
+This milestone is source-only: feature-on `.doo` input/output, trusted
+`--library` inputs, compiled standard-library reuse, precompiled modules and
+explicit translation-record input/output are rejected. Supply fully checked
+source normally instead. Complete-source compilation and execution remain
+available and do not emit automatic `.dtr` records. With the option off, existing
+library and record behavior is unchanged.

@@ -11,12 +11,17 @@ namespace Microsoft.Dafny;
 
 public class TypeRefinementWrapper : TypeProxy {
   private static int count = 0;
-  public readonly int UniqueId = count++;
+  public readonly int UniqueId = ModuleNamingScope.Current?.Next("refinement") ?? count++;
   public TypeRefinementWrapper(Type t) : base() {
     T = t;
   }
 
   public bool IsBottomType => T is BottomTypePlaceholder;
+
+  /// <summary>
+  /// Set only under --invariant-constructor-inference; see Flow.PinAndUpdate.
+  /// </summary>
+  public bool Pinned;
 
   public override string TypeName(DafnyOptions options, ModuleDefinition context, bool parseAble) {
     var baseName = base.TypeName(options, context, parseAble);

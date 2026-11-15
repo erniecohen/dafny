@@ -41,6 +41,43 @@ public class CommonOptionBag {
       IsHidden = true
     };
 
+  public static readonly Option<string> VerificationCache = new("--verification-cache",
+    "Reuse complete verification-task solver exchanges in DIR. Requires --type-system-refresh. Opt-in; uses a fresh solver history and stable numeric declaration order for each task. " +
+    "Replayed timing fields are identified in CSV/JSON logs. Unsupported tasks run normally.") { ArgumentHelpName = "DIR" };
+  public static readonly Option<bool> TranslationCache = new("--translation-cache",
+    "Reuse module translations in this process using semantic resolution keys. " +
+    "Requires --type-system-refresh. Uses the default module-scoped translator. Stores no files or verification results.");
+
+  public static readonly Option<int> ResolutionThreads = new("--resolution-threads", () => 0,
+    "Resolve independent modules with N workers. Requires --type-system-refresh. Scheduling is opt-in; generated names are module-scoped in every mode.") {
+    ArgumentHelpName = "N"
+  };
+
+  public static readonly Option<string> PipelineProfile =
+    new("--pipeline-profile", @"
+(experimental) Write timing events of the verification pipeline to the given file, one JSON object per line: parsing, resolution, translation to Boogie, Boogie's preparation of each module, and each verification task's queue wait and solver time, with process-wide allocation, garbage-collection and CPU deltas; and front-end events with the running thread's CPU time and allocation: each file parsed or .doo file read, the module dependency graph, each module's resolution and its phases, each global resolution pass, and each module's translation. Also accepted by resolve. Only the file is added; Dafny's other output and its solver input are unchanged.".TrimStart()) {
+      ArgumentHelpName = "file"
+    };
+
+  public static readonly Option<bool> PipelineProfileHeap =
+    new("--pipeline-profile-heap", @"
+(experimental) With --pipeline-profile, force a full compacting garbage collection after parsing, after resolution and when each module's results are reported, and record the live heap after it. This changes timing, so it is for retention measurements only.".TrimStart()) {
+      IsHidden = true
+    };
+
+  public static readonly Option<bool> PipelineProfileGcEvents =
+    new("--pipeline-profile-gc-events", @"
+(experimental) With --pipeline-profile, record each garbage collection and each pause from the runtime's GC events.".TrimStart()) {
+      IsHidden = true
+    };
+
+  public static readonly Option<string> PipelineProfileHold =
+    new("--pipeline-profile-hold", @"
+(experimental) With --pipeline-profile, at each heap point write <directory>/<n>.ready and wait for <directory>/<n>.go, so that a driver can take a heap dump there.".TrimStart()) {
+      IsHidden = true,
+      ArgumentHelpName = "directory"
+    };
+
   public static readonly Option<string> LogLocation =
     new("--log-location", "Sets the directory where to store log files") {
       IsHidden = true
@@ -70,6 +107,11 @@ public class CommonOptionBag {
       IsHidden = true
     };
 
+  public static readonly Option<bool> MapComprehensionDomainTriggers = new("--map-comprehension-domain-triggers",
+    "Use explicit and inferred triggers when proving membership in map and imap comprehensions with general key expressions. Defaults to false.");
+  public static readonly Option<bool> ConsistentObligationChecks = new("--consistent-obligation-checks", () => false,
+    "Prepare and check matching implicit obligations once using the existing local assertion machinery and fuel rules.");
+
   public static readonly Option<bool> ManualLemmaInduction =
     new("--manual-lemma-induction", "Turn off automatic induction for lemmas.");
 
@@ -83,6 +125,15 @@ true - In the compiled target code, transform any non-extern
     non-ghost parameter into just that parameter. For example, the type
         datatype Record = Record(x: int)
     is transformed into just 'int' in the target code.".TrimStart());
+
+  public static readonly Option<bool> CsReplacementTypes = new("--cs-replacement-types",
+    "Use replacement modules' concrete representations for abstract types when compiling C#. Defaults to false.");
+
+  public static readonly Option<bool> LegacyCsDatatypeEquality = new("--legacy-cs-datatype-equality", () => false,
+    "Compile == on C# datatype values with the legacy, unsound test that also compares the type arguments the values were built with, for migration and comparison only.") { IsHidden = true };
+
+  public static readonly Option<bool> PythonReorderReplacements = new("--python-reorder-replacements",
+    "Order Python modules by their compilation dependencies after substituting replacement modules. Defaults to false.");
 
   public static readonly Option<bool> Verbose = new("--verbose",
       "Print additional information such as which files are emitted where.");
@@ -150,6 +201,9 @@ The value may be a comma-separated list of files and folders.".TrimStart());
     ArgumentHelpName = "file",
     IsHidden = true
   };
+
+  public static readonly Option<bool> ProjectOutput = new("--project-output",
+    "Use the project's output filename when running, and require a nonempty filename stem for compiler output. Defaults to false.");
 
   public static readonly Option<FileInfo> Output = new(["--output", "-o"],
     "Specify the filename and location for the generated target language files.") {
@@ -227,14 +281,91 @@ true - All class instances are raw pointers and need to be manually deallocated"
     IsHidden = true
   };
 
+  public static readonly Option<bool> UserDefinedOperators = new("--user-defined-operators", () => false,
+    "Enable fallback arithmetic and comparison function operators on concrete classes and inductive datatypes. " +
+    "Requires --type-system-refresh. Equality and module-attribute operators remain intrinsic. " +
+    "Datatype < and > retain intrinsic rank comparison; call annotated predicates by name. " +
+    "Override mode, compounds, trait operators and library/precompiled input reuse are not yet supported. Disabled by default.") {
+    // Automatic usage on old CLI errors must retain its literal disabled output.
+    IsHidden = true
+  };
+
+  public static readonly Option<bool> AdditionalAxioms = new("--additional-axioms", () => false,
+    "Enable additional verifier axioms. May change verification performance and proof stability. Disabled by default.");
+
+  public static readonly Option<bool> HeapFreeLambdaFacts = new("--heap-free-lambda-facts", () => false,
+    "Check a lambda without a reads clause, whose body observes neither the heap nor allocation, in every heap and without assuming its parameters allocated, and let the calls in its body unfold wherever it is applied. May change verification performance. Disabled by default.");
+
+  public static readonly Option<bool> StatementExpressionConclusions = new("--statement-expression-conclusions", () => false,
+    "In the condition of an assert statement, use the conclusion of a statement expression (S; E), such as an assert or assume statement, as a fact for E also under quantifiers and logical connectives, and not only at the top. Not inside old, unchanged, fresh, lambdas, or set and map comprehensions. May change verification performance. Disabled by default.");
+
+  public static readonly Option<bool> TraitRankDecreases = new("--trait-rank-decreases", () => false,
+    "In decreases clauses, order values of traits that are not reference types by structural rank, together with inductive datatypes and sequences, so that 'decreases this' in a datatype that extends such a trait is comparable with 'decreases this' in the trait. With --additional-axioms, a trait-typed field of an inductive datatype value is below that value. No effect with --legacy-decreases-order. Disabled by default.");
+
   public static readonly Option<bool> AllowAxioms = new("--allow-axioms", () => false,
     "Prevents a warning from being generated for axioms, such as assume statements and functions or methods without a body, that don't have an {:axiom} attribute.") {
   };
 
-  public static readonly Option<bool> TypeSystemRefresh = new("--type-system-refresh", () => true,
+  public static readonly Option<bool> WarnUncheckedTermination = new("--warn-unchecked-termination", () => false,
+    "Warn about each trait with {:termination false} and each class or trait with @AssumeCrossModuleTermination: calls dispatched through such a trait are not checked for termination. Like an assume statement, the declaration is not reported if it has an {:axiom} attribute or if --allow-axioms is set. Only declarations that the run verifies are reported, not those of libraries or included files. Disabled by default.");
+
+  public static readonly Option<bool> BitvectorMapKeys = new("--bitvector-map-keys", () => false,
+    "Preserve bitvector key types in map and imap lookups, and bitvector element types in multiset multiplicity lookups, during verification. Disabled by default.");
+
+  public static readonly Option<bool> DatatypeSubsetConversions = new("--datatype-subset-conversions", () => false,
+    "With the legacy type system, allow explicit conversions to subsets of inductive datatypes using assignment compatibility and checked destination constraints. Disabled by default.");
+
+  public static readonly Option<bool> ContextualLambdaDomains = new("--contextual-lambda-domains", () => false,
+    "With the refreshed type system, infer omitted parameters of function-result lambdas from the declared arrow domain. Disabled by default.");
+
+  public static readonly Option<bool> ContextualQuantifierDomains = new("--contextual-quantifier-domains", () => false,
+    "With the refreshed type system, infer an omitted bound variable type of a forall or exists expression from the declared type of the function parameters it is passed to, when every use of the variable is such an argument and all those parameters have the same type. Disabled by default.");
+
+  public static readonly Option<bool> ConservativeMatchInference = new("--conservative-match-inference", () => true,
+    "With the refreshed type system, infer the type of a match source, and decide whether a pattern identifier is a constructor or a bound variable, by propagation before making default type decisions, so that an earlier literal can still take its type from the enclosing context. Enabled by default; '--conservative-match-inference:false' restores the earlier inference. No effect on the legacy resolver.");
+
+  public static readonly Option<bool> AncestorQualifiedModuleIds = new("--ancestor-qualified-module-ids", () => false,
+    "Let a refines clause or import whose qualified module name starts with modules that enclose it, as in 'module A.C refines A.B', depend on the module it names instead of on the enclosing module, which is otherwise reported as a cycle. Disabled by default.");
+
+  public static readonly Option<bool> SynonymRefinesAbstractType = new("--synonym-refines-abstract-type", () => false,
+    "In a refining module, let a type synonym 'type O<Xs> = T<Xs>' refine an abstract type O that has members, where T is a class, trait, datatype, newtype or abstract type declared in the refining module: the members of O are merged into T, as they would be into a declaration of O itself. Disabled by default.");
+
+  public static readonly Option<bool> DecreasesOrders = new("--decreases-orders", () => false,
+    "Allow a decreases-clause component 'e by O', where O is a closed ghost expression of the trait type Std.Termination.Orders.Wfo<T> from the standard library and e has type T; a call or loop iteration must make O.gt(old e, e) true or leave e unchanged. Requires --type-system-refresh and --general-traits=datatype or full. With --modular-termination, such components are also allowed in {:global} and {:callback} bounds, and the orders library is verified with the program. Disabled by default.");
+
+  public static readonly Option<bool> LegacyDecreasesOrder = new("--legacy-decreases-order", () => false,
+    "Use the legacy, unsound decreases-tuple comparison for migration and comparison only.") { IsHidden = true };
+
+  public static readonly Option<bool> LegacyNoncanonicalMapPayloads = new("--legacy-noncanonical-map-payloads", () => false,
+    "Use the legacy, inconsistent native-result map rows for migration and comparison only.") { IsHidden = true };
+
+  public static readonly Option<bool> LegacyAutoGeneratedAttributes = new("--legacy-auto-generated-attributes", () => false,
+    "Use the legacy, unsound reading of user-written {:auto_generated} and {:opaque_reveal} attributes as marks of declarations Dafny generated, for migration and comparison only.") { IsHidden = true };
+
+  public static readonly Option<bool> LegacyFirstPhaseConstReads = new("--legacy-first-phase-const-reads", () => false,
+    "Use the legacy, unsound rule that lets the first division of a constructor body (before 'new;') read a constant whose initializer depends on 'this', for migration and comparison only.") { IsHidden = true };
+
+  public static readonly Option<bool> LegacyUnguardedChar = new("--legacy-unguarded-char", () => false,
+    "Use the legacy, inconsistent unguarded character axioms for migration and comparison only.") { IsHidden = true };
+
+  public static readonly Option<bool> ModularTermination = new("--modular-termination", () => false,
+    "Experimental; it does not yet establish termination in every program. Accept global and callback decreases bounds. Under this option, {:termination false} declares checked trait extensibility; foreign extension of sealed traits is rejected, including with @AssumeCrossModuleTermination. Dispatched overridable slots require strict global-bound descent. Imported operations are General at their declared bound, or TOP, unless they publish a checked {:termination_closed} promise; private bodies never strengthen an imported contract. Exact General calls require nonincrease as well as ordinary termination. Constants and type/iterator evaluation hooks also use public effects. Closed code and bound computations cannot reach open dispatch, unknown applications or imported General code. Callback formation, forwarding and application retain their checked bounds. Show call classifications with --show-hints. Libraries are admitted only as .doo files built under this option, whose recorded program, options and termination contracts are checked when loaded. See the Reference Manual for restrictions. Disabled by default.");
+
+  public static readonly Option<string> ModularTerminationTrust = new("--modular-termination-trust", () => "none",
+    @"
+Experimental, with --modular-termination; it has no effect without it. Which trust list of named premises a library may contain and a client may admit (https://github.com/erniecohen/dafny/issues/211).
+none (default) - A library is recorded and admitted only when its program has no unchecked premise.
+standard-library - Also record and admit the bodyless {:axiom} ghost lemmas and functions of the standard library that Dafny's built-in list names, when their statement and context match the list. Results then hold only if those premises are true; the verifier's summary and 'dafny audit' report them.".TrimStart()) {
+    IsHidden = true
+  };
+
+  public static readonly Option<bool> InvariantConstructorInference = new("--invariant-constructor-inference", () => false,
+    "With the refreshed type system, let a datatype constructor argument whose formal type uses a type parameter in a non-variant position, such as the tail of a list, fix that type argument, instead of widening it to the type of another argument. Every argument is still checked against the chosen type. Disabled by default.");
+
+  public static readonly Option<bool> TypeSystemRefresh = new("--type-system-refresh", () => false,
     @"
 false - The type-inference engine and supported types are those of Dafny 4.0.
-true (default) - Use an updated type-inference engine.".TrimStart()) {
+true - Use an updated type-inference engine.".TrimStart()) {
     IsHidden = true
   };
 
@@ -244,19 +375,19 @@ true (default) - Use an updated type-inference engine.".TrimStart()) {
     Full
   }
 
-  public static readonly Option<GeneralTraitsOptions> GeneralTraits = new("--general-traits", () => GeneralTraitsOptions.Datatype,
+  public static readonly Option<GeneralTraitsOptions> GeneralTraits = new("--general-traits", () => GeneralTraitsOptions.Legacy,
     @"
-legacy - Every trait implicitly extends 'object', and thus is a reference type. Only traits and reference types can extend traits.
-datatype (default) - A trait is a reference type only if it or one of its ancestor traits is 'object'. Any non-'newtype' type with members can extend traits.
+legacy (default) - Every trait implicitly extends 'object', and thus is a reference type. Only traits and reference types can extend traits.
+datatype - A trait is a reference type only if it or one of its ancestor traits is 'object'. Any non-'newtype' type with members can extend traits.
 full - (don't use; not yet completely supported) A trait is a reference type only if it or one of its ancestor traits is 'object'. Any type with members can extend traits.
 Value implementations must retain their type parameters in compatible parent positions and satisfy cardinality admissibility.".TrimStart()) {
     IsHidden = true
   };
 
-  public static readonly Option<bool> GeneralNewtypes = new("--general-newtypes", () => true,
+  public static readonly Option<bool> GeneralNewtypes = new("--general-newtypes", () => false,
     @"
 false - A newtype can only be based on numeric types or another newtype.
-true (default) - (requires --type-system-refresh) A newtype can use non-reference, non-trait value bases other than ORDINAL, arrows, and datatypes (including tuples and codatatypes), unless --extended-newtype-bases is enabled.".TrimStart()) {
+true - (requires --type-system-refresh) A newtype can use non-reference, non-trait value bases other than ORDINAL, arrows, and datatypes (including tuples and codatatypes), unless --extended-newtype-bases is enabled.".TrimStart()) {
     IsHidden = true
   };
 
@@ -437,6 +568,7 @@ If verification fails, report a detailed counterexample for the first failing as
       }
     });
 
+    DafnyOptions.RegisterLegacyUi(AdditionalAxioms, DafnyOptions.ParseBoolean, "Verification options", legacyName: "additionalAxioms");
     DafnyOptions.RegisterLegacyUi(AllowAxioms, DafnyOptions.ParseBoolean, "Verification options", legacyName: "allowAxioms", defaultValue: true);
     DafnyOptions.RegisterLegacyBinding(ShowHints, (options, value) => {
       options.PrintTooltips = value;
@@ -474,17 +606,17 @@ features like traits or co-inductive types.".TrimStart(), "cs");
 0 - The char type represents any UTF-16 code unit.
 1 (default) - The char type represents any Unicode scalar value.".TrimStart(), defaultValue: true);
     DafnyOptions.RegisterLegacyUi(TypeSystemRefresh, DafnyOptions.ParseBoolean, "Language feature selection", "typeSystemRefresh", @"
-0 - The type-inference engine and supported types are those of Dafny 4.0.
-1 (default) - Use an updated type-inference engine.".TrimStart(), defaultValue: true);
+0 (default) - The type-inference engine and supported types are those of Dafny 4.0.
+1 - Use an updated type-inference engine.".TrimStart(), defaultValue: false);
     DafnyOptions.RegisterLegacyUi(GeneralTraits, DafnyOptions.ParseGeneralTraitsOption, "Language feature selection", "generalTraits", @"
-legacy - Every trait implicitly extends 'object', and thus is a reference type. Only traits and reference types can extend traits.
-datatype (default) - A trait is a reference type only if it or one of its ancestor traits is 'object'. Any non-'newtype' type with members can extend traits.
+legacy (default) - Every trait implicitly extends 'object', and thus is a reference type. Only traits and reference types can extend traits.
+datatype - A trait is a reference type only if it or one of its ancestor traits is 'object'. Any non-'newtype' type with members can extend traits.
 full - (don't use; not yet completely supported) A trait is a reference type only if it or one of its ancestor traits is 'object'. Any type with members can extend traits.
 Value implementations must retain their type parameters in compatible parent positions and satisfy cardinality admissibility.".TrimStart(),
-      defaultValue: GeneralTraitsOptions.Datatype);
+      defaultValue: GeneralTraitsOptions.Legacy);
     DafnyOptions.RegisterLegacyUi(GeneralNewtypes, DafnyOptions.ParseBoolean, "Language feature selection", "generalNewtypes", @"
-0 - A newtype can only be based on numeric types or another newtype.
-1 (default) - (requires /typeSystemRefresh:1) A newtype can use non-reference, non-trait value bases other than ORDINAL, arrows, and datatypes (including tuples and codatatypes), unless /extendedNewtypeBases:1 is enabled.".TrimStart(), true);
+0 (default) - A newtype can only be based on numeric types or another newtype.
+1 - (requires /typeSystemRefresh:1) A newtype can use non-reference, non-trait value bases other than ORDINAL, arrows, and datatypes (including tuples and codatatypes), unless /extendedNewtypeBases:1 is enabled.".TrimStart(), false);
     DafnyOptions.RegisterLegacyUi(ExtendedNewtypeBases, DafnyOptions.ParseBoolean, "Language feature selection", "extendedNewtypeBases",
       "0 (default) - Retain existing general-newtype base restrictions.\n1 - Permit ORDINAL, datatype (including tuple and codatatype), and arrow newtype bases; requires /generalNewtypes:1 and /typeSystemRefresh:1.", false);
     DafnyOptions.RegisterLegacyUi(TypeInferenceDebug, DafnyOptions.ParseBoolean, "Language feature selection", "titrace", @"
@@ -545,9 +677,12 @@ NoGhost - disable printing of functions, ghost methods, and proof
       }
     }
 
+    DafnyOptions.RegisterLegacyUi(ConsistentObligationChecks, DafnyOptions.ParseBoolean,
+      "Verification options", "consistentObligationChecks");
     DafnyOptions.RegisterLegacyUi(AddCompileSuffix, DafnyOptions.ParseBoolean, "Compilation options", "compileSuffix");
 
     QuantifierSyntax = QuantifierSyntax.FromAmong("3", "4");
+    ModularTerminationTrust = ModularTerminationTrust.FromAmong("none", "standard-library");
     DafnyOptions.RegisterLegacyBinding(JsonDiagnostics, (options, value) => {
       if (value) {
         options.Printer = new DafnyJsonConsolePrinter(options);
@@ -663,11 +798,30 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(WarnAsErrors, OptionScope.Cli);
     OptionRegistry.RegisterOption(ProgressOption, OptionScope.Cli);
     OptionRegistry.RegisterOption(LogLocation, OptionScope.Cli);
+    OptionRegistry.RegisterOption(VerificationCache, OptionScope.Cli);
+    ResolutionThreads.AddValidator(result => {
+      if (result.Tokens.Count != 0 && result.GetValueOrDefault<int>() < 1) {
+        result.ErrorMessage = "--resolution-threads must be a positive integer.";
+      }
+    });
+    OptionRegistry.RegisterOption(ResolutionThreads, OptionScope.Cli);
+    OptionRegistry.RegisterOption(TranslationCache, OptionScope.Cli);
+    OptionRegistry.RegisterOption(PipelineProfile, OptionScope.Cli);
+    OptionRegistry.RegisterOption(PipelineProfileHeap, OptionScope.Cli);
+    OptionRegistry.RegisterOption(PipelineProfileGcEvents, OptionScope.Cli);
+    OptionRegistry.RegisterOption(PipelineProfileHold, OptionScope.Cli);
     OptionRegistry.RegisterOption(LogLevelOption, OptionScope.Cli);
     OptionRegistry.RegisterOption(ManualTriggerOption, OptionScope.Module);
+    OptionRegistry.RegisterOption(UserDefinedOperators, OptionScope.Cli);
+    OptionRegistry.RegisterOption(AdditionalAxioms, OptionScope.Cli);
+    OptionRegistry.RegisterOption(MapComprehensionDomainTriggers, OptionScope.Cli);
+    OptionRegistry.RegisterOption(HeapFreeLambdaFacts, OptionScope.Cli);
+    OptionRegistry.RegisterOption(StatementExpressionConclusions, OptionScope.Cli);
+    OptionRegistry.RegisterOption(TraitRankDecreases, OptionScope.Cli);
     OptionRegistry.RegisterOption(ShowHints, OptionScope.Cli);
     OptionRegistry.RegisterOption(Libraries, OptionScope.Module);
     OptionRegistry.RegisterOption(Output, OptionScope.Cli);
+    OptionRegistry.RegisterOption(ProjectOutput, OptionScope.Cli);
     OptionRegistry.RegisterOption(PluginOption, OptionScope.Cli);
     OptionRegistry.RegisterOption(Prelude, OptionScope.Cli);
     OptionRegistry.RegisterOption(Target, OptionScope.Cli);
@@ -675,6 +829,9 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(JsonOutput, OptionScope.Cli);
     OptionRegistry.RegisterOption(JsonDiagnostics, OptionScope.Cli);
     OptionRegistry.RegisterOption(QuantifierSyntax, OptionScope.Module);
+    OptionRegistry.RegisterOption(CsReplacementTypes, OptionScope.Cli);
+    OptionRegistry.RegisterOption(LegacyCsDatatypeEquality, OptionScope.Cli);
+    OptionRegistry.RegisterOption(PythonReorderReplacements, OptionScope.Cli);
     OptionRegistry.RegisterOption(SpillTranslation, OptionScope.Cli);
     OptionRegistry.RegisterOption(StdIn, OptionScope.Cli);
     OptionRegistry.RegisterOption(TestAssumptions, OptionScope.Cli);
@@ -686,6 +843,26 @@ NoGhost - disable printing of functions, ghost methods, and proof
       (reporter, origin, prefix, option, localValue, libraryValue) =>
         OptionCompatibility.OptionLibraryImpliesLocalError(reporter, origin, prefix, option, localValue, libraryValue ?? false));
     OptionRegistry.RegisterOption(TypeSystemRefresh, OptionScope.Cli);
+    OptionRegistry.RegisterOption(BitvectorMapKeys, OptionScope.Cli);
+    OptionRegistry.RegisterOption(ContextualLambdaDomains, OptionScope.Cli);
+    OptionRegistry.RegisterOption(ContextualQuantifierDomains, OptionScope.Cli);
+    OptionRegistry.RegisterOption(ConservativeMatchInference, OptionScope.Cli);
+    OptionRegistry.RegisterOption(DatatypeSubsetConversions, OptionScope.Cli);
+    OptionRegistry.RegisterOption(AncestorQualifiedModuleIds, OptionScope.Cli);
+    OptionRegistry.RegisterOption(SynonymRefinesAbstractType, OptionScope.Cli);
+    OptionRegistry.RegisterOption(DecreasesOrders, OptionScope.Cli);
+    OptionRegistry.RegisterOption(LegacyDecreasesOrder, OptionScope.Cli);
+    OptionRegistry.RegisterOption(LegacyNoncanonicalMapPayloads, OptionScope.Cli);
+    DafnyOptions.RegisterLegacyBinding(LegacyNoncanonicalMapPayloads,
+      (options, value) => options.LegacyNoncanonicalMapPayloads = value);
+
+    OptionRegistry.RegisterOption(LegacyUnguardedChar, OptionScope.Cli);
+    OptionRegistry.RegisterOption(LegacyAutoGeneratedAttributes, OptionScope.Cli);
+    OptionRegistry.RegisterOption(LegacyFirstPhaseConstReads, OptionScope.Cli);
+    OptionRegistry.RegisterOption(ModularTermination, OptionScope.Cli);
+    OptionRegistry.RegisterOption(ModularTerminationTrust, OptionScope.Cli);
+    OptionRegistry.RegisterOption(WarnUncheckedTermination, OptionScope.Cli);
+    OptionRegistry.RegisterOption(InvariantConstructorInference, OptionScope.Cli);
     OptionRegistry.RegisterOption(VerificationLogFormat, OptionScope.Cli);
     OptionRegistry.RegisterOption(VerifyIncludedFiles, OptionScope.Cli);
     OptionRegistry.RegisterOption(DisableNonLinearArithmetic, OptionScope.Module);
@@ -703,6 +880,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(VerificationCoverageReport, OptionScope.Cli);
     OptionRegistry.RegisterOption(NoTimeStampForCoverageReport, OptionScope.Cli);
     OptionRegistry.RegisterOption(DefaultFunctionOpacity, OptionScope.Module);
+    OptionRegistry.RegisterOption(ConsistentObligationChecks, OptionScope.Cli);
     OptionRegistry.RegisterOption(OptimizeErasableDatatypeWrapper, OptionScope.Cli); // TODO needs translation record registration
     OptionRegistry.RegisterOption(AddCompileSuffix, OptionScope.Cli);  // TODO needs translation record registration
     OptionRegistry.RegisterOption(SystemModule, OptionScope.Cli);

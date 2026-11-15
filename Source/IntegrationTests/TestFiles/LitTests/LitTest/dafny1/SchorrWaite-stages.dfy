@@ -1,4 +1,4 @@
-// RUN: %testDafnyForEachResolver "%s" -- --allow-deprecation --verification-time-limit=90 --cores:1
+// RUN: %testDafnyForEachResolver "%s" -- --allow-deprecation
 
 
 // Schorr-Waite algorithms, written and verified in Dafny.
@@ -33,7 +33,7 @@ abstract module M0 {
     case Extend(prefix, n) => n in S && sink in n.children && ReachableVia(source, prefix, n, S)
   }
 
-  method {:vcs_split_on_every_assert} SchorrWaite(root: Node, ghost S: set<Node>)
+  method SchorrWaite(root: Node, ghost S: set<Node>)
     requires root in S
     // S is closed under 'children':
     requires forall n :: n in S ==>
@@ -113,11 +113,11 @@ abstract module M0 {
         t, p, p.children := p, p.children[p.childrenVisited], p.children[p.childrenVisited := t];
         stackNodes := stackNodes[..|stackNodes| - 1];
         t.childrenVisited := t.childrenVisited + 1;
-        assert {:split_here} true;
+
       } else if t.children[t.childrenVisited] == null || t.children[t.childrenVisited].marked {
         // just advance to next child
         t.childrenVisited := t.childrenVisited + 1;
-        assert {:split_here} true;
+
       } else {
         // push
         stackNodes := stackNodes + [t];
@@ -128,7 +128,6 @@ abstract module M0 {
         // some more properties about the loop.  Therefore, we just assume the property here and
         // prove it in a separate refinement.
         assume t !in stackNodes;
-        assert {:split_here} true;
       }
     }
     // From the loop invariant, it now follows that all children pointers have been restored,
@@ -195,6 +194,25 @@ abstract module M2 refines M1 {
     ghost var pathFromRoot: Path
   }
 
+  // Pointer reversal changes the current graph. Extend the witness in the
+  // method's initial heap before reversing the edge, using the unchanged edge
+  // from the current node to the child about to be marked.
+  twostate lemma ExtendInitialPath(root: Node, prefix: Path, parent: Node,
+                                 child: Node, S: set<Node>)
+    requires parent in S
+    requires old(ReachableVia(root, prefix, parent, S))
+    requires child in old(parent.children)
+    ensures old(allocated(Path.Extend(prefix, parent)))
+    ensures old(ReachableVia(root, Path.Extend(prefix, parent), child, S))
+    // The same concrete witness establishes the existential reachability fact.
+    ensures old(Reachable(root, child, S))
+  {
+    // Supply the particular witness for Reachable's existential; no search
+    // over arbitrary paths is needed to establish the new node's reachability.
+    ghost var pathWitness := Path.Extend(prefix, parent);
+    assert old(ReachableVia(root, pathWitness, child, S));
+  }
+
   method SchorrWaite...
   {
     ghost var path := Path.Empty;
@@ -227,9 +245,30 @@ abstract module M2 refines M1 {
         // advance to next child
       } else {
         // push
-        path := Path.Extend(path, t);
+        ghost var child := t.children[t.childrenVisited];
+        ghost var extendedPath := Path.Extend(path, t);
+        ExtendInitialPath(root, path, t, child, S);
+        path := extendedPath;
+        label BeforePush:
         ...;
+        // Keep the witness tied to the child across the pointer reversal.
+        assert t == child;
+        assert old(allocated(path)) && old(ReachableVia(root, path, t, S));
         t.pathFromRoot := path;
+        // The newly marked node uses the extended path; every other marked
+        // node retains its witness from before the pointer reversal.
+        forall n | n in S && n.marked
+          ensures var pth := n.pathFromRoot;
+                    old(allocated(pth)) && old(ReachableVia(root, pth, n, S))
+        {
+          if n == t {
+            assert n.pathFromRoot == path;
+            assert old(ReachableVia(root, path, t, S));
+          } else {
+            assert old@BeforePush(n.marked);
+            assert n.pathFromRoot == old@BeforePush(n.pathFromRoot);
+          }
+        }
       }
     }
     // In M0 above, we placed two assume statements here.  In M1, we refined the first of these

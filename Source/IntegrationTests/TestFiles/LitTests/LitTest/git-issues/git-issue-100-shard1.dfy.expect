@@ -1,0 +1,5 @@
+PASS original issue 100 at unchanged resource limit
+PASS legacy terminal reveal scopes
+PASS guarded private argument preparation
+PASS sequential initial-heap path postconditions and false controls
+PASS project option and CLI precedence

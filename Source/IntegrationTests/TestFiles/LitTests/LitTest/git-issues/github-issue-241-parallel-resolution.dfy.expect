@@ -1,0 +1,4 @@
+github-issue-241-parallel-resolution.dfy(34,36): Error: boolean literal used as if it had type int
+github-issue-241-parallel-resolution.dfy(35,37): Error: integer literal used as if it had type bool
+github-issue-241-parallel-resolution.dfy(36,54): Error: boolean literal used as if it had type int
+3 resolution/type errors detected in github-issue-241-parallel-resolution.dfy

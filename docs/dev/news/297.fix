@@ -1,0 +1,1 @@
+Preserve ghost tuple argument markers when cloning programs for library serialization, so the resulting .doo libraries retain their tuple types and resolve correctly.

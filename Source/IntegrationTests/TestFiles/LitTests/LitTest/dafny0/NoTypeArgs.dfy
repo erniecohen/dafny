@@ -72,14 +72,31 @@ lemma Theorem(xs: List)
     Lemma(reverse(rest), Cons(t, Nil));
 }
 
-lemma Lemma<A>(xs: List, ys: List)
+lemma {:induction false} Lemma<A>(xs: List, ys: List)
   ensures reverse(concat(xs, ys)) == concat(reverse(ys), reverse(xs))
 {
   match xs
   case Nil =>
-    assert forall ws: List<A> {:induction} :: concat(ws, Nil) == ws;
+    ConcatRightIdentity(reverse(ys));
   case Cons(t, rest) =>
-    assert forall a: List<A>, b, c {:induction} :: concat(a, concat(b, c)) == concat(concat(a, b), c);
+    Lemma(rest, ys);
+    ConcatAssociative(reverse(ys), reverse(rest), Cons(t, Nil));
+}
+
+lemma {:induction false} ConcatRightIdentity<A>(xs: List<A>)
+  ensures concat(xs, Nil) == xs
+{
+  match xs
+  case Nil =>
+  case Cons(_, rest) => ConcatRightIdentity(rest);
+}
+
+lemma {:induction false} ConcatAssociative<A>(xs: List<A>, ys: List, zs: List)
+  ensures concat(xs, concat(ys, zs)) == concat(concat(xs, ys), zs)
+{
+  match xs
+  case Nil =>
+  case Cons(_, rest) => ConcatAssociative(rest, ys, zs);
 }
 
 // ------ Here are some test cases where the inferred arguments will be a prefix of the given ones

@@ -30,6 +30,46 @@ namespace Microsoft.Dafny.Compilers {
     public CsharpCodeGenerator(DafnyOptions options, ErrorReporter reporter) : base(options, reporter) {
     }
 
+    private readonly Dictionary<TopLevelDecl, TopLevelDecl> replacementTypes = new();
+
+    protected override void OrganizeModules(Program program, out List<ModuleDefinition> modules) {
+      base.OrganizeModules(program, out modules);
+      replacementTypes.Clear();
+      if (!Options.Get(CommonOptionBag.CsReplacementTypes)) {
+        return;
+      }
+
+      void MatchTypes(ModuleDefinition original, ModuleDefinition replacement) {
+        var declarations = replacement.TopLevelDecls.ToDictionary(declaration => declaration.Name);
+        foreach (var declaration in original.TopLevelDecls) {
+          if (!declarations.TryGetValue(declaration.Name, out var concrete)) {
+            continue;
+          }
+          if (declaration is AbstractTypeDecl) {
+            replacementTypes[declaration] = concrete;
+          } else if (declaration is LiteralModuleDecl originalModule && concrete is LiteralModuleDecl replacementModule) {
+            MatchTypes(originalModule.ModuleDef, replacementModule.ModuleDef);
+          }
+        }
+      }
+
+      foreach (var (original, replacement) in program.Replacements) {
+        MatchTypes(original, replacement);
+      }
+    }
+
+    // Resolve the representation before erasing wrappers or choosing a C# type descriptor.
+    private Type ReplacementType(Type type) {
+      if (replacementTypes.Count == 0) {
+        return type;
+      }
+      var normalized = type.NormalizeExpandKeepConstraints();
+      while (normalized is UserDefinedType udt && replacementTypes.TryGetValue(udt.ResolvedClass, out var concrete)) {
+        normalized = UserDefinedType.FromTopLevelDecl(udt.Origin, concrete, udt.TypeArgs).NormalizeExpandKeepConstraints();
+      }
+      return normalized;
+    }
+
     const string DafnyISet = "Dafny.ISet";
     const string DafnyIMultiset = "Dafny.IMultiSet";
     const string DafnyISeq = "Dafny.ISequence";
@@ -472,7 +512,7 @@ namespace Microsoft.Dafny.Compilers {
 
       var constructors = iter.Members.OfType<Constructor>().ToList();
 
-      // we're expecting just one constructor
+      // we're expecting just one constructor 
       var enumerable = constructors.ToList();
       Contract.Assert(enumerable.Count == 1);
       Constructor ct = constructors[0];
@@ -595,8 +635,13 @@ namespace Microsoft.Dafny.Compilers {
       }
       var interfaceTree = wr.NewBlock();
 
+      var erasedInterface = "";
+      if (dt.IsRecordType && HasErasedEquality(dt)) {
+        erasedInterface = ", " + DeclareErasedEqualityInterface(dt.Ctors[0], wr);
+      }
+
       // from here on, write everything into the new block created here:
-      var btw = wr.NewNamedBlock("public{0} class {1} : {2}", dt.IsRecordType ? "" : " abstract", DtT_protected, DtTypeName(dt));
+      var btw = wr.NewNamedBlock("public{0} class {1} : {2}{3}", dt.IsRecordType ? "" : " abstract", DtT_protected, DtTypeName(dt), erasedInterface);
       wr = btw;
 
       // constructor
@@ -826,6 +871,8 @@ namespace Microsoft.Dafny.Compilers {
       }
 
       string PrintConvertedExpr(string name, Type fromType) {
+        // Subset types are erased; their underlying type determines the converter.
+        fromType = fromType.NormalizeExpand();
         if (Options.Get(CommonOptionBag.ExtendedNewtypeBases)) {
           // Unwrap before pairing carrier arguments; a nominal Flip<X,Y>
           // may compile as Pair<Y,X> and its clone converters use that order.
@@ -1045,11 +1092,52 @@ namespace Microsoft.Dafny.Compilers {
 
       int constructorIndex = 0; // used to give each constructor a different name
       foreach (var ctor in dt.Ctors.Where(ctor => !ctor.IsGhost)) {
+        var erasedInterface = HasErasedEquality(dt) ? ", " + DeclareErasedEqualityInterface(ctor, wrx) : "";
         var wr = wrx.NewNamedBlock(
-          $"public class {DtCtorDeclarationName(ctor)}{TypeParameters(nonGhostTypeArgs)} : {protectedTypeName(dt)}{typeParams}");
+          $"public class {DtCtorDeclarationName(ctor)}{TypeParameters(nonGhostTypeArgs)} : {protectedTypeName(dt)}{typeParams}{erasedInterface}");
         DatatypeFieldsAndConstructor(ctor, constructorIndex, wr);
         constructorIndex++;
       }
+    }
+
+    /// <summary>
+    /// Whether the classes of the constructors of "dt" implement an erased-equality interface, so that their
+    /// Equals methods do not depend on the type arguments a value was built with.  Two values of a datatype built at
+    /// different type arguments, such as Pair<Number, Integer>.Pair(i, j) and Pair<Integer, Number>.Pair(i, j) for
+    /// a datatype Pair<+A, +B>, are equal in Dafny when they have the same constructor and equal arguments, but they
+    /// are instances of different C# classes, so a cast of one to the class of the other fails.
+    /// </summary>
+    bool HasErasedEquality(DatatypeDecl dt) {
+      return !Options.Get(CommonOptionBag.LegacyCsDatatypeEquality) && SelectNonGhost(dt, dt.TypeArgs).Count != 0;
+    }
+
+    /// <summary>
+    /// The name of the non-generic interface through which the Equals method of a constructor class reads the
+    /// non-ghost arguments of a value of that constructor built at other type arguments.
+    /// </summary>
+    string ErasedEqualityInterfaceName(DatatypeCtor ctor) {
+      return $"_I{ctor.EnclosingDatatype.GetCompileName(Options)}_{ctor.GetCompileName(Options)}_Erased";
+    }
+
+    /// <summary>
+    /// Writes to "wr" the declaration of the erased-equality interface of "ctor":
+    ///   public interface _IDt_Ctor_Erased {
+    ///     object _field0 { get; }
+    ///     ...
+    ///   }
+    /// and returns its name.
+    /// </summary>
+    string DeclareErasedEqualityInterface(DatatypeCtor ctor, ConcreteSyntaxTree wr) {
+      var name = ErasedEqualityInterfaceName(ctor);
+      var w = wr.NewBlock($"public interface {name}");
+      var i = 0;
+      foreach (var arg in ctor.Formals) {
+        if (!arg.IsGhost) {
+          w.WriteLine($"object {FieldName(arg, i)} {{ get; }}");
+          i++;
+        }
+      }
+      return name;
     }
 
     void DatatypeFieldsAndConstructor(DatatypeCtor ctor, int constructorIndex, ConcreteSyntaxTree wr) {
@@ -1121,7 +1209,7 @@ namespace Microsoft.Dafny.Compilers {
       CompileDatatypeDowncastClone(dt, wr, nonGhostTypeArgs, ctor: ctor);
 
       // Equals method
-      {
+      if (!HasErasedEquality(dt)) {
         var w = wr.NewBlock("public override bool Equals(object other)");
         w.WriteLine($"var oth = other as {DtCtorName(ctor)}{TypeParameters(nonGhostTypeArgs)};");
         w.Write("return oth != null");
@@ -1141,6 +1229,49 @@ namespace Microsoft.Dafny.Compilers {
         }
 
         w.WriteLine(";");
+      } else {
+        // The value "other" may have been built at type arguments other than those of "this", which
+        // Dafny's equality ignores.  A value built at the same type arguments is compared as before; any
+        // other value of the same constructor is compared through the erased-equality interface.
+        //   public override bool Equals(object other) {
+        //     var oth = other as Dt_Ctor<T>;
+        //     if (oth != null) {
+        //       return true && equals(_field0, oth._field0) && ... ;
+        //     }
+        //     var erased = other as _IDt_Ctor_Erased;
+        //     return erased != null && object.Equals(_field0, erased._field0) && ... ;
+        //   }
+        //   object _IDt_Ctor_Erased._field0 => this._field0;
+        //   ...
+        var erasedInterface = ErasedEqualityInterfaceName(ctor);
+        var w = wr.NewBlock("public override bool Equals(object other)");
+        w.WriteLine($"var oth = other as {DtCtorName(ctor)}{TypeParameters(nonGhostTypeArgs)};");
+        var wSame = w.NewBlock("if (oth != null)");
+        wSame.Write("return true");
+        w.WriteLine($"var erased = other as {erasedInterface};");
+        w.Write("return erased != null");
+        i = 0;
+        foreach (var arg in ctor.Formals) {
+          if (!arg.IsGhost) {
+            var nm = FieldName(arg, i);
+            wSame.Write(IsDirectlyComparable(DatatypeWrapperEraser.SimplifyType(Options, arg.Type))
+              ? $" && this.{nm} == oth.{nm}"
+              : $" && object.Equals(this.{nm}, oth.{nm})");
+            w.Write($" && object.Equals(this.{nm}, erased.{nm})");
+            i++;
+          }
+        }
+        wSame.WriteLine(";");
+        w.WriteLine(";");
+
+        i = 0;
+        foreach (var arg in ctor.Formals) {
+          if (!arg.IsGhost) {
+            var nm = FieldName(arg, i);
+            wr.WriteLine($"object {erasedInterface}.{nm} => this.{nm};");
+            i++;
+          }
+        }
       }
 
       // GetHashCode method (Uses the djb2 algorithm)
@@ -1592,10 +1723,6 @@ namespace Microsoft.Dafny.Compilers {
       }
     }
 
-    private static string CSharpFloatTypeName(Type type) {
-      return type.IsFp32Type ? "float" : "double";
-    }
-
     protected override ConcreteSyntaxTree EmitTailCallStructure(MemberDecl member, ConcreteSyntaxTree wr) {
       Contract.Assume(member is Method { IsTailRecursive: true } or Function { IsTailRecursive: true }); // precondition
       if (!member.IsStatic && !NeedsCustomReceiver(member)) {
@@ -1614,7 +1741,7 @@ namespace Microsoft.Dafny.Compilers {
       Contract.Ensures(Contract.Result<string>() != null);
       Contract.Assume(type != null);  // precondition; this ought to be declared as a Requires in the superclass
 
-      var xType = DatatypeWrapperEraser.SimplifyType(Options, type);
+      var xType = DatatypeWrapperEraser.SimplifyType(Options, ReplacementType(type));
       if (xType is BoolType) {
         return "bool";
       } else if (xType is CharType) {
@@ -1623,10 +1750,6 @@ namespace Microsoft.Dafny.Compilers {
         return "BigInteger";
       } else if (xType is RealType) {
         return "Dafny.BigRational";
-      } else if (xType.IsFp32Type) {
-        return "float";
-      } else if (xType.IsFp64Type) {
-        return "double";
       } else if (xType is BitvectorType) {
         var t = (BitvectorType)xType;
         return t.NativeType != null ? GetNativeTypeName(t.NativeType) : "BigInteger";
@@ -1720,7 +1843,7 @@ namespace Microsoft.Dafny.Compilers {
     }
 
     protected override string TypeInitializationValue(Type type, ConcreteSyntaxTree wr, IOrigin tok, bool usePlaceboValue, bool constructTypeParameterDefaultsFromTypeDescriptors) {
-      var xType = type.NormalizeExpandKeepConstraints();
+      var xType = ReplacementType(type).NormalizeExpandKeepConstraints();
 
       if (usePlaceboValue) {
         return $"default({TypeName(type, wr, tok)})";
@@ -1734,10 +1857,6 @@ namespace Microsoft.Dafny.Compilers {
         return "BigInteger.Zero";
       } else if (xType is RealType) {
         return "Dafny.BigRational.ZERO";
-      } else if (xType.IsFp32Type) {
-        return "0.0f";
-      } else if (xType.IsFp64Type) {
-        return "0.0";
       } else if (xType is BitvectorType) {
         var t = (BitvectorType)xType;
         return t.NativeType != null ? "0" : "BigInteger.Zero";
@@ -1787,7 +1906,7 @@ namespace Microsoft.Dafny.Compilers {
             return $"new {typeNameSansBrackets}[{Util.Comma(arrayClass.Dims, _ => "0")}]{brackets}";
           } else {
             // non-null (non-array) type
-            // even though the type doesn't necessarily have a known initializer, it could be that the compiler needs to
+            // even though the type doesn't necessarily have a known initializer, it could be that the the compiler needs to
             // lay down some bits to please the C#'s compiler's different definite-assignment rules.
             return $"default({TypeName(xType, wr, udt.Origin)})";
           }
@@ -1856,7 +1975,7 @@ namespace Microsoft.Dafny.Compilers {
     }
 
     protected override string TypeDescriptor(Type type, ConcreteSyntaxTree wr, IOrigin tok) {
-      type = DatatypeWrapperEraser.SimplifyTypeAndTrimSubsetTypes(Options, type);
+      type = DatatypeWrapperEraser.SimplifyTypeAndTrimSubsetTypes(Options, ReplacementType(type));
       if (type is BoolType) {
         return "Dafny.Helpers.BOOL";
       } else if (type is CharType) {
@@ -2253,7 +2372,7 @@ namespace Microsoft.Dafny.Compilers {
         // Okay, so '\0' _is_ a value of type "char", but it's so unpleasant to deal with in test files, etc.
         // By returning false here, a different value will be chosen.
         return false;
-      } else if (t is BoolType or IntType or BigOrdinalType or RealType or BitvectorType or Fp64Type) {
+      } else if (t is BoolType || t is IntType || t is BigOrdinalType || t is RealType || t is BitvectorType) {
         return true;
       } else if (t is CollectionType) {
         return false;
@@ -2305,26 +2424,7 @@ namespace Microsoft.Dafny.Compilers {
       } else if (e.Value is BigInteger bigInteger) {
         EmitIntegerLiteral(bigInteger, wr);
       } else if (e.Value is BigDec n) {
-        if (e.Type.IsFloatingPointType) {
-          // Use precomputed float value for floating-point decimal literals
-          if (e is DecimalLiteralExpr { ResolvedFloatValue: not null } decLit) {
-            // Use exact IEEE 754 value from resolution
-            var bigFloat = decLit.ResolvedFloatValue.Value;
-            var s = "";
-            if (bigFloat.IsInfinity) {
-              var typeName = e.Type.IsFp32Type ? "float" : "double";
-              s += $"{typeName}.";
-              s += bigFloat.IsPositive ? "Positive" : "Negative";
-              s += "Infinity";
-            } else {
-              var suffix = e.Type.IsFp32Type ? 'f' : 'd';
-              s = bigFloat.ToDecimalString() + suffix;
-            }
-            wr.Write(s);
-          } else {
-            Contract.Assert(false, $"float literal without ResolvedFloatValue: {e.Value} (type: {e.GetType().Name})");
-          }
-        } else if (0 <= n.Exponent) {
+        if (0 <= n.Exponent) {
           wr.Write("new Dafny.BigRational(BigInteger.Parse(\"{0}", n.Mantissa);
           for (int i = 0; i < n.Exponent; i++) {
             wr.Write("0");
@@ -2447,25 +2547,6 @@ namespace Microsoft.Dafny.Compilers {
       return w;
     }
 
-    protected override ConcreteSyntaxTree EmitCoercionIfNecessary(Type from, Type to, IOrigin tok, ConcreteSyntaxTree wr, Type toOrig = null) {
-      if (from != null && to != null) {
-        if (from.IsNumericBased(Type.NumericPersuasion.Real) && !from.IsFp64Type && to.IsFp64Type) {
-          // real to fp64
-          wr.Write("(");
-          var w = wr.Fork();
-          wr.Write(").ToDouble()");
-          return w;
-        } else if (from.IsFp64Type && to.IsNumericBased(Type.NumericPersuasion.Real) && !to.IsFp64Type) {
-          // fp64 to real
-          wr.Write("Dafny.BigRational.FromDouble(");
-          var w = wr.Fork();
-          wr.Write(")");
-          return w;
-        }
-      }
-      return base.EmitCoercionIfNecessary(from, to, tok, wr, toOrig);
-    }
-
     protected override void EmitEmptyTupleList(string tupleTypeArgs, ConcreteSyntaxTree wr) {
       wr.Write($"new System.Collections.Generic.List<System.Tuple<{tupleTypeArgs}>>()");
     }
@@ -2483,93 +2564,42 @@ namespace Microsoft.Dafny.Compilers {
     protected override string IdProtect(string name) {
       return PublicIdProtect(name);
     }
+
+    // The reserved keywords of C#, all 77 of them, as the C# language reference lists them
+    // (https://learn.microsoft.com/dotnet/csharp/language-reference/keywords).  An identifier that is
+    // one of them must be written verbatim, with a leading '@'.
+    private static readonly HashSet<string> CSharpReservedKeywords = new() {
+      "abstract", "as", "base", "bool", "break", "byte", "case", "catch", "char", "checked",
+      "class", "const", "continue", "decimal", "default", "delegate", "do", "double", "else",
+      "enum", "event", "explicit", "extern", "false", "finally", "fixed", "float", "for",
+      "foreach", "goto", "if", "implicit", "in", "int", "interface", "internal", "is", "lock",
+      "long", "namespace", "new", "null", "object", "operator", "out", "override", "params",
+      "private", "protected", "public", "readonly", "ref", "return", "sbyte", "sealed", "short",
+      "sizeof", "stackalloc", "static", "string", "struct", "switch", "this", "throw", "true",
+      "try", "typeof", "uint", "ulong", "unchecked", "unsafe", "ushort", "using", "virtual",
+      "void", "volatile", "while"
+    };
+
+    // The contextual keywords of C#, all 46 that the same page lists, through C# 14.  Some of them are
+    // errors as plain identifiers in some positions (`record`, `file`, `required` and `scoped` as type
+    // names; `value` in a setter; `field` in an accessor; `await` in an async method).  A verbatim
+    // identifier `@x` names the same symbol as `x`, so escaping all of them is safe.
+    private static readonly HashSet<string> CSharpContextualKeywords = new() {
+      "add", "allows", "alias", "and", "ascending", "args", "async", "await", "by", "descending",
+      "dynamic", "equals", "extension", "field", "file", "from", "get", "global", "group", "init",
+      "into", "join", "let", "managed", "nameof", "nint", "not", "notnull", "nuint", "on", "or",
+      "orderby", "partial", "record", "remove", "required", "scoped", "select", "set", "unmanaged",
+      "value", "var", "when", "where", "with", "yield"
+    };
+
     public override string PublicIdProtect(string name) {
       if (name == "" || name.First() == '_') {
         return name;  // no need to further protect this name -- we know it's not a C# keyword
       }
+      if (CSharpReservedKeywords.Contains(name) || CSharpContextualKeywords.Contains(name)) {
+        return "@" + name;
+      }
       switch (name) {
-        // keywords
-        case "base":
-        case "byte":
-        case "catch":
-        case "checked":
-        case "continue":
-        case "decimal":
-        case "default":
-        case "delegate":
-        case "do":
-        case "double":
-        case "enum":
-        case "event":
-        case "explicit":
-        case "extern":
-        case "finally":
-        case "fixed":
-        case "float":
-        case "for":
-        case "foreach":
-        case "goto":
-        case "implicit":
-        case "interface":
-        case "internal":
-        case "is":
-        case "lock":
-        case "long":
-        case "namespace":
-        case "operator":
-        case "out":
-        case "override":
-        case "params":
-        case "private":
-        case "public":
-        case "readonly":
-        case "ref":
-        case "sbyte":
-        case "sealed":
-        case "short":
-        case "sizeof":
-        case "stackalloc":
-        case "struct":
-        case "switch":
-        case "throw":
-        case "try":
-        case "typeof":
-        case "uint":
-        case "ulong":
-        case "unchecked":
-        case "unsafe":
-        case "ushort":
-        case "using":
-        case "virtual":
-        case "void":
-        case "volatile":
-        // contextual keywords
-        case "add":
-        case "alias":
-        case "ascending":
-        case "async":
-        case "await":
-        case "descending":
-        case "dynamic":
-        case "equals":
-        case "from":
-        case "get":
-        case "global":
-        case "group":
-        case "into":
-        case "join":
-        case "let":
-        case "nameof":
-        case "on":
-        case "orderby":
-        case "partial":
-        case "remove":
-        case "select":
-        case "set":
-        case "value":
-        case "when":
-        case "where":
-          return "@" + name;
         // methods with expected names
         case "ToString":
         case "GetHashCode":
@@ -2717,145 +2747,10 @@ namespace Microsoft.Dafny.Compilers {
         case SpecialField.ID.New:
           compiledName = "_new";
           break;
-        case SpecialField.ID.IsNaN:
-          preString = $"{(CSharpFloatTypeName(receiverType))}.IsNaN(";
-          postString = ")";
-          break;
-        case SpecialField.ID.IsFinite:
-          preString = $"{(CSharpFloatTypeName(receiverType))}.IsFinite(";
-          postString = ")";
-          break;
-        case SpecialField.ID.IsInfinite:
-          preString = $"{(CSharpFloatTypeName(receiverType))}.IsInfinity(";
-          postString = ")";
-          break;
-        case SpecialField.ID.IsNormal:
-          preString = $"{(CSharpFloatTypeName(receiverType))}.IsNormal(";
-          postString = ")";
-          break;
-        case SpecialField.ID.IsSubnormal:
-          preString = $"{(CSharpFloatTypeName(receiverType))}.IsSubnormal(";
-          postString = ")";
-          break;
-        case SpecialField.ID.IsZero:
-          preString = "(";
-          postString = receiverType.IsFp32Type ? " == 0.0f)" : " == 0.0)";
-          break;
-        case SpecialField.ID.IsNegative:
-          preString = $"{(CSharpFloatTypeName(receiverType))}.IsNegative(";
-          postString = ")";
-          break;
-        case SpecialField.ID.IsPositive:
-          preString = receiverType.IsFp32Type ? "Dafny.Helpers.Fp32IsPositive(" : "Dafny.Helpers.Fp64IsPositive(";
-          postString = ")";
-          break;
-        case SpecialField.ID.NaN:
-          preString = $"{(CSharpFloatTypeName(receiverType))}.NaN";
-          break;
-        case SpecialField.ID.PositiveInfinity:
-          preString = $"{(CSharpFloatTypeName(receiverType))}.PositiveInfinity";
-          break;
-        case SpecialField.ID.NegativeInfinity:
-          preString = $"{(CSharpFloatTypeName(receiverType))}.NegativeInfinity";
-          break;
-        case SpecialField.ID.Pi:
-          preString = receiverType.IsFp32Type ? "(float)Math.PI" : "Math.PI";
-          break;
-        case SpecialField.ID.E:
-          preString = receiverType.IsFp32Type ? "(float)Math.E" : "Math.E";
-          break;
-        case SpecialField.ID.MaxValue:
-          preString = $"{(CSharpFloatTypeName(receiverType))}.MaxValue";
-          break;
-        case SpecialField.ID.MinValue:
-          preString = $"{(CSharpFloatTypeName(receiverType))}.MinValue";
-          break;
-        case SpecialField.ID.MinNormal:
-          preString = receiverType.IsFp32Type ? "1.17549435e-38f" : "2.2250738585072014e-308";
-          break;
-        case SpecialField.ID.MinSubnormal:
-          preString = $"{(CSharpFloatTypeName(receiverType))}.Epsilon";
-          break;
-        case SpecialField.ID.Epsilon:
-          preString = receiverType.IsFp32Type ? "(float)Math.Pow(2, -23)" : "Math.Pow(2, -52)";
-          break;
         default:
           Contract.Assert(false); // unexpected ID
           break;
       }
-    }
-
-    protected override void CompileFunctionCallExpr(FunctionCallExpr e, ConcreteSyntaxTree wr, bool inLetExprBody,
-        ConcreteSyntaxTree wStmts, FCE_Arg_Translator tr, bool alreadyCoerced = false) {
-
-      // Handle fp32 and fp64 special functions
-      if (e.Function is SpecialFunction && e.Function.EnclosingClass?.Name is "fp32" or "fp64") {
-        var isFp32 = e.Function.EnclosingClass?.Name == "fp32";
-        switch (e.Function.Name) {
-          case "Equal":
-            wr.Write("(");
-            tr(e.Args[0], wr, inLetExprBody, wStmts);
-            wr.Write(" == ");
-            tr(e.Args[1], wr, inLetExprBody, wStmts);
-            wr.Write(")");
-            return;
-          case "FromReal":
-            wr.Write("(");
-            tr(e.Args[0], wr, inLetExprBody, wStmts);
-            wr.Write(isFp32 ? ").ToSingle()" : ").ToDouble()");
-            return;
-          case "ToInt":
-            wr.Write("((System.Numerics.BigInteger)Math.Truncate(");
-            tr(e.Args[0], wr, inLetExprBody, wStmts);
-            wr.Write("))");
-            return;
-          case "Min":
-            wr.Write("Math.Min(");
-            tr(e.Args[0], wr, inLetExprBody, wStmts);
-            wr.Write(", ");
-            tr(e.Args[1], wr, inLetExprBody, wStmts);
-            wr.Write(")");
-            return;
-          case "Max":
-            wr.Write("Math.Max(");
-            tr(e.Args[0], wr, inLetExprBody, wStmts);
-            wr.Write(", ");
-            tr(e.Args[1], wr, inLetExprBody, wStmts);
-            wr.Write(")");
-            return;
-          case "Abs":
-            wr.Write("Math.Abs(");
-            tr(e.Args[0], wr, inLetExprBody, wStmts);
-            wr.Write(")");
-            return;
-          case "Floor":
-            if (isFp32) wr.Write("(float)");
-            wr.Write("Math.Floor(");
-            tr(e.Args[0], wr, inLetExprBody, wStmts);
-            wr.Write(")");
-            return;
-          case "Ceiling":
-            if (isFp32) wr.Write("(float)");
-            wr.Write("Math.Ceiling(");
-            tr(e.Args[0], wr, inLetExprBody, wStmts);
-            wr.Write(")");
-            return;
-          case "Round":
-            if (isFp32) wr.Write("(float)");
-            wr.Write("Math.Round(");
-            tr(e.Args[0], wr, inLetExprBody, wStmts);
-            wr.Write(", MidpointRounding.ToEven)");
-            return;
-          case "Sqrt":
-            if (isFp32) wr.Write("(float)");
-            wr.Write("Math.Sqrt(");
-            tr(e.Args[0], wr, inLetExprBody, wStmts);
-            wr.Write(")");
-            return;
-        }
-      }
-
-      base.CompileFunctionCallExpr(e, wr, inLetExprBody, wStmts, tr, alreadyCoerced);
     }
 
     protected override ILvalue EmitMemberSelect(Action<ConcreteSyntaxTree> obj, Type objType, MemberDecl member, List<TypeArgumentInstantiation> typeArgs, Dictionary<TypeParameter, Type> typeMap,
@@ -3281,9 +3176,6 @@ namespace Microsoft.Dafny.Compilers {
             wr.Write(".Count)");
           }
           break;
-        case ResolvedUnaryOp.FloatNegate:
-          TrParenExpr("-", expr, wr, inLetExprBody, wStmts);
-          break;
         default:
           Contract.Assert(false); throw new Cce.UnreachableException();  // unexpected unary expression
       }
@@ -3291,7 +3183,7 @@ namespace Microsoft.Dafny.Compilers {
 
     static bool IsDirectlyComparable(Type t) {
       Contract.Requires(t != null);
-      return t.IsBoolType || t.IsCharType || t.IsIntegerType || t.IsRealType || t.IsFloatingPointType || t.AsNewtype != null || t.IsBitVectorType || t.IsBigOrdinalType || t.IsRefType;
+      return t.IsBoolType || t.IsCharType || t.IsIntegerType || t.IsRealType || t.AsNewtype != null || t.IsBitVectorType || t.IsBigOrdinalType || t.IsRefType;
     }
 
     protected override void CompileBinOp(BinaryExpr.ResolvedOpcode op,
@@ -3478,15 +3370,7 @@ namespace Microsoft.Dafny.Compilers {
 
     protected override void EmitConversionExpr(Expression fromExpr, Type fromType, Type toType, bool inLetExprBody, ConcreteSyntaxTree wr, ConcreteSyntaxTree wStmts) {
       if (fromType.IsNumericBased(Type.NumericPersuasion.Int) || fromType.NormalizeToAncestorType().IsBitVectorType || fromType.IsCharType) {
-        if (toType.IsFp64Type) {
-          if (fromType.IsNumericBased(Type.NumericPersuasion.Int)) {
-            wr.Write("(double)");
-            EmitExpr(fromExpr, inLetExprBody, wr, wStmts);
-          } else {
-            // This should be prevented by the type checker
-            Contract.Assert(false, $"Direct conversion from {fromType} to fp64 is not allowed");
-          }
-        } else if (toType.IsNumericBased(Type.NumericPersuasion.Real)) {
+        if (toType.IsNumericBased(Type.NumericPersuasion.Real)) {
           // (int or bv or char) -> real
           Contract.Assert(AsNativeType(toType) == null);
           wr.Write("new Dafny.BigRational(");
@@ -3557,16 +3441,9 @@ namespace Microsoft.Dafny.Compilers {
             }
           }
         }
-      } else if (fromType.IsNumericBased(Type.NumericPersuasion.Real) && !fromType.IsFp64Type) {
-        // Handle real conversions but exclude fp64 (which has NumericPersuasion.Real)
+      } else if (fromType.IsNumericBased(Type.NumericPersuasion.Real)) {
         Contract.Assert(AsNativeType(fromType) == null);
-        if (toType.IsFp64Type) {
-          // real to fp64 (exact conversion only)
-          // For exact conversions, we expect simple rationals that can be exactly represented
-          wr.Write("(");
-          EmitExpr(fromExpr, inLetExprBody, wr, wStmts);
-          wr.Write(").ToDouble()");
-        } else if (toType.IsNumericBased(Type.NumericPersuasion.Real)) {
+        if (toType.IsNumericBased(Type.NumericPersuasion.Real)) {
           // real -> real
           Contract.Assert(AsNativeType(toType) == null);
           wr.Append(Expr(fromExpr, inLetExprBody, wStmts));
@@ -3601,28 +3478,6 @@ namespace Microsoft.Dafny.Compilers {
           var typename = TypeName(toType, wr, null, null);
           wr.Write($"({typename})");
           TrParenExpr(fromExpr, wr, inLetExprBody, wStmts);
-        } else {
-          Contract.Assert(false, $"not implemented for C#: {fromType} -> {toType}");
-        }
-      } else if (fromType.IsFp64Type) {
-        // fp64 conversions
-        if (toType.IsFp64Type) {
-          // fp64 -> fp64, no conversion needed
-          wr.Append(Expr(fromExpr, inLetExprBody, wStmts));
-        } else if (toType.IsFp32Type) {
-          wr.Write("(float)");
-          TrParenExpr(fromExpr, wr, inLetExprBody, wStmts);
-        } else if (toType.IsNumericBased(Type.NumericPersuasion.Int)) {
-          // fp64 -> int (exact conversion only)
-          // C# truncates towards zero, which matches what we want for exact integers
-          wr.Write("(BigInteger)");
-          TrParenExpr(fromExpr, wr, inLetExprBody, wStmts);
-        } else if (toType.IsNumericBased(Type.NumericPersuasion.Real)) {
-          // fp64 -> real (exact for finite values)
-          // Convert double to BigRational through decimal for better precision
-          wr.Write("Dafny.BigRational.FromDouble(");
-          TrParenExpr(fromExpr, wr, inLetExprBody, wStmts);
-          wr.Write(")");
         } else {
           Contract.Assert(false, $"not implemented for C#: {fromType} -> {toType}");
         }

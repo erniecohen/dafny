@@ -87,12 +87,6 @@ public class XConstraint {
           } else if (Type.FromSameHead(t, u, out var tUp, out var uUp)) {
             resolver.ConstrainAssignableTypeArgs(tUp, tUp.TypeArgs, uUp.TypeArgs, errorMsg, out moreXConstraints);
             return true;
-          } else if (u is NonProxyType && (u.IsFp32Type || u.IsFp64Type)) {
-            // For float types specifically, RHS concrete means LHS proxy should be assignable from RHS
-            // This helps resolve float type inference without breaking other numeric types like ORDINAL
-            resolver.ConstrainSubtypeRelation(u, t, errorMsg);
-            convertedIntoOtherTypeConstraints = true;
-            return true;
           } else if (fullstrength && t is NonProxyType) {
             // We convert Assignable(t, u) to the subtype constraint base(t) :> u.
             resolver.ConstrainAssignable((NonProxyType)t, u, errorMsg, out moreXConstraints, fullstrength);
@@ -108,10 +102,10 @@ public class XConstraint {
           return false;
         }
       case "NumericType":
-        satisfied = t.IsNumericBased();
+        satisfied = resolver.IsNumericBasedDuringInference(t);
         break;
       case "IntegerType":
-        satisfied = t.IsNumericBased(Type.NumericPersuasion.Int);
+        satisfied = resolver.IsNumericBasedDuringInference(t, Type.NumericPersuasion.Int);
         break;
       case "IsBitvector":
         satisfied = t.IsBitVectorType;
@@ -126,10 +120,10 @@ public class XConstraint {
         satisfied = t.IsRefType && !t.IsNonNullRefType;
         break;
       case "Orderable_Lt":
-        satisfied = t.IsNumericBased() || t.IsBitVectorType || t.IsBigOrdinalType || t.IsCharType || t is SeqType || t is SetType || t is MultiSetType;
+        satisfied = resolver.IsNumericBasedDuringInference(t) || t.IsBitVectorType || t.IsBigOrdinalType || t.IsCharType || t is SeqType || t is SetType || t is MultiSetType;
         break;
       case "Orderable_Gt":
-        satisfied = t.IsNumericBased() || t.IsBitVectorType || t.IsBigOrdinalType || t.IsCharType || t is SetType || t is MultiSetType;
+        satisfied = resolver.IsNumericBasedDuringInference(t) || t.IsBitVectorType || t.IsBigOrdinalType || t.IsCharType || t is SetType || t is MultiSetType;
         break;
       case "RankOrderable": {
           var u = Types[1].NormalizeExpand();
@@ -140,17 +134,17 @@ public class XConstraint {
           break;
         }
       case "Plussable":
-        satisfied = t.IsNumericBased() || t.IsBitVectorType || t.IsBigOrdinalType || t.IsCharType || t is SeqType || t is SetType || t is MultiSetType || t is MapType;
+        satisfied = resolver.IsNumericBasedDuringInference(t) || t.IsBitVectorType || t.IsBigOrdinalType || t.IsCharType || t is SeqType || t is SetType || t is MultiSetType || t is MapType;
         break;
       case "Minusable":
-        satisfied = t.IsNumericBased() || t.IsBitVectorType || t.IsBigOrdinalType || t.IsCharType || t is SetType || t is MultiSetType || t is MapType;
+        satisfied = resolver.IsNumericBasedDuringInference(t) || t.IsBitVectorType || t.IsBigOrdinalType || t.IsCharType || t is SetType || t is MultiSetType || t is MapType;
         break;
       case "Mullable":
-        satisfied = t.IsNumericBased() || t.IsBitVectorType || t is SetType || t is MultiSetType;
+        satisfied = resolver.IsNumericBasedDuringInference(t) || t.IsBitVectorType || t is SetType || t is MultiSetType;
         break;
       case "IntOrORDINAL":
         if (!(t is TypeProxy)) {
-          satisfied = t.IsNumericBased(Type.NumericPersuasion.Int) || t.IsBigOrdinalType;
+          satisfied = resolver.IsNumericBasedDuringInference(t, Type.NumericPersuasion.Int) || t.IsBigOrdinalType;
         } else if (fullstrength) {
           var proxy = (TypeProxy)t;
           // let's choose ORDINAL over int
@@ -162,13 +156,13 @@ public class XConstraint {
         }
         break;
       case "NumericOrBitvector":
-        satisfied = t.IsNumericBased() || t.IsBitVectorType;
+        satisfied = resolver.IsNumericBasedDuringInference(t) || t.IsBitVectorType;
         break;
       case "NumericOrBitvectorOrCharOrORDINAL":
-        satisfied = t.IsNumericBased() || t.IsBitVectorType || t.IsCharType || t.IsBigOrdinalType;
+        satisfied = resolver.IsNumericBasedDuringInference(t) || t.IsBitVectorType || t.IsCharType || t.IsBigOrdinalType;
         break;
       case "IntLikeOrBitvector":
-        satisfied = t.IsNumericBased(Type.NumericPersuasion.Int) || t.IsBitVectorType;
+        satisfied = resolver.IsNumericBasedDuringInference(t, Type.NumericPersuasion.Int) || t.IsBitVectorType;
         break;
       case "BooleanBits":
         satisfied = t.IsBoolType || t.IsBitVectorType;
@@ -334,7 +328,7 @@ public class XConstraint {
               proxy = (TypeProxy)u;
               other = t;
             }
-            if (other.IsNumericBased() || other.IsBitVectorType || other.IsBigOrdinalType) {
+            if (resolver.IsNumericBasedDuringInference(other) || other.IsBitVectorType || other.IsBigOrdinalType) {
               resolver.ConstrainSubtypeRelation(other.NormalizeExpand(), proxy, errorMsg, true);
               convertedIntoOtherTypeConstraints = true;
               return true;
@@ -386,7 +380,7 @@ public class XConstraint {
               proxy = (TypeProxy)u;
               other = t;
             }
-            if (other.IsNumericBased() || other.IsBitVectorType || other.IsBigOrdinalType) {
+            if (resolver.IsNumericBasedDuringInference(other) || other.IsBitVectorType || other.IsBigOrdinalType) {
               resolver.ConstrainSubtypeRelation(other.NormalizeExpand(), proxy, errorMsg, true);
               convertedIntoOtherTypeConstraints = true;
               return true;

@@ -29,6 +29,9 @@ public abstract class ExecutableBackend : IExecutableBackend {
 
   public override void Compile(Program dafnyProgram, string dafnyProgramName, ConcreteSyntaxTree output) {
     ProcessTranslationRecords(dafnyProgram, dafnyProgramName, output);
+    if (Options.Get(CommonOptionBag.UserDefinedOperators) && dafnyProgram.Reporter.HasErrors) {
+      return;
+    }
     CheckInstantiationReplaceableModules(dafnyProgram);
     ProcessOuterModules(dafnyProgram);
 
@@ -39,6 +42,13 @@ public abstract class ExecutableBackend : IExecutableBackend {
     // Process --translation-record options, since translation may need that data to translate correctly.
     dafnyProgram.Compilation.AlreadyTranslatedRecord = TranslationRecord.Empty(dafnyProgram);
     var records = dafnyProgram.Options.Get(TranslationRecords);
+    if (Options.Get(CommonOptionBag.UserDefinedOperators)) {
+      if (records?.Count > 0 || Options.Get(TranslationRecordOutput) != null) {
+        dafnyProgram.Reporter.Error(MessageSource.Compiler, "operator_input", Token.Cli,
+          "--user-defined-operators does not support translation record input/output in this milestone");
+      }
+      return;
+    }
     if (records != null) {
       foreach (var path in records) {
         TranslationRecord.ReadValidateAndMerge(dafnyProgram, path.FullName, Token.Cli);

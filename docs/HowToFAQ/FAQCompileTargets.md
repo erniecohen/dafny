@@ -1,10 +1,10 @@
 ---
-title: What compiler target languages are in development?
+title: What compiler target langages are in development?
 ---
 
 ## Question
 
-What compiler target languages are in development?
+What compiler target langages are in development?
 
 ## Answer
 

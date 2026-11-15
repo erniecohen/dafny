@@ -46,8 +46,12 @@ namespace Microsoft.Dafny {
             canCallRHS = BplAnd(canCallRHS, CanCallAssumption(rhs, cco));
           }
 
-          var bodyCanCall = CanCallAssumption(expr.Body);
-          // We'd like to compute the free variables of "bodyCanCall". It would be nice to use the Boogie
+          // Keep the self-call allowance (#166).  Under --consistent-obligation-checks the
+          // body takes the caller's options as they are; otherwise it takes them without the
+          // arrow allocation facts, which exact-let bodies omitted before.
+          var bodyCanCall = CanCallAssumption(expr.Body,
+            options.Get(CommonOptionBag.ConsistentObligationChecks) ? cco : cco?.WithoutArrowAllocationFacts());
+          // We'd like to compute the free variables if "bodyCanCall". It would be nice to use the Boogie
           // routine Bpl.Expr.ComputeFreeVariables for this purpose. However, calling it requires the Boogie
           // expression to be resolved. Instead, we do the cheesy thing of computing the set of names of
           // free variables in "bodyCanCall".
@@ -232,8 +236,13 @@ namespace Microsoft.Dafny {
       }
 
       private void AddLetSuchThenCanCallAxiom(LetExpr e, LetSuchThatExprInfo info, Bpl.Function canCallFunction) {
+        // When the condition reads no heap, the let functions take no heap argument, so
+        // "$heap" is not bound in this axiom.  The condition is then translated as a
+        // heap-independent definition is, with the placeholder $OneHeap.  Otherwise a lambda
+        // in it names the unbound "$heap" in the succession guard of its CanCall facts.
+        var heapCC = info.UsesHeap ? info.HeapExpr(BoogieGenerator, false) : BoogieGenerator.NewOneHeapExpr(e.Origin);
         var etranCC =
-          new ExpressionTranslator(BoogieGenerator, Predef, info.HeapExpr(BoogieGenerator, false), info.HeapExpr(BoogieGenerator, true), null);
+          new ExpressionTranslator(BoogieGenerator, Predef, heapCC, info.HeapExpr(BoogieGenerator, true), null);
         Bpl.Expr typeAntecedents; // later ignored
         List<Variable> gg = info.GAsVars(BoogieGenerator, false, out typeAntecedents, etranCC);
         var gExprs = new List<Bpl.Expr>();

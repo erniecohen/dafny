@@ -1,0 +1,1 @@
+Fix ghost inference for local variables initialized by decreases-to and nonincreases-to expressions, avoiding a resolver crash.

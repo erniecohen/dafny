@@ -1,6 +1,8 @@
 // RUN: %testDafnyForEachResolver --expect-exit-code=4 "%s" -- --show-proof-obligation-expressions 
 
-method GoodInstances(x: int, y: int) {
+method GoodInstances(x: int, y: int)
+  requires 0 <= x && 0 <= y
+{
   assert (true decreases to false);
   assert (1 decreases to 0);
   assert (x decreases to x - 1);
@@ -75,4 +77,13 @@ method BadInstance5(i: int, b: bool) {
 
 method BadInstance6() {
   assert (0 decreases to false);
+}
+
+method BadNegativeInstances(x: int, y: int)
+  requires x < 0 && y < 0
+{
+  if
+  case true => assert x decreases to x - 1; // error: negative old value
+  case true => assert (x, y decreases to x, y - 1); // error: negative suffix
+  case true => assert x nonincreases to x - 1; // error: negative old value
 }

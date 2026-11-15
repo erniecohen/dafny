@@ -1,0 +1,16 @@
+with --ancestor-qualified-module-ids
+github-issue-90-cycles.dfy(17,29): Error: module cannot refine itself: N3.C
+github-issue-90-cycles.dfy(11,7): Error: module definition contains a cycle (note: parent modules implicitly depend on submodules): module N1 -> module C -> module N1
+github-issue-90-cycles.dfy(14,7): Error: module definition contains a cycle (note: parent modules implicitly depend on submodules): module N2 -> module C -> import C -> module N2
+github-issue-90-cycles.dfy(20,19): Error: module definition contains a cycle (note: parent modules implicitly depend on submodules): module B -> import C -> module C -> import B -> module B
+github-issue-90-cycles.dfy(23,19): Error: module definition contains a cycle (note: parent modules implicitly depend on submodules): module B -> module C -> module B
+github-issue-90-cycles.dfy(27,7): Error: module definition contains a cycle (note: parent modules implicitly depend on submodules): module N6 -> module C -> import I -> module N6
+6 resolution/type errors detected in github-issue-90-cycles.dfy
+without it (the default)
+github-issue-90-cycles.dfy(11,7): Error: module definition contains a cycle (note: parent modules implicitly depend on submodules): module N1 -> module C -> module N1
+github-issue-90-cycles.dfy(14,7): Error: module definition contains a cycle (note: parent modules implicitly depend on submodules): module N2 -> module C -> import C -> module N2
+github-issue-90-cycles.dfy(17,7): Error: module definition contains a cycle (note: parent modules implicitly depend on submodules): module N3 -> module C -> module N3
+github-issue-90-cycles.dfy(20,7): Error: module definition contains a cycle (note: parent modules implicitly depend on submodules): module N4 -> module B -> import C -> module N4
+github-issue-90-cycles.dfy(23,7): Error: module definition contains a cycle (note: parent modules implicitly depend on submodules): module N5 -> module B -> module N5
+github-issue-90-cycles.dfy(27,7): Error: module definition contains a cycle (note: parent modules implicitly depend on submodules): module N6 -> module C -> import I -> module N6
+6 resolution/type errors detected in github-issue-90-cycles.dfy

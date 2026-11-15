@@ -441,43 +441,6 @@ module Std.Collections.Seq {
     else Zip(DropLast(xs), DropLast(ys)) + [(Last(xs), Last(ys))]
   }
 
-
-  function MaxBy<T>(s: seq<T>, lessThan: (T, T) -> bool): T
-    requires |s| > 0
-    decreases |s|
-  {
-    MaxByHelper(s, 1, s[0], lessThan)
-  }
-
-  function MaxByHelper<T>(s: seq<T>, idx: nat, current: T, lessThan: (T, T) -> bool): T
-    requires idx <= |s|
-    decreases |s| - idx
-  {
-    if idx == |s| then
-      current
-    else
-      var next := if lessThan(current, s[idx]) then s[idx] else current;
-      MaxByHelper(s, idx + 1, next, lessThan)
-  }
-
-  function MinBy<T>(s: seq<T>, lessThan: (T, T) -> bool): T
-    requires |s| > 0
-    decreases |s|
-  {
-    MinByHelper(s, 1, s[0], lessThan)
-  }
-
-  function MinByHelper<T>(s: seq<T>, idx: nat, current: T, lessThan: (T, T) -> bool): T
-    requires idx <= |s|
-    decreases |s| - idx
-  {
-    if idx == |s| then
-      current
-    else
-      var next := if lessThan(s[idx], current) then s[idx] else current;
-      MinByHelper(s, idx + 1, next, lessThan)
-  }
-
   /* Unzipping and zipping a sequence results in the original sequence */
   lemma LemmaZipOfUnzip<A, B>(xs: seq<(A, B)>)
     ensures Zip(Unzip(xs).0, Unzip(xs).1) == xs
@@ -622,7 +585,7 @@ module Std.Collections.Seq {
     else FlattenReverse(DropLast(xs)) + Last(xs)
   }
 
-  /* Flattening sequences of sequences in reverse order is distributive over concatenation.
+  /* Flattening sequences of sequences in reverse order is distributive over concatentation.
      That is, concatenating the flattening of two sequences of sequences in reverse
      order is the same as flattening the concatenation of two sequences of sequences
      in reverse order. */
@@ -1044,7 +1007,6 @@ module Std.Collections.Seq {
 
   // Helper function for MergeSortBy
   @TailRecursion
-  @ResourceLimit("5e7")
   function MergeSortedWith<T(!new)>(left: seq<T>, right: seq<T>, lessThanOrEq: (T, T) -> bool) : (result :seq<T>)
     requires SortedBy(lessThanOrEq, left)
     requires SortedBy(lessThanOrEq, right)
@@ -1077,7 +1039,6 @@ module Std.Collections.Seq {
   {}
 
   /* Proves that any two sequences that are sorted by a total order and that have the same elements are equal. */
-  @ResourceLimit("5e7")
   lemma SortedUnique<T(!new)>(xs: seq<T>, ys: seq<T>, R: (T, T) -> bool)
     requires SortedBy(R, xs)
     requires SortedBy(R, ys)
@@ -1090,12 +1051,42 @@ module Std.Collections.Seq {
       assert multiset(ys) == multiset{};
       assert ys == [];
     } else {
+      SortedUniqueHead(xs, ys, R);
       assert xs == [xs[0]] + xs[1..];
       assert ys == [ys[0]] + ys[1..];
       assert multiset(xs[1..]) == multiset(xs) - multiset{xs[0]};
       assert multiset(ys[1..]) == multiset(ys) - multiset{ys[0]};
       assert multiset(xs[1..]) == multiset(ys[1..]);
+      LemmaSortedByTail(xs, R);
+      LemmaSortedByTail(ys, R);
       SortedUnique(xs[1..], ys[1..], R);
+    }
+  }
+
+  /* Two nonempty sequences sorted by the same total order and with the same elements have the same first element. */
+  lemma SortedUniqueHead<T(!new)>(xs: seq<T>, ys: seq<T>, R: (T, T) -> bool)
+    requires SortedBy(R, xs)
+    requires SortedBy(R, ys)
+    requires TotalOrdering(R)
+    requires multiset(xs) == multiset(ys)
+    requires xs != []
+    ensures ys != [] && xs[0] == ys[0]
+  {
+    assert xs[0] in multiset(ys);
+    assert ys[0] in multiset(xs);
+    var k :| 0 <= k < |ys| && ys[k] == xs[0];
+    var l :| 0 <= l < |xs| && xs[l] == ys[0];
+    assert R(ys[0], xs[0]) by { assert k == 0 || R(ys[0], ys[k]); }
+    assert R(xs[0], ys[0]) by { assert l == 0 || R(xs[0], xs[l]); }
+  }
+
+  lemma LemmaSortedByTail<T>(xs: seq<T>, R: (T, T) -> bool)
+    requires SortedBy(R, xs)
+    requires xs != []
+    ensures SortedBy(R, xs[1..])
+  {
+    forall i, j | 0 <= i < j < |xs[1..]| ensures R(xs[1..][i], xs[1..][j]) {
+      assert xs[1..][i] == xs[i + 1] && xs[1..][j] == xs[j + 1];
     }
   }
 
@@ -1307,5 +1298,4 @@ module Std.Collections.Seq {
       }
     }
   }
-
 }

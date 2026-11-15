@@ -2,6 +2,15 @@
 title: Installation Instructions
 ---
 
+This fork's tools target .NET 10. Self-contained release binaries include the
+runtime; framework-dependent installations require the .NET 10 runtime.
+Building the fork and its plugins requires the .NET 10 SDK. Generated C# projects
+continue to target .NET 8: use the .NET 8 runtime to execute them and the .NET 8
+or .NET 10 SDK to compile them.
+
+The installation instructions below that download Dafny from `dafny-lang` or
+NuGet describe the upstream distribution and its dependencies.
+
 This page has instructions for installing Dafny by typical users:
 
 * Using IDEs: [VSCode](#Visual-Studio-Code), [Emacs](#Emacs)
@@ -15,18 +24,16 @@ are in the [Dafny project wiki](https://github.com/dafny-lang/dafny/wiki/INSTALL
 System Requirements
 ===================
 
-The `dafny tool` is a .NET 8.0 artifact, but it compiles to native executables on supported platforms.
+The fork's `dafny tool` is a .NET 10 artifact, and its release binaries include the runtime.
 That and the Z3 tool are all that is needed to use dafny for verification; additional tools are 
-need for compilation, as described below.
+needed for compilation, as described below.
 
 ## Operating Systems
 
 In addition to running dafny, the host OS must also be able to run the Z3 executable that is bundled with dafny.
 (The Dafny tools are tested using github runners, which limits the set of platforms that can be tested.)
 
-- Linux: `dafny` is tested on Ubuntu 20.04 and 22.04.
-- MacOS: `dafny` is tested on MacOS 11 (Big Sur) and MacOS 12 (Monterey)
-- Windows: `dafny` is tested on Windows 2019 and Windows 2022
+The fork's review CI tests Linux on Ubuntu 24.04 and macOS on macOS 14.
 
 ## Compilers {#compiling-dafny}
 

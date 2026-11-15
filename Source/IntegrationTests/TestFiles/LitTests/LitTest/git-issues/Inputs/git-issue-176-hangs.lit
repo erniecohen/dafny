@@ -1,0 +1,6 @@
+// Helper of IntegrationTests.LitHarnessTimeoutTests (issue 176); not a test by itself.
+// The first command's shell records its process id and that of a child it starts, then
+// waits far longer than the timeout the test gives.  The second command fails.  So the
+// test case can pass only if the harness lets an unfinished command pass.
+// RUN: sh -c 'echo $$ > %t.shell; sleep 600 & echo $! > %t.child; wait'
+// RUN: false

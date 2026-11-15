@@ -35,7 +35,7 @@ namespace Microsoft.Dafny.LanguageServer {
   /// {>Name: ... <} A span of text in the file annotated with an identifier.  There can be many of
   /// these, including ones with the same name.
   /// 
-  /// (>metadata||| ... <) A span of text in the file annotated with metadata.
+  /// (>metadata||| ... <) A span of text in the file annotated with metdata.
   /// 
   /// Additional encoded features can be added on a case by case basis.
   /// </summary>

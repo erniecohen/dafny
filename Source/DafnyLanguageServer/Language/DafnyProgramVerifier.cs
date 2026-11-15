@@ -26,7 +26,7 @@ namespace Microsoft.Dafny.LanguageServer.Language {
       this.logger = logger;
     }
 
-    public async Task<IReadOnlyList<IVerificationTask>> GetVerificationTasksAsync(ExecutionEngine engine,
+    public async Task<ModuleVerificationTasks> GetVerificationTasksAsync(ExecutionEngine engine,
       ResolutionResult resolution,
       ModuleDefinition moduleDefinition,
       CancellationToken cancellationToken) {
@@ -35,22 +35,67 @@ namespace Microsoft.Dafny.LanguageServer.Language {
         throw new Exception("tried to get verification tasks for a module that is not verified");
       }
 
+      var profile = PipelineProfile.For(resolution.ResolvedProgram.Options);
+      var moduleName = profile != null ? PipelineProfile.ModuleName(moduleDefinition) : null;
+      var profileStart = profile?.Begin();
       await mutex.WaitAsync(cancellationToken);
       try {
+        if (profile != null) {
+          profile.Span("translate.wait", profileStart!.Value, new Dictionary<string, object?> { ["module"] = moduleName });
+          profileStart = profile.Begin();
+        }
 
         var program = resolution.ResolvedProgram;
         var errorReporter = (ObservableErrorReporter)program.Reporter;
 
         cancellationToken.ThrowIfCancellationRequested();
 
+        var dependencies = new ProofDependencyManager();
         var boogieProgram = await DafnyMain.LargeStackFactory.StartNew(() => {
           Type.ResetScopes();
           var translatorFlags = new BoogieGenerator.TranslatorFlags(errorReporter.Options) {
             InsertChecksums = 0 < engine.Options.VerifySnapshots,
-            ReportRanges = program.Options.Get(Snippets.ShowSnippets)
+            ReportRanges = program.Options.Get(Snippets.ShowSnippets),
+            PreludeText = program.PreludeText
           };
-          var translator = new BoogieGenerator(errorReporter, resolution.ResolvedProgram.ProofDependencyManager, translatorFlags);
-          return translator.DoTranslation(resolution.ResolvedProgram, moduleDefinition);
+          if (program.Options.Get(CommonOptionBag.TranslationCache)) {
+            var cache = ModuleTranslationCache.ProcessCache;
+            var module = cache.TranslateModule(program, moduleDefinition, translatorFlags, cancellationToken, out var reused);
+            var cached = module.Program;
+            dependencies = module.ProofDependencies;
+            if (profile != null) {
+              profile.Span("translate", profileStart!.Value, new Dictionary<string, object?> {
+                ["module"] = moduleName, ["cached"] = reused,
+                ["declarations"] = cached.TopLevelDeclarations.Count(), ["implementations"] = cached.Implementations.Count()
+              });
+            }
+            return cached;
+          }
+          var threadAllocated = profile != null ? GC.GetAllocatedBytesForCurrentThread() : 0;
+          var translator = new BoogieGenerator(errorReporter, dependencies, translatorFlags);
+          if (profile != null) {
+            // The constructor reads, parses and resolves the prelude, once per module.
+            profile.Span("translate.prelude", profileStart!.Value, new Dictionary<string, object?> {
+              ["module"] = moduleName,
+              ["threadAllocBytes"] = GC.GetAllocatedBytesForCurrentThread() - threadAllocated
+            });
+            profileStart = profile.Begin();
+            threadAllocated = GC.GetAllocatedBytesForCurrentThread();
+          }
+          var threadStart = profile?.BeginThread();
+          var translated = translator.DoTranslation(resolution.ResolvedProgram, moduleDefinition);
+          if (profile != null) {
+            profile.FrontEnd("translate.module", threadStart!.Value, new Dictionary<string, object?> {
+              ["module"] = moduleName
+            });
+            profile.Span("translate", profileStart!.Value, new Dictionary<string, object?> {
+              ["module"] = moduleName,
+              ["threadAllocBytes"] = GC.GetAllocatedBytesForCurrentThread() - threadAllocated,
+              ["declarations"] = translated.TopLevelDeclarations.Count(),
+              ["implementations"] = translated.Implementations.Count()
+            });
+          }
+          return translated;
         }, cancellationToken);
         var suffix = moduleDefinition.SanitizedName;
 
@@ -62,7 +107,18 @@ namespace Microsoft.Dafny.LanguageServer.Language {
           ExecutionEngine.PrintBplFile(engine.Options, fileName, boogieProgram, false, false, engine.Options.PrettyPrint);
         }
 
-        return await engine.GetVerificationTasks(boogieProgram, cancellationToken);
+        profileStart = profile?.Begin();
+        var resultCache = Caching.TaskCacheSession.For(program.Options);
+        var tasks = await engine.GetVerificationTasks(boogieProgram, cancellationToken);
+        if (resultCache != null) { tasks = tasks.Select(resultCache.Wrap).ToList(); }
+        if (profile != null) {
+          // Boogie's preparation: type checking, inlining, preprocessing, passification and splitting.
+          profile.Span("prepare", profileStart!.Value, new Dictionary<string, object?> {
+            ["module"] = moduleName,
+            ["tasks"] = tasks.Count
+          });
+        }
+        return new ModuleVerificationTasks(tasks, dependencies);
       }
       finally {
         mutex.Release();

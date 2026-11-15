@@ -985,49 +985,17 @@ let _dafny = (function() {
     let y = _dafny.ShiftLeft(b, w - n).mod(new BigNumber(2).exponentiatedBy(w));;
     return x.plus(y);
   }
+  // Bitvector operands are nonnegative integers. Decimal strings preserve every
+  // bit when converting between BigNumber and BigInt, including above 2^53.
+  // BigInt bitwise operations have no 32-bit truncation or signed-limb results.
   $module.BitwiseAnd = function(a, b) {
-    let r = _dafny.ZERO;
-    const m = _dafny.NUMBER_LIMIT;  // 2^53
-    let h = _dafny.ONE;
-    while (!a.isZero() && !b.isZero()) {
-      let a0 = a.mod(m);
-      let b0 = b.mod(m);
-      r = r.plus(h.multipliedBy(a0 & b0));
-      a = a.dividedToIntegerBy(m);
-      b = b.dividedToIntegerBy(m);
-      h = h.multipliedBy(m);
-    }
-    return r;
+    return new BigNumber((BigInt(a.toFixed()) & BigInt(b.toFixed())).toString());
   }
   $module.BitwiseOr = function(a, b) {
-    let r = _dafny.ZERO;
-    const m = _dafny.NUMBER_LIMIT;  // 2^53
-    let h = _dafny.ONE;
-    while (!a.isZero() && !b.isZero()) {
-      let a0 = a.mod(m);
-      let b0 = b.mod(m);
-      r = r.plus(h.multipliedBy(a0 | b0));
-      a = a.dividedToIntegerBy(m);
-      b = b.dividedToIntegerBy(m);
-      h = h.multipliedBy(m);
-    }
-    r = r.plus(h.multipliedBy(a | b));
-    return r;
+    return new BigNumber((BigInt(a.toFixed()) | BigInt(b.toFixed())).toString());
   }
   $module.BitwiseXor = function(a, b) {
-    let r = _dafny.ZERO;
-    const m = _dafny.NUMBER_LIMIT;  // 2^53
-    let h = _dafny.ONE;
-    while (!a.isZero() && !b.isZero()) {
-      let a0 = a.mod(m);
-      let b0 = b.mod(m);
-      r = r.plus(h.multipliedBy(a0 ^ b0));
-      a = a.dividedToIntegerBy(m);
-      b = b.dividedToIntegerBy(m);
-      h = h.multipliedBy(m);
-    }
-    r = r.plus(h.multipliedBy(a | b));
-    return r;
+    return new BigNumber((BigInt(a.toFixed()) ^ BigInt(b.toFixed())).toString());
   }
   $module.BitwiseNot = function(a, bits) {
     let r = _dafny.ZERO;

@@ -1,0 +1,1 @@
+Preserve parentheses around decreases-to expressions used as tuple components during library serialization, so the emitted .doo retains the original expression structure.

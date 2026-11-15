@@ -75,7 +75,7 @@ Generate module names in the older A_mB_mC style instead of the current A.B.C sc
   public bool SuccessfullyResolved;  // set to true upon successful resolution; modules that import an unsuccessfully resolved module are not themselves resolved
   public ModuleKindEnum ModuleKind;
   public bool IsFacade; // True iff this module represents a module facade (that is, an abstract interface)
-  private bool IsBuiltinName => Name is "_System" or "_module"; // true if this is something like _System that shouldn't have its name mangled.
+  private bool IsBuiltinName => Name is "_System" or "_module"; // true if this is something like _System that shouldn't have it's name mangled.
 
   public DefaultClassDecl? DefaultClass { get; set; }
 
@@ -110,6 +110,9 @@ Generate module names in the older A_mB_mC style instead of the current A.B.C sc
   public Graph<ICallable> InterModuleCallGraph = new();
 
   [FilledInDuringResolution]
+  internal string? ResolutionKey { get; set; }
+  internal ModuleTranslationInputs? TranslationInputs { get; set; }
+
   public int Height;  // height in the topological sorting of modules;
 
   [FilledInDuringResolution]
@@ -181,6 +184,9 @@ Generate module names in the older A_mB_mC style instead of the current A.B.C sc
   }
 
   private VisibilityScope? visibilityScope;
+  internal void ShareVisibilityScope(ModuleDefinition original) {
+    visibilityScope = original.VisibilityScope;
+  }
   public VisibilityScope VisibilityScope =>
     visibilityScope ??= new VisibilityScope(this.SanitizedName);
 
@@ -197,6 +203,12 @@ Generate module names in the older A_mB_mC style instead of the current A.B.C sc
 
   public string SanitizedName {
     get {
+      if (ModuleNamingScope.Current is { } scope) {
+        return scope.Value(this, "sanitized-name", () => IsBuiltinName ? Name :
+          EnclosingModule != null && EnclosingModule.Name != "_module"
+            ? EnclosingModule.SanitizedName + "_m" + NonglobalVariable.SanitizeName(Name)
+            : NonglobalVariable.SanitizeName(Name));
+      }
       if (sanitizedName == null) {
         if (IsBuiltinName) {
           sanitizedName = Name;
@@ -221,6 +233,19 @@ Generate module names in the older A_mB_mC style instead of the current A.B.C sc
   }
 
   public string GetCompileName(DafnyOptions options) {
+    if (ModuleNamingScope.Current is { } scope) {
+      return scope.Value(this, "module-compile-name", () => {
+        if (GetImplementedModule() is { } implementedModule) { return implementedModule.GetCompileName(options); }
+        var args = options.DisallowExterns ? null : Attributes.FindExpressions(Attributes, "extern");
+        var suffix = options.Get(CommonOptionBag.AddCompileSuffix) && Name != "_module" && Name != "_System" ? "_Compile" : "";
+        if (args?.FirstOrDefault() is StringLiteralExpr literal) { return (string)literal.Value!; }
+        if (args != null) { return Name + suffix; }
+        var name = IsBuiltinName ? Name : EnclosingModule is { TryToAvoidName: false }
+          ? options.Get(LegacyModuleNames) ? SanitizedName : EnclosingModule.GetCompileName(options) + options.Backend.ModuleSeparator + NonglobalVariable.SanitizeName(Name)
+          : NonglobalVariable.SanitizeName(Name);
+        return name + suffix;
+      });
+    }
     if (compileName != null) {
       return compileName;
     }
@@ -482,17 +507,24 @@ Generate module names in the older A_mB_mC style instead of the current A.B.C sc
     var codatatypeDependencies = new Graph<CoDatatypeDecl>();
     var allDeclarations = AllDeclarationsAndNonNullTypeDecls(TopLevelDecls).ToList();
     int prevErrorCount = resolver.reporter.Count(ErrorLevel.Error);
+    // Close setup before timing the actual member signatures. Export-view Resolve calls
+    // share the containing module's phase list, but have distinct constant phase names.
+    PipelineProfile.ModulePhase(resolver.Options, exportSetName == null ? "resolveSetup" : "exportViewSetup");
     resolver.ResolveTopLevelDecls_Signatures(this, sig, allDeclarations, datatypeDependencies, codatatypeDependencies);
+    PipelineProfile.ModulePhase(resolver.Options, exportSetName == null ? "signature" : "exportSignature");
     Contract.Assert(resolver.AllTypeConstraints.Count == 0); // signature resolution does not add any type constraints
 
-    resolver.scope.PushMarker();
-    resolver.scope.AllowInstance = false;
-    resolver.ResolveAttributes(this, new ResolutionContext(new NoContext(EnclosingModule), false), true); // Must follow ResolveTopLevelDecls_Signatures, in case attributes refer to members
-    resolver.scope.PopMarker();
+    if (resolver.reporter.Count(ErrorLevel.Error) == prevErrorCount) {
+      // Attributes may refer to members, so signatures must resolve first. Failed signatures can contain
+      // cyclic types; do not enter another constraint-solving phase after they have already been rejected.
+      resolver.ResolveModuleAttributes(this, allDeclarations);
+      PipelineProfile.ModulePhase(resolver.Options, exportSetName == null ? "moduleAttributes" : "exportModuleAttributes");
+    }
 
     if (resolver.reporter.Count(ErrorLevel.Error) == prevErrorCount) {
       resolver.ResolveTopLevelDecls_Core(allDeclarations, datatypeDependencies, codatatypeDependencies,
         exportSetName == null ? Name : $"{Name} export {exportSetName}", exportSetName != null);
+      PipelineProfile.ModulePhase(resolver.Options, exportSetName == null ? "body" : "exportBody");
     }
 
     Type.PopScope(resolver.moduleInfo.VisibilityScope);
@@ -561,6 +593,7 @@ Generate module names in the older A_mB_mC style instead of the current A.B.C sc
       }
     }
 
+    PipelineProfile.ModulePhase(resolver.Options, exportSetName == null ? "accessibleMembers" : "exportAccessibleMembers");
     return true;
   }
 
@@ -870,7 +903,7 @@ Generate module names in the older A_mB_mC style instead of the current A.B.C sc
               if (members.TryGetValue(formal.Name, out previousMember)) {
                 localDuplicate = formalsUsedInThisCtor.Contains(formal.Name);
                 if (localDuplicate) {
-                  resolver.reporter.Error(MessageSource.Resolver, formal.Origin,
+                  resolver.reporter.Error(MessageSource.Resolver, ctor,
                     "Duplicate use of deconstructor name in the same constructor: {0}", formal.Name);
                   duplicates.Add(formal);
                 } else if (previousMember is DatatypeDestructor) {
@@ -896,7 +929,7 @@ Generate module names in the older A_mB_mC style instead of the current A.B.C sc
               dtor.InheritVisibility(dt);
               dtor.EnclosingClass = dt; // resolve here
               if (formal.HasName && !localDuplicate && previousMember == null) {
-                // the destructor has an explicit name and there was no member at all with this name before
+                // the destructor has an explict name and there was no member at all with this name before
                 members.Add(formal.Name, dtor);
               }
             }

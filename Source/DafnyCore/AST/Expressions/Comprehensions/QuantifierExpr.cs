@@ -46,7 +46,9 @@ public abstract class QuantifierExpr : ComprehensionExpr, TypeParameter.ParentTy
 
   public string FullName {
     get {
-      return "q$" + UniqueId;
+      return ModuleNamingScope.Current is { } scope
+        ? scope.Name(this, () => "q$" + scope.Prefix + scope.Next("quantifier"))
+        : "q$" + UniqueId;
     }
   }
 

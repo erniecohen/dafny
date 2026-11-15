@@ -28,7 +28,7 @@ namespace IntegrationTests {
     private static readonly Assembly TestDafnyAssembly = typeof(MultiBackendTest).Assembly;
     private static readonly Assembly DafnyServerAssembly = typeof(Server).Assembly;
 
-    private static readonly string RepositoryRoot = Path.GetFullPath("../../../../../"); // Up from Source/IntegrationTests/bin/Debug/net8.0/
+    private static readonly string RepositoryRoot = Path.GetFullPath("../../../../../"); // Up from Source/IntegrationTests/bin/Debug/net10.0/
 
     private static readonly string[] DefaultBoogieArguments = [
       "/infer:j",
@@ -38,6 +38,7 @@ namespace IntegrationTests {
       "/proverOpt:O:smt.qi.eager_threshold=44",
       "/proverOpt:O:smt.delay_units=true",
       "/proverOpt:O:smt.arith.solver=2",
+      "/proverOpt:O:smt.refine_inj_axioms=false",
       "/proverOpt:PROVER_PATH:" + RepositoryRoot + $"../unzippedRelease/dafny/z3/bin/z3-{DafnyOptions.DefaultZ3Version}"
     ];
 
@@ -144,6 +145,9 @@ namespace IntegrationTests {
                 await SourceToBinary.GetCommand(output).InvokeAsync(finalArgs))
         },
         {
+          "%bounded-resolve", (args, config) =>
+            new BoundedResolveCommand(args, config.PassthroughEnvironmentVariables, DafnyDriverAssembly.Location)
+        }, {
           "%baredafny", (args, config) =>
             DafnyCommand(args, config, InvokeMainMethodsDirectly)
         }, {
@@ -265,6 +269,15 @@ namespace IntegrationTests {
             config.PassthroughEnvironmentVariables);
         substitutions["%z3"] = Path.Join(dafnyReleaseDir, "z3", "bin", $"z3-{DafnyOptions.DefaultZ3Version}");
       }
+
+      // Preserve repository-relative paths in command reproductions without
+      // changing the test process's shared current directory.
+      commands["%baredafnyAtRepositoryRoot"] = (args, config) =>
+        dafnyReleaseDir == null
+          ? new ShellLitCommand("dotnet", new[] { DafnyDriverAssembly.Location }.Concat(args),
+            config.PassthroughEnvironmentVariables, RepositoryRoot)
+          : new ShellLitCommand(Path.Join(dafnyReleaseDir, "dafny"), args,
+            config.PassthroughEnvironmentVariables, RepositoryRoot);
 
       Config = new LitTestConfiguration(substitutions, commands, features, DafnyCliTests.ReferencedEnvironmentVariables);
     }

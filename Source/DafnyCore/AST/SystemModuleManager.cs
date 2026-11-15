@@ -10,6 +10,7 @@ using System.Security.Policy;
 namespace Microsoft.Dafny;
 
 public class SystemModuleManager {
+  internal ResolutionBuiltinCatalog ResolutionCatalog { get; }
   public DafnyOptions Options { get; }
   public readonly ModuleDefinition SystemModule;
   internal readonly Dictionary<int, ClassDecl> arrayTypeDecls = new();
@@ -28,6 +29,16 @@ public class SystemModuleManager {
   public readonly Dictionary<string, TopLevelDecl> PreTypeBuiltins = new();
 
   public ModuleSignature systemNameInfo;
+
+  /// <summary>
+  /// The resolution of this manager's system module: its signature, the declarations it set up and
+  /// their members. A resolution view that continues this one sets up only the builtins it adds, so
+  /// that each canonical builtin declaration is registered and resolved exactly once.
+  /// </summary>
+  internal sealed record ResolvedSystemModule(ModuleSignature Signature, IReadOnlySet<TopLevelDecl> Declarations,
+    Dictionary<TopLevelDeclWithMembers, Dictionary<string, MemberDecl>> ClassMembers);
+
+  internal ResolvedSystemModule ResolvedSystem { get; set; }
 
   public int MaxNonGhostTupleSizeUsed { get; private set; }
   public IOrigin MaxNonGhostTupleSizeToken { get; private set; }
@@ -60,7 +71,8 @@ public class SystemModuleManager {
             Concat(ArrowTypeDecls.Keys.OrderBy(x => x)).
             Concat(PartialArrowTypeDecls.Keys.OrderBy(x => x)).
             Concat(TotalArrowTypeDecls.Keys.OrderBy(x => x)).
-            Concat(tupleInts.OrderBy(x => x));
+            Concat(tupleInts.OrderBy(x => x)).
+            Concat(BoundedDecl != null ? [-1] : []);
         var bytes = ints.SelectMany(BitConverter.GetBytes).ToArray();
         hash = SHA256.Create()!.ComputeHash(bytes);
       }
@@ -70,13 +82,134 @@ public class SystemModuleManager {
   }
 
   public readonly ISet<int> Bitwidths = new HashSet<int>();
-  public readonly ISet<int> FloatWidths = new HashSet<int>();
+
+  /// <summary>A worker-owned view. Builtin identity is interned, publication is private.</summary>
+  internal SystemModuleManager(SystemModuleManager source, ResolutionBuiltinCatalog catalog = null) {
+    Options = source.Options;
+    ResolutionCatalog = catalog;
+    SystemModule = new ModuleDefinition(SourceOrigin.NoToken, new Name("_System"), [],
+      ModuleKindEnum.Concrete, false, null, null, null, new List<TopLevelDecl>(source.SystemModule.SourceDecls));
+    SystemModule.Height = -1;
+    SystemModule.ShareVisibilityScope(source.SystemModule);
+    systemNameInfo = source.systemNameInfo;
+    valuetypeDecls = source.valuetypeDecls;
+    StringDecl = source.StringDecl;
+    NatDecl = source.NatDecl;
+    ObjectDecl = source.ObjectDecl;
+    BoundedDecl = source.BoundedDecl;
+    ORDINAL_Offset = source.ORDINAL_Offset;
+    MergeResolutionView(source);
+  }
+
+  /// <summary>
+  /// Create an editor-owned view with canonical intrinsic identities. Parsed
+  /// builtin shapes are recreated through the same catalog as worker demands;
+  /// no source declarations or whole-program admission state are retained here.
+  /// </summary>
+  public SystemModuleManager CreateResolutionView(SystemModuleManager parsed) {
+    var catalog = ResolutionCatalog ?? new ResolutionBuiltinCatalog(this);
+    var view = new SystemModuleManager(this, catalog) { ResolvedSystem = ResolvedSystem };
+    foreach (var arity in parsed.ArrowTypeDecls.Keys) { view.CreateArrowTypeDecl(arity); }
+    foreach (var dimensions in parsed.arrayTypeDecls.Keys) {
+      var (_, modify) = ArrayType(Token.NoToken, dimensions, null, true);
+      modify(view);
+    }
+    foreach (var ghostness in parsed.tupleTypeDecls.Keys) {
+      view.TupleType(Token.NoToken, ghostness.Count, true, ghostness);
+    }
+    view.Bitwidths.Clear();
+    view.Bitwidths.UnionWith(parsed.Bitwidths);
+    return view;
+  }
+
+  internal void MergeResolutionView(SystemModuleManager source) {
+    foreach (var pair in source.arrayTypeDecls) { arrayTypeDecls[pair.Key] = pair.Value; }
+    foreach (var pair in source.ArrowTypeDecls) { ArrowTypeDecls[pair.Key] = pair.Value; }
+    foreach (var pair in source.PartialArrowTypeDecls) { PartialArrowTypeDecls[pair.Key] = pair.Value; }
+    foreach (var pair in source.TotalArrowTypeDecls) { TotalArrowTypeDecls[pair.Key] = pair.Value; }
+    foreach (var pair in source.tupleTypeDecls) { tupleTypeDecls[pair.Key] = pair.Value; }
+    foreach (var pair in source.PreTypeBuiltins) { PreTypeBuiltins[pair.Key] = pair.Value; }
+    foreach (var declaration in source.SystemModule.SourceDecls) {
+      RecordBuiltin(declaration);
+    }
+    Bitwidths.UnionWith(source.Bitwidths);
+    if (source.MaxNonGhostTupleSizeUsed > MaxNonGhostTupleSizeUsed) {
+      MaxNonGhostTupleSizeUsed = source.MaxNonGhostTupleSizeUsed;
+      MaxNonGhostTupleSizeToken = source.MaxNonGhostTupleSizeToken;
+    }
+    hash = null;
+  }
+
+  internal void RecordBuiltin(TopLevelDecl declaration) {
+    if (!SystemModule.SourceDecls.Contains(declaration)) {
+      SystemModule.SourceDecls.Add(declaration);
+    }
+  }
+
+  internal IReadOnlySet<TopLevelDecl> GetBuiltinTypeIdentities() {
+    // A worker's publication module is not the owner of interned declarations.
+    // Snapshot actual builtin identities before output pruning; neither module
+    // names nor a declaration's apparent shape establish compiler ownership.
+    return ResolutionCatalog == null ? null : SystemModule.SourceDecls
+      .Concat(valuetypeDecls).Concat(PreTypeBuiltins.Values)
+      .ToHashSet<TopLevelDecl>(ReferenceEqualityComparer.Instance);
+  }
+
+  internal void RestrictResolutionOutput(ModuleTranslationInputs inputs) {
+    // Parsing discovers builtin shapes across all input files. Retain only the
+    // shapes needed by this module's resolved closure in its published output.
+    foreach (var key in arrayTypeDecls.Keys.Where(k => !inputs.BuiltinNames.Contains(arrayTypeDecls[k].Name)).ToArray()) { arrayTypeDecls.Remove(key); }
+    foreach (var key in ArrowTypeDecls.Keys.Where(k => !inputs.BuiltinNames.Contains(ArrowTypeDecls[k].Name)).ToArray()) {
+      ArrowTypeDecls.Remove(key);
+      PartialArrowTypeDecls.Remove(key);
+      TotalArrowTypeDecls.Remove(key);
+    }
+    foreach (var key in tupleTypeDecls.Keys.Where(k => !inputs.BuiltinNames.Contains(tupleTypeDecls[k].Name)).ToArray()) { tupleTypeDecls.Remove(key); }
+    foreach (var key in PreTypeBuiltins.Keys.Where(k => !inputs.BuiltinNames.Contains(PreTypeBuiltins[k].Name)).ToArray()) { PreTypeBuiltins.Remove(key); }
+    SystemModule.SourceDecls.RemoveAll(d => !inputs.BuiltinNames.Contains(d.Name));
+    Bitwidths.Clear();
+    Bitwidths.UnionWith(inputs.Bitwidths);
+    hash = null;
+  }
+
+  internal void ImportArrow(SystemModuleManager source, int arity) {
+    ArrowTypeDecls[arity] = source.ArrowTypeDecls[arity];
+    PartialArrowTypeDecls[arity] = source.PartialArrowTypeDecls[arity];
+    TotalArrowTypeDecls[arity] = source.TotalArrowTypeDecls[arity];
+    RecordBuiltin(ArrowTypeDecls[arity]);
+    RecordBuiltin(PartialArrowTypeDecls[arity]);
+    RecordBuiltin(TotalArrowTypeDecls[arity]);
+  }
+
+  internal void ImportArray(SystemModuleManager source, int dimensions) {
+    arrayTypeDecls[dimensions] = source.arrayTypeDecls[dimensions];
+    RecordBuiltin(arrayTypeDecls[dimensions]);
+    ImportArrow(source, dimensions);
+  }
+
+  internal void ImportTuple(SystemModuleManager source, TupleTypeDecl declaration, IOrigin origin) {
+    var entry = source.tupleTypeDecls.First(p => ReferenceEquals(p.Value, declaration));
+    tupleTypeDecls[entry.Key] = declaration;
+    RecordBuiltin(declaration);
+    if (declaration.NonGhostDims > MaxNonGhostTupleSizeUsed) {
+      MaxNonGhostTupleSizeUsed = declaration.NonGhostDims;
+      MaxNonGhostTupleSizeToken = origin;
+    }
+    var nonGhost = source.tupleTypeDecls.Values.FirstOrDefault(d => d.Dims == declaration.NonGhostDims && d.NonGhostDims == d.Dims);
+    if (nonGhost != null && nonGhost != declaration) {
+      ImportTuple(source, nonGhost, origin);
+    }
+  }
   [FilledInDuringResolution] public SpecialField ORDINAL_Offset;  // used by the translator
 
   public readonly TypeSynonymDecl StringDecl;
   public readonly SubsetTypeDecl NatDecl;
   public UserDefinedType Nat() { return new UserDefinedType(Token.NoToken, "nat", NatDecl, []); }
   public readonly TraitDecl ObjectDecl;
+  /// <summary>
+  /// The abstract type "bounded&lt;O, F&gt;" of bounded callables (issue 266), declared only under --modular-termination.
+  /// </summary>
+  public readonly AbstractTypeDecl BoundedDecl;
   public UserDefinedType ObjectQ() {
     Contract.Assume(ObjectDecl != null);
     return new UserDefinedType(Token.NoToken, "object?", null) { ResolvedClass = ObjectDecl };
@@ -110,6 +243,10 @@ public class SystemModuleManager {
     // create trait 'object'
     ObjectDecl = new TraitDecl(SourceOrigin.NoToken, new Name("object"), SystemModule, [], [], DontCompile(), false, []);
     SystemModule.SourceDecls.Add(ObjectDecl);
+    if (options.Get(CommonOptionBag.ModularTermination)) {
+      BoundedDecl = BoundedCallables.CreateDecl(SystemModule, DontCompile());
+      SystemModule.SourceDecls.Add(BoundedDecl);
+    }
     // add one-dimensional arrays, since they may arise during type checking
     // Arrays of other dimensions may be added during parsing as the parser detects the need for these
     UserDefinedType tmp = ArrayType(1, Type.Int, true);
@@ -122,15 +259,12 @@ public class SystemModuleManager {
     TupleType(Token.NoToken, 2, true);
     // Several methods and fields rely on 1-argument arrow types
     CreateArrowTypeDecl(1);
-    // 2-argument arrow types created lazily for fp64.Equal
 
     valuetypeDecls = [
       new ValuetypeDecl("bool", SystemModule, t => t.IsBoolType, typeArgs => Type.Bool),
       new ValuetypeDecl("char", SystemModule, t => t.IsCharType, typeArgs => Type.Char),
-      new ValuetypeDecl("int", SystemModule, t => t.IsNumericBased(Type.NumericPersuasion.Int), _ => Type.Int),
-      new ValuetypeDecl("real", SystemModule, t => t.IsRealType, _ => Type.Real),
-      new ValuetypeDecl("fp32", SystemModule, t => t.IsFp32Type, _ => Type.Fp32),
-      new ValuetypeDecl("fp64", SystemModule, t => t.IsFp64Type, _ => Type.Fp64),
+      new ValuetypeDecl("int", SystemModule, t => t.IsNumericBased(Type.NumericPersuasion.Int), typeArgs => Type.Int),
+      new ValuetypeDecl("real", SystemModule, t => t.IsNumericBased(Type.NumericPersuasion.Real), typeArgs => Type.Real),
       new ValuetypeDecl("ORDINAL", SystemModule, t => t.IsBigOrdinalType, typeArgs => Type.BigOrdinal),
       new ValuetypeDecl("_bv", SystemModule, t => t.IsBitVectorType && !Options.Get(CommonOptionBag.TypeSystemRefresh),
         null), // "_bv" represents a family of classes, so no typeTester or type creator is supplied (it's used only in the legacy resolver)
@@ -153,11 +287,7 @@ public class SystemModuleManager {
         [TPVarianceSyntax.Covariant_Permissive, TPVarianceSyntax.Covariant_Strict],
         t => t.IsIMapType, typeArgs => new MapType(false, typeArgs[0], typeArgs[1]))
     ];
-
-    // Add all valuetype decls to system module (except fp32 and fp64, which are added lazily on first use)
-    SystemModule.SourceDecls.AddRange(valuetypeDecls.Where((_, i) =>
-      i != (int)ValuetypeVariety.Fp32 && i != (int)ValuetypeVariety.Fp64));
-
+    SystemModule.SourceDecls.AddRange(valuetypeDecls);
     // Resolution error handling relies on being able to get to the 0-tuple declaration
     TupleType(Token.NoToken, 0, true);
 
@@ -186,8 +316,6 @@ public class SystemModuleManager {
     var isNat = new SpecialField(SourceOrigin.NoToken, "IsNat", SpecialField.ID.IsNat, null, false, false, false, Type.Bool, null);
     AddMember(isNat, ValuetypeVariety.BigOrdinal);
 
-    // Note: fp32 and fp64 members are initialized lazily on first use
-
     // Add "Keys", "Values", and "Items" to map, imap
     foreach (var typeVariety in new[] { ValuetypeVariety.Map, ValuetypeVariety.IMap }) {
       var vtd = valuetypeDecls[(int)typeVariety];
@@ -214,9 +342,6 @@ public class SystemModuleManager {
     // a family of types rolled up in one ValuetypeDecl. Therefore, we use the special SelfType as the result type.
     AddRotateMember(valuetypeDecls[(int)ValuetypeVariety.Bitvector], "RotateLeft", new SelfType());
     AddRotateMember(valuetypeDecls[(int)ValuetypeVariety.Bitvector], "RotateRight", new SelfType());
-
-    // Create 2-argument arrow types early to avoid circular dependency
-    CreateArrowTypeDecl(2);
   }
 
   public void AddRotateMember(ValuetypeDecl enclosingType, string name, Type resultType) {
@@ -228,72 +353,6 @@ public class SystemModuleManager {
     rotateMember.EnclosingClass = enclosingType;
     rotateMember.AddVisibilityScope(SystemModule.VisibilityScope, false);
     enclosingType.Members.Add(rotateMember);
-  }
-
-  public void AddFloatSpecialValues(ValuetypeDecl enclosingType, Type floatType) {
-    AddFloatConstant(enclosingType, "NaN", SpecialField.ID.NaN, floatType);
-    AddFloatConstant(enclosingType, "PositiveInfinity", SpecialField.ID.PositiveInfinity, floatType);
-    AddFloatConstant(enclosingType, "NegativeInfinity", SpecialField.ID.NegativeInfinity, floatType);
-    AddFloatConstant(enclosingType, "Pi", SpecialField.ID.Pi, floatType);
-    AddFloatConstant(enclosingType, "E", SpecialField.ID.E, floatType);
-    AddFloatConstant(enclosingType, "MaxValue", SpecialField.ID.MaxValue, floatType);
-    AddFloatConstant(enclosingType, "MinValue", SpecialField.ID.MinValue, floatType);
-    AddFloatConstant(enclosingType, "MinNormal", SpecialField.ID.MinNormal, floatType);
-    AddFloatConstant(enclosingType, "MinSubnormal", SpecialField.ID.MinSubnormal, floatType);
-    AddFloatConstant(enclosingType, "Epsilon", SpecialField.ID.Epsilon, floatType);
-  }
-
-  private void AddFloatStaticMethods(ValuetypeDecl enclosingType, Type floatType) {
-    AddFloatStaticFunction(enclosingType, "Equal", [("x", floatType), ("y", floatType)], Type.Bool);
-    // Unchecked arithmetic methods - no NaN or invalid operation preconditions
-    // These allow testing IEEE 754 edge cases (e.g., inf/inf = NaN, nan + x = NaN)
-    AddFloatStaticFunction(enclosingType, "Add", [("x", floatType), ("y", floatType)], floatType);
-    AddFloatStaticFunction(enclosingType, "Sub", [("x", floatType), ("y", floatType)], floatType);
-    AddFloatStaticFunction(enclosingType, "Mul", [("x", floatType), ("y", floatType)], floatType);
-    AddFloatStaticFunction(enclosingType, "Div", [("x", floatType), ("y", floatType)], floatType);
-    AddFloatStaticFunction(enclosingType, "Neg", [("x", floatType)], floatType);
-    // Unchecked comparison methods - no NaN preconditions (always return false for NaN)
-    AddFloatStaticFunction(enclosingType, "Less", [("x", floatType), ("y", floatType)], Type.Bool);
-    AddFloatStaticFunction(enclosingType, "LessOrEqual", [("x", floatType), ("y", floatType)], Type.Bool);
-    AddFloatStaticFunction(enclosingType, "Greater", [("x", floatType), ("y", floatType)], Type.Bool);
-    AddFloatStaticFunction(enclosingType, "GreaterOrEqual", [("x", floatType), ("y", floatType)], Type.Bool);
-    AddFloatMathematicalFunctions(enclosingType, floatType);
-    AddFloatInexactConversionMethods(enclosingType, floatType);
-  }
-
-  private void AddFloatMathematicalFunctions(ValuetypeDecl enclosingType, Type floatType) {
-    CreateArrowTypeDecl(2);
-    AddFloatStaticFunction(enclosingType, "Min", [("x", floatType), ("y", floatType)], floatType);
-    AddFloatStaticFunction(enclosingType, "Max", [("x", floatType), ("y", floatType)], floatType);
-    AddFloatStaticFunction(enclosingType, "Abs", [("x", floatType)], floatType);
-    AddFloatStaticFunction(enclosingType, "Floor", [("x", floatType)], floatType);
-    AddFloatStaticFunction(enclosingType, "Ceiling", [("x", floatType)], floatType);
-    AddFloatStaticFunction(enclosingType, "Round", [("x", floatType)], floatType);
-    AddFloatStaticFunction(enclosingType, "Sqrt", [("x", floatType)], floatType);
-  }
-
-  private void AddFloatInexactConversionMethods(ValuetypeDecl enclosingType, Type floatType) {
-    AddFloatStaticFunction(enclosingType, "FromReal", [("r", Type.Real)], floatType);
-    AddFloatStaticFunction(enclosingType, "ToInt", [("f", floatType)], Type.Int);
-
-    // Cross-float conversions
-    if (floatType is Fp32Type) {
-      AddFloatStaticFunction(enclosingType, "FromFp64", [("f", new Fp64Type())], floatType);
-    } else if (floatType is Fp64Type) {
-      AddFloatStaticFunction(enclosingType, "FromFp32", [("f", new Fp32Type())], floatType);
-    }
-  }
-
-  private void AddFloatStaticFunction(ValuetypeDecl enclosingType, string name, (string, Type)[] parameters, Type returnType) {
-    var formals = parameters.Select(p => new Formal(Token.NoToken, p.Item1, p.Item2, true, false, null)).ToList();
-    var method = new SpecialFunction(SourceOrigin.NoToken, name, SystemModule, true, false,
-      [], formals, returnType,
-      [], new Specification<FrameExpression>([], null), [],
-      new Specification<Expression>([], null), null, null, null) {
-      EnclosingClass = enclosingType
-    };
-    method.AddVisibilityScope(SystemModule.VisibilityScope, false);
-    enclosingType.Members.Add(method);
   }
 
   private Attributes DontCompile() {
@@ -316,161 +375,6 @@ public class SystemModuleManager {
     return result;
   }
 
-  // Initialize fp64 type and add to system module on first reference
-  public void EnsureFloatTypesInitialized(ProgramResolver programResolver) {
-    EnsureFloatTypesInitialized();
-
-    var fp32TypeDecl = valuetypeDecls[(int)ValuetypeVariety.Fp32];
-
-    // Add fp32 to system module if not already there
-    if (!SystemModule.SourceDecls.Contains(fp32TypeDecl)) {
-      SystemModule.SourceDecls.Add(fp32TypeDecl);
-    }
-
-    // Register fp32 in systemNameInfo.TopLevels for name resolution
-    systemNameInfo.TopLevels.TryAdd("fp32", fp32TypeDecl);
-
-    // Add fp32 members to classMembers dictionary
-    var memberDictionary = fp32TypeDecl.Members
-      .GroupBy(member => member.Name)
-      .ToDictionary(g => g.Key, g => g.First());
-    programResolver.AddSystemClass(fp32TypeDecl, memberDictionary);
-  }
-
-  private void EnsureFloatTypesInitialized() {
-    var fp32TypeDecl = valuetypeDecls[(int)ValuetypeVariety.Fp32];
-
-    // Check if already initialized by looking for "Min" member
-    if (fp32TypeDecl.Members.Any(m => m.Name == "Min")) {
-      return;
-    }
-
-    // Initialize both fp32 and fp64 members together (they share implementation)
-    InitializeFp32Members();
-    InitializeFp64Members();
-
-    // Add both to system module
-    if (!SystemModule.SourceDecls.Contains(fp32TypeDecl)) {
-      SystemModule.SourceDecls.Add(fp32TypeDecl);
-    }
-    var fp64TypeDecl = valuetypeDecls[(int)ValuetypeVariety.Fp64];
-    if (!SystemModule.SourceDecls.Contains(fp64TypeDecl)) {
-      SystemModule.SourceDecls.Add(fp64TypeDecl);
-    }
-  }
-
-  public void EnsureFp64TypeInitialized(ProgramResolver programResolver) {
-    EnsureFp64TypeInitialized();
-
-    var fp64TypeDecl = valuetypeDecls[(int)ValuetypeVariety.Fp64];
-
-    // Register fp64 in systemNameInfo.TopLevels for name resolution
-    systemNameInfo.TopLevels.TryAdd("fp64", fp64TypeDecl);
-
-    // Add fp64 members to classMembers dictionary
-    var memberDictionary = fp64TypeDecl.Members
-      .GroupBy(member => member.Name)
-      .ToDictionary(g => g.Key, g => g.First());
-    programResolver.AddSystemClass(fp64TypeDecl, memberDictionary);
-  }
-
-  // Overload for backward compatibility (called from AsValuetypeDecl)
-  private void EnsureFp64TypeInitialized() {
-    var fp64TypeDecl = valuetypeDecls[(int)ValuetypeVariety.Fp64];
-
-    // Check if already initialized by looking for "Min" member
-    if (fp64TypeDecl.Members.Any(m => m.Name == "Min")) {
-      return;
-    }
-
-    // Initialize fp32 members
-    InitializeFp32Members();
-
-    // Initialize fp64 members
-    InitializeFp64Members();
-
-    // Add fp32 to system module
-    var fp32TypeDecl = valuetypeDecls[(int)ValuetypeVariety.Fp32];
-    if (!SystemModule.SourceDecls.Contains(fp32TypeDecl)) {
-      SystemModule.SourceDecls.Add(fp32TypeDecl);
-    }
-
-    // Add fp64 to system module
-    if (!SystemModule.SourceDecls.Contains(fp64TypeDecl)) {
-      SystemModule.SourceDecls.Add(fp64TypeDecl);
-    }
-  }
-
-  // Helper method to add a member to a valuetype with proper initialization
-  private void AddMemberToValuetype(MemberDecl member, ValuetypeVariety valuetypeVariety) {
-    var enclosingType = valuetypeDecls[(int)valuetypeVariety];
-    member.EnclosingClass = enclosingType;
-    member.AddVisibilityScope(SystemModule.VisibilityScope, false);
-    enclosingType.Members.Add(member);
-  }
-
-  private void AddFloatInstanceMembers(ValuetypeVariety variety) {
-    AddFloatInstancePredicate(variety, "IsFinite", SpecialField.ID.IsFinite);
-    AddFloatInstancePredicate(variety, "IsNaN", SpecialField.ID.IsNaN);
-    AddFloatInstancePredicate(variety, "IsInfinite", SpecialField.ID.IsInfinite);
-    AddFloatInstancePredicate(variety, "IsNormal", SpecialField.ID.IsNormal);
-    AddFloatInstancePredicate(variety, "IsSubnormal", SpecialField.ID.IsSubnormal);
-    AddFloatInstancePredicate(variety, "IsZero", SpecialField.ID.IsZero);
-    AddFloatInstancePredicate(variety, "IsNegative", SpecialField.ID.IsNegative);
-    AddFloatInstancePredicate(variety, "IsPositive", SpecialField.ID.IsPositive);
-  }
-
-  private void AddFloatInstancePredicate(ValuetypeVariety variety, string name, SpecialField.ID id) {
-    var field = new SpecialField(SourceOrigin.NoToken, name, id, null,
-      false, false, false, Type.Bool, null);
-    AddMemberToValuetype(field, variety);
-  }
-
-  private void InitializeFp32Members() {
-    var fp32TypeDecl = valuetypeDecls[(int)ValuetypeVariety.Fp32];
-    var fp32Type = new Fp32Type();
-    AddFloatInstanceMembers(ValuetypeVariety.Fp32);
-    AddFloatSpecialValues(fp32TypeDecl, fp32Type);
-    AddFloatStaticMethods(fp32TypeDecl, fp32Type);
-  }
-
-  private void InitializeFp64Members() {
-    var fp64TypeDecl = valuetypeDecls[(int)ValuetypeVariety.Fp64];
-    var fp64Type = new Fp64Type();
-    AddFloatInstanceMembers(ValuetypeVariety.Fp64);
-    AddFloatSpecialValues(fp64TypeDecl, fp64Type);
-    AddFloatStaticMethods(fp64TypeDecl, fp64Type);
-  }
-
-  private void AddFp64SpecialValues() {
-    var fp64Type = new Fp64Type();
-    var fp64TypeDecl = valuetypeDecls[(int)ValuetypeVariety.Fp64];
-
-    AddFloatConstant(fp64TypeDecl, "NaN", SpecialField.ID.NaN, fp64Type);
-    AddFloatConstant(fp64TypeDecl, "PositiveInfinity", SpecialField.ID.PositiveInfinity, fp64Type);
-    AddFloatConstant(fp64TypeDecl, "NegativeInfinity", SpecialField.ID.NegativeInfinity, fp64Type);
-    AddFloatConstant(fp64TypeDecl, "MaxValue", SpecialField.ID.MaxValue, fp64Type);
-    AddFloatConstant(fp64TypeDecl, "MinValue", SpecialField.ID.MinValue, fp64Type);
-    AddFloatConstant(fp64TypeDecl, "Epsilon", SpecialField.ID.Epsilon, fp64Type);
-    AddFloatConstant(fp64TypeDecl, "MinNormal", SpecialField.ID.MinNormal, fp64Type);
-    AddFloatConstant(fp64TypeDecl, "MinSubnormal", SpecialField.ID.MinSubnormal, fp64Type);
-    AddFloatConstant(fp64TypeDecl, "Pi", SpecialField.ID.Pi, fp64Type);
-    AddFloatConstant(fp64TypeDecl, "E", SpecialField.ID.E, fp64Type);
-
-    AddFloatStaticFunction(fp64TypeDecl, "Equal", [("a", fp64Type), ("b", fp64Type)], Type.Bool);
-    AddFloatStaticFunction(fp64TypeDecl, "Abs", [("x", fp64Type)], fp64Type);
-    AddFloatStaticFunction(fp64TypeDecl, "Sqrt", [("x", fp64Type)], fp64Type);
-  }
-
-  private void AddFloatConstant(ValuetypeDecl enclosingType, string name, SpecialField.ID id, Type floatType) {
-    var constant = new StaticSpecialField(SourceOrigin.NoToken, name, id, null,
-      false, false, false, floatType, null) {
-      EnclosingClass = enclosingType
-    };
-    constant.AddVisibilityScope(SystemModule.VisibilityScope, false);
-    enclosingType.Members.Add(constant);
-  }
-
   public static (UserDefinedType type, Action<SystemModuleManager> ModifyBuiltins) ArrayType(IOrigin tok, int dims, List<Type> optTypeArgs, bool allowCreationOfNewClass, bool useClassNameType = false) {
     Contract.Requires(tok != null);
     Contract.Requires(1 <= dims);
@@ -483,6 +387,10 @@ public class SystemModuleManager {
     }
 
     void ModifyBuiltins(SystemModuleManager builtIns) {
+      if (builtIns.ResolutionCatalog is { } catalog) {
+        catalog.Array(builtIns, dims, ModifyBuiltins);
+        return;
+      }
       if (!allowCreationOfNewClass || builtIns.arrayTypeDecls.ContainsKey(dims)) {
         return;
       }
@@ -518,6 +426,10 @@ public class SystemModuleManager {
   /// with this arrow type, the two built-in subset types based on the arrow type.
   /// </summary>
   public void CreateArrowTypeDecl(int arity) {
+    if (ResolutionCatalog is { } catalog) {
+      catalog.Arrow(this, arity);
+      return;
+    }
     Contract.Requires(0 <= arity);
     if (ArrowTypeDecls.ContainsKey(arity)) {
       // The work has already been done.
@@ -599,7 +511,6 @@ public class SystemModuleManager {
     Contract.Requires(member != null);
     Contract.Requires(tps != null && 1 <= tps.Count);
     var f = new IdentifierExpr(tok, id);
-    f.Type = id.Type;
     // forall x0,x1,x2 :: f.reads(x0,x1,x2) == {}
     // OR
     // forall x0,x1,x2 :: f.requires(x0,x1,x2)
@@ -642,6 +553,9 @@ public class SystemModuleManager {
   }
 
   public TupleTypeDecl TupleType(IOrigin tok, int dims, bool allowCreationOfNewType, List<bool> argumentGhostness = null) {
+    if (ResolutionCatalog is { } catalog) {
+      return catalog.Tuple(this, tok, dims, allowCreationOfNewType, argumentGhostness);
+    }
     Contract.Requires(tok != null);
     Contract.Requires(0 <= dims);
     Contract.Requires(argumentGhostness == null || argumentGhostness.Count == dims);
@@ -715,14 +629,12 @@ public class SystemModuleManager {
 
   public ValuetypeDecl AsValuetypeDecl(Type t) {
     Contract.Requires(t != null);
-    if (t.IsFp32Type) {
-      EnsureFloatTypesInitialized();
+    foreach (var vtd in valuetypeDecls) {
+      if (vtd.IsThisType(t)) {
+        return vtd;
+      }
     }
-    if (t.IsFp64Type) {
-      EnsureFp64TypeInitialized();
-    }
-
-    return valuetypeDecls.FirstOrDefault(vtd => vtd.IsThisType(t));
+    return null;
   }
 
   public void ResolveValueTypeDecls(ProgramResolver programResolver) {
@@ -738,10 +650,6 @@ public class SystemModuleManager {
           CallGraphBuilder.VisitMethod(method, programResolver.Reporter);
         }
       }
-
-      // Add ValuetypeDecl members to the classMembers dictionary for member resolution
-      var memberDictionary = valueTypeDecl.Members.ToDictionary(member => member.Name, member => member);
-      programResolver.AddSystemClass(valueTypeDecl, memberDictionary);
     }
   }
 
@@ -779,23 +687,11 @@ declared: {allDeclaredArities.Comma()}");
   }
 }
 
-// Custom static special field class for fp64 constants
-public class StaticSpecialField : SpecialField {
-  public override bool HasStaticKeyword => true;
-
-  public StaticSpecialField(IOrigin origin, string name, ID specialId, object idParam,
-    bool isGhost, bool isMutable, bool isUserMutable, Type explicitType, Attributes attributes)
-    : base(origin, name, specialId, idParam, isGhost, isMutable, isUserMutable, explicitType, attributes) {
-  }
-}
-
 enum ValuetypeVariety {
   Bool = 0,
   Char,
   Int,
   Real,
-  Fp32,
-  Fp64,
   BigOrdinal,
   Bitvector,
   Set,

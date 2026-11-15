@@ -13,8 +13,6 @@ public abstract class Type : NodeWithOrigin {
   public static CharType Char = new CharType();
   public static IntType Int = new IntType();
   public static RealType Real = new RealType();
-  public static Fp32Type Fp32 = new Fp32Type();
-  public static Fp64Type Fp64 = new Fp64Type();
   public static FieldType Field = new FieldType();
 
   [SyntaxConstructor]
@@ -50,6 +48,16 @@ public abstract class Type : NodeWithOrigin {
   public static void ResetScopes() {
     _scopes.Value = [];
     scopesEnabled = false;
+  }
+
+  /// <summary>The calling thread's scope stack and enabled state, for <see cref="RestoreScopes"/>.</summary>
+  public readonly record struct ScopeState(List<VisibilityScope> Scopes, bool Enabled);
+
+  public static ScopeState SaveScopes() => new(Scopes, scopesEnabled);
+
+  public static void RestoreScopes(ScopeState state) {
+    _scopes.Value = state.Scopes;
+    scopesEnabled = state.Enabled;
   }
 
   public static void PopScope() {
@@ -195,8 +203,8 @@ public abstract class Type : NodeWithOrigin {
 
   /// <summary>
   /// Follow proxies, in-scope synonyms/subsets, and instantiated newtype bases. An unresolved base is
-  /// Undetermined, not a cycle. Raw synonym dependencies are checked before definition expansion.
-  /// The result never substitutes a primitive type for erroneous ancestry.
+  /// Undetermined, not a cycle. Synonym cycles must already have their resolution-derived IsCyclic marks,
+  /// as required by NormalizeExpand. The result never substitutes a primitive type for erroneous ancestry.
   /// With preserveSubsetTypes, stop at a subset instead of erasing its constraints or arrow-family identity.
   /// </summary>
   public AncestorTypeResult NormalizeToAncestorTypeChecked(bool preserveSubsetTypes = false) {
@@ -209,16 +217,13 @@ public abstract class Type : NodeWithOrigin {
         if (current == null) {
           return new AncestorTypeResult(AncestorTypeKind.Undetermined, null);
         }
-        current = current.Normalize();
-        if (current is UserDefinedType { ResolvedClass: TypeSynonymDecl synonym }) {
-          var cycle = RedirectingTypeCycleAnalysis.TryFindCycle(synonym, GetScope());
-          if (cycle != null) {
-            return new AncestorTypeResult(AncestorTypeKind.Cyclic, null, cycle);
-          }
-        }
         current = current.NormalizeExpand(preserveSubsetTypes);
         if (current is TypeProxy || current is UserDefinedType { ResolvedClass: null }) {
           return new AncestorTypeResult(AncestorTypeKind.Undetermined, current);
+        }
+        if (current is UserDefinedType { ResolvedClass: TypeSynonymDecl { IsCyclic: true } synonym }) {
+          return new AncestorTypeResult(AncestorTypeKind.Cyclic, null,
+            RedirectingTypeCycleAnalysis.TryFindCycle(synonym, GetScope()) ?? Array.Empty<RedirectingTypeDecl>());
         }
         if (current is not UserDefinedType { ResolvedClass: NewtypeDecl newtypeDecl }) {
           if (preserveSubsetTypes &&
@@ -235,6 +240,10 @@ public abstract class Type : NodeWithOrigin {
             }
           }
           return new AncestorTypeResult(AncestorTypeKind.Resolved, current);
+        }
+        if (newtypeDecl.IsCyclic) {
+          return new AncestorTypeResult(AncestorTypeKind.Cyclic, null,
+            RedirectingTypeCycleAnalysis.TryFindCycle(newtypeDecl, GetScope()) ?? Array.Empty<RedirectingTypeDecl>());
         }
 
         bool repeated;
@@ -263,9 +272,7 @@ public abstract class Type : NodeWithOrigin {
           checkedAcyclic ??= RentNewtypeWalkSet();
           checkedAcyclic.Add(newtypeDecl);
         }
-        // Adjust visibility after substitution, preserving the instantiated base's own arguments.
-        current = newtypeDecl.BaseType == null ? null :
-          newtypeDecl.ConcreteBaseType(current.TypeArgs).NormalizeAndAdjustForScope();
+        current = newtypeDecl.BaseType == null ? null : newtypeDecl.RhsWithArgument(current.TypeArgs);
       }
     } finally {
       // Every exit, including unresolved/cyclic results and substitution failures, releases empty buffers.
@@ -275,18 +282,17 @@ public abstract class Type : NodeWithOrigin {
   }
 
   /// <summary>
-  /// Call NormalizeExpand() repeatedly, also on the base type of newtype's.
+  /// Return the ancestor of a successfully resolved, acyclic type. Inference and error-recovery callers
+  /// should use NormalizeToAncestorTypeChecked and handle its Undetermined and Cyclic results.
   /// </summary>
   public Type NormalizeToAncestorType() {
-    Type result = this;
-    while (true) {
-      result = result.NormalizeExpand();
-      if (result.AsNewtype is { } newtypeDecl) {
-        result = newtypeDecl.ConcreteBaseType(result.TypeArgs);
-      } else {
-        return result;
-      }
+    var ancestry = NormalizeToAncestorTypeChecked();
+    if (ancestry.Kind == AncestorTypeKind.Cyclic) {
+      throw new RedirectingTypeCycleException(ancestry.Cycle);
     }
+    // Keep the former unresolved-proxy result for callers recovering from unrelated errors.
+    // No result is manufactured when a refining declaration has not supplied its base yet.
+    return ancestry.AncestorType;
   }
 
   /// <summary>
@@ -353,7 +359,7 @@ public abstract class Type : NodeWithOrigin {
         }
 
         if (rtd.IsRevealedInScope(scope)) {
-          if (expandMode != ExpandMode.DontExpandJustAdjustForScopes && rtd is TypeSynonymDecl typeSynonymDecl) {
+          if (expandMode != ExpandMode.DontExpandJustAdjustForScopes && rtd is TypeSynonymDecl { IsCyclic: false } typeSynonymDecl) {
             if (typeSynonymDecl is not SubsetTypeDecl || expandMode == ExpandMode.ExpandSynonymsAndSubsetTypes) {
               type = typeSynonymDecl.RhsWithArgumentIgnoringScope(udt.TypeArgs);
               continue;
@@ -386,13 +392,6 @@ public abstract class Type : NodeWithOrigin {
         } else {
           return type;
         }
-      }
-
-      // Handle built-in types: convert UserDefinedType to actual basic type
-      if (type is UserDefinedType { ResolvedClass: ValuetypeDecl { Name: "fp32" or "fp64" or "int" or "real" or "bool" or "char" or "ORDINAL" } vtd } builtinUdt)
-      // Only convert specific built-in types to avoid breaking other ValuetypeDecls
-      {
-        return vtd.CreateType(builtinUdt.TypeArgs);
       }
 
       return type;
@@ -448,49 +447,41 @@ public abstract class Type : NodeWithOrigin {
   public bool IsRealType => NormalizeExpand() is RealType;
   public bool IsBigOrdinalType => NormalizeExpand() is BigOrdinalType;
   public bool IsBitVectorType => AsBitVectorType != null;
-  public bool IsFp32Type => NormalizeExpand() is Fp32Type;
-  public bool IsFp64Type => NormalizeExpand() is Fp64Type;
-  public bool IsFloatingPointType => IsFp32Type || IsFp64Type;
-
-  /// <summary>
-  /// Returns the Dafny type name for floating-point types ("fp32" or "fp64").
-  /// Should only be called on types where IsFloatingPointType is true.
-  /// </summary>
-  public string FloatTypeName => IsFp32Type ? "fp32" : "fp64";
   public bool IsStringType => AsSeqType?.Arg.IsCharType == true;
   public BitvectorType AsBitVectorType => NormalizeExpand() as BitvectorType;
 
-  public bool IsNumericBased() {
-    var t = NormalizeExpand();
-    return t.IsIntegerType || t.IsRealType || t.IsFloatingPointType || t.AsNewtype?.BaseType.IsNumericBased() == true;
-  }
-  public enum NumericPersuasion { Int, Real, Float }
+  public enum NumericAncestryKind { Integer, Real, NonNumeric, Undetermined, Cyclic }
+
+  public readonly record struct NumericAncestry(
+    NumericAncestryKind Kind, IReadOnlyList<RedirectingTypeDecl> Cycle = null);
+
+  /// <summary>
+  /// Classify numeric ancestry using actual type arguments and the current visibility scope. Scalar
+  /// classifications allocate no traversal state; declaration-cycle checks are local to this query.
+  /// </summary>
   [System.Diagnostics.Contracts.Pure]
-  public bool IsNumericBased(NumericPersuasion p) {
-    Type t = this;
-    while (true) {
-      t = t.NormalizeExpand();
-      if (t.IsIntegerType) {
-        return p == NumericPersuasion.Int;
-      }
-      if (t.IsRealType) {
-        return p == NumericPersuasion.Real;
-      }
-      if (t.IsFloatingPointType) {
-        return p == NumericPersuasion.Float;
-      }
-      if (t.AsNewtype is not { } newtypeDecl) {
-        return false;
-      }
-      t = newtypeDecl.RhsWithArgument(t.TypeArgs);
-    }
+  public NumericAncestry ClassifyNumericAncestry() {
+    var ancestry = NormalizeToAncestorTypeChecked();
+    return ancestry.Kind switch {
+      AncestorTypeKind.Undetermined => new NumericAncestry(NumericAncestryKind.Undetermined),
+      AncestorTypeKind.Cyclic => new NumericAncestry(NumericAncestryKind.Cyclic, ancestry.Cycle),
+      _ => new NumericAncestry(ancestry.AncestorType switch {
+        IntType => NumericAncestryKind.Integer,
+        RealType => NumericAncestryKind.Real,
+        _ => NumericAncestryKind.NonNumeric
+      })
+    };
   }
 
-  public (int significandBits, int exponentBits) FloatPrecision => this switch {
-    Fp32Type => (24, 8),
-    Fp64Type => (53, 11),
-    _ => throw new ArgumentException($"Not a float type: {this}")
-  };
+  public bool IsNumericBased() {
+    return ClassifyNumericAncestry().Kind is NumericAncestryKind.Integer or NumericAncestryKind.Real;
+  }
+  public enum NumericPersuasion { Int, Real }
+  [System.Diagnostics.Contracts.Pure]
+  public bool IsNumericBased(NumericPersuasion p) {
+    var kind = ClassifyNumericAncestry().Kind;
+    return p == NumericPersuasion.Int ? kind == NumericAncestryKind.Integer : kind == NumericAncestryKind.Real;
+  }
 
   /// <summary>
   /// Returns true if the type has two representations at run time, the ordinary representation and a
@@ -546,12 +537,12 @@ public abstract class Type : NodeWithOrigin {
       }
     }
 
-    switch (t) {
-      case BoolType or CharType or IntType or BigOrdinalType or RealType or BitvectorType or Fp32Type or Fp64Type:
-      case CollectionType:
-        return AutoInitInfo.CompilableValue;
-      case FieldType:
-        return AutoInitInfo.MaybeEmpty;
+    if (t is BoolType || t is CharType || t is IntType || t is BigOrdinalType || t is RealType || t is BitvectorType) {
+      return AutoInitInfo.CompilableValue;
+    } else if (t is CollectionType) {
+      return AutoInitInfo.CompilableValue;
+    } else if (t is FieldType) {
+      return AutoInitInfo.MaybeEmpty;
     }
 
     var udt = (UserDefinedType)t;
@@ -668,7 +659,9 @@ public abstract class Type : NodeWithOrigin {
         return true;
       }
       var mt = AsMapType;
-      if (mt != null && mt.Domain.HasFinitePossibleValues) {
+      if (mt != null && mt.Domain.HasFinitePossibleValues && mt.Range.HasFinitePossibleValues) {
+        // A finite key carrier bounds one map's domain, but the carrier of map
+        // values is finite only when its values also come from a finite carrier.
         return true;
       }
       var dt = AsDatatype;
@@ -721,13 +714,6 @@ public abstract class Type : NodeWithOrigin {
           return nntd.Class;
         }
       }
-
-      // Handle built-in types that normalize to non-UserDefinedType instances
-      // Only apply this for UserDefinedType instances that normalize to built-in types
-      if (udt == null && this is UserDefinedType originalUdt && originalUdt.ResolvedClass is ValuetypeDecl) {
-        return originalUdt.ResolvedClass as TopLevelDeclWithMembers;
-      }
-
       return udt?.ResolvedClass as TopLevelDeclWithMembers;
     }
   }
@@ -1183,24 +1169,18 @@ public abstract class Type : NodeWithOrigin {
       return sub is IntType;
     } else if (super is RealType) {
       return sub is RealType;
-    } else if (super is Fp32Type) {
-      return sub is Fp32Type;
-    } else if (super is Fp64Type) {
-      return sub is Fp64Type;
     } else if (super is BitvectorType) {
       var bitvectorSuper = (BitvectorType)super;
       var bitvectorSub = sub as BitvectorType;
       return bitvectorSub != null && bitvectorSuper.Width == bitvectorSub.Width;
-    } else if (super is IntVarietiesSupertype) {
-      while (sub.AsNewtype != null) {
-        sub = sub.AsNewtype.BaseType.NormalizeExpand();
+    } else if (super is IntVarietiesSupertype or RealVarietiesSupertype) {
+      var ancestry = sub.NormalizeToAncestorTypeChecked();
+      if (ancestry.Kind == AncestorTypeKind.Cyclic) {
+        throw new RedirectingTypeCycleException(ancestry.Cycle);
       }
-      return sub.IsIntegerType || sub is BitvectorType || sub is BigOrdinalType;
-    } else if (super is RealVarietiesSupertype) {
-      while (sub.AsNewtype != null) {
-        sub = sub.AsNewtype.BaseType.NormalizeExpand();
-      }
-      return sub is RealType or Fp32Type or Fp64Type;
+      return super is IntVarietiesSupertype
+        ? ancestry.AncestorType is IntType or BitvectorType or BigOrdinalType
+        : ancestry.AncestorType is RealType;
     } else if (super is BigOrdinalType) {
       return sub is BigOrdinalType;
     } else if (super is SetType) {
@@ -1276,10 +1256,6 @@ public abstract class Type : NodeWithOrigin {
       return b is IntType;
     } else if (a is RealType) {
       return b is RealType;
-    } else if (a is Fp64Type) {
-      return b is Fp64Type;
-    } else if (a is Fp32Type) {
-      return b is Fp32Type;
     } else if (a is FieldType) {
       return b is FieldType;
     } else if (a is BitvectorType) {
@@ -1494,9 +1470,9 @@ public abstract class Type : NodeWithOrigin {
     } else if (a.IsBoolType || a.IsCharType || a.IsBitVectorType || a.IsBigOrdinalType || a.IsTypeParameter || a.IsInternalTypeSynonym || a is TypeProxy) {
       return a.Equals(b) ? a : null;
     } else if (a is RealVarietiesSupertype) {
-      return b is RealVarietiesSupertype || b.IsNumericBased(NumericPersuasion.Real) || b.IsNumericBased(NumericPersuasion.Float) ? b : null;
+      return b is RealVarietiesSupertype || b.IsNumericBased(NumericPersuasion.Real) ? b : null;
     } else if (b is RealVarietiesSupertype) {
-      return a.IsNumericBased(NumericPersuasion.Real) || a.IsNumericBased(NumericPersuasion.Float) ? a : null;
+      return a.IsNumericBased(NumericPersuasion.Real) ? a : null;
     } else if (a.IsNumericBased()) {
       // Note, for join, we choose not to step down to IntVarietiesSupertype or RealVarietiesSupertype
       return a.Equals(b) ? a : null;
@@ -1681,14 +1657,10 @@ public abstract class Type : NodeWithOrigin {
       return b is IntVarietiesSupertype || b.IsNumericBased(NumericPersuasion.Int) || b.IsBigOrdinalType || b.IsBitVectorType ? b : null;
     } else if (b is IntVarietiesSupertype) {
       return a.IsNumericBased(NumericPersuasion.Int) || a.IsBigOrdinalType || a.IsBitVectorType ? a : null;
-    } else if (a is FloatVarietiesSupertype) {
-      return b is FloatVarietiesSupertype || b.IsFloatingPointType ? b : null;
-    } else if (b is FloatVarietiesSupertype) {
-      return a.IsFloatingPointType ? a : null;
     } else if (a is RealVarietiesSupertype) {
-      return b is RealVarietiesSupertype || b.IsNumericBased(NumericPersuasion.Real) || b.IsNumericBased(NumericPersuasion.Float) ? b : null;
+      return b is RealVarietiesSupertype || b.IsNumericBased(NumericPersuasion.Real) ? b : null;
     } else if (b is RealVarietiesSupertype) {
-      return a.IsNumericBased(NumericPersuasion.Real) || a.IsNumericBased(NumericPersuasion.Float) ? a : null;
+      return a.IsNumericBased(NumericPersuasion.Real) ? a : null;
     }
 
     var towerA = GetTowerOfSubsetTypes(a);
@@ -1958,16 +1930,6 @@ public class RealVarietiesSupertype : ArtificialType {
   }
 }
 
-public class FloatVarietiesSupertype : ArtificialType {
-  [System.Diagnostics.Contracts.Pure]
-  public override string TypeName(DafnyOptions options, ModuleDefinition context, bool parseAble) {
-    return "float";
-  }
-  public override bool Equals(Type that, bool keepConstraints = false) {
-    return keepConstraints ? this.GetType() == that.GetType() : that is FloatVarietiesSupertype;
-  }
-}
-
 /// <summary>
 /// A NonProxy type is a fully constrained type.  It may contain members.
 /// </summary>
@@ -2085,65 +2047,6 @@ public class RealType : BasicType {
   }
 }
 
-public class Fp64Type : BasicType {
-  [SyntaxConstructor]
-  public Fp64Type(IOrigin origin) : base(origin) {
-  }
-
-  public Fp64Type() {
-  }
-
-  [System.Diagnostics.Contracts.Pure]
-  public override string TypeName(DafnyOptions options, ModuleDefinition context, bool parseAble) {
-    return "fp64";
-  }
-
-  public override bool Equals(Type that, bool keepConstraints = false) {
-    return that.NormalizeExpand(keepConstraints) is Fp64Type;
-  }
-
-  // Key implementation: fp64 supports equality with preconditions
-  // In ghost contexts, equality is reflexive
-  // In compiled contexts, equality requires preconditions !x.IsNaN && !y.IsNaN
-  public override bool SupportsEquality => true;
-  public override bool PartiallySupportsEquality => true;
-
-  public override bool IsSubtypeOf(Type super, bool ignoreTypeArguments, bool ignoreNullity) {
-    return super switch {
-      RealVarietiesSupertype or Fp64Type => true,
-      _ => base.IsSubtypeOf(super, ignoreTypeArguments, ignoreNullity)
-    };
-  }
-}
-
-public class Fp32Type : BasicType {
-  [SyntaxConstructor]
-  public Fp32Type(IOrigin origin) : base(origin) {
-  }
-
-  public Fp32Type() {
-  }
-
-  [System.Diagnostics.Contracts.Pure]
-  public override string TypeName(DafnyOptions options, ModuleDefinition context, bool parseAble) {
-    return "fp32";
-  }
-
-  public override bool Equals(Type that, bool keepConstraints = false) {
-    return that.NormalizeExpand(keepConstraints) is Fp32Type;
-  }
-
-  public override bool SupportsEquality => true;
-  public override bool PartiallySupportsEquality => true;
-
-  public override bool IsSubtypeOf(Type super, bool ignoreTypeArguments, bool ignoreNullity) {
-    return super switch {
-      RealVarietiesSupertype or Fp32Type => true,
-      _ => base.IsSubtypeOf(super, ignoreTypeArguments, ignoreNullity)
-    };
-  }
-}
-
 public class BigOrdinalType : BasicType {
   [SyntaxConstructor]
   public BigOrdinalType(IOrigin origin) : base(origin) {
@@ -2230,7 +2133,7 @@ public class SelfType : NonProxyType {
       return t;
     } else {
       // SelfType's are used only in certain restricted situations. In those situations, we need to be able
-      // to substitute for the SelfType's TypeArg. That's the only case in which we expect to see a
+      // to substitute for the the SelfType's TypeArg. That's the only case in which we expect to see a
       // SelfType being part of a substitution operation at all.
       Contract.Assert(false); throw new Cce.UnreachableException();
     }
@@ -2355,13 +2258,19 @@ public abstract class TypeProxy : Type {
   public Family family = Family.Unknown;
   public static Family GetFamily(Type t) {
     Contract.Ensures(Contract.Result<Family>() != Family.Unknown || t is TypeProxy || t is ResolverIdentifierExpr.ResolverType);  // return Unknown ==> t is TypeProxy || t is ResolverType
+    // A cyclic nominal type cannot be represented by Unknown (see the postcondition). The legacy
+    // resolver catches this dedicated exception at its inference boundary and reports the cycle.
+    var ancestry = t.ClassifyNumericAncestry();
+    if (ancestry.Kind == NumericAncestryKind.Cyclic) {
+      throw new RedirectingTypeCycleException(ancestry.Cycle);
+    }
     if (t.IsBoolType) {
       return Family.Bool;
     } else if (t.IsCharType) {
       return Family.Char;
-    } else if (t.IsNumericBased(NumericPersuasion.Int) || t is IntVarietiesSupertype) {
+    } else if (ancestry.Kind == NumericAncestryKind.Integer || t is IntVarietiesSupertype) {
       return Family.IntLike;
-    } else if (t.IsNumericBased(NumericPersuasion.Real) || t.IsNumericBased(NumericPersuasion.Float) || t is RealVarietiesSupertype) {
+    } else if (ancestry.Kind == NumericAncestryKind.Real || t is RealVarietiesSupertype) {
       return Family.RealLike;
     } else if (t.IsBigOrdinalType) {
       return Family.Ordinal;
@@ -2385,7 +2294,7 @@ public abstract class TypeProxy : Type {
 
 #if TI_DEBUG_PRINT
   static int _id = 0;
-  int id = _id++;
+  int id = ModuleNamingScope.Current?.Next("type-proxy") ?? _id++;
 #endif
   [System.Diagnostics.Contracts.Pure]
   public override string TypeName(DafnyOptions options, ModuleDefinition context, bool parseAble) {

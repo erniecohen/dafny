@@ -378,6 +378,31 @@ module X refines P {
 
 Note that type refinements are not required to include the `...` indicator that they are refining a parent type.
 
+A type synonym cannot declare members, so by default it cannot refine an abstract type
+with members.  With the option `--synonym-refines-abstract-type`, it can, when it has the
+form `type T<X1, ..., Xn> = U<X1, ..., Xn>`: the right-hand side names a class, trait,
+datatype, newtype or abstract type `U` declared in the refining module (and not in the
+module it refines), applied to the synonym's own type parameters in order.  The members of
+`T` are then merged into `U`, exactly as they would be merged into a declaration of `T`
+itself: members of `T` that `U` does not declare are copied into `U`, and members that `U`
+declares must refine those of `T`, with the same signatures (repeated syntactically, so a
+type written `T` in the refined module is written `T` again, not `U`) and inheriting their
+specifications.  The type parameters of `U` must agree with those of `T` as above, and
+`T`'s type characteristics must hold of the synonym.  Each `U` can be the right-hand side
+of only one such synonym.
+
+<!-- %no-check -->
+```dafny
+abstract module A {
+  type O { predicate i() }
+}
+
+module B refines A {  // needs --synonym-refines-abstract-type
+  type T { predicate i() }
+  type O = T
+}
+```
+
 ## 10.10. Statements
 
 The refinement syntax (`...`) in statements is deprecated.

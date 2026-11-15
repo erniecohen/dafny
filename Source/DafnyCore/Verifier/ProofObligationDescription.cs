@@ -21,7 +21,7 @@ public abstract class ProofObligationDescription : Boogie.ProofObligationDescrip
     return null;
   }
 
-  // Substituting replaces the token of a substituting expression by the token of the identifierExpr being substituted,
+  // Substituting replaces the token of a substituting expression by the token of the identifierExpr being susbstituted,
   // Since the printer requires the token of IdentifierExpr to be Token.NoToken to print the custom name in Dafny mode,
   // we just wrap the identifierExpr into a ParensExpression, as it is the case for any other expression.
   protected static Expression ToSubstitutableExpression(BoundVar bvar) {
@@ -72,7 +72,7 @@ public abstract class ProofObligationDescription : Boogie.ProofObligationDescrip
 
 public class DivisorNonZero : ProofObligationDescription {
   public override string SuccessDescription =>
-    "divisor is always non-zero";
+    "divisor is always non-zero.";
 
   public override string FailureDescription =>
     "possible division by zero";
@@ -87,151 +87,6 @@ public class DivisorNonZero : ProofObligationDescription {
 
   public override Expression GetAssertedExpr(DafnyOptions options) {
     return new BinaryExpr(divisor.Origin, BinaryExpr.Opcode.Neq, divisor, new LiteralExpr(divisor.Origin, 0));
-  }
-}
-
-public class FloatEqualityPrecondition : ProofObligationDescription {
-  private readonly string floatTypeName;
-  private readonly Expression operand;
-
-  public FloatEqualityPrecondition(Expression operand, Type floatType) {
-    this.operand = operand;
-    this.floatTypeName = floatType.FloatTypeName;
-  }
-
-  public override string SuccessDescription =>
-    $"{floatTypeName} operand is never NaN for equality comparison";
-
-  public override string FailureDescription =>
-    $"{floatTypeName} equality comparison requires that operands are not NaN";
-
-  public override string ShortDescription => $"{floatTypeName} equality precondition";
-
-  public override Expression GetAssertedExpr(DafnyOptions options) {
-    return new LiteralExpr(operand.Origin, true);
-  }
-}
-
-public class FloatSignedZeroEqualityPrecondition : ProofObligationDescription {
-  private readonly string floatTypeName;
-  private readonly Expression operand0;
-  private readonly Expression operand1;
-
-  public FloatSignedZeroEqualityPrecondition(Expression operand0, Expression operand1, Type floatType) {
-    this.operand0 = operand0;
-    this.operand1 = operand1;
-    this.floatTypeName = floatType.FloatTypeName;
-  }
-
-  public override string SuccessDescription =>
-    $"{floatTypeName} equality comparison never compares +0.0 with -0.0";
-
-  public override string FailureDescription =>
-    $"{floatTypeName} equality comparison requires that signed zeros have the same sign";
-
-  public override string ShortDescription => $"{floatTypeName} signed zero equality precondition";
-
-  public override Expression GetAssertedExpr(DafnyOptions options) {
-    return new LiteralExpr(operand0.Origin, true);
-  }
-}
-
-public class FloatInvalidOperationPrecondition : ProofObligationDescription {
-  private readonly string operation;
-  private readonly Expression operand0;
-  private readonly Expression operand1;
-  private readonly string floatTypeName;
-
-  public FloatInvalidOperationPrecondition(string operation, Expression operand0, Expression operand1, Type floatType) {
-    this.operation = operation;
-    this.operand0 = operand0;
-    this.operand1 = operand1;
-    this.floatTypeName = floatType.IsFp32Type ? "fp32" : "fp64";
-  }
-
-  public override string SuccessDescription =>
-    $"{floatTypeName} {operation} never produces invalid operation";
-
-  public override string FailureDescription =>
-    $"{floatTypeName} {operation} has invalid operand combination (e.g., ∞+(-∞), ∞*0, 0/0, ∞/∞)";
-
-  public override string ShortDescription => $"{floatTypeName} {operation} invalid operation precondition";
-
-  public override Expression GetAssertedExpr(DafnyOptions options) {
-    return new LiteralExpr(operand0.Origin, true);
-  }
-}
-
-public class FloatNaNPrecondition : ProofObligationDescription {
-  private readonly string operation;
-  private readonly Expression operand;
-  private readonly string floatTypeName;
-
-  public FloatNaNPrecondition(string operation, Expression operand, Type floatType) {
-    this.operation = operation;
-    this.operand = operand;
-    this.floatTypeName = floatType.IsFp32Type ? "fp32" : "fp64";
-  }
-
-  public override string SuccessDescription =>
-    $"{floatTypeName} operand is never NaN for {operation}";
-
-  public override string FailureDescription =>
-    $"{floatTypeName} {operation} requires that operands are not NaN";
-
-  public override string ShortDescription => $"{floatTypeName} {operation} NaN precondition";
-
-  public override Expression GetAssertedExpr(DafnyOptions options) {
-    return new LiteralExpr(operand.Origin, true);
-  }
-}
-
-public class FloatCollectionEqualityWellformedness : ProofObligationDescription {
-  private readonly Type collectionType;
-  private readonly string floatTypeName;
-
-  public FloatCollectionEqualityWellformedness(Type collectionType, Type floatType) {
-    this.collectionType = collectionType.NormalizeExpand();
-    this.floatTypeName = floatType.FloatTypeName;
-  }
-
-  public override string SuccessDescription =>
-    "equality comparison is supported for this type";
-
-  public override string FailureDescription {
-    get {
-      string typeName = GetTypeName();
-      return $"equality comparison of {typeName} is not supported in compiled code (use ghost context or compare elements individually)";
-    }
-  }
-
-  public override string ShortDescription => $"{floatTypeName} collection equality";
-
-  private string GetTypeName() {
-    if (collectionType is SetType) {
-      return $"set<{floatTypeName}>";
-    } else if (collectionType is SeqType) {
-      return $"seq<{floatTypeName}>";
-    } else if (collectionType is MultiSetType) {
-      return $"multiset<{floatTypeName}>";
-    } else if (collectionType is MapType mapType) {
-      bool domainIsFloat = (floatTypeName == "fp32" && mapType.Domain is Fp32Type) ||
-                           (floatTypeName == "fp64" && mapType.Domain is Fp64Type);
-      bool rangeIsFloat = (floatTypeName == "fp32" && mapType.Range is Fp32Type) ||
-                          (floatTypeName == "fp64" && mapType.Range is Fp64Type);
-      return domainIsFloat ?
-        (rangeIsFloat ? $"map<{floatTypeName}, {floatTypeName}>" : $"map<{floatTypeName}, _>") :
-        $"map<_, {floatTypeName}>";
-    } else if (collectionType is UserDefinedType udt && udt.ResolvedClass != null) {
-      return $"datatype '{udt.ResolvedClass.Name}' containing {floatTypeName}";
-    } else if (collectionType != null) {
-      return $"type containing {floatTypeName}";
-    }
-    return $"type containing {floatTypeName}";
-  }
-
-  public override Expression GetAssertedExpr(DafnyOptions options) {
-    return new LiteralExpr(collectionType?.Origin ?? Microsoft.Dafny.Token.NoToken, false);
   }
 }
 
@@ -289,7 +144,7 @@ public class ConversionIsNatural : ProofObligationDescription {
     $"{prefix}value to be converted is always a natural number";
 
   public override string FailureDescription =>
-    $"{prefix}value to be converted could not be proved to be a natural number";
+    $"{prefix}value to be converted might be bigger than every natural number";
 
   public override string ShortDescription => "converted value is natural";
 
@@ -311,7 +166,7 @@ public class ConversionSatisfiesConstraints : ProofObligationDescription {
     $"{prefix}result of operation never violates {kind} constraints for '{name}'";
 
   public override string FailureDescription =>
-    $"{prefix}result of operation could not be proved to satisfy {kind} constraint for '{name}'";
+    $"{prefix}result of operation might violate {kind} constraint for '{name}'";
 
   public override string ShortDescription => "conversion satisfies type constraints";
 
@@ -337,7 +192,7 @@ public class OrdinalSubtractionIsNatural : ProofObligationDescription {
     "RHS of ORDINAL subtraction is always a natural number";
 
   public override string FailureDescription =>
-    "RHS of ORDINAL subtraction must be a natural number, but the given RHS could not be proved to be a natural number";
+    "RHS of ORDINAL subtraction must be a natural number, but the given RHS might be larger";
 
   public override string ShortDescription => "ordinal subtraction is natural";
 
@@ -354,10 +209,10 @@ public class OrdinalSubtractionIsNatural : ProofObligationDescription {
 
 public class OrdinalSubtractionUnderflow : ProofObligationDescription {
   public override string SuccessDescription =>
-    "ORDINAL subtraction will remain above limit ordinal";
+    "ORDINAL subtraction will never go below limit ordinal";
 
   public override string FailureDescription =>
-    "ORDINAL subtraction could not be proved to remain above limit ordinal (that is, RHS could not be proved to be sufficiently small)";
+    "ORDINAL subtraction might underflow a limit ordinal (that is, RHS might be too large)";
 
   public override string ShortDescription => "ordinal subtraction underflow";
 
@@ -381,10 +236,10 @@ public class OrdinalSubtractionUnderflow : ProofObligationDescription {
 
 public class CharOverflow : ProofObligationDescription {
   public override string SuccessDescription =>
-    "char addition will remain below maximum";
+    "char addition will not overflow";
 
   public override string FailureDescription =>
-    "char addition could not be proved to remain below maximum";
+    "char addition might overflow";
 
   public override string ShortDescription => "char overflow";
 
@@ -409,10 +264,10 @@ public class CharOverflow : ProofObligationDescription {
 
 public class CharUnderflow : ProofObligationDescription {
   public override string SuccessDescription =>
-    "char subtraction will remain above minimum";
+    "char subtraction will not underflow";
 
   public override string FailureDescription =>
-    "char subtraction could not be proved to remain above minimum";
+    "char subtraction might underflow";
 
   public override string ShortDescription => "char underflow";
 
@@ -440,7 +295,7 @@ public class ConversionFit : ProofObligationDescription {
     $"{prefix}{what} to be converted will always fit in {toType}";
 
   public override string FailureDescription =>
-    $"{prefix}{what} to be converted could not be proved to fit in {toType}";
+    $"{prefix}{what} to be converted might not fit in {toType}";
 
   public override string ShortDescription => "conversion fit";
 
@@ -466,7 +321,7 @@ public class NonNegative : ProofObligationDescription {
     $"{what} is never negative";
 
   public override string FailureDescription =>
-    $"{what} could not be proved to be non-negative";
+    $"{what} might be negative";
 
   public override string ShortDescription => "non-negative";
 
@@ -546,99 +401,6 @@ public class IsInteger : ProofObligationDescription {
   }
 }
 
-public class IsExactlyRepresentableAsFloat : ProofObligationDescription {
-  private readonly string floatTypeName;
-  private readonly Type floatType;
-  private readonly string prefix;
-  private readonly Expression expr;
-
-  public IsExactlyRepresentableAsFloat(Expression expr, Type floatType, string prefix = "") {
-    this.expr = expr;
-    this.floatType = floatType;
-    this.floatTypeName = floatType.FloatTypeName;
-    this.prefix = prefix;
-  }
-
-  public override string SuccessDescription =>
-    $"{prefix}the {(expr.Type.IsNumericBased(Type.NumericPersuasion.Real) ? "real " : "")}value is exactly representable as {floatTypeName}";
-
-  public override string FailureDescription =>
-    $"{prefix}the {(expr.Type.IsNumericBased(Type.NumericPersuasion.Real) ? "real " : "")}value must be exactly representable as {floatTypeName} (if you want rounding, use the approximation operator ~)";
-
-  public override string ShortDescription => $"is exactly representable as {floatTypeName}";
-
-  public override Expression GetAssertedExpr(DafnyOptions options) {
-    // For real→float: expr == (expr as float) as real
-    // For fp64→fp32: expr == (expr as fp32) as fp64
-    // For fp32→fp64: expr == (expr as fp64) as fp32 (though this always succeeds)
-    var sourceType = expr.Type.NormalizeExpand();
-    Type targetType;
-    if (sourceType.IsNumericBased(Type.NumericPersuasion.Real)) {
-      targetType = Type.Real;
-    } else if (floatType.IsFp32Type && sourceType is Fp64Type) {
-      targetType = new Fp64Type();
-    } else if (floatType is Fp64Type && sourceType.IsFp32Type) {
-      targetType = new Fp32Type();
-    } else {
-      targetType = Type.Real; // fallback
-    }
-
-    return new BinaryExpr(
-      expr.Origin,
-      BinaryExpr.Opcode.Eq,
-      expr,
-      new ConversionExpr(expr.Origin,
-        new ConversionExpr(expr.Origin, expr, floatType),
-        targetType)
-    );
-  }
-}
-
-public class FloatSqrtNonNegativePrecondition : ProofObligationDescription {
-  private readonly Expression expr;
-  private readonly string floatTypeName;
-
-  public FloatSqrtNonNegativePrecondition(Expression expr, Type floatType) {
-    this.expr = expr;
-    this.floatTypeName = floatType.IsFp32Type ? "fp32" : "fp64";
-  }
-
-  public override string SuccessDescription =>
-    $"{floatTypeName}.Sqrt argument is always non-negative";
-
-  public override string FailureDescription =>
-    $"{floatTypeName}.Sqrt requires a non-negative argument (negative values produce NaN)";
-
-  public override string ShortDescription => $"{floatTypeName}.Sqrt non-negative precondition";
-
-  public override Expression GetAssertedExpr(DafnyOptions options) {
-    var zero = Expression.CreateRealLiteral(expr.Origin, BaseTypes.BigDec.ZERO);
-    return new BinaryExpr(expr.Origin, BinaryExpr.Opcode.Ge, expr, zero);
-  }
-}
-
-public class FloatToIntFinitePrecondition : ProofObligationDescription {
-  private readonly Expression operand;
-  private readonly string floatTypeName;
-
-  public FloatToIntFinitePrecondition(Expression operand, Type floatType) {
-    this.operand = operand;
-    this.floatTypeName = floatType.IsFp32Type ? "fp32" : "fp64";
-  }
-
-  public override string SuccessDescription =>
-    $"{floatTypeName}.ToInt argument is always finite";
-
-  public override string FailureDescription =>
-    $"{floatTypeName}.ToInt requires a finite argument (not NaN or infinity)";
-
-  public override string ShortDescription => $"{floatTypeName}.ToInt finite precondition";
-
-  public override Expression GetAssertedExpr(DafnyOptions options) {
-    return new ExprDotName(operand.Origin, operand, new Name("IsFinite"), null);
-  }
-}
-
 //// Object properties
 
 public class NonNull : ProofObligationDescription {
@@ -646,7 +408,7 @@ public class NonNull : ProofObligationDescription {
     $"{PluralSuccess}{what} is never null";
 
   public override string FailureDescription =>
-    $"{PluralFailure}{what} could not be proved to be non-null";
+    $"{PluralFailure}{what} might be null";
 
   public override string ShortDescription => $"{what} non-null";
   private readonly string what;
@@ -780,7 +542,7 @@ public class AssertStatementDescription : ProofObligationDescriptionCustomMessag
     "assertion always holds";
 
   public override string DefaultFailureDescription =>
-    "assertion could not be proved";
+    "assertion might not hold";
 
   public override string ShortDescription => "assert statement";
 
@@ -1013,8 +775,8 @@ public class TraitFrame : ProofObligationDescription {
 
   public override string FailureDescription =>
     isModify
-      ? $"modified object in {whatKind} could not be proved to be in the parent trait's modifies clause"
-      : $"accessed object in {whatKind} could not be proved to be in the parent trait's reads clause";
+      ? $"{whatKind} might modify an object not in the parent trait context's modifies clause"
+      : $"{whatKind} might read an object not in the parent trait context's reads clause";
 
   public override string ShortDescription =>
     isModify ? "trait modifies" : "trait reads";
@@ -1060,12 +822,39 @@ public class TraitDecreases : ProofObligationDescription {
   }
 }
 
+/// <summary>
+/// Under --modular-termination, an override's global bound is no greater than its parent's.
+/// </summary>
+public class TraitGlobalDecreases : ProofObligationDescription {
+  public override string SuccessDescription =>
+    $"{whatKind}'s 'decreases {{:global}}' bound is below or equal to that in the trait";
+
+  public override string FailureDescription =>
+    $"{whatKind}'s 'decreases {{:global}}' bound must be below or equal to that in the trait";
+
+  public override string ShortDescription => "trait global decreases";
+
+  public override bool ProvedOutsideUserCode => true;
+
+  private readonly string whatKind;
+  private readonly Expression expr;
+
+  public TraitGlobalDecreases(string whatKind, Expression expr) {
+    this.whatKind = whatKind;
+    this.expr = expr;
+  }
+
+  public override Expression GetAssertedExpr(DafnyOptions options) {
+    return expr;
+  }
+}
+
 public class ModifyFrameSubset : ProofObligationDescription {
   public override string SuccessDescription =>
       $"{whatKind} is allowed by context's modifies clause";
 
   public override string FailureDescription =>
-      $"modified object in {whatKind} could not be proved to be in the current modifies clause";
+      $"{whatKind} might violate context's modifies clause";
 
   public override string ShortDescription => "modify frame subset";
 
@@ -1089,7 +878,7 @@ public class FrameDereferenceNonNull : ProofObligationDescription {
     "frame expression does not dereference null";
 
   public override string FailureDescription =>
-    "frame expression could not be proved to be non-null";
+    "frame expression might dereference null";
 
   public override string ShortDescription => "frame dereference";
 
@@ -1111,7 +900,7 @@ public class Terminates : ProofObligationDescription {
   public override string FailureDescription =>
     (inferredDescreases
       ? ("cannot prove termination; try supplying a decreases clause" + (isLoop ? " for the loop" : ""))
-      : $"decreases {FormDescription} could not be proved to decrease") +
+      : $"decreases {FormDescription} might not decrease") +
     (hint is null ? "" : $" ({hint})");
 
   public override string ShortDescription => "termination";
@@ -1219,7 +1008,7 @@ public class Modifiable : ProofObligationDescription {
     $"{description} is in the enclosing context's modifies clause";
 
   public override string FailureDescription =>
-    $"modified {description} could not be proved to be in the current modifies clause";
+    $"assignment might update {description} not in the enclosing context's modifies clause";
 
   public override string ShortDescription => "modifiable";
 
@@ -1462,7 +1251,7 @@ public class WitnessCheck : ProofObligationDescription {
 
   public override string FailureDescription =>
     witnessString is null
-      ? "the given witness expression could not be proved to satisfy constraint"
+      ? "the given witness expression might not satisfy constraint"
       : (witnessString == "" ? $"{errMsg}{hintMsg}" : $"{errMsg} (only tried {witnessString}){hintMsg}");
 
   public override string ShortDescription => "witness check";
@@ -1564,7 +1353,7 @@ public class ForallLHSUnique : ProofObligationDescription {
     "left-hand sides of forall-statement bound variables are unique (or right-hand sides are equivalent)";
 
   public override string FailureDescription =>
-    "left-hand sides for different forall-statement bound variables could not be proved to refer to different locations (and right-hand sides could not be proved to be equivalent)";
+    "left-hand sides for different forall-statement bound variables might refer to the same location (and right-hand sides might not be equivalent)";
 
   public override string ShortDescription => "forall bound unique";
 
@@ -1601,7 +1390,7 @@ public class ElementInDomain : ProofObligationDescription {
     "element is in domain";
 
   public override string FailureDescription =>
-    "element could not be proved to be in domain";
+    "element might not be in domain";
 
   public override string ShortDescription => "element in domain";
 
@@ -1622,7 +1411,7 @@ public class DefiniteAssignment : ProofObligationDescription {
     $"{kind} '{name}', which is subject to definite-assignment rules, is always initialized {where}";
 
   public override string FailureDescription =>
-    $"{kind} '{name}', which is subject to definite-assignment rules, could not be proved to be initialized {where}";
+    $"{kind} '{name}', which is subject to definite-assignment rules, might be uninitialized {where}";
 
   public override string ShortDescription => "definite assignment";
 
@@ -1721,7 +1510,7 @@ public class ComprehensionNoAlias : ProofObligationDescription {
     "key expressions refer to unique values";
 
   public override string FailureDescription =>
-    "key expressions could not be proved to refer to different values";
+    "key expressions might be referring to the same value";
 
   public override string ShortDescription => "unique key expressions";
 
@@ -1753,7 +1542,7 @@ public class DistinctLHS : ProofObligationDescription {
     $"left-hand sides {lhsa} and {lhsb} are distinct";
 
   public override string FailureDescription =>
-    $"{when}left-hand sides {lhsa} and {lhsb} could not be proved to refer to different locations{whenSuffix}";
+    $"{when}left-hand sides {lhsa} and {lhsb} {might}refer to the same location{whenSuffix}";
 
   public override string ShortDescription => "distinct lhs";
 
@@ -1968,44 +1757,6 @@ public class BoilerplateTriple : ProofObligationDescriptionCustomMessages {
   }
 }
 
-public class IntToFloatExactnessCheck : ProofObligationDescription {
-  private readonly string floatTypeName;
-  private readonly string mantissaBits;
-  private readonly string prefix;
-  private readonly Expression expr;
-
-  public IntToFloatExactnessCheck(Expression expr, Type floatType, string prefix = "") {
-    this.expr = expr;
-    this.prefix = prefix;
-    if (floatType.IsFp32Type) {
-      this.floatTypeName = "fp32";
-      this.mantissaBits = "2^24";
-    } else {
-      this.floatTypeName = "fp64";
-      this.mantissaBits = "2^53";
-    }
-  }
-
-  public override string SuccessDescription =>
-    $"{prefix}the integer value is exactly representable as {floatTypeName}";
-
-  public override string FailureDescription =>
-    $"{prefix}the integer value must be exactly representable as {floatTypeName} (integers outside ±{mantissaBits} cannot be exactly represented)";
-
-  public override string ShortDescription => $"int to {floatTypeName} exactness check";
-
-  public override Expression GetAssertedExpr(DafnyOptions options) {
-    // The exactness check is: converting to float and back to int preserves the value
-    // This properly handles all exactly representable integers, including:
-    // - All integers from -{mantissaBits} to {mantissaBits}
-    // - Even integers from ±{mantissaBits} to ±{mantissaBits}*2
-    // - Multiples of 4 from ±{mantissaBits}*2 to ±{mantissaBits}*4
-    // - And so on up to the maximum representable value
-    // The actual Boogie check performs the round-trip test, this is just for display
-    return Expression.CreateBoolLiteral(expr.Origin, true);
-  }
-}
-
 internal class Utils {
   public static Expression MakeCharBoundsCheck(DafnyOptions options, Expression expr) {
     return options.Get(CommonOptionBag.UnicodeCharacters)
@@ -2075,7 +1826,6 @@ internal class Utils {
   /// permit read/modification access to all objects, arrays, and/or sets of objects/arrays in the `subsetFrames`.
   /// </summary>
   public static Expression MakeDafnyMultiFrameCheck(List<FrameExpression> supersetFrames, List<FrameExpression> subsetFrames) {
-    Contract.Assert(!Function.FrameReadsDoubleStar(supersetFrames));
     if (subsetFrames.Count == 0) {
       return null;
     }
@@ -2089,7 +1839,6 @@ internal class Utils {
   /// permit read/modification access to an object/array (or set of objects/arrays).
   /// </summary>
   public static Expression MakeDafnyFrameCheck(List<FrameExpression> frames, Expression objOrObjSet, Field field) {
-    Contract.Assert(!Function.FrameReadsDoubleStar(frames));
     if (frames.Any(frame => frame.E is WildcardExpr)) {
       return new LiteralExpr(Token.NoToken, true);
     }

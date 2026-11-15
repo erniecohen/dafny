@@ -1,0 +1,15 @@
+Use module-scoped verification names, dependency heights and builtin inventories
+in the default translator. Unrelated module growth no longer changes another
+unit's translated text. This intentionally changes generated Boogie once and can
+move solver resource costs. Translation-table consumers use the same graph
+materialization and module-owned proof/report maps as uncached consumers.
+
+The moved Base64 encoding proof checks its existing obligations in separate assertion batches, within its unchanged resource limit.
+
+The moved structural-JSON function checks its existing well-formedness obligations separately, within its unchanged resource limit.
+
+The original well-founded induction regression and the one-padding Base64 decomposition lemma keep their existing proof obligations and resource ceilings, with assertion isolation to repair moved proof costs. Generated-name and canonical builtin-display expectations follow the new ownership scheme.
+
+Operator export views recognize dependency-local compiler builtin identities while retaining visibility checks on user declarations.
+
+Normalized solver declaration order uses deterministic numeric literal hashes by default, removing dependence on the runtime process hash seed.

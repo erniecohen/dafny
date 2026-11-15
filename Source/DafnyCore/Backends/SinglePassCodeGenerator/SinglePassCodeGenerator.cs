@@ -218,7 +218,7 @@ namespace Microsoft.Dafny.Compilers {
     protected virtual bool IncludeExternallyImportedMembers { get => false; }
     protected virtual bool SupportsStaticsInGenericClasses => true;
     protected virtual bool TraitRepeatsInheritedDeclarations => false;
-    protected virtual bool InstanceMethodsCanOnlyCallOverriddenTraitMethods => false;
+    protected virtual bool InstanceMethodsCanOnlyCallOverridenTraitMethods => false;
     protected IClassWriter CreateClass(string moduleName, TopLevelDecl cls, ConcreteSyntaxTree wr) {
       return CreateClass(moduleName, false, null, cls.TypeArgs,
         cls, (cls as TopLevelDeclWithMembers)?.ParentTypeInformation.UniqueParentTraits(), null, wr);
@@ -1310,7 +1310,7 @@ namespace Microsoft.Dafny.Compilers {
       ConcreteSyntaxTree wStmts);  // Immediately Invoked Function Expression
     protected abstract ConcreteSyntaxTree CreateIIFE1(int source, Type resultType, IOrigin resultTok, string bvName,
       ConcreteSyntaxTree wr, ConcreteSyntaxTree wStmts);  // Immediately Invoked Function Expression
-    public enum ResolvedUnaryOp { BoolNot, BitwiseNot, Cardinality, FloatNegate }
+    public enum ResolvedUnaryOp { BoolNot, BitwiseNot, Cardinality }
 
     protected static readonly Dictionary<UnaryOpExpr.ResolvedOpcode, ResolvedUnaryOp> UnaryOpCodeMap = new() {
       [UnaryOpExpr.ResolvedOpcode.BVNot] = ResolvedUnaryOp.BitwiseNot,
@@ -1318,8 +1318,7 @@ namespace Microsoft.Dafny.Compilers {
       [UnaryOpExpr.ResolvedOpcode.SeqLength] = ResolvedUnaryOp.Cardinality,
       [UnaryOpExpr.ResolvedOpcode.SetCard] = ResolvedUnaryOp.Cardinality,
       [UnaryOpExpr.ResolvedOpcode.MultiSetCard] = ResolvedUnaryOp.Cardinality,
-      [UnaryOpExpr.ResolvedOpcode.MapCard] = ResolvedUnaryOp.Cardinality,
-      [UnaryOpExpr.ResolvedOpcode.FloatNegate] = ResolvedUnaryOp.FloatNegate
+      [UnaryOpExpr.ResolvedOpcode.MapCard] = ResolvedUnaryOp.Cardinality
     };
 
     protected abstract void EmitUnaryExpr(ResolvedUnaryOp op, Expression expr, bool inLetExprBody,
@@ -2172,7 +2171,7 @@ namespace Microsoft.Dafny.Compilers {
         thisContext = c;
         foreach (var member in inheritedMembers.Select(memberx => (memberx as Function)?.ByMethodDecl ?? memberx)) {
           var canRedeclareMemberDefinedInTrait = c is not ClassLikeDecl and not DatatypeDecl and not NewtypeDecl ||
-                                                 !InstanceMethodsCanOnlyCallOverriddenTraitMethods || member.IsOverrideThatAddsBody;
+                                                 !InstanceMethodsCanOnlyCallOverridenTraitMethods || member.IsOverrideThatAddsBody;
           enclosingDeclaration = member;
           Contract.Assert(!member.IsStatic);  // only instance members should ever be added to .InheritedMembers
           if (member.IsGhost) {
@@ -2227,7 +2226,7 @@ namespace Microsoft.Dafny.Compilers {
           } else if (member is Function fn) {
             if (!IsExternallyImported(fn) && canRedeclareMemberDefinedInTrait) {
               Contract.Assert(fn.Body != null);
-              var typeArguments = InstanceMethodsCanOnlyCallOverriddenTraitMethods ?
+              var typeArguments = InstanceMethodsCanOnlyCallOverridenTraitMethods ?
                   new List<TypeArgumentInstantiation>()
                 : CombineAllTypeArguments(fn);
               var w = classWriter.CreateFunction(IdName(fn), typeArguments, fn.Ins, fn.ResultType, fn.Origin, fn.IsStatic, true, fn, true, false);
@@ -2238,7 +2237,7 @@ namespace Microsoft.Dafny.Compilers {
             if (!IsExternallyImported(method)
                 && canRedeclareMemberDefinedInTrait) {
               Contract.Assert(method.Body != null);
-              var typeArguments = InstanceMethodsCanOnlyCallOverriddenTraitMethods ?
+              var typeArguments = InstanceMethodsCanOnlyCallOverridenTraitMethods ?
                 new List<TypeArgumentInstantiation>()
                 : CombineAllTypeArguments(member);
               var w = classWriter.CreateMethod(method, typeArguments, true, true, false);
@@ -2294,7 +2293,7 @@ namespace Microsoft.Dafny.Compilers {
                 // that takes a parameter, because trait-equivalents in target languages don't allow implementations.
                 wBody = classWriter.CreateFunction(IdName(cf), CombineAllTypeArguments(cf), [], cf.Type, cf.Origin, InstanceConstAreStatic(), true, cf, false, true);
                 Contract.Assert(wBody != null);  // since the previous line asked for a body
-                if (c is TraitDecl && !InstanceMethodsCanOnlyCallOverriddenTraitMethods) {
+                if (c is TraitDecl && !InstanceMethodsCanOnlyCallOverridenTraitMethods) {
                   // also declare a function for the field in the interface
                   var wBodyInterface = CreateFunctionOrGetter(cf, IdName(cf), c, false, false, false, classWriter);
                   Contract.Assert(wBodyInterface == null);  // since the previous line said not to create a body
@@ -5375,7 +5374,6 @@ namespace Microsoft.Dafny.Compilers {
         compileName = IdName(f);
       }
       var typeArgs = CombineAllTypeArguments(f, e.TypeApplication_AtEnclosingClass, e.TypeApplication_JustFunction);
-
       EmitNameAndActualTypeArgs(compileName, TypeArgumentInstantiation.ToActuals(ForTypeParameters(typeArgs, f, false)),
         f.Origin, e.Receiver, customReceiver, wr);
       wr.Write("(");

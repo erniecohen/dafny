@@ -43,12 +43,15 @@ public class Compilation : IDisposable {
   private readonly CancellationTokenSource cancellationSource;
 
   public bool Started => started.Task.IsCompleted;
+  public CancellationToken CancellationToken => cancellationSource.Token;
 
   /// <summary>
   /// FilePosition is required because the default module lives in multiple files
   /// </summary>
   private readonly LazyConcurrentDictionary<ModuleDefinition,
     Task<IReadOnlyDictionary<ICanVerify, IReadOnlyList<IVerificationTask>>>> translatedModules = new();
+
+  private readonly ConcurrentDictionary<ModuleDefinition, ProofDependencyManager> moduleProofDependencies = new();
 
   private readonly ConcurrentDictionary<ICanVerify, Unit> verifyingOrVerifiedSymbols = new();
   private readonly LazyConcurrentDictionary<ICanVerify, IReadOnlyList<IVerificationTask>> tasksPerVerifiable = new();
@@ -67,6 +70,7 @@ public class Compilation : IDisposable {
 
   private bool disposed;
   private readonly ObservableErrorReporter errorReporter;
+  private readonly PipelineProfile? profile;
 
   public Task<Program?> ParsedProgram { get; }
   public Task<ResolutionResult?> Resolution { get; }
@@ -87,6 +91,7 @@ public class Compilation : IDisposable {
     ) {
     Input = input;
     this.boogieEngine = boogieEngine;
+    profile = PipelineProfile.For(input.Options);
 
     this.documentLoader = documentLoader;
     this.logger = logger;
@@ -141,6 +146,7 @@ public class Compilation : IDisposable {
 
   private async Task<IReadOnlyList<DafnyFile>> DetermineRootFiles() {
     await started.Task;
+    var profileStart = profile?.Begin();
 
     var result = new List<DafnyFile>();
 
@@ -202,6 +208,13 @@ public class Compilation : IDisposable {
       }
     }
 
+    if (DecreasesOrders.LoadsOrdersLibrary(Options)) {
+      await foreach (var file in DafnyFile.CreateAndValidate(fileSystem, errorReporter, Options,
+                       DafnyMain.StandardLibrariesOrdersDooUri, Project.StartingToken, !Options.Get(CommonOptionBag.TranslateStandardLibrary))) {
+        result.Add(file);
+      }
+    }
+
     var libraryPaths = CommonOptionBag.SplitOptionValueIntoFiles(Options.GetOrOptionDefault(CommonOptionBag.Libraries).Select(f => f.FullName));
     foreach (var library in libraryPaths) {
       await foreach (var file in DafnyFile.CreateAndValidate(fileSystem, errorReporter, Options, new Uri(library), Project.StartingToken, true)) {
@@ -221,6 +234,17 @@ public class Compilation : IDisposable {
     // Allow specifying the same file twice on the CLI
     var distinctResults = result.DistinctBy(d => d.Uri).ToList();
 
+    if (profile != null) {
+      profile.Span("roots", profileStart!.Value, new Dictionary<string, object?> {
+        ["version"] = Input.Version,
+        ["files"] = distinctResults.Select(f => new Dictionary<string, object?> {
+          ["uri"] = f.Uri.ToString(),
+          ["notVerified"] = f.ShouldNotVerify,
+          ["bytes"] = f.Uri.IsFile && File.Exists(f.Uri.LocalPath) ? new FileInfo(f.Uri.LocalPath).Length : null
+        }).ToList()
+      });
+    }
+
     updates.OnNext(new DeterminedRootFiles(Project, distinctResults));
     return distinctResults;
   }
@@ -231,7 +255,12 @@ public class Compilation : IDisposable {
       return null;
     }
 
+    var profileStart = profile?.Begin();
     var parseResult = await documentLoader.ParseAsync(this, cancellationSource.Token);
+    if (profile != null) {
+      profile.Span("parse", profileStart!.Value, new Dictionary<string, object?> { ["version"] = Input.Version });
+      profileStart = profile.Begin();
+    }
     if (Options.Get(CommonOptionBag.CheckSourceLocationConsistency)) {
       CheckSourceLocationConsistency(null, parseResult.Program);
     }
@@ -241,6 +270,10 @@ public class Compilation : IDisposable {
 
     var cloner = new Cloner(true);
     programAfterParsing = new Program(cloner, transformedProgram);
+    if (profile != null) {
+      profile.Span("parse.clone", profileStart!.Value, new Dictionary<string, object?> { ["version"] = Input.Version });
+      profile.HeapPoint("parsed");
+    }
 
     updates.OnNext(new FinishedParsing(parseResult with { Program = programAfterParsing }));
     logger.LogDebug(
@@ -273,7 +306,17 @@ public class Compilation : IDisposable {
     if (transformedProgram == null) {
       return null;
     }
+    var profileStart = profile?.Begin();
     var resolution = await documentLoader.ResolveAsync(this, transformedProgram!, cancellationSource.Token);
+    if (profile != null) {
+      profile.Span("resolve", profileStart!.Value, new Dictionary<string, object?> {
+        ["version"] = Input.Version,
+        ["typeSystemRefresh"] = Options.Get(CommonOptionBag.TypeSystemRefresh),
+        ["hasErrors"] = resolution?.HasErrors,
+        ["verifiableSymbols"] = resolution?.CanVerifies?.Values.Sum(t => t.Count())
+      });
+      profile.HeapPoint("resolved");
+    }
     if (resolution == null) {
       return null;
     }
@@ -371,7 +414,8 @@ public class Compilation : IDisposable {
           var result = await verifier.GetVerificationTasksAsync(boogieEngine, resolution, containingModule,
             cancellationSource.Token);
 
-          return result.GroupBy(t => {
+          moduleProofDependencies[containingModule] = result.ProofDependencies;
+          return result.Tasks.GroupBy(t => {
             var dafnyToken = (CanVerifyOrigin)t.ScopeToken;
             return dafnyToken.CanVerify;
           }).ToDictionary(
@@ -463,9 +507,11 @@ public class Compilation : IDisposable {
   }
 
   private void VerifyTask(ICanVerify canVerify, IVerificationTask task) {
+    profile?.TaskSubmitted(task);
     var statusUpdates = task.TryRun();
     if (statusUpdates == null) {
       if (task.CacheStatus is Completed completedCache) {
+        profile?.TaskStatus(PipelineProfile.ModuleName(canVerify.ContainingModule), canVerify.FullDafnyName, task, completedCache, true);
         HandleStatusUpdate(canVerify, task, completedCache);
       }
 
@@ -475,6 +521,7 @@ public class Compilation : IDisposable {
     statusUpdates.Subscribe(
       update => {
         try {
+          profile?.TaskStatus(PipelineProfile.ModuleName(canVerify.ContainingModule), canVerify.FullDafnyName, task, update, false);
           HandleStatusUpdate(canVerify, task, update);
         } catch (Exception e) {
           logger.LogError(e, "Caught exception in statusUpdates OnNext.");
@@ -510,7 +557,7 @@ public class Compilation : IDisposable {
     var tokenString = BoogieGenerator.ToDafnyToken(verificationTask.Split.Token).OriginToString(Options);
     logger.LogDebug($"Received Boogie status {boogieStatus} for {tokenString}, version {Input.Version}");
 
-    updates.OnNext(new BoogieUpdate(transformedProgram!.ProofDependencyManager, canVerify,
+    updates.OnNext(new BoogieUpdate(moduleProofDependencies[canVerify.ContainingModule], canVerify,
       verificationTask,
       boogieStatus));
   }
@@ -755,11 +802,26 @@ public class Compilation : IDisposable {
     }
   }
 
-  public void ClearModuleCache(ModuleDefinition moduleDefinition) {
-    translatedModules.Remove(moduleDefinition);
+  /// <summary>Cancels the verification tasks scheduled for one symbol.</summary>
+  public void CancelCanVerify(ICanVerify canVerify) {
+    if (tasksPerVerifiable.TryGetValue(canVerify, out var tasks)) {
+      foreach (var task in tasks) {
+        task.Cancel();
+      }
+    }
   }
 
-  public void ClearCanVerifyCache(ICanVerify canVerify) {
+  public void ClearModuleCache(ModuleDefinition moduleDefinition) {
+    translatedModules.Remove(moduleDefinition);
+    moduleProofDependencies.TryRemove(moduleDefinition, out _);
+  }
+
+  public void ClearCanVerifyCache(ICanVerify canVerify, bool allowRepeat = false) {
     tasksPerVerifiable.Remove(canVerify);
+    if (allowRepeat) {
+      // Called only after this symbol's tasks have finished. A later batch request
+      // must schedule fresh tasks, including for an overlapping or duplicate filter.
+      verifyingOrVerifiedSymbols.TryRemove(canVerify, out _);
+    }
   }
 }

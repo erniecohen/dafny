@@ -1,0 +1,43 @@
+heap (type-system-refresh:false)
+
+Dafny program verifier finished with 19 verified, 0 errors
+heap (type-system-refresh:true)
+
+Dafny program verifier finished with 19 verified, 0 errors
+negative (type-system-refresh:false)
+git-issue-2463-negative.dfy(10,2): Error: assertion might not hold
+git-issue-2463-negative.dfy(15,2): Error: assertion might not hold
+git-issue-2463-negative.dfy(20,2): Error: assertion might not hold
+git-issue-2463-negative.dfy(25,0): Error: a postcondition could not be proved on this return path
+git-issue-2463-negative.dfy(24,24): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 1 verified, 4 errors
+negative (type-system-refresh:true)
+git-issue-2463-negative.dfy(10,2): Error: assertion might not hold
+git-issue-2463-negative.dfy(15,2): Error: assertion might not hold
+git-issue-2463-negative.dfy(20,2): Error: assertion might not hold
+git-issue-2463-negative.dfy(25,0): Error: a postcondition could not be proved on this return path
+git-issue-2463-negative.dfy(24,24): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 1 verified, 4 errors
+Boogie, extensional heaps (typeEncoding:m)
+git-issue-2463.bpl(18,3): Error: this assertion could not be proved
+Execution trace:
+    git-issue-2463.bpl(12,3): anon0
+git-issue-2463.bpl(29,3): Error: this assertion could not be proved
+Execution trace:
+    git-issue-2463.bpl(25,3): anon0
+
+Boogie program verifier finished with 3 verified, 2 errors
+Boogie, Dafny's encoding (typeEncoding:a)
+git-issue-2463.bpl(17,3): Error: this assertion could not be proved
+Execution trace:
+    git-issue-2463.bpl(12,3): anon0
+git-issue-2463.bpl(18,3): Error: this assertion could not be proved
+Execution trace:
+    git-issue-2463.bpl(12,3): anon0
+git-issue-2463.bpl(29,3): Error: this assertion could not be proved
+Execution trace:
+    git-issue-2463.bpl(25,3): anon0
+
+Boogie program verifier finished with 3 verified, 3 errors

@@ -1,0 +1,1 @@
+Add the opt-in --python-reorder-replacements option to emit Python replacement modules before their consumers, avoiding missing imports when an implementation is declared later.

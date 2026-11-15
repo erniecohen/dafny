@@ -1,0 +1,1 @@
+The refreshed resolver now reports the enclosing type mismatch and the failing covariant or contravariant type-parameter constraint instead of the placeholder message `bad`. Contextual newtype inference and resolution outcomes are unchanged.

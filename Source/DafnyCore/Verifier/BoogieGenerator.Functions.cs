@@ -219,6 +219,7 @@ public partial class BoogieGenerator {
       Contract.Assert(whr != null); // since f.ResultType involves references, there should be an ISALLOC where clause
       if (whr != null) {
         Bpl.Expr ante = canCall;
+        Bpl.Trigger applicationTrigger = null;
         if (readsHeap) {
           // all parameters are included in the CanCall, so that's the only antecedent we need
           Contract.Assert(formals.Contains(bvHeap));
@@ -226,14 +227,26 @@ public partial class BoogieGenerator {
           // CanCall does not include the heap parameter but, since we will quantify over a heap, we need to
           // make sure the other parameters are connected to that heap
           Contract.Assert(f is not TwoStateFunction);
+          var goodHeap = FunctionCall(f.Origin, BuiltinFunction.IsGoodHeap, null, etranHeap.HeapExpr);
+          // With --additional-axioms, the axiom of a function whose parameters, receiver included, hold no
+          // references is also instantiated where the function is applied, so that what it says about the
+          // allocation of the result is available without a mention of $IsAlloc of the result
+          // (erniecohen/dafny#95).  The application mentions every bound variable but the heap, and a
+          // pattern must not be closed.  The option is checked before anything is built.
+          if (options.Get(CommonOptionBag.AdditionalAxioms) && parametersIsAlloc == Bpl.Expr.True) {
+            applicationTrigger = new Bpl.Trigger(f.Origin, true, formals.Count == 0 ? [goodHeap] : [funcAppl, goodHeap]);
+          }
           ante = BplAnd(ante, parametersIsAlloc);
           formals = Util.Cons(bvHeap, formals);
-          var goodHeap = FunctionCall(f.Origin, BuiltinFunction.IsGoodHeap, null, etranHeap.HeapExpr);
           ante = BplAnd(ante, goodHeap);
         }
 
         var axBody = BplImp(ante, whr);
-        var ax = BplForall(f.Origin, [], formals, null, BplTrigger(whr), axBody);
+        var triggers = BplTrigger(whr);
+        if (applicationTrigger != null) {
+          triggers.AddLast(applicationTrigger);
+        }
+        var ax = BplForall(f.Origin, [], formals, null, triggers, axBody);
         var allocConsequenceAxiom = new Bpl.Axiom(f.Origin, ax, "alloc consequence axiom for " + f.FullSanitizedName);
         AddOtherDefinition(boogieFunction, allocConsequenceAxiom);
       }
@@ -273,7 +286,7 @@ public partial class BoogieGenerator {
     //
     // The translation of "body" uses "s" as the layer argument for intra-cluster calls and the default layer argument
     // (which is Succ(0)) for other calls.  Usually, the layer argument in the LHS of the definition (and also in the trigger,
-    // see the two occurrences of (*) above) use Succ(s) as the layer argument.  However, if "lits" are specified,
+    // see the two occurrences of (*) above) use Succ(s) as the layer argument.  However, if "lits" are specified, then
     // then the argument used is just "s" (in both the LHS and trigger).
     //
     // Note, an antecedent $Heap[this,alloc] is intentionally left out:  including it would only weaken
@@ -615,12 +628,13 @@ public partial class BoogieGenerator {
       Expression selfExpr;
       Bpl.Expr prevHeapVar = null, selfVar = null;
       Dictionary<IVariable, Expression> rhs_dict = new Dictionary<IVariable, Expression>();
+      Bpl.Expr handlePrevHeap = null;
       if (f is TwoStateFunction) {
         // also add previous-heap to the list of fixed arguments of the handle
-        var prevH = BplBoundVar("$prevHeap", Predef.HeapType, vars);
-        prevHeapVar = prevH;
+        handlePrevHeap = BplBoundVar("$prevHeap", Predef.HeapType, vars);
+        prevHeapVar = handlePrevHeap;
         formals.Add(BplFormalVar("h", Predef.HeapType, true));
-        SnocPrevH = xs => Snoc(xs, prevH);
+        SnocPrevH = xs => Snoc(xs, handlePrevHeap);
       }
       if (f.IsStatic) {
         selfExpr = null;
@@ -685,7 +699,7 @@ public partial class BoogieGenerator {
         // As a first approximation, the following axiom is of the form:
         // Requires(Ty.., F#Handle( Ty1, ..., TyN, Layer, reveal, self), Heap, arg1, ..., argN)
         //   = F#Requires(Ty1, .., TyN, Layer, Heap, self, [Unbox] arg1, .., [Unbox] argN)
-        // However, .reads and .requires functions require special attention.
+        // However, .reads ands .requires functions require special attention.
         // To understand the rationale for these axioms, refer to the section on arrow types of the reference manual.
         // The requires clause of the .requires function is simply true.
         // The requires clause of the .reads function checks that the precondition of the receiving function holds.
@@ -711,11 +725,11 @@ public partial class BoogieGenerator {
 
       }
 
-      if (!f.ReadsDoubleStar) {
+      {
         // As a first approximation, the following axiom is of the form:
         // Reads(Ty.., F#Handle( Ty1, ..., TyN, Layer, self), Heap, arg1, ..., argN)
         //   =  $Frame_F(args...)
-        // However, .reads and .requires functions require special attention.
+        // However, .reads ands .requires functions require special attention.
         // To understand the rationale for these axioms, refer to the section on arrow types of the reference manual.
         // In both cases, the precondition of the receiving function must be checked before its reads clause can
         // be referred to.
@@ -727,18 +741,70 @@ public partial class BoogieGenerator {
         Bpl.Expr unboxBx = FunctionCall(f.Origin, BuiltinFunction.Unbox, Predef.RefType, bx);
         Bpl.Expr lhs = IsSetMember(f.Origin, lhs_inner, bx, true);
 
-        var et = new ExpressionTranslator(this, Predef, h, f);
-        var rhs = InRWClause_Aux(f.Origin, unboxBx, bx, null, f.Reads.Expressions, false, et, selfExpr, rhs_dict);
+        var et = handlePrevHeap == null
+          ? new ExpressionTranslator(this, Predef, h, f)
+          : new ExpressionTranslator(this, Predef, h, handlePrevHeap, f);
+        // A finite footprint contains the canonical box of each selected reference, not every box
+        // whose reference unboxing happens to select it.
+        var rhs = BplAnd(MkIsBox(bx, program.SystemModuleManager.ObjectQ()),
+          InRWClause_Aux(f.Origin, unboxBx, bx, null, f.Reads.Expressions, false, et, selfExpr, rhs_dict,
+            materializeFiniteSets: true));
 
-        if (f.EnclosingClass is ArrowTypeDecl) {
-          var args_h = f.ReadsHeap ? Snoc(SnocPrevH(argsRequires), h) : argsRequires;
-          var precondition = FunctionCall(f.Origin, Requires(arity), Bpl.Type.Bool, Concat(SnocSelf(args_h), lhs_args));
-          sink.AddTopLevelDeclaration(new Axiom(f.Origin,
-            BplForall(Cons(bxVar, Concat(vars, bvars)), BplTrigger(lhs), BplImp(precondition, Bpl.Expr.Eq(lhs, rhs)))));
-        } else {
-          sink.AddTopLevelDeclaration(new Axiom(f.Origin,
-            BplForall(Cons(bxVar, Concat(vars, bvars)), BplTrigger(lhs), Bpl.Expr.Eq(lhs, rhs))));
+        Bpl.Expr available = FunctionCall(f.Origin, BuiltinFunction.IsGoodHeap, null, h);
+        if (handlePrevHeap != null) {
+          available = BplAnd(available, BplAnd(
+            FunctionCall(f.Origin, BuiltinFunction.IsGoodHeap, null, handlePrevHeap),
+            HeapSucc(handlePrevHeap, h)));
         }
+        foreach (var typeBoundAxiom in TypeBoundAxioms(f.Origin, GetTypeParams(f))) {
+          available = BplAnd(available, typeBoundAxiom);
+        }
+        if (selfExpr != null) {
+          var self = et.TrExpr(selfExpr);
+          var receiverType = ModuleResolver.GetReceiverType(f.Origin, f);
+          var receiverWhere = f.EnclosingClass is ArrowTypeDecl
+            ? GetWhereClause(f.Origin, self, receiverType, et, NOALLOC)
+            : BplAnd(ReceiverNotNull(self),
+              (handlePrevHeap == null ? et : et.Old).GoodRef(f.Origin, self, receiverType));
+          if (receiverWhere != null) {
+            available = BplAnd(available, receiverWhere);
+          }
+        }
+        for (var i = 0; i < f.Ins.Count; i++) {
+          var formal = f.Ins[i];
+          available = BplAnd(available, MkIsBox(lhs_args[i], formal.Type));
+          // Match the source function's parameter availability discipline. Ordinary formals are
+          // checked without allocation; old/new formals of two-state functions use their own heap.
+          if (handlePrevHeap != null) {
+            available = BplAnd(available,
+              MkIsAllocBox(lhs_args[i], formal.Type, formal.IsOld ? handlePrevHeap : h));
+          }
+        }
+        var requiresArgs = f.ReadsHeap ? Snoc(SnocPrevH(argsRequires), h) : argsRequires;
+        var precondition = f.EnclosingClass is ArrowTypeDecl
+          ? FunctionCall(f.Origin, Requires(arity), Bpl.Type.Bool, Concat(SnocSelf(requiresArgs), lhs_args))
+          : FunctionCall(f.Origin, RequiresName(f), Bpl.Type.Bool, Concat(SnocSelf(requiresArgs), rhs_args));
+        // .reads checks the receiving function's precondition; it does not first call that function.
+        // In particular, do not require its #canCall predicate here. An effect-free arrow's .reads
+        // is total, including at inputs where the function itself cannot be called.
+        if (f.Reads.Expressions.Count != 0) {
+          available = BplAnd(available, precondition);
+        }
+
+        var readsSubstituter = new Substituter(selfExpr, rhs_dict, new Dictionary<TypeParameter, Type>());
+        var reads = f.Reads.Expressions.ConvertAll(readsSubstituter.SubstFrameExpr);
+        Bpl.Expr readsFacts = Bpl.Expr.True;
+        foreach (var frame in reads) {
+          readsFacts = BplAnd(readsFacts, et.CanCallAssumption(frame.E));
+        }
+        var finiteSupport = et.FiniteReadsSupport(reads);
+        if (readsFacts is not Bpl.LiteralExpr { IsTrue: true }) {
+          sink.AddTopLevelDeclaration(new Axiom(f.Origin,
+            BplForall(Concat(vars, bvars), BplTrigger(lhs_inner), BplImp(available, readsFacts))));
+        }
+        sink.AddTopLevelDeclaration(new Axiom(f.Origin,
+          BplForall(Cons(bxVar, Concat(vars, bvars)), BplTrigger(lhs),
+            BplImp(BplAnd(available, finiteSupport), Bpl.Expr.Eq(lhs, rhs)))));
       }
 
       {
@@ -797,7 +863,7 @@ public partial class BoogieGenerator {
   /// Expressions in [...] are omitted if
   ///   - /allocated:0, or
   ///   - /allocated:1, or
-  ///   - /allocated:3, except if "reads" clause is "*" or if the function is a two-state function;
+  ///   - /allocated:3, except if "reads" clause is "*" of if the function is a two-state function;
   /// see comments in AddArrowTypeAxioms
   /// Also, with /allocated:3, the frame axiom is omitted altogether if the (one-state) function has an
   /// empty "reads" clause (because then the function doesn't take a heap argument at all).
@@ -805,11 +871,6 @@ public partial class BoogieGenerator {
   void AddFrameAxiom(Function f) {
     Contract.Requires(f != null);
     Contract.Requires(sink != null && Predef != null);
-
-    if (f.ReadsDoubleStar) {
-      // A `reads **` says "don't emit a frame axiom".
-      return;
-    }
 
     var comment = "frame axiom for " + f.FullSanitizedName;
     // This is the general case

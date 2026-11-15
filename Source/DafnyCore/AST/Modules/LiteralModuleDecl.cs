@@ -127,6 +127,7 @@ public class LiteralModuleDecl : ModuleDecl, ICanFormat, IHasSymbolChildren {
       rewriter.PreResolve(module);
     }
 
+    PipelineProfile.ModulePhase(resolver.Options, "preResolve");
     Signature = module.RegisterTopLevelDecls(resolver, true);
     Signature.Refines = module.Implements?.Target.Sig;
 
@@ -135,6 +136,7 @@ public class LiteralModuleDecl : ModuleDecl, ICanFormat, IHasSymbolChildren {
     var preResolveErrorCount = resolver.reporter.ErrorCount;
 
     resolver.ResolveModuleExport(this, sig);
+    PipelineProfile.ModulePhase(resolver.Options, "registrationAndExports");
     var good = module.Resolve(sig, resolver);
 
     if (good && resolver.reporter.ErrorCount == preResolveErrorCount) {
@@ -161,26 +163,37 @@ public class LiteralModuleDecl : ModuleDecl, ICanFormat, IHasSymbolChildren {
 
     Type.PopScope(tempVis);
 
+    PipelineProfile.ModulePhase(resolver.Options, "exportsAndIntermediate");
     if (!good || resolver.reporter.HasErrors) {
       return sig;
     }
 
     Type.PushScope(tempVis);
+    var phases = PipelineProfile.RecordingModulePhases;
     resolver.ComputeIsRecursiveBit(compilation, module, rewriters);
+    PipelineProfile.ModulePhase(resolver.Options, "isRecursive");
     resolver.FillInDecreasesClauses(module);
     foreach (var iter in module.TopLevelDecls.OfType<IteratorDecl>()) {
       resolver.reporter.Info(MessageSource.Resolver, iter.Origin, Printer.IteratorClassToString(resolver.Reporter.Options, iter));
     }
+    PipelineProfile.ModulePhase(resolver.Options, "decreases");
 
     foreach (var rewriter in rewriters) {
       rewriter.PostDecreasesResolve(module);
+      if (phases) {
+        PipelineProfile.ModulePhase(resolver.Options, "postDecreasesResolve:" + rewriter.GetType().Name);
+      }
     }
 
     resolver.FillInAdditionalInformation(module);
     FuelAdjustment.CheckForFuelAdjustments(resolver.reporter, module);
+    PipelineProfile.ModulePhase(resolver.Options, "additionalInformation");
 
     foreach (var rewriter in rewriters) {
       rewriter.PostResolve(module);
+      if (phases) {
+        PipelineProfile.ModulePhase(resolver.Options, "postResolve:" + rewriter.GetType().Name);
+      }
     }
 
     Type.PopScope(tempVis);

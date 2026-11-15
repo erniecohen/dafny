@@ -264,7 +264,7 @@ public partial class BoogieGenerator {
         prevObj[i] = obj;
         if (!useSurrogateLocal) {
           // check that the enclosing modifies clause allows this object to be written:  assert $_ModifiesFrame[obj]);
-          var desc = new Modifiable("field", contextModFrames, fse.Obj, field);
+          var desc = new Modifiable("an object", contextModFrames, fse.Obj, field);
           builder.Add(Assert(tok, Bpl.Expr.SelectTok(tok, etran.ModifiesFrame(tok), obj, GetField(fse)), desc, builder.Context));
         }
 
@@ -314,7 +314,7 @@ public partial class BoogieGenerator {
         prevObj[i] = obj;
         prevIndex[i] = fieldName;
         // check that the enclosing modifies clause allows this object to be written:  assert $_Frame[obj,index]);
-        var desc = new Modifiable("array location", contextModFrames, sel.Seq, null);
+        var desc = new Modifiable("an array element", contextModFrames, sel.Seq, null);
         builder.Add(Assert(tok, Bpl.Expr.SelectTok(tok, etran.ModifiesFrame(tok), obj, fieldName), desc, builder.Context));
 
         bLhss.Add(null);
@@ -339,7 +339,7 @@ public partial class BoogieGenerator {
           "$index" + i, Predef.FieldName(mse.Origin), builder, locals);
         prevObj[i] = obj;
         prevIndex[i] = fieldName;
-        var desc = new Modifiable("array location", contextModFrames, mse.Array, null);
+        var desc = new Modifiable("an array element", contextModFrames, mse.Array, null);
         builder.Add(Assert(tok, Bpl.Expr.SelectTok(tok, etran.ModifiesFrame(tok), obj, fieldName), desc, builder.Context));
 
         bLhss.Add(null);
@@ -404,7 +404,7 @@ public partial class BoogieGenerator {
       } else if (rhs is HavocRhs && lhsVar != null && GetDefiniteAssignmentTracker(lhsVar) != null) {
         // This "where" clause expresses that the new variable has a value of the given type only if
         // the variable has already been definitely assigned. (If it has not already been assigned,
-        // then the variable will get a new value, but Dafny's definite-assignment rules prevent that
+        // then the variable will get a new value, but Dafny's definite-assginment rules prevent that
         // value from being used, so it's appropriate to use effectively-"true" as the "where" clause
         // in that case.
         wh = BplImp(GetDefiniteAssignmentTracker(lhsVar),
@@ -428,7 +428,8 @@ public partial class BoogieGenerator {
       TrStmt_CheckWellformed(e.Expr, builder, locals, etran, true, addResultCommands:
         (returnBuilder, result) => {
           if (cre != null) {
-            returnBuilder.Add(Assert(result.Origin, cre, desc, builder.Context));
+            CheckTypeMembership(result.Origin, cre, bRhs, e.Expr.Type, rhsTypeConstraint,
+              desc, returnBuilder, etran);
           }
         });
 
@@ -472,7 +473,7 @@ public partial class BoogieGenerator {
         TrCallStmt(allocateClass.InitCall, builder, locals, etran, nw);
       }
       // bLhs := $nw;
-      CheckSubrange(tok, nw, allocateClass.Type, rhsTypeConstraint, null, builder);
+      CheckSubrange(tok, nw, allocateClass.Type, rhsTypeConstraint, null, builder, etran: etran);
       return HandleGivenLhs(tok, bGivenLhs, lhsType, builder, stmt, bLhs, nw, allocateClass);
     } else if (rhs is AllocateArray allocateArray) {
       int j = 0;
@@ -523,7 +524,7 @@ public partial class BoogieGenerator {
         foreach (var v in allocateArray.InitDisplay) {
           var EE_ii = etran.TrExpr(v);
           // assert EE_ii satisfies any subset-type constraints;
-          CheckSubrange(v.Origin, EE_ii, v.Type, allocateArray.ElementType, v, builder);
+          CheckSubrange(v.Origin, EE_ii, v.Type, allocateArray.ElementType, v, builder, etran: etran);
           // assume nw[ii] == EE_ii;
           var ai = ReadHeap(tok, etran.HeapExpr, nw, GetArrayIndexFieldName(tok, [Bpl.Expr.Literal(ii)]));
           builder.Add(new Bpl.AssumeCmd(tok, Bpl.Expr.Eq(UnboxUnlessInherentlyBoxed(ai, allocateArray.ElementType), AdaptBoxing(tok, EE_ii, v.Type, allocateArray.ElementType))));
@@ -543,7 +544,7 @@ public partial class BoogieGenerator {
       }
       CommitAllocatedObject(tok, nw, heapAllocationRecorder, builder, etran);
       // bLhs := $nw;
-      CheckSubrange(tok, nw, allocateArray.Type, rhsTypeConstraint, null, builder);
+      CheckSubrange(tok, nw, allocateArray.Type, rhsTypeConstraint, null, builder, etran: etran);
       return HandleGivenLhs(tok, bGivenLhs, lhsType, builder, stmt, bLhs, nw, allocateArray);
     } else {
       throw new UnreachableException();

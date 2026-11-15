@@ -41,14 +41,12 @@ abstract module Std.Arithmetic.LittleEndianNat {
   }
 
   /* Converts a sequence to a nat beginning with the most significant position. */
-  @ResourceLimit("5e7")
   function ToNatLeft(xs: seq<digit>): nat
   {
     if |xs| == 0 then 0
     else
-      LemmaPowPositiveAuto();
-      LemmaMulNonnegativeAuto();
-      assert Last(xs) * Pow(BASE(), |xs| - 1) >= 0;
+      LemmaPowPositive(BASE(), |xs| - 1);
+      LemmaMulNonnegative(Last(xs), Pow(BASE(), |xs| - 1));
       ToNatLeft(DropLast(xs)) + Last(xs) * Pow(BASE(), |xs| - 1)
   }
 

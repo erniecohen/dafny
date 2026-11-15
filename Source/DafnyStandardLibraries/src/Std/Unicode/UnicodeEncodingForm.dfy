@@ -130,6 +130,7 @@ abstract module Std.Unicode.UnicodeEncodingForm {
     * Returns the unique partition of the given code unit sequence into minimal well-formed code unit subsequences,
     * or Failure(CodeUnitSeq) if no such partition exists, where the resulting sequence is the suffix it could not partition.
     */
+  @IsolateAssertions
   function PartitionCodeUnitSequenceChecked(s: CodeUnitSeq): (maybeParts: Result<seq<MinimalWellFormedCodeUnitSeq>, CodeUnitSeq>)
     ensures maybeParts.Success? ==> Seq.Flatten(maybeParts.Extract()) == s
     decreases |s|
@@ -271,7 +272,7 @@ abstract module Std.Unicode.UnicodeEncodingForm {
     Seq.Flatten(ms)
   }
   by method {
-    // Optimize to avoid allocating the intermediate unflattened sequence.
+    // Optimize to to avoid allocating the intermediate unflattened sequence.
     // We can't quite use Seq.FlatMap easily because we need to prove the result
     // is not just a seq<CodeUnit> but a WellFormedCodeUnitSeqs.
     // TODO: We can be even more efficient by using a JSON.Utils.Vectors.Vector instead.

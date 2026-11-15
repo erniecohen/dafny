@@ -1,0 +1,1 @@
+A `:|` statement or expression that binds many variables no longer overflows the stack.  Its existence check, a disjunction with one disjunct for each combination of guessed witnesses, exponentially many in the number of variables, is now nested to a logarithmic depth when it is long, and keeps a bounded number of disjuncts, preferring those that guess the most variables.

@@ -21,7 +21,9 @@ using Token = Microsoft.Dafny.Token;
 
 namespace DafnyDriver.Commands;
 
-public record CanVerifyResult(ICanVerify CanVerify, IReadOnlyList<VerificationTaskResult> Results);
+public record CanVerifyResult(ICanVerify CanVerify, IReadOnlyList<VerificationTaskResult> Results) {
+  public ProofDependencyManager? ProofDependencies { get; init; }
+}
 
 
 public class CliCompilation {
@@ -30,6 +32,22 @@ public class CliCompilation {
   private int errorCount;
   private int warningCount;
   public bool DidVerification { get; private set; }
+  /// <summary>
+  /// Under --modular-termination, the summary line that names the trusted premises of the admitted
+  /// libraries, or null when there are none.
+  /// </summary>
+  public string? TrustedPremisesSummary { get; private set; }
+  private bool batchInputsCaptured;
+
+  // The module whose verification the current asynchronous flow started, when
+  // --verification-module-window is greater than 1; null otherwise.
+  private readonly AsyncLocal<ModuleWindowSlot?> currentModuleSlot = new();
+  private Action<ICompilationEvent>? reportEvent;
+
+  /// <summary>The largest number of modules in verification at once, for tests.</summary>
+  public int MaxModulesInFlight { get; private set; }
+  /// <summary>The largest number of admitted modules not yet reported, for tests.</summary>
+  public int MaxModulesUnreported { get; private set; }
 
   private CliCompilation(
     CreateCompilation createCompilation,
@@ -84,7 +102,7 @@ public class CliCompilation {
 
   public Task<ResolutionResult?> Resolution => Compilation.Resolution;
 
-  public static CliCompilation Create(DafnyOptions options) {
+  public static CliCompilation Create(DafnyOptions options, IProgramVerifier? programVerifier = null) {
     var fileSystem = OnDiskFileSystem.Instance;
     ILoggerFactory factory = new LoggerFactory();
     var telemetryPublisher = new CliTelemetryPublisher(factory.CreateLogger<TelemetryPublisherBase>());
@@ -97,7 +115,7 @@ public class CliCompilation {
             factory.CreateLogger<DafnyLangParser>(),
             factory.CreateLogger<CachingParser>()),
           new DafnyLangSymbolResolver(factory.CreateLogger<DafnyLangSymbolResolver>(), factory.CreateLogger<CachingResolver>(), telemetryPublisher)),
-        new DafnyProgramVerifier(factory.CreateLogger<DafnyProgramVerifier>()), engine, input);
+        programVerifier ?? new DafnyProgramVerifier(factory.CreateLogger<DafnyProgramVerifier>()), engine, input);
   }
 
   public void Start() {
@@ -112,7 +130,7 @@ public class CliCompilation {
     };
 
     var internalExceptionsFound = 0;
-    Compilation.Updates.Subscribe(ev => {
+    reportEvent = ev => {
       if (ev is NewDiagnostic newDiagnostic) {
         if (newDiagnostic.Diagnostic.Level == ErrorLevel.Error) {
           errorsPerSource.AddOrUpdate(newDiagnostic.Diagnostic.Source,
@@ -144,6 +162,13 @@ public class CliCompilation {
         }
       }
 
+    };
+    Compilation.Updates.Subscribe(ev => {
+      // A module verified ahead of its turn reports its diagnostics when its turn comes.
+      if (currentModuleSlot.Value is { } slot && slot.Defer(ev)) {
+        return;
+      }
+      reportEvent(ev);
     });
     Compilation.Start();
   }
@@ -152,13 +177,14 @@ public class CliCompilation {
 
   public bool VerifiedAssertions { get; private set; }
 
-  public async IAsyncEnumerable<CanVerifyResult> VerifyAllLazily(int? randomSeed = null) {
+  public async IAsyncEnumerable<CanVerifyResult> VerifyAllLazily(int? randomSeed = null,
+    string? filterPosition = null, bool repeatVerification = false) {
     if (!Options.Get(CommonOptionBag.UnicodeCharacters) && Options.Backend is not CppBackend) {
       Compilation.Reporter.Deprecated(MessageSource.Verifier, "unicodeCharDeprecated", Token.Cli,
         "the option unicode-char has been deprecated.");
     }
 
-    var canVerifyResults = new Dictionary<ICanVerify, CliCanVerifyState>();
+    var canVerifyResults = new ConcurrentDictionary<ICanVerify, CliCanVerifyState>();
     using var subscription = Compilation.Updates.Subscribe(ev => {
 
       if (ev is CanVerifyPartsIdentified canVerifyPartsIdentified) {
@@ -172,7 +198,10 @@ public class CliCompilation {
         }
       }
       if (ev is InternalCompilationException internalCompilationException) {
-        foreach (var state in canVerifyResults.Values) {
+        var states = currentModuleSlot.Value is { } slot
+          ? slot.States.Select(s => s.State)
+          : canVerifyResults.Values;
+        foreach (var state in states) {
           state.Finished.TrySetException(internalCompilationException.Exception);
         }
       }
@@ -184,6 +213,7 @@ public class CliCompilation {
 
       if (ev is BoogieUpdate { BoogieStatus: Completed completed } boogieUpdate) {
         var canVerifyResult = canVerifyResults[boogieUpdate.CanVerify];
+        canVerifyResult.ProofDependencies = boogieUpdate.ProofDependencyManager;
         canVerifyResult.CompletedParts.Enqueue((boogieUpdate.VerificationTask, completed));
         var completedPartsCount = Interlocked.Increment(ref canVerifyResult.CompletedCount);
 
@@ -230,6 +260,7 @@ public class CliCompilation {
       }
     });
 
+    var profile = PipelineProfile.For(Options);
     var resolution = await Compilation.Resolution;
     if (resolution == null || resolution.HasErrors) {
       yield break;
@@ -239,16 +270,43 @@ public class CliCompilation {
       yield break;
     }
 
-    DidVerification = true;
+    if (repeatVerification) {
+      Compilation.CancellationToken.ThrowIfCancellationRequested();
+      if (!batchInputsCaptured) {
+        var preludePath = BoogieGenerator.PreludePath(Options);
+        resolution.ResolvedProgram.PreludeText = await File.ReadAllTextAsync(preludePath, Compilation.CancellationToken);
+        batchInputsCaptured = true;
+      }
+      // Earlier results retain their own manager; retranslations must not append
+      // new dependencies to the definitions used by a previous request.
+      resolution.ResolvedProgram.ProofDependencyManager = new ProofDependencyManager();
+    }
+    var requestDependencies = resolution.ResolvedProgram.ProofDependencyManager;
 
-    var canVerifies = FilterCanVerifies(resolution.CanVerifies, out var filterRange);
+    DidVerification = true;
+    TrustedPremisesSummary = Options.Get(CommonOptionBag.ModularTermination)
+      ? DafnyCore.ModularTerminationTrustList.Summary([], null, resolution.ResolvedProgram.Compilation.ModularTerminationPremises)
+      : null;
+
+    var canVerifies = FilterCanVerifies(resolution.CanVerifies, out var filterRange, filterPosition);
     VerifiedAssertions = filterRange.Filters;
 
     int done = 0;
 
+    var window = Options.Get(VerifyCommand.VerificationModuleWindow);
+    if (window > 1) {
+      await foreach (var result in VerifyModuleWindow((int)Math.Min(window, int.MaxValue), canVerifies, canVerifyResults,
+                       filterRange, randomSeed, repeatVerification, requestDependencies)) {
+        yield return result;
+      }
+      yield break;
+    }
+
     var canVerifiesPerModule = canVerifies.GroupBy(c => c.ContainingModule);
     foreach (var canVerifiesForModule in canVerifiesPerModule.
                OrderBy(v => v.Key.Origin.pos)) {
+      var moduleName = profile != null ? PipelineProfile.ModuleName(canVerifiesForModule.Key) : null;
+      var moduleAdmitted = profile?.Now;
       var toAwait = new List<ICanVerify>();
       foreach (var canVerify in canVerifiesForModule.OrderBy(v => v.Origin.pos)) {
         var results = new CliCanVerifyState();
@@ -257,11 +315,15 @@ public class CliCompilation {
           results.TaskFilter = t => KeepVerificationTask(t, filterRange);
         }
 
+        if (repeatVerification) {
+          Compilation.CancellationToken.ThrowIfCancellationRequested();
+        }
         var shouldVerify = await Compilation.VerifyCanVerify(canVerify, results.TaskFilter, randomSeed);
         if (shouldVerify) {
           toAwait.Add(canVerify);
         }
       }
+      var moduleScheduled = profile?.Now;
 
       foreach (var canVerify in toAwait) {
         var results = canVerifyResults[canVerify];
@@ -271,13 +333,29 @@ public class CliCompilation {
               $"Verified {done}/{canVerifies.ToList().Count} symbols. Waiting for {canVerify.FullDafnyName} to verify.");
           }
 
-          await results.Finished.Task;
+          if (repeatVerification) {
+            // Preparation may be cancelled before it identifies any tasks. Do not
+            // wait for a completion event that the detached preparation cannot emit.
+            await results.Finished.Task.WaitAsync(Compilation.CancellationToken);
+          } else {
+            await results.Finished.Task;
+          }
           done++;
+          profile?.Point("symbol", new Dictionary<string, object?> {
+            ["module"] = moduleName,
+            ["symbol"] = canVerify.FullDafnyName,
+            ["tasks"] = results.TaskCount
+          });
         } catch (ProverException e) {
           Compilation.Reporter.Error(MessageSource.Verifier, ResolutionErrors.ErrorId.none, canVerify.Origin, e.Message);
+          if (repeatVerification) {
+            throw; // Abort a batch before a later request can use an unhealthy solver session.
+          }
           yield break;
         } catch (OperationCanceledException) {
-
+          if (repeatVerification) {
+            throw;
+          }
         } catch (Exception e) {
           Compilation.Reporter.Error(MessageSource.Verifier, ResolutionErrors.ErrorId.none, canVerify.Origin,
             $"Internal error occurred during verification: {e.Message}\n{e.StackTrace}");
@@ -285,12 +363,239 @@ public class CliCompilation {
         }
 
         yield return new CanVerifyResult(canVerify,
-          results.CompletedParts.Select(c => new VerificationTaskResult(c.Task, c.Result.Result)).ToList());
+          results.CompletedParts.Select(c => new VerificationTaskResult(c.Task, c.Result.Result)).ToList()) {
+          ProofDependencies = results.ProofDependencies
+        };
 
-        canVerifyResults.Remove(canVerify); // Free memory
-        Compilation.ClearCanVerifyCache(canVerify);
+        canVerifyResults.TryRemove(canVerify, out _); // Free memory
+        Compilation.ClearCanVerifyCache(canVerify, repeatVerification);
       }
+      var moduleCompleted = profile?.Now;
       Compilation.ClearModuleCache(canVerifiesForModule.Key);
+      // admitted: the CLI started this module's symbols; scheduled: all of them were handed to the
+      // compilation; completed: the last of them finished; released: its cache was cleared and
+      // the next module may start (the per-module barrier).
+      profile?.Point("module", new Dictionary<string, object?> {
+        ["module"] = moduleName,
+        ["symbols"] = toAwait.Count,
+        ["admitted"] = moduleAdmitted,
+        ["scheduled"] = moduleScheduled,
+        ["completed"] = moduleCompleted,
+        ["released"] = profile.Now
+      });
+      profile?.HeapPoint("module", new Dictionary<string, object?> { ["module"] = moduleName });
+    }
+  }
+
+  /// <summary>
+  /// The loop of <see cref="VerifyAllLazily"/> with --verification-module-window K greater than 1.
+  /// Up to K modules are in verification at once: a module is admitted when one in verification
+  /// finishes, not only when the oldest is reported.  Admission follows the baseline module order,
+  /// so translation, task submission (the verification tickets) and proof-dependency ids keep the
+  /// order of the default loop.  Results are reported in that order too: each module's results,
+  /// and the diagnostics and internal-exception reports its preparation raised, wait until every
+  /// earlier module has been reported.  At most 2K modules are admitted and unreported, and a module is
+  /// admitted only while the managed heap is below the byte budget, unless it would be the only
+  /// unreported module.  A module's cache is cleared only after all its symbols have been reported.
+  /// </summary>
+  private async IAsyncEnumerable<CanVerifyResult> VerifyModuleWindow(int window,
+    IReadOnlyList<ICanVerify> canVerifies,
+    ConcurrentDictionary<ICanVerify, CliCanVerifyState> canVerifyResults,
+    LineRange filterRange, int? randomSeed, bool repeatVerification,
+    ProofDependencyManager requestDependencies) {
+    var modules = canVerifies.GroupBy(c => c.ContainingModule).
+      OrderBy(v => v.Key.Origin.pos).
+      Select(g => new ModuleWindowSlot(g.Key, g.OrderBy(v => v.Origin.pos).ToList())).
+      ToList();
+    var symbolCount = canVerifies.Count;
+    var memoryMiB = Options.Get(VerifyCommand.VerificationModuleWindowMemory);
+    var byteBudget = memoryMiB > 0
+      ? memoryMiB * 1024L * 1024L
+      : GC.GetGCMemoryInfo().TotalAvailableMemoryBytes / 2;
+    var cancellationToken = Compilation.CancellationToken;
+    var windowProfile = PipelineProfile.For(Options);
+    var admitted = 0;
+    var head = 0;
+    var done = 0;
+
+    bool CanAdmit() {
+      if (admitted >= modules.Count) {
+        return false;
+      }
+      var unreported = admitted - head;
+      if (unreported == 0) {
+        return true;
+      }
+      var inFlight = modules.Skip(head).Take(unreported).Count(m => !m.Completion.IsCompleted);
+      return inFlight < window && unreported < 2L * window && GC.GetTotalMemory(false) < byteBudget;
+    }
+
+    async Task Admit(ModuleWindowSlot slot) {
+      // Register every symbol's state before any of its events can arrive.
+      foreach (var canVerify in slot.Symbols) {
+        var results = new CliCanVerifyState();
+        if (VerifiedAssertions) {
+          results.TaskFilter = t => KeepVerificationTask(t, filterRange);
+        }
+        canVerifyResults[canVerify] = results;
+        slot.States.Add((canVerify, results));
+      }
+      var toAwait = new List<Task>();
+      currentModuleSlot.Value = slot;
+      try {
+        foreach (var (canVerify, results) in slot.States) {
+          if (repeatVerification) {
+            cancellationToken.ThrowIfCancellationRequested();
+          }
+          var shouldVerify = await Compilation.VerifyCanVerify(canVerify, results.TaskFilter, randomSeed);
+          if (shouldVerify) {
+            slot.ToAwait.Add(canVerify);
+            toAwait.Add(results.Finished.Task);
+          }
+        }
+      }
+      finally {
+        currentModuleSlot.Value = null;
+      }
+      slot.Completion = Task.WhenAll(toAwait).ContinueWith(t => _ = t.Exception, TaskContinuationOptions.ExecuteSynchronously);
+      admitted++;
+      MaxModulesInFlight = Math.Max(MaxModulesInFlight,
+        modules.Skip(head).Take(admitted - head).Count(m => !m.Completion.IsCompleted));
+      MaxModulesUnreported = Math.Max(MaxModulesUnreported, admitted - head);
+    }
+
+    // Wait for one symbol of the head module, admitting modules whenever there is room.
+    async Task WaitFor(Task finished) {
+      while (true) {
+        while (CanAdmit()) {
+          await Admit(modules[admitted]);
+        }
+        if (finished.IsCompleted) {
+          break;
+        }
+        var wakeUps = modules.Skip(head + 1).Take(admitted - head - 1).
+          Select(m => m.Completion).Where(c => !c.IsCompleted).ToList();
+        if (admitted >= modules.Count || wakeUps.Count == 0) {
+          break;
+        }
+        wakeUps.Add(finished);
+        var any = Task.WhenAny(wakeUps);
+        await (repeatVerification ? any.WaitAsync(cancellationToken) : any);
+      }
+      if (repeatVerification) {
+        // Preparation may be cancelled before it identifies any tasks. Do not
+        // wait for a completion event that the detached preparation cannot emit.
+        await finished.WaitAsync(cancellationToken);
+      } else {
+        await finished;
+      }
+    }
+
+    try {
+      for (; head < modules.Count; head++) {
+        if (head == admitted) {
+          await Admit(modules[head]);
+        }
+        var slot = modules[head];
+        slot.Release(reportEvent);
+        foreach (var canVerify in slot.ToAwait) {
+          var results = canVerifyResults[canVerify];
+          try {
+            if (Options.Get(CommonOptionBag.ProgressOption) > CommonOptionBag.ProgressLevel.None) {
+              await Options.OutputWriter.Status(
+                $"Verified {done}/{symbolCount} symbols. Waiting for {canVerify.FullDafnyName} to verify.");
+            }
+
+            await WaitFor(results.Finished.Task);
+            done++;
+          } catch (ProverException e) {
+            Compilation.Reporter.Error(MessageSource.Verifier, ResolutionErrors.ErrorId.none, canVerify.Origin, e.Message);
+            if (repeatVerification) {
+              throw; // Abort a batch before a later request can use an unhealthy solver session.
+            }
+            yield break;
+          } catch (OperationCanceledException) {
+            if (repeatVerification) {
+              throw;
+            }
+          } catch (Exception e) {
+            Compilation.Reporter.Error(MessageSource.Verifier, ResolutionErrors.ErrorId.none, canVerify.Origin,
+              $"Internal error occurred during verification: {e.Message}\n{e.StackTrace}");
+            throw;
+          }
+
+          yield return new CanVerifyResult(canVerify,
+            results.CompletedParts.Select(c => new VerificationTaskResult(c.Task, c.Result.Result)).ToList()) {
+            ProofDependencies = results.ProofDependencies
+          };
+
+          canVerifyResults.TryRemove(canVerify, out _); // Free memory
+          Compilation.ClearCanVerifyCache(canVerify, repeatVerification);
+        }
+        Compilation.ClearModuleCache(slot.Module);
+        // The live heap once this module is reported and released, with later modules in flight.
+        windowProfile?.HeapPoint("module", new Dictionary<string, object?> {
+          ["module"] = PipelineProfile.ModuleName(slot.Module),
+          ["window"] = window
+        });
+      }
+    }
+    finally {
+      // Stopped early, by an error or cancellation: modules admitted ahead of their turn are
+      // abandoned, as the default loop never starts them.  Their deferred diagnostics are dropped.
+      for (var index = head + 1; index < admitted; index++) {
+        var slot = modules[index];
+        slot.Abandon();
+        foreach (var canVerify in slot.ToAwait) {
+          Compilation.CancelCanVerify(canVerify);
+          Compilation.ClearCanVerifyCache(canVerify, repeatVerification);
+        }
+        Compilation.ClearModuleCache(slot.Module);
+      }
+    }
+  }
+
+  private sealed class ModuleWindowSlot(ModuleDefinition module, IReadOnlyList<ICanVerify> symbols) {
+    public ModuleDefinition Module { get; } = module;
+    public IReadOnlyList<ICanVerify> Symbols { get; } = symbols;
+    public List<(ICanVerify CanVerify, CliCanVerifyState State)> States { get; } = new();
+    public List<ICanVerify> ToAwait { get; } = new();
+    public Task Completion { get; set; } = Task.CompletedTask;
+    private readonly List<ICompilationEvent> deferred = new();
+    private bool released;
+    private bool abandoned;
+
+    /// <summary>Holds a reported event of this module until its turn; false once it is reported.</summary>
+    public bool Defer(ICompilationEvent ev) {
+      if (ev is not (NewDiagnostic or InternalCompilationException)) {
+        return false;
+      }
+      lock (deferred) {
+        if (released) {
+          return false;
+        }
+        if (!abandoned) {
+          deferred.Add(ev);
+        }
+        return true;
+      }
+    }
+
+    public void Release(Action<ICompilationEvent>? report) {
+      lock (deferred) {
+        foreach (var ev in deferred) {
+          report?.Invoke(ev);
+        }
+        deferred.Clear();
+        released = true;
+      }
+    }
+
+    public void Abandon() {
+      lock (deferred) {
+        deferred.Clear();
+        abandoned = true;
+      }
     }
   }
 
@@ -321,10 +626,11 @@ public class CliCompilation {
     public bool Filters => Start != int.MinValue || End != int.MaxValue;
   }
 
-  private IReadOnlyList<ICanVerify> FilterCanVerifies(IDictionary<Uri, IIntervalTree<DafnyPosition, ICanVerify>> canVerifies, out LineRange range) {
+  private IReadOnlyList<ICanVerify> FilterCanVerifies(IDictionary<Uri, IIntervalTree<DafnyPosition, ICanVerify>> canVerifies, out LineRange range,
+    string? filterPosition = null) {
     int start = int.MinValue;
     int end = int.MaxValue;
-    var filterPosition = Options.Get(VerifyCommand.FilterPosition);
+    filterPosition ??= Options.Get(VerifyCommand.FilterPosition);
     IEnumerable<ICanVerify> result;
     if (filterPosition == null) {
       range = new LineRange(start, end);

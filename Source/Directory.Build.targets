@@ -1,0 +1,7 @@
+<Project>
+  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0'">
+    <!-- .NET 10 supplies AsyncEnumerable. Keep the older transitive package at
+         runtime, and alias it for the ToObservable bridge that the framework lacks. -->
+    <PackageReference Include="System.Linq.Async" Version="6.0.1" Aliases="LegacyAsyncLinq" />
+  </ItemGroup>
+</Project>

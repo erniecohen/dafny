@@ -1,0 +1,2 @@
+github-issue-37.dfy(15,22): Error: incorrect argument type for datatype constructor parameter 'f' (expected A.T -> bool, found B.T -> bool) (contravariant type parameter 0 would require A.T <: B.T)
+1 resolution/type errors detected in github-issue-37.dfy

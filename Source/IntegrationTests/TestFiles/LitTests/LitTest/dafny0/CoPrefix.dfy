@@ -202,9 +202,9 @@ module PrefixEquality {
     calc {
       s;
       ==#[_k-1]
-      t;  // error: could not prove that the calculation of this step holds
+      t;  // error: this step might not hold
       ==#[if 2 <= _k.Offset then _k-2 else _k-1]
-      s;  // error: could not prove that the calculation of this step holds
+      s;  // error: this step might not hold
       ==#[0]
       t;
     }

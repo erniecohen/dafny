@@ -21,7 +21,12 @@ namespace Microsoft.Dafny {
     BatchErrorReporter ErrorReporter,
     Dictionary<ModuleDefinition, ModuleSignature> Signatures,
     Dictionary<TopLevelDeclWithMembers, Dictionary<string, MemberDecl>> ClassMembers
-    );
+    ) {
+    public string Key { get; init; }
+    public SystemModuleManager Builtins { get; init; }
+    public Dictionary<TopLevelDeclWithMembers, Dictionary<string, MemberDecl>> SystemClassMembers { get; init; }
+    internal ModuleTranslationInputs TranslationInputs { get; init; }
+  }
 
   public interface ICanResolveNewAndOld {
     void GenResolve(INewOrOldResolver resolver, ResolutionContext context);
@@ -42,9 +47,129 @@ namespace Microsoft.Dafny {
     public ModuleSignature moduleInfo = null;
 
     public ErrorReporter Reporter => reporter;
+    private HashSet<TopLevelDecl> operatorOwnersValidated;
+    internal HashSet<TopLevelDecl> OperatorOwnersValidated => operatorOwnersValidated ??= new();
     public Scope<IVariable> Scope => scope;
 
     public List<TypeConstraint.ErrorMsg> TypeConstraintErrorsToBeReported { get; } = [];
+
+    private RedirectingTypeDependencyTracker redirectingTypeTracker;
+
+    // All legacy inference assignments, including proxy merges, notify before inspecting
+    // the selected target's ancestry. The tracker is inactive outside this module's phase.
+    internal void OnTypeProxyAssigned(TypeProxy proxy) {
+      redirectingTypeTracker?.OnProxyAssigned(proxy);
+    }
+
+    internal bool IsNumericBasedDuringInference(Type type, Type.NumericPersuasion? persuasion = null) {
+      var ancestry = type.ClassifyNumericAncestry();
+      if (ancestry.Kind == Type.NumericAncestryKind.Cyclic) {
+        throw new RedirectingTypeCycleException(ancestry.Cycle);
+      }
+      return persuasion switch {
+        Type.NumericPersuasion.Int => ancestry.Kind == Type.NumericAncestryKind.Integer,
+        Type.NumericPersuasion.Real => ancestry.Kind == Type.NumericAncestryKind.Real,
+        _ => ancestry.Kind is Type.NumericAncestryKind.Integer or Type.NumericAncestryKind.Real
+      };
+    }
+
+    /// <summary>
+    /// Saves only inference-owned state. An abort can bypass nested push/pop pairs, including
+    /// temporarily replaced label scopes, so recovery restores both the objects and boundaries.
+    /// It deliberately leaves the enclosing module visibility scope and emitted errors alone.
+    /// </summary>
+    private sealed class LegacyInferenceCheckpoint {
+      private readonly ModuleResolver resolver;
+      private readonly Scope<IVariable>.Checkpoint variables;
+      private readonly Scope<TypeParameter> typeParameters;
+      private readonly Scope<TypeParameter>.Checkpoint typeParameterBoundary;
+      private readonly Scope<LabeledStatement> statementLabels;
+      private readonly Scope<LabeledStatement>.Checkpoint statementLabelBoundary;
+      private readonly Scope<Label> dominatingLabels;
+      private readonly Scope<Label>.Checkpoint dominatingLabelBoundary;
+      private readonly List<LabeledStatement> loops;
+      private readonly LabeledStatement[] loopContents;
+      private readonly TopLevelDeclWithMembers enclosingClass;
+      private readonly MethodOrConstructor enclosingMethod;
+      private readonly int recursionDepth;
+      private readonly Dictionary<TypeParameter, Type> selfTypeSubstitution;
+      private readonly int defaultValueCount;
+
+      internal LegacyInferenceCheckpoint(ModuleResolver resolver) {
+        this.resolver = resolver;
+        variables = resolver.scope.CreateCheckpoint();
+        typeParameters = resolver.allTypeParameters;
+        typeParameterBoundary = typeParameters.CreateCheckpoint();
+        statementLabels = resolver.EnclosingStatementLabels;
+        statementLabelBoundary = statementLabels.CreateCheckpoint();
+        dominatingLabels = resolver.DominatingStatementLabels;
+        dominatingLabelBoundary = dominatingLabels.CreateCheckpoint();
+        loops = resolver.loopStack;
+        loopContents = loops.ToArray();
+        enclosingClass = resolver.currentClass;
+        enclosingMethod = resolver.currentMethod;
+        recursionDepth = resolver._recursionDepth;
+        selfTypeSubstitution = resolver.SelfTypeSubstitution;
+        defaultValueCount = resolver.allDefaultValueExpressions.Count;
+      }
+
+      internal void Restore() {
+        resolver.scope.RestoreCheckpoint(variables);
+        resolver.allTypeParameters = typeParameters;
+        typeParameters.RestoreCheckpoint(typeParameterBoundary);
+        resolver.EnclosingStatementLabels = statementLabels;
+        statementLabels.RestoreCheckpoint(statementLabelBoundary);
+        resolver.DominatingStatementLabels = dominatingLabels;
+        dominatingLabels.RestoreCheckpoint(dominatingLabelBoundary);
+        resolver.loopStack = loops;
+        loops.Clear();
+        loops.AddRange(loopContents);
+        resolver.currentClass = enclosingClass;
+        resolver.currentMethod = enclosingMethod;
+        resolver._recursionDepth = recursionDepth;
+        resolver.SelfTypeSubstitution = selfTypeSubstitution;
+        resolver.allDefaultValueExpressions.RemoveRange(defaultValueCount,
+          resolver.allDefaultValueExpressions.Count - defaultValueCount);
+        resolver.AllTypeConstraints.Clear();
+        resolver.AllXConstraints.Clear();
+        resolver.TypeConstraintErrorsToBeReported.Clear();
+      }
+    }
+
+    private void ReportRedirectingTypeCycle(IReadOnlyList<RedirectingTypeDecl> cycle) {
+      RedirectingTypeCycleAnalysis.MarkCyclic(cycle);
+      const string message = "cycle among redirecting types (newtypes, subset types, type synonyms)";
+      if (cycle.Count != 0) {
+        ReportCycleError(reporter, cycle.ToList(), d => d.Tok, d => d.Name, message);
+      } else {
+        reporter.Error(MessageSource.Resolver, Token.NoToken, message);
+      }
+    }
+
+    /// <summary>
+    /// Module attributes use the legacy constraint solver before the main body-inference phase, even with the
+    /// refreshed resolver selected. Protect this phase too, and retain the enclosing module's visibility scope.
+    /// </summary>
+    internal void ResolveModuleAttributes(ModuleDefinition module, List<TopLevelDecl> declarations) {
+      if (module.Attributes == null) {
+        return;
+      }
+      var checkpoint = new LegacyInferenceCheckpoint(this);
+      var enclosingTracker = redirectingTypeTracker;
+      try {
+        redirectingTypeTracker = new RedirectingTypeDependencyTracker(declarations, Type.GetScope(),
+          cycle => throw new RedirectingTypeCycleException(cycle));
+        scope.PushMarker();
+        scope.AllowInstance = false;
+        ResolveAttributes(module, new ResolutionContext(new NoContext(module.EnclosingModule), false), true);
+        scope.PopMarker();
+      } catch (RedirectingTypeCycleException cycleError) {
+        ReportRedirectingTypeCycle(cycleError.Cycle);
+        checkpoint.Restore();
+      } finally {
+        redirectingTypeTracker = enclosingTracker;
+      }
+    }
 
     private bool RevealedInScope(Declaration d) {
       Contract.Requires(d != null);
@@ -541,7 +666,8 @@ namespace Microsoft.Dafny {
         }
 
         var scope = exportDecl.Signature.VisibilityScope;
-        Cloner cloner = new ScopeCloner(scope);
+        Cloner cloner = new ScopeCloner(scope, SystemModuleManager.SystemModule,
+          SystemModuleManager.GetBuiltinTypeIdentities());
         var exportView = cloner.CloneModuleDefinition(m, m.EnclosingModule, m.NameNode);
         if (Options.DafnyPrintExportedViews.Contains(exportDecl.FullName)) {
           var wr = new StringWriter();
@@ -604,6 +730,11 @@ namespace Microsoft.Dafny {
       // add for the module itself
       foreach (var kv in m.TopLevels) {
         if (info.TopLevels.TryGetValue(kv.Key, out var infoValue)) {
+          if (infoValue != kv.Value && BoundedCallables.IsBoundedDecl(infoValue)) {
+            // "bounded" is a contextual name (issue 266): a declaration of the module named "bounded" hides the system's.
+            info.TopLevels[kv.Key] = kv.Value;
+            continue;
+          }
           if (infoValue != kv.Value) {
             // This only happens if one signature contains the name C as a class C (because it
             // provides C) and the other signature contains the name C as a non-null type decl
@@ -717,6 +848,9 @@ namespace Microsoft.Dafny {
             // the caller, and let the caller remap the symbol after all opened imports have been processed.
             topLevelDeclReplacement = kv.Value;
           }
+        } else if (BoundedCallables.IsBoundedDecl(sameNameSymbolInImporter)) {
+          // "bounded" is a contextual name (issue 266): an opened import's declaration named "bounded" hides the system's.
+          importerSignature.TopLevels[kv.Key] = kv.Value;
         } else {
           bool unambiguous = false;
           // keep just one if they normalize to the same entity
@@ -819,6 +953,10 @@ namespace Microsoft.Dafny {
       Contract.Requires(origin != null);
       Contract.Requires(name != null);
       Contract.Requires(moduleSignatures != null);
+      if (Options.Get(CommonOptionBag.UserDefinedOperators) && OperatorResolution.FeatureBearing(origin.ModuleDef)) {
+        reporter.Error(MessageSource.Resolver, "operator_abstract_import", origin.ModuleDef.Origin,
+          "user-defined operators do not support feature-bearing abstract-signature imports in this milestone");
+      }
       var errCount = reporter.Count(ErrorLevel.Error);
 
       var module = new ModuleDefinition(SourceOrigin.NoToken, new Name(name + ".Abs"), [], ModuleKindEnum.Abstract, true, null, null, null);
@@ -830,7 +968,9 @@ namespace Microsoft.Dafny {
         }
       }
 
-      var defaultClassDecl = new DefaultClassDecl(module, origin.StaticMembers.Values.ToList());
+      // Registration regenerates prefix members from their extreme declarations.
+      var defaultClassDecl = new DefaultClassDecl(module,
+        origin.StaticMembers.Values.Where(member => member is not PrefixPredicate and not PrefixLemma).ToList());
       module.DefaultClass = (DefaultClassDecl)CloneDeclarationForAbstractSignature(origin.VisibilityScope, defaultClassDecl, module, moduleSignatures, name);
 
       var sig = module.RegisterTopLevelDecls(this, true);
@@ -880,7 +1020,8 @@ namespace Microsoft.Dafny {
         };
         return result;
       } else {
-        return new AbstractSignatureCloner(scope).CloneDeclaration(d, newParent);
+        return new AbstractSignatureCloner(scope, SystemModuleManager.SystemModule,
+          SystemModuleManager.GetBuiltinTypeIdentities()).CloneDeclaration(d, newParent);
       }
     }
 
@@ -957,12 +1098,52 @@ namespace Microsoft.Dafny {
       }
     }
 
+    /// <summary>
+    /// Under --warn-unchecked-termination, reports each trait with {:termination false} and each
+    /// class or trait with @AssumeCrossModuleTermination, the declarations that "dafny audit" reports
+    /// as unchecked termination assumptions.  As for an assume statement, an {:axiom} attribute on the
+    /// declaration, or --allow-axioms, acknowledges the assumption and suppresses the warning.
+    /// Declarations that this run does not verify are not reported.
+    /// </summary>
+    private void WarnUncheckedTermination(IEnumerable<TopLevelDecl> declarations) {
+      if (!Options.Get(CommonOptionBag.WarnUncheckedTermination) || Options.Get(CommonOptionBag.AllowAxioms)) {
+        return;
+      }
+      // Under --modular-termination, the calls are checked in the program being verified, but not in
+      // code verified separately (see "global bounds" in the Reference Manual), so the warning stays.
+      var modular = Options.Get(CommonOptionBag.ModularTermination);
+      foreach (var d in declarations) {
+        // Only declarations verified in this run are reported: a declaration from a library
+        // (--library, --standard-libraries or a .doo file) or an included file is not, since the
+        // user cannot acknowledge it with {:axiom} there.  Nor is the copy of a declaration that a
+        // refining module inherits: the attribute is reported where it is written.
+        if (d is not TopLevelDeclWithMembers cl || cl.HasAxiomAttribute || cl.Origin is RefinementOrigin ||
+            !cl.ShouldVerify(ProgramResolver.Program.Compilation)) {
+          continue;
+        }
+        bool termination = true;
+        if (cl is TraitDecl && Attributes.ContainsBool(cl.Attributes, "termination", ref termination) && !termination) {
+          reporter.Warning(MessageSource.Verifier, ResolutionErrors.ErrorId.r_termination_false_without_axiom, cl.NameNode.Origin,
+            $"trait '{cl.Name}' has {{:termination false}} and no {{:axiom}} annotation: " + (modular
+              ? "--modular-termination checks the calls dispatched through it only in code verified with that option"
+              : "calls dispatched through it are not checked for termination"));
+        }
+        if (Attributes.Contains(cl.Attributes, "AssumeCrossModuleTermination")) {
+          reporter.Warning(MessageSource.Verifier, ResolutionErrors.ErrorId.r_assume_cross_module_termination_without_axiom, cl.NameNode.Origin,
+            $"{cl.WhatKind} '{cl.Name}' has @AssumeCrossModuleTermination and no {{:axiom}} annotation: " + (modular
+              ? "code verified without it, such as the module of a trait it extends, did not check the calls dispatched to it for termination"
+              : "calls dispatched to it through traits of other modules are not checked for termination"));
+        }
+      }
+    }
+
     public void ResolveTopLevelDecls_Signatures(ModuleDefinition def, ModuleSignature sig, List<TopLevelDecl> declarations,
       Graph<IndDatatypeDecl> datatypeDependencies, Graph<CoDatatypeDecl> codatatypeDependencies) {
       Contract.Requires(declarations != null);
       Contract.Requires(datatypeDependencies != null);
       Contract.Requires(codatatypeDependencies != null);
       RevealAllInScope(declarations, def.VisibilityScope);
+      WarnUncheckedTermination(declarations);
 
       /* Augment the scoping environment for the current module*/
       foreach (TopLevelDecl d in declarations) {
@@ -985,12 +1166,24 @@ namespace Microsoft.Dafny {
         if (d is TypeSynonymDecl) {
           var dd = (TypeSynonymDecl)d;
           ResolveType(dd.Origin, dd.Rhs, dd, ResolveTypeOptionEnum.AllowPrefix, dd.TypeArgs);
+          var successors = new List<RedirectingTypeDecl>();
           dd.Rhs.ForeachTypeComponent(ty => {
             var s = ty.AsRedirectingType;
-            if (s != null && s != dd) {
+            if (s == dd) {
+              dd.IsCyclic = true;
+            } else if (s != null) {
               typeRedirectionDependencies.AddEdge(dd, s);
+              successors.Add(s);
             }
           });
+          // A cycle among redirecting types is reported below, after all signatures are resolved.  But the
+          // declarations after this one may expand this synonym before then (for example, when a datatype's
+          // constructor has a parameter of this type), and expanding a cyclic synonym does not terminate.  So
+          // mark this synonym now if it closes a cycle.  Every cycle has a member that closes it (the member
+          // resolved last), so marking that member lets Type.NormalizeExpand stop on any cycle.
+          if (successors.Exists(s => typeRedirectionDependencies.Reaches(s, dd))) {
+            dd.IsCyclic = true;
+          }
         } else if (d is NewtypeDecl) {
           var dd = (NewtypeDecl)d;
           ResolveType(dd.Origin, dd.BaseType, dd, ResolveTypeOptionEnum.DontInfer, null);
@@ -1195,17 +1388,34 @@ namespace Microsoft.Dafny {
         }
 
       } else {
-        InheritMembers(declarations);
+        var checkpoint = new LegacyInferenceCheckpoint(this);
+        var enclosingTracker = redirectingTypeTracker;
+        try {
+          // Signature resolution cannot see dependencies hidden behind unassigned bases.
+          // Keep tracking active through both rounds and reject a newly concrete cycle before
+          // inference propagation can enter an ancestry-dependent operation.
+          redirectingTypeTracker = new RedirectingTypeDependencyTracker(declarations, Type.GetScope(),
+            cycle => throw new RedirectingTypeCycleException(cycle));
+          InheritMembers(declarations);
 
-        // Resolve all names and infer types. These two are done together, because name resolution depends on having type information
-        // and type inference depends on having resolved names.
-        // The task is first performed for (the constraints of) newtype declarations, (the constraints of) subset type declarations, and
-        // (the right-hand sides of) const declarations, because type resolution sometimes needs to know the base type of newtypes and subset types
-        // and needs to know the type of const fields. Doing these declarations increases the chances the right information will be provided
-        // in time.
-        // Once the task is done for these newtype/subset-type/const parts, the task continues with everything else.
-        ResolveNamesAndInferTypes(declarations, true);
-        ResolveNamesAndInferTypes(declarations, false);
+          // Resolve newtype/subset constraints and constants before other bodies, preserving
+          // the existing inference order. Cold checks at round boundaries are a backstop;
+          // assignment notifications provide the synchronous well-formedness guarantee.
+          ResolveNamesAndInferTypes(declarations, true);
+          redirectingTypeTracker.CheckAtRoundBoundary();
+          ResolveNamesAndInferTypes(declarations, false);
+          redirectingTypeTracker.CheckAtRoundBoundary();
+          if (reporter.Count(ErrorLevel.Error) == prevErrorCount) {
+            var checkTypeInferenceVisitor = new CheckTypeInferenceVisitor(this);
+            checkTypeInferenceVisitor.VisitDeclarations(declarations);
+          }
+        } catch (RedirectingTypeCycleException cycleError) {
+          ReportRedirectingTypeCycle(cycleError.Cycle);
+          checkpoint.Restore();
+          return;
+        } finally {
+          redirectingTypeTracker = enclosingTracker;
+        }
       }
 
       // Check that all types have been determined. During this process, also fill in all .ResolvedOp fields.
@@ -1213,7 +1423,7 @@ namespace Microsoft.Dafny {
       // be specified, whereas some (necessarily unused) type arguments are still underspecified. Such will be caught by the
       // CheckTypeInferenceVisitor. (But CheckTypeInferenceVisitor could, for the type system refresh, be modified to
       // not bother setting .ResolvedOp fields, since the under-specification detector above has already set those.)
-      if (reporter.Count(ErrorLevel.Error) == prevErrorCount) {
+      if (Options.Get(CommonOptionBag.TypeSystemRefresh) && reporter.Count(ErrorLevel.Error) == prevErrorCount) {
         var checkTypeInferenceVisitor = new CheckTypeInferenceVisitor(this);
         checkTypeInferenceVisitor.VisitDeclarations(declarations);
       }
@@ -1300,9 +1510,9 @@ namespace Microsoft.Dafny {
       }
 
       // A function is not allowed to be used naked (that is, without being applied to arguments) in its own SCC.
-      // Also, a function is not allowed to be used in any way inside a "decreases" clause in its own SCC.
-      foreach (var callable in ModuleDefinition.AllCallables(declarations)) {
-        DetectUnsoundFunctionReferencesVisitor.Check(callable, this);
+      // Also, a function is not allowed to be used in any way inside a "decreases" clause its its own SCC.
+      foreach (var function in ModuleDefinition.AllFunctions(declarations)) {
+        DetectUnsoundFunctionReferencesVisitor.Check(function, this);
       }
 
       // An inductive datatype is allowed to be defined as an empty type. For example, in
@@ -1418,6 +1628,9 @@ namespace Microsoft.Dafny {
         //   - type characteristics, and
         //   - type bounds
         TypeCharacteristicChecker.InferAndCheck(declarations, isAnExport, reporter);
+
+        // Check the decreases components "e by O" (--decreases-orders)
+        DecreasesOrders.Check(Options, reporter, declarations);
 
         // Check that functions claiming to be abstemious really are, and check that 'older' parameters are used only when allowed
         foreach (var fn in ModuleDefinition.AllFunctions(declarations)) {
@@ -2186,16 +2399,22 @@ namespace Microsoft.Dafny {
             if (cl.EnclosingModuleDefinition == trait.EnclosingModuleDefinition ||
                 trait.IsObjectTrait ||
                 (Attributes.ContainsBool(trait.Attributes, "termination", ref termination) && !termination) ||
-                Attributes.Contains(cl.Attributes, "AssumeCrossModuleTermination")) {
+                (!Options.Get(CommonOptionBag.ModularTermination) && Attributes.Contains(cl.Attributes, "AssumeCrossModuleTermination"))) {
               // all is good (or the user takes responsibility for the lack of termination checking)
               if (!cl.ParentTraitHeads.Contains(trait)) {
                 cl.ParentTraitHeads.Add(trait);
                 parentRelation.AddEdge(cl, trait);
               }
             } else {
-              reporter.Error(MessageSource.Resolver, parentTypeToken,
-                $"{cl.WhatKind} '{cl.Name}' is in a different module than trait '{trait.FullName}'. A {cl.WhatKind} may only extend a trait " +
-                $"in the same module, unless the parent trait is annotated with {{:termination false}} or the {cl.WhatKind} with @AssumeCrossModuleTermination.");
+              if (Options.Get(CommonOptionBag.ModularTermination)) {
+                reporter.Error(MessageSource.Resolver, parentTypeToken,
+                  $"modular termination: {cl.WhatKind} '{cl.Name}' cannot extend sealed trait '{trait.FullName}' from another module; " +
+                  "the defining trait must declare {:termination false}; @AssumeCrossModuleTermination cannot override sealing");
+              } else {
+                reporter.Error(MessageSource.Resolver, parentTypeToken,
+                  $"{cl.WhatKind} '{cl.Name}' is in a different module than trait '{trait.FullName}'. A {cl.WhatKind} may only extend a trait " +
+                  $"in the same module, unless the parent trait is annotated with {{:termination false}} or the {cl.WhatKind} with @AssumeCrossModuleTermination.");
+              }
             }
 
             if (cl is TraitDecl td) {
@@ -2380,6 +2599,16 @@ namespace Microsoft.Dafny {
     }
 
     public ValuetypeDecl AddBitvectorTypeDecl(string name, int width) {
+      if (SystemModuleManager.ResolutionCatalog is { } catalog) {
+        var declaration = catalog.Bitvector(width, () => AddBitvectorTypeDeclCore(name, width));
+        SystemModuleManager.RecordBuiltin(declaration);
+        ProgramResolver.AddSystemClass(declaration, declaration.Members.ToDictionary(m => m.Name));
+        return declaration;
+      }
+      return AddBitvectorTypeDeclCore(name, width);
+    }
+
+    private ValuetypeDecl AddBitvectorTypeDeclCore(string name, int width) {
       var bvDecl = new ValuetypeDecl(name, ProgramResolver.SystemModuleManager.SystemModule,
         t => t.AsBitVectorType is { Width: var w } && w == width,
         typeArgs => new BitvectorType(Options, width));
@@ -2505,8 +2734,9 @@ namespace Microsoft.Dafny {
             } else if (Attributes.Contains(member.Attributes, "extern")) {
               // Extern functions do not need to be reimplemented.
               // TODO: When `:extern` is separated from `:compile false`, this should become `:compile false`.
-            } else if (member is Lemma && Attributes.Contains(member.Attributes, "opaque_reveal")) {
-              // reveal lemmas do not need to be reimplemented
+            } else if (member is Lemma && (member.IsGeneratedByDafny || Options.Get(CommonOptionBag.LegacyAutoGeneratedAttributes)) && Attributes.Contains(member.Attributes, "opaque_reveal")) {
+              // reveal lemmas do not need to be reimplemented; a lemma on which the user wrote {:opaque_reveal}
+              // is not a reveal lemma, and an unimplemented one would let a call assume its postcondition
             } else if (!suppressNoImplErrorsForTheseMembers.Contains(member.Name)) {
               reporter.Error(MessageSource.Resolver, cl.Origin, "{0} '{1}' does not implement trait {2} '{3}.{4}'", cl.WhatKind, cl.Name, member.WhatKind, member.EnclosingClass.Name, member.Name);
             }
@@ -2533,7 +2763,9 @@ namespace Microsoft.Dafny {
           // The class is not allowed to do anything with the field other than silently inherit it.
           reporter.Error(MessageSource.Resolver, member.Origin,
             $"{baseMember.WhatKindAndName} is inherited from {baseType.WhatKindAndName} and is not allowed to be re-declared");
-        } else if ((baseMember as Function)?.Body != null || (baseMember as Constructor)?.Body != null) {
+        } else if ((baseMember as Function)?.Body != null || (baseMember as Constructor)?.Body != null ||
+                   (Options.Get(CommonOptionBag.ModularTermination) && baseMember is Function &&
+                    baseMember.TerminationContract is { IsDispatchSlot: false })) {
           // the overridden member is a fully defined function or method, so the class is not allowed to do anything with it other than silently inherit it
           reporter.Error(MessageSource.Resolver, member.Origin,
             $"fully defined {baseMember.WhatKindAndName} is inherited from {baseType.WhatKindAndName} and is not allowed to be re-declared");
@@ -2643,7 +2875,7 @@ namespace Microsoft.Dafny {
           typeMap.Add(o, new UserDefinedType(tok, n));
           if (checkNames && o.Name != n.Name) { // if checkNames is false, then just treat the parameters positionally.
             reporter.Error(MessageSource.Resolver, n.Origin,
-              $"type parameters in this {thing} override are not allowed to be renamed from the names given in the {thing} it overrides" +
+              $"type parameters in this {thing} override are not allowed to be renamed from the names given in the the {thing} it overrides" +
               $" (expected '{o.Name}', got '{n.Name}')");
           } else {
             // Check type characteristics

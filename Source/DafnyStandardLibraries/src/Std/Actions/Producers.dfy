@@ -1318,7 +1318,7 @@ module Std.Producers {
       }
 
       Repr := {this} + original.Repr + originalTotalAction.Repr;
-      assert Valid();
+      assert {:split_here} Valid();
       assert old(State()).ValidChange(State());
     }
 
@@ -1424,7 +1424,7 @@ module Std.Producers {
       TMSucc(source.DecreasesMetric())
     }
 
-    @ResourceLimit("5e7")
+    @ResourceLimit("1e7")
     method Invoke(t: ()) returns (result: Option<T>)
       requires Requires(t)
       reads Reads(t)
@@ -1466,6 +1466,7 @@ module Std.Producers {
         old(DecreasesMetric()).SuccDecreasesToSucc(DecreasesMetric());
       }
 
+      assert {:split_here} Valid();
       if result.Some? {
         assert Seq.Last(source.Outputs()) == result;
         Seq.PartitionedLastTrueImpliesAll(source.Outputs(), IsSome);
@@ -1675,7 +1676,20 @@ module Std.Producers {
         }
       }
 
-      assert old(State()).ValidChange(State());
+      assert history == old(history) + [((), result)];
+      assert Outputs() == old(Outputs()) + [result];
+      assert old(State()).ValidChange(State()) by {
+        if old(Remaining()).Some? {
+          assert old(first.Remaining()).Some? && old(second.Remaining()).Some?;
+          if result.Some? {
+            assert 0 < old(Remaining()).value;
+            assert Remaining() == Some(old(Remaining()).value - 1);
+          } else {
+            assert old(Remaining()).value == 0;
+            assert Remaining() == Some(0);
+          }
+        }
+      }
 
       assert Ensures(t, result);
     }
@@ -2019,7 +2033,7 @@ module Std.Producers {
       TMTuple(base, TMNat(0), original.DecreasesMetric())
     }
 
-    @ResourceLimit("5e7")
+    @ResourceLimit("1e7")
     method Invoke(t: ()) returns (result: Option<Producer<O>>)
       requires Requires(t)
       reads Reads(t)
@@ -2057,7 +2071,7 @@ module Std.Producers {
       }
 
       Repr := {this} + original.Repr + mapping.Repr;
-      assert Valid();
+      assert {:split_here} Valid();
       assert original.DecreasedBy(next);
       if next.Some? {
         old(DecreasesMetric()).TupleDecreasesToTuple(DecreasesMetric());
@@ -2275,6 +2289,8 @@ module Std.Producers {
           // Need to use Invoke() here for the extra postcondition from ProducerOfNewProducers
           currentInner := original.Invoke(());
 
+          // Establish the new last output before changing the representation set.
+          assert {:split_here} currentInner == Seq.Last(original.Outputs());
           assert fresh(original.Repr - old@beforeOriginalNext(Repr));
           if currentInner.Some? {
             Repr := {this} + original.Repr + currentInner.value.Repr;
@@ -2284,7 +2300,6 @@ module Std.Producers {
             assert old@beforeOriginalNext(original.Valid());
             assert currentInner.value.history == [];
 
-            assert currentInner == Seq.Last(original.Outputs());
             Seq.PartitionedLastTrueImpliesAll(original.Outputs(), IsSome<Producer<T>>);
             assert !original.Done() && currentInner.Some? && !currentInner.value.Done();
             original.DoneIsOneWay();
@@ -2294,7 +2309,6 @@ module Std.Producers {
           } else {
             Repr := {this} + original.Repr;
 
-            assert currentInner == Seq.Last(original.Outputs());
             assert original.Done() && currentInner.None?;
 
             old@beforeOriginalNext(DecreasesMetric()).TupleNonIncreasesToTuple(DecreasesMetric()) by {
@@ -2311,6 +2325,7 @@ module Std.Producers {
           DecreasesMetric().second.SuccDecreasesToOriginal();
           result := currentInner.value.Next();
           this.Repr := {this} + original.Repr + currentInner.value.Repr;
+          assert {:split_here} Valid();
 
           assert old@beforeCurrentInnerNext(currentInner.value.DecreasesMetric()).NonIncreasesTo(currentInner.value.DecreasesMetric());
           InnerDecreasesMetricNonIncreases@beforeCurrentInnerNext();

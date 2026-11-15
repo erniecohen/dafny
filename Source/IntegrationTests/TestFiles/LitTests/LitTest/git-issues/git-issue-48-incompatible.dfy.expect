@@ -1,0 +1,4 @@
+git-issue-48-incompatible.dfy(6,9): Error: Function body type mismatch (expected Option<int>, got Option<bool>) (covariant type parameter would require bool <: int)
+1 resolution/type errors detected in git-issue-48-incompatible.dfy
+git-issue-48-incompatible.dfy(6,44): Error: boolean literal used as if it had type int
+1 resolution/type errors detected in git-issue-48-incompatible.dfy

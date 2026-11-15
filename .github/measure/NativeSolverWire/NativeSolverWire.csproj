@@ -1,0 +1,4 @@
+<Project Sdk="Microsoft.NET.Sdk">
+<PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net10.0</TargetFramework><ImplicitUsings>enable</ImplicitUsings><GeneratePackageOnBuild>false</GeneratePackageOnBuild></PropertyGroup>
+<ItemGroup><Reference Include="DafnyDriver"><HintPath>$(DafnyDirectory)/DafnyDriver.dll</HintPath></Reference><Reference Include="DafnyCore"><HintPath>$(DafnyDirectory)/DafnyCore.dll</HintPath></Reference><Reference Include="Boogie.Provers.SMTLib"><HintPath>$(DafnyDirectory)/Boogie.Provers.SMTLib.dll</HintPath></Reference><Reference Include="$(DafnyDirectory)/Boogie*.dll" /><Reference Include="System.CommandLine"><HintPath>$(DafnyDirectory)/System.CommandLine.dll</HintPath></Reference><Reference Include="DafnyPipeline"><HintPath>$(DafnyDirectory)/DafnyPipeline.dll</HintPath></Reference></ItemGroup>
+</Project>

@@ -1,0 +1,207 @@
+{
+  "solver": "Z3 5.1.0",
+  "boogie": "v3.5.5+review.c5a9f2ef",
+  "prerequisiteProducer": "62c7976f8104901326fd8bd20dce33145eab2d88",
+  "prerequisiteProduct": "05276f470205c09b39c616fee0e7a7f2bdd17e56",
+  "StdInputSnapshot": "e7e18c65ec22fd5780adfe05aacd5c9e5a65b4a8",
+  "problem": "Impl$$Std_mArithmetic_mMulInternalsNonlinear.__default.LemmaMulIsAssociative_split0",
+  "directNativeReplays": [
+    {
+      "scenario": "prior-1918",
+      "history": true,
+      "priorTasks": 1918,
+      "historyFrom": null,
+      "taskSha256": "ab5b290de0cf4027ec3845d3adcef8590098dcb200613a3a2e25f8b91ed0cb75",
+      "taskBytes": 8083,
+      "inputSha256": "cbb5914a389d1dd46bddbce40e0d026bbacb637e1cc351bfad40633cd4759940",
+      "observations": [
+        {
+          "sample": 0,
+          "targetRU": 20534,
+          "resourceResponses": 1919,
+          "stdoutSha256": "3144c7620c9987e742c6b47e5a415d85fd0ec3f77e29aa62dd8c09758850d7ef",
+          "stderrSha256": "15a66764b858e8fab6195bda25097a0f5f97910c310336a32e8c6e367b23139a",
+          "warningLines": 8016,
+          "targetSmtOutcome": "unsat"
+        },
+        {
+          "sample": 1,
+          "targetRU": 20534,
+          "resourceResponses": 1919,
+          "stdoutSha256": "3144c7620c9987e742c6b47e5a415d85fd0ec3f77e29aa62dd8c09758850d7ef",
+          "stderrSha256": "15a66764b858e8fab6195bda25097a0f5f97910c310336a32e8c6e367b23139a",
+          "warningLines": 8016,
+          "targetSmtOutcome": "unsat"
+        },
+        {
+          "sample": 2,
+          "targetRU": 20534,
+          "resourceResponses": 1919,
+          "stdoutSha256": "3144c7620c9987e742c6b47e5a415d85fd0ec3f77e29aa62dd8c09758850d7ef",
+          "stderrSha256": "15a66764b858e8fab6195bda25097a0f5f97910c310336a32e8c6e367b23139a",
+          "warningLines": 8016,
+          "targetSmtOutcome": "unsat"
+        },
+        {
+          "sample": 3,
+          "targetRU": 20534,
+          "resourceResponses": 1919,
+          "stdoutSha256": "3144c7620c9987e742c6b47e5a415d85fd0ec3f77e29aa62dd8c09758850d7ef",
+          "stderrSha256": "15a66764b858e8fab6195bda25097a0f5f97910c310336a32e8c6e367b23139a",
+          "warningLines": 8016,
+          "targetSmtOutcome": "unsat"
+        },
+        {
+          "sample": 4,
+          "targetRU": 20534,
+          "resourceResponses": 1919,
+          "stdoutSha256": "3144c7620c9987e742c6b47e5a415d85fd0ec3f77e29aa62dd8c09758850d7ef",
+          "stderrSha256": "15a66764b858e8fab6195bda25097a0f5f97910c310336a32e8c6e367b23139a",
+          "warningLines": 8016,
+          "targetSmtOutcome": "unsat"
+        }
+      ]
+    },
+    {
+      "scenario": "prior-1660",
+      "history": true,
+      "priorTasks": 1660,
+      "historyFrom": "CheckWellFormed$$Std_mConsumers.IConsumer.Accept_split0",
+      "taskSha256": "ab5b290de0cf4027ec3845d3adcef8590098dcb200613a3a2e25f8b91ed0cb75",
+      "taskBytes": 8083,
+      "inputSha256": "6cdd3d881cb08ffe368eb17a45e7234bbe6308e63b4e0463a304625321d74cb3",
+      "observations": [
+        {
+          "sample": 0,
+          "targetRU": 20558,
+          "resourceResponses": 1661,
+          "stdoutSha256": "69d02632521f1e06b891e85edeaf966626ba53fbb4ce05cf14eaa1139b20e01a",
+          "stderrSha256": "5441595ba249245a825d418544bf24ef345849689bee78e30b58d6c21004d4e0",
+          "warningLines": 2706,
+          "targetSmtOutcome": "unsat"
+        },
+        {
+          "sample": 1,
+          "targetRU": 20558,
+          "resourceResponses": 1661,
+          "stdoutSha256": "69d02632521f1e06b891e85edeaf966626ba53fbb4ce05cf14eaa1139b20e01a",
+          "stderrSha256": "5441595ba249245a825d418544bf24ef345849689bee78e30b58d6c21004d4e0",
+          "warningLines": 2706,
+          "targetSmtOutcome": "unsat"
+        },
+        {
+          "sample": 2,
+          "targetRU": 20558,
+          "resourceResponses": 1661,
+          "stdoutSha256": "69d02632521f1e06b891e85edeaf966626ba53fbb4ce05cf14eaa1139b20e01a",
+          "stderrSha256": "5441595ba249245a825d418544bf24ef345849689bee78e30b58d6c21004d4e0",
+          "warningLines": 2706,
+          "targetSmtOutcome": "unsat"
+        },
+        {
+          "sample": 3,
+          "targetRU": 20558,
+          "resourceResponses": 1661,
+          "stdoutSha256": "69d02632521f1e06b891e85edeaf966626ba53fbb4ce05cf14eaa1139b20e01a",
+          "stderrSha256": "5441595ba249245a825d418544bf24ef345849689bee78e30b58d6c21004d4e0",
+          "warningLines": 2706,
+          "targetSmtOutcome": "unsat"
+        },
+        {
+          "sample": 4,
+          "targetRU": 20558,
+          "resourceResponses": 1661,
+          "stdoutSha256": "69d02632521f1e06b891e85edeaf966626ba53fbb4ce05cf14eaa1139b20e01a",
+          "stderrSha256": "5441595ba249245a825d418544bf24ef345849689bee78e30b58d6c21004d4e0",
+          "warningLines": 2706,
+          "targetSmtOutcome": "unsat"
+        }
+      ]
+    },
+    {
+      "scenario": "fresh",
+      "history": false,
+      "priorTasks": 0,
+      "historyFrom": null,
+      "taskSha256": "ab5b290de0cf4027ec3845d3adcef8590098dcb200613a3a2e25f8b91ed0cb75",
+      "taskBytes": 8083,
+      "inputSha256": "ab5b290de0cf4027ec3845d3adcef8590098dcb200613a3a2e25f8b91ed0cb75",
+      "observations": [
+        {
+          "sample": 0,
+          "targetRU": 20536,
+          "resourceResponses": 1,
+          "stdoutSha256": "e2e3135b213f763ebc5067c7511b1c959722a814925ad81522b78276c1353454",
+          "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "warningLines": 0,
+          "targetSmtOutcome": "unsat"
+        },
+        {
+          "sample": 1,
+          "targetRU": 20536,
+          "resourceResponses": 1,
+          "stdoutSha256": "e2e3135b213f763ebc5067c7511b1c959722a814925ad81522b78276c1353454",
+          "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "warningLines": 0,
+          "targetSmtOutcome": "unsat"
+        },
+        {
+          "sample": 2,
+          "targetRU": 20536,
+          "resourceResponses": 1,
+          "stdoutSha256": "e2e3135b213f763ebc5067c7511b1c959722a814925ad81522b78276c1353454",
+          "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "warningLines": 0,
+          "targetSmtOutcome": "unsat"
+        },
+        {
+          "sample": 3,
+          "targetRU": 20536,
+          "resourceResponses": 1,
+          "stdoutSha256": "e2e3135b213f763ebc5067c7511b1c959722a814925ad81522b78276c1353454",
+          "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "warningLines": 0,
+          "targetSmtOutcome": "unsat"
+        },
+        {
+          "sample": 4,
+          "targetRU": 20536,
+          "resourceResponses": 1,
+          "stdoutSha256": "e2e3135b213f763ebc5067c7511b1c959722a814925ad81522b78276c1353454",
+          "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "warningLines": 0,
+          "targetSmtOutcome": "unsat"
+        }
+      ]
+    }
+  ],
+  "interpretation": "The exact same task reproduces both original resource counts when only its prior native process history changes. Fresh native processes agree. No Dafny/Boogie scheduling or cache is present in these direct replays.",
+  "nonlinearOptionControl": {
+    "prior1660WithExplicitTrueRU": 20558,
+    "prior1918WithExplicitTrueRU": 20534,
+    "conclusion": "Restoring smt.arith.nl alone does not erase the history effect."
+  },
+  "targetOutcomeValidation": "Every repetition has the same stdout SHA-256 as its retained native-output witness; the last SMT check response is unsat in each witness.",
+  "completeFreshStdBaselines": [
+    {
+      "additionalAxioms": false,
+      "scope": "Complete one-function-input Std baseline with explicit diagnostic /restartProver; not a completed size1/64 comparison",
+      "tasks": 7773,
+      "physicalProofSolvers": 7773,
+      "taskAndPhysicalCoverageComplete": true,
+      "targetOutcome": "Valid",
+      "targetRU": 20536,
+      "exit": 4
+    },
+    {
+      "additionalAxioms": true,
+      "scope": "Complete one-function-input Std baseline with explicit diagnostic /restartProver; not a completed size1/64 comparison",
+      "tasks": 7773,
+      "physicalProofSolvers": 7773,
+      "taskAndPhysicalCoverageComplete": true,
+      "targetOutcome": "Valid",
+      "targetRU": 20536,
+      "exit": 4
+    }
+  ]
+}
