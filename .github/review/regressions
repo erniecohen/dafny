@@ -561,5 +561,8 @@ git-issues/github-issue-362.dfy
 # Under --modular-termination, the reveal lemma Dafny generates for an opaque const is generated, in a concrete module and in the copies a refinement makes, so neither the library build nor 'dafny audit' counts it as a bodyless lemma with a postcondition (https://github.com/erniecohen/dafny/issues/371).
 git-issues/github-issue-371.dfy
 
+# With --inlined-body-call-permissions, a precondition calling a recursive member predicate on a constructed term verifies in every declaration order: the checked conjuncts of an inlined body get the body's call permissions at their layer (https://github.com/erniecohen/dafny/issues/198).
+git-issues/github-issue-198.dfy
+
 # Under --quantified-check-call-facts, a universally quantified postcondition or assert condition whose body the solver simplifies until no trigger term remains, as abs(l[i] - l[i]) <= d, keeps the call facts of its body, and wrong bounds, assert false and calls outside their precondition still fail (https://github.com/erniecohen/dafny/issues/196).
 git-issues/github-issue-196.dfy
