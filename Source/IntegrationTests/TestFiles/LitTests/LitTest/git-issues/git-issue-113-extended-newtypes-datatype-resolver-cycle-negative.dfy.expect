@@ -1,0 +1,2 @@
+git-issue-113-extended-newtypes-datatype-resolver-cycle-negative.dfy(4,8): Error: recursive constraint dependency involving a newtype: Expanding -> Expanding
+1 resolution/type errors detected in git-issue-113-extended-newtypes-datatype-resolver-cycle-negative.dfy

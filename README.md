@@ -26,7 +26,7 @@ Unless marked *opt-in*, a change is on by default. Soundness fixes are on by def
 
 **Resolver and language** (all *opt-in*)
 - `--conservative-match-inference` and fixes to the refreshed resolver (`--type-system-refresh`) for crossed comparisons, match literals, subtype variance diagnostics and match pattern types.
-- `--contextual-quantifier-domains`, `--contextual-lambda-domains`, `--invariant-constructor-inference`, `--synonym-refines-abstract-type`, `--ancestor-qualified-module-ids`, `--datatype-subset-conversions` and `--statement-expression-conclusions`.
+- `--contextual-quantifier-domains`, `--contextual-lambda-domains`, `--invariant-constructor-inference`, `--synonym-refines-abstract-type`, `--ancestor-qualified-module-ids`, `--datatype-subset-conversions`, `--statement-expression-conclusions` and `--quantified-check-call-facts`.
 - `--user-defined-operators` (milestone 1).
 
 **Proof automation** (*opt-in*)
@@ -34,6 +34,7 @@ Unless marked *opt-in*, a change is on by default. Soundness fixes are on by def
 - `--arithmetic-solver` for program-wide Z3 arithmetic solver selection.
 - `--bitvector-map-keys`.
 - `--heap-free-lambda-facts`.
+- `--inlined-body-call-permissions`: a checked call to a function with a body, inlined conjunct by conjunct, gets the body's call permissions in each conjunct.
 
 **Performance and tooling** (*opt-in*)
 - `--verification-cache` (a persistent per-task result cache) and `--translation-cache`.

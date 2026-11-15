@@ -1,0 +1,434 @@
+--- B-on
++++ W-erased-on
+@@ -2948,9 +2948,31 @@
+ const unique class._module.__default: ClassName;
+ 
+ // function declaration for _module._default.Encode
+-function _module.__default.Encode(b#0: Box) : Box;
++function _module.__default.Encode(b#0: Box) : DatatypeType;
+ 
+ function _module.__default.Encode#canCall(b#0: Box) : bool;
++
++function Tclass._module.Wrapper() : Ty
++uses {
++// Tclass._module.Wrapper Tag
++axiom Tag(Tclass._module.Wrapper()) == Tagclass._module.Wrapper
++   && TagFamily(Tclass._module.Wrapper()) == tytagFamily$Wrapper;
++}
++
++const unique Tagclass._module.Wrapper: TyTag;
++
++// Box/unbox axiom for Tclass._module.Wrapper
++axiom (forall bx: Box :: 
++  { $IsBox(bx, Tclass._module.Wrapper()) } 
++  $IsBox(bx, Tclass._module.Wrapper())
++     ==> $Box($Unbox(bx): DatatypeType) == bx
++       && $Is($Unbox(bx): DatatypeType, Tclass._module.Wrapper()));
++
++// consequence axiom for _module.__default.Encode
++axiom (forall b#0: Box :: 
++  { _module.__default.Encode(b#0) } 
++  _module.__default.Encode#canCall(b#0)
++     ==> $Is(_module.__default.Encode(b#0), Tclass._module.Wrapper()));
+ 
+ function _module.__default.Encode#requires(Box) : bool;
+ 
+@@ -2967,13 +2989,14 @@
+ // definition axiom for _module.__default.Encode (revealed)
+ axiom {:id "id0"} (forall b#0: Box :: 
+   { _module.__default.Encode(b#0) } 
+-  _module.__default.Encode#canCall(b#0) ==> _module.__default.Encode(b#0) == b#0);
++  _module.__default.Encode#canCall(b#0)
++     ==> _module.__default.Encode(b#0) == #_module.Wrapper.Wrap(b#0));
+ 
+ // definition axiom for _module.__default.Encode for all literals (revealed)
+ axiom {:id "id1"} (forall b#0: Box :: 
+   {:weight 3} { _module.__default.Encode(Lit(b#0)) } 
+   _module.__default.Encode#canCall(Lit(b#0))
+-     ==> _module.__default.Encode(Lit(b#0)) == Lit(b#0));
++     ==> _module.__default.Encode(Lit(b#0)) == Lit(#_module.Wrapper.Wrap(Lit(b#0))));
+ 
+ procedure {:verboseName "Encode (well-formedness)"} CheckWellformed$$_module.__default.Encode(b#0: Box);
+   modifies $Heap;
+@@ -2981,34 +3004,38 @@
+ 
+ 
+ // function declaration for _module._default.Decode
+-function _module.__default.Decode(v#0: Box) : Box;
+-
+-function _module.__default.Decode#canCall(v#0: Box) : bool;
+-
+-function _module.__default.Decode#requires(Box) : bool;
++function _module.__default.Decode(v#0: DatatypeType) : Box;
++
++function _module.__default.Decode#canCall(v#0: DatatypeType) : bool;
++
++function _module.__default.Decode#requires(DatatypeType) : bool;
+ 
+ // #requires axiom for _module.__default.Decode
+-axiom (forall v#0: Box :: 
++axiom (forall v#0: DatatypeType :: 
+   { _module.__default.Decode#requires(v#0) } 
+-  _module.__default.Decode#requires(v#0) == true);
++  $Is(v#0, Tclass._module.Wrapper())
++     ==> _module.__default.Decode#requires(v#0) == true);
+ 
+ // #requires ==> #canCall for _module.__default.Decode
+-axiom (forall v#0: Box :: 
++axiom (forall v#0: DatatypeType :: 
+   { _module.__default.Decode#requires(v#0) } 
+   _module.__default.Decode#requires(v#0) ==> _module.__default.Decode#canCall(v#0));
+ 
+ // definition axiom for _module.__default.Decode (revealed)
+-axiom {:id "id3"} (forall v#0: Box :: 
++axiom {:id "id3"} (forall v#0: DatatypeType :: 
+   { _module.__default.Decode(v#0) } 
+-  _module.__default.Decode#canCall(v#0) ==> _module.__default.Decode(v#0) == v#0);
++  _module.__default.Decode#canCall(v#0)
++     ==> _module.Wrapper.Wrap_q(v#0)
++       && _module.__default.Decode(v#0) == _module.Wrapper.value(v#0));
+ 
+ // definition axiom for _module.__default.Decode for all literals (revealed)
+-axiom {:id "id4"} (forall v#0: Box :: 
++axiom {:id "id4"} (forall v#0: DatatypeType :: 
+   {:weight 3} { _module.__default.Decode(Lit(v#0)) } 
+   _module.__default.Decode#canCall(Lit(v#0))
+-     ==> _module.__default.Decode(Lit(v#0)) == Lit(v#0));
+-
+-procedure {:verboseName "Decode (well-formedness)"} CheckWellformed$$_module.__default.Decode(v#0: Box);
++     ==> _module.Wrapper.Wrap_q(Lit(v#0))
++       && _module.__default.Decode(Lit(v#0)) == Lit(_module.Wrapper.value(Lit(v#0))));
++
++procedure {:verboseName "Decode (well-formedness)"} CheckWellformed$$_module.__default.Decode(v#0: DatatypeType where $Is(v#0, Tclass._module.Wrapper()));
+   modifies $Heap;
+ 
+ 
+@@ -3047,7 +3074,7 @@
+     // AddMethodImpl: RoundTrip, Impl$$_module.__default.RoundTrip
+     $_ModifiesFrame := (lambda $o: ref, $f: Field :: 
+       $o != null && $Unbox(read($Heap, $o, alloc)): bool ==> false);
+-    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/B.dfy(5,59): initial state"} true;
++    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/W.dfy(6,59): initial state"} true;
+     $_reverifyPost := false;
+ }
+ 
+@@ -3075,28 +3102,31 @@
+ implementation {:smt_option "smt.arith.solver", "2"} {:verboseName "ConcreteWitness (correctness)"} Impl$$_module.__default.ConcreteWitness() returns ($_reverifyPost: bool)
+ {
+   var $_ModifiesFrame: [ref,Field]bool;
+-  var v#0: Box;
++  var v#0: DatatypeType
++     where $Is(v#0, Tclass._module.Wrapper())
++       && $IsAlloc(v#0, Tclass._module.Wrapper(), $Heap);
+   var ##b#0: Box;
+-  var ##v#0: Box;
++  var ##v#0: DatatypeType;
+ 
+     // AddMethodImpl: ConcreteWitness, Impl$$_module.__default.ConcreteWitness
+     $_ModifiesFrame := (lambda $o: ref, $f: Field :: 
+       $o != null && $Unbox(read($Heap, $o, alloc)): bool ==> false);
+-    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/B.dfy(6,24): initial state"} true;
++    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/W.dfy(7,24): initial state"} true;
+     $_reverifyPost := false;
+-    // ----- assignment statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/B.dfy(6,33)
++    // ----- assignment statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/W.dfy(7,33)
+     assume true;
+     ##b#0 := Lit(ORD#FromNat(0));
+     // assume allocatedness for argument to function
+     assume $IsAlloc(##b#0, TORDINAL, $Heap);
+     assume _module.__default.Encode#canCall(Lit(ORD#FromNat(0)));
++    assume _module.Wrapper.Wrap_q(Lit(_module.__default.Encode(Lit(ORD#FromNat(0)))));
+     assume _module.__default.Encode#canCall(Lit(ORD#FromNat(0)));
+     v#0 := Lit(_module.__default.Encode(Lit(ORD#FromNat(0))));
+-    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/B.dfy(6,44)"} true;
+-    // ----- assert statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/B.dfy(6,47)
++    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/W.dfy(7,44)"} true;
++    // ----- assert statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/W.dfy(7,47)
+     ##v#0 := v#0;
+     // assume allocatedness for argument to function
+-    assume $IsAlloc(##v#0, TORDINAL, $Heap);
++    assume $IsAlloc(##v#0, Tclass._module.Wrapper(), $Heap);
+     assume _module.__default.Decode#canCall(v#0);
+     assume _module.__default.Decode#canCall(v#0);
+     assert {:id "id10"} _module.__default.Decode(v#0) == Lit(ORD#FromNat(0));
+@@ -3144,46 +3174,49 @@
+    returns (defass#checksum#0: bool, checksum#0: int, $_reverifyPost: bool)
+ {
+   var $_ModifiesFrame: [ref,Field]bool;
+-  var value#0: Box;
++  var value#0: DatatypeType
++     where $Is(value#0, Tclass._module.Wrapper())
++       && $IsAlloc(value#0, Tclass._module.Wrapper(), $Heap);
+   var ##b#0: Box;
+   var i#0: int;
+   var $PreLoopHeap$loop#0: Heap;
+   var preLoop$loop#0$defass#checksum#0: bool;
+   var $decr_init$loop#00: int;
+   var $w$loop#0: bool;
+-  var ##v#0: Box;
+-  var ##v#1: Box;
++  var ##v#0: DatatypeType;
++  var ##v#1: DatatypeType;
+   var $decr$loop#00: int;
+   var ##b#0_0: Box;
+-  var ##v#0_0: Box;
+-  var ##v#0_1: Box;
++  var ##v#0_0: DatatypeType;
++  var ##v#0_1: DatatypeType;
+ 
+     // AddMethodImpl: Work, Impl$$_module.__default.Work
+     $_ModifiesFrame := (lambda $o: ref, $f: Field :: 
+       $o != null && $Unbox(read($Heap, $o, alloc)): bool ==> false);
+-    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/B.dfy(9,0): initial state"} true;
++    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/W.dfy(10,0): initial state"} true;
+     $_reverifyPost := false;
+-    // ----- assignment statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/B.dfy(10,13)
++    // ----- assignment statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/W.dfy(11,13)
+     assume true;
+     ##b#0 := Lit(ORD#FromNat(0));
+     // assume allocatedness for argument to function
+     assume $IsAlloc(##b#0, TORDINAL, $Heap);
+     assume _module.__default.Encode#canCall(Lit(ORD#FromNat(0)));
++    assume _module.Wrapper.Wrap_q(Lit(_module.__default.Encode(Lit(ORD#FromNat(0)))));
+     assume _module.__default.Encode#canCall(Lit(ORD#FromNat(0)));
+     value#0 := Lit(_module.__default.Encode(Lit(ORD#FromNat(0))));
+-    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/B.dfy(10,24)"} true;
+-    // ----- assignment statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/B.dfy(11,9)
++    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/W.dfy(11,24)"} true;
++    // ----- assignment statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/W.dfy(12,9)
+     assume true;
+     assume true;
+     i#0 := LitInt(0);
+-    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/B.dfy(11,12)"} true;
+-    // ----- assignment statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/B.dfy(12,12)
++    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/W.dfy(12,12)"} true;
++    // ----- assignment statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/W.dfy(13,12)
+     assume true;
+     assume true;
+     checksum#0 := LitInt(0);
+     defass#checksum#0 := true;
+-    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/B.dfy(12,15)"} true;
+-    // ----- while statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/B.dfy(13,3)
++    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/W.dfy(13,15)"} true;
++    // ----- while statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/W.dfy(14,3)
+     // Assume Fuel Constant
+     $PreLoopHeap$loop#0 := $Heap;
+     preLoop$loop#0$defass#checksum#0 := defass#checksum#0;
+@@ -3217,7 +3250,7 @@
+       free invariant preLoop$loop#0$defass#checksum#0 ==> defass#checksum#0;
+       free invariant n#0 - i#0 <= $decr_init$loop#00;
+     {
+-        assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/B.dfy(13,2): after some loop iterations"} true;
++        assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/W.dfy(14,2): after some loop iterations"} true;
+         if (!$w$loop#0)
+         {
+             if (LitInt(0) <= i#0)
+@@ -3228,14 +3261,14 @@
+             assume {:id "id17"} LitInt(0) <= i#0 && i#0 <= n#0;
+             ##v#0 := value#0;
+             // assume allocatedness for argument to function
+-            assume $IsAlloc(##v#0, TORDINAL, $Heap);
++            assume $IsAlloc(##v#0, Tclass._module.Wrapper(), $Heap);
+             assume _module.__default.Decode#canCall(value#0);
+             assume _module.__default.Decode#canCall(value#0);
+             assume _module.__default.Decode#canCall(value#0);
+             assume {:id "id20"} ORD#IsNat(_module.__default.Decode(value#0));
+             ##v#1 := value#0;
+             // assume allocatedness for argument to function
+-            assume $IsAlloc(##v#1, TORDINAL, $Heap);
++            assume $IsAlloc(##v#1, Tclass._module.Wrapper(), $Heap);
+             assume _module.__default.Decode#canCall(value#0);
+             assume _module.__default.Decode#canCall(value#0);
+             assume _module.__default.Decode#canCall(value#0);
+@@ -3255,39 +3288,40 @@
+ 
+         assume true;
+         $decr$loop#00 := n#0 - i#0;
+-        // ----- assignment statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/B.dfy(19,11)
++        // ----- assignment statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/W.dfy(20,11)
+         assume true;
+         ##v#0_0 := value#0;
+         // assume allocatedness for argument to function
+-        assume $IsAlloc(##v#0_0, TORDINAL, $Heap);
++        assume $IsAlloc(##v#0_0, Tclass._module.Wrapper(), $Heap);
+         assume _module.__default.Decode#canCall(value#0);
+         ##b#0_0 := ORD#Plus(_module.__default.Decode(value#0), ORD#FromNat(1));
+         // assume allocatedness for argument to function
+         assume $IsAlloc(##b#0_0, TORDINAL, $Heap);
+         assume _module.__default.Encode#canCall(ORD#Plus(_module.__default.Decode(value#0), ORD#FromNat(1)));
++        assume _module.Wrapper.Wrap_q(_module.__default.Encode(ORD#Plus(_module.__default.Decode(value#0), ORD#FromNat(1))));
+         assume _module.__default.Decode#canCall(value#0)
+            && _module.__default.Encode#canCall(ORD#Plus(_module.__default.Decode(value#0), ORD#FromNat(1)));
+         value#0 := _module.__default.Encode(ORD#Plus(_module.__default.Decode(value#0), ORD#FromNat(1)));
+-        assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/B.dfy(19,38)"} true;
+-        // ----- assignment statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/B.dfy(20,14)
++        assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/W.dfy(20,38)"} true;
++        // ----- assignment statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/W.dfy(21,14)
+         assume true;
+         assert {:id "id28"} defass#checksum#0;
+         ##v#0_1 := value#0;
+         // assume allocatedness for argument to function
+-        assume $IsAlloc(##v#0_1, TORDINAL, $Heap);
++        assume $IsAlloc(##v#0_1, Tclass._module.Wrapper(), $Heap);
+         assume _module.__default.Decode#canCall(value#0);
+         assume _module.__default.Decode#canCall(value#0);
+         assume _module.__default.Decode#canCall(value#0);
+         checksum#0 := checksum#0 + ORD#Offset(_module.__default.Decode(value#0));
+         defass#checksum#0 := true;
+-        assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/B.dfy(20,47)"} true;
+-        // ----- assignment statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/B.dfy(21,7)
++        assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/W.dfy(21,47)"} true;
++        // ----- assignment statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/W.dfy(22,7)
+         assume true;
+         assume true;
+         i#0 := i#0 + 1;
+-        assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/B.dfy(21,14)"} true;
++        assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/W.dfy(22,14)"} true;
+         assume true;
+-        // ----- loop termination check ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/B.dfy(13,3)
++        // ----- loop termination check ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/W.dfy(14,3)
+         assert {:id "id31"} 0 <= $decr$loop#00 || n#0 - i#0 == $decr$loop#00;
+         assert {:id "id32"} n#0 - i#0 < $decr$loop#00;
+         assume LitInt(0) <= i#0 && i#0 <= n#0
+@@ -3343,9 +3377,9 @@
+     // AddMethodImpl: Main, Impl$$_module.__default.Main
+     $_ModifiesFrame := (lambda $o: ref, $f: Field :: 
+       $o != null && $Unbox(read($Heap, $o, alloc)): bool ==> false);
+-    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/B.dfy(24,14): initial state"} true;
++    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/W.dfy(25,14): initial state"} true;
+     $_reverifyPost := false;
+-    // ----- call statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/B.dfy(25,19)
++    // ----- call statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/W.dfy(26,19)
+     assume true;
+     // TrCallStmt: Adding lhs with type int
+     // TrCallStmt: Before ProcessCallStmt
+@@ -3356,12 +3390,12 @@
+     call {:id "id35"} $rhs##0 := Call$$_module.__default.Work(n##0);
+     // TrCallStmt: After ProcessCallStmt
+     warm#0 := $rhs##0;
+-    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/B.dfy(25,24)"} true;
+-    // ----- print statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/B.dfy(26,3)
++    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/W.dfy(26,24)"} true;
++    // ----- print statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/W.dfy(27,3)
+     assume true;
+     assume true;
+     assume true;
+-    // ----- call statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/B.dfy(27,21)
++    // ----- call statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/W.dfy(28,21)
+     assume true;
+     // TrCallStmt: Adding lhs with type int
+     // TrCallStmt: Before ProcessCallStmt
+@@ -3372,8 +3406,8 @@
+     call {:id "id38"} $rhs##1 := Call$$_module.__default.Work(n##1);
+     // TrCallStmt: After ProcessCallStmt
+     result#0 := $rhs##1;
+-    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/B.dfy(27,27)"} true;
+-    // ----- print statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/B.dfy(28,3)
++    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/W.dfy(28,27)"} true;
++    // ----- print statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/W.dfy(29,3)
+     assume true;
+     assume true;
+     assume true;
+@@ -3381,6 +3415,96 @@
+ 
+ 
+ 
++// Constructor function declaration
++function #_module.Wrapper.Wrap(Box) : DatatypeType;
++
++const unique ##_module.Wrapper.Wrap: DtCtorId
++uses {
++// Constructor identifier
++axiom (forall a#0#0#0: Box :: 
++  { #_module.Wrapper.Wrap(a#0#0#0) } 
++  DatatypeCtorId(#_module.Wrapper.Wrap(a#0#0#0)) == ##_module.Wrapper.Wrap);
++}
++
++function _module.Wrapper.Wrap_q(DatatypeType) : bool;
++
++// Questionmark and identifier
++axiom (forall d: DatatypeType :: 
++  { _module.Wrapper.Wrap_q(d) } 
++  _module.Wrapper.Wrap_q(d) <==> DatatypeCtorId(d) == ##_module.Wrapper.Wrap);
++
++// Constructor questionmark has arguments
++axiom (forall d: DatatypeType :: 
++  { _module.Wrapper.Wrap_q(d) } 
++  _module.Wrapper.Wrap_q(d)
++     ==> (exists a#1#0#0: Box :: d == #_module.Wrapper.Wrap(a#1#0#0)));
++
++// Constructor $Is
++axiom (forall a#2#0#0: Box :: 
++  { $Is(#_module.Wrapper.Wrap(a#2#0#0), Tclass._module.Wrapper()) } 
++  $Is(#_module.Wrapper.Wrap(a#2#0#0), Tclass._module.Wrapper())
++     <==> $Is(a#2#0#0, TORDINAL));
++
++// Destructor $IsAlloc
++axiom (forall d: DatatypeType, $h: Heap :: 
++  { $IsAlloc(_module.Wrapper.value(d), TORDINAL, $h) } 
++  $IsGoodHeap($h)
++       && 
++      _module.Wrapper.Wrap_q(d)
++       && $IsAlloc(d, Tclass._module.Wrapper(), $h)
++     ==> $IsAlloc(_module.Wrapper.value(d), TORDINAL, $h));
++
++// Constructor literal
++axiom (forall a#3#0#0: Box :: 
++  { #_module.Wrapper.Wrap(Lit(a#3#0#0)) } 
++  #_module.Wrapper.Wrap(Lit(a#3#0#0)) == Lit(#_module.Wrapper.Wrap(a#3#0#0)));
++
++function _module.Wrapper.value(DatatypeType) : Box;
++
++// Constructor injectivity
++axiom (forall a#4#0#0: Box :: 
++  { #_module.Wrapper.Wrap(a#4#0#0) } 
++  _module.Wrapper.value(#_module.Wrapper.Wrap(a#4#0#0)) == a#4#0#0);
++
++// Datatype $IsAlloc
++axiom (forall d: DatatypeType, $h: Heap :: 
++  { $IsAlloc(d, Tclass._module.Wrapper(), $h) } 
++  $IsGoodHeap($h) && $Is(d, Tclass._module.Wrapper())
++     ==> $IsAlloc(d, Tclass._module.Wrapper(), $h));
++
++// Depth-one case-split function
++function $IsA#_module.Wrapper(DatatypeType) : bool;
++
++// Depth-one case-split axiom
++axiom (forall d: DatatypeType :: 
++  { $IsA#_module.Wrapper(d) } 
++  $IsA#_module.Wrapper(d) ==> _module.Wrapper.Wrap_q(d));
++
++// Questionmark data type disjunctivity
++axiom (forall d: DatatypeType :: 
++  { _module.Wrapper.Wrap_q(d), $Is(d, Tclass._module.Wrapper()) } 
++  $Is(d, Tclass._module.Wrapper()) ==> _module.Wrapper.Wrap_q(d));
++
++// Datatype extensional equality declaration
++function _module.Wrapper#Equal(DatatypeType, DatatypeType) : bool;
++
++// Datatype extensional equality definition: #_module.Wrapper.Wrap
++axiom (forall a: DatatypeType, b: DatatypeType :: 
++  { _module.Wrapper#Equal(a, b) } 
++  (_module.Wrapper#Equal(a, b)
++       ==> _module.Wrapper.value(a) == _module.Wrapper.value(b))
++     && (_module.Wrapper.Wrap_q(a)
++         && _module.Wrapper.Wrap_q(b)
++         && _module.Wrapper.value(a) == _module.Wrapper.value(b)
++       ==> _module.Wrapper#Equal(a, b)));
++
++// Datatype extensionality axiom: _module.Wrapper
++axiom (forall a: DatatypeType, b: DatatypeType :: 
++  { _module.Wrapper#Equal(a, b) } 
++  _module.Wrapper#Equal(a, b) <==> a == b);
++
++const unique class._module.Wrapper: ClassName;
++
+ const unique tytagFamily$nat: TyTagFamily;
+ 
+ const unique tytagFamily$object: TyTagFamily;
+@@ -3402,3 +3526,5 @@
+ const unique tytagFamily$_tuple#2: TyTagFamily;
+ 
+ const unique tytagFamily$_tuple#0: TyTagFamily;
++
++const unique tytagFamily$Wrapper: TyTagFamily;

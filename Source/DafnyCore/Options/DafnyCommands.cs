@@ -53,7 +53,9 @@ public static class DafnyCommands {
     CommonOptionBag.ManualTriggerOption,
     CommonOptionBag.MapComprehensionDomainTriggers,
     CommonOptionBag.HeapFreeLambdaFacts,
+    CommonOptionBag.InlinedBodyCallPermissions,
     CommonOptionBag.StatementExpressionConclusions,
+    CommonOptionBag.QuantifiedCheckCallFacts,
     CommonOptionBag.TraitRankDecreases,
     CommonOptionBag.ShowProofObligationExpressions
   }.ToList();
@@ -111,6 +113,7 @@ public static class DafnyCommands {
     CommonOptionBag.EmitUncompilableCode,
     CommonOptionBag.GeneralTraits,
     CommonOptionBag.GeneralNewtypes,
+    CommonOptionBag.ExtendedNewtypeBases,
     CommonOptionBag.TypeSystemRefresh,
     CommonOptionBag.ResolutionThreads,
     CommonOptionBag.UserDefinedOperators,

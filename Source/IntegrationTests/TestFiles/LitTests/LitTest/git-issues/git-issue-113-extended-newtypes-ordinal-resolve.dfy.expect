@@ -1,0 +1,4 @@
+git-issue-113-extended-newtypes-ordinal-resolve.dfy(8,13): Error: RHS (of type ORDINAL) not assignable to LHS (of type Ord)
+git-issue-113-extended-newtypes-ordinal-resolve.dfy(9,18): Error: RHS (of type Ord) not assignable to LHS (of type OtherOrd)
+git-issue-113-extended-newtypes-ordinal-resolve.dfy(13,4): Error: type of * must be of a numeric type, bitvector type, or a set-like type (instead got Ord)
+3 resolution/type errors detected in git-issue-113-extended-newtypes-ordinal-resolve.dfy

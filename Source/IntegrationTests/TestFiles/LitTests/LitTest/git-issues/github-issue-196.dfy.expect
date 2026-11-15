@@ -1,0 +1,73 @@
+positive, option off
+github-issue-196-positive.dfy(18,0): Error: a postcondition could not be proved on this return path
+github-issue-196-positive.dfy(17,10): Related location: this is the postcondition that could not be proved
+github-issue-196-positive.dfy(23,0): Error: a postcondition could not be proved on this return path
+github-issue-196-positive.dfy(22,10): Related location: this is the postcondition that could not be proved
+github-issue-196-positive.dfy(32,0): Error: a postcondition could not be proved on this return path
+github-issue-196-positive.dfy(31,10): Related location: this is the postcondition that could not be proved
+github-issue-196-positive.dfy(37,0): Error: a postcondition could not be proved on this return path
+github-issue-196-positive.dfy(36,10): Related location: this is the postcondition that could not be proved
+github-issue-196-positive.dfy(43,0): Error: a postcondition could not be proved on this return path
+github-issue-196-positive.dfy(42,14): Related location: this is the postcondition that could not be proved
+github-issue-196-positive.dfy(10,2): Related location: this proposition could not be proved
+github-issue-196-positive.dfy(48,2): Error: assertion might not hold
+
+Dafny program verifier finished with 14 verified, 6 errors
+positive, option on
+
+Dafny program verifier finished with 20 verified, 0 errors
+positive, option on, Z3 5.1.0
+
+Dafny program verifier finished with 20 verified, 0 errors
+positive, option on, refreshed type system
+
+Dafny program verifier finished with 20 verified, 0 errors
+negative, option off
+github-issue-196-negative.dfy(16,0): Error: a postcondition could not be proved on this return path
+github-issue-196-negative.dfy(15,10): Related location: this is the postcondition that could not be proved
+github-issue-196-negative.dfy(20,0): Error: a postcondition could not be proved on this return path
+github-issue-196-negative.dfy(19,10): Related location: this is the postcondition that could not be proved
+github-issue-196-negative.dfy(25,0): Error: a postcondition could not be proved on this return path
+github-issue-196-negative.dfy(24,10): Related location: this is the postcondition that could not be proved
+github-issue-196-negative.dfy(32,0): Error: a postcondition could not be proved on this return path
+github-issue-196-negative.dfy(31,10): Related location: this is the postcondition that could not be proved
+github-issue-196-negative.dfy(38,2): Error: assertion might not hold
+github-issue-196-negative.dfy(39,2): Error: assertion might not hold
+github-issue-196-negative.dfy(45,40): Error: function precondition could not be proved
+github-issue-196-negative.dfy(11,39): Related location: this proposition could not be proved
+github-issue-196-negative.dfy(46,0): Error: a postcondition could not be proved on this return path
+github-issue-196-negative.dfy(45,10): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 5 verified, 8 errors
+negative, option on
+github-issue-196-negative.dfy(16,0): Error: a postcondition could not be proved on this return path
+github-issue-196-negative.dfy(15,10): Related location: this is the postcondition that could not be proved
+github-issue-196-negative.dfy(20,0): Error: a postcondition could not be proved on this return path
+github-issue-196-negative.dfy(19,10): Related location: this is the postcondition that could not be proved
+github-issue-196-negative.dfy(25,0): Error: a postcondition could not be proved on this return path
+github-issue-196-negative.dfy(24,10): Related location: this is the postcondition that could not be proved
+github-issue-196-negative.dfy(32,0): Error: a postcondition could not be proved on this return path
+github-issue-196-negative.dfy(31,10): Related location: this is the postcondition that could not be proved
+github-issue-196-negative.dfy(39,2): Error: assertion might not hold
+github-issue-196-negative.dfy(45,40): Error: function precondition could not be proved
+github-issue-196-negative.dfy(11,39): Related location: this proposition could not be proved
+github-issue-196-negative.dfy(46,0): Error: a postcondition could not be proved on this return path
+github-issue-196-negative.dfy(45,10): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 5 verified, 7 errors
+negative, option on, Z3 5.1.0
+github-issue-196-negative.dfy(16,0): Error: a postcondition could not be proved on this return path
+github-issue-196-negative.dfy(15,10): Related location: this is the postcondition that could not be proved
+github-issue-196-negative.dfy(20,0): Error: a postcondition could not be proved on this return path
+github-issue-196-negative.dfy(19,10): Related location: this is the postcondition that could not be proved
+github-issue-196-negative.dfy(25,0): Error: a postcondition could not be proved on this return path
+github-issue-196-negative.dfy(24,10): Related location: this is the postcondition that could not be proved
+github-issue-196-negative.dfy(32,0): Error: a postcondition could not be proved on this return path
+github-issue-196-negative.dfy(31,10): Related location: this is the postcondition that could not be proved
+github-issue-196-negative.dfy(39,2): Error: assertion might not hold
+github-issue-196-negative.dfy(45,40): Error: function precondition could not be proved
+github-issue-196-negative.dfy(11,39): Related location: this proposition could not be proved
+github-issue-196-negative.dfy(46,0): Error: a postcondition could not be proved on this return path
+github-issue-196-negative.dfy(45,10): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 5 verified, 7 errors

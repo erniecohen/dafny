@@ -1,0 +1,2 @@
+git-issue-113-extended-newtypes-type-test-phantom-negative.dfy(8,9): Error: an expression of type 'Maybe<int>' is not run-time checkable to be a 'Phantom<bool>'
+1 resolution/type errors detected in git-issue-113-extended-newtypes-type-test-phantom-negative.dfy

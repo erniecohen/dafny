@@ -296,8 +296,14 @@ true - All class instances are raw pointers and need to be manually deallocated"
   public static readonly Option<bool> HeapFreeLambdaFacts = new("--heap-free-lambda-facts", () => false,
     "Check a lambda without a reads clause, whose body observes neither the heap nor allocation, in every heap and without assuming its parameters allocated, and let the calls in its body unfold wherever it is applied. May change verification performance. Disabled by default.");
 
+  public static readonly Option<bool> InlinedBodyCallPermissions = new("--inlined-body-call-permissions", () => false,
+    "When a call to a function with a body is checked by inlining the body conjunct by conjunct, give each conjunct the call permissions of the body at its own fuel layer, an instance of the function's definition axiom. May change verification performance. Disabled by default.");
+
   public static readonly Option<bool> StatementExpressionConclusions = new("--statement-expression-conclusions", () => false,
     "In the condition of an assert statement, use the conclusion of a statement expression (S; E), such as an assert or assume statement, as a fact for E also under quantifiers and logical connectives, and not only at the top. Not inside old, unchanged, fresh, lambdas, or set and map comprehensions. May change verification performance. Disabled by default.");
+
+  public static readonly Option<bool> QuantifiedCheckCallFacts = new("--quantified-check-call-facts", () => false,
+    "When a postcondition or an assert statement is checked, give the body of each universal quantifier in it the call facts of the functions it calls, so that a function's definition is available even where the solver simplifies the body until no trigger term remains, as in 'forall i | 0 <= i < |s| :: f(s[i] - s[i]) <= d'. May change verification performance. Disabled by default.");
 
   public static readonly Option<bool> TraitRankDecreases = new("--trait-rank-decreases", () => false,
     "In decreases clauses, order values of traits that are not reference types by structural rank, together with inductive datatypes and sequences, so that 'decreases this' in a datatype that extends such a trait is comparable with 'decreases this' in the trait. With --additional-axioms, a trait-typed field of an inductive datatype value is below that value. No effect with --legacy-decreases-order. Disabled by default.");
@@ -387,9 +393,13 @@ Value implementations must retain their type parameters in compatible parent pos
   public static readonly Option<bool> GeneralNewtypes = new("--general-newtypes", () => false,
     @"
 false - A newtype can only be based on numeric types or another newtype.
-true - (requires --type-system-refresh) A newtype can be based on any non-reference, non-trait, non-arrow, non-ORDINAL type.".TrimStart()) {
+true - (requires --type-system-refresh) A newtype can use non-reference, non-trait value bases other than ORDINAL, arrows, and datatypes (including tuples and codatatypes), unless --extended-newtype-bases is enabled.".TrimStart()) {
     IsHidden = true
   };
+
+  public static readonly Option<bool> ExtendedNewtypeBases = new("--extended-newtype-bases", () => false,
+    "Permit ORDINAL, datatype (including tuple and codatatype), and ~>, -->, -> newtype bases. Disabled by default. " +
+    "Requires --general-newtypes=true and --type-system-refresh=true.");
 
   public static readonly Option<bool> TypeInferenceDebug = new("--type-inference-trace", () => false,
     @"
@@ -612,7 +622,9 @@ Value implementations must retain their type parameters in compatible parent pos
       defaultValue: GeneralTraitsOptions.Legacy);
     DafnyOptions.RegisterLegacyUi(GeneralNewtypes, DafnyOptions.ParseBoolean, "Language feature selection", "generalNewtypes", @"
 0 (default) - A newtype can only be based on numeric types or another newtype.
-1 - (requires /typeSystemRefresh:1) A newtype can be based on any non-reference, non-trait, non-arrow, non-ORDINAL type.".TrimStart(), false);
+1 - (requires /typeSystemRefresh:1) A newtype can use non-reference, non-trait value bases other than ORDINAL, arrows, and datatypes (including tuples and codatatypes), unless /extendedNewtypeBases:1 is enabled.".TrimStart(), false);
+    DafnyOptions.RegisterLegacyUi(ExtendedNewtypeBases, DafnyOptions.ParseBoolean, "Language feature selection", "extendedNewtypeBases",
+      "0 (default) - Retain existing general-newtype base restrictions.\n1 - Permit ORDINAL, datatype (including tuple and codatatype), and arrow newtype bases; requires /generalNewtypes:1 and /typeSystemRefresh:1.", false);
     DafnyOptions.RegisterLegacyUi(TypeInferenceDebug, DafnyOptions.ParseBoolean, "Language feature selection", "titrace", @"
 0 (default) - Don't print type-inference debug information.
 1 - Print type-inference debug information.".TrimStart(), defaultValue: false);
@@ -810,7 +822,9 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(AdditionalAxioms, OptionScope.Cli);
     OptionRegistry.RegisterOption(MapComprehensionDomainTriggers, OptionScope.Cli);
     OptionRegistry.RegisterOption(HeapFreeLambdaFacts, OptionScope.Cli);
+    OptionRegistry.RegisterOption(InlinedBodyCallPermissions, OptionScope.Cli);
     OptionRegistry.RegisterOption(StatementExpressionConclusions, OptionScope.Cli);
+    OptionRegistry.RegisterOption(QuantifiedCheckCallFacts, OptionScope.Cli);
     OptionRegistry.RegisterOption(TraitRankDecreases, OptionScope.Cli);
     OptionRegistry.RegisterOption(ShowHints, OptionScope.Cli);
     OptionRegistry.RegisterOption(Libraries, OptionScope.Module);
@@ -833,6 +847,9 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(TypeInferenceDebug, OptionScope.Cli);
     OptionRegistry.RegisterOption(GeneralTraits, OptionScope.Cli);
     OptionRegistry.RegisterOption(GeneralNewtypes, OptionScope.Cli);
+    OptionRegistry.RegisterGlobalOption(ExtendedNewtypeBases,
+      (reporter, origin, prefix, option, localValue, libraryValue) =>
+        OptionCompatibility.OptionLibraryImpliesLocalError(reporter, origin, prefix, option, localValue, libraryValue ?? false));
     OptionRegistry.RegisterOption(TypeSystemRefresh, OptionScope.Cli);
     OptionRegistry.RegisterOption(BitvectorMapKeys, OptionScope.Cli);
     OptionRegistry.RegisterOption(ContextualLambdaDomains, OptionScope.Cli);

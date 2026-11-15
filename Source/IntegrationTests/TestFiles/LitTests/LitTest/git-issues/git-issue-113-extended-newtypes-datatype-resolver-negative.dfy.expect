@@ -1,0 +1,5 @@
+git-issue-113-extended-newtypes-datatype-resolver-negative.dfy(9,29): Error: RHS (of type L) not assignable to LHS (of type NonEmpty)
+git-issue-113-extended-newtypes-datatype-resolver-negative.dfy(13,11): Error: RHS (of type NonEmpty) not assignable to LHS (of type L)
+git-issue-113-extended-newtypes-datatype-resolver-negative.dfy(14,19): Error: RHS (of type Other) not assignable to LHS (of type NonEmpty)
+git-issue-113-extended-newtypes-datatype-resolver-negative.dfy(15,11): Error: arguments must have comparable types (got NonEmpty and Other)
+4 resolution/type errors detected in git-issue-113-extended-newtypes-datatype-resolver-negative.dfy

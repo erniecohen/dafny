@@ -1945,7 +1945,11 @@ namespace Microsoft.Dafny {
           var (errorMessage, successMessage) = CustomErrorMessage(p.Attributes);
           AddEnsures(ens, FreeEnsures(p.E.Origin, etran.CanCallAssumptionForVerification(p.E), comment, true));
           comment = null;
-          foreach (var split in TrSplitExprForMethodSpec(new BodyTranslationContext(m.ContainsHide), p.E, etran, kind)) {
+          // At the exit of the implementation, Boogie assumes the free ensures above before it checks these.
+          var postSplits = kind == MethodTranslationKind.Implementation
+            ? WithSplitChecksFollowingCanCalls(() => TrSplitExprForMethodSpec(new BodyTranslationContext(m.ContainsHide), p.E, etran, kind))
+            : TrSplitExprForMethodSpec(new BodyTranslationContext(m.ContainsHide), p.E, etran, kind);
+          foreach (var split in postSplits) {
             var post = split.E;
             if (kind == MethodTranslationKind.Implementation && split.Tok.IsInherited(currentModule)) {
               // this postcondition was inherited into this module, so make it into the form "$_reverifyPost ==> s.E"
