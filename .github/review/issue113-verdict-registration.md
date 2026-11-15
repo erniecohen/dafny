@@ -142,3 +142,10 @@ The old `BoundedPolymorphismCompilation.dfy` success row is preserved. Its prere
 | `git-issue-113-extended-newtypes-type-test-phantom-negative.dfy` | 2 | New enabled extended base admission or nominality negative; the intended declaration is rejected. |
 | `git-issue-113-extended-newtypes-witness-negative.dfy` | 4 / 0 verified, 3 errors | New enabled extended base proof-boundary or nonvacuity negative; the intended obligation fails at lines 6,7,8. |
 | `git-issue-113.dfy` | 0 / 21 verified, 0 errors | New enabled extended base positive contract; canonical verification succeeds. |
+
+## Additional-axioms snapshot
+
+`expected-verdicts-additional-axioms.tsv` now has a row for each of the 134
+`git-issue-113*` programs. In the enabled additional-axioms mode each program's
+verdict equals its row in `expected-verdicts.tsv`, so each row is a copy of
+that row. No verdict differs between the two modes.
