@@ -141,6 +141,17 @@ public static class DafnyCommands {
     CommonOptionBag.Referrers
   });
 
+  /// <summary>
+  /// The options that a command which loads libraries but does not verify (resolve, audit, doc, extract and
+  /// format) adds to its own.  Under --modular-termination, admitting a library checks the Z3 binary that
+  /// verified it, so such a command must be able to choose that binary as dafny verify does
+  /// (https://github.com/erniecohen/dafny/issues/358).  The verifying commands have --solver-path in
+  /// VerificationOptions.
+  /// </summary>
+  public static readonly IReadOnlyList<Option> LibraryAdmissionOptions = new Option[] {
+    BoogieOptionBag.SolverPath
+  };
+
   public static IReadOnlyList<Option> ResolverOptions = new List<Option>(new Option[] {
     CommonOptionBag.PipelineProfile,
     CommonOptionBag.PipelineProfileHeap,

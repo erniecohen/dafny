@@ -23,7 +23,7 @@ static class DocCommand {
     DocProgramNameOption,
     DocFilenameFormat,
     DocShowModifyTime,
-  }.Concat(DafnyCommands.ResolverOptions);
+  }.Concat(DafnyCommands.ResolverOptions).Concat(DafnyCommands.LibraryAdmissionOptions);
 
   static DocCommand() {
     OptionRegistry.RegisterOption(DocProgramNameOption, OptionScope.Cli);

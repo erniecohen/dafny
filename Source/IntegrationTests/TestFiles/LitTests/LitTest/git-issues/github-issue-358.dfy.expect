@@ -1,0 +1,26 @@
+build: exit 0
+  Dafny program verifier finished with 1 verified, 0 errors
+resolve same solver: exit 0
+resolve other solver: exit 1
+  CLI: Error: cannot load lib.doo under --modular-termination: it was verified with a different Z3 binary (Z3 5.1.0, sha256 <digest>) than this run uses (Z3 <version>, sha256 <digest>); use the same solver, or rebuild the library with this one
+audit same solver: exit 0
+audit other solver: exit 1
+  CLI: Error: cannot load lib.doo under --modular-termination: it was verified with a different Z3 binary (Z3 5.1.0, sha256 <digest>) than this run uses (Z3 <version>, sha256 <digest>); use the same solver, or rebuild the library with this one
+doc same solver: exit 0
+doc other solver: exit 1
+  CLI: Error: cannot load lib.doo under --modular-termination: it was verified with a different Z3 binary (Z3 5.1.0, sha256 <digest>) than this run uses (Z3 <version>, sha256 <digest>); use the same solver, or rebuild the library with this one
+extract same solver: exit 0
+extract other solver: exit 1
+  CLI: Error: cannot load lib.doo under --modular-termination: it was verified with a different Z3 binary (Z3 5.1.0, sha256 <digest>) than this run uses (Z3 <version>, sha256 <digest>); use the same solver, or rebuild the library with this one
+format same solver: exit 0
+format other solver: exit 1
+  CLI: Error: cannot load lib.doo under --modular-termination: it was verified with a different Z3 binary (Z3 5.1.0, sha256 <digest>) than this run uses (Z3 <version>, sha256 <digest>); use the same solver, or rebuild the library with this one
+verify same solver: exit 0
+  Dafny program verifier finished with 2 verified, 0 errors
+verify other solver: exit 1
+  CLI: Error: cannot load lib.doo under --modular-termination: it was verified with a different Z3 binary (Z3 5.1.0, sha256 <digest>) than this run uses (Z3 <version>, sha256 <digest>); use the same solver, or rebuild the library with this one
+translate same solver: exit 0
+  Dafny program verifier finished with 2 verified, 0 errors
+translate other solver: exit 1
+  CLI: Error: cannot load lib.doo under --modular-termination: it was verified with a different Z3 binary (Z3 5.1.0, sha256 <digest>) than this run uses (Z3 <version>, sha256 <digest>); use the same solver, or rebuild the library with this one
+all checks passed
