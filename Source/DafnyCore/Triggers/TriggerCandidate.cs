@@ -41,7 +41,8 @@ class TriggerCandidate {
     Contract.Requires(!(quantifier is QuantifierExpr) || ((QuantifierExpr)quantifier).SplitQuantifier == null); // Don't call this on a quantifier with a Split clause: it's not a real quantifier
     var matchingSubterms = MatchingSubterms(quantifier);
     var boundVars = new HashSet<BoundVar>(quantifier.BoundVars);
-    return matchingSubterms.Where(tm => tm.CouldCauseLoops(Terms, boundVars, options));
+    var witnessVars = WitnessVariables.Of(quantifier, options);
+    return matchingSubterms.Where(tm => tm.CouldCauseLoops(Terms, boundVars, options, witnessVars));
   }
 
   private List<TriggerMatch> MatchingSubterms(ComprehensionExpr quantifier) {
