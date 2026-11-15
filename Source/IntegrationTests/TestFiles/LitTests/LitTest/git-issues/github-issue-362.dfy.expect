@@ -1,0 +1,12 @@
+github-issue-362.dfy(43,32): Error: a postcondition could not be proved on this return path
+github-issue-362.dfy(43,27): Related location: this is the postcondition that could not be proved
+github-issue-362.dfy(44,38): Error: a postcondition could not be proved on this return path
+github-issue-362.dfy(44,32): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 7 verified, 2 errors
+github-issue-362.dfy(43,32): Error: a postcondition could not be proved on this return path
+github-issue-362.dfy(43,27): Related location: this is the postcondition that could not be proved
+github-issue-362.dfy(44,38): Error: a postcondition could not be proved on this return path
+github-issue-362.dfy(44,32): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 7 verified, 2 errors

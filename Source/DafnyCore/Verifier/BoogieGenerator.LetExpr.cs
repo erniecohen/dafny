@@ -236,8 +236,13 @@ namespace Microsoft.Dafny {
       }
 
       private void AddLetSuchThenCanCallAxiom(LetExpr e, LetSuchThatExprInfo info, Bpl.Function canCallFunction) {
+        // When the condition reads no heap, the let functions take no heap argument, so
+        // "$heap" is not bound in this axiom.  The condition is then translated as a
+        // heap-independent definition is, with the placeholder $OneHeap.  Otherwise a lambda
+        // in it names the unbound "$heap" in the succession guard of its CanCall facts.
+        var heapCC = info.UsesHeap ? info.HeapExpr(BoogieGenerator, false) : BoogieGenerator.NewOneHeapExpr(e.Origin);
         var etranCC =
-          new ExpressionTranslator(BoogieGenerator, Predef, info.HeapExpr(BoogieGenerator, false), info.HeapExpr(BoogieGenerator, true), null);
+          new ExpressionTranslator(BoogieGenerator, Predef, heapCC, info.HeapExpr(BoogieGenerator, true), null);
         Bpl.Expr typeAntecedents; // later ignored
         List<Variable> gg = info.GAsVars(BoogieGenerator, false, out typeAntecedents, etranCC);
         var gExprs = new List<Bpl.Expr>();
