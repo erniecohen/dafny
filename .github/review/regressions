@@ -546,5 +546,8 @@ git-issues/github-issue-354.dfy
 # Bounded callables, milestone 1: the type bounded<O, F> under --modular-termination, its formation and characteristic rules, and its erasure (https://github.com/erniecohen/dafny/issues/266).
 git-issues/github-issue-266.dfy
 
+# Every command that loads libraries under --modular-termination (resolve, audit, doc, extract, format, verify, translate) takes --solver-path, and admits a library verified with that Z3 and refuses it with another (https://github.com/erniecohen/dafny/issues/358).
+git-issues/github-issue-358.dfy
+
 # A let-such-that condition that reads no heap but contains a lambda calling a function no longer crashes the verifier with an undeclared $heap (https://github.com/erniecohen/dafny/issues/362).
 git-issues/github-issue-362.dfy

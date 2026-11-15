@@ -11,9 +11,7 @@ static class AuditCommand {
     Auditor.Auditor.ReportFileOption,
     Auditor.Auditor.ReportFormatOption,
     Auditor.Auditor.CompareReportOption,
-    // Under --modular-termination, admitting a library checks the Z3 binary that verified it.
-    BoogieOptionBag.SolverPath
-  }.Concat(DafnyCommands.ResolverOptions);
+  }.Concat(DafnyCommands.ResolverOptions).Concat(DafnyCommands.LibraryAdmissionOptions);
 
   public static Command Create() {
     var result = new Command("audit", "Report issues in the Dafny code that might limit the soundness claims of verification, emitting them as warnings or in a report document.");
