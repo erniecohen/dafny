@@ -1112,9 +1112,20 @@ With `--additional-axioms` (or `--function-extensionality-axiom`), in
   bx...) <==> $IsBox(bx_1, d_1) && ...`. A handle built by `HandleN` keeps the
   original axioms. With the option off the translator does not emit `TagHandleN`,
   so the Boogie program is unchanged.
-- The Apply, Requires and reverse axioms of a named function's `F#Handle` hold
-  only on its formals' types (its Reads axiom already did), and its domain is
-  stated the same way.
+- A lambda whose parameters all have type `int`, `real`, `bool` or `ORDINAL`
+  (not a subset type or a newtype of one) is built by `BasicHandleN`, with the
+  same tags and domain, and with the original, unguarded selector axioms. Its maps
+  read each box only through an unboxing to that type, and every box unboxes to a
+  value of the type, so its value at any box is its value at a box in its domain.
+  Guarding these selectors costs proofs about integer lambdas: each application
+  must show `$IsBox` of its argument, and that search can exhaust a proof's
+  resource limit.
+- A named function's `F#Handle` keeps its unguarded Apply, Requires and reverse
+  axioms (its Reads axiom was already guarded), and its domain is its formals'
+  types. `F` itself is constrained only by axioms guarded by `F#canCall` or by its
+  formals' types, so its values outside its domain are free. Guarding these
+  axioms forces each application to prove a subset-type constraint on its
+  arguments.
 - `$ExactDom1(a, f) <==> (forall bx :: $FunDom1(f, bx) <==> $IsBox(bx, a))`: the
   domain is compared as a set of boxes, never as a `Ty` term. Distinct `Ty` terms
   can have the same boxes: `type MyInt = x: int | true` has a tag different from
@@ -1149,11 +1160,17 @@ With `--additional-axioms` (or `--function-extensionality-axiom`), in
 ### Model
 
 A function value of one argument is a pair of a box set `D` (its domain) and the
-three maps on `D`. Outside `D`, application is a fixed box, the precondition is
-false and the reads set is empty. `TagHandle1(d, h, r, rd)` is `(boxes of d, the
-three maps restricted to it)`; `HandleN` values keep their meaning as in the
-original model. The guarded selector axioms and the `F#Handle` axioms hold by
-construction. `$Is(f, A -> B)` holds when application is total on `A` and maps
+three maps on `D`. Outside `D`, its parts are given by a fixed extension of the
+pair: if `D` is the boxes of `int`, `real`, `bool` or `ORDINAL`, its parts at a box
+are its parts at the box of that box's unboxing; otherwise application is a fixed
+box, the precondition is false and the reads set is empty. `TagHandle1(d, h, r,
+rd)` and `BasicHandle1(d, h, r, rd)` are `(boxes of d, the three maps restricted to
+it)`; `HandleN` values keep their meaning as in the original model. The guarded
+selector axioms hold by construction, and so do `BasicHandle1`'s unguarded ones,
+because a lambda over a basic type is already that extension. A named function
+`F` is interpreted outside its domain by the extension of the value `F#Handle`
+denotes, which no axiom about `F` contradicts, since they all hold only inside its
+domain; the unguarded `F#Handle` axioms then hold. `$Is(f, A -> B)` holds when application is total on `A` and maps
 `A` into `B`, as before; it says nothing about boxes outside `A`. `Restrict(A, B,
 f)` is `(boxes of A, f's maps restricted to it)`. If `D` is exactly the boxes of
 `A`, restricting changes nothing, which is the `$ExactDom1` axiom. Two values with
@@ -1179,7 +1196,8 @@ bound the argument:
 `Inputs/github-issue-374-negative.dfy` (the counterexample's full values, a
 lambda over `int` viewed as `nat -> int`, a type-parameter domain, and `assert
 false` after each live fact, including restrictions of datatype lambdas that differ
-at a box of another datatype) under both; and `Inputs/github-issue-374-axiom.dfy`,
+at a box of another datatype, equal named functions over a datatype and over
+`nat`, a lambda equal to a named function, and equal lambdas over `int`) under both; and `Inputs/github-issue-374-axiom.dfy`,
 whose equalities fail under `--additional-axioms` alone and hold with the axiom.
 `git-issues/github-issue-34.dfy` (`Std.Axioms.FunctionExtensionality`) is
 unchanged under both options. Under the axiom, its control that an uncalled

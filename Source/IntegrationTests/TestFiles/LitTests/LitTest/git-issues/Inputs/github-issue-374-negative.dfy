@@ -67,3 +67,41 @@ lemma VacuityRestrict<A, B>(f: A -> B) {
   assert Restrict(Restrict(f)) == Restrict(f);
   assert false; // error
 }
+
+// The selectors of F#Handle and of a lambda over int are unguarded, but extensionality
+// stays consistent: a named function is constrained only inside its domain, and a lambda
+// over int reads every box as an int.
+function F(x: D): int { if x.A? then 1 else 2 }
+function G(x: D): int { if x.B? then 2 else 1 }
+lemma VacuityNamedDatatype() {
+  FunExt(F, G);
+  assert F == G;
+  assert false; // error
+}
+
+lemma VacuityLambdaNamed() {
+  var f := (x: D) => if x.A? then 1 else 2;
+  FunExt(f, G);
+  assert f == G;
+  assert false; // error
+}
+
+function N(x: nat): int { x }
+function M(x: nat): int { if x >= 0 then x else 5 }
+lemma VacuityNamedSubset() {
+  FunExt<nat, int>(N, M);
+  assert N == M;
+  assert false; // error
+}
+
+function Inc(x: int): int { x + 1 }
+lemma VacuityIntLambdas() {
+  var f := (x: int) => if x < 0 then -x else x;
+  var g := (x: int) => if x >= 0 then x else -x;
+  FunExt(f, g);
+  assert f == g;
+  var h := (x: int) => x + 1;
+  FunExt(h, Inc);
+  assert h == Inc;
+  assert false; // error
+}

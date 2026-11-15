@@ -62,3 +62,18 @@ lemma DatatypeRestrict() {
   FunExt(Restrict(f), Restrict(g));
   assert Restrict(f) == Restrict(g);
 }
+
+// A named function has its formals' types as its exact domain, as does a lambda over int.
+function F(x: D): int { if x.A? then 1 else 2 }
+function G(x: D): int { if x.B? then 2 else 1 }
+function Inc(x: int): int { x + 1 }
+lemma NamedFunctions() {
+  FunExt(F, G);
+  assert F == G;
+  var f := (x: D) => if x.A? then 1 else 2;
+  FunExt(f, G);
+  assert f == G;
+  var h := (x: int) => x + 1;
+  FunExt(h, Inc);
+  assert h == Inc;
+}

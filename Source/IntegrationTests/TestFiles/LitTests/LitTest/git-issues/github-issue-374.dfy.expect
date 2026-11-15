@@ -24,12 +24,22 @@ github-issue-374.dfy(62,8): Error: a precondition for this call could not be pro
 github-issue-374-decls.dfy(10,36): Related location: this is the precondition that could not be proved
 github-issue-374.dfy(62,8): Error: a precondition for this call could not be proved
 github-issue-374-decls.dfy(11,13): Related location: this is the precondition that could not be proved
+github-issue-374.dfy(71,8): Error: a precondition for this call could not be proved
+github-issue-374-decls.dfy(10,21): Related location: this is the precondition that could not be proved
+github-issue-374.dfy(71,8): Error: a precondition for this call could not be proved
+github-issue-374-decls.dfy(10,36): Related location: this is the precondition that could not be proved
+github-issue-374.dfy(74,8): Error: a precondition for this call could not be proved
+github-issue-374-decls.dfy(10,21): Related location: this is the precondition that could not be proved
+github-issue-374.dfy(77,8): Error: a precondition for this call could not be proved
+github-issue-374-decls.dfy(10,21): Related location: this is the precondition that could not be proved
+github-issue-374.dfy(77,8): Error: a precondition for this call could not be proved
+github-issue-374-decls.dfy(10,36): Related location: this is the precondition that could not be proved
 
-Dafny program verifier finished with 0 verified, 13 errors
+Dafny program verifier finished with 0 verified, 18 errors
 
-Dafny program verifier finished with 6 verified, 0 errors
+Dafny program verifier finished with 7 verified, 0 errors
 
-Dafny program verifier finished with 6 verified, 0 errors
+Dafny program verifier finished with 7 verified, 0 errors
 github-issue-374-negative.dfy(12,2): Error: assertion might not hold
 github-issue-374-negative.dfy(18,2): Error: assertion might not hold
 github-issue-374-negative.dfy(25,0): Error: a postcondition could not be proved on this return path
@@ -39,8 +49,12 @@ github-issue-374-negative.dfy(41,2): Error: assertion might not hold
 github-issue-374-negative.dfy(49,2): Error: assertion might not hold
 github-issue-374-negative.dfy(62,2): Error: assertion might not hold
 github-issue-374-negative.dfy(68,2): Error: assertion might not hold
+github-issue-374-negative.dfy(79,2): Error: assertion might not hold
+github-issue-374-negative.dfy(86,2): Error: assertion might not hold
+github-issue-374-negative.dfy(94,2): Error: assertion might not hold
+github-issue-374-negative.dfy(106,2): Error: assertion might not hold
 
-Dafny program verifier finished with 0 verified, 8 errors
+Dafny program verifier finished with 0 verified, 12 errors
 github-issue-374-negative.dfy(12,2): Error: assertion might not hold
 github-issue-374-negative.dfy(18,2): Error: assertion might not hold
 github-issue-374-negative.dfy(25,0): Error: a postcondition could not be proved on this return path
@@ -50,8 +64,12 @@ github-issue-374-negative.dfy(41,2): Error: assertion might not hold
 github-issue-374-negative.dfy(49,2): Error: assertion might not hold
 github-issue-374-negative.dfy(62,2): Error: assertion might not hold
 github-issue-374-negative.dfy(68,2): Error: assertion might not hold
+github-issue-374-negative.dfy(79,2): Error: assertion might not hold
+github-issue-374-negative.dfy(86,2): Error: assertion might not hold
+github-issue-374-negative.dfy(94,2): Error: assertion might not hold
+github-issue-374-negative.dfy(106,2): Error: assertion might not hold
 
-Dafny program verifier finished with 0 verified, 8 errors
+Dafny program verifier finished with 0 verified, 12 errors
 github-issue-374-axiom.dfy(12,2): Error: assertion might not hold
 github-issue-374-axiom.dfy(18,0): Error: a postcondition could not be proved on this return path
 github-issue-374-axiom.dfy(17,12): Related location: this is the postcondition that could not be proved

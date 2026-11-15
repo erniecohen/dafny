@@ -13,11 +13,19 @@ namespace Microsoft.Dafny;
 //  - a lambda is built by TagHandleN(D1, .., DN, h, r, rd), where Di is the declared type of
 //    its i-th parameter, instead of HandleN(h, r, rd);
 //  - $FunDomN(f, bx1, .., bxN) is membership in f's domain;
-//  - the application, precondition and reads selectors of TagHandleN and of F#Handle hold
-//    only inside the domain.
-// Outside its domain a handle's selectors are unspecified, so two handles with the same
-// domain that agree on it can be equal.  Restrict and ExactDom, declared in the standard
-// library with {:functionDomain}, are interpreted here.
+//  - the application, precondition and reads selectors of TagHandleN hold only inside the
+//    domain.  Outside it they are unspecified, so two handles with the same domain that agree
+//    on it can be equal.
+// Two kinds of handle keep unguarded selectors, because their values outside the domain are
+// already determined by their values inside it, or are free:
+//  - a lambda whose parameters all have type int, real, bool or ORDINAL is built by
+//    BasicHandleN, with the same tags.  Its maps read each box only through an unboxing to
+//    that type, and every box unboxes to some value of it, so its value at any box is its
+//    value at a box in the domain;
+//  - F#Handle applies F to the unboxed arguments, and F is constrained only through
+//    F#canCall, which the translator assumes only for arguments in F's domain.
+// Restrict and ExactDom, declared in the standard library with {:functionDomain}, are
+// interpreted here.
 public partial class BoogieGenerator {
 
   public const string FunctionDomainAttributeName = "functionDomain";
@@ -39,13 +47,25 @@ public partial class BoogieGenerator {
     return "TagHandle" + arity;
   }
 
+  public static string BasicHandle(int arity) {
+    return "BasicHandle" + arity;
+  }
+
+  /// <summary>
+  /// True for a type whose every Boogie value is a value of the type: int, real, bool and
+  /// ORDINAL, but not a subset type or a newtype of one.
+  /// </summary>
+  internal static bool IsBasicDomainType(Type t) {
+    return t.NormalizeExpand(true) is IntType or RealType or BoolType or BigOrdinalType;
+  }
+
   public static string FunDom(int arity) {
     return "$FunDom" + arity;
   }
 
   /// <summary>
-  /// Declares TagHandleN and $FunDomN, and gives TagHandleN its selector axioms, each
-  /// guarded by membership of the arguments in the tags:
+  /// Declares TagHandleN, BasicHandleN and $FunDomN.  TagHandleN's selector axioms are each
+  /// guarded by membership of the arguments in the tags (BasicHandleN's are the same, unguarded):
   ///   forall t.., d.., h, r, rd, heap, bx.. ::
   ///     $IsBox(bx1, d1) && .. && $IsBox(bxN, dN) ==>
   ///       ApplyN(t.., heap, TagHandleN(d.., h, r, rd), bx..) == h[heap, bx..]
@@ -56,7 +76,7 @@ public partial class BoogieGenerator {
     Bpl.Type objsetTy) {
     var arity = ad.Arity;
     var tok = ad.Origin;
-    {
+    foreach (var constructor in new[] { TagHandle(arity), BasicHandle(arity) }) {
       var args = new List<Bpl.Variable>();
       for (var i = 0; i < arity; i++) {
         args.Add(BplFormalVar(null, Predef.Ty, true));
@@ -64,7 +84,7 @@ public partial class BoogieGenerator {
       args.Add(BplFormalVar(null, applyTy, true));
       args.Add(BplFormalVar(null, requiresTy, true));
       args.Add(BplFormalVar(null, readsTy, true));
-      sink.AddTopLevelDeclaration(new Bpl.Function(Token.NoToken, TagHandle(arity), args,
+      sink.AddTopLevelDeclaration(new Bpl.Function(Token.NoToken, constructor, args,
         BplFormalVar(null, Predef.HandleType, false)));
     }
     {
@@ -76,7 +96,7 @@ public partial class BoogieGenerator {
         BplFormalVar(null, Bpl.Type.Bool, false)));
     }
 
-    void Selector(string selector, Bpl.Type selectorTy, string selectorVar) {
+    void Selector(string constructor, string selector, Bpl.Type selectorTy, string selectorVar) {
       var bvars = new List<Bpl.Variable>();
       var types = Map(Enumerable.Range(0, arity + 1), i => BplBoundVar("t" + i, Predef.Ty, bvars));
       var tags = Map(Enumerable.Range(0, arity), i => BplBoundVar("d" + i, Predef.Ty, bvars));
@@ -87,7 +107,7 @@ public partial class BoogieGenerator {
         ["rd"] = BplBoundVar("rd", readsTy, bvars)
       };
       var boxes = Map(Enumerable.Range(0, arity), i => BplBoundVar("bx" + i, Predef.BoxType, bvars));
-      var handle = FunctionCall(tok, TagHandle(arity), Predef.HandleType,
+      var handle = FunctionCall(tok, constructor, Predef.HandleType,
         Concat(tags, new List<Bpl.Expr> { maps["h"], maps["r"], maps["rd"] }));
       Bpl.Expr lhs = FunctionCall(tok, selector, selectorTy, Concat(types, Cons(heap, Cons(handle, boxes))));
       Bpl.Expr rhs = new Bpl.NAryExpr(tok, new Bpl.MapSelect(tok, arity + 1), Cons(maps[selectorVar], Cons(heap, boxes)));
@@ -101,22 +121,25 @@ public partial class BoogieGenerator {
       } else {
         body = Bpl.Expr.Eq(lhs, rhs);
       }
-      var guard = BplAnd(boxes.Zip(tags, (b, d) => MkIs(b, d, true)));
-      AddOtherDefinition(GetOrCreateTypeConstructor(ad), new Axiom(tok,
-        BplForall(bvars, BplTrigger(lhs), BplImp(guard, body))));
+      if (constructor == TagHandle(arity)) {
+        body = BplImp(BplAnd(boxes.Zip(tags, (b, d) => MkIs(b, d, true))), body);
+      }
+      AddOtherDefinition(GetOrCreateTypeConstructor(ad), new Axiom(tok, BplForall(bvars, BplTrigger(lhs), body)));
     }
-    Selector(Apply(arity), Predef.BoxType, "h");
-    Selector(Requires(arity), Bpl.Type.Bool, "r");
-    Selector(Reads(arity), objsetTy, "rd");
+    foreach (var constructor in new[] { TagHandle(arity), BasicHandle(arity) }) {
+      Selector(constructor, Apply(arity), Predef.BoxType, "h");
+      Selector(constructor, Requires(arity), Bpl.Type.Bool, "r");
+      Selector(constructor, Reads(arity), objsetTy, "rd");
+    }
 
-    {
+    foreach (var constructor in new[] { TagHandle(arity), BasicHandle(arity) }) {
       var bvars = new List<Bpl.Variable>();
       var tags = Map(Enumerable.Range(0, arity), i => BplBoundVar("d" + i, Predef.Ty, bvars));
       var h = BplBoundVar("h", applyTy, bvars);
       var r = BplBoundVar("r", requiresTy, bvars);
       var rd = BplBoundVar("rd", readsTy, bvars);
       var boxes = Map(Enumerable.Range(0, arity), i => BplBoundVar("bx" + i, Predef.BoxType, bvars));
-      var handle = FunctionCall(tok, TagHandle(arity), Predef.HandleType, Concat(tags, new List<Bpl.Expr> { h, r, rd }));
+      var handle = FunctionCall(tok, constructor, Predef.HandleType, Concat(tags, new List<Bpl.Expr> { h, r, rd }));
       var dom = FunctionCall(tok, FunDom(arity), Bpl.Type.Bool, Cons(handle, boxes));
       var guard = BplAnd(boxes.Zip(tags, (b, d) => MkIs(b, d, true)));
       AddOtherDefinition(GetOrCreateTypeConstructor(ad), new Axiom(tok,
