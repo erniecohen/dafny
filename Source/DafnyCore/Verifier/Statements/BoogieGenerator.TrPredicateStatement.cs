@@ -165,7 +165,14 @@ namespace Microsoft.Dafny {
         splits = lowering.Pieces.ToList();
         splitHappened = lowering.SplitHappened;
       } else {
-        splits = TrSplitExpr(proofBuilder.Context, condition, etran, true, out splitHappened);
+        // TrAssertStmt assumed the call facts of stmt.Expr, with this etran, after checking its
+        // well-formedness.  Not for an expect statement, and not for a condition that was rewritten.
+        var followsCanCalls = stmt is AssertStmt && ReferenceEquals(condition, stmt.Expr);
+        var happened = false;
+        splits = followsCanCalls
+          ? WithSplitChecksFollowingCanCalls(() => TrSplitExpr(proofBuilder.Context, condition, etran, true, out happened))
+          : TrSplitExpr(proofBuilder.Context, condition, etran, true, out happened);
+        splitHappened = happened;
       }
       if (!splitHappened) {
         var desc = new AssertStatementDescription(stmt, errorMessage, successMessage);

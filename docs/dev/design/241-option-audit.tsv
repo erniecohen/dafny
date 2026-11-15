@@ -113,6 +113,7 @@ cli	project-file-cache-expiry	--project-file-cache-expiry	System.CommandLine.Opt
 cli	project-output	--project-output	System.CommandLine.Option`1[System.Boolean]	command-setup	setup or another command; executes before/outside proof transport
 cli	python-module-name	--python-module-name	System.CommandLine.Option`1[System.String]	command-setup	setup or another command; executes before/outside proof transport
 cli	python-reorder-replacements	--python-reorder-replacements	System.CommandLine.Option`1[System.Boolean]	command-setup	setup or another command; executes before/outside proof transport
+cli	quantified-check-call-facts	--quantified-check-call-facts	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	quantifier-syntax	--quantifier-syntax	System.CommandLine.Option`1[Microsoft.Dafny.QuantifierSyntaxOptions]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	random-seed	--random-seed	System.CommandLine.Option`1[System.UInt32]	execution	effective prover interfaces/options plus exact SMT command stream; overrides retained
 cli	raw-pointers	--raw-pointers	System.CommandLine.Option`1[System.Boolean]	command-setup	setup or another command; executes before/outside proof transport

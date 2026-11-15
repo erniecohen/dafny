@@ -123,6 +123,30 @@ standard library moves.  The regression is `git-issues/github-issue-96.dfy`; CI'
 `Statement-expression conclusions (opt-in, #96)` runs its fixtures with the option on and off.
 The release note is `docs/dev/news/1371.feat`.
 
+## Opt-in call facts in quantified checks ([issue 196](https://github.com/erniecohen/dafny/issues/196))
+
+`--quantified-check-call-facts` (default false; also `quantified-check-call-facts = true` in
+`dfyconfig.toml`) is a completeness option.  A function's definition axiom is guarded by its
+`#canCall`, and for a quantified condition the call facts are assumed as a separate quantifier
+with the condition's triggers.  When the solver simplifies the checked instance until no trigger
+term remains (`abs(l[i] - l[i]) <= d` becomes `abs(0.0) <= d`), that quantifier never fires and
+the definition is lost.  With the option, where a method's postcondition is checked at the exit
+of its implementation, or the condition of an `assert` statement after its well-formedness
+check, a positive universal quantifier `Q = forall b :: T(b) ==> P(b)` is checked as
+`forall b :: CC(b) ==> T(b) ==> P(b)`, `CC(b)` being the body of the call-fact quantifier
+assumed just before (type antecedents of `b` imply the call facts of the range and the term),
+and `Q` itself is assumed afterwards, as before.  Its kind is **neither**: it adds no axiom and
+no assumption, since the assumed `forall b :: CC(b)` and the checked quantifier together imply
+`Q`.  Loop invariants, function postconditions, preconditions, quantifiers proved by induction,
+quantifiers Dafny splits by trigger and conditions rewritten by
+`--statement-expression-conclusions` are not affected, nor is anything under
+`--consistent-obligation-checks`.  With the option off, the Boogie program
+is unchanged and no verdict of the suite moves.  With it on, no verdict of the suite moves, and
+2.7% of its declarations change resource count (most within 5%, a few by up to about 3x).
+The regression is `git-issues/github-issue-196.dfy`: the issue's program and its variants, with
+and without the option, under both resolvers, and negative and `assert false` fixtures.  The
+release note is `docs/dev/news/196.feat`.
+
 ## Declared lambda preconditions under `--additional-axioms` ([#97](https://github.com/erniecohen/dafny/issues/97))
 
 Dafny's `RequiresN` schema for a lambda value gives only the sufficient direction of its declared

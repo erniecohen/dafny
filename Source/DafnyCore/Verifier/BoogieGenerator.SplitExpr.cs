@@ -37,6 +37,61 @@ namespace Microsoft.Dafny {
   }
 
   public partial class BoogieGenerator {
+    /// <summary>
+    /// Set while splitting a condition whose CanCallAssumption the caller has just assumed, at the same
+    /// point and with the same translator: a method's postcondition at the exit of its implementation, and
+    /// the condition of an assert statement after its well-formedness check.
+    /// </summary>
+    private bool splitChecksFollowCanCalls;
+
+    private T WithSplitChecksFollowingCanCalls<T>(Func<T> split) {
+      var saved = splitChecksFollowCanCalls;
+      splitChecksFollowCanCalls = true;
+      try {
+        return split();
+      }
+      finally {
+        splitChecksFollowCanCalls = saved;
+      }
+    }
+
+    /// <summary>
+    /// The body of the quantifier that CanCallAssumption(forall) produces, over the bound variables
+    /// "dummies" of the translated quantifier: the type antecedents of the bound variables imply the call facts
+    /// of the range and of the term.  Null if the range and the term have no call facts, or if a bound variable
+    /// has no counterpart in "dummies".
+    /// </summary>
+    private Bpl.Expr QuantifiedBodyCanCalls(ForallExpr forall, List<Bpl.Variable> dummies, ExpressionTranslator etran) {
+      // Translating an exists in an assert statement adjusts the fuel once (TranslateQuantifierExpr); these
+      // extra translations must leave that adjustment to the condition itself.
+      var savedAdjustFuelForExists = adjustFuelForExists;
+      var canCall = etran.CanCallAssumption(forall.Term);
+      if (forall.Range != null) {
+        canCall = BplAnd(etran.CanCallAssumption(forall.Range), BplImp(etran.TrExpr(forall.Range), canCall));
+      }
+      adjustFuelForExists = savedAdjustFuelForExists;
+      if (canCall is Bpl.LiteralExpr { IsTrue: true }) {
+        return null;
+      }
+      var boundVariables = etran.TrBoundVariables_SeparateWhereClauses(forall.BoundVars);
+      var antecedent = boundVariables
+        .Where(pair => pair.Item2 != null)
+        .Aggregate((Bpl.Expr)Bpl.Expr.True, (conjunction, pair) => BplAnd(conjunction, pair.Item2));
+      // The type antecedents refer to the variables just made, by declaration rather than by name, so they are
+      // rebound to the dummies of the translated quantifier (the call facts refer to the bound variables by name).
+      var rebinding = new Dictionary<Bpl.Variable, Bpl.Expr>();
+      foreach (var (variable, _) in boundVariables) {
+        var dummy = dummies.FirstOrDefault(d => d.Name == variable.Name);
+        if (dummy == null) {
+          return null;
+        }
+        rebinding[variable] = new Bpl.IdentifierExpr(dummy.tok, dummy);
+      }
+      // Identifiers bound by name, such as $Heap, have no declaration yet and are left alone.
+      antecedent = Bpl.Substituter.Apply(v => v != null && rebinding.TryGetValue(v, out var e) ? e : null, antecedent);
+      return BplImp(antecedent, canCall);
+    }
+
     // The existing positive-universal assertion rule. Generated range-bound
     // obligations share this rule on their body before the existing Boogie
     // binder/range closure is applied; this does not invent another fuel policy.
@@ -46,6 +101,24 @@ namespace Microsoft.Dafny {
       var check = checking.TrExpr(expression);
       var adjustToken = TrSplitNeedsTokenAdjustment(expression);
       if (adjustToken) { check.tok = new ForceCheckOrigin(expression.Origin); }
+      if (splitChecksFollowCanCalls && options.Get(CommonOptionBag.QuantifiedCheckCallFacts) &&
+          expression is ForallExpr { SplitQuantifier: null } forall && check is Bpl.ForallExpr checkedForall &&
+          QuantifiedBodyCanCalls(forall, checkedForall.Dummies, etran) is { } bodyCanCalls) {
+        // The call facts of the body, as an antecedent of the checked body
+        // (https://github.com/erniecohen/dafny/issues/196).  The caller assumed
+        // CanCallAssumption(expression), which is a quantifier with the same bound variables,
+        // bodyCanCalls as its body and the triggers of the quantifier.  An instance of the checked quantifier
+        // that the solver simplifies until no trigger term remains (abs(l[i] - l[i]) becomes abs(0.0))
+        // would not get the call facts from that quantifier; here it carries them along.
+        // Sound because the assumed quantifier and the checked one together imply the original.  The
+        // original is assumed afterwards, as before.
+        var guarded = new Bpl.ForallExpr(checkedForall.tok, checkedForall.TypeParameters, checkedForall.Dummies,
+          checkedForall.Attributes, checkedForall.Triggers, BplImp(bodyCanCalls, checkedForall.Body));
+        splits.Add(ToSplitExprInfo(SplitExprInfo.K.Checked, guarded));
+        splits.Add(ToSplitExprInfo(SplitExprInfo.K.Free,
+          checking.Statistics_CustomLayerFunctionCount == 0 ? check : etran.TrExpr(expression)));
+        return true;
+      }
       if (checking.Statistics_CustomLayerFunctionCount == 0) {
         splits.Add(ToSplitExprInfo(SplitExprInfo.K.Both, check));
         return adjustToken;

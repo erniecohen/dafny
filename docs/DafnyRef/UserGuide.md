@@ -2720,6 +2720,21 @@ and what information it produces about the verification process.
   `statement-expression-conclusions = true` in a project file's `[options]`
   section. It can change proof costs.
 
+* `--quantified-check-call-facts` - when a method postcondition or the
+  condition of an `assert` statement is a universal quantifier, check its body
+  under the call facts (`f#canCall`) of the functions the body calls, which
+  the verifier assumes, as a separate quantifier, just before the check. A
+  function's definition axiom is guarded by its call fact, so without the
+  option the definition can be lost where the solver simplifies the checked
+  body until no trigger term of that separate quantifier remains: for
+  example, `ensures forall i | 0 <= i < |l| :: abs(l[i] - l[i]) <= d` fails,
+  since `l[i] - l[i]` becomes `0.0` and `abs(0.0)` stays uninterpreted. The
+  quantifier assumed after the check is the original one, so the option adds
+  no assumption. Loop invariants, function postconditions, quantifiers proved
+  by induction and quantifiers that Dafny splits by trigger are not affected.
+  Disabled by default; `quantified-check-call-facts = true` in a project
+  file's `[options]` section. It can change proof costs.
+
 * `--trait-rank-decreases` - in `decreases` clauses, order the values of a
   trait that is not a reference type (one that does not extend `object`) by
   structural rank, together with inductive datatypes and sequences. A
