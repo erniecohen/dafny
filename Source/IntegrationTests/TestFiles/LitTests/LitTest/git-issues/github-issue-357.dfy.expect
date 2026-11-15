@@ -1,0 +1,9 @@
+
+Dafny program verifier finished with 11 verified, 0 errors
+
+Dafny program verifier finished with 4 verified, 0 errors
+github-issue-357-user.dfy(6,24): Warning: The {:verify false} attribute should only be used during development. Consider using a bodyless lemma together with the {:axiom} attribute instead
+
+Dafny program verifier finished with 1 verified, 0 errors
+CLI: Error: cannot build a library under --modular-termination: github-issue-357-user.dfy(6,26) has an assumption that 'dafny audit' reports: Declaration has {:verify false} attribute. A library built with --modular-termination records that its own program was completely verified; build it without --no-verify, --boogie arguments, {:verify false}, {:only}, decreases *, assumptions (anything 'dafny audit' reports, bodyless members, --allow-axioms) or {:extern}, and with every verification task succeeding
+Translation was aborted because errors were found
