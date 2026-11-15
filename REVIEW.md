@@ -123,6 +123,30 @@ standard library moves.  The regression is `git-issues/github-issue-96.dfy`; CI'
 `Statement-expression conclusions (opt-in, #96)` runs its fixtures with the option on and off.
 The release note is `docs/dev/news/1371.feat`.
 
+## Opt-in call facts in quantified checks ([issue 196](https://github.com/erniecohen/dafny/issues/196))
+
+`--quantified-check-call-facts` (default false; also `quantified-check-call-facts = true` in
+`dfyconfig.toml`) is a completeness option.  A function's definition axiom is guarded by its
+`#canCall`, and for a quantified condition the call facts are assumed as a separate quantifier
+with the condition's triggers.  When the solver simplifies the checked instance until no trigger
+term remains (`abs(l[i] - l[i]) <= d` becomes `abs(0.0) <= d`), that quantifier never fires and
+the definition is lost.  With the option, where a method's postcondition is checked at the exit
+of its implementation, or the condition of an `assert` statement after its well-formedness
+check, a positive universal quantifier `Q = forall b :: T(b) ==> P(b)` is checked as
+`forall b :: CC(b) ==> T(b) ==> P(b)`, `CC(b)` being the body of the call-fact quantifier
+assumed just before (type antecedents of `b` imply the call facts of the range and the term),
+and `Q` itself is assumed afterwards, as before.  Its kind is **neither**: it adds no axiom and
+no assumption, since the assumed `forall b :: CC(b)` and the checked quantifier together imply
+`Q`.  Loop invariants, function postconditions, preconditions, quantifiers proved by induction,
+quantifiers Dafny splits by trigger and conditions rewritten by
+`--statement-expression-conclusions` are not affected, nor is anything under
+`--consistent-obligation-checks`.  With the option off, the Boogie program
+is unchanged and no verdict of the suite moves.  With it on, no verdict of the suite moves, and
+2.7% of its declarations change resource count (most within 5%, a few by up to about 3x).
+The regression is `git-issues/github-issue-196.dfy`: the issue's program and its variants, with
+and without the option, under both resolvers, and negative and `assert false` fixtures.  The
+release note is `docs/dev/news/196.feat`.
+
 ## Declared lambda preconditions under `--additional-axioms` ([#97](https://github.com/erniecohen/dafny/issues/97))
 
 Dafny's `RequiresN` schema for a lambda value gives only the sufficient direction of its declared
@@ -165,6 +189,30 @@ the translation is unchanged.  The regression is `git-issues/github-issue-326.df
 program, positive and `ensures false` fixtures under both resolvers and both settings, and one
 fixture per circular route, with a false-derivation attempt, with the option on.  The release
 note is `docs/dev/news/326.feat`.
+
+## Opt-in inlined-body call permissions ([issue 198](https://github.com/erniecohen/dafny/issues/198))
+
+A checked call `F(args)` of a function with a body is split into one assertion per checked
+conjunct of the inlined body, `F#canCall(args) ==> F($LS($LZ), args) || c`, with
+`{:subsumption 0}`.  A call in a later conjunct, such as `b.scoped(n)` in
+`a.scoped(n) && b.scoped(n)`, unfolds only under its `#canCall`, which the definition axiom
+supplies only under the guard `a.scoped(n)` at the caller's layer `$LZ`, where it does not unfold.
+So `size(Bin(op,Var(0),Var(1)),[x,y])` with `requires t.scoped(|s|)` was proved only when an
+unrelated term unfolded the first conjunct, and which of two equivalent declarations failed moved
+with their order.  With `--inlined-body-call-permissions` (default false; also
+`inlined-body-call-permissions = true` in `dfyconfig.toml`), `InlinedBodyCanCall` (`BoogieGenerator.SplitExpr.cs`)
+puts the body's `CanCallAssumption` at the conjuncts' layer `$LS($LZ)` as each checked conjunct's
+antecedent.  Its kind is **neither**: the antecedent is the existing definition axiom of `F` at the
+same `args` and `ly := $LS($LZ)`, and each assertion is already guarded by `F#canCall(args)`, so it
+assumes nothing new
+([`docs/dev/additional-axioms.md`](docs/dev/additional-axioms.md#call-permissions-of-the-checked-conjuncts-of-an-inlined-body-198)).
+It has its own option, not `--additional-axioms`: under the shared option it moved one suite
+program and three Z3 5.1.0 standard-library rows from verified to out of resource, and raised the
+library's resource count by about 3%, so no gate runs with it on.  The option is tested before
+anything is built, so with it off the translation is unchanged.  The
+regression is `git-issues/github-issue-198.dfy`: the issue's forms and their variants in two
+declaration orders under both resolvers, and a precondition and an `assert false` control that must
+still fail.  The release note is `docs/dev/news/198.feat`.
 
 ## Datatypes and the traits they extend in one decreases order ([issue 317](https://github.com/erniecohen/dafny/issues/317))
 
