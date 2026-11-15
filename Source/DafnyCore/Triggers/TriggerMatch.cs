@@ -17,9 +17,12 @@ internal struct TriggerMatch {
   ///  to compute an answer, we match the Expr of this match against the Exprs of each of these term, allowing for harmless
   ///  variations. If any of these tests does match, this term likely won't cause a loop.
   ///  The boundVars list is useful to determine that forall x :: P(x) == P(y+z) does not loop.
+  ///  witnessVars, null unless --detect-witness-matching-loops is on, are the variables of nested quantifiers
+  ///  that are skolemized when the quantifier is instantiated (see WitnessVariables): a match in which one of
+  ///  them takes the place of a bound variable, as p in "p in s" for the trigger "q in s", does loop.
   /// </summary>
-  internal bool CouldCauseLoops(List<TriggerTerm> terms, ISet<BoundVar> boundVars, DafnyOptions options) {
+  internal bool CouldCauseLoops(List<TriggerTerm> terms, ISet<BoundVar> boundVars, DafnyOptions options, ISet<IVariable> witnessVars = null) {
     var expr = Expr;
-    return !terms.Any(term => term.Expr.ExpressionEqModuloExpressionsNotInvolvingBoundVariables(expr, boundVars, options));
+    return !terms.Any(term => term.Expr.ExpressionEqModuloExpressionsNotInvolvingBoundVariables(expr, boundVars, options, witnessVars));
   }
 }

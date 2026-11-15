@@ -190,6 +190,26 @@ program, positive and `ensures false` fixtures under both resolvers and both set
 fixture per circular route, with a false-derivation attempt, with the option on.  The release
 note is `docs/dev/news/326.feat`.
 
+## Opt-in matching-loop detection through existential witnesses ([issue 202](https://github.com/erniecohen/dafny/issues/202))
+
+Matching-loop detection (`TriggerMatch.CouldCauseLoops`) ignores a term of a quantifier's body
+that matches a trigger term up to one variable for another, so that `forall x, y {a(x, y)} ::
+a(x, y) == a(y, x)` is not a loop.  It treated `p in s` in `forall q | q in s :: exists p :: p in s
+&& q < p` the same way, but `p` is skolemized at each instance of the universal, so each instance
+yields a fresh `sk(q) in s` that matches the trigger `q in s` again.  With
+`--detect-witness-matching-loops` (default false; also `detect-witness-matching-loops = true` in
+`dfyconfig.toml`), `WitnessVariables.Of` collects the variables of the quantifiers nested in the
+body that are skolemized when the quantifier is instantiated (an existential in positive position,
+a universal in negative position, both where the position is mixed), and
+`ExpressionEqModuloExpressionsNotInvolvingBoundVariables` no longer counts a match that puts one of
+them in the place of a trigger variable as harmless.  Its kind is **neither**: it changes only
+which automatically selected triggers are reported or rejected, as the existing detection does, and
+adds no axiom.  With the option off, `WitnessVariables.Of` returns null and the comparison is
+unchanged.  The regression is `git-issues/github-issue-202.dfy`: the issue's reproducer, the same
+loop through a negated universal and through a negated existential, a quantifier where a
+non-looping trigger is preferred, and three nested quantifiers that are not loops and get no
+warning.  The release note is `docs/dev/news/202.feat`.
+
 ## Opt-in inlined-body call permissions ([issue 198](https://github.com/erniecohen/dafny/issues/198))
 
 A checked call `F(args)` of a function with a body is split into one assertion per checked
