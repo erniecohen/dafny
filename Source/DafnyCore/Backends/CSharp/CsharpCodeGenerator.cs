@@ -1254,7 +1254,10 @@ namespace Microsoft.Dafny.Compilers {
         foreach (var arg in ctor.Formals) {
           if (!arg.IsGhost) {
             var nm = FieldName(arg, i);
-            wSame.Write(IsDirectlyComparable(DatatypeWrapperEraser.SimplifyType(Options, arg.Type))
+            var equalityType = Options.Get(CommonOptionBag.ExtendedNewtypeBases)
+              ? DatatypeWrapperEraser.SimplifyTypeAndTrimNewtypes(Options, arg.Type)
+              : DatatypeWrapperEraser.SimplifyType(Options, arg.Type);
+            wSame.Write(IsDirectlyComparable(equalityType)
               ? $" && this.{nm} == oth.{nm}"
               : $" && object.Equals(this.{nm}, oth.{nm})");
             w.Write($" && object.Equals(this.{nm}, erased.{nm})");
