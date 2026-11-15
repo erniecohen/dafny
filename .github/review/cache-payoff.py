@@ -7,7 +7,11 @@ https://github.com/erniecohen/dafny/issues/261 (spec: https://github.com/ernieco
 
 `run` runs `D DAFNY-ARGS --pipeline-profile ...` --warmup times (discarded) and then --reps
 times, and records each run's wall time (process start to exit) in DIR/runs.tsv and its
-profile in DIR/NAME-<i>.jsonl.  The exit code is recorded, not judged: a front-end-only
+profile in DIR/NAME-<i>.jsonl.  With each run it also records the 1-minute load average before
+and after, and, with --active-cmd (a shell command that prints a number), the number of other
+jobs active when the run started and when it ended (the workflow counts the repository's
+in-progress jobs).  A run that overlapped other jobs (active > 0 at start or end) is repeated, up
+to --retries times; the last attempt is kept either way, and the report shows the counts.  The exit code is recorded, not judged: a front-end-only
 `dafny verify` with Boogie's no-op solver reports every task as inconclusive.
 
 `analyze` reads every profile and reports, per run name, medians over the measured runs of:
@@ -72,13 +76,33 @@ def run(a):
     args = a.args[1:] if a.args and a.args[0] == '--' else a.args
     tsv = out / 'runs.tsv'
     if not tsv.exists():
-        tsv.write_text('name\trep\texit\twall_s\n')
+        tsv.write_text('name\trep\texit\twall_s\tload_before\tload_after\tactive_before\tactive_after\n')
+
+    def active():
+        if not a.active_cmd:
+            return ''
+        try:
+            return subprocess.run(a.active_cmd, shell=True, capture_output=True, text=True, timeout=60).stdout.strip()
+        except Exception:
+            return ''
+
+    def busy(x):
+        try:
+            return int(x) > 0
+        except ValueError:
+            return False
     for rep in range(1 - a.warmup, a.reps + 1):
         profile = out / f'{a.name}-{rep}.jsonl'
         cmd = [a.dafny, *args, '--pipeline-profile', str(profile.resolve())]
-        t0 = time.monotonic()
-        p = subprocess.run(cmd, cwd=a.cwd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        wall = time.monotonic() - t0
+        for attempt in range(a.retries + 1):
+            act0, load0 = active(), os.getloadavg()[0]
+            t0 = time.monotonic()
+            p = subprocess.run(cmd, cwd=a.cwd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            wall = time.monotonic() - t0
+            load1, act1 = os.getloadavg()[0], active()
+            if rep <= 0 or not (busy(act0) or busy(act1)) or attempt == a.retries:
+                break
+            print(f'{a.name}: run {rep} overlapped other jobs ({act0}, {act1}); repeating', flush=True)
         if rep == 1 - a.warmup:
             (out / f'{a.name}.out').write_bytes(p.stdout)
         if b'resolution/type errors detected' in p.stdout or b'parse errors detected' in p.stdout:
@@ -88,8 +112,9 @@ def run(a):
             print(f'{a.name}: warm-up exit {p.returncode}, {wall:.1f} s', flush=True)
             continue
         with open(tsv, 'a') as f:
-            f.write(f'{a.name}\t{rep}\t{p.returncode}\t{wall:.3f}\n')
-        print(f'{a.name}: run {rep} exit {p.returncode}, {wall:.1f} s', flush=True)
+            f.write(f'{a.name}\t{rep}\t{p.returncode}\t{wall:.3f}\t{load0:.2f}\t{load1:.2f}\t{act0}\t{act1}\n')
+        print(f'{a.name}: run {rep} exit {p.returncode}, {wall:.1f} s; load {load0:.2f}/{load1:.2f}; '
+              f'other active jobs {act0 or "?"}/{act1 or "?"}', flush=True)
         events = load(profile)
         if not any(e['ev'] == 'summary' for e in events):
             sys.exit(f'{a.name}: profile {profile} has no summary')
@@ -122,9 +147,15 @@ def analyze_profile(path, wall_s):
         return None  # the run stopped before resolution (see its .out)
     nodes = graph['nodes']
     mods = [e for e in fe if e['stage'] == 'resolve.module']
+    threads = manifest.get('resolutionThreads') or 0
     cost = defaultdict(float)
     for e in mods:
         cost[e['id']] += e['end'] - e['start']
+    # With parallel workers a module's wall interval also counts contention, so the critical-path
+    # bound below uses the thread CPU time of each module's resolution (no more than its wall time).
+    cpu = defaultdict(float)
+    for e in mods:
+        cpu[e['id']] += e.get('threadCpuMs', e['end'] - e['start'])
     resolve = sum(s['end'] - s['start'] for s in spans if s['stage'] == 'resolve')
     modules_wall = union([(e['start'], e['end']) for e in mods])
     work = sum(cost.values())
@@ -148,6 +179,8 @@ def analyze_profile(path, wall_s):
         'vcgen work': sum(t.get('solveMs') or 0 for t in events if t['ev'] == 'task'),
         'tasks': sum(1 for t in events if t['ev'] == 'task'),
         'gc pause': next((e.get('gcPauseMs') or 0 for e in reversed(events) if e['ev'] == 'summary'), 0),
+        'cpu': next((e.get('cpuMs') or 0 for e in reversed(events) if e['ev'] == 'summary'), 0),
+        'resolve cpu': sum(s.get('cpuMs') or 0 for s in spans if s['stage'] == 'resolve'),
         'threads': manifest.get('resolutionThreads'),
         'refresh': manifest.get('typeSystemRefresh'),
         'cores': manifest.get('processorCount'),
@@ -163,15 +196,48 @@ def analyze_profile(path, wall_s):
     name_of = {i: nodes[i]['module'] for i in range(len(nodes))}
     tr_total = sum(tr.values())
 
+    out = defaultdict(list)
+    for a, b in graph['edges']:
+        out[a].append(b)
+
+    def critical_path(d):
+        # Longest chain of dependencies inside d, by module resolution CPU time.
+        memo = {}
+        for start in d:
+            stack = [(start, False)]
+            while stack:
+                x, done = stack.pop()
+                if x in memo:
+                    continue
+                if done:
+                    memo[x] = cpu.get(x, 0.0) + max((memo[y] for y in out[x] if y in d), default=0.0)
+                    continue
+                stack.append((x, True))
+                stack.extend((y, False) for y in out[x] if y in d and y not in memo)
+        return max(memo.values(), default=0.0)
+
     def saving(m):
         d = deps[m]
         res = sum(c for i, c in cost.items() if i not in d)
+        if threads > 0:
+            # Parallel workers: the invalidated modules still take at least their critical path and
+            # their CPU time spread over the workers; everything else in the modules interval is saved.
+            left = max(critical_path(d), sum(cpu[i] for i in d if i in cpu) / threads)
+            wall = max(0.0, modules_wall - left)
+        else:
+            wall = res / work * modules_wall if work else 0
         inval_names = {name_of[i] for i in d if nodes[i]['kind'] == 'module'}
         trs = sum(t for name, t in tr.items() if name not in inval_names)
-        return res, trs, len(d & userset)
+        return res, trs, len(d & userset), wall
 
     per = {m: saving(m) for m in user}
-    leaves = [m for m in user if len(deps[m] & userset) == 1]
+    # A nested module is part of its enclosing module (a nesting edge [parent, child]), so an edit to
+    # any module invalidates its enclosing modules too; a leaf is a user module on which nothing else
+    # depends: no other user module except its enclosing modules.
+    def ancestors(m):
+        name = name_of[m]
+        return {i for i in user if name.startswith(name_of[i] + '.')}
+    leaves = [m for m in user if not (deps[m] & userset) - {m} - ancestors(m)]
     root = max(user, key=lambda m: (len(deps[m] & userset), cost[m])) if user else None
     hot = max(user, key=lambda m: cost[m]) if user else None
     r['hot'] = name_of[hot] if hot is not None else None
@@ -188,7 +254,7 @@ def analyze_profile(path, wall_s):
         res = statistics.median(per[m][0] for m in ms)
         trs = statistics.median(per[m][1] for m in ms)
         r[f'saved resolve work ({label})'] = res
-        r[f'saved resolve wall ({label})'] = res / work * modules_wall if work else 0
+        r[f'saved resolve wall ({label})'] = statistics.median(per[m][3] for m in ms)
         r[f'saved translate ({label})'] = trs
     return r
 
@@ -198,9 +264,12 @@ def analyze(a):
     for d in a.dirs:
         for tsv in Path(d).rglob('runs.tsv'):
             for line in tsv.read_text().splitlines()[1:]:
-                name, rep, _, wall = line.split('\t')
+                name, rep, _, wall, *rest = line.split('\t')
                 r = analyze_profile(tsv.parent / f'{name}-{rep}.jsonl', float(wall))
                 if r is not None:
+                    rest += [''] * (4 - len(rest))
+                    r['overlap'] = f'{rest[2] or "?"}/{rest[3] or "?"}'
+                    r['load'] = f'{rest[0] or "?"}/{rest[1] or "?"}'
                     rows[name].append(r)
     report = {}
     for name in sorted(rows):
@@ -215,11 +284,13 @@ def analyze(a):
             else:
                 med[k] = vals[0] if vals else None
         med['runs'] = len(rs)
+        med['overlap'] = ', '.join(r['overlap'] for r in rs)
+        med['load'] = ', '.join(r['load'] for r in rs)
         report[name] = med
     lines = ['# Persistent per-module cache: what could it save?', '',
              'Medians over the measured runs; times in seconds; a share is of the process wall time.', '']
-    lines += ['| run | runs | wall | parse | resolve | modules (wall) | module work | library | global | translate | prepare | vcgen (tasks) | gc pause |',
-              '|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|']
+    lines += ['| run | runs | wall | cpu (cores) | parse | resolve | resolve cpu (share of cpu) | modules (wall) | module work | library | global | translate | prepare | vcgen (tasks) | gc pause |',
+              '|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|']
 
     def s(x):
         return f'{x / 1000:.2f}'
@@ -228,8 +299,10 @@ def analyze(a):
         return f'{100 * x / w:.0f}%'
     for name, r in report.items():
         w = r['wall']
-        lines.append(f"| {name} | {r['runs']} | {s(w)} | {s(r['parse'])} ({pct(r['parse'], w)}) | "
-                     f"{s(r['resolve'])} ({pct(r['resolve'], w)}) | {s(r['modules'])} ({pct(r['modules'], w)}) | "
+        c = r.get('cpu') or 0
+        lines.append(f"| {name} | {r['runs']} | {s(w)} | {s(c)} ({c / w:.1f}) | {s(r['parse'])} ({pct(r['parse'], w)}) | "
+                     f"{s(r['resolve'])} ({pct(r['resolve'], w)}) | {s(r['resolve cpu'])} ({pct(r['resolve cpu'], c) if c else '-'}) | "
+                     f"{s(r['modules'])} ({pct(r['modules'], w)}) | "
                      f"{s(r['module work'])} | {s(r['library'])} | {s(r['global'])} ({pct(r['global'], w)}) | "
                      f"{s(r['translate'])} ({pct(r['translate'], w)}) | {s(r['prepare'])} ({pct(r['prepare'], w)}) | "
                      f"{s(r['vcgen'])} ({pct(r['vcgen'], w)}, {r['tasks']}) | {s(r['gc pause'])} ({pct(r['gc pause'], w)}) |")
@@ -240,6 +313,10 @@ def analyze(a):
                      f"{r['modules (library)']} | {r['graph nodes']} / {r['graph edges']} | {r['leaves']} | "
                      f"{r['root']} ({r['root dependents']}) | {r['dependents (median)']} | "
                      f"{r['hot']} ({100 * r['hot share']:.0f}%) |")
+    lines += ['', 'Other jobs active in the repository at the start/end of each measured run, and the 1-minute load average before/after:', '',
+              '| run | other active jobs | load |', '|---|---|---|']
+    for name, r in report.items():
+        lines.append(f"| {name} | {r['overlap']} | {r['load']} |")
     lines += ['', 'Upper bound on what a warm cache saves, per edit (resolution wall saved; translation saved where translated):', '',
               '| run | edit leaf | edit random | edit root | edit costliest |', '|---|---:|---:|---:|---:|']
     for name, r in report.items():
@@ -272,6 +349,8 @@ def main():
     r.add_argument('--reps', type=int, default=3)
     r.add_argument('--warmup', type=int, default=1)
     r.add_argument('--cwd')
+    r.add_argument('--active-cmd')
+    r.add_argument('--retries', type=int, default=2)
     r.add_argument('args', nargs=argparse.REMAINDER)
     an = sub.add_parser('analyze')
     an.add_argument('dirs', nargs='+')

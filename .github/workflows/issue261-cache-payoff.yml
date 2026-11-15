@@ -22,33 +22,55 @@ on:
 
 permissions:
   contents: read
+  actions: read   # to count the other jobs running on the self-hosted runners during each run
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 env:
-  RELEASE: v4.11.0+fcb2042d.review.ddbc948c
+  RELEASE: v4.11.0+fcb2042d.review.c1cccaa3
   SCRIPT: .github/review/cache-payoff.py
   NOOP: --solver-option SOLVER=noop --boogie /deterministicLiteralHashes:1
 
 jobs:
   measure:
-    runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    # The fork's self-hosted runners share one machine, so the corpora are measured one at a time,
+    # and each timed run records the other jobs active on those runners (and is repeated if any).
+    if: github.repository == 'erniecohen/dafny'
+    runs-on: [self-hosted, macOS, ARM64, mac-studio]
+    timeout-minutes: 45
+    env:
+      GH_TOKEN: ${{ github.token }}
     strategy:
       fail-fast: false
+      max-parallel: 1
       matrix:
         corpus: [std, core, cedar, evm]
+    defaults:
+      run:
+        shell: bash
     steps:
+      - name: Yield to interactive work
+        run: |
+          case "$(ps -o comm= -p "$PPID")" in
+            */Runner.Worker|Runner.Worker) ;;
+            *) echo "::error::Expected this job's Runner.Worker parent"; exit 1 ;;
+          esac
+          renice 10 -p "$PPID" "$$" >/dev/null
+          test "$(ps -o nice= -p "$PPID" | tr -d ' ')" = 10
+          echo 'Job worker and shell niceness: 10; subsequent actions inherit it.'
       - uses: actions/checkout@v4
+        with:
+          clean: true
       - name: Released Dafny and Z3 5.1.0
         run: |
+          rm -rf rel ext results corpora.txt ci-z3
           mkdir -p rel && cd rel
           base="https://github.com/${GITHUB_REPOSITORY}/releases/download/${RELEASE//+/%2B}"
-          zip="dafny-${RELEASE#v}-linux-x64.zip"
+          zip="dafny-${RELEASE#v}-osx-arm64.zip"
           curl -fsSL --retry 3 -O "$base/$zip" -O "$base/SHA256SUMS"
-          grep " $zip\$" SHA256SUMS | sha256sum -c -
+          grep " $zip\$" SHA256SUMS | shasum -a 256 -c -
           unzip -q "$zip"
           cd ..
           z3=$(sh .github/review/setup-z3.sh 5.1.0 ci-z3)
@@ -75,7 +97,16 @@ jobs:
       - name: Measure
         run: |
           out="$PWD/results/${{ matrix.corpus }}"
-          run() { python3 "$GITHUB_WORKSPACE/$SCRIPT" run --dafny "$D" --out "$out" "$@"; }
+          # Other jobs in progress on the self-hosted runners, not counting this one.
+          cat > "$RUNNER_TEMP/active.sh" <<'SH'
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs?status=in_progress&per_page=100" --jq '.workflow_runs[].id' |
+            while read -r id; do
+              gh api "repos/$GITHUB_REPOSITORY/actions/runs/$id/jobs?per_page=100" \
+                --jq "[.jobs[] | select(.status == \"in_progress\" and (.labels | index(\"mac-studio\")) and .runner_name != \"$RUNNER_NAME\")] | length"
+            done | awk '{ s += $1 } END { print s + 0 }'
+          SH
+          active="bash $RUNNER_TEMP/active.sh"
+          run() { python3 "$GITHUB_WORKSPACE/$SCRIPT" run --dafny "$D" --out "$out" --active-cmd "$active" "$@"; }
           case "${{ matrix.corpus }}" in
           std)
             cd Source/DafnyStandardLibraries
@@ -96,22 +127,31 @@ jobs:
               --cores 4 --verification-time-limit 0 --solver-path "$Z3" --solver-option SOLVER=noop
             ;;
           core)
+            # Since https://github.com/erniecohen/dafny/pull/343 the released resolver rejects two reads
+            # in DafnyToRustCompiler's constructor of constants whose initializers depend on `this`
+            # (https://github.com/erniecohen/dafny/issues/339).  For this measurement only, inline the
+            # two initializers there; the resolution work is unchanged up to two expressions.
+            f=Source/DafnyCore/Backends/Rust/Dafny-compiler-rust.dfy
+            perl -0pi -e 's/FactorPathsOptimization\.apply\(thisFile\)\]/FactorPathsOptimization.apply(if rootType.RootCrate? then R.crate else R.crate.MSel(rootType.moduleName))]/; s/var thisAsSelf := rcNew\(R\.self\.Clone\(\)\);/var thisAsSelf := (if syncType.NoSync? then R.RcPath else R.ArcPath).AsExpr().FSel("new").Apply([R.self.Clone()]);/' "$f"
+            git diff --stat --exit-code -- "$f" && { echo "the DafnyCore workaround no longer applies"; exit 1; }
             run --name core-resolve-t0 --reps 3 -- resolve Source/DafnyCore/dfyconfig.toml
             run --name core-resolve-t4 --reps 3 -- resolve Source/DafnyCore/dfyconfig.toml --resolution-threads 4
             ;;
           cedar)
-            # Its own sources (not its tests); the refreshed resolver rejects it, so legacy only.
+            # Its own sources (not its tests).  The refreshed resolver rejects it (5 errors: receiver type
+            # not determined), and --resolution-threads requires it, so legacy and sequential only.
             cd ext/cedar/cedar-dafny
-            mapfile -t files < <(find def thm validation difftest -name '*.dfy' | sort)
+            files=(); while IFS= read -r f; do files+=("$f"); done < <(find def thm validation difftest -name '*.dfy' | sort)
             run --name cedar-resolve --reps 3 -- resolve "${files[@]}"
             # shellcheck disable=SC2086
             run --name cedar-verify-noop --warmup 0 --reps 2 -- verify "${files[@]}" \
               --cores 4 --solver-path "$Z3" $NOOP
             ;;
           evm)
-            # Its Gradle build's Dafny 4 flags; the refreshed resolver rejects it, so legacy only.
+            # Its Gradle build's Dafny 4 flags.  The refreshed resolver rejects it (2 errors: u8/u256
+            # element types), and --resolution-threads requires it, so legacy and sequential only.
             cd ext/evm
-            mapfile -t files < <(find src/dafny -name '*.dfy' | sort)
+            files=(); while IFS= read -r f; do files+=("$f"); done < <(find src/dafny -name '*.dfy' | sort)
             flags=(--function-syntax 4 --quantifier-syntax 4 --allow-warnings)
             run --name evm-resolve --reps 3 -- resolve "${files[@]}" "${flags[@]}"
             # shellcheck disable=SC2086
@@ -123,7 +163,7 @@ jobs:
         if: always()
         run: |
           {
-            echo "Runner: $(nproc) processors, $(free -g | awk '/Mem:/{print $2}') GB memory; Dafny $RELEASE; Z3 5.1.0."
+            echo "Runner $RUNNER_NAME: $(sysctl -n hw.ncpu) processors ($(sysctl -n hw.perflevel1.physicalcpu 2>/dev/null || echo 0) efficiency cores), $(( $(sysctl -n hw.memsize) / 1073741824 )) GB memory; Dafny $RELEASE; Z3 5.1.0."
             cat corpora.txt 2>/dev/null || true
             python3 "$SCRIPT" analyze "results/${{ matrix.corpus }}" --out report.md > /dev/null && cat report.md
           } >> "$GITHUB_STEP_SUMMARY"
