@@ -2570,8 +2570,9 @@ warnings as errors.
   annotate, and a declaration that a refining module inherits is reported once, where it is
   written. Under
   `--modular-termination` the warning stays, since that option checks these calls only in the
-  code verified with it. Disabled by default. Use `warn-unchecked-termination = true` in a
-  project file's `[options]` section.
+  code verified with it. Enabled by default; `--warn-unchecked-termination=false`, or
+  `warn-unchecked-termination = false` in a project file's `[options]` section, turns it off, and so
+  does the hidden `--legacy-no-unchecked-termination-warning`, kept for migration and comparison.
 
 Legacy options
 

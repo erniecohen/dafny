@@ -1099,14 +1099,16 @@ namespace Microsoft.Dafny {
     }
 
     /// <summary>
-    /// Under --warn-unchecked-termination, reports each trait with {:termination false} and each
+    /// Under --warn-unchecked-termination, on by default, reports each trait with {:termination false} and each
     /// class or trait with @AssumeCrossModuleTermination, the declarations that "dafny audit" reports
     /// as unchecked termination assumptions.  As for an assume statement, an {:axiom} attribute on the
     /// declaration, or --allow-axioms, acknowledges the assumption and suppresses the warning.
-    /// Declarations that this run does not verify are not reported.
+    /// Declarations that this run does not verify are not reported.  The hidden
+    /// --legacy-no-unchecked-termination-warning restores the earlier silence.
     /// </summary>
     private void WarnUncheckedTermination(IEnumerable<TopLevelDecl> declarations) {
-      if (!Options.Get(CommonOptionBag.WarnUncheckedTermination) || Options.Get(CommonOptionBag.AllowAxioms)) {
+      if (!Options.Get(CommonOptionBag.WarnUncheckedTermination) || Options.Get(CommonOptionBag.LegacyNoUncheckedTerminationWarning) ||
+          Options.Get(CommonOptionBag.AllowAxioms)) {
         return;
       }
       // Under --modular-termination, the calls are checked in the program being verified, but not in

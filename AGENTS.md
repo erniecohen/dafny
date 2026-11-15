@@ -79,6 +79,16 @@ changes with that reason on record ("The verdict gates", below).  A feature that
 replaces an assumption with a check, such as `--modular-termination`, is not a
 soundness fix: it stays opt-in until it is believed sound.
 
+**An exception the owner made.**  On 2026-11-15 the owner decided ("Yes, default-on")
+that `--warn-unchecked-termination` is on by default, although it is a new warning
+and not a soundness fix.  It reports `{:termination false}` and
+`@AssumeCrossModuleTermination`, unchecked premises through which a program can prove
+`false` ([issue 211](https://github.com/erniecohen/dafny/issues/211)).  Like a soundness
+fix, it has a hidden opt-out, `--legacy-no-unchecked-termination-warning`.  It changes
+no verdict and no resource count, only the diagnostics and, without
+`--allow-warnings`, the exit code.  Other new warnings stay opt-in unless the owner
+decides otherwise.
+
 ## Merging fix pull requests
 
 Every product change updates `.github/review/base` and appends its test to
