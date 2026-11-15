@@ -757,6 +757,7 @@ public static class ModularTerminationRecords {
     CommonOptionBag.MapComprehensionDomainTriggers,
     CommonOptionBag.HeapFreeLambdaFacts,
     CommonOptionBag.StatementExpressionConclusions,
+    CommonOptionBag.QuantifiedCheckCallFacts,
     CommonOptionBag.TraitRankDecreases,
     CommonOptionBag.ConsistentObligationChecks,
     CommonOptionBag.RawPointers,
