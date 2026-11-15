@@ -9,7 +9,7 @@ static class ResolveCommand {
   public static Command Create() {
     var result = new Command("resolve", "Only check for parse and type resolution errors.");
     result.AddArgument(DafnyCommands.FilesArgument);
-    foreach (var option in DafnyCommands.ConsoleOutputOptions.Concat(DafnyCommands.ResolverOptions)) {
+    foreach (var option in DafnyCommands.ConsoleOutputOptions.Concat(DafnyCommands.ResolverOptions).Concat(DafnyCommands.LibraryAdmissionOptions)) {
       result.AddOption(option);
     }
     DafnyNewCli.SetHandlerUsingDafnyOptionsContinuation(result, async (options, _) => {
