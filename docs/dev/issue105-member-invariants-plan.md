@@ -34,7 +34,7 @@ The consequences, each argued below:
 | When checked, value types | Where a raw value is used at type `T`. |
 | When checked, objects | One obligation per constructor, emitted at `new;` (explicit or implicit).  Because the state it reads cannot change, this is the same obligation as "at constructor exit", not an extra one. |
 | Newtypes | The `x: B \| P(x)` constraint *is* the invariant.  The old syntax is kept as sugar during migration. |
-| Codatatypes | Included.  The type is a greatest fixed point; the invariant is local to a node, and the result of a co-recursive call is not assumed to have it (section 3.8). |
+| Codatatypes | Included.  The type is a greatest fixed point.  A co-recursive function is checked prefix-wise, as a greatest lemma is: the result of a co-recursive call counts as a `T` only as the component it is placed in, never in the proof of an invariant.  The raw type is raw at every depth (section 3.8). |
 | Inhabitance | A value type with an invariant is possibly empty unless it declares a `witness`.  Its raw type is as inhabited as the type is today.  Reference types are unaffected. |
 | Quantifying over the type | Not in the type's own invariant or in what the invariant reaches, unless the quantifier is bounded by a collection.  One condition for every kind of type. |
 | Repeated obligations | None.  Each conjunct is proved once per construction site; inherited conjuncts are not re-proved in a refinement, and an ancestor reached by two paths counts once (section 4.4). |
@@ -56,8 +56,9 @@ The plan differs from the upstream proposal in these places, on purpose:
    (section 3.3).  Such an invariant defines the type's extension in terms of
    itself, and the definition may have no solution.
 4. **More places.**  Newtypes, abstract types and codatatypes are included.
-   Codatatypes need a rule about co-recursive calls that inductive types do
-   not (section 3.8).
+   Codatatypes are checked prefix-wise, because a co-recursive call has no
+   termination argument to justify assuming that its result is in the type
+   (section 3.8).
 
 ## 2. Syntax and placement
 
@@ -96,7 +97,7 @@ Wherever members can be declared.
 | `class` | yes | Checked at `new;` (section 3.4). |
 | `trait` (reference or general) | yes | Every extending type inherits it. |
 | `datatype` | yes | Section 3.5. |
-| `codatatype` | yes | With the restrictions of section 3.8. |
+| `codatatype` | yes | Checked prefix-wise; the raw type is raw at every depth (section 3.8). |
 | `newtype` | yes | Its constraint is an invariant; `newtype N = x: B \| P(x)` is sugar (section 3.5). |
 | abstract type (`type T { ... }`) | yes | The invariant is over its member functions, and every refinement must honour it (section 4.3). |
 | subset type, type synonym | no | They cannot declare members.  A subset type keeps its constraint clause. |
@@ -132,7 +133,8 @@ not itself assume the invariant; if it could, the invariant would be defined
 in terms of a function that takes the invariant for granted.
 
 **Raw members.**  A member function or constant is a *raw member* of `T` if an
-invariant of `T` applies it to `this`, or another raw member of `T` does.
+invariant of `T` applies it to `this` or to another value of type `raw T`, or
+another raw member of `T` does.
 
 - In a raw member, `this` has type `raw T`.  Its body and specification are
   checked without the invariant.
@@ -167,6 +169,9 @@ datatype SortedList = Nil | Cons(head: int, tail: SortedList) {
 A raw value is raw only at the top.  `raw SortedList` is the set of `Nil` and
 `Cons(h, t)` with `t` a `SortedList`.  A declaration that wants a raw
 component says so: `Cons(head: int, tail: raw SortedList)`.
+
+A codatatype is the exception.  Its values are not built from smaller ones, so
+its raw type is raw at every depth (section 3.8).
 
 ### 3.2 Reads restrictions
 
@@ -635,7 +640,7 @@ second declaration.
 | Quantify over `T` in a member of `T_` | rejected: "recursive constraint dependency" | accepted, outside the cone |
 | Refine or extend | `T_` can be, `T` cannot, and the pair must be kept in step by hand | the one type can be, and the raw type follows |
 | Strengthen in a refinement | a predicate with an ever-stronger postcondition | add an `invariant` |
-| Recursion | `T_`'s components are `T_` or `T`, chosen by hand | components are finished unless declared raw |
+| Recursion | `T_`'s components can only be `T_`: a component of type `T` is rejected as a recursive constraint dependency.  An invariant on every node is a recursive predicate over the whole value | components are finished unless declared raw (for a codatatype, section 3.8) |
 | Intermediate invalid values | have type `T_` | have type `raw T` |
 
 **Quantifying over the type.**  Today the resolver puts the subset type and its
@@ -668,8 +673,12 @@ an invariant.
 
 ### 3.8 Codatatypes
 
-A codatatype may declare an invariant.  Two things differ from an inductive
-type, and both come from the same fact: a value can be a component of itself.
+A codatatype may declare an invariant.  Sections 3.1 to 3.7 apply to it, with
+two changes.  Both come from one fact: a value of a codatatype can be a
+component of itself.
+
+- A co-recursive function is checked prefix-wise, as a greatest lemma is.
+- The raw type of a codatatype is raw at every depth, not only at the top.
 
 **What the type means.**  For an inductive type, "the raw values whose
 components are in their types and which satisfy the invariant" is a definition
@@ -680,99 +689,249 @@ on, and the type is the *greatest* set that fits:
 T  =  the greatest X such that every K(a) in X has  a in types[T := X]  and  Inv_K(a)
 ```
 
-By the extension condition the invariant does not mention `X`, so the operator
-is monotone and the greatest fixed point exists.  This reading is not a
-choice.  It is what a codatatype without an invariant already means.
+`types[T := X]` are the declared component types with `X` in place of `T`.
+The invariant does not depend on `X`, by the extension condition and by the
+rule on raw types below.  So the operator is monotone and the greatest fixed
+point exists.  This reading is not a choice.  It is what a codatatype without
+an invariant already means.
 
-**Why the constructor check is unsound as it stands.**  The check at
-`Cons(1, s)` assumes that the argument `s` is a value of the type.  When `s`
-is the value being built, the check assumes what it is proving:
-
-```dafny
-codatatype Stream = Cons(head: int, tail: Stream) {
-  invariant exists n :: Nth(this, n) == 0          // a zero occurs somewhere
-}
-function Ones(): Stream { Cons(1, Ones()) }
-```
-
-To check `Cons(1, Ones())`, assume the invariant of `Ones()`: a zero occurs in
-it at some `n`.  Then one occurs in `Cons(1, Ones())` at `n + 1`.  The check
-passes, and the stream of ones has no zero.
-
-The fault is not only in invariants of that shape.  With the assumption in
-place, any invariant can be established from nothing:
+**The problem is a circular assumption.**
 
 ```dafny
 codatatype S = Cons(head: int, tail: S) { invariant false }
 function F(): S { Cons(1, F()) }
 ```
 
-The check at `Cons(1, F())` assumes `F()` is an `S`.  No `S` exists, so the
-assumption is `false` and the check passes.  Restricting what the invariant
-may say does not help here.  The assumption about the co-recursive call is
-what has to go.
+The check at `Cons(1, F())` must prove the invariant of the new node.  If it
+may assume that `F()` is an `S`, it assumes `false`, because no `S` exists,
+and it passes.  `S` is then both empty and inhabited.
 
-**The sound condition.**  Two rules, both needed.
+An inductive type does not have the problem, and the reason is termination.
+A recursive call must decrease a measure.  "The result of the recursive call
+is in `T`" is an induction hypothesis: it is about a smaller argument, and the
+smallest arguments get no help from it.  A co-recursive call decreases
+nothing.  The assumption that its result is in `T` is the statement being
+proved, about the value being defined.
 
-1. **The co-call rule.**  In a function body, the result of a co-recursive
-   call is accepted as a constructor argument of its declared type, and
-   nothing is assumed of it: not that it is in the type, and not that it or
-   anything inside it satisfies an invariant.  Accepting it is the coinductive
-   step.  Assuming nothing is what keeps the step honest.
+What the invariant says does not matter.  `false` shows it, and so does any
+invariant that follows from the tail's invariant: with "a zero occurs
+somewhere", a zero at position `n` of `Ones()` is a zero at position `n + 1`
+of `Cons(1, Ones())`.  So no restriction on the form of the invariant is the
+fix.  The assumption is what has to change.
 
-   Dafny has the rule already, in another form: a function with a
-   postcondition may not make co-recursive calls
+**Prefixes.**  The greatest fixed point is reached from above:
+
+```
+T#0      =  raw T
+T#(k+1)  =  { K(a)  |  a in types[T := T#k]  and  Inv_K(a) }
+T        =  the intersection of the T#k
+```
+
+`T#k` is the set of raw values whose top `k` layers satisfy the invariant.
+Natural numbers are enough.  A component is in `types[T := X]` when *every*
+`T`-typed value inside it is in `X`, so the intersection of the `T#k` is
+closed under the operator.  Greatest predicates need ordinals because a body
+may put the recursive call under an existential quantifier.  The component
+types of a codatatype cannot.
+
+**The rule.**  The functions of a co-recursive cluster are checked as a
+greatest lemma is:
+
+> For an arbitrary `k`, assume that the result of every co-recursive call is
+> in `T#k`.  Prove that the value of each body is in `T#(k+1)`.
+
+By induction on `k`, every result is in every `T#k`, and so in `T`.  Said
+without `k`: the assumption that a co-recursive call returns a `T` must be
+guarded.  It is used once, to give its type to the component in which the
+call sits.  It is not available for proving an invariant.
+
+**What the rule comes to.**  Take a node `Cons(e, G(x))` in a body.
+
+- Its tail is in `T#k`.  That is the assumption.
+- Its invariant must be proved for every `k`, including `k = 0`, where the
+  assumption says only that the tail is in `raw T`.  The invariant is one
+  predicate, not a family indexed by `k`.  So the case `k = 0` is the whole
+  obligation:
+
+  > The invariant of a node built over a co-recursive call is proved knowing
+  > of the call's result only that it is in `raw T`.
+
+- A node inside a node is one level up.  In `Cons(a, Cons(b, G(x)))` the inner
+  node is in `T#(k+1)` once its invariant is proved, and the outer one is then
+  in `T#(k+2)`.  The proof of the outer invariant may use the inner invariant,
+  which has just been checked, and nothing about `G(x)`.  The level counts the
+  layers that have been checked.
+
+```dafny
+codatatype Zs = Cons(head: int, tail: Zs) {
+  function Nth(n: nat): int decreases n { if n == 0 then head else tail.Nth(n - 1) }
+  invariant exists n: nat :: Nth(n) == 0            // every suffix has a zero
+}
+function Zeros(): Zs { Cons(0, Zeros()) }           // accepted: n = 0
+function Alt(): Zs { Cons(1, Cons(0, Alt())) }      // accepted: n = 0 for the inner node, n = 1 for the outer
+function Ones(): Zs { Cons(1, Ones()) }             // error: invariant might not hold
+function F(): S { Cons(1, F()) }                    // error: invariant might not hold
+```
+
+`Ones` fails because a zero must be exhibited in `Cons(1, Ones())`, and
+nothing is known of `Ones()` but its raw type.  `F` fails because `false` must
+be proved.  Both type declarations are accepted.  `Zs` is the type of streams
+with infinitely many zeros, and `S` is an empty type.
+
+**The raw type of a codatatype is raw at every depth.**  `T#0` has to be a
+type that exists before any invariant is known to hold.  The raw type of
+section 3.1 is not that: its components are finished.  For an inductive type,
+"the components are finished" is recursion on structure.  For a codatatype a
+component may be the value itself, and "the components are finished" is the
+assumption the rule forbids.  So, for a codatatype:
+
+- `raw T` is the declaration with its invariant removed and every
+  co-recursive component read as raw.  It is the type the codatatype would be
+  without the invariant.  A co-recursive component is one whose type depends
+  on a codatatype in the same recursive cluster of declarations.  An inductive
+  datatype in such a cluster is read the same way.
+- In the invariant and in raw members, `this.tail` has type `raw T`.  They are
+  checked without the invariant at any depth.  A member applied to a receiver
+  of type `raw T` is a raw member, as in section 3.1.
+- A constructor accepts raw co-recursive components and yields a raw value.
+  Using the value at type `T` proves membership: the invariant of the node,
+  and that each co-recursive component is a `T`.  The second part is immediate
+  for a component whose static type is `T`.
+
+The rule is needed, not only tidy.  With the raw type of section 3.1:
+
+```dafny
+codatatype Zs = Cons(head: int, tail: Zs) {
+  function Nth(n: nat): int decreases n { if n == 0 then head else tail.Nth(n - 1) }
+  predicate Q() ensures Q() { exists n: nat :: Nth(n) == 0 }
+  invariant Q()
+}
+function Ones(): Zs { Cons(1, Ones()) }
+```
+
+`Q` is a raw member.  If its `this` had a finished tail, the postcondition
+would be provable: the tail has a zero, so `this` has one.  The check at
+`Cons(1, Ones())` would then pass by the postcondition of `Q`, with nothing
+assumed about `Ones()` directly.  The assumption that the tail is finished has
+moved into `Q`.  With a tail of type `raw Zs` the postcondition of `Q` cannot
+be proved, and the error is reported there.
+
+The cost is that the invariant of a codatatype cannot call an ordinary member
+on a co-recursive component, or lean on that component's invariant to be well
+formed.  It can read as deep as it likes: `invariant head <= tail.head` is
+allowed.
+
+**Where `raw T` for a co-recursive call comes from.**  "The result of the
+co-recursive call is in `raw T`" is itself a coinductive fact.  `raw T` is a
+greatest fixed point too, and its components have types.  It may be assumed
+because it is established first and separately, by the check Dafny makes
+today, in which nothing is assumed of a co-recursive call.  So a node has two
+kinds of obligation, and they see different things:
+
+| Obligation at a node | May assume, of the result of a co-recursive call |
+|---|---|
+| Each component has its declared type (today) | Nothing |
+| The node's invariant (new) | That it is in `raw T` |
+
+The second row assumes what the first row concludes.  Neither assumes that the
+result is in `T`.  The two must be kept apart in the verification condition.
+If the raw type of a co-recursive call's result reached the obligations of the
+first row, a field whose type is empty would discharge them, which is
+https://github.com/erniecohen/dafny/issues/143 again.  Control `V7c` of
+section 6.4 is the test.
+
+**What Dafny does today, and whether reusing it is enough.**  The pinned fork
+treats a self-call under a constructor in three ways, depending on what the
+function promises about its result.
+
+1. *The function has an `ensures` clause.*  The call is not co-recursive
    (`NoBecauseFunctionHasPostcondition` in
-   `Source/DafnyCore/Resolver/CoCallResolution.cs`).  A result type with an
-   invariant is a postcondition.  Rather than forbid the call, the plan
-   withholds what the postcondition would say.
+   `Source/DafnyCore/Resolver/CoCallResolution.cs`).  It is an ordinary
+   recursive call and must terminate: "cannot prove termination ... (note that
+   only functions without any ensures clause can be called co-recursively)".
+   The source gives `ensures false` as the reason, which is the circular
+   assumption above.
+2. *The result type is a constrained newtype over a codatatype*, under
+   `--extended-newtype-bases`.  The same demotion
+   (`NoBecauseFunctionHasConstrainedReturnType`).
+3. *The result type is a subset type over a codatatype.*  The call is not
+   demoted.  It stays co-recursive and falls under the rule that fixed
+   https://github.com/erniecohen/dafny/issues/143
+   (https://github.com/erniecohen/dafny/pull/159).  A guarded co-recursive
+   call is a *suspended value*.  The verifier does not assume `canCall` for
+   it, so it has neither the call's type nor its definition.  When a suspended
+   value is observed, by a destructor, a `match`, a `let`, or as an argument
+   to an ordinary function, its membership is asserted and never assumed.
+   The effect on a subset-type result is that the function is rejected
+   whatever the constraint says:
 
-   A call that is not co-recursive is an ordinary call.  It terminates, and
-   its result has its type.
+   ```dafny
+   codatatype St = Cons(head: int, tail: St)
+   type Any = s: St | true witness *
+   function Plain(): St { Cons(1, Plain()) }      // accepted
+   function Triv(): Any { Cons(1, Triv()) }       // error: value does not satisfy the subset constraints of 'Any'
+   ```
 
-2. **The invariant is local.**  The invariant of a codatatype, and its raw
-   members, may not mention a component whose type depends on the codatatype.
-   It speaks of one node.
+   The check of the result asks for the whole node to be in the base type.
+   That includes the co-recursive call's result, and nothing can show it.
 
-With both rules the argument is short.  Let `X` be the set of values that
-verified code produces.  Each one is `K(a)` for a constructor application
-whose conversion was checked.  The invariant mentions only the components
-that are not co-recursive, and those are in their types by induction on the
-evaluation that produced them.  So `Inv_K(a)` holds as checked.  The
-co-recursive components were produced the same way, so they are in `X`.
-Therefore `X` is contained in the greatest fixed point.
+Also, the recursive form of the workaround cannot be written today.  A
+datatype or codatatype with a component whose type is a subset type over
+itself is rejected: "recursive constraint dependency involving a subset type".
+So the only constraint a co-recursively built node carries today is the type
+of a field, and issue 143 was about exactly that.
 
-**The choice the owner asked for.**
+Is reusing these rules enough?
 
-- *Bounded depth, or safety only.*  The invariant looks a bounded distance
-  into the value.  Rule 2 is the strict form: depth zero.
-- *The invariant read as a greatest fixed point, like a copredicate.*  The
-  invariant may follow co-recursive components without bound, and holds if
-  nothing ever refutes it.
+- *Demotion* (1 and 2) is sound and gives up too much.  A type with an
+  invariant puts a postcondition on every function that returns it.  If each
+  such function had to terminate, no value of the type could be built
+  co-recursively, and a type like `Zs` would have no values that a program
+  can produce.
+- *The suspended-value rule* (3) is sound.  Applied unchanged to a type with
+  an invariant, it would reject every co-recursive function whose result is
+  `T`, for the reason it rejects `Triv`.  It never grants the one guarded use
+  of the assumption: that the call's result is in `T` as the component it is
+  placed in.
+- The suspended-value rule is the right base.  It is the first row of the
+  table above, already implemented and tested.  The plan adds the second row.
+  Where a node over suspended values is used at type `T`, the verifier does
+  not ask for the whole node to be in `T`.  It asks that the components that
+  are not suspended have their finished types, and that the node's invariant
+  holds given that the suspended calls are raw.
+- The rule on raw types has no counterpart today and is needed in addition.
+  Today a constraint cannot call a function over the type it constrains,
+  because of the cycle check, so nothing can carry an assumption about a
+  component into the check of a node.  A raw member can.
 
-**Recommendation: bounded depth, in its strict form, with the co-call rule.**
+The same prefix reading would let a postcondition on a co-recursive function
+be proved instead of forbidden.  That is a separate proposal.
 
-- The type is a greatest fixed point under either choice.  The choice is
-  only about what one node's invariant may look at.
-- A local invariant is established by a local check.  Under the copredicate
-  reading, establishing the invariant of a co-recursively built value is a
-  coinductive proof.  An assertion at the constructor cannot carry it.  It
-  needs what a `greatest lemma` gets: a prefix form of the invariant and
-  induction on the depth.  That is a design of its own.
-- A local invariant on every node is already a global safety property:
-  "every element is positive" is `invariant head > 0`.
-- Neither choice admits the counterexample's invariant.  "A zero occurs
-  somewhere" is a liveness property.  It is not a greatest fixed point of
-  anything, and no guarded co-recursion establishes it.
+**Looking into the result of a co-recursive call.**
 
-Depth one or more (`invariant head <= tail.head`, a sorted stream) is sound in
-principle, and is the first relaxation to want.  Its check at
-`Cons(h, G())` needs `G().head`, which the co-call rule withholds, so it needs
-a way to unfold the call without assuming its type.  It is left to stage 7.
+```dafny
+codatatype Sorted = Cons(head: int, tail: Sorted) { invariant head <= tail.head }
+function Up(n: int): Sorted { Cons(n, Up(n + 1)) }
+```
 
-Everything else about a codatatype is as for a datatype: constructor
-applications are raw, conversion checks the invariant, a witness makes the
-type nonempty.
+The obligation is `n <= Up(n + 1).head`.  It needs a fact about the *value*
+of the co-recursive call, not about its type.  The defining equation of `Up`
+supplies it, and using the equation is sound: a guarded definition has a
+solution whatever the types say.  Today's rule withholds the equation
+together with the type, because one antecedent guards both in the encoding.
+Until they are separated, `Up` is rejected.  Separating them is listed with
+the relaxations (section 7.2).  It is all that an invariant of bounded depth
+needs.
+
+**Proofs that are not one step.**  The check above is the proof that a
+function body can carry: one step for each node.  Membership that needs a
+coinductive argument of its own, with a stronger hypothesis or another lemma,
+would be proved by a greatest lemma that concludes `r is T` for an
+`r: raw T`, with `T#k` as the prefix predicate.  That is not designed here.
+It is listed with the relaxations.
+
+Everything else about a codatatype is as for a datatype: conversion checks
+the invariant, and a witness makes the type nonempty.
 
 ## 4. Inheritance and refinement
 
@@ -906,10 +1065,10 @@ module Impl refines Spec {
 - **The extension condition** is checked in the abstract module against what
   is visible there, the specifications of the bodiless functions, and again in
   each refinement, against the bodies.
-- **A codatatype as the refinement** must also meet section 3.8.  An abstract
-  type's invariant is over member functions, and whether those are local
-  cannot be known until they have bodies.  The check is made in the
-  refinement.
+- **A codatatype as the refinement** reads `raw` as section 3.8 does.  The
+  bodies it gives to the abstract type's raw members are checked with raw
+  co-recursive components.  Nothing in the abstract module depends on the
+  difference, because an abstract type shows no components.
 
 An abstract type with no invariant may be refined by a type that has one, as
 before.
@@ -998,9 +1157,18 @@ axiom (forall G, v ::  { $Is(v, Tclass.T(G)) }
 where `P₁ …` are the distinct ancestors that declare invariants.  The raw type
 gets the axioms the type has today:
 
-- **Datatype, codatatype.**  For each constructor,
+- **Datatype.**  For each constructor,
   `$Is(#D.K(a), Tclass.D.raw(G)) <==> $Is(a₁, T₁) ∧ … ∧ $Is(aₙ, Tₙ)`, where a
   component declared with type `D` has `Tᵢ = Tclass.D(G)`, the finished type.
+- **Codatatype.**  The same axiom, except that a co-recursive component has
+  the raw type, `Tᵢ = Tclass.D.raw(G)` (section 3.8).  The equivalence above
+  would then constrain only the top node, so for a codatatype it is stated for
+  each constructor instead:
+  `$Is(#D.K(a), Tclass.D(G)) <==> $Is(a₁, T₁) ∧ … ∧ $Is(aₙ, Tₙ) ∧ D#Inv(G, #D.K(a)) ∧ …`
+  with the finished component types, together with
+  `$Is(v, Tclass.D(G)) ==> $Is(v, Tclass.D.raw(G))`.  These are the equations
+  of a fixed point.  They do not let the prover conclude that a co-recursively
+  built value is in the type.  The check of section 3.8 does that.
 - **Class.**  `$Is(o, Tclass.C.raw?(G)) <==> o == null ∨ dtype(o) == Tclass.C?(G)`.
   The finished type is
   `$Is(o, Tclass.C?(G)) <==> o == null ∨ (dtype(o) == Tclass.C?(G) ∧ invariants)`.
@@ -1023,7 +1191,9 @@ Obligations.
 - **Conversion.**  Where an expression of type `raw T` is used at type `T`:
   one assertion per conjunct, own and inherited, of the invariant applied to
   the value.  This is the place the subset-type check sits today
-  (`CheckSubrange`).
+  (`CheckSubrange`).  For a codatatype the co-recursive components must also
+  be shown to have the finished type, which is immediate when that is their
+  static type.
 - **`new;`.**  In the translation of `DividedBlockStmt`
   (`Source/DafnyCore/Verifier/Statements/BoogieGenerator.TrStatement.cs`), the
   first division runs on local surrogates of the fields, and `new;` then
@@ -1032,27 +1202,38 @@ Obligations.
   conjunct of the invariant of `this`.  The finished type then follows from
   the equivalence above.  There is no assumption of the finished type to
   place before or after the check.
-- **Co-recursive calls** (section 3.8).  Within the functions of one
-  recursive cluster, the fact that the result of a co-recursive call has its
-  type is not available.
+- **Co-recursive calls** (section 3.8).  As today, `canCall` is not assumed
+  for a guarded co-recursive call, so neither its type nor its definition is
+  available in the body.  Where a constructor application over such calls is
+  used at a type `T` with an invariant, the verifier does not assert `$Is` of
+  the whole value at `T`.  It takes the nested constructor applications from
+  the innermost outward.  For each node it asserts that the components holding
+  no suspended call have their finished types.  Then it asserts `T#Inv` of the
+  node, in a scope that assumes the raw type of the suspended calls and the
+  invariants of the inner nodes.  That assumption does not leave the scope.
+  Outside the cluster, the function's consequence axiom gives the result its
+  type, as for any function.
 
 ### 5.2 Why it is consistent
 
 Fix a program that meets the reads restrictions, the extension condition, the
-raw-member rule, and for codatatypes the locality rule.  Build a model.
+raw-member rule, and for codatatypes the rule that the raw type is raw at
+every depth.  Build a model.
 
 **The raw types** are what the types are today.  Raw datatype values are
-constructor applications to components in their types.  Raw references of
-dynamic type `C` are all references with that dynamic type, with every
-combination of `const` values in the constants' types.  Raw newtype values
-are the base values.
+constructor applications to components in their types.  Raw codatatype values
+are the values of the codatatype declared without its invariant.  Raw
+references of dynamic type `C` are all references with that dynamic type, with
+every combination of `const` values in the constants' types.  Raw newtype
+values are the base values.
 
 **The invariants are fixed predicates of raw values.**  The cone of `T`'s
 invariant does not refer to the extension of `T` or of a type that depends on
 it, by quantifying (clauses 1 to 4) or by testing a raw value (clause 5).
 What it applies to a raw `this` is a raw member, defined on all raw values
 without reference to the invariant.  What it applies to a component is
-applied to a value that is already in its type.
+applied to a value that is already in its type.  For a codatatype a
+co-recursive component is itself raw, and only raw members are applied to it.
 
 **The types.**  Order the types so that each comes after the types whose
 extensions its cone refers to.
@@ -1066,8 +1247,9 @@ extensions its cone refers to.
   own component.  Then `o ∈ C ⟺ dtype(o) = C ∧ Inv(o)` is a definition by
   recursion on the stage.
 - *Codatatypes.*  The greatest fixed point of section 3.8.  It exists because
-  the invariant is a fixed predicate, and it satisfies the equivalence, since
-  a greatest fixed point is a fixed point.
+  the invariant is a fixed predicate of raw values, which the rule on raw
+  types secures.  It satisfies the equations of section 5.1, since a greatest
+  fixed point is a fixed point.
 - *Newtypes and abstract types.*  A subset of the raw values, with nothing
   recursive about it.
 
@@ -1103,8 +1285,21 @@ than occur; that is a loss of completeness in no program anyone can write.
 all: for `Liar` and `Liar2` of section 3.3 no set satisfies the equivalence.
 
 **Codatatypes.**  The model shows the axioms are consistent.  It does not
-show that the value a co-recursive function denotes is in the type; that is
-the argument of section 3.8, and it rests on the co-call rule.
+show that the value of a co-recursive function is in its type.  That is the
+induction of section 3.8, and it has two steps.
+
+1. By today's rule, every value such a function denotes is in its raw type.
+   Nothing about a co-recursive call was assumed to show it.
+2. Fix `k`, and suppose the result of every co-recursive call is in `T#k`.
+   Take a node of a body.  Its components that are not suspended are in their
+   finished types, as checked.  Its suspended components are in `T#k`: the
+   calls by the supposition, and the inner nodes because they are in
+   `T#(k+1)` or higher and the `T#k` decrease.  Its invariant was proved from
+   the raw types of the calls, which step 1 supplies, and from the invariants
+   of the inner nodes.  So the node is in `T#(k+1)`.
+
+The argument fails if an obligation of step 1 can see the assumption that
+step 2 makes.  That is why the two are kept apart.
 
 Per `AGENTS.md`, these axioms need vacuity controls: tests in which
 `assert false` must still fail in contexts that trigger them.  Section 6.4
@@ -1124,7 +1319,8 @@ so anything verifies there.  The channels, and what closes each:
 | Class field of such a type | Existing rule: the class must have a constructor that assigns it |
 | Type argument for `(0)` or `(00)` | Characteristic check |
 | Enclosing datatype believed inhabited through a component | `GetAutoInit` propagation |
-| Result of a co-recursive call assumed to be in its type | The co-call rule (section 3.8) |
+| Result of a co-recursive call assumed to be in its type | The prefix-wise check (section 3.8), on top of the suspended-value rule the fork already has |
+| A raw member of a codatatype assuming that a co-recursive component is finished | The raw type of a codatatype is raw at every depth (section 3.8) |
 | Abstract type with an invariant, refined by a type that cannot carry it | Rejected (section 4.3) |
 | Bodiless function or method returning the type | An assumption today, for any possibly-empty type; unchanged, and it should appear in `dafny audit` |
 | `new C` on a class with no constructor | Rejected: the class must declare one |
@@ -1182,12 +1378,14 @@ of the type a recursive definition, which may have no solution.  The extension
 condition excludes it, for every kind of type.  It is sufficient, not
 necessary, and its clauses 2 to 5 are conservative.
 
-**Co-recursion.**  Section 3.8.  The co-call rule is easy to state and easy
-to get wrong in the translator, because the typing of a function's result is
-part of an axiom that is otherwise wanted.  The `invariant false` control of
-section 6.4 is the test.  Whether a subset type over a codatatype has the
-same exposure today is a question for a separate issue; this plan does not
-claim it.
+**Co-recursion.**  Section 3.8.  The exposure existed for the types of
+fields and was closed in the fork
+(https://github.com/erniecohen/dafny/issues/143).  Invariants add two ways to
+reopen it.  One is to let the raw type of a co-recursive call's result, which
+the invariant check assumes, reach the component-type obligations.  The other
+is to let an invariant or a raw member assume that a co-recursive component is
+finished.  Controls `V7`, `V7b` and `V7c` of section 6.4 are the tests, and
+the tests of issue 143 must keep their verdicts.
 
 **Trigger cost.**  The equivalence for a class triggers on
 `$Is(o, Tclass.C?)`, which is a common term.  It appears only for classes
@@ -1330,11 +1528,16 @@ newtype Even' = int { invariant this as int % 2 == 0  witness 0 }
 ```
 
 ```dafny
-// A codatatype with a local invariant.
+// Codatatypes.  The invariant of each new node is proved.  A co-recursive call is only known to be raw.
 codatatype Pos = Cons(head: int, tail: Pos) { invariant head > 0 }
-function From(n: int): Pos requires n > 0 { Cons(n, From(n + 1)) }
-                        // checked: n > 0.  Nothing is assumed of From(n + 1).
-lemma AllPositive(s: Pos, k: nat) ensures Nth(s, k) > 0     // by induction on k, from the type
+function From(n: int): Pos requires n > 0 { Cons(n, From(n + 1)) }       // checked: n > 0
+lemma AllPositive(s: Pos, k: nat) ensures Nth(s, k) > 0                  // by induction on k, from the type
+
+codatatype Zs = Cons(head: int, tail: Zs) {
+  function Nth(n: nat): int decreases n { if n == 0 then head else tail.Nth(n - 1) }
+  invariant exists n: nat :: Nth(n) == 0                                 // every suffix has a zero
+}
+function Alt(): Zs { Cons(1, Cons(0, Alt())) }                           // checked for the inner node, then the outer
 ```
 
 The abstract type of section 4.3 is the remaining accepted example.
@@ -1361,10 +1564,6 @@ datatype Liar2 = Liar2(f: int) {
   invariant No()
 }
 
-codatatype Stream = Cons(head: int, tail: Stream) {
-  invariant exists n :: Nth(this, n) == 0   // error: the invariant of a codatatype may not mention 'tail', or pass 'this' on
-}
-
 module Bad refines Spec {                   // Spec from section 4.3
   type T = int                              // error: 'T' has an invariant; a type synonym cannot carry it
 }
@@ -1382,9 +1581,8 @@ datatype D = D(x: nat, y: nat) {
   invariant x == y
   witness D(0, 1)                              // error: invariant might not hold
   function Inc(): D { this.(x := x + 1) }      // error at the result: invariant might not hold
-  predicate Ok() { Twice() == 2 * x }          // error: 'Ok' is used by the invariant, so 'this' is raw here,
-  invariant Ok()                               //        and 'Twice' needs a 'D'
-  function Twice(): nat { x + y }
+  function Gap(): nat { x - y }                // error: result might be negative.  'Gap' is used by an invariant,
+  invariant Gap() == 0                         //        so 'this' is raw here and x == y is not known
 }
 
 class Pos {
@@ -1399,8 +1597,22 @@ method M() {
 }
 ```
 
-Whether the `Ok` error belongs to the resolver or the verifier depends on how
-clause 5 is implemented; the first stage reports it in the resolver.
+Codatatypes (section 3.8):
+
+```dafny
+function Ones(): Zs { Cons(1, Ones()) }        // Zs from section 6.1.  error: invariant might not hold.
+                                               // Ones() is only known to be raw
+
+codatatype Zs' = Cons(head: int, tail: Zs') {
+  function Nth(n: nat): int decreases n { if n == 0 then head else tail.Nth(n - 1) }
+  predicate Q() ensures Q() { exists n: nat :: Nth(n) == 0 }   // error: postcondition might not hold.  'Q' is used by
+  invariant Q()                                                 //        the invariant, so 'this' and its tail are raw
+}
+
+codatatype Sorted = Cons(head: int, tail: Sorted) { invariant head <= tail.head }
+function Up(n: int): Sorted { Cons(n, Up(n + 1)) }   // error in the first codatatype stage: the check needs
+                                                     // Up(n + 1).head.  Accepted once the call can be unfolded
+```
 
 ### 6.4 Vacuity controls
 
@@ -1439,6 +1651,23 @@ function F(): S { Cons(1, F()) }               // must report: invariant might n
 
 If the result of the co-recursive call were assumed to be an `S`, `F` would
 verify, and `S` would be both empty and inhabited.
+
+`V7b` is the declaration of `Zs'` in section 6.3.  It must report the error in
+`Q`.  If a raw member could assume a finished tail, `Q` would verify, and
+`function Ones(): Zs' { Cons(1, Ones()) }` with it.
+
+`V7c` keeps the two kinds of obligation apart:
+
+```dafny
+type Impossible = x: int | false witness *
+codatatype P = P(w: W, f: Impossible)
+codatatype W = W(p: P) { invariant true }
+function Bad(): P { P(W(Bad()), 0 as Impossible) }    // must report an error at '0 as Impossible'
+```
+
+The invariant check of `W(Bad())` assumes that `Bad()` is a raw `P`.  No raw
+`P` exists.  If the assumption stayed in force after that check, the
+conversion to `Impossible` would pass.
 
 `V8` is `method V8(r: raw Interval) { var i: Interval := r; }`.  It must
 report an error at the assignment.  It records that a raw value is not taken
@@ -1505,9 +1734,11 @@ new nodes.
   and dynamically bound calls that clause 4 does not accept, directly.
   Compute the per-type-parameter "quantifies without a bound" flag on
   functions.
-- `Source/DafnyCore/Resolver/CoCallResolution.cs`: a co-recursive call whose
-  result type has an invariant is accepted and marked, so that the verifier
-  withholds its typing.  The locality rule for codatatype invariants.
+- `Source/DafnyCore/Resolver/CoCallResolution.cs`: no new disqualification.
+  A guarded self-call stays co-recursive when its result type has an
+  invariant.  It is not demoted, as a call to a function with an `ensures`
+  clause is.  The raw type of a codatatype, with raw co-recursive components,
+  belongs with the other typing rules for `raw`.
 - `Source/DafnyCore/AST/Types/Types.cs`: `GetAutoInit` for value types with
   invariants; subtyping for raw reference types.
 - `Source/DafnyCore/Resolver/ModuleResolver.cs`: "a class with an invariant
@@ -1529,8 +1760,15 @@ new nodes.
 - `Source/DafnyCore/Verifier/Statements/BoogieGenerator.TrStatement.cs`
   (`DividedBlockStmt`): assume the raw type, translate the `by` block, assert
   the conjuncts.
-- The function consequence axiom: withhold the result's typing for marked
-  co-recursive calls.
+- `Source/DafnyCore/Verifier/BoogieGenerator.ExpressionWellformed.cs`: the
+  suspended-value checks of https://github.com/erniecohen/dafny/pull/159 stay
+  as they are.  Add the obligation of section 3.8 where a constructor
+  application over suspended values is used at a type with an invariant: the
+  components that are not suspended, at their finished types, and then the
+  invariant, in a scope of its own that assumes the raw type of the suspended
+  calls.  The relaxation that unfolds a co-recursive call needs the function
+  consequence axiom split, so that a call's definition is available without
+  its result type.
 - A well-formedness procedure for each invariant and each witness, in the
   manner of `AddWellformednessCheck` for subset types.
 - `Source/DafnyCore/Verifier/ProofObligationDescription.cs`: two descriptions,
@@ -1567,16 +1805,16 @@ the option off.
 | 4 | **Traits and `extends`.**  Inherited invariants and raw members, the conjunction at `new;`, export visibility.  General traits extended by datatypes. | Control V3; a cross-module extension test. |
 | 5 | **Refinement and abstract types.**  Added invariants, replaced witnesses, the tests of section 4.2, invariants on abstract types. | The `M0`/`M1` and `Spec`/`Impl` examples; a refinement that must fail at an inherited `new;`. |
 | 6 | **Newtypes.**  The member form, the sugar, native representations. | Every existing newtype test gives the same verdict and resource count in both forms. |
-| 7 | **Codatatypes.**  The co-call rule and the locality rule. | Control V7; the `Pos` and `Stream` examples. |
-| 8 | **Relaxations**, each with its own argument: `new by`; the exact clause 2; conversions in the cone; stored function values and dynamic dispatch in a reference-free type's cone; positive occurrences under a fixed-point reading; codatatype invariants of depth one and more. | Per relaxation. |
+| 7 | **Codatatypes.**  The raw type that is raw at every depth.  The prefix-wise check, on top of the suspended-value rule, without unfolding. | Controls V7, V7b and V7c; the `Pos`, `Zs` and `Ones` examples; the tests of issue 143 keep their verdicts. |
+| 8 | **Relaxations**, each with its own argument: `new by`; the exact clause 2; conversions in the cone; stored function values and dynamic dispatch in a reference-free type's cone; positive occurrences under a fixed-point reading; unfolding a co-recursive call in an invariant check (the `Sorted` example); membership in a codatatype proved by a greatest lemma. | Per relaxation. |
 
 ## 8. Open questions for the owner
 
 Settled by the owner, and assumed above: raw types exist and are nameable;
 invariants go wherever members can be declared, abstract types and newtypes
 included, with the newtype constraint as sugar; `this` is not limited to
-component selection; codatatypes are included; the object check is at `new;`;
-every obligation is proved once.
+component selection; codatatypes are included, and are checked prefix-wise;
+the object check is at `new;`; every obligation is proved once.
 
 Each remaining question has a recommendation.  The plan above assumes it.
 
@@ -1618,10 +1856,16 @@ Each remaining question has a recommendation.  The plan above assumes it.
    conservative and unsupported by a counterexample; the owner may prefer to
    drop them.
 
-6. **Codatatype invariants: how deep?**
-   *Recommend local invariants only, for now* (section 3.8).  Depth one is the
-   first relaxation, and needs a way to unfold a co-recursive call without
-   assuming its type.
+6. **Codatatypes: is a raw type that is raw at every depth acceptable?**
+   *Recommend yes* (section 3.8).  It follows from the prefix reading: the
+   invariant is evaluated on values whose co-recursive components are known
+   only to level `k`, and `k` may be 0.  The alternative that keeps one
+   meaning of `raw` for every type is to forbid a codatatype's invariant from
+   mentioning a co-recursive component at all.  That rules out an invariant
+   like that of `Sorted` for good.
+   A second point: unfolding a co-recursive call is placed with the
+   relaxations, so the first codatatype stage accepts the type `Sorted` and
+   rejects the function `Up`.  Unfolding could be moved into that stage.
 
 7. **A value type with an invariant and no `witness`: possibly empty, or an
    error?**
