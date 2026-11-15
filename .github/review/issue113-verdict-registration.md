@@ -1,6 +1,8 @@
 # Registered issue-113 suite verdicts
 
-These 133 new rows come from [the first full development gate](https://github.com/erniecohen/dafny/actions/runs/37243414478), source `500df6ecd0680991d4ce4732cfe305a6ba319dfb`, Z3 5.1.0. Each row is a newly registered input, rather than a changed old verdict. First-RUN options are preserved by the canonical suite planner. The feature-off/on output pairs have separate measured goldens; runtime execution and the complete strict gate remain separate acceptance requirements.
+These rows first came from [the first full development gate](https://github.com/erniecohen/dafny/actions/runs/37243414478), source `500df6ecd0680991d4ce4732cfe305a6ba319dfb`, Z3 5.1.0. Each row is a newly registered input, rather than a changed old verdict. First-RUN options are preserved by the canonical suite planner. The feature-off/on output pairs have separate measured goldens; runtime execution and the complete strict gate remain separate acceptance requirements.
+
+On `review/4.11.0` the three floating-point inputs were dropped, because that line has no `fp32` or `fp64`, and the expected outputs took that line's diagnostic wording; no error location or summary changed. Four inputs were added for the base-membership check at a conversion into a newtype whose base is a datatype, tuple, codatatype or arrow: 134 rows in all.
 
 The old `BoundedPolymorphismCompilation.dfy` success row is preserved. Its prerequisite-composition crash and the changed standard-library rows are not accepted by this update.
 
@@ -46,6 +48,8 @@ The old `BoundedPolymorphismCompilation.dfy` success row is preserved. Its prere
 | `git-issue-113-existing-sequence-newtype-allocation-pure.dfy` | 0 / 3 verified, 0 errors | New existing-language / feature-off control positive contract; canonical verification succeeds. |
 | `git-issue-113-extended-newtypes-arrow-allocation-negative.dfy` | 4 / 3 verified, 13 errors | New enabled extended base proof-boundary or nonvacuity negative; the intended obligation fails at lines 26,36,47,58,68,78,79,88,105,106,113,129,130. |
 | `git-issue-113-extended-newtypes-arrow-allocation-positive.dfy` | 0 / 2 verified, 0 errors | New enabled extended base positive contract; canonical verification succeeds. |
+| `git-issue-113-extended-newtypes-arrow-base-cast-negative.dfy` | 4 / 0 verified, 11 errors | New base-membership negative: each conversion of a function outside the instantiated arrow family fails at the conversion (lines 16,23,29,33,37,41), and a final false assertion after a valid conversion fails at line 47. |
+| `git-issue-113-extended-newtypes-arrow-base-cast-positive.dfy` | 0 / 1 verified, 0 errors | New base-membership positive control; canonical verification succeeds. |
 | `git-issue-113-extended-newtypes-arrow-intermediate-negative.dfy` | 4 / 1 verified, 3 errors | New enabled extended base proof-boundary or nonvacuity negative; the intended obligation fails at lines 9,12,17. |
 | `git-issue-113-extended-newtypes-arrow-intermediate-positive.dfy` | 0 / 3 verified, 0 errors | New enabled extended base positive contract; canonical verification succeeds. |
 | `git-issue-113-extended-newtypes-arrow-membership-false-control.dfy` | 4 / 0 verified, 1 error | New enabled extended base proof-boundary or nonvacuity negative; the intended obligation fails at lines 10. |
@@ -74,18 +78,17 @@ The old `BoundedPolymorphismCompilation.dfy` success row is preserved. Its prere
 | `git-issue-113-extended-newtypes-codatatype-default-negative.dfy` | 4 / 0 verified, 1 error | New enabled extended base proof-boundary or nonvacuity negative; the intended obligation fails at lines 5. |
 | `git-issue-113-extended-newtypes-codatatype-field-constraint-negative.dfy` | 4 / 1 verified, 1 error | New enabled extended base proof-boundary or nonvacuity negative; the intended obligation fails at lines 12. |
 | `git-issue-113-extended-newtypes-codatatype-field-refinement-proof-negative.dfy` | 4 / 1 verified, 4 errors | New enabled extended base proof-boundary or nonvacuity negative; the intended obligation fails at lines 11,14,17,25. |
-| `git-issue-113-extended-newtypes-codatatype-floating-dev-positive.dfy` | 0 / 1 verified, 0 errors | New enabled extended base positive contract; canonical verification succeeds. |
 | `git-issue-113-extended-newtypes-codatatype-hidden-negative.dfy` | 2 | New enabled extended base admission or nominality negative; the intended declaration is rejected. |
 | `git-issue-113-extended-newtypes-codatatype-positive.dfy` | 0 / 21 verified, 0 errors | New enabled extended base positive contract; canonical verification succeeds. |
 | `git-issue-113-extended-newtypes-codatatype-proof-negative.dfy` | 4 / 1 verified, 7 errors | New enabled extended base proof-boundary or nonvacuity negative; the intended obligation fails at lines 8,12,16,23,29,35,41. |
 | `git-issue-113-extended-newtypes-codatatype-resolver-negative.dfy` | 2 | New enabled extended base admission or nominality negative; the intended declaration is rejected. |
 | `git-issue-113-extended-newtypes-codatatype-runtime.dfy` | 0 / 5 verified, 0 errors | New enabled extended base positive contract; canonical verification succeeds. |
+| `git-issue-113-extended-newtypes-datatype-base-cast-negative.dfy` | 4 / 2 verified, 11 errors | New base-membership negative, including the review's reproducer: each conversion of a value outside the instantiated datatype, tuple or codatatype base fails at the conversion (lines 25,29,35,39,43,47,51,55,61,67), and a final false assertion after a valid conversion fails at line 77. |
+| `git-issue-113-extended-newtypes-datatype-base-cast-positive.dfy` | 0 / 3 verified, 0 errors | New base-membership positive control; canonical verification succeeds. |
 | `git-issue-113-extended-newtypes-datatype-base-trait-nominality-negative.dfy` | 2 | New enabled extended base admission or nominality negative; the intended declaration is rejected. |
 | `git-issue-113-extended-newtypes-datatype-base-trait-positive.dfy` | 0 / 8 verified, 0 errors | New enabled extended base positive contract; canonical verification succeeds. |
 | `git-issue-113-extended-newtypes-datatype-cycle.dfy` | 2 | New enabled extended base admission or nominality negative; the intended declaration is rejected. |
 | `git-issue-113-extended-newtypes-datatype-descriptor-runtime.dfy` | 0 / 2 verified, 0 errors | New enabled extended base positive contract; canonical verification succeeds. |
-| `git-issue-113-extended-newtypes-datatype-floating-negative.dfy` | 4 / 0 verified, 6 errors | New enabled extended base proof-boundary or nonvacuity negative; the intended obligation fails at lines 13,14,15,16,17,18. |
-| `git-issue-113-extended-newtypes-datatype-floating-positive.dfy` | 0 / 4 verified, 0 errors | New enabled extended base positive contract; canonical verification succeeds. |
 | `git-issue-113-extended-newtypes-datatype-generic-witness-runtime.dfy` | 0 / 3 verified, 0 errors | New enabled extended base positive contract; canonical verification succeeds. |
 | `git-issue-113-extended-newtypes-datatype-partial-equality.dfy` | 0 / 3 verified, 0 errors | New enabled extended base positive contract; canonical verification succeeds. |
 | `git-issue-113-extended-newtypes-datatype-phantom-positive.dfy` | 0 / 4 verified, 0 errors | New enabled extended base positive contract; canonical verification succeeds. |

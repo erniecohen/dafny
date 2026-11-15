@@ -1069,6 +1069,9 @@ namespace Microsoft.Dafny {
                   ee.E, builder, ee.messagePrefix, etran: etran);
                 if (options.Get(CommonOptionBag.ConsistentObligationChecks)) { break; }
               }
+              if (options.Get(CommonOptionBag.ExtendedNewtypeBases)) {
+                CheckNewtypeDatatypeBaseMembership(unaryExpr.Origin, ee, builder, etran);
+              }
               if (options.Get(CommonOptionBag.ExtendedNewtypeBases) && ee.IsBaseOperation &&
                   ee.Type.Equals(ee.ToType, true)) {
                 var operationSource = NewtypeOperationView.Get(ee.E.Type, preserveSubsetTypes: true);
@@ -1595,6 +1598,34 @@ namespace Microsoft.Dafny {
       return call.CoCall == FunctionCallExpr.CoCallResolution.Yes && call.Function is not ExtremePredicate and not PrefixPredicate;
     }
 
+
+    /// <summary>
+    /// With --extended-newtype-bases, a conversion into a newtype chain whose
+    /// fully instantiated base is a datatype, tuple, codatatype or arrow must
+    /// establish that the original value inhabits that instantiated base: for
+    /// example B<nat> rather than the source's B<int>, or the arrow family
+    /// int ~> nat rather than the source's int ~> int. The chain's own
+    /// constraints, including the partial and total arrow subset constraints,
+    /// are checked separately by CheckResultToBeInType, which stops at the base.
+    /// This is a proof obligation only; no fact is assumed.
+    /// </summary>
+    void CheckNewtypeDatatypeBaseMembership(IOrigin tok, ConversionExpr ee, BoogieStmtListBuilder builder, ExpressionTranslator etran) {
+      var target = NewtypeOperationView.Get(ee.ToType);
+      if (target.Status != NewtypeOperationView.ViewStatus.Resolved || !target.Path.Any(d => d is NewtypeDecl)) {
+        return;
+      }
+      var baseType = target.BaseType.NormalizeExpandKeepConstraints();
+      if (baseType.IsRefType || !(baseType.IsDatatype || baseType.IsArrowType)) {
+        return;
+      }
+      var source = NewtypeOperationView.Get(ee.E.Type);
+      if (source.Status == NewtypeOperationView.ViewStatus.Resolved && source.BaseType != null &&
+          source.BaseType.Equals(target.BaseType, true)) {
+        // The operand already inhabits this exact instantiated base.
+        return;
+      }
+      CheckSubrange(tok, etran.TrExpr(ee.E), ee.E.Type, target.BaseType, ee.E, builder, ee.messagePrefix, etran: etran);
+    }
 
     private bool IsSuspendedCoDatatypeIdentityConversion(ConversionExpr conversion) {
       var enabled = options.Get(CommonOptionBag.ExtendedNewtypeBases);

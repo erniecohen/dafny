@@ -592,7 +592,6 @@ git-issues/git-issue-113-extended-newtypes-codatatype-cycle-negative.dfy
 git-issues/git-issue-113-extended-newtypes-codatatype-default-negative.dfy
 git-issues/git-issue-113-extended-newtypes-codatatype-field-constraint-negative.dfy
 git-issues/git-issue-113-extended-newtypes-codatatype-field-refinement-proof-negative.dfy
-git-issues/git-issue-113-extended-newtypes-codatatype-floating-dev-positive.dfy
 git-issues/git-issue-113-extended-newtypes-codatatype-hidden-negative.dfy
 git-issues/git-issue-113-extended-newtypes-codatatype-positive.dfy
 git-issues/git-issue-113-extended-newtypes-codatatype-proof-negative.dfy
@@ -602,8 +601,6 @@ git-issues/git-issue-113-extended-newtypes-datatype-base-trait-nominality-negati
 git-issues/git-issue-113-extended-newtypes-datatype-base-trait-positive.dfy
 git-issues/git-issue-113-extended-newtypes-datatype-cycle.dfy
 git-issues/git-issue-113-extended-newtypes-datatype-descriptor-runtime.dfy
-git-issues/git-issue-113-extended-newtypes-datatype-floating-negative.dfy
-git-issues/git-issue-113-extended-newtypes-datatype-floating-positive.dfy
 git-issues/git-issue-113-extended-newtypes-datatype-generic-witness-runtime.dfy
 git-issues/git-issue-113-extended-newtypes-datatype-partial-equality.dfy
 git-issues/git-issue-113-extended-newtypes-datatype-positive.dfy
@@ -694,3 +691,7 @@ git-issues/git-issue-113-dependency-provided-inhabited-false-negative.dfy
 git-issues/git-issue-113-dependency-provided-newtype-no-characteristic-negative.dfy
 git-issues/git-issue-113-dependency-provided-no-characteristic-negative.dfy
 git-issues/git-issue-113-dependency-revealed-control-positive.dfy
+git-issues/git-issue-113-extended-newtypes-arrow-base-cast-negative.dfy
+git-issues/git-issue-113-extended-newtypes-arrow-base-cast-positive.dfy
+git-issues/git-issue-113-extended-newtypes-datatype-base-cast-negative.dfy
+git-issues/git-issue-113-extended-newtypes-datatype-base-cast-positive.dfy

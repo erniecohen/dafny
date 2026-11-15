@@ -1,0 +1,13 @@
+git-issue-113-extended-newtypes-arrow-base-cast-negative.dfy(16,28): Error: value of expression (of type 'int -> int') is not known to be an instance of type 'int ~> nat'
+git-issue-113-extended-newtypes-arrow-base-cast-negative.dfy(23,13): Error: value of expression (of type 'int -> int') is not known to be an instance of type 'int ~> nat'
+git-issue-113-extended-newtypes-arrow-base-cast-negative.dfy(29,13): Error: result of operation might violate subset type constraint for '_#PartialFunc1'
+git-issue-113-extended-newtypes-arrow-base-cast-negative.dfy(29,13): Error: result of operation might violate subset type constraint for '_#TotalFunc1'
+git-issue-113-extended-newtypes-arrow-base-cast-negative.dfy(29,13): Error: value of expression (of type 'int -> int') is not known to be an instance of type 'int ~> nat'
+git-issue-113-extended-newtypes-arrow-base-cast-negative.dfy(33,28): Error: value of expression (of type 'int -> int') is not known to be an instance of type 'int ~> nat'
+git-issue-113-extended-newtypes-arrow-base-cast-negative.dfy(37,28): Error: value of expression (of type 'int -> int') is not known to be an instance of type 'int ~> nat'
+git-issue-113-extended-newtypes-arrow-base-cast-negative.dfy(41,13): Error: result of operation might violate subset type constraint for '_#PartialFunc1'
+git-issue-113-extended-newtypes-arrow-base-cast-negative.dfy(41,13): Error: result of operation might violate subset type constraint for '_#TotalFunc1'
+git-issue-113-extended-newtypes-arrow-base-cast-negative.dfy(41,13): Error: value of expression (of type 'nat -> nat') is not known to be an instance of type 'int ~> nat'
+git-issue-113-extended-newtypes-arrow-base-cast-negative.dfy(47,2): Error: assertion might not hold
+
+Dafny program verifier finished with 0 verified, 11 errors

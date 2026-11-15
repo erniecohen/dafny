@@ -29,6 +29,17 @@ extension introduces no new background schema, extensionality principle,
 constructor coherence theorem or arbitrary predicate-closure axiom. This is a
 relative source argument, not a consistency proof for the complete verifier.
 
+A conversion `e as N` into a chain whose fully instantiated base is a datatype,
+tuple, codatatype or arrow first proves that the original value of `e` inhabits
+that instantiated base: `B<nat>` rather than the operand's `B<int>`, or the
+arrow family `int ~> nat` rather than `int ~> int`. Only then does it check the
+chain's own predicates and arrow subset constraints. The check is a proof
+obligation and assumes nothing. It is omitted when the operand's own view already
+has exactly that instantiated base. This covers identity casts, including the
+suspended codatatype identity conversions described below. The conversion
+`f as F`, from a function over `int` to `F = nat -> int`, is still rejected by
+the existing total-arrow subset check. That incompleteness predates this option.
+
 ## Ordinal and function views
 
 Ordinal identity casts preserve the complete ordinal, including non-finite

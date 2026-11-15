@@ -398,7 +398,11 @@ public class TypeRefinementVisitor : ASTVisitor<IASTVisitorContext> {
           for (var i = 0; i < idPattern.Arguments.Count; i++) {
             var argumentIndex = i;
             VisitMatchCasePattern(idPattern.Arguments[i], () => {
-              var sourceType = getPatternRhsType().NormalizeExpand();
+              // As in VisitPattern: with --extended-newtype-bases the source may be a newtype
+              // whose instantiated base is the constructor's datatype.
+              var nominalSourceType = getPatternRhsType();
+              var sourceType = systemModuleManager.Options.Get(CommonOptionBag.ExtendedNewtypeBases)
+                ? NewtypeOperationView.Get(nominalSourceType).BaseType : nominalSourceType.NormalizeExpand();
               Contract.Assert(sourceType.IsDatatype);
               Contract.Assert(sourceType.TypeArgs.Count == ctor.EnclosingDatatype.TypeArgs.Count);
               var typeMap = TypeParameter.SubstitutionMap(ctor.EnclosingDatatype.TypeArgs, sourceType.TypeArgs);
