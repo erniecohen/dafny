@@ -35,6 +35,7 @@ Unless marked *opt-in*, a change is on by default. Soundness fixes are on by def
 - `--bitvector-map-keys`.
 - `--heap-free-lambda-facts`.
 - `--inlined-body-call-permissions`: a checked call to a function with a body, inlined conjunct by conjunct, gets the body's call permissions in each conjunct.
+- `--detect-witness-matching-loops`: matching-loop detection follows the witnesses of nested existentials, so `forall q | q in s :: exists p :: p in s && q < p` is reported as a loop.
 
 **Performance and tooling** (*opt-in*)
 - `--verification-cache` (a persistent per-task result cache) and `--translation-cache`.

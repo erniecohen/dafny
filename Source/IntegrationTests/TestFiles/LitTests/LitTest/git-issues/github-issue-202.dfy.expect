@@ -1,0 +1,43 @@
+default
+github-issue-202.dfy(22,4): Info: Selected triggers: {p in x.below}
+github-issue-202.dfy(28,2): Info: Selected triggers: {q in s}
+github-issue-202.dfy(28,25): Info: Selected triggers: {p in s}
+github-issue-202.dfy(31,4): Info: Selected triggers: {q in s}
+github-issue-202.dfy(31,26): Info: Selected triggers: {p in s}
+github-issue-202.dfy(37,2): Info: Selected triggers:
+   {g(q)}, {q in s}
+github-issue-202.dfy(37,23): Info: Selected triggers: {p in s}
+github-issue-202.dfy(42,2): Info: Selected triggers: {q in s}
+github-issue-202.dfy(42,23): Info: Selected triggers: {p in s}
+github-issue-202.dfy(45,2): Info: Selected triggers: {q in s}
+github-issue-202.dfy(45,25): Info: Selected triggers: {p in s}
+github-issue-202.dfy(48,2): Info: Selected triggers: {q in s}
+github-issue-202.dfy(48,24): Info: Selected triggers: {p in s}
+github-issue-202.dfy(14,5): Info: Selected triggers: {q in below}
+github-issue-202.dfy(14,32): Info: Selected triggers: {q in below}
+github-issue-202.dfy(14,57): Info: Selected triggers: {p in below}
+
+Dafny program verifier finished with 2 verified, 0 errors
+--detect-witness-matching-loops
+github-issue-202.dfy(22,4): Info: Selected triggers: {p in x.below}
+github-issue-202.dfy(28,2): Info: Selected triggers: {q in s} (may loop with "p in s")
+github-issue-202.dfy(28,2): Warning: Triggers were added to this quantifier that may introduce matching loops, which may cause brittle verification. To silence this warning, add an explicit trigger using the {:trigger} attribute. For more information, see the section on quantifier instantiation rules in the reference manual.
+github-issue-202.dfy(28,25): Info: Selected triggers: {p in s}
+github-issue-202.dfy(31,4): Info: Selected triggers: {q in s} (may loop with "p in s")
+github-issue-202.dfy(31,4): Warning: Triggers were added to this quantifier that may introduce matching loops, which may cause brittle verification. To silence this warning, add an explicit trigger using the {:trigger} attribute. For more information, see the section on quantifier instantiation rules in the reference manual.
+github-issue-202.dfy(31,26): Info: Selected triggers: {p in s}
+github-issue-202.dfy(37,2): Info: Selected triggers: {g(q)}
+ Rejected triggers: {q in s} (may loop with "p in s")
+github-issue-202.dfy(37,23): Info: Selected triggers: {p in s}
+github-issue-202.dfy(42,2): Info: Selected triggers: {q in s}
+github-issue-202.dfy(42,23): Info: Selected triggers: {p in s}
+github-issue-202.dfy(45,2): Info: Selected triggers: {q in s}
+github-issue-202.dfy(45,25): Info: Selected triggers: {p in s}
+github-issue-202.dfy(48,2): Info: Selected triggers: {q in s}
+github-issue-202.dfy(48,24): Info: Selected triggers: {p in s}
+github-issue-202.dfy(14,5): Info: Selected triggers: {q in below}
+github-issue-202.dfy(14,32): Info: Selected triggers: {q in below} (may loop with "p in below")
+github-issue-202.dfy(14,32): Warning: Triggers were added to this quantifier that may introduce matching loops, which may cause brittle verification. To silence this warning, add an explicit trigger using the {:trigger} attribute. For more information, see the section on quantifier instantiation rules in the reference manual.
+github-issue-202.dfy(14,57): Info: Selected triggers: {p in below}
+
+Dafny program verifier finished with 2 verified, 0 errors
