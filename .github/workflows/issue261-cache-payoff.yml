@@ -19,6 +19,16 @@ on:
   push:
     branches: ['scratch/issue-261-cache-payoff*']
   workflow_dispatch:
+    inputs:
+      corpora:
+        description: 'Corpora to measure, a JSON list'
+        default: '["std", "core", "cedar", "evm"]'
+      runs:
+        description: 'Bash regular expression: measure only the runs whose names match'
+        default: '.*'
+      wait:
+        description: 'Seconds each timed run may wait for a quiet host'
+        default: '600'
 
 permissions:
   contents: read
@@ -46,7 +56,7 @@ jobs:
       fail-fast: false
       max-parallel: 1
       matrix:
-        corpus: [std, core, cedar, evm]
+        corpus: ${{ fromJSON(inputs.corpora || '["std", "core", "cedar", "evm"]') }}
     defaults:
       run:
         shell: bash
@@ -111,8 +121,12 @@ jobs:
           active="bash $RUNNER_TEMP/active.sh"
           # A run waits for the 1-minute load average to fall to 8 (a run with --cores 4 alone keeps it
           # near 5), and one that overlapped a higher load or another job is repeated.
-          run() { python3 "$GITHUB_WORKSPACE/$SCRIPT" run --dafny "$D" --out "$out" --active-cmd "$active" \
-                    --max-load 8 --load-wait 600 "$@"; }
+          only='${{ inputs.runs || '.*' }}'
+          run() {  # --name NAME ...
+            [[ $2 =~ ^($only)$ ]] || { echo "$2: not selected"; return 0; }
+            python3 "$GITHUB_WORKSPACE/$SCRIPT" run --dafny "$D" --out "$out" --active-cmd "$active" \
+              --max-load 8 --load-wait '${{ inputs.wait || '600' }}' "$@"
+          }
           case "${{ matrix.corpus }}" in
           std)
             cd Source/DafnyStandardLibraries
