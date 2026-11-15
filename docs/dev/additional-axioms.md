@@ -627,6 +627,77 @@ moves.
 cast with the option off (1 error) and on (verifies, in both resolvers), and the
 same program with `assert false` after the proof, which must still fail.
 
+## Call permissions of the checked conjuncts of an inlined body (#198)
+
+https://github.com/erniecohen/dafny/issues/198. With
+`datatype T = Var(i: nat) | Bin(op: Op, a: T, b: T)`, a member predicate
+`scoped(n)` that is `a.scoped(n) && b.scoped(n)` on `Bin`, and
+`function size(t: T, s: seq<int>): int requires t.scoped(|s|)`, the calls
+`size(Bin(P,Var(0),Var(1)),[x,y])` and `size(Bin(op,Var(0),Var(1)),[x,y])`
+are both well formed, but exactly one of them failed its precondition, and which one
+moved with the surrounding declarations.
+
+A checked precondition `F(args)` of a function with a body is split by inlining
+that body (`TrSplitFunctionCallExpr`, `BoogieGenerator.SplitExpr.cs`). Each checked
+conjunct `c` of the body becomes its own assertion
+
+```boogie
+F#canCall(args) ==> F($LS($LZ), args) || c    // c translated at layer $LS($LS($LZ))
+```
+
+and the splits carry `{:subsumption 0}`, so an earlier one is not assumed while a
+later one is checked. In the second conjunct `b.scoped(n)`, the call unfolds only
+under `scoped#canCall(b, n)`. The only source of that is the definition axiom
+instance at `args`, whose body is translated at the caller's layer `$LZ`:
+
+```boogie
+// existing definition axiom of F, unchanged
+forall ly, args :: F#canCall(args) ==>
+  CanCallAssumption(BODY, ly) && F($LS(ly), args) == BODY(ly)
+```
+
+and `CanCallAssumption` of `a.scoped(n) && b.scoped(n)` is
+`scoped#canCall(a, n) && (scoped(ly, a, n) ==> scoped#canCall(b, n))`. At
+`ly := $LZ`, `scoped($LZ, a, n)` cannot be unfolded, and the split that proves
+`a.scoped(n)` is not available. So the second conjunct was proved only when an
+unrelated term in the same verification condition happened to unfold the first;
+reversing the conjuncts moves the failure to the new second one.
+
+With the option, each checked conjunct gets the body's call permissions at the
+layer of the conjuncts as an antecedent:
+
+```boogie
+F#canCall(args) ==> F($LS($LZ), args) || (CanCallAssumption(BODY, $LS($LZ)) ==> c)
+```
+
+where `c` is translated at `$LS($LS($LZ))`, as before.  `CanCallAssumption(BODY, $LS($LZ))`
+contains `scoped($LS($LZ), a, n) ==> scoped#canCall(b, n)`, whose guard unfolds. The body
+is the same type-specialized, prefix-substituted body the definition axiom uses. When its
+call permissions are `true` nothing is added. The option is tested before anything is
+built, so with it off the Boogie program is unchanged. Its kind is **neither**: it adds
+no axiom and no assumption, and weakens a checked assertion only by an antecedent that the
+existing axioms already imply.
+
+**Derivation.** The antecedent is the first conjunct of the existing definition axiom of
+`F` instantiated at the same `args` and at `ly := $LS($LZ)`, and each assertion is already
+guarded by `F#canCall(args)`. So the assertion with the antecedent follows from the
+assertion without it and the existing axiom: no new fact is assumed, and no model is
+removed. The antecedent can only make an assertion easier to prove when it is a
+consequence of what is already known.
+
+**Cost.** The antecedent is added to every checked conjunct of every inlined body whose
+call permissions are not trivially `true`, so the verification conditions of such
+callers change, not only those that failed. COST
+
+**Controls.** `git-issues/github-issue-198.dfy` runs, with the option on and in both
+resolvers, the issue's two forms and their three-child, reversed-conjunct, method and
+lemma variants (`Inputs/github-issue-198-forms.dfy`), the same declarations in reverse
+order (`Inputs/github-issue-198-reversed.dfy`), and two controls that must still fail
+(`Inputs/github-issue-198-controls.dfy`): a term with a leaf `Var(2)` against a
+two-element sequence, which must fail its precondition, and a lemma that calls `size`
+and then asserts `false`. With the option off, five of the fifteen positive declarations
+fail, in both orders and both resolvers.
+
 ## Standing CI for the shared option (#50)
 
 The review workflow runs the existing suite plan with the shared option both

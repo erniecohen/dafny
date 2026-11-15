@@ -1,0 +1,26 @@
+forms (additional axioms, refreshed)
+
+Dafny program verifier finished with 15 verified, 0 errors
+forms (additional axioms, legacy)
+
+Dafny program verifier finished with 15 verified, 0 errors
+reversed (additional axioms, refreshed)
+
+Dafny program verifier finished with 15 verified, 0 errors
+reversed (additional axioms, legacy)
+
+Dafny program verifier finished with 15 verified, 0 errors
+controls (additional axioms, refreshed)
+github-issue-198-controls.dfy(14,55): Error: function precondition could not be proved
+github-issue-198-controls.dfy(12,55): Related location: this proposition could not be proved
+github-issue-198-controls.dfy(8,48): Related location: this proposition could not be proved
+github-issue-198-controls.dfy(18,2): Error: assertion might not hold
+
+Dafny program verifier finished with 2 verified, 2 errors
+controls (additional axioms, legacy)
+github-issue-198-controls.dfy(14,55): Error: function precondition could not be proved
+github-issue-198-controls.dfy(12,55): Related location: this proposition could not be proved
+github-issue-198-controls.dfy(8,48): Related location: this proposition could not be proved
+github-issue-198-controls.dfy(18,2): Error: assertion might not hold
+
+Dafny program verifier finished with 2 verified, 2 errors

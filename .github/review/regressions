@@ -560,3 +560,6 @@ git-issues/github-issue-362.dfy
 
 # Under --modular-termination, the reveal lemma Dafny generates for an opaque const is generated, in a concrete module and in the copies a refinement makes, so neither the library build nor 'dafny audit' counts it as a bodyless lemma with a postcondition (https://github.com/erniecohen/dafny/issues/371).
 git-issues/github-issue-371.dfy
+
+# With --additional-axioms, a precondition calling a recursive member predicate on a constructed term verifies in every declaration order: the checked conjuncts of an inlined body get the body's call permissions at their layer (https://github.com/erniecohen/dafny/issues/198).
+git-issues/github-issue-198.dfy
