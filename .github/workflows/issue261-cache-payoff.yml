@@ -39,7 +39,7 @@ jobs:
     # and each timed run records the other jobs active on those runners (and is repeated if any).
     if: github.repository == 'erniecohen/dafny'
     runs-on: [self-hosted, macOS, ARM64, mac-studio]
-    timeout-minutes: 120
+    timeout-minutes: 300
     env:
       GH_TOKEN: ${{ github.token }}
     strategy:
@@ -99,7 +99,10 @@ jobs:
           out="$PWD/results/${{ matrix.corpus }}"
           # Other jobs in progress on the self-hosted runners, not counting this one.
           cat > "$RUNNER_TEMP/active.sh" <<'SH'
-          gh api "repos/$GITHUB_REPOSITORY/actions/runs?status=in_progress&per_page=100" --jq '.workflow_runs[].id' |
+          # A run with a job still waiting for a runner reports itself as queued, so both are listed.
+          for status in in_progress queued; do
+            gh api "repos/$GITHUB_REPOSITORY/actions/runs?status=$status&per_page=100" --jq '.workflow_runs[].id'
+          done | sort -u |
             while read -r id; do
               gh api "repos/$GITHUB_REPOSITORY/actions/runs/$id/jobs?per_page=100" \
                 --jq "[.jobs[] | select(.status == \"in_progress\" and (.labels | index(\"mac-studio\")) and .runner_name != \"$RUNNER_NAME\")] | length"
@@ -166,7 +169,7 @@ jobs:
         if: always()
         run: |
           {
-            echo "Runner $RUNNER_NAME: $(sysctl -n hw.ncpu) processors ($(sysctl -n hw.perflevel1.physicalcpu 2>/dev/null || echo 0) efficiency cores), $(( $(sysctl -n hw.memsize) / 1073741824 )) GB memory; Dafny $RELEASE; Z3 5.1.0."
+            echo "Runner $RUNNER_NAME: $(sysctl -n hw.ncpu) processors ($(for l in 0 1; do printf '%s %s; ' "$(sysctl -n hw.perflevel$l.physicalcpu 2>/dev/null)" "$(sysctl -n hw.perflevel$l.name 2>/dev/null)"; done)), $(( $(sysctl -n hw.memsize) / 1073741824 )) GB memory; Dafny $RELEASE; Z3 5.1.0."
             cat corpora.txt 2>/dev/null || true
             python3 "$SCRIPT" analyze "results/${{ matrix.corpus }}" --out report.md > /dev/null && cat report.md
           } >> "$GITHUB_STEP_SUMMARY"

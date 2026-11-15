@@ -10,7 +10,7 @@ times, and records each run's wall time (process start to exit) in DIR/runs.tsv 
 profile in DIR/NAME-<i>.jsonl.  With each run it also records the 1-minute load average before
 and after, and, with --active-cmd (a shell command that prints a number), the number of other
 jobs active when the run started and when it ended (the workflow counts the repository's
-in-progress jobs).  With --max-load L, each attempt first waits (up to --load-wait seconds) for the
+in-progress jobs).  With --max-load L, each attempt first waits (up to --load-wait seconds for all of a run's attempts) for the
 load average to fall to L and, with --active-cmd, for the other jobs to finish.  A run that overlapped other jobs (active > 0 at start or end) or a
 load above L (before or after) is repeated, up to --retries times; the last attempt is kept
 either way, and the report shows the counts and loads.  The exit code is recorded, not judged: a front-end-only
@@ -96,9 +96,9 @@ def run(a):
     for rep in range(1 - a.warmup, a.reps + 1):
         profile = out / f'{a.name}-{rep}.jsonl'
         cmd = [a.dafny, *args, '--pipeline-profile', str(profile.resolve())]
+        deadline = time.monotonic() + a.load_wait  # for all of this run's attempts together
         for attempt in range(a.retries + 1):
             if a.max_load is not None or a.active_cmd:
-                deadline = time.monotonic() + a.load_wait
                 while time.monotonic() < deadline and (
                         (a.max_load is not None and os.getloadavg()[0] > a.max_load) or busy(active())):
                     time.sleep(60)
