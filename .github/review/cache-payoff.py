@@ -10,8 +10,10 @@ times, and records each run's wall time (process start to exit) in DIR/runs.tsv 
 profile in DIR/NAME-<i>.jsonl.  With each run it also records the 1-minute load average before
 and after, and, with --active-cmd (a shell command that prints a number), the number of other
 jobs active when the run started and when it ended (the workflow counts the repository's
-in-progress jobs).  A run that overlapped other jobs (active > 0 at start or end) is repeated, up
-to --retries times; the last attempt is kept either way, and the report shows the counts.  The exit code is recorded, not judged: a front-end-only
+in-progress jobs).  With --max-load L, each attempt first waits (up to --load-wait seconds) for the
+load average to fall to L and, with --active-cmd, for the other jobs to finish.  A run that overlapped other jobs (active > 0 at start or end) or a
+load above L (before or after) is repeated, up to --retries times; the last attempt is kept
+either way, and the report shows the counts and loads.  The exit code is recorded, not judged: a front-end-only
 `dafny verify` with Boogie's no-op solver reports every task as inconclusive.
 
 `analyze` reads every profile and reports, per run name, medians over the measured runs of:
@@ -95,14 +97,21 @@ def run(a):
         profile = out / f'{a.name}-{rep}.jsonl'
         cmd = [a.dafny, *args, '--pipeline-profile', str(profile.resolve())]
         for attempt in range(a.retries + 1):
+            if a.max_load is not None or a.active_cmd:
+                deadline = time.monotonic() + a.load_wait
+                while time.monotonic() < deadline and (
+                        (a.max_load is not None and os.getloadavg()[0] > a.max_load) or busy(active())):
+                    time.sleep(60)
             act0, load0 = active(), os.getloadavg()[0]
             t0 = time.monotonic()
             p = subprocess.run(cmd, cwd=a.cwd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
             wall = time.monotonic() - t0
             load1, act1 = os.getloadavg()[0], active()
-            if rep <= 0 or not (busy(act0) or busy(act1)) or attempt == a.retries:
+            loaded = a.max_load is not None and max(load0, load1) > a.max_load
+            if rep <= 0 or not (busy(act0) or busy(act1) or loaded) or attempt == a.retries:
                 break
-            print(f'{a.name}: run {rep} overlapped other jobs ({act0}, {act1}); repeating', flush=True)
+            print(f'{a.name}: run {rep} overlapped other work (jobs {act0}/{act1}, load {load0:.2f}/{load1:.2f}); '
+                  'repeating', flush=True)
         if rep == 1 - a.warmup:
             (out / f'{a.name}.out').write_bytes(p.stdout)
         if b'resolution/type errors detected' in p.stdout or b'parse errors detected' in p.stdout:
@@ -351,6 +360,8 @@ def main():
     r.add_argument('--cwd')
     r.add_argument('--active-cmd')
     r.add_argument('--retries', type=int, default=2)
+    r.add_argument('--max-load', type=float)
+    r.add_argument('--load-wait', type=float, default=900)
     r.add_argument('args', nargs=argparse.REMAINDER)
     an = sub.add_parser('analyze')
     an.add_argument('dirs', nargs='+')

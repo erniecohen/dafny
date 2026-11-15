@@ -39,7 +39,7 @@ jobs:
     # and each timed run records the other jobs active on those runners (and is repeated if any).
     if: github.repository == 'erniecohen/dafny'
     runs-on: [self-hosted, macOS, ARM64, mac-studio]
-    timeout-minutes: 45
+    timeout-minutes: 120
     env:
       GH_TOKEN: ${{ github.token }}
     strategy:
@@ -106,7 +106,10 @@ jobs:
             done | awk '{ s += $1 } END { print s + 0 }'
           SH
           active="bash $RUNNER_TEMP/active.sh"
-          run() { python3 "$GITHUB_WORKSPACE/$SCRIPT" run --dafny "$D" --out "$out" --active-cmd "$active" "$@"; }
+          # A run waits for the 1-minute load average to fall to 8 (a run with --cores 4 alone keeps it
+          # near 5), and one that overlapped a higher load or another job is repeated.
+          run() { python3 "$GITHUB_WORKSPACE/$SCRIPT" run --dafny "$D" --out "$out" --active-cmd "$active" \
+                    --max-load 8 --load-wait 600 "$@"; }
           case "${{ matrix.corpus }}" in
           std)
             cd Source/DafnyStandardLibraries
