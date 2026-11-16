@@ -198,7 +198,8 @@ public partial class BoogieGenerator {
   ///   callee's bound must be below the caller's.
   /// * A call to a known callee that reaches such a dispatch (see <see cref="ModularTerminationAnalysis"/>) uses
   ///   the same-bound rule: the callee runs under the caller's bound, so its own bound must not exceed it.
-  /// A call from a caller without a bound needs no check, except that a dispatched callee must have one; a call
+  /// A call from a caller without a bound needs no check, except that a dispatched callee of a legacy
+  /// {:termination false} trait must have one; a call
   /// from a caller with a bound fails when the callee has none.  Other calls get no check here: the existing termination checks order them.
   /// </summary>
   void CheckModularTermination(IOrigin tok, ICodeContext codeContext, MemberDecl callee, Expression receiverReplacement,
@@ -218,13 +219,21 @@ public partial class BoogieGenerator {
     // a value fixed where the lambda is created.
     var lambdaBound = CurrentLambdaBound;
     var callerBound = lambdaBound ?? GlobalBound(caller);
-    if (callerBound == null && (calleeBound != null || !dispatched)) {
+    // A caller without a bound is TOP: it may make any call, including one dispatched to a member without a bound
+    // (rule 4 of revision 3), whose foreign implementations are leaves.  A member without a bound of a legacy
+    // {:termination false} trait keeps its earlier rule: its foreign implementations need not be leaves, so a
+    // dispatched call to it always fails.
+    var legacySlot = dispatched && calleeBound == null && callee.EnclosingClass is TraitDecl calleeTrait &&
+                     ModularTermination.IsExtensible(calleeTrait);
+    if (callerBound == null && !legacySlot) {
       return;
     }
     string hint;
     if (dispatched) {
-      hint = calleeBound == null
-        ? "the dispatched callee has no 'decreases {:global}' bound, which --modular-termination requires"
+      hint = legacySlot
+        ? "the dispatched callee has no 'decreases {:global}' bound, which --modular-termination requires of a member of a {:termination false} trait"
+        : calleeBound == null
+        ? "the dispatched callee has no 'decreases {:global}' bound, so under --modular-termination it is TOP, above the caller's bound; declare a bound on it, or make it an explicit leaf with {:termination_leaf}"
         : "--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's";
     } else {
       hint = calleeBound == null

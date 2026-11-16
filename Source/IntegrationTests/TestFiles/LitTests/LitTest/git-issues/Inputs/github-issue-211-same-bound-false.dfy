@@ -56,9 +56,9 @@ module Y {
   }
 }
 
-// A call to a bodyless member of a trait that is not open is dispatched to an implementation in
-// the same module.  The member reaches the open dispatch through its implementation, so its bound
-// is compared with the caller's.
+// A call to a member of a class is not dispatched.  The member reaches the open dispatch, so its bound
+// is compared with the caller's.  (Every trait may be extended from another module, so a call through a
+// trait is dispatched, and needs a smaller bound.)
 module Tr4 {
   trait {:termination false} T {
     function F(n: nat): nat decreases {:global} n
@@ -67,12 +67,9 @@ module Tr4 {
 
 module C4 {
   import Tr4
-  trait C {
-    function G(t: Tr4.T, n: nat): nat decreases {:global} n
-  }
-  class K extends C {
+  class C {
     constructor() { }
-    function G(t: Tr4.T, n: nat): nat { if n == 0 then 0 else var r := t.F(n - 1); assert false; r }
+    function G(t: Tr4.T, n: nat): nat decreases {:global} n { if n == 0 then 0 else var r := t.F(n - 1); assert false; r }
   }
 }
 
