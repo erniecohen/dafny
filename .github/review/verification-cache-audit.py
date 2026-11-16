@@ -33,6 +33,7 @@ import random
 import struct
 import subprocess
 import sys
+import zlib
 
 OUTCOMES = {0: 'Correct', 1: 'Errors', 2: 'OutOfResource'}
 SEND, REQUEST, PING, PROBLEM = 0, 1, 2, 3
@@ -56,6 +57,21 @@ def read_data(path):
         return f.read()
 
 
+BLOB_MAGIC = b'\x00dcz'
+
+
+def decode_blob(stored):
+    """BlobEncoding.TryDecode: a blob is its own bytes, or (issue 388) a header and a zlib stream."""
+    if not stored.startswith(BLOB_MAGIC) or len(stored) < 16 or stored[4:6] != b'\x01\x01':
+        return stored
+    length, = struct.unpack('>I', stored[6:10])
+    try:
+        decoded = zlib.decompress(stored[10:])
+    except zlib.error:
+        return stored
+    return decoded if len(decoded) == length else stored
+
+
 def records(cache):
     """Yield (index key, record dict, problems) for every result index entry."""
     root = Path(cache) / 'v1'
@@ -66,7 +82,7 @@ def records(cache):
         problems = []
         try:
             entry = json.loads(read_data(index))
-            blob = read_data(root / 'blobs' / 'sha256' / entry['Blob'][:2] / entry['Blob'])
+            blob = decode_blob(read_data(root / 'blobs' / 'sha256' / entry['Blob'][:2] / entry['Blob']))
         except (OSError, ValueError, KeyError) as e:
             yield key, None, ['unreadable: %s' % e]
             continue
