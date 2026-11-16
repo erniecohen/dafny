@@ -912,10 +912,11 @@ jobs:
             --filter 'FullyQualifiedName~ResolutionPipelineTests|FullyQualifiedName~PipelineProfileResolutionTests' \
             --logger "console;verbosity=normal"
       - name: Resolution and cardinality tests with Debug contract assertions
-        # Release builds compile Contract.Assert out; a failed assertion here ends the run.
+        # Release builds compile Contract.Assert and Debug.Assert out; here a failed assertion fails the step.
+        # NewtypeWitnessResolutionTests: https://github.com/erniecohen/dafny/issues/422.
         run: |
           dotnet test --settings .github/review/ci.runsettings Source/DafnyCore.Test -c Debug \
-            --filter 'FullyQualifiedName~ResolutionPipelineTests|FullyQualifiedName~PipelineProfileResolutionTests|FullyQualifiedName~Cardinality|FullyQualifiedName~NewtypeReferenceCharacteristicTests' \
+            --filter 'FullyQualifiedName~ResolutionPipelineTests|FullyQualifiedName~PipelineProfileResolutionTests|FullyQualifiedName~Cardinality|FullyQualifiedName~NewtypeReferenceCharacteristicTests|FullyQualifiedName~NewtypeWitnessResolutionTests' \
             --logger "console;verbosity=normal"
       - name: Run the tests named in .github/review/regressions
         continue-on-error: ${{ github.event_name == 'workflow_dispatch' && inputs.review_followup_probe && startsWith(github.ref, 'refs/heads/scratch/') }}
