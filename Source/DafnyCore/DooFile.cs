@@ -246,7 +246,12 @@ public class DooFile {
       result.Options.OptionArguments[option] = libraryValue;
       result.ApplyBinding(option);
       var prefix = $"cannot load {options.GetPrintPath(libraryFile.LocalPath)}";
-      var checkpasses = OptionRegistry.GlobalCheck(option)?.Invoke(reporter, origin, prefix, option, localValue, libraryValue) ?? true;
+      var check = OptionRegistry.GlobalCheck(option);
+      if (option == BoogieOptionBag.BoogieArguments && relevantOptions.Contains(BoogieOptionBag.LegacyBoogieLibraryCheck) &&
+          options.Get(BoogieOptionBag.LegacyBoogieLibraryCheck)) {
+        check = OptionCompatibility.CheckOptionMatches;
+      }
+      var checkpasses = check?.Invoke(reporter, origin, prefix, option, localValue, libraryValue) ?? true;
       success = success && checkpasses;
     }
 
