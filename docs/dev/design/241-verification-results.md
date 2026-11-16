@@ -177,9 +177,11 @@ and the explicit lifecycle/retry boundary described below. It must pass the same
 completeness and differential gates; publishing a draft is not acceptance.
 
 CLI filters select today's task inventory. Each task independently hits or runs;
-all selected tasks contribute to the current aggregate exit code. Initially bypass
-persistent reads for `--filter-position-batch` and unsupported side effects or
-callbacks. Solver logs, trace/timing output, model/split files and verification
+all selected tasks contribute to the current aggregate exit code. V1 bypassed
+persistent reads for `--filter-position-batch`; since
+https://github.com/erniecohen/dafny/issues/387 each batch request reads and writes
+the cache as a separate `--filter-position` run does. Unsupported side effects or
+callbacks bypass. Solver logs, trace/timing output, model/split files and verification
 plugins either have tested replay support or bypass. CSV/JSON per-task outcomes
 and RU are identical on cold and warm runs; actual execution timestamps and
 durations describe the current invocation. Default stdout, stderr and exit code
@@ -210,7 +212,9 @@ reject publication. Unit controls and native Std pattern-warning tasks exercise
 this distinction.
 
 The environment descriptor includes an ABI identifier and actual bytes of all
-application/runtime managed assemblies, the native solver and host, hostfxr,
+application/runtime managed assemblies, the native solver and host, hostfxr
+(the installation's `host/fxr`, or, in a self-contained publish, the bundled
+`libhostfxr` and `libhostpolicy`; https://github.com/erniecohen/dafny/issues/387),
 runtime native libraries and resolved native dependencies. The macOS profile
 also hashes the actual OS dyld shared-cache files; Linux resolves dependencies
 with `ldd` and records actual mapped libraries, including dlopen-only ICU/OpenSSL
