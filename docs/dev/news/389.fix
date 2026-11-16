@@ -1,0 +1,1 @@
+The verification-cache regression test is now two lit tests, one per driver, and the early-cutoff driver no longer hashes the solver's native images again for each of its independent oracle runs, so each part finishes well inside the lit timeout.  Every assertion is kept.
