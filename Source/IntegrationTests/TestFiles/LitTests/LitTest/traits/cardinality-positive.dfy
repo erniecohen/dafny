@@ -1,4 +1,4 @@
-// RUN: %verify "%s" > "%t"
+// RUN: %verify --warn-unchecked-termination=false "%s" > "%t"
 // RUN: %diff "%s.expect" "%t"
 
 module Basic {

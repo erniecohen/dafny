@@ -1,6 +1,6 @@
-// RUN: %build -t:lib --no-verify "%S/Inputs/cardinality-library.dfy" --output "%S/Output/cardinality-library.doo" > "%t"
-// RUN: %exits-with 2 %resolve "%s" --library "%S/Output/cardinality-library.doo" >> "%t"
-// RUN: %exits-with 2 %verify --dont-verify-dependencies --filter-symbol=Selected "%s" --library "%S/Output/cardinality-library.doo" >> "%t"
+// RUN: %build --warn-unchecked-termination=false -t:lib --no-verify "%S/Inputs/cardinality-library.dfy" --output "%S/Output/cardinality-library.doo" > "%t"
+// RUN: %exits-with 2 %resolve --warn-unchecked-termination=false "%s" --library "%S/Output/cardinality-library.doo" >> "%t"
+// RUN: %exits-with 2 %verify --warn-unchecked-termination=false --dont-verify-dependencies --filter-symbol=Selected "%s" --library "%S/Output/cardinality-library.doo" >> "%t"
 // RUN: %diff "%s.expect" "%t"
 
 module Client {
