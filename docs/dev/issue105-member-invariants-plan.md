@@ -1735,7 +1735,10 @@ soundness problem while nothing checks or assumes an invariant.
 - *The not-yet-supported error is per translated module.*  A module given only
   as a library, one left out by `--filter-symbol`, or a program that is
   compiled with `--no-verify`, is never translated, so its invariants are not
-  reported.  The second pull request reports them for the whole program.
+  reported.  The second pull request makes the error program-wide: if any
+  module, a library's included, declares an invariant, no module is verified.
+  Compiling with `--no-verify` remains allowed, and the compiled code ignores
+  the invariants.
 - *Export sets.*  `export provides T` clones a type's members without their
   bodies, so a client sees an invariant without its body.  What a client that
   cannot see the body may assume about a value of `T` is to be decided before
