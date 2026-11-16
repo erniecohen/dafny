@@ -33,6 +33,7 @@ public static class DafnyCommands {
     CommonOptionBag.DisableNonLinearArithmetic,
     BoogieOptionBag.IsolateAssertions,
     BoogieOptionBag.BoogieArguments,
+    BoogieOptionBag.LegacyBoogieLibraryCheck,
     CommonOptionBag.VerificationLogFormat,
     BoogieOptionBag.SolverResourceLimit,
     BoogieOptionBag.SolverOption,
