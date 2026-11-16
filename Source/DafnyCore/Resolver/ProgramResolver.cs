@@ -199,6 +199,7 @@ public class ProgramResolver {
     var initialBuiltins = new SystemModuleManager(SystemModuleManager);
     var initialMembers = new Dictionary<TopLevelDeclWithMembers, Dictionary<string, MemberDecl>>(classMembers);
     var profile = PipelineProfile.For(Options);
+    var namePrefixes = ModuleNamePrefixes.For(declarations.Select(d => d.FullName));
     Program.ResolutionKeys = new();
     for (var i = 0; i < declarations.Count; i++) {
       foreach (var dependency in prerequisites[i]) {
@@ -248,7 +249,7 @@ public class ProgramResolver {
           Type.ResetScopes();
           Type.EnableScopes();
           try {
-            using var names = new ModuleNamingScope(declarations[index].FullName);
+            using var names = new ModuleNamingScope(declarations[index].FullName, namePrefixes);
             var builtins = new SystemModuleManager(initialBuiltins, catalog);
             builtins.Bitwidths.Clear();
             var workerProgram = new Program(Program.FullName, Program.DefaultModule, builtins,
