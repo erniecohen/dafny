@@ -1635,7 +1635,10 @@ namespace Microsoft.Dafny {
       // CallStmt case of CheckIsOkayNewStatement never sees it.  A call to a method with a nonempty modifies clause
       // can change state the parent module knows about, which would invalidate what the inherited body established
       // (https://github.com/erniecohen/dafny/issues/412).  The initializing call of a "new" belongs to its RHS and is
-      // checked above.
+      // checked above.  The hidden --legacy-skeleton-modifying-calls restores the old, unsound rule.
+      if (Reporter.Options.Get(CommonOptionBag.LegacySkeletonModifyingCalls)) {
+        return;
+      }
       var descendants = stmt.DescendantsAndSelf.ToList();
       var initCalls = descendants.OfType<SingleAssignStmt>().Select(a => a.Rhs).OfType<AllocateClass>()
         .Select(a => a.InitCall).Where(c => c != null).ToHashSet();

@@ -1,5 +1,6 @@
 // RUN: %exits-with 2 %resolve --allow-deprecation "%s" > "%t"
 // RUN: %exits-with 2 %resolve --allow-deprecation --type-system-refresh=false --general-newtypes=false "%s" >> "%t"
+// RUN: %exits-with 2 %resolve --allow-deprecation --legacy-skeleton-modifying-calls "%s" >> "%t"
 // RUN: %verify --allow-deprecation "%S/Inputs/github-issue-412-positive.dfy" >> "%t"
 // RUN: %verify --allow-deprecation --type-system-refresh=false --general-newtypes=false "%S/Inputs/github-issue-412-positive.dfy" >> "%t"
 // RUN: %diff "%s.expect" "%t"
@@ -9,6 +10,8 @@
 // c.f == 2, and Bad proved false.  A direct assignment to such state was already rejected; a call to a
 // method with a nonempty modifies clause is now rejected too, wherever it appears in the added
 // statements.  Calls that cannot change state stay allowed (Inputs/github-issue-412-positive.dfy).
+// Under the hidden --legacy-skeleton-modifying-calls the old, unsound rule accepts the added calls
+// again, and only B9's direct assignment, which the older check rejects, is reported.
 
 module A {
   class C {

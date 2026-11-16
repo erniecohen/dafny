@@ -814,7 +814,8 @@ walks the resolved statements and rejects any call (other than the initializing 
 method or ghost method with a nonempty `modifies` clause, with the error `ref_invalid_call_modifies`.
 Its kind is **weakens only**: it rejects programs and adds no fact or axiom.  No program in the suite or
 the standard library makes such a call (every refining program in both was resolved with the check), so
-the fix costs no proofs and has no `--legacy-*` opt-out.  The regression is
+the fix costs no proofs.  Still, as for every soundness fix, the hidden
+`--legacy-skeleton-modifying-calls` option restores the old rule for comparison and migration.  The regression is
 `git-issues/github-issue-412.dfy`; the release note is `docs/dev/news/412.fix`.
 
 ## Comparing crossed component types ([issue 47](https://github.com/erniecohen/dafny/issues/47))
