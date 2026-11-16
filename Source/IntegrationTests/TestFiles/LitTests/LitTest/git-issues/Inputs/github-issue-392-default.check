@@ -1,0 +1,4 @@
+// The default module's generated names have no module prefix.
+// CHECK-NOT: someBoundVariable#[A-Za-z]
+// CHECK: someBoundVariable#0
+// CHECK-NOT: someBoundVariable#[A-Za-z]

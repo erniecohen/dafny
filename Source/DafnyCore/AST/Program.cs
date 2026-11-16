@@ -55,6 +55,14 @@ public class Program : NodeWithoutOrigin {
 
   public ProofDependencyManager ProofDependencyManager { get; set; } = new();
 
+  private ModuleNamePrefixes? moduleNamePrefixes;
+  /// <summary>
+  /// The generated-name prefixes of this resolved program's modules, from the set of their full
+  /// names. Computed on first use, after resolution.
+  /// </summary>
+  internal ModuleNamePrefixes ModuleNamePrefixes => System.Threading.LazyInitializer.EnsureInitialized(
+    ref moduleNamePrefixes, () => ModuleNamePrefixes.For(ModuleSigs?.Keys.Select(m => m.FullName) ?? []));
+
   // CLI batches capture this before translating their first request.
   [JsonIgnore]
   public string? PreludeText { get; set; }
