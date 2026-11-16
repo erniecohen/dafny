@@ -707,3 +707,5 @@ git-issues/github-issue-202.dfy
 
 # A cast through a chain of forty newtypes translates as before and keeps its verdicts, now that the translator remembers the ancestor of each type it converts (https://github.com/erniecohen/dafny/issues/378).
 git-issues/github-issue-378.dfy
+
+# --warn-unchecked-termination is on by default, owner decision of 2026-11-15, with the hidden --legacy-no-unchecked-termination-warning (https://github.com/erniecohen/dafny/issues/211): extends git-issues/github-issue-211-warning.dfy, listed above.

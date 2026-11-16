@@ -1,4 +1,4 @@
-// RUN: %resolve "%s" > "%t"
+// RUN: %resolve --warn-unchecked-termination=false "%s" > "%t"
 // RUN: %diff "%s.expect" "%t"
 
 abstract module A {

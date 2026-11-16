@@ -1,4 +1,4 @@
-// RUN: %exits-with 2 %resolve --type-system-refresh --general-traits=datatype "%s" > "%t"
+// RUN: %exits-with 2 %resolve --warn-unchecked-termination=false --type-system-refresh --general-traits=datatype "%s" > "%t"
 // RUN: %diff "%s.expect" "%t"
 
 module Api { trait {:termination false} V {} }
