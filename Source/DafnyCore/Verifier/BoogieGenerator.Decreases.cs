@@ -173,6 +173,9 @@ public partial class BoogieGenerator {
     if (callable is Method { FunctionFromWhichThisIsByMethodDecl: { } function }) {
       return GlobalBound(function);
     }
+    if (ExtremeOfPrefix(callable) is { } extreme) {
+      return GlobalBound(extreme)?.ConvertAll(PrefixSubstituter(extreme, callable).Substitute);
+    }
     var declared = ModularTermination.DeclaredGlobalBound(callable);
     if (declared != null) {
       return declared;
@@ -189,6 +192,35 @@ public partial class BoogieGenerator {
     var sub = new FunctionCallSubstituter(substMap, typeMap, (TraitDecl)((MemberDecl)parent).EnclosingClass,
       (TopLevelDeclWithMembers)member.EnclosingClass);
     return parentBound.ConvertAll(sub.Substitute);
+  }
+
+  /// <summary>
+  /// The extreme predicate or lemma whose prefix predicate or lemma "callable" is, or null.  Under
+  /// --modular-termination a prefix member has the bounds of its extreme member: it is that member's body, run to
+  /// a depth _k, and a call of one is a call of the other.
+  /// </summary>
+  static ICallable ExtremeOfPrefix(ICallable callable) {
+    return callable switch {
+      PrefixPredicate p => p.ExtremePred,
+      PrefixLemma l => l.ExtremeLemma,
+      _ => null
+    };
+  }
+
+  /// <summary>
+  /// Rewrites an expression over the formals and type parameters of "extreme" to one over those of its prefix
+  /// member "prefix", whose first formal is the extra _k.
+  /// </summary>
+  static Substituter PrefixSubstituter(ICallable extreme, ICallable prefix) {
+    var substMap = new Dictionary<IVariable, Expression>();
+    for (var i = 0; i < extreme.Ins.Count; i++) {
+      substMap.Add(extreme.Ins[i], Expression.CreateIdentExpr(prefix.Ins[i + 1]));
+    }
+    var typeMap = new Dictionary<TypeParameter, Type>();
+    for (var i = 0; i < extreme.TypeArgs.Count; i++) {
+      typeMap.Add(extreme.TypeArgs[i], new UserDefinedType(prefix.TypeArgs[i]));
+    }
+    return new Substituter(null, substMap, typeMap);
   }
 
   /// <summary>
@@ -316,6 +348,9 @@ public partial class BoogieGenerator {
   List<Expression> CallbackBound(ICallable callable, int index) {
     if (callable is Method { FunctionFromWhichThisIsByMethodDecl: { } function }) {
       return CallbackBound(function, index);
+    }
+    if (ExtremeOfPrefix(callable) is { } extreme) {
+      return index == 0 ? null : CallbackBound(extreme, index - 1)?.ConvertAll(PrefixSubstituter(extreme, callable).Substitute);
     }
     if (index >= callable.Ins.Count) {
       return null;

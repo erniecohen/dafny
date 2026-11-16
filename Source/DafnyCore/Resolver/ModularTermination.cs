@@ -580,16 +580,21 @@ public class ModularTerminationAnalysis {
   }
 
   /// <summary>
-  /// The source owner of an evaluation: the iterator for its constructor/Valid/MoveNext protocol,
-  /// otherwise the member itself.
+  /// The source owner of an evaluation: the iterator for its constructor/Valid/MoveNext protocol, the extreme
+  /// predicate or lemma for its prefix predicate or lemma, otherwise the member itself.
   /// </summary>
   private static Declaration NodeOf(Declaration declaration) {
     return declaration is MemberDecl member ? NodeOf(member) : declaration;
   }
 
   private static Declaration NodeOf(MemberDecl member) {
-    return member.EnclosingClass is IteratorDecl iter &&
-           (member == iter.Member_Init || member == iter.Member_Valid || member == iter.Member_MoveNext) ? iter : member;
+    return member switch {
+      // A prefix predicate or lemma is its extreme member's body, run to a depth _k.
+      PrefixPredicate prefix => prefix.ExtremePred,
+      PrefixLemma prefix => prefix.ExtremeLemma,
+      _ => member.EnclosingClass is IteratorDecl iter &&
+           (member == iter.Member_Init || member == iter.Member_Valid || member == iter.Member_MoveNext) ? iter : member
+    };
   }
 
   /// <summary>

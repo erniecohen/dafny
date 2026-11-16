@@ -529,6 +529,17 @@ it implements declares a global bound:
   global bound. The attribute may also be put on a function, method, constant, type or iterator to promise that it
   is a leaf, which other leaves may then call across an import.
 
+These rules apply to every call, including a call of a least or greatest predicate, of its prefix
+predicate, and a co-call: the clusters that exempt those from the ordinary decreases check do not see
+calls across modules. An extreme predicate cannot declare a decreases clause, so it has no bound: a
+member with a global bound may call one only if it reaches no dispatched call, and may dispatch to an
+extreme predicate slot only if that slot is an explicit leaf. A least or greatest lemma's body, which
+is checked as its prefix lemma's, runs under the lemma's global bound.
+
+A foreign subtrait may redeclare a member with no bound and give it one. Calls through the subtrait
+then see that bound, but its implementations still implement the member with no bound, so they must
+be leaves and cannot declare a bound of their own.
+
 The legacy forms keep their meaning: an undeclared member of a trait with `{:termination false}`, or
 implemented by a type with `@AssumeCrossModuleTermination`, is exempt from the leaf rule, as an
 unchecked premise that `--warn-unchecked-termination` reports. Declared bounds still bind it.
