@@ -732,5 +732,8 @@ git-issues/github-issue-404.dfy
 # The legacy resolver (--type-system-refresh:false) inherits no members from a non-numeric newtype base, which it rejects, so selecting one is an error rather than a crash, as with --type-system-refresh (https://github.com/erniecohen/dafny/issues/417).
 git-issues/github-issue-417.dfy
 
+# Opt-in --verification-cache stores blobs compressed with zlib under the SHA-256 of their uncompressed bytes; earlier uncompressed and mixed caches still replay, and a truncated or corrupted compressed blob is a miss with the same report (https://github.com/erniecohen/dafny/issues/388).
+git-issues/git-issue-388.dfy
+
 # A statement added by a skeleton may not call a method that modifies state, which made inherited postconditions contradict new ones (https://github.com/erniecohen/dafny/issues/412).
 git-issues/github-issue-412.dfy
