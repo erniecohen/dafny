@@ -723,6 +723,8 @@ git-issues/github-issue-390-generic.dfy
 git-issues/github-issue-390-newtype.dfy
 # --verification-cache is used by a self-contained build, whose bundled libhostfxr and libhostpolicy identify its host, and by each request of --filter-position-batch, with results identical to uncached runs and a miss for an edited task (https://github.com/erniecohen/dafny/issues/387).
 git-issues/github-issue-387.dfy
+# Under --type-system-refresh, operators in the witness of a newtype without a constraint variable are resolved before TypeRefinementVisitor reads them, and an underspecified witness is reported, as with a constraint variable; a Debug build failed an assertion or a cast (https://github.com/erniecohen/dafny/issues/422).
+git-issues/github-issue-422.dfy
 
 # --print writes a refining datatype or codatatype that declares no constructors with "...", as it was written, in every print mode, so the printed program parses (https://github.com/erniecohen/dafny/issues/415).
 git-issues/github-issue-415.dfy
