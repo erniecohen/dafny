@@ -39,11 +39,21 @@ namespace Microsoft.Dafny {
       if (other == null) {
         return true;
       }
-      var otherTokens = other.Tokens();
+      // A cache hit must not copy the other scope's tokens: this check runs for nearly every
+      // declaration the translator meets. Scopes only grow, and growing this scope clears its
+      // cache, so a cached overlap stays true and a cached non-overlap is still exact while the
+      // other scope's token count is unchanged.
+      int otherCount;
+      lock (other.syncRoot) {
+        otherCount = other.scopeTokens.Count;
+      }
       lock (syncRoot) {
-        if (cached.TryGetValue(other, out var result) && result.Item1 == otherTokens.Length) {
+        if (cached.TryGetValue(other, out var result) && (result.Item2 || result.Item1 == otherCount)) {
           return result.Item2;
         }
+      }
+      var otherTokens = other.Tokens();
+      lock (syncRoot) {
         var overlaps = scopeTokens.Overlaps(otherTokens);
         cached[other] = new Tuple<int, bool>(otherTokens.Length, overlaps);
         return overlaps;
