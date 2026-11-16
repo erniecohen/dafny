@@ -731,3 +731,9 @@ git-issues/github-issue-404.dfy
 
 # The legacy resolver (--type-system-refresh:false) inherits no members from a non-numeric newtype base, which it rejects, so selecting one is an error rather than a crash, as with --type-system-refresh (https://github.com/erniecohen/dafny/issues/417).
 git-issues/github-issue-417.dfy
+
+# The resolved program that --rprint prints lists the bitvector types the program uses, in order and with the widths that lowering a shift adds, as the translator declares them; under --type-system-refresh, _System again declares each bvN with RotateLeft and RotateRight. git-issue-1665 prints the module-prefixed names generated for :- and the match source's type for an untyped case variable (https://github.com/erniecohen/dafny/issues/441).
+dafny0/TypeConversions.dfy
+traits/TraitResolution0.dfy
+dafny4/git-issue228.dfy
+git-issues/git-issue-1665.dfy
