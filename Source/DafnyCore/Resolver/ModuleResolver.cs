@@ -2468,7 +2468,14 @@ namespace Microsoft.Dafny {
           // ignore any subset types, since they have no members and thus we don't need their type-parameter mappings
           var baseType = newtypeDecl.BaseType.NormalizeExpand();
           baseTypeArguments = baseType.TypeArgs;
-          if (baseType is UserDefinedType { ResolvedClass: TopLevelDeclWithMembers topLevelDeclWithMembers }) {
+          if (baseType.ClassifyNumericAncestry().Kind == Type.NumericAncestryKind.NonNumeric) {
+            // This resolver accepts only a numeric base. It reports any other base once inference is done (see
+            // "NumericType" in ResolveNamesAndInferTypesForOneDeclarationInitial), but members are selected before
+            // then. So, like the pre-type resolver with a base it rejects, inherit nothing from such a base. Its
+            // members are not members of the newtype, and ResolveExprDotCall cannot instantiate them through it
+            // (https://github.com/erniecohen/dafny/issues/417). A base whose ancestry is not known yet, because a
+            // newtype on the way to it has a base still to be inferred, keeps its members.
+          } else if (baseType is UserDefinedType { ResolvedClass: TopLevelDeclWithMembers topLevelDeclWithMembers }) {
             baseTypeDecl = topLevelDeclWithMembers;
           } else if (Options.Get(CommonOptionBag.GeneralNewtypes) || baseType.IsIntegerType || baseType.IsRealType) {
             baseTypeDecl = GetSystemValuetypeDecl(baseType);
