@@ -1002,3 +1002,21 @@ _Refining statements are no longer supported in Dafny._
 
 _Refining statements are no longer supported in Dafny._
 
+## **Error: refinement method cannot call a method that may modify state ('_name_')** {#ref_invalid_call_modifies}
+
+```dafny
+module A {
+  class C { var f: int }
+  method Set2(c: C) modifies c ensures c.f == 2 { c.f := 2; }
+  method M(c: C) modifies c ensures c.f == 1 { c.f := 1; }
+}
+module B refines A {
+  method M ... ensures c.f == 2 { ...; Set2(c); }
+}
+```
+
+A statement added to an inherited method body must not change state that the parent module knows about,
+because what the inherited body established, such as its postconditions, is not proved again in the
+refining module. A call to a method whose `modifies` clause is not empty may change such state, so it is
+not allowed. A call to a lemma, or to a method with no `modifies` clause, is allowed.
+
