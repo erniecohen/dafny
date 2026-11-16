@@ -729,5 +729,8 @@ git-issues/github-issue-422.dfy
 # A refining module makes the override check of an inherited class member when it strengthens the trait member, adds the extension or replaces the import that declares it, and not when it changes neither member; the old rule proved false (https://github.com/erniecohen/dafny/issues/404).
 git-issues/github-issue-404.dfy
 
+# The legacy resolver (--type-system-refresh:false) inherits no members from a non-numeric newtype base, which it rejects, so selecting one is an error rather than a crash, as with --type-system-refresh (https://github.com/erniecohen/dafny/issues/417).
+git-issues/github-issue-417.dfy
+
 # Asking whether a recursive datatype with no values is nonempty (a (00) type argument, a (00) type refined by it, a local of it) reports an error instead of overflowing the stack in Type.GetAutoInit, for direct, mutual, arrow and non-regular recursion, while types with values keep their answers (https://github.com/erniecohen/dafny/issues/413).
 git-issues/github-issue-413.dfy
