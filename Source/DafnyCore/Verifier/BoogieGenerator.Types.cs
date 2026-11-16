@@ -5,6 +5,7 @@ using System.Numerics;
 using System.Diagnostics.Contracts;
 using System.IO;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using Bpl = Microsoft.Boogie;
 using BplParser = Microsoft.Boogie.Parser;
@@ -1277,6 +1278,44 @@ public partial class BoogieGenerator {
 
 
   /// <summary>
+  /// Ancestors already computed by ConvertExpression during this translation, keyed by the type object and the
+  /// visibility scope it was normalized in. Well-formedness re-translates the operand of every conversion, so
+  /// a nested cast "((b as L0) as L1) ... as LN" over a chain of newtypes asks for the ancestors of the same
+  /// O(N) type objects O(N^2) times, and each uncached walk follows up to N layers (issue 378).
+  /// </summary>
+  private readonly Dictionary<(Type Type, VisibilityScope Scope), Type> ancestorTypeCache =
+    new(new AncestorTypeCacheKeyComparer());
+
+  private sealed class AncestorTypeCacheKeyComparer : IEqualityComparer<(Type Type, VisibilityScope Scope)> {
+    public bool Equals((Type Type, VisibilityScope Scope) x, (Type Type, VisibilityScope Scope) y) {
+      return ReferenceEquals(x.Type, y.Type) && ReferenceEquals(x.Scope, y.Scope);
+    }
+
+    public int GetHashCode((Type Type, VisibilityScope Scope) key) {
+      return HashCode.Combine(RuntimeHelpers.GetHashCode(key.Type), RuntimeHelpers.GetHashCode(key.Scope));
+    }
+  }
+
+  /// <summary>
+  /// Same result as type.NormalizeToAncestorType(). Translation runs after resolution, so a type object and
+  /// the declarations it reaches no longer change, and the walk depends only on them and on the current
+  /// visibility scope. Only Resolved results are cached; Undetermined and Cyclic ones are recomputed each time,
+  /// so a cycle still throws, and a type that still mentions an unresolved proxy is never cached.
+  /// </summary>
+  private Type CachedAncestorType(Type type) {
+    var key = (type, Type.GetScope());
+    if (ancestorTypeCache.TryGetValue(key, out var cached)) {
+      return cached;
+    }
+    var ancestry = type.NormalizeToAncestorTypeChecked();
+    if (ancestry.Kind == Type.AncestorTypeKind.Resolved) {
+      ancestorTypeCache[key] = ancestry.AncestorType;
+      return ancestry.AncestorType;
+    }
+    return type.NormalizeToAncestorType();
+  }
+
+  /// <summary>
   /// Returns the translation of converting "r", whose Dafny type was "fromType", to a value of type "toType".
   /// The translation assumes that "r" is known to be a value of type "toType".
   /// </summary>
@@ -1285,8 +1324,8 @@ public partial class BoogieGenerator {
     Contract.Requires(r != null);
     Contract.Requires(fromType != null);
     Contract.Requires(toType != null);
-    toType = toType.NormalizeToAncestorType();
-    fromType = fromType.NormalizeToAncestorType();
+    toType = CachedAncestorType(toType);
+    fromType = CachedAncestorType(fromType);
     if (fromType.IsTypeParameter) {
       return UnboxUnlessInherentlyBoxed(r, toType);
     } else if (fromType.IsNumericBased(Type.NumericPersuasion.Int)) {

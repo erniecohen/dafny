@@ -705,6 +705,9 @@ git-issues/github-issue-196.dfy
 # Under --detect-witness-matching-loops, an existential under a universal whose witness re-matches the universal's trigger, as in a subset-type invariant forall q | q in below :: exists p :: p in below && q < p, gets the matching-loop warning, and quantifiers whose nested variables are universal get none (https://github.com/erniecohen/dafny/issues/202).
 git-issues/github-issue-202.dfy
 
+# A cast through a chain of forty newtypes translates as before and keeps its verdicts, now that the translator remembers the ancestor of each type it converts (https://github.com/erniecohen/dafny/issues/378).
+git-issues/github-issue-378.dfy
+
 # Under --type-system-refresh --contextual-lambda-domains, a function-result lambda whose parameter takes its type from the declared arrow domain and is passed to a formal that names that type through a synonym (generic, of a subset type, or of a newtype) resolves without crashing, and subset constraints of the formal are still checked (https://github.com/erniecohen/dafny/issues/390).
 git-issues/github-issue-390.dfy
 git-issues/github-issue-390-subset.dfy
