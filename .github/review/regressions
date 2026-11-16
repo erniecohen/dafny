@@ -731,3 +731,6 @@ git-issues/github-issue-404.dfy
 
 # The legacy resolver (--type-system-refresh:false) inherits no members from a non-numeric newtype base, which it rejects, so selecting one is an error rather than a crash, as with --type-system-refresh (https://github.com/erniecohen/dafny/issues/417).
 git-issues/github-issue-417.dfy
+# A let-such-that expression whose condition depends on the allocation state (a quantifier or comprehension over the allocated objects or over a type parameter's values, a sequence constructor whose initializer reads the heap, "old" around either, a two-state call) has a choice function that takes that heap: two such expressions around an allocation or a heap update do not prove false, and the verifier does not crash (https://github.com/erniecohen/dafny/issues/431).
+git-issues/github-issue-431.dfy
+git-issues/github-issue-431-more.dfy
