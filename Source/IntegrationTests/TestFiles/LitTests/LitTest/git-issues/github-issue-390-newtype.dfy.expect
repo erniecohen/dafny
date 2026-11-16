@@ -1,0 +1,5 @@
+
+Dafny program verifier did not attempt verification
+github-issue-390-newtype.dfy(18,34): Error: value does not satisfy the subset constraints of 'Small'
+
+Dafny program verifier finished with 2 verified, 1 error
