@@ -129,10 +129,12 @@ shapes. Nonincrease, a TOP comparison that wins, induction hypotheses, the loop
 summary, `decreases to`, overrides and every other component type keep the
 corrected helper too.
 
-Since the two shapes are the same formula, this changes no verdict. The solver
-can still find one shape much harder than the other in a large proof context:
-the issue measured a single `decreases b - a` at 33 times the legacy cost. The
-diagnostic changes too: a negative integer measure is again reported as not
+Since the two shapes are the same formula, this changes no program's
+correctness, only what the solver is asked. Either shape can be much harder for
+the solver in a given proof context: the issue measured a single
+`decreases b - a` at 33 times the legacy cost, while in the test suite the split
+shape runs out of resources in two proofs that the single assertion finished.
+The diagnostic changes too: a negative integer measure is again reported as not
 bounded below, as it was before the corrected order.
 
 For transitivity and absorption, choose the earlier decisive strict coordinate
