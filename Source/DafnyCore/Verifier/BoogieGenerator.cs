@@ -768,11 +768,13 @@ namespace Microsoft.Dafny {
       RequireCardinalityValidation(p);
       using var moduleNames = new ModuleNamingScope(forModule.FullName, p.ModuleNamePrefixes);
       Type.ResetScopes();
+      ancestorTypeCache.Clear();
       try {
         proofDependencies.SetCurrentDefinition(forModule.FullName, forModule.EnclosingLiteralModuleDecl);
         return DoTranslationCore(p, forModule);
       } finally {
         Type.ResetScopes();
+        ancestorTypeCache.Clear();
       }
     }
 

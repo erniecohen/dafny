@@ -705,5 +705,8 @@ git-issues/github-issue-196.dfy
 # Under --detect-witness-matching-loops, an existential under a universal whose witness re-matches the universal's trigger, as in a subset-type invariant forall q | q in below :: exists p :: p in below && q < p, gets the matching-loop warning, and quantifiers whose nested variables are universal get none (https://github.com/erniecohen/dafny/issues/202).
 git-issues/github-issue-202.dfy
 
+# A cast through a chain of forty newtypes translates as before and keeps its verdicts, now that the translator remembers the ancestor of each type it converts (https://github.com/erniecohen/dafny/issues/378).
+git-issues/github-issue-378.dfy
+
 # Generated names carry a short module prefix, M plus the shortest unshared start of the base-32 SHA-256 of the module name, not the hex of the whole name, and the default module carries none (https://github.com/erniecohen/dafny/issues/392).
 git-issues/github-issue-392.dfy
