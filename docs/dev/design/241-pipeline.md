@@ -707,7 +707,10 @@ over-key filters where their independence from encoding has not been proved.
 `--filter-position-batch` requests again with fresh tasks. V1 persistent **reads
 are bypassed throughout such a batch**, including records already on disk and
 same-invocation deduplication. Write-only publication for later ordinary
-invocations is permitted under the cache option. Preserve its one resolved
+invocations is permitted under the cache option. (Superseded by
+https://github.com/erniecohen/dafny/issues/387: under `--verification-cache` each
+batch request now reads and writes the cache as a separate `--filter-position` run
+does; without the option, repeated requests still run again.) Preserve its one resolved
 program, captured prelude, separate request dependency maps, per-request
 summaries, combined logs and failure aggregation. Batch result reuse would be a
 separate explicitly requested semantic change.

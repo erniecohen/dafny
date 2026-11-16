@@ -1281,6 +1281,10 @@ jobs:
           test "$v" = "${{ needs.build.outputs.version }}"
           out/dafny/dafny verify --solver-path "$z/bin/z3" \
             Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/git-issue-6537.dfy
+          # The persistent verification cache works on the self-contained layout, which has
+          # no host/fxr (https://github.com/erniecohen/dafny/issues/387).
+          python3 .github/review/verification-cache-self-contained.py out/dafny/dafny "$z/bin/z3" \
+            Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/github-issue-387.dfy "$RUNNER_TEMP/cache-387"
       - name: Zip
         run: |
           name=dafny-${{ needs.build.outputs.version }}-${{ matrix.rid }}.zip

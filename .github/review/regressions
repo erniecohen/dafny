@@ -718,6 +718,8 @@ git-issues/github-issue-390.dfy
 git-issues/github-issue-390-subset.dfy
 git-issues/github-issue-390-generic.dfy
 git-issues/github-issue-390-newtype.dfy
+# --verification-cache is used by a self-contained build, whose bundled libhostfxr and libhostpolicy identify its host, and by each request of --filter-position-batch, with results identical to uncached runs and a miss for an edited task (https://github.com/erniecohen/dafny/issues/387).
+git-issues/github-issue-387.dfy
 
 # A refining module makes the override check of an inherited class member when it strengthens the trait member, adds the extension or replaces the import that declares it, and not when it changes neither member; the old rule proved false (https://github.com/erniecohen/dafny/issues/404).
 git-issues/github-issue-404.dfy

@@ -41,7 +41,7 @@ public static class VerifyCommand {
     @"Filter what gets verified based on a source location. The location is specified as a file path suffix, optionally followed by a colon and a line number or line range. For example, `dafny verify dfyconfig.toml --filter-position=source1.dfy:5-7` will only verify things that between (and including) line 5 and 7 in the file `source1.dfy`. You can also use `:5`, `:5-`, `:-5` to specify individual lines or open ranges. In combination with `--isolate-assertions`, individual assertions can be verified by filtering on the line that contains them. When processing a single file, the filename can be skipped, for example: `dafny verify MyFile.dfy --filter-position=:23`");
 
   public static readonly Option<IList<string>> FilterPositionBatch = new("--filter-position-batch", () => new List<string>(),
-    "Resolve the program once and verify a sequence of position filters in order. Repeat this option once per filter, using the same syntax as --filter-position. Duplicate and overlapping filters are verified again with fresh proof tasks. Inputs and all other options stay fixed for this invocation; the prelude is captured before the first request. Changes require a new invocation. Reports one summary per filter and a combined verification log. Cannot be combined with --filter-position.") {
+    "Resolve the program once and verify a sequence of position filters in order. Repeat this option once per filter, using the same syntax as --filter-position. Duplicate and overlapping filters are verified again with fresh proof tasks; with --verification-cache, each request reads and writes that cache as a separate --filter-position run would. Inputs and all other options stay fixed for this invocation; the prelude is captured before the first request. Changes require a new invocation. Reports one summary per filter and a combined verification log. Cannot be combined with --filter-position.") {
     ArgumentHelpName = "position",
     Arity = ArgumentArity.OneOrMore,
     AllowMultipleArgumentsPerToken = false
@@ -84,7 +84,6 @@ public static class VerifyCommand {
 
   public static async Task<int> HandleVerification(DafnyOptions options) {
     var batch = options.GetOrOptionDefault(FilterPositionBatch).ToArray();
-    options.VerificationCacheBatchMode = batch.Length != 0;
     if (batch.Length != 0 && options.Get(FilterPosition) != null) {
       ErrorReporter reporter = options.DiagnosticsFormat switch {
         DafnyOptions.DiagnosticsFormats.PlainText => new ConsoleErrorReporter(options),
@@ -109,7 +108,7 @@ public static class VerifyCommand {
       if (resolution is { HasErrors: false, CanVerifies: not null }) {
         await HandleBatch(compilation, resolution, batch);
       }
-      return await compilation.GetAndReportExitCode();
+      return Finish(options, await compilation.GetAndReportExitCode());
     }
 
     if (resolution != null) {
@@ -126,7 +125,11 @@ public static class VerifyCommand {
       await proofDependenciesReported;
     }
 
-    var exitCode = await compilation.GetAndReportExitCode();
+    return Finish(options, await compilation.GetAndReportExitCode());
+  }
+
+  /// <summary>Records the result cache's counters, for a batch as for a single request.</summary>
+  private static int Finish(DafnyOptions options, int exitCode) {
     if (Caching.TaskCacheSession.TryFor(options) is { } cache) {
       PipelineProfile.For(options)?.Point("result-cache", new Dictionary<string, object?> {
         ["solverStarts"] = cache.SolverStarts, ["solverVersionProbes"] = options.VerificationCacheVersionProbes, ["hits"] = cache.Hits,
