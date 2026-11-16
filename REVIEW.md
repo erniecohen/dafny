@@ -823,6 +823,30 @@ The hidden `--legacy-elided-override-checks` option restores the old rule for co
 migration.  The regression is `git-issues/github-issue-404.dfy`; the release note is
 `docs/dev/news/404.fix`.
 
+## Inherited constructors of classes with new fields ([issue 411](https://github.com/erniecohen/dafny/issues/411))
+
+A refining module may add a field to a class whose constructor it inherits unchanged.  The copied
+constructor cannot assign the new field, and its body's definite-assignment check for the field,
+at `new;` or at the end of the body, is not at an inherited origin, so it survives as an assert.
+But the pipeline never scheduled a copied member's tasks, so `dafny verify` never checked it, and
+a read of the uninitialized field proved `false` (the compile commands, which verify the whole
+Boogie program, did report it).  `BoogieGenerator.MustCheckInheritedConstructorFields` now decides
+when a refining module verifies an inherited constructor: when the constructor has a body and the
+module adds an instance field that is subject to definite-assignment rules (one that the base
+class's constructed object lacks).  `MustVerifyCopy` joins it with issue 404's
+`MustReverifyInheritedOverrideCheck`, and the pipeline schedules the body task of such a
+constructor the way it schedules a reverified override check (`IsReverifiedInheritedCheck`).
+Every other assert of the copied body stays where refinement put it: asserts at inherited origins
+are assumed.  The field checks assert at the base's origin, since a copied `new;` is inherited,
+with the refining module as a related location.  A module that adds no such field, or that
+declares the constructor itself, gets the same Boogie program as before.
+Its kind is **asserts more**: it rejects programs, by verifying an existing assert the old
+pipeline skipped, and adds no fact or axiom.  It has no `--legacy-*` opt-out, because it costs no
+proof: the inherited body cannot assign the new field, so a check it adds fails unless the body
+cannot reach `new;` or its end, and in the test suite it adds a check only to its regression.
+The regression is `git-issues/github-issue-411.dfy`; the release note is
+`docs/dev/news/411.fix`.
+
 ## Comparing crossed component types ([issue 47](https://github.com/erniecohen/dafny/issues/47))
 
 With `--type-system-refresh`, `==`, `!=`, `in`, `!in` and prefix equality required, in their final
