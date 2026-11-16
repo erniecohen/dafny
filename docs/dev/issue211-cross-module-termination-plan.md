@@ -33,6 +33,9 @@ replace the detailed designs it builds on:
   the sequential part of VeriFast's call permissions, construct by construct.
   Stage 2 now requires stored and returned callables and a multiset order, and
   stage 2(e) adds an acceptance suite of ported examples. Sugar is optional.
+  The CPS port (Figs. 16–17) then showed that a stored bound covers VeriFast's
+  one-shot continuation permissions when bounds are bags of bags, so no consumable
+  form is needed (§8, question 5).
 
 The owner's proposal, as given, has two holes, both shown by programs that prove
 `false` (§2.2). The repair is small, and the rest of the proposal survives it:
@@ -414,6 +417,8 @@ Each stage is opt-in by use, so none needs the `AGENTS.md` exception for default
     gives, by König's lemma, a descending chain in `O`.
   - It is usable wherever an order is: `decreases {:global} d by Multiset<O>`,
     callback bounds, tuples of bounds.
+  - It must compose: `Multiset<Multiset<O>>` is an admitted order, because the CPS
+    example (§7.2, row 12) is bounded by a bag of bags of levels.
   - It ships with the lemmas VeriFast's `termination.gh` provides and its
     examples use: replacing one element by finitely many lower ones
     (`bag_lt_cons_lt`), adding an element (`bag_lt_xs_cons_xs`), monotonicity of
@@ -590,7 +595,7 @@ optional sugar.
 | 9 | Dynamic depth as an argument of an abstract predicate family: `RealFunc(d)`, `IntSet(d)`, `{o.*}` (§4.3–4.4, Figs. 10–12, 15); the struct field `d` in `cons.c` | a trait field `ghost const depth` (or a `ghost var` under `Valid()`) that bounds may read (rule 8), and `Valid()` bounded below the members it guards. Example below | matched; runs today |
 | 10 | Ghost and data-dependent levels: free variables of a contract are universally quantified (pp. 668, 673); `call_perm((n, {integrateIter} ⊎ d))` (Fig. 13) | bounds are expressions over parameters, ghost parameters and readable fields, captured on entry | matched; runs today (`IntegrateIter`) |
 | 11 | Returned permissions (`Λ' <= Λ`, p. 676) and returned objects whose depth is bounded, `ensures result.RealFunc(d) ∧ d < {createSum} ⊎ d1 ⊎ d2` (Figs. 11–12) | `B` is fixed on entry, so returned permissions add nothing. Returned objects: `ensures` on the depth of `result` | matched for objects (runs today). For returned function values, **gap: stage 2(c)** |
-| 12 | Permissions stored in objects: continuations carry `call_perm` in their predicates and use it once (§4.4, Figs. 16–17) | a stored ghost bound value, reusable rather than consumed. Whoever invokes a stored object needs a bound above its depth, so the CPS port folds the continuation's depth into the bound: `containsCPS` gets `depth + cont.depth` | believed matched by this encoding, **not yet shown**: the Figs. 16–17 port decides it (§7.3). If it fails, the gap is one-shot (linear) evidence, and no stage covers that yet (§8, question 5) |
+| 12 | Permissions stored in objects: continuations carry `call_perm` in their predicates and use it once (§4.4, Figs. 16–17) | a stored ghost bound value, reusable rather than consumed. Folding a single depth into the bound fails: `intersectsCPS` would count `other`'s depth twice. What works is VeriFast's own measure, the stock of permissions, held as a nested bag. Each continuation stores `stock: multiset<multiset<nat>>`, its own level added to its continuation's stock. `containsCPS` is bounded by `{depth} + k.stock`, `intersectsCPS` by `{depth + other.depth} + k.stock`, and `Invoke` by `stock`, all under the multiset order applied twice | matched. The Figs. 16–17 port verifies with a stand-in for that order (§7.3). The stock already counts the permissions held in stored predicates, so §7.1's simulation covers them once bounds are nested bags, and no consumable evidence is needed (§8, question 5). It needs stage 2(d), applied to its own output |
 | 13 | Function pointers with level specs: a `typedef` with `terminates` and `call_perm` in its contract, stored in a struct, ordered by `func_lt` (§5; `funcptr.c`, `cons.c`) | parameters: `decreases {:callback f} E` (M3, done). Stored or returned: `bounded<O, F>` (issue 266) | parameters matched; stored and returned: **gap, stage 2(c)**. Applying a stored value of unknown code is rejected today |
 | 14 | A call consumes a permission whose bag contains the callee, `f ∈ d` (§5, p. 687) | not needed: the callee's declared bound is what is compared | matched (ours asks less) |
 | 15 | No loops: loops become recursive methods (§1). VeriFast's implementation has loops with `decreases` (`simple_termination1.c`) | loops with `decreases` | matched |
@@ -645,18 +650,18 @@ named in §7.2.
 |---|---|---|---|
 | Fig. 1, `Identity.test` (§1) | verifies | verifies; control fails | — |
 | Fig. 1, `Loopy.test` (§1) | rejected at `Loopy.apply`'s call of `derivative` | rejected there (callee bound `depth + 1` exceeds `depth`) | — |
-| Fig. 4, `PlusN` and `Twice` (§2.1), with depths | verifies | not ported yet; same pattern as Figs. 10–13 | — |
+| Fig. 4, `PlusN` and `Twice` (§2.1), with depths | verifies | verifies (`Twice(f)` has depth `f.depth + 1`); control fails; a `Twice` that does not raise the depth is rejected at both calls of `f.Apply` | — |
 | Fig. 8, `sqrt` (§4.1); Fig. 9, `isOdd`/`isEven` (§4.2); Ackermann (§4.2) | verifies | verifies; control fails | — |
 | Figs. 10–13: `RealFunc`, `LinearFunc`, `Sum`, `integrate` and `main` (§4.3) | verifies | verifies with depth as `nat`; control fails | stage 2(d) for the faithful bag version and Fig. 14's inequalities |
 | Fig. 15, `IntSet` with `intersects` (§4.4) | verifies | verifies with submultisets; control fails | — |
-| Figs. 16–17, CPS `containsCPS` and `intersectsCPS` (§4.4) | verifies | not ported yet. Continuations return a value in place of `Nothing`, which does not change the termination argument | the row 12 encoding; stage 2(d) if `InsertCont3`'s bound needs it |
+| Figs. 16–17, CPS `containsCPS` and `intersectsCPS` (§4.4) | verifies | verifies with the row 12 encoding, where the nested Huet–Oppen order is a `Wfo` built with `Of` and its well-foundedness is an axiom; control fails; a continuation that passes itself on, in place of its own continuation, is rejected. Continuations return a value in place of `Nothing`, which does not change the termination argument | stage 2(d), applied twice, to replace the axiom |
 | `simple_recursion.c`, `ackermann.c` | verifies | as Figs. 9 and Ackermann (§5 of the paper says they correspond) | — |
-| `simple_termination1.c`, `simple_termination2.c`: loops calling an imported module | verifies | not ported yet; plain Dafny | — |
+| `simple_termination1.c`, `simple_termination2.c`: loops calling an imported module | verifies | verifies; control fails; the loop without its increment is rejected | — |
 | `funcptr.c`: a function pointer stored in a struct, with a level spec | verifies | the trait form is Figs. 10–13; the stored-value form needs storage | stages 2(c), 2(d) |
 | `cons.c`: two function pointers and a bag stored in a struct | verifies | the trait form is Fig. 15; the stored-value form needs storage | stages 2(c), 2(d) |
 | `termination_errors.c`: an endless loop, self-recursion, mutual recursion | each rejected | each rejected | — |
 | `termination_errors2.c`: a function called through a pointer to itself | rejected | rejected (`naked function in recursive setting`); a stored value of unknown code applied under a bound is rejected as TOP | — |
-| `proto_impl_error.c`: a non-terminating body under a terminating prototype | rejected | not ported yet; the analogue is a `decreases *` override of a terminating trait member | — |
+| `proto_impl_error.c`: a non-terminating body under a terminating prototype | rejected | rejected: the analogue, a `decreases *` override of a bounded trait method, fails resolution (`not allowed to override a terminating method with a possibly non-terminating method`) | — |
 | `inter_module_loop1.c`, `inter_module_loop2.c` | rejected | cannot be expressed: Dafny rejects the cyclic import at resolution (row 16) | — |
 | `termination.gh`, `call_perms.gh`, `termination.c` | — | library, not a test: the order lemmas become part of stage 2(d) | stage 2(d) |
 
@@ -677,10 +682,11 @@ systems share.
    declarations should get a "redundant" hint instead of the premise warning.
 4. When to remove `--modular-termination` after stage 4: after one release, as
    proposed, or once downstream users confirm they have migrated.
-5. Whether one-shot evidence is needed (§7.2, row 12). VeriFast's continuations
-   carry a permission that is used once, so whoever invokes them needs no level of
-   its own. Here a stored bound is reusable, so the invoker's bound must cover the
-   stored object's depth. I expect the CPS port to go through by folding that
-   depth into the invoker's bound. If some program needs the invoker to stay below
-   the stored object, that is a real gap. It would need a consumable form of
-   `bounded<O, F>`, which no stage covers.
+5. Settled: one-shot evidence is not needed (§7.2, row 12). VeriFast's
+   continuations carry a permission that is used once; here a stored bound is
+   reusable. A single folded depth does not cover the CPS example, but a nested
+   bag does. VeriFast's measure is the stock of permissions the caller holds,
+   including those in its predicates, and a continuation's stored stock is that
+   measure. So the simulation of §7.1 goes through with bounds of type
+   `multiset<multiset<L>>`, which stage 2(d) provides by applying the multiset
+   order to itself. No consumable `bounded<O, F>` stage is added.
