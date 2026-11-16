@@ -101,6 +101,40 @@ rankings just described. A negative old numeric component cannot itself justify
 further numeric descent. Thus the repair changes assumptions as well as checks;
 its soundness claim relies on these order arguments, not just on removing facts.
 
+### Integer tuples
+
+A strict check at a call or at the end of a loop iteration, whose terminal value
+is false and whose compared components are all int-based (without `by O`), is
+emitted in the legacy shape (https://github.com/erniecohen/dafny/issues/414):
+an assertion `B_k = 0 <= y_k || x_k == y_k || x_0 < y_0 || ... || x_(k-1) < y_(k-1)`
+for each component, then the lexicographic `x_0 < y_0 || (x_0 == y_0 && (x_1 < y_1 || ...))`
+without lower bounds. Their conjunction is the corrected `L_0`:
+
+* From legacy to corrected: the lexicographic part gives a `k` with `x_i == y_i`
+  for `i < k` and `x_k < y_k`. In `B_k` the other disjuncts are false, so
+  `0 <= y_k`. That is `s_k` after equal, hence weak, steps.
+* From corrected to legacy: take the least `k` with `w_i` for `i < k` and `s_k`.
+  If some `i < k` had `x_i != y_i`, then `w_i` gives `0 <= y_i` and `x_i <= y_i`,
+  so `x_i < y_i` and `s_i`, contradicting the choice of `k`. So `x_i == y_i` for
+  `i < k`, which with `x_k < y_k` is the lexicographic part. `B_j` holds by
+  equality for `j < k`, by `0 <= y_k` for `j = k`, and by `x_k < y_k` for `j > k`.
+
+The second step uses that a weak integer step that is not an equality is
+strict. That fails for reals, where `x <= y` need not give `x <= y - 1`: the
+corrected order accepts a fractional decrease followed by strict progress in a
+later component, and the legacy comparison does not. So real components keep
+the corrected helper. A callee tuple cut short by an incompatible pair, or by
+having fewer components than the caller, has terminal value false in both
+shapes. Nonincrease, a TOP comparison that wins, induction hypotheses, the loop
+summary, `decreases to`, overrides and every other component type keep the
+corrected helper too.
+
+Since the two shapes are the same formula, this changes no verdict. The solver
+can still find one shape much harder than the other in a large proof context:
+the issue measured a single `decreases b - a` at 33 times the legacy cost. The
+diagnostic changes too: a negative integer measure is again reported as not
+bounded below, as it was before the corrected order.
+
 For transitivity and absorption, choose the earlier decisive strict coordinate
 of the two comparisons. Every preceding coordinate composes weakly, and the
 component absorption laws preserve that strict coordinate. If neither comparison

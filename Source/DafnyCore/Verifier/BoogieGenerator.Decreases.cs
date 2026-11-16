@@ -440,9 +440,14 @@ public partial class BoogieGenerator {
     Contract.Requires(builder == null || suffixMsg != null);
     Contract.Ensures(Contract.Result<Bpl.Expr>() != null);
 
-    if (UseConsistentDecreasesOrder) {
+    if (UseConsistentDecreasesOrder &&
+        !(builder != null && !allowNoChange && !includeLowerBound && tailComparison != true && AllIntComponents(dafny0, dafny1))) {
       return ConsistentDecreasesCheck(toks, dafny0, dafny1, ee0, ee1, tailComparison ?? allowNoChange);
     }
+    // Under the corrected order, the legacy check below is used only for a strict check at a call or at the end of a
+    // loop iteration, whose terminal value is false and whose components are all int-based.  There it is the same formula
+    // as the corrected lift (docs/dev/decreases-order.md, "Integer tuples"), split into the bounded-below assertions and
+    // a lexicographic comparison without lower bounds, the shape that solvers handled before the corrected order.
 
     int N = dafny0.Count;
 
@@ -516,6 +521,25 @@ public partial class BoogieGenerator {
       }
     }
     return decrCheck;
+  }
+
+  /// <summary>
+  /// Whether every component pair is int-based, without a "by O" order.  For such components the legacy strict check
+  /// is the same formula as the corrected lift with terminal value false.
+  /// </summary>
+  static bool AllIntComponents(List<Expression> dafny0, List<Expression> dafny1) {
+    for (var i = 0; i < dafny0.Count; i++) {
+      if (DecreasesByExpr.OrderOf(dafny0[i]) != null || DecreasesByExpr.OrderOf(dafny1[i]) != null) {
+        return false;
+      }
+      // Not reals: a weak real step "0 <= y && x <= y" that is not strict ("x <= y - 1") may precede strict progress
+      // in a later component under the corrected order, where the legacy comparison needs equality.
+      if (!dafny0[i].Type.NormalizeToAncestorType().IsNumericBased(Type.NumericPersuasion.Int) ||
+          !dafny1[i].Type.NormalizeToAncestorType().IsNumericBased(Type.NumericPersuasion.Int)) {
+        return false;
+      }
+    }
+    return true;
   }
 
   /// <summary>

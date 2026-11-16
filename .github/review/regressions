@@ -718,3 +718,5 @@ git-issues/github-issue-390.dfy
 git-issues/github-issue-390-subset.dfy
 git-issues/github-issue-390-generic.dfy
 git-issues/github-issue-390-newtype.dfy
+# Termination checks on integer measures keep the shape they had before the corrected decreases order (https://github.com/erniecohen/dafny/issues/414)
+git-issues/github-issue-414.dfy
