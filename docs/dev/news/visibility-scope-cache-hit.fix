@@ -1,0 +1,1 @@
+Make a cached visibility check cost nothing again: since the dependency-local translation default, every check copied the other scope's token set and took a lock even when the answer was cached.
