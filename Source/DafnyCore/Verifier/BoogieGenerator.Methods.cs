@@ -1000,11 +1000,13 @@ namespace Microsoft.Dafny {
     /// module that adds such a field to the class, directly or through a parent it adds, while keeping the inherited
     /// constructor, must make the check, which the inherited body, unaware of the field, fails.  Every other assert of
     /// the copied body is still at an inherited origin, and so still assumed, and an inherited postcondition is
-    /// checked only under $_reverifyPost, which the body sets to false.
+    /// checked only under $_reverifyPost, which the body sets to false.  The hidden
+    /// --legacy-inherited-constructor-fields restores the old, unsound rule.
     /// </summary>
     public static bool MustCheckInheritedConstructorFields(MemberDecl member, DafnyOptions options) {
       if (member is not Constructor { Body: not null } constructor ||
-          constructor.EnclosingClass is not TopLevelDeclWithMembers cl) {
+          constructor.EnclosingClass is not TopLevelDeclWithMembers cl ||
+          options.Get(CommonOptionBag.LegacyInheritedConstructorFields)) {
         return false;
       }
       if (!constructor.Origin.IsInherited(cl.EnclosingModuleDefinition)) {

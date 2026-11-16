@@ -3,6 +3,7 @@
 // RUN: %exits-with 4 %verify "%S/Inputs/github-issue-411-include.dfy" >> "%t"
 // RUN: %exits-with 4 %verify "%S/Inputs/github-issue-411-client.dfy" --library "%S/Inputs/github-issue-411-library.dfy" >> "%t"
 // RUN: %verify "%S/Inputs/github-issue-411-positive.dfy" >> "%t"
+// RUN: %exits-with 0 %verify --legacy-inherited-constructor-fields "%s" >> "%t"
 // RUN: %diff "%s.expect" "%t"
 // Regression (https://github.com/erniecohen/dafny/issues/411): a refining module that adds a field
 // subject to definite-assignment rules to a class keeps the constructor it inherits, which cannot
@@ -11,7 +12,8 @@
 // constructor is now verified when its module adds such a field, with the module as a related
 // location; every other assert of the copied body stays assumed.  This holds when the base module is
 // in an included file or a library too.  Fields that need no definite assignment, and constructors the
-// refining module declares itself, are unaffected (Inputs/github-issue-411-positive.dfy).
+// refining module declares itself, are unaffected (Inputs/github-issue-411-positive.dfy).  The hidden
+// --legacy-inherited-constructor-fields restores the old, unsound rule, under which the program verifies.
 
 // The reproducer
 module A {

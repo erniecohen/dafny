@@ -841,9 +841,10 @@ are assumed.  The field checks assert at the base's origin, since a copied `new;
 with the refining module as a related location.  A module that adds no such field, or that
 declares the constructor itself, gets the same Boogie program as before.
 Its kind is **asserts more**: it rejects programs, by verifying an existing assert the old
-pipeline skipped, and adds no fact or axiom.  It has no `--legacy-*` opt-out, because it costs no
-proof: the inherited body cannot assign the new field, so a check it adds fails unless the body
-cannot reach `new;` or its end, and in the test suite it adds a check only to its regression.
+pipeline skipped, and adds no fact or axiom.  It costs no proof: the inherited body cannot assign
+the new field, so a check it adds fails unless the body cannot reach `new;` or its end, and in the
+test suite it adds a check only to its regression.  Still, as for every soundness fix, the hidden
+`--legacy-inherited-constructor-fields` option restores the old rule for comparison and migration.
 The regression is `git-issues/github-issue-411.dfy`; the release note is
 `docs/dev/news/411.fix`.
 
