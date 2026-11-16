@@ -168,6 +168,7 @@ public static class DafnyCommands {
     PrintStmt.TrackPrintEffectsOption,
     CommonOptionBag.AllowAxioms,
     CommonOptionBag.WarnUncheckedTermination,
+    CommonOptionBag.LegacyNoUncheckedTerminationWarning,
     CommonOptionBag.EnforceDeterminism,
     MethodOrFunction.AllowExternalContracts,
     DafnyProject.FindProjectOption,
