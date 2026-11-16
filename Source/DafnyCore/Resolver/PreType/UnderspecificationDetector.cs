@@ -71,9 +71,11 @@ namespace Microsoft.Dafny {
               ReportError(dd, $"base type of {dd.WhatKindAndName} is not fully determined; add an explicit type for bound variable '{dd.Var.Name}'");
             }
             CheckExpression(dd.Constraint, context);
-            if (dd.Witness != null) {
-              CheckExpression(dd.Witness, context);
-            }
+          }
+          // A newtype without a constraint variable can still have a witness, which the pre-type resolver
+          // resolves, so it is checked here too, as for a subset type.
+          if (dd.Witness != null) {
+            CheckExpression(dd.Witness, context);
           }
           CheckMembers(dd);
 
