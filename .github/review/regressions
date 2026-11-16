@@ -718,3 +718,19 @@ git-issues/github-issue-390.dfy
 git-issues/github-issue-390-subset.dfy
 git-issues/github-issue-390-generic.dfy
 git-issues/github-issue-390-newtype.dfy
+# Member invariants under the hidden --member-invariants, first stage: syntax, printing and
+# resolution, the reads restriction, the codatatype rule for programs and libraries, refinement,
+# opacity, and unchanged behaviour without the option (https://github.com/erniecohen/dafny/issues/105).
+git-issues/git-issue-105-option.dfy
+git-issues/git-issue-105-syntax.dfy
+git-issues/git-issue-105-raw-identifier.dfy
+git-issues/git-issue-105-control.dfy
+git-issues/git-issue-105-modifiers.dfy
+git-issues/git-issue-105-reads.dfy
+git-issues/git-issue-105-two-state.dfy
+git-issues/git-issue-105-codatatypes.dfy
+git-issues/git-issue-105-libraries.dfy
+git-issues/git-issue-105-refinement.dfy
+git-issues/git-issue-105-opacity.dfy
+git-issues/git-issue-105-not-yet.dfy
+git-issues/git-issue-105-verify.dfy
