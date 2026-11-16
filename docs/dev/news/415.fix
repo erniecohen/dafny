@@ -1,0 +1,1 @@
+Fix `--print` writing a refining datatype or codatatype that declares no constructors, `datatype D ... { ... }`, as `datatype D = { ... }`, which does not parse. It is now printed as it was written, in every print mode (https://github.com/erniecohen/dafny/issues/415).
