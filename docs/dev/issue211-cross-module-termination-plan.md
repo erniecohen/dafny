@@ -20,12 +20,19 @@ replace the detailed designs it builds on:
   flipping the default.
 - Revision 2: the owner chose not to break legacy uses of `{:termination false}`.
   It proposed a new `@Extensible` declaration instead.
-- Revision 3, this one: the owner wrote, "The interface bound (if any) is explicitly
+- Revision 3: the owner wrote, "The interface bound (if any) is explicitly
   declared ... if it is not declared, it is implicitly 0 ... So I'm suggesting that
   the visibility of all interface bounds should make @extensible redundant." So
   there is no openness marker. Every trait may be extended from any module, and
   each member's declared bound, or the lack of one, says what its implementations
   may do.
+- Revision 4, this one: the owner set the acceptance criterion: "I am primarily
+  concerned with expressiveness and modularity, not syntactic sweetness, so as long
+  as we can replicate the verifast machinery I am satisfied if we are at least as
+  complete as verifast." Concurrency is out of scope. §7 compares the design with
+  the sequential part of VeriFast's call permissions, construct by construct.
+  Stage 2 now requires stored and returned callables and a multiset order, and
+  stage 2(e) adds an acceptance suite of ported examples. Sugar is optional.
 
 The owner's proposal, as given, has two holes, both shown by programs that prove
 `false` (§2.2). The repair is small, and the rest of the proposal survives it:
@@ -90,8 +97,8 @@ A member's *interface bound* is a value in a well-founded order, written
 `decreases {:global} E`. It is part of the member's signature, so it is visible
 wherever the member is. This is the sequential level discipline of Jacobs, Bosnacki
 and Kuiper ("Modular Termination Verification", ECOOP 2015; TOPLAS 2018), without
-call permissions. Most of it is in the code today, behind `--modular-termination`
-(milestones M1 to M5b on issue 211).
+call permissions; §7 shows how bounds simulate them. Most of it is in the code
+today, behind `--modular-termination` (milestones M1 to M5b on issue 211).
 
 Terms used below:
 
@@ -120,7 +127,7 @@ The rules:
    graph, under `(module, SCC, decreases)`. In exchange, a call dispatched to such
    a member counts as TOP for a bounded caller, which cannot make it, directly or
    through a known call. A caller with no bound may make it, as today.
-5. **Explicit leaf.** A member may be declared a leaf (spelling open, §7). Then
+5. **Explicit leaf.** A member may be declared a leaf (spelling open, §8). Then
    every implementation, home or foreign, must be a leaf, and the member's bound
    is BOTTOM, a proper bound below every other one. Any caller may dispatch to it.
    This is revision 2's leaf default (`function value(): nat`), made explicit.
@@ -392,12 +399,47 @@ Each stage is opt-in by use, so none needs the `AGENTS.md` exception for default
 - (b) The coverage of implicit evaluations (constants, defaults, constraints,
   witnesses, specifications) by the leaf and `Closed` effects, which M4b
   milestone 6 requires.
-- (c) Stored and returned callables: issue 266, the milestones after M1. Without
-  them `Std/Actions` cannot be certified.
+- (c) **Required.** Stored and returned callables: issue 266, milestones 2 to 5
+  after M1 (design §9). VeriFast stores function pointers with level
+  specifications in structs and returns objects that hold them (§7.2, rows 11 and
+  13). Without this stage `Std/Actions` cannot be certified either.
+- (d) **Required.** A built-in multiset order. For a base order `O` over `T`
+  admitted by issue 245, `Multiset<O>` orders `multiset<T>` by the
+  Dershowitz–Manna extension, in the Huet–Oppen form that VeriFast's `bag_le`
+  uses (`call_perms.gh`): `M <= N` iff every element of `M - N` is below some
+  element of `N - M`, and `M < N` iff also `M != N`.
+  - Its well-foundedness, and the laws rule 10 needs (`a <= b < c ==> a < c`), are
+    proved once, as a verified library construction over any admitted `O`, not
+    per use. The proof is the standard one: a descending chain in `Multiset<O>`
+    gives, by König's lemma, a descending chain in `O`.
+  - It is usable wherever an order is: `decreases {:global} d by Multiset<O>`,
+    callback bounds, tuples of bounds.
+  - It ships with the lemmas VeriFast's `termination.gh` provides and its
+    examples use: replacing one element by finitely many lower ones
+    (`bag_lt_cons_lt`), adding an element (`bag_lt_xs_cons_xs`), monotonicity of
+    union (`bag_le_bag_le_append_l`, `bag_le_append_r`), and transitivity.
+  - Dafny's built-in `decreases` on multisets stays the submultiset order
+    (`docs/dev/decreases-order.md`). That order suffices for some examples
+    (Fig. 15 of the paper, below), but not for the paper's Fig. 14 or for
+    `funcptr.c` and `cons.c`.
+- (e) **Required.** The acceptance suite of §7.3. The ports that run today land
+  with stage 1. Each other port lands with the stage it needs, and stage 5 does
+  not pass until all of them do.
 
-The remaining items in the manual's list of terminating programs that are rejected
-are about completeness, not soundness: helper-bound inference, ranks computed
-through dispatch, bounds on types, constants and iterators, and serialized input.
+**Optional (sugar).** These shorten specifications but add no expressiveness; none
+blocks a stage:
+
+- helper-bound inference;
+- built-in module levels, in place of the `Level` constants of §7.2;
+- inferring `{:termination_closed}` for constants and classes from their public
+  signatures;
+- deriving a trait's depth field and `Valid()` from its fields, the pattern
+  VeriFast's abstract predicate families give.
+
+The rest of the manual's list of terminating programs that are rejected is also
+about completeness, not soundness, and stays outside the requirement unless §7
+needs it: ranks computed through dispatch, bounds on types, constants and
+iterators, and serialized input.
 
 **Stage 3: migrate our own code.** Migration removes `{:termination false}` and
 `@AssumeCrossModuleTermination` wherever the program now passes without them, and
@@ -445,6 +487,8 @@ adds bounds where it does not.
 - Check byte identity and resource counts for programs that do not use the design.
 - For every program that loses its marker and is then rejected, say whether it
   terminates, and repair the ones that do.
+- Run the acceptance suite of §7.3: every accepted port verifies, every `assert
+  false` control fails, and every rejected port is rejected at the expected call.
 - Ask the owner to declare the design believed sound, and drop "experimental" from
   the manual.
 
@@ -478,7 +522,148 @@ library.**
   admitted that way is a premise the user wrote down. `dafny audit` reports it, and
   the default warning fires on it like the legacy forms.
 
-## 7. Open questions
+## 7. Completeness relative to VeriFast (sequential)
+
+**Sources.**
+
+- Read in full: B. Jacobs, D. Bosnacki and R. Kuiper, "Modular Termination
+  Verification", ECOOP 2015, LIPIcs 37, pp. 664–688. Section and page numbers
+  below are from it.
+- Read: VeriFast's `examples/termination` directory on its default branch, all
+  files except `concurrent/`.
+- Not read: the TOPLAS 2018 version, which is behind a paywall, and the extended
+  report (KU Leuven CW 680), which is behind a login. The ECOOP paper's §7 says
+  what the extended version adds: absence of deadlock, multithreaded termination,
+  compare-and-swap loops, and liveness of non-terminating programs. All of these
+  are concurrent, so out of scope. If the TOPLAS version adds a sequential
+  construct, this table misses it.
+
+### 7.1 Why bounds can replace call permissions
+
+In VeriFast a function holds a stock `Λ`, a bag of ordinals (§3, p. 676). Each call
+consumes one permission. Before it, the caller may replace a permission by finitely
+many lower ones (rule Conseq, p. 677). The callee gets what its precondition asks
+for, `Λc`. A postcondition can give back only `Λ' <= Λ` (p. 676). So at every call
+`Λc ⊎ {β} <= Λ`, and therefore `Λc < Λ` in the multiset order.
+
+Take as each function's bound the multiset of the ordinals its precondition
+requires, as a function of its parameters and of ghost state. Then every call that
+VeriFast accepts satisfies this design's `b < B`, where `B` is the bound captured
+on entry. The caller's later calls are each checked against the same `B`,
+independently, so permissions that came back or were not used change nothing.
+Three things must be expressible for this to work:
+
+- the ordinals, which issue 245 provides;
+- bags of them, which stage 2(d) provides;
+- the values that the precondition quantifies over. These become parameters,
+  ghost parameters, or fields that a bound may read (rule 8).
+
+This design needs less than VeriFast in two places:
+
+- code without a bound is TOP, and is checked by `(module, SCC, decreases)`;
+- leaves need no bound at all.
+
+### 7.2 Construct table
+
+Status is one of three:
+
+- **matched**, naming our construct;
+- **gap**, naming the stage that closes it;
+- **shared**, a restriction both systems have.
+
+"Runs today" means it was checked with `--modular-termination` on the build of
+https://github.com/erniecohen/dafny/pull/386 (ebf1fd105), with Z3 5.1.0. Today's
+form still needs `{:termination false}` and `{:termination_closed}` on the trait,
+the classes and the depth field. Stage 1 removes the first. The second is
+optional sugar.
+
+| # | VeriFast construct (source) | Ours | Status |
+|---|---|---|---|
+| 1 | Call permission qualified by an ordinal; a stock that is a bag of permissions; weakening `⊑` (§3, pp. 675–677; `call_perm`, `call_perm_level` in `call_perms.gh`) | the entry bound `B` and `decreases {:global} E` (rules 2 and 6); one bound value stands for the whole stock (§7.1) | matched, given row 4 |
+| 2 | Levels in interface specs: an interface method requires `call_perm((0, d))` (§4.3, Fig. 10(b); `int_func` in `funcptr.c`; `contains` and `intersects` in `cons.c`) | `decreases {:global} E` on the trait member. It binds every implementation (rule 2) and is inherited by overrides (rule 7) | matched; runs today (Figs. 1, 10–13, 15) |
+| 3 | Splitting one permission into finitely many lower ones, `call_perm(α) ⊑ n·call_perm(α')` for `α' < α` (p. 677; the outline of Fig. 8; `call_perm_below(frac)` and `consume_call_perm_for`) | implicit: each call is checked `b < B` on its own, any number of times | matched; ours needs no count |
+| 4 | Bags of levels and their multiset order: `ω^X`, `MethodBags` (§3 p. 676, §4.3 p. 680), the inequalities of Fig. 14; `bag_le` and `bag_lt` (`call_perms.gh`) and their lemmas (`termination.gh`) | built-in multisets have only the submultiset order | **gap: stage 2(d)**. Fig. 15 needs only submultisets and runs today. Fig. 14, `funcptr.c` and `cons.c` need the full order, for example `bag_le(func_lt, cons(invoke, d_), d)` |
+| 5 | Lexicographic pairs: `LocOrd · ClassMethods` (§4.2), `LocOrd · MethodBags` (§4.3); `pair_lt` (`termination.gh`) | decreases tuples, and bound tuples such as `depth, 1`; issue 245 for user orders | matched; runs today |
+| 6 | Arbitrary well-founded orders (footnote 3, p. 676; `call_perm_level`, `is_wf`) | `decreases {:global} e by O`, with the laws of rule 10 (issue 245) | matched |
+| 7 | Module-induced levels. For static calls: layers (§1), methods ordered by position (§4.1), `func_lt` (`call_perms.gh`), and `simple_termination2.c`, which asserts `func_lt(foo, baz)` for an imported `foo`. As values: `{C.m}` in bags, and `produce_call_perm` for `d < {f}` (§5, p. 687) | Static calls: `(module, SCC, decreases)`. Unbounded code is TOP and calls down freely; bounded code makes known calls under `b <= B` (rule 6). As values, by convention: each module exports `const Level: nat := 1 + max(imported Levels)`, revealed, and pairs it with a module-local component where it needs finer levels | matched. Proofs use only `A.Level < Level`, so a change in a lower module does not break a higher one. Siblings stay incomparable, as with `func_lt`. Built-in levels are optional sugar |
+| 8 | Recursion measured inside a module: `x · call_perm(...)` (Fig. 9) and Ackermann with `ω·ω` (§4.2, p. 680) | ordinary `decreases` within an SCC | matched; runs today |
+| 9 | Dynamic depth as an argument of an abstract predicate family: `RealFunc(d)`, `IntSet(d)`, `{o.*}` (§4.3–4.4, Figs. 10–12, 15); the struct field `d` in `cons.c` | a trait field `ghost const depth` (or a `ghost var` under `Valid()`) that bounds may read (rule 8), and `Valid()` bounded below the members it guards. Example below | matched; runs today |
+| 10 | Ghost and data-dependent levels: free variables of a contract are universally quantified (pp. 668, 673); `call_perm((n, {integrateIter} ⊎ d))` (Fig. 13) | bounds are expressions over parameters, ghost parameters and readable fields, captured on entry | matched; runs today (`IntegrateIter`) |
+| 11 | Returned permissions (`Λ' <= Λ`, p. 676) and returned objects whose depth is bounded, `ensures result.RealFunc(d) ∧ d < {createSum} ⊎ d1 ⊎ d2` (Figs. 11–12) | `B` is fixed on entry, so returned permissions add nothing. Returned objects: `ensures` on the depth of `result` | matched for objects (runs today). For returned function values, **gap: stage 2(c)** |
+| 12 | Permissions stored in objects: continuations carry `call_perm` in their predicates and use it once (§4.4, Figs. 16–17) | a stored ghost bound value, reusable rather than consumed. Whoever invokes a stored object needs a bound above its depth, so the CPS port folds the continuation's depth into the bound: `containsCPS` gets `depth + cont.depth` | believed matched by this encoding, **not yet shown**: the Figs. 16–17 port decides it (§7.3). If it fails, the gap is one-shot (linear) evidence, and no stage covers that yet (§8, question 5) |
+| 13 | Function pointers with level specs: a `typedef` with `terminates` and `call_perm` in its contract, stored in a struct, ordered by `func_lt` (§5; `funcptr.c`, `cons.c`) | parameters: `decreases {:callback f} E` (M3, done). Stored or returned: `bounded<O, F>` (issue 266) | parameters matched; stored and returned: **gap, stage 2(c)**. Applying a stored value of unknown code is rejected today |
+| 14 | A call consumes a permission whose bag contains the callee, `f ∈ d` (§5, p. 687) | not needed: the callee's declared bound is what is compared | matched (ours asks less) |
+| 15 | No loops: loops become recursive methods (§1). VeriFast's implementation has loops with `decreases` (`simple_termination1.c`) | loops with `decreases` | matched |
+| 16 | An acyclic module import graph (§1); `inter_module_loop1.c` and `inter_module_loop2.c` make a cycle through a shared header | Dafny forbids cyclic imports. The cross-module cycle that can happen is the one through dispatch, the Tie program of §1 | shared |
+| 17 | Termination is opt-in per function (`terminates`, §5); `proto_impl_error.c` rejects a non-terminating body under a terminating prototype | everything terminates unless it says `decreases *` | matched, by Dafny's stronger default; the analogue, a `decreases *` body under a terminating trait member, is ported in §7.3 |
+| 18 | Threads: `call_perm_(thread, f)`, scopes, transfer, `examples/termination/concurrent` | — | out of scope |
+
+**Example (row 9), Fig. 15 as it runs today.** `IntSet(d)` becomes the field
+`depth` and `Valid()`. The bound of `Intersects` is `d ⊎ do`, as in the paper.
+
+```dafny
+module S {
+  trait {:termination false} {:termination_closed} IntSet {
+    ghost const {:termination_closed} depth: multiset<nat>
+    ghost predicate Valid() decreases {:global} depth, 0
+    predicate Contains(x: int) requires Valid() decreases {:global} depth, 1
+    predicate Intersects(other: IntSet) requires Valid() && other.Valid()
+      decreases {:global} depth + other.depth, 1
+  }
+}
+module I { import S
+  class {:termination_closed} Insert extends S.IntSet {
+    const elem: int
+    const inner: S.IntSet
+    constructor (elem: int, inner: S.IntSet) requires inner.Valid()
+      ensures Valid() && depth == multiset{1} + inner.depth
+    { this.elem := elem; this.inner := inner; depth := multiset{1} + inner.depth; }
+    ghost predicate Valid() decreases {:global} depth, 0
+    { depth == multiset{1} + inner.depth && inner.Valid() }
+    predicate Contains(x: int) requires Valid() decreases {:global} depth, 1
+    { x == elem || inner.Contains(x) }
+    predicate Intersects(other: S.IntSet) requires Valid() && other.Valid()
+      decreases {:global} depth + other.depth, 1
+    { other.Contains(elem) ||
+      (assert (depth + other.depth)[1] == (inner.depth + other.depth)[1] + 1;
+       inner.Intersects(other)) }
+  }
+}
+```
+
+`Empty` (level 0) and a client complete it. The multiplicity hint is needed
+because Z3 does not find the strict submultiset on its own. The library lemmas of
+stage 2(d) would replace it.
+
+### 7.3 Acceptance suite
+
+Each accepted program comes with an `assert false` control, which must fail. Each
+rejected program must be rejected at the expected call. "Today" means the build
+named in §7.2.
+
+| Program (source) | Expected | Today | Needs |
+|---|---|---|---|
+| Fig. 1, `Identity.test` (§1) | verifies | verifies; control fails | — |
+| Fig. 1, `Loopy.test` (§1) | rejected at `Loopy.apply`'s call of `derivative` | rejected there (callee bound `depth + 1` exceeds `depth`) | — |
+| Fig. 4, `PlusN` and `Twice` (§2.1), with depths | verifies | not ported yet; same pattern as Figs. 10–13 | — |
+| Fig. 8, `sqrt` (§4.1); Fig. 9, `isOdd`/`isEven` (§4.2); Ackermann (§4.2) | verifies | verifies; control fails | — |
+| Figs. 10–13: `RealFunc`, `LinearFunc`, `Sum`, `integrate` and `main` (§4.3) | verifies | verifies with depth as `nat`; control fails | stage 2(d) for the faithful bag version and Fig. 14's inequalities |
+| Fig. 15, `IntSet` with `intersects` (§4.4) | verifies | verifies with submultisets; control fails | — |
+| Figs. 16–17, CPS `containsCPS` and `intersectsCPS` (§4.4) | verifies | not ported yet. Continuations return a value in place of `Nothing`, which does not change the termination argument | the row 12 encoding; stage 2(d) if `InsertCont3`'s bound needs it |
+| `simple_recursion.c`, `ackermann.c` | verifies | as Figs. 9 and Ackermann (§5 of the paper says they correspond) | — |
+| `simple_termination1.c`, `simple_termination2.c`: loops calling an imported module | verifies | not ported yet; plain Dafny | — |
+| `funcptr.c`: a function pointer stored in a struct, with a level spec | verifies | the trait form is Figs. 10–13; the stored-value form needs storage | stages 2(c), 2(d) |
+| `cons.c`: two function pointers and a bag stored in a struct | verifies | the trait form is Fig. 15; the stored-value form needs storage | stages 2(c), 2(d) |
+| `termination_errors.c`: an endless loop, self-recursion, mutual recursion | each rejected | each rejected | — |
+| `termination_errors2.c`: a function called through a pointer to itself | rejected | rejected (`naked function in recursive setting`); a stored value of unknown code applied under a bound is rejected as TOP | — |
+| `proto_impl_error.c`: a non-terminating body under a terminating prototype | rejected | not ported yet; the analogue is a `decreases *` override of a terminating trait member | — |
+| `inter_module_loop1.c`, `inter_module_loop2.c` | rejected | cannot be expressed: Dafny rejects the cyclic import at resolution (row 16) | — |
+| `termination.gh`, `call_perms.gh`, `termination.c` | — | library, not a test: the order lemmas become part of stage 2(d) | stage 2(d) |
+
+Programs that cannot be expressed: only the cyclic-import pair, for a reason both
+systems share.
+
+## 8. Open questions
 
 1. The spelling of the explicit leaf (rule 5). Candidates are an attribute on the
    member, such as `{:termination_leaf}`, or `decreases {:global} BOTTOM`. The
@@ -492,3 +677,10 @@ library.**
    declarations should get a "redundant" hint instead of the premise warning.
 4. When to remove `--modular-termination` after stage 4: after one release, as
    proposed, or once downstream users confirm they have migrated.
+5. Whether one-shot evidence is needed (§7.2, row 12). VeriFast's continuations
+   carry a permission that is used once, so whoever invokes them needs no level of
+   its own. Here a stored bound is reusable, so the invoker's bound must cover the
+   stored object's depth. I expect the CPS port to go through by folding that
+   depth into the invoker's bound. If some program needs the invoker to stay below
+   the stored object, that is a real gap. It would need a consumable form of
+   `bounded<O, F>`, which no stage covers.
