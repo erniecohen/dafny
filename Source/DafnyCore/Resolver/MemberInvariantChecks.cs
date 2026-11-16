@@ -108,13 +108,13 @@ public static class MemberInvariantChecks {
           Error(expr, $"use the two-state function '{function.Name}'");
           break;
         case MemberSelectExpr { Member: Function function } select when MayReadHeap(function, select.Obj):
-          Error(expr, $"use the function '{function.Name}', which has a reads clause");
+          Error(expr, HeapReadingUse("use", function));
           break;
         case FunctionCallExpr { Function: TwoStateFunction function }:
           Error(expr, $"call the two-state function '{function.Name}'");
           break;
         case FunctionCallExpr { Function: { } function } call when MayReadHeap(function, call.Receiver):
-          Error(expr, $"call the function '{function.Name}', which has a reads clause");
+          Error(expr, HeapReadingUse("call", function));
           break;
         case SeqSelectExpr select when select.Seq.Type.IsArrayType:
           Error(expr, "read an array element");
@@ -138,6 +138,12 @@ public static class MemberInvariantChecks {
           Error(expr, "use 'allocated'");
           break;
       }
+    }
+
+    private static string HeapReadingUse(string verb, Function function) {
+      return function.EnclosingClass is ArrowTypeDecl
+        ? $"use '{function.Name}' of a function value that may read the heap"
+        : $"{verb} the function '{function.Name}', which has a reads clause";
     }
 
     /// <summary>

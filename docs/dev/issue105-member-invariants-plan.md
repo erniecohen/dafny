@@ -1684,9 +1684,24 @@ Each is also recorded in the pull request that makes it.
   member position and for `raw` directly before a type name; the parser retags
   the ordinary tokens as these only under the option.  Coco/R generates no
   scanner if a token lacks a definition, so each has one that starts with the
-  control character U+0001, which no Dafny program contains.  `raw` is retagged
-  only when the next token is an identifier, so `raw` remains usable as a name,
-  including as the name of a type.
+  control character U+0001.  The scanner therefore produces these tokens from
+  U+0001 followed by the word, which used to be a scan error; each production
+  rejects such a token, with or without the option, so a program containing
+  U+0001 is still rejected.  `raw` is retagged only when the next token is an
+  identifier, so `raw` remains usable as a name, including as the name of a
+  type.  `invariant` and `witness` are also retagged at the top of a module, so
+  that one written there gets the error that it belongs to a type.
+- *Never opaque.*  An invariant is a fixed predicate of the type (section 3.1);
+  hiding it would hide what the type means.  So an invariant cannot be declared
+  `{:opaque}` (or `opaque`), `--default-function-opacity` does not make it
+  opaque, and it gets no reveal lemma.  A reveal lemma would also be inherited
+  by name, which invariants are not, so traits meeting in a diamond would
+  clash on it.
+- *Printing.*  The printed program is source: `invariant e`, with the reserved
+  name omitted.  The resolved program (`--rprint`) also shows the reserved name
+  as a comment, `invariant /* invariant#k */ e`, so the numbering of section 4.2
+  can be seen.  Refinement places a declaration's own members before the
+  inherited ones, so the printed order is not the order of the numbers.
 - *Option check.*  `--member-invariants` without `--type-system-refresh` is a
   command-line error, reported before any file is read (as for
   `--translation-cache`).  The resolver repeats the check for front ends that
@@ -1707,5 +1722,25 @@ Each is also recorded in the pull request that makes it.
   reads clause (called or used as a value), and no application of a function
   value whose type allows reading the heap (`~>`).  A function value's
   `requires` and `reads` read what the value may read, so they are allowed on a
-  `->` or `-->` value and rejected on a `~>` value.  Inside an invariant, `this`
-  has the type itself until `raw T` exists.
+  `->` or `-->` value and rejected on a `~>` value.  A lambda with a reads
+  clause may be built, since building it reads nothing, but its body is held to
+  the same restrictions, although it is evaluated only where the lambda is
+  applied; this is conservative, and simpler than tracking where a lambda may
+  be applied.  Inside an invariant, `this` has the type itself until `raw T`
+  exists.
+
+**Open after the first pull request.**  Recorded at review; none is a
+soundness problem while nothing checks or assumes an invariant.
+
+- *The not-yet-supported error is per translated module.*  A module given only
+  as a library, one left out by `--filter-symbol`, or a program that is
+  compiled with `--no-verify`, is never translated, so its invariants are not
+  reported.  The second pull request reports them for the whole program.
+- *Export sets.*  `export provides T` clones a type's members without their
+  bodies, so a client sees an invariant without its body.  What a client that
+  cannot see the body may assume about a value of `T` is to be decided before
+  invariants are assumed.
+- *The language server's parse cache* keys on the file's name and contents,
+  not on the parser's options, so toggling `--member-invariants` in a project
+  does not reparse an unchanged file.  This predates member invariants and
+  applies to every parser option.

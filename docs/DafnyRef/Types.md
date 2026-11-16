@@ -4867,8 +4867,9 @@ declaration.
 The hidden, experimental option `--member-invariants` defaults to `false` and
 requires `--type-system-refresh`. It is being implemented in stages
 (https://github.com/erniecohen/dafny/issues/105); in this stage a program with
-member invariants can be parsed, printed and resolved, but not verified or
-compiled.
+member invariants can be parsed, printed and resolved, and compiled with
+`--no-verify`, but not verified. Nothing yet checks or assumes an invariant: the
+verifier reports each one as not yet supported, and compiled code ignores them.
 
 With the option, a datatype, class, trait, newtype or abstract type may declare
 invariants among its members:
@@ -4881,7 +4882,9 @@ datatype Interval = Interval(lo: int, hi: int) {
 ```
 
 An invariant is a boolean expression over `this`. It takes no modifiers and has
-no name, and a type may declare several. An invariant depends on no mutable
+no name, and a type may declare several. It is never opaque, so it cannot be
+declared `{:opaque}`, and `--default-function-opacity` does not apply to it. An
+invariant depends on no mutable
 state: it may not read a mutable field or an array element, use `old`, `fresh`,
 `allocated` or `unchanged`, call a two-state function or lemma, use a function
 that has a `reads` clause, or apply a function value that may read the heap

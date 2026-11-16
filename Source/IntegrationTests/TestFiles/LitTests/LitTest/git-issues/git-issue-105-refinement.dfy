@@ -1,7 +1,10 @@
 // Member invariants (https://github.com/erniecohen/dafny/issues/105) in refinement.  An invariant is
 // anonymous, so an invariant of a refining declaration never refines one of the refinement base: the
 // refining declaration has the inherited invariants and its own, over any number of refinement steps.
-// RUN: %resolve --member-invariants "%s" > "%t"
+// The resolved program is printed with the reserved name of each invariant, which numbers it after
+// the inherited ones.  Refinement places a declaration's own members before the inherited ones, so the
+// printed order is not the order of the numbers.
+// RUN: %resolve --member-invariants --print-mode NoIncludes --rprint:- "%s" > "%t"
 // RUN: %diff "%s.expect" "%t"
 
 abstract module M0 {
