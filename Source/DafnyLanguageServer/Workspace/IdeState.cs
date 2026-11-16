@@ -241,10 +241,11 @@ public record IdeState(
     var preparationProgress = new[]
       { previousVerificationResult.PreparationProgress, VerificationPreparationState.InProgress }.Max();
     var verificationResult = new IdeCanVerifyState(PreparationProgress: preparationProgress,
-      VerificationTasks: previousImplementations.ToImmutableDictionary(kv => kv.Key, kv => kv.Value with {
-        Status = PublishedVerificationStatus.Stale,
-        Diagnostics = MarkDiagnosticsAsOutdated(kv.Value.Diagnostics).ToList()
-      }), previousVerificationResult.Diagnostics);
+      VerificationTasks: previousImplementations.ToImmutableDictionary(kv => kv.Key,
+        kv => !BelongsTo(kv.Value, scheduledVerification.CanVerify) ? kv.Value : kv.Value with {
+          Status = PublishedVerificationStatus.Stale,
+          Diagnostics = MarkDiagnosticsAsOutdated(kv.Value.Diagnostics).ToList()
+        }), previousVerificationResult.Diagnostics);
     return previousState with {
       CanVerifyStates = previousState.CanVerifyStates.SetItem(uri,
         previousState.CanVerifyStates[uri].SetItem(range, verificationResult))
@@ -352,10 +353,27 @@ public record IdeState(
       previousIdeCanVerifyState?.VerificationTasks ??
       ImmutableDictionary<string, IdeVerificationTaskState>.Empty;
     return new IdeCanVerifyState(PreparationProgress: VerificationPreparationState.NotStarted,
-      VerificationTasks: previousImplementations.ToImmutableDictionary(kv => kv.Key, kv => kv.Value with {
-        Status = PublishedVerificationStatus.Stale,
-        Diagnostics = MarkDiagnosticsAsOutdated(kv.Value.Diagnostics).ToList()
-      }), previousIdeCanVerifyState?.Diagnostics ?? new List<Diagnostic>());
+      VerificationTasks: previousImplementations.Where(kv => BelongsTo(kv.Value, canVerify)).ToImmutableDictionary(
+        kv => kv.Key, kv => kv.Value with {
+          Status = PublishedVerificationStatus.Stale,
+          Diagnostics = MarkDiagnosticsAsOutdated(kv.Value.Diagnostics).ToList()
+        }), previousIdeCanVerifyState?.Diagnostics ?? new List<Diagnostic>());
+  }
+
+  /// <summary>
+  /// Several ICanVerify can share a navigation range.  A refining module's copy of an inherited member, whose
+  /// override check that module makes again (BoogieGenerator.MustReverifyInheritedOverrideCheck), has the range of
+  /// the member in the refinement base, which is verified too, and so may the copies of other refining modules.
+  /// The events of one of them must leave the tasks of the others alone.  So a task belongs to the copies of the
+  /// module that copied its ICanVerify, or to the declarations that are not copies.  Those keep the range's tasks as
+  /// before, under a rename too, because their key has no name in it.
+  /// </summary>
+  private static bool BelongsTo(IdeVerificationTaskState task, ICanVerify canVerify) {
+    return CopyingModule(Compilation.GetCanVerify(task.Task)) == CopyingModule(canVerify);
+  }
+
+  private static string? CopyingModule(ICanVerify canVerify) {
+    return canVerify.Origin.IsCopy ? canVerify.ContainingModule.FullDafnyName : null;
   }
 
   private IdeState HandleFinishedParsing(FinishedParsing finishedParsing) {
@@ -393,14 +411,16 @@ public record IdeState(
 
     var range = canVerifyPartsIdentified.CanVerify.NavigationRange.ToLspRange();
     var previousImplementations = previousState.CanVerifyStates[uri][range].VerificationTasks;
+    var tasksOfOthers = previousImplementations.Where(kv => !BelongsTo(kv.Value, canVerifyPartsIdentified.CanVerify));
     var verificationResult = new IdeCanVerifyState(PreparationProgress: VerificationPreparationState.Done,
-      VerificationTasks: canVerifyPartsIdentified.Parts.ToImmutableDictionary(Compilation.GetTaskName,
+      VerificationTasks: ImmutableDictionary.CreateRange(tasksOfOthers).SetItems(
+        canVerifyPartsIdentified.Parts.ToImmutableDictionary(Compilation.GetTaskName,
         k => {
           var previous = previousImplementations.GetValueOrDefault(Compilation.GetTaskName(k));
           return new IdeVerificationTaskState(range, PublishedVerificationStatus.Queued,
             previous?.Diagnostics ?? Array.Empty<Diagnostic>(),
             previous?.HitErrorLimit ?? false, k, new Stale());
-        }), new List<Diagnostic>());
+        })), new List<Diagnostic>());
     return previousState with {
       CanVerifyStates = previousState.CanVerifyStates.SetItem(uri,
         previousState.CanVerifyStates[uri].SetItem(range, verificationResult))
