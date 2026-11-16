@@ -720,3 +720,5 @@ git-issues/github-issue-390-generic.dfy
 git-issues/github-issue-390-newtype.dfy
 # --verification-cache is used by a self-contained build, whose bundled libhostfxr and libhostpolicy identify its host, and by each request of --filter-position-batch, with results identical to uncached runs and a miss for an edited task (https://github.com/erniecohen/dafny/issues/387).
 git-issues/github-issue-387.dfy
+# The canonical map payloads no longer push this proof out of resource at seeds 2 and 6: Boogie states the canonical row of a map whose result type is a type parameter as one row per native result sort (https://github.com/erniecohen/dafny/issues/425).
+git-issues/github-issue-425-map-payload-cost.dfy

@@ -524,6 +524,8 @@ resultType == BType ==> e_B(p_B(v)) == v
 
 using the actual Boogie type-code terms and cast functions. For a non-native result the condition is `true`. Construct this expression, rather than declaring an unconstrained predicate whose name suggests canonicality. Keep the pinned left inverses and cast normal form. [Map signature/row generation](https://github.com/erniecohen/boogie/blob/45a8869bb43456f126577f5ba6fd24725ed6e4d9/Source/VCExpr/TypeErasure/TypeErasureArguments.cs#L204-L357).
 
+When the result type is a skeleton type parameter, Boogie states this guard as one row per native sort `B`, whose select and store terms carry `BType` in place of the parameter and whose premise is `e_B(p_B(v)) == v`, and one row for the other result types, whose premise is `resultType != BType` for every native `B`. The native type codes are distinct, so the rows together are equivalent to the single guarded row, but no instance case-splits over every native sort, and a sort's casts reach the solver only through a store at that sort. The single row cost some proofs several times their former resource count ([#425](https://github.com/erniecohen/dafny/issues/425)).
+
 That is the narrowest repair of the demonstrated Boolean-payload contradiction. A general map theorem must additionally handle native **indexes**, where quantifying raw off-image indexes can also be too strong. It must handle the generic `AtLayer<A>` map axioms; the existing concrete handle-valued call sites do not by themselves erase the universal prelude axioms. Do not label this local edit a complete Boogie soundness fix.
 
 #### More structural alternatives
