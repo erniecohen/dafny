@@ -731,3 +731,6 @@ git-issues/github-issue-404.dfy
 
 # The legacy resolver (--type-system-refresh:false) inherits no members from a non-numeric newtype base, which it rejects, so selecting one is an error rather than a crash, as with --type-system-refresh (https://github.com/erniecohen/dafny/issues/417).
 git-issues/github-issue-417.dfy
+
+# A module that replaces a replaceable module may not import it or depend on a module that depends on it; the module graph is acyclic once every use of the replaced module means the replacement, and the old rule let a lemma cycle through the two prove false (https://github.com/erniecohen/dafny/issues/405).
+git-issues/github-issue-405.dfy
