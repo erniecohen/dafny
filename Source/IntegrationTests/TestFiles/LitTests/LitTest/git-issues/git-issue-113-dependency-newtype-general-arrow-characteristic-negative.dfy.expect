@@ -1,0 +1,4 @@
+git-issue-113-dependency-newtype-general-arrow-characteristic-negative.dfy(8,5): Error: type 'WrongDirect' declared as containing no reference types, but the RHS type (seq<int ~> int>) may contain reference types
+git-issue-113-dependency-newtype-general-arrow-characteristic-negative.dfy(9,5): Error: type 'WrongSequence' declared as containing no reference types, but the RHS type (SeqId<int ~> int>) may contain reference types
+git-issue-113-dependency-newtype-general-arrow-characteristic-negative.dfy(10,5): Error: type 'WrongIdentity' declared as containing no reference types, but the RHS type (Id<int ~> int>) may contain reference types
+3 resolution/type errors detected in git-issue-113-dependency-newtype-general-arrow-characteristic-negative.dfy

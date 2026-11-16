@@ -123,6 +123,30 @@ standard library moves.  The regression is `git-issues/github-issue-96.dfy`; CI'
 `Statement-expression conclusions (opt-in, #96)` runs its fixtures with the option on and off.
 The release note is `docs/dev/news/1371.feat`.
 
+## Opt-in call facts in quantified checks ([issue 196](https://github.com/erniecohen/dafny/issues/196))
+
+`--quantified-check-call-facts` (default false; also `quantified-check-call-facts = true` in
+`dfyconfig.toml`) is a completeness option.  A function's definition axiom is guarded by its
+`#canCall`, and for a quantified condition the call facts are assumed as a separate quantifier
+with the condition's triggers.  When the solver simplifies the checked instance until no trigger
+term remains (`abs(l[i] - l[i]) <= d` becomes `abs(0.0) <= d`), that quantifier never fires and
+the definition is lost.  With the option, where a method's postcondition is checked at the exit
+of its implementation, or the condition of an `assert` statement after its well-formedness
+check, a positive universal quantifier `Q = forall b :: T(b) ==> P(b)` is checked as
+`forall b :: CC(b) ==> T(b) ==> P(b)`, `CC(b)` being the body of the call-fact quantifier
+assumed just before (type antecedents of `b` imply the call facts of the range and the term),
+and `Q` itself is assumed afterwards, as before.  Its kind is **neither**: it adds no axiom and
+no assumption, since the assumed `forall b :: CC(b)` and the checked quantifier together imply
+`Q`.  Loop invariants, function postconditions, preconditions, quantifiers proved by induction,
+quantifiers Dafny splits by trigger and conditions rewritten by
+`--statement-expression-conclusions` are not affected, nor is anything under
+`--consistent-obligation-checks`.  With the option off, the Boogie program
+is unchanged and no verdict of the suite moves.  With it on, no verdict of the suite moves, and
+2.7% of its declarations change resource count (most within 5%, a few by up to about 3x).
+The regression is `git-issues/github-issue-196.dfy`: the issue's program and its variants, with
+and without the option, under both resolvers, and negative and `assert false` fixtures.  The
+release note is `docs/dev/news/196.feat`.
+
 ## Declared lambda preconditions under `--additional-axioms` ([#97](https://github.com/erniecohen/dafny/issues/97))
 
 Dafny's `RequiresN` schema for a lambda value gives only the sufficient direction of its declared
@@ -165,6 +189,50 @@ the translation is unchanged.  The regression is `git-issues/github-issue-326.df
 program, positive and `ensures false` fixtures under both resolvers and both settings, and one
 fixture per circular route, with a false-derivation attempt, with the option on.  The release
 note is `docs/dev/news/326.feat`.
+
+## Opt-in matching-loop detection through existential witnesses ([issue 202](https://github.com/erniecohen/dafny/issues/202))
+
+Matching-loop detection (`TriggerMatch.CouldCauseLoops`) ignores a term of a quantifier's body
+that matches a trigger term up to one variable for another, so that `forall x, y {a(x, y)} ::
+a(x, y) == a(y, x)` is not a loop.  It treated `p in s` in `forall q | q in s :: exists p :: p in s
+&& q < p` the same way, but `p` is skolemized at each instance of the universal, so each instance
+yields a fresh `sk(q) in s` that matches the trigger `q in s` again.  With
+`--detect-witness-matching-loops` (default false; also `detect-witness-matching-loops = true` in
+`dfyconfig.toml`), `WitnessVariables.Of` collects the variables of the quantifiers nested in the
+body that are skolemized when the quantifier is instantiated (an existential in positive position,
+a universal in negative position, both where the position is mixed), and
+`ExpressionEqModuloExpressionsNotInvolvingBoundVariables` no longer counts a match that puts one of
+them in the place of a trigger variable as harmless.  Its kind is **neither**: it changes only
+which automatically selected triggers are reported or rejected, as the existing detection does, and
+adds no axiom.  With the option off, `WitnessVariables.Of` returns null and the comparison is
+unchanged.  The regression is `git-issues/github-issue-202.dfy`: the issue's reproducer, the same
+loop through a negated universal and through a negated existential, a quantifier where a
+non-looping trigger is preferred, and three nested quantifiers that are not loops and get no
+warning.  The release note is `docs/dev/news/202.feat`.
+
+## Opt-in inlined-body call permissions ([issue 198](https://github.com/erniecohen/dafny/issues/198))
+
+A checked call `F(args)` of a function with a body is split into one assertion per checked
+conjunct of the inlined body, `F#canCall(args) ==> F($LS($LZ), args) || c`, with
+`{:subsumption 0}`.  A call in a later conjunct, such as `b.scoped(n)` in
+`a.scoped(n) && b.scoped(n)`, unfolds only under its `#canCall`, which the definition axiom
+supplies only under the guard `a.scoped(n)` at the caller's layer `$LZ`, where it does not unfold.
+So `size(Bin(op,Var(0),Var(1)),[x,y])` with `requires t.scoped(|s|)` was proved only when an
+unrelated term unfolded the first conjunct, and which of two equivalent declarations failed moved
+with their order.  With `--inlined-body-call-permissions` (default false; also
+`inlined-body-call-permissions = true` in `dfyconfig.toml`), `InlinedBodyCanCall` (`BoogieGenerator.SplitExpr.cs`)
+puts the body's `CanCallAssumption` at the conjuncts' layer `$LS($LZ)` as each checked conjunct's
+antecedent.  Its kind is **neither**: the antecedent is the existing definition axiom of `F` at the
+same `args` and `ly := $LS($LZ)`, and each assertion is already guarded by `F#canCall(args)`, so it
+assumes nothing new
+([`docs/dev/additional-axioms.md`](docs/dev/additional-axioms.md#call-permissions-of-the-checked-conjuncts-of-an-inlined-body-198)).
+It has its own option, not `--additional-axioms`: under the shared option it moved one suite
+program and three Z3 5.1.0 standard-library rows from verified to out of resource, and raised the
+library's resource count by about 3%, so no gate runs with it on.  The option is tested before
+anything is built, so with it off the translation is unchanged.  The
+regression is `git-issues/github-issue-198.dfy`: the issue's forms and their variants in two
+declaration orders under both resolvers, and a precondition and an `assert false` control that must
+still fail.  The release note is `docs/dev/news/198.feat`.
 
 ## Datatypes and the traits they extend in one decreases order ([issue 317](https://github.com/erniecohen/dafny/issues/317))
 
@@ -731,6 +799,29 @@ needed.  Its kind is **weakens only**: it rejects programs and adds no fact or a
 that does not make such a read is unchanged.  The hidden `--legacy-first-phase-const-reads`
 option restores the old rule for comparison and migration.  The regression is
 `git-issues/github-issue-339.dfy`; the release note is `docs/dev/news/339.fix`.
+
+## Override checks in refining modules ([issue 404](https://github.com/erniecohen/dafny/issues/404))
+
+A refining module could strengthen the contract of a trait member, or refine an abstract type into
+a class that extends a trait, while it inherited the overriding class member unchanged.  The
+override check asserts at the overriding member's origin, which the refining module inherits, and
+asserts at inherited origins become assumes, because the base module made them.  So the check
+against the new contract was never made, and a call through the trait proved `false`.  Even had it
+been made, the pipeline never scheduled a copied member's tasks.  `BoogieGenerator.MustReverifyInheritedOverrideCheck`
+now decides when a refining module makes the override check of an inherited member itself: unless
+the base counterpart of the member overrode the same member, unchanged (the base counterpart of the
+overridden member, or the overridden member itself when it lies outside the refining module).  So a
+changed overridden member, a new extension, and a replaced abstract import are checked, and a pair
+the module inherits unchanged is not checked again.  Such a check asserts at the inherited origin,
+reports the refining module as a related location, and is verified with the refining module even
+when the base comes from a library; the pipeline schedules that task, and no other, of the copy.
+In the IDE the copy shares the navigation range of the base member, so `IdeState` keeps the tasks of
+each `ICanVerify` at a range apart, and the base member's own errors stay shown beside the check.
+Its kind is **asserts more**: it rejects programs, by checking an obligation the old rule skipped,
+and adds no fact or axiom; a program whose refining modules change no override pair is unchanged.
+The hidden `--legacy-elided-override-checks` option restores the old rule for comparison and
+migration.  The regression is `git-issues/github-issue-404.dfy`; the release note is
+`docs/dev/news/404.fix`.
 
 ## Comparing crossed component types ([issue 47](https://github.com/erniecohen/dafny/issues/47))
 

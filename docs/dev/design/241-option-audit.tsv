@@ -34,6 +34,7 @@ cli	emit-uncompilable-code	--emit-uncompilable-code	System.CommandLine.Option`1[
 cli	enforce-determinism	--enforce-determinism	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	error-limit	--error-limit	System.CommandLine.Option`1[System.Int32]	execution	effective prover interfaces/options plus exact SMT command stream; overrides retained
 cli	expected-coverage-report	--coverage-report,--expected-coverage-report	System.CommandLine.Option`1[System.String]	command-setup	setup or another command; executes before/outside proof transport
+cli	extended-newtype-bases	--extended-newtype-bases	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	extract-counterexample	--extract-counterexample	System.CommandLine.Option`1[System.Boolean]	command-setup	setup or another command; executes before/outside proof transport
 cli	file-name	--file-name	System.CommandLine.Option`1[System.String]	command-setup	setup or another command; executes before/outside proof transport
 cli	filter-position	--filter-position	System.CommandLine.Option`1[System.String]	selection	selects current task inventory; each selected task is independently prepared
@@ -46,6 +47,8 @@ cli	general-newtypes	--general-newtypes	System.CommandLine.Option`1[System.Boole
 cli	general-traits	--general-traits	System.CommandLine.Option`1[Microsoft.Dafny.CommonOptionBag+GeneralTraitsOptions]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	go-module-name	--go-module-name	System.CommandLine.Option`1[System.String]	command-setup	setup or another command; executes before/outside proof transport
 cli	function-extensionality-axiom	--function-extensionality-axiom	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
+cli	detect-witness-matching-loops	--detect-witness-matching-loops	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
+cli	inlined-body-call-permissions	--inlined-body-call-permissions	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	heap-free-lambda-facts	--heap-free-lambda-facts	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	help	--help,-?,-h,/?,/h	System.CommandLine.Help.HelpOption	command-setup	setup or another command; executes before/outside proof transport
 cli	help-internal	--help-internal	System.CommandLine.Option`1[System.Boolean]	command-setup	setup or another command; executes before/outside proof transport
@@ -63,12 +66,15 @@ cli	javadoclike-docstring-plugin	--javadoclike-docstring-plugin	System.CommandLi
 cli	json-diagnostics	--json-diagnostics	System.CommandLine.Option`1[System.Boolean]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
 cli	json-output	--json-output	System.CommandLine.Option`1[System.Boolean]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
 cli	legacy-auto-generated-attributes	--legacy-auto-generated-attributes	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
+cli	legacy-boogie-library-check	--legacy-boogie-library-check	System.CommandLine.Option`1[System.Boolean]	command-setup	checked when a library is loaded, before proof transport; no effect on the proof task
 cli	legacy-cs-datatype-equality	--legacy-cs-datatype-equality	System.CommandLine.Option`1[System.Boolean]	command-setup	setup or another command; executes before/outside proof transport
 cli	legacy-data-constructors	--legacy-data-constructors	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	legacy-decreases-order	--legacy-decreases-order	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
+cli	legacy-elided-override-checks	--legacy-elided-override-checks	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	legacy-first-phase-const-reads	--legacy-first-phase-const-reads	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	legacy-module-names	--legacy-module-names	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	length-limit	--length-limit	System.CommandLine.Option`1[System.UInt32]	command-setup	setup or another command; executes before/outside proof transport
+cli	legacy-no-unchecked-termination-warning	--legacy-no-unchecked-termination-warning	System.CommandLine.Option`1[System.Boolean]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
 cli	legacy-noncanonical-map-payloads	--legacy-noncanonical-map-payloads	System.CommandLine.Option`1[System.Boolean]	input	map encoding is lowered before task lookup; exact SMT and current assertion map
 cli	legacy-unguarded-char	--legacy-unguarded-char	System.CommandLine.Option`1[System.Boolean]	input	character encoding is lowered before task lookup; exact SMT and current assertion map
 cli	library	--library	System.CommandLine.Option`1[System.Collections.Generic.IList`1[System.IO.FileInfo]]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
@@ -113,6 +119,7 @@ cli	project-file-cache-expiry	--project-file-cache-expiry	System.CommandLine.Opt
 cli	project-output	--project-output	System.CommandLine.Option`1[System.Boolean]	command-setup	setup or another command; executes before/outside proof transport
 cli	python-module-name	--python-module-name	System.CommandLine.Option`1[System.String]	command-setup	setup or another command; executes before/outside proof transport
 cli	python-reorder-replacements	--python-reorder-replacements	System.CommandLine.Option`1[System.Boolean]	command-setup	setup or another command; executes before/outside proof transport
+cli	quantified-check-call-facts	--quantified-check-call-facts	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	quantifier-syntax	--quantifier-syntax	System.CommandLine.Option`1[Microsoft.Dafny.QuantifierSyntaxOptions]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	random-seed	--random-seed	System.CommandLine.Option`1[System.UInt32]	execution	effective prover interfaces/options plus exact SMT command stream; overrides retained
 cli	raw-pointers	--raw-pointers	System.CommandLine.Option`1[System.Boolean]	command-setup	setup or another command; executes before/outside proof transport

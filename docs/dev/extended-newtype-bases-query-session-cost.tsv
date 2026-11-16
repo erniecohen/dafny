@@ -1,0 +1,16 @@
+case	axis	sample	baseline_ru	final_ru	delta_ru	changed_single_vcs	identical_ordered_contexts	literal_commands_reordered	other_context_differences	same_prior_session_prefixes	pair_order
+5.1.0 / cs	canonical-cores4	0	6553608	6553603	-5	3	66	61	5	10	baseline then final
+5.1.0 / cs	canonical-cores4	1	6553669	6553603	-66	58	58	73	1	8	final then baseline
+5.1.0 / cs	canonical-cores4	2	6553609	6553626	17	4	57	68	7	13	baseline then final
+5.1.0 / cs	additional-cores1	0	6553603	6553605	2	2	57	68	7	27	baseline then final
+5.1.0 / cs	additional-cores1	1	6553608	6553604	-4	4	57	69	6	27	final then baseline
+5.1.0 / notarget	canonical-cores4	0	6553603	6553607	4	4	57	72	3	19	final then baseline
+5.1.0 / notarget	canonical-cores4	1	6553604	6553603	-1	1	57	71	4	25	baseline then final
+5.1.0 / notarget	canonical-cores4	2	6553676	6553727	51	70	57	65	10	20	final then baseline
+5.1.0 / notarget	additional-cores1	0	6553605	6553614	9	13	57	73	2	27	baseline then final
+5.1.0 / notarget	additional-cores1	1	6553608	6553672	64	72	57	71	4	27	final then baseline
+4.16.0 / notarget	canonical-cores4	0	6599362	6599367	5	3	120	0	12	14	baseline then final
+4.16.0 / notarget	canonical-cores4	1	6599362	6599293	-69	69	58	74	0	21	final then baseline
+4.16.0 / notarget	canonical-cores4	2	6599033	6599293	260	2	57	65	10	19	baseline then final
+4.16.0 / notarget	additional-cores1	0	6599299	6598962	-337	4	61	52	19	27	baseline then final
+4.16.0 / notarget	additional-cores1	1	6599293	6599299	6	2	57	71	4	27	final then baseline

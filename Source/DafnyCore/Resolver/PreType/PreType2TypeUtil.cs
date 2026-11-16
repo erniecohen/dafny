@@ -90,6 +90,18 @@ public static class PreType2TypeUtil {
   }
 
   /// <summary>
+  /// Like Combine, but when the head of the converted pre-type is a type synonym or subset type that the head of
+  /// "userSuppliedType" does not match, the converted pre-type is expanded, not just "userSuppliedType".
+  /// This is used only for a lambda binder whose type --contextual-lambda-domains took from the declared arrow
+  /// domain: that domain and the binder's pre-type have the same base type, but either one may be spelled with a
+  /// synonym or subset type that the other does not use.
+  /// </summary>
+  public static void CombineModuloPreTypeSynonyms(Type userSuppliedType, PreType preType, bool allowFutureRefinements) {
+    var preTypeConverted = PreType2Type(preType, allowFutureRefinements);
+    Combine(userSuppliedType, preTypeConverted, true);
+  }
+
+  /// <summary>
   /// This method combines the respective user-supplied types with the inferred pre-types. It expects that either
   ///     - "types" is null, which represents the case where the types are inferred. In this case, the method returns a new
   ///       list that contains the converted pre-types.
@@ -114,7 +126,7 @@ public static class PreType2TypeUtil {
     return types;
   }
 
-  private static void Combine(Type type, Type preTypeConverted) {
+  private static void Combine(Type type, Type preTypeConverted, bool expandPreTypeSynonyms = false) {
     Contract.Requires(type != null);
     Contract.Requires(preTypeConverted != null);
 
@@ -128,8 +140,12 @@ public static class PreType2TypeUtil {
       if ((type as UserDefinedType)?.ResolvedClass == (preTypeConverted as UserDefinedType)?.ResolvedClass) {
         Contract.Assert(type.TypeArgs.Count == preTypeConverted.TypeArgs.Count);
         for (var i = 0; i < type.TypeArgs.Count; i++) {
-          Combine(type.TypeArgs[i], preTypeConverted.TypeArgs[i]);
+          Combine(type.TypeArgs[i], preTypeConverted.TypeArgs[i], expandPreTypeSynonyms);
         }
+      } else if (expandPreTypeSynonyms &&
+                 preTypeConverted is UserDefinedType { ResolvedClass: TypeSynonymDecl preTypeSynonymDecl } preTypeUdt) {
+        // The pre-type is spelled with a synonym or subset type that "type" does not use. Expand it and recurse.
+        Combine(type, preTypeSynonymDecl.RhsWithArgumentIgnoringScope(preTypeUdt.TypeArgs), true);
       } else {
         // The only way this can happen is if the user-supplied "type" is a type synonym, subset type, or newtype that expands to one of its
         // type parameters. If so, expand "type" and recurse.
@@ -139,7 +155,7 @@ public static class PreType2TypeUtil {
         } else {
           type = ((NewtypeDecl)udt.ResolvedClass).RhsWithArgument(udt.TypeArgs);
         }
-        Combine(type, preTypeConverted);
+        Combine(type, preTypeConverted, expandPreTypeSynonyms);
       }
     }
   }

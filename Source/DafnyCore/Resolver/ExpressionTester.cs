@@ -439,7 +439,26 @@ public class ExpressionTester {
 
       var A = fromType.NormalizeExpand(); // important to NOT keep constraints here, since they won't be evident at run time
       Type A_U;
-      if (A is UserDefinedType udtA) {
+      var operationB = NewtypeOperationView.Get(B_T);
+      var usesExtendedNewtype = operationB.Path.OfType<NewtypeDecl>().Any(n => n.UseBaseReferenceCharacteristics) ||
+        A is UserDefinedType { ResolvedClass: NewtypeDecl { UseBaseReferenceCharacteristics: true } };
+      var operationA = usesExtendedNewtype ? NewtypeOperationView.Get(A) : default;
+      if (usesExtendedNewtype && (operationA.Status != NewtypeOperationView.ViewStatus.Resolved ||
+                                 operationB.Status != NewtypeOperationView.ViewStatus.Resolved)) {
+        return false;
+      }
+      if (usesExtendedNewtype && operationB.Path.OfType<RedirectingTypeDecl>()
+            .Any(declaration => declaration.Var != null && !declaration.ConstraintIsCompilable)) {
+        // A bare outer newtype does not make an inner ghost constraint executable.
+        // Inspect only the resolved, scope-sensitive destination path.
+        return false;
+      }
+      if (usesExtendedNewtype && Type.SameHead(operationA.BaseType, operationB.BaseType)) {
+        // Datatype, tuple, and arrow carriers are representation ancestry, not
+        // trait parents. Keep B's symbolic arguments to perform the same
+        // injectivity check below after scoped, instantiated base traversal.
+        A_U = operationB.BaseType;
+      } else if (A is UserDefinedType udtA) {
         A_U = B_T.AsParentType(udtA.ResolvedClass);
       } else {
         // Evidently, A is not a newtype, subset type, (co)datatype, abstract type, reference type, or trait type (except possibly "object?"). Hence:

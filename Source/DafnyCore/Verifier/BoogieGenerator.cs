@@ -42,6 +42,13 @@ namespace Microsoft.Dafny {
     }
 
     public ICanVerify CanVerify { get; }
+
+    /// <summary>
+    /// Whether this is the override check of a member that a refining module copied from its refinement base and
+    /// must check again (see BoogieGenerator.MustReverifyInheritedOverrideCheck).  The pipeline verifies only such
+    /// tasks of a copy: whatever else the copy produces asserts nothing and was verified with the base.
+    /// </summary>
+    public bool IsReverifiedOverrideCheck { get; init; }
   }
 
   public partial class BoogieGenerator {
@@ -766,13 +773,15 @@ namespace Microsoft.Dafny {
     // Cached and uncached callers materialize exactly one graph through the same copier.
     internal Bpl.Program DoTranslationForSnapshot(Program p, ModuleDefinition forModule) {
       RequireCardinalityValidation(p);
-      using var moduleNames = new ModuleNamingScope(forModule.FullName);
+      using var moduleNames = new ModuleNamingScope(forModule.FullName, p.ModuleNamePrefixes);
       Type.ResetScopes();
+      ancestorTypeCache.Clear();
       try {
         proofDependencies.SetCurrentDefinition(forModule.FullName, forModule.EnclosingLiteralModuleDecl);
         return DoTranslationCore(p, forModule);
       } finally {
         Type.ResetScopes();
+        ancestorTypeCache.Clear();
       }
     }
 
@@ -1503,10 +1512,11 @@ namespace Microsoft.Dafny {
           var b = new Bpl.NAryExpr(tok, new Bpl.FunctionCall(GetReadonlyField(dtor)), new List<Bpl.Expr> { B });
           var ty = dtor.Type;
           Bpl.Expr q;
-          var codecl = ty.AsCoDatatype;
+          var coType = NewtypeOperationView.CoDatatypeType(ty, options.Get(CommonOptionBag.ExtendedNewtypeBases));
+          var codecl = coType.AsCoDatatype;
           if (codecl != null && codecl.SscRepr == dt.SscRepr) {
-            var lexprs = Map(ty.TypeArgs, tt => tt.Subst(lsu));
-            var rexprs = Map(ty.TypeArgs, tt => tt.Subst(rsu));
+            var lexprs = Map(coType.TypeArgs, tt => tt.Subst(lsu));
+            var rexprs = Map(coType.TypeArgs, tt => tt.Subst(rsu));
             q = CoEqualCall(codecl, lexprs, rexprs, k, l, a, b);
           } else {
             // ordinary equality; let the usual translation machinery figure out the translation
@@ -1735,6 +1745,7 @@ namespace Microsoft.Dafny {
     private void Reset() {
       currentModule = null;
       codeContext = null;
+      reverifyInheritedOverrideCheck = false;
       CurrentIdGenerator.Reset();
       _tmpIEs.Clear();
       assertionCount = 0;
@@ -2052,6 +2063,18 @@ namespace Microsoft.Dafny {
     }
 
     ModuleDefinition currentModule = null;  // the module whose members are currently being translated
+
+    /// <summary>
+    /// Set while translating an override check that the current module must make itself although the overriding
+    /// member is a copy from its refinement base (see MustReverifyInheritedOverrideCheck).
+    /// </summary>
+    bool reverifyInheritedOverrideCheck = false;
+
+    /// <summary>
+    /// Whether asserts at origins inherited from the refinement base are checked in the current code context, rather
+    /// than assumed on the grounds that the base module already checked them.
+    /// </summary>
+    bool MustReverifyInheritedCode => reverifyInheritedOverrideCheck || codeContext is { MustReverify: true };
     ModuleDefinition forModule = null;  // the root module
     ICallable codeContext = null;  // the method/iterator whose implementation is currently being translated or the function whose specification is being checked for well-formedness
     Bpl.LocalVariable yieldCountVariable = null;  // non-null when an iterator body is being translated
@@ -2744,6 +2767,11 @@ namespace Microsoft.Dafny {
       } else if (pat.Arguments != null) {
         Contract.Assert(pat.Ctor != null);  // follows from successful resolution
         Contract.Assert(pat.Arguments.Count == pat.Ctor.Destructors.Count);  // follows from successful resolution
+        if (options.Get(CommonOptionBag.ExtendedNewtypeBases) &&
+            NewtypeOperationView.Get(rhsType).BaseType is { } baseType &&
+            baseType.AsDatatype == pat.Ctor.EnclosingDatatype) {
+          rhsType = baseType;
+        }
         rhsType = rhsType.Normalize();
         Contract.Assert(rhsType is UserDefinedType && ((UserDefinedType)rhsType).ResolvedClass != null);
         var rhsTypeUdt = (UserDefinedType)rhsType;
@@ -3704,7 +3732,7 @@ namespace Microsoft.Dafny {
       Bpl.PredicateCmd cmd;
       if (context.AssertMode == AssertMode.Assume
           || (assertionOnlyFilter != null && !assertionOnlyFilter(tok.ReportingRange.StartToken))
-          || (refinesToken.IsInherited(currentModule) && codeContext is not { MustReverify: true })) {
+          || (refinesToken.IsInherited(currentModule) && !MustReverifyInheritedCode)) {
         // produce an assume instead
         cmd = TrAssumeCmd(tok, condition, kv);
         proofDependencies?.AddProofDependencyId(cmd, tok, new AssumedProofObligationDependency(tok, description));
@@ -3728,7 +3756,7 @@ namespace Microsoft.Dafny {
       PredicateCmd cmd;
       if (context.AssertMode == AssertMode.Assume ||
           (assertionOnlyFilter != null && !assertionOnlyFilter(tok.ReportingRange.StartToken)) ||
-          (refinesTok.IsInherited(currentModule) && (codeContext == null || !codeContext.MustReverify))) {
+          (refinesTok.IsInherited(currentModule) && !MustReverifyInheritedCode)) {
         // produce a "skip" instead
         cmd = TrAssumeCmd(tok, Bpl.Expr.True, kv);
       } else {
@@ -4370,6 +4398,18 @@ namespace Microsoft.Dafny {
         return null;
       }
       targetType = targetType.NormalizeExpandKeepConstraints();
+      if (options.Get(CommonOptionBag.ExtendedNewtypeBases)) {
+        var sourceView = NewtypeOperationView.Get(sourceType, preserveSubsetTypes: true);
+        if (sourceView.Status == NewtypeOperationView.ViewStatus.Resolved &&
+            sourceView.Path.OfType<NewtypeDecl>().Any() && sourceView.BaseType.IsArrowType &&
+            sourceView.BaseType.Equals(targetType, true)) {
+          // Membership in a nominal newtype entails membership in its exact,
+          // instantiated visible base. This is an operation projection, not
+          // an arrow-signature coercion or a stronger partiality/reads contract.
+          desc = null;
+          return null;
+        }
+      }
       var udt = targetType as UserDefinedType;
       Bpl.Expr cre;
       var constraintCarrier = udt?.ResolvedClass switch {
@@ -5043,7 +5083,7 @@ namespace Microsoft.Dafny {
 
     bool TrSplitNeedsTokenAdjustment(Expression expr) {
       Contract.Requires(expr != null);
-      return expr.Origin.IsInherited(currentModule) && (codeContext == null || !codeContext.MustReverify) && RefinementTransformer.ContainsChange(expr, currentModule);
+      return expr.Origin.IsInherited(currentModule) && !MustReverifyInheritedCode && RefinementTransformer.ContainsChange(expr, currentModule);
     }
 
     /// <summary>

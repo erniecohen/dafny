@@ -1041,7 +1041,9 @@ namespace Microsoft.Dafny.Compilers {
             if (!arg.IsGhost) {
               wCase.Write(" && ");
               string nm = DatatypeFieldName(arg, k);
-              var eqType = DatatypeWrapperEraser.SimplifyType(Options, arg.Type);
+              var eqType = Options.Get(CommonOptionBag.ExtendedNewtypeBases)
+                ? DatatypeWrapperEraser.SimplifyTypeAndTrimNewtypes(Options, arg.Type)
+                : DatatypeWrapperEraser.SimplifyType(Options, arg.Type);
               if (IsDirectlyComparable(eqType)) {
                 wCase.Write("data1.{0} == data2.{0}", nm);
               } else if (IsOrderedByCmp(eqType)) {
@@ -1099,7 +1101,12 @@ namespace Microsoft.Dafny.Compilers {
       }
       if (nt.WitnessKind == SubsetTypeDecl.WKind.Compiled) {
         var retType = nativeType ?? TypeName(nt.BaseType, w, nt.Origin);
-        var wWitness = w.NewNamedBlock("func (_this *{0}) Witness() {1}", FormatCompanionTypeName(IdName(nt)), retType);
+        var parameters = "";
+        if (Options.Get(CommonOptionBag.ExtendedNewtypeBases) && nt.TypeArgs.Count != 0) {
+          WriteRuntimeTypeDescriptorsFormals(nt.TypeArgs, false, out var formals, out _);
+          parameters = formals.ToString();
+        }
+        var wWitness = w.NewNamedBlock("func (_this *{0}) Witness({1}) {2}", FormatCompanionTypeName(IdName(nt)), parameters, retType);
         var wStmts = wWitness.Fork();
         wWitness.Write("return ");
         if (nt.NativeType == null) {
@@ -1114,9 +1121,15 @@ namespace Microsoft.Dafny.Compilers {
       var udt = UserDefinedType.FromTopLevelDecl(nt.Origin, nt);
       // RTD
       {
-        CreateRTD(IdName(nt), nt.TypeArgs, out var wDefaultBody, wr);
-        WriteRuntimeTypeDescriptorsLocals(nt.TypeArgs, wDefaultBody);
-        var d = DefaultValue(udt, wr, nt.Origin, true);
+        var descriptorParams = Options.Get(CommonOptionBag.ExtendedNewtypeBases)
+          ? nt.TypeArgs.Where(NeedsTypeDescriptor).ToList() : nt.TypeArgs;
+        CreateRTD(IdName(nt), descriptorParams, out var wDefaultBody, wr);
+        WriteRuntimeTypeDescriptorsLocals(descriptorParams, wDefaultBody);
+        // Descriptor storage does not establish source-language inhabitation.
+        // Ghost and opt-out witnesses never supply compiled default values.
+        var d = Options.Get(CommonOptionBag.ExtendedNewtypeBases) && udt.GetAutoInit() != Type.AutoInitInfo.CompilableValue
+          ? PlaceboValue(udt, wr, nt.Origin, true)
+          : DefaultValue(udt, wr, nt.Origin, true);
         wDefaultBody.WriteLine("return {0}", d);
       }
 
@@ -1546,6 +1559,9 @@ namespace Microsoft.Dafny.Compilers {
         var w = new ConcreteSyntaxTree();
         w.Write("{0}(", cl is TupleTypeDecl ? "_dafny.TupleType" : TypeName_RTD(xType, w, tok));
         var typeArgs = cl is DatatypeDecl dt ? UsedTypeParameters(dt, udt.TypeArgs, true) : TypeArgumentInstantiation.ListFromClass(cl, udt.TypeArgs);
+        if (cl is NewtypeDecl && Options.Get(CommonOptionBag.ExtendedNewtypeBases)) {
+          typeArgs = typeArgs.Where(ta => NeedsTypeDescriptor(ta.Formal)).ToList();
+        }
         EmitTypeDescriptorsActuals(typeArgs, udt.Origin, w, true);
         w.Write(")");
         return w.ToString();
@@ -1730,7 +1746,9 @@ namespace Microsoft.Dafny.Compilers {
       } else if (cl is NewtypeDecl) {
         var td = (NewtypeDecl)cl;
         if (td.Witness != null) {
-          return TypeName_Companion(cl, wr, tok) + ".Witness()";
+          var arguments = Options.Get(CommonOptionBag.ExtendedNewtypeBases) && td.TypeArgs.Count != 0
+            ? TypeArgumentInstantiation.ListFromClass(td, udt.TypeArgs).Where(ta => NeedsTypeDescriptor(ta.Formal)).Comma(ta => TypeDescriptor(ta.Actual, wr, tok)) : "";
+          return TypeName_Companion(cl, wr, tok) + $".Witness({arguments})";
         } else if (td.NativeType != null) {
           return GetNativeTypeName(td.NativeType) + "(0)";
         } else {

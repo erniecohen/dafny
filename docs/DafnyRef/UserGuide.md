@@ -321,6 +321,11 @@ Various options control the verification process, in addition to all those descr
   describe the current invocation, not a new solver measurement. Unsupported
   execution profiles run normally. The initial native profile supports macOS
   and Linux; custom loading environments and solver launcher scripts bypass.
+  Both a framework-dependent build, whose .NET host is identified by the
+  installation's `host/fxr`, and a self-contained build, whose bundled
+  `libhostfxr` and `libhostpolicy` identify its host, are supported. Each request of
+  `--filter-position-batch` reads and writes the cache as a separate
+  `--filter-position` run would.
   Paths under Dafny's own installation, the .NET runtime and the solver's
   directory enter the key as placeholders, so the same build in another directory
   or on another machine reuses the cache; the bytes of every image are still
@@ -385,7 +390,9 @@ Dafny parses and resolves the whole program once, then verifies these requests i
 order. Each filter uses the syntax of `--filter-position` and is also restricted
 by `--filter-symbol`, if supplied. `--filter-position-batch` cannot be combined
 with `--filter-position`. Duplicate or overlapping filters run their selected
-proofs again; they do not reuse a previous verification result. Each request has
+proofs again; they do not reuse a previous verification result, unless
+`--verification-cache` is given, under which each request reads and writes the
+persistent cache as a separate `--filter-position` run would. Each request has
 a separate summary, and `--log-format` collects all requests into one log, including repeated rows for repeated proofs. The exit code is
 unsuccessful if any request fails, even if later requests succeed. Parsing or
 resolution errors prevent every request from running.
@@ -397,7 +404,8 @@ warnings are isolated per request, and combined coverage includes every request.
 Cancellation or a solver exception aborts the batch before a later request starts.
 Files edited after they have been read
 are not reloaded between requests. To use changed inputs or options, start a new
-invocation; every invocation parses and resolves again. No cache is persisted.
+invocation; every invocation parses and resolves again. Apart from
+`--verification-cache`, no cache is persisted.
 As with a single position filter, a successful batch verifies only its selected
 proofs and does not establish that the whole project is verified.
 
@@ -2570,8 +2578,9 @@ warnings as errors.
   annotate, and a declaration that a refining module inherits is reported once, where it is
   written. Under
   `--modular-termination` the warning stays, since that option checks these calls only in the
-  code verified with it. Disabled by default. Use `warn-unchecked-termination = true` in a
-  project file's `[options]` section.
+  code verified with it. Enabled by default; `--warn-unchecked-termination=false`, or
+  `warn-unchecked-termination = false` in a project file's `[options]` section, turns it off, and so
+  does the hidden `--legacy-no-unchecked-termination-warning`, kept for migration and comparison.
 
 Legacy options
 
@@ -2705,6 +2714,31 @@ and what information it produces about the verification process.
   because it can change proof costs. See
   [the soundness note](../dev/additional-axioms.md).
 
+* `--inlined-body-call-permissions` - when a call to a function with a body
+  is checked by inlining the body conjunct by conjunct (for example a
+  precondition `t.P(n)` where `P` is `a.P(n) && b.P(n)`), give each conjunct
+  the call permissions of the body at its own fuel layer, so that a later
+  conjunct no longer depends on unrelated terms unfolding an earlier one. It
+  adds no fact beyond the function's definition axiom. Disabled by default;
+  `inlined-body-call-permissions = true` in a project file's `[options]`
+  section. It has its own option, not `--additional-axioms`, because it
+  changes proof costs. See
+  [the soundness note](../dev/additional-axioms.md#call-permissions-of-the-checked-conjuncts-of-an-inlined-body-198).
+
+* `--detect-witness-matching-loops` - in the matching-loop detection of
+  automatically selected triggers, treat a variable bound by a nested
+  existential as a new term, since each instance of the enclosing quantifier
+  yields a fresh witness for it. For example,
+  `forall q | q in s :: exists p :: p in s && q < p` is reported as a matching
+  loop: the witness `p` of the instance at `q` matches the trigger `q in s`
+  again. Without the option, `p in s` counts as a harmless renaming of the
+  trigger. A variable counts when its quantifier is an existential in positive
+  position, or a universal in negative position, in the enclosing quantifier's
+  body, or where the position is mixed. A trigger that does not loop is
+  preferred where one exists. Disabled by default;
+  `detect-witness-matching-loops = true` in a project file's `[options]`
+  section.
+
 * `--statement-expression-conclusions` - in the condition of an `assert`
   statement, use the conclusion of a statement expression `S; E` (the
   condition of an `assert`, `assume` or `expect` statement, the result of a
@@ -2721,6 +2755,21 @@ and what information it produces about the verification process.
   if-then-else expressions. Disabled by default;
   `statement-expression-conclusions = true` in a project file's `[options]`
   section. It can change proof costs.
+
+* `--quantified-check-call-facts` - when a method postcondition or the
+  condition of an `assert` statement is a universal quantifier, check its body
+  under the call facts (`f#canCall`) of the functions the body calls, which
+  the verifier assumes, as a separate quantifier, just before the check. A
+  function's definition axiom is guarded by its call fact, so without the
+  option the definition can be lost where the solver simplifies the checked
+  body until no trigger term of that separate quantifier remains: for
+  example, `ensures forall i | 0 <= i < |l| :: abs(l[i] - l[i]) <= d` fails,
+  since `l[i] - l[i]` becomes `0.0` and `abs(0.0)` stays uninterpreted. The
+  quantifier assumed after the check is the original one, so the option adds
+  no assumption. Loop invariants, function postconditions, quantifiers proved
+  by induction and quantifiers that Dafny splits by trigger are not affected.
+  Disabled by default; `quantified-check-call-facts = true` in a project
+  file's `[options]` section. It can change proof costs.
 
 * `--trait-rank-decreases` - in `decreases` clauses, order the values of a
   trait that is not a reference type (one that does not extend `object`) by

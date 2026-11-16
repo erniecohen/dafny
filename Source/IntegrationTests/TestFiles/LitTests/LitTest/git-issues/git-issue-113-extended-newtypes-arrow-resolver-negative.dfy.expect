@@ -1,0 +1,4 @@
+git-issue-113-extended-newtypes-arrow-resolver-negative.dfy(44,19): Error: non-function expression (of type Hidden) is called with parameters
+git-issue-113-extended-newtypes-arrow-resolver-negative.dfy(45,26): Error: member 'requires' does not exist in newtype 'Hidden'
+git-issue-113-extended-newtypes-arrow-resolver-negative.dfy(41,7): Error: not resolving module '_module' because there were errors in resolving its nested module 'OpaqueClient'
+3 resolution/type errors detected in git-issue-113-extended-newtypes-arrow-resolver-negative.dfy

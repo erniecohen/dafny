@@ -1,0 +1,3 @@
+git-issue-113-extended-newtypes-datatype-cycle.dfy(5,8): Error: recursive constraint dependency involving a newtype: NW -> W -> NW
+git-issue-113-extended-newtypes-datatype-cycle.dfy(7,8): Error: recursive constraint dependency involving a newtype: NG -> G -> NG
+2 resolution/type errors detected in git-issue-113-extended-newtypes-datatype-cycle.dfy

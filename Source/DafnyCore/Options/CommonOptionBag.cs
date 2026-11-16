@@ -299,8 +299,17 @@ true - All class instances are raw pointers and need to be manually deallocated"
   public static readonly Option<bool> HeapFreeLambdaFacts = new("--heap-free-lambda-facts", () => false,
     "Check a lambda without a reads clause, whose body observes neither the heap nor allocation, in every heap and without assuming its parameters allocated, and let the calls in its body unfold wherever it is applied. May change verification performance. Disabled by default.");
 
+  public static readonly Option<bool> DetectWitnessMatchingLoops = new("--detect-witness-matching-loops", () => false,
+    "In the matching-loop detection of automatically selected triggers, treat a variable bound by a nested existential, whose witness is a new term at each instance of the enclosing quantifier, as a new term, so that 'forall q | q in s :: exists p :: p in s && q < p' is reported as a matching loop, and another trigger is preferred where one exists. May change the selected triggers. Disabled by default.");
+
+  public static readonly Option<bool> InlinedBodyCallPermissions = new("--inlined-body-call-permissions", () => false,
+    "When a call to a function with a body is checked by inlining the body conjunct by conjunct, give each conjunct the call permissions of the body at its own fuel layer, an instance of the function's definition axiom. May change verification performance. Disabled by default.");
+
   public static readonly Option<bool> StatementExpressionConclusions = new("--statement-expression-conclusions", () => false,
     "In the condition of an assert statement, use the conclusion of a statement expression (S; E), such as an assert or assume statement, as a fact for E also under quantifiers and logical connectives, and not only at the top. Not inside old, unchanged, fresh, lambdas, or set and map comprehensions. May change verification performance. Disabled by default.");
+
+  public static readonly Option<bool> QuantifiedCheckCallFacts = new("--quantified-check-call-facts", () => false,
+    "When a postcondition or an assert statement is checked, give the body of each universal quantifier in it the call facts of the functions it calls, so that a function's definition is available even where the solver simplifies the body until no trigger term remains, as in 'forall i | 0 <= i < |s| :: f(s[i] - s[i]) <= d'. May change verification performance. Disabled by default.");
 
   public static readonly Option<bool> TraitRankDecreases = new("--trait-rank-decreases", () => false,
     "In decreases clauses, order values of traits that are not reference types by structural rank, together with inductive datatypes and sequences, so that 'decreases this' in a datatype that extends such a trait is comparable with 'decreases this' in the trait. With --additional-axioms, a trait-typed field of an inductive datatype value is below that value. No effect with --legacy-decreases-order. Disabled by default.");
@@ -309,8 +318,11 @@ true - All class instances are raw pointers and need to be manually deallocated"
     "Prevents a warning from being generated for axioms, such as assume statements and functions or methods without a body, that don't have an {:axiom} attribute.") {
   };
 
-  public static readonly Option<bool> WarnUncheckedTermination = new("--warn-unchecked-termination", () => false,
-    "Warn about each trait with {:termination false} and each class or trait with @AssumeCrossModuleTermination: calls dispatched through such a trait are not checked for termination. Like an assume statement, the declaration is not reported if it has an {:axiom} attribute or if --allow-axioms is set. Only declarations that the run verifies are reported, not those of libraries or included files. Disabled by default.");
+  public static readonly Option<bool> WarnUncheckedTermination = new("--warn-unchecked-termination", () => true,
+    "Warn about each trait with {:termination false} and each class or trait with @AssumeCrossModuleTermination: calls dispatched through such a trait are not checked for termination. Like an assume statement, the declaration is not reported if it has an {:axiom} attribute or if --allow-axioms is set. Only declarations that the run verifies are reported, not those of libraries or included files. Enabled by default.");
+
+  public static readonly Option<bool> LegacyNoUncheckedTerminationWarning = new("--legacy-no-unchecked-termination-warning", () => false,
+    "Do not warn about {:termination false} and @AssumeCrossModuleTermination, as before the warning was on by default; for migration and comparison only.") { IsHidden = true };
 
   public static readonly Option<bool> BitvectorMapKeys = new("--bitvector-map-keys", () => false,
     "Preserve bitvector key types in map and imap lookups, and bitvector element types in multiset multiplicity lookups, during verification. Disabled by default.");
@@ -351,6 +363,9 @@ true - All class instances are raw pointers and need to be manually deallocated"
   public static readonly Option<bool> LegacyUnguardedChar = new("--legacy-unguarded-char", () => false,
     "Use the legacy, inconsistent unguarded character axioms for migration and comparison only.") { IsHidden = true };
 
+  public static readonly Option<bool> LegacyElidedOverrideChecks = new("--legacy-elided-override-checks", () => false,
+    "Use the legacy, unsound rule that skips the override check of a member a refining module inherits unchanged, even when the module changes the member it overrides or adds the parent that declares it, for migration and comparison only.") { IsHidden = true };
+
   public static readonly Option<bool> ModularTermination = new("--modular-termination", () => false,
     "Experimental; it does not yet establish termination in every program. Accept global and callback decreases bounds. Under this option, {:termination false} declares checked trait extensibility; foreign extension of sealed traits is rejected, including with @AssumeCrossModuleTermination. Dispatched overridable slots require strict global-bound descent. Imported operations are General at their declared bound, or TOP, unless they publish a checked {:termination_closed} promise; private bodies never strengthen an imported contract. Exact General calls require nonincrease as well as ordinary termination. Constants and type/iterator evaluation hooks also use public effects. Closed code and bound computations cannot reach open dispatch, unknown applications or imported General code. Callback formation, forwarding and application retain their checked bounds. Show call classifications with --show-hints. Libraries are admitted only as .doo files built under this option, whose recorded program, options and termination contracts are checked when loaded. See the Reference Manual for restrictions. Disabled by default.");
 
@@ -390,9 +405,13 @@ Value implementations must retain their type parameters in compatible parent pos
   public static readonly Option<bool> GeneralNewtypes = new("--general-newtypes", () => false,
     @"
 false - A newtype can only be based on numeric types or another newtype.
-true - (requires --type-system-refresh) A newtype can be based on any non-reference, non-trait, non-arrow, non-ORDINAL type.".TrimStart()) {
+true - (requires --type-system-refresh) A newtype can use non-reference, non-trait value bases other than ORDINAL, arrows, and datatypes (including tuples and codatatypes), unless --extended-newtype-bases is enabled.".TrimStart()) {
     IsHidden = true
   };
+
+  public static readonly Option<bool> ExtendedNewtypeBases = new("--extended-newtype-bases", () => false,
+    "Permit ORDINAL, datatype (including tuple and codatatype), and ~>, -->, -> newtype bases. Disabled by default. " +
+    "Requires --general-newtypes=true and --type-system-refresh=true.");
 
   public static readonly Option<bool> TypeInferenceDebug = new("--type-inference-trace", () => false,
     @"
@@ -615,7 +634,9 @@ Value implementations must retain their type parameters in compatible parent pos
       defaultValue: GeneralTraitsOptions.Legacy);
     DafnyOptions.RegisterLegacyUi(GeneralNewtypes, DafnyOptions.ParseBoolean, "Language feature selection", "generalNewtypes", @"
 0 (default) - A newtype can only be based on numeric types or another newtype.
-1 - (requires /typeSystemRefresh:1) A newtype can be based on any non-reference, non-trait, non-arrow, non-ORDINAL type.".TrimStart(), false);
+1 - (requires /typeSystemRefresh:1) A newtype can use non-reference, non-trait value bases other than ORDINAL, arrows, and datatypes (including tuples and codatatypes), unless /extendedNewtypeBases:1 is enabled.".TrimStart(), false);
+    DafnyOptions.RegisterLegacyUi(ExtendedNewtypeBases, DafnyOptions.ParseBoolean, "Language feature selection", "extendedNewtypeBases",
+      "0 (default) - Retain existing general-newtype base restrictions.\n1 - Permit ORDINAL, datatype (including tuple and codatatype), and arrow newtype bases; requires /generalNewtypes:1 and /typeSystemRefresh:1.", false);
     DafnyOptions.RegisterLegacyUi(TypeInferenceDebug, DafnyOptions.ParseBoolean, "Language feature selection", "titrace", @"
 0 (default) - Don't print type-inference debug information.
 1 - Print type-inference debug information.".TrimStart(), defaultValue: false);
@@ -814,7 +835,10 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(MapComprehensionDomainTriggers, OptionScope.Cli);
     OptionRegistry.RegisterOption(HeapFreeLambdaFacts, OptionScope.Cli);
     OptionRegistry.RegisterOption(FunctionExtensionalityAxiom, OptionScope.Cli);
+    OptionRegistry.RegisterOption(InlinedBodyCallPermissions, OptionScope.Cli);
+    OptionRegistry.RegisterOption(DetectWitnessMatchingLoops, OptionScope.Cli);
     OptionRegistry.RegisterOption(StatementExpressionConclusions, OptionScope.Cli);
+    OptionRegistry.RegisterOption(QuantifiedCheckCallFacts, OptionScope.Cli);
     OptionRegistry.RegisterOption(TraitRankDecreases, OptionScope.Cli);
     OptionRegistry.RegisterOption(ShowHints, OptionScope.Cli);
     OptionRegistry.RegisterOption(Libraries, OptionScope.Module);
@@ -837,6 +861,9 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(TypeInferenceDebug, OptionScope.Cli);
     OptionRegistry.RegisterOption(GeneralTraits, OptionScope.Cli);
     OptionRegistry.RegisterOption(GeneralNewtypes, OptionScope.Cli);
+    OptionRegistry.RegisterGlobalOption(ExtendedNewtypeBases,
+      (reporter, origin, prefix, option, localValue, libraryValue) =>
+        OptionCompatibility.OptionLibraryImpliesLocalError(reporter, origin, prefix, option, localValue, libraryValue ?? false));
     OptionRegistry.RegisterOption(TypeSystemRefresh, OptionScope.Cli);
     OptionRegistry.RegisterOption(BitvectorMapKeys, OptionScope.Cli);
     OptionRegistry.RegisterOption(ContextualLambdaDomains, OptionScope.Cli);
@@ -854,9 +881,11 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(LegacyUnguardedChar, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacyAutoGeneratedAttributes, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacyFirstPhaseConstReads, OptionScope.Cli);
+    OptionRegistry.RegisterOption(LegacyElidedOverrideChecks, OptionScope.Cli);
     OptionRegistry.RegisterOption(ModularTermination, OptionScope.Cli);
     OptionRegistry.RegisterOption(ModularTerminationTrust, OptionScope.Cli);
     OptionRegistry.RegisterOption(WarnUncheckedTermination, OptionScope.Cli);
+    OptionRegistry.RegisterOption(LegacyNoUncheckedTerminationWarning, OptionScope.Cli);
     OptionRegistry.RegisterOption(InvariantConstructorInference, OptionScope.Cli);
     OptionRegistry.RegisterOption(VerificationLogFormat, OptionScope.Cli);
     OptionRegistry.RegisterOption(VerifyIncludedFiles, OptionScope.Cli);

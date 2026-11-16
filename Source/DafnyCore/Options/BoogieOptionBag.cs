@@ -17,6 +17,9 @@ public static class BoogieOptionBag {
     Arity = ArgumentArity.ZeroOrMore
   };
 
+  public static readonly Option<bool> LegacyBoogieLibraryCheck = new("--legacy-boogie-library-check", () => false,
+    "Require the --boogie arguments of a project and of a library it loads to match exactly, as before arguments that cannot change an imported declaration's facts were allowed to differ, for migration and comparison only.") { IsHidden = true };
+
   public static readonly Option<uint> Cores = new("--cores", result => {
 
     var value = result.Tokens[^1].Value;
@@ -157,7 +160,8 @@ public static class BoogieOptionBag {
     DafnyOptions.RegisterLegacyBinding(VerificationErrorLimit, (options, value) => { options.ErrorLimit = value; });
     DafnyOptions.RegisterLegacyBinding(IsolateAssertions, (o, v) => o.VcsSplitOnEveryAssert = v);
 
-    OptionRegistry.RegisterGlobalOption(BoogieArguments, OptionCompatibility.CheckOptionMatches);
+    OptionRegistry.RegisterGlobalOption(BoogieArguments, BoogieLibraryCompatibility.Check);
+    OptionRegistry.RegisterOption(LegacyBoogieLibraryCheck, OptionScope.Cli);
     OptionRegistry.RegisterGlobalOption(NoVerify, OptionCompatibility.OptionLibraryImpliesLocalError);
     OptionRegistry.RegisterGlobalOption(HiddenNoVerify, OptionCompatibility.NoOpOptionCheck);
     OptionRegistry.RegisterOption(Cores, OptionScope.Cli);

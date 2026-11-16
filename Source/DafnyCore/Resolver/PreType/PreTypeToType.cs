@@ -31,6 +31,13 @@ class PreTypeToTypeVisitor : ASTVisitor<IASTVisitorContext> {
 
   private readonly SystemModuleManager systemModuleManager;
 
+  /// <summary>
+  /// The lambda binders that --contextual-lambda-domains gave the declared arrow domain as their type.
+  /// Such a binder's pre-type may print as a different, equivalent spelling of that domain, such as a type synonym
+  /// or subset type of a formal it is passed to, so it is combined with that pre-type modulo synonyms.
+  /// </summary>
+  private readonly HashSet<IVariable> contextualLambdaBinders = new();
+
   public PreTypeToTypeVisitor(SystemModuleManager systemModuleManager) {
     this.systemModuleManager = systemModuleManager;
   }
@@ -96,15 +103,20 @@ class PreTypeToTypeVisitor : ASTVisitor<IASTVisitorContext> {
           // A declared arrow domain supplies a checking context for this lambda,
           // without refining unrelated quantified or comprehension variables.
           proxy.T = domain;
+          contextualLambdaBinders.Add(boundVar);
         }
       }
     }
     base.VisitFunction(function);
   }
 
-  private static void VisitVariableList(IEnumerable<IVariable> variables, bool allowFutureRefinements) {
+  private void VisitVariableList(IEnumerable<IVariable> variables, bool allowFutureRefinements) {
     foreach (var v in variables) {
-      PreType2TypeUtil.Combine(v.Type, v.PreType, allowFutureRefinements);
+      if (contextualLambdaBinders.Contains(v)) {
+        PreType2TypeUtil.CombineModuloPreTypeSynonyms(v.Type, v.PreType, allowFutureRefinements);
+      } else {
+        PreType2TypeUtil.Combine(v.Type, v.PreType, allowFutureRefinements);
+      }
     }
   }
 
@@ -223,8 +235,19 @@ class PreTypeToTypeVisitor : ASTVisitor<IASTVisitorContext> {
       }
 
     } else if (expr is ConversionExpr conversionExpr) {
-      PreType2TypeUtil.Combine(conversionExpr.ToType, conversionExpr.PreType, false);
-      expr.Type = conversionExpr.ToType;
+      // Pre-types omit subset refinements, including total/no-reads arrow families.
+      // A synthetic base view must recover them from its nominal source during refinement.
+      PreType2TypeUtil.Combine(conversionExpr.ToType, conversionExpr.PreType, conversionExpr.IsBaseOperation);
+      if (conversionExpr.IsBaseOperation && conversionExpr.PreType.Normalize() is DPreType { Decl: ArrowTypeDecl }) {
+        // Combine can retain an explicit head, and Expression.Type normalizes away
+        // outer proxies. Give this projection an owned target before parent flows
+        // capture it, and share that target with its checked conversion type.
+        var target = new TypeRefinementWrapper(conversionExpr.ToType.Normalize());
+        conversionExpr.ToType = target;
+        conversionExpr.UnnormalizedType = target;
+      } else {
+        expr.Type = conversionExpr.ToType;
+      }
       return;
     }
 

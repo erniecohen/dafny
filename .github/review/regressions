@@ -405,6 +405,9 @@ git-issues/github-issue-268.dfy
 # the resource limit compared with each result's resource use rather than keyed
 # (https://github.com/erniecohen/dafny/issues/261).
 git-issues/git-issue-241-verification-cache.dfy
+# Imported-body early cutoff, split out to stay well inside the lit timeout
+# (https://github.com/erniecohen/dafny/issues/389).
+git-issues/git-issue-241-verification-cache-cutoff.dfy
 # Default dependency-local translation (https://github.com/erniecohen/dafny/issues/241).
 git-issues/git-issue-241-history-free-translation.dfy
 git-issues/github-issue-241-translation-cache.dfy
@@ -560,6 +563,174 @@ git-issues/github-issue-362.dfy
 
 # Under --modular-termination, the reveal lemma Dafny generates for an opaque const is generated, in a concrete module and in the copies a refinement makes, so neither the library build nor 'dafny audit' counts it as a bodyless lemma with a postcondition (https://github.com/erniecohen/dafny/issues/371).
 git-issues/github-issue-371.dfy
+# Extended newtype bases (issue 113): --extended-newtype-bases, its option-off identity, and its nonvacuity controls.
+git-issues/git-issue-113-existing-arrow-raw-arrow-subset-negative.dfy
+git-issues/git-issue-113-existing-arrow-raw-arrow-subset-nonvacuity-negative.dfy
+git-issues/git-issue-113-existing-arrow-raw-arrow-subset-positive.dfy
+git-issues/git-issue-113-existing-arrow-runtime-control.dfy
+git-issues/git-issue-113-existing-arrow-variance-control.dfy
+git-issues/git-issue-113-existing-codatatype-prefix-nequality-trigger-control.dfy
+git-issues/git-issue-113-existing-codatatype-subset-control.dfy
+git-issues/git-issue-113-existing-codatatype-subset-field-negative.dfy
+git-issues/git-issue-113-existing-codatatype-subset-nonvacuity-negative.dfy
+git-issues/git-issue-113-existing-codatatype-subset-result-negative.dfy
+git-issues/git-issue-113-existing-datatype-base-trait-control.dfy
+git-issues/git-issue-113-extended-newtypes-arrow-allocation-negative.dfy
+git-issues/git-issue-113-extended-newtypes-arrow-allocation-positive.dfy
+git-issues/git-issue-113-extended-newtypes-arrow-intermediate-negative.dfy
+git-issues/git-issue-113-extended-newtypes-arrow-intermediate-positive.dfy
+git-issues/git-issue-113-extended-newtypes-arrow-membership-false-control.dfy
+git-issues/git-issue-113-extended-newtypes-arrow-membership-negative.dfy
+git-issues/git-issue-113-extended-newtypes-arrow-membership-positive.dfy
+git-issues/git-issue-113-extended-newtypes-arrow-nominal-arrow-subset-negative.dfy
+git-issues/git-issue-113-extended-newtypes-arrow-nominal-arrow-subset-nonvacuity-negative.dfy
+git-issues/git-issue-113-extended-newtypes-arrow-nominal-arrow-subset-positive.dfy
+git-issues/git-issue-113-extended-newtypes-arrow-positive.dfy
+git-issues/git-issue-113-extended-newtypes-arrow-proof-negative.dfy
+git-issues/git-issue-113-extended-newtypes-arrow-resolver-negative.dfy
+git-issues/git-issue-113-extended-newtypes-arrow-runtime.dfy
+git-issues/git-issue-113-extended-newtypes-arrow-variance-control.dfy
+git-issues/git-issue-113-extended-newtypes-codatatype-constrained-result-negative.dfy
+git-issues/git-issue-113-extended-newtypes-codatatype-cycle-negative.dfy
+git-issues/git-issue-113-extended-newtypes-codatatype-default-negative.dfy
+git-issues/git-issue-113-extended-newtypes-codatatype-field-constraint-negative.dfy
+git-issues/git-issue-113-extended-newtypes-codatatype-field-refinement-proof-negative.dfy
+git-issues/git-issue-113-extended-newtypes-codatatype-hidden-negative.dfy
+git-issues/git-issue-113-extended-newtypes-codatatype-positive.dfy
+git-issues/git-issue-113-extended-newtypes-codatatype-proof-negative.dfy
+git-issues/git-issue-113-extended-newtypes-codatatype-resolver-negative.dfy
+git-issues/git-issue-113-extended-newtypes-codatatype-runtime.dfy
+git-issues/git-issue-113-extended-newtypes-datatype-base-trait-nominality-negative.dfy
+git-issues/git-issue-113-extended-newtypes-datatype-base-trait-positive.dfy
+git-issues/git-issue-113-extended-newtypes-datatype-cycle.dfy
+git-issues/git-issue-113-extended-newtypes-datatype-descriptor-runtime.dfy
+git-issues/git-issue-113-extended-newtypes-datatype-generic-witness-runtime.dfy
+git-issues/git-issue-113-extended-newtypes-datatype-partial-equality.dfy
+git-issues/git-issue-113-extended-newtypes-datatype-positive.dfy
+git-issues/git-issue-113-extended-newtypes-datatype-proof-negative.dfy
+git-issues/git-issue-113-extended-newtypes-datatype-resolver-cycle-negative.dfy
+git-issues/git-issue-113-extended-newtypes-datatype-resolver-negative.dfy
+git-issues/git-issue-113-extended-newtypes-datatype-runtime.dfy
+git-issues/git-issue-113-extended-newtypes-datatype-trait-negative.dfy
+git-issues/git-issue-113-extended-newtypes-datatype-type-test-resolver-negative.dfy
+git-issues/git-issue-113-extended-newtypes-datatype-type-test-runtime.dfy
+git-issues/git-issue-113-extended-newtypes-direct-reference-resolver-negative.dfy
+git-issues/git-issue-113-extended-newtypes-generic-companion-runtime.dfy
+git-issues/git-issue-113-extended-newtypes-generic-conversion-runtime.dfy
+git-issues/git-issue-113-extended-newtypes-hidden-base-cast.dfy
+git-issues/git-issue-113-extended-newtypes-hidden-base-introduction.dfy
+git-issues/git-issue-113-extended-newtypes-hidden-base-member.dfy
+git-issues/git-issue-113-extended-newtypes-hidden-base-order.dfy
+git-issues/git-issue-113-extended-newtypes-hidden-base-plus.dfy
+git-issues/git-issue-113-extended-newtypes-hidden-base-typearguments.dfy
+git-issues/git-issue-113-extended-newtypes-hidden-cast.dfy
+git-issues/git-issue-113-extended-newtypes-hidden-member.dfy
+git-issues/git-issue-113-extended-newtypes-hidden-ordinal.dfy
+git-issues/git-issue-113-extended-newtypes-hidden-positive.dfy
+git-issues/git-issue-113-extended-newtypes-native-runtime.dfy
+git-issues/git-issue-113-extended-newtypes-numeric-view-errors.dfy
+git-issues/git-issue-113-extended-newtypes-numeric-views.dfy
+git-issues/git-issue-113-extended-newtypes-ordinal-bv-resolve.dfy
+git-issues/git-issue-113-extended-newtypes-ordinal-errors.dfy
+git-issues/git-issue-113-extended-newtypes-ordinal-generic.dfy
+git-issues/git-issue-113-extended-newtypes-ordinal-native-resolve.dfy
+git-issues/git-issue-113-extended-newtypes-ordinal-ranges.dfy
+git-issues/git-issue-113-extended-newtypes-ordinal-resolve.dfy
+git-issues/git-issue-113-extended-newtypes-ordinal-runtime.dfy
+git-issues/git-issue-113-extended-newtypes-ordinal-unicode-errors.dfy
+git-issues/git-issue-113-extended-newtypes-ordinal-unicode.dfy
+git-issues/git-issue-113-extended-newtypes-ordinal.dfy
+git-issues/git-issue-113-extended-newtypes-substitution.dfy
+git-issues/git-issue-113-extended-newtypes-type-test-actuals-negative.dfy
+git-issues/git-issue-113-extended-newtypes-type-test-downcast-runtime.dfy
+git-issues/git-issue-113-extended-newtypes-type-test-ghost-negative.dfy
+git-issues/git-issue-113-extended-newtypes-type-test-ghost-positive.dfy
+git-issues/git-issue-113-extended-newtypes-type-test-hidden-negative.dfy
+git-issues/git-issue-113-extended-newtypes-type-test-nested-ghost-negative.dfy
+git-issues/git-issue-113-extended-newtypes-type-test-phantom-negative.dfy
+git-issues/git-issue-113.dfy
+git-issues/git-issue-113-existing-sequence-control.dfy
+git-issues/git-issue-113-extended-newtypes-option-off.dfy
+git-issues/git-issue-113-extended-newtypes-datatype-phantom-positive.dfy
+git-issues/git-issue-113-extended-newtypes-inhabited-false.dfy
+git-issues/git-issue-113-extended-newtypes-witness-negative.dfy
+git-issues/git-issue-113-existing-codata-suspension-destructor-refinement-negative-raw.dfy
+git-issues/git-issue-113-existing-codata-suspension-generic-carrier-change-negative-raw.dfy
+git-issues/git-issue-113-existing-codata-suspension-helper-boundary-valid-rejected-raw.dfy
+git-issues/git-issue-113-existing-codata-suspension-inhabited-final-false-raw.dfy
+git-issues/git-issue-113-existing-codata-suspension-let-refinement-negative-raw.dfy
+git-issues/git-issue-113-existing-codata-suspension-match-refinement-negative-raw.dfy
+git-issues/git-issue-113-existing-codata-suspension-productive-universal-raw.dfy
+git-issues/git-issue-113-existing-codata-suspension-strengthened-result-negative-raw.dfy
+git-issues/git-issue-113-existing-codata-suspension-unconditioned-predicate-negative-raw.dfy
+git-issues/git-issue-113-existing-codata-suspension-unguarded-negative-raw.dfy
+git-issues/git-issue-113-extended-newtypes-codata-suspension-destructor-refinement-negative-nominal.dfy
+git-issues/git-issue-113-extended-newtypes-codata-suspension-generic-carrier-change-negative-nominal.dfy
+git-issues/git-issue-113-extended-newtypes-codata-suspension-helper-boundary-valid-rejected-nominal.dfy
+git-issues/git-issue-113-extended-newtypes-codata-suspension-inhabited-final-false-nominal.dfy
+git-issues/git-issue-113-extended-newtypes-codata-suspension-let-refinement-negative-nominal.dfy
+git-issues/git-issue-113-extended-newtypes-codata-suspension-match-refinement-negative-nominal.dfy
+git-issues/git-issue-113-extended-newtypes-codata-suspension-productive-universal-nominal.dfy
+git-issues/git-issue-113-extended-newtypes-codata-suspension-strengthened-result-negative-nominal.dfy
+git-issues/git-issue-113-extended-newtypes-codata-suspension-unconditioned-predicate-negative-nominal.dfy
+git-issues/git-issue-113-extended-newtypes-codata-suspension-unguarded-negative-nominal.dfy
+git-issues/git-issue-113-extended-newtypes-finite-codatatype-actual-positive.dfy
+git-issues/git-issue-113-extended-newtypes-finite-actual-characteristic-nested-argument-positive-proof.dfy
+git-issues/git-issue-113-extended-newtypes-finite-actual-characteristic-positive-proof.dfy
+git-issues/git-issue-113-extended-newtypes-finite-actual-characteristic-proof-nonvacuity.dfy
+git-issues/git-issue-113-existing-sequence-newtype-allocation-negative.dfy
+git-issues/git-issue-113-existing-sequence-newtype-allocation-preallocated.dfy
+git-issues/git-issue-113-existing-sequence-newtype-allocation-pure.dfy
+git-issues/git-issue-113-dependency-newtype-finite-actual-positive-triggered.dfy
+git-issues/git-issue-113-dependency-newtype-general-arrow-characteristic-negative.dfy
+git-issues/git-issue-113-dependency-newtype-hidden-characteristic-negative.dfy
+git-issues/git-issue-113-dependency-newtype-mixed-subset-cycle-negative.dfy
+git-issues/git-issue-113-dependency-newtype-partial-total-positive.dfy
+git-issues/git-issue-113-dependency-newtype-partial-total-universal-proof-nonvacuity.dfy
+git-issues/git-issue-113-dependency-newtype-partial-total-universal-proof.dfy
+git-issues/git-issue-113-dependency-newtype-reference-characteristic-negative.dfy
+git-issues/git-issue-113-dependency-provided-characteristic-positive.dfy
+git-issues/git-issue-113-dependency-provided-inhabited-false-negative.dfy
+git-issues/git-issue-113-dependency-provided-newtype-no-characteristic-negative.dfy
+git-issues/git-issue-113-dependency-provided-no-characteristic-negative.dfy
+git-issues/git-issue-113-dependency-revealed-control-positive.dfy
+git-issues/git-issue-113-extended-newtypes-arrow-base-cast-negative.dfy
+git-issues/git-issue-113-extended-newtypes-arrow-base-cast-positive.dfy
+git-issues/git-issue-113-extended-newtypes-datatype-base-cast-negative.dfy
+git-issues/git-issue-113-extended-newtypes-datatype-base-cast-positive.dfy
+
+# With --inlined-body-call-permissions, a precondition calling a recursive member predicate on a constructed term verifies in every declaration order: the checked conjuncts of an inlined body get the body's call permissions at their layer (https://github.com/erniecohen/dafny/issues/198).
+git-issues/github-issue-198.dfy
+
+# Under --quantified-check-call-facts, a universally quantified postcondition or assert condition whose body the solver simplifies until no trigger term remains, as abs(l[i] - l[i]) <= d, keeps the call facts of its body, and wrong bounds, assert false and calls outside their precondition still fail (https://github.com/erniecohen/dafny/issues/196).
+git-issues/github-issue-196.dfy
+
+# Under --detect-witness-matching-loops, an existential under a universal whose witness re-matches the universal's trigger, as in a subset-type invariant forall q | q in below :: exists p :: p in below && q < p, gets the matching-loop warning, and quantifiers whose nested variables are universal get none (https://github.com/erniecohen/dafny/issues/202).
+git-issues/github-issue-202.dfy
+
+# A cast through a chain of forty newtypes translates as before and keeps its verdicts, now that the translator remembers the ancestor of each type it converts (https://github.com/erniecohen/dafny/issues/378).
+git-issues/github-issue-378.dfy
+
+# --warn-unchecked-termination is on by default, owner decision of 2026-11-15, with the hidden --legacy-no-unchecked-termination-warning (https://github.com/erniecohen/dafny/issues/211): extends git-issues/github-issue-211-warning.dfy, listed above.
+
+# Generated names carry a short module prefix, M plus the shortest unshared start of the base-32 SHA-256 of the module name, not the hex of the whole name, and the default module carries none (https://github.com/erniecohen/dafny/issues/392).
+git-issues/github-issue-392.dfy
+
+# Under --type-system-refresh --contextual-lambda-domains, a function-result lambda whose parameter takes its type from the declared arrow domain and is passed to a formal that names that type through a synonym (generic, of a subset type, or of a newtype) resolves without crashing, and subset constraints of the formal are still checked (https://github.com/erniecohen/dafny/issues/390).
+git-issues/github-issue-390.dfy
+git-issues/github-issue-390-subset.dfy
+git-issues/github-issue-390-generic.dfy
+git-issues/github-issue-390-newtype.dfy
+# --verification-cache is used by a self-contained build, whose bundled libhostfxr and libhostpolicy identify its host, and by each request of --filter-position-batch, with results identical to uncached runs and a miss for an edited task (https://github.com/erniecohen/dafny/issues/387).
+git-issues/github-issue-387.dfy
+# Under --type-system-refresh, operators in the witness of a newtype without a constraint variable are resolved before TypeRefinementVisitor reads them, and an underspecified witness is reported, as with a constraint variable; a Debug build failed an assertion or a cast (https://github.com/erniecohen/dafny/issues/422).
+git-issues/github-issue-422.dfy
+
+# A refining module makes the override check of an inherited class member when it strengthens the trait member, adds the extension or replaces the import that declares it, and not when it changes neither member; the old rule proved false (https://github.com/erniecohen/dafny/issues/404).
+git-issues/github-issue-404.dfy
+
+# The legacy resolver (--type-system-refresh:false) inherits no members from a non-numeric newtype base, which it rejects, so selecting one is an error rather than a crash, as with --type-system-refresh (https://github.com/erniecohen/dafny/issues/417).
+git-issues/github-issue-417.dfy
 
 # Function domains: under --additional-axioms lambdas carry their parameter types as domain tags,
 # {:functionDomain} declarations give Restrict and ExactDom, and --function-extensionality-axiom makes

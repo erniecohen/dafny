@@ -285,6 +285,16 @@ module X refines P {
 }
 ```
 
+A member that overrides a trait member must meet the trait member's specification
+(the override check). A refining module may change a trait member's specification, for
+example by adding a postcondition, or it may give a class a parent, by refining an
+abstract type into a class that extends a trait. In both cases, the refining module
+makes the override check of every member that overrides the changed trait member, or
+that now overrides a member of the new parent. It does so even when it inherits the
+overriding member unchanged. A failure is reported at the inherited member, with the
+refining module as a related location. An override pair that the refining module
+inherits unchanged is not checked again.
+
 ## 10.9. Type declarations
 
 Types can be refined in two ways:

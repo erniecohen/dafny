@@ -1,6 +1,9 @@
 # 003: A recursive member predicate on a constructed term fails in a precondition
 
-- **Status:** filed ([#198](https://github.com/erniecohen/dafny/issues/198))
+- **Status:** filed ([#198](https://github.com/erniecohen/dafny/issues/198)); fixed behind the opt-in
+  option `--inlined-body-call-permissions`
+  (https://github.com/erniecohen/dafny/pull/376), not yet in a release. The
+  default behaviour is unchanged, so the check below still reproduces.
 - **Seen on:** Dafny 4.11.0+fcb2042d.review.bcc0c421 (this fork's release), Z3 5.1.0
 - **Options:** `--type-system-refresh --general-traits=full --general-newtypes`,
   resource limit 5,000,000 per declaration (`dfyconfig.toml`)
@@ -47,6 +50,19 @@ Both functions are well formed: the term has depth two and its leaves are
 `assert Var(0).scoped(2) && Var(1).scoped(2);` before the call
 (`workaround.dfy`).
 
+## Opt-in fix
+
+https://github.com/erniecohen/dafny/pull/376 adds the default-off option
+`--inlined-body-call-permissions`. The precondition is checked by inlining
+`scoped`'s body one conjunct at a time, and the second conjunct's call
+`b.scoped(n)` could unfold only under the first conjunct at a fuel layer that
+does not unfold. The option gives each conjunct the body's call permissions at
+its own layer, an instance of the existing definition axiom. With it, both
+`Literal` and `Variable` verify, in either declaration order. It is not part of
+`--additional-axioms`, because it changes proof costs elsewhere. The case keeps
+the status `filed`, and its check records the default behaviour, until a
+release makes the fix the default or a status for opt-in fixes is defined.
+
 ## Suggested fix
 
 Same family as case 002. Unfolding of member predicates on literal receivers
@@ -69,3 +85,7 @@ failed-any Literal Variable
 ## Last recheck
 
 2026-10-30, Dafny 4.11.0+fcb2042d.review.bcc0c421, Z3 5.1.0: REPRODUCES, with the figures above. The workaround verifies.
+
+2026-11-15, a build of https://github.com/erniecohen/dafny/pull/376, Z3 5.1.0: the
+default still fails (`Variable`, 1 error); with `--inlined-body-call-permissions`
+all four declarations verify.

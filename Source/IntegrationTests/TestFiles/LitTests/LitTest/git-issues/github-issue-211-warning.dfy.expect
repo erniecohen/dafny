@@ -1,4 +1,13 @@
-trait, option off: no warning, verifies
+trait, default options: warning, fails without --allow-warnings
+github-issue-211-warning-trait.dfy(4,29): Warning: trait 'T' has {:termination false} and no {:axiom} annotation: calls dispatched through it are not checked for termination
+github-issue-211-warning-trait.dfy(29,29): Warning: trait 'V' has {:termination false} and no {:axiom} annotation: calls dispatched through it are not checked for termination
+
+Dafny program verifier finished with 2 verified, 0 errors
+Compilation failed because warnings were found and --allow-warnings is false
+trait, --legacy-no-unchecked-termination-warning: no warning, verifies
+
+Dafny program verifier finished with 2 verified, 0 errors
+trait, --warn-unchecked-termination=false: no warning, verifies
 
 Dafny program verifier finished with 2 verified, 0 errors
 trait, option on: warning, fails without --allow-warnings
@@ -15,7 +24,13 @@ Dafny program verifier finished with 2 verified, 0 errors
 trait, option on, --allow-axioms: no warning, verifies
 
 Dafny program verifier finished with 2 verified, 0 errors
-class, option off: no warning, verifies
+class, default options: warnings, fails without --allow-warnings
+github-issue-211-warning-class.dfy(13,8): Warning: class 'C' has @AssumeCrossModuleTermination and no {:axiom} annotation: calls dispatched to it through traits of other modules are not checked for termination
+github-issue-211-warning-class.dfy(33,8): Warning: trait 'U' has @AssumeCrossModuleTermination and no {:axiom} annotation: calls dispatched to it through traits of other modules are not checked for termination
+
+Dafny program verifier finished with 4 verified, 0 errors
+Compilation failed because warnings were found and --allow-warnings is false
+class, --legacy-no-unchecked-termination-warning: no warning, verifies
 
 Dafny program verifier finished with 4 verified, 0 errors
 class, option on: warnings, fails without --allow-warnings
@@ -38,7 +53,7 @@ github-issue-211-warning-trait.dfy(29,29): Warning: trait 'V' has {:termination 
 github-issue-211-warning-trait.dfy(21,20): Error: decreases clause might not decrease (the dispatched callee has no 'decreases {:global}' bound, which --modular-termination requires)
 
 Dafny program verifier finished with 1 verified, 1 error
-bounded trait, --modular-termination without the warning option: verifies
+bounded trait, --modular-termination, --warn-unchecked-termination=false: verifies
 
 Dafny program verifier finished with 3 verified, 0 errors
 bounded trait, --modular-termination: warning, fails without --allow-warnings

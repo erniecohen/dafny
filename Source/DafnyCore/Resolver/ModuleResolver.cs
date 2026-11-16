@@ -1099,14 +1099,16 @@ namespace Microsoft.Dafny {
     }
 
     /// <summary>
-    /// Under --warn-unchecked-termination, reports each trait with {:termination false} and each
+    /// Under --warn-unchecked-termination, on by default, reports each trait with {:termination false} and each
     /// class or trait with @AssumeCrossModuleTermination, the declarations that "dafny audit" reports
     /// as unchecked termination assumptions.  As for an assume statement, an {:axiom} attribute on the
     /// declaration, or --allow-axioms, acknowledges the assumption and suppresses the warning.
-    /// Declarations that this run does not verify are not reported.
+    /// Declarations that this run does not verify are not reported.  The hidden
+    /// --legacy-no-unchecked-termination-warning restores the earlier silence.
     /// </summary>
     private void WarnUncheckedTermination(IEnumerable<TopLevelDecl> declarations) {
-      if (!Options.Get(CommonOptionBag.WarnUncheckedTermination) || Options.Get(CommonOptionBag.AllowAxioms)) {
+      if (!Options.Get(CommonOptionBag.WarnUncheckedTermination) || Options.Get(CommonOptionBag.LegacyNoUncheckedTerminationWarning) ||
+          Options.Get(CommonOptionBag.AllowAxioms)) {
         return;
       }
       // Under --modular-termination, the calls are checked in the program being verified, but not in
@@ -1345,6 +1347,13 @@ namespace Microsoft.Dafny {
 
       int prevErrorCount = reporter.Count(ErrorLevel.Error);
 
+      if (Options.Get(CommonOptionBag.ExtendedNewtypeBases) &&
+          (!Options.Get(CommonOptionBag.GeneralNewtypes) || !Options.Get(CommonOptionBag.TypeSystemRefresh))) {
+        reporter.Error(MessageSource.Resolver, Token.NoToken,
+          "use of --extended-newtype-bases requires --general-newtypes and --type-system-refresh");
+        return;
+      }
+
       if (Options.Get(CommonOptionBag.GeneralNewtypes) && !Options.Get(CommonOptionBag.TypeSystemRefresh)) {
         reporter.Error(MessageSource.Resolver, Token.NoToken, "use of --general-newtypes requires --type-system-refresh");
         return;
@@ -1539,6 +1548,19 @@ namespace Microsoft.Dafny {
         }
       }
 
+      // Newtype bases are fully resolved here. Include visible nominal field
+      // paths in the existing codatatype dependency graph before choosing SCCs.
+      if (Options.Get(CommonOptionBag.ExtendedNewtypeBases) && reporter.Count(ErrorLevel.Error) == prevErrorCount) {
+        foreach (var datatype in declarations.OfType<CoDatatypeDecl>()) {
+          foreach (var formal in datatype.Ctors.SelectMany(ctor => ctor.Formals)) {
+            var dependency = NewtypeOperationView.CoDatatypeType(formal.Type, true).AsCoDatatype;
+            if (dependency != null && dependency.EnclosingModuleDefinition == datatype.EnclosingModuleDefinition) {
+              codatatypeDependencies.AddEdge(datatype, dependency);
+            }
+          }
+        }
+      }
+
       // Set the SccRepr field of codatatypes
       if (reporter.Count(ErrorLevel.Error) == prevErrorCount) {
         foreach (var repr in codatatypeDependencies.TopologicallySortedComponents()) {
@@ -1555,7 +1577,7 @@ namespace Microsoft.Dafny {
           bool dealsWithCodatatypes = false;
           foreach (var m in module.CallGraph.GetSCC(repr)) {
             var f = m as Function;
-            if (f != null && f.ResultType.InvolvesCoDatatype) {
+            if (f != null && NewtypeOperationView.InvolvesCoDatatype(f.ResultType, Options.Get(CommonOptionBag.ExtendedNewtypeBases))) {
               dealsWithCodatatypes = true;
               break;
             }
@@ -1565,7 +1587,7 @@ namespace Microsoft.Dafny {
           foreach (var m in module.CallGraph.GetSCC(repr)) {
             var f = m as Function;
             if (f != null && f.Body != null) {
-              var checker = new CoCallResolution(f, dealsWithCodatatypes);
+              var checker = new CoCallResolution(f, dealsWithCodatatypes, Options.Get(CommonOptionBag.ExtendedNewtypeBases));
               checker.CheckCoCalls(f.Body);
               coCandidates.AddRange(checker.FinalCandidates);
               hasIntraClusterCallsInDestructiveContexts |= checker.HasIntraClusterCallsInDestructiveContexts;
@@ -1704,6 +1726,20 @@ namespace Microsoft.Dafny {
             CheckVariance(dd.Rhs, dd, TypeParameter.TPVariance.Co, false);
           } else if (d is NewtypeDecl) {
             var dd = (NewtypeDecl)d;
+            if (Options.Get(CommonOptionBag.ExtendedNewtypeBases) && dd.Constraint != null) {
+              var ancestor = dd.BaseType.NormalizeToAncestorType();
+              // A hidden carrier or type parameter cannot justify predicate
+              // stability. Keep constrained parameters invariant until the base
+              // is known to belong to the existing general-newtype families.
+              // This admission check must not reveal hidden operations.
+              if (ancestor.IsDatatype || ancestor.IsArrowType || ancestor.IsBigOrdinalType ||
+                  ancestor.IsInternalTypeSynonym || ancestor.IsAbstractType || ancestor.IsTypeParameter) {
+                foreach (var tp in dd.TypeArgs.Where(tp => tp.Variance != TypeParameter.TPVariance.Non)) {
+                  reporter.Error(MessageSource.Resolver, tp.Origin,
+                    "a constrained newtype with an extended base only supports invariant type parameters");
+                }
+              }
+            }
             CheckVariance(dd.BaseType, dd, TypeParameter.TPVariance.Co, false);
           } else if (d is DatatypeDecl) {
             var dd = (DatatypeDecl)d;
@@ -1969,7 +2005,9 @@ namespace Microsoft.Dafny {
                 }
               } else {
                 var binExpr = (BinaryExpr)e; // each "coConclusion" is either a FunctionCallExpr or a BinaryExpr
-                focalCodatatypeEquality.Add(binExpr.E0.Type.AsCoDatatype ?? binExpr.E1.Type.AsCoDatatype);
+                focalCodatatypeEquality.Add(
+                  NewtypeOperationView.CoDatatypeType(binExpr.E0.Type, Options.Get(CommonOptionBag.ExtendedNewtypeBases)).AsCoDatatype ??
+                  NewtypeOperationView.CoDatatypeType(binExpr.E1.Type, Options.Get(CommonOptionBag.ExtendedNewtypeBases)).AsCoDatatype);
               }
             }
           }
@@ -2430,7 +2468,14 @@ namespace Microsoft.Dafny {
           // ignore any subset types, since they have no members and thus we don't need their type-parameter mappings
           var baseType = newtypeDecl.BaseType.NormalizeExpand();
           baseTypeArguments = baseType.TypeArgs;
-          if (baseType is UserDefinedType { ResolvedClass: TopLevelDeclWithMembers topLevelDeclWithMembers }) {
+          if (baseType.ClassifyNumericAncestry().Kind == Type.NumericAncestryKind.NonNumeric) {
+            // This resolver accepts only a numeric base. It reports any other base once inference is done (see
+            // "NumericType" in ResolveNamesAndInferTypesForOneDeclarationInitial), but members are selected before
+            // then. So, like the pre-type resolver with a base it rejects, inherit nothing from such a base. Its
+            // members are not members of the newtype, and ResolveExprDotCall cannot instantiate them through it
+            // (https://github.com/erniecohen/dafny/issues/417). A base whose ancestry is not known yet, because a
+            // newtype on the way to it has a base still to be inferred, keeps its members.
+          } else if (baseType is UserDefinedType { ResolvedClass: TopLevelDeclWithMembers topLevelDeclWithMembers }) {
             baseTypeDecl = topLevelDeclWithMembers;
           } else if (Options.Get(CommonOptionBag.GeneralNewtypes) || baseType.IsIntegerType || baseType.IsRealType) {
             baseTypeDecl = GetSystemValuetypeDecl(baseType);
@@ -3075,8 +3120,13 @@ namespace Microsoft.Dafny {
       } else if (cl is InternalTypeSynonymDecl) {
         // a type exported as opaque from another module is like a ground type
         return true;
-      } else if (cl is NewtypeDecl) {
-        // values of a newtype can be constructed
+      } else if (cl is NewtypeDecl newtype) {
+        // Extended carriers and their compiled witnesses can require generic
+        // defaults even though the nominal newtype has no datatype head.
+        // Retain the legacy default-parameter selection with the option off.
+        if (newtype.UseBaseReferenceCharacteristics) {
+          type.AddFreeTypeParameters(typeParametersUsed);
+        }
         return true;
       } else if (cl is SubsetTypeDecl) {
         var td = (SubsetTypeDecl)cl;

@@ -1,0 +1,11 @@
+git-issue-113-extended-newtypes-ordinal-errors.dfy(12,13): Error: value to be converted might be bigger than every natural number
+git-issue-113-extended-newtypes-ordinal-errors.dfy(18,13): Error: result of operation might violate newtype constraint for 'FiniteOrd'
+git-issue-113-extended-newtypes-ordinal-errors.dfy(23,16): Error: a negative integer cannot be converted to an Ord
+git-issue-113-extended-newtypes-ordinal-errors.dfy(29,4): Error: RHS of ORDINAL subtraction must be a natural number, but the given RHS might be larger
+git-issue-113-extended-newtypes-ordinal-errors.dfy(35,4): Error: ORDINAL subtraction might underflow a limit ordinal (that is, RHS might be too large)
+git-issue-113-extended-newtypes-ordinal-errors.dfy(41,17): Error: result of operation might violate newtype constraint for 'AtMostOne'
+git-issue-113-extended-newtypes-ordinal-errors.dfy(47,23): Error: result of operation might violate newtype constraint for 'PositiveOrd'
+git-issue-113-extended-newtypes-ordinal-errors.dfy(54,2): Error: assertion might not hold
+git-issue-113-extended-newtypes-ordinal-errors.dfy(61,2): Error: assertion might not hold
+
+Dafny program verifier finished with 4 verified, 9 errors

@@ -1,0 +1,2 @@
+git-issue-113-extended-newtypes-type-test-nested-ghost-negative.dfy(10,9): Error: an expression of type 'Maybe<int>' is not run-time checkable to be a 'OuterGhost'
+1 resolution/type errors detected in git-issue-113-extended-newtypes-type-test-nested-ghost-negative.dfy

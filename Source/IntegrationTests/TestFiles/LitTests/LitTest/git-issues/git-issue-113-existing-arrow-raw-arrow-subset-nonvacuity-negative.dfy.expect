@@ -1,0 +1,3 @@
+git-issue-113-existing-arrow-raw-arrow-subset-nonvacuity-negative.dfy(11,2): Error: assertion might not hold
+
+Dafny program verifier finished with 1 verified, 1 error
