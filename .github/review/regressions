@@ -712,3 +712,9 @@ git-issues/github-issue-378.dfy
 
 # Generated names carry a short module prefix, M plus the shortest unshared start of the base-32 SHA-256 of the module name, not the hex of the whole name, and the default module carries none (https://github.com/erniecohen/dafny/issues/392).
 git-issues/github-issue-392.dfy
+
+# Under --type-system-refresh --contextual-lambda-domains, a function-result lambda whose parameter takes its type from the declared arrow domain and is passed to a formal that names that type through a synonym (generic, of a subset type, or of a newtype) resolves without crashing, and subset constraints of the formal are still checked (https://github.com/erniecohen/dafny/issues/390).
+git-issues/github-issue-390.dfy
+git-issues/github-issue-390-subset.dfy
+git-issues/github-issue-390-generic.dfy
+git-issues/github-issue-390-newtype.dfy
