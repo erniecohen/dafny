@@ -764,10 +764,7 @@ namespace Microsoft.Dafny {
     /// Return whether the program declares a member invariant.
     /// </summary>
     private bool ReportUnsupportedMemberInvariants(Program p, ModuleDefinition forModule) {
-      static IEnumerable<MemberInvariant> Invariants(ModuleDefinition module) {
-        return module.TopLevelDecls.OfType<TopLevelDeclWithMembers>().SelectMany(decl => decl.Members.OfType<MemberInvariant>());
-      }
-      if (!Options.Get(CommonOptionBag.MemberInvariants) || !p.RawModules().Any(module => Invariants(module).Any())) {
+      if (!DeclaresMemberInvariants(p)) {
         return false;
       }
       const string notYet = "verification of a program that declares member invariants is not yet supported";
@@ -785,6 +782,19 @@ namespace Microsoft.Dafny {
         }
       }
       return true;
+    }
+
+    private static IEnumerable<MemberInvariant> Invariants(ModuleDefinition module) {
+      return module.TopLevelDecls.OfType<TopLevelDeclWithMembers>().SelectMany(decl => decl.Members.OfType<MemberInvariant>());
+    }
+
+    /// <summary>
+    /// Issue 105: whether the program, libraries included, declares a member invariant under --member-invariants, in
+    /// which case no module of it is translated. The translation cache checks this too, since a module's key covers
+    /// only what the module depends on.
+    /// </summary>
+    internal static bool DeclaresMemberInvariants(Program p) {
+      return p.Options.Get(CommonOptionBag.MemberInvariants) && p.RawModules().Any(module => Invariants(module).Any());
     }
 
     public Bpl.Program DoTranslation(Program p, ModuleDefinition forModule) {

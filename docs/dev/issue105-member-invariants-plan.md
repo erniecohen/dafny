@@ -1799,7 +1799,10 @@ soundness problem while nothing checks or assumes an invariant.
   the verifier translates no module of a program that declares an invariant:
   it reports each invariant, and in each other module the first declaration it
   would have verified.  The first pull request verified the modules without
-  invariants.
+  invariants.  The translation cache (`--translation-cache`) keys a module on
+  what the module depends on, so in the language server a module could be
+  reused from before an unrelated module declared an invariant; it therefore
+  reuses nothing in such a program, so that a cache never changes a result.
 - *Open until verification.*  Under `--general-traits=datatype`, a `raw D`
   converts to a parent trait of `D` without the obligation that it satisfy
   `D`'s invariants.  Section 3.4 makes `raw D` a subtype of the raw parent
