@@ -41,12 +41,20 @@ namespace DCOMP {
       (this)._pointerType = pointerType;
       (this)._rootType = rootType;
       (this)._syncType = syncType;
+      RAST._IPath _0_thisFilePath;
+      if ((rootType).is_RootCrate) {
+        _0_thisFilePath = RAST.__default.crate;
+      } else {
+        _0_thisFilePath = (RAST.__default.crate).MSel((rootType).dtor_moduleName);
+      }
       (this).error = Std.Wrappers.Option<Dafny.ISequence<Dafny.Rune>>.create_None();
-      (this).optimizations = Dafny.Sequence<Func<RAST._IMod, RAST._IMod>>.FromElements(ExpressionOptimization.__default.apply, FactorPathsOptimization.__default.apply((this).thisFile));
-      RAST._IExpr _0_thisAsSelf;
-      _0_thisAsSelf = Dafny.Helpers.Id<Func<RAST._IExpr, RAST._IExpr>>((this).rcNew)((RAST.__default.self).Clone());
-      (this)._rcDatatypeThis = _0_thisAsSelf;
-      (this)._borrowedRcDatatypeThis = RAST.__default.Borrow(_0_thisAsSelf);
+      (this).optimizations = Dafny.Sequence<Func<RAST._IMod, RAST._IMod>>.FromElements(ExpressionOptimization.__default.apply, FactorPathsOptimization.__default.apply(_0_thisFilePath));
+      RAST._IExpr _1_rcExprLocal;
+      _1_rcExprLocal = ((((syncType).is_NoSync) ? (RAST.__default.RcPath) : (RAST.__default.ArcPath))).AsExpr();
+      RAST._IExpr _2_thisAsSelf;
+      _2_thisAsSelf = ((_1_rcExprLocal).FSel(Dafny.Sequence<Dafny.Rune>.UnicodeFromString("new"))).Apply(Dafny.Sequence<RAST._IExpr>.FromElements((RAST.__default.self).Clone()));
+      (this)._rcDatatypeThis = _2_thisAsSelf;
+      (this)._borrowedRcDatatypeThis = RAST.__default.Borrow(_2_thisAsSelf);
     }
     public bool HasAttribute(Dafny.ISequence<DAST._IAttribute> attributes, Dafny.ISequence<Dafny.Rune> name)
     {

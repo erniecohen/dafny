@@ -766,13 +766,15 @@ namespace Microsoft.Dafny {
     // Cached and uncached callers materialize exactly one graph through the same copier.
     internal Bpl.Program DoTranslationForSnapshot(Program p, ModuleDefinition forModule) {
       RequireCardinalityValidation(p);
-      using var moduleNames = new ModuleNamingScope(forModule.FullName);
+      using var moduleNames = new ModuleNamingScope(forModule.FullName, p.ModuleNamePrefixes);
       Type.ResetScopes();
+      ancestorTypeCache.Clear();
       try {
         proofDependencies.SetCurrentDefinition(forModule.FullName, forModule.EnclosingLiteralModuleDecl);
         return DoTranslationCore(p, forModule);
       } finally {
         Type.ResetScopes();
+        ancestorTypeCache.Clear();
       }
     }
 

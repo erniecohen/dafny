@@ -1,4 +1,4 @@
-// RUN: %exits-with 2 %resolve "%s" > "%t"
+// RUN: %exits-with 2 %resolve --warn-unchecked-termination=false "%s" > "%t"
 // RUN: %diff "%s.expect" "%t"
 
 // Ordinary resolution already forbids compiled access through an abstract

@@ -8,10 +8,8 @@
 // RUN: %OutputCheck --file-to-check "%t_LabeledRefinement.bpl" "%s"
 
 // The inherited trigger must keep the explicit old-state label after re-resolution.
-// CHECK-L: { LabeledRefinement.C.P($Heap_at_0,
-// CHECK-NEXT-L: $Heap,
-// CHECK-NEXT-L: this,
-// CHECK-NEXT: ^\s+\$as#n\S+\) \}\s*$
+// The bound variable's generated name carries the module's prefix.
+// CHECK: \{ LabeledRefinement\.C\.P\(\$Heap_at_0, \$Heap, this, \$as#n[A-Za-z0-9_]+#[A-Za-z0-9_]+\) \}
 
 abstract module Base {
   predicate F(n: nat) { n >= 0 }

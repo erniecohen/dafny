@@ -1,0 +1,10 @@
+
+Dafny program verifier finished with 1 verified, 0 errors
+
+Dafny program verifier finished with 1 verified, 0 errors
+CLI: Error: cannot load DafnyStandardLibraries-cs.doo: --boogie is set locally to [/normalizeDeclarationOrder:0,/loopUnroll:5], but the library was built with []
+CLI: Error: cannot load DafnyStandardLibraries.doo: --boogie is set locally to [/normalizeDeclarationOrder:0,/loopUnroll:5], but the library was built with []
+CLI: Error: cannot load DafnyStandardLibraries-cs.doo: --boogie is set locally to [/proverOpt:SOME_OTHER_OPTION=1], but the library was built with []
+CLI: Error: cannot load DafnyStandardLibraries.doo: --boogie is set locally to [/proverOpt:SOME_OTHER_OPTION=1], but the library was built with []
+CLI: Error: cannot load DafnyStandardLibraries-cs.doo: --boogie is set locally to [/normalizeDeclarationOrder:0], but the library was built with []
+CLI: Error: cannot load DafnyStandardLibraries.doo: --boogie is set locally to [/normalizeDeclarationOrder:0], but the library was built with []

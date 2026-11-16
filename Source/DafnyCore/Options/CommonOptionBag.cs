@@ -296,6 +296,9 @@ true - All class instances are raw pointers and need to be manually deallocated"
   public static readonly Option<bool> HeapFreeLambdaFacts = new("--heap-free-lambda-facts", () => false,
     "Check a lambda without a reads clause, whose body observes neither the heap nor allocation, in every heap and without assuming its parameters allocated, and let the calls in its body unfold wherever it is applied. May change verification performance. Disabled by default.");
 
+  public static readonly Option<bool> DetectWitnessMatchingLoops = new("--detect-witness-matching-loops", () => false,
+    "In the matching-loop detection of automatically selected triggers, treat a variable bound by a nested existential, whose witness is a new term at each instance of the enclosing quantifier, as a new term, so that 'forall q | q in s :: exists p :: p in s && q < p' is reported as a matching loop, and another trigger is preferred where one exists. May change the selected triggers. Disabled by default.");
+
   public static readonly Option<bool> InlinedBodyCallPermissions = new("--inlined-body-call-permissions", () => false,
     "When a call to a function with a body is checked by inlining the body conjunct by conjunct, give each conjunct the call permissions of the body at its own fuel layer, an instance of the function's definition axiom. May change verification performance. Disabled by default.");
 
@@ -312,8 +315,11 @@ true - All class instances are raw pointers and need to be manually deallocated"
     "Prevents a warning from being generated for axioms, such as assume statements and functions or methods without a body, that don't have an {:axiom} attribute.") {
   };
 
-  public static readonly Option<bool> WarnUncheckedTermination = new("--warn-unchecked-termination", () => false,
-    "Warn about each trait with {:termination false} and each class or trait with @AssumeCrossModuleTermination: calls dispatched through such a trait are not checked for termination. Like an assume statement, the declaration is not reported if it has an {:axiom} attribute or if --allow-axioms is set. Only declarations that the run verifies are reported, not those of libraries or included files. Disabled by default.");
+  public static readonly Option<bool> WarnUncheckedTermination = new("--warn-unchecked-termination", () => true,
+    "Warn about each trait with {:termination false} and each class or trait with @AssumeCrossModuleTermination: calls dispatched through such a trait are not checked for termination. Like an assume statement, the declaration is not reported if it has an {:axiom} attribute or if --allow-axioms is set. Only declarations that the run verifies are reported, not those of libraries or included files. Enabled by default.");
+
+  public static readonly Option<bool> LegacyNoUncheckedTerminationWarning = new("--legacy-no-unchecked-termination-warning", () => false,
+    "Do not warn about {:termination false} and @AssumeCrossModuleTermination, as before the warning was on by default; for migration and comparison only.") { IsHidden = true };
 
   public static readonly Option<bool> BitvectorMapKeys = new("--bitvector-map-keys", () => false,
     "Preserve bitvector key types in map and imap lookups, and bitvector element types in multiset multiplicity lookups, during verification. Disabled by default.");
@@ -823,6 +829,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(MapComprehensionDomainTriggers, OptionScope.Cli);
     OptionRegistry.RegisterOption(HeapFreeLambdaFacts, OptionScope.Cli);
     OptionRegistry.RegisterOption(InlinedBodyCallPermissions, OptionScope.Cli);
+    OptionRegistry.RegisterOption(DetectWitnessMatchingLoops, OptionScope.Cli);
     OptionRegistry.RegisterOption(StatementExpressionConclusions, OptionScope.Cli);
     OptionRegistry.RegisterOption(QuantifiedCheckCallFacts, OptionScope.Cli);
     OptionRegistry.RegisterOption(TraitRankDecreases, OptionScope.Cli);
@@ -870,6 +877,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(ModularTermination, OptionScope.Cli);
     OptionRegistry.RegisterOption(ModularTerminationTrust, OptionScope.Cli);
     OptionRegistry.RegisterOption(WarnUncheckedTermination, OptionScope.Cli);
+    OptionRegistry.RegisterOption(LegacyNoUncheckedTerminationWarning, OptionScope.Cli);
     OptionRegistry.RegisterOption(InvariantConstructorInference, OptionScope.Cli);
     OptionRegistry.RegisterOption(VerificationLogFormat, OptionScope.Cli);
     OptionRegistry.RegisterOption(VerifyIncludedFiles, OptionScope.Cli);
