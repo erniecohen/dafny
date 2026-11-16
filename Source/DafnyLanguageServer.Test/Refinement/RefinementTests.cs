@@ -3,6 +3,7 @@ using System.Linq;
 using System.Reactive.Linq;
 using System.Reactive.Threading.Tasks;
 using System.Threading.Tasks;
+using Microsoft.Dafny.LanguageServer.IntegrationTest.Extensions;
 using Microsoft.Dafny.LanguageServer.IntegrationTest.Util;
 using Microsoft.Dafny.LanguageServer.Workspace;
 using Microsoft.Dafny.LanguageServer.Workspace.Notifications;
@@ -215,6 +216,41 @@ module B refines A {
     var tree = state.VerificationTrees.GetValueOrDefault(uri.ToUri());
     return tree == null ? null : VerificationStatusGutter.ComputeFrom(uri, null, tree.Children.ToList(),
       new Container<Diagnostic>(), tree.Range.End.Line + 1, true).PerLineStatus;
+  }
+
+  // https://github.com/erniecohen/dafny/issues/424: the warnings computed once an implementation has verified, such as
+  // --warn-redundant-assumptions, belong to the member or the copy whose implementation it is.  At each resolution,
+  // the member and B's copy of it, which share a range, carry over only their own warnings, so an edit that does not
+  // verify again leaves the base member's warning single.
+  [Fact]
+  public async Task CopyDoesNotDuplicateTheBaseMembersWarnings() {
+    await SetUp(options => {
+      options.Set(CommonOptionBag.WarnRedundantAssumptions, true);
+      options.Set(ProjectManager.Verification, VerifyOnMode.Save);
+    });
+    var source = @"
+module A {
+  trait S { lemma L(n: int) requires n > 4 ensures true }
+  class C extends S { lemma L(n: int) requires n > 4 ensures true { } }
+}
+module B refines A {
+  trait S ... { lemma L... ensures n > 0 }
+}".TrimStart();
+    var document = await CreateOpenAndWaitForResolve(source);
+    await client.SaveDocumentAndWaitAsync(document, CancellationToken);
+    AssertTheRedundantRequires(await GetLastDiagnostics(document));
+    ApplyChange(ref document, new Range(6, 1, 6, 1), "\n// edit\n");
+    AssertTheRedundantRequires(await GetLastDiagnostics(document, allowStale: true));
+    ApplyChange(ref document, new Range(8, 0, 8, 0), "// another edit\n");
+    AssertTheRedundantRequires(await GetLastDiagnostics(document, allowStale: true));
+    await client.SaveDocumentAndWaitAsync(document, CancellationToken);
+    AssertTheRedundantRequires(await GetLastDiagnostics(document));
+  }
+
+  private static void AssertTheRedundantRequires(Diagnostic[] diagnostics) {
+    var diagnostic = Assert.Single(diagnostics);
+    Assert.Contains("unnecessary requires clause", diagnostic.Message);
+    Assert.Equal(2, diagnostic.Range.Start.Line);
   }
 
   public RefinementTests(ITestOutputHelper output, LogLevel dafnyLogLevel = LogLevel.Information) : base(output, dafnyLogLevel) {
