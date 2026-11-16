@@ -1,0 +1,9 @@
+
+Dafny program verifier finished with 4 verified, 0 errors
+github-issue-422-underspecified.dfy(4,34): Error: the type ('set<?1>') of this expression is underspecified
+github-issue-422-underspecified.dfy(4,29): Error: type of bound variable 's' could not be determined ('set<?1>'); please specify the type explicitly
+github-issue-422-underspecified.dfy(5,44): Error: the type ('set<?7>') of this expression is underspecified
+github-issue-422-underspecified.dfy(5,39): Error: type of bound variable 's' could not be determined ('set<?7>'); please specify the type explicitly
+github-issue-422-underspecified.dfy(6,41): Error: the type ('set<?13>') of this expression is underspecified
+github-issue-422-underspecified.dfy(6,36): Error: type of bound variable 's' could not be determined ('set<?13>'); please specify the type explicitly
+6 resolution/type errors detected in github-issue-422-underspecified.dfy

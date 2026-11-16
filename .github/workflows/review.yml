@@ -912,10 +912,11 @@ jobs:
             --filter 'FullyQualifiedName~ResolutionPipelineTests|FullyQualifiedName~PipelineProfileResolutionTests' \
             --logger "console;verbosity=normal"
       - name: Resolution and cardinality tests with Debug contract assertions
-        # Release builds compile Contract.Assert out; a failed assertion here ends the run.
+        # Release builds compile Contract.Assert and Debug.Assert out; here a failed assertion fails the step.
+        # NewtypeWitnessResolutionTests: https://github.com/erniecohen/dafny/issues/422.
         run: |
           dotnet test --settings .github/review/ci.runsettings Source/DafnyCore.Test -c Debug \
-            --filter 'FullyQualifiedName~ResolutionPipelineTests|FullyQualifiedName~PipelineProfileResolutionTests|FullyQualifiedName~Cardinality|FullyQualifiedName~NewtypeReferenceCharacteristicTests' \
+            --filter 'FullyQualifiedName~ResolutionPipelineTests|FullyQualifiedName~PipelineProfileResolutionTests|FullyQualifiedName~Cardinality|FullyQualifiedName~NewtypeReferenceCharacteristicTests|FullyQualifiedName~NewtypeWitnessResolutionTests' \
             --logger "console;verbosity=normal"
       - name: Run the tests named in .github/review/regressions
         continue-on-error: ${{ github.event_name == 'workflow_dispatch' && inputs.review_followup_probe && startsWith(github.ref, 'refs/heads/scratch/') }}
@@ -1072,6 +1073,15 @@ jobs:
           dotnet test --settings .github/review/ci.runsettings Source/DafnyLanguageServer.Test -c Release --no-build \
             --logger "console;verbosity=normal" \
             --filter "FullyQualifiedName~Synchronization.CachingTest" \
+            --blame-hang --blame-hang-timeout 90s --blame-hang-dump-type none
+      # https://github.com/erniecohen/dafny/issues/421: the code actions. Some of them come from
+      # verification failures. These tests do not set a solver path, and this job has no z3 next to
+      # the test binaries, so Dafny takes the solver from PATH.
+      - name: Test code actions
+        run: |
+          PATH="$(dirname "$Z3"):$PATH" dotnet test --settings .github/review/ci.runsettings Source/DafnyLanguageServer.Test -c Release --no-build \
+            --logger "console;verbosity=normal" \
+            --filter "FullyQualifiedName~IntegrationTest.CodeActions.CodeActionTest" \
             --blame-hang --blame-hang-timeout 90s --blame-hang-dump-type none
 
   finite-support:
