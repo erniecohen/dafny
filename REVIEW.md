@@ -322,8 +322,8 @@ that runs Boogie's own test jobs and packs Boogie's NuGet packages.  The same fi
 is offered to Boogie's master as
 [boogie-org/boogie#1169](https://github.com/boogie-org/boogie/pull/1169).
 
-This branch builds against that fork's release `v3.5.5+review.dcd726f6`, whose
-packages have the version `3.5.5-review.dcd726f6`.  The release carries them with
+This branch builds against that fork's release `v3.5.5+review.5d9897bc`, whose
+packages have the version `3.5.5-review.5d9897bc`.  The release carries them with
 their sha256 sums, and its `REVIEW.md` says what the fork changes and how its
 version is computed.  Besides that fix, it brings:
 
@@ -371,7 +371,11 @@ version is computed.  Besides that fix, it brings:
   read-over-write axiom requires a native payload's box/unbox round trip to
   preserve the stored value. This weakens the inconsistent row without adding
   an axiom. The hidden `--legacy-noncanonical-map-payloads` switch restores the
-  old row for comparison and migration.
+  old row for comparison and migration. When the map's result type is a type
+  parameter, the row is stated as one row per native result sort and one for the
+  other result types, which together are equivalent to the single guarded row
+  but cost the solver far less
+  ([#425](https://github.com/erniecohen/dafny/issues/425)).
 - **A pooled-solver idle-handshake repair**, on by default
   ([#287](https://github.com/erniecohen/dafny/issues/287)): a healthy solver no
   longer gets retired merely because its idle handshake exceeds 100 ms. The
@@ -384,10 +388,10 @@ version is computed.  Besides that fix, it brings:
   restores the old deadline for comparison, passed through Dafny's `--boogie`.
 
 `a48933e` made this branch build against the fork's packages, at
-`3.5.5-review.37e4435d`.  It now builds against `3.5.5-review.dcd726f6`:
+`3.5.5-review.37e4435d`.  It now builds against `3.5.5-review.5d9897bc`:
 
 - `Source/DafnyCore/DafnyCore.csproj` names `Boogie.ExecutionEngine`
-  `3.5.5-review.dcd726f6`, and `dotnet-tools.json` names the `boogie` tool at the
+  `3.5.5-review.5d9897bc`, and `dotnet-tools.json` names the `boogie` tool at the
   same version;
 - `nuget.config` adds a local package source, `Binaries/boogie-packages`, and maps
   every Boogie package to it and to nothing else, so a missing package stops the
@@ -430,6 +434,16 @@ solver gets the same text as before.  Its test,
 assertion its own split on one core, with and without `/cacheBackground`, and requires
 the same report and, from the CSV log, the same outcome and resource count for every
 check.  Its release note is `docs/dev/news/241-boogie-cache-background.feat`.
+
+The move from `dcd726f6` to `5d9897bc` is a product change, and so a new version.
+It states the canonical map row of a map whose result type is a type parameter as one
+row per native result sort and one for the other result types, from
+[erniecohen/boogie#12](https://github.com/erniecohen/boogie/pull/12); the rows are
+equivalent to the single guarded row, and the legacy mode's text is unchanged.  Its
+test, `git-issues/github-issue-425-map-payload-cost.dfy`, verifies the reproducer of
+[#425](https://github.com/erniecohen/dafny/issues/425) at the two seeds where the
+single row ran out of resource, with a limit of 20M resource units.  Its release note
+is `docs/dev/news/425-map-payload-cost.fix`.
 
 **To build this branch, run `sh Scripts/fetch-boogie-packages.sh` once first.**
 CI does so in every job that builds.
