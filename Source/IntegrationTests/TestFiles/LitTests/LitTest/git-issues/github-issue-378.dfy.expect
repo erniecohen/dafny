@@ -1,0 +1,6 @@
+github-issue-378.dfy(71,11): Error: result of operation might violate newtype constraint for 'Small'
+
+Dafny program verifier finished with 6 verified, 1 error
+github-issue-378.dfy(71,11): Error: result of operation might violate newtype constraint for 'Small'
+
+Dafny program verifier finished with 49 verified, 1 error
