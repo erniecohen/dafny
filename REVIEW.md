@@ -815,6 +815,8 @@ changed overridden member, a new extension, and a replaced abstract import are c
 the module inherits unchanged is not checked again.  Such a check asserts at the inherited origin,
 reports the refining module as a related location, and is verified with the refining module even
 when the base comes from a library; the pipeline schedules that task, and no other, of the copy.
+In the IDE the copy shares the navigation range of the base member, so `IdeState` keeps the tasks of
+each `ICanVerify` at a range apart, and the base member's own errors stay shown beside the check.
 Its kind is **asserts more**: it rejects programs, by checking an obligation the old rule skipped,
 and adds no fact or axiom; a program whose refining modules change no override pair is unchanged.
 The hidden `--legacy-elided-override-checks` option restores the old rule for comparison and
