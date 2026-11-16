@@ -27,7 +27,7 @@ The consequences, each argued below:
 
 | Question | Decision |
 |---|---|
-| Where | `class`, `trait`, `datatype`, `newtype`, abstract type.  Not subset types, which have no members.  Not codatatypes, for now (section 3.8). |
+| Where | `class`, `trait`, `datatype`, `newtype`, abstract type.  Not subset types, which have no members.  Not codatatypes, and a program that declares an invariant may not declare a codatatype at all (section 3.8). |
 | The raw type | Derived and nameable: `raw T`.  Constructors and updates produce raw values.  Using a raw value where a `T` is expected checks the invariant, as a subset-type conversion does. |
 | What an invariant may use | Any member with empty reads, applied to `this` or to anything else.  Inside an invariant `this` has type `raw T`. |
 | When assumed | Everywhere a value has type `T`. |
@@ -39,7 +39,7 @@ The consequences, each argued below:
 | Repeated obligations | None.  Each conjunct is proved once per construction site; inherited conjuncts are not re-proved in a refinement, and an ancestor reached by two paths counts once (section 4.4). |
 | `extends`, refinement | Invariants accumulate by conjunction.  There is no syntax that weakens, so "only strengthened" holds by construction.  The raw type follows automatically. |
 | Encoding | Per-type axioms only.  No prelude change.  A program without invariants gets the same Boogie as today. |
-| Option | `--member-invariants`, default off, requires `--type-system-refresh`. |
+| Option | `--member-invariants`, default off, hidden while the feature is incomplete, requires `--type-system-refresh`. |
 
 The plan differs from the upstream proposal in these places, on purpose:
 
@@ -54,9 +54,10 @@ The plan differs from the upstream proposal in these places, on purpose:
 3. **An invariant may not refer to the set of values of its own type**
    (section 3.3).  Such an invariant defines the type's extension in terms of
    itself, and the definition may have no solution.
-4. **More places.**  Newtypes and abstract types are included.  Codatatypes
-   are not, for now: a co-recursive call has no termination argument to
-   justify assuming that its result is in the type (section 3.8).
+4. **More places, and one exclusion.**  Newtypes and abstract types are
+   included.  A program that declares an invariant may not declare a
+   codatatype: a co-recursive call has no termination argument to justify
+   assuming that its result is in the type (section 3.8).
 
 ## 2. Syntax and placement
 
@@ -95,7 +96,7 @@ Wherever members can be declared, except in a codatatype.
 | `class` | yes | Checked at `new;` (section 3.4). |
 | `trait` (reference or general) | yes | Every extending type inherits it. |
 | `datatype` | yes | Section 3.5. |
-| `codatatype` | no | A resolution error.  Deferred (section 3.8). |
+| `codatatype` | no | A resolution error, and a program with an invariant may not declare a codatatype at all (section 3.8). |
 | `newtype` | yes | Its constraint is an invariant; `newtype N = x: B \| P(x)` is sugar (section 3.5). |
 | abstract type (`type T { ... }`) | yes | The invariant is over its member functions, and every refinement must honour it (section 4.3). |
 | subset type, type synonym | no | They cannot declare members.  A subset type keeps its constraint clause. |
@@ -168,8 +169,9 @@ A raw value is raw only at the top.  `raw SortedList` is the set of `Nil` and
 `Cons(h, t)` with `t` a `SortedList`.  A declaration that wants a raw
 component says so: `Cons(head: int, tail: raw SortedList)`.
 
-A datatype value can contain itself through a codatatype component.  Section
-3.8 has the rule that keeps the recursion on structure valid all the same.
+A datatype value could contain itself through a codatatype component, but a
+program with invariants declares no codatatype (section 3.8), so the recursion
+on structure is always well-founded.
 
 ### 3.2 Reads restrictions
 
@@ -669,90 +671,53 @@ or without invariants; that is Dafny's existing restriction.  A method, a
 lemma or a two-state function can, and may do so whether or not the type has
 an invariant.
 
-### 3.8 Deferred: codatatypes
+### 3.8 Codatatypes: the declaration rule
 
-A codatatype may not declare an invariant or a witness.  Under
-`--member-invariants` the resolver reports an error: "a codatatype may not
-declare an invariant".  The owner has ruled that invariants on codatatypes
-wait.  This section records why they are not the datatype rules again, and
-what the plan means where a codatatype meets a type that has an invariant.
+**Rule: a resolved program may not declare both a codatatype and a member
+invariant.**  Under `--member-invariants` the resolver reports an error when
+it does, at each `invariant` member: "a program that declares a member
+invariant may not declare a codatatype", naming one codatatype.  The owner
+chose this rule
+(https://github.com/erniecohen/dafny/issues/395#issuecomment-6908809898) in
+place of the mixing rules of the previous revision of this section.
 
-**Why they wait.**
+- **What counts.**  An `invariant` member, written as such, in any declaration
+  of the program.  A subset type's constraint and a newtype written in the old
+  `x: B | P(x)` syntax are not member invariants and do not count, so the rule
+  rejects no program that does not use the new syntax.  (A newtype in the
+  member form, `newtype N = B { invariant ... }`, does count.)  The rule is a
+  resolution error raised only where an invariant is declared, so without the
+  option, and in every program written without invariants, nothing changes.
+- **Libraries.**  A program's libraries, `.doo` files and `--library` sources
+  alike, are resolved together with it, so the one check covers them.  There is
+  no new option, nothing recorded in a `.doo` file, and no check at link time.
+  A library that declares neither a codatatype nor an invariant works with
+  programs of either kind.
+- **An invariant inside a codatatype** was a resolution error of its own in the
+  previous revision ("a codatatype may not declare an invariant").  It is now
+  a special case of the rule: the codatatype that would hold the invariant is a
+  codatatype declared in the program.  The resolver reports it with the more
+  specific message, at the invariant.  A `witness` member in a codatatype is
+  also an error, since a codatatype has no invariant for it to witness.
 
-1. *The check cannot assume its own conclusion.*  A value of a codatatype can
-   be a component of itself, so the type would be a greatest fixed point.
+**Why this is enough.**  Three reasons kept invariants away from codatatypes
+(they are recorded in full in
+https://github.com/erniecohen/dafny/pull/384/commits/267570e34873023a813f57ec65ce1511f5de407c):
+a guarded co-recursive call has no termination argument, so a check that may
+assume the call's result is in the type assumes its own conclusion; the
+suspended-value rule of https://github.com/erniecohen/dafny/issues/143 and
+https://github.com/erniecohen/dafny/pull/159 is sound but rejects every
+co-recursive function whose result type carries a constraint; and the
+defining equation of a co-recursive function is tied to the type of its
+result.  All three are about co-recursive calls, and a co-recursive call is a
+call whose result is a codatatype value built under a co-constructor.  A
+program with no codatatype has none.
 
-   ```dafny
-   codatatype S = Cons(head: int, tail: S) { invariant false }    // not accepted by this plan
-   function F(): S { Cons(1, F()) }
-   ```
-
-   If the check at `Cons(1, F())` may assume that `F()` is an `S`, it assumes
-   `false` and passes, and `S` is both empty and inhabited.  An inductive type
-   is safe because a recursive call terminates: "the result is in `T`" is an
-   induction hypothesis about a smaller argument.  A guarded co-recursive call
-   decreases nothing.  What the invariant says makes no difference, as `false`
-   shows.  So the check would have to be prefix-wise, as for a greatest lemma.
-   Let `T#0` be `raw T`, and `T#(k+1)` the raw values that satisfy the
-   invariant and have their co-recursive components in `T#k`.  Assume that
-   every co-recursive call returns a value in `T#k`, and prove that the body
-   is in `T#(k+1)`.
-2. *Today's rule does not grant the guarded use.*  The fork closed the same
-   hole for fields with constrained types
-   (https://github.com/erniecohen/dafny/issues/143,
-   https://github.com/erniecohen/dafny/pull/159).  A guarded co-recursive call
-   is a suspended value.  Nothing is assumed of it, and where it is observed
-   its membership is asserted.  That is sound, and it is the base a design
-   would build on.  It has no way to say "in the type, as the component it is
-   placed in", so it rejects a co-recursive function whose result type carries
-   any constraint, even `true`:
-
-   ```dafny
-   codatatype St = Cons(head: int, tail: St)
-   type Any = s: St | true witness *
-   function Triv(): Any { Cons(1, Triv()) }     // error today: value does not satisfy the subset constraints of 'Any'
-   ```
-
-   A function with an `ensures` clause is treated more bluntly: its self-calls
-   are not co-recursive at all and must terminate.
-3. *The defining equation is tied to the type.*  An invariant that looks into
-   the result of a co-recursive call, such as `head <= tail.head` for a stream
-   built by `Cons(n, Up(n + 1))`, needs the equation that defines `Up` without
-   the type of its result.  One antecedent guards both in today's encoding.
-   They would have to be separated.
-
-The previous revision of this file worked such a design out
-(https://github.com/erniecohen/dafny/pull/384/commits/267570e34873023a813f57ec65ce1511f5de407c).
-It found a fourth point: the raw type of a codatatype would have to be raw at
-every depth, unlike the raw type of section 3.1.
-
-**Where a codatatype meets a type with an invariant.**  Both directions are
-allowed.
-
-- *A type with an invariant may have a component of a codatatype type.*  The
-  component has the codatatype's type and is checked as today.  It has no
-  invariant of its own.  The invariant of the enclosing type may read it.
-
-  ```dafny
-  codatatype Stream = Cons(head: int, tail: Stream)
-  function Nth(s: Stream, n: nat): int decreases n { if n == 0 then s.head else Nth(s.tail, n - 1) }
-  datatype Bounded = Bounded(bound: int, s: Stream) {
-    invariant forall n: nat :: Nth(s, n) <= bound
-  }
-  ```
-
-- *A codatatype may have a component whose type has an invariant.*  That is
-  the constrained field of issue 143, with an invariant where the subset
-  constraint was.  The suspended-value rule applies to it unchanged.
-
-  ```dafny
-  codatatype Intervals = Cons(head: Interval, tail: Intervals)
-  function From(n: int): Intervals { Cons(Interval(n, n + 1), From(n + 1)) }   // the head is checked: n <= n + 1
-  ```
-
-**No value of a type with an invariant is built around a co-recursive call.**
-One rule is needed for this, and it is about datatypes.  Today a datatype
-value can contain itself through a codatatype:
+**What the rule removes from the plan.**  The previous revision allowed
+mixing in both directions, and needed one extra rule for it: a conversion to a
+type with an invariant was not a position for a co-recursive call, however
+many constructors lay between the conversion and the call.  It was needed
+because a datatype value can contain itself through a codatatype component:
 
 ```dafny
 codatatype Forest = Cons(head: Bush, tail: Forest)
@@ -760,36 +725,27 @@ datatype Bush = Tip | Fork(kids: Forest)
 function C(): Forest { Cons(Fork(Cons(Tip, C())), C()) }     // accepted today
 ```
 
-`C().head` is a `Bush` with `C()` inside it.  The first `C()` is guarded,
-because it sits directly under a `Cons`.  If `Bush` had an invariant, the check
-of `Fork(Cons(Tip, C()))` would be the check of point 1 again, one constructor
-further in.  It is not enough to assume nothing about `C()` in that check.
-The invariant and its raw members were verified for a `this` whose components
-are finished, and what was proved of them is available for any receiver of the
-right static type.  For this node, that the components are finished is the
-assumption in question.  The node has to be rejected whatever its invariant
-says.
+If `Bush` had an invariant, the check of `Fork(Cons(Tip, C()))` would assume
+that `C()` is finished while checking a node that contains it.  Under the
+declaration rule `Bush` cannot have an invariant in a program that declares
+`Forest`, so the situation does not arise, and the rule is dropped with
+nothing in its place.  So are its consequences: the translator records no
+implicit conversions for the co-call pass, `CoCallResolution.cs` is not
+touched, and the model of section 5.2 needs no ordinal stages for datatype
+values that contain themselves.  In a program with invariants every datatype
+value is well-founded in its constructors, because the only way to build a
+value around a call that does not terminate is guarded co-recursion.
 
-So the conversion to a type with an invariant is a position in which a call
-cannot be co-recursive, however many constructors lie between the conversion
-and the call.  The conversion evaluates the invariant, and the invariant may
-look as deep as it likes.  An argument of a function is such a position today,
-and the fork already treats a conversion to a constrained newtype over a
-codatatype this way.  With an invariant on `Bush`, even `invariant true`, the
-first `C()` is an ordinary recursive call and `C` is rejected: "cannot prove
-termination".  `From` above is unaffected, because its co-recursive call is
-not inside the converted head.
+**Semantics.**  A program that declares invariants rests only on least fixed
+points: inductive datatypes, terminating functions, and the definitions of
+types by structural recursion (section 5.2).  Greatest predicates and lemmas
+are still available.  They are defined through their prefix predicates, which
+are least definitions over a natural-number index, and need no guarded
+recursion.
 
-A type with an invariant is therefore inductive in its own nodes.  Where a
-value has a component of its own type, however deep inside codatatype
-components, that component was finished first, and the recursion on structure
-of section 3.1 stands.  The cost is the rule itself: such a value cannot be
-built around a co-recursive call.  Types without invariants keep today's
-behaviour, `Bush` as declared above included.
-
-A newtype whose base is a codatatype, which the fork allows under
-`--extended-newtype-bases`, is not a codatatype.  Its constraint is an
-invariant in the sense of this plan, and it keeps the rules it has today.
+**A newtype over a codatatype**, which the fork allows under
+`--extended-newtype-bases`, needs a codatatype, so it cannot appear in a
+program with invariants.  In other programs it keeps the rules it has today.
 
 ## 4. Inheritance and refinement
 
@@ -911,8 +867,8 @@ module Impl refines Spec {
   is, and it is checked wherever the refinement makes a value.
 - **What may refine it.**  A declaration that can carry an invariant: a
   datatype, newtype, class or trait, or another abstract type.  A type synonym
-  or a subset type cannot, because it has no members.  A codatatype cannot,
-  for now (section 3.8).  Refining an abstract type that has an invariant with
+  or a subset type cannot, because it has no members.  A codatatype cannot
+  appear in a program with invariants at all (section 3.8).  Refining an abstract type that has an invariant with
   one of those is an error.
 - **Raw members stay raw.**  `Size` is applied to a raw `this` in the abstract
   module, so the body the refinement gives it is checked without the
@@ -1015,8 +971,7 @@ gets the axioms the type has today:
 - **Datatype.**  For each constructor,
   `$Is(#D.K(a), Tclass.D.raw(G)) <==> $Is(a₁, T₁) ∧ … ∧ $Is(aₙ, Tₙ)`, where a
   component declared with type `D` has `Tᵢ = Tclass.D(G)`, the finished type.
-  A codatatype has no invariant, so it has no raw type of its own and its
-  axioms do not change.
+  A program with invariants declares no codatatype (section 3.8).
 - **Class.**  `$Is(o, Tclass.C.raw?(G)) <==> o == null ∨ dtype(o) == Tclass.C?(G)`.
   The finished type is
   `$Is(o, Tclass.C?(G)) <==> o == null ∨ (dtype(o) == Tclass.C?(G) ∧ invariants)`.
@@ -1048,15 +1003,15 @@ Obligations.
   conjunct of the invariant of `this`.  The finished type then follows from
   the equivalence above.  There is no assumption of the finished type to
   place before or after the check.
-- **Co-recursion** (section 3.8).  Nothing new is emitted.  A conversion to a
-  type with an invariant is not a position for a co-recursive call, by a
-  resolver rule.  So none of the obligations above is ever stated of a value
-  that holds a suspended co-recursive call.
+- **Co-recursion** (section 3.8).  Nothing new is emitted.  A program with
+  invariants declares no codatatype, so it has no co-recursive calls, and none
+  of the obligations above is ever stated of a value that holds a suspended
+  one.
 
 ### 5.2 Why it is consistent
 
 Fix a program that meets the reads restrictions, the extension condition, the
-raw-member rule, and the rule on conversions of section 3.8.  Build a model.
+raw-member rule, and the declaration rule of section 3.8.  Build a model.
 
 **The raw types** are what the types are today.  Raw datatype values are
 constructor applications to components in their types.  Raw references of
@@ -1076,16 +1031,10 @@ extensions its cone refers to.
 
 - *Datatypes.*  `K(a) ∈ D ⟺ a ∈ types ∧ Inv(K(a))`, by recursion on the
   structure of values.  A datatype value is well-founded in its own
-  constructors, which Dafny's rank axioms already require.  Where no
-  codatatype is involved there is exactly one solution.  Through a codatatype
-  component a value can contain itself (section 3.8), and then there are
-  several.  Take the least, built by stages through the ordinals: a value
-  enters `D` when its parts declared with type `D` have entered and its
-  invariant holds.  A value that has itself as such a part never enters.  The
-  verifier agrees, because the rule on conversions accepts no such value at
-  type `D`.
-  Codatatypes, and datatypes without invariants, keep the meaning they have
-  today over the types so defined.
+  constructors, which Dafny's rank axioms already require.  The program
+  declares no codatatype (section 3.8), so no value contains itself and
+  there is exactly one solution.  Datatypes without invariants keep the
+  meaning they have today over the types so defined.
 - *Classes and traits.*  A component of a reference may be a reference of the
   same class.  Build the references by stages, each stage using finished
   references of earlier stages as `const` values, so that no reference is its
@@ -1143,7 +1092,7 @@ so anything verifies there.  The channels, and what closes each:
 | Class field of such a type | Existing rule: the class must have a constructor that assigns it |
 | Type argument for `(0)` or `(00)` | Characteristic check |
 | Enclosing datatype believed inhabited through a component | `GetAutoInit` propagation |
-| A value of a type with an invariant built around a guarded co-recursive call | A conversion to such a type is not a position for a co-recursive call (section 3.8) |
+| A value of a type with an invariant built around a guarded co-recursive call | The declaration rule: a program with invariants declares no codatatype, so it has no co-recursive calls (section 3.8) |
 | Abstract type with an invariant, refined by a type that cannot carry it | Rejected (section 4.3) |
 | Bodiless function or method returning the type | An assumption today, for any possibly-empty type; unchanged, and it should appear in `dafny audit` |
 | `new C` on a class with no constructor | Rejected: the class must declare one |
@@ -1201,13 +1150,12 @@ of the type a recursive definition, which may have no solution.  The extension
 condition excludes it, for every kind of type.  It is sufficient, not
 necessary, and its clauses 2 to 5 are conservative.
 
-**Co-recursion.**  Section 3.8.  Codatatypes declare no invariants, but a
-datatype with an invariant can stand inside a codatatype, and today a call
-under a co-constructor inside a datatype constructor is co-recursive.  The
-rule on conversions closes that.  It has to be in place from the first stage,
-because the exposure comes with datatype invariants, not with codatatypes.
-Control `V7` of section 6.4 is the test, and the tests of
-https://github.com/erniecohen/dafny/issues/143 must keep their verdicts.
+**Co-recursion.**  Section 3.8.  A program that declares an invariant may not
+declare a codatatype, so the exposure through guarded co-recursion that the
+previous revision had to close with a rule on conversions does not arise.
+Control `V7` of section 6.4 is the test of the declaration rule, and the tests
+of https://github.com/erniecohen/dafny/issues/143 must keep their verdicts,
+since they declare no invariant.
 
 **Trigger cost.**  The equivalence for a class triggers on
 `$Is(o, Tclass.C?)`, which is a common term.  It appears only for classes
@@ -1349,18 +1297,6 @@ newtype Even  = x: int | x % 2 == 0
 newtype Even' = int { invariant this as int % 2 == 0  witness 0 }
 ```
 
-```dafny
-// Next to a codatatype (section 3.8).  The codatatype itself declares no invariant.
-codatatype Stream = Cons(head: int, tail: Stream)
-function Nth(s: Stream, n: nat): int decreases n { if n == 0 then s.head else Nth(s.tail, n - 1) }
-datatype Bounded = Bounded(bound: int, s: Stream) {
-  invariant forall n: nat :: Nth(s, n) <= bound              // an invariant about a codatatype component
-}
-
-codatatype Intervals = Cons(head: Interval, tail: Intervals)
-function From(n: int): Intervals { Cons(Interval(n, n + 1), From(n + 1)) }   // the head is checked: n <= n + 1
-```
-
 The abstract type of section 4.3 is the remaining accepted example.
 
 ### 6.2 Rejected by the resolver
@@ -1399,6 +1335,15 @@ codatatype NonNeg = Cons(head: int, tail: NonNeg) {
 }
 ```
 
+The declaration rule (section 3.8), in a program of its own:
+
+```dafny
+codatatype Stream = Cons(head: int, tail: Stream)
+datatype Bounded = Bounded(bound: int, s: Stream) {
+  invariant bound >= 0         // error: a program that declares a member invariant may not declare a codatatype ('Stream')
+}
+```
+
 ### 6.3 Rejected by the verifier
 
 ```dafny
@@ -1420,15 +1365,6 @@ method M() {
   var e: Empty;                                // Empty from section 3.6: no witness
   Consume(e);                                  // error: variable 'e' is used before it is assigned
 }
-```
-
-A datatype with an invariant, inside a codatatype (section 3.8):
-
-```dafny
-codatatype Forest = Cons(head: Bush, tail: Forest)
-datatype Bush = Tip | Fork(kids: Forest) { invariant true }
-function C(): Forest { Cons(Fork(Cons(Tip, C())), C()) }   // error: cannot prove termination.  The first C() is under
-                                                           // a conversion to 'Bush', so it is not co-recursive
 ```
 
 ### 6.4 Vacuity controls
@@ -1459,12 +1395,12 @@ It must report an error at `new;`, and a method that takes an `F` must be
 accepted.  It records that an unsatisfiable object invariant is sound: the
 class simply cannot be constructed.
 
-`V7` is the function `C` of section 6.3.  It must report the termination
-error, although the invariant is `true`.  With the invariant removed from
-`Bush`, the same program must be accepted, as it is today.  The pair records
-that no value of a type with an invariant is accepted around a co-recursive
-call, whatever the invariant says, and that types without invariants are
-untouched.
+`V7` is the declaration rule.  The program of section 3.8 with `Forest`,
+`Bush` and `C` must be rejected by the resolver when `Bush` declares
+`invariant true`, and accepted, as it is today, without the invariant.  The
+same pair is repeated with the codatatype in a library and the invariant in
+the program, and the other way round, and a neutral library (neither) must be
+accepted with programs of both kinds.
 
 `V8` is `method V8(r: raw Interval) { var i: Interval := r; }`.  It must
 report an error at the assignment.  It records that a raw value is not taken
@@ -1475,7 +1411,7 @@ for a finished one.
 ### 7.1 Files
 
 **Option.**  `Source/DafnyCore/Options/CommonOptionBag.cs`: `--member-invariants`,
-default false, usable from `dfyconfig.toml`.  It is an error without
+default false, hidden until the feature is complete, usable from `dfyconfig.toml`.  It is an error without
 `--type-system-refresh`.  `Source/DafnyCore/Options/DafnyCommands.cs`: add to
 the resolver options.
 
@@ -1488,7 +1424,8 @@ the resolver options.
   the issue.
 - `TypeMembers` reaches datatypes, codatatypes, newtypes and abstract types
   through the same production.  The resolver rejects an invariant or a witness
-  in a codatatype (section 3.8).
+  in a codatatype, and an invariant in any program that declares a codatatype
+  (section 3.8).
 - `raw` before a type name, in the type productions, by a lookahead predicate
   so that `raw` stays an identifier everywhere else.
 - `new by { ... }` in a constructor body, if open question 2 is accepted.
@@ -1532,17 +1469,13 @@ new nodes.
   and dynamically bound calls that clause 4 does not accept, directly.
   Compute the per-type-parameter "quantifies without a bound" flag on
   functions.
-- `Source/DafnyCore/Resolver/CoCallResolution.cs`: a conversion to a type
-  with an invariant is handled as a refining conversion to a constrained
-  newtype over a codatatype is handled there today.  Its operand is checked
-  with an unbounded destruction level and no enclosing co-constructor, so no
-  call inside it is co-recursive (section 3.8).  These conversions are
-  implicit, so type checking must have recorded them before this pass.
 - `Source/DafnyCore/AST/Types/Types.cs`: `GetAutoInit` for value types with
   invariants; subtyping for raw reference types.
 - `Source/DafnyCore/Resolver/ModuleResolver.cs`: "a class with an invariant
-  must declare a constructor", and "a codatatype may not declare an
-  invariant".
+  must declare a constructor", "a codatatype may not declare an
+  invariant", and the declaration rule of section 3.8: after the program and
+  its libraries are resolved, if any declaration declares a codatatype,
+  every `invariant` member is an error.
 - `Source/DafnyCore/Rewriters/RefinementTransformer.cs`: `MergeClass` already
   merges members; let it accept added invariants and a replaced witness, carry
   an abstract type's invariant into the refining declaration, and reject a
@@ -1590,7 +1523,7 @@ the option off.
 | Stage | Content | Exit test |
 |---|---|---|
 | 0 | Option, grammar (`invariant`, `witness`, `raw`), AST, printer, cloner.  The resolver rejects every invariant with "not yet supported". | Round-trip printing; the diagnostic with the option off is unchanged. |
-| 1 | **Datatypes, non-generic, no parents.**  The raw type and its typing rules, raw members, the reads rule, the extension condition in its conservative form (clause 2 rejects every dependent type argument), the encoding, conversion obligations, witnesses and `GetAutoInit`.  The error for an invariant in a codatatype, and the rule that a conversion is not a position for a co-recursive call (section 3.8). | Sections 6.1 (datatype examples), 6.2, 6.3, and controls V1, V4, V5, V5b, V7, V8.  The tests of issue 143 keep their verdicts. |
+| 1 | **Datatypes, non-generic, no parents.**  The raw type and its typing rules, raw members, the reads rule, the extension condition in its conservative form (clause 2 rejects every dependent type argument), the encoding, conversion obligations, witnesses and `GetAutoInit`.  The error for an invariant in a codatatype, and the declaration rule (section 3.8). | Sections 6.1 (datatype examples), 6.2, 6.3, and controls V1, V4, V5, V5b, V7, V8.  The tests of issue 143 keep their verdicts. |
 | 2 | **Emptiness and raw-typing audit.**  Every consumer of "is this type inhabited" for value types, and every place the translator chooses between a type and its raw type.  Generic datatypes. | A test for each row of the vacuous-types table. |
 | 3 | **Classes.**  Raw reference types and their subtyping, the equivalence, the check at `new;`, the constructor requirement, audit reporting.  The test for lambda bodies (section 3.3).  Measure the trigger cost. | Controls V2 and V6, the `Bad` test; the `Buffer`, `Box` and `Max` examples; raw references do not reach `object`. |
 | 4 | **Traits and `extends`.**  Inherited invariants and raw members, the conjunction at `new;`, export visibility.  General traits extended by datatypes. | Control V3; a cross-module extension test. |
@@ -1598,15 +1531,16 @@ the option off.
 | 6 | **Newtypes.**  The member form, the sugar, native representations. | Every existing newtype test gives the same verdict and resource count in both forms. |
 | 7 | **Relaxations**, each with its own argument: `new by`; the exact clause 2; conversions in the cone; stored function values and dynamic dispatch in a reference-free type's cone; positive occurrences under a fixed-point reading. | Per relaxation. |
 
-Invariants on codatatypes are not a stage of this plan.  Section 3.8 says what
-a design for them has to settle.
+Invariants on codatatypes are not a stage of this plan, and the declaration
+rule of section 3.8 keeps codatatypes out of every program that declares an
+invariant.
 
 ## 8. Open questions for the owner
 
 Settled by the owner, and assumed above: raw types exist and are nameable;
 invariants go wherever members can be declared, abstract types and newtypes
-included, with the newtype constraint as sugar, but not in codatatypes for
-now; `this` is not limited to component selection; the object check is at
+included, with the newtype constraint as sugar, but not in codatatypes, and
+not in a program that declares a codatatype (section 3.8); `this` is not limited to component selection; the object check is at
 `new;`; every obligation is proved once.
 
 Each remaining question has a recommendation.  The plan above assumes it.
@@ -1650,13 +1584,10 @@ Each remaining question has a recommendation.  The plan above assumes it.
    drop them.
 
 6. **A datatype with an invariant inside a codatatype.**
-   *Recommend the rule of section 3.8*: a conversion to a type with an
-   invariant is not a position for a co-recursive call, so no value of such a
-   type contains itself.  It follows the fork's treatment of a conversion to a
-   constrained newtype over a codatatype.  The alternative is a resolver rule
-   that rejects an invariant on any datatype that can reach itself through a
-   codatatype.  That is harder to state, because of type arguments and
-   abstract types, and it rejects more.
+   *Settled by the owner: the declaration rule of section 3.8.*  A program
+   that declares an invariant may not declare a codatatype.  The previous
+   recommendation, a rule that a conversion to a type with an invariant is not
+   a position for a co-recursive call, is withdrawn as unnecessary.
 
 7. **A value type with an invariant and no `witness`: possibly empty, or an
    error?**
@@ -1711,5 +1642,5 @@ parents, with their raw types.**
 - Witnesses reuse the possibly-empty machinery.
 - The extension condition is needed from the first day, in its conservative
   form.  With the typing of raw values, it is the part to review hardest.
-- None of it touches the heap, `new;`, inheritance or refinement.  It touches
-  co-recursion in one resolver rule (section 3.8).
+- None of it touches the heap, `new;`, inheritance or refinement, or
+  co-recursion: the declaration rule (section 3.8) keeps codatatypes out.
