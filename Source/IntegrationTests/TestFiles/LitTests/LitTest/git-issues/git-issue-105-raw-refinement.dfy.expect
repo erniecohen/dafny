@@ -41,7 +41,7 @@ abstract module Middle refines Base {
   }
 
   datatype D = D(x: int, y: int) {
-    invariant Pos()
+    invariant /* invariant#0 */ Pos()
 
     // raw member: 'this' has type 'raw D'
     predicate Pos()
@@ -85,8 +85,8 @@ module Final refines Middle {
   }
 
   datatype D = D(x: int, y: int) {
-    invariant Ordered()
-    invariant Pos()
+    invariant /* invariant#1 */ Ordered()
+    invariant /* invariant#0 */ Pos()
 
     // raw member: 'this' has type 'raw D'
     predicate Pos()
@@ -144,7 +144,7 @@ module Concrete refines AbstractBase {
   }
 
   datatype T = T(n: nat) {
-    invariant n != 7
+    invariant /* invariant#0 */ n != 7
   }
   /*-- type with member invariants
   type T = v: raw T

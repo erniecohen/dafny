@@ -22,7 +22,7 @@ module A {
           lo <= hi
         }
 
-        invariant Ok()
+        invariant /* invariant#0 */ Ok()
 
         function Width(): int
           decreases this
@@ -62,7 +62,7 @@ module A {
           lo <= hi
         }
 
-        invariant Ok()
+        invariant /* invariant#0 */ Ok()
 
         function Width(): int
           decreases this
@@ -102,7 +102,7 @@ module A {
       lo <= hi
     }
 
-    invariant Ok()
+    invariant /* invariant#0 */ Ok()
 
     function Width(): int
       decreases this
@@ -162,7 +162,7 @@ module ExportsRaw {
     provides Interval, MakeRaw
     /*----- exported view:
       datatype /*{:_provided}*/ Interval = Interval(lo: int, hi: int) {
-        invariant lo <= hi
+        invariant /* invariant#0 */ lo <= hi
       }
       type Interval = v: raw Interval
         | v.invariant#0()
@@ -175,7 +175,7 @@ module ExportsRaw {
 
 
   datatype /*{:_provided}*/ Interval = Interval(lo: int, hi: int) {
-    invariant lo <= hi
+    invariant /* invariant#0 */ lo <= hi
   }
   /*-- type with member invariants
   type Interval = v: raw Interval

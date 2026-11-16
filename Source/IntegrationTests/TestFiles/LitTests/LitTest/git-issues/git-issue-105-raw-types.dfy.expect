@@ -35,7 +35,7 @@ module Basics {
   }
 
   datatype Interval = Interval(lo: int, hi: int) {
-    invariant lo <= hi
+    invariant /* invariant#0 */ lo <= hi
 
     function Width(): nat
       decreases this
@@ -77,7 +77,7 @@ module Generics {
   }
 
   datatype Pair<A(==)> = Pair(a: A, b: A) {
-    invariant a != b
+    invariant /* invariant#0 */ a != b
 
     function Swap(): Pair<A>
       decreases this
@@ -107,7 +107,7 @@ module RawMembers {
           key < k
     }
 
-    invariant Ordered()
+    invariant /* invariant#0 */ Ordered()
 
     function Keys(): set<int>
       decreases this
@@ -136,7 +136,7 @@ module RawMembers {
       t.Size() < 100
     }
 
-    invariant Small()
+    invariant /* invariant#1 */ Small()
 
     function Min(): int
       requires Node?
@@ -155,7 +155,7 @@ module RawMembers {
   */
 
   datatype Chain = Chain(n: nat) {
-    invariant A()
+    invariant /* invariant#0 */ A()
 
     // raw member: 'this' has type 'raw Chain'
     predicate A()
@@ -193,7 +193,7 @@ module RawMembers {
   */
 
   datatype Parity = Parity(n: nat) {
-    invariant Even() || Odd()
+    invariant /* invariant#0 */ Even() || Odd()
 
     // raw member: 'this' has type 'raw Parity'
     predicate Even()
@@ -217,8 +217,8 @@ module RawMembers {
   */
 
   datatype Span = Span(lo: int, hi: int) {
-    invariant Span(lo, hi).Ok()
-    invariant Finished().Len() >= 0
+    invariant /* invariant#0 */ Span(lo, hi).Ok()
+    invariant /* invariant#1 */ Finished().Len() >= 0
 
     // raw member: 'this' has type 'raw Span'
     predicate Ok()
@@ -250,7 +250,7 @@ module RawMembers {
     // raw member: 'this' has type 'raw Rect'
     const area: int := w * h
     const perimeter: int := 2 * (w + h)
-    invariant area >= 0
+    invariant /* invariant#0 */ area >= 0
 
     // raw member: 'this' has type 'raw Rect'
     function Diagonal(): int
@@ -261,7 +261,7 @@ module RawMembers {
       return w + h;
     }
 
-    invariant Diagonal() >= 0
+    invariant /* invariant#1 */ Diagonal() >= 0
 
     // raw member: 'this' has type 'raw Rect'
     lemma Square()
@@ -278,7 +278,7 @@ module RawMembers {
       w * w >= 0
     }
 
-    invariant P()
+    invariant /* invariant#2 */ P()
   }
   /*-- type with member invariants
   type Rect = v: raw Rect
@@ -287,7 +287,7 @@ module RawMembers {
   */
 
   datatype Num = Zero | Succ(pred: Num) {
-    invariant Fin()
+    invariant /* invariant#0 */ Fin()
 
     // raw member: 'this' has type 'raw Num'
     least predicate Fin()

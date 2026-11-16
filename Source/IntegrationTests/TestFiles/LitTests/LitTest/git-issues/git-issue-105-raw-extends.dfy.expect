@@ -19,7 +19,7 @@ module Extends {
   }
 
   datatype Square extends Shape = Square(side: int) {
-    invariant Valid()
+    invariant /* invariant#0 */ Valid()
 
     function Area(): int
     {
@@ -59,7 +59,7 @@ module Diamond {
   trait Right extends Top { }
 
   datatype Both extends Left, Right = Both(x: int, y: int) {
-    invariant Id() == x
+    invariant /* invariant#0 */ Id() == x
 
     // raw member: 'this' has type 'raw Both'
     function Id(): int
@@ -94,7 +94,7 @@ module GenericExtends {
   }
 
   datatype Bounded<T> extends Container<T> = Bounded(s: seq<T>, cap: nat) {
-    invariant |Elems()| <= cap
+    invariant /* invariant#0 */ |Elems()| <= cap
 
     // raw member: 'this' has type 'raw Bounded'
     function Elems(): seq<T>
@@ -119,8 +119,8 @@ module Mutual {
   }
 
   datatype Tree = Leaf(key: int) | Node(key: int, kids: Forest) {
-    invariant Node? ==> kids.Above(key)
-    invariant Forest.Nil.Count() == 0
+    invariant /* invariant#0 */ Node? ==> kids.Above(key)
+    invariant /* invariant#1 */ Forest.Nil.Count() == 0
 
     function Size(): nat
       decreases this
@@ -138,7 +138,7 @@ module Mutual {
   */
 
   datatype Forest = Nil | Cons(head: Tree, tail: Forest) {
-    invariant Cons? ==> tail.Count() < 100
+    invariant /* invariant#0 */ Cons? ==> tail.Count() < 100
 
     predicate Above(n: int)
       decreases this, n
