@@ -372,7 +372,7 @@ public record IdeState(
     return CopyingModule(Compilation.GetCanVerify(task.Task)) == CopyingModule(canVerify);
   }
 
-  private static string? CopyingModule(ICanVerify canVerify) {
+  internal static string? CopyingModule(ICanVerify canVerify) {
     return canVerify.Origin.IsCopy ? canVerify.ContainingModule.FullDafnyName : null;
   }
 
