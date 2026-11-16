@@ -519,9 +519,14 @@ no `reads` clause can name the allocation state.
 The mechanism this plan borrows has the gap today.  A let-such-that in a method,
 with a constraint that quantifies over the allocated objects and reads no field,
 gets a choice function without a heap argument: experiment A16 reports an
-internal error on one release of the fork and a proof of `false` on the next.
-So the binding's "uses the heap" must not be that computation alone, in either
-stage.
+internal error on one release of the fork and a proof of `false` on the next
+(https://github.com/erniecohen/dafny/issues/431).  The fix proposed in
+https://github.com/erniecohen/dafny/pull/448 makes the computation report such
+a quantifier, a comprehension of the same kind, and a sequence constructor whose
+initializer may read the heap.  Until that is merged, the binding's "uses the
+heap" must not be that computation alone, in either stage; after it, condition 3
+is still needed, for the reason above: a function may not depend on the
+allocation state, with or without a heap argument.
 
 Hence condition 3 of section 3.1: the postcondition must already be an expression
 that a function may contain.  The same quantifier in a function is a resolution
@@ -869,8 +874,9 @@ the releases named at the top.  The outcome:
   of allocated objects without reading a field, and binding such a lemma proves
   `false` (A6).  Today's let-such-that has the same gap outside functions, where
   on the latest release it is a proof of `false` with no trusted construct
-  (A16).  That is a defect of the fork as it stands, separate from this plan, and
-  needs its own issue.
+  (A16).  That is a defect of the fork as it stands, separate from this plan:
+  https://github.com/erniecohen/dafny/issues/431, with a fix proposed in
+  https://github.com/erniecohen/dafny/pull/448.
 - **Result types** are judged by `(!new)`, that is by what a value may *show*,
   not by what it may involve: `~>` is out, `->` and `-->` over admissible types
   are in (fact 11, A8).  The reason for excluding references is restated with
