@@ -5,6 +5,10 @@
 // RUN: %exits-with 0 %verify --type-system-refresh=false --general-newtypes=false "%S/Inputs/github-issue-404-positive.dfy" >> "%t"
 // RUN: %exits-with 0 %verify "%S/Inputs/github-issue-404-unchanged.dfy" >> "%t"
 // RUN: %exits-with 0 %verify --legacy-elided-override-checks "%S/Inputs/github-issue-404-unchanged.dfy" >> "%t"
+// RUN: %exits-with 4 %verify --general-traits=full "%S/Inputs/github-issue-404-general-traits.dfy" >> "%t"
+// RUN: %exits-with 0 %verify --general-traits=full --legacy-elided-override-checks "%S/Inputs/github-issue-404-general-traits.dfy" >> "%t"
+// RUN: %exits-with 4 %verify "%S/Inputs/github-issue-404-redeclared.dfy" >> "%t"
+// RUN: %exits-with 4 %verify --legacy-elided-override-checks "%S/Inputs/github-issue-404-redeclared.dfy" >> "%t"
 // RUN: %exits-with 0 %baredafny build --target:lib --solver-path %review-z3 --use-basename-for-filename --show-snippets:false --standard-libraries:false "%S/Inputs/github-issue-404-library.dfy" --output "%t.doo" >> "%t"
 // RUN: %exits-with 4 %baredafny verify --solver-path %review-z3 --use-basename-for-filename --show-snippets:false --standard-libraries:false --library "%t.doo" "%S/Inputs/github-issue-404-client.dfy" >> "%t"
 // RUN: %exits-with 0 %baredafny verify --solver-path %review-z3 --use-basename-for-filename --show-snippets:false --standard-libraries:false --legacy-elided-override-checks --library "%t.doo" "%S/Inputs/github-issue-404-client.dfy" >> "%t"
@@ -18,7 +22,10 @@
 // does not change are not checked again (Inputs/github-issue-404-unchanged.dfy verifies as many tasks
 // as under the legacy option), and strengthened contracts that the class member meets still verify
 // (Inputs/github-issue-404-positive.dfy).  Under the hidden --legacy-elided-override-checks the checks
-// are skipped again and every M verifies.
+// are skipped again and every M verifies.  Inputs/github-issue-404-general-traits.dfy does the same for
+// datatype and newtype members under --general-traits=full.  A class member that the refining module
+// redeclares, even with its contract unchanged, is the module's own, so its override check is made under
+// both rules (Inputs/github-issue-404-redeclared.dfy).
 
 // The issue's program: a lemma.
 module LemmaBase {
@@ -141,4 +148,57 @@ module MethodBase {
 module Method refines MethodBase {
   trait S ... { method N... ensures false }
   method M() ensures false { var s: S := new C(); var r := s.N(); }
+}
+
+// An abstract type refined into a class that adds a parent, where the class member's precondition is
+// stronger than the trait member's.
+module PreconditionBase {
+  trait S { method N(k: int) ensures k == 0 }
+  type T {
+    method N(k: int) requires k == 0 ensures k == 0 { }
+  }
+}
+module Precondition refines PreconditionBase {
+  class T extends S {
+    constructor () {}
+  }
+  method M() ensures false { var s: S := new T(); s.N(1); }
+}
+
+// The same, where the class member's decreases is larger than the trait member's.  A call through the
+// trait is checked against the trait's decreases, so Aux may call S.Le, and the cycle through T.Le never
+// decreases.  Every other termination check on the cycle holds.
+abstract module DecreasesBase {
+  trait S { lemma Le(n: nat) requires n > 0 ensures false decreases 0 }
+  type T {
+    lemma Le(n: nat) requires n > 0 ensures false decreases n { Aux(this, n); }
+  }
+  lemma Aux(t: T, n: nat) requires n > 0 ensures false decreases n, 0
+}
+module Decreases refines DecreasesBase {
+  class T extends S {
+    constructor () {}
+  }
+  lemma Aux... { var s: S := t; s.Le(n); }
+  method M() ensures false { var t := new T(); t.Le(1); }
+}
+
+// A twostate lemma.
+module TwoStateBase {
+  trait S { twostate lemma L() ensures true }
+  class C extends S { constructor () {} twostate lemma L() ensures true { } }
+}
+module TwoState refines TwoStateBase {
+  trait S ... { twostate lemma L... ensures false }
+  method M(s: S) ensures false { s.L(); }
+}
+
+// A least lemma.
+module LeastBase {
+  trait S { least lemma L(x: nat) ensures true }
+  class C extends S { constructor () {} least lemma L(x: nat) ensures true { } }
+}
+module Least refines LeastBase {
+  trait S ... { least lemma L... ensures false }
+  method M() ensures false { var s: S := new C(); s.L(0); }
 }
