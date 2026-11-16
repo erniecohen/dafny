@@ -34,7 +34,22 @@ internal sealed class ImageRoots {
   }
 
   internal static DirectoryInfo? RuntimeRoot() =>
-    new DirectoryInfo(RuntimeEnvironment.GetRuntimeDirectory()).Parent?.Parent?.Parent;
+    RuntimeRoot(RuntimeEnvironment.GetRuntimeDirectory(), AppContext.BaseDirectory);
+
+  /// <summary>
+  /// The .NET installation that <paramref name="runtimeDirectory"/>, a shared framework directory
+  /// <c>ROOT/shared/Microsoft.NETCore.App/VERSION</c>, belongs to.  A self-contained publish
+  /// has no such installation: its runtime is the application directory itself, which the
+  /// <c>&lt;dafny&gt;</c> placeholder already names, so there is none.
+  /// </summary>
+  internal static DirectoryInfo? RuntimeRoot(string runtimeDirectory, string applicationDirectory) =>
+    IsSelfContained(runtimeDirectory, applicationDirectory) ? null : new DirectoryInfo(runtimeDirectory).Parent?.Parent?.Parent;
+
+  /// <summary>Whether the runtime was loaded from the application directory, as in a
+  /// self-contained publish, rather than from a shared .NET installation.</summary>
+  internal static bool IsSelfContained(string runtimeDirectory, string applicationDirectory) =>
+    string.Equals(Path.TrimEndingDirectorySeparator(Path.GetFullPath(runtimeDirectory)),
+      Path.TrimEndingDirectorySeparator(Path.GetFullPath(applicationDirectory)), StringComparison.Ordinal);
 
   /// <summary>Replaces each path in <paramref name="value"/> that lies under a root by the
   /// root's placeholder.  A root matches only between separators (start, end, '/', '\\', ':',
@@ -115,13 +130,7 @@ internal static class ExecutionImageIdentity {
                .Concat(Directory.GetFiles(RuntimeEnvironment.GetRuntimeDirectory(), "*.dll"))
                .Concat(Directory.GetFiles(RuntimeEnvironment.GetRuntimeDirectory(), "*.dylib"))
                .Concat(Directory.GetFiles(RuntimeEnvironment.GetRuntimeDirectory(), "*.so"))) { files.Add(file); }
-    var runtimeRoot = ImageRoots.RuntimeRoot();
-    var hostFxr = runtimeRoot == null ? null : Path.Combine(runtimeRoot.FullName, "host", "fxr");
-    if (hostFxr == null || !Directory.Exists(hostFxr)) {
-      throw new NotSupportedException("runtime host dependency identity is unavailable");
-    }
-    foreach (var file in Directory.GetFiles(hostFxr, "*", SearchOption.AllDirectories)
-               .Where(f => f.EndsWith(".dylib", StringComparison.Ordinal) || f.EndsWith(".so", StringComparison.Ordinal))) {
+    foreach (var file in HostDependencies(RuntimeEnvironment.GetRuntimeDirectory(), AppContext.BaseDirectory)) {
       files.Add(file);
     }
     if (OperatingSystem.IsMacOS()) {
@@ -177,6 +186,34 @@ internal static class ExecutionImageIdentity {
       }
     } else { throw new NotSupportedException("native dependency enumeration is unsupported on this platform"); }
     return Digests(files, memo);
+  }
+
+  /// <summary>
+  /// The native host libraries that resolved and started this runtime: hostfxr, and hostpolicy
+  /// beside it.  A framework-dependent application is started by the hostfxr of its .NET
+  /// installation, under <c>ROOT/host/fxr/VERSION</c>.  A self-contained publish
+  /// (https://github.com/erniecohen/dafny/issues/387) bundles both libraries in the application
+  /// directory, which is then also the runtime directory, and has no <c>host/fxr</c>; its own
+  /// copies are the ones its launcher loads.  Without either layout the host is unidentified,
+  /// and the cache is bypassed.
+  /// </summary>
+  internal static IReadOnlyList<string> HostDependencies(string runtimeDirectory, string applicationDirectory) {
+    static bool IsNative(string file) =>
+      file.EndsWith(".dylib", StringComparison.Ordinal) || file.EndsWith(".so", StringComparison.Ordinal);
+    if (ImageRoots.IsSelfContained(runtimeDirectory, applicationDirectory)) {
+      var bundled = new[] { "libhostfxr", "libhostpolicy" }.Select(name =>
+        Directory.GetFiles(applicationDirectory, name + ".*").Where(IsNative).ToArray()).ToArray();
+      if (bundled.Any(candidates => candidates.Length != 1)) {
+        throw new NotSupportedException("runtime host dependency identity is unavailable");
+      }
+      return bundled.Select(candidates => Path.GetFullPath(candidates[0])).ToArray();
+    }
+    var runtimeRoot = ImageRoots.RuntimeRoot(runtimeDirectory, applicationDirectory);
+    var hostFxr = runtimeRoot == null ? null : Path.Combine(runtimeRoot.FullName, "host", "fxr");
+    if (hostFxr == null || !Directory.Exists(hostFxr)) {
+      throw new NotSupportedException("runtime host dependency identity is unavailable");
+    }
+    return Directory.GetFiles(hostFxr, "*", SearchOption.AllDirectories).Where(IsNative).ToArray();
   }
 
   internal static Image Digests(IEnumerable<string> files, ImageDigestMemo memo) {
