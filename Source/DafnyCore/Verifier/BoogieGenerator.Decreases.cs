@@ -262,6 +262,47 @@ public partial class BoogieGenerator {
   }
 
   /// <summary>
+  /// A lemma's automatic induction hypothesis, and the generated limit-ordinal case of a prefix lemma, are
+  /// recursive calls of "m" that are not translated as calls, so CheckModularTermination does not see them.
+  /// Under --modular-termination, if a recursive call of "m" written in its body would get a global-bound check,
+  /// return a generator of the condition that such a call must meet, for the instance of "m" given by
+  /// "receiverReplacement" and "substMap": the instance's bound does not exceed m's own (or is below it, if a
+  /// call of "m" is dispatched).  The caller limits the hypothesis to the instances that meet the condition.
+  /// Return null if there is nothing to limit (https://github.com/erniecohen/dafny/issues/460).
+  /// </summary>
+  ExpressionConverter RecursiveInstanceWithinGlobalBound(MethodOrConstructor m, Expression receiverReplacement,
+                                                        Dictionary<IVariable, Expression> substMap) {
+    if (!options.Get(CommonOptionBag.ModularTermination) || GlobalBound(m) is not { } bound) {
+      // A lemma without a bound runs under TOP, and so may any call it makes.
+      return null;
+    }
+    var analysis = ModularTerminationAnalysis.Of(program);
+    var dispatched = ModularTermination.IsOpenDispatch(m, analysis.OpenTraits);
+    if (!dispatched && !analysis.ReachesOpenDispatch(m, ((ICallable)m).EnclosingModule)) {
+      return null;
+    }
+    return delegate (Dictionary<IVariable, Expression> renaming, ExpressionTranslator exprTran) {
+      var toks = new List<IOrigin>();
+      var instance = new List<Bpl.Expr>();
+      var own = new List<Bpl.Expr>();
+      var instanceDafny = new List<Expression>();
+      Bpl.Expr canCalls = Bpl.Expr.True;
+      foreach (var e in bound) {
+        toks.Add(e.Origin);
+        canCalls = BplAnd(canCalls, exprTran.CanCallAssumptionForVerification(e));
+        own.Add(exprTran.TrExpr(e));
+        var atInstance = Substitute(Substitute(e, receiverReplacement, substMap), null, renaming);
+        instanceDafny.Add(atInstance);
+        canCalls = BplAnd(canCalls, exprTran.CanCallAssumptionForVerification(atInstance));
+        instance.Add(exprTran.TrExpr(atInstance));
+      }
+      // Like the range of the induction hypothesis: canCallAssumptions ==> condition.
+      return BplImp(canCalls,
+        DecreasesCheck(toks, null, instanceDafny, bound, instance, own, null, null, !dispatched, false));
+    };
+  }
+
+  /// <summary>
   /// The bounds to give CheckCallTermination, which checks "below", to check that "lower" is at most "upper" in the
   /// order in which missing components are TOP: a strict decrease of "lower" against the components of "upper"
   /// that it has, if "upper" has more; otherwise no increase in the components of "upper", which an extra

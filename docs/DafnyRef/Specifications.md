@@ -606,6 +606,13 @@ is checked as a call of `L`. A least or greatest predicate cannot declare a boun
 predicate are TOP when they can reach a dispatched call. A co-recursive call is checked against the
 caller's bound as any other call is.
 
+A lemma with a global bound that can reach a dispatched call runs under that bound, and so does every
+instance of itself that its proof uses. So under the option its automatic induction hypothesis covers
+only the instances whose bound is at most the lemma's own bound (below it, if the lemma is itself an
+overridable member of an extensible trait). The same holds for the induction hypothesis of a prefix
+lemma, and for the case that Dafny generates for a prefix lemma at a limit ordinal. A proof that used
+one of these at a larger bound does not verify under the option.
+
 Some code belongs to no method or function: the constraint and the witness of a subset type or
 newtype, the default values of a datatype's or class's components (which a witness or an allocation
 may evaluate), and the initializer of a constant. Such code has no global bound, so it is TOP.

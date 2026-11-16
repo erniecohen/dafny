@@ -737,3 +737,6 @@ git-issues/git-issue-388.dfy
 
 # Under --modular-termination, calls in the body of a least or greatest lemma, calls of least and greatest predicates, and co-recursive calls are checked against the caller's global bound; each proved false (https://github.com/erniecohen/dafny/issues/456).
 git-issues/github-issue-456.dfy
+
+# Under --modular-termination, the induction hypothesis of a lemma, of a prefix lemma and of its limit-ordinal case covers only the instances within the lemma's global bound; each proved false (https://github.com/erniecohen/dafny/issues/460).
+git-issues/github-issue-460.dfy
