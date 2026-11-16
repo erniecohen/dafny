@@ -473,7 +473,6 @@ namespace Microsoft.Dafny {
     public string SolverIdentifier { get; private set; }
     public Version SolverVersion { get; set; }
     public int VerificationCacheVersionProbes { get; private set; }
-    public bool VerificationCacheBatchMode { get; set; }
 
     public static readonly ReadOnlyCollection<Plugin> DefaultPlugins =
       new(new[] { SinglePassCodeGenerator.Plugin, InternalDocstringRewritersPluginConfiguration.Plugin });
@@ -1241,7 +1240,7 @@ namespace Microsoft.Dafny {
 
       if (confirmedProverPath is not null) {
         ProverOptions.Add($"{pp}{confirmedProverPath}");
-        return string.IsNullOrEmpty(Get(CommonOptionBag.VerificationCache)) || VerificationCacheBatchMode
+        return string.IsNullOrEmpty(Get(CommonOptionBag.VerificationCache))
           ? z3VersionPerPath.GetOrAdd(confirmedProverPath, GetZ3Version)
           : Caching.SolverVersionCache.ReadOrProbe(Get(CommonOptionBag.VerificationCache), confirmedProverPath, path => { VerificationCacheVersionProbes++; return GetZ3Version(path); });
       }

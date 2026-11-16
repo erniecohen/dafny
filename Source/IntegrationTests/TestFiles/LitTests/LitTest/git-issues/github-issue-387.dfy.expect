@@ -1,0 +1,1 @@
+verification cache under --filter-position-batch: cold and warm batches report as uncached; repeated requests and single filters reuse results; an edited task misses
