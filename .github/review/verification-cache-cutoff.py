@@ -76,6 +76,26 @@ def run(name, text, directory=cache):
 
 cold = run('cold', original)
 assert cold['output'][0] == 0 and cold['stats']['solverStarts'] == cold['stats']['publications'] == 8
+
+# Each oracle is a cold run in its own cache. Hashing the solver's native images dominates
+# a run that starts from an empty directory, and repeating it for every oracle brought this
+# test close to the lit timeout (https://github.com/erniecohen/dafny/issues/389). So each
+# oracle cache starts with the cold run's image-digest memo, which is keyed by path and file
+# stamp, and with nothing else: no result, translation or solver-identity record.
+memo = destination / 'image-memo'
+for entry in (cache / 'v1/image-digests').glob('*/*/data'):
+    blob = json.loads(entry.read_text())['Blob']
+    for part in (entry.relative_to(cache), Path('v1/blobs/sha256', blob[:2], blob, 'data')):
+        (memo / part).parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(cache / part, memo / part)
+assert {p.name for p in (memo / 'v1').iterdir()} == {'image-digests', 'blobs'}
+
+
+def oracle_cache(name):
+    directory = destination / (name + '-oracle-cache')
+    shutil.copytree(memo, directory)
+    return directory
+
 warm = run('warm', original)
 for field in ('output', 'report', 'keys', 'modules'):
     assert cold[field] == warm[field], field
@@ -93,7 +113,8 @@ for name, (before, after) in edits.items():
     text = original.replace(before, after, 1)
     assert text != original
     edited = run(name, text)
-    oracle = run(name + '-oracle', text, destination / (name + '-oracle-cache'))
+    oracle = run(name + '-oracle', text, oracle_cache(name))
+    assert oracle['stats']['hits'] == 0 and oracle['stats']['imagesHashed'] == 0, oracle['stats']
     for field in ('output', 'report', 'keys', 'modules'):
         assert edited[field] == oracle[field], (name, field)
     changed = set(oracle['keys']) - set(cold['keys'])
