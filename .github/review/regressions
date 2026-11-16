@@ -405,6 +405,9 @@ git-issues/github-issue-268.dfy
 # the resource limit compared with each result's resource use rather than keyed
 # (https://github.com/erniecohen/dafny/issues/261).
 git-issues/git-issue-241-verification-cache.dfy
+# Imported-body early cutoff, split out to stay well inside the lit timeout
+# (https://github.com/erniecohen/dafny/issues/389).
+git-issues/git-issue-241-verification-cache-cutoff.dfy
 # Default dependency-local translation (https://github.com/erniecohen/dafny/issues/241).
 git-issues/git-issue-241-history-free-translation.dfy
 git-issues/github-issue-241-translation-cache.dfy
@@ -718,6 +721,8 @@ git-issues/github-issue-390.dfy
 git-issues/github-issue-390-subset.dfy
 git-issues/github-issue-390-generic.dfy
 git-issues/github-issue-390-newtype.dfy
+# --verification-cache is used by a self-contained build, whose bundled libhostfxr and libhostpolicy identify its host, and by each request of --filter-position-batch, with results identical to uncached runs and a miss for an edited task (https://github.com/erniecohen/dafny/issues/387).
+git-issues/github-issue-387.dfy
 # Termination checks on integer measures keep the shape they had before the corrected decreases order (https://github.com/erniecohen/dafny/issues/414)
 git-issues/github-issue-414.dfy
 # With integer termination checks back in the legacy shape, --isolate-assertions splits them into two tasks again, so these two upstream tests read their .expect counts of 20 and 25 verified (https://github.com/erniecohen/dafny/issues/436).
