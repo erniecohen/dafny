@@ -38,8 +38,15 @@ class PreTypeToTypeVisitor : ASTVisitor<IASTVisitorContext> {
   /// </summary>
   private readonly HashSet<IVariable> contextualLambdaBinders = new();
 
-  public PreTypeToTypeVisitor(SystemModuleManager systemModuleManager) {
+  /// <summary>
+  /// Issue 105: non-null when the declarations include a type with member invariants. It gives the type of "this" in
+  /// the instance members of such a type.
+  /// </summary>
+  private readonly RawMemberInference rawMemberInference;
+
+  public PreTypeToTypeVisitor(SystemModuleManager systemModuleManager, RawMemberInference rawMemberInference = null) {
     this.systemModuleManager = systemModuleManager;
+    this.rawMemberInference = rawMemberInference;
   }
 
   /// <summary>
@@ -187,7 +194,11 @@ class PreTypeToTypeVisitor : ASTVisitor<IASTVisitorContext> {
   }
 
   protected override void PostVisitOneExpression(Expression expr, IASTVisitorContext context) {
-    if (expr is LiteralExpr or ThisExpr) {
+    if (expr is ThisExpr && rawMemberInference?.ThisType(context) is { } thisType) {
+      // Issue 105: every "this" in the member shares one type, which becomes "raw T" if the member is raw
+      expr.UnnormalizedType = thisType;
+      return;
+    } else if (expr is LiteralExpr or ThisExpr) {
       // Note, for the LiteralExpr "null", we expect to get a possibly-null type, whereas for a reference-type ThisExpr, we expect
       // to get the non-null type. The .PreType of these two distinguish between those cases, because the latter has a .PrintablePreType
       // field that gives the non-null type.

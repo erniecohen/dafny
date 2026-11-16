@@ -377,7 +377,10 @@ public class UserDefinedType : NonProxyType, IHasReferences {
           s += this.TypeArgsToString(options, context, parseAble);
         }
       }
-      return IsRawSyntax ? "raw " + s : s;
+      // Issue 105: once resolved, the declaration of a type with member invariants denotes its raw type, whether
+      // or not "raw" was written.
+      var isRaw = IsRawSyntax || ResolvedClass is TopLevelDeclWithMembers { InvariantTypeDecl: not null };
+      return isRaw ? "raw " + s : s;
     }
   }
 

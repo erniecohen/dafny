@@ -41,10 +41,6 @@ namespace Microsoft.Dafny {
       }
 
       foreach (MemberDecl member in c.Members.FindAll(VisibleInScope)) {
-        if (member is MemberInvariant) {
-          // Issue 105: member invariants are resolved, but not yet verified (see ReportUnsupportedMemberInvariants).
-          continue;
-        }
         Contract.Assert(IsAllocContext == null);
         CurrentDeclaration = member;
         var ignored =

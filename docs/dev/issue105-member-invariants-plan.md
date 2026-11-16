@@ -1709,3 +1709,65 @@ Each is also recorded in the pull request that makes it.
   `requires` and `reads` read what the value may read, so they are allowed on a
   `->` or `-->` value and rejected on a `~>` value.  Inside an invariant, `this`
   has the type itself until `raw T` exists.
+
+**`raw T` for datatypes (second pull request).**
+
+- *The derived type.*  A datatype `D` that declares an invariant is itself the
+  raw type, `raw D`.  The name `D` written as a type denotes a derived
+  declaration (`InvariantTypeDecl`): a subset type of `raw D` whose constraint
+  is the conjunction of `D`'s invariants, in the order of their numbers, with
+  `witness *`.  This follows `NonNullTypeDecl`, where a class `C` is `C?` and
+  `C` is derived.  Unlike `C?`, the derived declaration has no name of its own:
+  `D` stays registered for the datatype, so constructors, discriminators,
+  static members, `import` and export sets refer to the datatype as before,
+  and only `D` in a type position is redirected.  The derived declaration
+  shares the datatype's visibility, and member lookup on a `D` sees through it
+  to the datatype.  A datatype without invariants gets no derived declaration,
+  and `raw D` is `D`.
+- *Typing.*  Constructor applications and updates have type `raw D`
+  (section 3.5).  `D` converts to `raw D` freely; `raw D` converts to `D` as
+  any type converts to a subset type of it, with the obligation left to the
+  verifier, and so do the collection and variance rules.  A destructor of a
+  raw value has the component's declared type, so components are finished.
+  Under `--type-system-refresh`, `raw D` and `D` have the same pre-type.
+- *Raw members are inferred* (question 3), for every instance member:
+  functions, predicates, constants with an initializer, methods, lemmas, the
+  by-method part of a function (which goes with the function) and the prefix
+  predicate of an extreme predicate (which goes with the predicate).  Each
+  instance member's `this` starts as `D` (as `raw D` in an invariant), and type
+  refinement raises it to `raw D` when the member is applied to a raw receiver
+  in an invariant or raw member of `D`.  Only `D`'s own invariants and raw
+  members make a member of `D` raw: where anything else applies a member that
+  is not raw to a raw value, that is a conversion of the receiver, which the
+  verifier is to check.  The result is part of type refinement's fixpoint,
+  since raising `this` changes the types that flow from it.
+- *Where `raw` applies* (section 3.5).  `raw` is supported for an inductive
+  datatype.  For a class, trait, newtype or abstract type it is reported as not
+  yet supported: their raw types come with their stages.  It is an error for a
+  type parameter, and for a type that cannot declare an invariant: a type
+  synonym, a subset type, a codatatype, a built-in type.  Since `raw` is
+  retagged only before an identifier, `raw int` and `raw array<D>` do not
+  parse.
+- *Provided but not revealed.*  Where a datatype is exported by `provides`
+  only, it is an abstract type, so `raw D` there is not yet supported (stage 5).
+  This includes an export set that provides `D` and reveals a member whose
+  signature mentions `raw D`; the export set is reported as inconsistent.
+- *Emptiness.*  Until witnesses are supported, `D` is possibly empty: it does
+  not satisfy `(0)` or `(00)`.  `raw D` has the datatype's own characteristics.
+- *Call graph.*  A use of `D` as a type is a dependency on the datatype.  The
+  extension condition of section 3.3 lands with verification.
+- *Verification.*  `D` in a verified module is now a subset type whose
+  constraint calls the invariants, and its conversions carry obligations.  So
+  the verifier translates no module of a program that declares an invariant:
+  it reports each invariant, and in each other module the first declaration it
+  would have verified.  The first pull request verified the modules without
+  invariants.
+- *Open until verification.*  Under `--general-traits=datatype`, a `raw D`
+  converts to a parent trait of `D` without the obligation that it satisfy
+  `D`'s invariants.  Section 3.4 makes `raw D` a subtype of the raw parent
+  only, so this conversion must carry the obligation before verification is
+  enabled for a datatype with parents (stage 4).
+- *Compilation.*  The derived declaration is not compiled: `D` and `raw D` are
+  the same target type.
+- *Printing.*  `/rprint` shows the derived declaration, in a comment after the
+  datatype, and marks each raw member.

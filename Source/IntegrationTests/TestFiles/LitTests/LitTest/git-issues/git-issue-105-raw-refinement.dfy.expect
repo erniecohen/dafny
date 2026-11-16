@@ -1,0 +1,156 @@
+// git-issue-105-raw-refinement.dfy
+
+
+abstract module Base {
+  method M(d: D, r: raw D)
+      returns (e: D, f: raw D)
+    decreases d, r
+  {
+    e := r;
+    f := D(d.x, d.y);
+  }
+
+  datatype D = D(x: int, y: int) {
+    predicate Pos()
+      decreases this
+    {
+      x > 0
+    }
+
+    predicate Ordered()
+      decreases this
+    {
+      x <= y
+    }
+
+    function Sum(): int
+      decreases this
+    {
+      x + y
+    }
+  }
+}
+
+abstract module Middle refines Base {
+  method M(d: D, r: raw D)
+      returns (e: D, f: raw D)
+    decreases d, r
+  {
+    e := r;
+    f := D(d.x, d.y);
+  }
+
+  datatype D = D(x: int, y: int) {
+    invariant Pos()
+
+    // raw member: 'this' has type 'raw D'
+    predicate Pos()
+      decreases this
+    {
+      x > 0
+    }
+
+    predicate Ordered()
+      decreases this
+    {
+      x <= y
+    }
+
+    function Sum(): int
+      decreases this
+    {
+      x + y
+    }
+  }
+  /*-- type with member invariants
+  type D = v: raw D
+    | v.invariant#0()
+    witness *
+  */
+}
+
+module Final refines Middle {
+  method N(d: D) returns (r: raw D)
+    decreases d
+  {
+    r := d.(x := d.y);
+  }
+
+  method M(d: D, r: raw D)
+      returns (e: D, f: raw D)
+    decreases d, r
+  {
+    e := r;
+    f := D(d.x, d.y);
+  }
+
+  datatype D = D(x: int, y: int) {
+    invariant Ordered()
+    invariant Pos()
+
+    // raw member: 'this' has type 'raw D'
+    predicate Pos()
+      decreases this
+    {
+      x > 0
+    }
+
+    // raw member: 'this' has type 'raw D'
+    predicate Ordered()
+      decreases this
+    {
+      x <= y
+    }
+
+    function Sum(): int
+      decreases this
+    {
+      x + y
+    }
+  }
+  /*-- type with member invariants
+  type D = v: raw D
+    | v.invariant#0() && v.invariant#1()
+    witness *
+  */
+}
+
+abstract module AbstractBase {
+  function Make(): T
+
+  method Use(t: T) returns (u: T)
+  {
+    u := t;
+  }
+
+  type T
+}
+
+module Concrete refines AbstractBase {
+  function Make(): T
+  {
+    T(0)
+  }
+
+  method Raw() returns (r: raw T)
+  {
+    r := T(7);
+  }
+
+  method Use(t: T) returns (u: T)
+    decreases t
+  {
+    u := t;
+  }
+
+  datatype T = T(n: nat) {
+    invariant n != 7
+  }
+  /*-- type with member invariants
+  type T = v: raw T
+    | v.invariant#0()
+    witness *
+  */
+}
+
+Dafny program verifier did not attempt verification

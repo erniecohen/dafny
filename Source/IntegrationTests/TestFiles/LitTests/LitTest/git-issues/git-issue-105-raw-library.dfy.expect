@@ -1,0 +1,25 @@
+
+Dafny program verifier did not attempt verification
+// git-issue-105-raw-library.dfy
+
+
+module Client {
+  method M(i: L.Interval)
+      returns (r: raw L.Interval, ok: bool, w: int, f: L.Interval)
+    decreases i
+  {
+    r := L.Make(3, 1);
+    ok := r.Ok();
+    w := i.Width();
+    f := L.Fix(r);
+    var j: raw L.Interval := L.Interval(0, 0);
+    var k: raw L.Interval := i.(lo := 5);
+    var s: seq<raw L.Interval> := [i, j, k];
+  }
+
+  import L = RawLib
+}
+
+Dafny program verifier did not attempt verification
+
+Dafny program verifier did not attempt verification

@@ -1,0 +1,326 @@
+// git-issue-105-raw-types.dfy
+
+
+module Basics {
+  method Values(i: Interval) returns (j: Interval)
+    decreases i
+  {
+    var r: raw Interval := Interval(i.hi, i.lo);
+    var u: raw Interval := i.(lo := i.lo - 1);
+    var v: Interval := r;
+    var w: Interval := i;
+    var s: seq<raw Interval> := [r, i];
+    var t: seq<Interval> := [i, v];
+    var m: map<raw Interval, Interval> := map[r := i];
+    var x: raw Interval := if r.lo < 0 then r else i;
+    var b: bool := r == i && r.Interval? && r.lo == i.hi;
+    var c: int := match r case Interval(a: int, _ /* _v0 */: int) => a;
+    j := r;
+  }
+
+  function Pick(b: bool, r: raw Interval, i: Interval): raw Interval
+    decreases b, r, i
+  {
+    if b then
+      r
+    else
+      i
+  }
+
+  method Plains(r: raw Plain) returns (p: Plain)
+    decreases r
+  {
+    p := r;
+    var k: Plain := Plain(3);
+  }
+
+  datatype Interval = Interval(lo: int, hi: int) {
+    invariant lo <= hi
+
+    function Width(): nat
+      decreases this
+    {
+      hi - lo
+    }
+  }
+  /*-- type with member invariants
+  type Interval = v: raw Interval
+    | v.invariant#0()
+    witness *
+  */
+
+  datatype Plain = Plain(x: int)
+}
+
+module Clients {
+  method Use(r: raw B.Interval, s: seq<raw B.Interval>) returns (i: B.Interval)
+    decreases r, s
+  {
+    var k: raw Interval := B.Interval(0, 1);
+    i := if |s| == 0 then r else s[0];
+  }
+
+  import B = Basics
+}
+
+module Generics {
+  method M<X(==)>(p: Pair<X>, q: raw Pair<int>, b: Box<raw Pair<X>>, c: Box<Pair<X>>)
+    decreases p, q, b, c
+  {
+    var r: raw Pair<X> := Pair(p.b, p.a);
+    var rb: Box<raw Pair<X>> := Box(r);
+    var pb: Box<Pair<X>> := Box(p);
+    var s: Pair<X> := p.Swap();
+    var b2: Box<raw Pair<X>> := c;
+    var c2: Box<Pair<X>> := b;
+    var q2: raw Pair<int> := q.(a := 3);
+  }
+
+  datatype Pair<A(==)> = Pair(a: A, b: A) {
+    invariant a != b
+
+    function Swap(): Pair<A>
+      decreases this
+    {
+      Pair(b, a)
+    }
+  }
+  /*-- type with member invariants
+  type Pair<A(==)> = v: raw Pair<A>
+    | v.invariant#0()
+    witness *
+  */
+
+  datatype Box<+T> = Box(t: T)
+}
+
+module RawMembers {
+  datatype Tree = Leaf | Node(left: Tree, key: int, right: Tree) {
+    // raw member: 'this' has type 'raw Tree'
+    predicate Ordered()
+      decreases this
+    {
+      Node? ==>
+        (forall k: int {:trigger k in left.Keys()} | k in left.Keys() :: 
+          k < key) &&
+        forall k: int {:trigger k in right.Keys()} | k in right.Keys() :: 
+          key < k
+    }
+
+    invariant Ordered()
+
+    function Keys(): set<int>
+      decreases this
+    {
+      if Leaf? then
+        {}
+      else
+        left.Keys() + {key} + right.Keys()
+    }
+
+    // raw member: 'this' has type 'raw Tree'
+    function Size(): nat
+      decreases this
+    {
+      if Leaf? then
+        0
+      else
+        1 + left.Size() + right.Size()
+    }
+
+    // raw member: 'this' has type 'raw Tree'
+    predicate Small()
+      decreases this
+    {
+      var t: raw Tree := this;
+      t.Size() < 100
+    }
+
+    invariant Small()
+
+    function Min(): int
+      requires Node?
+      decreases this
+    {
+      if left.Leaf? then
+        key
+      else
+        left.Min()
+    }
+  }
+  /*-- type with member invariants
+  type Tree = v: raw Tree
+    | v.invariant#0() && v.invariant#1()
+    witness *
+  */
+
+  datatype Chain = Chain(n: nat) {
+    invariant A()
+
+    // raw member: 'this' has type 'raw Chain'
+    predicate A()
+      decreases this
+    {
+      B()
+    }
+
+    // raw member: 'this' has type 'raw Chain'
+    predicate B()
+      decreases this
+    {
+      n < 10 &&
+      C()
+    }
+
+    // raw member: 'this' has type 'raw Chain'
+    predicate C()
+      decreases this
+    {
+      n != 7
+    }
+
+    predicate D()
+      decreases this
+    {
+      A() &&
+      C()
+    }
+  }
+  /*-- type with member invariants
+  type Chain = v: raw Chain
+    | v.invariant#0()
+    witness *
+  */
+
+  datatype Parity = Parity(n: nat) {
+    invariant Even() || Odd()
+
+    // raw member: 'this' has type 'raw Parity'
+    predicate Even()
+      decreases n
+    {
+      n == 0 || Parity(n - 1).Odd()
+    }
+
+    // raw member: 'this' has type 'raw Parity'
+    predicate Odd()
+      decreases n
+    {
+      n != 0 &&
+      Parity(n - 1).Even()
+    }
+  }
+  /*-- type with member invariants
+  type Parity = v: raw Parity
+    | v.invariant#0()
+    witness *
+  */
+
+  datatype Span = Span(lo: int, hi: int) {
+    invariant Span(lo, hi).Ok()
+    invariant Finished().Len() >= 0
+
+    // raw member: 'this' has type 'raw Span'
+    predicate Ok()
+      decreases this
+    {
+      lo <= hi
+    }
+
+    // raw member: 'this' has type 'raw Span'
+    function Finished(): Span
+      decreases this
+    {
+      this
+    }
+
+    function Len(): int
+      decreases this
+    {
+      hi - lo
+    }
+  }
+  /*-- type with member invariants
+  type Span = v: raw Span
+    | v.invariant#0() && v.invariant#1()
+    witness *
+  */
+
+  datatype Rect = Rect(w: int, h: int) {
+    // raw member: 'this' has type 'raw Rect'
+    const area: int := w * h
+    const perimeter: int := 2 * (w + h)
+    invariant area >= 0
+
+    // raw member: 'this' has type 'raw Rect'
+    function Diagonal(): int
+      decreases this
+    {
+      w + h
+    } by method /* ensures #result == Diagonal() */ {
+      return w + h;
+    }
+
+    invariant Diagonal() >= 0
+
+    // raw member: 'this' has type 'raw Rect'
+    lemma Square()
+      ensures w * w >= 0
+      decreases this
+    {
+    }
+
+    // raw member: 'this' has type 'raw Rect'
+    predicate P()
+      decreases this
+    {
+      Square();
+      w * w >= 0
+    }
+
+    invariant P()
+  }
+  /*-- type with member invariants
+  type Rect = v: raw Rect
+    | v.invariant#0() && v.invariant#1() && v.invariant#2()
+    witness *
+  */
+
+  datatype Num = Zero | Succ(pred: Num) {
+    invariant Fin()
+
+    // raw member: 'this' has type 'raw Num'
+    least predicate Fin()
+    {
+      Zero? || pred.Fin()
+    }
+    /*** (note, what is printed here does not show substitutions of calls to prefix predicates)
+    predicate {:axiom} Fin#[_k: ORDINAL]()
+      decreases _k
+    {
+      Zero? || pred.Fin()
+    }
+    ***/
+
+    greatest predicate Inf()
+    {
+      Succ? &&
+      pred.Inf()
+    }
+    /*** (note, what is printed here does not show substitutions of calls to prefix predicates)
+    predicate {:axiom} Inf#[_k: ORDINAL]()
+      decreases _k
+    {
+      Succ? &&
+      pred.Inf()
+    }
+    ***/
+  }
+  /*-- type with member invariants
+  type Num = v: raw Num
+    | v.invariant#0()
+    witness *
+  */
+}
+
+Dafny program verifier did not attempt verification

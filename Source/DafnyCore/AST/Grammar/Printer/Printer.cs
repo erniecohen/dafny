@@ -775,6 +775,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
           state = 1;
         } else if (m is MethodOrConstructor methodOrConstructor) {
           if (state != 0) { wr.WriteLine(); }
+          PrintRawMemberNote(m, indent);
           PrintMethod(methodOrConstructor, indent, printFlags.InterfaceOnly);
           if (m is ExtremeLemma { PrefixLemma: not null } com) {
             Indent(indent); wr.WriteLine("/***");
@@ -784,10 +785,12 @@ NoGhost - disable printing of functions, ghost methods, and proof
           state = 2;
         } else if (m is Field) {
           if (state == 2) { wr.WriteLine(); }
+          PrintRawMemberNote(m, indent);
           PrintField((Field)m, indent);
           state = 1;
         } else if (m is Function) {
           if (state != 0) { wr.WriteLine(); }
+          PrintRawMemberNote(m, indent);
           PrintFunction((Function)m, indent, false);
           if (m is ExtremePredicate fixp && fixp.PrefixPredicate != null) {
             Indent(indent); wr.WriteLine("/*** (note, what is printed here does not show substitutions of calls to prefix predicates)");
@@ -915,6 +918,17 @@ NoGhost - disable printing of functions, ghost methods, and proof
         Indent(indent);
         wr.WriteLine("}");
       }
+
+      if (options.DafnyPrintResolvedFile != null && dt.InvariantTypeDecl != null) {
+        // Issue 105: the type that the name of a type with member invariants denotes
+        if (!printingExportSet) {
+          Indent(indent); wr.WriteLine("/*-- type with member invariants");
+        }
+        PrintSubsetTypeDecl(dt.InvariantTypeDecl, indent);
+        if (!printingExportSet) {
+          Indent(indent); wr.WriteLine("*/");
+        }
+      }
     }
 
     /// <summary>
@@ -1016,6 +1030,17 @@ NoGhost - disable printing of functions, ghost methods, and proof
         wr.Write("  // non-assignable");
       }
       wr.WriteLine();
+    }
+
+    /// <summary>
+    /// In a printout of the resolved program, notes that "m" is a raw member (issue 105), whose receiver has the raw
+    /// type. An invariant is always raw.
+    /// </summary>
+    void PrintRawMemberNote(MemberDecl m, int indent) {
+      if (options.DafnyPrintResolvedFile != null && m.IsRawMember) {
+        Indent(indent);
+        wr.WriteLine("// raw member: 'this' has type 'raw {0}'", m.EnclosingClass.Name);
+      }
     }
 
     /// <summary>

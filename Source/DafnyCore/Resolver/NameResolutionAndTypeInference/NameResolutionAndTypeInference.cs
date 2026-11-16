@@ -4222,10 +4222,6 @@ namespace Microsoft.Dafny {
           return null;
         }
         var prevErrorCount = reporter.Count(ErrorLevel.Error);
-        if (t.IsRawSyntax) {
-          // Issue 105: "raw T" is parsed only under --member-invariants.
-          reporter.Error(MessageSource.Resolver, t.Origin, "raw types are not yet supported");
-        }
         if (t.NamePath is ExprDotName) {
           var ret = ResolveDotSuffix_Type((ExprDotName)t.NamePath, resolutionContext, allowDanglingDotName, option, defaultTypeArguments);
           if (ret != null) {
@@ -4258,11 +4254,16 @@ namespace Microsoft.Dafny {
                 }
               }
               t.ResolvedClass = d;
-            } else if (d is DatatypeDecl) {
-              t.ResolvedClass = d;
+            } else if (d is DatatypeDecl datatypeDecl) {
+              // Issue 105: for a datatype with member invariants, the name denotes the derived subset type, and
+              // "raw D" denotes the datatype itself.
+              t.ResolvedClass = t.IsRawSyntax ? d : (TopLevelDecl)datatypeDecl.InvariantTypeDecl ?? d;
             } else {
               // d is a type parameter, coinductive datatype, or class, and it may have type parameters
               t.ResolvedClass = d;
+            }
+            if (t.IsRawSyntax) {
+              CheckRawType(t, d);
             }
             if (option.Opt == ResolveTypeOptionEnum.DontInfer) {
               // don't add anything
@@ -4295,6 +4296,33 @@ namespace Microsoft.Dafny {
         Contract.Assert(false); throw new Cce.UnreachableException();  // unexpected type
       }
       return null;
+    }
+
+    /// <summary>
+    /// Issue 105: "raw T" (parsed only under --member-invariants) applies to a declaration that can declare a
+    /// member invariant: a datatype, class, trait, newtype or abstract type. So far, only inductive datatypes
+    /// are supported.
+    /// </summary>
+    private void CheckRawType(UserDefinedType t, TopLevelDecl d) {
+      if (d is IndDatatypeDecl) {
+        if (!d.IsRevealedInScope(Type.GetScope())) {
+          // Where a datatype is provided but not revealed, it is an abstract type.
+          reporter.Error(MessageSource.Resolver, t.Origin,
+            "'raw' is not yet supported for {0} '{1}', which is provided but not revealed here", d.WhatKind, d.Name);
+        }
+        return;
+      }
+      var decl = d is NonNullTypeDecl nonNullTypeDecl ? nonNullTypeDecl.Class : d;
+      if (decl is TypeParameter) {
+        reporter.Error(MessageSource.Resolver, t.Origin, "'raw' does not apply to type parameter '{0}'", decl.Name);
+      } else if (decl.EnclosingModuleDefinition == SystemModuleManager.SystemModule ||
+                 decl is not (ClassLikeDecl or NewtypeDecl or AbstractTypeDecl)) {
+        reporter.Error(MessageSource.Resolver, t.Origin,
+          "'raw' applies only to a type that can declare a member invariant (a datatype, class, trait, newtype or abstract type), not to {0} '{1}'",
+          decl.WhatKind, decl.Name);
+      } else {
+        reporter.Error(MessageSource.Resolver, t.Origin, "'raw' is not yet supported for {0} '{1}'", decl.WhatKind, decl.Name);
+      }
     }
 
     /// <summary>

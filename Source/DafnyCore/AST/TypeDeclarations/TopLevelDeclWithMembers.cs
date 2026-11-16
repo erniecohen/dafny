@@ -24,6 +24,12 @@ public abstract class TopLevelDeclWithMembers : TopLevelDecl, IHasSymbolChildren
   /// </summary>
   public List<TraitDecl> ParentTraitHeads = [];
 
+  /// <summary>
+  /// For a declaration with member invariants, the derived subset type that its name denotes when written as a
+  /// type (issue 105). The declaration itself denotes the raw type. Set when the module's names are registered.
+  /// </summary>
+  [FilledInDuringResolution] public InvariantTypeDecl? InvariantTypeDecl;
+
   internal bool HeadDerivesFrom(TopLevelDecl b) {
     return this == b || this.ParentTraitHeads.Exists(tr => tr.HeadDerivesFrom(b));
   }

@@ -403,12 +403,16 @@ Generate module names in the older A_mB_mC style instead of the current A.B.C sc
   /// <summary>
   /// Emits the declarations in "declarations", but for each such declaration that is a class with
   /// a corresponding non-null type, also emits that non-null type *after* the class declaration.
+  /// Likewise, a declaration with member invariants is followed by its derived InvariantTypeDecl.
   /// </summary>
   public static IEnumerable<TopLevelDecl> AllDeclarationsAndNonNullTypeDecls(IEnumerable<TopLevelDecl> declarations) {
     foreach (var d in declarations) {
       yield return d;
       if (d is ClassLikeDecl { NonNullTypeDecl: { } } cl) {
         yield return cl.NonNullTypeDecl;
+      }
+      if (d is TopLevelDeclWithMembers { InvariantTypeDecl: { } invariantTypeDecl }) {
+        yield return invariantTypeDecl;
       }
     }
   }
@@ -855,6 +859,10 @@ Generate module names in the older A_mB_mC style instead of the current A.B.C sc
 
       } else if (d is DatatypeDecl) {
         var dt = (DatatypeDecl)d;
+
+        if (dt.InvariantTypeDecl == null && InvariantTypeDecl.Applies(dt)) {
+          dt.InvariantTypeDecl = new InvariantTypeDecl(dt);
+        }
 
         // register the names of the constructors
         dt.ConstructorsByName = new();
