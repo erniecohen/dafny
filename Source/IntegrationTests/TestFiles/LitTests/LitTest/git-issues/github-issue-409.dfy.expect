@@ -20,8 +20,10 @@ github-issue-409.dfy(108,69): Error: decreases clause might not decrease
 github-issue-409.dfy(110,7): Related location: refining module
 github-issue-409.dfy(117,39): Error: decreases clause might not decrease
 github-issue-409.dfy(119,7): Related location: refining module
+github-issue-409.dfy(126,41): Error: decreases clause might not decrease
+github-issue-409.dfy(128,7): Related location: refining module
 
-Dafny program verifier finished with 25 verified, 11 errors
+Dafny program verifier finished with 27 verified, 12 errors
 github-issue-409.dfy(27,41): Error: decreases clause might not decrease
 github-issue-409.dfy(29,7): Related location: refining module
 github-issue-409.dfy(36,44): Error: decreases clause might not decrease
@@ -44,8 +46,10 @@ github-issue-409.dfy(108,69): Error: decreases clause might not decrease
 github-issue-409.dfy(110,7): Related location: refining module
 github-issue-409.dfy(117,39): Error: decreases clause might not decrease
 github-issue-409.dfy(119,7): Related location: refining module
+github-issue-409.dfy(126,41): Error: decreases clause might not decrease
+github-issue-409.dfy(128,7): Related location: refining module
 
-Dafny program verifier finished with 25 verified, 11 errors
+Dafny program verifier finished with 27 verified, 12 errors
 github-issue-409-one-module.dfy(4,41): Error: decreases clause might not decrease
 github-issue-409-one-module.dfy(9,44): Error: decreases clause might not decrease
 
@@ -70,4 +74,4 @@ github-issue-409-positive.dfy(44,20): Error: assertion might not hold
 
 Dafny program verifier finished with 16 verified, 3 errors
 
-Dafny program verifier finished with 25 verified, 0 errors
+Dafny program verifier finished with 27 verified, 0 errors
