@@ -739,6 +739,7 @@ public static class ModularTerminationRecords {
     CommonOptionBag.LegacyElidedOverrideChecks,
     CommonOptionBag.LegacySkeletonModifyingCalls,
     CommonOptionBag.LegacyInheritedConstructorFields,
+    CommonOptionBag.LegacyInheritedTerminationChecks,
     CommonOptionBag.TypeSystemRefresh,
     CommonOptionBag.GeneralTraits,
     CommonOptionBag.GeneralNewtypes,

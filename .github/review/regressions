@@ -749,3 +749,6 @@ git-issues/github-issue-413.dfy
 
 # A refining module that adds a field subject to definite assignment to a class verifies the constructor it inherits unchanged, which cannot assign the field; dafny verify skipped the copy and proved false (https://github.com/erniecohen/dafny/issues/411).
 git-issues/github-issue-411.dfy
+
+# A refining module that gives a body to a member without one, closing a call cycle through an inherited call, checks the termination of that call; the base never checked it and the refinement assumed it, so false was provable (https://github.com/erniecohen/dafny/issues/409).
+git-issues/github-issue-409.dfy

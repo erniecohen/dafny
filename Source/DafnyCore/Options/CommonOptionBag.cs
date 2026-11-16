@@ -369,6 +369,9 @@ true - All class instances are raw pointers and need to be manually deallocated"
   public static readonly Option<bool> LegacyInheritedConstructorFields = new("--legacy-inherited-constructor-fields", () => false,
     "Use the legacy, unsound rule that does not verify a constructor a refining module inherits unchanged, even when the module adds a field the constructor must assign, for migration and comparison only.") { IsHidden = true };
 
+  public static readonly Option<bool> LegacyInheritedTerminationChecks = new("--legacy-inherited-termination-checks", () => false,
+    "Use the legacy, unsound rule that assumes the termination check of every recursive call a refining module inherits, even when the module closes a new cycle through it, for example by giving a body to a member without one, for migration and comparison only.") { IsHidden = true };
+
   public static readonly Option<bool> ModularTermination = new("--modular-termination", () => false,
     "Experimental; it does not yet establish termination in every program. Accept global and callback decreases bounds. Under this option, {:termination false} declares checked trait extensibility; foreign extension of sealed traits is rejected, including with @AssumeCrossModuleTermination. Dispatched overridable slots require strict global-bound descent. Imported operations are General at their declared bound, or TOP, unless they publish a checked {:termination_closed} promise; private bodies never strengthen an imported contract. Exact General calls require nonincrease as well as ordinary termination. Constants and type/iterator evaluation hooks also use public effects. Closed code and bound computations cannot reach open dispatch, unknown applications or imported General code. Callback formation, forwarding and application retain their checked bounds. Show call classifications with --show-hints. Libraries are admitted only as .doo files built under this option, whose recorded program, options and termination contracts are checked when loaded. See the Reference Manual for restrictions. Disabled by default.");
 
@@ -886,6 +889,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(LegacyElidedOverrideChecks, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacySkeletonModifyingCalls, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacyInheritedConstructorFields, OptionScope.Cli);
+    OptionRegistry.RegisterOption(LegacyInheritedTerminationChecks, OptionScope.Cli);
     OptionRegistry.RegisterOption(ModularTermination, OptionScope.Cli);
     OptionRegistry.RegisterOption(ModularTerminationTrust, OptionScope.Cli);
     OptionRegistry.RegisterOption(WarnUncheckedTermination, OptionScope.Cli);
