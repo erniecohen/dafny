@@ -8,9 +8,10 @@ Base: `review/4.11.0` at `1920c844b`.
 
 This is a plan only. It changes no product file.
 
-Soundness bugs found while writing it: https://github.com/erniecohen/dafny/issues/404 is
-filed. Section 2 describes four more, with reproducers. No issue is filed for those yet
-(section 10, question 2).
+Soundness bugs found while writing it, all in refinement and all described in section 2:
+https://github.com/erniecohen/dafny/issues/404 (override checks), https://github.com/erniecohen/dafny/issues/409 (termination), https://github.com/erniecohen/dafny/issues/410 (name capture),
+https://github.com/erniecohen/dafny/issues/411 (members that `dafny verify` skips) and https://github.com/erniecohen/dafny/issues/412 (statement skeletons).
+Related: https://github.com/erniecohen/dafny/issues/408 (an abstract import bound to a module that does not refine it).
 
 ## 0. Summary
 
@@ -105,9 +106,11 @@ assumed. Under issue 89 the report becomes accurate.
 
 ## 2. Refinement assumes what it did not prove: five bugs
 
-**The mechanism.** For `module M1 refines M0`, `RefinementTransformer` copies `M0`'s
-declarations into `M1` as text, and `M1` is resolved from scratch. The translator then
-treats every obligation whose source position lies in `M0`'s text as already proved:
+**Two mechanisms.** For `module M1 refines M0`, `RefinementTransformer` copies `M0`'s
+declarations into `M1` as text, and `M1` is resolved from scratch.
+
+First, the translator treats every obligation whose source position lies in `M0`'s text
+as already proved:
 
 - `BoogieGenerator.Assert` emits an assume for it (`BoogieGenerator.cs:3712-3716`), and
   `AssertAndForget` emits nothing (`BoogieGenerator.cs:3737-3741`);
@@ -128,12 +131,21 @@ The transformer does take care of the direct case. When a refinement gives a bod
 member that had none, the member's postconditions are copied as new text and are
 checked (a28).
 
-So the test for "already proved" is where the text came from. That test is wrong
-whenever an obligation depends on something outside its own text that the refinement
-changed, and whenever the text itself changed meaning. Five cases follow. Each program
-is accepted under default options and under `--type-system-refresh`, and `dafny audit`
-reports nothing for it. Each has a control, the same declarations written in one
-module, which Dafny rejects.
+Second, `dafny verify` does not verify a member that a refining module inherits without
+redeclaring it. It selects the declarations to verify by origin and leaves out copies
+(`Source/DafnyCore/Pipeline/TextDocumentLoader.cs:70-74`, `RefinementOrigin.cs:20`). So an
+assertion that the translator does keep in such a member is never sent to the solver.
+The commands that compile (`dafny translate`, `build`, `run`) verify the whole Boogie
+program. https://github.com/erniecohen/dafny/issues/411 reports this.
+
+So, both times, the test for "already proved" is where the text came from. That test is
+wrong whenever an obligation depends on something outside its own text that the
+refinement changed, and whenever the text itself changed meaning. Five cases follow.
+Each program is accepted by `dafny verify` under default options and under
+`--type-system-refresh`, and `dafny audit` reports nothing for it. All but 2.4 are also
+accepted by `dafny translate`, so they come from the first mechanism; 2.4 comes from
+the second. Each has a control, the same declarations written in one module, which
+Dafny rejects.
 
 ### 2.1 Override checks (https://github.com/erniecohen/dafny/issues/404)
 
@@ -175,7 +187,7 @@ member's origin: `Assert(m.Origin, ...)` (`BoogieGenerator.Methods.cs:1561`, and
 implementation at all (`EmitImplementation`, `BoogieGenerator.cs:1729-1736`): the
 Boogie output of e7 shows `procedure OverrideCheck$$B.T.L` with no `implementation`.
 
-### 2.2 Termination
+### 2.2 Termination (https://github.com/erniecohen/dafny/issues/409)
 
 ```dafny
 abstract module A {
@@ -219,7 +231,7 @@ obligation. In `B` they are in one component, and the obligation is new. But
 exception, `ForceCheckOrigin` (`BoogieGenerator.Decreases.cs:114-117`), applies only
 when every `decreases` expression of the context is new. It does not cover a new cycle.
 
-### 2.3 A captured name changes what was proved
+### 2.3 A captured name changes what was proved (https://github.com/erniecohen/dafny/issues/410)
 
 ```dafny
 module Lib { function f(): int { 0 } }
@@ -269,7 +281,7 @@ In `B`, the inherited `Check(null)` is `this.Check(null)`, a method of the added
 **Cause.** The inherited text is resolved again in `M1`, where declarations of `M1`
 shadow those the text referred to in `M0`. Nothing compares the two resolutions.
 
-### 2.4 Definite assignment of an added field
+### 2.4 Definite assignment of an added field (https://github.com/erniecohen/dafny/issues/411)
 
 ```dafny
 module A {
@@ -286,13 +298,19 @@ module B refines A {
 }
 ```
 
-`B` verifies (a3). `E` is empty, the inherited constructor never assigns `e`, and the
-check that it does is emitted at the end of the inherited constructor body
-(`BoogieGenerator.DefiniteAssignment.cs:144-152`, `BoogieGenerator.TrStatement.cs:321`),
-so it is assumed. A class with no constructor at all is caught by the resolver (a18).
-With issue 88 an added parent brings its fields to every class below `T`.
+`dafny verify` accepts `B` (a3). `E` is empty, and the inherited constructor never
+assigns `e`. The translator does emit the check, as an assertion at the end of the
+inherited constructor body (`BoogieGenerator.DefiniteAssignment.cs:144-152`,
+`BoogieGenerator.TrStatement.cs:321`), and `dafny translate` rejects the program with
+the definite-assignment error. `dafny verify` never looks: the constructor is inherited
+unchanged, so it is not among the declarations it verifies. A class with no constructor
+at all is caught by the resolver (a18). With issue 88 an added parent brings its fields
+to every class below `T`.
 
-### 2.5 A changed body keeps its old postcondition
+This case matters beyond fields. A fix for 2.1 or 2.2 puts its check in an inherited
+member, and `dafny verify` will not see it until inherited members are verified.
+
+### 2.5 A changed body keeps its old postcondition (https://github.com/erniecohen/dafny/issues/412)
 
 ```dafny
 module A {
@@ -310,9 +328,11 @@ module B refines A {
 `B` verifies and prints `1` (a26d). The refined body of `M` no longer establishes
 `x == 0`, but the postcondition is inherited and so is not checked. With `return;`
 added after `Set();` it is checked, and the program is rejected (a27): the transformer
-re-verifies postconditions only at returns that the refinement adds. This uses the
+re-verifies postconditions only at returns that the refinement adds. The design relies
+on a rule that statements added by a skeleton cannot change state the base knew about.
+The transformer enforces that rule for assignments and not for calls. This uses the
 deprecated `...;` statement refinement and has nothing to do with parents. It is listed
-because it has the same cause, and so the same fix.
+because the inherited postcondition is assumed on the same ground as the others.
 
 ### 2.6 What held
 
@@ -361,17 +381,19 @@ The origin of a piece of text establishes none of the three.
 
 ### 3.2 Stage 0, form A: a refining module is verified in full
 
-No obligation is assumed because of its origin. Every site listed at the head of
-section 2 stops looking at the origin: `Assert` and `AssertAndForget` emit the check,
-inherited call preconditions are checked, and inherited postconditions of methods,
-functions and iterators are checked.
+No obligation is assumed because of its origin, and no member is skipped because of it.
+Every site listed at the head of section 2 stops looking at the origin: `Assert` and
+`AssertAndForget` emit the check, inherited call preconditions are checked, inherited
+postconditions of methods, functions and iterators are checked, and `dafny verify`
+verifies the inherited members of a refining module, as the compiling commands do.
 
 - **Soundness** needs no argument about refinement. `M1` is already resolved from
   scratch, as an ordinary module whose text is the merge. Verifying all of it is
   verifying that module. All five bugs go, including 2.3: text with a captured name is
   proved again under its new meaning, so a15 is rejected at `B.L`, as its one-module
-  control is today. This is a consequence of the design. It could not be run, because
-  form A does not exist yet.
+  control is today. The reproducer of https://github.com/erniecohen/dafny/issues/408 is rejected too: its inherited lemma is
+  proved again against the module the import is bound to. These are consequences of the
+  design. They could not be run, because form A does not exist yet.
 - **Cost.** Each refining module proves its inherited bodies again. Stage 0 measures
   this on the suite and the standard library, in resource units.
 - **Reporting.** An inherited obligation that fails is reported in each module that
@@ -398,9 +420,15 @@ what it resolved to in `M0`**, and an inherited inferred type must be the copy o
 `M0` type. Otherwise it is an error at the capturing declaration, naming the inherited
 use. This needs the cloner to keep, for each copied name, the node it was copied from.
 
-Form B keeps today's cost. Its soundness rests on the table being complete. The table
-is what this review found in one pass. It is not a proof that no sixth kind exists: the
-translator has many assert sites, and each needs the argument.
+Form B also needs `dafny verify` to verify inherited members (section 2.4): each check
+that it forces sits in one. The issues filed for sections 2.1 to 2.5 each propose a fix
+of this kind, one obligation at a time.
+
+Form B keeps most of today's cost. Its soundness rests on the table being complete. The
+table is what this review found in one pass. It is not a proof that no sixth kind
+exists: the translator has many assert sites, and each needs the argument. https://github.com/erniecohen/dafny/issues/411
+says the same of the assertions that survive in inherited members: they have not been
+surveyed.
 
 ### 3.4 Recommendation
 
@@ -557,6 +585,11 @@ point 2 are new, and today Dafny assumes four of them (sections 2.1 to 2.4).
   class is refined), and R4, R6 and R7 apply to it. So an abstract import is covered by
   stage 0, not by C2 alone. Under form B, "unchanged" in the keys of section 3.3 must be
   judged after the import is bound.
+
+  All of this assumes that the module bound to `X` refines `M0`. The language requires
+  it, and today nothing enforces it (https://github.com/erniecohen/dafny/issues/408). Under form B that fix is a
+  prerequisite as well. Under form A the inherited text is proved again against the
+  bound module, whatever it is.
 - **Substitutability.** A module written against `M0` can be rejected against `M1`: a
   class below `X.T` may clash with a member of the added parent, or lack one. Those are
   errors, as when a refinement adds a bodiless member to a trait today. R1 exists so
@@ -803,6 +836,7 @@ without the other.
 | Check | Where | Feature |
 |---|---|---|
 | Inherited obligations checked (form A), or assumed only by key (form B) | every site listed at the head of section 2 | stage 0 |
+| Inherited members of a refining module verified by `dafny verify` (both forms) | `TextDocumentLoader.cs:70-74` | stage 0 |
 | Inherited names resolve to the copy of their `M0` meaning (form B only) | `RefinementTransformer` cloner and the resolver | stage 0 |
 | `... extends` parses only with the option | `Dafny.atg` (class and trait rules) | 88 |
 | Parents merged, duplicates dropped | `RefinementTransformer.MergeClass` (`:672`) | 88 |
@@ -846,7 +880,8 @@ relies on an inherited fact has an `assert false` companion that must fail. Ever
 runs under both resolvers.
 
 **Stage 0: refining modules check what they changed** (default on). Tests, each of
-which must now fail with the error reported in the refining module:
+which must now fail with the error reported in the refining module, under `dafny verify`
+and under a compiling command, with the same verdict from both:
 
 - override checks: e7, e7c, e14, e15, the generic version (e11), the diamond (e12), the
   library version (e10), the non-reference trait (c4), the abstract import (a7), and a
@@ -926,14 +961,15 @@ owner decides otherwise.
 
 ## 10. Open questions for the owner
 
-1. **Stage 0's form.** A: verify refining modules in full (evidently sound, one small
-   change, costs resource units and re-reports inherited failures). B: keep the elision
-   with exact keys and a no-capture rule (keeps today's cost, soundness rests on the
-   list of section 3.3 being complete). Recommendation: A, then measure.
-2. **Issues for sections 2.2 to 2.5.** Only 2.1 is filed
-   (https://github.com/erniecohen/dafny/issues/404). The others are reproduced and
-   have no issue. Under form A they have one cause and one fix, so one issue could
-   carry all five, with issue 404 as its first case. Under form B each needs its own.
+1. **Stage 0's form.** A: verify refining modules in full (evidently sound, one change
+   at the sites of section 2, costs resource units and re-reports inherited failures). B: keep the elision
+   with exact keys and a no-capture rule (keeps most of today's cost, soundness rests on
+   the list of section 3.3 being complete). Recommendation: A, then measure.
+2. **One fix or five.** https://github.com/erniecohen/dafny/issues/404, https://github.com/erniecohen/dafny/issues/409, https://github.com/erniecohen/dafny/issues/410, https://github.com/erniecohen/dafny/issues/411 and https://github.com/erniecohen/dafny/issues/412 each propose
+   a fix for their own case, which together are form B. Form A closes all five, and the
+   verdict side of https://github.com/erniecohen/dafny/issues/408, with one change. If the owner chooses A, the five fixes
+   become one piece of work, and the resolver rules of 408 and 410 remain worth having
+   for their error messages. If B, they proceed one by one, and 411 comes first.
 3. **The 105 and 211 plans** both rely on the elision: 105 in its sections 4.2 and 4.4,
    211 in the M4b requirement that the base does not yet meet (section 6.1). Should
    those plans be amended to depend on stage 0?
