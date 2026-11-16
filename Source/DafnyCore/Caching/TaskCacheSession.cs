@@ -78,7 +78,7 @@ public sealed class TaskCacheSession {
 
   public static TaskCacheSession? For(DafnyOptions options) {
     var directory = options.Get(CommonOptionBag.VerificationCache);
-    if (string.IsNullOrEmpty(directory) || options.VerificationCacheBatchMode) { return null; }
+    if (string.IsNullOrEmpty(directory)) { return null; }
     try { return Sessions.GetValue(options, o => new TaskCacheSession(o, directory)); }
     catch (Exception e) when (e is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException) { return null; }
   }
