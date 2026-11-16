@@ -212,9 +212,11 @@ TOKENS
   minus = "-".
   /* The next three tokens stand for 'invariant' and 'witness' in a member position, and for 'raw'
      before a type name (issue 105).  The parser retags those tokens as these only under
-     --member-invariants, so without the option they never occur and the parse is the same as before.
-     Coco requires every token to have a definition, so each is given one that starts with the control
-     character U+0001, which is not legal in a Dafny program. */
+     --member-invariants.  Coco requires every token to have a definition, so each is given one that
+     starts with the control character U+0001.  The scanner therefore also produces them, for that
+     character followed by the word, and before these definitions it reported the character as an
+     error.  So each production that uses one of these tokens reports it as an error unless the
+     parser retagged it (CheckRetaggedToken), with or without the option. */
   memberInvariant = "\u0001invariant".
   memberWitness = "\u0001witness".
   rawType = "\u0001raw".
@@ -246,8 +248,11 @@ Dafny
                                }
                             .)
   }
+  (. RetagMemberKeyword(); .)
   { AtAttributes<ref attrs>
-    TopDecl<theModule, /* isTopLevel */ true, ref attrs> }
+    TopDecl<theModule, /* isTopLevel */ true, ref attrs>
+    (. RetagMemberKeyword(); .)
+  }
   (. CheckNoAttributes(ref attrs); .)
   (. 
     theModule.SetOrigin(new SourceOrigin(fileStartToken.Next, t));
@@ -276,6 +281,7 @@ TopDecl<ModuleDefinition module, bool isTopLevel, ref Attributes attrs>
      TraitDecl/*!*/ trait;
   .)
   { DeclModifier<ref dmod> }
+  (. RetagMemberKeyword(); .)
   ( SubModuleDecl<dmod, module, out submodule, isTopLevel>
                                                (. var litmod = submodule as LiteralModuleDecl;
                                                   if (litmod != null && litmod.ModuleDef.PrefixIds.Count != 0) {
@@ -356,9 +362,11 @@ ModuleDefinition<DeclModifierData dmod, ModuleDefinition parent, out ModuleDecl 
                                         idRefined == null ? null : new Implements(implementationKind, new ModuleQualifiedId(idRefined)), parent, dmod.Attributes, []);
    .)
    SYNC
-   "{"                                 (. module.BodyStartTok = t; .)
+   "{"                                 (. module.BodyStartTok = t; RetagMemberKeyword(); .)
      { AtAttributes<ref attrs>
-       TopDecl<module, /* isTopLevel */ false, ref attrs>}
+       TopDecl<module, /* isTopLevel */ false, ref attrs>
+       (. RetagMemberKeyword(); .)
+     }
    "}"
    (. CheckNoAttributes(ref attrs); .)
     (.
@@ -653,11 +661,16 @@ MemberInvariantDecl<. DeclModifierData dmod, List<MemberDecl> mm, bool moduleLev
 = (. Expression e;
      CheckDeclModifiers(ref dmod, "invariant", AllowedDeclModifiers.None);
   .)
-  memberInvariant                    (. var startToken = dmod.FirstToken ?? t; var keywordToken = t; .)
+  memberInvariant                    (. var startToken = dmod.FirstToken ?? t; var keywordToken = t;
+                                        var retagged = CheckRetaggedToken(t); .)
   { Attribute<ref dmod.Attributes> }
   Expression<out e, false, true>
-  (. if (moduleLevelDecl) {
+  (. if (!retagged) {
+       // reported by CheckRetaggedToken
+     } else if (moduleLevelDecl) {
        SemErr(ErrorId.p_top_level_member_invariant, keywordToken, "an invariant is not allowed at the module level; it is a member of a type");
+     } else if (Attributes.Find(dmod.Attributes, "opaque") is { } opaqueAttribute) {
+       SemErr(ErrorId.p_opaque_member_invariant, opaqueAttribute.Origin, "an invariant cannot be declared {:opaque}");
      } else {
        mm.Add(new MemberInvariant(new SourceOrigin(startToken, t, keywordToken), keywordToken,
          MemberInvariant.NextName(mm), e, dmod.Attributes));
@@ -670,10 +683,13 @@ MemberWitnessDecl<. DeclModifierData dmod, List<MemberDecl> mm, bool moduleLevel
 = (. Expression e;
      CheckDeclModifiers(ref dmod, "witness", AllowedDeclModifiers.Ghost);
   .)
-  memberWitness                      (. var startToken = dmod.FirstToken ?? t; var keywordToken = t; .)
+  memberWitness                      (. var startToken = dmod.FirstToken ?? t; var keywordToken = t;
+                                        var retagged = CheckRetaggedToken(t); .)
   { Attribute<ref dmod.Attributes> }
   Expression<out e, false, true>
-  (. if (moduleLevelDecl) {
+  (. if (!retagged) {
+       // reported by CheckRetaggedToken
+     } else if (moduleLevelDecl) {
        SemErr(ErrorId.p_top_level_member_invariant, keywordToken, "a witness is not allowed at the module level; it is a member of a type");
      } else {
        mm.Add(new MemberWitness(new SourceOrigin(startToken, t, keywordToken), keywordToken,
@@ -1637,9 +1653,11 @@ TypeAndToken<out Token tok, out Type ty, bool inExpressionContext>
                                     .)
   | TupleType<out ty, out tok, out tupleArgTypes, out argumentGhostTokens>
   | NamedType<out ty, out tok, inExpressionContext>
-  | rawType                         (. startToken = t; .)
+  | rawType                         (. startToken = t; var retagged = CheckRetaggedToken(t); .)
     NamedType<out ty, out tok, inExpressionContext>
-                                    (. if (ty is UserDefinedType rawUdt) {
+                                    (. if (!retagged) {
+                                         // reported by CheckRetaggedToken
+                                       } else if (ty is UserDefinedType rawUdt) {
                                          rawUdt.IsRawSyntax = true;
                                          rawUdt.SetOrigin(new SourceOrigin(startToken, t));
                                        } else {

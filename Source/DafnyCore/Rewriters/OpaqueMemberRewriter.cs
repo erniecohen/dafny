@@ -111,6 +111,10 @@ public class OpaqueMemberRewriter : IRewriter {
   }
 
   private bool ShouldBeRevealed(MemberDecl member) {
+    if (member is MemberInvariant) {
+      // A member invariant (issue 105) is never opaque; the parser rejects {:opaque} on one.
+      return false;
+    }
     return
       Attributes.Contains(member.Attributes, "opaque")
         || member.IsOpaque

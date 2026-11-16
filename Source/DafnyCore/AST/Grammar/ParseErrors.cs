@@ -147,6 +147,8 @@ public class ParseErrors {
     p_needs_referrers,
     p_top_level_member_invariant,
     p_raw_needs_named_type,
+    p_control_character,
+    p_opaque_member_invariant,
     p_decreases_order_needs_option
   }
 
@@ -1246,6 +1248,16 @@ Under --member-invariants, an `invariant` or `witness` declaration is a member o
       @"
 Under --member-invariants, `raw T` names the raw type of a type `T` that may declare an invariant.
 `raw` must be followed by the name of such a type.".TrimStart());
+
+    Add(ErrorId.p_control_character,
+      @"
+The control character U+0001 is not allowed in a Dafny program.  The parser uses it internally to
+represent `invariant`, `witness` and `raw` under --member-invariants.".TrimStart());
+
+    Add(ErrorId.p_opaque_member_invariant,
+      @"
+Under --member-invariants, an invariant is part of the meaning of its type, so it cannot be opaque:
+neither the `opaque` modifier nor the `{:opaque}` attribute is allowed on it.".TrimStart());
   }
 
   public static void RunStaticConstructor() {

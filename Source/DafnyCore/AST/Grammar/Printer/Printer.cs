@@ -1058,6 +1058,11 @@ NoGhost - disable printing of functions, ghost methods, and proof
         wr.Write(w.IsGhost ? "ghost witness" : "witness");
         e = w.Rhs;
       }
+      if (afterResolver) {
+        // The reserved name numbers the member among its declaration's invariants or witnesses, the
+        // inherited ones of a refinement first; it cannot be written in source, so it is a comment.
+        wr.Write($" /* {m.Name} */");
+      }
       PrintAttributes(m.Attributes, false, indent);
       wr.Write(" ");
       PrintExpression(e, false);

@@ -709,6 +709,20 @@ public partial class Parser {
     }
   }
 
+  /// <summary>
+  /// Whether "tok", a memberInvariant, memberWitness or rawType token (issue 105), is one that the parser retagged.
+  /// The scanner produces these tokens too, for the control character U+0001 followed by the word (see their
+  /// definitions in Dafny.atg).  That character is not legal in a Dafny program, with or without
+  /// --member-invariants, so such a token is reported as an error.  A retagged token keeps its text.
+  /// </summary>
+  bool CheckRetaggedToken(Token tok) {
+    if (tok.val.Length != 0 && tok.val[0] == '\u0001') {
+      SemErr(ErrorId.p_control_character, tok, "the control character U+0001 is not allowed in a Dafny program");
+      return false;
+    }
+    return true;
+  }
+
   void ConvertKeywordTokenToIdent() {
     var oldKind = la.kind;
     la.kind = _ident;
