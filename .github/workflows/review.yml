@@ -1071,6 +1071,15 @@ jobs:
             --logger "console;verbosity=normal" \
             --filter "FullyQualifiedName~Synchronization.CachingTest" \
             --blame-hang --blame-hang-timeout 90s --blame-hang-dump-type none
+      # https://github.com/erniecohen/dafny/issues/421: the code actions. Some of them come from
+      # verification failures. These tests do not set a solver path, and this job has no z3 next to
+      # the test binaries, so Dafny takes the solver from PATH.
+      - name: Test code actions
+        run: |
+          PATH="$(dirname "$Z3"):$PATH" dotnet test --settings .github/review/ci.runsettings Source/DafnyLanguageServer.Test -c Release --no-build \
+            --logger "console;verbosity=normal" \
+            --filter "FullyQualifiedName~IntegrationTest.CodeActions.CodeActionTest" \
+            --blame-hang --blame-hang-timeout 90s --blame-hang-dump-type none
 
   finite-support:
     if: ${{ ((github.event_name != 'pull_request' || !github.event.pull_request.draft) && ((github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'erniecohen/dafny'))) && !inputs.platform_parity)) && needs.tree.outputs.reuse != 'true' }}
