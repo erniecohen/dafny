@@ -867,7 +867,9 @@ module-qualified names generated for `:-` and gives an untyped case variable the
 source, `nat`.  One was a bug: under `--type-system-refresh`, the published `_System` lost each
 `bvN` declaration with its `RotateLeft` and `RotateRight`, because the dependency-local translation
 inputs recorded a bitvector type's width but not its declaration, so `--rprint` no longer listed
-them.  `ModuleTranslationInputs` now records the name too.  Its kind is **no effect on
+them.  `ModuleTranslationInputs` now records the name too.  `dafny0/BitvectorsMore.dfy.refresh.expect`
+had been rewritten to the broken output when dependency-local translation became the default; it
+now lists the declarations again, as 4.11.0 did.  Its kind is **no effect on
 verification**: the translator does nothing for these declarations, the solver input of each of the
 four tests is byte-identical with and without the change, under both resolvers, and so is compiled
 output.  The four tests are now in `.github/review/regressions`; the release note is
