@@ -119,3 +119,13 @@ abstract module IteratorA {
 module IteratorB refines IteratorA {
   method N(n: nat) { var it := new I(n); var more := it.MoveNext(); }
 }
+
+// Constant decreases clauses, under which the inherited call plainly increases
+abstract module ConstantA {
+  function G(n: nat): nat decreases 1
+  function F(n: nat): nat decreases 0 { G(n) }
+}
+module ConstantB refines ConstantA {
+  function G(n: nat): nat { F(n) + 1 }
+  lemma Bad() ensures false { assert G(0) == F(0) + 1 == G(0) + 1; }
+}
