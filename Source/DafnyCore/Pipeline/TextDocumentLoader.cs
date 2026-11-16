@@ -68,10 +68,13 @@ namespace Microsoft.Dafny {
         var symbols = SymbolExtensions.GetSymbolDescendants(program.DefaultModule);
         verifiables = new Dictionary<Uri, IIntervalTree<DafnyPosition, ICanVerify>>();
         foreach (var canVerify in symbols.OfType<ICanVerify>().Where(v =>
-                   !v.Origin.IsCopy &&
                    v.ShouldVerify &&
-                  v.ContainingModule.ShouldVerify(program.Compilation) &&
-                  v.ShouldVerify(program.Compilation)
+                   v.ContainingModule.ShouldVerify(program.Compilation) &&
+                   // A copy from a refinement base has nothing to verify, unless its module must make its override
+                   // check, which is then verified with the module, wherever the base comes from.
+                   (v.Origin.IsCopy
+                     ? v is MemberDecl copy && BoogieGenerator.MustReverifyInheritedOverrideCheck(copy, compilation.Options)
+                     : v.ShouldVerify(program.Compilation))
                   ).ToList()) {
           var forUri =
             verifiables.GetOrCreate(canVerify.Origin.Uri, () => new IntervalTree<DafnyPosition, ICanVerify>());

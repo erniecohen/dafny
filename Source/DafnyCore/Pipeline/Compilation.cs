@@ -420,7 +420,10 @@ public class Compilation : IDisposable {
             return dafnyToken.CanVerify;
           }).ToDictionary(
             g => g.Key,
-            g => (IReadOnlyList<IVerificationTask>)g.ToList());
+            // A copy from a refinement base is scheduled only for the override check its module makes again;
+            // its other tasks assert nothing.
+            g => (IReadOnlyList<IVerificationTask>)g.Where(t =>
+              !g.Key.Origin.IsCopy || ((CanVerifyOrigin)t.ScopeToken).IsReverifiedOverrideCheck).ToList());
         });
       } catch (OperationCanceledException) {
         throw;
