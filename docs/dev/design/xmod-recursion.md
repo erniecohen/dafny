@@ -85,8 +85,9 @@ Three findings came out of the experiments for this note and matter beyond it:
   call is generated and then assumed, as if the base module had proved it.  A
   two-module program proves `false` with default options (section 2.5).  This
   is also an existing hole, and a sibling of
-  [issue 404](https://github.com/erniecohen/dafny/issues/404).  It has no issue
-  yet.  The refinement rule of this design depends on both being fixed.
+  [issue 404](https://github.com/erniecohen/dafny/issues/404).  It is
+  [issue 409](https://github.com/erniecohen/dafny/issues/409).  The
+  refinement rule of this design depends on both being fixed.
 
 ## 2. Where Dafny relies on acyclic modules today
 
@@ -312,7 +313,18 @@ the base's call graph with the same `decreases` clauses.  The simplest sound
 rule asserts every termination check in a refining module.  A cheaper one skips
 the check only when the SCC, with every member and every edge in it, is
 inherited unchanged.  Like issue 405 this is a default-on soundness fix with a
-hidden `--legacy-*` opt-out, and it has no issue yet.
+hidden `--legacy-*` opt-out.  It is
+[issue 409](https://github.com/erniecohen/dafny/issues/409), which was found
+independently in the refinement work and has more forms of the program.  The
+check will often sit in a member that the refining module inherits unchanged,
+and `dafny verify` does not verify such members today
+([issue 411](https://github.com/erniecohen/dafny/issues/411)), so the fix needs
+that one too.
+
+Stock 4.11.0 has the same code path: at the release commit `fcb2042d` the
+assert at an inherited origin becomes an assume in the same way, with the same
+single exception.  The same is true of the replacement hole of section 2.4.
+Neither was introduced by the fork.
 
 This matters to the design for two reasons.  The refinement rule of section 3.2
 rests on it.  And it is the same mistake a group implementation could make:
@@ -487,9 +499,10 @@ target is finished, so it must point to a strictly lower group.
   ```
 
   `Other` does not refine `I`, and the inherited `P` is assumed.  This is a
-  third existing hole in refinement.  It is described in the refinement plan of
-  https://github.com/erniecohen/dafny/pull/401, and that plan's fix is a
-  prerequisite here as well.
+  third existing hole in refinement,
+  [issue 408](https://github.com/erniecohen/dafny/issues/408).  The refinement
+  plan of https://github.com/erniecohen/dafny/pull/401 describes it, and its
+  fix is a prerequisite here as well.
 - **Replacement.**  A replacement edge is a refinement edge for the purpose of
   verification, and at run time it redirects every edge into the replaced
   module.  Groups are computed on the graph with those edges added: for a
@@ -847,8 +860,9 @@ into the trait's group gets them checked.
   `datatype T = T(t: T)  method M() { var u: T; }` overflows the stack in
   `Type.GetAutoInit`, which follows the grounding constructor's formals with no
   visited set for inductive datatypes (`Types.cs:633-634`).  This is an
-  existing crash, with no issue yet.  The M2 test for an empty cycle across
-  modules would hit it, so it is fixed first (P3 in section 9).
+  existing crash, [issue 413](https://github.com/erniecohen/dafny/issues/413).
+  The M2 test for an empty cycle across modules would hit it, so it is fixed
+  first (P3 in section 9).
 - **Witnesses.**  Under the 105 plan a value type with an invariant is possibly
   empty unless it declares a witness.  A witness is a closed expression, proved
   by the ordinary conversion check.  A witness, a constant initializer and a
@@ -952,8 +966,8 @@ units.
 | Milestone | Content | Tests |
 |---|---|---|
 | **P1** ([issue 405](https://github.com/erniecohen/dafny/issues/405), default-on soundness fix) | Reject a replacement whose imports reach a client of the replaced module (section 2.4), with a hidden `--legacy-*` opt-out. | The program of section 2.4, rejected; its function form and its type form, rejected; the same through two intermediate modules, rejected; a replacement that imports an unrelated module, accepted. |
-| **P2** (needs an issue; default-on soundness fix) | Assert the termination check at an inherited call unless its SCC is inherited unchanged (section 2.5), with a hidden `--legacy-*` opt-out.  [Issue 404](https://github.com/erniecohen/dafny/issues/404) and the unchecked binding of an abstract import (section 3.2, https://github.com/erniecohen/dafny/pull/401) are its siblings and are also needed before M5. | The programs of section 2.5, each rejected with the error it gets in one module; a refinement that adds no body to the SCC, accepted with unchanged resource counts; a refinement whose new call decreases, accepted. |
-| **P3** (needs an issue; crash) | `Type.GetAutoInit` terminates on an empty cyclic datatype (section 6). | `datatype T = T(t: T)  method M() { var u: T; }`: the warning and a definite-assignment error on use, no crash. |
+| **P2** ([issue 409](https://github.com/erniecohen/dafny/issues/409), with [issue 411](https://github.com/erniecohen/dafny/issues/411); default-on soundness fix) | Assert the termination check at an inherited call unless its SCC is inherited unchanged (section 2.5), with a hidden `--legacy-*` opt-out.  [Issue 404](https://github.com/erniecohen/dafny/issues/404) and the unchecked binding of an abstract import (section 3.2, [issue 408](https://github.com/erniecohen/dafny/issues/408)) are its siblings and are also needed before M5. | The programs of section 2.5, each rejected with the error it gets in one module; a refinement that adds no body to the SCC, accepted with unchanged resource counts; a refinement whose new call decreases, accepted. |
+| **P3** ([issue 413](https://github.com/erniecohen/dafny/issues/413); crash) | `Type.GetAutoInit` terminates on an empty cyclic datatype (section 6). | `datatype T = T(t: T)  method M() { var u: T; }`: the warning and a definite-assignment error on use, no crash. |
 | **M1**: groups, reported | The option, its dependency on `--member-invariants`, the `.doo` record.  Compute groups after replacement edges.  Cycles through refinement, abstract-import, replacement or submodule edges are errors that name the edge.  Groups are listed by `--show-hints`.  A group of more than one module is still rejected: "not yet supported". | Option off: the cycle messages of section 2.1 unchanged.  A two-module cycle and a three-module cycle (`A -> B -> C -> A`) reported as one group.  A diamond (`D` imports `B` and `C`, both import `A`) is four groups of one.  A cycle through `refines`, through `import X : I`, through a submodule: each an error naming that edge.  A cycle through the binding of an inherited abstract import (the program of section 3.2): an error naming the binding.  A replaceable module in a cycle: an error.  A replacement whose added edge closes a cycle with a group: an error.  A cycle together with a codatatype: rejected by the issue 395 rule. |
 | **M2**: groups without invariants | Group resolution in phases (section 4.1).  Every analysis of section 2.2 per group: call graph, `InSameSCC`, type-dependency and datatype edges, recursion in negative positions, naked function references, extreme predicate rules, datatype dependencies, grounding, equality support, auto-initialization, constraint and constant cycles, inferred signatures, recursion flags, fuel and heights. | Mutually recursive datatypes across two modules, with functions over them that verify.  A three-module function cycle with a wrong `decreases` in the middle module: the error is at that call.  A cross-module cycle of datatypes with no base case: the warning of section 2.2 and the definite-assignment error.  A constant cycle across modules: error.  **Cycle through generics**: `A.List<X>`, `B.Tree = Node(A.List<B.Tree>)`, and `A.Forest = Forest(B.Tree)`, so that `A` and `B` form a group through a type argument.  **Diamond with a cycle**: `B` and `C` import each other and both import `A`, and `D` imports both.  Provided-only types across a group: a proof that needs the hidden definition fails, and one that does not, verifies.  Opened imports in both directions, with a name clash that is an ambiguity error.  **One negative test per row of section 2.2**, each a program that is rejected in one module and must be rejected with the same error when split over two: `A.T = T(f: B.U -> bool)` with `B.U = U(t: A.T)` ("cardinality exceeds itself"); a naked reference to a function of the other module inside a cycle; a least predicate that reaches itself through an ordinary predicate of the other module; a subset-type constraint cycle; a trait-parent cycle; constants whose inferred types depend on each other ("Cyclic dependency among declarations").  Each of these also with the declaration in the middle hidden by a provides-only export: still rejected (the views rule).  A cycle through an eta-expanded function of the other module: "cannot prove termination". |
 | **M3**: traits in a group | Cross-module `extends` inside a group without `{:termination false}`.  `ModularTermination` compares groups. | The Tie program with `Tr`, `X`, `Y`, `L` in one group: "cannot prove termination" at both dispatched calls, as in section 2.3.  The same with a bound that decreases: verifies.  Tie with `X` outside the group: the 211 rules apply, with and without `--modular-termination`. |
@@ -965,7 +979,7 @@ units.
 The extreme cases asked for are in M1 (three-module cycle, diamond), M2 (cycle
 through generics, diamond with a cycle), M3 (dispatch across a group) and M5
 (refinement inside a cycle).  M1 depends on P1, M2 on P3, and M5 on P2,
-issue 404 and the checked binding of abstract imports.
+issue 404 and issue 408.
 
 ## 10. Open questions for the owner
 
@@ -986,10 +1000,12 @@ Each has a recommendation, which the note assumes.
    [issue 405](https://github.com/erniecohen/dafny/issues/405).  *Recommend a
    default-on fix*, as a soundness fix under `AGENTS.md`.  It is independent of
    this feature, and M1 assumes it.
-6. **The refinement hole (section 2.5) and the `GetAutoInit` crash (section
-   6).**  Both are reproduced, both are independent of this feature, and
-   neither has an issue.  *Recommend filing both*, the first with the label
-   `soundness` and a default-on fix, before any work on M5 and M2.
+6. **The refinement holes (sections 2.5 and 3.2) and the `GetAutoInit` crash
+   (section 6).**  They are independent of this feature and are filed:
+   [issue 409](https://github.com/erniecohen/dafny/issues/409),
+   [issue 408](https://github.com/erniecohen/dafny/issues/408) and
+   [issue 413](https://github.com/erniecohen/dafny/issues/413).  *Recommend
+   fixing 409, 408 and 404 before any work on M5, and 413 before M2.*
 7. **A replaceable module in a group.**  *Recommend rejecting it* in the first
    version (section 3.2).  Allowing it needs global bounds on replaceable
    members, which is a design of its own.
