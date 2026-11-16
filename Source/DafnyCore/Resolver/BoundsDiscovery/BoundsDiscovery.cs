@@ -16,6 +16,18 @@ namespace Microsoft.Dafny {
       public class BoundsDiscoveryContext : IASTVisitorContext {
         private readonly IASTVisitorContext astVisitorContext;
         readonly bool inLambdaExpression;
+        // True inside an "old" (or "old@L") expression that is itself inside the innermost enclosing lambda
+        // expression.  Such an expression is evaluated in a fixed earlier heap, not in the heap the lambda
+        // is applied in.
+        readonly bool inOldWithinLambda;
+
+        /// <summary>
+        /// True when an "allocated" expression here would make the value of the innermost enclosing lambda
+        /// expression depend on the allocation state of the heap the lambda is applied in.  The frame axiom
+        /// of the lambda's arrow equates its values in any two heaps that agree on its reads frame, so such
+        /// a dependence is unsound (https://github.com/erniecohen/dafny/issues/457).
+        /// </summary>
+        public bool AllocatedDependsOnLambdaHeap => inLambdaExpression && !inOldWithinLambda;
 
         public bool AllowedToDependOnAllocationState =>
           !(astVisitorContext is Function or ConstantField or RedirectingTypeDecl || inLambdaExpression);
@@ -49,6 +61,16 @@ namespace Microsoft.Dafny {
         public BoundsDiscoveryContext(BoundsDiscoveryContext parentContext, LambdaExpr lambdaExpr) {
           this.astVisitorContext = parentContext.astVisitorContext;
           this.inLambdaExpression = true;
+          this.inOldWithinLambda = false;
+        }
+
+        /// <summary>
+        /// This constructor is used to say that, within parentContext, the context is inside an "old" expression.
+        /// </summary>
+        public BoundsDiscoveryContext(BoundsDiscoveryContext parentContext, OldExpr oldExpr) {
+          this.astVisitorContext = parentContext.astVisitorContext;
+          this.inLambdaExpression = parentContext.inLambdaExpression;
+          this.inOldWithinLambda = parentContext.inLambdaExpression;
         }
 
         ModuleDefinition IASTVisitorContext.EnclosingModule => astVisitorContext.EnclosingModule;
@@ -173,11 +195,19 @@ namespace Microsoft.Dafny {
 
           // Make the context more specific when visiting inside a lambda expression
           context = new BoundsDiscoveryContext(context, lambdaExpr);
+        } else if (expr is OldExpr oldExpr) {
+          context = new BoundsDiscoveryContext(context, oldExpr);
         }
         base.VisitExpression(expr, context);
       }
 
       protected override bool VisitOneExpression(Expression expr, BoundsDiscoveryContext context) {
+        if (expr is UnaryOpExpr { Op: UnaryOpExpr.Opcode.Allocated } && context.AllocatedDependsOnLambdaHeap &&
+            !resolver.Options.Get(CommonOptionBag.LegacyAllocatedInLambdas)) {
+          Reporter.Error(MessageSource.Resolver, expr,
+            "a lambda expression is not allowed to depend on the set of allocated references, " +
+            "except inside an 'old' expression within the lambda expression");
+        }
         if (expr is ComprehensionExpr and not LambdaExpr) {
           var e = (ComprehensionExpr)expr;
           // apply bounds discovery to quantifiers, finite sets, and finite maps

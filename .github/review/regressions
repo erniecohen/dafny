@@ -734,3 +734,6 @@ git-issues/github-issue-417.dfy
 
 # Opt-in --verification-cache stores blobs compressed with zlib under the SHA-256 of their uncompressed bytes; earlier uncompressed and mixed caches still replay, and a truncated or corrupted compressed blob is a miss with the same report (https://github.com/erniecohen/dafny/issues/388).
 git-issues/git-issue-388.dfy
+
+# A lambda expression may not mention allocated(...) in its body, precondition or reads clause outside an old within the lambda, under both resolvers; old(...) inside is allowed, the control does not prove false, and --legacy-allocated-in-lambdas restores the old rule (https://github.com/erniecohen/dafny/issues/457).
+git-issues/github-issue-457.dfy
