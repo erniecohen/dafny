@@ -155,7 +155,7 @@ namespace Microsoft.Dafny {
 
       AddClassMember_Function(f);
 
-      if (InVerificationScope(f)) {
+      if (FunctionWellformednessInVerificationScope(f)) {
         new FunctionWellformednessChecker(this).Check(f);
       }
       if (f.OverriddenFunction != null && OverrideCheckInVerificationScope(f)) { //it means that f is overriding its associated parent function
@@ -987,7 +987,8 @@ namespace Microsoft.Dafny {
     /// The pipeline schedules such a copy, and only the tasks marked CanVerifyOrigin.IsReverifiedInheritedCheck.
     /// </summary>
     public static bool MustVerifyCopy(MemberDecl copy, DafnyOptions options) {
-      return MustReverifyInheritedOverrideCheck(copy, options) || MustCheckInheritedConstructorFields(copy, options);
+      return MustReverifyInheritedOverrideCheck(copy, options) || MustCheckInheritedConstructorFields(copy, options) ||
+             MustCheckInheritedTermination(copy, options);
     }
 
     /// <summary>
@@ -1028,26 +1029,55 @@ namespace Microsoft.Dafny {
     }
 
     /// <summary>
-    /// The body of a method is in the verification scope with the method.  The body of a copied constructor that its
-    /// module must verify itself is also in the scope with that module, when the copy comes from a refinement base
-    /// outside the scope, such as a library.
+    /// The body of a method is in the verification scope with the method.  The body of a copy that its module must
+    /// verify itself, a constructor or a member of a changed SCC, is also in the scope with that module, when the copy
+    /// comes from a refinement base outside the scope, such as a library.
     /// </summary>
     bool BodyInVerificationScope(MethodOrConstructor member) {
       if (InVerificationScope(member)) {
         return true;
       }
       var module = member.EnclosingClass.EnclosingModuleDefinition;
-      return MustCheckInheritedConstructorFields(member, options) && !module.IsFacade &&
+      return MustVerifyCopiedBody(member) && !module.IsFacade &&
              module.ShouldVerify(program.Compilation) && member.IsVisibleInScope(verificationScope);
     }
 
     /// <summary>
-    /// The scope token of the body of "member".  It marks the body of a copied constructor that the current module
-    /// verifies itself, so that the pipeline verifies it.
+    /// The scope token of the body of "member".  It marks the body of a copy that the current module verifies itself,
+    /// so that the pipeline verifies it.
     /// </summary>
     private CanVerifyOrigin BodyToken(MethodOrConstructor member) {
       var token = GetToken(member);
-      return MustCheckInheritedConstructorFields(member, options)
+      return MustVerifyCopiedBody(member)
+        ? new CanVerifyOrigin(token.CanVerify) { IsReverifiedInheritedCheck = true }
+        : token;
+    }
+
+    private bool MustVerifyCopiedBody(MemberDecl member) {
+      return MustCheckInheritedConstructorFields(member, options) || MustCheckInheritedTermination(member, options);
+    }
+
+    /// <summary>
+    /// The well-formedness check of a function, which checks the termination of the calls in its body, is in the
+    /// verification scope with the function.  The check of a copy whose SCC its module changed is also in the scope
+    /// with that module, when the copy comes from a refinement base outside the scope, such as a library.
+    /// </summary>
+    internal bool FunctionWellformednessInVerificationScope(Function f) {
+      if (InVerificationScope(f)) {
+        return true;
+      }
+      var module = f.EnclosingClass.EnclosingModuleDefinition;
+      return MustCheckInheritedTermination(f, options) && !module.IsFacade &&
+             module.ShouldVerify(program.Compilation) && f.IsVisibleInScope(verificationScope);
+    }
+
+    /// <summary>
+    /// The scope token of the well-formedness check of "f".  It marks the check of a copy whose SCC the current module
+    /// changed, so that the pipeline verifies it.
+    /// </summary>
+    internal CanVerifyOrigin FunctionWellformednessToken(Function f) {
+      var token = GetToken(f);
+      return MustCheckInheritedTermination(f, options)
         ? new CanVerifyOrigin(token.CanVerify) { IsReverifiedInheritedCheck = true }
         : token;
     }
