@@ -963,6 +963,20 @@ namespace Microsoft.Dafny {
                     e.GetTypeArgumentSubstitutions(), wfOptions.CallerTerminationTranslator ?? builder.Context.CallerTerminationTranslator ?? etran,
                     builder, etran);
                 }
+              } else if (codeContext != null && options.Get(CommonOptionBag.ModularTermination)) {
+                // A co-recursive call, and a call of a least or greatest predicate, are exempt from the check that
+                // the decreases measure goes down, because inside a module other rules order them.  Nothing else
+                // orders such a call against a call dispatched to implementations in other modules, so the global
+                // bounds are checked for it as for any other call (https://github.com/erniecohen/dafny/issues/456).
+                // For a co-recursive call this is the same-bound rule: every unfolding of the result then runs
+                // under a bound that does not exceed that of the code that asked for it.
+                CheckCallbackArguments(callExpr.Origin, codeContext, e.Function, e.Args, e.Receiver, substMap, e.GetTypeArgumentSubstitutions(),
+                  wfOptions.CallerTerminationTranslator ?? builder.Context.CallerTerminationTranslator ?? etran, builder);
+                if (e.Function != wfOptions.SelfCallsAllowance) {
+                  CheckModularTermination(callExpr.Origin, codeContext, e.Function, e.Receiver, substMap, directSubstMap,
+                    e.GetTypeArgumentSubstitutions(), wfOptions.CallerTerminationTranslator ?? builder.Context.CallerTerminationTranslator ?? etran,
+                    builder, etran);
+                }
               }
               // all is okay, so allow this function application access to the function's axiom, except if it was okay because of the self-call allowance.
               Bpl.IdentifierExpr canCallFuncID = new Bpl.IdentifierExpr(callExpr.Origin, e.Function.FullSanitizedName + "#canCall", Bpl.Type.Bool);

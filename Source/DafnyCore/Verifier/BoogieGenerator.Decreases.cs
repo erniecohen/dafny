@@ -173,6 +173,25 @@ public partial class BoogieGenerator {
     if (callable is Method { FunctionFromWhichThisIsByMethodDecl: { } function }) {
       return GlobalBound(function);
     }
+    if (callable is PrefixLemma prefixLemma) {
+      // The body of a least or greatest lemma is checked as the body of its prefix lemma, and a recursive call in
+      // it is a call of the prefix lemma.  The prefix lemma has the lemma's bound, in terms of its own formals,
+      // which are "_k" followed by copies of the lemma's (https://github.com/erniecohen/dafny/issues/456).
+      var extremeLemma = prefixLemma.ExtremeLemma;
+      if (GlobalBound(extremeLemma) is not { } extremeBound) {
+        return null;
+      }
+      var prefixSubstMap = new Dictionary<IVariable, Expression>();
+      for (var i = 0; i < extremeLemma.Ins.Count; i++) {
+        prefixSubstMap.Add(extremeLemma.Ins[i], Expression.CreateIdentExpr(prefixLemma.Ins[i + 1]));
+      }
+      var prefixTypeMap = new Dictionary<TypeParameter, Type>();
+      for (var i = 0; i < extremeLemma.TypeArgs.Count; i++) {
+        prefixTypeMap.Add(extremeLemma.TypeArgs[i], new UserDefinedType(prefixLemma.TypeArgs[i]));
+      }
+      var prefixSub = new Substituter(null, prefixSubstMap, prefixTypeMap);
+      return extremeBound.ConvertAll(prefixSub.Substitute);
+    }
     var declared = ModularTermination.DeclaredGlobalBound(callable);
     if (declared != null) {
       return declared;

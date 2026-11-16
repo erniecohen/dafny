@@ -600,6 +600,12 @@ before. Bounds of different lengths are compared as decreases tuples are, with m
 above every value: a bound `n, 7` is at most `n`, but `n` is not at most `n, 0`. The method of a
 function's `by method` body has the function's bound.
 
+A least or greatest lemma may declare a global bound, but not a callback bound. Its body is verified
+as the body of its prefix lemma, which has the same bound, and a call `L#[k](...)` of the prefix lemma
+is checked as a call of `L`. A least or greatest predicate cannot declare a bound; it and its prefix
+predicate are TOP when they can reach a dispatched call. A co-recursive call is checked against the
+caller's bound as any other call is.
+
 Some code belongs to no method or function: the constraint and the witness of a subset type or
 newtype, the default values of a datatype's or class's components (which a witness or an allocation
 may evaluate), and the initializer of a constant. Such code has no global bound, so it is TOP.
@@ -770,6 +776,9 @@ It also rejects some programs that terminate:
   heap, in a datatype value or in a collection, or returned by a function, has no bound.
 * An iterator has no global bound, so a call of an iterator that reaches a dispatched call is
   rejected from a member with a bound.
+* A least or greatest predicate has no global bound, so one that reaches a dispatched call, or one
+  imported from a module that does not promise `{:termination_closed}` for it, cannot be used by a
+  member with a bound.
 * The C# parser is what turns `decreases {:global} E` and `decreases {:callback g} E` into bounds. A
   program that reaches Dafny through another front end, serialized, keeps them as ordinary decreases
   clauses with argument-less `{:global}` attributes or one-argument `{:callback g}` attributes.

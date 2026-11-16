@@ -154,6 +154,11 @@ public static class ModularTermination {
   /// Whether the callable has a global bound, declared or inherited.
   /// </summary>
   public static bool HasGlobalBound(ICallable callable) {
+    if (callable is PrefixLemma prefixLemma) {
+      // The body of a least or greatest lemma is checked as the body of its prefix lemma, which runs under the
+      // lemma's bound (https://github.com/erniecohen/dafny/issues/456).
+      return HasGlobalBound(prefixLemma.ExtremeLemma);
+    }
     for (ICallable? c = callable; c != null; c = (c as MemberDecl)?.OverriddenMember as ICallable) {
       if (DeclaredGlobalBound(c) != null) {
         return true;
@@ -453,6 +458,14 @@ public class ModularTerminationAnalysis {
   /// otherwise the member itself.
   /// </summary>
   private static Declaration NodeOf(MemberDecl member) {
+    // A prefix predicate or prefix lemma runs the code of its least or greatest predicate or lemma, and is not
+    // among the members of its class (https://github.com/erniecohen/dafny/issues/456).
+    switch (member) {
+      case PrefixPredicate prefixPredicate:
+        return prefixPredicate.ExtremePred;
+      case PrefixLemma prefixLemma:
+        return prefixLemma.ExtremeLemma;
+    }
     return member.EnclosingClass is IteratorDecl iter &&
            (member == iter.Member_Init || member == iter.Member_Valid || member == iter.Member_MoveNext) ? iter : member;
   }
@@ -1034,7 +1047,13 @@ public class ModularTerminationRewriter : IRewriter {
     var named = new HashSet<Formal>();
     foreach (var clause in ModularTermination.CallbackClauses(callable.Decreases.Attributes)) {
       var formal = ModularTermination.CallbackParameter(callable, clause);
-      if (formal == null || !formal.Type.IsArrowType) {
+      if (callable is ExtremeLemma) {
+        // The body of a least or greatest lemma is checked as the body of its prefix lemma, whose in-parameters
+        // are not the lemma's, and a recursive call in it is a call of the prefix lemma
+        // (https://github.com/erniecohen/dafny/issues/456).
+        Reporter.Error(MessageSource.Resolver, clause.Origin,
+          $"a {callable.WhatKind} cannot declare a 'decreases {{:callback}}' clause");
+      } else if (formal == null || !formal.Type.IsArrowType) {
         Reporter.Error(MessageSource.Resolver, clause.Args[0].Origin,
           "the first argument of a 'decreases {:callback f}' clause must be an in-parameter of the method or function, of an arrow type");
       } else if (!named.Add(formal)) {
