@@ -757,6 +757,17 @@ namespace Microsoft.Dafny {
       return new Bpl.IdentifierExpr(tok, var.AssignUniqueName(CurrentDeclaration.IdGenerator), TrType(var.Type));
     }
 
+    /// <summary>
+    /// Issue 105: member invariants (--member-invariants) are resolved, but not yet verified.
+    /// </summary>
+    private void ReportUnsupportedMemberInvariants(ModuleDefinition forModule) {
+      foreach (var decl in forModule.TopLevelDecls.OfType<TopLevelDeclWithMembers>()) {
+        foreach (var invariant in decl.Members.OfType<MemberInvariant>()) {
+          reporter.Error(MessageSource.Translator, invariant.NameNode.Origin, "verification of member invariants is not yet supported");
+        }
+      }
+    }
+
     public Bpl.Program DoTranslation(Program p, ModuleDefinition forModule) {
       var snapshot = DoTranslationForSnapshot(p, forModule);
       return BoogieSnapshotCloner.TryClone(snapshot, out var consumer, out _) ? consumer : snapshot;
@@ -766,6 +777,7 @@ namespace Microsoft.Dafny {
     // Cached and uncached callers materialize exactly one graph through the same copier.
     internal Bpl.Program DoTranslationForSnapshot(Program p, ModuleDefinition forModule) {
       RequireCardinalityValidation(p);
+      ReportUnsupportedMemberInvariants(forModule);
       using var moduleNames = new ModuleNamingScope(forModule.FullName, p.ModuleNamePrefixes);
       Type.ResetScopes();
       ancestorTypeCache.Clear();

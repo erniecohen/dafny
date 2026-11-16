@@ -1784,6 +1784,11 @@ namespace Microsoft.Dafny {
         new CheckMapRangeSupportsEquality(reporter).VisitDeclarations(declarations);
       }
 
+      if (reporter.Count(ErrorLevel.Error) == prevErrorCount && Options.Get(CommonOptionBag.MemberInvariants)) {
+        // Issue 105: an invariant depends on no mutable state.
+        MemberInvariantChecks.CheckReadsRestrictions(declarations, reporter);
+      }
+
       if (reporter.Count(ErrorLevel.Error) == prevErrorCount) {
         // Check that usage of "this" is restricted before "new;" in constructor bodies,
         // and that a class without any constructor only has fields with known initializers.
@@ -2558,6 +2563,11 @@ namespace Microsoft.Dafny {
       sortedKeys.Sort();
       foreach (var inheritedMemberName in sortedKeys) {
         var inheritedMember = members[inheritedMemberName];
+        if (inheritedMember is MemberInvariant or MemberWitness) {
+          // Member invariants and witnesses (issue 105) are anonymous: they are not inherited by name, and they
+          // neither override nor are overridden.  A type's ancestors' invariants are found from its parent traits.
+          continue;
+        }
         if (!inheritedMembers.TryGetValue(inheritedMember.Name, out var prevMember)) {
           // all good; record "inheritedMember" as an inherited member
           inheritedMembers.Add(inheritedMember.Name, inheritedMember);

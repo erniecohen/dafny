@@ -4222,6 +4222,10 @@ namespace Microsoft.Dafny {
           return null;
         }
         var prevErrorCount = reporter.Count(ErrorLevel.Error);
+        if (t.IsRawSyntax) {
+          // Issue 105: "raw T" is parsed only under --member-invariants.
+          reporter.Error(MessageSource.Resolver, t.Origin, "raw types are not yet supported");
+        }
         if (t.NamePath is ExprDotName) {
           var ret = ResolveDotSuffix_Type((ExprDotName)t.NamePath, resolutionContext, allowDanglingDotName, option, defaultTypeArguments);
           if (ret != null) {

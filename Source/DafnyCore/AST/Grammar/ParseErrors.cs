@@ -145,6 +145,8 @@ public class ParseErrors {
     p_binding_in_decreases_to,
     p_ghost_in_decreases_to,
     p_needs_referrers,
+    p_top_level_member_invariant,
+    p_raw_needs_named_type,
     p_decreases_order_needs_option
   }
 
@@ -1234,6 +1236,16 @@ Please rename your use of opaque as an identifier to some other name.
     Add(ErrorId.p_needs_referrers,
       @"
 Array memory locations are supported only with --referrers here".TrimStart());
+
+    Add(ErrorId.p_top_level_member_invariant,
+      @"
+Under --member-invariants, an `invariant` or `witness` declaration is a member of a type
+(a class, trait, datatype, newtype or abstract type), so it cannot be declared at the module level.".TrimStart());
+
+    Add(ErrorId.p_raw_needs_named_type,
+      @"
+Under --member-invariants, `raw T` names the raw type of a type `T` that may declare an invariant.
+`raw` must be followed by the name of such a type.".TrimStart());
   }
 
   public static void RunStaticConstructor() {

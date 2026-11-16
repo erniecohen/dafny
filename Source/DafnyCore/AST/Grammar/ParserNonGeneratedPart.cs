@@ -640,10 +640,15 @@ public partial class Parser {
         return pt.kind != _openAngleBracket || IsTypeList(ref pt);
       case _ident:
       case _least:
-      case _greatest:
-        while (true) {
-          // invariant: next token is an identifier (_ident, _least, or _greatest)
+      case _greatest: {
+        var isRaw = pt.kind == _ident && pt.val == "raw" && theOptions.Get(CommonOptionBag.MemberInvariants);
+        pt = scanner.Peek();
+        if (isRaw && pt.kind == _ident) {
+          // "raw T" (issue 105, as in RetagRawType): the named type T follows
           pt = scanner.Peek();
+        }
+        while (true) {
+          // invariant: pt is the token after an identifier (_ident, _least, or _greatest)
           if (pt.kind == _openAngleBracket && !IsTypeList(ref pt)) {
             return false;
           }
@@ -655,7 +660,9 @@ public partial class Parser {
           if (!IsIdentifier(pt.kind)) {
             return false;
           }
+          pt = scanner.Peek();
         }
+      }
       case _openparen:
         pt = scanner.Peek();
         if (pt.kind == _closeparen) {
@@ -669,6 +676,38 @@ public partial class Parser {
     }
   }
 
+
+  /// <summary>
+  /// Under --member-invariants (issue 105), 'invariant' and 'witness' in a member position are
+  /// member declarations.  The scanner produces them as the keywords they are elsewhere; the parser
+  /// retags the lookahead token before it tests for a member.  Without the option nothing is
+  /// retagged, so the parse, and every diagnostic, is what it was before the option existed.
+  /// </summary>
+  void RetagMemberKeyword() {
+    if (!theOptions.Get(CommonOptionBag.MemberInvariants)) {
+      return;
+    }
+    if (la.kind == _invariant) {
+      la.kind = _memberInvariant;
+    } else if (la.kind == _witness) {
+      la.kind = _memberWitness;
+    }
+  }
+
+  /// <summary>
+  /// Under --member-invariants (issue 105), 'raw' followed by a type name, where a type is expected,
+  /// is the raw-type operator.  'raw' stays an identifier everywhere else.
+  /// </summary>
+  void RetagRawType() {
+    if (!theOptions.Get(CommonOptionBag.MemberInvariants) || la.kind != _ident || la.val != "raw") {
+      return;
+    }
+    scanner.ResetPeek();
+    var next = scanner.Peek();
+    if (next.kind == _ident) {
+      la.kind = _rawType;
+    }
+  }
 
   void ConvertKeywordTokenToIdent() {
     var oldKind = la.kind;

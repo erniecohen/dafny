@@ -1,0 +1,5 @@
+git-issue-105-modifiers.dfy(7,2): Error: an invariant cannot be declared 'ghost'
+git-issue-105-modifiers.dfy(8,2): Error: an invariant cannot be declared 'static'
+git-issue-105-modifiers.dfy(9,2): Error: an invariant cannot be declared 'opaque'
+git-issue-105-modifiers.dfy(10,2): Error: a witness cannot be declared 'static'
+4 parse errors detected in git-issue-105-modifiers.dfy

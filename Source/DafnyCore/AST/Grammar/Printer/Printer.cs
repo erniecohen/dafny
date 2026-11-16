@@ -769,6 +769,10 @@ NoGhost - disable printing of functions, ghost methods, and proof
           // omit a member that Dafny generated, such as a reveal lemma: reading the library back generates it
           // again.  A member on which the user wrote {:auto_generated} is printed like any other, because
           // leaving it out would change what the library's names resolve to.
+        } else if (m is MemberInvariant or MemberWitness) {
+          if (state == 2) { wr.WriteLine(); }
+          PrintMemberInvariantOrWitness(m, indent);
+          state = 1;
         } else if (m is MethodOrConstructor methodOrConstructor) {
           if (state != 0) { wr.WriteLine(); }
           PrintMethod(methodOrConstructor, indent, printFlags.InterfaceOnly);
@@ -1011,6 +1015,27 @@ NoGhost - disable printing of functions, ghost methods, and proof
       } else if (!field.IsUserMutable && field.IsMutable) {
         wr.Write("  // non-assignable");
       }
+      wr.WriteLine();
+    }
+
+    /// <summary>
+    /// Prints "invariant e" or "[ghost] witness e" (issue 105).
+    /// </summary>
+    void PrintMemberInvariantOrWitness(MemberDecl m, int indent) {
+      Indent(indent);
+      PrintAttributes(m.Attributes, true, indent);
+      Expression e;
+      if (m is MemberInvariant inv) {
+        wr.Write("invariant");
+        e = inv.Body;
+      } else {
+        var w = (MemberWitness)m;
+        wr.Write(w.IsGhost ? "ghost witness" : "witness");
+        e = w.Rhs;
+      }
+      PrintAttributes(m.Attributes, false, indent);
+      wr.Write(" ");
+      PrintExpression(e, false);
       wr.WriteLine();
     }
 

@@ -1644,3 +1644,68 @@ parents, with their raw types.**
   form.  With the typing of raw values, it is the part to review hardest.
 - None of it touches the heap, `new;`, inheritance or refinement, or
   co-recursion: the declaration rule (section 3.8) keeps codatatypes out.
+
+## 10. Implementation decisions
+
+Decisions made while implementing, on the principle of consistent semantics.
+Each is also recorded in the pull request that makes it.
+
+**Stage 0 and the resolution part of stage 1 (first pull request).**
+
+- *Split.*  Section 7.2's stage 0 has the resolver reject every invariant.
+  Instead, the first pull request resolves invariants, applies the reads
+  restriction of section 3.2, the codatatype ban and the declaration rule of
+  section 3.8, and the verifier reports each invariant as not yet supported.
+  `witness` members and `raw T` are parsed and rejected by the resolver as not
+  yet supported.  Resolution is the same for every kind of type, so it is not
+  split by kind; the stages by kind are about verification.  The extension
+  condition of section 3.3 is a resolver check, but it protects only the
+  axioms of section 5.1, so it lands with the first stage that emits them;
+  until then the verifier rejects every invariant and nothing depends on it.
+- *Representation.*  An invariant is a `MemberInvariant`, a ghost instance
+  predicate with no parameters, an empty reads clause and the reserved name
+  `invariant#k` (k numbers the invariants of the declaration).  A witness is a
+  `MemberWitness`, a static const with an inferred type and the reserved name
+  `witness#k`.  Neither name can be written in source, so neither member can be
+  referred to directly.  This reuses resolution, well-formedness, the call graph
+  and Boogie function generation.
+- *Invariants are anonymous.*  An invariant never overrides and is never
+  overridden, so it takes no part in the name-based inheritance of trait
+  members: two invariants with the same reserved name in a type and its parent
+  trait are different invariants, not a re-declaration.  A type's ancestors'
+  invariants (section 4.1) are found from its parent traits, not from its
+  member table.  Likewise in refinement (section 4.2), an invariant of a
+  refining declaration never refines one of the refinement base: the inherited
+  invariants keep their numbers and the refining declaration's own are numbered
+  after them, so the numbers give the order of the conjuncts, inherited ones
+  first.
+- *Parsing.*  With the option off the scanner and parser see exactly the tokens
+  they saw before.  Three new tokens stand for `invariant` and `witness` in a
+  member position and for `raw` directly before a type name; the parser retags
+  the ordinary tokens as these only under the option.  Coco/R generates no
+  scanner if a token lacks a definition, so each has one that starts with the
+  control character U+0001, which no Dafny program contains.  `raw` is retagged
+  only when the next token is an identifier, so `raw` remains usable as a name,
+  including as the name of a type.
+- *Option check.*  `--member-invariants` without `--type-system-refresh` is a
+  command-line error, reported before any file is read (as for
+  `--translation-cache`).  The resolver repeats the check for front ends that
+  do not go through the command line, such as the language server.
+- *Option scope.*  A `.doo` library built with the option requires its clients
+  to enable it, since it may declare invariants.  The manifest records the
+  option only when it is on, so a library built without it is byte-for-byte
+  unchanged and may be used by programs with or without the option.
+- *Declaration rule.*  The rule is checked once per program, syntactically,
+  before modules are resolved, over every module (abstract and refined modules
+  included) and every library.  When it is violated, the error is reported once:
+  at an invariant in the program's own source if there is one, otherwise at a
+  codatatype in it, naming the other declaration.
+- *Reads restriction.*  Checked syntactically on the resolved body, including
+  inside lambdas and statement expressions: no mutable field, no array element
+  (also through slices and multi-dimensional selection), no `old`, `fresh`,
+  `allocated`, `unchanged`, no two-state function or lemma, no function with a
+  reads clause (called or used as a value), and no application of a function
+  value whose type allows reading the heap (`~>`).  A function value's
+  `requires` and `reads` read what the value may read, so they are allowed on a
+  `->` or `-->` value and rejected on a `~>` value.  Inside an invariant, `this`
+  has the type itself until `raw T` exists.

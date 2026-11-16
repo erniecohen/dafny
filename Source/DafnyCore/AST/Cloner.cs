@@ -531,6 +531,7 @@ namespace Microsoft.Dafny {
     public virtual Field CloneField(Field f) {
       Contract.Requires(f != null);
       return f switch {
+        MemberWitness w => new MemberWitness(this, w),
         ConstantField c => new ConstantField(this, c),
         // We don't expect a SpecialField to ever be cloned. However, it can happen for malformed programs, for example if
         // an iterator in a refined module is replaced by a class in the refining module.
@@ -557,7 +558,9 @@ namespace Microsoft.Dafny {
       var newNameNode = new Name(Origin(f.NameNode.Origin), newName);
       var signatureEllipsis = f.SignatureEllipsis == null ? null : Origin(f.SignatureEllipsis);
 
-      if (f is Predicate) {
+      if (f is MemberInvariant) {
+        return new MemberInvariant(Origin(f.Origin), Origin(f.NameNode.Origin), newName, body, CloneAttributes(f.Attributes));
+      } else if (f is Predicate) {
         return new Predicate(Origin(f.Origin), newNameNode, f.HasStaticKeyword, f.IsGhost, f.IsOpaque, tps, formals,
           result,
           req, reads, ens, decreases, body, Predicate.BodyOriginKind.OriginalOrInherited,

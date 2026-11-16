@@ -1,0 +1,10 @@
+git-issue-105-reads.dfy(27,12): Error: an invariant may not read the mutable field 'f': it depends on no mutable state
+git-issue-105-reads.dfy(28,34): Error: an invariant may not read the mutable field 'f': it depends on no mutable state
+git-issue-105-reads.dfy(29,13): Error: an invariant may not read an array element: it depends on no mutable state
+git-issue-105-reads.dfy(30,13): Error: an invariant may not read an array element: it depends on no mutable state
+git-issue-105-reads.dfy(31,13): Error: an invariant may not read an array element: it depends on no mutable state
+git-issue-105-reads.dfy(32,17): Error: an invariant may not call the function 'Reads', which has a reads clause: it depends on no mutable state
+git-issue-105-reads.dfy(33,22): Error: an invariant may not use the function 'Reads', which has a reads clause: it depends on no mutable state
+git-issue-105-reads.dfy(34,12): Error: an invariant may not apply a function value that may read the heap: it depends on no mutable state
+git-issue-105-reads.dfy(35,47): Error: an invariant may not read an array element: it depends on no mutable state
+9 resolution/type errors detected in git-issue-105-reads.dfy

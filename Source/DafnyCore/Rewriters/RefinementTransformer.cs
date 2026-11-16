@@ -674,6 +674,17 @@ namespace Microsoft.Dafny {
         .AddRange(prev.CardinalityParentObligations.Select(refinementCloner.CloneType));
       nw.Attributes = refinementCloner.MergeAttributes(prev.Attributes, nw.Attributes);
 
+      // Member invariants (issue 105) are anonymous: an invariant of the refining declaration does not refine one of
+      // the refinement base, it is added to the inherited ones.  Number the refining declaration's invariants after
+      // the inherited ones, so that their reserved names differ and give the order of the conjuncts.
+      var inheritedInvariantCount = prev.Members.OfType<MemberInvariant>().Count();
+      if (inheritedInvariantCount != 0) {
+        var k = inheritedInvariantCount;
+        foreach (var invariant in nw.Members.OfType<MemberInvariant>()) {
+          invariant.NameNode.Value = MemberInvariant.NamePrefix + k++;
+        }
+      }
+
       // Create a simple name-to-member dictionary.  Ignore any duplicates at this time.
       var declaredNames = new Dictionary<string, int>();
       for (int i = 0; i < nw.Members.Count; i++) {
