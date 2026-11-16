@@ -26,6 +26,7 @@ module Client {
     requires L in bag && L > 0
     decreases {:global} bag by Bags()
   {
+    GtWellFounded();
     MultisetReplaceOne<nat>(Gt, bag, L, Copies(L - 1, k));
     c.Run(bag - multiset{L} + Copies(L - 1, k))
   }
@@ -42,9 +43,16 @@ module Client {
     requires bag != multiset{}
     decreases {:global} bag by Bags()
   {
-    MultisetReplace<nat>(Gt, bag, bag, multiset{});
-    assert bag - bag + multiset{} == multiset{};
+    MultisetSub<nat>(Gt, multiset{}, bag);
     c.Run(multiset{})
+  }
+
+  // A permission is taken before the dispatched call, with no hint about multiplicities
+  function CallTake(c: Callees.Callee, a: nat, X: multiset<nat>): nat
+    decreases {:global} multiset{a} + X by Bags()
+  {
+    MultisetAddOne<nat>(Gt, a, X);
+    c.Run(X)
   }
 
   // A pair (a, 0) is exchanged for three pairs (a - 1, n)
@@ -53,6 +61,7 @@ module Client {
     decreases {:global} bag by PairBags()
   {
     var q := (a, n);
+    LexWellFounded();
     MultisetReplaceOne<(nat, nat)>(Lex, bag, (a + 1, 0), multiset{q, q, q});
     c.Run(bag - multiset{(a + 1, 0)} + multiset{q, q, q})
   }
@@ -71,6 +80,7 @@ module Client {
     ensures MultisetGt<multiset<nat>>(MultisetRel<nat>(Gt), bag, bag - multiset{multiset{L}} + Copies(multiset{L - 1, L - 1}, k))
   {
     var B' := multiset{L - 1, L - 1};
+    GtWellFounded();
     MultisetReplaceOne<nat>(Gt, multiset{L}, L, B');
     assert multiset{L} - multiset{L} + B' == B';
     assert MultisetRel<nat>(Gt)(multiset{L}, B');

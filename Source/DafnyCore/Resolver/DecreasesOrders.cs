@@ -28,11 +28,23 @@ public static class DecreasesOrders {
   public const string StopsName = "stops";
   public const string MultisetOfName = "MultisetOf";
   public const string MultisetRelName = "MultisetRel";
-  public const string MultisetGtName = "MultisetGt";
-  public const string DominatedName = "Dominated";
-  public const string MultisetReplaceName = "MultisetReplace";
-  public const string MultisetReplaceOneName = "MultisetReplaceOne";
-  public const string MultisetTransitiveName = "MultisetTransitive";
+
+  /// <summary>
+  /// The functions of the orders library's multiset order, other than MultisetOf and MultisetRel, that a client
+  /// may call: the order itself and the base relations' properties its lemmas require.
+  /// </summary>
+  private static readonly HashSet<string> MultisetFunctionNames = new() {
+    "MultisetGe", "MultisetGt", "Transitive"
+  };
+
+  /// <summary>
+  /// The lemmas of the orders library's multiset order that a client calls to prove that a multiset goes down.
+  /// </summary>
+  private static readonly HashSet<string> MultisetLemmaNames = new() {
+    "WellFoundedIrreflexive", "MultisetReplaceLower", "MultisetReplaceByLower", "MultisetReplaceOne",
+    "MultisetAddOne", "MultisetSub", "MultisetGeAdd", "MultisetGeUnion", "MultisetGeCons", "MultisetDrop",
+    "MultisetGeTransitive", "MultisetAntisymmetric", "MultisetGeGt", "MultisetGtGe", "MultisetTransitive"
+  };
 
   /// <summary>
   /// Whether the options let a client hold values of the trait Wfo: a datatype value converts to a trait type
@@ -82,24 +94,25 @@ public static class DecreasesOrders {
 
   /// <summary>
   /// Whether "function" is one of the orders library's module-level functions Of, wellFounded and stops, or of its
-  /// multiset order MultisetOf, MultisetRel, MultisetGt and Dominated, whose only code that is not known is the
+  /// multiset order (MultisetOf, MultisetRel and MultisetFunctionNames), whose only code that is not known is the
   /// application of their arguments of arrow type.  Of makes a WfoOf from the relation it is given, and MultisetOf
   /// makes one from the multiset order over the relation it is given.  The proofs that the multiset order is
   /// well-founded, which MultisetRel calls, are lemmas of the library that apply nothing but that relation and
   /// functions they build from it, and terminate by their own decreases clauses.
   /// </summary>
   public static bool AppliesOnlyItsArguments(Function function) {
-    return function.Name is OfName or WellFoundedName or StopsName or MultisetOfName or MultisetRelName or MultisetGtName or DominatedName &&
+    return (function.Name is OfName or WellFoundedName or StopsName or MultisetOfName or MultisetRelName ||
+            MultisetFunctionNames.Contains(function.Name)) &&
            InOrdersLibraryModule(function);
   }
 
   /// <summary>
-  /// Whether "lemma" is one of the orders library's lemmas MultisetReplace, MultisetReplaceOne and MultisetTransitive,
-  /// which a client calls to prove that a multiset goes down.  Like the functions of AppliesOnlyItsArguments, they
+  /// Whether "lemma" is one of the orders library's lemmas of the multiset order (MultisetLemmaNames), which a client
+  /// calls to prove that a multiset goes down.  Like the functions of AppliesOnlyItsArguments, they
   /// apply nothing but their argument of arrow type and functions they build from it.
   /// </summary>
   public static bool AppliesOnlyItsArguments(MethodOrConstructor lemma) {
-    return lemma is Lemma { Name: MultisetReplaceName or MultisetReplaceOneName or MultisetTransitiveName } &&
+    return lemma is Lemma && MultisetLemmaNames.Contains(lemma.Name) &&
            InOrdersLibraryModule(lemma);
   }
 

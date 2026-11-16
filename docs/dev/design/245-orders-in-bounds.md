@@ -25,13 +25,13 @@ The library's `Of`, `WfoOf`, `wellFounded` and `stops` count as applications of 
 type.  `Chain` and `WfoOf` are marked `{:termination_closed}`.
 
 The multiset order of https://github.com/erniecohen/dafny/issues/211 adds `MultisetOf`, `MultisetRel`,
-`MultisetGt` and `Dominated` to those functions, and its lemmas `MultisetReplace`, `MultisetReplaceOne` and
-`MultisetTransitive`: a call of one counts as applications of its arguments of arrow type, and the call
-itself gets no bound check (`DecreasesOrders.CallAppliesOnlyItsArguments`).  Their bodies apply nothing but
-those arguments and relations built from them, and the lemmas they call terminate by their own decreases
-clauses; the library is verified with the program.  Applying the result of a call of `MultisetRel` is an
-application of its argument, which the call already counts.  This holds only at a call, which supplies the
-arguments: a library function named as a value is still classified by what it reaches.
+`MultisetGe`, `MultisetGt` and `Transitive` to those functions, and its lemmas (the list
+`DecreasesOrders.MultisetLemmaNames`): a call of one counts as applications of its arguments of arrow type,
+and the call itself gets no bound check (`DecreasesOrders.CallAppliesOnlyItsArguments`).  Their bodies apply
+nothing but those arguments and relations built from them, and the lemmas they call terminate by their own
+decreases clauses; the library is verified with the program.  Applying the result of a call of `MultisetRel`
+is an application of its argument, which the call already counts.  This holds only at a call, which supplies
+the arguments: a library function named as a value is still classified by what it reaches.
 
 ## The binder rule
 

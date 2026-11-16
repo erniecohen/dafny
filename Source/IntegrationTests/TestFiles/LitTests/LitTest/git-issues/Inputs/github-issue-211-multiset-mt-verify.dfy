@@ -24,6 +24,7 @@ module Controls {
     requires L in bag && L > 0
     decreases {:global} bag by Bags()
   {
+    GtWellFounded();
     MultisetReplaceOne<nat>(Gt, bag, L, Copies(L - 1, k));
     assert false; // error
     c.Run(bag - multiset{L} + Copies(L - 1, k))
@@ -33,9 +34,17 @@ module Controls {
     requires bag != multiset{}
     decreases {:global} bag by Bags()
   {
-    MultisetReplace<nat>(Gt, bag, bag, multiset{});
+    MultisetSub<nat>(Gt, multiset{}, bag);
     assert false; // error
     c.Run(multiset{})
+  }
+
+  function CallTake(c: Callees.Callee, a: nat, X: multiset<nat>): nat
+    decreases {:global} multiset{a} + X by Bags()
+  {
+    MultisetAddOne<nat>(Gt, a, X);
+    assert false; // error
+    c.Run(X)
   }
 
   function CallPairs(c: Callees.PairCallee, bag: multiset<(nat, nat)>, a: nat, n: nat): nat
@@ -43,6 +52,7 @@ module Controls {
     decreases {:global} bag by PairBags()
   {
     var q := (a, n);
+    LexWellFounded();
     MultisetReplaceOne<(nat, nat)>(Lex, bag, (a + 1, 0), multiset{q, q, q});
     assert false; // error
     c.Run(bag - multiset{(a + 1, 0)} + multiset{q, q, q})
@@ -62,6 +72,7 @@ module Controls {
     ensures MultisetGt<multiset<nat>>(MultisetRel<nat>(Gt), bag, bag - multiset{multiset{L}} + Copies(multiset{L - 1, L - 1}, k))
   {
     var B' := multiset{L - 1, L - 1};
+    GtWellFounded();
     MultisetReplaceOne<nat>(Gt, multiset{L}, L, B');
     assert multiset{L} - multiset{L} + B' == B';
     assert MultisetRel<nat>(Gt)(multiset{L}, B');

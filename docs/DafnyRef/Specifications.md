@@ -484,17 +484,23 @@ dispatch, and that includes the code of `O`:
   is rejected. Build orders with `Of` instead.
 
 **The multiset order.** `Std.Termination.Orders.MultisetOf(r)` is the multiset
-(Dershowitz-Manna) order over a relation `r` proved `wellFounded`. A multiset `M`
-is above `N` when `N` is `M` with a nonempty part `X` replaced by finitely many
-elements `Y`, each below some element of `X`:
-`MultisetGt(r, M, N)` is `exists X, Y :: X != multiset{} && X <= M && N == M - X + Y && Dominated(r, X, Y)`.
-So one element may be exchanged for any finite number of smaller ones, as the
-bags of call permission levels of VeriFast are. The library proves this order
-well-founded; nothing about it is assumed. The lemmas
-`MultisetReplace(r, M, X, Y)` and `MultisetReplaceOne(r, M, a, Y)` give
-`MultisetGt` for one step; `MultisetRel(r)` is the order as a relation, so
-multiset orders nest (`MultisetOf(MultisetRel(r))` orders multisets of
-multisets), and `MultisetTransitive` shows that it is transitive when `r` is:
+order over a relation `r` proved `wellFounded`, in the form of Huet and Oppen
+that VeriFast uses for its bags of call permission levels.
+`MultisetGe(r, M, N)` (`M` is at least `N`) holds when each element of `N - M`
+is below some element of `M - N`, where `-` is multiset difference, and
+`MultisetGt(r, M, N)` (`M` is above `N`) when also `M != N`. So one element may
+be exchanged for any finite number of smaller ones. The library proves this
+order well-founded; nothing about it is assumed. `MultisetRel(r)` is the order
+as a relation, so multiset orders nest (`MultisetOf(MultisetRel(r))` orders
+multisets of multisets). Lemmas prove the usual steps: `MultisetReplaceOne`
+(an element of a multiset replaced by finitely many below it),
+`MultisetReplaceLower`, `MultisetReplaceByLower`, `MultisetAddOne`,
+`MultisetDrop`, `MultisetSub`, `MultisetGeAdd`, `MultisetGeUnion` and
+`MultisetGeCons`. When `r` is also transitive, `MultisetGeTransitive`,
+`MultisetGtGe`, `MultisetGeGt` and `MultisetTransitive` show that the order is
+transitive and that `>=` followed by `>`, in either order, gives `>`. Those
+lemmas that need `r` to be irreflexive or transitive require
+`wellFounded(r)` or `Transitive(r)`:
 
 <!-- %check-verify %options --standard-libraries --type-system-refresh --general-traits=datatype --decreases-orders -->
 ```dafny
@@ -530,14 +536,15 @@ function Spend(bag: multiset<nat>, L: nat): nat
 {
   if L == 0 then 0 else
     var next := bag - multiset{L} + multiset{L - 1, L - 1};
+    GtWellFounded();
     MultisetReplaceOne<nat>(Gt, bag, L, multiset{L - 1, L - 1});
     1 + Spend(next, L - 1)
 }
 ```
 
-Under `--modular-termination`, `MultisetOf`, `MultisetRel`, `MultisetGt` and
-`Dominated`, and calls of the three lemmas, count as applications of the
-relation they are given, as `Of` does. The relation must itself be known code,
+Under `--modular-termination`, `MultisetOf`, `MultisetRel`, `MultisetGe`,
+`MultisetGt` and `Transitive`, and calls of the lemmas, count as applications of
+the relation they are given, as `Of` does. The relation must itself be known code,
 such as a function marked `{:termination_closed}` when another module uses it.
 
 The design is described in https://github.com/erniecohen/dafny/issues/245.

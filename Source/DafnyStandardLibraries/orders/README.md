@@ -11,13 +11,14 @@ section "Well-founded orders").
 - `WfoOf` is the datatype that implements `Of`.
 - `Chain` and `WfoOf` are marked `{:termination_closed}`, so that under `--modular-termination`
   other modules may use them in bounds.
-- `MultisetOf(r)` is the multiset (Dershowitz-Manna) order over a well-founded relation `r`:
-  a multiset goes down when a nonempty part of it is replaced by finitely many elements, each
-  below some element of that part (https://github.com/erniecohen/dafny/issues/211). Its
-  well-foundedness is proved here, by accessibility, as in Nipkow's proof. `MultisetGt` and
-  `Dominated` define the relation, `MultisetRel(r)` is the relation itself (so multiset orders
-  nest), `MultisetReplace` and `MultisetReplaceOne` prove one step, and `MultisetTransitive`
-  proves the order transitive when `r` is.
+- `MultisetOf(r)` is the multiset order over a well-founded relation `r`, in the form of Huet
+  and Oppen that VeriFast uses (https://github.com/erniecohen/dafny/issues/211): `M` is at least
+  `N` (`MultisetGe`) when each element of `N - M` is below some element of `M - N`, and above it
+  (`MultisetGt`) when also `M != N`. Each such step is a step of the Dershowitz-Manna order, whose
+  well-foundedness is proved here by accessibility, as in Nipkow's proof. `MultisetRel(r)` is the
+  relation itself, so multiset orders nest. The lemmas, with the names of the corresponding
+  lemmas of VeriFast's `termination.gh` in the comments, prove the usual steps and, when `r` is
+  transitive, transitivity and both absorption laws (`MultisetGtGe`, `MultisetGeGt`).
 
 The module is a library of its own, `binaries/DafnyStandardLibraries-orders.doo`, built
 against `binaries/DafnyStandardLibraries.doo`. Dafny loads it with the standard library only

@@ -6,7 +6,7 @@ module MultisetOrders {
 
   ghost predicate {:termination_closed} Gt(x: nat, y: nat) { x > y }
 
-  lemma GtWellFounded() ensures wellFounded<nat>(Gt) {
+  lemma {:termination_closed} GtWellFounded() ensures wellFounded<nat>(Gt) {
     forall c: Chain<nat> ensures stops<nat>(Gt, c) {
       if forall n: nat :: Gt(c(n), c(n + 1)) {
         Descends(c(0) + 1);
@@ -25,12 +25,12 @@ module MultisetOrders {
     }
   }
 
-  lemma GtTransitive() ensures Transitive<nat>(Gt) { }
+  lemma {:termination_closed} GtTransitive() ensures Transitive<nat>(Gt) { }
 
   // (a, b) is above (a', b') when a > a', or a == a' and b > b'
   ghost predicate {:termination_closed} Lex(x: (nat, nat), y: (nat, nat)) { x.0 > y.0 || (x.0 == y.0 && x.1 > y.1) }
 
-  lemma LexWellFounded() ensures wellFounded<(nat, nat)>(Lex) {
+  lemma {:termination_closed} LexWellFounded() ensures wellFounded<(nat, nat)>(Lex) {
     forall c: Chain<(nat, nat)> ensures stops<(nat, nat)>(Lex, c) {
       if forall n: nat :: Lex(c(n), c(n + 1)) {
         LexDescends(c(0).0, c(0).1);

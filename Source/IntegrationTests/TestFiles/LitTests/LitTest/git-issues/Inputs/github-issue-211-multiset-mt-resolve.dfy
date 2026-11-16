@@ -18,4 +18,7 @@ module Unknown {
   ghost function {:termination_closed} ByGt(r: (nat, nat) -> bool, M: multiset<nat>, N: multiset<nat>): bool {
     MultisetGt<nat>(r, M, N)
   }
+  ghost function {:termination_closed} ByGe(r: (nat, nat) -> bool, M: multiset<nat>, N: multiset<nat>): bool {
+    MultisetGe<nat>(r, M, N)
+  }
 }

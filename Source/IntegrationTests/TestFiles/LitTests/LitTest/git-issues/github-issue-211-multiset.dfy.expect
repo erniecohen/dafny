@@ -1,40 +1,47 @@
 the orders library, verified from its sources
 
-Dafny program verifier finished with 32 verified, 0 errors
-positive: one element for many smaller ones, the empty bag, pairs, bags of bags, a mixed tuple, absorption
+Dafny program verifier finished with 47 verified, 0 errors
+positive: one element for many smaller ones, the empty bag, pairs, bags of bags, a mixed tuple, absorption, the lemmas of VeriFast
 
-Dafny program verifier finished with 24 verified, 0 errors
+Dafny program verifier finished with 29 verified, 0 errors
 controls (assert false in each positive context) and bags that do not go down
-github-issue-211-multiset-verify.dfy(15,6): Error: assertion might not hold
-github-issue-211-multiset-verify.dfy(31,6): Error: assertion might not hold
-github-issue-211-multiset-verify.dfy(42,6): Error: assertion might not hold
-github-issue-211-multiset-verify.dfy(54,6): Error: assertion might not hold
-github-issue-211-multiset-verify.dfy(67,4): Error: assertion might not hold
-github-issue-211-multiset-verify.dfy(79,6): Error: assertion might not hold
-github-issue-211-multiset-verify.dfy(93,4): Error: assertion might not hold
-github-issue-211-multiset-verify.dfy(100,30): Error: decreases clause might not decrease
-github-issue-211-multiset-verify.dfy(108,13): Error: decreases clause might not decrease
-github-issue-211-multiset-verify.dfy(116,8): Error: decreases clause might not decrease
-github-issue-211-multiset-verify.dfy(124,29): Error: decreases clause might not decrease
-github-issue-211-multiset-verify.dfy(133,11): Error: decreases clause might not decrease
+github-issue-211-multiset-verify.dfy(16,6): Error: assertion might not hold
+github-issue-211-multiset-verify.dfy(33,6): Error: assertion might not hold
+github-issue-211-multiset-verify.dfy(43,6): Error: assertion might not hold
+github-issue-211-multiset-verify.dfy(56,6): Error: assertion might not hold
+github-issue-211-multiset-verify.dfy(70,4): Error: assertion might not hold
+github-issue-211-multiset-verify.dfy(83,6): Error: assertion might not hold
+github-issue-211-multiset-verify.dfy(98,4): Error: assertion might not hold
+github-issue-211-multiset-verify.dfy(110,6): Error: assertion might not hold
+github-issue-211-multiset-verify.dfy(130,4): Error: assertion might not hold
+github-issue-211-multiset-verify.dfy(144,6): Error: assertion might not hold
+github-issue-211-multiset-verify.dfy(152,30): Error: decreases clause might not decrease
+github-issue-211-multiset-verify.dfy(160,13): Error: decreases clause might not decrease
+github-issue-211-multiset-verify.dfy(168,8): Error: decreases clause might not decrease
+github-issue-211-multiset-verify.dfy(176,29): Error: decreases clause might not decrease
+github-issue-211-multiset-verify.dfy(184,9): Error: decreases clause might not decrease
+github-issue-211-multiset-verify.dfy(192,32): Error: decreases clause might not decrease
+github-issue-211-multiset-verify.dfy(201,11): Error: decreases clause might not decrease
 
-Dafny program verifier finished with 11 verified, 12 errors
+Dafny program verifier finished with 11 verified, 17 errors
 --modular-termination: global bounds by multiset orders, the orders library verified with the client
 
-Dafny program verifier finished with 50 verified, 0 errors
+Dafny program verifier finished with 66 verified, 0 errors
 --modular-termination: controls and bounds above the caller's
-github-issue-211-multiset-mt-verify.dfy(28,4): Error: assertion might not hold
-github-issue-211-multiset-mt-verify.dfy(37,4): Error: assertion might not hold
-github-issue-211-multiset-mt-verify.dfy(47,4): Error: assertion might not hold
-github-issue-211-multiset-mt-verify.dfy(56,4): Error: assertion might not hold
-github-issue-211-multiset-mt-verify.dfy(77,9): Error: decreases clause might not decrease (--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
-github-issue-211-multiset-mt-verify.dfy(85,9): Error: decreases clause might not decrease (--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
-github-issue-211-multiset-mt-verify.dfy(93,9): Error: decreases clause might not decrease (--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
-github-issue-211-multiset-mt-verify.dfy(101,9): Error: decreases clause might not decrease (--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
+github-issue-211-multiset-mt-verify.dfy(29,4): Error: assertion might not hold
+github-issue-211-multiset-mt-verify.dfy(38,4): Error: assertion might not hold
+github-issue-211-multiset-mt-verify.dfy(46,4): Error: assertion might not hold
+github-issue-211-multiset-mt-verify.dfy(57,4): Error: assertion might not hold
+github-issue-211-multiset-mt-verify.dfy(66,4): Error: assertion might not hold
+github-issue-211-multiset-mt-verify.dfy(88,9): Error: decreases clause might not decrease (--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
+github-issue-211-multiset-mt-verify.dfy(96,9): Error: decreases clause might not decrease (--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
+github-issue-211-multiset-mt-verify.dfy(104,9): Error: decreases clause might not decrease (--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
+github-issue-211-multiset-mt-verify.dfy(112,9): Error: decreases clause might not decrease (--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
 
-Dafny program verifier finished with 45 verified, 8 errors
+Dafny program verifier finished with 60 verified, 9 errors
 --modular-termination: a relation that is not known, passed to the library's multiset functions and lemmas
 github-issue-211-multiset-mt-resolve.dfy(9,33): Error: modular termination: the {:termination_closed} promise of 'ByLemma' is not established; its body, specifications or implicit evaluations can reach open dispatch, an unknown application or an imported General contract
 github-issue-211-multiset-mt-resolve.dfy(15,39): Error: modular termination: the {:termination_closed} promise of 'ByRel' is not established; its body, specifications or implicit evaluations can reach open dispatch, an unknown application or an imported General contract
 github-issue-211-multiset-mt-resolve.dfy(18,39): Error: modular termination: the {:termination_closed} promise of 'ByGt' is not established; its body, specifications or implicit evaluations can reach open dispatch, an unknown application or an imported General contract
-3 resolution/type errors detected in github-issue-211-multiset-mt-resolve.dfy
+github-issue-211-multiset-mt-resolve.dfy(21,39): Error: modular termination: the {:termination_closed} promise of 'ByGe' is not established; its body, specifications or implicit evaluations can reach open dispatch, an unknown application or an imported General contract
+4 resolution/type errors detected in github-issue-211-multiset-mt-resolve.dfy
