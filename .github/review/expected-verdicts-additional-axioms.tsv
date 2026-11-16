@@ -1312,6 +1312,8 @@ git-issues/github-issue-4017.dfy	0	1 verified, 0 errors
 git-issues/github-issue-404.dfy	4	50 verified, 15 errors	33,43,54,67,79,90,103,119,136,146,158,174,189,199
 git-issues/github-issue-4144.dfy	0	2 verified, 0 errors	
 git-issues/github-issue-422.dfy	0	4 verified, 0 errors	
+git-issues/github-issue-431-more.dfy	4	12 verified, 10 errors	26,35,44,61,63,81,93,103,113,152
+git-issues/github-issue-431.dfy	4	11 verified, 6 errors	24,33,41,48,66,68
 git-issues/github-issue-4483.dfy	0	2 verified, 0 errors	
 git-issues/github-issue-4804.dfy	4	3 verified, 0 errors, 1 out of resource; 2 out of resource	19
 git-issues/github-issue-5029.dfy	0	3 verified, 0 errors	
