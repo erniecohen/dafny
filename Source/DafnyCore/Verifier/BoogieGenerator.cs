@@ -42,6 +42,13 @@ namespace Microsoft.Dafny {
     }
 
     public ICanVerify CanVerify { get; }
+
+    /// <summary>
+    /// Whether this is the override check of a member that a refining module copied from its refinement base and
+    /// must check again (see BoogieGenerator.MustReverifyInheritedOverrideCheck).  The pipeline verifies only such
+    /// tasks of a copy: whatever else the copy produces asserts nothing and was verified with the base.
+    /// </summary>
+    public bool IsReverifiedOverrideCheck { get; init; }
   }
 
   public partial class BoogieGenerator {
@@ -1738,6 +1745,7 @@ namespace Microsoft.Dafny {
     private void Reset() {
       currentModule = null;
       codeContext = null;
+      reverifyInheritedOverrideCheck = false;
       CurrentIdGenerator.Reset();
       _tmpIEs.Clear();
       assertionCount = 0;
@@ -2055,6 +2063,18 @@ namespace Microsoft.Dafny {
     }
 
     ModuleDefinition currentModule = null;  // the module whose members are currently being translated
+
+    /// <summary>
+    /// Set while translating an override check that the current module must make itself although the overriding
+    /// member is a copy from its refinement base (see MustReverifyInheritedOverrideCheck).
+    /// </summary>
+    bool reverifyInheritedOverrideCheck = false;
+
+    /// <summary>
+    /// Whether asserts at origins inherited from the refinement base are checked in the current code context, rather
+    /// than assumed on the grounds that the base module already checked them.
+    /// </summary>
+    bool MustReverifyInheritedCode => reverifyInheritedOverrideCheck || codeContext is { MustReverify: true };
     ModuleDefinition forModule = null;  // the root module
     ICallable codeContext = null;  // the method/iterator whose implementation is currently being translated or the function whose specification is being checked for well-formedness
     Bpl.LocalVariable yieldCountVariable = null;  // non-null when an iterator body is being translated
@@ -3712,7 +3732,7 @@ namespace Microsoft.Dafny {
       Bpl.PredicateCmd cmd;
       if (context.AssertMode == AssertMode.Assume
           || (assertionOnlyFilter != null && !assertionOnlyFilter(tok.ReportingRange.StartToken))
-          || (refinesToken.IsInherited(currentModule) && codeContext is not { MustReverify: true })) {
+          || (refinesToken.IsInherited(currentModule) && !MustReverifyInheritedCode)) {
         // produce an assume instead
         cmd = TrAssumeCmd(tok, condition, kv);
         proofDependencies?.AddProofDependencyId(cmd, tok, new AssumedProofObligationDependency(tok, description));
@@ -3736,7 +3756,7 @@ namespace Microsoft.Dafny {
       PredicateCmd cmd;
       if (context.AssertMode == AssertMode.Assume ||
           (assertionOnlyFilter != null && !assertionOnlyFilter(tok.ReportingRange.StartToken)) ||
-          (refinesTok.IsInherited(currentModule) && (codeContext == null || !codeContext.MustReverify))) {
+          (refinesTok.IsInherited(currentModule) && !MustReverifyInheritedCode)) {
         // produce a "skip" instead
         cmd = TrAssumeCmd(tok, Bpl.Expr.True, kv);
       } else {
@@ -5063,7 +5083,7 @@ namespace Microsoft.Dafny {
 
     bool TrSplitNeedsTokenAdjustment(Expression expr) {
       Contract.Requires(expr != null);
-      return expr.Origin.IsInherited(currentModule) && (codeContext == null || !codeContext.MustReverify) && RefinementTransformer.ContainsChange(expr, currentModule);
+      return expr.Origin.IsInherited(currentModule) && !MustReverifyInheritedCode && RefinementTransformer.ContainsChange(expr, currentModule);
     }
 
     /// <summary>
