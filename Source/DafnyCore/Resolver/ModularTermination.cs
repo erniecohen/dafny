@@ -650,6 +650,10 @@ public class ModularTerminationAnalysis {
             Call(call.Function);
           }
           break;
+        // A method is never a value, so selecting one of the orders library's multiset lemmas is the callee of a
+        // call statement, which VisitOneStmt visits as an application of its arguments of arrow type.
+        case MemberSelectExpr { Member: MethodOrConstructor lemma } when DecreasesOrders.AppliesOnlyItsArguments(lemma):
+          break;
         case MemberSelectExpr { Member: Function or MethodOrConstructor or ConstantField } select:
           Call(select.Member);
           break;
@@ -683,6 +687,10 @@ public class ModularTerminationAnalysis {
       if (value.Resolved is IdentifierExpr { Var: { } binder } && analysis.logicalBinders.Contains(binder)) {
         return;
       }
+      // The relation MultisetRel(r) of the orders library applies only r, which the visit of that call applies.
+      if (value.Resolved is FunctionCallExpr { Function: { } function } && DecreasesOrders.IsLibraryMultisetRel(function)) {
+        return;
+      }
       Dispatch("a call through a function value whose code is not known");
     }
 
@@ -691,7 +699,14 @@ public class ModularTerminationAnalysis {
         Mention(type);
       }
       if (stmt is CallStmt { Method: { } method }) {
-        Call(method);
+        if (DecreasesOrders.AppliesOnlyItsArguments(method)) {
+          // The orders library's lemmas of the multiset order (https://github.com/erniecohen/dafny/issues/211)
+          foreach (var arg in ((CallStmt)stmt).Args.Where(a => a.Type.NormalizeExpand().IsArrowType)) {
+            Apply(arg);
+          }
+        } else {
+          Call(method);
+        }
       }
       if (stmt is SingleAssignStmt { Rhs: AllocateArray { ElementInit: { } init } }) {
         Apply(init);
@@ -1281,7 +1296,8 @@ public class ModularTerminationRewriter : IRewriter {
         }
       }
       var dispatched = ModularTermination.IsOpenDispatch(callee, analysis.OpenTraits);
-      if (!dispatched && !analysis.ReachesOpenDispatch(callee, caller.EnclosingModule)) {
+      if (!dispatched && (DecreasesOrders.CallAppliesOnlyItsArguments(callee) ||
+                          !analysis.ReachesOpenDispatch(callee, caller.EnclosingModule))) {
         return;
       }
       if (!FirstReport(origin)) {

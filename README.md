@@ -16,7 +16,7 @@ Unless marked *opt-in*, a change is on by default. Soundness fixes are on by def
 **Termination**
 - *Opt-in* `--modular-termination`: cross-module termination checked through recorded bounds and contracts, which `.doo` libraries carry. It includes a certified standard-library core.
 - *Opt-in* `--warn-unchecked-termination` reports `{:termination false}` and assumed cross-module termination.
-- *Opt-in* `--decreases-orders`: `decreases e by O`, where `O` is any user-proved well-founded order (`Std.Termination.Orders.Wfo`).
+- *Opt-in* `--decreases-orders`: `decreases e by O`, where `O` is any user-proved well-founded order (`Std.Termination.Orders.Wfo`). The orders library includes the multiset (Dershowitz-Manna) order over any well-founded order, proved well-founded.
 - *Opt-in* `--trait-rank-decreases`: datatypes and the non-reference traits they extend are ordered by rank.
 
 **Standard library**

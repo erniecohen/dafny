@@ -1,6 +1,6 @@
 the orders library, verified from its sources
 
-Dafny program verifier finished with 7 verified, 0 errors
+Dafny program verifier finished with 32 verified, 0 errors
 positive: functions, methods, loops, mixed components, a user implementation of Wfo
 
 Dafny program verifier finished with 18 verified, 0 errors
@@ -24,14 +24,14 @@ github-issue-245-resolve.dfy(31,12): Error: a decreases component 'e by O' is no
 6 resolution/type errors detected in github-issue-245-resolve.dfy
 --modular-termination: global and callback bounds by an order, the orders library verified with the client
 
-Dafny program verifier finished with 15 verified, 0 errors
+Dafny program verifier finished with 40 verified, 0 errors
 --modular-termination: bounds that are not below, or name another order
 github-issue-245-mt-verify.dfy(53,7): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
 github-issue-245-mt-verify.dfy(61,7): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
 github-issue-245-mt-verify.dfy(69,7): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
 github-issue-245-mt-verify.dfy(78,4): Error: decreases clause might not decrease (--modular-termination: the 'decreases {:callback}' bound of 'g' must be below the caller's 'decreases {:global}' bound)
 
-Dafny program verifier finished with 12 verified, 4 errors
+Dafny program verifier finished with 37 verified, 4 errors
 --modular-termination: bounds that reach open dispatch, outside the binder rule
 github-issue-245-mt-resolve.dfy(66,16): Error: modular termination: the 'decreases {:global}' bound of 'Ord.ByParam' can reach dispatch to implementations that other modules may provide (bound -> 'Ord.ParamOrder' -> 'Ord.ParamWellFounded' -> 'Ord.ParamClimbs' -> a call through a function value whose code is not known); a bound may only use code that cannot reach one, since its value must not depend on the termination that the bounds establish
 github-issue-245-mt-resolve.dfy(74,16): Error: modular termination: the 'decreases {:global}' bound of 'Ord.ByGeneral' can reach dispatch to implementations that other modules may provide (bound -> 'Ord.GeneralOrder' -> 'Ord.General' -> a call through a function value whose code is not known); a bound may only use code that cannot reach one, since its value must not depend on the termination that the bounds establish

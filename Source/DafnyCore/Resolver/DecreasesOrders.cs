@@ -26,6 +26,13 @@ public static class DecreasesOrders {
   public const string OfName = "Of";
   public const string WellFoundedName = "wellFounded";
   public const string StopsName = "stops";
+  public const string MultisetOfName = "MultisetOf";
+  public const string MultisetRelName = "MultisetRel";
+  public const string MultisetGtName = "MultisetGt";
+  public const string DominatedName = "Dominated";
+  public const string MultisetReplaceName = "MultisetReplace";
+  public const string MultisetReplaceOneName = "MultisetReplaceOne";
+  public const string MultisetTransitiveName = "MultisetTransitive";
 
   /// <summary>
   /// Whether the options let a client hold values of the trait Wfo: a datatype value converts to a trait type
@@ -74,13 +81,57 @@ public static class DecreasesOrders {
   }
 
   /// <summary>
-  /// Whether "function" is one of the orders library's module-level functions Of, wellFounded and stops, whose only
-  /// code that is not known is the application of their arguments of arrow type.  Of makes a WfoOf from the relation
-  /// it is given.
+  /// Whether "function" is one of the orders library's module-level functions Of, wellFounded and stops, or of its
+  /// multiset order MultisetOf, MultisetRel, MultisetGt and Dominated, whose only code that is not known is the
+  /// application of their arguments of arrow type.  Of makes a WfoOf from the relation it is given, and MultisetOf
+  /// makes one from the multiset order over the relation it is given.  The proofs that the multiset order is
+  /// well-founded, which MultisetRel calls, are lemmas of the library that apply nothing but that relation and
+  /// functions they build from it, and terminate by their own decreases clauses.
   /// </summary>
   public static bool AppliesOnlyItsArguments(Function function) {
-    return function is { Name: OfName or WellFoundedName or StopsName, EnclosingClass: DefaultClassDecl cl } &&
-           cl.EnclosingModuleDefinition.FullDafnyName == WfoModule && function.Origin.Uri == DafnyMain.StandardLibrariesOrdersDooUri;
+    return function.Name is OfName or WellFoundedName or StopsName or MultisetOfName or MultisetRelName or MultisetGtName or DominatedName &&
+           InOrdersLibraryModule(function);
+  }
+
+  /// <summary>
+  /// Whether "lemma" is one of the orders library's lemmas MultisetReplace, MultisetReplaceOne and MultisetTransitive,
+  /// which a client calls to prove that a multiset goes down.  Like the functions of AppliesOnlyItsArguments, they
+  /// apply nothing but their argument of arrow type and functions they build from it.
+  /// </summary>
+  public static bool AppliesOnlyItsArguments(MethodOrConstructor lemma) {
+    return lemma is Lemma { Name: MultisetReplaceName or MultisetReplaceOneName or MultisetTransitiveName } &&
+           InOrdersLibraryModule(lemma);
+  }
+
+  /// <summary>
+  /// Whether a call of "callee" runs no code but its arguments of arrow type: one of the functions or lemmas of
+  /// AppliesOnlyItsArguments.  The caller's walk applies those arguments at the call site, so under
+  /// --modular-termination the call itself needs no bound check.  This holds only for a call, which supplies the
+  /// arguments; a function named as a value is classified by what it reaches.
+  /// </summary>
+  public static bool CallAppliesOnlyItsArguments(MemberDecl callee) {
+    return callee switch {
+      Function function => AppliesOnlyItsArguments(function),
+      MethodOrConstructor lemma => AppliesOnlyItsArguments(lemma),
+      _ => false
+    };
+  }
+
+  /// <summary>
+  /// Whether "member" is a module-level declaration of the orders library.
+  /// </summary>
+  static bool InOrdersLibraryModule(MemberDecl member) {
+    return member.EnclosingClass is DefaultClassDecl cl && cl.EnclosingModuleDefinition.FullDafnyName == WfoModule &&
+           member.Origin.Uri == DafnyMain.StandardLibrariesOrdersDooUri;
+  }
+
+  /// <summary>
+  /// Whether "function" is the orders library's MultisetRel, whose result is a relation that applies only the
+  /// argument of MultisetRel.  A call of MultisetRel is visited as an application of that argument, so applying its
+  /// result runs no other code.
+  /// </summary>
+  public static bool IsLibraryMultisetRel(Function function) {
+    return function.Name == MultisetRelName && AppliesOnlyItsArguments(function);
   }
 
   /// <summary>

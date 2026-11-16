@@ -483,6 +483,63 @@ dispatch, and that includes the code of `O`:
   that code is not known. A bound with an order then reaches it, and the bound
   is rejected. Build orders with `Of` instead.
 
+**The multiset order.** `Std.Termination.Orders.MultisetOf(r)` is the multiset
+(Dershowitz-Manna) order over a relation `r` proved `wellFounded`. A multiset `M`
+is above `N` when `N` is `M` with a nonempty part `X` replaced by finitely many
+elements `Y`, each below some element of `X`:
+`MultisetGt(r, M, N)` is `exists X, Y :: X != multiset{} && X <= M && N == M - X + Y && Dominated(r, X, Y)`.
+So one element may be exchanged for any finite number of smaller ones, as the
+bags of call permission levels of VeriFast are. The library proves this order
+well-founded; nothing about it is assumed. The lemmas
+`MultisetReplace(r, M, X, Y)` and `MultisetReplaceOne(r, M, a, Y)` give
+`MultisetGt` for one step; `MultisetRel(r)` is the order as a relation, so
+multiset orders nest (`MultisetOf(MultisetRel(r))` orders multisets of
+multisets), and `MultisetTransitive` shows that it is transitive when `r` is:
+
+<!-- %check-verify %options --standard-libraries --type-system-refresh --general-traits=datatype --decreases-orders -->
+```dafny
+import opened Std.Termination.Orders
+
+ghost predicate Gt(x: nat, y: nat) { x > y }
+
+lemma GtWellFounded() ensures wellFounded<nat>(Gt) {
+  forall c: Chain<nat> ensures stops<nat>(Gt, c) {
+    if forall n: nat :: Gt(c(n), c(n + 1)) {
+      Descends(c(0) + 1);
+    }
+  }
+}
+
+lemma Descends(n: nat)
+  ensures forall c: Chain<nat> :: (forall k: nat :: Gt(c(k), c(k + 1))) ==> c(n) + n <= c(0)
+{
+  if n > 0 {
+    Descends(n - 1);
+    forall c: Chain<nat> | forall k: nat :: Gt(c(k), c(k + 1)) ensures c(n) + n <= c(0) {
+      assert Gt(c(n - 1), c(n));
+    }
+  }
+}
+
+ghost function Bags(): Wfo<multiset<nat>> { GtWellFounded(); MultisetOf(Gt) }
+
+// One permission at level L is exchanged for two at level L - 1
+function Spend(bag: multiset<nat>, L: nat): nat
+  requires L in bag
+  decreases bag by Bags()
+{
+  if L == 0 then 0 else
+    var next := bag - multiset{L} + multiset{L - 1, L - 1};
+    MultisetReplaceOne<nat>(Gt, bag, L, multiset{L - 1, L - 1});
+    1 + Spend(next, L - 1)
+}
+```
+
+Under `--modular-termination`, `MultisetOf`, `MultisetRel`, `MultisetGt` and
+`Dominated`, and calls of the three lemmas, count as applications of the
+relation they are given, as `Of` does. The relation must itself be known code,
+such as a function marked `{:termination_closed}` when another module uses it.
+
 The design is described in https://github.com/erniecohen/dafny/issues/245.
 
 #### 7.1.3.2. Global bounds: `decreases {:global}` (experimental) {#sec-global-decreases}
