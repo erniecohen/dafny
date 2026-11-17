@@ -788,3 +788,6 @@ git-issues/github-issue-460.dfy
 # Soundness gates of the plan for https://github.com/erniecohen/dafny/issues/211: (a) a library verified alone under --modular-termination is not invalidated by a later extension, with both resolvers; (b) every context in which code runs is ordered by the rules, one marked member per context.
 git-issues/github-issue-211-gate-library.dfy
 git-issues/github-issue-211-gate-coverage.dfy
+
+# A lambda expression may not mention allocated(...) in its body, precondition or reads clause outside an old within the lambda, under both resolvers; old(...) inside is allowed, the control does not prove false, and --legacy-allocated-in-lambdas restores the old rule (https://github.com/erniecohen/dafny/issues/457).
+git-issues/github-issue-457.dfy

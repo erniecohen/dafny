@@ -821,6 +821,22 @@ sources, `modular-termination`, `orders` and its examples).  The hidden `--legac
 migration.  The regression is `git-issues/github-issue-479.dfy`; the release note is
 `docs/dev/news/479.fix`.
 
+## `allocated` in lambda expressions ([issue 457](https://github.com/erniecohen/dafny/issues/457))
+
+A function, a constant or a redirecting type could not depend on the set of allocated references,
+but a lambda expression in a method could mention `allocated(c)`.  The verifier translates a
+lambda's body, precondition and reads clause in the heap the lambda is applied in, so its value
+depended on that heap's allocation state, while the frame axiom of its arrow equates its values in
+any two heaps that agree on its reads frame.  With an empty reads frame, `(x: int) =>
+allocated(c)` applied after `c` was allocated proved `false`.  `BoundsDiscoveryVisitor`, which
+already rejected quantifiers that depend on the allocation state inside a lambda, now also reports
+`allocated(...)` in a lambda's body, precondition or reads clause, under both resolvers, unless it is
+inside an `old` (or `old@L`) expression within that lambda; an `old` around the lambda does not
+count, since the lambda is still evaluated in the heap it is applied in.  Its kind is **weakens
+only**: it rejects programs and adds no fact or axiom.  The hidden `--legacy-allocated-in-lambdas`
+option restores the old rule for comparison and migration.  The regression is
+`git-issues/github-issue-457.dfy`; the release note is `docs/dev/news/457.fix`.
+
 ## Override checks in refining modules ([issue 404](https://github.com/erniecohen/dafny/issues/404))
 
 A refining module could strengthen the contract of a trait member, or refine an abstract type into
