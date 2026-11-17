@@ -1,0 +1,10 @@
+git-issue-105-abstract-errors.dfy(23,11): Error: to be a refinement of abstract type 'Spec.T' declared with (0), datatype 'NoWitness.T' must support auto-initialization
+git-issue-105-abstract-errors.dfy(26,11): Error: to be a refinement of abstract type 'Spec.U' declared with (00), datatype 'NoWitness.U' must be nonempty
+git-issue-105-abstract-errors.dfy(32,11): Error: to be a refinement of abstract type 'Spec.T' declared with (0), datatype 'GhostWitness.T' must support auto-initialization
+git-issue-105-abstract-errors.dfy(43,7): Error: a type synonym (T) cannot declare members, so it cannot refine an abstract type with members
+git-issue-105-abstract-errors.dfy(49,22): Error: 'Size' is used by the invariant of 'T' and refers to the set of values of 'T'
+git-issue-105-abstract-errors.dfy(62,16): Error: 'Size' is used by the invariant of 'V' and refers to the set of values of 'V'
+git-issue-105-abstract-errors.dfy(76,14): Error: 'raw' is not yet supported for abstract type 'T', which is provided but not revealed here
+7 resolution/type errors detected in git-issue-105-abstract-errors.dfy
+git-issue-105-abstract-witness.dfy(7,4): Error: an abstract type may not declare a witness: its characteristics, '(0)' or '(00)', promise one, and each refinement that defines the type supplies it
+1 resolution/type errors detected in git-issue-105-abstract-witness.dfy

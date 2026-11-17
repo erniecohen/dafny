@@ -46,9 +46,12 @@ namespace Microsoft.Dafny {
     /// <summary>
     /// Whether this is a check of a member that a refining module copied from its refinement base and must make
     /// itself (see BoogieGenerator.MustVerifyCopy): an override check
-    /// (BoogieGenerator.MustReverifyInheritedOverrideCheck), or the body of a constructor of a class to which the
-    /// module added fields (BoogieGenerator.MustCheckInheritedConstructorFields).  The pipeline verifies only such
-    /// tasks of a copy: whatever else the copy produces asserts nothing new and was verified with the base.
+    /// (BoogieGenerator.MustReverifyInheritedOverrideCheck), the body of a constructor of a class to which the
+    /// module added fields (BoogieGenerator.MustCheckInheritedConstructorFields), a check of the termination of
+    /// calls in an SCC the module changed (BoogieGenerator.MustCheckInheritedTermination), or, under
+    /// --member-invariants, a check that converts to a type with an invariant the module added, or of a member that
+    /// became raw (BoogieGenerator.MustCheckAddedInvariants).  The pipeline verifies only such tasks of a copy:
+    /// whatever else the copy produces asserts nothing new and was verified with the base.
     /// </summary>
     public bool IsReverifiedInheritedCheck { get; init; }
   }
@@ -767,8 +770,8 @@ namespace Microsoft.Dafny {
     }
 
     /// <summary>
-    /// Issue 105: member invariants (--member-invariants) are verified for inductive datatypes, classes and traits,
-    /// declared or inherited, in a module that refines no other. If the program, libraries included, has any other
+    /// Issue 105: member invariants (--member-invariants) are verified for inductive datatypes, classes, traits and
+    /// abstract types, declared or inherited, in any module. If the program, libraries included, has any other
     /// invariant, declared or inherited, no module of it is translated, since the types of every module may depend
     /// on the invariants. Then report each unsupported invariant of "forModule", or, if it has none, the first of its
     /// declarations that would have been verified. Return whether the program has an unsupported invariant.
@@ -800,8 +803,7 @@ namespace Microsoft.Dafny {
 
     /// <summary>
     /// Issue 105: the invariants of "module" whose verification is not yet supported, each with where to report it and
-    /// why: an invariant of a newtype or an abstract type, a newtype or an abstract type that extends a trait with
-    /// invariants (reported at its name), and an invariant, declared or inherited, of a declaration in a refining module.
+    /// why: an invariant of a newtype, and a newtype that extends a trait with invariants (reported at its name).
     /// </summary>
     private static IEnumerable<(IOrigin Origin, string Reason)> UnsupportedInvariants(ModuleDefinition module) {
       const string notYet = "is not yet supported";
@@ -814,14 +816,6 @@ namespace Microsoft.Dafny {
           }
           if (decl.Traits.Any(ExtendsTraitWithInvariants)) {
             yield return (decl.NameNode.Origin, $"verification of {kind} that extends a trait with member invariants {notYet}");
-          }
-        } else if (decl.InvariantTypeDecl != null && decl.EnclosingModuleDefinition.Implements != null) {
-          const string reason = $"verification of a member invariant in a refining module {notYet}";
-          if (invariants.Count == 0) {
-            yield return (decl.NameNode.Origin, reason);
-          }
-          foreach (var invariant in invariants) {
-            yield return (invariant.NameNode.Origin, reason);
           }
         }
       }
@@ -994,6 +988,12 @@ namespace Microsoft.Dafny {
         CurrentDeclaration = d;
         if (d is AbstractTypeDecl abstractType) {
           AddClassMembers(abstractType, true, true);
+          if (abstractType.InvariantTypeDecl != null && RevealedInScope((RevealableTypeDecl)abstractType)) {
+            // Issue 105: the type that the abstract type's name denotes, the raw type restricted by the invariants.
+            // Where the abstract type is only provided, so are its invariants, and the name denotes an opaque type,
+            // as for a datatype (see AddRevealableTypeDecl).
+            AddTypeDecl(abstractType.InvariantTypeDecl);
+          }
         } else if (d is ModuleDecl) {
           // submodules have already been added as a top level module, ignore this.
         } else if (d is RevealableTypeDecl revealableTypeDecl) {
@@ -1814,6 +1814,12 @@ namespace Microsoft.Dafny {
 
     private Implementation AddImplementationWithAttributes(CanVerifyOrigin tok, Procedure proc, List<Variable> inParams,
       List<Variable> outParams, Variables localVariables, StmtList stmts, QKeyValue kv) {
+      if (addedInvariantChecks != 0 || codeContext is MemberDecl member && BecameRaw(member)) {
+        // Issue 105: the implementation checks a conjunct that the refining module added, at an inherited site, or
+        // verifies again a member that became raw, so the pipeline verifies it even where it belongs to a copy
+        tok = new CanVerifyOrigin(tok.CanVerify) { IsReverifiedInheritedCheck = true };
+      }
+      addedInvariantChecks = 0;
       Bpl.Implementation impl = new Bpl.Implementation(tok, proc.Name,
         [], inParams, outParams,
         localVariables.Values.ToList<Variable>(), stmts, kv);
@@ -1844,6 +1850,7 @@ namespace Microsoft.Dafny {
       currentModule = null;
       codeContext = null;
       reverifyInheritedOverrideCheck = false;
+      addedInvariantChecks = 0;
       CurrentIdGenerator.Reset();
       _tmpIEs.Clear();
       assertionCount = 0;
@@ -2170,9 +2177,11 @@ namespace Microsoft.Dafny {
 
     /// <summary>
     /// Whether asserts at origins inherited from the refinement base are checked in the current code context, rather
-    /// than assumed on the grounds that the base module already checked them.
+    /// than assumed on the grounds that the base module already checked them.  Issue 105: a member that became raw
+    /// in the refining module is verified again in full (BecameRaw).
     /// </summary>
-    bool MustReverifyInheritedCode => reverifyInheritedOverrideCheck || codeContext is { MustReverify: true };
+    bool MustReverifyInheritedCode => reverifyInheritedOverrideCheck || codeContext is { MustReverify: true } ||
+                                      codeContext is MemberDecl member && BecameRaw(member);
     ModuleDefinition forModule = null;  // the root module
     ICallable codeContext = null;  // the method/iterator whose implementation is currently being translated or the function whose specification is being checked for well-formedness
     Bpl.LocalVariable yieldCountVariable = null;  // non-null when an iterator body is being translated

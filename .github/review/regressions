@@ -874,3 +874,9 @@ git-issues/git-issue-105-trait-gates.dfy
 # Variance by polarity, and statements inside expressions, which are outside the cone of the extension
 # condition (https://github.com/erniecohen/dafny/issues/105).
 git-issues/git-issue-105-statements.dfy
+# Member invariants in refining modules, and of abstract types
+# (https://github.com/erniecohen/dafny/issues/105).
+git-issues/git-issue-105-refinement-verify.dfy
+git-issues/git-issue-105-abstract-types.dfy
+git-issues/git-issue-105-abstract-errors.dfy
+git-issues/git-issue-105-abstract-synonym.dfy

@@ -79,12 +79,26 @@ public class InvariantTypeDecl : SubsetTypeDecl {
 
   private static Type.AutoInitInfo AutoInit(TopLevelDeclWithMembers owner, MemberWitness? witness) {
     return IsReferenceType(owner) ? Type.AutoInitInfo.CompilableValue
+      : owner is AbstractTypeDecl abstractTypeDecl ? PromisedAutoInit(abstractTypeDecl)
       : witness == null ? Type.AutoInitInfo.MaybeEmpty
       : witness.IsGhost ? Type.AutoInitInfo.Nonempty : Type.AutoInitInfo.CompilableValue;
   }
 
   /// <summary>
+  /// The characteristics that the header of an abstract type with invariants states, "(0)" or "(00)", are promises
+  /// about the type with its invariants, which every refinement keeps by supplying a witness (section 4.3 of the
+  /// plan). The refinement's characteristics are checked where it refines the abstract type.
+  /// </summary>
+  public static Type.AutoInitInfo PromisedAutoInit(AbstractTypeDecl owner) {
+    return owner.Characteristics.HasCompiledValue ? Type.AutoInitInfo.CompilableValue
+      : owner.Characteristics.IsNonempty ? Type.AutoInitInfo.Nonempty : Type.AutoInitInfo.MaybeEmpty;
+  }
+
+  /// <summary>
   /// A reference type has the witness null, which satisfies the constraint, as the base type's default value does.
+  /// An abstract type has no witness of its own: what its characteristics promise, a refinement supplies (see
+  /// PromisedAutoInit), so it opts out of the witness check, and where it is compiled, its default value is that of
+  /// "raw T".
   /// </summary>
   private static WKind WitnessKindOf(TopLevelDeclWithMembers owner, MemberWitness? witness) {
     return IsReferenceType(owner) ? WKind.CompiledZero
@@ -248,7 +262,7 @@ public class InvariantTypeDecl : SubsetTypeDecl {
 
   /// <summary>
   /// The declarations that get a derived InvariantTypeDecl when their names are registered: an inductive datatype, a
-  /// class or a trait that declares an invariant (in itself or, by refinement, in a declaration it refines). One that
+  /// class, a trait or an abstract type that declares an invariant (in itself or, by refinement, in a declaration it refines). One that
   /// declares none, but extends a trait that has invariants, gets one once its extends clauses are resolved (see
   /// ModuleResolver.CreateInheritedInvariantTypeDecls).
   /// </summary>
@@ -260,7 +274,7 @@ public class InvariantTypeDecl : SubsetTypeDecl {
   /// The kinds of declaration whose invariants, declared or inherited, are supported.
   /// </summary>
   public static bool MayHaveInvariants(TopLevelDeclWithMembers decl) {
-    return decl is IndDatatypeDecl or ClassDecl or TraitDecl;
+    return decl is IndDatatypeDecl or ClassDecl or TraitDecl or AbstractTypeDecl;
   }
 
   /// <summary>

@@ -342,9 +342,17 @@ public partial class BoogieGenerator {
           CommitAllocatedObject(tok, bplThis, null, builder, etran);
           if (cl.InvariantTypeDecl != null) {
             // Issue 105: the new object is "raw C" until here, where its invariants must hold. They depend only on the
-            // const fields that the constructor has now assigned, so they hold for the rest of the object's life.
+            // const fields that the constructor has now assigned, so they hold for the rest of the object's life.  The
+            // check is at the origin of "new;" itself, not newTok, so that in a copy of the constructor the conjuncts
+            // the refinement base checked here are assumed, and those the refining module added are checked.  Where
+            // "new;" is implicit, that is the end of the body, which the cloner does not mark as inherited.
+            IOrigin newOrigin = s.SeparatorTok ?? s.EndToken;
+            if (s.SeparatorTok == null && codeContext is Constructor { Origin: { IsCopy: true } constructorOrigin } &&
+                constructorOrigin.IsInherited(currentModule)) {
+              newOrigin = new RefinementOrigin(newOrigin, currentModule);
+            }
             var rawThisType = cl.InvariantTypeDecl.RawThisType(tok, th.Type.TypeArgs);
-            CheckSubrange(newTok, bplThis, rawThisType, th.Type, null, builder, etran: etran);
+            CheckSubrange(newOrigin, bplThis, rawThisType, th.Type, null, builder, etran: etran);
           }
 
           AddComment(builder, blockStmt1, "divided block after new;");

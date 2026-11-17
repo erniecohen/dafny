@@ -2,8 +2,8 @@
 // RUN: %diff "%s.expect" "%t"
 // Member invariants (https://github.com/erniecohen/dafny/issues/105): 'raw' for a class across
 // modules.  Where a class with invariants is revealed, a client sees 'raw C' and 'raw C?'.  Where it is
-// only provided, it is an abstract type, so 'raw' does not yet apply to it (in the client, and in the
-// export set's own signature), but its members may be used.
+// only provided, it is an abstract type whose invariants are hidden, so 'raw' does not yet apply to it
+// (in the client, and in the export set's own signature), but its members may be used.
 
 module A {
   export Provides provides Cell, Cell.Inverse, Cell.k, Make

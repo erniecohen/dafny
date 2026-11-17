@@ -103,3 +103,14 @@ module Obligations {
     G00<Ghostly>();
   }
 }
+
+// The by-method part of a raw function is verified for a raw receiver, which is what it is applied
+// to at run time; that of a function that is not raw, for a value of the type
+module ByMethods {
+  datatype D = D(x: int) {
+    invariant x > 0
+    invariant F() == 1
+    function F(): int { if x > 0 then 1 else 2 } by method { return 1; }  // error: 'this' is raw
+    function G(): int { if x > 0 then 1 else 2 } by method { return 1; }
+  }
+}

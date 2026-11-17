@@ -2378,6 +2378,124 @@ section 7.2).**
   `git-issue-105-syntax.dfy` adds members after bodiless ones, and
   `git-issue-105-opacity.dfy` now verifies.
 
+**Refinement and abstract types (seventh step; stage 5 of section 7.2).**
+
+- *The gate* is lifted for refining modules and for abstract types: the
+  invariants of inductive datatypes, classes, traits and abstract types,
+  declared or inherited, are verified in any module.  Only newtypes are still
+  behind it: an invariant of a newtype, and a newtype that extends a trait with
+  invariants (reported at its name).
+- *Inherited sites* (section 4.2).  A refining module `M1` adds invariants to a
+  type `T` of its refinement base `M0` by declaring them in the refining
+  declaration, in a trait that `T` extends, or by giving `T` a parent with
+  invariants.  `M1.T` is then a different type, with more conjuncts.  An assert
+  at an inherited origin is an assume in a copy, since the base proved it, but
+  for a conversion to `M1.T` that is sound only for the conjuncts the base
+  checked at the same site.  So at an inherited site, each conjunct that the
+  base did not check is checked (`ForceCheckOrigin`), with the refining module
+  as a related location, and the others are assumed.  Conjunct `k` of the
+  constraint was checked by the base if the constraint of the declaration the
+  base converted to has an invariant numbered `k`, declared by a declaration
+  that the conjunct's own declaration refines, directly or not.  Invariant
+  numbers are stable under refinement, since a refining declaration numbers
+  its own after the inherited ones.  So an expensive inherited conjunct costs
+  nothing in `M1`, as section 4.2 asks.  The code is in
+  `BoogieGenerator.InheritedInvariants.cs`.
+- *Checks that are not split.*  A check of membership that is not split into
+  the conjuncts of the types it involves, such as the conversion of a
+  `seq<raw P>` to a `seq<P>`, is checked whole at an inherited site if one of
+  those types has a conjunct the base did not check.  This is conservative: it
+  also checks again the conjuncts the base checked.
+- *Abstract imports.*  Where `M1` binds an abstract import of `M0` to a module,
+  `M0` converted to the declarations of the signature, which the bound module
+  refines.  So the conjuncts assumed are those of the first declaration in the
+  chain that the bound one refines, its root.  That is conservative.  Under the
+  hidden `--legacy-unchecked-import-binding`, which accepts a binding that is
+  not a refinement, none is assumed.
+- *What is verified again.*  The pipeline verifies, of a copied member, only the
+  checks that the refining module must make itself (`IsReverifiedInheritedCheck`).
+  A module that may convert, at an inherited site, to a type with a conjunct its
+  base did not check (`AddsInvariantConjuncts`: it declares such a type, has a
+  member that became raw, or binds an abstract import) schedules its copies
+  (`MustCheckAddedInvariants`).  An implementation is marked when it forces a
+  check or belongs to a member that became raw; the copy's other tasks assert
+  nothing new and are dropped.  A refining module that adds no invariant
+  verifies no inherited code again.  A copy from a refinement base outside the
+  verification scope, such as a library, enters the scope when its module must
+  check it.
+- *Members that became raw.*  An invariant that `M1` adds may apply to `this` a
+  member that was not raw in `M0`, which makes it raw (section 3.4).  Its
+  `this` no longer satisfies the invariants that the base's proof of it may
+  have used, so its inherited body is verified again in full, with its
+  inherited postconditions (`$_reverifyPost` is set), which a by-method body
+  needs.
+- *A fix to an earlier step.*  The by-method part of a raw function was
+  verified with a receiver that satisfied the invariants, although it runs on
+  raw receivers: a program proved that a call returned 2 and printed 1.  The
+  receiver of a by-method body, and of a prefix predicate or lemma, now has the
+  rawness of the member it belongs to (`ModuleResolver.GetReceiverType`).
+- *`new;`.*  The check at the `new;` of an inherited constructor is at the
+  origin of `new;` itself, so the conjuncts the base checked there are assumed.
+  Where `new;` is implicit, its origin is the end of the body, which the cloner
+  does not mark as inherited, so it is marked here.
+- *Witnesses.*  A witness of the refining declaration replaces the inherited
+  one, and is checked against all the invariants.  An inherited witness is
+  checked against the added conjuncts only.
+- *Abstract types.*  An abstract type may declare invariants (section 4.3).
+  Its name denotes the derived declaration, the raw type restricted by the
+  invariants, and `raw T` the abstract type itself.  These rules settle what
+  the plan left open:
+  - The characteristics in its header, `(0)` and `(00)`, are promises about the
+    type with its invariants.  The derived declaration takes its
+    auto-initialization from the header, and opts out of the witness check: an
+    abstract type has no witness of its own.  Where it is compiled, its default
+    value is that of `raw T`.
+  - Each refinement keeps the promise.  The existing check that a refinement
+    respects the characteristics runs against the refining declaration's
+    derived declaration, so a datatype that refines `type T(0)` needs a
+    compiled witness that satisfies all the invariants.
+  - An abstract type may not declare a witness (a resolver error): its
+    characteristics promise one, and each refinement supplies it.
+  - An abstract type exported by `provides` alone is opaque where it is
+    imported: its invariants are hidden with it, as for a datatype, and its
+    characteristics are still promised.  `raw` of it is rejected (below).
+  - It may extend a trait with invariants.
+  - Section 4.3 says a synonym cannot refine an abstract type with an
+    invariant.  The fork's `--synonym-refines-abstract-type` lets one refine it,
+    and moves the abstract type's members to the type the synonym names.  So
+    its invariants become invariants of that type: `T` and that type denote the
+    same values, which satisfy the invariants of both, and every one of them is
+    checked where the refining module makes a value.  `raw T`, in the code the
+    module inherits, is rejected, since a synonym is not a type that can declare
+    an invariant.  This follows the option's own meaning rather than refusing
+    the combination.
+- *`raw` and export sets.*  A declaration that is provided but not revealed has
+  no members where it is seen, its invariants among them.  The rule that
+  rejects `raw` of it also covers the view that an export set makes of it,
+  which is checked for consistency on its own: `ScopeCloner` marks that view
+  (`ProvidedOnlyViewOf`), and the message names the original kind ("'raw' is
+  not yet supported for class 'Cell', which is provided but not revealed
+  here").  Before this step, a provided datatype or class gave an abstract type
+  in the view, which the old message named.  The earlier steps left it to this
+  stage, and it stays "not yet supported": where `D` is provided only, the
+  view of `D` is an abstract type without its invariants, so supporting `raw D`
+  needs a view that keeps the raw type while hiding the invariants.  That is a
+  candidate relaxation (stage 7).
+- *Translation cache.*  A refining module with invariants and an abstract type
+  with invariants no longer make the cache step aside; only newtypes still do.
+- *Tests.*  `git-issue-105-refinement-verify.dfy` holds the inherited sites:
+  added invariants checked and inherited ones assumed (a base failure is not
+  reported again), constructors with an explicit and an implicit `new;`, a
+  trait's added invariant, an abstract import bound to a refinement, the
+  witness rules, members that became raw (a body and a by-method), an unsplit
+  check, and a refinement of a library base.  `git-issue-105-abstract-types.dfy`
+  holds the characteristics as promises, witnesses in refinements, layered
+  refinements, traits and the export of an abstract type;
+  `git-issue-105-abstract-errors.dfy` the resolver's rules;
+  `git-issue-105-abstract-synonym.dfy` the synonym option.
+  `git-issue-105-datatypes.dfy` adds the by-method controls, and
+  `git-issue-105-trait-gates.dfy` now holds only newtypes.
+
 **Variance by polarity (the owner's decision, replacing the variance rule of the step for generic datatypes).**
 
 - *The rule* is section 3.5's: a declared `+X` or `-X` of a type with
@@ -2473,6 +2591,25 @@ removed when no program can reach it.
   | the extension condition | check | `InvariantExtensionCondition.cs` | none | extension, trait-errors |
   | the reads restriction | check | `MemberInvariantChecks.cs`, `CheckReadsRestrictions` | none | reads |
   | the program-wide checks | check | `MemberInvariantChecks.cs`, `Check` | none | codatatypes |
+  | at an inherited site, a conjunct the base did not check is checked | check | `BoogieGenerator.InheritedInvariants.cs`, `InheritedConjunctOrigin` | `CheckInvariantTypeMembership/10`, `Assert`, `AssertAndForget` | refinement-verify, abstract-types |
+  | at an inherited site, a conjunct the base checked is assumed | assumption | same | same | refinement-verify |
+  | at an inherited site, a membership check that is not split is checked whole | check | `BoogieGenerator.TypeObligations.cs`, `InheritedMembershipOrigin` | `CheckTypeMembership/12`, `CheckTypeMembership` (1 to 2) | refinement-verify |
+  | a member that became raw is verified again | check | `BoogieGenerator.InheritedInvariants.cs`, `BecameRaw` | none | refinement-verify |
+  | the inherited postconditions of a member that became raw are checked | check | `BoogieGenerator.Methods.cs`, `$_reverifyPost` | none | refinement-verify |
+  | the copies of a module that adds conjuncts are scheduled | check | `BoogieGenerator.Methods.cs`, `MustVerifyCopy` | none | refinement-verify |
+  | an implementation of a copy that makes such a check is marked | check | `BoogieGenerator.cs`, `AddImplementationWithAttributes` | none | refinement-verify |
+  | a copy from a library base enters the verification scope | check | `BoogieGenerator.InheritedInvariants.cs`, `AddedInvariantsInVerificationScope` | none | refinement-verify |
+  | the implicit `new;` of an inherited constructor is at an inherited origin | check | `BoogieGenerator.TrStatement.cs`, `TrStmt` | `TrStmt/4`, `CheckSubrange` | refinement-verify |
+  | a witness of the refining declaration replaces the inherited one | rule | `RefinementTransformer.cs` | none | refinement-verify |
+  | the receiver of a by-method body has the rawness of its function | check | `ModuleResolver.cs`, `GetReceiverType` | none | datatypes, refinement-verify |
+  | the axioms of an abstract type's derived declaration | axiom | `BoogieGenerator.cs`, the declarations of a module | none | abstract-types, abstract-synonym |
+  | the same, only where the abstract type is revealed | visibility | same | none | abstract-types |
+  | the characteristics of an abstract type are promised, for the type | characteristics | `Types.cs`, `GetAutoInit` | none | abstract-types |
+  | the same, for the derived declaration | characteristics | `InvariantTypeDecl.cs`, `PromisedAutoInit` | none | abstract-types |
+  | a refinement keeps the promised characteristics | check | `RefinementTransformer.cs`, the characteristics of a refinement | none | abstract-errors |
+  | an abstract type may not declare a witness | check | `MemberInvariantChecks.cs`, `Check` | none | abstract-errors |
+  | `raw` of an export set's view of a declaration that is provided only | check | `ScopeCloner.cs`; `NameResolutionAndTypeInference.cs`, `CheckRawType` | none | raw-exports, class-exports |
+  | an abstract type's name denotes its derived declaration | rule | `NameResolutionAndTypeInference.cs` | none | abstract-types |
 
 - *Resolver errors.*  Each error that the feature adds has a negative control
   in the expect files named:
@@ -2483,6 +2620,8 @@ removed when no program can reach it.
   | a witness in a class | class-witness |
   | a witness or an invariant in a codatatype | codatatypes, libraries |
   | a witness of a declaration other than a datatype (not yet) | trait-witness |
+  | a witness of an abstract type | abstract-errors |
+  | a refinement that does not keep the characteristics an abstract type with invariants promises | abstract-errors |
   | a witness without an invariant, two witnesses | trait-witness |
   | the declaration rule (an invariant and a codatatype in one program) | codatatypes, libraries |
   | the reads restriction | reads, class-errors |
@@ -2537,6 +2676,5 @@ removed when no program can reach it.
   there is nothing to reuse.  A program whose invariants are all of kinds that
   are verified is cached as any program is, in the IDE too.  So the step-aside
   is lifted kind by kind with the gate.  It goes entirely, with the gate and `DeclaresUnsupportedMemberInvariants`,
-  at the step that verifies the last kind: newtypes (step 8).  Until then a
-  refining module or abstract type with invariants (step 7) and newtypes are
-  the only cases left.
+  at the step that verifies the last kind: newtypes (step 8).  Since step 7,
+  newtypes are the only case left.

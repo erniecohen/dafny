@@ -821,6 +821,9 @@ Generate module names in the older A_mB_mC style instead of the current A.B.C sc
         // nothing more to register
       } else if (d is NewtypeDecl or AbstractTypeDecl) {
         var cl = (TopLevelDeclWithMembers)d;
+        if (cl.InvariantTypeDecl == null && InvariantTypeDecl.Applies(cl)) {
+          cl.InvariantTypeDecl = new InvariantTypeDecl(cl);
+        }
         // register the names of the type members
         var members = new Dictionary<string, MemberDecl>();
         resolver.AddClassMembers(cl, members);

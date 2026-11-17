@@ -1,6 +1,6 @@
 // Member invariants (https://github.com/erniecohen/dafny/issues/105): "raw" is parsed and printed
-// for every type, but supported only for a datatype, a class or a trait so far, and an invariant body
-// must be a boolean expression.
+// for every type, but so far supported for a datatype, a class, a trait or an abstract type, and not
+// yet for a newtype, and an invariant body must be a boolean expression.
 // RUN: %exits-with 2 %resolve --member-invariants --print "%t.dfy" "%s" > "%t"
 // RUN: %exits-with 2 %resolve --member-invariants "%t.dfy" >> "%t"
 // RUN: %diff "%s.expect" "%t"

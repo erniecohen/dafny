@@ -1767,7 +1767,7 @@ public partial class BoogieGenerator {
 
     proofDependencies.SetCurrentDefinition(MethodVerboseName(decl.FullDafnyName, MethodTranslationKind.SpecWellformedness), null);
 
-    if (!InVerificationScope(decl)) {
+    if (!InVerificationScope(decl) && !AddedInvariantsInVerificationScope((Declaration)decl)) {
       // Checked in other file
       return;
     }

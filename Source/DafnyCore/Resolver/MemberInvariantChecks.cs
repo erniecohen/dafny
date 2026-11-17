@@ -9,8 +9,8 @@ namespace Microsoft.Dafny;
 /// modules are resolved:
 ///  * the option requires --type-system-refresh;
 ///  * a codatatype may not declare an invariant or a witness member;
-///  * a datatype declares at most one witness member, and only if it has an invariant (witness members of other
-///    declarations are not yet supported);
+///  * a datatype declares at most one witness member, and only if it has an invariant; a class or an abstract type
+///    declares none (witness members of traits and newtypes are not yet supported);
 ///  * the declaration rule: a program that declares a member invariant may not declare a codatatype.
 ///    Libraries are part of the program, so the rule covers them too.
 /// The checks are syntactic, so they see every declaration, including those of abstract modules and of
@@ -56,6 +56,9 @@ public static class MemberInvariantChecks {
           } else if (decl is ClassDecl) {
             reporter.Error(MessageSource.Resolver, witness.NameNode.Origin,
               "a class may not declare a witness: its objects are the ones its constructors return, so it needs none");
+          } else if (decl is AbstractTypeDecl) {
+            reporter.Error(MessageSource.Resolver, witness.NameNode.Origin,
+              "an abstract type may not declare a witness: its characteristics, '(0)' or '(00)', promise one, and each refinement that defines the type supplies it");
           } else if (decl is not IndDatatypeDecl datatype) {
             reporter.Error(MessageSource.Resolver, witness.NameNode.Origin,
               $"a witness member of a {decl.WhatKind} is not yet supported");

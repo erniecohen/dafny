@@ -3873,7 +3873,10 @@ namespace Microsoft.Dafny {
       Contract.Ensures(Contract.Result<UserDefinedType>() != null);
 
       var cl = (TopLevelDeclWithMembers)member.EnclosingClass;
-      if (member.IsRawMember || (RawMemberInference.IsStoredField(member) && cl is ClassLikeDecl { InvariantTypeDecl: not null })) {
+      // Issue 105: the by-method part of a function, and a prefix predicate or lemma, are applied to the receivers of
+      // the member they belong to (RawMemberInference.Member)
+      var owner = RawMemberInference.Member(member as IASTVisitorContext) ?? member;
+      if (owner.IsRawMember || (RawMemberInference.IsStoredField(member) && cl is ClassLikeDecl { InvariantTypeDecl: not null })) {
         // Issue 105: the receiver of a raw member has the raw type, and so does that of a stored field of a class,
         // which a raw reference has
         return cl.InvariantTypeDecl!.RawThisType(tok, cl.TypeArgs.ConvertAll(tp => (Type)new UserDefinedType(tp)));

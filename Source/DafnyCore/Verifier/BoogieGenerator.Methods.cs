@@ -190,7 +190,7 @@ namespace Microsoft.Dafny {
         if (!isByMethod) {
           var proc = AddMethod(m, MethodTranslationKind.SpecWellformedness);
           sink.AddTopLevelDeclaration(proc);
-          if (InVerificationScope(m)) {
+          if (InVerificationScope(m) || AddedInvariantsInVerificationScope(m)) {
             AddMethodImpl(m, proc, true);
           }
         }
@@ -853,8 +853,10 @@ namespace Microsoft.Dafny {
       // translate the body of the method
       Contract.Assert(m.Body != null);  // follows from method precondition and the if guard
 
-      // $_reverifyPost := false;
-      builder.Add(Boogie.Cmd.SimpleAssign(m.Origin, new Boogie.IdentifierExpr(m.Origin, "$_reverifyPost", Boogie.Type.Bool), Boogie.Expr.False));
+      // $_reverifyPost := false;  Issue 105: true in a member that became raw (BecameRaw), whose inherited
+      // postconditions the refinement base proved for a "this" that satisfied the invariants
+      builder.Add(Boogie.Cmd.SimpleAssign(m.Origin, new Boogie.IdentifierExpr(m.Origin, "$_reverifyPost", Boogie.Type.Bool),
+        BecameRaw(m) ? Boogie.Expr.True : Boogie.Expr.False));
       // register output parameters with definite-assignment trackers
 
       var beforeOutTrackers = DefiniteAssignmentTrackers;
@@ -994,9 +996,10 @@ namespace Microsoft.Dafny {
     /// Whether the refining module that copied "copy" from its refinement base must verify some check of it itself.
     /// The pipeline schedules such a copy, and only the tasks marked CanVerifyOrigin.IsReverifiedInheritedCheck.
     /// </summary>
-    public static bool MustVerifyCopy(MemberDecl copy, DafnyOptions options) {
-      return MustReverifyInheritedOverrideCheck(copy, options) || MustCheckInheritedConstructorFields(copy, options) ||
-             MustCheckInheritedTermination(copy, options);
+    public static bool MustVerifyCopy(Declaration copy, DafnyOptions options) {
+      return copy is MemberDecl member &&
+             (MustReverifyInheritedOverrideCheck(member, options) || MustCheckInheritedConstructorFields(member, options)) ||
+             MustCheckInheritedTermination(copy, options) || MustCheckAddedInvariants(copy, options);
     }
 
     /// <summary>
@@ -1039,10 +1042,11 @@ namespace Microsoft.Dafny {
     /// <summary>
     /// The body of a method is in the verification scope with the method.  The body of a copy that its module must
     /// verify itself, a constructor or a member of a changed SCC, is also in the scope with that module, when the copy
-    /// comes from a refinement base outside the scope, such as a library.
+    /// comes from a refinement base outside the scope, such as a library, as is any check of a copy that its module
+    /// must check for the invariants it adds (issue 105).
     /// </summary>
     bool BodyInVerificationScope(MethodOrConstructor member) {
-      if (InVerificationScope(member)) {
+      if (InVerificationScope(member) || AddedInvariantsInVerificationScope(member)) {
         return true;
       }
       var module = member.EnclosingClass.EnclosingModuleDefinition;
@@ -1071,7 +1075,7 @@ namespace Microsoft.Dafny {
     /// with that module, when the copy comes from a refinement base outside the scope, such as a library.
     /// </summary>
     internal bool FunctionWellformednessInVerificationScope(Function f) {
-      if (InVerificationScope(f)) {
+      if (InVerificationScope(f) || AddedInvariantsInVerificationScope(f)) {
         return true;
       }
       var module = f.EnclosingClass.EnclosingModuleDefinition;
@@ -1096,7 +1100,7 @@ namespace Microsoft.Dafny {
     /// outside the scope, such as a library.
     /// </summary>
     bool OverrideCheckInVerificationScope(MemberDecl member) {
-      if (InVerificationScope(member)) {
+      if (InVerificationScope(member) || AddedInvariantsInVerificationScope(member)) {
         return true;
       }
       var module = member.EnclosingClass.EnclosingModuleDefinition;

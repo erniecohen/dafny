@@ -328,9 +328,12 @@ namespace Microsoft.Dafny {
         } else {
           var od = (AbstractTypeDecl)d;
           postTasks.Enqueue(() => {
-            // check that od's type characteristics are respected by nw's
+            // check that od's type characteristics are respected by nw's. Issue 105: by the type that the name of
+            // nw denotes, which for a declaration with member invariants is its derived subset type, so that the
+            // refinement keeps a promise of od's characteristics with a witness.
             var newType = UserDefinedType.FromTopLevelDecl(nw.Origin,
-              nw is ClassLikeDecl { NonNullTypeDecl: { } nonNullTypeDecl } ? nonNullTypeDecl : nw);
+              nw is ClassLikeDecl { NonNullTypeDecl: { } nonNullTypeDecl } ? nonNullTypeDecl
+              : nw is TopLevelDeclWithMembers { InvariantTypeDecl: { } invariantTypeDecl } ? invariantTypeDecl : nw);
             if (!CheckTypeCharacteristicsVisitor.CheckCharacteristics(od.Characteristics, newType, false, out var whatIsNeeded, out var hint, out var errorId)) {
               var typeCharacteristicsSyntax = od.Characteristics.ToString();
               Error(errorId, nw.Origin,
@@ -759,6 +762,13 @@ namespace Microsoft.Dafny {
           nw.Members.Add(nwMember);
         } else {
           var nwMember = nw.Members[index];
+          if (nwMember is MemberWitness && member is MemberWitness) {
+            // Issue 105: a witness of the refining declaration replaces the inherited one, which need not satisfy the
+            // invariants that the refining module adds.  It is checked against all of the invariants, like any
+            // witness.  The characteristics it gives the type are checked where the module uses the type, since a
+            // refining module resolves the code it inherits again.
+            continue;
+          }
           if (nwMember is ConstantField) {
             var newConst = (ConstantField)nwMember;
             var origConst = member as ConstantField;

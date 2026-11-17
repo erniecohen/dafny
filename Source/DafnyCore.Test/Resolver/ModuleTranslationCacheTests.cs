@@ -305,7 +305,7 @@ public class ModuleTranslationCacheTests {
   [InlineData("module Unrelated { class C { const k: int invariant k > 0 constructor () { k := 1; } } }", true)]
   [InlineData("module Unrelated { newtype N = int { invariant this > 0 } }", false)]
   [InlineData("module Unrelated { trait T extends object { const k: int invariant k > 0 } class C extends T { constructor () { k := 1; } } }", true)]
-  [InlineData("module Unrelated { type A { invariant true } }", false)]
+  [InlineData("module Unrelated { type A { invariant true } }", true)]
   public async Task AnUnsupportedMemberInvariantInAnUnrelatedFileStopsReuse(string with, bool supported) {
     const string without = "module Unrelated { datatype D = D(x: int) }";
     var cache = new ModuleTranslationCache();

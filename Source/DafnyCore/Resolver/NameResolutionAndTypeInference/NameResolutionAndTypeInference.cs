@@ -4237,9 +4237,11 @@ namespace Microsoft.Dafny {
             reporter.Error(MessageSource.Resolver, t.Origin, "expected type");
           } else if (r.Type is ResolverIdentifierExpr.ResolverTypeType) {
             var d = r.Decl;
-            if (d is AbstractTypeDecl) {
+            if (d is AbstractTypeDecl abstractTypeDecl) {
               // resolve like a type parameter, and it may have type parameters if it's an abstract type
-              t.ResolvedClass = d;  // Store the decl, so the compiler will generate the fully qualified name
+              // Store the decl, so the compiler will generate the fully qualified name. Issue 105: for an abstract
+              // type with member invariants, the name denotes the derived subset type, and "raw T" the declaration.
+              t.ResolvedClass = t.IsRawSyntax ? d : (TopLevelDecl)abstractTypeDecl.InvariantTypeDecl ?? d;
             } else if (d is RedirectingTypeDecl) {
               var dd = (RedirectingTypeDecl)d;
               var caller = CodeContextWrapper.Unwrap(resolutionContext.CodeContext) as ICallable;
@@ -4307,15 +4309,20 @@ namespace Microsoft.Dafny {
     /// <summary>
     /// Issue 105: "raw T" (parsed only under --member-invariants) applies to a declaration that can declare a
     /// member invariant: a datatype, class, trait, newtype or abstract type. So far, only inductive datatypes,
-    /// classes and traits are supported.
+    /// classes, traits and abstract types are supported.
     /// </summary>
     private void CheckRawType(UserDefinedType t, TopLevelDecl d) {
       var decl = d is NonNullTypeDecl nonNullTypeDecl ? nonNullTypeDecl.Class : d;
-      if (decl is IndDatatypeDecl or ClassDecl or TraitDecl) {
-        if (!decl.IsRevealedInScope(Type.GetScope())) {
-          // Where a datatype, class or trait is provided but not revealed, its members, the invariants among them, are not.
+      if (decl is IndDatatypeDecl or ClassDecl or TraitDecl or AbstractTypeDecl) {
+        // Where a declaration is provided but not revealed, its members, the invariants among them, are not. That is so
+        // in a scope that sees it as provided only, and in the view that an export set makes of it, which is checked for
+        // consistency on its own.
+        var providedOnly = decl is AbstractTypeDecl { ProvidedOnlyViewOf: { } original } ? original
+          : !decl.IsRevealedInScope(Type.GetScope()) ? decl : null;
+        if (providedOnly != null) {
           reporter.Error(MessageSource.Resolver, t.Origin,
-            "'raw' is not yet supported for {0} '{1}', which is provided but not revealed here", decl.WhatKind, decl.Name);
+            "'raw' is not yet supported for {0} '{1}', which is provided but not revealed here", providedOnly.WhatKind,
+            providedOnly.Name);
         }
         return;
       }

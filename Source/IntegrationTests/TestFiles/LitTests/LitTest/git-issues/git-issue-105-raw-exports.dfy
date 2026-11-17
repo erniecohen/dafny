@@ -1,7 +1,7 @@
 // Member invariants (https://github.com/erniecohen/dafny/issues/105): 'raw' across modules.  Where a
 // datatype with invariants is revealed, a client sees both 'raw D' and 'D'.  Where it is only
-// provided, it is an abstract type, so 'raw' does not yet apply to it (in the client, and in the
-// export set's own signature), but its members, raw or not, may be used.
+// provided, it is an abstract type whose invariants are hidden, so 'raw' does not yet apply to it (in
+// the client, and in the export set's own signature), but its members, raw or not, may be used.
 // RUN: %exits-with 2 %resolve --member-invariants --print-mode NoIncludes --rprint:- "%s" > "%t"
 // RUN: %diff "%s.expect" "%t"
 

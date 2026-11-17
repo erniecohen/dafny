@@ -44,6 +44,19 @@ public partial class BoogieGenerator {
   }
 
   /// <summary>
+  /// "location", as a related location of a check at "origin", followed by the related locations that "origin" names
+  /// itself, such as the refining module of an inherited site.
+  /// </summary>
+  private static IOrigin KeepingRelatedLocations(IOrigin location, IOrigin origin) {
+    for (var current = origin; current is OriginWrapper wrapper; current = wrapper.WrappedOrigin) {
+      if (current is NestedOrigin nested) {
+        return new NestedOrigin(location, nested.Inner, nested.Message);
+      }
+    }
+    return location;
+  }
+
+  /// <summary>
   /// Issue 105: the conversion of a value to a type D with member invariants (D &lt;- raw D). The value must be in
   /// raw D, and each invariant of D must hold of it. Each invariant is a separate obligation, "invariant might not
   /// hold", whose related location is that invariant. Returns false, and checks nothing, unless the target is such
@@ -88,12 +101,16 @@ public partial class BoogieGenerator {
       if (notNull != null) { guard = BplAnd(notNull, guard); }
       if (valueCanCall != null) { guard = BplAnd(valueCanCall, guard); }
       var check = close(BplImp(guard, etran.TrExpr(conjunct)));
-      var token = conjunct.Resolved is FunctionCallExpr { Function: MemberInvariant invariant }
-        ? new NestedOrigin(origin, invariant.Body.Origin, "this is the invariant that might not hold")
+      var invariant = conjunct.Resolved is FunctionCallExpr { Function: MemberInvariant memberInvariant } ? memberInvariant : null;
+      var token = invariant != null
+        ? new NestedOrigin(origin, KeepingRelatedLocations(invariant.Body.Origin, origin), "this is the invariant that might not hold")
         : origin;
+      // At an inherited site, a conjunct that the refinement base checked there is assumed, and one that the refining
+      // module added is checked (section 4.2)
+      var refinesToken = invariant != null ? InheritedConjunctOrigin(origin, declaration.Owner, invariant) : origin;
       builder.Add(forget
-        ? AssertAndForget(builder.Context, token, check, description, origin, null)
-        : Assert(token, check, description, origin, builder.Context));
+        ? AssertAndForget(builder.Context, token, check, description, refinesToken, null)
+        : Assert(token, check, description, refinesToken, builder.Context));
     }
     return true;
   }
@@ -133,6 +150,11 @@ public partial class BoogieGenerator {
     } else if (etran != null && CheckInvariantTypeMembership(origin, value, sourceType, targetType, builder, etran, close, forget, universalClosure, valueCanCall)) {
       // Membership in the target follows from these checks under the target's introduction axiom,
       // "$Is(v, raw) && (CanCall ==> constraint) ==> $Is(v, target)", so nothing is assumed here.
+    } else if (InheritedMembershipOrigin(origin, targetType) is ForceCheckOrigin forced && forced != origin) {
+      // Issue 105: a membership check at an inherited site that involves a conjunct the refinement base did not check.
+      // A forced origin is not inherited, so the check is made once, with it.
+      CheckTypeMembership(forced, membership, value, sourceType, targetType, description, builder, etran, close, forget,
+        universalClosure, valueCanCall);
     } else if (options.Get(CommonOptionBag.ConsistentObligationChecks) && etran != null &&
         (CheckSequenceTypeMembership(origin, value, sourceType, targetType, description, builder, etran, close, forget, valueCanCall) ||
          CheckVisibleTypeObligations(origin, value, sourceType, targetType, description, builder, etran, close, forget, universalClosure, valueCanCall))) {

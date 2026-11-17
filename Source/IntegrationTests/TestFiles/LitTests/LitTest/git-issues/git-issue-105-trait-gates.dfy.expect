@@ -1,9 +1,5 @@
 git-issue-105-trait-gates.dfy(14,10): Error: verification of a newtype that extends a trait with member invariants is not yet supported
-git-issue-105-trait-gates.dfy(15,7): Error: verification of an abstract type that extends a trait with member invariants is not yet supported
-git-issue-105-trait-gates.dfy(17,4): Error: verification of a member invariant of an abstract type is not yet supported
-git-issue-105-trait-gates.dfy(24,4): Error: module 'A' is not verified: the program declares a member invariant whose verification is not yet supported
-git-issue-105-trait-gates.dfy(28,8): Error: verification of a member invariant in a refining module is not yet supported
-git-issue-105-trait-gates.dfy(24,4): Error: verification of a member invariant in a refining module is not yet supported
-git-issue-105-trait-gates.dfy(27,7): Related location: refining module
+git-issue-105-trait-gates.dfy(21,4): Error: module 'A' is not verified: the program declares a member invariant whose verification is not yet supported
+git-issue-105-trait-gates.dfy(26,4): Error: module 'B' is not verified: the program declares a member invariant whose verification is not yet supported
 
 Dafny program verifier finished with 0 verified, 0 errors

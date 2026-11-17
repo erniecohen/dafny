@@ -609,6 +609,10 @@ public abstract class Type : NodeWithOrigin {
           Contract.Assert(false); // unexpected case
           throw new Cce.UnreachableException();
       }
+    } else if (cl is InvariantTypeDecl { Owner: AbstractTypeDecl abstractOwner }) {
+      // Issue 105: an abstract type with member invariants has what its characteristics promise, which every
+      // refinement keeps with a witness
+      return InvariantTypeDecl.PromisedAutoInit(abstractOwner);
     } else if (cl is SubsetTypeDecl) {
       var td = (SubsetTypeDecl)cl;
       switch (td.WitnessKind) {
