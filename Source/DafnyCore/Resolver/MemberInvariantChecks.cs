@@ -95,7 +95,9 @@ public static class MemberInvariantChecks {
   /// invariant declared in "declarations": an invariant depends on no mutable state, so that it can be
   /// translated to a function with no heap argument.  It reads no mutable field and no array element, uses no
   /// old, fresh, allocated or unchanged, calls no two-state function or lemma, uses no function that has a
-  /// reads clause, and applies no function value that may read the heap.
+  /// reads clause, and applies no function value that may read the heap.  Of these, the checks of every
+  /// function body already reject old, fresh, unchanged, allocated and two-state functions and lemmas (an
+  /// invariant is not a two-state context, and has no reads clause), so they are not repeated here.
   /// </summary>
   public static void CheckReadsRestrictions(IEnumerable<TopLevelDecl> declarations, ErrorReporter reporter) {
     var visitor = new ReadsRestrictionVisitor(reporter);
@@ -118,14 +120,8 @@ public static class MemberInvariantChecks {
         case MemberSelectExpr { Member: Field { IsMutable: true } field }:
           Error(expr, $"read the mutable field '{field.Name}'");
           break;
-        case MemberSelectExpr { Member: TwoStateFunction function }:
-          Error(expr, $"use the two-state function '{function.Name}'");
-          break;
         case MemberSelectExpr { Member: Function function } select when MayReadHeap(function, select.Obj):
           Error(expr, HeapReadingUse("use", function));
-          break;
-        case FunctionCallExpr { Function: TwoStateFunction function }:
-          Error(expr, $"call the two-state function '{function.Name}'");
           break;
         case FunctionCallExpr { Function: { } function } call when MayReadHeap(function, call.Receiver):
           Error(expr, HeapReadingUse("call", function));
@@ -138,18 +134,6 @@ public static class MemberInvariantChecks {
           break;
         case ApplyExpr apply when !apply.Function.Type.IsArrowTypeWithoutReadEffects:
           Error(expr, "apply a function value that may read the heap");
-          break;
-        case OldExpr:
-          Error(expr, "use 'old'");
-          break;
-        case UnchangedExpr:
-          Error(expr, "use 'unchanged'");
-          break;
-        case FreshExpr:
-          Error(expr, "use 'fresh'");
-          break;
-        case UnaryOpExpr { Op: UnaryOpExpr.Opcode.Allocated }:
-          Error(expr, "use 'allocated'");
           break;
       }
     }
@@ -169,13 +153,6 @@ public static class MemberInvariantChecks {
         return !receiver.Type.IsArrowTypeWithoutReadEffects;
       }
       return function.Reads.Expressions.Count != 0;
-    }
-
-    protected override void VisitOneStmt(Statement stmt) {
-      if (stmt is CallStmt { Method: TwoStateLemma lemma }) {
-        reporter.Error(MessageSource.Resolver, stmt.Origin,
-          $"an invariant may not call the two-state lemma '{lemma.Name}': it depends on no mutable state");
-      }
     }
   }
 

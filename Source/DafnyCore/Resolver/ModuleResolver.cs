@@ -2582,13 +2582,10 @@ namespace Microsoft.Dafny {
           }
           var typeArgs = parentType.TypeArgs.ConvertAll(t => t.Subst(subst));
           Visit(trait, TypeParameter.SubstitutionMap(trait.TypeArgs, typeArgs));
-          var invariants = InvariantTypeDecl.Invariants(trait).ToList();
-          if (invariants.Count != 0 && !trait.InvariantTypeDecl.IsRevealedInScope(Type.GetScope())) {
-            reporter.Error(MessageSource.Resolver, parentType is UserDefinedType udt ? udt.Origin : decl.Origin,
-              $"{decl.WhatKind} '{decl.Name}' extends trait '{trait.Name}', which has member invariants, where '{trait.Name}' is not revealed");
-            continue;
-          }
-          foreach (var invariant in invariants) {
+          // Only a revealed trait can be extended (one that is only provided is not a trait where it is imported), and
+          // an export set that reveals a trait must reveal the traits it extends
+          Contract.Assert(trait.InvariantTypeDecl.IsRevealedInScope(Type.GetScope()));
+          foreach (var invariant in InvariantTypeDecl.Invariants(trait)) {
             inherited.Add((invariant, trait.InvariantTypeDecl.RawThisType(decl.Origin, typeArgs)));
           }
         }

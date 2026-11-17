@@ -131,14 +131,8 @@ public partial class BoogieGenerator {
           universalClosure, valueCanCall);
       }
     } else if (etran != null && CheckInvariantTypeMembership(origin, value, sourceType, targetType, builder, etran, close, forget, universalClosure, valueCanCall)) {
-      // As for a subset type, membership in the target follows from the checks under the type's introduction axiom.
-      if (!forget) {
-        var guardedMembership = valueCanCall == null ? membership : BplImp(valueCanCall, membership);
-        var derived = TrAssumeCmd(origin, close(guardedMembership));
-        proofDependencies?.AddProofDependencyId(derived, origin,
-          new AssumptionDependency(false, "derived checked type membership", new BoogieWrapper(close(guardedMembership), Type.Bool)));
-        builder.Add(derived);
-      }
+      // Membership in the target follows from these checks under the target's introduction axiom,
+      // "$Is(v, raw) && (CanCall ==> constraint) ==> $Is(v, target)", so nothing is assumed here.
     } else if (options.Get(CommonOptionBag.ConsistentObligationChecks) && etran != null &&
         (CheckSequenceTypeMembership(origin, value, sourceType, targetType, description, builder, etran, close, forget, valueCanCall) ||
          CheckVisibleTypeObligations(origin, value, sourceType, targetType, description, builder, etran, close, forget, universalClosure, valueCanCall))) {

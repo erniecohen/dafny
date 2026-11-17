@@ -5,7 +5,8 @@
 // docs/dev/issue105-member-invariants-plan.md).  A trait's values are those of the types that extend
 // it, each with its own witness or none.  A datatype that has no invariant needs no witness; one that
 // only inherits invariants may declare one (git-issue-105-general-traits.dfy), and one that extends
-// only traits without invariants may not (git-issue-105-trait-errors.dfy).
+// only traits without invariants may not (git-issue-105-trait-errors.dfy).  A datatype declares at
+// most one witness.
 
 module Reference {
   trait P extends object {
@@ -26,5 +27,13 @@ module General {
 module NoInvariant {
   datatype D = D(x: int) {
     witness D(0)                                       // error: D has no invariant
+  }
+}
+
+module TwoWitnesses {
+  datatype D = D(x: int) {
+    invariant x > 0
+    witness D(1)
+    witness D(2)                                       // error: D already declares a witness
   }
 }

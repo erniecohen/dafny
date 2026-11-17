@@ -86,6 +86,14 @@ module Variance {
     var w: raw L<Empty> := l;
     r := w;  // error: the invariant might not hold
   }
+
+  // A conversion against the variance checks that the value is in the raw type, as well as the
+  // invariants: P's invariant holds of p, but its components are not nats
+  datatype P<+X(==)> = P(a: X, b: X) { invariant a == b }
+  method Components() {
+    var p: P<int> := P(-1, -1);
+    var q: P<nat> := p;  // error: p is not a raw P<nat>
+  }
 }
 
 // The witness of a generic datatype is a static const of type D<X>, so it is checked for every X.

@@ -37,6 +37,11 @@ public class MemberInvariant : Predicate {
       new Specification<Expression>([], null), body, BodyOriginKind.OriginalOrInherited,
       null, null, attributes, null) {
   }
+
+  // The reserved name is not shown to the user
+  public override string GetDescription(DafnyOptions options) {
+    return $"invariant {Printer.ExprToString(options, Body)}";
+  }
 }
 
 /// <summary>
@@ -57,5 +62,10 @@ public class MemberWitness : ConstantField {
 
   public MemberWitness(IOrigin origin, IOrigin keywordToken, string name, bool isGhost, Expression rhs, Attributes? attributes)
     : base(origin, new Name(keywordToken, name), rhs, true, isGhost, false, null, attributes) {
+  }
+
+  // The reserved name is not shown to the user
+  public override string GetDescription(DafnyOptions options) {
+    return $"{(IsGhost ? "ghost " : "")}witness {Printer.ExprToString(options, Rhs!)}";
   }
 }

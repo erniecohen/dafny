@@ -9,19 +9,21 @@ git-issue-105-classes.dfy(138,19): Error: invariant might not hold
 git-issue-105-classes.dfy(76,16): Related location: this is the invariant that might not hold
 git-issue-105-classes.dfy(141,20): Error: invariant might not hold
 git-issue-105-classes.dfy(76,16): Related location: this is the invariant that might not hold
-git-issue-105-classes.dfy(160,4): Error: assertion might not hold
+git-issue-105-classes.dfy(144,19): Error: value of expression (of type 'raw Cell?') is not known to be an instance of type 'raw Cell', because it might be null
 git-issue-105-classes.dfy(163,4): Error: assertion might not hold
-git-issue-105-classes.dfy(166,27): Error: assertion might not hold
-git-issue-105-classes.dfy(185,21): Error: invariant might not hold
-git-issue-105-classes.dfy(178,16): Related location: this is the invariant that might not hold
-git-issue-105-classes.dfy(188,22): Error: invariant might not hold
-git-issue-105-classes.dfy(178,16): Related location: this is the invariant that might not hold
-git-issue-105-classes.dfy(191,26): Error: value of expression (of type 'set<raw Cell>') is not known to be an instance of type 'set<Cell>'
-git-issue-105-classes.dfy(194,27): Error: value of expression (of type 'seq<raw Cell>') is not known to be an instance of type 'seq<Cell>'
-git-issue-105-classes.dfy(197,31): Error: value of expression (of type 'map<int, raw Cell>') is not known to be an instance of type 'map<int, Cell>'
-git-issue-105-classes.dfy(200,29): Error: value of expression (of type 'Option<raw Cell>') is not known to be an instance of type 'Option<Cell>'
-git-issue-105-classes.dfy(204,24): Error: invariant might not hold
-git-issue-105-classes.dfy(178,16): Related location: this is the invariant that might not hold
-git-issue-105-classes.dfy(207,27): Error: value of expression (of type '() -> raw Cell') is not known to be an instance of type '() ~> Cell'
+git-issue-105-classes.dfy(166,4): Error: assertion might not hold
+git-issue-105-classes.dfy(169,27): Error: assertion might not hold
+git-issue-105-classes.dfy(176,4): Error: assertion might not hold
+git-issue-105-classes.dfy(197,21): Error: invariant might not hold
+git-issue-105-classes.dfy(190,16): Related location: this is the invariant that might not hold
+git-issue-105-classes.dfy(200,22): Error: invariant might not hold
+git-issue-105-classes.dfy(190,16): Related location: this is the invariant that might not hold
+git-issue-105-classes.dfy(203,26): Error: value of expression (of type 'set<raw Cell>') is not known to be an instance of type 'set<Cell>'
+git-issue-105-classes.dfy(206,27): Error: value of expression (of type 'seq<raw Cell>') is not known to be an instance of type 'seq<Cell>'
+git-issue-105-classes.dfy(209,31): Error: value of expression (of type 'map<int, raw Cell>') is not known to be an instance of type 'map<int, Cell>'
+git-issue-105-classes.dfy(212,29): Error: value of expression (of type 'Option<raw Cell>') is not known to be an instance of type 'Option<Cell>'
+git-issue-105-classes.dfy(216,24): Error: invariant might not hold
+git-issue-105-classes.dfy(190,16): Related location: this is the invariant that might not hold
+git-issue-105-classes.dfy(219,27): Error: value of expression (of type '() -> raw Cell') is not known to be an instance of type '() ~> Cell'
 
-Dafny program verifier finished with 29 verified, 17 errors
+Dafny program verifier finished with 31 verified, 19 errors

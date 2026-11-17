@@ -1659,13 +1659,11 @@ TypeAndToken<out Token tok, out Type ty, bool inExpressionContext>
   | NamedType<out ty, out tok, inExpressionContext>
   | rawType                         (. startToken = t; var retagged = CheckRetaggedToken(t); .)
     NamedType<out ty, out tok, inExpressionContext>
-                                    (. if (!retagged) {
-                                         // reported by CheckRetaggedToken
-                                       } else if (ty is UserDefinedType rawUdt) {
+                                    (. if (retagged) {   // otherwise reported by CheckRetaggedToken
+                                         // RetagRawType retags "raw" only before a name, and NamedType yields a UserDefinedType
+                                         var rawUdt = (UserDefinedType)ty;
                                          rawUdt.IsRawSyntax = true;
                                          rawUdt.SetOrigin(new SourceOrigin(startToken, t));
-                                       } else {
-                                         SemErr(ErrorId.p_raw_needs_named_type, startToken, "'raw' must be followed by the name of a type");
                                        }
                                     .)
   )

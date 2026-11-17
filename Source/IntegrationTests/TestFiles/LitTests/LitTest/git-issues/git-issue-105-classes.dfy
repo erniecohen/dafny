@@ -140,6 +140,9 @@ module Rules {
   method RawToCellQ(r: raw Cell?) {
     var c: Cell? := r;                                 // error
   }
+  method RawQToCell(r: raw Cell?) requires r != null ==> r.k > 0 {
+    var c: Cell := r;                                  // error: r might be null
+  }
   method RawToCellChecked(r: raw Cell, r': raw Cell?)
     requires r.k > 0 && (r' != null ==> r'.k > 0)
   {
@@ -167,6 +170,15 @@ module Rules {
   }
   method TestRawChecked(r: raw Cell) requires r.k > 0 {
     assert r is Cell;
+  }
+  // a raw Cell is an 'object' only if it is a Cell
+  method TestRawObject(r: raw Cell) {
+    assert r is object;                                // error
+  }
+  method TestRawObjectChecked(r: raw Cell) {
+    if r is object {
+      assert r.k > 0;
+    }
   }
 }
 

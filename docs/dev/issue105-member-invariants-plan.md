@@ -1835,7 +1835,12 @@ each step below.
   (also through slices and multi-dimensional selection), no `old`, `fresh`,
   `allocated`, `unchanged`, no two-state function or lemma, no function with a
   reads clause (called or used as a value), and no application of a function
-  value whose type allows reading the heap (`~>`).  A function value's
+  value whose type allows reading the heap (`~>`).  The checks of every
+  function body already reject `old`, `fresh`, `allocated`, `unchanged` and
+  two-state functions and lemmas in an invariant, which is a single-state
+  predicate with no reads clause, so the restriction adds only the rest (its
+  own checks of these were removed at the controls step, since no program
+  reaches them).  A function value's
   `requires` and `reads` read what the value may read, so they are allowed on a
   `->` or `-->` value and rejected on a `~>` value.  A lambda with a reads
   clause may be built, since building it reads nothing, but its body is held to
@@ -2335,10 +2340,12 @@ section 7.2).**
   own witness or none, and what a trait's witness would promise is not yet
   settled.
 - *Visibility.*  To extend a trait with invariants, a module must see them
-  (section 4.1); the resolver reports an extends clause whose trait has
-  invariants but is not revealed.  A trait exported by `provides` alone cannot
-  be extended anyway (the existing "can only extend traits" error comes
-  first), so this is a backstop.
+  (section 4.1).  The existing rules already ensure it: a trait exported by
+  `provides` alone is not a trait where it is imported, so the existing "can
+  only extend traits" error rejects the extends clause, and an export set that
+  reveals a trait must reveal the traits it extends.  The resolver asserts it.
+  (An error for this case was removed at the controls step: no program reaches
+  it.)
 - *Two fixes to earlier steps.*  The parser now accepts `invariant` or
   `witness` directly after a method or function with no body (the member
   keyword is retagged before the specification's synchronization point); the
@@ -2421,3 +2428,91 @@ section 7.2).**
   verifies only because the conversion is a subtyping (the check would need
   induction), and conversions against the variance, which are checked.
 
+**Controls (the owner's rule for every feature).**  Every addition, meaning
+every axiom or assumption, has a positive control: a test that verifies only
+because the addition is there.  Every check has a negative control: a test
+that is rejected exactly at that check.  A local mutation run confirms it.  It
+disables each emission site of the translator, and each check of the resolver,
+in turn, rebuilds, and runs the `git-issue-105` tests.  For each site, some
+test changes its result.  A site that no test caught got a new control, or was
+removed when no program can reach it.
+
+- *Translator and resolver sites.*  "Producer" names the entries of
+  `docs/dev/obligation-producers.json` (file, member, producer) that a site
+  adds; a site that adds no obligation has none.  "Flips" lists the tests that
+  change their result when the site is disabled.
+
+  | Site | Kind | Where | Producer | Flips |
+  |---|---|---|---|---|
+  | earlier invariants assumed in the well-formedness of a later one | assumption | `BoogieGenerator.Functions.Wellformedness.cs`, `Check` | `Check/1`, `CanCallAssumptionForVerification` (2 to 3) | wellformedness |
+  | the `$Is` axioms of `D` use its constraint | axiom | `BoogieGenerator.Types.cs`, the axioms of a subset type | none | datatypes, vacuity, classes |
+  | each invariant checked at a conversion to `D` | check | `BoogieGenerator.TypeObligations.cs` | `CheckInvariantTypeMembership/10`, `Assert`, `AssertAndForget`, `CanCallAssumption` | datatypes |
+  | the value is in `raw D` before the invariants are checked | check | same | `CheckInvariantTypeMembership/10`, the second `CheckSubrange` | generics (`Components`) |
+  | a value converted to `C` is not null | check | same | `CheckInvariantTypeMembership/10`, the first `CheckSubrange` | classes (`RawQToCell`) |
+  | a member that is not raw is applied to a raw receiver only if it satisfies the invariants | check | same | `CheckReceiverInvariants/5`, `CheckSubrange` | traits |
+  | a raw reference reaches a type that is not raw only if it satisfies the invariants | check | same | `CheckTypeMembership/12`, `CheckSubrange`, `GetSubrangeCheck`, `CheckTypeMembership` | classes, traits |
+  | the same, in the type test and the membership check of a raw reference | check | `BoogieGenerator.cs`, `GetSubrangeCheck` | `GetSubrangeCheck/8`, `GetSubrangeCheck` | classes (`TestRawObjectChecked`) |
+  | the invariants checked at `new;` | check | `BoogieGenerator.TrStatement.cs`, `TrStmt` | `TrStmt/4`, `CheckSubrange` (1 to 2) | classes, traits |
+  | the object is raw until `new;` | restriction | same | none | classes, traits |
+  | the parent axioms of a raw class reach the raw types of its traits | axiom | `BoogieGenerator.cs` | none | traits, general-traits |
+  | the constraint includes the inherited invariants | constraint | `InvariantTypeDecl.cs` | none | traits, general-traits |
+  | the translator's gate for what is not yet verified | check | `BoogieGenerator.cs`, `DeclaresUnsupportedMemberInvariants` | none | trait-gates |
+  | `D` keeps the declared variance | subtyping | `InvariantTypeDecl.cs`, `TypeParametersOf` | none | generics, variance |
+  | variance by polarity | check | `TypeParameterPolarity.cs`, `CheckInvariantVariance` | none | variance |
+  | the extension condition | check | `InvariantExtensionCondition.cs` | none | extension, trait-errors |
+  | the reads restriction | check | `MemberInvariantChecks.cs`, `CheckReadsRestrictions` | none | reads |
+  | the program-wide checks | check | `MemberInvariantChecks.cs`, `Check` | none | codatatypes |
+
+- *Resolver errors.*  Each error that the feature adds has a negative control
+  in the expect files named:
+
+  | Error | Tests |
+  |---|---|
+  | an invariant or witness outside a type declaration | modifiers |
+  | a witness in a class | class-witness |
+  | a witness or an invariant in a codatatype | codatatypes, libraries |
+  | a witness of a declaration other than a datatype (not yet) | trait-witness |
+  | a witness without an invariant, two witnesses | trait-witness |
+  | the declaration rule (an invariant and a codatatype in one program) | codatatypes, libraries |
+  | the reads restriction | reads, class-errors |
+  | an inherited witness | trait-errors |
+  | a class with invariants and no constructor, an inherited constructor | class-errors |
+  | `raw` applied to a type parameter | raw-errors |
+  | `raw` of a type that is provided but not revealed | class-exports, raw-exports |
+  | `raw` where it is not yet supported | not-yet, raw-errors, class-exports, raw-exports |
+  | an opaque invariant | modifiers |
+  | `allocated` in an invariant | class-errors, two-state |
+  | the translator's gate | trait-gates, verify |
+  | variance by polarity | variance |
+  | `--member-invariants` without `--type-system-refresh` | option (command line); `MemberInvariantsRequireTypeSystemRefresh` in `DafnyCore.Test` (resolver); `MemberInvariantsTest.OptionsFromTheProjectFile` in `DafnyLanguageServer.Test` (a project file) |
+
+- *Polarity controls.*  `git-issue-105-variance.dfy` has the negative ones
+  (`forall` under `+X`, `exists` under `-X`, the arrow's flip, a non-variant
+  type argument, a generic callee used negatively, an opaque callee, and the
+  rest listed under variance by polarity above).  `git-issue-105-generics.dfy`
+  has the positive ones, a covariant `L<nat>` used as an `L<int>` and a
+  contravariant `N<int>` used as an `N<Empty>`.
+- *Removed at this step.*  Four things that no test could catch:
+  - The assumption, after the checks of a conversion to `D`, that the value is
+    in `D`.  It is redundant: the introduction axiom of `D`, "`$Is(v, raw D)`
+    and `CanCall ==> constraint` imply `$Is(v, D)`", derives it from the checks
+    themselves.
+  - The parser's error for `raw` before something other than a named type.
+    `raw` is a keyword only before an identifier, so the error was
+    unreachable.
+  - The reads restriction's own errors for `old`, `fresh`, `allocated`,
+    `unchanged` and two-state functions and lemmas.  The existing checks of a
+    function body reject them first (`git-issue-105-two-state.dfy` holds the
+    controls).
+  - The error for extending a trait whose invariants are not revealed.  The
+    existing rules reject such a program first (see the step for traits); the
+    resolver now asserts it.
+- *The IDE.*  `MemberInvariantsTest` in `DafnyLanguageServer.Test` sets the
+  option in a project file.  It checks the diagnostics of the invariant's
+  well-formedness and of a failing conversion, at the conversion with the
+  invariant as related location, and the verification status of each.  It also
+  checks hovers, document symbols, and that the reserved names `invariant#k`
+  and `witness#k` are never shown, and that the error for the option without
+  `--type-system-refresh` is reported in the project file.  The test found one
+  fault, fixed at this step: the hover and the verification tree showed the
+  reserved names.

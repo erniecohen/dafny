@@ -1,4 +1,5 @@
-git-issue-105-trait-witness.dfy(14,4): Error: a witness member of a trait is not yet supported
-git-issue-105-trait-witness.dfy(22,10): Error: a witness member of a trait is not yet supported
-git-issue-105-trait-witness.dfy(28,4): Error: 'D' declares no invariant, so it needs no witness: its values are its constructors' values
-3 resolution/type errors detected in git-issue-105-trait-witness.dfy
+git-issue-105-trait-witness.dfy(15,4): Error: a witness member of a trait is not yet supported
+git-issue-105-trait-witness.dfy(23,10): Error: a witness member of a trait is not yet supported
+git-issue-105-trait-witness.dfy(29,4): Error: 'D' declares no invariant, so it needs no witness: its values are its constructors' values
+git-issue-105-trait-witness.dfy(37,4): Error: 'D' declares more than one witness
+4 resolution/type errors detected in git-issue-105-trait-witness.dfy
