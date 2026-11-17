@@ -29,7 +29,7 @@ github-issue-404.dfy(191,7): Related location: refining module
 github-issue-404.dfy(199,52): Error: the method must provide an equal or more detailed postcondition than in its parent trait
 github-issue-404.dfy(201,7): Related location: refining module
 
-Dafny program verifier finished with 50 verified, 15 errors
+Dafny program verifier finished with 51 verified, 15 errors
 github-issue-404.dfy(33,46): Error: the method must provide an equal or more detailed postcondition than in its parent trait
 github-issue-404.dfy(35,7): Related location: refining module
 github-issue-404.dfy(43,49): Error: the function must provide an equal or more detailed postcondition than in its parent trait
@@ -61,9 +61,9 @@ github-issue-404.dfy(191,7): Related location: refining module
 github-issue-404.dfy(199,52): Error: the method must provide an equal or more detailed postcondition than in its parent trait
 github-issue-404.dfy(201,7): Related location: refining module
 
-Dafny program verifier finished with 50 verified, 15 errors
+Dafny program verifier finished with 51 verified, 15 errors
 
-Dafny program verifier finished with 48 verified, 0 errors
+Dafny program verifier finished with 49 verified, 0 errors
 
 Dafny program verifier finished with 18 verified, 0 errors
 

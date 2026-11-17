@@ -20,6 +20,8 @@ public class SpecialField : Field {
     Reads,
     Modifies,
     New,
+    BoundedBound,  // the ghost bound of a bounded callable (issue 266)
+    BoundedErase,  // the function value of a bounded callable (issue 266); compiled as the value itself
   }
   public ID SpecialId;
   public object IdParam;

@@ -1,0 +1,37 @@
+github-issue-445.dfy(58,11): Warning: because of cyclic dependencies among constructor argument types, no instances of datatype 'W' can be constructed
+github-issue-445.dfy(59,11): Warning: because of cyclic dependencies among constructor argument types, no instances of datatype 'E' can be constructed
+github-issue-445.dfy(57,27): Error: type of yield-parameter must support auto-initialization (got 'W')
+github-issue-445.dfy(62,23): Error: type of yield-parameter must support auto-initialization (got 'E')
+github-issue-445.dfy(62,29): Error: type of yield-parameter must support auto-initialization (got 'Tr')
+github-issue-445.dfy(62,36): Error: type of yield-parameter must support auto-initialization (got 'Ghosty')
+github-issue-445.dfy(63,29): Error: type of yield-parameter must support auto-initialization (got 'E')
+github-issue-445.dfy(63,41): Error: type of yield-parameter must support auto-initialization (got 'Tr')
+github-issue-445.dfy(64,26): Error: type of yield-parameter must support auto-initialization (got 'T')
+github-issue-445.dfy(70,23): Error: type of yield-parameter must support auto-initialization (got 'D<int>')
+github-issue-445.dfy(71,29): Error: type of yield-parameter must support auto-initialization (got 'D<int>')
+9 resolution/type errors detected in github-issue-445.dfy
+github-issue-445.dfy(58,11): Warning: because of cyclic dependencies among constructor argument types, no instances of datatype 'W' can be constructed
+github-issue-445.dfy(59,11): Warning: because of cyclic dependencies among constructor argument types, no instances of datatype 'E' can be constructed
+github-issue-445.dfy(57,27): Error: type of yield-parameter must support auto-initialization (got 'W')
+github-issue-445.dfy(62,23): Error: type of yield-parameter must support auto-initialization (got 'E')
+github-issue-445.dfy(62,29): Error: type of yield-parameter must support auto-initialization (got 'Tr')
+github-issue-445.dfy(62,36): Error: type of yield-parameter must support auto-initialization (got 'Ghosty')
+github-issue-445.dfy(63,29): Error: type of yield-parameter must support auto-initialization (got 'E')
+github-issue-445.dfy(63,41): Error: type of yield-parameter must support auto-initialization (got 'Tr')
+github-issue-445.dfy(64,26): Error: type of yield-parameter must support auto-initialization (got 'T')
+github-issue-445.dfy(70,23): Error: type of yield-parameter must support auto-initialization (got 'D<int>')
+github-issue-445.dfy(71,29): Error: type of yield-parameter must support auto-initialization (got 'D<int>')
+9 resolution/type errors detected in github-issue-445.dfy
+
+Dafny program verifier finished with 3 verified, 0 errors
+L.Cons(1, L.Nil)
+L.Cons(2, L.Cons(1, L.Nil))
+L.Cons(3, L.Cons(2, L.Cons(1, L.Nil)))
+
+Dafny program verifier finished with 3 verified, 0 errors
+L.Cons(1, L.Nil)
+L.Cons(2, L.Cons(1, L.Nil))
+L.Cons(3, L.Cons(2, L.Cons(1, L.Nil)))
+
+Dafny program verifier finished with 2 verified, 0 errors
+null
