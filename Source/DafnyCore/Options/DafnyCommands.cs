@@ -136,6 +136,7 @@ public static class DafnyCommands {
     CommonOptionBag.LegacyElidedOverrideChecks,
     CommonOptionBag.LegacySkeletonModifyingCalls,
     CommonOptionBag.LegacyInheritedConstructorFields,
+    CommonOptionBag.LegacyEarlyYieldParameterCheck,
     CommonOptionBag.LegacyReplacementCycles,
     CommonOptionBag.ModularTermination,
     CommonOptionBag.ModularTerminationTrust,
