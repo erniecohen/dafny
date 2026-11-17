@@ -58,14 +58,10 @@ module Y5 {
   }
 }
 
-// A bodyless member of a trait that is not open reaches the dispatched call through its
-// implementation in the same module.
+// A member of a class, which is not dispatched, reaches the dispatched call.
 module C6 {
   import Tr
-  trait C {
-    function G(t: Tr.T, n: nat): nat
-  }
-  class K extends C {
+  class C {
     function G(t: Tr.T, n: nat): nat { if n == 0 then 0 else t.F(n - 1) }
   }
 }

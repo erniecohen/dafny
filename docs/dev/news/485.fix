@@ -1,0 +1,1 @@
+The verifier no longer crashes when a function that reads nothing reads a constant whose initializer applies an arrow, such as `const v: int := cb(1)` with `cb: int -> int`, or calls a function that reads the heap, such as a ghost `cb.requires(1)` with `cb: int ~> int`.
