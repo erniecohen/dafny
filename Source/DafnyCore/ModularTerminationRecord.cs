@@ -733,6 +733,7 @@ public static class ModularTerminationRecords {
   public static IEnumerable<Option> SemanticOptionList => [
     CommonOptionBag.ModularTermination,
     CommonOptionBag.DecreasesOrders,
+    CommonOptionBag.LemmaBindings,
     CommonOptionBag.LegacyDecreasesOrder,
     CommonOptionBag.LegacyReadingFunctionsInDatatypes,
     CommonOptionBag.LegacyNoncanonicalMapPayloads,
