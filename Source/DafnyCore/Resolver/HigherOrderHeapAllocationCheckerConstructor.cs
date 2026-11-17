@@ -62,6 +62,18 @@ class HigherOrderHeapAllocationCheckerConstructor : ASTVisitor<IASTVisitorContex
       return Occurs(obj, t.Arg, left);
     } else {
       var t = (UserDefinedType)type;
+      if (BoundedCallables.IsBoundedDecl(t.ResolvedClass)) {
+        // A bounded value (--modular-termination, issue 266) cannot close a knot by being applied: each
+        // application is checked to run under a bound strictly below that of the code applying it, and the
+        // function it applies is checked to run under the value's bound.  So only the top-level arrow of the
+        // function type is exempt.  The order type, and the function's parameter and result types, may still hold
+        // raw functions, which the bounded function can hand out to code that applies them without a bound: a
+        // value of type "bounded<nat, () -> (Y -> int)>" can return a function on "Y" that applies it again.
+        // They are checked as if they appeared where the bounded type does.
+        var function = t.TypeArgs[1].NormalizeExpand();
+        var components = function.IsArrowType ? function.TypeArgs : [function];
+        return Occurs(obj, t.TypeArgs[0], left) || components.Exists(typeArg => Occurs(obj, typeArg, left));
+      }
       if (left && Type.Equal_Improved(obj, t)) {
         return true;
       }

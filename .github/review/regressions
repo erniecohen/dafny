@@ -792,5 +792,8 @@ git-issues/github-issue-211-gate-coverage.dfy
 # A lambda expression may not mention allocated(...) in its body, precondition or reads clause outside an old within the lambda, under both resolvers; old(...) inside is allowed, the control does not prove false, and --legacy-allocated-in-lambdas restores the old rule (https://github.com/erniecohen/dafny/issues/457).
 git-issues/github-issue-457.dfy
 
+# Bounded callables, milestone 2: bounded.certify, application below the bound, the bound and erase members, admitted named functions, stored values and the divergence kernels, under --modular-termination (https://github.com/erniecohen/dafny/issues/266).
+git-issues/github-issue-266-m2.dfy
+
 # A constructor that stores a function in a field is rejected when a function of the object could apply it to a value that reaches the object again, through a datatype, a tuple, the constants of another object, a newtype, or a generic class or trait; the old check looked only at the function's type and its type arguments, so false was provable (https://github.com/erniecohen/dafny/issues/453).
 git-issues/github-issue-453.dfy

@@ -152,6 +152,49 @@ public static class ModularTermination {
   }
 
   /// <summary>
+  /// Issue 266: the function that "value" names, if it is one that "bounded.certify" may take as an exact
+  /// implementation (design section 3.2).  Its own code runs, so it must not be an abstract trait member, whose
+  /// implementation dispatch chooses; it must not have parameters with callback bounds, whose first-class protocol
+  /// is not represented; and its global bound, declared or inherited, must depend on neither its parameters nor the
+  /// heap, so that the bound of every later application is the one that the verifier checks, at "bounded.certify",
+  /// to be at most the allowance.  If "value" names a function that cannot be admitted, "problem" says why.
+  /// </summary>
+  public static Function? AdmittedMember(DafnyOptions options, Expression value, out string? problem) {
+    problem = null;
+    if (value.Resolved is not MemberSelectExpr { Member: Function g } || IsArrowMember(g)) {
+      return null;
+    }
+    if (g.EnclosingClass is TraitDecl && g.Body == null && !g.IsStatic) {
+      problem = "it is a trait member, whose implementation dispatch chooses (certify a lambda that calls it)";
+      return null;
+    }
+    if (HasCallbackBounds(g)) {
+      problem = "it has a parameter with a 'decreases {:callback}' bound";
+      return null;
+    }
+    List<Expression>? bound = null;
+    for (ICallable? c = g; c != null && bound == null; c = (c as MemberDecl)?.OverriddenMember as ICallable) {
+      bound = DeclaredGlobalBound(c);
+    }
+    if (bound == null) {
+      problem = "it has no 'decreases {:global}' bound";
+      return null;
+    }
+    foreach (var e in bound) {
+      var usesHeap = false;
+      var usesOldHeap = false;
+      Type? usesThis = null;
+      var fvs = new HashSet<IVariable>();
+      FreeVariablesUtil.ComputeFreeVariables(options, e, fvs, ref usesHeap, ref usesOldHeap, new HashSet<Label>(), ref usesThis, false);
+      if (fvs.Count != 0 || usesHeap || usesOldHeap) {
+        problem = "its 'decreases {:global}' bound depends on its parameters or on the heap (certify a lambda with a narrower precondition)";
+        return null;
+      }
+    }
+    return g;
+  }
+
+  /// <summary>
   /// The global decreases clauses among the given attributes, last-written first.
   /// </summary>
   public static IEnumerable<Attributes> GlobalClauses(Attributes? attrs) {
@@ -614,6 +657,11 @@ public class ModularTerminationAnalysis {
     /// M4): applying it calls nothing.  It is not a value that may be passed for a parameter with a callback bound.
     /// </summary>
     Binder,
+    /// <summary>
+    /// The function value "X.erase" of a value "X" of a bounded type (issue 266): it runs under "X.bound", which the
+    /// verifier checks.
+    /// </summary>
+    Bounded,
     /// <summary>Any other value: its code is not known, so it has no bound (TOP).</summary>
     Unknown
   }
@@ -625,6 +673,8 @@ public class ModularTerminationAnalysis {
     switch (value.Resolved) {
       case LambdaExpr:
         return FunctionValueKind.Lambda;
+      case var erased when BoundedCallables.ErasedCallable(erased) != null:
+        return FunctionValueKind.Bounded;
       case IdentifierExpr { Var: { } binder } when logicalBinders.Contains(binder):
         return FunctionValueKind.Binder;
       case IdentifierExpr { Var: Formal f } when enclosing != null && enclosing.Ins.IndexOf(f) is var i and >= 0 &&
@@ -1337,7 +1387,8 @@ public class ModularTerminationRewriter : IRewriter {
     /// </summary>
     private void ReportApplication(IOrigin origin, Expression value, object site, string what, bool initializer) {
       var kind = analysis.Classify(value, caller);
-      if (kind == ModularTerminationAnalysis.FunctionValueKind.CallbackParameter && (initializer || insideLambda.Contains(site))) {
+      if (kind == ModularTerminationAnalysis.FunctionValueKind.CallbackParameter && (initializer || insideLambda.Contains(site)) ||
+          kind == ModularTerminationAnalysis.FunctionValueKind.Bounded && initializer) {
         kind = ModularTerminationAnalysis.FunctionValueKind.Unknown;
       }
       if (kind == ModularTerminationAnalysis.FunctionValueKind.Lambda || !FirstReport(origin)) {
@@ -1352,6 +1403,11 @@ public class ModularTerminationRewriter : IRewriter {
         case ModularTerminationAnalysis.FunctionValueKind.Binder:
           reporter.Info(MessageSource.Resolver, origin,
             $"modular termination: in {CallerName}, {what} needs the smaller-bound rule; holds: the value is a variable bound by a quantifier, which ranges over functions that exist already, so applying it calls nothing");
+          break;
+        case ModularTerminationAnalysis.FunctionValueKind.Bounded:
+          reporter.Info(MessageSource.Resolver, origin,
+            $"modular termination: in {CallerName}, {what} needs the smaller-bound rule; " +
+            (bounded ? "checked: the bounded value's bound must be below the caller's" : "holds: the caller has no 'decreases {:global}' bound, which is above every bound"));
           break;
         case ModularTerminationAnalysis.FunctionValueKind.CallbackParameter:
           reporter.Info(MessageSource.Resolver, origin,
@@ -1391,11 +1447,24 @@ public class ModularTerminationRewriter : IRewriter {
         if (kind == ModularTerminationAnalysis.FunctionValueKind.CallbackParameter && insideLambda.Contains(site)) {
           kind = ModularTerminationAnalysis.FunctionValueKind.Unknown;
         }
+        if (kind is ModularTerminationAnalysis.FunctionValueKind.Unknown && BoundedCallables.IsCertify(callee)) {
+          if (ModularTermination.AdmittedMember(reporter.Options, args[i], out var problem) != null) {
+            reporter.Info(MessageSource.Resolver, args[i].Origin,
+              $"modular termination: in {CallerName}, the function certified by '{QualifiedName(callee)}' runs its own code; " +
+              "checked: its 'decreases {:global}' bound must not exceed the bound given");
+            continue;
+          }
+          if (problem != null) {
+            reporter.Error(MessageSource.Resolver, args[i].Origin,
+              $"modular termination: in {CallerName}, the function passed to '{QualifiedName(callee)}' cannot be certified: {problem}");
+            continue;
+          }
+        }
         if (kind is ModularTerminationAnalysis.FunctionValueKind.Unknown or ModularTerminationAnalysis.FunctionValueKind.Binder) {
           reporter.Error(MessageSource.Resolver, args[i].Origin,
             $"modular termination: in {CallerName}, the value passed for parameter '{callable.Ins[i].Name}' of '{QualifiedName(callee)}', " +
             "which has a 'decreases {:callback}' bound, must be a lambda expression, a parameter with such a bound (outside a lambda), " +
-            "or a function that reaches no dispatched call");
+            "a function that reaches no dispatched call, or the function of a bounded value");
         }
       }
     }

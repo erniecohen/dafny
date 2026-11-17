@@ -453,6 +453,7 @@ public partial class BoogieGenerator {
                               Expression receiverReplacement, Dictionary<IVariable, Expression> substMap,
                               Dictionary<TypeParameter, Type> typeMap, ExpressionTranslator etranCurrent,
                               BoogieStmtListBuilder builder) {
+    CheckBoundedArguments(tok, callee, args, receiverReplacement, substMap, typeMap, etranCurrent, builder);
     if (!options.Get(CommonOptionBag.ModularTermination) || codeContext is not ICallable caller ||
         callee is not ICallable callable || InsideLambda) {
       return;
@@ -490,6 +491,10 @@ public partial class BoogieGenerator {
   /// </summary>
   void CheckCallbackApplication(IOrigin tok, ICodeContext codeContext, Expression value, ExpressionTranslator etranCurrent,
                                 BoogieStmtListBuilder builder) {
+    if (options.Get(CommonOptionBag.ModularTermination) && BoundedCallables.ErasedCallable(value.Resolved) is { } bounded) {
+      CheckBoundedApplication(tok, codeContext, bounded, etranCurrent, builder);
+      return;
+    }
     if (!options.Get(CommonOptionBag.ModularTermination) || codeContext is not ICallable caller || InsideLambda ||
         value.Resolved is not IdentifierExpr { Var: Formal formal }) {
       return;

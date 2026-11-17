@@ -850,7 +850,9 @@ namespace Microsoft.Dafny {
       }
       foreach (TopLevelDecl d in systemDeclarations) {
         CurrentDeclaration = d;
-        if (d is AbstractTypeDecl abstractType) {
+        if (d is AbstractTypeDecl boundedDecl && BoundedCallables.IsBoundedDecl(boundedDecl)) {
+          AddBoundedCallableDeclarations(boundedDecl);
+        } else if (d is AbstractTypeDecl abstractType) {
           GetOrCreateTypeConstructor(abstractType);
           AddClassMembers(abstractType, true, true);
         } else if (d is NewtypeDecl) {
