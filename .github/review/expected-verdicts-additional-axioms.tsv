@@ -1310,6 +1310,8 @@ git-issues/github-issue-4004.dfy	0	0 verified, 0 errors
 git-issues/github-issue-4004_v2.dfy	0	1 verified, 0 errors	
 git-issues/github-issue-4017.dfy	0	1 verified, 0 errors	
 git-issues/github-issue-404.dfy	4	50 verified, 15 errors	33,43,54,67,79,90,103,119,136,146,158,174,189,199
+git-issues/github-issue-405.dfy	2		25,38,43,50,54,58,69,75,83,84,89,95
+git-issues/github-issue-411.dfy	4	3 verified, 5 errors	21,38,56,72,90
 git-issues/github-issue-4144.dfy	0	2 verified, 0 errors	
 git-issues/github-issue-422.dfy	0	4 verified, 0 errors	
 git-issues/github-issue-4483.dfy	0	2 verified, 0 errors	

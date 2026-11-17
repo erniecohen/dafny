@@ -1,0 +1,39 @@
+github-issue-405.dfy(25,24): Error: replacing module Foo by FooImpl makes the module dependencies cyclic, because FooImpl uses Foo other than by replacing it: FooImpl -> Bar -> Foo
+github-issue-405.dfy(38,27): Error: replacing module FunFoo by FunFooImpl makes the module dependencies cyclic, because FunFooImpl uses FunFoo other than by replacing it: FunFooImpl -> FunBar -> FunFoo
+github-issue-405.dfy(43,28): Error: replacing module TypeFoo by TypeFooImpl makes the module dependencies cyclic, because TypeFooImpl uses TypeFoo other than by replacing it: TypeFooImpl -> TypeBar -> TypeFoo
+github-issue-405.dfy(50,27): Error: replacing module HopFoo by HopFooImpl makes the module dependencies cyclic, because HopFooImpl uses HopFoo other than by replacing it: HopFooImpl -> Hop2 -> Hop1 -> HopBar -> HopFoo
+github-issue-405.dfy(54,28): Error: replacing module SelfFoo by SelfFooImpl makes the module dependencies cyclic, because SelfFooImpl uses SelfFoo other than by replacing it: SelfFooImpl -> SelfFoo
+github-issue-405.dfy(58,27): Error: replacing module SubFoo by SubFooImpl makes the module dependencies cyclic, because SubFooImpl uses SubFoo other than by replacing it: SubFooImpl -> SubFooImpl.Sub -> SubFoo
+github-issue-405.dfy(69,25): Error: replacing module NestOuter.F by NestImpl makes the module dependencies cyclic, because NestImpl uses NestOuter.F other than by replacing it: NestImpl -> NestOuter -> NestOuter.F
+github-issue-405.dfy(75,25): Error: replacing module ChainFoo by ChainTop makes the module dependencies cyclic, because ChainTop uses ChainFoo other than by replacing it: ChainTop -> ChainBar -> ChainFoo
+github-issue-405.dfy(83,26): Error: replacing module PairFoo1 by PairImpl1 makes the module dependencies cyclic, because PairImpl1 uses PairFoo1 other than by replacing it: PairImpl1 -> PairUser1 -> PairFoo2 (replaced by PairImpl2) -> PairUser2 -> PairFoo1
+github-issue-405.dfy(84,26): Error: replacing module PairFoo2 by PairImpl2 makes the module dependencies cyclic, because PairImpl2 uses PairFoo2 other than by replacing it: PairImpl2 -> PairUser2 -> PairFoo1 (replaced by PairImpl1) -> PairUser1 -> PairFoo2
+github-issue-405.dfy(89,30): Error: replacing module ExportFoo by ExportFooImpl makes the module dependencies cyclic, because ExportFooImpl uses ExportFoo other than by replacing it: ExportFooImpl -> ExportBar -> ExportFoo
+github-issue-405.dfy(95,30): Error: replacing module RefineFoo by RefineFooImpl makes the module dependencies cyclic, because RefineFooImpl uses RefineFoo other than by replacing it: RefineFooImpl -> RefineBar -> RefineFoo
+12 resolution/type errors detected in github-issue-405.dfy
+github-issue-405.dfy(25,24): Error: replacing module Foo by FooImpl makes the module dependencies cyclic, because FooImpl uses Foo other than by replacing it: FooImpl -> Bar -> Foo
+github-issue-405.dfy(38,27): Error: replacing module FunFoo by FunFooImpl makes the module dependencies cyclic, because FunFooImpl uses FunFoo other than by replacing it: FunFooImpl -> FunBar -> FunFoo
+github-issue-405.dfy(43,28): Error: replacing module TypeFoo by TypeFooImpl makes the module dependencies cyclic, because TypeFooImpl uses TypeFoo other than by replacing it: TypeFooImpl -> TypeBar -> TypeFoo
+github-issue-405.dfy(50,27): Error: replacing module HopFoo by HopFooImpl makes the module dependencies cyclic, because HopFooImpl uses HopFoo other than by replacing it: HopFooImpl -> Hop2 -> Hop1 -> HopBar -> HopFoo
+github-issue-405.dfy(54,28): Error: replacing module SelfFoo by SelfFooImpl makes the module dependencies cyclic, because SelfFooImpl uses SelfFoo other than by replacing it: SelfFooImpl -> SelfFoo
+github-issue-405.dfy(58,27): Error: replacing module SubFoo by SubFooImpl makes the module dependencies cyclic, because SubFooImpl uses SubFoo other than by replacing it: SubFooImpl -> SubFooImpl.Sub -> SubFoo
+github-issue-405.dfy(69,25): Error: replacing module NestOuter.F by NestImpl makes the module dependencies cyclic, because NestImpl uses NestOuter.F other than by replacing it: NestImpl -> NestOuter -> NestOuter.F
+github-issue-405.dfy(75,25): Error: replacing module ChainFoo by ChainTop makes the module dependencies cyclic, because ChainTop uses ChainFoo other than by replacing it: ChainTop -> ChainBar -> ChainFoo
+github-issue-405.dfy(83,26): Error: replacing module PairFoo1 by PairImpl1 makes the module dependencies cyclic, because PairImpl1 uses PairFoo1 other than by replacing it: PairImpl1 -> PairUser1 -> PairFoo2 (replaced by PairImpl2) -> PairUser2 -> PairFoo1
+github-issue-405.dfy(84,26): Error: replacing module PairFoo2 by PairImpl2 makes the module dependencies cyclic, because PairImpl2 uses PairFoo2 other than by replacing it: PairImpl2 -> PairUser2 -> PairFoo1 (replaced by PairImpl1) -> PairUser1 -> PairFoo2
+github-issue-405.dfy(89,30): Error: replacing module ExportFoo by ExportFooImpl makes the module dependencies cyclic, because ExportFooImpl uses ExportFoo other than by replacing it: ExportFooImpl -> ExportBar -> ExportFoo
+github-issue-405.dfy(95,30): Error: replacing module RefineFoo by RefineFooImpl makes the module dependencies cyclic, because RefineFooImpl uses RefineFoo other than by replacing it: RefineFooImpl -> RefineBar -> RefineFoo
+12 resolution/type errors detected in github-issue-405.dfy
+
+Dafny program verifier finished with 23 verified, 0 errors
+
+Dafny program verifier finished with 23 verified, 0 errors
+
+Dafny program verifier finished with 6 verified, 0 errors
+
+Dafny program verifier finished with 6 verified, 0 errors
+
+Dafny program verifier finished with 6 verified, 0 errors
+
+Dafny program verifier finished with 6 verified, 0 errors
+1 2 3 4 5

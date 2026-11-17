@@ -53,7 +53,7 @@ internal sealed class BoogieSnapshotCloner {
       if (!currentSymbols.TryGetValue(SymbolKey(origin.CanVerify), out var current)) {
         throw new UnsupportedSnapshotException("current verification symbol binding");
       }
-      return new CanVerifyOrigin(current) { IsReverifiedOverrideCheck = origin.IsReverifiedOverrideCheck };
+      return new CanVerifyOrigin(current) { IsReverifiedInheritedCheck = origin.IsReverifiedInheritedCheck };
     }
     if (type.IsPrimitive || type.IsEnum || value is string or decimal or System.Numerics.BigInteger or
         Microsoft.BaseTypes.BigNum or Microsoft.BaseTypes.BigDec or Uri or System.Type or Bpl.IToken or Bpl.ProofObligationDescription) {
