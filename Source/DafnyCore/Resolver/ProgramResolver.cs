@@ -107,6 +107,9 @@ public class ProgramResolver {
     Type.DisableScopes();
 
     InstantiateReplaceableModules(Program);
+    if (!Options.Get(CommonOptionBag.LegacyReplacementCycles)) {
+      ReplacementDependencyChecker.Check(Program, Reporter);
+    }
     CheckDuplicateModuleNames(Program);
     profile?.FrontEnd("resolve.global.replaceable", profileStart!.Value);
 

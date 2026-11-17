@@ -321,6 +321,11 @@ Various options control the verification process, in addition to all those descr
   describe the current invocation, not a new solver measurement. Unsupported
   execution profiles run normally. The initial native profile supports macOS
   and Linux; custom loading environments and solver launcher scripts bypass.
+  Both a framework-dependent build, whose .NET host is identified by the
+  installation's `host/fxr`, and a self-contained build, whose bundled
+  `libhostfxr` and `libhostpolicy` identify its host, are supported. Each request of
+  `--filter-position-batch` reads and writes the cache as a separate
+  `--filter-position` run would.
   Paths under Dafny's own installation, the .NET runtime and the solver's
   directory enter the key as placeholders, so the same build in another directory
   or on another machine reuses the cache; the bytes of every image are still
@@ -385,7 +390,9 @@ Dafny parses and resolves the whole program once, then verifies these requests i
 order. Each filter uses the syntax of `--filter-position` and is also restricted
 by `--filter-symbol`, if supplied. `--filter-position-batch` cannot be combined
 with `--filter-position`. Duplicate or overlapping filters run their selected
-proofs again; they do not reuse a previous verification result. Each request has
+proofs again; they do not reuse a previous verification result, unless
+`--verification-cache` is given, under which each request reads and writes the
+persistent cache as a separate `--filter-position` run would. Each request has
 a separate summary, and `--log-format` collects all requests into one log, including repeated rows for repeated proofs. The exit code is
 unsuccessful if any request fails, even if later requests succeed. Parsing or
 resolution errors prevent every request from running.
@@ -397,7 +404,8 @@ warnings are isolated per request, and combined coverage includes every request.
 Cancellation or a solver exception aborts the batch before a later request starts.
 Files edited after they have been read
 are not reloaded between requests. To use changed inputs or options, start a new
-invocation; every invocation parses and resolves again. No cache is persisted.
+invocation; every invocation parses and resolves again. Apart from
+`--verification-cache`, no cache is persisted.
 As with a single position filter, a successful batch verifies only its selected
 proofs and does not establish that the whole project is verified.
 
@@ -1944,6 +1952,20 @@ module ConcreteFoo replaces Foo {
 ```
 
 When replacing a replaceable module, the same rules apply as when refining an abstract module. However, unlike an abstract module, a placeholder module can be used as if it is a concrete module. When executing code, using for example `dafny run` or `dafny translate`, any program that contains a placeholder module must also contain a replacement of this placeholder. When using `dafny verify`, placeholder modules do not have to be replaced.
+
+In a program that contains a replacement, every use of the replaceable module is a use of its replacement. So a replacement may not use the module it replaces, other than by replacing it: it may not import that module, and it may not depend on a module that depends on that module. A module depends on the modules it imports, on the modules nested in it, on the module it refines, and on whatever those depend on; a use of a replaceable module also counts as a use of its replacement. Otherwise the replacement and a client of the replaceable module would depend on each other, which Dafny does not allow of any two modules. In the following program, `FooImpl` imports `Bar`, which imports `Foo`, so Dafny reports an error at `replaces Foo`:
+
+<!-- %no-check -->
+```dafny
+replaceable module Foo { function G(n: nat): nat }
+module Bar { import Foo  function F(n: nat): nat { Foo.G(n) } }
+module FooImpl replaces Foo {
+  import Bar // error: FooImpl -> Bar -> Foo
+  function G(n: nat): nat { Bar.F(n) + 1 }
+}
+```
+
+A replacement may import any module that does not depend on the module it replaces, and it may use what the replaceable module itself imports.
 
 Replaceable modules are particularly useful for defining behavior that depends on which target language Dafny is translated to.
 

@@ -226,10 +226,17 @@ namespace Microsoft.Dafny {
           } else if (newDeclaration is TypeSynonymDecl) {
             var msg = $"a type synonym ({newDeclaration.Name}) is not allowed to replace a {originalDeclaration.WhatKind} from the refined module ({module.Implements.Target}), even if it denotes the same type";
             Error(ErrorId.ref_refinement_type_must_match_base, newDeclaration.Origin, msg);
-          } else if (originalDeclaration is AbstractModuleDecl && newDeclaration is ModuleDecl) {
+          } else if (originalDeclaration is AbstractModuleDecl abstractImport && newDeclaration is ModuleDecl binding) {
             // Abstract-import overrides do not use refining notation or the type
             // merger. Retain their exact correspondence for selected environments.
             newDeclaration.CardinalityRefinementBase = originalDeclaration;
+            // The inherited text was proved for an arbitrary refinement of the import's target, so the
+            // module that takes its place must be one (https://github.com/erniecohen/dafny/issues/408).
+            if (!Reporter.Options.Get(CommonOptionBag.LegacyUncheckedImportBinding) &&
+                BindsRefinementOf(binding, abstractImport) == false) {
+              Error(ErrorId.ref_module_must_refine_module_2, binding.Origin,
+                "a module ({0}) can only be replaced by a refinement of the original module", originalDeclaration.Name);
+            }
           } else if (!(originalDeclaration is AbstractModuleDecl)) {
             Error(ErrorId.ref_refining_notation_needed, newDeclaration.Origin, $"to redeclare and refine declaration '{originalDeclaration.Name}' from module '{module.Implements.Target}', you must use the refining (`...`) notation");
           }
@@ -409,6 +416,43 @@ namespace Microsoft.Dafny {
       // Record the final object, including reconstructed iterators. The global
       // validator uses this relation only when this module is selected as a replacement.
       nwPointer.Get().CardinalityRefinementBase = d;
+    }
+
+    /// <summary>
+    /// The module definition whose refines chain decides what <paramref name="decl"/> may stand for. An
+    /// abstract import stands for a refinement of its original target, not for its signature facade, and
+    /// an alias stands for whatever the declaration it names stands for, so an alias of another module's
+    /// abstract import (import X = D.Y) is judged by Y's target.
+    /// </summary>
+    private static ModuleDefinition RefinementSubject(ModuleDecl decl) {
+      var seen = new HashSet<ModuleDecl>();
+      while (decl is AliasModuleDecl alias && alias.TargetQId?.Decl is { } named && seen.Add(decl)) {
+        decl = named;
+      }
+      return decl is AbstractModuleDecl abstractDecl ? abstractDecl.OriginalSignature?.ModuleDef : decl.Signature?.ModuleDef;
+    }
+
+    /// <summary>
+    /// Whether the module that <paramref name="binding"/> denotes is the target of
+    /// <paramref name="abstractImport"/> or reaches it along its chain of refines clauses. The binding
+    /// can be an alias import, a literal or refining nested module, or another abstract import, which
+    /// stands for a refinement of its own target. Null if either module is unknown because its
+    /// resolution failed, which has been reported already.
+    /// </summary>
+    private static bool? BindsRefinementOf(ModuleDecl binding, AbstractModuleDecl abstractImport) {
+      var target = abstractImport.OriginalSignature?.ModuleDef;
+      var current = RefinementSubject(binding);
+      if (target == null || current == null) {
+        return null;
+      }
+      var visited = new HashSet<ModuleDefinition>();
+      while (current != null && visited.Add(current)) {
+        if (current == target) {
+          return true;
+        }
+        current = current.Implements?.Target.Def;
+      }
+      return false;
     }
 
     public bool CheckIsRefinement(ModuleDecl derived, AbstractModuleDecl original) {
@@ -1640,6 +1684,22 @@ namespace Microsoft.Dafny {
           if (rhs.CanAffectPreviouslyKnownExpressions) {
             Error(ErrorId.ref_invalid_assignment_rhs, rhs.Origin, "assignment RHS in refinement method is not allowed to affect previously defined state");
           }
+        }
+      }
+      // A call statement parses as an update statement and becomes a CallStmt only during resolution, so the
+      // CallStmt case of CheckIsOkayNewStatement never sees it.  A call to a method with a nonempty modifies clause
+      // can change state the parent module knows about, which would invalidate what the inherited body established
+      // (https://github.com/erniecohen/dafny/issues/412).  The initializing call of a "new" belongs to its RHS and is
+      // checked above.  The hidden --legacy-skeleton-modifying-calls restores the old, unsound rule.
+      if (Reporter.Options.Get(CommonOptionBag.LegacySkeletonModifyingCalls)) {
+        return;
+      }
+      var descendants = stmt.DescendantsAndSelf.ToList();
+      var initCalls = descendants.OfType<SingleAssignStmt>().Select(a => a.Rhs).OfType<AllocateClass>()
+        .Select(a => a.InitCall).Where(c => c != null).ToHashSet();
+      foreach (var call in descendants.OfType<CallStmt>()) {
+        if (!initCalls.Contains(call) && call.Method.Mod.Expressions.Count != 0) {
+          Error(ErrorId.ref_invalid_call_modifies, call.Origin, "refinement method cannot call a method that may modify state ('{0}')", call.Method.Name);
         }
       }
     }
