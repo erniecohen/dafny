@@ -1,0 +1,51 @@
+positive, both resolvers
+
+Dafny program verifier finished with 27 verified, 0 errors
+
+Dafny program verifier finished with 27 verified, 0 errors
+false controls: one reachable assert false per family, both resolvers
+github-issue-266-m3-false.dfy(24,4): Error: assertion might not hold
+github-issue-266-m3-false.dfy(57,4): Error: assertion might not hold
+github-issue-266-m3-false.dfy(97,4): Error: assertion might not hold
+github-issue-266-m3-false.dfy(110,4): Error: assertion might not hold
+github-issue-266-m3-false.dfy(136,4): Error: assertion might not hold
+
+Dafny program verifier finished with 22 verified, 5 errors
+github-issue-266-m3-false.dfy(24,4): Error: assertion might not hold
+github-issue-266-m3-false.dfy(57,4): Error: assertion might not hold
+github-issue-266-m3-false.dfy(97,4): Error: assertion might not hold
+github-issue-266-m3-false.dfy(110,4): Error: assertion might not hold
+github-issue-266-m3-false.dfy(136,4): Error: assertion might not hold
+
+Dafny program verifier finished with 22 verified, 5 errors
+divergence kernels and rule violations, both resolvers
+github-issue-266-m3-kernels.dfy(14,48): Error: decreases clause might not decrease (--modular-termination: the bound of the bounded value must be below the bound under which the enclosing lambda runs)
+github-issue-266-m3-kernels.dfy(14,48): Error: function precondition could not be proved
+github-issue-266-m3-kernels.dfy(44,74): Error: decreases clause might not decrease (--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
+github-issue-266-m3-kernels.dfy(75,74): Error: decreases clause might not decrease (--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
+github-issue-266-m3-kernels.dfy(96,4): Error: assertion might not hold
+github-issue-266-m3-kernels.dfy(109,23): Error: receiver could not be proved to be allocated in the state in which its fields are accessed
+github-issue-266-m3-kernels.dfy(124,34): Error: decreases clause might not decrease (--modular-termination: the 'decreases {:callback}' bound of 'f' must be below the bound under which the enclosing lambda runs)
+github-issue-266-m3-kernels.dfy(132,34): Error: decreases clause might not decrease (--modular-termination: the 'decreases {:callback}' bound of 'f' must be below the bound under which the enclosing lambda runs)
+github-issue-266-m3-kernels.dfy(140,24): Error: decreases clause might not decrease (--modular-termination: the 'decreases {:callback}' bound of 'f' must not exceed that of the parameter it is passed for)
+github-issue-266-m3-kernels.dfy(152,44): Error: decreases clause might not decrease (--modular-termination: the 'decreases {:callback}' bound of 'f' must not exceed that of the parameter it is passed for)
+
+Dafny program verifier finished with 21 verified, 10 errors
+github-issue-266-m3-kernels.dfy(14,48): Error: decreases clause might not decrease (--modular-termination: the bound of the bounded value must be below the bound under which the enclosing lambda runs)
+github-issue-266-m3-kernels.dfy(14,48): Error: function precondition could not be proved
+github-issue-266-m3-kernels.dfy(44,74): Error: decreases clause might not decrease (--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
+github-issue-266-m3-kernels.dfy(75,74): Error: decreases clause might not decrease (--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
+github-issue-266-m3-kernels.dfy(96,4): Error: assertion might not hold
+github-issue-266-m3-kernels.dfy(109,23): Error: receiver could not be proved to be allocated in the state in which its fields are accessed
+github-issue-266-m3-kernels.dfy(124,34): Error: decreases clause might not decrease (--modular-termination: the 'decreases {:callback}' bound of 'f' must be below the bound under which the enclosing lambda runs)
+github-issue-266-m3-kernels.dfy(132,34): Error: decreases clause might not decrease (--modular-termination: the 'decreases {:callback}' bound of 'f' must be below the bound under which the enclosing lambda runs)
+github-issue-266-m3-kernels.dfy(140,24): Error: decreases clause might not decrease (--modular-termination: the 'decreases {:callback}' bound of 'f' must not exceed that of the parameter it is passed for)
+github-issue-266-m3-kernels.dfy(152,44): Error: decreases clause might not decrease (--modular-termination: the 'decreases {:callback}' bound of 'f' must not exceed that of the parameter it is passed for)
+
+Dafny program verifier finished with 22 verified, 10 errors
+stored bounded values, compiled
+
+Dafny program verifier finished with 6 verified, 0 errors
+22 24 22
+7
+11

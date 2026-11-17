@@ -737,3 +737,6 @@ git-issues/git-issue-388.dfy
 
 # Bounded callables, milestone 2: bounded.certify, application below the bound, the bound and erase members, admitted named functions, stored values and the divergence kernels, under --modular-termination (https://github.com/erniecohen/dafny/issues/266).
 git-issues/github-issue-266-m2.dfy
+
+# Bounded callables, milestone 3: heap-reading bounded values in fields and collections, generic flow, higher-order bounded values, and callback parameters kept and applied inside lambdas, under --modular-termination (https://github.com/erniecohen/dafny/issues/266).
+git-issues/github-issue-266-m3.dfy

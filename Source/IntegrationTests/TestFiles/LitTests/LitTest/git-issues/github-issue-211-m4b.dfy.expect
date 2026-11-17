@@ -43,7 +43,7 @@ rank-general, refresh false, consistent false
 github-issue-211-m4b-rank-general.dfy(6,38): Error: modular termination: the 'decreases {:global}' bound of 'Client.F' can reach dispatch to implementations that other modules may provide (bound -> General contract of 'Library.Leaf' (publish {:termination_closed} for independent closed code)); a bound may only use code that cannot reach one, since its value must not depend on the termination that the bounds establish
 1 resolution/type errors detected in github-issue-211-m4b-rank-general.dfy
 named-general, refresh false, consistent false
-github-issue-211-m4b-named-general.dfy(8,64): Error: modular termination: in 'Client.F', the value passed for parameter 'f' of 'Client.Apply', which has a 'decreases {:callback}' bound, must be a lambda expression, a parameter with such a bound (outside a lambda), a function that reaches no dispatched call, or the function of a bounded value
+github-issue-211-m4b-named-general.dfy(8,64): Error: modular termination: in 'Client.F', the value passed for parameter 'f' of 'Client.Apply', which has a 'decreases {:callback}' bound, must be a lambda expression, a parameter with such a bound, a function that reaches no dispatched call, or the function of a bounded value
 1 resolution/type errors detected in github-issue-211-m4b-named-general.dfy
 implicit-general, refresh false, consistent false
 github-issue-211-m4b-implicit-general.dfy(8,52): Error: modular termination: in 'Client.F', this may evaluate the initializer of constant 'Library.Weight', which can reach dispatch to implementations that other modules may provide and has no 'decreases {:global}' bound, so it cannot run under the caller's bound (same-bound rule)
@@ -161,7 +161,7 @@ rank-general, refresh false, consistent true
 github-issue-211-m4b-rank-general.dfy(6,38): Error: modular termination: the 'decreases {:global}' bound of 'Client.F' can reach dispatch to implementations that other modules may provide (bound -> General contract of 'Library.Leaf' (publish {:termination_closed} for independent closed code)); a bound may only use code that cannot reach one, since its value must not depend on the termination that the bounds establish
 1 resolution/type errors detected in github-issue-211-m4b-rank-general.dfy
 named-general, refresh false, consistent true
-github-issue-211-m4b-named-general.dfy(8,64): Error: modular termination: in 'Client.F', the value passed for parameter 'f' of 'Client.Apply', which has a 'decreases {:callback}' bound, must be a lambda expression, a parameter with such a bound (outside a lambda), a function that reaches no dispatched call, or the function of a bounded value
+github-issue-211-m4b-named-general.dfy(8,64): Error: modular termination: in 'Client.F', the value passed for parameter 'f' of 'Client.Apply', which has a 'decreases {:callback}' bound, must be a lambda expression, a parameter with such a bound, a function that reaches no dispatched call, or the function of a bounded value
 1 resolution/type errors detected in github-issue-211-m4b-named-general.dfy
 implicit-general, refresh false, consistent true
 github-issue-211-m4b-implicit-general.dfy(8,52): Error: modular termination: in 'Client.F', this may evaluate the initializer of constant 'Library.Weight', which can reach dispatch to implementations that other modules may provide and has no 'decreases {:global}' bound, so it cannot run under the caller's bound (same-bound rule)
@@ -279,7 +279,7 @@ rank-general, refresh true, consistent false
 github-issue-211-m4b-rank-general.dfy(6,38): Error: modular termination: the 'decreases {:global}' bound of 'Client.F' can reach dispatch to implementations that other modules may provide (bound -> General contract of 'Library.Leaf' (publish {:termination_closed} for independent closed code)); a bound may only use code that cannot reach one, since its value must not depend on the termination that the bounds establish
 1 resolution/type errors detected in github-issue-211-m4b-rank-general.dfy
 named-general, refresh true, consistent false
-github-issue-211-m4b-named-general.dfy(8,64): Error: modular termination: in 'Client.F', the value passed for parameter 'f' of 'Client.Apply', which has a 'decreases {:callback}' bound, must be a lambda expression, a parameter with such a bound (outside a lambda), a function that reaches no dispatched call, or the function of a bounded value
+github-issue-211-m4b-named-general.dfy(8,64): Error: modular termination: in 'Client.F', the value passed for parameter 'f' of 'Client.Apply', which has a 'decreases {:callback}' bound, must be a lambda expression, a parameter with such a bound, a function that reaches no dispatched call, or the function of a bounded value
 1 resolution/type errors detected in github-issue-211-m4b-named-general.dfy
 implicit-general, refresh true, consistent false
 github-issue-211-m4b-implicit-general.dfy(8,52): Error: modular termination: in 'Client.F', this may evaluate the initializer of constant 'Library.Weight', which can reach dispatch to implementations that other modules may provide and has no 'decreases {:global}' bound, so it cannot run under the caller's bound (same-bound rule)
@@ -397,7 +397,7 @@ rank-general, refresh true, consistent true
 github-issue-211-m4b-rank-general.dfy(6,38): Error: modular termination: the 'decreases {:global}' bound of 'Client.F' can reach dispatch to implementations that other modules may provide (bound -> General contract of 'Library.Leaf' (publish {:termination_closed} for independent closed code)); a bound may only use code that cannot reach one, since its value must not depend on the termination that the bounds establish
 1 resolution/type errors detected in github-issue-211-m4b-rank-general.dfy
 named-general, refresh true, consistent true
-github-issue-211-m4b-named-general.dfy(8,64): Error: modular termination: in 'Client.F', the value passed for parameter 'f' of 'Client.Apply', which has a 'decreases {:callback}' bound, must be a lambda expression, a parameter with such a bound (outside a lambda), a function that reaches no dispatched call, or the function of a bounded value
+github-issue-211-m4b-named-general.dfy(8,64): Error: modular termination: in 'Client.F', the value passed for parameter 'f' of 'Client.Apply', which has a 'decreases {:callback}' bound, must be a lambda expression, a parameter with such a bound, a function that reaches no dispatched call, or the function of a bounded value
 1 resolution/type errors detected in github-issue-211-m4b-named-general.dfy
 implicit-general, refresh true, consistent true
 github-issue-211-m4b-implicit-general.dfy(8,52): Error: modular termination: in 'Client.F', this may evaluate the initializer of constant 'Library.Weight', which can reach dispatch to implementations that other modules may provide and has no 'decreases {:global}' bound, so it cannot run under the caller's bound (same-bound rule)

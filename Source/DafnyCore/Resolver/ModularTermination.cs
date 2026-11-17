@@ -1107,9 +1107,8 @@ public class ModularTerminationRewriter : IRewriter {
     // A type is reported once per line: a declaration, its expressions and their subexpressions mention the same type.
     private readonly HashSet<(System.Uri, int, TopLevelDecl)> reportedTypes = new();
 
-    // The code inside a lambda expression, and inside a lambda expression passed for a parameter with a callback
-    // bound (a bounded lambda, M3b), whose body runs under that bound, and so does every lambda inside it.
-    private readonly HashSet<object> insideLambda = new(ReferenceEqualityComparer.Instance);
+    // The code inside a lambda expression passed for a parameter with a callback bound (a bounded lambda, M3b),
+    // whose body runs under that bound, and so does every lambda inside it.
     private readonly HashSet<object> insideBoundedLambda = new(ReferenceEqualityComparer.Instance);
     // The member selections that a call statement names its method by.
     private readonly HashSet<object> calledSelections = new(ReferenceEqualityComparer.Instance);
@@ -1129,17 +1128,14 @@ public class ModularTerminationRewriter : IRewriter {
     /// </summary>
     public void Prepare(IEnumerable<Expression> exprs, IEnumerable<Statement> stmts) {
       foreach (var e in exprs) {
-        Walk(e, false, false);
+        Walk(e, false);
       }
       foreach (var st in stmts) {
-        Walk(st, false, false);
+        Walk(st, false);
       }
     }
 
-    private void Walk(object node, bool inLambda, bool inBounded) {
-      if (inLambda) {
-        insideLambda.Add(node);
-      }
+    private void Walk(object node, bool inBounded) {
       if (inBounded) {
         insideBoundedLambda.Add(node);
       }
@@ -1161,19 +1157,19 @@ public class ModularTerminationRewriter : IRewriter {
         case Expression expr:
           foreach (var sub in expr.SubExpressions) {
             var isLambda = sub.Resolved is LambdaExpr;
-            Walk(sub, inLambda || isLambda, inBounded || (isLambda && bounded.Contains(sub)));
+            Walk(sub, inBounded || (isLambda && bounded.Contains(sub)));
           }
           if (expr is StmtExpr stmtExpr) {
-            Walk(stmtExpr.S, inLambda, inBounded);
+            Walk(stmtExpr.S, inBounded);
           }
           break;
         case Statement stmt:
           foreach (var sub in stmt.SubExpressions) {
             var isLambda = sub.Resolved is LambdaExpr;
-            Walk(sub, inLambda || isLambda, inBounded || (isLambda && bounded.Contains(sub)));
+            Walk(sub, inBounded || (isLambda && bounded.Contains(sub)));
           }
           foreach (var sub in stmt.SubStatements) {
-            Walk(sub, inLambda, inBounded);
+            Walk(sub, inBounded);
           }
           break;
       }
@@ -1244,13 +1240,13 @@ public class ModularTerminationRewriter : IRewriter {
     /// <summary>
     /// An application of a function value (M3b).  A lambda's body is checked where it appears, and a function
     /// named as a value that reaches no dispatched call needs no check.  A parameter with a callback bound runs
-    /// under that bound, which the verifier checks to be below the caller's (smaller-bound rule), except inside a
-    /// lambda and as the initializer of a sequence or an array, where it counts as unknown.  Any other value runs
-    /// code that is not known, which has no bound (TOP): an error where the code runs under a bound.
+    /// under that bound, which the verifier checks to be below the caller's, or inside a lambda the lambda's
+    /// (smaller-bound rule), except as the initializer of a sequence or an array, where it counts as unknown.  Any
+    /// other value runs code that is not known, which has no bound (TOP): an error where the code runs under a bound.
     /// </summary>
     private void ReportApplication(IOrigin origin, Expression value, object site, string what, bool initializer) {
       var kind = analysis.Classify(value, caller);
-      if (kind == ModularTerminationAnalysis.FunctionValueKind.CallbackParameter && (initializer || insideLambda.Contains(site)) ||
+      if (kind == ModularTerminationAnalysis.FunctionValueKind.CallbackParameter && initializer ||
           kind == ModularTerminationAnalysis.FunctionValueKind.Bounded && initializer) {
         kind = ModularTerminationAnalysis.FunctionValueKind.Unknown;
       }
@@ -1307,9 +1303,6 @@ public class ModularTerminationRewriter : IRewriter {
           continue;
         }
         var kind = analysis.Classify(args[i], caller);
-        if (kind == ModularTerminationAnalysis.FunctionValueKind.CallbackParameter && insideLambda.Contains(site)) {
-          kind = ModularTerminationAnalysis.FunctionValueKind.Unknown;
-        }
         if (kind is ModularTerminationAnalysis.FunctionValueKind.Unknown && BoundedCallables.IsCertify(callee)) {
           if (ModularTermination.AdmittedMember(reporter.Options, args[i], out var problem) != null) {
             reporter.Info(MessageSource.Resolver, args[i].Origin,
@@ -1326,7 +1319,7 @@ public class ModularTerminationRewriter : IRewriter {
         if (kind is ModularTerminationAnalysis.FunctionValueKind.Unknown or ModularTerminationAnalysis.FunctionValueKind.Binder) {
           reporter.Error(MessageSource.Resolver, args[i].Origin,
             $"modular termination: in {CallerName}, the value passed for parameter '{callable.Ins[i].Name}' of '{QualifiedName(callee)}', " +
-            "which has a 'decreases {:callback}' bound, must be a lambda expression, a parameter with such a bound (outside a lambda), " +
+            "which has a 'decreases {:callback}' bound, must be a lambda expression, a parameter with such a bound, " +
             "a function that reaches no dispatched call, or the function of a bounded value");
         }
       }

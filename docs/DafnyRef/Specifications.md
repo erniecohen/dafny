@@ -644,9 +644,11 @@ A call through a function value runs code that the call does not name. Under the
   it and is checked there, under the same rules.
 * If the value is a function named as a value that is locally closed, or publishes
   `{:termination_closed}` across an import, nothing needs to be checked.
-* If the value is an in-parameter with a _callback bound_ (below), outside a lambda, the application is a
-  call to code whose bound is that callback bound: the callback bound must be below the caller's global
-  bound, both evaluated on entry (the smaller-bound rule).
+* If the value is an in-parameter with a _callback bound_ (below), the application is a call to code
+  whose bound is that callback bound: the callback bound, evaluated on entry, must be below the caller's
+  global bound on entry, or, inside a lambda expression, below the bound under which the lambda runs,
+  evaluated where the lambda is formed (the smaller-bound rule). The actual runs under its callback bound
+  in every later state, so a lambda can keep the parameter and apply it later.
 * Any other value runs code that is not known, which has no bound (TOP), like a dispatched call to a
   member without a bound. A member with a global bound may not apply it; a member without one may, and
   then it can reach a dispatched call, so that a member with a bound may not call it in turn.
@@ -668,7 +670,7 @@ The callback bound is an obligation where the value is passed, never an assumpti
 pass for `g` a lambda expression, whose body (with its `requires` and `reads` clauses) is then checked under
 the callback bound at the call's arguments, as if that were the bound of the member it belongs to, also
 when the caller has no bound; an in-parameter of the caller that has a callback bound of its own, which must
-be at most the callee's, at the call's arguments (outside a lambda); or a function named as a value that
+be at most the callee's, at the call's arguments (both evaluated as above); or a function named as a value that
 reaches no dispatched call. Any other value is rejected. So in
 
 <!-- %no-check -->
@@ -883,9 +885,9 @@ _bounded callable_: a function value of the arrow type `F` together with persist
 every call of it terminates below a ghost bound in the order `O`
 (https://github.com/erniecohen/dafny/issues/266). A value is formed by `bounded.certify(a, f)`, its
 bound `c.bound` (ghost) and function `c.erase` are projected, and applying it, `c(x)` or
-`c.erase(x)`, spends the evidence. A value can be passed, returned and stored in locals, fields and collections,
-since each application checks the bound of the value it applies. A field still cannot hold one whose
-function reads the heap (see below), which a later version is planned to allow.
+`c.erase(x)`, spends the evidence. A value can be passed, returned and stored in locals, fields, collections and
+generic containers, also when its function reads the heap, since each application checks the bound of
+the value it applies.
 
 - The order `O` is `nat` or `ORDINAL`, or a type synonym for one of them, with its built-in order.
   `O` is non-variant: `bounded<nat, F>` and `bounded<ORDINAL, F>` are unrelated.
@@ -897,15 +899,20 @@ function reads the heap (see below), which a later version is planned to allow.
   cannot be the element type of a compiled set or the argument of a `(0)` or `(00)` type
   parameter. Definite assignment applies to its variables and fields. Ghost equality is allowed.
 - The compilers erase `bounded<O, F>` to `F`, with no wrapper and no run-time cost.
-- A function value that reads the heap cannot be stored in a field. This rule applies to a
-  `bounded<O, A ~> B>` field too.
+- A function value that reads the heap cannot be stored in a field, but a bounded value can, also
+  one of type `bounded<O, A ~> B>`. Its formation checked its function in every later state, so a
+  cycle through the heap would apply it under its own bound or a larger one, which the rule for
+  applications below rejects. The order type `O` itself is checked as before.
 
 Formation and application:
 
 - `bounded.certify(a, f)`, with `a` of type `O` and `f` of type `F`, has type `bounded<O, F>`, and
   `bounded.certify(a, f).bound == a` and `bounded.certify(a, f).erase == f`. It checks that `f` runs
-  under `a`. A lambda expression's body is checked as code with the global bound `a`. The function
-  of a bounded value, `c.erase`, needs `c.bound <= a`. A named function `g` (or `o.g`), which runs
+  under `a`. A lambda expression's body is checked as code with the global bound `a`, evaluated where
+  the value is formed, in every state that can follow, as for any lambda that reads the heap. The function
+  of a bounded value, `c.erase`, needs `c.bound <= a`. An in-parameter `g` with a callback bound
+  needs that bound, evaluated on entry, to be at most `a`, so a member can keep a callback it is
+  given. A named function `g` (or `o.g`), which runs
   its own code, needs a `decreases {:global}` bound that does not exceed `a`, unless it can reach no
   dispatched call; its bound must not depend on its parameters or the heap, it may not be a trait
   member whose implementation dispatch chooses, and it may not have a parameter with a

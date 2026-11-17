@@ -75,7 +75,7 @@ github-issue-266-m2-reject.dfy(70,50): Error: decreases clause might not decreas
 
 Dafny program verifier finished with 3 verified, 12 errors
 values that cannot be certified, both resolvers
-github-issue-266-m2-certify.dfy(39,32): Error: modular termination: in 'A.Raw', the value passed for parameter 'f' of '_System.bounded.certify', which has a 'decreases {:callback}' bound, must be a lambda expression, a parameter with such a bound (outside a lambda), a function that reaches no dispatched call, or the function of a bounded value
+github-issue-266-m2-certify.dfy(39,32): Error: modular termination: in 'A.Raw', the value passed for parameter 'f' of '_System.bounded.certify', which has a 'decreases {:callback}' bound, must be a lambda expression, a parameter with such a bound, a function that reaches no dispatched call, or the function of a bounded value
 github-issue-266-m2-certify.dfy(42,34): Error: modular termination: in 'A.Abstract', the function passed to '_System.bounded.certify' cannot be certified: it is a trait member, whose implementation dispatch chooses (certify a lambda that calls it)
 github-issue-266-m2-certify.dfy(45,32): Error: modular termination: in 'A.Parameter', the function passed to '_System.bounded.certify' cannot be certified: its 'decreases {:global}' bound depends on its parameters or on the heap (certify a lambda with a narrower precondition)
 github-issue-266-m2-certify.dfy(48,37): Error: modular termination: in 'A.HeapBound', the function passed to '_System.bounded.certify' cannot be certified: its 'decreases {:global}' bound depends on its parameters or on the heap (certify a lambda with a narrower precondition)
@@ -84,7 +84,7 @@ github-issue-266-m2-certify.dfy(54,32): Error: modular termination: 'A.Callback'
 github-issue-266-m2-certify.dfy(54,32): Error: modular termination: in 'A.WithCallback', the function passed to '_System.bounded.certify' cannot be certified: it has a parameter with a 'decreases {:callback}' bound
 github-issue-266-m2-certify.dfy(60,13): Error: modular termination: in 'A.RawEscape', a call through a function value needs the smaller-bound rule; rejected: the value's code is not known, so it has no bound, and the caller has one (pass the value for a parameter with a 'decreases {:callback}' bound)
 8 resolution/type errors detected in github-issue-266-m2-certify.dfy
-github-issue-266-m2-certify.dfy(39,32): Error: modular termination: in 'A.Raw', the value passed for parameter 'f' of '_System.bounded.certify', which has a 'decreases {:callback}' bound, must be a lambda expression, a parameter with such a bound (outside a lambda), a function that reaches no dispatched call, or the function of a bounded value
+github-issue-266-m2-certify.dfy(39,32): Error: modular termination: in 'A.Raw', the value passed for parameter 'f' of '_System.bounded.certify', which has a 'decreases {:callback}' bound, must be a lambda expression, a parameter with such a bound, a function that reaches no dispatched call, or the function of a bounded value
 github-issue-266-m2-certify.dfy(42,34): Error: modular termination: in 'A.Abstract', the function passed to '_System.bounded.certify' cannot be certified: it is a trait member, whose implementation dispatch chooses (certify a lambda that calls it)
 github-issue-266-m2-certify.dfy(45,32): Error: modular termination: in 'A.Parameter', the function passed to '_System.bounded.certify' cannot be certified: its 'decreases {:global}' bound depends on its parameters or on the heap (certify a lambda with a narrower precondition)
 github-issue-266-m2-certify.dfy(48,37): Error: modular termination: in 'A.HeapBound', the function passed to '_System.bounded.certify' cannot be certified: its 'decreases {:global}' bound depends on its parameters or on the heap (certify a lambda with a narrower precondition)
@@ -101,14 +101,12 @@ github-issue-266-m2-resolve.dfy(5,10): Error: ghost variables such as b are allo
 github-issue-266-m2-resolve.dfy(10,10): Error: ghost variables such as g are allowed only in specification contexts. g was inferred to be ghost based on its declaration or initialization.
 2 resolution/type errors detected in github-issue-266-m2-resolve.dfy
 knots through data, both resolvers
-github-issue-266-m2-datatype.dfy(5,33): Error: using the type being defined ('D') here would cause a logical inconsistency by defining a type whose cardinality exceeds itself (like the Continuum Transfunctioner, you might say its power would then be exceeded only by its mystery)
-github-issue-266-m2-datatype.dfy(13,34): Error: RHS (of type array<Zero>) not assignable to LHS (of type array<T -> int>) (non-variant type parameter would require T -> int = Zero)
-github-issue-266-m2-datatype.dfy(26,9): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
-3 resolution/type errors detected in github-issue-266-m2-datatype.dfy
-github-issue-266-m2-datatype.dfy(5,33): Error: using the type being defined ('D') here would cause a logical inconsistency by defining a type whose cardinality exceeds itself (like the Continuum Transfunctioner, you might say its power would then be exceeded only by its mystery)
-github-issue-266-m2-datatype.dfy(12,11): Error: type array?<Zero> is not assignable to LHS (of type array?<T -> int>) (non-variant type parameter 'arg' would require T -> int = Zero)
-github-issue-266-m2-datatype.dfy(26,9): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
-3 resolution/type errors detected in github-issue-266-m2-datatype.dfy
+github-issue-266-m2-datatype.dfy(6,33): Error: using the type being defined ('D') here would cause a logical inconsistency by defining a type whose cardinality exceeds itself (like the Continuum Transfunctioner, you might say its power would then be exceeded only by its mystery)
+github-issue-266-m2-datatype.dfy(14,34): Error: RHS (of type array<Zero>) not assignable to LHS (of type array<T -> int>) (non-variant type parameter would require T -> int = Zero)
+2 resolution/type errors detected in github-issue-266-m2-datatype.dfy
+github-issue-266-m2-datatype.dfy(6,33): Error: using the type being defined ('D') here would cause a logical inconsistency by defining a type whose cardinality exceeds itself (like the Continuum Transfunctioner, you might say its power would then be exceeded only by its mystery)
+github-issue-266-m2-datatype.dfy(13,11): Error: type array?<Zero> is not assignable to LHS (of type array?<T -> int>) (non-variant type parameter 'arg' would require T -> int = Zero)
+2 resolution/type errors detected in github-issue-266-m2-datatype.dfy
 knots through the parameter and result types of a bounded function, both resolvers
 github-issue-266-m2-wrapper.dfy(8,81): Error: To prevent the creation of non-terminating functions, storing functions into an object's fields that reads the object is disallowed
 github-issue-266-m2-wrapper.dfy(21,64): Error: To prevent the creation of non-terminating functions, storing functions into an object's fields that reads the object is disallowed
