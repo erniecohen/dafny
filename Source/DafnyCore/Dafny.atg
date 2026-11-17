@@ -1140,13 +1140,16 @@ TPCharOption<ref TypeParameterCharacteristics characteristics>
                       characteristics.AutoInit = Microsoft.Dafny.Type.AutoInitInfo.Nonempty;
                     }
                   } else {
-                    SemErr(ErrorId.p_unexpected_type_characteristic, t, $"unexpected type characteristic: '{t.val}' should be one of == or 0 or 00 or !new");
+                    SemErr(ErrorId.p_unexpected_type_characteristic, t, $"unexpected type characteristic: '{t.val}' should be one of == or 0 or 00 or !new or !reads");
                   }
                .)
-  | "!" "new"  (. characteristics.ContainsNoReferenceTypes = true; .)
+  | "!"
+    ( "new"    (. characteristics.ContainsNoReferenceTypes = true; .)
+    | "reads"  (. characteristics.ContainsNoReadingFunctions = true; .)
+    )
   | ANY        (. if (t.kind == _closeparen || t.kind == _comma) 
-                      SemErr(ErrorId.p_missing_type_characteristic, t, $"extra comma or missing type characteristic: should be one of == or 0 or 00 or !new");
-                  else SemErr(ErrorId.p_illegal_type_characteristic, t, $"illegal type characteristic: '{t.val}' should be one of == or 0 or 00 or !new");
+                      SemErr(ErrorId.p_missing_type_characteristic, t, $"extra comma or missing type characteristic: should be one of == or 0 or 00 or !new or !reads");
+                  else SemErr(ErrorId.p_illegal_type_characteristic, t, $"illegal type characteristic: '{t.val}' should be one of == or 0 or 00 or !new or !reads");
                 .)
   )
   .
