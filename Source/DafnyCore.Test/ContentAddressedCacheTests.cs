@@ -181,6 +181,201 @@ public class ContentAddressedCacheTests : IDisposable {
     Assert.Null(cache.TryRead(CacheTable.Translation, key));
   }
 
+  // A record-like payload that compresses well, as verification results do (issue 388).
+  private static readonly byte[] Large = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Range(0, 400).Select(i =>
+    $"{{\"Step\":{i},\"Request\":\"(check-sat)\",\"Response\":\"unsat\",\"Resources\":{i * 37}}}\n")));
+  private string LargeBlobPath => BlobPathOf(Large);
+
+  [Fact]
+  public void CompressibleBlobsAreStoredCompressedAndRoundTrip() {
+    var cache = new ContentAddressedCache(directory);
+    Assert.Equal(CachePublication.Stored, cache.TryPublish(CacheTable.VerificationResult, key, Large));
+    var stored = File.ReadAllBytes(LargeBlobPath);
+    Assert.True(BlobEncoding.IsEncoded(stored));
+    Assert.True(stored.Length * 4 < Large.Length, $"{stored.Length} of {Large.Length}");
+    Assert.Equal(Large, cache.TryRead(CacheTable.VerificationResult, key));
+    Assert.Equal(Large, new ContentAddressedCache(directory).TryRead(CacheTable.VerificationResult, key));
+    Assert.Equal(CachePublication.AlreadyPresent, new ContentAddressedCache(directory).TryPublish(CacheTable.VerificationResult, key, Large));
+    Assert.Equal(Large, new ContentAddressedCache(directory).TryReadBlob(CacheDigest.Blob(Large)));
+  }
+
+  [Fact]
+  public void AddressesAndRecordsCoverTheDecodedBytes() {
+    // The address, and the record's Blob and Length, are those of the payload, whatever the
+    // stored form; so neither keys nor addresses depend on the compression level or library.
+    var cache = new ContentAddressedCache(directory);
+    cache.TryPublish(CacheTable.Translation, key, Large);
+    var record = JsonNode.Parse(File.ReadAllText(EntryPath))!;
+    Assert.Equal(Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(Large)).ToLowerInvariant(),
+      (string)record["Blob"]!);
+    Assert.Equal(Large.Length, (int)record["Length"]!);
+    Assert.True(File.Exists(LargeBlobPath));
+  }
+
+  [Fact]
+  public void IncompressibleBlobsAreStoredRaw() {
+    var random = new byte[4096];
+    new Random(388).NextBytes(random);
+    var cache = new ContentAddressedCache(directory);
+    cache.TryPublish(CacheTable.Translation, key, random);
+    Assert.Equal(random, File.ReadAllBytes(BlobPathOf(random)));
+    Assert.Equal(random, new ContentAddressedCache(directory).TryRead(CacheTable.Translation, key));
+  }
+
+  [Fact]
+  public void UncompressedBlobsFromEarlierWritersStillRead() {
+    var other = CacheDigest.Compute("translation-lookup/v1", Encoding.UTF8.GetBytes("other module"));
+    // An earlier writer stored every blob raw. Plant that layout for one key, and add a new
+    // compressed entry beside it.
+    WriteLegacy("results", key, Large);
+    var cache = new ContentAddressedCache(directory);
+    Assert.Equal(Large, File.ReadAllBytes(LargeBlobPath));
+    Assert.Equal(Large, cache.TryRead(CacheTable.VerificationResult, key));
+    // A new publication of the same blob reuses the raw file as it is.
+    Assert.Equal(CachePublication.Stored, cache.TryPublish(CacheTable.Translation, other, Large));
+    Assert.Equal(Large, File.ReadAllBytes(LargeBlobPath));
+    Assert.Equal(Large, cache.TryRead(CacheTable.Translation, other));
+    Assert.Equal(CachePublication.AlreadyPresent, cache.TryPublish(CacheTable.VerificationResult, key, Large));
+    // A new blob is compressed, and old and new entries both read in a fresh instance.
+    var newer = Large.Concat("tail"u8.ToArray()).ToArray();
+    Assert.Equal(CachePublication.Stored, cache.TryPublish(CacheTable.Translation, key, newer));
+    Assert.True(BlobEncoding.IsEncoded(File.ReadAllBytes(BlobPathOf(newer))));
+    var fresh = new ContentAddressedCache(directory);
+    Assert.Equal(Large, fresh.TryRead(CacheTable.VerificationResult, key));
+    Assert.Equal(Large, fresh.TryRead(CacheTable.Translation, other));
+    Assert.Equal(newer, fresh.TryRead(CacheTable.Translation, key));
+  }
+
+  [Fact]
+  public void RawBlobThatBeginsWithTheHeaderStillReads() {
+    var lookalike = new byte[] { 0x00, 0x64, 0x63, 0x7a, 1, 1, 0, 0, 0, 3, 1, 2, 3 };
+    WriteLegacy("translations", key, lookalike);
+    Assert.Equal(lookalike, new ContentAddressedCache(directory).TryRead(CacheTable.Translation, key));
+    // And the writer, which cannot shrink it, stores it raw too.
+    var other = CacheDigest.Compute("translation-lookup/v1", Encoding.UTF8.GetBytes("other"));
+    Directory.Delete(Path.Combine(directory, "v1"), recursive: true);
+    var cache = new ContentAddressedCache(directory);
+    Assert.Equal(CachePublication.Stored, cache.TryPublish(CacheTable.Translation, other, lookalike));
+    Assert.Equal(lookalike, new ContentAddressedCache(directory).TryRead(CacheTable.Translation, other));
+  }
+
+  public static IEnumerable<object[]> Corruptions() {
+    var encoded = BlobEncoding.Encode(Large);
+    var cases = new List<(string, byte[])>();
+    foreach (var length in new[] { 0, 3, 4, 9, 10, 11, encoded.Length / 2, encoded.Length - 4, encoded.Length - 1 }) {
+      cases.Add(($"truncated to {length}", encoded[..length]));
+    }
+    foreach (var offset in new[] { 0, 3, 4, 5, 6, 9, 10, 11, encoded.Length / 2, encoded.Length - 1 }) {
+      var flipped = encoded.ToArray();
+      flipped[offset] ^= 0x01;
+      cases.Add(($"bit flipped at {offset}", flipped));
+    }
+    var longer = encoded.ToArray();
+    BinaryPrimitivesWrite(longer, (uint)Large.Length + 1);
+    cases.Add(("length too large", longer));
+    var shorter = encoded.ToArray();
+    BinaryPrimitivesWrite(shorter, (uint)Large.Length - 1);
+    cases.Add(("length too small", shorter));
+    var bomb = encoded.ToArray();
+    BinaryPrimitivesWrite(bomb, uint.MaxValue);
+    cases.Add(("length beyond the bound", bomb));
+    cases.Add(("trailing bytes", encoded.Concat(new byte[] { 0 }).ToArray()));
+    var version = encoded.ToArray();
+    version[4] = 2;
+    cases.Add(("unknown version", version));
+    var algorithm = encoded.ToArray();
+    algorithm[5] = 2;
+    cases.Add(("unknown algorithm", algorithm));
+    cases.Add(("another blob, compressed", BlobEncoding.Encode(Large.Concat(new byte[] { 1 }).ToArray())));
+    return cases.Select(c => new object[] { c.Item1, c.Item2 });
+  }
+
+  private static void BinaryPrimitivesWrite(byte[] stored, uint length) =>
+    System.Buffers.Binary.BinaryPrimitives.WriteUInt32BigEndian(stored.AsSpan(6, 4), length);
+
+  [Theory]
+  [MemberData(nameof(Corruptions))]
+  public void CorruptOrTruncatedCompressedBlobsAreMisses(string description, byte[] stored) {
+    var cache = new ContentAddressedCache(directory);
+    Assert.Equal(CachePublication.Stored, cache.TryPublish(CacheTable.VerificationResult, key, Large));
+    File.WriteAllBytes(LargeBlobPath, stored);
+    Assert.True(new ContentAddressedCache(directory).TryRead(CacheTable.VerificationResult, key) == null, description);
+    Assert.Null(new ContentAddressedCache(directory).TryReadBlob(CacheDigest.Blob(Large)));
+    // A corrupt object is not replaced by a later publisher: the key fails closed.
+    Assert.Equal(CachePublication.Conflict, cache.TryPublish(CacheTable.VerificationResult, key, Large));
+    Assert.Null(new ContentAddressedCache(directory).TryRead(CacheTable.VerificationResult, key));
+  }
+
+  [Fact]
+  public void Adler32MatchesTheZLibTrailer() {
+    Assert.Equal(0x11E60398u, BlobEncoding.Adler32("Wikipedia"u8));
+    Assert.Equal(1u, BlobEncoding.Adler32([]));
+    var big = new byte[100_000];
+    Array.Fill(big, (byte)0xff);
+    var encoded = BlobEncoding.Encode(big);
+    Assert.Equal(System.Buffers.Binary.BinaryPrimitives.ReadUInt32BigEndian(encoded.AsSpan(encoded.Length - 4)),
+      BlobEncoding.Adler32(big));
+    Assert.Equal(big, BlobEncoding.TryDecode(encoded, big.Length));
+    Assert.Null(BlobEncoding.TryDecode(encoded, big.Length - 1));
+  }
+
+  [Fact]
+  public void DecodingArbitraryBytesNeverThrows() {
+    var random = new Random(388);
+    var encoded = BlobEncoding.Encode(Large);
+    for (var trial = 0; trial < 2000; trial++) {
+      var stored = trial % 2 == 0 ? encoded.ToArray() : new byte[random.Next(0, 64)];
+      if (trial % 2 == 0) {
+        for (var flips = random.Next(1, 8); flips > 0; flips--) {
+          stored[random.Next(BlobEncoding.HeaderLength, stored.Length)] = (byte)random.Next(256);
+        }
+      } else {
+        random.NextBytes(stored);
+        if (stored.Length >= BlobEncoding.HeaderLength) {
+          BlobEncoding.Encode(Large).AsSpan(0, 6).CopyTo(stored);
+        }
+      }
+      var decoded = BlobEncoding.TryDecode(stored, 1 << 20);
+      Assert.True(decoded == null || decoded.Length <= 1 << 20);
+    }
+  }
+
+  [Fact]
+  public async Task ConcurrentCompressedPublishersAndReadersSeeOnlyTheValue() {
+    var tasks = Enumerable.Range(0, 32).Select(index => Task.Run(() => {
+      var cache = new ContentAddressedCache(directory);
+      if (index % 2 == 0) {
+        var result = cache.TryPublish(CacheTable.VerificationResult, key, Large);
+        Assert.Contains(result, new[] { CachePublication.Stored, CachePublication.AlreadyPresent });
+        Assert.Equal(Large, cache.TryRead(CacheTable.VerificationResult, key));
+      } else {
+        var read = cache.TryRead(CacheTable.VerificationResult, key);
+        Assert.True(read == null || read.SequenceEqual(Large));
+      }
+    }));
+    await Task.WhenAll(tasks);
+    Assert.Equal(Large, new ContentAddressedCache(directory).TryRead(CacheTable.VerificationResult, key));
+    Assert.Empty(Directory.GetFileSystemEntries(directory, "*.tmp", SearchOption.AllDirectories));
+  }
+
+  private void WriteLegacy(string tableName, string entryKey, byte[] payload) {
+    var digest = CacheDigest.Blob(payload);
+    Directory.CreateDirectory(Path.GetDirectoryName(BlobPathOf(payload))!);
+    File.WriteAllBytes(BlobPathOf(payload), payload);
+    var entry = Path.Combine(directory, "v1", tableName, entryKey[..2], entryKey, "data");
+    Directory.CreateDirectory(Path.GetDirectoryName(entry)!);
+    File.WriteAllText(entry, new JsonObject {
+      ["Schema"] = 1,
+      ["Table"] = tableName,
+      ["Key"] = entryKey,
+      ["Blob"] = digest,
+      ["Length"] = payload.Length
+    }.ToJsonString());
+  }
+
+  private string BlobPathOf(byte[] payload) =>
+    Path.Combine(directory, "v1", "blobs", "sha256", CacheDigest.Blob(payload)[..2], CacheDigest.Blob(payload), "data");
+
   private string EntryPath => Path.Combine(directory, "v1", "translations", key[..2], key, "data");
   private string BlobPath => Path.Combine(directory, "v1", "blobs", "sha256", CacheDigest.Blob(Payload)[..2], CacheDigest.Blob(Payload), "data");
 

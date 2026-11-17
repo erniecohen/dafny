@@ -68,10 +68,16 @@ namespace Microsoft.Dafny {
         var symbols = SymbolExtensions.GetSymbolDescendants(program.DefaultModule);
         verifiables = new Dictionary<Uri, IIntervalTree<DafnyPosition, ICanVerify>>();
         foreach (var canVerify in symbols.OfType<ICanVerify>().Where(v =>
-                   !v.Origin.IsCopy &&
                    v.ShouldVerify &&
-                  v.ContainingModule.ShouldVerify(program.Compilation) &&
-                  v.ShouldVerify(program.Compilation)
+                   v.ContainingModule.ShouldVerify(program.Compilation) &&
+                   // A copy from a refinement base has nothing to verify, unless its module must make a check of it
+                   // itself, which is then verified with the module, wherever the base comes from.  So a copy skips
+                   // the test of its own URI and of include filtering (ShouldVerify(Compilation)): its origin is in
+                   // the base's file, which may be included or a library, and only its module's test above applies.
+                   (v.Origin.IsCopy
+                     ? v is MemberDecl copy ? BoogieGenerator.MustVerifyCopy(copy, compilation.Options)
+                       : v is IteratorDecl iterator && BoogieGenerator.MustCheckInheritedTermination(iterator, compilation.Options)
+                     : v.ShouldVerify(program.Compilation))
                   ).ToList()) {
           var forUri =
             verifiables.GetOrCreate(canVerify.Origin.Uri, () => new IntervalTree<DafnyPosition, ICanVerify>());

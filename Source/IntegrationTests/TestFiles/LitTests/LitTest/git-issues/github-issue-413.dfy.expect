@@ -1,0 +1,34 @@
+github-issue-413.dfy(16,11): Warning: because of cyclic dependencies among constructor argument types, no instances of datatype 'D' can be constructed
+github-issue-413.dfy(18,21): Error: type parameter (X) passed to method M must be nonempty (got D)
+github-issue-413.dfy(24,11): Warning: because of cyclic dependencies among constructor argument types, no instances of datatype 'D' can be constructed
+github-issue-413.dfy(26,7): Related location: refining module
+github-issue-413.dfy(27,7): Error: to be a refinement of abstract type 'A.T' declared with (00), type synonym 'B.T' must be nonempty
+github-issue-413.dfy(32,11): Warning: because of cyclic dependencies among constructor argument types, no instances of datatype 'A' can be constructed
+github-issue-413.dfy(33,11): Warning: because of cyclic dependencies among constructor argument types, no instances of datatype 'B' can be constructed
+github-issue-413.dfy(35,21): Error: type parameter (X) passed to method M must be nonempty (got A)
+github-issue-413.dfy(42,21): Error: type parameter (X) passed to method M must be nonempty (got F)
+github-issue-413.dfy(47,11): Warning: because of cyclic dependencies among constructor argument types, no instances of datatype 'P' can be constructed
+github-issue-413.dfy(49,26): Error: type parameter (X) passed to method M must be nonempty (got P<int>)
+5 resolution/type errors detected in github-issue-413.dfy
+github-issue-413.dfy(16,11): Warning: because of cyclic dependencies among constructor argument types, no instances of datatype 'D' can be constructed
+github-issue-413.dfy(18,21): Error: type parameter (X) passed to method M must be nonempty (got D)
+github-issue-413.dfy(24,11): Warning: because of cyclic dependencies among constructor argument types, no instances of datatype 'D' can be constructed
+github-issue-413.dfy(26,7): Related location: refining module
+github-issue-413.dfy(27,7): Error: to be a refinement of abstract type 'A.T' declared with (00), type synonym 'B.T' must be nonempty
+github-issue-413.dfy(32,11): Warning: because of cyclic dependencies among constructor argument types, no instances of datatype 'A' can be constructed
+github-issue-413.dfy(33,11): Warning: because of cyclic dependencies among constructor argument types, no instances of datatype 'B' can be constructed
+github-issue-413.dfy(35,21): Error: type parameter (X) passed to method M must be nonempty (got A)
+github-issue-413.dfy(42,21): Error: type parameter (X) passed to method M must be nonempty (got F)
+github-issue-413.dfy(47,11): Warning: because of cyclic dependencies among constructor argument types, no instances of datatype 'P' can be constructed
+github-issue-413.dfy(49,26): Error: type parameter (X) passed to method M must be nonempty (got P<int>)
+5 resolution/type errors detected in github-issue-413.dfy
+github-issue-413-locals.dfy(4,9): Warning: because of cyclic dependencies among constructor argument types, no instances of datatype 'T' can be constructed
+github-issue-413-locals.dfy(13,2): Error: assertion might not hold
+github-issue-413-locals.dfy(18,2): Error: assertion might not hold
+
+Dafny program verifier finished with 1 verified, 2 errors
+github-issue-413-locals.dfy(4,9): Warning: because of cyclic dependencies among constructor argument types, no instances of datatype 'T' can be constructed
+github-issue-413-locals.dfy(13,2): Error: assertion might not hold
+github-issue-413-locals.dfy(18,2): Error: assertion might not hold
+
+Dafny program verifier finished with 1 verified, 2 errors
