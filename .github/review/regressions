@@ -811,6 +811,10 @@ git-issues/github-issue-211-rev3.dfy
 # The multiset order of the orders library over any well-founded relation, and global bounds of --modular-termination by multiset orders, where a dispatched call needs a strictly smaller bag (https://github.com/erniecohen/dafny/issues/211).
 git-issues/github-issue-211-multiset.dfy
 
+# Hiding or revealing a static function or constant through an object, as in `reveal foo.Q`, resolves under --type-system-refresh instead of crashing, and verifies (https://github.com/erniecohen/dafny/issues/416).
+git-issues/github-issue-416.dfy
+ast/reveal/revealQualified.dfy
+
 # Member invariants under the hidden --member-invariants, first stage: syntax, printing and
 # resolution, the reads restriction, the codatatype rule for programs and libraries, refinement,
 # opacity, and unchanged behaviour without the option (https://github.com/erniecohen/dafny/issues/105).
