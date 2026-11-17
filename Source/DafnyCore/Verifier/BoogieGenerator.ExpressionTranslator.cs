@@ -401,6 +401,16 @@ namespace Microsoft.Dafny {
             return TrLambdaExpr(lambdaExpr);
           case StmtExpr stmtExpr:
             return TrExpr(stmtExpr.E);
+          case LemmaResultExpr lemmaResultExpr: {
+              // L#bind#y(G), see LemmaBindingInfo
+              var info = BoogieGenerator.GetLemmaBindingInfo(lemmaResultExpr.Lemma);
+              var tok = GetToken(lemmaResultExpr);
+              var formal = lemmaResultExpr.Out;
+              var args = BoogieGenerator.LemmaBindingArguments(info, tok, lemmaResultExpr.TypeArgumentSubstitutionsWithParents(),
+                lemmaResultExpr.Receiver, lemmaResultExpr.Args, this);
+              var result = FunctionCall(tok, info.ResultFunctionName(lemmaResultExpr.OutIndex), BoogieGenerator.TrType(formal.Type), args);
+              return BoogieGenerator.CondApplyUnbox(tok, result, formal.Type, lemmaResultExpr.Type);
+            }
           case ITEExpr iteExpr:
             return TranslateIfThenElseExpr(iteExpr);
           case MatchExpr matchExpr:
@@ -2616,7 +2626,14 @@ namespace Microsoft.Dafny {
 
         } else if (expr is StmtExpr) {
           var e = (StmtExpr)expr;
+          if (e.LemmaBindingCall is { } lemmaBindingCall) {
+            // The fact that says something of the results of the lemma comes from the call statement, where it is
+            // justified, and not from the result expressions.
+            return BplAnd(BoogieGenerator.LemmaBindingCanCall(lemmaBindingCall, this) ?? Boogie.Expr.True, CanCallAssumption(e.E, cco));
+          }
           return CanCallAssumption(e.E, cco);
+        } else if (expr is LemmaResultExpr lemmaResultExpr) {
+          return CanCallAssumption(lemmaResultExpr.SubExpressions, cco);
         } else if (expr is ITEExpr) {
           ITEExpr e = (ITEExpr)expr;
           Boogie.Expr total = CanCallAssumption(e.Test, cco);

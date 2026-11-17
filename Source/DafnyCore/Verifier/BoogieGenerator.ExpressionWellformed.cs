@@ -1463,6 +1463,14 @@ namespace Microsoft.Dafny {
           CheckWellformedStmtExpr(stmtExpr, wfOptions, locals, builder, etran, addResultCommands);
           addResultCommands = null;
           break;
+        case LemmaResultExpr lemmaResultExpr:
+          // The call that justifies the result is a statement in front of it (see CheckWellformedStmtExpr). The
+          // result itself has nothing to check but its arguments.
+          CheckWellformed(lemmaResultExpr.Receiver, wfOptions, locals, builder, etran);
+          foreach (var argument in lemmaResultExpr.Args) {
+            CheckWellformed(argument, wfOptions, locals, builder, etran);
+          }
+          break;
         case ITEExpr iteExpr: {
             ITEExpr e = iteExpr;
             CheckWellformed(e.Test, wfOptions, locals, builder, etran);
@@ -1698,9 +1706,16 @@ namespace Microsoft.Dafny {
       BoogieStmtListBuilder builder, ExpressionTranslator etran, AddResultCommands addResultCommands) {
 
       var statements = new List<Statement>() { stmtExpr.S };
+      var lemmaBindingCalls = new List<CallStmt>();
+      if (stmtExpr.LemmaBindingCall is { } lemmaBindingCall) {
+        lemmaBindingCalls.Add(lemmaBindingCall);
+      }
       Expression expression = stmtExpr.E;
       while (expression is StmtExpr nestedStmtExpr) {
         statements.Add(nestedStmtExpr.S);
+        if (nestedStmtExpr.LemmaBindingCall is { } nestedLemmaBindingCall) {
+          lemmaBindingCalls.Add(nestedLemmaBindingCall);
+        }
         expression = nestedStmtExpr.E;
       }
 
@@ -1708,6 +1723,8 @@ namespace Microsoft.Dafny {
       // expressions. However, here, we're also having to translate e.S, which is a
       // Statement. Since statement translation (in particular, translation of CallStmt's)
       // work directly on the global variable $Heap, we temporarily change its value here.
+      // The call statement of a lemma binding declares local variables, which go out of scope after that binding.
+      var previousTrackers = DefiniteAssignmentTrackers;
       statementExpressionDepth++;
       try {
         if (etran.UsesOldHeap) {
@@ -1725,6 +1742,13 @@ namespace Microsoft.Dafny {
       }
       finally {
         statementExpressionDepth--;
+      }
+
+      if (lemmaBindingCalls.Count != 0) {
+        foreach (var call in lemmaBindingCalls) {
+          AssumeLemmaBinding(call, wfOptions, locals, builder, etran);
+        }
+        DefiniteAssignmentTrackers = previousTrackers;
       }
 
       CheckWellformedWithResult(expression, wfOptions, locals, builder, etran, addResultCommands);
