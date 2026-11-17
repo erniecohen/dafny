@@ -364,7 +364,7 @@ method m<T,-U>(i: int, list: List<T>) {}
 
 <!-- There are two instances of this error, one for the first item in a type parameter list, and one for subsequent items -->
 
-## **Error: unexpected type characteristic: '000' should be one of == or 0 or 00 or !new** {#p_unexpected_type_characteristic}
+## **Error: unexpected type characteristic: '000' should be one of == or 0 or 00 or !new or !reads** {#p_unexpected_type_characteristic}
 
 ```dafny
 type T(000)
@@ -372,7 +372,7 @@ type T(000)
 
 <!-- INSERT-TEXT -->
 
-## **Error: extra comma or missing type characteristic: should be one of == or 0 or 00 or !new** {#p_missing_type_characteristic}
+## **Error: extra comma or missing type characteristic: should be one of == or 0 or 00 or !new or !reads** {#p_missing_type_characteristic}
 
 <!-- %no-check - TODO - fix to better error recovery after 4.0 -->
 ```dafny
@@ -381,7 +381,7 @@ type T(0,,0)
 
 <!-- INSERT-TEXT -->
 
-## **Error: illegal type characteristic: '_token_' should be one of == or 0 or 00 or !new** {#p_illegal_type_characteristic}
+## **Error: illegal type characteristic: '_token_' should be one of == or 0 or 00 or !new or !reads** {#p_illegal_type_characteristic}
 
 ```dafny
 type T(X)

@@ -1546,6 +1546,21 @@ namespace Microsoft.Dafny {
             DetermineEqualitySupport(dtd, datatypeDependencies);
           }
         }
+
+        // The type of a yield parameter must support auto-initialization.  Whether a datatype does depends on its
+        // grounding constructor, which SccStratosphereCheck has just found, and which the compiler uses for the
+        // default value.  Checked while the signatures were being resolved, as under the hidden
+        // --legacy-early-yield-parameter-check, Type.GetAutoInit follows another constructor, and the constructors
+        // of a datatype declared after the iterator have unresolved types (https://github.com/erniecohen/dafny/issues/445).
+        if (!Options.Get(CommonOptionBag.LegacyEarlyYieldParameterCheck)) {
+          foreach (var iter in declarations.OfType<IteratorDecl>()) {
+            foreach (var p in iter.Outs) {
+              if (!p.Type.KnownToHaveToAValue(p.IsGhost)) {
+                reporter.Error(MessageSource.Resolver, p.Origin, "type of yield-parameter must support auto-initialization (got '{0}')", p.Type);
+              }
+            }
+          }
+        }
       }
 
       // Newtype bases are fully resolved here. Include visible nominal field
@@ -1774,6 +1789,9 @@ namespace Microsoft.Dafny {
 
       if (reporter.Count(ErrorLevel.Error) == prevErrorCount) {
         new HigherOrderHeapAllocationChecker(reporter).VisitDeclarations(declarations);
+        if (!Options.Get(CommonOptionBag.LegacyGenericFunctionStores)) {
+          new HigherOrderHeapAllocationCheckerGeneric(reporter).Check(declarations);
+        }
       }
 
       if (reporter.Count(ErrorLevel.Error) == prevErrorCount) {
@@ -2473,7 +2491,14 @@ namespace Microsoft.Dafny {
           // ignore any subset types, since they have no members and thus we don't need their type-parameter mappings
           var baseType = newtypeDecl.BaseType.NormalizeExpand();
           baseTypeArguments = baseType.TypeArgs;
-          if (baseType is UserDefinedType { ResolvedClass: TopLevelDeclWithMembers topLevelDeclWithMembers }) {
+          if (baseType.ClassifyNumericAncestry().Kind == Type.NumericAncestryKind.NonNumeric) {
+            // This resolver accepts only a numeric base. It reports any other base once inference is done (see
+            // "NumericType" in ResolveNamesAndInferTypesForOneDeclarationInitial), but members are selected before
+            // then. So, like the pre-type resolver with a base it rejects, inherit nothing from such a base. Its
+            // members are not members of the newtype, and ResolveExprDotCall cannot instantiate them through it
+            // (https://github.com/erniecohen/dafny/issues/417). A base whose ancestry is not known yet, because a
+            // newtype on the way to it has a base still to be inferred, keeps its members.
+          } else if (baseType is UserDefinedType { ResolvedClass: TopLevelDeclWithMembers topLevelDeclWithMembers }) {
             baseTypeDecl = topLevelDeclWithMembers;
           } else if (Options.Get(CommonOptionBag.GeneralNewtypes) || baseType.IsIntegerType || baseType.IsRealType) {
             baseTypeDecl = GetSystemValuetypeDecl(baseType);
@@ -3465,7 +3490,9 @@ namespace Microsoft.Dafny {
       }
       foreach (var p in iter.Outs) {
         ResolveType(p.Origin, p.Type, iter, option, iter.TypeArgs);
-        if (!p.Type.KnownToHaveToAValue(p.IsGhost)) {
+        // Whether the type supports auto-initialization is checked after SccStratosphereCheck, in
+        // ResolveTopLevelDecls_Core.  The hidden --legacy-early-yield-parameter-check restores the old check here.
+        if (Options.Get(CommonOptionBag.LegacyEarlyYieldParameterCheck) && !p.Type.KnownToHaveToAValue(p.IsGhost)) {
           reporter.Error(MessageSource.Resolver, p.Origin, "type of yield-parameter must support auto-initialization (got '{0}')", p.Type);
         }
       }

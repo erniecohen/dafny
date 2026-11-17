@@ -1,0 +1,21 @@
+github-issue-417.dfy(10,10): Error: newtypes must be based on some numeric type (got int --> int)
+github-issue-417.dfy(13,15): Error: member 'requires' does not exist in newtype 'Partial'
+github-issue-417.dfy(22,10): Error: newtypes must be based on some numeric type (got A)
+github-issue-417.dfy(25,15): Error: member 'Get' does not exist in newtype 'N'
+github-issue-417.dfy(26,15): Error: member 'n' does not exist in newtype 'N'
+github-issue-417.dfy(33,10): Error: newtypes must be based on some numeric type (got Pair<Y, X>)
+github-issue-417.dfy(34,10): Error: newtypes must be based on some numeric type (got Flip<seq<T>, bool>)
+github-issue-417.dfy(37,24): Error: member 'left' does not exist in newtype 'Deep'
+github-issue-417.dfy(46,10): Error: newtypes must be based on some numeric type (got C?)
+github-issue-417.dfy(49,11): Error: member 'F' does not exist in newtype 'N'
+10 resolution/type errors detected in github-issue-417.dfy
+github-issue-417.dfy(10,10): Error: a newtype ('Partial') must be based on some numeric type (got int --> int)
+github-issue-417.dfy(13,15): Error: member 'requires' does not exist in newtype 'Partial'
+github-issue-417.dfy(22,10): Error: a newtype ('N') must be based on some numeric type (got A)
+github-issue-417.dfy(25,15): Error: member 'Get' does not exist in newtype 'N'
+github-issue-417.dfy(26,15): Error: member 'n' does not exist in newtype 'N'
+github-issue-417.dfy(33,10): Error: a newtype ('Flip') must be based on some numeric type (got Pair<Y, X>)
+github-issue-417.dfy(37,24): Error: member 'left' does not exist in newtype 'Deep'
+github-issue-417.dfy(46,10): Error: a newtype ('N') must be based on some numeric type (got C?)
+github-issue-417.dfy(49,11): Error: member 'F' does not exist in newtype 'N'
+9 resolution/type errors detected in github-issue-417.dfy
