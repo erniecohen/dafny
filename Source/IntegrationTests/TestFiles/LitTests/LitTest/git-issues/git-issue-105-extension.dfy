@@ -186,3 +186,58 @@ module Others {
   datatype U = U(x: int) { invariant x > 0 }
   datatype T = T(u: U) { invariant u.x > 1 && u.x < Limit }
 }
+
+// Generic datatypes.  A type with invariants reached in the cone is analysed with the dependence of each
+// of its type parameters, as a generic subset type is.  Clause 2 is in its first-stage form: a generic
+// member function given a type argument that depends on T is rejected even where its body would pass.
+module Generics {
+  datatype R1<X(!new)> = R1(n: int) {
+    invariant forall r: R1<X> :: r.n == 0  // error: clause 1
+  }
+  datatype R2<X> = R2(n: int) {
+    invariant forall r: R2<int> :: r.n == 0  // error: clause 1, at another instantiation
+  }
+  datatype R3<X(!new)> = R3(n: int) {
+    invariant forall r: raw R3<X> :: r.n == 0  // error: clause 1 (counting raw R3 is conservative, section 3.3)
+  }
+  datatype R4<X(!new)> = R4(n: int, x: X) {
+    invariant n > 0
+  }
+  datatype R5<X(!new)> = R5(r: R4<X>) {
+    invariant forall q: R4<X> :: q.n > 0  // accepted: R4 does not depend on R5
+  }
+  datatype R6<X(!new)> = R6(n: int) {
+    invariant (R6(1) as raw R6<X>) is R6<X>  // error: clause 5
+  }
+  datatype Q<X(!new)> = Q(n: int) {
+    invariant forall r: R4<Q<X>> :: r.n == 0  // error: clause 1, through a type argument
+  }
+
+  // A component of a generic type with invariants, instantiated with the type itself.
+  datatype Box<X> = Box(x: X) {
+    invariant true
+  }
+  datatype T = T(b: Box<T>) | Leaf {
+    invariant true
+  }
+  type Sub<X> = b: Box<X> | true
+  datatype U = U(s: Sub<U>) | ULeaf {
+    invariant true
+  }
+  datatype L<X> = Nil | Cons(x: X, t: L<X>) {
+    invariant Len() < 100  // error: clause 2, where V instantiates L
+    function Len(): nat { if Nil? then 0 else 1 + t.Len() }
+  }
+  datatype V = V(l: L<V>) | VLeaf {
+    invariant true
+  }
+
+  // V5c of git-issue-105-vacuity.dfy: the invariant of P<Liar3> refers to the set of values of Liar3.
+  ghost predicate Yes<X>(x: X) { true }
+  datatype P<X(!new)> = P(b: bool) {
+    invariant b <==> forall x: X :: !Yes(x)  // error: clause 1 and clause 2, where Liar3 instantiates P
+  }
+  datatype Liar3 = Liar3(p: P<Liar3>) {
+    invariant p.b
+  }
+}

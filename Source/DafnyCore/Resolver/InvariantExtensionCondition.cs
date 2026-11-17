@@ -25,6 +25,8 @@ namespace Microsoft.Dafny;
 ///  3. no function value is applied other than a lambda expression or a named function, applied on the spot;
 ///  4. no dynamically bound function is called or mentioned, since its overrides are not all known;
 ///  5. no raw value is tested against, or converted to, a T-dependent type, explicitly or implicitly.
+/// The constraint of a generic type in the cone (a subset type, a newtype, or a type with invariants, whose
+/// constraint is its invariants) is analysed with each type parameter T-dependent where its type argument is.
 /// Statements inside expressions are proof hints and do not contribute to the meaning, so they are not in the cone.
 ///
 /// The plan notes that, where T may involve references, the existing restriction on function bodies discharges
@@ -37,12 +39,14 @@ public class InvariantExtensionCondition {
   private readonly ErrorReporter reporter;
   private readonly Dictionary<TopLevelDecl, bool> declDependence = new();
   private readonly HashSet<string> visitedTypeNodes = [];
-  private readonly HashSet<MemberDecl> visitedMembers = [];
+  private readonly HashSet<(MemberDecl, string)> visitedMembers = [];
   private readonly Queue<Node> worklist = new();
 
   /// <summary>
-  /// A part of the cone: a member (an invariant, a function or a constant), or a type declaration instantiated with
-  /// arguments of which those at "DependentParameters" are T-dependent.
+  /// A part of the cone: a member (an invariant, a function or a constant), or a type declaration, instantiated with
+  /// type arguments of which those at "DependentParameters" are T-dependent.  Only an invariant reached through the
+  /// type it constrains has dependent parameters as a member: a generic function given a dependent type argument
+  /// is rejected (clause 2).
   /// </summary>
   private record Node(MemberDecl? Member, TopLevelDecl? Type, ISet<TypeParameter> DependentParameters);
 
@@ -99,7 +103,18 @@ public class InvariantExtensionCondition {
         Visit(rhs);
       } else {
         switch (current.Type) {
-          case SubsetTypeDecl subsetTypeDecl: // including InvariantTypeDecl and NonNullTypeDecl
+          case InvariantTypeDecl invariantTypeDecl:
+            // The constraint of the type is the conjunction of the invariants of its owner, which are analysed as the
+            // constraint of a generic subset type is, with the dependence of each type parameter, rather than as
+            // calls of generic functions (clause 2).
+            ReachType(invariantTypeDecl.Var.Type, invariantTypeDecl.Var.Origin);
+            var dependentOwnerParameters = invariantTypeDecl.TypeArgs.Zip(invariantTypeDecl.Owner.TypeArgs)
+              .Where(pair => current.DependentParameters.Contains(pair.First)).Select(pair => pair.Second).ToHashSet();
+            foreach (var invariant in InvariantTypeDecl.Invariants(invariantTypeDecl.Owner)) {
+              Enqueue(invariant, dependentOwnerParameters);
+            }
+            break;
+          case SubsetTypeDecl subsetTypeDecl: // including NonNullTypeDecl
             if (IsConstrainedArrowTypeDecl(subsetTypeDecl)) {
               // A built-in arrow type, with its base types, is checked where the program reaches it (see ReachType),
               // since its declaration has no place in the program to report.
@@ -126,9 +141,12 @@ public class InvariantExtensionCondition {
 
   private TopLevelDeclWithMembers decl => owner;
 
-  private void Enqueue(MemberDecl member) {
-    if (visitedMembers.Add(member)) {
-      worklist.Enqueue(new Node(member, null, new HashSet<TypeParameter>()));
+  private void Enqueue(MemberDecl member) => Enqueue(member, new HashSet<TypeParameter>());
+
+  private void Enqueue(MemberDecl member, ISet<TypeParameter> dependentParameters) {
+    var key = string.Join(",", member.EnclosingClass.TypeArgs.Select(dependentParameters.Contains));
+    if (visitedMembers.Add((member, key))) {
+      worklist.Enqueue(new Node(member, null, dependentParameters));
     }
   }
 

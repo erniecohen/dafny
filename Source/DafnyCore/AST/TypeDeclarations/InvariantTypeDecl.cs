@@ -29,7 +29,22 @@ public class InvariantTypeDecl : SubsetTypeDecl {
   public readonly TopLevelDeclWithMembers Owner;
 
   public InvariantTypeDecl(TopLevelDeclWithMembers owner)
-    : this(owner, TypeParameter.CloneTypeParameters(owner.TypeArgs)) {
+    : this(owner, NonVariantTypeParameters(owner.TypeArgs)) {
+  }
+
+  /// <summary>
+  /// Unresolved clones of the owner's type parameters, each non-variant. A value of D&lt;A&gt; satisfies the invariants
+  /// as instantiated with A, which need not imply them as instantiated with B, even where A is a subtype of B: an
+  /// invariant may quantify over a type parameter. So D&lt;A&gt; is a subtype of D&lt;B&gt; only where A and B are the same
+  /// type, whatever the variance of the owner, and a conversion between them is checked as a conversion to any
+  /// subset type is. "raw D" keeps the owner's variance. Each parameter keeps its strictness, which concerns the
+  /// cardinality of the type, not its subtyping.
+  /// </summary>
+  private static List<TypeParameter> NonVariantTypeParameters(List<TypeParameter> typeParameters) {
+    var cloner = new Cloner();
+    return typeParameters.ConvertAll(tp => new TypeParameter(tp.Origin, tp.NameNode,
+      tp.StrictVariance ? TPVarianceSyntax.NonVariant_Strict : TPVarianceSyntax.NonVariant_Permissive,
+      tp.Characteristics, tp.TypeBounds.ConvertAll(cloner.CloneType), tp.Attributes));
   }
 
   private InvariantTypeDecl(TopLevelDeclWithMembers owner, List<TypeParameter> tps)
@@ -43,11 +58,12 @@ public class InvariantTypeDecl : SubsetTypeDecl {
   private InvariantTypeDecl(TopLevelDeclWithMembers owner, List<TypeParameter> tps, BoundVar var, MemberWitness? witness)
     : base(owner.Origin, owner.NameNode,
       new TypeParameterCharacteristics(TypeParameter.EqualitySupportValue.Unspecified, AutoInit(witness), false),
-      tps, owner.EnclosingModuleDefinition, var, Constraint(owner, var), WitnessKindOf(witness), WitnessReference(owner, witness), null) {
+      tps, owner.EnclosingModuleDefinition, var, Constraint(owner, var), WitnessKindOf(witness), WitnessReference(owner, tps, witness), null) {
     Owner = owner;
     if (witness is { ExplicitType: null }) {
-      // As if the witness had been written "static const witness#k: D := e".
-      witness.ExplicitType = new UserDefinedType(witness.Origin, owner.Name, null);
+      // As if the witness had been written "static const witness#k: D<X, ...> := e", where X, ... are the type
+      // parameters of the owner.
+      witness.ExplicitType = new UserDefinedType(witness.Origin, owner.Name, TypeArgumentsNamed(witness.Origin, owner.TypeArgs));
       witness.Type = witness.ExplicitType;
     }
     InheritVisibility(owner, false);
@@ -66,15 +82,23 @@ public class InvariantTypeDecl : SubsetTypeDecl {
   }
 
   /// <summary>
-  /// The expression "D.witness#k", which denotes the witness member "witness". Like the invariants, the reserved name
-  /// cannot be written in source, but name resolution finds it like any other member.
+  /// The expression "D<X, ...>.witness#k", which denotes the witness member "witness", where X, ... are the type
+  /// parameters "tps" of this declaration. Like the invariants, the reserved name cannot be written in source, but
+  /// name resolution finds it like any other member.
   /// </summary>
-  private static Expression? WitnessReference(TopLevelDeclWithMembers owner, MemberWitness? witness) {
+  private static Expression? WitnessReference(TopLevelDeclWithMembers owner, List<TypeParameter> tps, MemberWitness? witness) {
     if (witness == null) {
       return null;
     }
     var tok = witness.Origin;
-    return new ExprDotName(tok, new NameSegment(tok, owner.Name, null), new Name(tok, witness.Name), null);
+    return new ExprDotName(tok, new NameSegment(tok, owner.Name, TypeArgumentsNamed(tok, tps)), new Name(tok, witness.Name), null);
+  }
+
+  /// <summary>
+  /// The type parameters "tps", as unresolved type arguments that name them, or null if there are none.
+  /// </summary>
+  private static List<Type>? TypeArgumentsNamed(IOrigin tok, List<TypeParameter> tps) {
+    return tps.Count == 0 ? null : tps.ConvertAll(tp => (Type)new UserDefinedType(tok, tp.Name, null));
   }
 
   /// <summary>

@@ -810,3 +810,9 @@ git-issues/git-issue-105-datatypes.dfy
 git-issues/git-issue-105-vacuity.dfy
 git-issues/git-issue-105-extension.dfy
 git-issues/git-issue-105-compile.dfy
+# Fourth stage: emptiness, the raw-typing audit and generic datatypes (variance, witnesses, the
+# extension condition over type parameters) (https://github.com/erniecohen/dafny/issues/105).
+git-issues/git-issue-105-generics.dfy
+git-issues/git-issue-105-variance.dfy
+git-issues/git-issue-105-emptiness.dfy
+git-issues/git-issue-105-emptiness-errors.dfy

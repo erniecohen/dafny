@@ -1,0 +1,23 @@
+git-issue-105-emptiness.dfy(33,9): Error: variable 'a', which is subject to definite-assignment rules, might be uninitialized here
+git-issue-105-emptiness.dfy(37,8): Error: variable 'c', which is subject to definite-assignment rules, might be uninitialized here
+git-issue-105-emptiness.dfy(44,9): Error: variable 'f', which is subject to definite-assignment rules, might be uninitialized here
+git-issue-105-emptiness.dfy(45,2): Error: assertion might not hold
+git-issue-105-emptiness.dfy(48,0): Error: out-parameter 'a', which is subject to definite-assignment rules, might be uninitialized at this return point
+git-issue-105-emptiness.dfy(56,9): Error: variable 'a', which is subject to definite-assignment rules, might be uninitialized here
+git-issue-105-emptiness.dfy(59,2): Error: assertion might not hold
+git-issue-105-emptiness.dfy(64,25): Error: cannot establish the existence of LHS values that satisfy the such-that predicate. Note, no trigger was found for the such-that predicate, which may be the reason the proof failed. To give a trigger explicitly, use the {:trigger} attribute. For more information, see the section on quantifier instantiation rules in the reference manual.
+git-issue-105-emptiness.dfy(65,2): Error: assertion might not hold
+git-issue-105-emptiness.dfy(68,2): Error: cannot establish the existence of LHS values that satisfy the such-that predicate. Note, no trigger was found for the such-that predicate, which may be the reason the proof failed. To give a trigger explicitly, use the {:trigger} attribute. For more information, see the section on quantifier instantiation rules in the reference manual.
+git-issue-105-emptiness.dfy(70,30): Error: a postcondition could not be proved on this return path
+git-issue-105-emptiness.dfy(70,24): Related location: this is the postcondition that could not be proved
+git-issue-105-emptiness.dfy(76,11): Error: unless an initializer is provided for the array elements, a new array of 'NoWitness' must have empty size
+git-issue-105-emptiness.dfy(79,11): Error: unless an initializer is provided for the array elements, a new array of 'Ghostly<int>' must have empty size
+git-issue-105-emptiness.dfy(85,2): Error: assertion might not hold
+git-issue-105-emptiness.dfy(93,2): Error: assertion might not hold
+
+Dafny program verifier finished with 3 verified, 15 errors
+git-issue-105-emptiness.dfy(97,9): Warning: Arbitrary: Compiled declaration has no body and has an ensures clause. Possible mitigation: Provide a body or add `{:axiom}`.
+git-issue-105-emptiness.dfy(98,19): Warning: External: Function with `{:extern}` attribute. Possible mitigation: Turn into a `method` with `modifies {}` and test thoroughly for lack of side effects.
+Dafny auditor completed with 2 findings
+
+Dafny program verifier did not attempt verification

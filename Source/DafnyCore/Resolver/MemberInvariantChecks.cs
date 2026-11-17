@@ -10,7 +10,7 @@ namespace Microsoft.Dafny;
 ///  * the option requires --type-system-refresh;
 ///  * a codatatype may not declare an invariant or a witness member;
 ///  * a datatype declares at most one witness member, and only if it has an invariant (witness members of other
-///    declarations, and of generic datatypes, are not yet supported);
+///    declarations are not yet supported);
 ///  * the declaration rule: a program that declares a member invariant may not declare a codatatype.
 ///    Libraries are part of the program, so the rule covers them too.
 /// The checks are syntactic, so they see every declaration, including those of abstract modules and of
@@ -56,9 +56,6 @@ public static class MemberInvariantChecks {
           } else if (decl is not IndDatatypeDecl datatype) {
             reporter.Error(MessageSource.Resolver, witness.NameNode.Origin,
               $"a witness member of a {decl.WhatKind} is not yet supported");
-          } else if (datatype.TypeArgs.Count != 0) {
-            reporter.Error(MessageSource.Resolver, witness.NameNode.Origin,
-              "a witness member of a datatype with type parameters is not yet supported");
           } else if (withMembers.Members.OfType<MemberWitness>().First() != witness) {
             reporter.Error(MessageSource.Resolver, witness.NameNode.Origin,
               $"'{decl.Name}' declares more than one witness");

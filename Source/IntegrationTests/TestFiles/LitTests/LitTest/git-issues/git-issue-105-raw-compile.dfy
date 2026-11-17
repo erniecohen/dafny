@@ -1,9 +1,8 @@
+// RUN: %run --type-system-refresh=true --general-traits=datatype --general-newtypes=true --member-invariants "%s" > "%t"
+// RUN: %run --type-system-refresh=true --general-traits=datatype --general-newtypes=true --member-invariants --target py "%s" >> "%t"
+// RUN: %diff "%s.expect" "%t"
 // Member invariants (https://github.com/erniecohen/dafny/issues/105): a datatype with invariants and
 // its raw type compile to the same target type, and its raw members compile as other members do.
-// The invariant of the generic Pair is not verified yet, so the program is compiled with --no-verify.
-// RUN: %run --no-verify --member-invariants "%s" > "%t"
-// RUN: %run --no-verify --member-invariants --target py "%s" >> "%t"
-// RUN: %diff "%s.expect" "%t"
 
 datatype Interval = Interval(lo: int, hi: int) {
   invariant Ok()

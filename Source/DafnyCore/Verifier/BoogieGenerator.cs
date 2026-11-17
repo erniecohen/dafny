@@ -807,8 +807,6 @@ namespace Microsoft.Dafny {
     private static string UnsupportedInvariantReason(MemberInvariant invariant) {
       const string notYet = "is not yet supported";
       return invariant.EnclosingClass switch {
-        IndDatatypeDecl { TypeArgs.Count: not 0 } =>
-          $"verification of a member invariant of a datatype with type parameters {notYet}",
         IndDatatypeDecl { Traits.Count: not 0 } =>
           $"verification of a member invariant of a datatype that extends a trait {notYet}",
         IndDatatypeDecl { EnclosingModuleDefinition.Implements: not null } =>

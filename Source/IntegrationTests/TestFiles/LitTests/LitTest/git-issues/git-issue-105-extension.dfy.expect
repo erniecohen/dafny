@@ -22,4 +22,12 @@ git-issue-105-extension.dfy(153,29): Error: the invariant of 'Component' convert
 git-issue-105-extension.dfy(157,26): Error: 'G' is used by the invariant of 'Receiver' and converts a raw value to 'Receiver'
 git-issue-105-extension.dfy(161,21): Error: the invariant of 'Tree' converts a raw value to 'Forest', by applying 'Count', which is not a raw member, to it
 git-issue-105-extension.dfy(168,36): Error: the invariant of 'Sub' tests a raw value against 'Small'
-24 resolution/type errors detected in git-issue-105-extension.dfy
+git-issue-105-extension.dfy(195,21): Error: the invariant of 'R1' refers to the set of values of 'R1<X>', which depends on 'R1'
+git-issue-105-extension.dfy(198,21): Error: the invariant of 'R2' refers to the set of values of 'R2<int>', which depends on 'R2'
+git-issue-105-extension.dfy(201,21): Error: the invariant of 'R3' refers to the set of values of 'raw R3<X>', which depends on 'R3'
+git-issue-105-extension.dfy(210,35): Error: the invariant of 'R6' tests a raw value against 'R6<X>'
+git-issue-105-extension.dfy(213,21): Error: the invariant of 'Q' refers to the set of values of 'R4<Q<X>>', which depends on 'Q'
+git-issue-105-extension.dfy(228,17): Error: the invariant of 'L' is used by the invariant of 'V' and instantiates 'Len' with 'X', a type that depends on 'V', which is not yet supported
+git-issue-105-extension.dfy(238,28): Error: the invariant of 'P' is used by the invariant of 'Liar3' and refers to the set of values of 'X', which depends on 'Liar3'
+git-issue-105-extension.dfy(238,40): Error: the invariant of 'P' is used by the invariant of 'Liar3' and instantiates 'Yes' with 'X', a type that depends on 'Liar3', which is not yet supported
+32 resolution/type errors detected in git-issue-105-extension.dfy

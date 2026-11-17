@@ -5,7 +5,8 @@
 // with invariants is its witness, compiled, so that every default the compiled program makes up (an
 // array element, an out-parameter of a type parameter declared (0), a field of a class) satisfies the
 // invariants.  A datatype without invariants whose constructor takes such a datatype gets its default
-// from the witness too.
+// from the witness too.  The witness of a generic datatype is compiled once and serves every
+// instantiation.
 
 datatype Interval = Interval(lo: int, hi: int) {
   invariant lo <= hi
@@ -13,6 +14,17 @@ datatype Interval = Interval(lo: int, hi: int) {
   function Width(): nat { hi - lo }
 }
 datatype Holder = Holder(i: Interval, n: int)
+
+datatype Opt<X> = None | Some(x: X, n: int) {
+  invariant Some? ==> n > 0
+  witness Empty()
+  static function Empty(): raw Opt<X> { None }
+}
+datatype Bag<X> = Bag(xs: seq<X>, n: int) {
+  invariant n > |xs|
+  witness Bag([], 3)
+}
+datatype Pair<Y> = Pair(o: Opt<Y>, b: Bag<Y>, k: int)
 
 method Default<T(0)>() returns (t: T) { t := *; }
 
@@ -32,4 +44,12 @@ method Main() {
   print c.x, "\n";
   var s: seq<Interval> := seq(2, _ => Interval(1, 2));
   print s, "\n";
+  var g := new Bag<int>[2];
+  var p := new Pair<real>[1];
+  print g[0], " ", g[1].n, " ", p[0], "\n";
+  var bt := Default<Bag<bool>>();
+  var pt := Default<Pair<char>>();
+  print bt, " ", pt, "\n";
+  var gc := new Cell<Bag<string>>();
+  print gc.x, "\n";
 }

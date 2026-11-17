@@ -1,0 +1,5 @@
+git-issue-105-variance.dfy(9,48): Error: formal type parameter 'X' is not used according to its variance specification
+git-issue-105-variance.dfy(13,26): Error: formal type parameter 'X' is not used according to its variance specification
+git-issue-105-variance.dfy(18,28): Error: formal type parameter 'X' is not used according to its variance specification
+git-issue-105-variance.dfy(20,27): Error: formal type parameter 'X' is not used according to its variance specification (it is used left of an arrow) (perhaps try declaring 'X' as '-X' or '!X')
+4 resolution/type errors detected in git-issue-105-variance.dfy

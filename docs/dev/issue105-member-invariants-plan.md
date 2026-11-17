@@ -1938,3 +1938,79 @@ section 7.2).**
   as default values in compiled code.  V7 is the declaration rule, already
   tested by `git-issue-105-codatatypes.dfy` and `git-issue-105-libraries.dfy`.
   Section 3.3's test of lambda bodies in methods belongs to classes (stage 3).
+
+**Emptiness, the raw-typing audit and generic datatypes (fourth step; stage
+2 of section 7.2).**
+
+- *The gate* is lifted for generic datatypes: the invariants of an inductive
+  datatype with no parent traits, declared in a module that refines no other,
+  are verified, and such a datatype may declare a witness whatever its type
+  parameters.
+- *Emptiness.*  Every consumer of "is this value type inhabited" asks
+  `Type.GetAutoInit`, directly or through `IsNonempty`, `HasCompilableValue`
+  and the characteristics checks: definite assignment of locals and
+  out-parameters, a havoc, a such-that, a new array without an initializer,
+  `(0)` and `(00)`, the constructor rule for class fields, and the trimming of
+  possibly empty bound variables from CanCall assumptions.  Its branch for
+  subset types reads the witness kind, which the derived declaration has, and
+  its branch for datatypes propagates through the components of a grounding
+  constructor.  No consumer decides emptiness by asking whether a type is a
+  `SubsetTypeDecl`; the translator's remaining branches on `SubsetTypeDecl`
+  choose a constraint to check (subrange checks, a declaration's witness
+  check), which a derived declaration takes as a subset type does.  So nothing
+  needed to change.  A datatype with invariants behaves exactly as a subset
+  type with the corresponding witness clause, under strict and relaxed definite
+  assignment.  Each row of the vacuous-types table of section 5.3 that applies
+  to datatypes has a test, with an `assert false` that must fail after each
+  channel; the rows for classes, abstract types and refinement come with their
+  stages.
+- *Raw typing.*  The translator uses the raw type where the datatype is the
+  subject (its constructor, allocation, box and discriminator axioms, and
+  `this` in a raw member) and the declared type everywhere else.  With type
+  parameters, `Tclass.D(X)` and `Tclass.D#raw(X)` take the same type
+  descriptors, and the constraint of `Tclass.D(X)` is the invariants
+  instantiated with `X`.
+- *Variance.*  The derived declaration's type parameters are non-variant,
+  whatever the datatype declares, and keep their strictness.  A value of `D<A>`
+  satisfies the invariants instantiated with `A`, which need not imply them
+  instantiated with `B` where `A` is a subtype of `B`, since an invariant may
+  quantify over a type parameter: with `invariant b ==> forall y: X :: F(y)`
+  and `F` false, `Box(true)` is a `Box<Empty>` and not a `Box<int>`.  Keeping
+  the declared variance would let a `Box<Empty>` become a `Box<int>` with no
+  check, and prove `false`.  So `D<A>` is a subtype of `D<B>` only where `A`
+  and `B` are the same type, and a conversion between them is checked as a
+  conversion to any subset type is.  `raw D` keeps the declared variance.
+  Pre-types use the datatype's variance, since a subset type's pre-type is its
+  base's, so inference accepts a `D<A>` where a `D<B>` is expected and the
+  verifier checks it, and joining two different instantiations of `D` gives
+  `raw D`.  A consequence: a type whose definition uses `D<X>`, `D` itself
+  included, cannot declare `X` co- or contravariant, and uses `raw D<X>`
+  instead.  The same hole exists without this feature, for a covariant subset
+  type whose constraint quantifies over its type parameter, under both type
+  systems.  It is outside this feature, and is reported separately.
+- *Witnesses of generic datatypes.*  The witness member is the static const
+  `witness#k: D<X, ...>`, as if written with the datatype's own type
+  parameters, and the derived declaration's witness is `D<Y, ...>.witness#k`
+  with the derived declaration's.  So it is checked for every instantiation.
+  Where it is compiled, the derived declaration compiles as the generic subset
+  type `D#<X, ...>`, whose default value is the witness at each instantiation.
+- *The extension condition.*  A generic type with invariants that the cone
+  reaches is analysed as a generic subset type is: its invariants are analysed
+  as its constraint, with each of its type parameters dependent where the type
+  argument depends on the type being checked, rather than as calls of generic
+  functions.  A datatype `T` with a component of type `Box<T>`, where `Box`'s
+  invariant does not quantify over its parameter, is accepted.  A member
+  function of the reached type, called from its invariant, is a generic
+  function, so clause 2 rejects the call where a type argument is dependent;
+  the exact form of clause 2 is a stage 7 relaxation.  V5c, a generic form of
+  V5 in which a `Liar3` needs a `P<Liar3>` whose invariant holds only where its
+  type parameter is empty, is rejected, and verifies `false` without the check.
+- *Tests.*  `git-issue-105-generics.dfy` holds the controls V1 and V4 over a
+  type parameter, conversions between instantiations, and witnesses;
+  `git-issue-105-variance.dfy` the variance a declaration may give;
+  `git-issue-105-emptiness.dfy` and `git-issue-105-emptiness-errors.dfy` the
+  rows of the vacuous-types table, the first also running `dafny audit` for
+  bodiless and extern functions; `git-issue-105-vacuity.dfy` adds V5c and
+  `git-issue-105-extension.dfy` the generic cases of each clause;
+  `git-issue-105-compile.dfy` runs generic witnesses in compiled code, and
+  `git-issue-105-raw-compile.dfy` is now verified first.

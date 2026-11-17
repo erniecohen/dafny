@@ -4909,8 +4909,8 @@ declaration.
 The hidden, experimental option `--member-invariants` defaults to `false` and
 requires `--type-system-refresh`. It is being implemented in stages
 (https://github.com/erniecohen/dafny/issues/105). So far, the invariants of an
-inductive datatype that has no type parameters and extends no trait, declared
-in a module that refines no other, are verified. A program, libraries included,
+inductive datatype that extends no trait, declared in a module that refines no
+other, are verified. A program, libraries included,
 that declares any other invariant can be parsed, printed and resolved, and
 compiled with `--no-verify`, but not verified: the verifier reports each such
 invariant as not yet supported, and verifies no module of the program. Compiled
@@ -5022,8 +5022,7 @@ datatype Cert = Cert(ghost p: int) {
   instantiate a type parameter that requires `(0)` or `(00)`. `raw D` can, as
   the datatype could without invariants.
 - A datatype declares at most one witness, and only if it declares an
-  invariant. A witness member of a generic datatype, or of another kind of
-  type, is not yet supported.
+  invariant. A witness member of another kind of type is not yet supported.
 
 ### 6.6.3. An invariant may not refer to its own type {#sec-invariant-extension}
 
@@ -5060,3 +5059,40 @@ types they use), must not:
 Statements inside expressions are proof hints, and are not checked. A bound
 variable whose type is inferred as `raw D` makes a test `k is D` a test of a raw
 value; write `k: D` to range over values of `D`.
+
+### 6.6.4. Generic datatypes {#sec-invariant-generics}
+
+For a datatype `D<X>` with invariants, `D<A>` is the subset of `raw D<A>` whose
+values satisfy the invariants with `A` for `X`. An invariant may quantify over
+`X`, so a `D<A>` need not be a `D<B>`, even where every `A` is a `B`:
+
+<!-- %no-check -->
+```dafny
+ghost predicate Never<X>(x: X) { false }
+datatype Box<+X(!new)> = Box(b: bool) {
+  invariant b ==> forall y: X :: Never(y)   // Box(true) is a Box<X> where X is empty
+}
+type Empty = x: int | false witness *
+
+method Convert(s: Box<Empty>) returns (r: raw Box<int>, t: Box<int>) {
+  r := s;                       // raw Box is covariant
+  t := s;                       // error: invariant might not hold
+}
+```
+
+- `D<A>` is a subtype of `D<B>` only where `A` and `B` are the same type,
+  whatever variance `D` declares for `X`. A `D<A>` used where a `D<B>` is
+  expected is a conversion, and the verifier checks the invariants with `B` for
+  `X`. `raw D` has the variance that `D` declares.
+- So a type whose definition uses `D<X>`, `D` itself included, cannot declare
+  `X` covariant or contravariant; it may use `raw D<X>` instead. A type
+  parameter keeps its strictness (`*` or not), which concerns the cardinality
+  of the type, not its subtyping.
+- A witness is checked for every `X`, and `witness e` gives every
+  instantiation of `D` its default value.
+- In the condition of section 6.6.3, a generic type with invariants that the
+  invariants of `D` reach is analysed with the dependence of each of its type
+  arguments on `D`, as the constraint of a generic subset type is. A member
+  function of a generic type is generic in the type's parameters, so clause 2
+  rejects such an invariant that calls one, where a type argument depends on
+  `D`.

@@ -1,12 +1,18 @@
 
-Dafny program verifier finished with 4 verified, 0 errors
+Dafny program verifier finished with 7 verified, 0 errors
 Interval.Interval(5, 7) 2 Holder.Holder(Interval.Interval(5, 7), 0)
 Interval.Interval(5, 7) Holder.Holder(Interval.Interval(5, 7), 0)
 Interval.Interval(5, 7)
 [Interval.Interval(1, 2), Interval.Interval(1, 2)]
+Bag.Bag([], 3) 3 Pair.Pair(Opt.None, Bag.Bag([], 3), 0)
+Bag.Bag([], 3) Pair.Pair(Opt.None, Bag.Bag([], 3), 0)
+Bag.Bag([], 3)
 
-Dafny program verifier finished with 4 verified, 0 errors
+Dafny program verifier finished with 7 verified, 0 errors
 Interval.Interval(5, 7) 2 Holder.Holder(Interval.Interval(5, 7), 0)
 Interval.Interval(5, 7) Holder.Holder(Interval.Interval(5, 7), 0)
 Interval.Interval(5, 7)
 [Interval.Interval(1, 2), Interval.Interval(1, 2)]
+Bag.Bag([], 3) 3 Pair.Pair(Opt.None, Bag.Bag([], 3), 0)
+Bag.Bag([], 3) Pair.Pair(Opt.None, Bag.Bag([], 3), 0)
+Bag.Bag([], 3)
