@@ -45,6 +45,26 @@ public class DooFileTest {
     Assert.Equal(true, with.Options[name]);
   }
 
+  /// <summary>
+  /// The same for --recursive-modules (recursion across module boundaries).
+  /// </summary>
+  [Fact]
+  public void RecursiveModulesRecordedOnlyWhenOn() {
+    var options = DafnyOptions.CreateUsingOldParser(TextWriter.Null);
+    options.ApplyDefaultOptionsWithoutSettingsDefault();
+    var name = CommonOptionBag.RecursiveModules.Name;
+
+    var without = new DooFile.ManifestData(options);
+    Assert.False(without.Options.ContainsKey(name));
+    var writer = new StringWriter();
+    without.Write(writer);
+    Assert.DoesNotContain(name, writer.ToString());
+
+    options.Set(CommonOptionBag.RecursiveModules, true);
+    var with = new DooFile.ManifestData(options);
+    Assert.Equal(true, with.Options[name]);
+  }
+
   [Fact]
   public void UnknownManifestEntries() {
     var filePath = Path.Combine(Directory.GetCurrentDirectory(), "TestFiles/DooFileTest/badManifest.toml");

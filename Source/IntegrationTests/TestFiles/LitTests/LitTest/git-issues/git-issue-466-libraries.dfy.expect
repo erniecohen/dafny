@@ -1,0 +1,21 @@
+
+Dafny program verifier did not attempt verification
+
+Dafny program verifier did not attempt verification
+
+Dafny program verifier did not attempt verification
+CLI: Error: cannot load git-issue-466-libraries.dfy.tmp-on.doo: --recursive-modules is set locally to False, but the library was built with True
+CLI: Error: cannot load git-issue-466-libraries.dfy.tmp-on.doo: --member-invariants is set locally to False, but the library was built with True
+CLI: Error: cannot load git-issue-466-libraries.dfy.tmp-on.doo: --recursive-modules is set locally to False, but the library was built with True
+
+Dafny program verifier did not attempt verification
+
+Dafny program verifier did not attempt verification
+git-issue-466-cyclic-library.dfy(1,7): Error: modules LibA and LibB import each other; a recursive module group of more than one module is not yet supported
+1 resolution/type errors detected in git-issue-466-libraries.dfy
+git-issue-466-cyclic-library.dfy(1,7): Error: module definition contains a cycle (note: parent modules implicitly depend on submodules): module LibA -> import LibB -> module LibB -> import LibA -> module LibA
+1 resolution/type errors detected in git-issue-466-libraries.dfy
+git-issue-466-cyclic-library.dfy(1,7): Error: modules LibA and LibB import each other; a recursive module group of more than one module is not yet supported
+1 resolution/type errors detected in git-issue-466-cyclic-library.dfy
+git-issue-466-cyclic-library.dfy(1,7): Error: module definition contains a cycle (note: parent modules implicitly depend on submodules): module LibA -> import LibB -> module LibB -> import LibA -> module LibA
+1 resolution/type errors detected in git-issue-466-cyclic-library.dfy

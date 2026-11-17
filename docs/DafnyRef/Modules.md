@@ -905,6 +905,56 @@ module A.C refines A.B { }
 
 `A.C` depends on `A.B`, not on `A`, which depends on both.
 
+### 4.7.1. Recursive module groups (experimental, incomplete) {#sec-recursive-module-groups}
+
+The hidden, experimental option `--recursive-modules` defaults to `false` and
+requires `--member-invariants` (and so `--type-system-refresh`). It is being
+implemented in stages (https://github.com/erniecohen/dafny/issues/466; the
+design is in `docs/dev/design/xmod-recursion.md`). Without
+the option, any cycle of module dependencies is an error, as described above.
+
+With the option, modules that import each other form a _recursive module
+group_: the modules of a cycle of imports, together with every other module on
+a cycle with them. A group is meant to mean what one module with the
+declarations of all its members would mean, with the names and export sets of
+the modules kept.
+
+<!-- %no-check -->
+```dafny
+module A {
+  import B
+  datatype T = Leaf | Node(u: B.U)
+}
+module B {
+  import A
+  datatype U = U(t: A.T)
+}
+```
+
+Only plain imports (`import B`, `import X = B`, `import opened B`, and imports
+of export sets) may be part of a cycle. Each of the following must lead from a
+module to one that does not depend on it, and a cycle that goes through one is
+an error that names it:
+
+* the `refines` or `replaces` clause of a module;
+* an abstract import, `import X : I`;
+* an import `import X = M` that binds an abstract import that the module
+  inherits from the module it refines;
+* the nesting of a module in another. An import of a path, such as
+  `import P.Q`, depends on `P`, the first module of the path, so a cycle
+  through `Q` and the importing module also goes through the nesting of `Q`
+  in `P`. Sibling modules nested in a third may form a group.
+
+A replaceable module may not be in a group, a module may not import itself, and
+a program that has a group may not declare a codatatype.
+
+In this stage the groups are computed and checked, and `--show-hints` lists the
+members of each group at each member, but a group of more than one module is
+then rejected as not yet supported. So no program is accepted with the option
+that is rejected without it. A `.doo` library built with `--recursive-modules`
+requires its client to enable the option too; one built without it records
+nothing.
+
 ## 4.8. Name Resolution {#sec-name-resolution}
 
 When Dafny sees something like `A<T>.B<U>.C<V>`, how does it know what each part

@@ -1,0 +1,18 @@
+git-issue-466-groups.dfy(10,7): Info: recursive module group: Two1, Two2
+git-issue-466-groups.dfy(14,7): Info: recursive module group: Two1, Two2
+git-issue-466-groups.dfy(10,7): Error: modules Two1 and Two2 import each other; a recursive module group of more than one module is not yet supported
+git-issue-466-groups.dfy(20,7): Info: recursive module group: Three1, Three2, Three3
+git-issue-466-groups.dfy(24,7): Info: recursive module group: Three1, Three2, Three3
+git-issue-466-groups.dfy(28,7): Info: recursive module group: Three1, Three2, Three3
+git-issue-466-groups.dfy(20,7): Error: modules Three1, Three2 and Three3 import each other; a recursive module group of more than one module is not yet supported
+git-issue-466-groups.dfy(35,9): Info: recursive module group: Outer.Left, Outer.Right
+git-issue-466-groups.dfy(40,9): Info: recursive module group: Outer.Left, Outer.Right
+git-issue-466-groups.dfy(35,9): Error: modules Outer.Left and Outer.Right import each other; a recursive module group of more than one module is not yet supported
+git-issue-466-groups.dfy(47,7): Info: recursive module group: Exp1, Exp2, Exp3
+git-issue-466-groups.dfy(53,7): Info: recursive module group: Exp1, Exp2, Exp3
+git-issue-466-groups.dfy(59,7): Info: recursive module group: Exp1, Exp2, Exp3
+git-issue-466-groups.dfy(47,7): Error: modules Exp1, Exp2 and Exp3 import each other; a recursive module group of more than one module is not yet supported
+git-issue-466-groups.dfy(70,7): Info: recursive module group: Mid1, Mid2
+git-issue-466-groups.dfy(75,7): Info: recursive module group: Mid1, Mid2
+git-issue-466-groups.dfy(70,7): Error: modules Mid1 and Mid2 import each other; a recursive module group of more than one module is not yet supported
+5 resolution/type errors detected in git-issue-466-groups.dfy

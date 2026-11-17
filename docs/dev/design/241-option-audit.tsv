@@ -124,6 +124,7 @@ cli	quantifier-syntax	--quantifier-syntax	System.CommandLine.Option`1[Microsoft.
 cli	random-seed	--random-seed	System.CommandLine.Option`1[System.UInt32]	execution	effective prover interfaces/options plus exact SMT command stream; overrides retained
 cli	raw-pointers	--raw-pointers	System.CommandLine.Option`1[System.Boolean]	command-setup	setup or another command; executes before/outside proof transport
 cli	reads-clauses-on-methods	--reads-clauses-on-methods	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
+cli	recursive-modules	--recursive-modules	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	referrers	--referrers	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	relax-definite-assignment	--relax-definite-assignment	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	report-file	--report-file	System.CommandLine.Option`1[System.String]	command-setup	setup or another command; executes before/outside proof transport

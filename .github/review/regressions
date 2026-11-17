@@ -760,3 +760,12 @@ git-issues/git-issue-105-raw-refinement.dfy
 git-issues/git-issue-105-raw-extends.dfy
 git-issues/git-issue-105-raw-library.dfy
 git-issues/git-issue-105-raw-compile.dfy
+# Recursion across module boundaries, first stage: the option, the groups, the edges that may not be on
+# a cycle, the codatatype rule, libraries, and an accepted control
+# (https://github.com/erniecohen/dafny/issues/466).
+git-issues/git-issue-466-option.dfy
+git-issues/git-issue-466-groups.dfy
+git-issues/git-issue-466-edges.dfy
+git-issues/git-issue-466-codatatype.dfy
+git-issues/git-issue-466-libraries.dfy
+git-issues/git-issue-466-accepted.dfy

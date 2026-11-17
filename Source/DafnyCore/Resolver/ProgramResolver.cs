@@ -16,6 +16,19 @@ public class ProgramResolver {
   private readonly Dictionary<TopLevelDeclWithMembers, Dictionary<string, MemberDecl>> classMembers = new();
 
   protected readonly Graph<ModuleDecl> dependencies = new();
+
+  /// <summary>
+  /// What each edge of "dependencies" stands for.  Where two edges join the same two declarations, the
+  /// larger kind is kept.  Read only under --recursive-modules.
+  /// </summary>
+  private readonly Dictionary<(ModuleDecl From, ModuleDecl To), ModuleDependencyKind> dependencyKinds = new();
+
+  private void AddDependency(ModuleDecl from, ModuleDecl to, ModuleDependencyKind kind) {
+    dependencies.AddEdge(from, to);
+    if (!dependencyKinds.TryGetValue((from, to), out var previous) || previous < kind) {
+      dependencyKinds[(from, to)] = kind;
+    }
+  }
   public DafnyOptions Options => Program.Options;
   public SystemModuleManager SystemModuleManager => Program.SystemModuleManager;
   public ErrorReporter Reporter => Program.Reporter;
@@ -52,7 +65,7 @@ public class ProgramResolver {
       profile.FrontEnd("resolve.prefixNamed", profileStart!.Value);
       profileStart = profile.BeginThread();
     }
-    if (!MemberInvariantChecks.Check(Program, Reporter)) {
+    if (!MemberInvariantChecks.Check(Program, Reporter) || !RecursiveModuleGroups.CheckOptions(Program, Reporter)) {
       return Task.CompletedTask;
     }
     ComputeModuleDependencyGraph(Program, out var moduleDeclarationPointers);
@@ -505,6 +518,11 @@ public class ProgramResolver {
     ProcessDependencies(program.DefaultModule, defaultModuleBindings, moduleDeclarationPointers);
 
     // check for cycles in the import graph
+    if (Options.Get(CommonOptionBag.RecursiveModules)) {
+      // Every cycle is still an error at this stage, but the error says which kind of cycle it is.
+      RecursiveModuleGroups.Compute(program, dependencies, (from, to) => dependencyKinds[(from, to)], Reporter);
+      return;
+    }
     foreach (var cycle in dependencies.AllCycles()) {
       ModuleResolver.ReportCycleError(Reporter, cycle, m => m.Origin,
         m => (m is AliasModuleDecl ? "import " : "module ") + m.Name,
@@ -707,7 +725,9 @@ public class ProgramResolver {
             module.Implements.Target.ToString());
         } else {
           Contract.Assert(other != null); // follows from postcondition of TryGetValue
-          dependencies.AddEdge(literalDecl, other);
+          AddDependency(literalDecl, other, module.Implements.Kind == ImplementationKind.Replacement
+            ? ModuleDependencyKind.Replacement
+            : ModuleDependencyKind.Refinement);
         }
       }
     }
@@ -731,9 +751,10 @@ public class ProgramResolver {
       }
 
       if (toplevel is ModuleExportDecl) {
-        dependencies.AddEdge(moduleDecl, literalDecl);
+        AddDependency(moduleDecl, literalDecl, ModuleDependencyKind.Declaration);
       } else {
-        dependencies.AddEdge(literalDecl, moduleDecl);
+        AddDependency(literalDecl, moduleDecl,
+          moduleDecl is LiteralModuleDecl ? ModuleDependencyKind.Submodule : ModuleDependencyKind.Declaration);
       }
 
       var subBindings = bindings.SubBindings(moduleDecl.Name);
@@ -812,7 +833,7 @@ public class ProgramResolver {
         root = SkipEnclosingModules(aliasDecl.TargetQId, root);
         aliasDecl.TargetQId.Root = root;
         declarationPointers.AddOrUpdate(root, v => aliasDecl.TargetQId.Root = v, Util.Concat);
-        dependencies.AddEdge(aliasDecl, root);
+        AddDependency(aliasDecl, root, ModuleDependencyKind.Import);
       }
     } else if (moduleDecl is AbstractModuleDecl abstractDecl) {
       if (!bindings.ResolveQualifiedModuleIdRootAbstract(abstractDecl, abstractDecl.QId, out var root)) {
@@ -823,7 +844,7 @@ public class ProgramResolver {
         root = SkipEnclosingModules(abstractDecl.QId, root);
         abstractDecl.QId.Root = root;
         declarationPointers.AddOrUpdate(root, v => abstractDecl.QId.Root = v, Util.Concat);
-        dependencies.AddEdge(abstractDecl, root);
+        AddDependency(abstractDecl, root, ModuleDependencyKind.AbstractImport);
       }
     }
   }

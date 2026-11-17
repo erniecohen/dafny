@@ -117,6 +117,7 @@ public static class DafnyCommands {
     CommonOptionBag.GeneralNewtypes,
     CommonOptionBag.ExtendedNewtypeBases,
     CommonOptionBag.MemberInvariants,
+    CommonOptionBag.RecursiveModules,
     CommonOptionBag.TypeSystemRefresh,
     CommonOptionBag.ResolutionThreads,
     CommonOptionBag.UserDefinedOperators,
