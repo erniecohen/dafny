@@ -187,7 +187,10 @@ jobs:
       - name: Version
         id: version
         run: |
-          sh .github/review/version.sh | tee -a "$GITHUB_OUTPUT"
+          # Not a pipe into tee: without pipefail a failing version.sh left the version empty.
+          out=$(sh .github/review/version.sh)
+          echo "$out" | tee -a "$GITHUB_OUTPUT"
+          echo "$out" | grep -q '^version=.'
           harness=$(sed -n 's/.*DefaultZ3Version = "\(.*\)";.*/\1/p' Source/DafnyCore/DafnyOptions.cs)
           echo "harness_z3=$harness" >> "$GITHUB_OUTPUT"
       - uses: ./.github/actions/setup-dotnet
