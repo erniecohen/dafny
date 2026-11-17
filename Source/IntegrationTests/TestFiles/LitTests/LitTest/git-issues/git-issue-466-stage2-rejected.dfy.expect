@@ -6,4 +6,6 @@ git-issue-466-stage2-rejected.dfy(60,30): Error: using the type being defined ('
 git-issue-466-stage2-rejected.dfy(70,28): Error: sorry, tail-call optimizations are not supported for mutually recursive functions
 git-issue-466-stage2-rejected.dfy(86,13): Error: == can only be applied to expressions of types that support equality (got D<int -> int>)
 git-issue-466-stage2-rejected.dfy(89,13): Error: == can only be applied to expressions of types that support equality (got D<U>) (perhaps try declaring type parameter 'U' on line 88 as 'U(==)', which says it can only be instantiated with a type that supports equality)
-8 resolution/type errors detected in git-issue-466-stage2-rejected.dfy
+git-issue-466-stage2-rejected.dfy(107,9): Error: == can only be applied to expressions of types that support equality (got W)
+git-issue-466-stage2-rejected.dfy(116,14): Error: type parameter (T) passed to type D must support equality (got int -> int)
+10 resolution/type errors detected in git-issue-466-stage2-rejected.dfy

@@ -549,3 +549,27 @@ module Hidden {
     }
   }
 }
+
+// the type of a constant that is inferred from a constant of another member, in three steps: the
+// subset type nat reaches Refined1.a only when the members repeat the inference, and the export
+// sets hide the values, so G verifies only because a has that type
+module Refined1 {
+  import Refined2
+  const a := Refined2.b
+  function G(): nat { a }
+  lemma Bad()
+    ensures a == 0
+  {
+  }
+}
+module Refined2 {
+  export provides b, Refined3
+  import Refined3
+  const b := Refined3.c
+}
+module Refined3 {
+  export provides c, Refined1
+  import Refined1
+  function F(): nat
+  const c := F()
+}

@@ -42,8 +42,10 @@ git-issue-466-stage2-accepted.dfy(515,2): Error: a postcondition could not be pr
 git-issue-466-stage2-accepted.dfy(514,17): Related location: this is the postcondition that could not be proved
 git-issue-466-stage2-accepted.dfy(540,4): Error: a postcondition could not be proved on this return path
 git-issue-466-stage2-accepted.dfy(539,23): Related location: this is the postcondition that could not be proved
+git-issue-466-stage2-accepted.dfy(562,2): Error: a postcondition could not be proved on this return path
+git-issue-466-stage2-accepted.dfy(561,14): Related location: this is the postcondition that could not be proved
 
-Dafny program verifier finished with 94 verified, 20 errors
+Dafny program verifier finished with 94 verified, 21 errors
 git-issue-466-stage2-accepted.dfy(44,2): Error: a postcondition could not be proved on this return path
 git-issue-466-stage2-accepted.dfy(43,20): Related location: this is the postcondition that could not be proved
 git-issue-466-stage2-accepted.dfy(79,4): Error: a postcondition could not be proved on this return path
@@ -88,5 +90,7 @@ git-issue-466-stage2-accepted.dfy(515,2): Error: a postcondition could not be pr
 git-issue-466-stage2-accepted.dfy(514,17): Related location: this is the postcondition that could not be proved
 git-issue-466-stage2-accepted.dfy(540,4): Error: a postcondition could not be proved on this return path
 git-issue-466-stage2-accepted.dfy(539,23): Related location: this is the postcondition that could not be proved
+git-issue-466-stage2-accepted.dfy(562,2): Error: a postcondition could not be proved on this return path
+git-issue-466-stage2-accepted.dfy(561,14): Related location: this is the postcondition that could not be proved
 
-Dafny program verifier finished with 94 verified, 20 errors
+Dafny program verifier finished with 94 verified, 21 errors

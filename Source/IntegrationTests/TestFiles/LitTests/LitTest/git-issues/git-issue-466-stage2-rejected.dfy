@@ -93,3 +93,29 @@ module Equality2 {
   import Equality1
   datatype E<T> = E(d: Equality1.D<T>, t: T)
 }
+
+// equality of a datatype that does not support it because of a datatype of another member
+module Equality3 {
+  import Equality4
+  datatype NoEq = NoEq(f: int -> int, v: Equality4.V)
+}
+module Equality4 {
+  import Equality3
+  datatype V = V(n: int)
+  datatype W = W(n: Equality3.NoEq)
+  method M(x: W, y: W) returns (b: bool) {
+    b := x == y;
+  }
+}
+
+// a type parameter that must support equality because of a datatype of another member, which is
+// found only when the members repeat the inference
+module Equality5 {
+  import Equality6
+  datatype D<T> = D(e: Equality6.E<T>)
+  method M(d: D<int -> int>) { }
+}
+module Equality6 {
+  import Equality5
+  datatype E<T> = E(s: set<T>)
+}

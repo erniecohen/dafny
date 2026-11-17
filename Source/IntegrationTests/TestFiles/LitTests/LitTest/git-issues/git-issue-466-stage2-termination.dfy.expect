@@ -1,5 +1,5 @@
-git-issue-466-stage2-termination.dfy(420,11): Warning: because of cyclic dependencies among constructor argument types, no instances of datatype 'D' can be constructed
-git-issue-466-stage2-termination.dfy(428,11): Warning: because of cyclic dependencies among constructor argument types, no instances of datatype 'E' can be constructed
+git-issue-466-stage2-termination.dfy(430,11): Warning: because of cyclic dependencies among constructor argument types, no instances of datatype 'D' can be constructed
+git-issue-466-stage2-termination.dfy(438,11): Warning: because of cyclic dependencies among constructor argument types, no instances of datatype 'E' can be constructed
 git-issue-466-stage2-termination.dfy(14,43): Error: cannot prove termination; try supplying a decreases clause
 git-issue-466-stage2-termination.dfy(23,43): Error: cannot prove termination; try supplying a decreases clause
 git-issue-466-stage2-termination.dfy(32,16): Error: cannot prove termination; try supplying a decreases clause
@@ -45,6 +45,7 @@ git-issue-466-stage2-termination.dfy(387,21): Error: cannot prove termination; t
 git-issue-466-stage2-termination.dfy(398,43): Error: cannot prove termination; try supplying a decreases clause
 git-issue-466-stage2-termination.dfy(402,7): Error: cannot prove termination; try supplying a decreases clause
 git-issue-466-stage2-termination.dfy(409,45): Error: default-value expression is not allowed to involve recursive or mutually recursive calls
-git-issue-466-stage2-termination.dfy(423,13): Error: variable 'x', which is subject to definite-assignment rules, might be uninitialized here
+git-issue-466-stage2-termination.dfy(423,53): Error: default-value expression is not allowed to involve recursive or mutually recursive calls
+git-issue-466-stage2-termination.dfy(433,13): Error: variable 'x', which is subject to definite-assignment rules, might be uninitialized here
 
-Dafny program verifier finished with 15 verified, 42 errors
+Dafny program verifier finished with 15 verified, 43 errors

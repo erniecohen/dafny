@@ -413,6 +413,16 @@ module LoopDefault2 {
   function G(n: nat): nat { LoopDefault1.F(n) }
 }
 
+// a default value of a parameter of a datatype constructor in a cycle of calls
+module LoopDataDefault1 {
+  import LoopDataDefault2
+  function F(n: nat): nat { LoopDataDefault2.D(n).y }
+}
+module LoopDataDefault2 {
+  import LoopDataDefault1
+  datatype D = D(x: nat, y: nat := LoopDataDefault1.F(x))
+}
+
 // a cycle of datatypes with no value: the types are reported as possibly empty, and a variable of
 // such a type is not assigned
 module Empty1 {
