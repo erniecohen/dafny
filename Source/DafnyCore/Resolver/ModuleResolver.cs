@@ -921,13 +921,9 @@ namespace Microsoft.Dafny {
             // It's okay if "d" and "kv.Value" denote the same type. This can happen, for example,
             // if both are type synonyms for "int".
             var scope = Type.GetScope();
-            if (importer.RecursiveGroup != null &&
-                (ModuleDefinition.InSameRecursiveGroup(importer, sameNameSymbolInImporter.EnclosingModuleDefinition) ||
-                 ModuleDefinition.InSameRecursiveGroup(importer, kv.Value.EnclosingModuleDefinition))) {
-              // One of the two is declared in a member of the importer's recursive module group.  Its type is
-              // not resolved yet, so the two cannot be compared; they are different declarations, so the name
-              // is ambiguous.
-            } else if (sameNameSymbolInImporter.IsVisibleInScope(scope) && kv.Value.IsVisibleInScope(scope)) {
+            // (A declaration of another member of the importer's recursive module group is not resolved yet, and
+            // is not equal to any other declaration here: the name is ambiguous.)
+            if (sameNameSymbolInImporter.IsVisibleInScope(scope) && kv.Value.IsVisibleInScope(scope)) {
               var dType = UserDefinedType.FromTopLevelDecl(sameNameSymbolInImporter.Origin, sameNameSymbolInImporter);
               var vType = UserDefinedType.FromTopLevelDecl(kv.Value.Origin, kv.Value);
               unambiguous = dType.Equals(vType, true);

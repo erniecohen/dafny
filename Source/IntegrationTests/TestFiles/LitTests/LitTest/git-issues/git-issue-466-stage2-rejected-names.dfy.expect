@@ -6,4 +6,8 @@ git-issue-466-stage2-rejected-names.dfy(34,2): Error: This export set is not con
 git-issue-466-stage2-rejected-names.dfy(53,30): Error: unresolved identifier: Secret
 git-issue-466-stage2-rejected-names.dfy(59,9): Error: import X names its target through imports of its recursive module group that depend on each other
 git-issue-466-stage2-rejected-names.dfy(63,9): Error: import Y names its target through imports of its recursive module group that depend on each other
-7 resolution/type errors detected in git-issue-466-stage2-rejected-names.dfy
+git-issue-466-stage2-rejected-names.dfy(71,16): Error: The name T ambiguously refers to a type in one of the modules SameType2, SameTypeBase (try qualifying the type name with the module name)
+git-issue-466-stage2-rejected-names.dfy(71,20): Error: The name T ambiguously refers to a type in one of the modules SameType2, SameTypeBase (try qualifying the type name with the module name)
+git-issue-466-stage2-rejected-names.dfy(85,24): Error: boolean literal used as if it had type int
+git-issue-466-stage2-rejected-names.dfy(87,7): Error: not resolving the modules of the recursive module group of module 'Failed1' because there were errors in a module that one of them imports
+11 resolution/type errors detected in git-issue-466-stage2-rejected-names.dfy

@@ -1010,6 +1010,11 @@ an error that names it:
 A replaceable module may not be in a group, a module may not import itself, and
 a program that has a group may not declare a codatatype.
 
+If two opened imports of a member bring in a type of the same name, and one of
+the two is declared in a member of the group, the name is ambiguous, also where
+both declarations denote the same type (outside a group, such a name is not
+ambiguous). Qualify the name with the module.
+
 Whether a trait is a reference type (whether it extends `object`, itself or
 through a parent trait) is needed before the imports among the members of a
 group are resolved. So for a trait of a group, the names of its parent traits

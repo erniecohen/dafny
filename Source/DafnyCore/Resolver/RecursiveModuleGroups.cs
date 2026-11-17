@@ -45,9 +45,6 @@ public sealed class RecursiveModuleGroup {
   /// <summary>The dependencies among the inductive datatypes of all members.</summary>
   public readonly Graph<IndDatatypeDecl> DatatypeDependencies = new();
 
-  /// <summary>Codatatypes are rejected in a program that has a group; the graph stays empty.</summary>
-  public readonly Graph<CoDatatypeDecl> CodatatypeDependencies = new();
-
   /// <summary>The dependencies among the type synonyms, subset types and newtypes of all members.</summary>
   public readonly Graph<RedirectingTypeDecl> TypeRedirectionDependencies = new();
 

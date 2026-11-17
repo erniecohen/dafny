@@ -561,7 +561,8 @@ Generate module names in the older A_mB_mC style instead of the current A.B.C sc
       }
     }
     var datatypeDependencies = group?.DatatypeDependencies ?? new Graph<IndDatatypeDecl>();
-    var codatatypeDependencies = group?.CodatatypeDependencies ?? new Graph<CoDatatypeDecl>();
+    // Codatatypes are rejected in a program that has a group, so their graph is not shared.
+    var codatatypeDependencies = new Graph<CoDatatypeDecl>();
     var allDeclarations = AllDeclarationsAndNonNullTypeDecls(TopLevelDecls).ToList();
     if (group != null) {
       group.MemberDeclarations[this] = allDeclarations;
