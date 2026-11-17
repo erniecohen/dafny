@@ -105,13 +105,15 @@ for resolver, flags in resolvers.items():
     client('without the option (the hole that the option closes)', 'raise', 0, verified='3 verified, 0 errors',
            lib=plain, enabled=False)
 
-    # A least lemma of the library under a bound.  A library with a least predicate cannot be built under the
-    # option yet (https://github.com/erniecohen/dafny/issues/461), so the library and its client are verified
-    # as one program.
+    # A least lemma of the library under a bound.  The library is built alone, and its client is verified
+    # against it (https://github.com/erniecohen/dafny/issues/461: the generated prefix lemma's {:axiom} is not
+    # an assumption of the library).  The same pair verified as one program gives the same errors.
+    extreme = str(output / ('extreme-%s.doo' % resolver))
     run(resolver + ': build library with a least predicate', ['build', '-t:lib', '--modular-termination'] + flags
-        + [source('lib-extreme'), '--output=' + str(output / ('extreme-%s.doo' % resolver))], 3,
-        'has an assumption that')
-    run(resolver + ': least lemma of the library called from implementations of its slot',
+        + [source('lib-extreme'), '--output=' + extreme], 0, verified='4 verified, 0 errors')
+    client('least lemma of the library called from implementations of its slot', 'prefix', 4,
+           'prefix.dfy(34,6): Error: assertion might not hold', '7 verified, 3 errors', lib=extreme)
+    run(resolver + ': least lemma of the library, as one program',
         ['verify', '--modular-termination'] + flags + [source('lib-extreme'), source('prefix')], 4,
         'prefix.dfy(34,6): Error: assertion might not hold', '11 verified, 3 errors')
 

@@ -20,7 +20,8 @@
 // is refused under the option, that a library with a record is refused without the option, and that the
 // 'raise' client verifies when neither side uses the option, which is the hole the option closes.
 //
-// The last two checks use a library with a least lemma under a bound.  It cannot be built into a .doo
-// yet (https://github.com/erniecohen/dafny/issues/461), so the library and its client are verified as one
-// program: implementations of the library's lemma slot that call the least lemma, or its prefix lemma,
-// above the bound of the slot are rejected (https://github.com/erniecohen/dafny/issues/456).
+// The last three checks use a library with a least lemma under a bound.  It is built into a .doo
+// (https://github.com/erniecohen/dafny/issues/461), and implementations of its lemma slot that call the least
+// lemma, or its prefix lemma, above the bound of the slot are rejected
+// (https://github.com/erniecohen/dafny/issues/456), both against the built library and with the library and
+// its client verified as one program.

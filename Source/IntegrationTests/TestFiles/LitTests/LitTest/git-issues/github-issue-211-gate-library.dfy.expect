@@ -32,10 +32,14 @@ legacy: library with a record, option off: exit 1
   CLI: Error: cannot load lib-legacy.doo: it was built with --modular-termination and is checked only under that option; use --modular-termination, or rebuild the library without it
 legacy: without the option (the hole that the option closes): exit 0
   Dafny program verifier finished with 3 verified, 0 errors
-legacy: build library with a least predicate: exit 3
+legacy: build library with a least predicate: exit 0
   Dafny program verifier finished with 4 verified, 0 errors
-  CLI: Error: cannot build a library under --modular-termination: github-issue-211-gate-a-lib-extreme.dfy(12,42) has an assumption that 'dafny audit' reports: Declaration has explicit {:axiom} attribute. A library built with --modular-termination records that its own program was completely verified; build it without --no-verify, --boogie arguments, {:verify false}, {:only}, decreases *, assumptions (anything 'dafny audit' reports, bodyless members, --allow-axioms) or {:extern}, and with every verification task succeeding
 legacy: least lemma of the library called from implementations of its slot: exit 4
+  github-issue-211-gate-a-prefix.dfy(13,10): Error: decreases clause might not decrease (--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
+  github-issue-211-gate-a-prefix.dfy(23,14): Error: decreases clause might not decrease (--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
+  github-issue-211-gate-a-prefix.dfy(34,6): Error: assertion might not hold
+  Dafny program verifier finished with 7 verified, 3 errors
+legacy: least lemma of the library, as one program: exit 4
   github-issue-211-gate-a-prefix.dfy(13,10): Error: decreases clause might not decrease (--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
   github-issue-211-gate-a-prefix.dfy(23,14): Error: decreases clause might not decrease (--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
   github-issue-211-gate-a-prefix.dfy(34,6): Error: assertion might not hold
@@ -74,12 +78,16 @@ refresh: library with a record, option off: exit 1
   CLI: Error: cannot load lib-refresh.doo: it was built with --modular-termination and is checked only under that option; use --modular-termination, or rebuild the library without it
 refresh: without the option (the hole that the option closes): exit 0
   Dafny program verifier finished with 3 verified, 0 errors
-refresh: build library with a least predicate: exit 3
+refresh: build library with a least predicate: exit 0
   Dafny program verifier finished with 4 verified, 0 errors
-  CLI: Error: cannot build a library under --modular-termination: github-issue-211-gate-a-lib-extreme.dfy(12,42) has an assumption that 'dafny audit' reports: Declaration has explicit {:axiom} attribute. A library built with --modular-termination records that its own program was completely verified; build it without --no-verify, --boogie arguments, {:verify false}, {:only}, decreases *, assumptions (anything 'dafny audit' reports, bodyless members, --allow-axioms) or {:extern}, and with every verification task succeeding
 refresh: least lemma of the library called from implementations of its slot: exit 4
   github-issue-211-gate-a-prefix.dfy(13,10): Error: decreases clause might not decrease (--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
   github-issue-211-gate-a-prefix.dfy(23,14): Error: decreases clause might not decrease (--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
   github-issue-211-gate-a-prefix.dfy(34,6): Error: assertion might not hold
+  Dafny program verifier finished with 7 verified, 3 errors
+refresh: least lemma of the library, as one program: exit 4
+  github-issue-211-gate-a-prefix.dfy(13,10): Error: decreases clause might not decrease (--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
+  github-issue-211-gate-a-prefix.dfy(23,14): Error: decreases clause might not decrease (--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
+  github-issue-211-gate-a-prefix.dfy(34,6): Error: assertion might not hold
   Dafny program verifier finished with 11 verified, 3 errors
-library gate: 32 checks, all passed
+library gate: 34 checks, all passed
