@@ -1021,3 +1021,28 @@ only programs whose yield types have a default value the compiler makes, and add
 The hidden `--legacy-early-yield-parameter-check` option restores the old check at its old place,
 crashes included, for comparison and migration.  The regression is
 `git-issues/github-issue-445.dfy`; the release note is `docs/dev/news/445.fix`.
+
+## Functions stored through every left-hand side ([issue 483](https://github.com/erniecohen/dafny/issues/483))
+
+`HigherOrderHeapAllocationChecker` rejects storing a value whose type contains a function with
+read effects (`~>`) in memory, so that such a function cannot read itself.  It looked only at a
+`SingleAssignStmt` whose left-hand side is a `MemberSelectExpr` (a field) or a `SeqSelectExpr` (a
+one-dimensional array element).  A multi-dimensional array element (`MultiSelectExpr`) is memory
+too, and a method call (`CallStmt`) stores its out-parameters in its left-hand sides, which may be
+fields, array elements or an iterator's yield parameters.  Through either, a function could read
+itself, and a program proved `false` under both resolvers.  The checker now treats a
+`MultiSelectExpr` left-hand side like the other two, and checks each left-hand side of a call that
+is a memory location against the type of the corresponding out-parameter, with the call's type
+arguments substituted.  Like the plain assignment, which looks at the type of its right-hand side,
+the call is rejected only if the value it stores may contain a reading function, so storing a
+`Pack<() -> bool>` result in a `Pack<() ~> bool>` element is still accepted.  The other ways to
+write memory were already covered: a multi-assignment, a `forall` statement and `:-` resolve to
+`SingleAssignStmt`s; an array initializer makes an array whose type contains `~>`, and storing that
+array is rejected; `:|` supports only local variables; and a constructor's first phase cannot
+assign a `const` field through a call.
+Its kind is **rejects more**: it adds no fact or axiom and changes no Boogie program it accepts.
+In a resolution screen of the other 3,056 `.dfy` files of the test suite, no file changes its exit
+code or its errors, and the standard library resolves with no error under both resolvers.
+Still, as for every soundness fix, the hidden `--legacy-function-store-locations` option restores
+the old check for comparison and migration.  The regression is `git-issues/github-issue-483.dfy`;
+the release note is `docs/dev/news/483.fix`.
