@@ -41,13 +41,13 @@ abstract module Mod {
   }
 }
 ```
-Here `A` is abstract because it stands for any concrete module that adheres to the interface declared in `Interface`
+Here `A` is abstract because it stands for any concrete module that refines the interface declared in `Interface`
 (note that the function `addSome` has no body). Consequently `Mod` must be abstract as well.
 `Interface` is not compilable, but it actually does not need to be declared `abstract`.
 
-Now we can implement a concrete version of `Interface`:
+Now we can implement a concrete version of `Interface`, as a refinement of it:
 ```
-module Implementation {
+module Implementation refines Interface {
   function addSome(n: nat): nat
     ensures addSome(n) == n + 1
   {
