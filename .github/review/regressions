@@ -738,5 +738,14 @@ git-issues/git-issue-388.dfy
 # A statement added by a skeleton may not call a method that modifies state, which made inherited postconditions contradict new ones (https://github.com/erniecohen/dafny/issues/412).
 git-issues/github-issue-412.dfy
 
+# The resolved program that --rprint prints lists the bitvector types the program uses, in order and with the widths that lowering a shift adds, as the translator declares them; under --type-system-refresh, _System again declares each bvN with RotateLeft and RotateRight. git-issue-1665 prints the module-prefixed names generated for :- and the match source's type for an untyped case variable (https://github.com/erniecohen/dafny/issues/441).
+dafny0/TypeConversions.dfy
+traits/TraitResolution0.dfy
+dafny4/git-issue228.dfy
+git-issues/git-issue-1665.dfy
+
+# Asking whether a recursive datatype with no values is nonempty (a (00) type argument, a (00) type refined by it, a local of it) reports an error instead of overflowing the stack in Type.GetAutoInit, for direct, mutual, arrow and non-regular recursion, while types with values keep their answers (https://github.com/erniecohen/dafny/issues/413).
+git-issues/github-issue-413.dfy
+
 # A refining module that adds a field subject to definite assignment to a class verifies the constructor it inherits unchanged, which cannot assign the field; dafny verify skipped the copy and proved false (https://github.com/erniecohen/dafny/issues/411).
 git-issues/github-issue-411.dfy
