@@ -794,3 +794,9 @@ git-issues/github-issue-457.dfy
 
 # Bounded callables, milestone 2: bounded.certify, application below the bound, the bound and erase members, admitted named functions, stored values and the divergence kernels, under --modular-termination (https://github.com/erniecohen/dafny/issues/266).
 git-issues/github-issue-266-m2.dfy
+
+# Revision 3 of the rules of --modular-termination: any trait may be extended from any module, a foreign implementation of a member without a global bound is a leaf or has a bound of its own, a member without a body reaches a dispatch unless it promises {:termination_closed}, and the VeriFast ports of ECOOP 2015 Fig. 4 and the CPS example (https://github.com/erniecohen/dafny/issues/211).
+git-issues/github-issue-211-rev3.dfy
+
+# The multiset order of the orders library over any well-founded relation, and global bounds of --modular-termination by multiset orders, where a dispatched call needs a strictly smaller bag (https://github.com/erniecohen/dafny/issues/211).
+git-issues/github-issue-211-multiset.dfy
