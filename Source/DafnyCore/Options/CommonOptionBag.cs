@@ -348,6 +348,9 @@ true - All class instances are raw pointers and need to be manually deallocated"
   public static readonly Option<bool> LegacyDecreasesOrder = new("--legacy-decreases-order", () => false,
     "Use the legacy, unsound decreases-tuple comparison for migration and comparison only.") { IsHidden = true };
 
+  public static readonly Option<bool> LegacyReadingFunctionsInDatatypes = new("--legacy-reading-functions-in-datatypes", () => false,
+    "Use the legacy, unsound rule that, when a value is stored in a field or an array element, looks for a function that reads the heap only in the type of the value and its type arguments, not inside the declarations of datatypes, newtypes and subset types, for migration and comparison only.") { IsHidden = true };
+
   public static readonly Option<bool> LegacyNoncanonicalMapPayloads = new("--legacy-noncanonical-map-payloads", () => false,
     "Use the legacy, inconsistent native-result map rows for migration and comparison only.") { IsHidden = true };
 
@@ -371,6 +374,8 @@ true - All class instances are raw pointers and need to be manually deallocated"
 
   public static readonly Option<bool> LegacyInheritedConstructorFields = new("--legacy-inherited-constructor-fields", () => false,
     "Use the legacy, unsound rule that does not verify a constructor a refining module inherits unchanged, even when the module adds a field the constructor must assign, for migration and comparison only.") { IsHidden = true };
+  public static readonly Option<bool> LegacyReplacementCycles = new("--legacy-replacement-cycles", () => false,
+    "Use the legacy, unsound rule that lets a module that replaces a replaceable module depend on a module that uses the replaced module, for migration and comparison only.") { IsHidden = true };
 
   public static readonly Option<bool> LegacyFunctionStoreLocations = new("--legacy-function-store-locations", () => false,
     "Use the legacy, unsound rule that lets a function with read effects be stored in a multi-dimensional array element, or in a field or an array element as the result of a method call, for migration and comparison only.") { IsHidden = true };
@@ -882,6 +887,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(SynonymRefinesAbstractType, OptionScope.Cli);
     OptionRegistry.RegisterOption(DecreasesOrders, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacyDecreasesOrder, OptionScope.Cli);
+    OptionRegistry.RegisterOption(LegacyReadingFunctionsInDatatypes, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacyNoncanonicalMapPayloads, OptionScope.Cli);
     DafnyOptions.RegisterLegacyBinding(LegacyNoncanonicalMapPayloads,
       (options, value) => options.LegacyNoncanonicalMapPayloads = value);
@@ -894,6 +900,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(LegacyInheritedConstructorFields, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacyFunctionStoreLocations, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacyEarlyYieldParameterCheck, OptionScope.Cli);
+    OptionRegistry.RegisterOption(LegacyReplacementCycles, OptionScope.Cli);
     OptionRegistry.RegisterOption(ModularTermination, OptionScope.Cli);
     OptionRegistry.RegisterOption(ModularTerminationTrust, OptionScope.Cli);
     OptionRegistry.RegisterOption(WarnUncheckedTermination, OptionScope.Cli);

@@ -800,6 +800,27 @@ that does not make such a read is unchanged.  The hidden `--legacy-first-phase-c
 option restores the old rule for comparison and migration.  The regression is
 `git-issues/github-issue-339.dfy`; the release note is `docs/dev/news/339.fix`.
 
+## Functions that read the heap, stored inside datatypes ([issue 479](https://github.com/erniecohen/dafny/issues/479))
+
+`HigherOrderHeapAllocationChecker` rejects storing, in a field or an array element, a value whose
+type contains a function that reads the heap (`~>`).  Otherwise the function could read itself
+through the field and apply itself, and applying a function value gets no termination check.
+`ContainsRead` looked only at the type and its type arguments, so `datatype W = W(f: () ~> bool)`
+passed as reading-free, and storing `W(knot)`, where `knot` reads the field, proved `false` under
+both resolvers.  `ContainsRead` now also searches the constructor arguments of inductive and
+coinductive datatypes (tuples among them), and the base types of newtypes and subset types, with
+the type arguments substituted.  It stops at arrow types, whose base is the reading arrow, and at
+the types of classes, traits and type parameters.  It searches each declaration once.  Since the
+type arguments of every occurrence are searched where they occur, a recursive or non-regular
+datatype ends the search.  Its kind is **weakens only**: it rejects programs and adds no fact or
+axiom.  Among the test suite's files that mention `~>`, it changes resolution only in its regression
+and in two inputs of `git-issues/github-issue-326.dfy`, `route-subset` and `route-tilde-field`.
+Those inputs store such a function in a datatype to test the rank axioms of arrow-typed fields, and
+they now run under the legacy option.  It changes no resolution in the standard library (its
+sources, `modular-termination`, `orders` and its examples).  The hidden `--legacy-reading-functions-in-datatypes` option restores the old check for comparison and
+migration.  The regression is `git-issues/github-issue-479.dfy`; the release note is
+`docs/dev/news/479.fix`.
+
 ## Override checks in refining modules ([issue 404](https://github.com/erniecohen/dafny/issues/404))
 
 A refining module could strengthen the contract of a trait member, or refine an abstract type into
@@ -865,6 +886,28 @@ test suite it adds a check only to its regression.  Still, as for every soundnes
 `--legacy-inherited-constructor-fields` option restores the old rule for comparison and migration.
 The regression is `git-issues/github-issue-411.dfy`; the release note is
 `docs/dev/news/411.fix`.
+
+## Replacements that depend on a client ([issue 405](https://github.com/erniecohen/dafny/issues/405))
+
+A module `R` that replaces a replaceable module `F` could import a client `C` of `F`.  The module
+graph the resolver checks for cycles has the edges `C -> F`, `R -> F` and `R -> C`, and is acyclic.
+But in the compiled program every use of `F` is a use of `R`, so `C` and `R` depended on each other.
+A call from `R` into `C` and a call from `C` into `F` each go to an imported module, which the
+termination checks take to be lower in the module order, so neither was checked: a lemma cycle
+through the two modules proved `false` with no assumption in the program, a function cycle
+overflowed the stack, and two datatypes could each need a value of the other.
+`ReplacementDependencyChecker`, run by `ProgramResolver` once every module has resolved, identifies
+each replaceable module with the modules that replace it and requires the dependencies to stay
+acyclic.  A module depends on the modules it imports, on those nested in it and on the one it
+refines; the dependency of `R` on `F` by `replaces` is the identification itself and is not counted.
+It reads the resolved program, where an import names the module at the end of its path, because the
+resolver's own graph names the first component, in which an import of `A.B` depends on all of `A`.
+The error is reported at the `replaces` clause and shows a shortest path, such as
+`FooImpl -> Bar -> Foo`.  Its kind is **rejects more**: it rejects programs and adds no fact or
+axiom; a program without such a replacement, and every program without a replacement at all, is
+unchanged.  The hidden `--legacy-replacement-cycles` option restores the old rule for comparison
+and migration.  The regression is `git-issues/github-issue-405.dfy`; the release note is
+`docs/dev/news/405.fix`.
 
 ## Comparing crossed component types ([issue 47](https://github.com/erniecohen/dafny/issues/47))
 

@@ -128,6 +128,7 @@ public static class DafnyCommands {
     CommonOptionBag.SynonymRefinesAbstractType,
     CommonOptionBag.DecreasesOrders,
     CommonOptionBag.LegacyDecreasesOrder,
+    CommonOptionBag.LegacyReadingFunctionsInDatatypes,
     CommonOptionBag.LegacyNoncanonicalMapPayloads,
 
     CommonOptionBag.LegacyUnguardedChar,
@@ -138,6 +139,7 @@ public static class DafnyCommands {
     CommonOptionBag.LegacyInheritedConstructorFields,
     CommonOptionBag.LegacyFunctionStoreLocations,
     CommonOptionBag.LegacyEarlyYieldParameterCheck,
+    CommonOptionBag.LegacyReplacementCycles,
     CommonOptionBag.ModularTermination,
     CommonOptionBag.ModularTerminationTrust,
     CommonOptionBag.InvariantConstructorInference,
