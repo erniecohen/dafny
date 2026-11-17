@@ -823,6 +823,28 @@ The hidden `--legacy-elided-override-checks` option restores the old rule for co
 migration.  The regression is `git-issues/github-issue-404.dfy`; the release note is
 `docs/dev/news/404.fix`.
 
+## Replacements that depend on a client ([issue 405](https://github.com/erniecohen/dafny/issues/405))
+
+A module `R` that replaces a replaceable module `F` could import a client `C` of `F`.  The module
+graph the resolver checks for cycles has the edges `C -> F`, `R -> F` and `R -> C`, and is acyclic.
+But in the compiled program every use of `F` is a use of `R`, so `C` and `R` depended on each other.
+A call from `R` into `C` and a call from `C` into `F` each go to an imported module, which the
+termination checks take to be lower in the module order, so neither was checked: a lemma cycle
+through the two modules proved `false` with no assumption in the program, a function cycle
+overflowed the stack, and two datatypes could each need a value of the other.
+`ReplacementDependencyChecker`, run by `ProgramResolver` once every module has resolved, identifies
+each replaceable module with the modules that replace it and requires the dependencies to stay
+acyclic.  A module depends on the modules it imports, on those nested in it and on the one it
+refines; the dependency of `R` on `F` by `replaces` is the identification itself and is not counted.
+It reads the resolved program, where an import names the module at the end of its path, because the
+resolver's own graph names the first component, in which an import of `A.B` depends on all of `A`.
+The error is reported at the `replaces` clause and shows a shortest path, such as
+`FooImpl -> Bar -> Foo`.  Its kind is **rejects more**: it rejects programs and adds no fact or
+axiom; a program without such a replacement, and every program without a replacement at all, is
+unchanged.  The hidden `--legacy-replacement-cycles` option restores the old rule for comparison
+and migration.  The regression is `git-issues/github-issue-405.dfy`; the release note is
+`docs/dev/news/405.fix`.
+
 ## Comparing crossed component types ([issue 47](https://github.com/erniecohen/dafny/issues/47))
 
 With `--type-system-refresh`, `==`, `!=`, `in`, `!in` and prefix equality required, in their final
