@@ -348,6 +348,9 @@ true - All class instances are raw pointers and need to be manually deallocated"
   public static readonly Option<bool> LegacyDecreasesOrder = new("--legacy-decreases-order", () => false,
     "Use the legacy, unsound decreases-tuple comparison for migration and comparison only.") { IsHidden = true };
 
+  public static readonly Option<bool> LegacyReadingFunctionsInDatatypes = new("--legacy-reading-functions-in-datatypes", () => false,
+    "Use the legacy, unsound rule that, when a value is stored in a field or an array element, looks for a function that reads the heap only in the type of the value and its type arguments, not inside the declarations of datatypes, newtypes and subset types, for migration and comparison only.") { IsHidden = true };
+
   public static readonly Option<bool> LegacyNoncanonicalMapPayloads = new("--legacy-noncanonical-map-payloads", () => false,
     "Use the legacy, inconsistent native-result map rows for migration and comparison only.") { IsHidden = true };
 
@@ -357,11 +360,20 @@ true - All class instances are raw pointers and need to be manually deallocated"
   public static readonly Option<bool> LegacyFirstPhaseConstReads = new("--legacy-first-phase-const-reads", () => false,
     "Use the legacy, unsound rule that lets the first division of a constructor body (before 'new;') read a constant whose initializer depends on 'this', for migration and comparison only.") { IsHidden = true };
 
+  public static readonly Option<bool> LegacySkeletonModifyingCalls = new("--legacy-skeleton-modifying-calls", () => false,
+    "Use the legacy, unsound rule that lets a statement a refinement skeleton adds call a method with a nonempty modifies clause, for migration and comparison only.") { IsHidden = true };
+
+  public static readonly Option<bool> LegacyEarlyYieldParameterCheck = new("--legacy-early-yield-parameter-check", () => false,
+    "Use the legacy, unsound check of the types of iterator yield parameters, made before the resolver knows how each datatype is constructed, for migration and comparison only.") { IsHidden = true };
+
   public static readonly Option<bool> LegacyUnguardedChar = new("--legacy-unguarded-char", () => false,
     "Use the legacy, inconsistent unguarded character axioms for migration and comparison only.") { IsHidden = true };
 
   public static readonly Option<bool> LegacyElidedOverrideChecks = new("--legacy-elided-override-checks", () => false,
     "Use the legacy, unsound rule that skips the override check of a member a refining module inherits unchanged, even when the module changes the member it overrides or adds the parent that declares it, for migration and comparison only.") { IsHidden = true };
+
+  public static readonly Option<bool> LegacyInheritedConstructorFields = new("--legacy-inherited-constructor-fields", () => false,
+    "Use the legacy, unsound rule that does not verify a constructor a refining module inherits unchanged, even when the module adds a field the constructor must assign, for migration and comparison only.") { IsHidden = true };
 
   public static readonly Option<bool> ModularTermination = new("--modular-termination", () => false,
     "Experimental; it does not yet establish termination in every program. Accept global and callback decreases bounds. Under this option, {:termination false} declares checked trait extensibility; foreign extension of sealed traits is rejected, including with @AssumeCrossModuleTermination. Dispatched overridable slots require strict global-bound descent. Imported operations are General at their declared bound, or TOP, unless they publish a checked {:termination_closed} promise; private bodies never strengthen an imported contract. Exact General calls require nonincrease as well as ordinary termination. Constants and type/iterator evaluation hooks also use public effects. Closed code and bound computations cannot reach open dispatch, unknown applications or imported General code. Callback formation, forwarding and application retain their checked bounds. Declares the type bounded<O, F> of bounded callables, formed by bounded.certify(a, f) and applied only below the bound a. Show call classifications with --show-hints. Libraries are admitted only as .doo files built under this option, whose recorded program, options and termination contracts are checked when loaded. See the Reference Manual for restrictions. Disabled by default.");
@@ -870,6 +882,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(SynonymRefinesAbstractType, OptionScope.Cli);
     OptionRegistry.RegisterOption(DecreasesOrders, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacyDecreasesOrder, OptionScope.Cli);
+    OptionRegistry.RegisterOption(LegacyReadingFunctionsInDatatypes, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacyNoncanonicalMapPayloads, OptionScope.Cli);
     DafnyOptions.RegisterLegacyBinding(LegacyNoncanonicalMapPayloads,
       (options, value) => options.LegacyNoncanonicalMapPayloads = value);
@@ -878,6 +891,9 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(LegacyAutoGeneratedAttributes, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacyFirstPhaseConstReads, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacyElidedOverrideChecks, OptionScope.Cli);
+    OptionRegistry.RegisterOption(LegacySkeletonModifyingCalls, OptionScope.Cli);
+    OptionRegistry.RegisterOption(LegacyInheritedConstructorFields, OptionScope.Cli);
+    OptionRegistry.RegisterOption(LegacyEarlyYieldParameterCheck, OptionScope.Cli);
     OptionRegistry.RegisterOption(ModularTermination, OptionScope.Cli);
     OptionRegistry.RegisterOption(ModularTerminationTrust, OptionScope.Cli);
     OptionRegistry.RegisterOption(WarnUncheckedTermination, OptionScope.Cli);

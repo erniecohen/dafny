@@ -424,10 +424,10 @@ public class Compilation : IDisposable {
           moduleProofDependencies[containingModule] = result.ProofDependencies;
           return result.Tasks.GroupBy(GetCanVerify).ToDictionary(
             g => g.Key,
-            // A copy from a refinement base is scheduled only for the override check its module makes again;
-            // its other tasks assert nothing.
+            // A copy from a refinement base is scheduled only for the checks its module must make itself;
+            // its other tasks assert nothing new.
             g => (IReadOnlyList<IVerificationTask>)g.Where(t =>
-              !g.Key.Origin.IsCopy || ((CanVerifyOrigin)t.ScopeToken).IsReverifiedOverrideCheck).ToList());
+              !g.Key.Origin.IsCopy || ((CanVerifyOrigin)t.ScopeToken).IsReverifiedInheritedCheck).ToList());
         });
       } catch (OperationCanceledException) {
         throw;

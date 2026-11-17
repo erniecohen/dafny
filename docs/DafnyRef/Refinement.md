@@ -295,6 +295,14 @@ overriding member unchanged. A failure is reported at the inherited member, with
 refining module as a related location. An override pair that the refining module
 inherits unchanged is not checked again.
 
+A refining module may add fields to a class whose constructor it inherits unchanged. A
+constructor must assign every field that is subject to definite-assignment rules before `new;`,
+or by the end of its body if it has no `new;`. An inherited constructor cannot assign a field
+that the refining module adds. So when the refining module adds such a field, it verifies the
+inherited constructor's body, which reports the unassigned field at the inherited constructor,
+with the refining module as a related location. To initialize the new field, the refining
+module declares the constructor itself.
+
 ## 10.9. Type declarations
 
 Types can be refined in two ways:
