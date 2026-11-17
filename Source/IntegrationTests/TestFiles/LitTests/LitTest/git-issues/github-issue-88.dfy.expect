@@ -1,86 +1,86 @@
-github-issue-88.dfy(365,8): Warning: class 'D' has @AssumeCrossModuleTermination and no {:axiom} annotation: calls dispatched to it through traits of other modules are not checked for termination
-github-issue-88.dfy(45,4): Error: assertion might not hold
-github-issue-88.dfy(77,4): Error: assertion might not hold
-github-issue-88.dfy(107,4): Error: assertion might not hold
-github-issue-88.dfy(115,13): Error: the function must provide an equal or more detailed postcondition than in its parent trait
-github-issue-88.dfy(119,7): Related location: refining module
-github-issue-88.dfy(116,10): Error: the method must provide an equal or more detailed postcondition than in its parent trait
-github-issue-88.dfy(119,7): Related location: refining module
-github-issue-88.dfy(133,10): Error: the method must provide an equal or more detailed postcondition than in its parent trait
-github-issue-88.dfy(137,7): Related location: refining module
-github-issue-88.dfy(134,13): Error: the function must provide an equal or more detailed postcondition than in its parent trait
-github-issue-88.dfy(137,7): Related location: refining module
-github-issue-88.dfy(178,4): Error: assertion might not hold
+github-issue-88.dfy(371,8): Warning: class 'D' has @AssumeCrossModuleTermination and no {:axiom} annotation: calls dispatched to it through traits of other modules are not checked for termination
+github-issue-88.dfy(51,4): Error: assertion might not hold
+github-issue-88.dfy(83,4): Error: assertion might not hold
+github-issue-88.dfy(113,4): Error: assertion might not hold
+github-issue-88.dfy(121,13): Error: the function must provide an equal or more detailed postcondition than in its parent trait
+github-issue-88.dfy(125,7): Related location: refining module
+github-issue-88.dfy(122,10): Error: the method must provide an equal or more detailed postcondition than in its parent trait
+github-issue-88.dfy(125,7): Related location: refining module
+github-issue-88.dfy(139,10): Error: the method must provide an equal or more detailed postcondition than in its parent trait
+github-issue-88.dfy(143,7): Related location: refining module
+github-issue-88.dfy(140,13): Error: the function must provide an equal or more detailed postcondition than in its parent trait
+github-issue-88.dfy(143,7): Related location: refining module
 github-issue-88.dfy(184,4): Error: assertion might not hold
-github-issue-88.dfy(193,20): Error: field 'e', which is subject to definite-assignment rules, might be uninitialized at this point in the constructor body
-github-issue-88.dfy(196,7): Related location: refining module
-github-issue-88.dfy(228,4): Error: assertion might not hold
-github-issue-88.dfy(239,31): Error: decreases clause might not decrease
-github-issue-88.dfy(246,7): Related location: refining module
-github-issue-88.dfy(286,4): Error: assertion might not hold
-github-issue-88.dfy(326,4): Error: assertion might not hold
-github-issue-88.dfy(346,4): Error: assertion might not hold
-github-issue-88.dfy(367,10): Error: the method must provide an equal or more detailed postcondition than in its parent trait
-github-issue-88.dfy(370,7): Related location: refining module
-github-issue-88.dfy(404,4): Error: assertion might not hold
+github-issue-88.dfy(190,4): Error: assertion might not hold
+github-issue-88.dfy(199,20): Error: field 'e', which is subject to definite-assignment rules, might be uninitialized at this point in the constructor body
+github-issue-88.dfy(202,7): Related location: refining module
+github-issue-88.dfy(234,4): Error: assertion might not hold
+github-issue-88.dfy(245,31): Error: decreases clause might not decrease
+github-issue-88.dfy(252,7): Related location: refining module
+github-issue-88.dfy(292,4): Error: assertion might not hold
+github-issue-88.dfy(332,4): Error: assertion might not hold
+github-issue-88.dfy(352,4): Error: assertion might not hold
+github-issue-88.dfy(373,10): Error: the method must provide an equal or more detailed postcondition than in its parent trait
+github-issue-88.dfy(376,7): Related location: refining module
+github-issue-88.dfy(410,4): Error: assertion might not hold
 
 Dafny program verifier finished with 46 verified, 17 errors
-github-issue-88.dfy(365,8): Warning: class 'D' has @AssumeCrossModuleTermination and no {:axiom} annotation: calls dispatched to it through traits of other modules are not checked for termination
-github-issue-88.dfy(45,4): Error: assertion might not hold
-github-issue-88.dfy(77,4): Error: assertion might not hold
-github-issue-88.dfy(107,4): Error: assertion might not hold
-github-issue-88.dfy(115,13): Error: the function must provide an equal or more detailed postcondition than in its parent trait
-github-issue-88.dfy(119,7): Related location: refining module
-github-issue-88.dfy(116,10): Error: the method must provide an equal or more detailed postcondition than in its parent trait
-github-issue-88.dfy(119,7): Related location: refining module
-github-issue-88.dfy(133,10): Error: the method must provide an equal or more detailed postcondition than in its parent trait
-github-issue-88.dfy(137,7): Related location: refining module
-github-issue-88.dfy(134,13): Error: the function must provide an equal or more detailed postcondition than in its parent trait
-github-issue-88.dfy(137,7): Related location: refining module
-github-issue-88.dfy(178,4): Error: assertion might not hold
+github-issue-88.dfy(371,8): Warning: class 'D' has @AssumeCrossModuleTermination and no {:axiom} annotation: calls dispatched to it through traits of other modules are not checked for termination
+github-issue-88.dfy(51,4): Error: assertion might not hold
+github-issue-88.dfy(83,4): Error: assertion might not hold
+github-issue-88.dfy(113,4): Error: assertion might not hold
+github-issue-88.dfy(121,13): Error: the function must provide an equal or more detailed postcondition than in its parent trait
+github-issue-88.dfy(125,7): Related location: refining module
+github-issue-88.dfy(122,10): Error: the method must provide an equal or more detailed postcondition than in its parent trait
+github-issue-88.dfy(125,7): Related location: refining module
+github-issue-88.dfy(139,10): Error: the method must provide an equal or more detailed postcondition than in its parent trait
+github-issue-88.dfy(143,7): Related location: refining module
+github-issue-88.dfy(140,13): Error: the function must provide an equal or more detailed postcondition than in its parent trait
+github-issue-88.dfy(143,7): Related location: refining module
 github-issue-88.dfy(184,4): Error: assertion might not hold
-github-issue-88.dfy(193,20): Error: field 'e', which is subject to definite-assignment rules, might be uninitialized at this point in the constructor body
-github-issue-88.dfy(196,7): Related location: refining module
-github-issue-88.dfy(228,4): Error: assertion might not hold
-github-issue-88.dfy(239,31): Error: decreases clause might not decrease
-github-issue-88.dfy(246,7): Related location: refining module
-github-issue-88.dfy(286,4): Error: assertion might not hold
-github-issue-88.dfy(326,4): Error: assertion might not hold
-github-issue-88.dfy(346,4): Error: assertion might not hold
-github-issue-88.dfy(367,10): Error: the method must provide an equal or more detailed postcondition than in its parent trait
-github-issue-88.dfy(370,7): Related location: refining module
-github-issue-88.dfy(404,4): Error: assertion might not hold
+github-issue-88.dfy(190,4): Error: assertion might not hold
+github-issue-88.dfy(199,20): Error: field 'e', which is subject to definite-assignment rules, might be uninitialized at this point in the constructor body
+github-issue-88.dfy(202,7): Related location: refining module
+github-issue-88.dfy(234,4): Error: assertion might not hold
+github-issue-88.dfy(245,31): Error: decreases clause might not decrease
+github-issue-88.dfy(252,7): Related location: refining module
+github-issue-88.dfy(292,4): Error: assertion might not hold
+github-issue-88.dfy(332,4): Error: assertion might not hold
+github-issue-88.dfy(352,4): Error: assertion might not hold
+github-issue-88.dfy(373,10): Error: the method must provide an equal or more detailed postcondition than in its parent trait
+github-issue-88.dfy(376,7): Related location: refining module
+github-issue-88.dfy(410,4): Error: assertion might not hold
 
 Dafny program verifier finished with 46 verified, 17 errors
-github-issue-88.dfy(39,14): Error: a refining declaration (`...`) may add parent traits only with --refinement-extends
-github-issue-88.dfy(65,14): Error: a refining declaration (`...`) may add parent traits only with --refinement-extends
-github-issue-88.dfy(94,14): Error: a refining declaration (`...`) may add parent traits only with --refinement-extends
-github-issue-88.dfy(124,14): Error: a refining declaration (`...`) may add parent traits only with --refinement-extends
-github-issue-88.dfy(142,14): Error: a refining declaration (`...`) may add parent traits only with --refinement-extends
-github-issue-88.dfy(167,14): Error: a refining declaration (`...`) may add parent traits only with --refinement-extends
-github-issue-88.dfy(201,14): Error: a refining declaration (`...`) may add parent traits only with --refinement-extends
-github-issue-88.dfy(221,14): Error: a refining declaration (`...`) may add parent traits only with --refinement-extends
-github-issue-88.dfy(247,14): Error: a refining declaration (`...`) may add parent traits only with --refinement-extends
-github-issue-88.dfy(275,14): Error: a refining declaration (`...`) may add parent traits only with --refinement-extends
-github-issue-88.dfy(302,14): Error: a refining declaration (`...`) may add parent traits only with --refinement-extends
-github-issue-88.dfy(311,14): Error: a refining declaration (`...`) may add parent traits only with --refinement-extends
-github-issue-88.dfy(360,14): Error: a refining declaration (`...`) may add parent traits only with --refinement-extends
-github-issue-88.dfy(396,17): Error: a refining declaration (`...`) may add parent traits only with --refinement-extends
+github-issue-88.dfy(45,14): Error: a refining declaration (`...`) may add parent traits only with --refinement-extends
+github-issue-88.dfy(71,14): Error: a refining declaration (`...`) may add parent traits only with --refinement-extends
+github-issue-88.dfy(100,14): Error: a refining declaration (`...`) may add parent traits only with --refinement-extends
+github-issue-88.dfy(130,14): Error: a refining declaration (`...`) may add parent traits only with --refinement-extends
+github-issue-88.dfy(148,14): Error: a refining declaration (`...`) may add parent traits only with --refinement-extends
+github-issue-88.dfy(173,14): Error: a refining declaration (`...`) may add parent traits only with --refinement-extends
+github-issue-88.dfy(207,14): Error: a refining declaration (`...`) may add parent traits only with --refinement-extends
+github-issue-88.dfy(227,14): Error: a refining declaration (`...`) may add parent traits only with --refinement-extends
+github-issue-88.dfy(253,14): Error: a refining declaration (`...`) may add parent traits only with --refinement-extends
+github-issue-88.dfy(281,14): Error: a refining declaration (`...`) may add parent traits only with --refinement-extends
+github-issue-88.dfy(308,14): Error: a refining declaration (`...`) may add parent traits only with --refinement-extends
+github-issue-88.dfy(317,14): Error: a refining declaration (`...`) may add parent traits only with --refinement-extends
+github-issue-88.dfy(366,14): Error: a refining declaration (`...`) may add parent traits only with --refinement-extends
+github-issue-88.dfy(402,17): Error: a refining declaration (`...`) may add parent traits only with --refinement-extends
 14 parse errors detected in github-issue-88.dfy
-github-issue-88.dfy(39,14): Error: a refining declaration (`...`) may add parent traits only with --refinement-extends
-github-issue-88.dfy(65,14): Error: a refining declaration (`...`) may add parent traits only with --refinement-extends
-github-issue-88.dfy(94,14): Error: a refining declaration (`...`) may add parent traits only with --refinement-extends
-github-issue-88.dfy(124,14): Error: a refining declaration (`...`) may add parent traits only with --refinement-extends
-github-issue-88.dfy(142,14): Error: a refining declaration (`...`) may add parent traits only with --refinement-extends
-github-issue-88.dfy(167,14): Error: a refining declaration (`...`) may add parent traits only with --refinement-extends
-github-issue-88.dfy(201,14): Error: a refining declaration (`...`) may add parent traits only with --refinement-extends
-github-issue-88.dfy(221,14): Error: a refining declaration (`...`) may add parent traits only with --refinement-extends
-github-issue-88.dfy(247,14): Error: a refining declaration (`...`) may add parent traits only with --refinement-extends
-github-issue-88.dfy(275,14): Error: a refining declaration (`...`) may add parent traits only with --refinement-extends
-github-issue-88.dfy(302,14): Error: a refining declaration (`...`) may add parent traits only with --refinement-extends
-github-issue-88.dfy(311,14): Error: a refining declaration (`...`) may add parent traits only with --refinement-extends
-github-issue-88.dfy(360,14): Error: a refining declaration (`...`) may add parent traits only with --refinement-extends
-github-issue-88.dfy(396,17): Error: a refining declaration (`...`) may add parent traits only with --refinement-extends
+github-issue-88.dfy(45,14): Error: a refining declaration (`...`) may add parent traits only with --refinement-extends
+github-issue-88.dfy(71,14): Error: a refining declaration (`...`) may add parent traits only with --refinement-extends
+github-issue-88.dfy(100,14): Error: a refining declaration (`...`) may add parent traits only with --refinement-extends
+github-issue-88.dfy(130,14): Error: a refining declaration (`...`) may add parent traits only with --refinement-extends
+github-issue-88.dfy(148,14): Error: a refining declaration (`...`) may add parent traits only with --refinement-extends
+github-issue-88.dfy(173,14): Error: a refining declaration (`...`) may add parent traits only with --refinement-extends
+github-issue-88.dfy(207,14): Error: a refining declaration (`...`) may add parent traits only with --refinement-extends
+github-issue-88.dfy(227,14): Error: a refining declaration (`...`) may add parent traits only with --refinement-extends
+github-issue-88.dfy(253,14): Error: a refining declaration (`...`) may add parent traits only with --refinement-extends
+github-issue-88.dfy(281,14): Error: a refining declaration (`...`) may add parent traits only with --refinement-extends
+github-issue-88.dfy(308,14): Error: a refining declaration (`...`) may add parent traits only with --refinement-extends
+github-issue-88.dfy(317,14): Error: a refining declaration (`...`) may add parent traits only with --refinement-extends
+github-issue-88.dfy(366,14): Error: a refining declaration (`...`) may add parent traits only with --refinement-extends
+github-issue-88.dfy(402,17): Error: a refining declaration (`...`) may add parent traits only with --refinement-extends
 14 parse errors detected in github-issue-88.dfy
 github-issue-88-rejected.dfy(7,8): Error: class 'C' does not implement trait lemma 'S.L'
 github-issue-88-rejected.dfy(11,7): Related location: refining module
@@ -177,3 +177,7 @@ github-issue-88-client-rejected.dfy(9,32): Error: trait 'T' is in a different mo
 CLI: Error: cannot load github-issue-88.dfy.tmp-lib.doo: --refinement-extends is set locally to False, but the library was built with True
 
 Dafny program verifier finished with 1 verified, 0 errors
+
+Dafny program verifier did not attempt verification
+
+Dafny program verifier did not attempt verification

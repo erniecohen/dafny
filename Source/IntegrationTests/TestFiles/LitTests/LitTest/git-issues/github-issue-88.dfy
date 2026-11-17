@@ -16,12 +16,18 @@
 // RUN: %exits-with 2 %baredafny verify --solver-path %review-z3 --use-basename-for-filename --show-snippets:false --standard-libraries:false --refinement-extends --library "%t-lib.doo" "%S/Inputs/github-issue-88-client-rejected.dfy" >> "%t"
 // RUN: %exits-with 1 %baredafny verify --solver-path %review-z3 --use-basename-for-filename --show-snippets:false --standard-libraries:false --library "%t-lib.doo" "%S/Inputs/github-issue-88-plain-client.dfy" >> "%t"
 // RUN: %exits-with 0 %baredafny verify --solver-path %review-z3 --use-basename-for-filename --show-snippets:false --standard-libraries:false --refinement-extends --library "%t-lib.doo" "%S/Inputs/github-issue-88-plain-client.dfy" >> "%t"
+// RUN: %resolve --refinement-extends --rprint "%t.print" "%S/Inputs/github-issue-88-print.dfy" >> "%t"
+// RUN: %OutputCheck --file-to-check "%t.print" "%S/Inputs/github-issue-88-print.dfy"
+// RUN: %resolve --refinement-extends --type-system-refresh=false --general-newtypes=false --rprint "%t.print-legacy" "%S/Inputs/github-issue-88-print.dfy" >> "%t"
+// RUN: %OutputCheck --file-to-check "%t.print-legacy" "%S/Inputs/github-issue-88-print.dfy"
 // RUN: %diff "%s.expect" "%t"
 // Feature (https://github.com/erniecohen/dafny/issues/88): under --refinement-extends, a class or trait
 // declaration in a refining module may add parent traits to the declaration it refines:
 // "trait T ... extends S { }".  The parents of the refined declaration are kept and the added ones
 // follow them.  Without the option the syntax is a parse error, as before (the third and fourth RUN
 // lines).  The Inputs files hold the programs that resolution rejects, and a library with its clients.
+// The last RUN lines print the resolved program of Inputs/github-issue-88-print.dfy and check that a
+// refining declaration is printed with the parents it adds, and only those, after "...".
 //
 // An added parent creates obligations in the refining module, also at text the module inherits:
 // override checks, definite assignment of the parent's fields, and termination of calls that the new
