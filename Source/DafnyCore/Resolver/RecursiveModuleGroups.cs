@@ -54,6 +54,12 @@ public sealed class RecursiveModuleGroup {
   /// <summary>The parent relation among the types of all members.</summary>
   public readonly Graph<TopLevelDeclWithMembers> ParentRelation = new();
 
+  /// <summary>
+  /// Which traits of the members have been determined to be reference types, or are being determined
+  /// (see ModuleDefinition.DetermineReferenceTypes).  A parent trait may be in another member.
+  /// </summary>
+  public readonly Dictionary<TraitDecl, bool> ReferenceTraitsProgress = new();
+
   /// <summary>The callables for which a cycle error has been reported, so that each cycle is reported once.</summary>
   public readonly HashSet<ICallable> CycleErrorHasBeenReported = new();
 

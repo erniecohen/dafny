@@ -141,7 +141,16 @@ public class LiteralModuleDecl : ModuleDecl, ICanFormat, IHasSymbolChildren {
     }
 
     PipelineProfile.ModulePhase(resolver.Options, "preResolve");
-    Signature = module.RegisterTopLevelDecls(resolver, true);
+    if (resolver.Group != null) {
+      // Whether a trait is a reference type depends on its parent traits, and a parent trait may be declared
+      // in another member of the group.  So every member registers its names before any member determines
+      // its reference types.
+      Signature = module.RegisterTopLevelDecls(resolver, true, deferReferenceTypes: true);
+      yield return "registerNames";
+      module.RegisterReferenceTypes();
+    } else {
+      Signature = module.RegisterTopLevelDecls(resolver, true);
+    }
     Signature.Refines = module.Implements?.Target.Sig;
     yield return "register";
 

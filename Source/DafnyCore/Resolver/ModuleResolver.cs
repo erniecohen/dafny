@@ -1297,6 +1297,11 @@ namespace Microsoft.Dafny {
       foreach (var cycle in parentRelation.AllCycles().Where(cycle => group == null || cycle[0].EnclosingModuleDefinition == def)) {
         ReportCycleError(reporter, cycle, m => m.Origin, m => m.Name, "trait definitions contain a cycle");
       }
+      if (group != null) {
+        // Not reached if any member has an error.
+        yield return "parentTraitCycles";
+        CheckReferenceTraitsOfGroup(declarations);
+      }
       if (prevErrorCount == reporter.Count(ErrorLevel.Error)) {
         // check that only reference types (classes and some traits) inherit from 'object'
         foreach (TopLevelDecl d in declarations.Where(d => d is TopLevelDeclWithMembers and not ClassLikeDecl)) {
@@ -2560,10 +2565,10 @@ namespace Microsoft.Dafny {
           if (trait != null) {
             // disallowing inheritance in multi module case
             bool termination = true;
-            if (Group != null && cl.EnclosingModuleDefinition != trait.EnclosingModuleDefinition && Group.Contains(trait.EnclosingModuleDefinition)) {
-              reporter.Error(MessageSource.Resolver, parentTypeToken,
-                $"{cl.WhatKind} '{cl.Name}' extends trait '{trait.FullName}', which is declared in another module of its recursive module group; this is not yet supported");
-            } else if (cl.EnclosingModuleDefinition == trait.EnclosingModuleDefinition ||
+            // A trait of another member of the recursive module group is like a trait of the same module: the members of
+            // a group are verified together, and a call that is dispatched to an override is checked against the "decreases"
+            // clauses as it is inside one module.
+            if (ModuleDefinition.InSameRecursiveGroup(cl.EnclosingModuleDefinition, trait.EnclosingModuleDefinition) ||
                 trait.IsObjectTrait ||
                 (Attributes.ContainsBool(trait.Attributes, "termination", ref termination) && !termination) ||
                 (!Options.Get(CommonOptionBag.ModularTermination) && Attributes.Contains(cl.Attributes, "AssumeCrossModuleTermination"))) {
@@ -2598,6 +2603,26 @@ namespace Microsoft.Dafny {
       currentClass = null;
     }
 
+    /// <summary>
+    /// Whether a trait is a reference type is determined when the names of its module are registered, before its
+    /// parent traits are resolved (ModuleDefinition.DetermineReferenceTypes), by looking the parents up by name.
+    /// For a parent in another member of a recursive module group, that lookup does not go through the import that
+    /// the resolution of the parent goes through.  So check the answer against the resolved parents: a trait is a
+    /// reference type if and only if a parent is one.  Otherwise a trait that inherits from "object" would not be
+    /// treated as a reference type, or the reverse.
+    /// </summary>
+    void CheckReferenceTraitsOfGroup(List<TopLevelDecl> declarations) {
+      var legacy = Options.Get(CommonOptionBag.GeneralTraits) == CommonOptionBag.GeneralTraitsOptions.Legacy;
+      foreach (var trait in declarations.OfType<TraitDecl>()) {
+        var inheritsFromObject = legacy || trait.IsObjectTrait || trait.ParentTraitHeads.Exists(parent => parent.IsReferenceTypeDecl);
+        if (trait.IsReferenceTypeDecl != inheritsFromObject) {
+          reporter.Error(MessageSource.Resolver, trait.Origin,
+            $"trait '{trait.Name}' was taken {(trait.IsReferenceTypeDecl ? "" : "not ")}to be a reference type, but its parent traits say otherwise; " +
+            "name the parent traits of the traits of a recursive module group so that they can be looked up before the imports are resolved");
+        }
+      }
+    }
+
     void InheritMembers(List<TopLevelDecl> declarations) {
       // Register the trait members in the classes that inherit them
       foreach (var topLevelDeclWithMembers in declarations.OfType<TopLevelDeclWithMembers>()) {
@@ -2618,6 +2643,14 @@ namespace Microsoft.Dafny {
       Contract.Requires(cl != null);
 
       if (cl.ParentTypeInformation != null) {
+        return;
+      }
+      if (Group is { } recursiveGroup && cl.EnclosingModuleDefinition is { } owner &&
+          recursiveGroup.Resolvers.TryGetValue(owner, out var ownerResolver) && ownerResolver != this) {
+        // A parent in another member of the recursive module group is processed by the resolver of that member.
+        Type.PushScope(ownerResolver.moduleInfo.VisibilityScope);
+        ownerResolver.RegisterInheritedMembers(cl, basePreType);
+        Type.PopScope(ownerResolver.moduleInfo.VisibilityScope);
         return;
       }
       cl.ParentTypeInformation = new TopLevelDeclWithMembers.InheritanceInformationClass();

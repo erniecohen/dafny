@@ -952,7 +952,44 @@ The declarations of the members are resolved and verified together:
 * An export set hides from the other members what it hides from any other
   importer: a function that a member provides and does not reveal is opaque to
   the other members, and a name that it does not export is not visible to them.
+* A class, datatype or other type of one member may extend a trait of another
+  member, as it may extend a trait of its own module: the trait needs no
+  `{:termination false}` and the type no `@AssumeCrossModuleTermination`. A
+  call through the trait may be dispatched to an override in any member, and
+  it is checked for termination as it is when trait and override are in one
+  module. So a cycle of calls that goes through overrides in several members
+  needs a measure that decreases, and `{:termination false}` on a trait says
+  nothing about the types of its own group that extend it. An override is
+  checked against the specification of the member of the trait, and a type
+  must implement every member that the trait leaves without a body.
+  To a module outside the group, a trait of the group is a trait of another
+  module, under the rules that apply without the option. With
+  `--modular-termination`, the members of a group count as one module.
 * `--show-hints` lists the members of each group at each member.
+
+In the following group, the datatype of one member extends the trait of the
+other, and the function `Unit` of the trait's module creates a value of the
+datatype:
+
+<!-- %check-verify %options --type-system-refresh --general-traits=datatype --member-invariants --recursive-modules -->
+```dafny
+module Shapes {
+  import Squares
+  trait Shape {
+    function Area(): nat
+  }
+  function Total(shapes: seq<Shape>): nat {
+    if shapes == [] then 0 else shapes[0].Area() + Total(shapes[1..])
+  }
+  function Unit(): Shape { Squares.Square(1) }
+}
+module Squares {
+  import Shapes
+  datatype Square extends Shapes.Shape = Square(side: nat) {
+    function Area(): nat { side * side }
+  }
+}
+```
 
 Only plain imports (`import B`, `import X = B`, `import opened B`, and imports
 of export sets) may be part of a cycle. Each of the following must lead from a
@@ -971,14 +1008,20 @@ an error that names it:
 A replaceable module may not be in a group, a module may not import itself, and
 a program that has a group may not declare a codatatype.
 
+Whether a trait is a reference type (whether it extends `object`, itself or
+through a parent trait) is needed before the imports among the members of a
+group are resolved. So for a trait of a group, the names of its parent traits
+are first looked up among all the declarations of the modules they lead
+through, whatever the export sets of those modules show. If the parent traits
+that resolution finds later give a different answer, that is an error. It
+arises only where a name means one trait with the export sets and another
+without them, and naming the parent trait through its module avoids it.
+
 The following are not yet supported. Each is an error, so nothing is accepted
 that a later stage would have to reject:
 
 * a member of a group that is abstract, that refines or replaces a module, or
   that declares an abstract import or an invariant;
-* a class or other type of one member that extends a trait of another member
-  (a type may extend a trait of its own module, and a trait of a module
-  outside the group under the rules that apply without the option);
 * a module outside a group that refines a member, or that names a member in an
   abstract import;
 * imports of the members of one group that name their targets through each
