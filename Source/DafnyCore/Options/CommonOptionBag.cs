@@ -377,6 +377,8 @@ true - All class instances are raw pointers and need to be manually deallocated"
   public static readonly Option<bool> LegacyReplacementCycles = new("--legacy-replacement-cycles", () => false,
     "Use the legacy, unsound rule that lets a module that replaces a replaceable module depend on a module that uses the replaced module, for migration and comparison only.") { IsHidden = true };
 
+  public static readonly Option<bool> LegacyGenericFunctionStores = new("--legacy-generic-function-stores", () => false,
+    "Use the legacy, unsound rule that lets a type parameter whose values may be stored in memory be instantiated with a type that contains a function with read effects, for migration and comparison only.") { IsHidden = true };
   public static readonly Option<bool> LegacyFunctionStoreLocations = new("--legacy-function-store-locations", () => false,
     "Use the legacy, unsound rule that lets a function with read effects be stored in a multi-dimensional array element, or in a field or an array element as the result of a method call, for migration and comparison only.") { IsHidden = true };
 
@@ -901,6 +903,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(LegacyFunctionStoreLocations, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacyEarlyYieldParameterCheck, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacyReplacementCycles, OptionScope.Cli);
+    OptionRegistry.RegisterOption(LegacyGenericFunctionStores, OptionScope.Cli);
     OptionRegistry.RegisterOption(ModularTermination, OptionScope.Cli);
     OptionRegistry.RegisterOption(ModularTerminationTrust, OptionScope.Cli);
     OptionRegistry.RegisterOption(WarnUncheckedTermination, OptionScope.Cli);

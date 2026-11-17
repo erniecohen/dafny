@@ -140,6 +140,7 @@ public static class DafnyCommands {
     CommonOptionBag.LegacyFunctionStoreLocations,
     CommonOptionBag.LegacyEarlyYieldParameterCheck,
     CommonOptionBag.LegacyReplacementCycles,
+    CommonOptionBag.LegacyGenericFunctionStores,
     CommonOptionBag.ModularTermination,
     CommonOptionBag.ModularTerminationTrust,
     CommonOptionBag.InvariantConstructorInference,
