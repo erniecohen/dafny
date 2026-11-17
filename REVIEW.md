@@ -999,6 +999,50 @@ decreases clauses.  The hidden `--legacy-inherited-termination-checks` option
 restores the old rule for comparison and migration.  The regression is
 `git-issues/github-issue-409.dfy`; the release note is `docs/dev/news/409.fix`.
 
+## Functions stored in objects that call back ([issue 453](https://github.com/erniecohen/dafny/issues/453))
+
+`HigherOrderHeapAllocationCheckerConstructor` rejects an assignment to a field whose value's type
+has, left of an arrow, the object's type or a trait type, so that a function the object stores
+cannot be applied by a function of the object to the object itself: applying a function value gets
+no termination check, and the two functions would be a cycle.  A stored function cannot read the
+heap (`HigherOrderHeapAllocationChecker`), but it can reach the object through its argument without
+reading it: through a datatype constructor's argument, a tuple component, a constant of a class or
+trait, or the base of a newtype.  The check looked only at the type and its type arguments, so
+`const g: Box -> nat` with `datatype Box = Box(c: C)` proved `false`.  So did a function stored in
+another object whose argument reaches that object, a function inside a stored datatype value, and a
+class or trait with a permissive (`!T`) type parameter instantiated with the type of the object
+that stores the instance.  `HigherOrderHeapAllocationCheckerConstructor.Reach` now follows, left of
+an arrow, the arguments of datatype constructors, the constants of classes, traits, datatypes and
+newtypes (with those of parent traits), and the bases of newtypes, substituting type arguments.  It
+fails at the object's class, with any type arguments, at a trait type, and at an abstract type,
+which a refining module or an export may give such a definition.  Elsewhere in the stored value's
+type it looks for function values in the same declarations, and it takes the type arguments of a
+trait type or an abstract type to be left of an arrow, because an implementation or definition may
+store a function of them.  A type parameter is not followed: an instance of a generic class is
+checked where it is stored, with the type arguments substituted.  Mutable fields are not followed,
+since a function without a `reads` clause cannot read them.  A nested datatype, such as
+`N<A> = Leaf(a: A) | Node(n: N<seq<A>>)`, makes a larger instantiation of its declaration at each
+step, so the search expands a declaration again, in the same position, only at an instantiation
+that is not larger.  At a larger one it searches the type arguments alone, as if left of an arrow;
+the expansion in progress searches the rest of the declaration.  So the search ends.  It is
+conservative there: a nested datatype instantiated with the object's class, such as `N<C?>` stored
+in a field of `C`, is rejected even when it holds no function.  Under `--modular-termination`, a
+bounded value ([issue 266](https://github.com/erniecohen/dafny/issues/266)) is exempt as it is in
+the old check: its top-level arrow is not searched, but its order type and its function's parameter
+and result types are, where the bounded type is.  A cycle through bounded values cannot form.
+Applying one is checked to run under a bound strictly below the global bound of the code that
+applies it, and its function is checked to run under the value's bound.  So the bounds strictly
+decrease along any chain of applications through bounded values, and they are well founded.  In
+`github-issue-266-m2.dfy`, `C.f` (global bound 1) applies `cb: bounded<nat, Stored.T -> int>`
+with bound 0 to `this`.  The function `cb` holds runs under bound 0, so it cannot call `f`.
+Raw functions inside a bounded type are applied without a bound, so a function on a datatype that
+holds the object, returned by a bounded function, is still rejected.
+Its kind is **weakens only**: it rejects programs and adds no fact or axiom.  It changes no
+resolution outside its regression in the test suite, the standard library (its sources,
+`modular-termination`, `orders`) or the standard library's examples.  The hidden
+`--legacy-stored-function-callbacks` option restores the old check for comparison and migration.
+The regression is `git-issues/github-issue-453.dfy`; the release note is `docs/dev/news/453.fix`.
+
 ## Comparing crossed component types ([issue 47](https://github.com/erniecohen/dafny/issues/47))
 
 With `--type-system-refresh`, `==`, `!=`, `in`, `!in` and prefix equality required, in their final
