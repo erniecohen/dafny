@@ -500,7 +500,8 @@ those v4.11.0 already has, and leaves out the paths that are not product (tests,
 `docs`, `.github`, `friction` and the documents at the top of the tree):
 
     git diff --no-renames --abbrev=7 v4.11.0 <last product commit> -- . \
-      ':(exclude)Source/IntegrationTests' ':(exclude)docs' ':(exclude).github' \
+      ':(exclude)Source/IntegrationTests' ':(exclude,glob)Source/*.Test/**' \
+      ':(exclude,glob)Source/*.Tests/**' ':(exclude)docs' ':(exclude).github' \
       ':(exclude)friction' ':(exclude)REVIEW.md' ':(exclude)ROADMAP.md' \
       ':(exclude)AGENTS.md' ':(exclude)CLAUDE.md' | sha256sum
 
@@ -546,14 +547,17 @@ change no product file, so the version stays.  The rule on this branch:
   and gets a new version and a new tag;
 - any other commit keeps them.
 
-The product is everything outside `Source/IntegrationTests/`, `docs/`,
+The product is everything outside `Source/IntegrationTests/`, the unit-test
+projects (`Source/*.Test/` and `Source/*.Tests/`, which no release ships; left out
+since 2026-11-16), `docs/`,
 `.github/`, `friction/`, this file, and the other documents at the top of the
 tree: `ROADMAP.md`, `AGENTS.md` and `CLAUDE.md`.  `.github/review/base` names the base
 and the last product commit, and CI's `.github/review/version.sh` computes the
 version from them and fails if a later commit changes a product file.  By hand,
 this prints nothing:
 
-    git diff --name-only b97a6fe <commit> -- . ':!Source/IntegrationTests' ':!docs' ':!.github' \
+    git diff --name-only b97a6fe <commit> -- . ':!Source/IntegrationTests' \
+      ':(exclude,glob)Source/*.Test/**' ':(exclude,glob)Source/*.Tests/**' ':!docs' ':!.github' \
       ':!friction' ':!REVIEW.md' ':!ROADMAP.md' ':!AGENTS.md' ':!CLAUDE.md'
 
 A release binary built from the tag prints the version with `dafny --version`.
@@ -820,6 +824,22 @@ they now run under the legacy option.  It changes no resolution in the standard 
 sources, `modular-termination`, `orders` and its examples).  The hidden `--legacy-reading-functions-in-datatypes` option restores the old check for comparison and
 migration.  The regression is `git-issues/github-issue-479.dfy`; the release note is
 `docs/dev/news/479.fix`.
+
+## `allocated` in lambda expressions ([issue 457](https://github.com/erniecohen/dafny/issues/457))
+
+A function, a constant or a redirecting type could not depend on the set of allocated references,
+but a lambda expression in a method could mention `allocated(c)`.  The verifier translates a
+lambda's body, precondition and reads clause in the heap the lambda is applied in, so its value
+depended on that heap's allocation state, while the frame axiom of its arrow equates its values in
+any two heaps that agree on its reads frame.  With an empty reads frame, `(x: int) =>
+allocated(c)` applied after `c` was allocated proved `false`.  `BoundsDiscoveryVisitor`, which
+already rejected quantifiers that depend on the allocation state inside a lambda, now also reports
+`allocated(...)` in a lambda's body, precondition or reads clause, under both resolvers, unless it is
+inside an `old` (or `old@L`) expression within that lambda; an `old` around the lambda does not
+count, since the lambda is still evaluated in the heap it is applied in.  Its kind is **weakens
+only**: it rejects programs and adds no fact or axiom.  The hidden `--legacy-allocated-in-lambdas`
+option restores the old rule for comparison and migration.  The regression is
+`git-issues/github-issue-457.dfy`; the release note is `docs/dev/news/457.fix`.
 
 ## Override checks in refining modules ([issue 404](https://github.com/erniecohen/dafny/issues/404))
 
