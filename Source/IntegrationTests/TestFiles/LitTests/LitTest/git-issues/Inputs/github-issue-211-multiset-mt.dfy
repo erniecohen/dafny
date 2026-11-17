@@ -31,11 +31,15 @@ module Client {
     c.Run(bag - multiset{L} + Copies(L - 1, k))
   }
 
-  // The same bag: a dispatched call runs under the caller's bound, so its own bound may equal it
-  function Same(c: Callees.Callee, bag: multiset<nat>): nat
+  // One permission is given up before the dispatched call, whose bound is then strictly below the caller's
+  // (the same bag is rejected, in github-issue-211-multiset-mt-verify.dfy)
+  function Lower(c: Callees.Callee, bag: multiset<nat>, m: nat): nat
+    requires m in bag
     decreases {:global} bag by Bags()
   {
-    c.Run(bag)
+    MultisetSub<nat>(Gt, bag - multiset{m}, bag);
+    assert bag - multiset{m} != bag by { assert (bag - multiset{m})[m] < bag[m]; }
+    c.Run(bag - multiset{m})
   }
 
   // Every permission is given up before the dispatched call

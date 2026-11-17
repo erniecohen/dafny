@@ -11,7 +11,7 @@
 // RUN: %exits-with 4 %baredafny verify --solver-path %review-z3 --use-basename-for-filename --show-snippets:false --standard-libraries --type-system-refresh --general-traits=datatype --decreases-orders "%S/Inputs/github-issue-211-multiset-verify.dfy" "%S/Inputs/github-issue-211-multiset-orders.dfy" >> "%t"
 // RUN: echo "--modular-termination: global bounds by multiset orders, the orders library verified with the client" >> "%t"
 // RUN: %exits-with 0 %baredafny verify --solver-path %review-z3 --use-basename-for-filename --show-snippets:false --standard-libraries:false --type-system-refresh --general-traits=datatype --decreases-orders --modular-termination "%S/Inputs/github-issue-211-multiset-mt.dfy" "%S/Inputs/github-issue-211-multiset-orders.dfy" >> "%t"
-// RUN: echo "--modular-termination: controls and bounds above the caller's" >> "%t"
+// RUN: echo "--modular-termination: controls, the same bag, and bounds above the caller's" >> "%t"
 // RUN: %exits-with 4 %baredafny verify --solver-path %review-z3 --use-basename-for-filename --show-snippets:false --standard-libraries:false --type-system-refresh --general-traits=datatype --decreases-orders --modular-termination "%S/Inputs/github-issue-211-multiset-mt-verify.dfy" "%S/Inputs/github-issue-211-multiset-orders.dfy" >> "%t"
 // RUN: echo "--modular-termination: a relation that is not known, passed to the library's multiset functions and lemmas" >> "%t"
 // RUN: %exits-with 2 %baredafny verify --solver-path %review-z3 --use-basename-for-filename --show-snippets:false --standard-libraries:false --type-system-refresh --general-traits=datatype --decreases-orders --modular-termination "%S/Inputs/github-issue-211-multiset-mt-resolve.dfy" >> "%t"
