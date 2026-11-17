@@ -348,6 +348,9 @@ true - All class instances are raw pointers and need to be manually deallocated"
   public static readonly Option<bool> LegacyDecreasesOrder = new("--legacy-decreases-order", () => false,
     "Use the legacy, unsound decreases-tuple comparison for migration and comparison only.") { IsHidden = true };
 
+  public static readonly Option<bool> LegacyReadingFunctionsInDatatypes = new("--legacy-reading-functions-in-datatypes", () => false,
+    "Use the legacy, unsound rule that, when a value is stored in a field or an array element, looks for a function that reads the heap only in the type of the value and its type arguments, not inside the declarations of datatypes, newtypes and subset types, for migration and comparison only.") { IsHidden = true };
+
   public static readonly Option<bool> LegacyNoncanonicalMapPayloads = new("--legacy-noncanonical-map-payloads", () => false,
     "Use the legacy, inconsistent native-result map rows for migration and comparison only.") { IsHidden = true };
 
@@ -881,6 +884,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(SynonymRefinesAbstractType, OptionScope.Cli);
     OptionRegistry.RegisterOption(DecreasesOrders, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacyDecreasesOrder, OptionScope.Cli);
+    OptionRegistry.RegisterOption(LegacyReadingFunctionsInDatatypes, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacyNoncanonicalMapPayloads, OptionScope.Cli);
     DafnyOptions.RegisterLegacyBinding(LegacyNoncanonicalMapPayloads,
       (options, value) => options.LegacyNoncanonicalMapPayloads = value);

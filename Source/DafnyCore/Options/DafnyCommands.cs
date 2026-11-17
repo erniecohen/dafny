@@ -128,6 +128,7 @@ public static class DafnyCommands {
     CommonOptionBag.SynonymRefinesAbstractType,
     CommonOptionBag.DecreasesOrders,
     CommonOptionBag.LegacyDecreasesOrder,
+    CommonOptionBag.LegacyReadingFunctionsInDatatypes,
     CommonOptionBag.LegacyNoncanonicalMapPayloads,
 
     CommonOptionBag.LegacyUnguardedChar,

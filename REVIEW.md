@@ -800,6 +800,27 @@ that does not make such a read is unchanged.  The hidden `--legacy-first-phase-c
 option restores the old rule for comparison and migration.  The regression is
 `git-issues/github-issue-339.dfy`; the release note is `docs/dev/news/339.fix`.
 
+## Functions that read the heap, stored inside datatypes ([issue 479](https://github.com/erniecohen/dafny/issues/479))
+
+`HigherOrderHeapAllocationChecker` rejects storing, in a field or an array element, a value whose
+type contains a function that reads the heap (`~>`).  Otherwise the function could read itself
+through the field and apply itself, and applying a function value gets no termination check.
+`ContainsRead` looked only at the type and its type arguments, so `datatype W = W(f: () ~> bool)`
+passed as reading-free, and storing `W(knot)`, where `knot` reads the field, proved `false` under
+both resolvers.  `ContainsRead` now also searches the constructor arguments of inductive and
+coinductive datatypes (tuples among them), and the base types of newtypes and subset types, with
+the type arguments substituted.  It stops at arrow types, whose base is the reading arrow, and at
+the types of classes, traits and type parameters.  It searches each declaration once.  Since the
+type arguments of every occurrence are searched where they occur, a recursive or non-regular
+datatype ends the search.  Its kind is **weakens only**: it rejects programs and adds no fact or
+axiom.  Among the test suite's files that mention `~>`, it changes resolution only in its regression
+and in two inputs of `git-issues/github-issue-326.dfy`, `route-subset` and `route-tilde-field`.
+Those inputs store such a function in a datatype to test the rank axioms of arrow-typed fields, and
+they now run under the legacy option.  It changes no resolution in the standard library (its
+sources, `modular-termination`, `orders` and its examples).  The hidden `--legacy-reading-functions-in-datatypes` option restores the old check for comparison and
+migration.  The regression is `git-issues/github-issue-479.dfy`; the release note is
+`docs/dev/news/479.fix`.
+
 ## Override checks in refining modules ([issue 404](https://github.com/erniecohen/dafny/issues/404))
 
 A refining module could strengthen the contract of a trait member, or refine an abstract type into
