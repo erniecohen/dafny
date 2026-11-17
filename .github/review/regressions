@@ -818,6 +818,12 @@ ast/reveal/revealQualified.dfy
 # --print writes a refining datatype or codatatype that declares no constructors with "...", as it was written, in every print mode, so the printed program parses (https://github.com/erniecohen/dafny/issues/415).
 git-issues/github-issue-415.dfy
 
+# Termination checks on integer measures keep the shape they had before the corrected decreases order (https://github.com/erniecohen/dafny/issues/414)
+git-issues/github-issue-414.dfy
+# With integer termination checks back in the legacy shape, --isolate-assertions splits them into two tasks again, so these two upstream tests read their .expect counts of 20 and 25 verified (https://github.com/erniecohen/dafny/issues/436).
+ast/reveal/revealInBlock.dfy
+ast/reveal/revealFunctions.dfy
+
 # Member invariants under the hidden --member-invariants, first stage: syntax, printing and
 # resolution, the reads restriction, the codatatype rule for programs and libraries, refinement,
 # opacity, and unchanged behaviour without the option (https://github.com/erniecohen/dafny/issues/105).
