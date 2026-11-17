@@ -139,10 +139,10 @@ module ConcreteModule {
     if n == 0 {
       :- Func1()
       /*---------- desugared ----------
-      var valueOrError0: Status;
-      valueOrError0 := Func1();
-      if valueOrError0.IsFailure() {
-        r := valueOrError0.PropagateFailure();
+      var valueOrErrorMdxehk3_0: Status;
+      valueOrErrorMdxehk3_0 := Func1();
+      if valueOrErrorMdxehk3_0.IsFailure() {
+        r := valueOrErrorMdxehk3_0.PropagateFailure();
         return;
       }
       ---------- end desugared ----------*/;
@@ -150,10 +150,10 @@ module ConcreteModule {
       if m == 1 {
         :- Func1()
         /*---------- desugared ----------
-        var valueOrError1: Status;
-        valueOrError1 := Func1();
-        if valueOrError1.IsFailure() {
-          r := valueOrError1.PropagateFailure();
+        var valueOrErrorMdxehk3_1: Status;
+        valueOrErrorMdxehk3_1 := Func1();
+        if valueOrErrorMdxehk3_1.IsFailure() {
+          r := valueOrErrorMdxehk3_1.PropagateFailure();
           return;
         }
         ---------- end desugared ----------*/;
@@ -169,10 +169,10 @@ module ConcreteModule {
       case {:split false} 0 =>
         :- Func1()
         /*---------- desugared ----------
-        var valueOrError0: Status;
-        valueOrError0 := Func1();
-        if valueOrError0.IsFailure() {
-          r := valueOrError0.PropagateFailure();
+        var valueOrErrorMdxehk3_0: Status;
+        valueOrErrorMdxehk3_0 := Func1();
+        if valueOrErrorMdxehk3_0.IsFailure() {
+          r := valueOrErrorMdxehk3_0.PropagateFailure();
           return;
         }
         ---------- end desugared ----------*/;
@@ -180,17 +180,17 @@ module ConcreteModule {
           case {:split false} 1 =>
             :- Func1()
             /*---------- desugared ----------
-            var valueOrError1: Status;
-            valueOrError1 := Func1();
-            if valueOrError1.IsFailure() {
-              r := valueOrError1.PropagateFailure();
+            var valueOrErrorMdxehk3_1: Status;
+            valueOrErrorMdxehk3_1 := Func1();
+            if valueOrErrorMdxehk3_1.IsFailure() {
+              r := valueOrErrorMdxehk3_1.PropagateFailure();
               return;
             }
             ---------- end desugared ----------*/;
-          case {:split false} _ /* _v0 */: int =>
+          case {:split false} _ /* _v0 */: nat =>
             return Success;
         }
-      case {:split false} _ /* _v1 */: int =>
+      case {:split false} _ /* _v1 */: nat =>
         return Success;
     }
   }
@@ -209,7 +209,7 @@ module ConcreteModule {
     }
     ---------- end flattened ----------*/
     match n {
-      case {:split false} _ /* _v2 */: int =>
+      case {:split false} _ /* _v2 */: nat =>
     }
     
     /*---------- flattened ----------
@@ -246,7 +246,7 @@ module ConcreteModule {
     }
     ---------- end flattened ----------*/
     match n {
-      case {:split false} x: int =>
+      case {:split false} x: nat =>
     }
     
     /*---------- flattened ----------
@@ -254,7 +254,7 @@ module ConcreteModule {
     }
     ---------- end flattened ----------*/
     match n {
-      case {:split false} n: int =>
+      case {:split false} n: nat =>
     }
     
     /*---------- flattened ----------

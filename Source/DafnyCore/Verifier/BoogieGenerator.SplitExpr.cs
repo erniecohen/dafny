@@ -571,7 +571,7 @@ namespace Microsoft.Dafny {
       if (functionHeight < heightLimit && f.Body != null && RevealedInScope(f)) {
         if (fexp.Origin.IsInherited(currentModule) &&
             f is Predicate && ((Predicate)f).BodyOrigin == Predicate.BodyOriginKind.DelayedDefinition &&
-            (codeContext == null || !codeContext.MustReverify)) {
+            !MustReverifyInheritedCode) {
           // The function was inherited as body-less but is now given a body. Don't inline the body (since, apparently, everything
           // that needed to be proved about the function was proved already in the previous module, even without the body definition).
         } else if (!FunctionBodyIsAvailable(f, currentModule, currentScope)) {

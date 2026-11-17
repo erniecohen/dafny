@@ -1,0 +1,1 @@
+Under `--modular-termination`, limit the automatic induction hypothesis of a lemma, and of a prefix lemma and its limit-ordinal case, to the instances within the lemma's `decreases {:global}` bound; an instance at a larger bound proved false.

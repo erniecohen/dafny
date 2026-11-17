@@ -172,8 +172,22 @@ Send notifications about the verification status of each line in the program.
       return;
     }
 
+    // Several ICanVerify can share this node.  A refining module's copy of an inherited member, whose override check
+    // that module makes again, has the position of the member in the refinement base, which is verified too
+    // (https://github.com/erniecohen/dafny/issues/423).  Each reports only its own implementations.  So the node keeps
+    // the implementations of the others, as long as IdeState still has tasks of theirs at this range, and its status
+    // and its assertion batches merge them all.  IdeState keys its tasks the same way (IdeState.CopyingModule).
+    var copyingModule = IdeState.CopyingModule(canVerify);
+    var verifiedAtRange = state.CanVerifyStates.GetValueOrDefault(uri)?
+      .GetValueOrDefault(canVerify.NavigationRange.ToLspRange())?.VerificationTasks.Values
+      .Select(task => IdeState.CopyingModule(Compilation.GetCanVerify(task.Task))).ToHashSet() ?? [];
 
     canVerifyNode.ResetNewChildren();
+    foreach (var other in canVerifyNode.Children.OfType<ImplementationVerificationTree>()) {
+      if (other.CopyingModule != copyingModule && verifiedAtRange.Contains(other.CopyingModule)) {
+        canVerifyNode.AddNewChild(other);
+      }
+    }
 
     foreach (var implementation in implementations) {
 
@@ -193,7 +207,9 @@ Send notifications about the verification status of each line in the program.
         targetMethodNode.Uri,
         targetMethodNode.Range,
         targetMethodNode.Position
-      ).WithImplementation(implementation);
+      ) {
+        CopyingModule = copyingModule
+      }.WithImplementation(implementation);
       if (oldImplementationNode != null) {
         newImplementationNode.Children = oldImplementationNode.Children;
       }
@@ -208,6 +224,12 @@ Send notifications about the verification status of each line in the program.
       canVerifyNode.Stop();
       canVerifyNode.StatusCurrent = CurrentStatus.Current;
       canVerifyNode.StatusVerification = GutterVerificationStatus.Verified;
+    } else if (canVerifyNode.Finished && canVerifyNode.Children.Any(child => !child.Finished)) {
+      // Another ICanVerify at this node finished first.  The node is pending again until these implementations are
+      // verified.  It is not started again: Start would restart the finished implementations too, and stopping
+      // them would then drop their results.
+      canVerifyNode.Finished = false;
+      canVerifyNode.StatusCurrent = CurrentStatus.Obsolete;
     }
 
     canVerifyNode.PropagateChildrenErrorsUp();
