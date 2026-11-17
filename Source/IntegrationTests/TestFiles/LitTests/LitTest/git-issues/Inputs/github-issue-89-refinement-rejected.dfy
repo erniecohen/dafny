@@ -40,3 +40,23 @@ module GivesBody refines Base {
     ghost function Overridden(): int { 0 }  // error (reported at C.Overridden)
   }
 }
+
+// What a refinement may still do to a bodiless trait member: add {:axiom} to a static member, which no
+// type inherits as a member to implement; repeat {:axiom} on a member that is an axiom already; and
+// refine a member without adding {:axiom}.
+module Allowed0 {
+  trait T {
+    static lemma Static()
+    ghost function {:axiom} Axiom(): int
+    ghost function Plain(): int
+    lemma PlainLemma()
+  }
+}
+module Allowed1 refines Allowed0 {
+  trait T ... {
+    static lemma {:axiom} Static... ensures 0 < 1
+    ghost function {:axiom} Axiom...
+    ghost function Plain...
+    lemma PlainLemma... ensures 1 < 2
+  }
+}

@@ -8,6 +8,7 @@ module Compiled {
     function {:axiom} F(): int ensures F() > 0  // error
     predicate {:axiom} P()  // error
   }
+  trait U extends T { }  // each error is reported once, at the member
 }
 
 // {:axiom} on a bodiless extreme predicate or lemma.

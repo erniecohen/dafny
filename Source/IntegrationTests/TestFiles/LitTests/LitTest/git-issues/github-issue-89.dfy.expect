@@ -1,164 +1,166 @@
-github-issue-89.dfy(40,24): Error: assertion might not hold
-github-issue-89.dfy(54,56): Error: assertion might not hold
-github-issue-89.dfy(55,48): Error: a postcondition could not be proved on this return path
-github-issue-89.dfy(55,44): Related location: this is the postcondition that could not be proved
-github-issue-89.dfy(88,4): Error: assertion might not hold
-github-issue-89.dfy(90,54): Error: assertion might not hold
-github-issue-89.dfy(91,75): Error: assertion might not hold
-github-issue-89.dfy(92,77): Error: assertion might not hold
-github-issue-89.dfy(93,47): Error: a postcondition could not be proved on this return path
-github-issue-89.dfy(93,43): Related location: this is the postcondition that could not be proved
-github-issue-89.dfy(105,24): Error: assertion might not hold
-github-issue-89.dfy(123,70): Error: assertion might not hold
-github-issue-89.dfy(124,81): Error: assertion might not hold
-github-issue-89.dfy(139,51): Error: assertion might not hold
-github-issue-89.dfy(161,59): Error: assertion might not hold
-github-issue-89.dfy(178,37): Error: a postcondition could not be proved on this return path
-github-issue-89.dfy(178,33): Related location: this is the postcondition that could not be proved
-github-issue-89.dfy(179,46): Error: a postcondition could not be proved on this return path
-github-issue-89.dfy(179,40): Related location: this is the postcondition that could not be proved
-github-issue-89.dfy(183,10): Error: the method must provide an equal or more detailed postcondition than in its parent trait
-github-issue-89.dfy(205,38): Error: assertion might not hold
-github-issue-89.dfy(214,22): Error: a postcondition could not be proved on this return path
-github-issue-89.dfy(194,42): Related location: this is the postcondition that could not be proved
-github-issue-89.dfy(200,7): Related location: refining module
-github-issue-89.dfy(222,56): Error: assertion might not hold
-github-issue-89.dfy(231,49): Error: a postcondition could not be proved on this return path
-github-issue-89.dfy(231,45): Related location: this is the postcondition that could not be proved
+github-issue-89.dfy(50,24): Error: assertion might not hold
+github-issue-89.dfy(64,56): Error: assertion might not hold
+github-issue-89.dfy(65,48): Error: a postcondition could not be proved on this return path
+github-issue-89.dfy(65,44): Related location: this is the postcondition that could not be proved
+github-issue-89.dfy(98,4): Error: assertion might not hold
+github-issue-89.dfy(100,54): Error: assertion might not hold
+github-issue-89.dfy(101,75): Error: assertion might not hold
+github-issue-89.dfy(102,77): Error: assertion might not hold
+github-issue-89.dfy(103,47): Error: a postcondition could not be proved on this return path
+github-issue-89.dfy(103,43): Related location: this is the postcondition that could not be proved
+github-issue-89.dfy(115,24): Error: assertion might not hold
+github-issue-89.dfy(133,70): Error: assertion might not hold
+github-issue-89.dfy(134,81): Error: assertion might not hold
+github-issue-89.dfy(149,51): Error: assertion might not hold
+github-issue-89.dfy(171,59): Error: assertion might not hold
+github-issue-89.dfy(188,37): Error: a postcondition could not be proved on this return path
+github-issue-89.dfy(188,33): Related location: this is the postcondition that could not be proved
+github-issue-89.dfy(189,46): Error: a postcondition could not be proved on this return path
+github-issue-89.dfy(189,40): Related location: this is the postcondition that could not be proved
+github-issue-89.dfy(193,10): Error: the method must provide an equal or more detailed postcondition than in its parent trait
+github-issue-89.dfy(215,38): Error: assertion might not hold
+github-issue-89.dfy(224,22): Error: a postcondition could not be proved on this return path
+github-issue-89.dfy(204,42): Related location: this is the postcondition that could not be proved
+github-issue-89.dfy(210,7): Related location: refining module
+github-issue-89.dfy(232,56): Error: assertion might not hold
+github-issue-89.dfy(242,49): Error: a postcondition could not be proved on this return path
+github-issue-89.dfy(242,45): Related location: this is the postcondition that could not be proved
 
-Dafny program verifier finished with 57 verified, 20 errors
-github-issue-89.dfy(40,24): Error: assertion might not hold
-github-issue-89.dfy(54,56): Error: assertion might not hold
-github-issue-89.dfy(55,48): Error: a postcondition could not be proved on this return path
-github-issue-89.dfy(55,44): Related location: this is the postcondition that could not be proved
-github-issue-89.dfy(88,4): Error: assertion might not hold
-github-issue-89.dfy(90,54): Error: assertion might not hold
-github-issue-89.dfy(91,75): Error: assertion might not hold
-github-issue-89.dfy(92,77): Error: assertion might not hold
-github-issue-89.dfy(93,47): Error: a postcondition could not be proved on this return path
-github-issue-89.dfy(93,43): Related location: this is the postcondition that could not be proved
-github-issue-89.dfy(105,24): Error: assertion might not hold
-github-issue-89.dfy(123,70): Error: assertion might not hold
-github-issue-89.dfy(124,81): Error: assertion might not hold
-github-issue-89.dfy(139,51): Error: assertion might not hold
-github-issue-89.dfy(161,59): Error: assertion might not hold
-github-issue-89.dfy(178,37): Error: a postcondition could not be proved on this return path
-github-issue-89.dfy(178,33): Related location: this is the postcondition that could not be proved
-github-issue-89.dfy(179,46): Error: a postcondition could not be proved on this return path
-github-issue-89.dfy(179,40): Related location: this is the postcondition that could not be proved
-github-issue-89.dfy(183,10): Error: the method must provide an equal or more detailed postcondition than in its parent trait
-github-issue-89.dfy(205,38): Error: assertion might not hold
-github-issue-89.dfy(214,22): Error: a postcondition could not be proved on this return path
-github-issue-89.dfy(194,42): Related location: this is the postcondition that could not be proved
-github-issue-89.dfy(200,7): Related location: refining module
-github-issue-89.dfy(222,56): Error: assertion might not hold
-github-issue-89.dfy(231,49): Error: a postcondition could not be proved on this return path
-github-issue-89.dfy(231,45): Related location: this is the postcondition that could not be proved
+Dafny program verifier finished with 58 verified, 20 errors
+github-issue-89.dfy(50,24): Error: assertion might not hold
+github-issue-89.dfy(64,56): Error: assertion might not hold
+github-issue-89.dfy(65,48): Error: a postcondition could not be proved on this return path
+github-issue-89.dfy(65,44): Related location: this is the postcondition that could not be proved
+github-issue-89.dfy(98,4): Error: assertion might not hold
+github-issue-89.dfy(100,54): Error: assertion might not hold
+github-issue-89.dfy(101,75): Error: assertion might not hold
+github-issue-89.dfy(102,77): Error: assertion might not hold
+github-issue-89.dfy(103,47): Error: a postcondition could not be proved on this return path
+github-issue-89.dfy(103,43): Related location: this is the postcondition that could not be proved
+github-issue-89.dfy(115,24): Error: assertion might not hold
+github-issue-89.dfy(133,70): Error: assertion might not hold
+github-issue-89.dfy(134,81): Error: assertion might not hold
+github-issue-89.dfy(149,51): Error: assertion might not hold
+github-issue-89.dfy(171,59): Error: assertion might not hold
+github-issue-89.dfy(188,37): Error: a postcondition could not be proved on this return path
+github-issue-89.dfy(188,33): Related location: this is the postcondition that could not be proved
+github-issue-89.dfy(189,46): Error: a postcondition could not be proved on this return path
+github-issue-89.dfy(189,40): Related location: this is the postcondition that could not be proved
+github-issue-89.dfy(193,10): Error: the method must provide an equal or more detailed postcondition than in its parent trait
+github-issue-89.dfy(215,38): Error: assertion might not hold
+github-issue-89.dfy(224,22): Error: a postcondition could not be proved on this return path
+github-issue-89.dfy(204,42): Related location: this is the postcondition that could not be proved
+github-issue-89.dfy(210,7): Related location: refining module
+github-issue-89.dfy(232,56): Error: assertion might not hold
+github-issue-89.dfy(242,49): Error: a postcondition could not be proved on this return path
+github-issue-89.dfy(242,45): Related location: this is the postcondition that could not be proved
 
-Dafny program verifier finished with 57 verified, 20 errors
-github-issue-89.dfy(36,8): Error: class 'C' does not implement trait lemma 'T.foo'
-github-issue-89.dfy(49,8): Error: class 'C' does not implement trait lemma 'T.Positive'
-github-issue-89.dfy(74,8): Error: class 'C' does not implement trait twostate function 'T.Delta'
-github-issue-89.dfy(74,8): Error: class 'C' does not implement trait predicate 'T.Good'
-github-issue-89.dfy(74,8): Error: class 'C' does not implement trait twostate lemma 'T.Grows'
-github-issue-89.dfy(74,8): Error: class 'C' does not implement trait function 'T.Rank'
-github-issue-89.dfy(74,8): Error: class 'C' does not implement trait method 'T.Witness'
-github-issue-89.dfy(103,8): Error: class 'C' does not implement trait function 'T.Get'
-github-issue-89.dfy(114,8): Error: class 'C' does not implement trait lemma 'T.SizePositive'
-github-issue-89.dfy(117,8): Error: class 'D' does not implement trait lemma 'T.SizePositive'
-github-issue-89.dfy(135,8): Error: class 'C' does not implement trait lemma 'T.Holds'
-github-issue-89.dfy(152,8): Error: class 'BelowU' does not implement trait lemma 'U.Bound'
-github-issue-89.dfy(181,8): Error: class 'Weaker' does not implement trait function 'T.G'
-github-issue-89.dfy(196,8): Error: class 'C' does not implement trait lemma 'T.NonNegative'
-github-issue-89.dfy(196,8): Error: class 'C' does not implement trait lemma 'T.Positive'
-github-issue-89.dfy(201,8): Error: class 'D' does not implement trait lemma 'T.NonNegative'
-github-issue-89.dfy(201,8): Error: class 'D' does not implement trait lemma 'T.Positive'
-github-issue-89.dfy(196,8): Error: class 'C' does not implement trait lemma 'T.NonNegative'
-github-issue-89.dfy(200,7): Related location: refining module
-github-issue-89.dfy(196,8): Error: class 'C' does not implement trait lemma 'T.Positive'
-github-issue-89.dfy(200,7): Related location: refining module
-github-issue-89.dfy(201,8): Error: class 'D' does not implement trait lemma 'T.Positive'
-github-issue-89.dfy(207,7): Related location: refining module
-github-issue-89.dfy(196,8): Error: class 'C' does not implement trait lemma 'T.Positive'
-github-issue-89.dfy(207,7): Related location: refining module
-github-issue-89.dfy(201,8): Error: class 'D' does not implement trait lemma 'T.NonNegative'
-github-issue-89.dfy(212,7): Related location: refining module
-github-issue-89.dfy(196,8): Error: class 'C' does not implement trait lemma 'T.NonNegative'
-github-issue-89.dfy(212,7): Related location: refining module
-github-issue-89.dfy(196,8): Error: class 'C' does not implement trait lemma 'T.NonNegative'
+Dafny program verifier finished with 58 verified, 20 errors
+github-issue-89.dfy(46,8): Error: class 'C' does not implement trait lemma 'T.foo'
+github-issue-89.dfy(59,8): Error: class 'C' does not implement trait lemma 'T.Positive'
+github-issue-89.dfy(84,8): Error: class 'C' does not implement trait twostate function 'T.Delta'
+github-issue-89.dfy(84,8): Error: class 'C' does not implement trait predicate 'T.Good'
+github-issue-89.dfy(84,8): Error: class 'C' does not implement trait twostate lemma 'T.Grows'
+github-issue-89.dfy(84,8): Error: class 'C' does not implement trait function 'T.Rank'
+github-issue-89.dfy(84,8): Error: class 'C' does not implement trait method 'T.Witness'
+github-issue-89.dfy(113,8): Error: class 'C' does not implement trait function 'T.Get'
+github-issue-89.dfy(124,8): Error: class 'C' does not implement trait lemma 'T.SizePositive'
+github-issue-89.dfy(127,8): Error: class 'D' does not implement trait lemma 'T.SizePositive'
+github-issue-89.dfy(145,8): Error: class 'C' does not implement trait lemma 'T.Holds'
+github-issue-89.dfy(162,8): Error: class 'BelowU' does not implement trait lemma 'U.Bound'
+github-issue-89.dfy(191,8): Error: class 'Weaker' does not implement trait function 'T.G'
+github-issue-89.dfy(206,8): Error: class 'C' does not implement trait lemma 'T.NonNegative'
+github-issue-89.dfy(206,8): Error: class 'C' does not implement trait lemma 'T.Positive'
+github-issue-89.dfy(211,8): Error: class 'D' does not implement trait lemma 'T.NonNegative'
+github-issue-89.dfy(211,8): Error: class 'D' does not implement trait lemma 'T.Positive'
+github-issue-89.dfy(206,8): Error: class 'C' does not implement trait lemma 'T.NonNegative'
+github-issue-89.dfy(210,7): Related location: refining module
+github-issue-89.dfy(206,8): Error: class 'C' does not implement trait lemma 'T.Positive'
+github-issue-89.dfy(210,7): Related location: refining module
+github-issue-89.dfy(211,8): Error: class 'D' does not implement trait lemma 'T.Positive'
 github-issue-89.dfy(217,7): Related location: refining module
-github-issue-89.dfy(196,8): Error: class 'C' does not implement trait lemma 'T.Positive'
+github-issue-89.dfy(206,8): Error: class 'C' does not implement trait lemma 'T.Positive'
 github-issue-89.dfy(217,7): Related location: refining module
+github-issue-89.dfy(211,8): Error: class 'D' does not implement trait lemma 'T.NonNegative'
+github-issue-89.dfy(222,7): Related location: refining module
+github-issue-89.dfy(206,8): Error: class 'C' does not implement trait lemma 'T.NonNegative'
+github-issue-89.dfy(222,7): Related location: refining module
+github-issue-89.dfy(206,8): Error: class 'C' does not implement trait lemma 'T.NonNegative'
+github-issue-89.dfy(227,7): Related location: refining module
+github-issue-89.dfy(206,8): Error: class 'C' does not implement trait lemma 'T.Positive'
+github-issue-89.dfy(227,7): Related location: refining module
 25 resolution/type errors detected in github-issue-89.dfy
-github-issue-89.dfy(36,8): Error: class 'C' does not implement trait lemma 'T.foo'
-github-issue-89.dfy(49,8): Error: class 'C' does not implement trait lemma 'T.Positive'
-github-issue-89.dfy(74,8): Error: class 'C' does not implement trait twostate function 'T.Delta'
-github-issue-89.dfy(74,8): Error: class 'C' does not implement trait predicate 'T.Good'
-github-issue-89.dfy(74,8): Error: class 'C' does not implement trait twostate lemma 'T.Grows'
-github-issue-89.dfy(74,8): Error: class 'C' does not implement trait function 'T.Rank'
-github-issue-89.dfy(74,8): Error: class 'C' does not implement trait method 'T.Witness'
-github-issue-89.dfy(103,8): Error: class 'C' does not implement trait function 'T.Get'
-github-issue-89.dfy(114,8): Error: class 'C' does not implement trait lemma 'T.SizePositive'
-github-issue-89.dfy(117,8): Error: class 'D' does not implement trait lemma 'T.SizePositive'
-github-issue-89.dfy(135,8): Error: class 'C' does not implement trait lemma 'T.Holds'
-github-issue-89.dfy(152,8): Error: class 'BelowU' does not implement trait lemma 'U.Bound'
-github-issue-89.dfy(181,8): Error: class 'Weaker' does not implement trait function 'T.G'
-github-issue-89.dfy(196,8): Error: class 'C' does not implement trait lemma 'T.NonNegative'
-github-issue-89.dfy(196,8): Error: class 'C' does not implement trait lemma 'T.Positive'
-github-issue-89.dfy(201,8): Error: class 'D' does not implement trait lemma 'T.NonNegative'
-github-issue-89.dfy(201,8): Error: class 'D' does not implement trait lemma 'T.Positive'
-github-issue-89.dfy(196,8): Error: class 'C' does not implement trait lemma 'T.NonNegative'
-github-issue-89.dfy(200,7): Related location: refining module
-github-issue-89.dfy(196,8): Error: class 'C' does not implement trait lemma 'T.Positive'
-github-issue-89.dfy(200,7): Related location: refining module
-github-issue-89.dfy(201,8): Error: class 'D' does not implement trait lemma 'T.Positive'
-github-issue-89.dfy(207,7): Related location: refining module
-github-issue-89.dfy(196,8): Error: class 'C' does not implement trait lemma 'T.Positive'
-github-issue-89.dfy(207,7): Related location: refining module
-github-issue-89.dfy(201,8): Error: class 'D' does not implement trait lemma 'T.NonNegative'
-github-issue-89.dfy(212,7): Related location: refining module
-github-issue-89.dfy(196,8): Error: class 'C' does not implement trait lemma 'T.NonNegative'
-github-issue-89.dfy(212,7): Related location: refining module
-github-issue-89.dfy(196,8): Error: class 'C' does not implement trait lemma 'T.NonNegative'
+github-issue-89.dfy(46,8): Error: class 'C' does not implement trait lemma 'T.foo'
+github-issue-89.dfy(59,8): Error: class 'C' does not implement trait lemma 'T.Positive'
+github-issue-89.dfy(84,8): Error: class 'C' does not implement trait twostate function 'T.Delta'
+github-issue-89.dfy(84,8): Error: class 'C' does not implement trait predicate 'T.Good'
+github-issue-89.dfy(84,8): Error: class 'C' does not implement trait twostate lemma 'T.Grows'
+github-issue-89.dfy(84,8): Error: class 'C' does not implement trait function 'T.Rank'
+github-issue-89.dfy(84,8): Error: class 'C' does not implement trait method 'T.Witness'
+github-issue-89.dfy(113,8): Error: class 'C' does not implement trait function 'T.Get'
+github-issue-89.dfy(124,8): Error: class 'C' does not implement trait lemma 'T.SizePositive'
+github-issue-89.dfy(127,8): Error: class 'D' does not implement trait lemma 'T.SizePositive'
+github-issue-89.dfy(145,8): Error: class 'C' does not implement trait lemma 'T.Holds'
+github-issue-89.dfy(162,8): Error: class 'BelowU' does not implement trait lemma 'U.Bound'
+github-issue-89.dfy(191,8): Error: class 'Weaker' does not implement trait function 'T.G'
+github-issue-89.dfy(206,8): Error: class 'C' does not implement trait lemma 'T.NonNegative'
+github-issue-89.dfy(206,8): Error: class 'C' does not implement trait lemma 'T.Positive'
+github-issue-89.dfy(211,8): Error: class 'D' does not implement trait lemma 'T.NonNegative'
+github-issue-89.dfy(211,8): Error: class 'D' does not implement trait lemma 'T.Positive'
+github-issue-89.dfy(206,8): Error: class 'C' does not implement trait lemma 'T.NonNegative'
+github-issue-89.dfy(210,7): Related location: refining module
+github-issue-89.dfy(206,8): Error: class 'C' does not implement trait lemma 'T.Positive'
+github-issue-89.dfy(210,7): Related location: refining module
+github-issue-89.dfy(211,8): Error: class 'D' does not implement trait lemma 'T.Positive'
 github-issue-89.dfy(217,7): Related location: refining module
-github-issue-89.dfy(196,8): Error: class 'C' does not implement trait lemma 'T.Positive'
+github-issue-89.dfy(206,8): Error: class 'C' does not implement trait lemma 'T.Positive'
 github-issue-89.dfy(217,7): Related location: refining module
+github-issue-89.dfy(211,8): Error: class 'D' does not implement trait lemma 'T.NonNegative'
+github-issue-89.dfy(222,7): Related location: refining module
+github-issue-89.dfy(206,8): Error: class 'C' does not implement trait lemma 'T.NonNegative'
+github-issue-89.dfy(222,7): Related location: refining module
+github-issue-89.dfy(206,8): Error: class 'C' does not implement trait lemma 'T.NonNegative'
+github-issue-89.dfy(227,7): Related location: refining module
+github-issue-89.dfy(206,8): Error: class 'C' does not implement trait lemma 'T.Positive'
+github-issue-89.dfy(227,7): Related location: refining module
 25 resolution/type errors detected in github-issue-89.dfy
 github-issue-89-audit.dfy(9,19): Warning: Positive: Declaration has explicit `{:axiom}` attribute. Possible mitigation: Provide a proof or test.
 github-issue-89-audit.dfy(9,19): Warning: Positive: Trait axiom: its specification is assumed for every type that extends `T`, without proof. Possible mitigation: Provide a body, or remove `{:axiom}` so that each type that extends the trait implements it.
 github-issue-89-audit.dfy(10,28): Warning: Get: Declaration has explicit `{:axiom}` attribute. Possible mitigation: Provide a proof or test.
 github-issue-89-audit.dfy(10,28): Warning: Get: Trait axiom: every type that extends `T` is assumed to have a function with this signature and specification, without defining it. Possible mitigation: Provide a body, or remove `{:axiom}` so that each type that extends the trait implements it.
-github-issue-89-audit.dfy(13,8): Warning: Inherits: Type inherits trait axiom `M.T.Get` without implementing it. Possible mitigation: Override it with an implementation, or check that the axiom holds for this type.
-github-issue-89-audit.dfy(13,8): Warning: Inherits: Type inherits trait axiom `M.T.Positive` without implementing it. Possible mitigation: Override it with an implementation, or check that the axiom holds for this type.
-github-issue-89-audit.dfy(17,8): Warning: Overrides: Type inherits trait axiom `M.T.Get` without implementing it. Possible mitigation: Override it with an implementation, or check that the axiom holds for this type.
-github-issue-89-audit.dfy(23,8): Warning: Below: Type inherits trait axiom `M.T.Get` without implementing it. Possible mitigation: Override it with an implementation, or check that the axiom holds for this type.
-github-issue-89-audit.dfy(23,8): Warning: Below: Type inherits trait axiom `M.T.Positive` without implementing it. Possible mitigation: Override it with an implementation, or check that the axiom holds for this type.
-Dafny auditor completed with 9 findings
+github-issue-89-audit.dfy(13,26): Warning: Static: Declaration has explicit `{:axiom}` attribute. Possible mitigation: Provide a proof or test.
+github-issue-89-audit.dfy(14,19): Warning: Proved: Declaration has explicit `{:axiom}` attribute. Possible mitigation: Provide a proof or test.
+github-issue-89-audit.dfy(16,8): Warning: Inherits: Type inherits trait axiom `M.T.Get` without implementing it. Possible mitigation: Override it with an implementation, or check that the axiom holds for this type.
+github-issue-89-audit.dfy(16,8): Warning: Inherits: Type inherits trait axiom `M.T.Positive` without implementing it. Possible mitigation: Override it with an implementation, or check that the axiom holds for this type.
+github-issue-89-audit.dfy(20,8): Warning: Overrides: Type inherits trait axiom `M.T.Get` without implementing it. Possible mitigation: Override it with an implementation, or check that the axiom holds for this type.
+github-issue-89-audit.dfy(26,8): Warning: Below: Type inherits trait axiom `M.T.Get` without implementing it. Possible mitigation: Override it with an implementation, or check that the axiom holds for this type.
+github-issue-89-audit.dfy(26,8): Warning: Below: Type inherits trait axiom `M.T.Positive` without implementing it. Possible mitigation: Override it with an implementation, or check that the axiom holds for this type.
+Dafny auditor completed with 11 findings
 
 Dafny program verifier did not attempt verification
 github-issue-89-rejected.dfy(7,20): Error: under --inherited-trait-axioms, {:axiom} is not allowed on compiled method 'M' of trait 'T', which has no body: only a ghost member can be a trait axiom (use {:extern} for a member that is implemented outside Dafny)
 github-issue-89-rejected.dfy(8,22): Error: under --inherited-trait-axioms, {:axiom} is not allowed on compiled function 'F' of trait 'T', which has no body: only a ghost member can be a trait axiom (use {:extern} for a member that is implemented outside Dafny)
 github-issue-89-rejected.dfy(9,23): Error: under --inherited-trait-axioms, {:axiom} is not allowed on compiled predicate 'P' of trait 'T', which has no body: only a ghost member can be a trait axiom (use {:extern} for a member that is implemented outside Dafny)
-github-issue-89-rejected.dfy(16,29): Error: under --inherited-trait-axioms, {:axiom} is not supported on least predicate 'Least' of trait 'T', which has no body: a least predicate cannot be a trait axiom
-github-issue-89-rejected.dfy(17,32): Error: under --inherited-trait-axioms, {:axiom} is not supported on greatest predicate 'Greatest' of trait 'T', which has no body: a greatest predicate cannot be a trait axiom
-github-issue-89-rejected.dfy(18,25): Error: under --inherited-trait-axioms, {:axiom} is not supported on least lemma 'LeastLemma' of trait 'T', which has no body: a least lemma cannot be a trait axiom
-github-issue-89-rejected.dfy(19,28): Error: under --inherited-trait-axioms, {:axiom} is not supported on greatest lemma 'GreatestLemma' of trait 'T', which has no body: a greatest lemma cannot be a trait axiom
-github-issue-89-rejected.dfy(32,8): Error: class 'BelowU' does not implement trait lemma 'U.L'
-github-issue-89-rejected.dfy(39,8): Error: class 'C' inherits a member named 'L' from both trait 'A' and trait 'B'
-github-issue-89-rejected.dfy(48,8): Error: class 'C' does not implement trait function 'T.F'
-github-issue-89-rejected.dfy(48,8): Error: class 'C' does not implement trait lemma 'T.L'
+github-issue-89-rejected.dfy(17,29): Error: under --inherited-trait-axioms, {:axiom} is not supported on least predicate 'Least' of trait 'T', which has no body: a least predicate cannot be a trait axiom
+github-issue-89-rejected.dfy(18,32): Error: under --inherited-trait-axioms, {:axiom} is not supported on greatest predicate 'Greatest' of trait 'T', which has no body: a greatest predicate cannot be a trait axiom
+github-issue-89-rejected.dfy(19,25): Error: under --inherited-trait-axioms, {:axiom} is not supported on least lemma 'LeastLemma' of trait 'T', which has no body: a least lemma cannot be a trait axiom
+github-issue-89-rejected.dfy(20,28): Error: under --inherited-trait-axioms, {:axiom} is not supported on greatest lemma 'GreatestLemma' of trait 'T', which has no body: a greatest lemma cannot be a trait axiom
+github-issue-89-rejected.dfy(33,8): Error: class 'BelowU' does not implement trait lemma 'U.L'
+github-issue-89-rejected.dfy(40,8): Error: class 'C' inherits a member named 'L' from both trait 'A' and trait 'B'
+github-issue-89-rejected.dfy(49,8): Error: class 'C' does not implement trait function 'T.F'
+github-issue-89-rejected.dfy(49,8): Error: class 'C' does not implement trait lemma 'T.L'
 11 resolution/type errors detected in github-issue-89-rejected.dfy
 github-issue-89-rejected.dfy(7,20): Error: under --inherited-trait-axioms, {:axiom} is not allowed on compiled method 'M' of trait 'T', which has no body: only a ghost member can be a trait axiom (use {:extern} for a member that is implemented outside Dafny)
 github-issue-89-rejected.dfy(8,22): Error: under --inherited-trait-axioms, {:axiom} is not allowed on compiled function 'F' of trait 'T', which has no body: only a ghost member can be a trait axiom (use {:extern} for a member that is implemented outside Dafny)
 github-issue-89-rejected.dfy(9,23): Error: under --inherited-trait-axioms, {:axiom} is not allowed on compiled predicate 'P' of trait 'T', which has no body: only a ghost member can be a trait axiom (use {:extern} for a member that is implemented outside Dafny)
-github-issue-89-rejected.dfy(16,29): Error: under --inherited-trait-axioms, {:axiom} is not supported on least predicate 'Least' of trait 'T', which has no body: a least predicate cannot be a trait axiom
-github-issue-89-rejected.dfy(17,32): Error: under --inherited-trait-axioms, {:axiom} is not supported on greatest predicate 'Greatest' of trait 'T', which has no body: a greatest predicate cannot be a trait axiom
-github-issue-89-rejected.dfy(18,25): Error: under --inherited-trait-axioms, {:axiom} is not supported on least lemma 'LeastLemma' of trait 'T', which has no body: a least lemma cannot be a trait axiom
-github-issue-89-rejected.dfy(19,28): Error: under --inherited-trait-axioms, {:axiom} is not supported on greatest lemma 'GreatestLemma' of trait 'T', which has no body: a greatest lemma cannot be a trait axiom
-github-issue-89-rejected.dfy(32,8): Error: class 'BelowU' does not implement trait lemma 'U.L'
-github-issue-89-rejected.dfy(39,8): Error: class 'C' inherits a member named 'L' from both trait 'A' and trait 'B'
-github-issue-89-rejected.dfy(48,8): Error: class 'C' does not implement trait function 'T.F'
-github-issue-89-rejected.dfy(48,8): Error: class 'C' does not implement trait lemma 'T.L'
+github-issue-89-rejected.dfy(17,29): Error: under --inherited-trait-axioms, {:axiom} is not supported on least predicate 'Least' of trait 'T', which has no body: a least predicate cannot be a trait axiom
+github-issue-89-rejected.dfy(18,32): Error: under --inherited-trait-axioms, {:axiom} is not supported on greatest predicate 'Greatest' of trait 'T', which has no body: a greatest predicate cannot be a trait axiom
+github-issue-89-rejected.dfy(19,25): Error: under --inherited-trait-axioms, {:axiom} is not supported on least lemma 'LeastLemma' of trait 'T', which has no body: a least lemma cannot be a trait axiom
+github-issue-89-rejected.dfy(20,28): Error: under --inherited-trait-axioms, {:axiom} is not supported on greatest lemma 'GreatestLemma' of trait 'T', which has no body: a greatest lemma cannot be a trait axiom
+github-issue-89-rejected.dfy(33,8): Error: class 'BelowU' does not implement trait lemma 'U.L'
+github-issue-89-rejected.dfy(40,8): Error: class 'C' inherits a member named 'L' from both trait 'A' and trait 'B'
+github-issue-89-rejected.dfy(49,8): Error: class 'C' does not implement trait function 'T.F'
+github-issue-89-rejected.dfy(49,8): Error: class 'C' does not implement trait lemma 'T.L'
 11 resolution/type errors detected in github-issue-89-rejected.dfy
 github-issue-89-refinement-rejected.dfy(19,19): Error: under --inherited-trait-axioms, a refinement is not allowed to add {:axiom} to lemma 'Interface' of trait 'T' unless it gives it a body: whether types that inherit the member must implement it is fixed where the member is first declared
 github-issue-89-refinement-rejected.dfy(33,13): Error: under --inherited-trait-axioms, {:axiom} is not allowed on compiled function 'Axiom' of trait 'T', which has no body: only a ghost member can be a trait axiom (use {:extern} for a member that is implemented outside Dafny)
@@ -174,6 +176,13 @@ github-issue-89-refinement-rejected.dfy(31,7): Related location: refining module
 github-issue-89-refinement-rejected.dfy(12,19): Error: fully defined function 'Overridden' is inherited from trait 'T' and is not allowed to be re-declared
 github-issue-89-refinement-rejected.dfy(38,7): Related location: refining module
 4 resolution/type errors detected in github-issue-89-refinement-rejected.dfy
+
+Dafny program verifier did not attempt verification
+
+Dafny program verifier did not attempt verification
+github-issue-89-refinement-option-off.dfy(14,19): Error: under --inherited-trait-axioms, a refinement is not allowed to add {:axiom} to lemma 'L' of trait 'T' unless it gives it a body: whether types that inherit the member must implement it is fixed where the member is first declared
+github-issue-89-refinement-option-off.dfy(15,28): Error: under --inherited-trait-axioms, a refinement is not allowed to add {:axiom} to function 'F' of trait 'T' unless it gives it a body: whether types that inherit the member must implement it is fixed where the member is first declared
+2 resolution/type errors detected in github-issue-89-refinement-option-off.dfy
 github-issue-89-general-traits.dfy(21,76): Error: assertion might not hold
 github-issue-89-general-traits.dfy(22,75): Error: assertion might not hold
 
@@ -207,3 +216,8 @@ Dafny program verifier finished with 0 verified, 0 errors
 github-issue-89-client.dfy(7,8): Warning: class 'C' has @AssumeCrossModuleTermination and no {:axiom} annotation: calls dispatched to it through traits of other modules are not checked for termination
 github-issue-89-client.dfy(7,8): Error: class 'C' does not implement trait lemma 'T.SizePositive'
 1 resolution/type errors detected in github-issue-89-client.dfy
+
+Dafny program verifier finished with 0 verified, 0 errors
+
+Dafny program verifier finished with 1 verified, 0 errors
+CLI: Error: cannot load github-issue-89.dfy.tmp-mt.doo under --modular-termination: it was verified with inherited-trait-axioms 'false', but this run uses 'true'; use the same value, or rebuild the library with it

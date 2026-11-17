@@ -45,11 +45,11 @@ public abstract class MemberDecl : Declaration, ISymbol {
   public virtual bool IsOverrideThatAddsBody => OverriddenMember != null;
 
   /// <summary>
-  /// The member was declared in a trait under --inherited-trait-axioms.  The parser sets this from the
-  /// options of the file that declares the member, and cloning and refinement keep it, so a member's
-  /// status as a trait axiom is fixed where it is declared: a library built without the option keeps
-  /// its bodiless {:axiom} trait members as members to implement, also for a client that uses the option
-  /// (https://github.com/erniecohen/dafny/issues/89).
+  /// The member was declared in a trait under --inherited-trait-axioms.  The parser sets this, on the
+  /// members of a trait only, from the options of the file that declares the member, and cloning and
+  /// refinement keep it, so a member's status as a trait axiom is fixed where it is declared: a library
+  /// built without the option keeps its bodiless {:axiom} trait members as members to implement, also
+  /// for a client that uses the option (https://github.com/erniecohen/dafny/issues/89).
   /// </summary>
   public bool DeclaredUnderInheritedTraitAxioms;
 
@@ -58,7 +58,7 @@ public abstract class MemberDecl : Declaration, ISymbol {
   /// not it is of a kind that can be a trait axiom.
   /// </summary>
   public bool IsBodilessAxiomOfTrait =>
-    DeclaredUnderInheritedTraitAxioms && EnclosingClass is TraitDecl && !IsStatic && HasAxiomAttribute &&
+    DeclaredUnderInheritedTraitAxioms && !IsStatic && HasAxiomAttribute &&
     this is (Function { Body: null } or MethodOrConstructor { Body: null });
 
   /// <summary>

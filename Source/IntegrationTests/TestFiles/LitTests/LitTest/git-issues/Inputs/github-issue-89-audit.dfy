@@ -9,6 +9,9 @@ module M {
     lemma {:axiom} Positive() ensures F() > 0
     ghost function {:axiom} Get(): Empty
     lemma Interface() ensures F() == F()
+    // not trait axioms: a static member, and a member with a body
+    static lemma {:axiom} Static() ensures 0 < 1
+    lemma {:axiom} Proved() ensures 0 < 1 { }
   }
   class Inherits extends T {
     ghost function F(): int { 0 }

@@ -947,11 +947,13 @@ namespace Microsoft.Dafny {
     /// first declared.  The merged member keeps the status of the member it refines, and a refinement may not
     /// add {:axiom} to a trait member that stays bodiless: it would change which types must implement the
     /// member.  (A refinement cannot remove {:axiom}, since the merged member keeps the attributes of both.)
+    /// Only a member of a trait has the mark, and a library that has it requires the option of its clients,
+    /// so the mark of the refining member alone says that the rule applies.
     /// </summary>
     void KeepTraitAxiomStatus(TopLevelDeclWithMembers nw, MemberDecl refining, MemberDecl prev, MemberDecl merged) {
       merged.DeclaredUnderInheritedTraitAxioms = prev.DeclaredUnderInheritedTraitAxioms;
-      if (nw is TraitDecl && (refining.DeclaredUnderInheritedTraitAxioms || prev.DeclaredUnderInheritedTraitAxioms) &&
-          !prev.HasStaticKeyword && refining.HasAxiomAttribute && !prev.HasAxiomAttribute &&
+      if (refining.DeclaredUnderInheritedTraitAxioms && !prev.HasStaticKeyword &&
+          refining.HasAxiomAttribute && !prev.HasAxiomAttribute &&
           merged is (Function { Body: null } or MethodOrConstructor { Body: null })) {
         Reporter.Error(MessageSource.RefinementTransformer, "ref_no_added_trait_axiom", refining.Origin,
           $"under --inherited-trait-axioms, a refinement is not allowed to add {{:axiom}} to {prev.WhatKindAndName} of trait '{nw.Name}' unless it gives it a body: " +

@@ -2,6 +2,9 @@
 // RUN: %exits-with 4 %verify --refinement-extends --modular-termination --type-system-refresh=false --general-newtypes=false "%s" >> "%t"
 // RUN: %exits-with 2 %resolve --refinement-extends --modular-termination "%S/Inputs/github-issue-88-modular-termination-rejected.dfy" >> "%t"
 // RUN: %exits-with 2 %resolve --refinement-extends --modular-termination --type-system-refresh=false --general-newtypes=false "%S/Inputs/github-issue-88-modular-termination-rejected.dfy" >> "%t"
+// RUN: %exits-with 0 %baredafny build --target:lib --solver-path %review-z3 --use-basename-for-filename --show-snippets:false --standard-libraries:false --modular-termination "%S/Inputs/github-issue-88-modular-termination-library.dfy" --output "%t-mt.doo" >> "%t"
+// RUN: %exits-with 0 %baredafny verify --solver-path %review-z3 --use-basename-for-filename --show-snippets:false --standard-libraries:false --modular-termination --library "%t-mt.doo" "%S/Inputs/github-issue-88-modular-termination-client.dfy" >> "%t"
+// RUN: %exits-with 1 %baredafny verify --solver-path %review-z3 --use-basename-for-filename --show-snippets:false --standard-libraries:false --modular-termination --refinement-extends --library "%t-mt.doo" "%S/Inputs/github-issue-88-modular-termination-client.dfy" >> "%t"
 // RUN: %diff "%s.expect" "%t"
 
 // Issue 88 with --modular-termination: a parent added in a refinement (--refinement-extends) is
@@ -11,6 +14,10 @@
 // inherited member that becomes an implementation of a member of another module that has no
 // bound must be a leaf (the input file).  Each module that refines is followed by a one-module
 // control that is rejected for the same reason, or accepted with an assert false that fails.
+//
+// The last three RUN lines: under --modular-termination a library and its client agree on
+// --refinement-extends, so a library built without it loads for a client that does not use the
+// option and is refused for one that does.
 //
 // Not covered here: an inherited member that has no bound of its own, gets one from the added
 // parent, and makes a call that the bound forbids.  That is not rejected yet, with or without

@@ -7,6 +7,9 @@
 // RUN: %exits-with 2 %resolve --inherited-trait-axioms --type-system-refresh=false --general-newtypes=false "%S/Inputs/github-issue-89-rejected.dfy" >> "%t"
 // RUN: %exits-with 2 %resolve --inherited-trait-axioms "%S/Inputs/github-issue-89-refinement-rejected.dfy" >> "%t"
 // RUN: %exits-with 2 %resolve --inherited-trait-axioms --type-system-refresh=false --general-newtypes=false "%S/Inputs/github-issue-89-refinement-rejected.dfy" >> "%t"
+// RUN: %resolve "%S/Inputs/github-issue-89-refinement-option-off.dfy" >> "%t"
+// RUN: %resolve --type-system-refresh=false --general-newtypes=false "%S/Inputs/github-issue-89-refinement-option-off.dfy" >> "%t"
+// RUN: %exits-with 2 %resolve --inherited-trait-axioms "%S/Inputs/github-issue-89-refinement-option-off.dfy" >> "%t"
 // RUN: %exits-with 4 %verify --inherited-trait-axioms --general-traits=full "%S/Inputs/github-issue-89-general-traits.dfy" >> "%t"
 // RUN: %exits-with 2 %verify --general-traits=full "%S/Inputs/github-issue-89-general-traits.dfy" >> "%t"
 // RUN: %run --inherited-trait-axioms "%S/Inputs/github-issue-89-run.dfy" >> "%t"
@@ -17,6 +20,9 @@
 // RUN: %exits-with 1 %baredafny verify --solver-path %review-z3 --use-basename-for-filename --show-snippets:false --standard-libraries:false --library "%t-with.doo" "%S/Inputs/github-issue-89-client.dfy" >> "%t"
 // RUN: %exits-with 0 %baredafny build --target:lib --solver-path %review-z3 --use-basename-for-filename --show-snippets:false --standard-libraries:false "%S/Inputs/github-issue-89-library.dfy" --output "%t-without.doo" >> "%t"
 // RUN: %exits-with 2 %baredafny verify --solver-path %review-z3 --use-basename-for-filename --show-snippets:false --standard-libraries:false --inherited-trait-axioms --library "%t-without.doo" "%S/Inputs/github-issue-89-client.dfy" >> "%t"
+// RUN: %exits-with 0 %baredafny build --target:lib --solver-path %review-z3 --use-basename-for-filename --show-snippets:false --standard-libraries:false --modular-termination "%S/Inputs/github-issue-89-modular-termination-library.dfy" --output "%t-mt.doo" >> "%t"
+// RUN: %exits-with 0 %baredafny verify --solver-path %review-z3 --use-basename-for-filename --show-snippets:false --standard-libraries:false --modular-termination --library "%t-mt.doo" "%S/Inputs/github-issue-89-modular-termination-client.dfy" >> "%t"
+// RUN: %exits-with 1 %baredafny verify --solver-path %review-z3 --use-basename-for-filename --show-snippets:false --standard-libraries:false --modular-termination --inherited-trait-axioms --library "%t-mt.doo" "%S/Inputs/github-issue-89-modular-termination-client.dfy" >> "%t"
 // RUN: %diff "%s.expect" "%t"
 // Feature (https://github.com/erniecohen/dafny/issues/89): under --inherited-trait-axioms, a bodiless ghost
 // trait member marked {:axiom} is a trait axiom.  A class, datatype or newtype that inherits it need not
@@ -27,6 +33,10 @@
 // Each use of an inherited axiom below has a control that ends in "assert false" and must fail: the
 // axiom gives its own postcondition and nothing more.  The one exception is the issue's own program,
 // whose axiom is "ensures false".
+//
+// The last three RUN lines: under --modular-termination a library and its client agree on
+// --inherited-trait-axioms, so a library built without it loads for a client that does not use the
+// option and is refused for one that does.
 
 // The issue's program.  With "ensures false", a call proves false, and only a call does.
 module Issue {
@@ -223,12 +233,14 @@ module Stronger refines Base {
 }
 
 // Static members, members with a body, and {:extern} members are as before: {:axiom} on them does not
-// make a trait axiom, and a body is still verified.
+// make a trait axiom, a body is still verified, and a compiled one is not rejected.
 module Unchanged {
   trait T {
     static lemma {:axiom} Static() ensures 0 < 1
+    static method {:axiom} StaticCompiled() returns (r: int) ensures r > 0
     lemma {:axiom} WithBody() ensures 0 < 1 { }
     lemma {:axiom} WithWrongBody() ensures 1 < 0 { }  // error: a body is verified, also with {:axiom}
+    method {:axiom} CompiledWithBody() returns (r: int) ensures r > 0 { r := 1; }
     method {:extern} {:axiom} Extern() returns (r: int) ensures r > 0
   }
   class C extends T { }
