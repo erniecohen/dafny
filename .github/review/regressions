@@ -519,6 +519,10 @@ git-issues/github-issue-337.dfy
 # old rule proved false (https://github.com/erniecohen/dafny/issues/339).
 git-issues/github-issue-339.dfy
 
+# A refining module may bind an inherited abstract import only to a refinement of its target; the
+# old rule proved false (https://github.com/erniecohen/dafny/issues/408).
+git-issues/github-issue-408.dfy
+
 # Datatype and trait in one decreases order under --trait-rank-decreases, and the rank of trait-typed datatype
 # fields under --additional-axioms (https://github.com/erniecohen/dafny/issues/317).
 git-issues/github-issue-317.dfy
@@ -755,6 +759,35 @@ git-issues/github-issue-411.dfy
 
 # The type of an iterator's yield parameter is checked for auto-initialization after the grounding constructors are found: a datatype whose first constructor is recursive is accepted, one declared after the iterator or inherited by a refining module no longer crashes the resolver, and one whose grounding constructor has no compilable value is rejected rather than left null by the compiled iterator; the hidden --legacy-early-yield-parameter-check restores the old check (https://github.com/erniecohen/dafny/issues/445).
 git-issues/github-issue-445.dfy
+
+# A module that replaces a replaceable module may not import it or depend on a module that depends on it; the module graph is acyclic once every use of the replaced module means the replacement, and the old rule let a lemma cycle through the two prove false (https://github.com/erniecohen/dafny/issues/405).
+git-issues/github-issue-405.dfy
+
+# A type parameter whose values may be stored in memory (a mutable field, a store, or an instantiation of such a parameter) may not be instantiated with a type that contains a function reading the heap; a generic class could store such a function that read itself and prove false, through a class, a trait, a datatype wrapper or a nested class. The rule holds across modules, export sets and .doo libraries, and for overriding and refining declarations, with the characteristic (!reads) for a base without a body (https://github.com/erniecohen/dafny/issues/481).
+git-issues/github-issue-481.dfy
+
+# A function with read effects stored in a multi-dimensional array element, or stored in a field, an array element or an iterator's yield parameter as the result of a method call, is rejected like one stored by a plain assignment; the hidden --legacy-function-store-locations restores the old check (https://github.com/erniecohen/dafny/issues/483).
+git-issues/github-issue-483.dfy
+
+# A function that reads nothing, reading a constant whose initializer applies an arrow or calls a function that reads the heap, no longer crashes the verifier; such an initializer is inlined into the function's axioms only when it needs no heap (https://github.com/erniecohen/dafny/issues/485).
+git-issues/github-issue-485.dfy
+
+# A let-such-that expression whose condition depends on the allocation state (a quantifier or comprehension over the allocated objects or over a type parameter's values, a sequence constructor whose initializer reads the heap, "old" around either, a two-state call) has a choice function that takes that heap: two such expressions around an allocation or a heap update do not prove false, and the verifier does not crash (https://github.com/erniecohen/dafny/issues/431).
+git-issues/github-issue-431.dfy
+git-issues/github-issue-431-more.dfy
+
+# A refining module that gives a body to a member without one, closing a call cycle through an inherited call, checks the termination of that call; the base never checked it and the refinement assumed it, so false was provable (https://github.com/erniecohen/dafny/issues/409).
+git-issues/github-issue-409.dfy
+
+# Under --modular-termination, calls in the body of a least or greatest lemma, calls of least and greatest predicates, and co-recursive calls are checked against the caller's global bound; each proved false (https://github.com/erniecohen/dafny/issues/456).
+git-issues/github-issue-456.dfy
+
+# Under --modular-termination, the induction hypothesis of a lemma, of a prefix lemma and of its limit-ordinal case covers only the instances within the lemma's global bound; each proved false (https://github.com/erniecohen/dafny/issues/460).
+git-issues/github-issue-460.dfy
+
+# Soundness gates of the plan for https://github.com/erniecohen/dafny/issues/211: (a) a library verified alone under --modular-termination is not invalidated by a later extension, with both resolvers; (b) every context in which code runs is ordered by the rules, one marked member per context.
+git-issues/github-issue-211-gate-library.dfy
+git-issues/github-issue-211-gate-coverage.dfy
 
 # Bounded callables, milestone 2: bounded.certify, application below the bound, the bound and erase members, admitted named functions, stored values and the divergence kernels, under --modular-termination (https://github.com/erniecohen/dafny/issues/266).
 git-issues/github-issue-266-m2.dfy

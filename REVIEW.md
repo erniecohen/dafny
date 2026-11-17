@@ -887,6 +887,98 @@ test suite it adds a check only to its regression.  Still, as for every soundnes
 The regression is `git-issues/github-issue-411.dfy`; the release note is
 `docs/dev/news/411.fix`.
 
+## Replacements that depend on a client ([issue 405](https://github.com/erniecohen/dafny/issues/405))
+
+A module `R` that replaces a replaceable module `F` could import a client `C` of `F`.  The module
+graph the resolver checks for cycles has the edges `C -> F`, `R -> F` and `R -> C`, and is acyclic.
+But in the compiled program every use of `F` is a use of `R`, so `C` and `R` depended on each other.
+A call from `R` into `C` and a call from `C` into `F` each go to an imported module, which the
+termination checks take to be lower in the module order, so neither was checked: a lemma cycle
+through the two modules proved `false` with no assumption in the program, a function cycle
+overflowed the stack, and two datatypes could each need a value of the other.
+`ReplacementDependencyChecker`, run by `ProgramResolver` once every module has resolved, identifies
+each replaceable module with the modules that replace it and requires the dependencies to stay
+acyclic.  A module depends on the modules it imports, on those nested in it and on the one it
+refines; the dependency of `R` on `F` by `replaces` is the identification itself and is not counted.
+It reads the resolved program, where an import names the module at the end of its path, because the
+resolver's own graph names the first component, in which an import of `A.B` depends on all of `A`.
+The error is reported at the `replaces` clause and shows a shortest path, such as
+`FooImpl -> Bar -> Foo`.  Its kind is **rejects more**: it rejects programs and adds no fact or
+axiom; a program without such a replacement, and every program without a replacement at all, is
+unchanged.  The hidden `--legacy-replacement-cycles` option restores the old rule for comparison
+and migration.  The regression is `git-issues/github-issue-405.dfy`; the release note is
+`docs/dev/news/405.fix`.
+
+## Type parameters stored in memory ([issue 481](https://github.com/erniecohen/dafny/issues/481))
+
+`HigherOrderHeapAllocationChecker` rejects storing a value whose static type contains a function
+with read effects (`~>`) in a mutable field or an array element.  In generic code that static type
+is a type parameter, so a generic class could store a `() ~> bool` in a field of type `T`, the
+stored function could read itself, and a program proved `false`.  The new
+`HigherOrderHeapAllocationCheckerGeneric` runs right after it and infers, for each type parameter of
+the module, whether its values may be stored in memory: it occurs in the type of a mutable field of
+its class, trait or iterator; a store (an assignment or call result into a mutable field, an array
+element or a multi-dimensional array element, or an array initializer) has a value type that
+mentions it; or it occurs in a type argument passed, anywhere in its scope, to a type parameter that
+may be stored (explicit and inferred type arguments, expression types, `extends` clauses, datatype
+constructor arguments, newtype and synonym right-hand sides).  Arrays are not stored by fiat: an
+array's writes are stores in whatever code makes them.  Instantiating a stored type parameter with
+a type that contains a reading function, through datatypes, newtypes and synonyms, is an error that
+names the field or store that makes it stored.  The inferred reason is part of the declaration's
+interface: the cloner copies it, so it survives export sets and abstract imports, whose signatures
+drop bodies, and a `.doo` library is resolved from its source with its bodies.  An overriding
+member, or a declaration in a refining module (bodiless trait methods, and classes and other
+declarations of abstract modules), may store a type parameter only if the member it overrides, or
+the declaration it refines, may.  A base without a body that must allow a store declares its type
+parameter with the new characteristic `(!reads)`, spelled like `(!new)`; it is allowed only on a
+type parameter, and is the only marker the rule adds.
+Its kind is **rejects more**: it adds no fact or axiom, and changes no Boogie program it accepts.
+In a resolution screen of the 3,053 other `.dfy` files of the test suite it rejects
+no program that was accepted; the only negative test whose output changes is `Landin/Knot8.dfy`,
+which gets a second error at the instantiation.  The standard library resolves with no error under
+both resolvers.  Still, as for every soundness fix, the hidden `--legacy-generic-function-stores`
+option restores the old rule for comparison and migration.  The regression is
+`git-issues/github-issue-481.dfy`; the release note is `docs/dev/news/481.fix`.
+
+## Termination of inherited calls in new cycles ([issue 409](https://github.com/erniecohen/dafny/issues/409))
+
+A call between two members of one strongly connected component (SCC) of the call graph gets a
+termination check.  A refining module that gives a body to a member without one can close a cycle
+through a call it inherits: in the base the callee did not call back, so the base made no check,
+and in the refining module the check's origin is inherited, so `Assert` made it an assume.  Lemmas
+proved `false`, and compiled methods recursed forever.  The rule follows the design in
+https://github.com/erniecohen/dafny/pull/397 (`docs/dev/design/xmod-recursion.md`, section 2.5 and
+milestone P2): `BoogieGenerator.InheritedRecursionUnchanged` holds for an SCC when every member has
+a counterpart in the refinement base, all in one module, each member's decreases clause is the
+counterpart's, copied by the refinement (all its expressions at inherited origins), and every call
+between two members is a call between their counterparts in the base's call graph.  The last
+condition makes the counterparts strongly connected in the base, so the base placed the inherited
+call in one SCC and checked it against the same decreases clauses.  Comparing only the caller and
+the callee with the base's SCCs is not enough when a third member joins the cycle.  An inherited
+termination check (and the coarse `IsNonRecursive` check) whose SCC fails the test is wrapped in
+`ForceCheckOrigin` and asserted, at the base's origin with the refining module as a related
+location.  `MustCheckInheritedTermination` decides which copies hold such a call: a member, an
+iterator (whose calls are MoveNext's) or a by-method body, copied from the base, recursive in a
+changed SCC.  `MustVerifyCopy` and the pipeline schedule them as for issues 404 and 411
+(`IsReverifiedInheritedCheck`), with function well-formedness and iterator bodies now marked too,
+also when the base comes from an included file or a library; every other assert of a copied body
+stays assumed.  A refinement that adds no body to a recursive SCC gets the same Boogie program and
+the same tasks as before, with one exception: when the base inferred an empty decreases clause, because
+no parameter's type was then decreasable, the refinement infers it again, and a refinement that gives
+such a type a definition gets a longer clause.  The SCC then counts as changed, and its intra-SCC
+calls are checked against the new clause.  With an empty clause the base can have proved only calls
+that need no decrease, such as a function's reference to itself in its own postcondition, so these
+checks hold where the base's did.
+Its kind is **asserts more**: it rejects programs, by checking an obligation the old rule
+assumed, and adds no fact or axiom.  In the test suite it adds three tasks outside its regression,
+and all of them verify.  One is in `git-issues/github-issue-404.dfy`, whose module `Decreases` closes a cycle
+through an inherited call that decreases, so the new check holds.  Two are in
+`cloudmake/CloudMake-ParallelBuilds.dfy`, where `M1.Union` and `M3.GetCert` mention themselves in their
+postconditions and their refinements define the opaque `State` and `Path`, which re-infers their empty
+decreases clauses.  The hidden `--legacy-inherited-termination-checks` option
+restores the old rule for comparison and migration.  The regression is
+`git-issues/github-issue-409.dfy`; the release note is `docs/dev/news/409.fix`.
+
 ## Comparing crossed component types ([issue 47](https://github.com/erniecohen/dafny/issues/47))
 
 With `--type-system-refresh`, `==`, `!=`, `in`, `!in` and prefix equality required, in their final
@@ -964,3 +1056,55 @@ only programs whose yield types have a default value the compiler makes, and add
 The hidden `--legacy-early-yield-parameter-check` option restores the old check at its old place,
 crashes included, for comparison and migration.  The regression is
 `git-issues/github-issue-445.dfy`; the release note is `docs/dev/news/445.fix`.
+
+## Functions stored through every left-hand side ([issue 483](https://github.com/erniecohen/dafny/issues/483))
+
+`HigherOrderHeapAllocationChecker` rejects storing a value whose type contains a function with
+read effects (`~>`) in memory, so that such a function cannot read itself.  It looked only at a
+`SingleAssignStmt` whose left-hand side is a `MemberSelectExpr` (a field) or a `SeqSelectExpr` (a
+one-dimensional array element).  A multi-dimensional array element (`MultiSelectExpr`) is memory
+too, and a method call (`CallStmt`) stores its out-parameters in its left-hand sides, which may be
+fields, array elements or an iterator's yield parameters.  Through either, a function could read
+itself, and a program proved `false` under both resolvers.  The checker now treats a
+`MultiSelectExpr` left-hand side like the other two, and checks each left-hand side of a call that
+is a memory location against the type of the corresponding out-parameter, with the call's type
+arguments substituted.  Like the plain assignment, which looks at the type of its right-hand side,
+the call is rejected only if the value it stores may contain a reading function, so storing a
+`Pack<() -> bool>` result in a `Pack<() ~> bool>` element is still accepted.  The other ways to
+write memory were already covered: a multi-assignment, a `forall` statement and `:-` resolve to
+`SingleAssignStmt`s; an array initializer makes an array whose type contains `~>`, and storing that
+array is rejected; `:|` supports only local variables; and a constructor's first phase cannot
+assign a `const` field through a call.
+Its kind is **rejects more**: it adds no fact or axiom and changes no Boogie program it accepts.
+In a resolution screen of the other 3,056 `.dfy` files of the test suite, no file changes its exit
+code or its errors, and the standard library resolves with no error under both resolvers.
+Still, as for every soundness fix, the hidden `--legacy-function-store-locations` option restores
+the old check for comparison and migration.  The regression is `git-issues/github-issue-483.dfy`;
+the release note is `docs/dev/news/483.fix`.
+
+## Abstract imports bound to non-refinements ([issue 408](https://github.com/erniecohen/dafny/issues/408))
+
+A module `C refines B` may say which module stands for `B`'s abstract import `import X : A`,
+and the language requires that module to refine `A`: `B`'s proofs were made from `A`'s contracts,
+and `C` inherits them as assumptions.  `RefinementTransformer.PreResolve` accepted any module
+declaration in that place without a check (`CheckIsRefinement` is reached only for declarations
+written with refining notation, which an import never is), so `import X = Other`, where `Other`
+merely has members with `A`'s names, proved `false`.  The transformer now requires the module that
+the new declaration denotes to be `A` or to reach `A` along its chain of `refines` clauses.  An
+alias is followed to the declaration it names, and an abstract import, including an alias of
+another module's abstract import, stands for its original target, not for its signature facade.
+The check runs only where an inherited abstract import is overridden, after the overriding
+declaration has been resolved.  Its kind is **weakens only**: it rejects programs and adds no
+fact or axiom; a program whose bindings refine their targets is unchanged.  The hidden
+`--legacy-unchecked-import-binding` option restores the old rule for comparison and migration.
+It does not check that an export set of the binding reveals what the import's own export set
+does; the import's facade is resolved from the target's signature, and a binding through a
+narrower export set is caught where an inherited member is missing.  The regression is
+`git-issues/github-issue-408.dfy`; the release note is `docs/dev/news/408.fix`.
+The rule is nominal, as in the design drafts of [PR 401](https://github.com/erniecohen/dafny/pull/401)
+and [PR 397](https://github.com/erniecohen/dafny/pull/397).  The reference manual had said the
+binding must "adhere" to the target, and its example bound `import A = Implementation` where
+`Implementation` did not declare `refines`; no structural check of that kind ever existed.  The
+change updates `docs/DafnyRef/Modules.md` §4.6, `docs/DafnyRef/Refinement.md` §10.2,
+`docs/HowToFAQ/FAQImportAbstractModule.md` and `docs/HowToFAQ/onepage.md` to the nominal rule
+and adds `refines Interface` to the example; `docs/OnlineTutorial/Modules.md` already had it.

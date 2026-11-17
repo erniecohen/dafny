@@ -501,7 +501,9 @@ public static class ModularTerminationProducer {
   /// <param name="listed">The node is a candidate premise that the selected trust list names: its {:axiom}
   /// and its missing body are left to the digest match.</param>
   private static string? UncheckedPremise(INode node, bool listed) {
-    if (node is IAttributeBearingDeclaration attributed) {
+    // A prefix predicate or lemma carries Dafny's own {:axiom}, for the axioms that Dafny generates to define it,
+    // and copies of the attributes of its extreme predicate or lemma, which are checked there.
+    if (node is IAttributeBearingDeclaration attributed && node is not (PrefixPredicate or PrefixLemma)) {
       var verify = true;
       if (Attributes.ContainsBool(attributed.Attributes, "verify", ref verify) && !verify) {
         return "is marked {:verify false}";
@@ -740,7 +742,12 @@ public static class ModularTerminationRecords {
     CommonOptionBag.LegacyElidedOverrideChecks,
     CommonOptionBag.LegacySkeletonModifyingCalls,
     CommonOptionBag.LegacyInheritedConstructorFields,
+    CommonOptionBag.LegacyFunctionStoreLocations,
     CommonOptionBag.LegacyEarlyYieldParameterCheck,
+    CommonOptionBag.LegacyReplacementCycles,
+    CommonOptionBag.LegacyGenericFunctionStores,
+    CommonOptionBag.LegacyInheritedTerminationChecks,
+    CommonOptionBag.LegacyUncheckedImportBinding,
     CommonOptionBag.TypeSystemRefresh,
     CommonOptionBag.GeneralTraits,
     CommonOptionBag.GeneralNewtypes,

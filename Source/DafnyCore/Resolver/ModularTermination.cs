@@ -17,9 +17,31 @@ public sealed record TerminationSourceContract(string SlotId, bool IsDispatchSlo
 public static class ModularTermination {
   public const string ClosedAttributeName = "termination_closed";
 
+  /// <summary>
+  /// Whether "trait" carries the legacy form {:termination false}.  Under --modular-termination every trait may be
+  /// extended from any module; the legacy form only exempts the foreign implementations of its members that have no
+  /// declared bound from the leaf rule, as an unchecked premise.
+  /// </summary>
   public static bool IsExtensible(TraitDecl trait) {
     bool termination = true;
     return !trait.IsObjectTrait && Attributes.ContainsBool(trait.Attributes, "termination", ref termination) && !termination;
+  }
+
+  /// <summary>
+  /// Whether "member" is an overridable instance slot of a trait: a call of it is dispatched.
+  /// </summary>
+  public static bool IsDispatchSlot(MemberDecl member) {
+    if (member.IsStatic) {
+      return false;
+    }
+    if (member.TerminationContract is { } contract) {
+      return contract.IsDispatchSlot && contract.IsExtensibleOwner;
+    }
+    return member.EnclosingClass is TraitDecl { IsObjectTrait: false } && member switch {
+      Function f => f.Body == null,
+      Method => true,
+      _ => false
+    };
   }
 
   public static bool HasClosedContract(Declaration declaration) {
@@ -215,20 +237,30 @@ public static class ModularTermination {
 
   /// <summary>
   /// Whether a call to "callee" is dispatched to an implementation that may lie in a module that no
-  /// call graph sees: "callee" is an overridable instance slot of a declared-extensible trait.
+  /// call graph sees: "callee" is an overridable instance slot of a trait (every trait may be extended from any
+  /// module, rule 1 of revision 3).  Such a call uses the callee's global bound, or TOP if it has none (rule 4).
   /// </summary>
   public static bool IsOpenDispatch(MemberDecl callee, HashSet<TraitDecl> openTraits) {
-    if (callee.IsStatic) {
-      return false;
+    return IsDispatchSlot(callee);
+  }
+
+  /// <summary>
+  /// The member, among "member"'s ancestors, whose foreign implementations must be leaves (rule 3), if "member" is
+  /// such a foreign implementation: an ancestor with no global bound, in a trait without the
+  /// legacy form {:termination false}, declared in another module than "member".  A type with the legacy form
+  /// @AssumeCrossModuleTermination is exempt, as an unchecked premise (section 2.4 of the plan).
+  /// </summary>
+  public static MemberDecl? UndeclaredForeignAncestor(MemberDecl member) {
+    if (Attributes.Contains(member.EnclosingClass.Attributes, "AssumeCrossModuleTermination")) {
+      return null;
     }
-    if (callee.TerminationContract is { } contract) {
-      return contract.IsDispatchSlot && contract.IsExtensibleOwner;
+    for (var a = member.OverriddenMember; a != null; a = a.OverriddenMember) {
+      if (a.EnclosingClass is TraitDecl trait && !IsExtensible(trait) && a is ICallable callable && !HasGlobalBound(callable) &&
+          ModuleOf(a) != ModuleOf(member)) {
+        return a;
+      }
     }
-    return callee.EnclosingClass is TraitDecl trait && IsExtensible(trait) && callee switch {
-      Function f => f.Body == null,
-      Method => true,
-      _ => false
-    };
+    return null;
   }
 
   /// <summary>
@@ -270,6 +302,9 @@ public class ModularTerminationAnalysis {
 
   public readonly HashSet<TraitDecl> OpenTraits;
   private readonly HashSet<Declaration> reaching = [];
+  // The nodes that are not leaves (rule 3 of revision 3): those that reach open dispatch, an unknown application or
+  // an imported General contract, themselves or through the code they call.
+  private readonly HashSet<Declaration> nonLeaf = [];
   private readonly Dictionary<ModuleDefinition, VisibilityScope> interfaceScopes = new();
   private readonly ModuleDefinition systemModule;
   // The callees of each node, and, for a node that makes an open dispatch itself, a description of the first one.
@@ -442,6 +477,13 @@ public class ModularTerminationAnalysis {
                 }
                 // A default value is evaluated as part of the call that omits the argument.
                 c.Visit(((ICallable)member).Ins.Where(f => f.DefaultValue != null).Select(f => f.DefaultValue));
+                // A member without a body may be given one by a refining module, and code inherited from this module,
+                // whose calls were checked here, is not checked again there.  So, unless it promises
+                // {:termination_closed}, which a refinement must keep, it is taken to reach a dispatch.
+                if (member is Function { Body: null } or MethodOrConstructor { Body: null } &&
+                    !ModularTermination.IsDispatchSlot(member) && !ModularTermination.HasClosedContract(member)) {
+                  c.BodyToCome();
+                }
               });
               break;
             case ConstantField { Rhs: { } rhs } constant:
@@ -485,6 +527,62 @@ public class ModularTerminationAnalysis {
         }
       }
     }
+    // A node that reaches open dispatch is not a leaf; nor is one that calls a node that is not a leaf.
+    foreach (var node in reaching) {
+      nonLeaf.Add(node);
+    }
+    foreach (var node in nonLeaf) {
+      work.Push(node);
+    }
+    while (work.Count != 0) {
+      var node = work.Pop();
+      if (callers.TryGetValue(node, out var list)) {
+        foreach (var caller in list) {
+          if (nonLeaf.Add(caller)) {
+            work.Push(caller);
+          }
+        }
+      }
+    }
+  }
+
+  /// <summary>
+  /// Whether "declaration" is not a leaf (rule 3 of revision 3): it, or the code it calls, makes a dispatched call
+  /// through a trait, applies a function value whose code is not known, or depends on code of another module that
+  /// does not promise to be a leaf.
+  /// </summary>
+  public bool IsNonLeaf(Declaration declaration) => nonLeaf.Contains(NodeOf(declaration));
+
+  /// <summary>
+  /// If "declaration" is not a leaf, the shortest chain of code by which it is not, for instance
+  /// "'Y.Y.A' -> 'Tr.G' -> dispatch of 'Tr.T.A'"; else null.
+  /// </summary>
+  public string? NonLeafChain(Declaration declaration) {
+    var start = NodeOf(declaration);
+    if (!nonLeaf.Contains(start)) {
+      return null;
+    }
+    var parent = new Dictionary<Declaration, Declaration?> { [start] = null };
+    var queue = new Queue<Declaration>();
+    queue.Enqueue(start);
+    while (queue.Count != 0) {
+      var node = queue.Dequeue();
+      var direct = directDispatch.GetValueOrDefault(node);
+      if (direct != null) {
+        var chain = new List<string> { direct };
+        for (Declaration? n = node; n != null; n = parent[n]) {
+          chain.Add(NodeName(n));
+        }
+        chain.Reverse();
+        return string.Join(" -> ", chain);
+      }
+      foreach (var next in edges.GetValueOrDefault(node, []).Where(nonLeaf.Contains).OrderBy(NodeName, StringComparer.Ordinal)) {
+        if (parent.TryAdd(next, node)) {
+          queue.Enqueue(next);
+        }
+      }
+    }
+    return NodeName(start);
   }
 
   private bool IsOpen(MemberDecl member) {
@@ -492,12 +590,21 @@ public class ModularTerminationAnalysis {
   }
 
   /// <summary>
-  /// The source owner of an evaluation: the iterator for its constructor/Valid/MoveNext protocol,
-  /// otherwise the member itself.
+  /// The source owner of an evaluation: the iterator for its constructor/Valid/MoveNext protocol, the extreme
+  /// predicate or lemma for its prefix predicate or lemma, otherwise the member itself.
   /// </summary>
+  private static Declaration NodeOf(Declaration declaration) {
+    return declaration is MemberDecl member ? NodeOf(member) : declaration;
+  }
+
   private static Declaration NodeOf(MemberDecl member) {
-    return member.EnclosingClass is IteratorDecl iter &&
-           (member == iter.Member_Init || member == iter.Member_Valid || member == iter.Member_MoveNext) ? iter : member;
+    return member switch {
+      // A prefix predicate or lemma is its extreme member's body, run to a depth _k.
+      PrefixPredicate prefix => prefix.ExtremePred,
+      PrefixLemma prefix => prefix.ExtremeLemma,
+      _ => member.EnclosingClass is IteratorDecl iter &&
+           (member == iter.Member_Init || member == iter.Member_Valid || member == iter.Member_MoveNext) ? iter : member
+    };
   }
 
   /// <summary>
@@ -510,6 +617,14 @@ public class ModularTerminationAnalysis {
   }
 
   private bool HasGeneralContract(Declaration node, ModuleDefinition callerModule) {
+    return !ModularTermination.HasClosedContract(node) && HasEvaluationHooks(node, callerModule);
+  }
+
+  /// <summary>
+  /// Whether depending on "node", from "callerModule", may run code of "node"'s module: then, across modules, only a
+  /// public promise says what that code may reach.
+  /// </summary>
+  private bool HasEvaluationHooks(Declaration node, ModuleDefinition callerModule) {
     // Built-in types and operations have no provider-defined evaluation hooks. Arrow
     // requires/reads are checked as applications of their receiver, not imported helpers.
     if (ModularTermination.ModuleOf(node) == systemModule) {
@@ -519,9 +634,8 @@ public class ModularTerminationAnalysis {
                      !node.IsRevealedInScope(scope);
     var structuralHook = node is TopLevelDeclWithMembers type &&
                          (type.Members.OfType<Field>().Any() || type.Traits.Count != 0);
-    return !ModularTermination.HasClosedContract(node) &&
-      (node is MemberDecl || node is AbstractTypeDecl || hiddenType || structuralHook ||
-       node.TerminationContract is { HasEvaluation: true });
+    return node is MemberDecl || node is AbstractTypeDecl || hiddenType || structuralHook ||
+           node.TerminationContract is { HasEvaluation: true };
   }
 
   private bool NeedsGeneral(Declaration node, ModuleDefinition? callerModule) {
@@ -638,6 +752,11 @@ public class ModularTerminationAnalysis {
         Dispatches = true;
         DispatchDescription = description;
       }
+    }
+
+    /// <summary>The member being visited has no body, and a refining module may give it one.</summary>
+    public void BodyToCome() {
+      Dispatch("no body, which a refining module may give it");
     }
 
     private readonly ModuleDefinition? callerModule;
@@ -900,7 +1019,7 @@ public class ModularTerminationRewriter : IRewriter {
           $"{module.FullDafnyName}.{cl.Name}.{member.Name}",
           cl is TraitDecl && !member.HasStaticKeyword && (member is Method || member is Function { Body: null }),
           member is not ConstantField || member is ConstantField { Rhs: not null },
-          cl is TraitDecl owner && ModularTermination.IsExtensible(owner));
+          cl is TraitDecl { IsObjectTrait: false });
       }
     }
   }
@@ -916,6 +1035,7 @@ public class ModularTerminationRewriter : IRewriter {
           CheckExtensibleAncestors(type);
           foreach (var member in type.Members) {
             CheckClosedPromise(member, analysis);
+            CheckForeignImplementation(member, analysis);
           }
         }
         if (decl is not TopLevelDeclWithMembers cl) {
@@ -970,14 +1090,31 @@ public class ModularTerminationRewriter : IRewriter {
       Reporter.Error(MessageSource.Resolver, child.Origin,
         "modular termination: refinement cannot change a trait's declared extensibility");
     }
-    foreach (var ancestor in child.TraitAncestors().Where(a => !a.IsObjectTrait)) {
-      if (!ModularTermination.IsExtensible(ancestor) &&
-          (child.EnclosingModuleDefinition != ancestor.EnclosingModuleDefinition ||
-           child is TraitDecl trait && ModularTermination.IsExtensible(trait))) {
-        Reporter.Error(MessageSource.Resolver, child.Origin,
-          $"modular termination: '{child.Name}' cannot expose sealed ancestor '{ancestor.FullName}'; " +
-          "every non-object ancestor of a foreign implementation or extensible trait must declare {:termination false}");
-      }
+    // Every trait may be extended from any module (rule 1 of revision 3), so no ancestor is sealed.
+  }
+
+  /// <summary>
+  /// Rule 3 of revision 3: a foreign implementation of a member with no declared bound must be a leaf, unless it
+  /// has a bound of its own, declared or inherited from a subtrait.  A declared bound is checked like any other: every call the implementation makes
+  /// must be below it (or, to known code that reaches open dispatch, at most it), so the implementation cannot reach
+  /// a call dispatched to a member without a bound, which is TOP.  The order of bounds has no bottom, and needs none:
+  /// what matters is that bounded code never reaches TOP, so no cycle through an unbounded dispatch can close.
+  /// </summary>
+  private void CheckForeignImplementation(MemberDecl member, ModularTerminationAnalysis analysis) {
+    if (member is not (MethodOrConstructor or Function) || ModularTermination.UndeclaredForeignAncestor(member) is not { } ancestor) {
+      return;
+    }
+    if (ModularTermination.IsDispatchSlot(member) && member is Method { Body: null } or Function { Body: null }) {
+      return; // a bodyless member of a subtrait: its own implementations are checked
+    }
+    var name = ModularTermination.QualifiedName(ancestor);
+    if (ModularTermination.HasGlobalBound((ICallable)member)) {
+      return; // its bound, declared or inherited from a subtrait, is checked at each call it makes
+    }
+    if (analysis.NonLeafChain(member) is { } chain) {
+      Reporter.Error(MessageSource.Resolver, member.Origin,
+        $"modular termination: '{member.Name}' implements '{name}' of another module, which has no 'decreases {{:global}}' bound, " +
+        $"so it must be a leaf or declare a bound, but it is not a leaf ({chain}); declare a bound on '{name}' or on this implementation, or make this implementation a leaf");
     }
   }
 
@@ -987,7 +1124,7 @@ public class ModularTerminationRewriter : IRewriter {
     }
     if (declaration is MemberDecl member && ModularTermination.IsOpenDispatch(member, analysis.OpenTraits)) {
       Reporter.Error(MessageSource.Resolver, declaration.Origin,
-        "modular termination: an extensible trait's overridable slot cannot promise {:termination_closed}; use a proper global bound");
+        "modular termination: a trait's overridable slot cannot promise {:termination_closed}; use a global bound");
     }
     if (declaration is ICallable callable && ModularTermination.HasCallbackBounds(callable)) {
       Reporter.Error(MessageSource.Resolver, declaration.Origin,
