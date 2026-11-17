@@ -1,5 +1,5 @@
-// The divergence kernels K1, K2, K4, K5 and K6 of docs/dev/design/266-bounded-callables.md, section 5.  Each wrong rule
-// would admit a call cycle through a stored bounded value; each must fail at the named obligation.
+// The divergence kernels K1, K2, K4 and K6 of docs/dev/design/266-bounded-callables.md, section 5.  Each wrong rule
+// would admit a call cycle through a stored bounded value; each must fail at the named obligation.  K5 is in github-issue-266-m2-k5.dfy.
 
 // K1: equality transfer, wrapping and narrowing.  The trace would be high(2) -> C.f(1) -> h(0) -> high(2) -> ...
 module K1A {
@@ -115,37 +115,6 @@ module K4 {
   }
   method AndFalse() {
     ghost var cb: Zero := bounded.certify(0, (t: T) requires high(t) && false => 0); // error: 2 <= 0
-  }
-}
-
-// K5: the frame of a lambda runs under its bound too.
-module K5 {
-  trait {:termination false} T extends object {
-    ghost function r(): set<object?>
-      reads *
-      decreases {:global} 1
-  }
-  ghost function highReads(t: T): set<object?>
-    reads *
-    decreases {:global} 2
-  {
-    t.r()
-  }
-  type Zero = h: bounded<nat, T ~> int> | h.bound == 0
-    ghost witness bounded.certify(0, (t: T) => 0)
-  class C extends T {
-    ghost const cb: Zero
-    constructor (ghost h: Zero) { cb := h; }
-    ghost function r(): set<object?>
-      reads *
-    {
-      if cb.requires(this) then cb.reads(this) else {}
-    }
-  }
-  method Main() {
-    ghost var cb: Zero := bounded.certify(0, (t: T) reads highReads(t) => 0); // error: 2 <= 0
-    var c := new C(cb);
-    ghost var footprint := cb.reads(c);
   }
 }
 
