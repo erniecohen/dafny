@@ -800,6 +800,27 @@ that does not make such a read is unchanged.  The hidden `--legacy-first-phase-c
 option restores the old rule for comparison and migration.  The regression is
 `git-issues/github-issue-339.dfy`; the release note is `docs/dev/news/339.fix`.
 
+## Functions that read the heap, stored inside datatypes ([issue 479](https://github.com/erniecohen/dafny/issues/479))
+
+`HigherOrderHeapAllocationChecker` rejects storing, in a field or an array element, a value whose
+type contains a function that reads the heap (`~>`).  Otherwise the function could read itself
+through the field and apply itself, and applying a function value gets no termination check.
+`ContainsRead` looked only at the type and its type arguments, so `datatype W = W(f: () ~> bool)`
+passed as reading-free, and storing `W(knot)`, where `knot` reads the field, proved `false` under
+both resolvers.  `ContainsRead` now also searches the constructor arguments of inductive and
+coinductive datatypes (tuples among them), and the base types of newtypes and subset types, with
+the type arguments substituted.  It stops at arrow types, whose base is the reading arrow, and at
+the types of classes, traits and type parameters.  It searches each declaration once.  Since the
+type arguments of every occurrence are searched where they occur, a recursive or non-regular
+datatype ends the search.  Its kind is **weakens only**: it rejects programs and adds no fact or
+axiom.  Among the test suite's files that mention `~>`, it changes resolution only in its regression
+and in two inputs of `git-issues/github-issue-326.dfy`, `route-subset` and `route-tilde-field`.
+Those inputs store such a function in a datatype to test the rank axioms of arrow-typed fields, and
+they now run under the legacy option.  It changes no resolution in the standard library (its
+sources, `modular-termination`, `orders` and its examples).  The hidden `--legacy-reading-functions-in-datatypes` option restores the old check for comparison and
+migration.  The regression is `git-issues/github-issue-479.dfy`; the release note is
+`docs/dev/news/479.fix`.
+
 ## Override checks in refining modules ([issue 404](https://github.com/erniecohen/dafny/issues/404))
 
 A refining module could strengthen the contract of a trait member, or refine an abstract type into
@@ -865,6 +886,59 @@ test suite it adds a check only to its regression.  Still, as for every soundnes
 `--legacy-inherited-constructor-fields` option restores the old rule for comparison and migration.
 The regression is `git-issues/github-issue-411.dfy`; the release note is
 `docs/dev/news/411.fix`.
+
+## Replacements that depend on a client ([issue 405](https://github.com/erniecohen/dafny/issues/405))
+
+A module `R` that replaces a replaceable module `F` could import a client `C` of `F`.  The module
+graph the resolver checks for cycles has the edges `C -> F`, `R -> F` and `R -> C`, and is acyclic.
+But in the compiled program every use of `F` is a use of `R`, so `C` and `R` depended on each other.
+A call from `R` into `C` and a call from `C` into `F` each go to an imported module, which the
+termination checks take to be lower in the module order, so neither was checked: a lemma cycle
+through the two modules proved `false` with no assumption in the program, a function cycle
+overflowed the stack, and two datatypes could each need a value of the other.
+`ReplacementDependencyChecker`, run by `ProgramResolver` once every module has resolved, identifies
+each replaceable module with the modules that replace it and requires the dependencies to stay
+acyclic.  A module depends on the modules it imports, on those nested in it and on the one it
+refines; the dependency of `R` on `F` by `replaces` is the identification itself and is not counted.
+It reads the resolved program, where an import names the module at the end of its path, because the
+resolver's own graph names the first component, in which an import of `A.B` depends on all of `A`.
+The error is reported at the `replaces` clause and shows a shortest path, such as
+`FooImpl -> Bar -> Foo`.  Its kind is **rejects more**: it rejects programs and adds no fact or
+axiom; a program without such a replacement, and every program without a replacement at all, is
+unchanged.  The hidden `--legacy-replacement-cycles` option restores the old rule for comparison
+and migration.  The regression is `git-issues/github-issue-405.dfy`; the release note is
+`docs/dev/news/405.fix`.
+
+## Type parameters stored in memory ([issue 481](https://github.com/erniecohen/dafny/issues/481))
+
+`HigherOrderHeapAllocationChecker` rejects storing a value whose static type contains a function
+with read effects (`~>`) in a mutable field or an array element.  In generic code that static type
+is a type parameter, so a generic class could store a `() ~> bool` in a field of type `T`, the
+stored function could read itself, and a program proved `false`.  The new
+`HigherOrderHeapAllocationCheckerGeneric` runs right after it and infers, for each type parameter of
+the module, whether its values may be stored in memory: it occurs in the type of a mutable field of
+its class, trait or iterator; a store (an assignment or call result into a mutable field, an array
+element or a multi-dimensional array element, or an array initializer) has a value type that
+mentions it; or it occurs in a type argument passed, anywhere in its scope, to a type parameter that
+may be stored (explicit and inferred type arguments, expression types, `extends` clauses, datatype
+constructor arguments, newtype and synonym right-hand sides).  Arrays are not stored by fiat: an
+array's writes are stores in whatever code makes them.  Instantiating a stored type parameter with
+a type that contains a reading function, through datatypes, newtypes and synonyms, is an error that
+names the field or store that makes it stored.  The inferred reason is part of the declaration's
+interface: the cloner copies it, so it survives export sets and abstract imports, whose signatures
+drop bodies, and a `.doo` library is resolved from its source with its bodies.  An overriding
+member, or a declaration in a refining module (bodiless trait methods, and classes and other
+declarations of abstract modules), may store a type parameter only if the member it overrides, or
+the declaration it refines, may.  A base without a body that must allow a store declares its type
+parameter with the new characteristic `(!reads)`, spelled like `(!new)`; it is allowed only on a
+type parameter, and is the only marker the rule adds.
+Its kind is **rejects more**: it adds no fact or axiom, and changes no Boogie program it accepts.
+In a resolution screen of the 3,053 other `.dfy` files of the test suite it rejects
+no program that was accepted; the only negative test whose output changes is `Landin/Knot8.dfy`,
+which gets a second error at the instantiation.  The standard library resolves with no error under
+both resolvers.  Still, as for every soundness fix, the hidden `--legacy-generic-function-stores`
+option restores the old rule for comparison and migration.  The regression is
+`git-issues/github-issue-481.dfy`; the release note is `docs/dev/news/481.fix`.
 
 ## Termination of inherited calls in new cycles ([issue 409](https://github.com/erniecohen/dafny/issues/409))
 
@@ -957,3 +1031,53 @@ four tests is byte-identical with and without the change, under both resolvers, 
 output.  The four tests are now in `.github/review/regressions`; the release note is
 `docs/dev/news/441.fix`.  The fifth test of the issue, `dafny0/Superposition.legacy.dfy`, is left
 to [issue 436](https://github.com/erniecohen/dafny/issues/436).
+
+## Yield parameters checked after grounding constructors ([issue 445](https://github.com/erniecohen/dafny/issues/445))
+
+The resolver checked that the type of each yield parameter supports auto-initialization in
+`ResolveIteratorSignature`, while `ResolveTopLevelDecls_Signatures` was still resolving the module's
+declarations in source order.  No datatype had a grounding constructor yet, so `Type.GetAutoInit`
+followed its fallback, the first ghost constructor or else the first constructor, and the
+constructors of a datatype declared after the iterator, or inherited by a refining module, still had
+unresolved types.  So a recursive first constructor made a datatype with values look empty, a false
+rejection or, before [issue 413](https://github.com/erniecohen/dafny/issues/413), a stack overflow;
+an unresolved type crashed the resolver; and a first constructor with a compilable value hid a
+grounding constructor without one, as in `datatype D<T> = C1(t: T) | C2(s: S)` with `S` declared
+`witness *`.  The compiler initializes a yield parameter with the default value of its type, made
+with the grounding constructor, so the compiled iterator left such a parameter null, and a verified
+program printed `null` or threw a `NullReferenceException`.  The check now runs in
+`ResolveTopLevelDecls_Core`, right after `SccStratosphereCheck` has found the grounding
+constructors, so it agrees with the compiler and with the checks of class fields and of `(0)` and
+`(00)` type arguments.  Ghost yield parameters are checked the same way, as ghost fields are, and,
+like the other checks in that block, the check is skipped when the module already has errors.  Its
+kind is a **crash and false-rejection fix**, and, for the null values, a soundness fix that **weakens
+only**: it rejects programs whose compiled iterator could read a value it never initialized, accepts
+only programs whose yield types have a default value the compiler makes, and adds no fact or axiom.
+The hidden `--legacy-early-yield-parameter-check` option restores the old check at its old place,
+crashes included, for comparison and migration.  The regression is
+`git-issues/github-issue-445.dfy`; the release note is `docs/dev/news/445.fix`.
+
+## Functions stored through every left-hand side ([issue 483](https://github.com/erniecohen/dafny/issues/483))
+
+`HigherOrderHeapAllocationChecker` rejects storing a value whose type contains a function with
+read effects (`~>`) in memory, so that such a function cannot read itself.  It looked only at a
+`SingleAssignStmt` whose left-hand side is a `MemberSelectExpr` (a field) or a `SeqSelectExpr` (a
+one-dimensional array element).  A multi-dimensional array element (`MultiSelectExpr`) is memory
+too, and a method call (`CallStmt`) stores its out-parameters in its left-hand sides, which may be
+fields, array elements or an iterator's yield parameters.  Through either, a function could read
+itself, and a program proved `false` under both resolvers.  The checker now treats a
+`MultiSelectExpr` left-hand side like the other two, and checks each left-hand side of a call that
+is a memory location against the type of the corresponding out-parameter, with the call's type
+arguments substituted.  Like the plain assignment, which looks at the type of its right-hand side,
+the call is rejected only if the value it stores may contain a reading function, so storing a
+`Pack<() -> bool>` result in a `Pack<() ~> bool>` element is still accepted.  The other ways to
+write memory were already covered: a multi-assignment, a `forall` statement and `:-` resolve to
+`SingleAssignStmt`s; an array initializer makes an array whose type contains `~>`, and storing that
+array is rejected; `:|` supports only local variables; and a constructor's first phase cannot
+assign a `const` field through a call.
+Its kind is **rejects more**: it adds no fact or axiom and changes no Boogie program it accepts.
+In a resolution screen of the other 3,056 `.dfy` files of the test suite, no file changes its exit
+code or its errors, and the standard library resolves with no error under both resolvers.
+Still, as for every soundness fix, the hidden `--legacy-function-store-locations` option restores
+the old check for comparison and migration.  The regression is `git-issues/github-issue-483.dfy`;
+the release note is `docs/dev/news/483.fix`.
