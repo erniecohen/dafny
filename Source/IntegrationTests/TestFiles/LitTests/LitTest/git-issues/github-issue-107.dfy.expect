@@ -134,9 +134,19 @@ github-issue-107-cycle.dfy(5,7): Error: module definition contains a cycle (note
 github-issue-107-cycle.dfy(9,7): Error: module definition contains a cycle (note: parent modules implicitly depend on submodules): module Outer -> module Inner -> module X -> module Outer
 github-issue-107-cycle.dfy(15,7): Error: module definition contains a cycle (note: parent modules implicitly depend on submodules): module A -> module X -> module B -> module Y -> module A
 4 resolution/type errors detected in github-issue-107-cycle.dfy
-github-issue-107.dfy(56,11): Error: rbrace expected
+
+Dafny program verifier finished with 20 verified, 0 errors
+
+Dafny program verifier finished with 20 verified, 0 errors
+github-issue-107-inherited-rejected.dfy(38,9): Error: a module (A) can only be replaced by a refinement of the original module
+github-issue-107-inherited-rejected.dfy(51,16): Error: incorrect argument type for function parameter 't' (expected T, found T)
+2 resolution/type errors detected in github-issue-107-inherited-rejected.dfy
+github-issue-107-inherited-rejected.dfy(38,9): Error: a module (A) can only be replaced by a refinement of the original module
+github-issue-107-inherited-rejected.dfy(51,16): Error: incorrect argument type for function parameter 't' (expected T, found B.T)
+2 resolution/type errors detected in github-issue-107-inherited-rejected.dfy
+github-issue-107.dfy(61,11): Error: rbrace expected
 1 parse errors detected in github-issue-107.dfy
-github-issue-107.dfy(56,11): Error: rbrace expected
+github-issue-107.dfy(61,11): Error: rbrace expected
 1 parse errors detected in github-issue-107.dfy
 
 Dafny program verifier finished with 10 verified, 0 errors

@@ -8,6 +8,10 @@
 // RUN: %exits-with 2 %verify --copy-imports --type-system-refresh=false --general-newtypes=false "%S/Inputs/github-issue-107-names.dfy" >> "%t"
 // RUN: %exits-with 2 %verify --copy-imports "%S/Inputs/github-issue-107-cycle.dfy" >> "%t"
 // RUN: %exits-with 2 %verify --copy-imports --type-system-refresh=false --general-newtypes=false "%S/Inputs/github-issue-107-cycle.dfy" >> "%t"
+// RUN: %verify --copy-imports "%S/Inputs/github-issue-107-inherited.dfy" >> "%t"
+// RUN: %verify --copy-imports --type-system-refresh=false --general-newtypes=false "%S/Inputs/github-issue-107-inherited.dfy" >> "%t"
+// RUN: %exits-with 2 %verify --copy-imports "%S/Inputs/github-issue-107-inherited-rejected.dfy" >> "%t"
+// RUN: %exits-with 2 %verify --copy-imports --type-system-refresh=false --general-newtypes=false "%S/Inputs/github-issue-107-inherited-rejected.dfy" >> "%t"
 // RUN: %exits-with 2 %verify "%s" >> "%t"
 // RUN: %exits-with 2 %verify --type-system-refresh=false --general-newtypes=false "%s" >> "%t"
 // RUN: %run --copy-imports --target cs "%S/Inputs/github-issue-107-run.dfy" >> "%t"
@@ -27,7 +31,8 @@
 // constants have the definitions that Q gives them.  A module that refines the importing module
 // gets copies of its own.  This file holds the uses that are accepted, under both resolvers.
 // The inputs hold: lemmas that say two copies are the same, which the verifier rejects; the
-// declarations that the resolver rejects; a program that is compiled and run, and printed and
+// declarations that the resolver rejects; a copy that takes the place of an inherited abstract
+// import, and the checks that are and are not made again for a copy; a program that is compiled and run, and printed and
 // run again; and a library that uses copying imports, used by a module that refines one of the
 // library's modules.  Without the option, the syntax is a parse error as before, and a library
 // built with the option does not load.

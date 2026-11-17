@@ -307,8 +307,13 @@ with the name of a copying import that it inherits. Through an abstract import `
 the types of `I.Requests` are known neither to be the types of `Client.Requests` nor to differ
 from them.
 
-**Verification and compilation.** A copy adds nothing to verify: what is proved in `Q` is not
-proved again for `X`. Each copy is a module of the compiled program.
+A copying import in a refining module can take the place of an abstract import `import A : B`
+that the module inherits. As for any module that replaces an abstract import, the copied module
+must be `B` or a refinement of `B`.
+
+**Verification and compilation.** What is proved in `Q` is not proved again for `X`. There is one
+exception: if `Q` has a copying import and a class of `Q` extends a trait of that copy, then the
+check that the class's members agree with the trait's is made again for each copy of `Q`. Each copy is a module of the compiled program.
 
 **Restrictions.**
 

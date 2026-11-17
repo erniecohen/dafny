@@ -1316,11 +1316,29 @@ signature: `I` may be any refinement of `M`, each of which has copies of its own
 `I.X` are known neither to be those of `M.X` nor to differ from them.  The controls of the
 regression test fail in both directions.
 
+*Binding an abstract import.*  A copying import in a refining module may take the place of an
+abstract import `import A : B` that the module inherits, as a nested module may.  The rule of
+https://github.com/erniecohen/dafny/issues/408 applies to it unchanged: the copy refines the
+module it copies, so `import A := R` is accepted when `R` is `B` or refines it, and is otherwise
+the error `a module (A) can only be replaced by a refinement of the original module`.  The
+regression test has both cases.
+
 *Proof cost.*  The verifier does not verify the members that a refining module inherits
-unchanged, so a copy adds no proof.  The regression test has a module with six copies of a module
-with a lemma; the count of proofs in its expected output would change if copies were verified.
-A change that makes refining modules verify inherited members again must decide what it does for
-copies.
+unchanged, so a copy adds no proof, with one exception.  The checks that a refining module makes
+again for an inherited member are those of https://github.com/erniecohen/dafny/issues/404 (an
+override whose overridden member is not the one the refined module checked),
+https://github.com/erniecohen/dafny/issues/411 (a constructor of a class to which the module
+added a field) and https://github.com/erniecohen/dafny/issues/409 (the termination of a group of
+recursive members that the module changed).  A copy has no declaration of its own, so the last
+two do not apply to it, and the first applies in one case: `Q` has a copying import `Y`, and a
+class of `Q` extends a trait of `Y`.  In a copy `X` of `Q` the trait belongs to the new copy
+`X.Y`, which is not the module that `Q` checked the class against, so the check of each override
+is made again, once for each copy of `Q`.  The same check is made for a written-out
+`module X refines Q { }`.  It is redundant, because `X.Y` and `Q.Y` copy the same module, and it
+is kept because the rule that makes it is the simple one.  The regression test has six copies of
+a module with a lemma, six copies of a module with an override, a constructor and a recursive
+function, which add no proof, and four copies of a module of the excepted kind, which add one
+proof each.
 
 *Libraries.*  The option is recorded in a library, and a library built with it is loaded only
 under it, with the error `--copy-imports is set locally to False, but the library was built with
