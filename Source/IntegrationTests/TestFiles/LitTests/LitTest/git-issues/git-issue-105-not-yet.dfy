@@ -1,6 +1,6 @@
 // Member invariants (https://github.com/erniecohen/dafny/issues/105): "raw" is parsed and printed
-// for every type, but supported only for a datatype or a class so far, and an invariant body must be
-// a boolean expression.
+// for every type, but supported only for a datatype, a class or a trait so far, and an invariant body
+// must be a boolean expression.
 // RUN: %exits-with 2 %resolve --member-invariants --print "%t.dfy" "%s" > "%t"
 // RUN: %exits-with 2 %resolve --member-invariants "%t.dfy" >> "%t"
 // RUN: %diff "%s.expect" "%t"
@@ -26,6 +26,12 @@ module RawTypes {
   }
 
   method N(t: raw Named, u: seq<raw Named?>, v: raw Cell?) { }
+
+  newtype Small = x: int | x < 10 {
+    invariant x > 0
+  }
+
+  method S(s: raw Small) { }
 }
 
 module NotBool {

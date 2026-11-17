@@ -522,8 +522,8 @@ NoGhost - disable printing of functions, ghost methods, and proof
 
     private void PrintSubsetTypeDecl(SubsetTypeDecl dd, int indent) {
       Indent(indent);
-      // Issue 105: the type derived from a class with member invariants is named "C?"
-      var name = dd is InvariantTypeDecl { Owner: ClassLikeDecl } ? dd.Name + "?" : dd.Name;
+      // Issue 105: the type derived from a class or reference trait with member invariants is named "C?"
+      var name = dd is InvariantTypeDecl invariantTypeDecl && InvariantTypeDecl.IsReferenceType(invariantTypeDecl.Owner) ? dd.Name + "?" : dd.Name;
       PrintClassMethodHelper("type", dd.Attributes, name + TPCharacteristicsSuffix(dd.Characteristics), dd.TypeArgs);
       wr.Write(" = ");
       wr.Write(dd.Var.DisplayName);
@@ -742,7 +742,8 @@ NoGhost - disable printing of functions, ghost methods, and proof
       }
 
       if (options.DafnyPrintResolvedFile != null && c.InvariantTypeDecl != null) {
-        // Issue 105: the type "C?" that the name of a class with member invariants denotes
+        // Issue 105: the type "C?" that the name of a class or reference trait with member invariants denotes, or the type
+        // G that the name of a general trait denotes
         if (!printingExportSet) {
           Indent(indent); wr.WriteLine("/*-- type with member invariants");
         }

@@ -847,3 +847,13 @@ git-issues/git-issue-105-class-witness.dfy
 git-issues/git-issue-105-class-compile.dfy
 git-issues/git-issue-105-exports.dfy
 git-issues/git-issue-105-class-exports.dfy
+# Sixth stage: verification of traits, reference and general (inherited invariants, raw parent types,
+# type tests, joins and receivers), the order of well-formedness assumptions, and what stays behind
+# the gate (https://github.com/erniecohen/dafny/issues/105).
+git-issues/git-issue-105-traits.dfy
+git-issues/git-issue-105-general-traits.dfy
+git-issues/git-issue-105-trait-errors.dfy
+git-issues/git-issue-105-trait-witness.dfy
+git-issues/git-issue-105-wellformedness.dfy
+git-issues/git-issue-105-trait-compile.dfy
+git-issues/git-issue-105-trait-gates.dfy

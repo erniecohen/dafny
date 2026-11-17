@@ -350,6 +350,10 @@ public class UserDefinedType : NonProxyType, IHasReferences {
   /// </summary>
   [CanBeNull]
   public TraitDecl AsParentTraitDecl() {
+    if (IsRawSyntax) {
+      // Issue 105: an extends clause names a trait, not its raw type
+      return null;
+    }
     // If .Name == "Tr" and "Tr" is a reference-type trait, then .ResolvedClass will be a NonNullTypeDecl
     // whose .ViewAsClass is that trait declaration we're looking for.
     if (ResolvedClass is NonNullTypeDecl { ViewAsClass: TraitDecl trait0 }) {
@@ -362,6 +366,11 @@ public class UserDefinedType : NonProxyType, IHasReferences {
     if (ResolvedClass is TraitDecl trait1 && trait1.Name == Name) {
       Contract.Assert(!trait1.IsReferenceTypeDecl);
       return trait1;
+    }
+    // Issue 105: if "Tr" is a general trait with member invariants, .ResolvedClass is its derived InvariantTypeDecl
+    if (ResolvedClass is InvariantTypeDecl { Owner: TraitDecl trait2 } && trait2.Name == Name) {
+      Contract.Assert(!trait2.IsReferenceTypeDecl);
+      return trait2;
     }
     return null;
   }

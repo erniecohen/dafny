@@ -1448,6 +1448,7 @@ MethodSpec<.bool isGhost, List<AttributedExpression> req, List<FrameExpression> 
      Contract.Requires(Cce.NonNullElements(mod));
      Contract.Requires(Cce.NonNullElements(ens));
      Contract.Requires(Cce.NonNullElements(decreases));
+     RetagMemberKeyword(); // a member invariant or witness may follow a method without a body (issue 105)
   .)
   SYNC
   { ReadsClause<reads, ref readsAttrs, false, false, true>
@@ -2117,6 +2118,7 @@ FunctionSpec<.List<AttributedExpression> reqs, List<FrameExpression> reads, List
 = (. Contract.Requires(Cce.NonNullElements(reqs));
      Contract.Requires(Cce.NonNullElements(reads));
      Contract.Requires(decreases == null || Cce.NonNullElements(decreases));
+     RetagMemberKeyword(); // a member invariant or witness may follow a function without a body (issue 105)
   .)
   SYNC
   { RequiresClause<reqs, true>

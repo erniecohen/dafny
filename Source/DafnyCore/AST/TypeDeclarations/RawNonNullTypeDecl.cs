@@ -6,8 +6,9 @@ namespace Microsoft.Dafny;
 /// <summary>
 /// Issue 105 (--member-invariants): for a class C with member invariants, the type "raw C", whose values are the
 /// non-null references whose dynamic type is C, whether or not they satisfy the invariants. Its base is "raw C?",
-/// the class declaration itself, and it is a subtype of that and of nothing else: not of "object", and not of a
-/// parent trait. C is a subtype of "raw C" (see NonNullTypeDecl.ParentTypes).
+/// the class declaration itself, and it is a subtype of that and of the raw non-null types of the parent traits that
+/// have invariants ("raw P"), and of nothing else: not of "object", and not of another parent trait. C is a subtype of
+/// "raw C" (see NonNullTypeDecl.ParentTypes). A reference trait with member invariants has one too.
 ///
 /// Like the derived type "C?" (an InvariantTypeDecl), it is not registered under a name of its own. The resolver
 /// maps "raw C", written as a type, to it.
@@ -23,6 +24,10 @@ public class RawNonNullTypeDecl : NonNullTypeDecl {
   }
 
   public override List<Type> ParentTypes(List<Type> typeArgs, bool includeTypeBounds) {
-    return [RhsWithArgument(typeArgs)];
+    var result = new List<Type> { RhsWithArgument(typeArgs) };
+    foreach (var rawParent in Class.RawParentTypesWithInvariants(typeArgs)) {
+      result.Add(UserDefinedType.CreateNonNullTypeIfReferenceType((UserDefinedType)rawParent));
+    }
+    return result;
   }
 }

@@ -1,7 +1,7 @@
 // Member invariants (https://github.com/erniecohen/dafny/issues/105): "raw D" and raw members of a
 // datatype that extends traits, directly, through a diamond and generically, and of mutually
 // recursive datatypes. A raw value converts to a parent trait as to D itself: the resolver accepts
-// the conversion, and the verifier is to check it.
+// the conversion, and the verifier checks it (git-issue-105-general-traits.dfy).
 // RUN: %resolve --member-invariants --print-mode NoIncludes --rprint:- "%s" > "%t"
 // RUN: %diff "%s.expect" "%t"
 

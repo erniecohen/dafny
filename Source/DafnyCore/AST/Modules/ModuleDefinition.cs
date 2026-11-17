@@ -510,6 +510,7 @@ Generate module names in the older A_mB_mC style instead of the current A.B.C sc
     resolver.moduleInfo = ModuleResolver.MergeSignature(sig, resolver.ProgramResolver.SystemModuleManager.systemNameInfo);
     Type.PushScope(resolver.moduleInfo.VisibilityScope);
     ModuleResolver.ResolveOpenedImports(resolver.moduleInfo, this, resolver.Reporter, resolver); // opened imports do not persist
+    resolver.CreateInheritedInvariantTypeDecls(this);
     var datatypeDependencies = new Graph<IndDatatypeDecl>();
     var codatatypeDependencies = new Graph<CoDatatypeDecl>();
     var allDeclarations = AllDeclarationsAndNonNullTypeDecls(TopLevelDecls).ToList();
@@ -853,12 +854,6 @@ Generate module names in the older A_mB_mC style instead of the current A.B.C sc
         var cl = (ClassLikeDecl)d;
         var preMemberErrs = resolver.reporter.Count(ErrorLevel.Error);
 
-        if (cl.InvariantTypeDecl == null && InvariantTypeDecl.Applies(cl)) {
-          // Issue 105: "C?" and "raw C" for a class with member invariants
-          cl.InvariantTypeDecl = new InvariantTypeDecl(cl);
-          cl.RawNonNullTypeDecl = new RawNonNullTypeDecl(cl);
-        }
-
         // register the names of the class members
         var members = new Dictionary<string, MemberDecl>();
         resolver.AddClassMembers(cl, members);
@@ -974,6 +969,17 @@ Generate module names in the older A_mB_mC style instead of the current A.B.C sc
     }
 
     DetermineReferenceTypes(resolver, sig);
+
+    // Issue 105: "C?" and "raw C" for a class or reference trait with member invariants, or the derived type G of a
+    // general trait. This waits for DetermineReferenceTypes, which decides which traits are reference types.
+    foreach (var cl in TopLevelDecls.OfType<ClassLikeDecl>()) {
+      if (cl.InvariantTypeDecl == null && InvariantTypeDecl.Applies(cl)) {
+        cl.InvariantTypeDecl = new InvariantTypeDecl(cl);
+        if (cl.NonNullTypeDecl != null) {
+          cl.RawNonNullTypeDecl = new RawNonNullTypeDecl(cl);
+        }
+      }
+    }
 
     // Now, for each reference type (class and some traits), register its possibly-null type.
     // In the big loop above, each class and trait was registered under its own name. We're now going to change that for the reference types.

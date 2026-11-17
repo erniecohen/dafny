@@ -63,8 +63,9 @@ public class InvariantTypeDecl : SubsetTypeDecl {
   private InvariantTypeDecl(TopLevelDeclWithMembers owner, List<TypeParameter> tps, BoundVar var, MemberWitness? witness)
     : base(owner.Origin, owner.NameNode,
       new TypeParameterCharacteristics(TypeParameter.EqualitySupportValue.Unspecified, AutoInit(owner, witness), false),
-      tps, owner.EnclosingModuleDefinition, var, Constraint(owner, var), WitnessKindOf(owner, witness), WitnessReference(owner, tps, witness), null) {
+      tps, owner.EnclosingModuleDefinition, var, OwnConstraintOf(owner, var), WitnessKindOf(owner, witness), WitnessReference(owner, tps, witness), null) {
     Owner = owner;
+    OwnConstraint = Constraint;
     if (witness is { ExplicitType: null }) {
       // As if the witness had been written "static const witness#k: D<X, ...> := e", where X, ... are the type
       // parameters of the owner.
@@ -92,8 +93,7 @@ public class InvariantTypeDecl : SubsetTypeDecl {
   }
 
   /// <summary>
-  /// Whether "owner" is a class (or, later, a reference trait), whose derived declaration is the possibly-null type
-  /// "C?".
+  /// Whether "owner" is a class or a reference trait, whose derived declaration is the possibly-null type "C?".
   /// </summary>
   public static bool IsReferenceType(TopLevelDeclWithMembers owner) {
     return owner is ClassLikeDecl { NonNullTypeDecl: not null };
@@ -136,12 +136,16 @@ public class InvariantTypeDecl : SubsetTypeDecl {
   }
 
   /// <summary>
-  /// The conjunction of the invariants, applied to "var", and for a reference type, "var != null ==>" that. The
-  /// reserved names of the invariants cannot be written in source, but name resolution finds them like any other
-  /// member.
+  /// The conjunction of the invariants that "owner" declares, applied to "var", and for a reference type, "var != null
+  /// ==>" that. The reserved names of the invariants cannot be written in source, but name resolution finds them like
+  /// any other member. A declaration that declares no invariant but inherits some has the constraint "true" until
+  /// SetInheritedInvariants gives it the inherited ones.
   /// </summary>
-  private static Expression Constraint(TopLevelDeclWithMembers owner, BoundVar var) {
-    var invariants = Invariants(owner, var);
+  private static Expression OwnConstraintOf(TopLevelDeclWithMembers owner, BoundVar var) {
+    return Guarded(owner, var, Invariants(owner, var) ?? new LiteralExpr(owner.Origin, true));
+  }
+
+  private static Expression Guarded(TopLevelDeclWithMembers owner, BoundVar var, Expression invariants) {
     if (!IsReferenceType(owner)) {
       return invariants;
     }
@@ -150,17 +154,90 @@ public class InvariantTypeDecl : SubsetTypeDecl {
       new BinaryExpr(tok, BinaryExpr.Opcode.Neq, new IdentifierExpr(tok, var), new LiteralExpr(tok)), invariants);
   }
 
-  private static Expression Invariants(TopLevelDeclWithMembers owner, BoundVar var) {
+  private static Expression? Invariants(TopLevelDeclWithMembers owner, BoundVar var) {
     Expression? constraint = null;
     foreach (var invariant in Invariants(owner)) {
-      var tok = invariant.Origin;
-      Expression call = new ApplySuffix(tok, null,
-        new ExprDotName(tok, new IdentifierExpr(tok, var), new Name(tok, invariant.Name), null),
-        [], Token.NoToken);
-      constraint = constraint == null ? call : new BinaryExpr(tok, BinaryExpr.Opcode.And, constraint, call);
+      constraint = Conjoin(constraint, Application(invariant, new IdentifierExpr(invariant.Origin, var)));
     }
-    Contract.Assert(constraint != null); // see Applies
     return constraint;
+  }
+
+  private static Expression Conjoin(Expression? conjunction, Expression conjunct) {
+    return conjunction == null ? conjunct : new BinaryExpr(conjunct.Origin, BinaryExpr.Opcode.And, conjunction, conjunct);
+  }
+
+  /// <summary>
+  /// The application of "invariant" to "receiver", unresolved.
+  /// </summary>
+  private static Expression Application(MemberInvariant invariant, Expression receiver) {
+    var tok = invariant.Origin;
+    return new ApplySuffix(tok, null, new ExprDotName(tok, receiver, new Name(tok, invariant.Name), null), [], Token.NoToken);
+  }
+
+  /// <summary>
+  /// The constraint as the owner's own invariants give it, before SetInheritedInvariants.
+  /// </summary>
+  private readonly Expression OwnConstraint;
+
+  /// <summary>
+  /// The invariants that the owner inherits from the traits it extends, directly or not, in the order in which the
+  /// constraint conjoins them, each with the trait that declares it as the raw type of a receiver ("raw P", or for a
+  /// general trait, "raw G"), instantiated in terms of the owner's type parameters. Empty until the extends clauses are
+  /// resolved (see SetInheritedInvariants).
+  /// </summary>
+  public List<(MemberInvariant Invariant, UserDefinedType Receiver)> InheritedInvariants { get; private set; } = [];
+
+  /// <summary>
+  /// Set the inherited invariants (see InheritedInvariants), and with them the constraint: the inherited invariants,
+  /// each "(v as raw P&lt;A&gt;).invariant#k()", followed by those the owner declares, and for a reference type, guarded
+  /// by "v != null". The receiver types are pre-resolved, so name resolution finds each invariant in the trait that
+  /// declares it, even where the owner declares an invariant with the same reserved name.
+  /// </summary>
+  public void SetInheritedInvariants(List<(MemberInvariant Invariant, UserDefinedType Receiver)> inherited) {
+    InheritedInvariants = inherited;
+    if (inherited.Count == 0) {
+      Constraint = OwnConstraint;
+      return;
+    }
+    var subst = TypeParameter.SubstitutionMap(Owner.TypeArgs, TypeArgs.ConvertAll(tp => (Type)new UserDefinedType(tp)));
+    Expression? conjunction = null;
+    foreach (var (invariant, receiver) in inherited) {
+      var tok = invariant.Origin;
+      var receiverType = (UserDefinedType)receiver.Subst(subst);
+      conjunction = Conjoin(conjunction, Application(invariant, new ConversionExpr(tok, new IdentifierExpr(tok, Var), receiverType)));
+    }
+    var own = Invariants(Owner, Var);
+    Constraint = Guarded(Owner, Var, own == null ? conjunction! : Conjoin(conjunction, own));
+  }
+
+  /// <summary>
+  /// The invariants that come before "invariant" in the constraint of the type that declares it, resolved and applied
+  /// to "this": those the type inherits, each "(this as raw P&lt;A&gt;).invariant#k()", then its own with smaller numbers.
+  /// The well-formedness check of "invariant" assumes them, as that of a requires clause assumes the clauses before it.
+  /// </summary>
+  public static IEnumerable<Expression> EarlierInvariants(MemberInvariant invariant) {
+    var owner = (TopLevelDeclWithMembers)invariant.EnclosingClass;
+    if (owner.InvariantTypeDecl is not { } invariantTypeDecl) {
+      yield break;
+    }
+    var tok = invariant.Origin;
+    var typeArgs = owner.TypeArgs.ConvertAll(tp => (Type)new UserDefinedType(tp));
+    var thisExpr = new ThisExpr(tok) { Type = invariantTypeDecl.RawThisType(tok, typeArgs) };
+    foreach (var (inherited, receiver) in invariantTypeDecl.InheritedInvariants) {
+      yield return ResolvedApplication(inherited, new ConversionExpr(tok, thisExpr, receiver) { Type = receiver }, receiver.TypeArgs);
+    }
+    foreach (var earlier in Invariants(owner).TakeWhile(other => other.Number < invariant.Number)) {
+      yield return ResolvedApplication(earlier, thisExpr, typeArgs);
+    }
+  }
+
+  private static FunctionCallExpr ResolvedApplication(MemberInvariant invariant, Expression receiver, List<Type> typeArgs) {
+    return new FunctionCallExpr(receiver.Origin, invariant.NameNode, receiver, receiver.Origin, Token.NoToken, new List<Expression>()) {
+      Function = invariant,
+      Type = Type.Bool,
+      TypeApplication_AtEnclosingClass = typeArgs,
+      TypeApplication_JustFunction = []
+    };
   }
 
   /// <summary>
@@ -171,22 +248,30 @@ public class InvariantTypeDecl : SubsetTypeDecl {
   }
 
   /// <summary>
-  /// The declarations that get a derived InvariantTypeDecl. In this stage, an inductive datatype or a class that
-  /// declares an invariant (in itself or, by refinement, in a declaration it refines).
+  /// The declarations that get a derived InvariantTypeDecl when their names are registered: an inductive datatype, a
+  /// class or a trait that declares an invariant (in itself or, by refinement, in a declaration it refines). One that
+  /// declares none, but extends a trait that has invariants, gets one once its extends clauses are resolved (see
+  /// ModuleResolver.CreateInheritedInvariantTypeDecls).
   /// </summary>
   public static bool Applies(TopLevelDeclWithMembers decl) {
-    return decl is IndDatatypeDecl or ClassDecl && Invariants(decl).Any();
+    return MayHaveInvariants(decl) && Invariants(decl).Any();
   }
 
   /// <summary>
-  /// The parents of the type: for a class, those of the class (issue 105: the class declaration itself, "raw C?",
-  /// has none).
+  /// The kinds of declaration whose invariants, declared or inherited, are supported.
+  /// </summary>
+  public static bool MayHaveInvariants(TopLevelDeclWithMembers decl) {
+    return decl is IndDatatypeDecl or ClassDecl or TraitDecl;
+  }
+
+  /// <summary>
+  /// The parents of the type: "raw D" (or "raw C?"), and the parents of the declaration, as the types that their
+  /// names denote, "object?" included for a reference type. The declaration itself, the raw type, has as parents
+  /// only the raw types of the parent traits that have invariants (see TopLevelDeclWithMembers.ParentTypes).
   /// </summary>
   public override List<Type> ParentTypes(List<Type> typeArgs, bool includeTypeBounds) {
     var result = base.ParentTypes(typeArgs, includeTypeBounds);
-    if (IsReferenceType(Owner)) {
-      result.AddRange(Owner.RawTraitsWithArgument(typeArgs));
-    }
+    result.AddRange(Owner.RawTraitsWithArgument(typeArgs));
     return result;
   }
 
@@ -223,36 +308,66 @@ public class InvariantTypeDecl : SubsetTypeDecl {
   }
 
   /// <summary>
-  /// Whether "type" is "raw C" or "raw C?", or a subset type of one of them that is not a subset type of "C?", for a
-  /// class C with member invariants: a reference type whose values need not satisfy the invariants of C, and so is
-  /// not a subtype of "object" or of a parent trait (issue 105).
+  /// The declaration with member invariants, declared or inherited, whose raw type "type" is, or null if "type" is not
+  /// raw: "type" is "raw D", or "raw C" or "raw C?", or a subset type of one of them that is not a subset type of the
+  /// type that the name of the declaration denotes. Its values need not satisfy the invariants, so it is a subtype only
+  /// of the raw types of the parent traits that have invariants, and not of "object" or of another trait.
   /// </summary>
-  public static bool IsRawReferenceType(Type type) {
+  public static TopLevelDeclWithMembers? RawOwner(Type type) {
     var tower = Type.GetTowerOfSubsetTypes(type);
-    return tower[0] is UserDefinedType { ResolvedClass: ClassLikeDecl { InvariantTypeDecl: { } invariantTypeDecl } } &&
-           !tower.Exists(t => t is UserDefinedType { ResolvedClass: var decl } && decl == invariantTypeDecl);
+    return tower[0] is UserDefinedType { ResolvedClass: TopLevelDeclWithMembers { InvariantTypeDecl: { } invariantTypeDecl } owner } &&
+           !tower.Exists(t => t is UserDefinedType { ResolvedClass: var decl } && decl == invariantTypeDecl)
+      ? owner : null;
   }
 
   /// <summary>
-  /// Issue 105: if a value of type "source" may carry a raw reference ("raw C" or "raw C?") to a place where
-  /// "target" does not have a type based on the same class C, such as "object" or a parent trait, return "source"
-  /// with each such raw type replaced by the type that the name of its class denotes ("C" or "C?"): the type that the
-  /// value must have before it is converted to "target". Otherwise, return null. The places are the value itself and,
-  /// covariantly, the elements of collections and the type arguments of other types. A raw reference in a parameter
-  /// position of a function type is left to the ordinary membership check, since, in the verifier's model, "object"
-  /// contains every reference that is not null.
+  /// Whether "type" is a raw type (see RawOwner).
+  /// </summary>
+  public static bool IsRawType(Type type) {
+    return RawOwner(type) != null;
+  }
+
+  /// <summary>
+  /// Whether "type" is a raw reference type: "raw C" or "raw C?" for a class or reference trait C (see RawOwner).
+  /// </summary>
+  public static bool IsRawReferenceType(Type type) {
+    return RawOwner(type) is { } owner && IsReferenceType(owner);
+  }
+
+  /// <summary>
+  /// For a raw type "type" (see RawOwner), the type that the value must have before it reaches a type that is not
+  /// raw: the type that the name of its declaration denotes, with the same type arguments, and for a non-null
+  /// reference type, the non-null one ("C" for "raw C", "C?" for "raw C?", D for "raw D").
+  /// </summary>
+  public static UserDefinedType FinishedTypeOf(Type type) {
+    var owner = RawOwner(type)!;
+    var rawBase = (UserDefinedType)Type.GetTowerOfSubsetTypes(type)[0];
+    return type.IsNonNullRefType
+      ? owner.InvariantTypeDecl!.ThisType(rawBase.Origin, rawBase.TypeArgs)
+      : owner.InvariantTypeDecl!.FinishedType(rawBase.Origin, rawBase.TypeArgs);
+  }
+
+  /// <summary>
+  /// Issue 105: if a value of type "source" may carry a raw value (of a type "raw T") to a place where "target" does
+  /// not have a raw type based on T or on a trait with invariants that T extends, such as "object", a trait without
+  /// invariants, or a type that is not raw, return "source" with each such raw type replaced by the type that the name
+  /// of its declaration denotes (see FinishedTypeOf): the type that the value must have before it is converted to
+  /// "target". Otherwise, return null. A conversion from "raw T" to T itself is left to the membership check of the
+  /// target, which checks the invariants of T. A conversion to "raw P", for a trait P with invariants that T extends,
+  /// carries no obligation; one to P checks all of the invariants of T, so that a later type test of the value
+  /// against T, which tests only its dynamic type, is sound.
+  ///
+  /// The places are the value itself and, covariantly, the elements of collections and the type arguments of other
+  /// types. A raw reference in a parameter position of a function type is left to the ordinary membership check, since,
+  /// in the verifier's model, "object" contains every reference that is not null.
   /// </summary>
   public static Type? FinishRawReferences(Type source, Type target) {
-    if (IsRawReferenceType(source)) {
-      var sourceBase = (UserDefinedType)Type.GetTowerOfSubsetTypes(source)[0];
-      if (Type.GetTowerOfSubsetTypes(target)[0] is UserDefinedType { ResolvedClass: var targetDecl } &&
-          targetDecl == sourceBase.ResolvedClass) {
+    if (RawOwner(source) is { } owner) {
+      var targetBase = Type.GetTowerOfSubsetTypes(target)[0];
+      if (targetBase is UserDefinedType { ResolvedClass: var targetDecl } && (targetDecl == owner || IsRawType(target))) {
         return null;
       }
-      var invariantTypeDecl = ((ClassLikeDecl)sourceBase.ResolvedClass).InvariantTypeDecl!;
-      return source.IsNonNullRefType
-        ? invariantTypeDecl.ThisType(sourceBase.Origin, sourceBase.TypeArgs)
-        : invariantTypeDecl.FinishedType(sourceBase.Origin, sourceBase.TypeArgs);
+      return FinishedTypeOf(source);
     }
     var s = source.NormalizeExpand();
     var t = target.NormalizeExpand();

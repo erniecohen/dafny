@@ -52,7 +52,8 @@ public class NonNullTypeDecl : SubsetTypeDecl {
     var classParentTypes = Class.InvariantTypeDecl != null ? Class.RawTraitsWithArgument(typeArgs) : Class.ParentTypes(typeArgs, includeTypeBounds);
     foreach (var rhsParentType in classParentTypes) {
       var rhsParentUdt = (UserDefinedType)rhsParentType; // all parent types of .Class are expected to be possibly-null class types
-      Contract.Assert(rhsParentUdt.ResolvedClass is TraitDecl);
+      // Issue 105: or the derived "P?" of a trait P with member invariants, or the derived type G of a general trait
+      Contract.Assert(rhsParentUdt.ResolvedClass is TraitDecl or InvariantTypeDecl { Owner: TraitDecl });
       result.Add(UserDefinedType.CreateNonNullTypeIfReferenceType(rhsParentUdt));
     }
     if (Class is ClassLikeDecl { RawNonNullTypeDecl: { } rawNonNullTypeDecl }) {

@@ -106,7 +106,9 @@ internal sealed class CardinalityTypeVisitor {
     if (use.Type is not UserDefinedType { ResolvedClass: { } raw } type || raw is TypeParameter) {
       throw new CardinalityTypeException(reason.Origin, "a parent obligation is not a resolved nominal trait instance");
     }
-    var parent = canonicalizer.Declaration(raw);
+    // Issue 105: a general trait with member invariants, written as a parent, denotes its derived declaration,
+    // whose type parameters are those of the trait
+    var parent = canonicalizer.Declaration(raw is InvariantTypeDecl { Owner: TraitDecl trait } ? trait : raw);
     if (parent is not TraitDecl) {
       throw new CardinalityTypeException(reason.Origin, "a parent obligation does not denote a trait");
     }

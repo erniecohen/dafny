@@ -1238,6 +1238,22 @@ namespace Microsoft.Dafny {
         }
       }
 
+      // Issue 105: the invariants that each declaration with member invariants inherits
+      if (prevErrorCount == reporter.Count(ErrorLevel.Error)) {
+        foreach (var d in declarations.OfType<TopLevelDeclWithMembers>().Where(d => d.InvariantTypeDecl != null)) {
+          SetInheritedInvariants(d);
+        }
+        // A datatype with no invariant needs no witness. MemberInvariantChecks rejects the witness of one that
+        // extends no trait and refines nothing; here the others are known.
+        foreach (var d in declarations.OfType<IndDatatypeDecl>().Where(d => d.InvariantTypeDecl == null &&
+                   (d.Traits.Count != 0 || d.EnclosingModuleDefinition.Implements != null))) {
+          if (d.Members.OfType<MemberWitness>().FirstOrDefault() is { } witness) {
+            reporter.Error(MessageSource.Resolver, witness.NameNode.Origin,
+              $"'{d.Name}' neither declares nor inherits an invariant, so it needs no witness: its values are its constructors' values");
+          }
+        }
+      }
+
       // These inherited parents are analysis obligations rather than runtime
       // inheritance. Resolve them explicitly without adding them to Children,
       // the parent relation, or the ordinary type dependency graphs.
@@ -1771,7 +1787,14 @@ namespace Microsoft.Dafny {
 
           if (d is TopLevelDeclWithMembers topLevelDeclWithMembers) {
             foreach (var parentTrait in topLevelDeclWithMembers.Traits) {
-              CheckVariance(parentTrait, topLevelDeclWithMembers, TypeParameter.TPVariance.Co, false);
+              // Issue 105: a declaration that inherits member invariants is, as a raw type, a subtype of the raw type
+              // of a parent trait that has them, whose type parameters keep their declared variance. The type that
+              // the declaration's name denotes has non-variant type parameters (see InvariantTypeDecl).
+              var parentType = topLevelDeclWithMembers.InvariantTypeDecl != null &&
+                               TopLevelDeclWithMembers.ParentTraitDecl(parentTrait).InvariantTypeDecl != null
+                ? TopLevelDeclWithMembers.RawParentType(parentTrait)
+                : parentTrait;
+              CheckVariance(parentType, topLevelDeclWithMembers, TypeParameter.TPVariance.Co, false);
             }
           }
         }
@@ -2482,6 +2505,92 @@ namespace Microsoft.Dafny {
       currentClass = null;
     }
 
+    /// <summary>
+    /// Issue 105: a datatype, class or trait that declares no member invariant, but extends a trait that has some,
+    /// declared or inherited, has the inherited ones, and so a derived InvariantTypeDecl, as one that declares an
+    /// invariant does (see InvariantTypeDecl.Applies). Its derived declarations must exist before the signatures of
+    /// the module are resolved, since the name of the declaration, written as a type, denotes the derived one, but
+    /// whether it inherits invariants is known only from its resolved extends clauses. So resolve clones of the
+    /// extends clauses here, into a sink (ResolveParentTraitTypes resolves them again, reporting errors), and make
+    /// the derived declarations, to a fixpoint, since a trait in this module may inherit invariants from another.
+    /// </summary>
+    public void CreateInheritedInvariantTypeDecls(ModuleDefinition def) {
+      if (!Options.Get(CommonOptionBag.MemberInvariants)) {
+        return;
+      }
+      var candidates = def.TopLevelDecls.OfType<TopLevelDeclWithMembers>()
+        .Where(d => d.InvariantTypeDecl == null && d.Traits.Count != 0 && InvariantTypeDecl.MayHaveInvariants(d)).ToList();
+      if (candidates.Count == 0) {
+        return;
+      }
+      var parents = new Dictionary<TopLevelDeclWithMembers, List<TraitDecl>>();
+      var originalReporter = reporter;
+      reporter = new ErrorReporterSink(Options);
+      try {
+        foreach (var d in candidates) {
+          allTypeParameters.PushMarker();
+          ResolveTypeParameters(d.TypeArgs, false, d);
+          var traits = new List<TraitDecl>();
+          foreach (var parentType in d.Traits) {
+            var probe = new Cloner().CloneType(parentType);
+            ResolveType(d.Origin, probe, new NoContext(def), ResolveTypeOptionEnum.DontInfer, null);
+            if (probe is UserDefinedType udt && udt.AsParentTraitDecl() is { } trait) {
+              traits.Add(trait);
+            }
+          }
+          allTypeParameters.PopMarker();
+          parents.Add(d, traits);
+        }
+      } finally {
+        reporter = originalReporter;
+      }
+      bool changed;
+      do {
+        changed = false;
+        foreach (var (d, traits) in parents) {
+          if (d.InvariantTypeDecl == null && traits.Exists(trait => trait.InvariantTypeDecl != null)) {
+            d.InvariantTypeDecl = new InvariantTypeDecl(d);
+            if (d is ClassLikeDecl { NonNullTypeDecl: not null } cl) {
+              cl.RawNonNullTypeDecl = new RawNonNullTypeDecl(cl);
+            }
+            changed = true;
+          }
+        }
+      } while (changed);
+    }
+
+    /// <summary>
+    /// Issue 105: set the invariants that "decl", which has member invariants, inherits from the traits it extends:
+    /// in post-order over the extends clauses, the invariants that each trait declares, each trait once. Each is
+    /// applied to the value as the raw type of the trait, instantiated as the extends clauses instantiate it. Assumes
+    /// that the extends clauses of "decl" and of its ancestors are resolved.
+    /// </summary>
+    private void SetInheritedInvariants(TopLevelDeclWithMembers decl) {
+      var inherited = new List<(MemberInvariant, UserDefinedType)>();
+      var visited = new HashSet<TraitDecl>();
+      void Visit(TopLevelDeclWithMembers d, Dictionary<TypeParameter, Type> subst) {
+        foreach (var parentType in d.Traits) {
+          var trait = TopLevelDeclWithMembers.ParentTraitDecl(parentType);
+          if (trait.InvariantTypeDecl == null || !visited.Add(trait)) {
+            continue;
+          }
+          var typeArgs = parentType.TypeArgs.ConvertAll(t => t.Subst(subst));
+          Visit(trait, TypeParameter.SubstitutionMap(trait.TypeArgs, typeArgs));
+          var invariants = InvariantTypeDecl.Invariants(trait).ToList();
+          if (invariants.Count != 0 && !trait.InvariantTypeDecl.IsRevealedInScope(Type.GetScope())) {
+            reporter.Error(MessageSource.Resolver, parentType is UserDefinedType udt ? udt.Origin : decl.Origin,
+              $"{decl.WhatKind} '{decl.Name}' extends trait '{trait.Name}', which has member invariants, where '{trait.Name}' is not revealed");
+            continue;
+          }
+          foreach (var invariant in invariants) {
+            inherited.Add((invariant, trait.InvariantTypeDecl.RawThisType(decl.Origin, typeArgs)));
+          }
+        }
+      }
+      Visit(decl, TypeParameter.SubstitutionMap(decl.TypeArgs, decl.TypeArgs.ConvertAll(tp => (Type)new UserDefinedType(tp))));
+      decl.InvariantTypeDecl!.SetInheritedInvariants(inherited);
+    }
+
     void InheritMembers(List<TopLevelDecl> declarations) {
       // Register the trait members in the classes that inherit them
       foreach (var topLevelDeclWithMembers in declarations.OfType<TopLevelDeclWithMembers>()) {
@@ -2542,7 +2651,7 @@ namespace Microsoft.Dafny {
       // populate .ParentTypeInformation and .ParentFormalTypeParametersToActuals for the immediate parent traits
       foreach (var tt in cl.Traits) {
         var udt = (UserDefinedType)tt;
-        var trait = (TraitDecl)((udt.ResolvedClass as NonNullTypeDecl)?.ViewAsClass ?? udt.ResolvedClass);
+        var trait = TopLevelDeclWithMembers.ParentTraitDecl(udt);
         cl.ParentTypeInformation.Record(trait, udt);
         Contract.Assert(trait.TypeArgs.Count == udt.TypeArgs.Count);
         for (var i = 0; i < trait.TypeArgs.Count; i++) {

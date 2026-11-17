@@ -4306,14 +4306,14 @@ namespace Microsoft.Dafny {
 
     /// <summary>
     /// Issue 105: "raw T" (parsed only under --member-invariants) applies to a declaration that can declare a
-    /// member invariant: a datatype, class, trait, newtype or abstract type. So far, only inductive datatypes and
-    /// classes are supported.
+    /// member invariant: a datatype, class, trait, newtype or abstract type. So far, only inductive datatypes,
+    /// classes and traits are supported.
     /// </summary>
     private void CheckRawType(UserDefinedType t, TopLevelDecl d) {
       var decl = d is NonNullTypeDecl nonNullTypeDecl ? nonNullTypeDecl.Class : d;
-      if (decl is IndDatatypeDecl or ClassDecl) {
+      if (decl is IndDatatypeDecl or ClassDecl or TraitDecl) {
         if (!decl.IsRevealedInScope(Type.GetScope())) {
-          // Where a datatype or class is provided but not revealed, its members, the invariants among them, are not.
+          // Where a datatype, class or trait is provided but not revealed, its members, the invariants among them, are not.
           reporter.Error(MessageSource.Resolver, t.Origin,
             "'raw' is not yet supported for {0} '{1}', which is provided but not revealed here", decl.WhatKind, decl.Name);
         }

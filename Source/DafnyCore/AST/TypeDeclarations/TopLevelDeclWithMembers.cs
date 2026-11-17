@@ -118,12 +118,52 @@ public abstract class TopLevelDeclWithMembers : TopLevelDecl, IHasSymbolChildren
   }
 
   public override List<Type> ParentTypes(List<Type> typeArgs, bool includeTypeBounds) {
-    if (this is ClassDecl && InvariantTypeDecl != null) {
-      // Issue 105: a class with member invariants denotes "raw C?", which is not a subtype of "object?" or of a
-      // parent trait. Its derived type "C?" is (see InvariantTypeDecl.ParentTypes).
-      return [];
+    if (InvariantTypeDecl != null) {
+      // Issue 105: a declaration with member invariants, declared or inherited, denotes its raw type ("raw D", or
+      // "raw C?"), which is a subtype only of the raw types of the parent traits that have invariants: not of
+      // "object?", or of another parent trait. The type that its name denotes is (see InvariantTypeDecl.ParentTypes).
+      return RawParentTypesWithInvariants(typeArgs);
     }
     return RawTraitsWithArgument(typeArgs);
+  }
+
+  /// <summary>
+  /// Issue 105: the raw types of the parent traits that have member invariants, declared or inherited, instantiated
+  /// with "typeArgs": "raw P?" for a reference trait P (or, for a "typeArgs" that is null, in terms of the type
+  /// parameters of this declaration), "raw G" for a general trait G.
+  /// </summary>
+  public List<Type> RawParentTypesWithInvariants(List<Type> typeArgs) {
+    var subst = TypeParameter.SubstitutionMap(TypeArgs, typeArgs);
+    var results = new List<Type>();
+    foreach (var traitType in Traits) {
+      var trait = ParentTraitDecl(traitType);
+      if (trait.InvariantTypeDecl != null) {
+        results.Add(RawParentType(traitType).Subst(subst));
+      }
+    }
+    return results;
+  }
+
+  /// <summary>
+  /// The trait that "parentType", a resolved type in an extends clause, names. Issue 105: for a general trait with
+  /// member invariants, the type that its name denotes is its derived InvariantTypeDecl.
+  /// </summary>
+  public static TraitDecl ParentTraitDecl(Type parentType) {
+    var udt = (UserDefinedType)parentType;  // in a successfully resolved program, we expect all .ParentTraits to be a UserDefinedType
+    return udt.ResolvedClass switch {
+      NonNullTypeDecl nonNullTypeDecl => (TraitDecl)nonNullTypeDecl.Class,
+      InvariantTypeDecl invariantTypeDecl => (TraitDecl)invariantTypeDecl.Owner,
+      var decl => (TraitDecl)decl
+    };
+  }
+
+  /// <summary>
+  /// Issue 105: the raw type of the trait that "parentType", a resolved type in an extends clause, names, with the
+  /// same type arguments: the trait declaration itself, "raw P?" for a reference trait, "raw G" for a general trait.
+  /// </summary>
+  public static UserDefinedType RawParentType(Type parentType) {
+    var udt = (UserDefinedType)parentType;
+    return UserDefinedType.FromTopLevelDecl(udt.Origin, ParentTraitDecl(parentType), udt.TypeArgs);
   }
 
   public static List<UserDefinedType> CommonTraits(TopLevelDeclWithMembers a, TopLevelDeclWithMembers b) {
@@ -158,13 +198,7 @@ public abstract class TopLevelDeclWithMembers : TopLevelDecl, IHasSymbolChildren
   /// </summary>
   private void AddTraitAncestors(ISet<TraitDecl> s) {
     foreach (var parent in Traits) {
-      var udt = (UserDefinedType)parent;  // in a successfully resolved program, we expect all .ParentTraits to be a UserDefinedType
-      TraitDecl tr;
-      if (udt.ResolvedClass is NonNullTypeDecl nntd) {
-        tr = (TraitDecl)nntd.Class;
-      } else {
-        tr = (TraitDecl)udt.ResolvedClass;
-      }
+      var tr = ParentTraitDecl(parent);
       s.Add(tr);
       tr.AddTraitAncestors(s);
     }

@@ -99,17 +99,19 @@ public partial class BoogieGenerator {
   }
 
   /// <summary>
-  /// Issue 105: an instance member of a type D with member invariants that is not raw may be applied only to a value
-  /// of D. If "receiver" is of type raw D, check that it is one (D &lt;- raw D).
+  /// Issue 105: an instance member is applied to a raw receiver, of type "raw D", only if it is a raw member of a type
+  /// with member invariants, D or a trait that D extends; any other member, a member of a trait without invariants
+  /// included, is applied only to a value of D. So if "receiver" is raw, check that it is one (D &lt;- raw D). A field
+  /// whose value is stored needs no check: a raw value has it.
   /// </summary>
   private void CheckReceiverInvariants(IOrigin origin, MemberDecl member, Expression receiver,
     BoogieStmtListBuilder builder, ExpressionTranslator etran) {
-    if (!RawMemberInference.HasRawCounterpart(member) || RawMemberInference.IsRawMember(member) ||
-        receiver.Type.NormalizeExpand() is not UserDefinedType receiverType) {
+    if (member is { IsStatic: true } or SpecialField || RawMemberInference.IsStoredField(member) ||
+        (RawMemberInference.HasRawCounterpart(member) && RawMemberInference.IsRawMember(member)) ||
+        !InvariantTypeDecl.IsRawType(receiver.Type)) {
       return;
     }
-    var invariantTypeDecl = ((TopLevelDeclWithMembers)member.EnclosingClass).InvariantTypeDecl;
-    var targetType = invariantTypeDecl.ThisType(origin, receiverType.TypeArgs);
+    var targetType = InvariantTypeDecl.FinishedTypeOf(receiver.Type);
     CheckSubrange(origin, etran.TrExpr(receiver), receiver.Type, targetType, receiver, builder, etran: etran);
   }
 

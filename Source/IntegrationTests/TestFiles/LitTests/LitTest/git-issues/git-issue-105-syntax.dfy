@@ -131,3 +131,22 @@ module Concrete refines Abstract {
   }
   function Get(p: Positive): int { p.n }
 }
+
+// An invariant or a witness may follow a method, a function or a lemma without a body.
+module Bodiless {
+  datatype D = D(x: int) {
+    method M()
+    invariant x > 0
+    function F(): int
+    invariant x > 1
+    predicate P()
+    witness D(2)
+  }
+  trait T {
+    const k: int
+    lemma L()
+    invariant k > 0
+    twostate predicate Q()
+    invariant k > 1
+  }
+}

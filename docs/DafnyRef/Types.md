@@ -4908,13 +4908,15 @@ declaration.
 
 The hidden, experimental option `--member-invariants` defaults to `false` and
 requires `--type-system-refresh`. It is being implemented in stages
-(https://github.com/erniecohen/dafny/issues/105). So far, the invariants of an
-inductive datatype or a class that extends no trait, declared in a module that
-refines no other, are verified. A program, libraries included,
-that declares any other invariant can be parsed, printed and resolved, and
-compiled with `--no-verify`, but not verified: the verifier reports each such
-invariant as not yet supported, and verifies no module of the program. Compiled
-code does not check invariants.
+(https://github.com/erniecohen/dafny/issues/105). So far, the invariants of
+inductive datatypes, classes and traits, declared or inherited, are verified,
+except in a module that refines another. A program, libraries included, that
+declares an invariant of a newtype or an abstract type, a newtype or abstract
+type that extends a trait with invariants, or a type with invariants in a
+refining module, can be parsed, printed and resolved, and compiled with
+`--no-verify`, but not verified: the verifier reports each such declaration as
+not yet supported, and verifies no module of the program. Compiled code does not
+check invariants.
 
 With the option, a datatype, class, trait, newtype or abstract type may declare
 invariants among its members:
@@ -4941,6 +4943,12 @@ declaration in a refining module has those of the declaration it refines as
 well as any it adds. An inherited invariant cannot be removed or changed: an
 invariant has no name, so it never overrides another.
 
+The invariants of a type are, in order, those it inherits (section 6.6.6) and
+then its own. Each is well formed where the ones before it hold, as successive
+`requires` clauses are: an invariant may divide by a component that an earlier
+one says is nonzero, but not by one that only a later invariant, or one of a
+type that extends it, constrains.
+
 A codatatype may not declare an invariant, and a program that declares a member
 invariant may not declare a codatatype. Libraries are part of the program, so
 the rule applies to them too; a library that declares neither may be used either
@@ -4956,8 +4964,8 @@ invariants.
 
 ### 6.6.1. Raw types {#sec-raw-types}
 
-The values of a datatype `D` that declares invariants need not satisfy them
-while they are being built. `raw D` is the type of all the values of `D`, and
+The values of a datatype `D` with invariants, declared or inherited, need not
+satisfy them while they are being built. `raw D` is the type of all the values of `D`, and
 `D` is the subset of them that satisfy the invariants, as if `D` were declared
 as the subset type `type D = v: raw D | <the invariants of v>`. `raw` is a
 prefix on the name of a type, and composes with qualified names, type
@@ -4992,14 +5000,15 @@ method Widen(i: Interval) returns (j: Interval) {
   members are inferred, not declared; `Ok` is one above, and `Width` is not.
   Where anything else applies a member that is not raw to a `raw D`, the
   verifier checks that the value is a `D`.
-- Where `D` declares no invariant, `raw D` is `D`.
+- Where `D` neither declares nor inherits an invariant, `raw D` is `D`.
 - Where `D` is exported by `provides` only, it is an abstract type, and `raw D`
   is not yet supported there.
 
 `raw` applies to a type that can declare an invariant, and not to a type
 parameter, a type synonym, a subset type or a codatatype. So far it is
-supported for a datatype and for a class (section 6.6.5); for a trait, newtype
-or abstract type it is parsed but not yet supported. With the option, `raw` is still an identifier
+supported for a datatype, a class (section 6.6.5) and a trait (section 6.6.6);
+for a newtype or abstract type it is parsed but not yet supported. With the
+option, `raw` is still an identifier
 except directly before the name of a type, and `witness` is still the witness
 clause of a subset type or newtype.
 
@@ -5028,10 +5037,11 @@ datatype Cert = Cert(ghost p: int) {
   variable of type `D` must be assigned before it is used, and `D` cannot
   instantiate a type parameter that requires `(0)` or `(00)`. `raw D` can, as
   the datatype could without invariants.
-- A datatype declares at most one witness, and only if it declares an
-  invariant. A class may not declare one: a class type contains `null`, and its
+- A datatype declares at most one witness, and only if it declares or inherits
+  an invariant. The witness must satisfy the inherited invariants as well as
+  its own. A class may not declare one: a class type contains `null`, and its
   objects are the ones its constructors return. A witness member of another
-  kind of type is not yet supported.
+  kind of type, a trait included, is not yet supported.
 
 ### 6.6.3. An invariant may not refer to its own type {#sec-invariant-extension}
 
@@ -5047,9 +5057,11 @@ datatype Liar = Liar(f: int) {
 ```
 
 So the resolver checks a conservative condition. A type *depends on* `D` if its
-set of values is defined with `D`'s: `D`, `raw D`, and every type built from
-one of them, as a datatype component, a type argument, the base type of a subset
-type or newtype, or a parameter or result of an arrow. The invariants of `D`,
+set of values is defined with `D`'s: `D`, `raw D`, the traits `D` extends and
+the types that extend `D` (and their raw types), `object` where `D` is a
+reference type, and every type built from one of these, as a datatype
+component, a type argument, the base type of a subset type or newtype, or a
+parameter or result of an arrow. The invariants of `D`,
 and everything they reach (the specifications and bodies of the functions they
 call, the initializers of the constants they read, and the constraints of the
 types they use), must not:
@@ -5148,12 +5160,79 @@ class Buffer {
 - `raw C` is the type of the objects of the class whether or not they satisfy
   the invariants, and `raw C?` adds `null`. `C` is a `raw C`. A `raw C` used
   where a `C` is expected is a conversion, and the verifier checks the
-  invariants. `raw C` is a subtype of nothing else: in particular, not of
-  `object`. A raw reference reaches `object`, a trait, a collection of those
-  or a type argument that is not raw only where the verifier proves that it
-  satisfies the invariants. A `reads` or `modifies` clause may mention a raw
-  reference without that proof.
+  invariants. `raw C` is a subtype of `raw P` for each trait `P` with
+  invariants that `C` extends (section 6.6.6), and of nothing else: in
+  particular, not of `object`. A raw reference reaches `object`, a trait, a
+  collection of those or a type argument that is not raw only where the
+  verifier proves that it satisfies the invariants. A `reads` or `modifies`
+  clause may mention a raw reference without that proof.
 - For a reference `o` that is not raw, `o is C` tests the dynamic type alone,
   and compiles. A test of a raw reference, `r is C`, evaluates the invariants,
   so it is ghost.
 - `C`, `C?`, `raw C` and `raw C?` are the same type in compiled code.
+
+### 6.6.6. Traits {#sec-invariant-traits}
+
+A trait may declare invariants, and every type that extends it, directly or
+through other traits, inherits them, instantiated at the parent type arguments.
+The invariants of a type are those of its ancestors, each ancestor once however
+many paths reach it, in a post-order walk of the `extends` clauses, followed by
+its own:
+
+<!-- %no-check -->
+```dafny
+trait Account extends object {
+  const balance: int
+  invariant balance >= 0
+}
+class Savings extends Account {
+  const rate: int
+  invariant rate > 0
+  constructor (b: int, r: int)
+    requires b >= 0 && r > 0
+  {
+    balance := b;
+    rate := r;                  // both invariants are checked at the implicit 'new;'
+  }
+}
+method Interest(a: Account) returns (x: int) {
+  x := a.balance / 10;          // a.balance >= 0, from the invariant
+}
+```
+
+- A trait constructs nothing, so its invariants are checked where the types
+  that extend it construct their values: at `new;` for a class, and where a raw
+  value is converted to its finished type for a datatype. Every value of a trait
+  type `P`, and every non-null value of `P?`, satisfies the invariants of `P`.
+- `raw P` is the type of the values of the types that extend `P`, whether or
+  not they satisfy the invariants of `P`, and for a reference trait `raw P?` adds
+  `null`. For a type `C` that extends `P`, `raw C` is a subtype of `raw P`, and
+  `C` of `P`. A `raw P` used where a `P` is expected is a conversion, and the
+  verifier checks the invariants of `P`.
+- A raw value reaches `P`, or a trait without invariants, or `object`, as a
+  finished value of its own type: a `raw C` used where a `P` is expected checks
+  all the invariants of `C`, the inherited ones included. Through `raw P`, only
+  those of `P` are checked, so a `P` may hold a value that is a `raw C` and not
+  a `C`.
+- So, for a general trait `G` and a datatype `D` that extends it, `g is D` is
+  ghost, and `g is raw D` compiles. A class's objects satisfy its invariants,
+  the inherited ones included, once they are constructed, so for a value that
+  is not raw, a test against a class `C` or a reference trait `P` tests the
+  dynamic type alone, and compiles. A test of a raw reference against `C` or
+  `P` evaluates the invariants, so it is ghost.
+- Where the least common supertype of two types is a trait `P` with
+  invariants, as in the branches of an `if` expression or the elements of a
+  display, the two join at `P` (or `P?`) if neither is raw and both instantiate
+  `P` alike, and at `raw P` (or `raw P?`) otherwise.
+- A member that is not raw, applied to a raw value, checks the value against the
+  finished type of its own static type, all of its invariants included, even
+  where the member is inherited from a trait without invariants. Static members
+  and fields need no check.
+- An invariant may apply to `this` only raw members, its own or inherited, and
+  may not call a member that a type extending the trait may override (clause 4
+  of section 6.6.3). The traits that a type extends depend on it, so an
+  invariant may not convert `this` to `raw P`, or test it against `P`.
+- A trait may not yet declare a witness: its values are those of the types that
+  extend it, each with its own witness or none. A newtype or abstract type that
+  extends a trait with invariants is not yet verified.
+- `P`, `P?`, `raw P` and `raw P?` are the same type in compiled code.

@@ -767,22 +767,19 @@ namespace Microsoft.Dafny {
     }
 
     /// <summary>
-    /// Issue 105: member invariants (--member-invariants) are verified for an inductive datatype or a class that
-    /// declares no parent traits, declared in a module that refines no other. If the program, libraries
-    /// included, declares any other invariant, no module of it is translated, since the types of every module may
-    /// depend on the invariants. Then report each unsupported invariant of "forModule", or, if it declares none, the
-    /// first of its declarations that would have been verified. Return whether the program declares an unsupported
-    /// invariant.
+    /// Issue 105: member invariants (--member-invariants) are verified for inductive datatypes, classes and traits,
+    /// declared or inherited, in a module that refines no other. If the program, libraries included, has any other
+    /// invariant, declared or inherited, no module of it is translated, since the types of every module may depend
+    /// on the invariants. Then report each unsupported invariant of "forModule", or, if it has none, the first of its
+    /// declarations that would have been verified. Return whether the program has an unsupported invariant.
     /// </summary>
     private bool ReportUnsupportedMemberInvariants(Program p, ModuleDefinition forModule) {
       if (!DeclaresUnsupportedMemberInvariants(p)) {
         return false;
       }
-      var unsupported = Invariants(forModule)
-        .Select(invariant => (Invariant: invariant, Reason: UnsupportedInvariantReason(invariant)))
-        .Where(pair => pair.Reason != null).ToList();
-      foreach (var (invariant, reason) in unsupported) {
-        reporter.Error(MessageSource.Translator, invariant.NameNode.Origin, reason);
+      var unsupported = UnsupportedInvariants(forModule).ToList();
+      foreach (var (origin, reason) in unsupported) {
+        reporter.Error(MessageSource.Translator, origin, reason);
       }
       if (unsupported.Count == 0) {
         var verifiable = forModule.TopLevelDecls
@@ -802,18 +799,36 @@ namespace Microsoft.Dafny {
     }
 
     /// <summary>
-    /// Issue 105: why the verification of "invariant" is not yet supported, or null if it is.
+    /// Issue 105: the invariants of "module" whose verification is not yet supported, each with where to report it and
+    /// why: an invariant of a newtype or an abstract type, a newtype or an abstract type that extends a trait with
+    /// invariants (reported at its name), and an invariant, declared or inherited, of a declaration in a refining module.
     /// </summary>
-    private static string UnsupportedInvariantReason(MemberInvariant invariant) {
+    private static IEnumerable<(IOrigin Origin, string Reason)> UnsupportedInvariants(ModuleDefinition module) {
       const string notYet = "is not yet supported";
-      return invariant.EnclosingClass switch {
-        TopLevelDeclWithMembers { Traits.Count: not 0 } and (IndDatatypeDecl or ClassDecl) =>
-          $"verification of a member invariant of a {invariant.EnclosingClass.WhatKind} that extends a trait {notYet}",
-        TopLevelDeclWithMembers { EnclosingModuleDefinition.Implements: not null } and (IndDatatypeDecl or ClassDecl) =>
-          $"verification of a member invariant in a refining module {notYet}",
-        IndDatatypeDecl or ClassDecl => null,
-        var decl => $"verification of a member invariant of a {decl.WhatKind} {notYet}"
-      };
+      foreach (var decl in module.TopLevelDecls.OfType<TopLevelDeclWithMembers>()) {
+        var invariants = decl.Members.OfType<MemberInvariant>().ToList();
+        if (!InvariantTypeDecl.MayHaveInvariants(decl)) {
+          var kind = ("aeiou".Contains(decl.WhatKind[0]) ? "an " : "a ") + decl.WhatKind;
+          foreach (var invariant in invariants) {
+            yield return (invariant.NameNode.Origin, $"verification of a member invariant of {kind} {notYet}");
+          }
+          if (decl.Traits.Any(ExtendsTraitWithInvariants)) {
+            yield return (decl.NameNode.Origin, $"verification of {kind} that extends a trait with member invariants {notYet}");
+          }
+        } else if (decl.InvariantTypeDecl != null && decl.EnclosingModuleDefinition.Implements != null) {
+          const string reason = $"verification of a member invariant in a refining module {notYet}";
+          if (invariants.Count == 0) {
+            yield return (decl.NameNode.Origin, reason);
+          }
+          foreach (var invariant in invariants) {
+            yield return (invariant.NameNode.Origin, reason);
+          }
+        }
+      }
+    }
+
+    private static bool ExtendsTraitWithInvariants(Type parent) {
+      return parent is UserDefinedType { ResolvedClass: InvariantTypeDecl or NonNullTypeDecl { Class.InvariantTypeDecl: not null } };
     }
 
     /// <summary>
@@ -822,8 +837,7 @@ namespace Microsoft.Dafny {
     /// does not reuse a module of such a program, since a module's key covers only what the module depends on.
     /// </summary>
     internal static bool DeclaresUnsupportedMemberInvariants(Program p) {
-      return DeclaresMemberInvariants(p) &&
-             p.RawModules().Any(module => Invariants(module).Any(invariant => UnsupportedInvariantReason(invariant) != null));
+      return DeclaresMemberInvariants(p) && p.RawModules().Any(module => UnsupportedInvariants(module).Any());
     }
 
     /// <summary>
@@ -1466,7 +1480,16 @@ namespace Microsoft.Dafny {
           foreach (var parentTypeInExtendsClause in c.Traits) {
             var childType = UserDefinedType.FromTopLevelDecl(c.Origin, c);
             var parentType = (UserDefinedType)parentTypeInExtendsClause;
-            if (parentType.IsRefType) {
+            if (ExtendsTraitWithInvariants(parentType)) {
+              // Issue 105: a parent with member invariants. A raw value of the child is a raw value of the parent, "raw P?"
+              // or "raw G" (a finished one is a finished one by the subset-type axioms, since the child's invariants
+              // include the parent's). A class that extends a general trait relates "raw C" to it.
+              var parentTrait = TopLevelDeclWithMembers.ParentTraitDecl(parentType);
+              parentType = TopLevelDeclWithMembers.RawParentType(parentType);
+              if (!parentTrait.IsReferenceTypeDecl && c is ClassLikeDecl { RawNonNullTypeDecl: { } rawNonNull }) {
+                childType = UserDefinedType.FromTopLevelDecl(c.Origin, rawNonNull, c.TypeArgs);
+              }
+            } else if (parentType.IsRefType) {
               // use the nullable versions of the types
               Contract.Assert(childType.IsRefType);
               parentType = UserDefinedType.CreateNullableType(parentType);

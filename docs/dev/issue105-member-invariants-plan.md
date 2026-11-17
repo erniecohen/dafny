@@ -2121,3 +2121,118 @@ section 7.2).**
   compiled code; `git-issue-105-exports.dfy` and
   `git-issue-105-class-exports.dfy` export sets, for datatypes and classes;
   `git-issue-105-emptiness.dfy` adds a bodiless constructor to the audit.
+
+**Verification of traits (sixth step; stage 4 of section 7.2).**
+
+- *The gate* is lifted for traits, reference and general, and for the
+  datatypes and classes that extend them: the invariants of inductive
+  datatypes, classes and traits, declared or inherited, in a module that
+  refines no other, are verified.  Still behind it: an invariant of a newtype
+  or an abstract type, a newtype or abstract type that extends a trait with
+  invariants (reported at its name), and any declaration with invariants,
+  declared or inherited, in a refining module.  The messages now read "an
+  abstract type" rather than "a abstract type".
+- *The types.*  A datatype, class or trait that declares no invariant but
+  inherits some gets the derived declarations that one that declares an
+  invariant gets.  Its name written as a type must denote the derived
+  declaration before the module's signatures are resolved, but whether it
+  inherits invariants is known only from its resolved extends clauses.  So
+  `CreateInheritedInvariantTypeDecls` resolves clones of the extends clauses
+  first, into a sink (they are resolved again, with errors reported, in the
+  usual place), and makes the derived declarations to a fixpoint, since a trait
+  of the module may inherit invariants from another.  The derived declarations
+  of classes and traits are now made after `DetermineReferenceTypes`, which
+  decides which traits are reference types.  A reference trait `P` is treated
+  as a class is: the trait declaration is `raw P?`, `P?` the derived
+  declaration, `P` its non-null type, and `raw P` a `RawNonNullTypeDecl`.  A
+  general trait `G` is treated as a datatype is: the declaration is `raw G`,
+  and `G` the derived declaration.
+- *The constraint* (section 4.4).  The invariants of a type, in the order its
+  constraint conjoins them, are the inherited ones, in a post-order walk of
+  the extends clauses, each trait once however many paths reach it, and then
+  its own.  An inherited conjunct is `(v as raw P<args>).invariant#k()`, with
+  the parent type arguments of the extends clauses; for a reference type it is
+  guarded by `v != null`.  A diamond proves the top trait's conjuncts once.
+- *Subtyping.*  `raw C` is a subtype of `raw P` for each parent trait `P` with
+  invariants, and `C` of `P` through the subset-type axioms, since the
+  conjuncts of `C` include those of `P`.  A raw value is not a subtype of
+  `object`, nor of a parent trait without invariants: it reaches them only as
+  a finished value of its own type, so that conversion checks all the
+  invariants of `C`, the inherited ones included.  Through `raw P`, only those
+  of `P` are checked, so a `P` may hold a value that is a `raw C` and not a
+  `C` (`AShapeThatIsNotASquare` in `git-issue-105-general-traits.dfy`).  The
+  Boogie parent axiom relates raw to raw (`raw C?` to `raw P?`, or `raw G`);
+  relating the raw child to the finished parent would have been unsound.  The
+  variance check of an extends clause uses the raw parent type.
+- *Type tests.*  At run time every object satisfies the invariants of its
+  class, the inherited ones included, since they read only constants and are
+  checked before the constructor's `this` can be used.  So, from a type that
+  is not raw, a test against a class or a reference trait tests the dynamic
+  type alone and compiles, even where the static type does not tell the
+  verifier that the object satisfies the class's own invariants.  A datatype
+  has raw values at run time, so a test of a general trait's value against a
+  datatype with invariants (`g is D`) is ghost, as is a test against a general
+  trait with invariants; `g is raw D` compiles.  A test of a raw reference
+  against a class or a trait with invariants stays ghost.
+- *Joins.*  Where the least common supertype of two types has invariants, the
+  join is its finished type (`P`, `P?` or `G`) if neither type is raw and their
+  type arguments agree, and its raw type otherwise.  Before this step a join
+  of a raw reference type with any other class or trait did not exist.
+- *Receivers.*  A member applied to a raw receiver is checked unless it is
+  static, a stored field or a datatype destructor (`SpecialField`), or a raw
+  member; otherwise the receiver is checked against the finished type of its
+  own static type, all of its invariants included, even where the member is
+  inherited from a trait without invariants.  Before this step only members of
+  the receiver's own declaration were considered.
+- *Well-formedness* (sections 4.1 and 4.4).  An invariant is well formed where
+  the invariants before it in its type's constraint hold, as successive
+  `requires` clauses are: the inherited ones, then the type's own earlier ones.
+  The earlier steps checked each invariant with no assumption, which rejected a
+  datatype whose second invariant divides by a component that its first one
+  says is nonzero; this fixes that too.  The well-formedness check of each
+  invariant gains one more `CanCall` assumption in the obligation inventory.
+- *The extension condition* runs for every declaration with derived
+  declarations, the inherited invariants in its cone, with the type parameters
+  of each trait mapped through the extends clauses.  Two consequences:
+  - The traits a type extends, the types that extend it, and `object` for a
+    reference type, are `T`-dependent (section 3.3), so an invariant may not
+    convert `this` to `raw P` or test it against `P`.  This is conservative: a
+    raw ancestor depends on `T` only through its components, as section 3.3
+    says of `raw U`.  It is a candidate relaxation (stage 7).
+  - Clause 4 rejects a dynamically bound call, so the remark of section 4.1
+    that an invariant may call a function a later class overrides does not
+    apply: such an invariant is rejected.  An invariant may call a function
+    with a body, which no type overrides.
+- *Witnesses.*  A datatype that only inherits invariants may declare a witness,
+  which is checked against the inherited invariants as well as its own; one
+  that extends only traits without invariants, and so has none, may not (the
+  syntactic check of the first step cannot see that, so the resolver reports
+  it).  A trait may not declare a witness, a general trait included ("not yet
+  supported"): its values are those of the types that extend it, each with its
+  own witness or none, and what a trait's witness would promise is not yet
+  settled.
+- *Visibility.*  To extend a trait with invariants, a module must see them
+  (section 4.1); the resolver reports an extends clause whose trait has
+  invariants but is not revealed.  A trait exported by `provides` alone cannot
+  be extended anyway (the existing "can only extend traits" error comes
+  first), so this is a backstop.
+- *Two fixes to earlier steps.*  The parser now accepts `invariant` or
+  `witness` directly after a method or function with no body (the member
+  keyword is retagged before the specification's synchronization point); the
+  first step's grammar missed it.  The printer names a general trait's derived
+  declaration without `?`.
+- *Translation cache.*  A trait whose invariants are verified, and a class
+  that extends one, no longer make the cache step aside; an abstract type with
+  an invariant still does.
+- *Tests.*  `git-issue-105-traits.dfy` holds reference traits: V3, the check at
+  `new;` of inherited invariants, a diamond, a trait of another module, raw
+  receivers and joins; `git-issue-105-general-traits.dfy` general traits, the
+  values of `raw G`, generic traits, witnesses that inherit, and a class that
+  extends a general trait; `git-issue-105-trait-errors.dfy` the resolver's
+  rules, including the paradoxes of section 3.3 built through a trait;
+  `git-issue-105-trait-witness.dfy` the witness rule;
+  `git-issue-105-wellformedness.dfy` the order of well-formedness assumptions;
+  `git-issue-105-trait-compile.dfy` runs trait values and type tests in
+  compiled code; `git-issue-105-trait-gates.dfy` what stays behind the gate.
+  `git-issue-105-syntax.dfy` adds members after bodiless ones, and
+  `git-issue-105-opacity.dfy` now verifies.

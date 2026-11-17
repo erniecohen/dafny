@@ -64,12 +64,13 @@ public class InvariantExtensionCondition {
   }
 
   /// <summary>
-  /// Check the extension condition for each declaration in "declarations" that declares an invariant.
+  /// Check the extension condition for each declaration in "declarations" that has invariants, declared or inherited
+  /// from the traits it extends.
   /// </summary>
   public static void Check(IEnumerable<TopLevelDecl> declarations, ErrorReporter reporter) {
     var reported = new HashSet<(string?, int)>();
     foreach (var decl in declarations.OfType<TopLevelDeclWithMembers>()) {
-      if (decl.Members.OfType<MemberInvariant>().Any()) {
+      if (decl.Members.OfType<MemberInvariant>().Any() || decl.InvariantTypeDecl != null) {
         new InvariantExtensionCondition(decl, reporter, reported).Run();
       }
     }
@@ -80,6 +81,7 @@ public class InvariantExtensionCondition {
     foreach (var invariant in decl.Members.OfType<MemberInvariant>()) {
       Enqueue(invariant);
     }
+    EnqueueInheritedInvariants(decl, none);
     if (owner is DatatypeDecl datatype) {
       // The values of raw T are built from values of the types of its components.
       EnqueueType(datatype, datatype.TypeArgs.ConvertAll(tp => (Type)new UserDefinedType(tp)), none);
@@ -113,6 +115,7 @@ public class InvariantExtensionCondition {
             foreach (var invariant in InvariantTypeDecl.Invariants(invariantTypeDecl.Owner)) {
               Enqueue(invariant, dependentOwnerParameters);
             }
+            EnqueueInheritedInvariants(invariantTypeDecl.Owner, dependentOwnerParameters);
             break;
           case SubsetTypeDecl subsetTypeDecl: // including NonNullTypeDecl
             if (IsConstrainedArrowTypeDecl(subsetTypeDecl)) {
@@ -140,6 +143,21 @@ public class InvariantExtensionCondition {
   }
 
   private TopLevelDeclWithMembers decl => owner;
+
+  /// <summary>
+  /// Put into the cone the invariants that "withInvariants" inherits from the traits it extends, where the type
+  /// parameters "dependentParameters" of "withInvariants" are T-dependent. A type parameter of the trait that declares
+  /// an inherited invariant is T-dependent where its type argument in the extends clauses is.
+  /// </summary>
+  private void EnqueueInheritedInvariants(TopLevelDeclWithMembers withInvariants, ISet<TypeParameter> dependentParameters) {
+    foreach (var (invariant, receiver) in withInvariants.InvariantTypeDecl?.InheritedInvariants ?? []) {
+      var trait = invariant.EnclosingClass;
+      var dependent = trait.TypeArgs
+        .Where((_, i) => i < receiver.TypeArgs.Count && DependsOnOwner(receiver.TypeArgs[i], dependentParameters))
+        .ToHashSet();
+      Enqueue(invariant, dependent);
+    }
+  }
 
   private void Enqueue(MemberDecl member) => Enqueue(member, new HashSet<TypeParameter>());
 
@@ -330,12 +348,14 @@ public class InvariantExtensionCondition {
   }
 
   /// <summary>
-  /// Clause 5 for a receiver: a member of a type with invariants that is not raw is applied to a value of that
-  /// type, so a raw receiver is converted to it.
+  /// Clause 5 for a receiver: a member that is not a raw member of a type with invariants (a member of the receiver's
+  /// type or of a trait it extends, that is not raw, or a member of a trait without invariants) is applied to a value
+  /// of the receiver's type, so a raw receiver is converted to it. A field whose value is stored needs no conversion.
   /// </summary>
   private void CheckReceiver(Expression? receiver, MemberDecl member) {
-    if (receiver?.Type == null || !RawMemberInference.HasRawCounterpart(member) || RawMemberInference.IsRawMember(member) ||
-        RawOwner(receiver.Type) is not { InvariantTypeDecl: { } invariantTypeDecl } cl || cl != member.EnclosingClass) {
+    if (receiver?.Type == null || member is { IsStatic: true } or SpecialField || RawMemberInference.IsStoredField(member) ||
+        (RawMemberInference.HasRawCounterpart(member) && RawMemberInference.IsRawMember(member)) ||
+        RawOwner(receiver.Type) is not { InvariantTypeDecl: { } invariantTypeDecl }) {
       return;
     }
     var target = new UserDefinedType(receiver.Origin, invariantTypeDecl.Name, invariantTypeDecl, receiver.Type.NormalizeExpand().TypeArgs);
