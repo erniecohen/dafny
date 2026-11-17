@@ -187,7 +187,10 @@ jobs:
       - name: Version
         id: version
         run: |
-          sh .github/review/version.sh | tee -a "$GITHUB_OUTPUT"
+          # Not a pipe into tee: without pipefail a failing version.sh left the version empty.
+          out=$(sh .github/review/version.sh)
+          echo "$out" | tee -a "$GITHUB_OUTPUT"
+          echo "$out" | grep -q '^version=.'
           harness=$(sed -n 's/.*DefaultZ3Version = "\(.*\)";.*/\1/p' Source/DafnyCore/DafnyOptions.cs)
           echo "harness_z3=$harness" >> "$GITHUB_OUTPUT"
       - uses: ./.github/actions/setup-dotnet
@@ -972,6 +975,8 @@ jobs:
         run: dotnet test --settings .github/review/ci.runsettings Source/DafnyLanguageServer.Test -c Release --filter FullyQualifiedName~ConsistentObligationChecksTest --logger "console;verbosity=normal"
       - name: Editor option changes invalidate verification results
         run: dotnet test --settings .github/review/ci.runsettings Source/DafnyLanguageServer.Test -c Release --filter FullyQualifiedName~AdditionalAxiomsTest --logger "console;verbosity=normal"
+      - name: The gutter does not mark a line verified while a member on it is pending (issue 426)
+        run: dotnet test --settings .github/review/ci.runsettings Source/DafnyLanguageServer.Test -c Release --filter FullyQualifiedName~GutterStatus --logger "console;verbosity=normal"
 
 
   regressions-linux:
