@@ -1668,12 +1668,14 @@ parents, with their raw types.**
 ## 10. Implementation decisions
 
 Decisions made while implementing, on the principle of consistent semantics.
-Each is also recorded in the pull request that makes it.
+Each is also recorded in the message of the commit that makes it.  The
+feature lands as one pull request, a sequence of commits, one or a few for
+each step below.
 
-**Stage 0 and the resolution part of stage 1 (first pull request).**
+**Stage 0 and the resolution part of stage 1 (first step).**
 
 - *Split.*  Section 7.2's stage 0 has the resolver reject every invariant.
-  Instead, the first pull request resolves invariants, applies the reads
+  Instead, the first step resolves invariants, applies the reads
   restriction of section 3.2, the codatatype ban and the declaration rule of
   section 3.8, and the verifier reports each invariant as not yet supported.
   `witness` members and `raw T` are parsed and rejected by the resolver as not
@@ -1749,13 +1751,13 @@ Each is also recorded in the pull request that makes it.
   be applied.  Inside an invariant, `this` has the type itself until `raw T`
   exists.
 
-**Open after the first pull request.**  Recorded at review; none is a
+**Open after the first step.**  Recorded at review; none is a
 soundness problem while nothing checks or assumes an invariant.
 
 - *The not-yet-supported error is per translated module.*  A module given only
   as a library, one left out by `--filter-symbol`, or a program that is
   compiled with `--no-verify`, is never translated, so its invariants are not
-  reported.  The second pull request makes the error program-wide: if any
+  reported.  The second step makes the error program-wide: if any
   module, a library's included, declares an invariant, no module is verified.
   Compiling with `--no-verify` remains allowed, and the compiled code ignores
   the invariants.
@@ -1768,7 +1770,7 @@ soundness problem while nothing checks or assumes an invariant.
   does not reparse an unchanged file.  This predates member invariants and
   applies to every parser option.
 
-**`raw T` for datatypes (second pull request).**
+**`raw T` for datatypes (second step).**
 
 - *The derived type.*  A datatype `D` that declares an invariant is itself the
   raw type, `raw D`.  The name `D` written as a type denotes a derived
@@ -1818,7 +1820,7 @@ soundness problem while nothing checks or assumes an invariant.
   constraint calls the invariants, and its conversions carry obligations.  So
   the verifier translates no module of a program that declares an invariant:
   it reports each invariant, and in each other module the first declaration it
-  would have verified.  The first pull request verified the modules without
+  would have verified.  The first step verified the modules without
   invariants.  The translation cache (`--translation-cache`) keys a module on
   what the module depends on, so in the language server a module could be
   reused from before an unrelated module declared an invariant; it therefore
@@ -1833,12 +1835,12 @@ soundness problem while nothing checks or assumes an invariant.
 - *Printing.*  `/rprint` shows the derived declaration, in a comment after the
   datatype, and marks each raw member.
 
-**Verification of datatypes (third pull request; the rest of stage 1 of
+**Verification of datatypes (third step; the rest of stage 1 of
 section 7.2).**
 
 - *The gate.*  The invariants of an inductive datatype with no type parameters
   and no parent traits, declared in a module that refines no other, are
-  verified.  The program-wide gate of the second pull request stays for every
+  verified.  The program-wide gate of the second step stays for every
   other invariant: if the program, libraries included, declares one, no module
   is translated, and each such invariant is reported with its reason (a
   datatype with type parameters, a datatype that extends a trait, a refining
@@ -1922,9 +1924,13 @@ section 7.2).**
   type.  It now analyses a declaration's base type first when that is still to
   be done.  Without invariants the call graph already puts base types first, so
   the order is unchanged.
-- *Translation cache.*  Still bypassed for a program that declares an
-  invariant: whether a module is translated depends on the invariants of every
-  module, and the cache does not yet key on them.
+- *Translation cache.*  The cache steps aside only for a program that
+  declares an invariant whose verification is not yet supported: then no
+  module is translated, and a module's key covers only the modules it depends
+  on.  Otherwise a module's translation depends only on what its key covers,
+  the source and resolution of the module and of the modules it depends on,
+  and the options, `--member-invariants` among them.  So a module of a program
+  whose invariants are all verified is cached as any module is.
 - *Tests.*  `git-issue-105-datatypes.dfy` holds sections 6.1 and 6.3 for
   datatypes and the controls V1, V4 and V8; `git-issue-105-vacuity.dfy` holds V5
   and V5b; `git-issue-105-extension.dfy` holds section 6.2's datatype examples

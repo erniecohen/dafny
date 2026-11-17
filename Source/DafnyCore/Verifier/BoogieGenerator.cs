@@ -820,19 +820,18 @@ namespace Microsoft.Dafny {
 
     /// <summary>
     /// Issue 105: whether the program, libraries included, declares a member invariant under --member-invariants
-    /// whose verification is not yet supported, in which case no module of it is translated.
+    /// whose verification is not yet supported, in which case no module of it is translated. The translation cache
+    /// does not reuse a module of such a program, since a module's key covers only what the module depends on.
     /// </summary>
-    private static bool DeclaresUnsupportedMemberInvariants(Program p) {
+    internal static bool DeclaresUnsupportedMemberInvariants(Program p) {
       return DeclaresMemberInvariants(p) &&
              p.RawModules().Any(module => Invariants(module).Any(invariant => UnsupportedInvariantReason(invariant) != null));
     }
 
     /// <summary>
     /// Issue 105: whether the program, libraries included, declares a member invariant under --member-invariants.
-    /// The translation cache does not reuse a module of such a program, since a module's key covers only what the
-    /// module depends on, and whether it is translated at all depends on the invariants of every module.
     /// </summary>
-    internal static bool DeclaresMemberInvariants(Program p) {
+    private static bool DeclaresMemberInvariants(Program p) {
       return p.Options.Get(CommonOptionBag.MemberInvariants) && p.RawModules().Any(module => Invariants(module).Any());
     }
 

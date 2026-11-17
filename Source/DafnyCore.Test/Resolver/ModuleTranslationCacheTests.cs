@@ -296,12 +296,13 @@ public class ModuleTranslationCacheTests {
   /// <summary>
   /// Issue 105: no module of a program that declares a member invariant whose verification is not yet supported is
   /// verified. A module's key covers only what the module depends on, so its entry from before an unrelated file
-  /// declared an invariant must not be reused, whether or not that invariant's verification is supported.
+  /// declared such an invariant must not be reused. An unrelated invariant whose verification is supported does not
+  /// change the module's translation, so its entry is reused.
   /// </summary>
   [Theory]
   [InlineData("module Unrelated { datatype D = D(x: int) { invariant x > 0 } }", true)]
   [InlineData("module Unrelated { datatype D<X> = D(x: X) { invariant true } }", false)]
-  public async Task AMemberInvariantInAnUnrelatedFileStopsReuse(string with, bool supported) {
+  public async Task AnUnsupportedMemberInvariantInAnUnrelatedFileStopsReuse(string with, bool supported) {
     const string without = "module Unrelated { datatype D = D(x: int) }";
     var cache = new ModuleTranslationCache();
     var before = await Resolve(Source, without, refresh: true, memberInvariants: true);
@@ -312,15 +313,46 @@ public class ModuleTranslationCacheTests {
     cache.Translate(again, again.RawModules().Single(m => m.Name == "M"), new(again.Options), default);
     Assert.Equal(1, cache.Hits);
     var after = await Resolve(Source, with, refresh: true, memberInvariants: true);
-    var second = cache.Translate(after, after.RawModules().Single(m => m.Name == "M"), new(after.Options), default);
-    Assert.Equal(1, cache.Hits);
+    var second = cache.Translate(after, after.RawModules().Single(m => m.Name == "M"), new(after.Options), default,
+      out var reused);
     if (supported) {
-      Assert.NotEmpty(second.Implementations);
+      Assert.True(reused);
+      Assert.Equal(2, cache.Hits);
+      Assert.Equal(ModuleTranslationCache.Emit(first, before.Options), ModuleTranslationCache.Emit(second, after.Options));
       Assert.Equal(0, after.Reporter.ErrorCount);
     } else {
+      Assert.False(reused);
+      Assert.Equal(1, cache.Hits);
       Assert.Empty(second.Implementations);
       Assert.Equal(1, after.Reporter.ErrorCount);
     }
+  }
+
+  /// <summary>
+  /// Issue 105: a module that declares a member invariant whose verification is supported is cached as any other
+  /// module is. The invariant is part of the module's source, so a changed invariant is a different entry.
+  /// </summary>
+  [Fact]
+  public async Task AModuleWithASupportedMemberInvariantIsReused() {
+    const string with = "module M { datatype D = D(x: int) { invariant x > 0 } lemma L(d: D) ensures d.x > 0 {} }";
+    const string changed = "module M { datatype D = D(x: int) { invariant x > 1 } lemma L(d: D) ensures d.x > 0 {} }";
+    var cache = new ModuleTranslationCache();
+    var before = await Resolve(with, refresh: true, memberInvariants: true);
+    var first = cache.Translate(before, before.RawModules().Single(m => m.Name == "M"), new(before.Options), default,
+      out var reused);
+    Assert.False(reused);
+    Assert.NotEmpty(first.Implementations);
+    var again = await Resolve(with, refresh: true, memberInvariants: true);
+    var second = cache.Translate(again, again.RawModules().Single(m => m.Name == "M"), new(again.Options), default,
+      out reused);
+    Assert.True(reused);
+    Assert.Equal(ModuleTranslationCache.Emit(first, before.Options), ModuleTranslationCache.Emit(second, again.Options));
+    var other = await Resolve(changed, refresh: true, memberInvariants: true);
+    var third = cache.Translate(other, other.RawModules().Single(m => m.Name == "M"), new(other.Options), default,
+      out reused);
+    Assert.False(reused);
+    Assert.Equal(1, cache.Hits);
+    Assert.NotEqual(ModuleTranslationCache.Emit(first, before.Options), ModuleTranslationCache.Emit(third, other.Options));
   }
 
   internal static async Task<Microsoft.Dafny.Program> Resolve(string source, string? unrelated = null, bool refresh = false, bool modularTermination = false, int threads = 1, bool cached = true, bool memberInvariants = false) {
