@@ -5,6 +5,9 @@
 // RUN: %exits-with 4 %verify --type-system-refresh=false --general-newtypes=false "%S/Inputs/github-issue-453-accepted.dfy" >> "%t"
 // RUN: %exits-with 0 %verify --legacy-stored-function-callbacks "%S/Inputs/github-issue-453-knot.dfy" >> "%t"
 // RUN: %exits-with 2 %resolve "%S/Inputs/github-issue-453-knot.dfy" >> "%t"
+// RUN: %exits-with 0 %verify --legacy-stored-function-callbacks "%S/Inputs/github-issue-453-nested-knot.dfy" >> "%t"
+// RUN: %exits-with 2 %resolve "%S/Inputs/github-issue-453-nested-knot.dfy" >> "%t"
+// RUN: %exits-with 2 %resolve --type-system-refresh=false --general-newtypes=false "%S/Inputs/github-issue-453-nested-knot.dfy" >> "%t"
 // RUN: %diff "%s.expect" "%t"
 // Regression (https://github.com/erniecohen/dafny/issues/453): a function value that a constructor
 // stores in a field could be applied, by a function of the object, to a value from which it reaches
@@ -18,7 +21,10 @@
 // in the type arguments of a trait type.  Each module below stores such a function and is rejected.
 // Inputs/github-issue-453-accepted.dfy has stored functions that do not reach the object, and an
 // "assert false" that must fail.  The hidden --legacy-stored-function-callbacks restores the old
-// search, under which the knot verifies.
+// search, under which the knot verifies.  A nested datatype, whose recursion makes a larger
+// instantiation at every step, is expanded once on each path of the search, so the search ends: a
+// store of one is accepted (Inputs/github-issue-453-accepted.dfy), and a knot through one is rejected
+// (Inputs/github-issue-453-nested-knot.dfy, which also verifies under the legacy option).
 
 // The reproducer of the issue: a datatype argument
 module Datatype {

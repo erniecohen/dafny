@@ -96,6 +96,8 @@ class HigherOrderHeapAllocationCheckerConstructor : ASTVisitor<IASTVisitorContex
   private sealed class Reach {
     public readonly TopLevelDecl ObjDecl;
     private readonly HashSet<(string, bool)> visited = [];
+    // The size of the instantiation of each declaration, in each position, that is being expanded
+    private readonly Dictionary<(TopLevelDecl, bool), int> expanding = new();
 
     public Reach(Type obj) {
       ObjDecl = Declaration(obj as UserDefinedType);
@@ -137,8 +139,40 @@ class HigherOrderHeapAllocationCheckerConstructor : ASTVisitor<IASTVisitorContex
       if (found != null || decl is not TopLevelDeclWithMembers withMembers || decl is TraitDecl || decl is AbstractTypeDecl) {
         return found;
       }
-      var subst = TypeParameter.SubstitutionMap(withMembers.TypeArgs, udt.TypeArgs);
-      return Components(withMembers, subst).Select(component => Occurs(component, left)).FirstOrDefault(t => t != null);
+      // A declaration can recur at a larger instantiation, as in a nested datatype
+      // N<A> = Leaf(a: A) | Node(n: N<seq<A>>), whose expansion makes a larger type at every step.  So a
+      // declaration that is being expanded, in the same position, is not expanded again at a larger
+      // instantiation: the parts of its components that do not come from its type parameters are the
+      // same at every instantiation, and they are searched by the expansion in progress.  Only the type
+      // arguments differ, and they are searched as if left of an arrow, the position in which the
+      // search fails the most.  An instantiation that is not larger is expanded, as for Box<Box<C>>.
+      // On each path of the search, then, the instantiations of a declaration in a position do not
+      // grow; there are finitely many types of a given size, and "visited" stops a repeated one, so
+      // the search ends.
+      var key = (withMembers, left);
+      var size = Size(udt);
+      var nested = expanding.TryGetValue(key, out var outer);
+      if (nested && size > outer) {
+        return udt.TypeArgs.Select(typeArg => Occurs(typeArg, true)).FirstOrDefault(t => t != null);
+      }
+      expanding[key] = size;
+      try {
+        var subst = TypeParameter.SubstitutionMap(withMembers.TypeArgs, udt.TypeArgs);
+        return Components(withMembers, subst).Select(component => Occurs(component, left)).FirstOrDefault(t => t != null);
+      } finally {
+        if (nested) {
+          expanding[key] = outer;
+        } else {
+          expanding.Remove(key);
+        }
+      }
+    }
+
+    /// <summary>
+    /// The number of type constructors in a type, after its synonyms are expanded.
+    /// </summary>
+    private static int Size(Type type) {
+      return 1 + type.NormalizeExpand().TypeArgs.Sum(Size);
     }
 
     /// <summary>

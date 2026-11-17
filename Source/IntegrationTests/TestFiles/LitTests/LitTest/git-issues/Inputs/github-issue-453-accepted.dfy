@@ -45,6 +45,25 @@ class C {
   function F(): nat { p(Pair(0, [])) + q(Box(1)) + w.f(2) + a.Apply(3) + h.g(4) }
 }
 
+// A nested datatype, whose recursion makes a larger instantiation at every step.  The search of N<int>
+// went on through N<seq<int>>, N<seq<seq<int>>> and so on, and did not end.
+datatype N<A> = Leaf(a: A) | Node(n: N<seq<A>>)
+
+class Nested {
+  const n: N<int>
+  const m: N<int -> int>
+  constructor () {
+    n := Node(Leaf([1]));
+    m := Leaf((i: int) => i);
+  }
+}
+
+// A type nested in another instantiation of its own declaration, which is not a larger instantiation
+class Self {
+  const bb: Box<Box<Self?>>
+  constructor () { bb := Box(Box(null)); }
+}
+
 method Main() {
   var fa := new FA<int>((i: int) => if i < 0 then 0 else i);
   var g := new G<int>((i: int) => 0);

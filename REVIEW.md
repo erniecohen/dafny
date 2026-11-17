@@ -1016,7 +1016,13 @@ type it looks for function values in the same declarations, and it takes the typ
 trait type or an abstract type to be left of an arrow, because an implementation or definition may
 store a function of them.  A type parameter is not followed: an instance of a generic class is
 checked where it is stored, with the type arguments substituted.  Mutable fields are not followed,
-since a function without a `reads` clause cannot read them.
+since a function without a `reads` clause cannot read them.  A nested datatype, such as
+`N<A> = Leaf(a: A) | Node(n: N<seq<A>>)`, makes a larger instantiation of its declaration at each
+step, so the search expands a declaration again, in the same position, only at an instantiation
+that is not larger.  At a larger one it searches the type arguments alone, as if left of an arrow;
+the expansion in progress searches the rest of the declaration.  So the search ends.  It is
+conservative there: a nested datatype instantiated with the object's class, such as `N<C?>` stored
+in a field of `C`, is rejected even when it holds no function.
 Its kind is **weakens only**: it rejects programs and adds no fact or axiom.  It changes no
 resolution outside its regression in the test suite, the standard library (its sources,
 `modular-termination`, `orders`) or the standard library's examples.  The hidden
