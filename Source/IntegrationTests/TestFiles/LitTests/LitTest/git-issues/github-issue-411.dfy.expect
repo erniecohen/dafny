@@ -1,0 +1,37 @@
+github-issue-411.dfy(21,21): Error: field 'e', which is subject to definite-assignment rules, might be uninitialized at this point in the constructor body
+github-issue-411.dfy(24,7): Related location: refining module
+github-issue-411.dfy(38,21): Error: field 'e', which is subject to definite-assignment rules, might be uninitialized at this point in the constructor body
+github-issue-411.dfy(41,7): Related location: refining module
+github-issue-411.dfy(56,53): Error: field 'd', which is subject to definite-assignment rules, might be uninitialized at this point in the constructor body
+github-issue-411.dfy(59,7): Related location: refining module
+github-issue-411.dfy(72,21): Error: field 'w', which is subject to definite-assignment rules, might be uninitialized at this point in the constructor body
+github-issue-411.dfy(80,7): Related location: refining module
+github-issue-411.dfy(90,21): Error: field 't', which is subject to definite-assignment rules, might be uninitialized at this point in the constructor body
+github-issue-411.dfy(93,7): Related location: refining module
+
+Dafny program verifier finished with 3 verified, 5 errors
+github-issue-411.dfy(21,21): Error: field 'e', which is subject to definite-assignment rules, might be uninitialized at this point in the constructor body
+github-issue-411.dfy(24,7): Related location: refining module
+github-issue-411.dfy(38,21): Error: field 'e', which is subject to definite-assignment rules, might be uninitialized at this point in the constructor body
+github-issue-411.dfy(41,7): Related location: refining module
+github-issue-411.dfy(56,53): Error: field 'd', which is subject to definite-assignment rules, might be uninitialized at this point in the constructor body
+github-issue-411.dfy(59,7): Related location: refining module
+github-issue-411.dfy(72,21): Error: field 'w', which is subject to definite-assignment rules, might be uninitialized at this point in the constructor body
+github-issue-411.dfy(80,7): Related location: refining module
+github-issue-411.dfy(90,21): Error: field 't', which is subject to definite-assignment rules, might be uninitialized at this point in the constructor body
+github-issue-411.dfy(93,7): Related location: refining module
+
+Dafny program verifier finished with 3 verified, 5 errors
+github-issue-411-library.dfy(3,21): Error: field 'e', which is subject to definite-assignment rules, might be uninitialized at this point in the constructor body
+github-issue-411-include.dfy(4,7): Related location: refining module
+
+Dafny program verifier finished with 0 verified, 1 error
+CLI: Warning: The file 'github-issue-411-library.dfy' was passed to --library. Verification for that file might have used options incompatible with the current ones, or might have been skipped entirely. Use a .doo file to enable Dafny to check that compatible options were used
+github-issue-411-library.dfy(3,21): Error: field 'e', which is subject to definite-assignment rules, might be uninitialized at this point in the constructor body
+github-issue-411-client.dfy(2,7): Related location: refining module
+
+Dafny program verifier finished with 0 verified, 1 error
+
+Dafny program verifier finished with 5 verified, 0 errors
+
+Dafny program verifier finished with 3 verified, 0 errors

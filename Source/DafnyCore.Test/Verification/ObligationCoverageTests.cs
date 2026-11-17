@@ -33,6 +33,7 @@ public class ObligationCoverageTests {
     ["BoogieGenerator.DataTypes.cs"]="datatype-constructors",
     ["BoogieGenerator.ExpressionWellformed.cs"]="ordered-expression-wf",
     ["BoogieGenerator.Decreases.cs"]="termination",
+    ["BoogieGenerator.BoundedCallables.cs"]="termination",
     ["BoogieGenerator.TypeObligations.cs"]="guarded-type-introduction",
     ["BoogieGenerator.LetExpr.cs"]="let-permissions",
     ["BoogieGenerator.SplitExpr.cs"]="canonical-proposition-core",

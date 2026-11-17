@@ -22,7 +22,8 @@ git-issue-264-negative.dfy(2,2): Error: assertion might not hold
 git-issue-264-negative.dfy(5,2): Error: assertion might not hold
 git-issue-264-negative.dfy(8,2): Error: assertion might not hold
 git-issue-264-negative.dfy(11,2): Error: assertion might not hold
-git-issue-264-negative.dfy(16,19): Error: decreases clause might not decrease
+git-issue-264-negative.dfy(16,19): Error: decreases expression must be bounded below by 0
+git-issue-264-negative.dfy(15,12): Related location: this decreases clause was not satisfied
 git-issue-264-negative.dfy(19,2): Error: assertion might not hold
 git-issue-264-negative.dfy(22,34): Error: assertion might not hold
 git-issue-264-negative.dfy(25,37): Error: assertion might not hold

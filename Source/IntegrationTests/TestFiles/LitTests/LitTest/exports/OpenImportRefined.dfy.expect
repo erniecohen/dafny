@@ -1,2 +1,7 @@
-
-Dafny program verifier finished with 2 verified, 0 errors
+OpenImportRefined.dfy(11,23): Error: refining module 'Refined' captures the name 'T' used in code inherited from module 'Base': in 'Base' it refers to type synonym 'GiveT.T' (declared at OpenImportRefined.dfy(5,7)), but in 'Refined' it would refer to type synonym 'Refined.T' (declared at OpenImportRefined.dfy(15,7))
+OpenImportRefined.dfy(14,7): Related location: refining module
+OpenImportRefined.dfy(45,12): Error: refining module 'RefinedF' captures the name 'f' used in code inherited from module 'BaseF': in 'BaseF' it refers to function 'GiveF.f' (declared at OpenImportRefined.dfy(38,27)), but in 'RefinedF' it would refer to function 'RefinedF.f' (declared at OpenImportRefined.dfy(51,17))
+OpenImportRefined.dfy(50,7): Related location: refining module
+OpenImportRefined.dfy(46,11): Error: refining module 'RefinedF' captures the name 'f' used in code inherited from module 'BaseF': in 'BaseF' it refers to function 'GiveF.f' (declared at OpenImportRefined.dfy(38,27)), but in 'RefinedF' it would refer to function 'RefinedF.f' (declared at OpenImportRefined.dfy(51,17))
+OpenImportRefined.dfy(50,7): Related location: refining module
+3 resolution/type errors detected in OpenImportRefined.dfy
