@@ -892,8 +892,11 @@ NoGhost - disable printing of functions, ghost methods, and proof
       Indent(indent);
       PrintClassMethodHelper(dt is IndDatatypeDecl ? "datatype" : "codatatype", dt.Attributes, dt.Name, dt.TypeArgs);
       PrintExtendsClause(dt);
-      // Before refinement merging, the constructors are inherited, not an empty definition.
-      wr.Write(printMode == PrintModes.Serialization && dt.IsRefining && dt.Ctors.Count == 0 ? " ..." : " =");
+      // A refining datatype declares no constructors. It inherits them when refinement merges it with the datatype
+      // it refines, so before then it has none. Print it as it was written, with "..." in place of "=" and the
+      // constructors, in every print mode: "=" with no constructors after it does not parse
+      // (https://github.com/erniecohen/dafny/issues/415).
+      wr.Write(dt.IsRefining && dt.Ctors.Count == 0 ? " ..." : " =");
       string sep = "";
       foreach (DatatypeCtor ctor in dt.Ctors) {
         wr.Write(sep);
