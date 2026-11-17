@@ -902,7 +902,10 @@ the value it applies.
 - A function value that reads the heap cannot be stored in a field, but a bounded value can, also
   one of type `bounded<O, A ~> B>`. Its formation checked its function in every later state, so a
   cycle through the heap would apply it under its own bound or a larger one, which the rule for
-  applications below rejects. The order type `O` itself is checked as before.
+  applications below rejects. Only the top-level arrow of `F` is exempt: the order type `O`, and the
+  parameter and result types of `F`, are checked as before, so `bounded<nat, () -> (() ~> bool)>`
+  cannot be stored, since its function could hand out a raw heap-reading function to code without
+  a bound.
 
 Formation and application:
 

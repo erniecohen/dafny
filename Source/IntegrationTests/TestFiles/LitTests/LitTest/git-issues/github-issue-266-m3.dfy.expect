@@ -43,6 +43,23 @@ github-issue-266-m3-kernels.dfy(140,24): Error: decreases clause might not decre
 github-issue-266-m3-kernels.dfy(152,44): Error: decreases clause might not decrease (--modular-termination: the 'decreases {:callback}' bound of 'f' must not exceed that of the parameter it is passed for)
 
 Dafny program verifier finished with 22 verified, 10 errors
+knots through the parameter and result types of a bounded function, both resolvers
+github-issue-266-m3-wrapper.dfy(13,8): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+github-issue-266-m3-wrapper.dfy(8,83): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+github-issue-266-m3-wrapper.dfy(28,8): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+github-issue-266-m3-wrapper.dfy(42,9): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+github-issue-266-m3-wrapper.dfy(37,41): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+github-issue-266-m3-wrapper.dfy(52,9): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+github-issue-266-m3-wrapper.dfy(61,64): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+7 resolution/type errors detected in github-issue-266-m3-wrapper.dfy
+github-issue-266-m3-wrapper.dfy(13,8): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+github-issue-266-m3-wrapper.dfy(8,83): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+github-issue-266-m3-wrapper.dfy(28,8): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+github-issue-266-m3-wrapper.dfy(42,9): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+github-issue-266-m3-wrapper.dfy(37,41): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+github-issue-266-m3-wrapper.dfy(52,9): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+github-issue-266-m3-wrapper.dfy(61,64): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+7 resolution/type errors detected in github-issue-266-m3-wrapper.dfy
 stored bounded values, compiled
 
 Dafny program verifier finished with 6 verified, 0 errors
