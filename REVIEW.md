@@ -500,7 +500,8 @@ those v4.11.0 already has, and leaves out the paths that are not product (tests,
 `docs`, `.github`, `friction` and the documents at the top of the tree):
 
     git diff --no-renames --abbrev=7 v4.11.0 <last product commit> -- . \
-      ':(exclude)Source/IntegrationTests' ':(exclude)docs' ':(exclude).github' \
+      ':(exclude)Source/IntegrationTests' ':(exclude,glob)Source/*.Test/**' \
+      ':(exclude,glob)Source/*.Tests/**' ':(exclude)docs' ':(exclude).github' \
       ':(exclude)friction' ':(exclude)REVIEW.md' ':(exclude)ROADMAP.md' \
       ':(exclude)AGENTS.md' ':(exclude)CLAUDE.md' | sha256sum
 
@@ -546,14 +547,17 @@ change no product file, so the version stays.  The rule on this branch:
   and gets a new version and a new tag;
 - any other commit keeps them.
 
-The product is everything outside `Source/IntegrationTests/`, `docs/`,
+The product is everything outside `Source/IntegrationTests/`, the unit-test
+projects (`Source/*.Test/` and `Source/*.Tests/`, which no release ships; left out
+since 2026-11-16), `docs/`,
 `.github/`, `friction/`, this file, and the other documents at the top of the
 tree: `ROADMAP.md`, `AGENTS.md` and `CLAUDE.md`.  `.github/review/base` names the base
 and the last product commit, and CI's `.github/review/version.sh` computes the
 version from them and fails if a later commit changes a product file.  By hand,
 this prints nothing:
 
-    git diff --name-only b97a6fe <commit> -- . ':!Source/IntegrationTests' ':!docs' ':!.github' \
+    git diff --name-only b97a6fe <commit> -- . ':!Source/IntegrationTests' \
+      ':(exclude,glob)Source/*.Test/**' ':(exclude,glob)Source/*.Tests/**' ':!docs' ':!.github' \
       ':!friction' ':!REVIEW.md' ':!ROADMAP.md' ':!AGENTS.md' ':!CLAUDE.md'
 
 A release binary built from the tag prints the version with `dafny --version`.
