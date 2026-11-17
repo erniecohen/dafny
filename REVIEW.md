@@ -841,6 +841,31 @@ the fix costs no proofs.  Still, as for every soundness fix, the hidden
 `--legacy-skeleton-modifying-calls` option restores the old rule for comparison and migration.  The regression is
 `git-issues/github-issue-412.dfy`; the release note is `docs/dev/news/412.fix`.
 
+## Inherited constructors of classes with new fields ([issue 411](https://github.com/erniecohen/dafny/issues/411))
+
+A refining module may add a field to a class whose constructor it inherits unchanged.  The copied
+constructor cannot assign the new field, and its body's definite-assignment check for the field,
+at `new;` or at the end of the body, is not at an inherited origin, so it survives as an assert.
+But the pipeline never scheduled a copied member's tasks, so `dafny verify` never checked it, and
+a read of the uninitialized field proved `false` (the compile commands, which verify the whole
+Boogie program, did report it).  `BoogieGenerator.MustCheckInheritedConstructorFields` now decides
+when a refining module verifies an inherited constructor: when the constructor has a body and the
+module adds an instance field that is subject to definite-assignment rules (one that the base
+class's constructed object lacks).  `MustVerifyCopy` joins it with issue 404's
+`MustReverifyInheritedOverrideCheck`, and the pipeline schedules the body task of such a
+constructor the way it schedules a reverified override check (`IsReverifiedInheritedCheck`).
+Every other assert of the copied body stays where refinement put it: asserts at inherited origins
+are assumed.  The field checks assert at the base's origin, since a copied `new;` is inherited,
+with the refining module as a related location.  A module that adds no such field, or that
+declares the constructor itself, gets the same Boogie program as before.
+Its kind is **asserts more**: it rejects programs, by verifying an existing assert the old
+pipeline skipped, and adds no fact or axiom.  It costs no proof: the inherited body cannot assign
+the new field, so a check it adds fails unless the body cannot reach `new;` or its end, and in the
+test suite it adds a check only to its regression.  Still, as for every soundness fix, the hidden
+`--legacy-inherited-constructor-fields` option restores the old rule for comparison and migration.
+The regression is `git-issues/github-issue-411.dfy`; the release note is
+`docs/dev/news/411.fix`.
+
 ## Replacements that depend on a client ([issue 405](https://github.com/erniecohen/dafny/issues/405))
 
 A module `R` that replaces a replaceable module `F` could import a client `C` of `F`.  The module
@@ -896,3 +921,22 @@ rejected.  The legacy resolver ignores the option.  When a pattern does not matc
 default decisions are made before the error is reported, so that the message names the types
 they give.  The regression is `git-issues/github-issue-48.dfy`; the release note is
 `docs/dev/news/conservative-match-inference-default.fix`.
+
+## Printing the resolved program ([issue 441](https://github.com/erniecohen/dafny/issues/441))
+
+Four printing tests had fallen behind the fork.  Three are printer output that the fork changed on
+purpose, so their `.expect` files are updated.  The comment `// bitvector types in use` lists the
+widths that the translator declares: in increasing order, and including the bit length of a width
+that a shift lowers to (`bv67` adds `bv7`).  `git-issues/git-issue-1665.dfy` prints the
+module-qualified names generated for `:-` and gives an untyped case variable the type of the match
+source, `nat`.  One was a bug: under `--type-system-refresh`, the published `_System` lost each
+`bvN` declaration with its `RotateLeft` and `RotateRight`, because the dependency-local translation
+inputs recorded a bitvector type's width but not its declaration, so `--rprint` no longer listed
+them.  `ModuleTranslationInputs` now records the name too.  `dafny0/BitvectorsMore.dfy.refresh.expect`
+had been rewritten to the broken output when dependency-local translation became the default; it
+now lists the declarations again, as 4.11.0 did.  Its kind is **no effect on
+verification**: the translator does nothing for these declarations, the solver input of each of the
+four tests is byte-identical with and without the change, under both resolvers, and so is compiled
+output.  The four tests are now in `.github/review/regressions`; the release note is
+`docs/dev/news/441.fix`.  The fifth test of the issue, `dafny0/Superposition.legacy.dfy`, is left
+to [issue 436](https://github.com/erniecohen/dafny/issues/436).

@@ -126,7 +126,7 @@ module _System {
     | forall x0: T0, x1: T1 :: f.requires(x0, x1)
     /*special witness*/
 }
-// bitvector types in use: bv10
+// bitvector types in use: bv4 bv10
 */
 
 /* CALL GRAPH for module _module:

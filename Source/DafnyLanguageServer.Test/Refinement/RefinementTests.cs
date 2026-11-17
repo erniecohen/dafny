@@ -99,6 +99,26 @@ module B refines A {
     Assert.DoesNotContain(diagnostic.RelatedInformation ?? [], r => r.Message.Contains("refining module"));
   }
 
+  // https://github.com/erniecohen/dafny/issues/411: a refining module that adds a field subject to definite
+  // assignment verifies the constructor it inherits unchanged, which cannot assign the field.
+  [Fact]
+  public async Task AddedFieldChecksInheritedConstructor() {
+    var source = @"
+module A {
+  class C { constructor () { } }
+}
+module B refines A {
+  type Empty = x: int | false witness *
+  class C ... { var e: Empty }
+}".TrimStart();
+    var document = await CreateOpenAndWaitForResolve(source);
+    var diagnostics = await GetLastDiagnostics(document, DiagnosticSeverity.Error);
+    var diagnostic = Assert.Single(diagnostics);
+    Assert.Contains("field 'e'", diagnostic.Message);
+    Assert.Equal(1, diagnostic.Range.Start.Line);
+    Assert.Contains(diagnostic.RelatedInformation ?? [], r => r.Message.Contains("refining module"));
+  }
+
   // https://github.com/erniecohen/dafny/issues/423: B checks the override of the member it inherits, which has the
   // position of C.L in A, so the two share one node of the verification tree.  Each reports its implementations to
   // that node, and the gutter shows the results of both, whichever reports last.  The order depends on scheduling, so
@@ -231,6 +251,36 @@ module B refines A {
     var diagnostic = Assert.Single(diagnostics);
     Assert.Contains("unnecessary requires clause", diagnostic.Message);
     Assert.Equal(2, diagnostic.Range.Start.Line);
+  }
+
+  /// <summary>
+  /// The copy of C.L that B verifies has C.L's range.  The copy is scheduled before C.L, and its check passes while
+  /// C.L's fails, so the range must not read Correct before C.L's tasks are identified (issue 433).  With the roles
+  /// swapped, the range must not read Correct from C.L's tasks alone, should C.L be scheduled first.  C comes before
+  /// S, so that no other member is scheduled before C.L, which would have A or B translated earlier.
+  /// </summary>
+  [Theory]
+  [InlineData(true)]
+  [InlineData(false)]
+  public async Task SharedRangeIsNotCorrectUntilEachVerifiableIsPrepared(bool baseFails) {
+    var source = $@"
+module A {{
+  class C extends S {{ lemma L() ensures true {{ {(baseFails ? "assert false;" : "")} }} }}
+  trait S {{ lemma L() ensures true }}
+}}
+module B refines A {{
+  trait S ... {{ lemma L... ensures {(baseFails ? "1 == 1" : "false")} }}
+}}".TrimStart();
+    await CreateOpenAndWaitForResolve(source);
+    var statuses = new List<PublishedVerificationStatus>();
+    while (statuses.Count == 0 || statuses[^1] != PublishedVerificationStatus.Error) {
+      var fileStatus = await verificationStatusReceiver.AwaitNextNotificationAsync(CancellationToken);
+      var status = fileStatus.NamedVerifiables.FirstOrDefault(n => n.NameRange.Start.Line == 1)?.Status;
+      if (status != null && (statuses.Count == 0 || statuses[^1] != status)) {
+        statuses.Add(status.Value);
+      }
+    }
+    Assert.DoesNotContain(PublishedVerificationStatus.Correct, statuses);
   }
 
   public RefinementTests(ITestOutputHelper output, LogLevel dafnyLogLevel = LogLevel.Information) : base(output, dafnyLogLevel) {

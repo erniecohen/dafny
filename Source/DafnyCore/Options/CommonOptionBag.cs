@@ -366,6 +366,8 @@ true - All class instances are raw pointers and need to be manually deallocated"
   public static readonly Option<bool> LegacyElidedOverrideChecks = new("--legacy-elided-override-checks", () => false,
     "Use the legacy, unsound rule that skips the override check of a member a refining module inherits unchanged, even when the module changes the member it overrides or adds the parent that declares it, for migration and comparison only.") { IsHidden = true };
 
+  public static readonly Option<bool> LegacyInheritedConstructorFields = new("--legacy-inherited-constructor-fields", () => false,
+    "Use the legacy, unsound rule that does not verify a constructor a refining module inherits unchanged, even when the module adds a field the constructor must assign, for migration and comparison only.") { IsHidden = true };
   public static readonly Option<bool> LegacyReplacementCycles = new("--legacy-replacement-cycles", () => false,
     "Use the legacy, unsound rule that lets a module that replaces a replaceable module depend on a module that uses the replaced module, for migration and comparison only.") { IsHidden = true };
 
@@ -885,6 +887,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(LegacyFirstPhaseConstReads, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacyElidedOverrideChecks, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacySkeletonModifyingCalls, OptionScope.Cli);
+    OptionRegistry.RegisterOption(LegacyInheritedConstructorFields, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacyReplacementCycles, OptionScope.Cli);
     OptionRegistry.RegisterOption(ModularTermination, OptionScope.Cli);
     OptionRegistry.RegisterOption(ModularTerminationTrust, OptionScope.Cli);
