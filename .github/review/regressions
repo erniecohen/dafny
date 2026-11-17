@@ -779,6 +779,22 @@ git-issues/github-issue-431-more.dfy
 # A refining module that gives a body to a member without one, closing a call cycle through an inherited call, checks the termination of that call; the base never checked it and the refinement assumed it, so false was provable (https://github.com/erniecohen/dafny/issues/409).
 git-issues/github-issue-409.dfy
 
+# Under --modular-termination, calls in the body of a least or greatest lemma, calls of least and greatest predicates, and co-recursive calls are checked against the caller's global bound; each proved false (https://github.com/erniecohen/dafny/issues/456).
+git-issues/github-issue-456.dfy
+
+# Under --modular-termination, the induction hypothesis of a lemma, of a prefix lemma and of its limit-ordinal case covers only the instances within the lemma's global bound; each proved false (https://github.com/erniecohen/dafny/issues/460).
+git-issues/github-issue-460.dfy
+
+# Soundness gates of the plan for https://github.com/erniecohen/dafny/issues/211: (a) a library verified alone under --modular-termination is not invalidated by a later extension, with both resolvers; (b) every context in which code runs is ordered by the rules, one marked member per context.
+git-issues/github-issue-211-gate-library.dfy
+git-issues/github-issue-211-gate-coverage.dfy
+
+# A lambda expression may not mention allocated(...) in its body, precondition or reads clause outside an old within the lambda, under both resolvers; old(...) inside is allowed, the control does not prove false, and --legacy-allocated-in-lambdas restores the old rule (https://github.com/erniecohen/dafny/issues/457).
+git-issues/github-issue-457.dfy
+
+# Bounded callables, milestone 2: bounded.certify, application below the bound, the bound and erase members, admitted named functions, stored values and the divergence kernels, under --modular-termination (https://github.com/erniecohen/dafny/issues/266).
+git-issues/github-issue-266-m2.dfy
+
 # Member invariants under the hidden --member-invariants, first stage: syntax, printing and
 # resolution, the reads restriction, the codatatype rule for programs and libraries, refinement,
 # opacity, and unchanged behaviour without the option (https://github.com/erniecohen/dafny/issues/105).

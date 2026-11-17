@@ -79,12 +79,19 @@ public abstract class Declaration : NodeWithOrigin, IAttributeBearingDeclaration
     va.Args.Count == 1 &&
     LiteralExpr.IsFalse(va.Args[0]);
 
+  /// <summary>
+  /// A prefix predicate or lemma, which only Dafny declares.  Its attributes are Dafny's own {:axiom}, which marks
+  /// a declaration that Dafny defines by axioms it generates, and those the user wrote on its extreme predicate or
+  /// lemma, which are reported there.
+  /// </summary>
+  private bool IsPrefixDeclaration => this is PrefixPredicate or PrefixLemma;
+
   public override IEnumerable<Assumption> Assumptions(Declaration decl) {
-    if (HasAxiomAttribute && !IsGeneratedByDafny) {
+    if (HasAxiomAttribute && !IsGeneratedByDafny && !IsPrefixDeclaration) {
       yield return new Assumption(this, Origin, AssumptionDescription.HasAxiomAttribute);
     }
 
-    if (HasVerifyFalseAttribute && !IsGeneratedByDafny) {
+    if (HasVerifyFalseAttribute && !IsGeneratedByDafny && !IsPrefixDeclaration) {
       yield return new Assumption(this, Origin, AssumptionDescription.HasVerifyFalseAttribute);
     }
   }

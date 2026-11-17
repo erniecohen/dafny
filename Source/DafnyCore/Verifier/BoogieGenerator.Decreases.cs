@@ -173,6 +173,9 @@ public partial class BoogieGenerator {
     if (callable is Method { FunctionFromWhichThisIsByMethodDecl: { } function }) {
       return GlobalBound(function);
     }
+    if (ExtremeOfPrefix(callable) is { } extreme) {
+      return GlobalBound(extreme)?.ConvertAll(PrefixSubstituter(extreme, callable).Substitute);
+    }
     var declared = ModularTermination.DeclaredGlobalBound(callable);
     if (declared != null) {
       return declared;
@@ -192,13 +195,43 @@ public partial class BoogieGenerator {
   }
 
   /// <summary>
+  /// The extreme predicate or lemma whose prefix predicate or lemma "callable" is, or null.  Under
+  /// --modular-termination a prefix member has the bounds of its extreme member: it is that member's body, run to
+  /// a depth _k, and a call of one is a call of the other.
+  /// </summary>
+  static ICallable ExtremeOfPrefix(ICallable callable) {
+    return callable switch {
+      PrefixPredicate p => p.ExtremePred,
+      PrefixLemma l => l.ExtremeLemma,
+      _ => null
+    };
+  }
+
+  /// <summary>
+  /// Rewrites an expression over the formals and type parameters of "extreme" to one over those of its prefix
+  /// member "prefix", whose first formal is the extra _k.
+  /// </summary>
+  static Substituter PrefixSubstituter(ICallable extreme, ICallable prefix) {
+    var substMap = new Dictionary<IVariable, Expression>();
+    for (var i = 0; i < extreme.Ins.Count; i++) {
+      substMap.Add(extreme.Ins[i], Expression.CreateIdentExpr(prefix.Ins[i + 1]));
+    }
+    var typeMap = new Dictionary<TypeParameter, Type>();
+    for (var i = 0; i < extreme.TypeArgs.Count; i++) {
+      typeMap.Add(extreme.TypeArgs[i], new UserDefinedType(prefix.TypeArgs[i]));
+    }
+    return new Substituter(null, substMap, typeMap);
+  }
+
+  /// <summary>
   /// Under --modular-termination, emit to "builder" the check of the global bounds for a call from "codeContext"
   /// to "callee".  The caller's bound is captured on entry, and a missing bound is TOP, above every other.
   /// * A call dispatched to implementations that other modules may provide uses the smaller-bound rule: the
   ///   callee's bound must be below the caller's.
   /// * A call to a known callee that reaches such a dispatch (see <see cref="ModularTerminationAnalysis"/>) uses
   ///   the same-bound rule: the callee runs under the caller's bound, so its own bound must not exceed it.
-  /// A call from a caller without a bound needs no check, except that a dispatched callee must have one; a call
+  /// A call from a caller without a bound needs no check, except that a dispatched callee of a legacy
+  /// {:termination false} trait must have one; a call
   /// from a caller with a bound fails when the callee has none.  Other calls get no check here: the existing termination checks order them.
   /// </summary>
   void CheckModularTermination(IOrigin tok, ICodeContext codeContext, MemberDecl callee, Expression receiverReplacement,
@@ -210,7 +243,8 @@ public partial class BoogieGenerator {
     }
     var analysis = ModularTerminationAnalysis.Of(program);
     var dispatched = ModularTermination.IsOpenDispatch(callee, analysis.OpenTraits);
-    if (!dispatched && !analysis.ReachesOpenDispatch(callee, caller.EnclosingModule)) {
+    if (!dispatched && (DecreasesOrders.CallAppliesOnlyItsArguments(callee) ||
+                        !analysis.ReachesOpenDispatch(callee, caller.EnclosingModule))) {
       return;
     }
     var calleeBound = GlobalBound((ICallable)callee);
@@ -218,13 +252,21 @@ public partial class BoogieGenerator {
     // a value fixed where the lambda is created.
     var lambdaBound = CurrentLambdaBound;
     var callerBound = lambdaBound ?? GlobalBound(caller);
-    if (callerBound == null && (calleeBound != null || !dispatched)) {
+    // A caller without a bound is TOP: it may make any call, including one dispatched to a member without a bound
+    // (rule 4 of revision 3), whose foreign implementations are leaves.  A member without a bound of a legacy
+    // {:termination false} trait keeps its earlier rule: its foreign implementations need not be leaves, so a
+    // dispatched call to it always fails.
+    var legacySlot = dispatched && calleeBound == null && callee.EnclosingClass is TraitDecl calleeTrait &&
+                     ModularTermination.IsExtensible(calleeTrait);
+    if (callerBound == null && !legacySlot) {
       return;
     }
     string hint;
     if (dispatched) {
-      hint = calleeBound == null
-        ? "the dispatched callee has no 'decreases {:global}' bound, which --modular-termination requires"
+      hint = legacySlot
+        ? "the dispatched callee has no 'decreases {:global}' bound, which --modular-termination requires of a member of a {:termination false} trait"
+        : calleeBound == null
+        ? "the dispatched callee has no 'decreases {:global}' bound, so under --modular-termination it is TOP, above the caller's bound; declare a bound on it"
         : "--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's";
     } else {
       hint = calleeBound == null
@@ -240,6 +282,47 @@ public partial class BoogieGenerator {
     }
     CheckCallTermination(tok, contextBound, comparedBound, null, receiverReplacement, substMap, directSubstMap, typeMap,
       etranCurrent, oldCaller, builder, false, hint, etranCallee, nonincrease);
+  }
+
+  /// <summary>
+  /// A lemma's automatic induction hypothesis, and the generated limit-ordinal case of a prefix lemma, are
+  /// recursive calls of "m" that are not translated as calls, so CheckModularTermination does not see them.
+  /// Under --modular-termination, if a recursive call of "m" written in its body would get a global-bound check,
+  /// return a generator of the condition that such a call must meet, for the instance of "m" given by
+  /// "receiverReplacement" and "substMap": the instance's bound does not exceed m's own (or is below it, if a
+  /// call of "m" is dispatched).  The caller limits the hypothesis to the instances that meet the condition.
+  /// Return null if there is nothing to limit (https://github.com/erniecohen/dafny/issues/460).
+  /// </summary>
+  ExpressionConverter RecursiveInstanceWithinGlobalBound(MethodOrConstructor m, Expression receiverReplacement,
+                                                        Dictionary<IVariable, Expression> substMap) {
+    if (!options.Get(CommonOptionBag.ModularTermination) || GlobalBound(m) is not { } bound) {
+      // A lemma without a bound runs under TOP, and so may any call it makes.
+      return null;
+    }
+    var analysis = ModularTerminationAnalysis.Of(program);
+    var dispatched = ModularTermination.IsOpenDispatch(m, analysis.OpenTraits);
+    if (!dispatched && !analysis.ReachesOpenDispatch(m, ((ICallable)m).EnclosingModule)) {
+      return null;
+    }
+    return delegate (Dictionary<IVariable, Expression> renaming, ExpressionTranslator exprTran) {
+      var toks = new List<IOrigin>();
+      var instance = new List<Bpl.Expr>();
+      var own = new List<Bpl.Expr>();
+      var instanceDafny = new List<Expression>();
+      Bpl.Expr canCalls = Bpl.Expr.True;
+      foreach (var e in bound) {
+        toks.Add(e.Origin);
+        canCalls = BplAnd(canCalls, exprTran.CanCallAssumptionForVerification(e));
+        own.Add(exprTran.TrExpr(e));
+        var atInstance = Substitute(Substitute(e, receiverReplacement, substMap), null, renaming);
+        instanceDafny.Add(atInstance);
+        canCalls = BplAnd(canCalls, exprTran.CanCallAssumptionForVerification(atInstance));
+        instance.Add(exprTran.TrExpr(atInstance));
+      }
+      // Like the range of the induction hypothesis: canCallAssumptions ==> condition.
+      return BplImp(canCalls,
+        DecreasesCheck(toks, null, instanceDafny, bound, instance, own, null, null, !dispatched, false));
+    };
   }
 
   /// <summary>
@@ -308,6 +391,9 @@ public partial class BoogieGenerator {
     if (callable is Method { FunctionFromWhichThisIsByMethodDecl: { } function }) {
       return CallbackBound(function, index);
     }
+    if (ExtremeOfPrefix(callable) is { } extreme) {
+      return index == 0 ? null : CallbackBound(extreme, index - 1)?.ConvertAll(PrefixSubstituter(extreme, callable).Substitute);
+    }
     if (index >= callable.Ins.Count) {
       return null;
     }
@@ -368,6 +454,7 @@ public partial class BoogieGenerator {
                               Expression receiverReplacement, Dictionary<IVariable, Expression> substMap,
                               Dictionary<TypeParameter, Type> typeMap, ExpressionTranslator etranCurrent,
                               BoogieStmtListBuilder builder) {
+    CheckBoundedArguments(tok, callee, args, receiverReplacement, substMap, typeMap, etranCurrent, builder);
     if (!options.Get(CommonOptionBag.ModularTermination) || codeContext is not ICallable caller ||
         callee is not ICallable callable || InsideLambda) {
       return;
@@ -405,6 +492,10 @@ public partial class BoogieGenerator {
   /// </summary>
   void CheckCallbackApplication(IOrigin tok, ICodeContext codeContext, Expression value, ExpressionTranslator etranCurrent,
                                 BoogieStmtListBuilder builder) {
+    if (options.Get(CommonOptionBag.ModularTermination) && BoundedCallables.ErasedCallable(value.Resolved) is { } bounded) {
+      CheckBoundedApplication(tok, codeContext, bounded, etranCurrent, builder);
+      return;
+    }
     if (!options.Get(CommonOptionBag.ModularTermination) || codeContext is not ICallable caller || InsideLambda ||
         value.Resolved is not IdentifierExpr { Var: Formal formal }) {
       return;

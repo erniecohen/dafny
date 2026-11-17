@@ -339,7 +339,9 @@ public partial class BoogieGenerator {
           calleeEtran ?? etran);
       }
     }
-    if (codeContext != null && !isCoCall) {
+    // Under --modular-termination, a co-call (a call of a prefix lemma from a greatest or least lemma's body) gets
+    // the check of the global bounds too: the bounds order calls across modules, which no cluster sees.
+    if (codeContext != null) {
       CheckModularTermination(tok, codeContext, callee, receiver, substMap, directSubstMap, tySubst,
         builder.Context.CallerTerminationTranslator ?? etran, builder, etran);
       if (callee.Ins.Count == Args.Count) {

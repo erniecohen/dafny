@@ -1943,6 +1943,11 @@ namespace Microsoft.Dafny {
 
       } else if (lhs != null) {
         // ----- 4. Look up name in the type of the Lhs
+        if (name is "requires" or "reads" && Constraints.FindDefinedPreType(expr.Lhs.PreType, false) is { } lhsPreType &&
+            BoundedCallables.SelectByPreType(expr.Lhs, lhsPreType, BoundedCallables.EraseName) is { } erased) {
+          // "c.requires" and "c.reads", for a value "c" of a bounded type, are those of "c.erase" (issue 266)
+          expr.Lhs = erased;
+        }
         var (member, tentativeReceiverPreType) = FindMember(expr.Origin, expr.Lhs.PreType, name, resolutionContext,
           expr.Lhs.Resolved != null);
         if (member != null) {
@@ -2133,6 +2138,11 @@ namespace Microsoft.Dafny {
         if (atLabel == null) {
           ReportError(e.AtTok, "no label '{0}' in scope at this time", e.AtTok.val);
         }
+      }
+      if (r == null && e.Lhs.Resolved != null && Constraints.FindDefinedPreType(e.Lhs.PreType, false) is { } lhsPreType &&
+          BoundedCallables.SelectByPreType(e.Lhs, lhsPreType, BoundedCallables.EraseName) is { } erased) {
+        // "c(args)", for a value "c" of a bounded type, applies "c.erase" (issue 266)
+        e.Lhs = erased;
       }
       if (r == null) {
         // e.Lhs denotes a function value, or at least it's used as if it were
