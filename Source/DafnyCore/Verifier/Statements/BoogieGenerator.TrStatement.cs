@@ -318,7 +318,15 @@ public partial class BoogieGenerator {
 
           // The "new;" translates into an allocation of "this"
           AddComment(builder, blockStmt1, "new;");
-          fields.ForEach(f => CheckDefiniteAssignmentSurrogate(s.SeparatorTok ?? s.EndToken, f, true, builder));
+          IOrigin newTok = s.SeparatorTok ?? s.EndToken;
+          if (MustCheckInheritedConstructorFields((Constructor)codeContext, options)) {
+            // The constructor is a copy that the refining module verifies, because it added fields
+            // (MustCheckInheritedConstructorFields).  A copied "new;" has an inherited origin, at which an assert
+            // would become an assume, so check at the base's origin instead, and name the refining module.
+            newTok = new NestedOrigin(newTok is RefinementOrigin copied ? copied.WrappedOrigin : newTok,
+              currentModule.Origin, "refining module");
+          }
+          fields.ForEach(f => CheckDefiniteAssignmentSurrogate(newTok, f, true, builder));
           DefiniteAssignmentTrackers = beforeTrackers;
           var th = new ThisExpr(cl);
           var bplThis = (Bpl.IdentifierExpr)etran.TrExpr(th);

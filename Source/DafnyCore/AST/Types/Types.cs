@@ -521,9 +521,24 @@ public abstract class Type : NodeWithOrigin {
   ///     - Nonempty,        if the type is known to contain some value
   ///     - MaybeEmpty,      otherwise
   /// This property should be used only after successful resolution. It is assumed that all type proxies have
-  /// been resolved and that all recursion through types comes to an end.
+  /// been resolved.
+  ///
+  /// The recursion follows, for each inductive datatype, its grounding constructor. A datatype for which the
+  /// resolver has found none (it may have no values, or the resolver has not looked yet) falls back to a
+  /// constructor that can lead back to the datatype, forever (https://github.com/erniecohen/dafny/issues/413).
+  /// Grounding constructors alone lead to an end, so from the first such datatype on, "datatypesBeingVisited"
+  /// holds each inductive datatype the recursion is inside of, each with the type the recursion has reached,
+  /// written with the datatype's type parameters in place of its type arguments. A datatype leaves the list when
+  /// the recursion goes into one of its type arguments. The list empties when the recursion enters a codatatype,
+  /// since meeting that codatatype again ends the recursion, so a way back through it does not repeat.
+  ///
+  /// Meeting a datatype that is still in the list, the recursion answers MaybeEmpty. It has come back to the
+  /// datatype without looking at the type arguments it had, so the same way leads back to it again, and again,
+  /// with the type arguments replaced each time as they were the first time. The recursion would not end, unless
+  /// something met on the way is MaybeEmpty, which makes the answer MaybeEmpty anyway.
   /// </summary>
-  public AutoInitInfo GetAutoInit(List<UserDefinedType>/*?*/ coDatatypesBeingVisited = null) {
+  public AutoInitInfo GetAutoInit(List<UserDefinedType>/*?*/ coDatatypesBeingVisited = null,
+    List<(IndDatatypeDecl Datatype, Type Reached)>/*?*/ datatypesBeingVisited = null) {
     var t = NormalizeExpandKeepConstraints();
     Contract.Assume(t is NonProxyType); // precondition
 
@@ -548,6 +563,25 @@ public abstract class Type : NodeWithOrigin {
     var udt = (UserDefinedType)t;
     var cl = udt.ResolvedClass;
     Contract.Assert(cl != null);
+
+    // "datatypesBeingVisited" after a step from "udt" to "next(udt.TypeArgs)", without each datatype whose type
+    // arguments the step goes into
+    List<(IndDatatypeDecl Datatype, Type Reached)> Step(Func<List<Type>, Type> next) {
+      if (datatypesBeingVisited == null) {
+        return null;
+      }
+      var stepped = new List<(IndDatatypeDecl Datatype, Type Reached)>();
+      foreach (var (datatype, reached) in datatypesBeingVisited) {
+        if (reached.NormalizeExpandKeepConstraints() is UserDefinedType r && r.ResolvedClass == cl) {
+          var nextReached = next(r.TypeArgs);
+          if (nextReached.NormalizeExpandKeepConstraints() is not UserDefinedType { ResolvedClass: TypeParameter }) {
+            stepped.Add((datatype, nextReached));
+          }
+        }
+      }
+      return stepped;
+    }
+
     if (cl is AbstractTypeDecl) {
       var otd = (AbstractTypeDecl)cl;
       return CharacteristicToAutoInitInfo(otd.Characteristics);
@@ -562,7 +596,7 @@ public abstract class Type : NodeWithOrigin {
       switch (td.WitnessKind) {
         case SubsetTypeDecl.WKind.CompiledZero:
           return td.InheritsBaseDefault
-            ? td.ConcreteBaseType(udt.TypeArgs).GetAutoInit(coDatatypesBeingVisited)
+            ? td.ConcreteBaseType(udt.TypeArgs).GetAutoInit(coDatatypesBeingVisited, Step(td.ConcreteBaseType))
             : AutoInitInfo.CompilableValue;
         case SubsetTypeDecl.WKind.Compiled:
           return AutoInitInfo.CompilableValue;
@@ -593,7 +627,7 @@ public abstract class Type : NodeWithOrigin {
             return AutoInitInfo.CompilableValue;
           } else if (ArrowType.IsTotalArrowTypeName(td.Name)) {
             // total arrow
-            return udt.TypeArgs.Last().GetAutoInit(coDatatypesBeingVisited);
+            return udt.TypeArgs.Last().GetAutoInit(coDatatypesBeingVisited, Step(typeArgs => typeArgs.Last()));
           } else if (((NonNullTypeDecl)td).Class is ArrayClassDecl) {
             // non-null array type; we know how to initialize them
             return AutoInitInfo.CompilableValue;
@@ -629,9 +663,18 @@ public abstract class Type : NodeWithOrigin {
           coDatatypesBeingVisited = [];
         }
         coDatatypesBeingVisited.Add(udt);
+        datatypesBeingVisited = null;
+      } else if (datatypesBeingVisited != null || cl is IndDatatypeDecl { GroundingCtor: null }) {
+        var indDt = (IndDatatypeDecl)cl;
+        if (datatypesBeingVisited != null && datatypesBeingVisited.Exists(visit => visit.Datatype == indDt)) {
+          return AutoInitInfo.MaybeEmpty;
+        }
+        (IndDatatypeDecl, Type) visit = (indDt, UserDefinedType.FromTopLevelDecl(indDt.Origin, indDt));
+        datatypesBeingVisited = datatypesBeingVisited == null ? [visit] : [.. datatypesBeingVisited, visit];
       }
       foreach (var formal in dt.GetGroundingCtor().Formals) {
-        var autoInit = formal.Type.Subst(subst).GetAutoInit(coDatatypesBeingVisited);
+        var autoInit = formal.Type.Subst(subst).GetAutoInit(coDatatypesBeingVisited,
+          Step(typeArgs => formal.Type.Subst(TypeParameter.SubstitutionMap(dt.TypeArgs, typeArgs))));
         if (autoInit == AutoInitInfo.MaybeEmpty) {
           return AutoInitInfo.MaybeEmpty;
         } else if (formal.IsGhost) {

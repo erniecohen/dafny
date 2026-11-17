@@ -731,6 +731,43 @@ git-issues/github-issue-404.dfy
 
 # The legacy resolver (--type-system-refresh:false) inherits no members from a non-numeric newtype base, which it rejects, so selecting one is an error rather than a crash, as with --type-system-refresh (https://github.com/erniecohen/dafny/issues/417).
 git-issues/github-issue-417.dfy
+
+# Opt-in --verification-cache stores blobs compressed with zlib under the SHA-256 of their uncompressed bytes; earlier uncompressed and mixed caches still replay, and a truncated or corrupted compressed blob is a miss with the same report (https://github.com/erniecohen/dafny/issues/388).
+git-issues/git-issue-388.dfy
+
+# A statement added by a skeleton may not call a method that modifies state, which made inherited postconditions contradict new ones (https://github.com/erniecohen/dafny/issues/412).
+git-issues/github-issue-412.dfy
+
+# The resolved program that --rprint prints lists the bitvector types the program uses, in order and with the widths that lowering a shift adds, as the translator declares them; under --type-system-refresh, _System again declares each bvN with RotateLeft and RotateRight. git-issue-1665 prints the module-prefixed names generated for :- and the match source's type for an untyped case variable (https://github.com/erniecohen/dafny/issues/441).
+dafny0/TypeConversions.dfy
+traits/TraitResolution0.dfy
+dafny4/git-issue228.dfy
+git-issues/git-issue-1665.dfy
+
+# Asking whether a recursive datatype with no values is nonempty (a (00) type argument, a (00) type refined by it, a local of it) reports an error instead of overflowing the stack in Type.GetAutoInit, for direct, mutual, arrow and non-regular recursion, while types with values keep their answers (https://github.com/erniecohen/dafny/issues/413).
+git-issues/github-issue-413.dfy
+
+# Storing a value that holds a function that reads the heap is rejected when the function is inside a datatype, a codatatype, a newtype or a subset type; the old check looked only at the type and its type arguments, so a function stored in a datatype could read itself and false was provable (https://github.com/erniecohen/dafny/issues/479).
+git-issues/github-issue-479.dfy
+
+# A refining module that adds a field subject to definite assignment to a class verifies the constructor it inherits unchanged, which cannot assign the field; dafny verify skipped the copy and proved false (https://github.com/erniecohen/dafny/issues/411).
+git-issues/github-issue-411.dfy
+
+# The type of an iterator's yield parameter is checked for auto-initialization after the grounding constructors are found: a datatype whose first constructor is recursive is accepted, one declared after the iterator or inherited by a refining module no longer crashes the resolver, and one whose grounding constructor has no compilable value is rejected rather than left null by the compiled iterator; the hidden --legacy-early-yield-parameter-check restores the old check (https://github.com/erniecohen/dafny/issues/445).
+git-issues/github-issue-445.dfy
+
+# A module that replaces a replaceable module may not import it or depend on a module that depends on it; the module graph is acyclic once every use of the replaced module means the replacement, and the old rule let a lemma cycle through the two prove false (https://github.com/erniecohen/dafny/issues/405).
+git-issues/github-issue-405.dfy
+
+# A type parameter whose values may be stored in memory (a mutable field, a store, or an instantiation of such a parameter) may not be instantiated with a type that contains a function reading the heap; a generic class could store such a function that read itself and prove false, through a class, a trait, a datatype wrapper or a nested class. The rule holds across modules, export sets and .doo libraries, and for overriding and refining declarations, with the characteristic (!reads) for a base without a body (https://github.com/erniecohen/dafny/issues/481).
+git-issues/github-issue-481.dfy
+
+# A function with read effects stored in a multi-dimensional array element, or stored in a field, an array element or an iterator's yield parameter as the result of a method call, is rejected like one stored by a plain assignment; the hidden --legacy-function-store-locations restores the old check (https://github.com/erniecohen/dafny/issues/483).
+git-issues/github-issue-483.dfy
+
+# A function that reads nothing, reading a constant whose initializer applies an arrow or calls a function that reads the heap, no longer crashes the verifier; such an initializer is inlined into the function's axioms only when it needs no heap (https://github.com/erniecohen/dafny/issues/485).
+git-issues/github-issue-485.dfy
+
 # A let-such-that expression whose condition depends on the allocation state (a quantifier or comprehension over the allocated objects or over a type parameter's values, a sequence constructor whose initializer reads the heap, "old" around either, a two-state call) has a choice function that takes that heap: two such expressions around an allocation or a heap update do not prove false, and the verifier does not crash (https://github.com/erniecohen/dafny/issues/431).
 git-issues/github-issue-431.dfy
 git-issues/github-issue-431-more.dfy
