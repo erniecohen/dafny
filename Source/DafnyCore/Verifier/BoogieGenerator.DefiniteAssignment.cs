@@ -22,6 +22,10 @@ namespace Microsoft.Dafny {
     #region Definite-assignment tracking
 
     bool NeedsDefiniteAssignmentTracker(bool isGhost, Type type, bool isField) {
+      return NeedsDefiniteAssignmentTracker(options, isGhost, type, isField);
+    }
+
+    static bool NeedsDefiniteAssignmentTracker(DafnyOptions options, bool isGhost, Type type, bool isField) {
       Contract.Requires(type != null);
 
       if (options.DefiniteAssignmentLevel == 0) {
