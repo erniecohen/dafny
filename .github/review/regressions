@@ -832,3 +832,12 @@ git-issues/git-issue-105-generics.dfy
 git-issues/git-issue-105-variance.dfy
 git-issues/git-issue-105-emptiness.dfy
 git-issues/git-issue-105-emptiness-errors.dfy
+# Fifth stage: verification of classes (the check at 'new;', raw references and where they may go,
+# the constructor and witness rules) and the visibility of member invariants across export sets
+# (https://github.com/erniecohen/dafny/issues/105).
+git-issues/git-issue-105-classes.dfy
+git-issues/git-issue-105-class-errors.dfy
+git-issues/git-issue-105-class-witness.dfy
+git-issues/git-issue-105-class-compile.dfy
+git-issues/git-issue-105-exports.dfy
+git-issues/git-issue-105-class-exports.dfy

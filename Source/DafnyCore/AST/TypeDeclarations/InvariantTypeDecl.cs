@@ -19,6 +19,11 @@ namespace Microsoft.Dafny;
 /// and the resolver maps D, written as a type, to this declaration. A derived declaration shares its visibility
 /// with the declaration it is derived from.
 ///
+/// For a class C, the class declaration denotes "raw C?", and this derived declaration is the type "C?" that the
+/// name "C?" denotes: { v: raw C? | v != null ==> v.invariant#0() &amp;&amp; ... }. Its parents are those of the class:
+/// "object?" and the parent traits. The non-null type C is based on it, and "raw C" is a RawNonNullTypeDecl based
+/// on the class declaration. A class type contains null, so it is auto-initializable and needs no witness.
+///
 /// With no witness member, the type is possibly empty, as a subset type with "witness *" is. A witness member
 /// "witness e" (or "ghost witness e") is a static const of type D, so its well-formedness is the ordinary check that
 /// e satisfies the invariants, and the witness of this declaration is that const. The type is then auto-initializable
@@ -57,8 +62,8 @@ public class InvariantTypeDecl : SubsetTypeDecl {
 
   private InvariantTypeDecl(TopLevelDeclWithMembers owner, List<TypeParameter> tps, BoundVar var, MemberWitness? witness)
     : base(owner.Origin, owner.NameNode,
-      new TypeParameterCharacteristics(TypeParameter.EqualitySupportValue.Unspecified, AutoInit(witness), false),
-      tps, owner.EnclosingModuleDefinition, var, Constraint(owner, var), WitnessKindOf(witness), WitnessReference(owner, tps, witness), null) {
+      new TypeParameterCharacteristics(TypeParameter.EqualitySupportValue.Unspecified, AutoInit(owner, witness), false),
+      tps, owner.EnclosingModuleDefinition, var, Constraint(owner, var), WitnessKindOf(owner, witness), WitnessReference(owner, tps, witness), null) {
     Owner = owner;
     if (witness is { ExplicitType: null }) {
       // As if the witness had been written "static const witness#k: D<X, ...> := e", where X, ... are the type
@@ -72,13 +77,26 @@ public class InvariantTypeDecl : SubsetTypeDecl {
     this.NewSelfSynonym();
   }
 
-  private static Type.AutoInitInfo AutoInit(MemberWitness? witness) {
-    return witness == null ? Type.AutoInitInfo.MaybeEmpty
+  private static Type.AutoInitInfo AutoInit(TopLevelDeclWithMembers owner, MemberWitness? witness) {
+    return IsReferenceType(owner) ? Type.AutoInitInfo.CompilableValue
+      : witness == null ? Type.AutoInitInfo.MaybeEmpty
       : witness.IsGhost ? Type.AutoInitInfo.Nonempty : Type.AutoInitInfo.CompilableValue;
   }
 
-  private static WKind WitnessKindOf(MemberWitness? witness) {
-    return witness == null ? WKind.OptOut : witness.IsGhost ? WKind.Ghost : WKind.Compiled;
+  /// <summary>
+  /// A reference type has the witness null, which satisfies the constraint, as the base type's default value does.
+  /// </summary>
+  private static WKind WitnessKindOf(TopLevelDeclWithMembers owner, MemberWitness? witness) {
+    return IsReferenceType(owner) ? WKind.CompiledZero
+      : witness == null ? WKind.OptOut : witness.IsGhost ? WKind.Ghost : WKind.Compiled;
+  }
+
+  /// <summary>
+  /// Whether "owner" is a class (or, later, a reference trait), whose derived declaration is the possibly-null type
+  /// "C?".
+  /// </summary>
+  public static bool IsReferenceType(TopLevelDeclWithMembers owner) {
+    return owner is ClassLikeDecl { NonNullTypeDecl: not null };
   }
 
   /// <summary>
@@ -114,14 +132,25 @@ public class InvariantTypeDecl : SubsetTypeDecl {
 
   private static UserDefinedType RawType(TopLevelDeclWithMembers owner, List<TypeParameter> tps) {
     var typeArgs = tps.ConvertAll(tp => (Type)new UserDefinedType(tp));
-    return new UserDefinedType(owner.Origin, owner.Name, owner, typeArgs);
+    return UserDefinedType.FromTopLevelDecl(owner.Origin, owner, typeArgs);
   }
 
   /// <summary>
-  /// The conjunction of the invariants, applied to "var". The reserved names of the invariants cannot be written
-  /// in source, but name resolution finds them like any other member.
+  /// The conjunction of the invariants, applied to "var", and for a reference type, "var != null ==>" that. The
+  /// reserved names of the invariants cannot be written in source, but name resolution finds them like any other
+  /// member.
   /// </summary>
   private static Expression Constraint(TopLevelDeclWithMembers owner, BoundVar var) {
+    var invariants = Invariants(owner, var);
+    if (!IsReferenceType(owner)) {
+      return invariants;
+    }
+    var tok = owner.Origin;
+    return new BinaryExpr(tok, BinaryExpr.Opcode.Imp,
+      new BinaryExpr(tok, BinaryExpr.Opcode.Neq, new IdentifierExpr(tok, var), new LiteralExpr(tok)), invariants);
+  }
+
+  private static Expression Invariants(TopLevelDeclWithMembers owner, BoundVar var) {
     Expression? constraint = null;
     foreach (var invariant in Invariants(owner)) {
       var tok = invariant.Origin;
@@ -142,18 +171,122 @@ public class InvariantTypeDecl : SubsetTypeDecl {
   }
 
   /// <summary>
-  /// The declarations that get a derived InvariantTypeDecl. In this stage, an inductive datatype that declares an
-  /// invariant (in itself or, by refinement, in a declaration it refines).
+  /// The declarations that get a derived InvariantTypeDecl. In this stage, an inductive datatype or a class that
+  /// declares an invariant (in itself or, by refinement, in a declaration it refines).
   /// </summary>
   public static bool Applies(TopLevelDeclWithMembers decl) {
-    return decl is IndDatatypeDecl && Invariants(decl).Any();
+    return decl is IndDatatypeDecl or ClassDecl && Invariants(decl).Any();
   }
 
   /// <summary>
-  /// The type "raw D" for the declaration D with type arguments "typeArgs".
+  /// The parents of the type: for a class, those of the class (issue 105: the class declaration itself, "raw C?",
+  /// has none).
+  /// </summary>
+  public override List<Type> ParentTypes(List<Type> typeArgs, bool includeTypeBounds) {
+    var result = base.ParentTypes(typeArgs, includeTypeBounds);
+    if (IsReferenceType(Owner)) {
+      result.AddRange(Owner.RawTraitsWithArgument(typeArgs));
+    }
+    return result;
+  }
+
+  /// <summary>
+  /// The type "raw D" for the declaration D with type arguments "typeArgs". For a class, "raw C?".
   /// </summary>
   public UserDefinedType RawType(IOrigin tok, List<Type> typeArgs) {
-    return new UserDefinedType(tok, Owner.Name, Owner, typeArgs);
+    return UserDefinedType.FromTopLevelDecl(tok, Owner, typeArgs);
+  }
+
+  /// <summary>
+  /// The type D that the name of the declaration denotes, with type arguments "typeArgs". For a class, "C?".
+  /// </summary>
+  public UserDefinedType FinishedType(IOrigin tok, List<Type> typeArgs) {
+    return UserDefinedType.FromTopLevelDecl(tok, this, typeArgs);
+  }
+
+  /// <summary>
+  /// The type of "this" in a member of the declaration that is not raw: D, or for a class, C.
+  /// </summary>
+  public UserDefinedType ThisType(IOrigin tok, List<Type> typeArgs) {
+    return Owner is ClassLikeDecl { NonNullTypeDecl: { } nonNullTypeDecl }
+      ? UserDefinedType.FromTopLevelDecl(tok, nonNullTypeDecl, typeArgs)
+      : FinishedType(tok, typeArgs);
+  }
+
+  /// <summary>
+  /// The type of "this" in a raw member of the declaration: "raw D", or for a class, "raw C".
+  /// </summary>
+  public UserDefinedType RawThisType(IOrigin tok, List<Type> typeArgs) {
+    return Owner is ClassLikeDecl { RawNonNullTypeDecl: { } rawNonNullTypeDecl }
+      ? UserDefinedType.FromTopLevelDecl(tok, rawNonNullTypeDecl, typeArgs)
+      : RawType(tok, typeArgs);
+  }
+
+  /// <summary>
+  /// Whether "type" is "raw C" or "raw C?", or a subset type of one of them that is not a subset type of "C?", for a
+  /// class C with member invariants: a reference type whose values need not satisfy the invariants of C, and so is
+  /// not a subtype of "object" or of a parent trait (issue 105).
+  /// </summary>
+  public static bool IsRawReferenceType(Type type) {
+    var tower = Type.GetTowerOfSubsetTypes(type);
+    return tower[0] is UserDefinedType { ResolvedClass: ClassLikeDecl { InvariantTypeDecl: { } invariantTypeDecl } } &&
+           !tower.Exists(t => t is UserDefinedType { ResolvedClass: var decl } && decl == invariantTypeDecl);
+  }
+
+  /// <summary>
+  /// Issue 105: if a value of type "source" may carry a raw reference ("raw C" or "raw C?") to a place where
+  /// "target" does not have a type based on the same class C, such as "object" or a parent trait, return "source"
+  /// with each such raw type replaced by the type that the name of its class denotes ("C" or "C?"): the type that the
+  /// value must have before it is converted to "target". Otherwise, return null. The places are the value itself and,
+  /// covariantly, the elements of collections and the type arguments of other types. A raw reference in a parameter
+  /// position of a function type is left to the ordinary membership check, since, in the verifier's model, "object"
+  /// contains every reference that is not null.
+  /// </summary>
+  public static Type? FinishRawReferences(Type source, Type target) {
+    if (IsRawReferenceType(source)) {
+      var sourceBase = (UserDefinedType)Type.GetTowerOfSubsetTypes(source)[0];
+      if (Type.GetTowerOfSubsetTypes(target)[0] is UserDefinedType { ResolvedClass: var targetDecl } &&
+          targetDecl == sourceBase.ResolvedClass) {
+        return null;
+      }
+      var invariantTypeDecl = ((ClassLikeDecl)sourceBase.ResolvedClass).InvariantTypeDecl!;
+      return source.IsNonNullRefType
+        ? invariantTypeDecl.ThisType(sourceBase.Origin, sourceBase.TypeArgs)
+        : invariantTypeDecl.FinishedType(sourceBase.Origin, sourceBase.TypeArgs);
+    }
+    var s = source.NormalizeExpand();
+    var t = target.NormalizeExpand();
+    List<TypeParameter.TPVariance> variances;
+    if (s is CollectionType && t is CollectionType && s.GetType() == t.GetType()) {
+      variances = s.TypeArgs.ConvertAll(_ => TypeParameter.TPVariance.Co);
+    } else if (s is UserDefinedType { ResolvedClass: { } decl } && t is UserDefinedType { ResolvedClass: var targetDecl } &&
+               decl == targetDecl) {
+      variances = s.AsArrowType is { } arrow ? arrow.Variances() : TypeParameter.Variances(decl.TypeArgs);
+    } else {
+      return null;
+    }
+    if (s.TypeArgs.Count != t.TypeArgs.Count || s.TypeArgs.Count != variances.Count) {
+      return null;
+    }
+    var changed = false;
+    var typeArgs = new List<Type>();
+    for (var i = 0; i < s.TypeArgs.Count; i++) {
+      var finished = variances[i] == TypeParameter.TPVariance.Co ? FinishRawReferences(s.TypeArgs[i], t.TypeArgs[i]) : null;
+      changed |= finished != null;
+      typeArgs.Add(finished ?? s.TypeArgs[i]);
+    }
+    if (!changed) {
+      return null;
+    }
+    return s switch {
+      SetType set => new SetType(set.Finite, typeArgs[0]),
+      MultiSetType => new MultiSetType(typeArgs[0]),
+      SeqType => new SeqType(typeArgs[0]),
+      MapType map => new MapType(map.Finite, typeArgs[0], typeArgs[1]),
+      ArrowType arrow => new ArrowType(arrow.Origin, (ArrowTypeDecl)arrow.ResolvedClass, typeArgs),
+      UserDefinedType udt => UserDefinedType.FromTopLevelDecl(udt.Origin, udt.ResolvedClass, typeArgs),
+      _ => null
+    };
   }
 
   public override SymbolKind? Kind => Owner.Kind;

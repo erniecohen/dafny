@@ -53,6 +53,9 @@ public static class MemberInvariantChecks {
           if (decl is CoDatatypeDecl) {
             reporter.Error(MessageSource.Resolver, witness.NameNode.Origin,
               "a codatatype may not declare a witness: a witness is only needed by a type with an invariant");
+          } else if (decl is ClassDecl) {
+            reporter.Error(MessageSource.Resolver, witness.NameNode.Origin,
+              "a class may not declare a witness: its objects are the ones its constructors return, so it needs none");
           } else if (decl is not IndDatatypeDecl datatype) {
             reporter.Error(MessageSource.Resolver, witness.NameNode.Origin,
               $"a witness member of a {decl.WhatKind} is not yet supported");

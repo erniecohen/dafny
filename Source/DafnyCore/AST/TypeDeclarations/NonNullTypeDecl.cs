@@ -13,13 +13,23 @@ public class NonNullTypeDecl : SubsetTypeDecl {
   /// in order to build values that depend on previously computed parameters.
   /// </summary>
   public NonNullTypeDecl(ClassLikeDecl cl)
-    : this(cl, TypeParameter.CloneTypeParameters(cl.TypeArgs)) {
+    : this(cl, false) {
     Contract.Requires(cl != null);
   }
 
-  private NonNullTypeDecl(ClassLikeDecl cl, List<TypeParameter> tps)
+  /// <summary>
+  /// The non-null type of "cl", whose base is "C?" or, if "raw" (issue 105), "raw C?".
+  /// </summary>
+  protected NonNullTypeDecl(ClassLikeDecl cl, bool raw)
+    : this(cl, TypeParameter.CloneTypeParameters(cl.TypeArgs), raw) {
+    Contract.Requires(cl != null);
+  }
+
+  private NonNullTypeDecl(ClassLikeDecl cl, List<TypeParameter> tps, bool raw)
     : this(cl, tps,
-      new BoundVar(cl.Origin, "c", new UserDefinedType(cl.Origin, cl.Name + "?", tps.Count == 0 ? null : tps.ConvertAll(tp => (Type)new UserDefinedType(tp))))) {
+      new BoundVar(cl.Origin, "c", new UserDefinedType(cl.Origin, cl.Name + "?", tps.Count == 0 ? null : tps.ConvertAll(tp => (Type)new UserDefinedType(tp))) {
+        IsRawSyntax = raw
+      })) {
     Contract.Requires(cl != null);
     Contract.Requires(tps != null);
   }
@@ -37,10 +47,17 @@ public class NonNullTypeDecl : SubsetTypeDecl {
   public override List<Type> ParentTypes(List<Type> typeArgs, bool includeTypeBounds) {
     var result = new List<Type>(base.ParentTypes(typeArgs, includeTypeBounds));
 
-    foreach (var rhsParentType in Class.ParentTypes(typeArgs, includeTypeBounds)) {
+    // The parents of a class with member invariants are the parents of the type "C?" that its name denotes, not of
+    // the raw type "raw C?" that is the class declaration itself (issue 105).
+    var classParentTypes = Class.InvariantTypeDecl != null ? Class.RawTraitsWithArgument(typeArgs) : Class.ParentTypes(typeArgs, includeTypeBounds);
+    foreach (var rhsParentType in classParentTypes) {
       var rhsParentUdt = (UserDefinedType)rhsParentType; // all parent types of .Class are expected to be possibly-null class types
       Contract.Assert(rhsParentUdt.ResolvedClass is TraitDecl);
       result.Add(UserDefinedType.CreateNonNullTypeIfReferenceType(rhsParentUdt));
+    }
+    if (Class is ClassLikeDecl { RawNonNullTypeDecl: { } rawNonNullTypeDecl }) {
+      // Issue 105: C is a subtype of raw C
+      result.Add(UserDefinedType.FromTopLevelDecl(Origin, rawNonNullTypeDecl, typeArgs));
     }
 
     return result;

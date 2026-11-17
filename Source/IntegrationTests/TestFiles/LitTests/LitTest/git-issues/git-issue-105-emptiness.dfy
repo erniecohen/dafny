@@ -96,3 +96,13 @@ lemma Comprehension(s: set<NoWitness>) {
 // Assumptions, which 'dafny audit' reports.
 function Arbitrary(): NoWitness
 function {:extern} External(): Holder<NoWitness>
+// The object a bodiless constructor returns is assumed to satisfy the class's invariants (a class
+// that declares no constructor is rejected: git-issue-105-class-errors.dfy).
+class Bodiless {
+  const k: int
+  invariant k > 0
+  constructor ()
+}
+method UseBodiless() returns (b: Bodiless) ensures b.k > 0 {
+  b := new Bodiless();
+}

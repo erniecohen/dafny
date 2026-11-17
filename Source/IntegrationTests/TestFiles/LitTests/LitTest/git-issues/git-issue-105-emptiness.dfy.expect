@@ -15,9 +15,10 @@ git-issue-105-emptiness.dfy(79,11): Error: unless an initializer is provided for
 git-issue-105-emptiness.dfy(85,2): Error: assertion might not hold
 git-issue-105-emptiness.dfy(93,2): Error: assertion might not hold
 
-Dafny program verifier finished with 3 verified, 15 errors
+Dafny program verifier finished with 5 verified, 15 errors
 git-issue-105-emptiness.dfy(97,9): Warning: Arbitrary: Compiled declaration has no body and has an ensures clause. Possible mitigation: Provide a body or add `{:axiom}`.
 git-issue-105-emptiness.dfy(98,19): Warning: External: Function with `{:extern}` attribute. Possible mitigation: Turn into a `method` with `modifies {}` and test thoroughly for lack of side effects.
-Dafny auditor completed with 2 findings
+git-issue-105-emptiness.dfy(104,2): Warning: _ctor: Compiled declaration has no body and has an ensures clause. Possible mitigation: Provide a body or add `{:axiom}`.
+Dafny auditor completed with 3 findings
 
 Dafny program verifier did not attempt verification

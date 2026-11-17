@@ -1877,6 +1877,20 @@ public abstract class Type : NodeWithOrigin {
   }
 
   /// <summary>
+  /// The declaration of the possibly-null type whose non-null type "decl" is, or "decl" itself if it is not a non-null
+  /// type. For a class C with member invariants (issue 105), the possibly-null type of "C" is the derived type "C?",
+  /// and that of "raw C" is "raw C?", the class declaration itself.
+  /// </summary>
+  private static TopLevelDecl NullableHead(TopLevelDecl decl) {
+    return decl switch {
+      RawNonNullTypeDecl raw => raw.Class,
+      NonNullTypeDecl { Class.InvariantTypeDecl: { } invariants } => invariants,
+      NonNullTypeDecl nonNull => nonNull.Class,
+      _ => decl
+    };
+  }
+
+  /// <summary>
   /// Return whether or not "this" is a subtype of "super".
   /// If "ignoreTypeArguments" is "true", then proceed as if the type arguments were equal.
   /// If "ignoreNullity" is "true", then the difference between a non-null reference type C
@@ -1890,9 +1904,7 @@ public abstract class Type : NodeWithOrigin {
     bool equivalentHeads = SameHead(sub, super);
     if (!equivalentHeads && ignoreNullity) {
       if (super is UserDefinedType a && sub is UserDefinedType b) {
-        var clA = (a.ResolvedClass as NonNullTypeDecl)?.Class ?? a.ResolvedClass;
-        var clB = (b.ResolvedClass as NonNullTypeDecl)?.Class ?? b.ResolvedClass;
-        equivalentHeads = clA == clB;
+        equivalentHeads = NullableHead(a.ResolvedClass) == NullableHead(b.ResolvedClass);
       }
     }
     if (equivalentHeads) {
@@ -1902,7 +1914,7 @@ public abstract class Type : NodeWithOrigin {
     // There is a special case, namely when super is the non-null "object". Since "sub.ParentTypes()" only gives
     // back the explicitly declared parent traits, the general case below may miss it.
     if (super.IsObject) {
-      return sub.IsNonNullRefType;
+      return sub.IsNonNullRefType && !InvariantTypeDecl.IsRawReferenceType(sub);
     }
 
     return sub.ParentTypes(true).Any(parentType => parentType.IsSubtypeOf(super, ignoreTypeArguments, ignoreNullity));

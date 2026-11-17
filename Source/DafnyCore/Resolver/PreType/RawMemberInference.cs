@@ -48,8 +48,16 @@ public class RawMemberInference {
   /// that may or may not be raw.
   /// </summary>
   public static bool HasRawCounterpart(MemberDecl? member) {
-    return member is { IsStatic: false } and not SpecialField &&
+    return member is { IsStatic: false } and not SpecialField && !IsStoredField(member) &&
            member.EnclosingClass is TopLevelDeclWithMembers { InvariantTypeDecl: not null };
+  }
+
+  /// <summary>
+  /// Whether "member" is a field of an object whose value is stored: a mutable field, or a constant field without an
+  /// initializer. A raw reference has these, and its constructor assigns them before its invariants hold.
+  /// </summary>
+  public static bool IsStoredField(MemberDecl member) {
+    return member is Field and not SpecialField and not ConstantField { Rhs: not null };
   }
 
   /// <summary>
@@ -67,8 +75,8 @@ public class RawMemberInference {
       var invariantTypeDecl = cl.InvariantTypeDecl!;
       var typeArgs = cl.TypeArgs.ConvertAll(tp => (Type)new UserDefinedType(tp));
       Type type = member is MemberInvariant
-        ? invariantTypeDecl.RawType(member.Origin, typeArgs)
-        : new UserDefinedType(member.Origin, cl.Name, invariantTypeDecl, typeArgs);
+        ? invariantTypeDecl.RawThisType(member.Origin, typeArgs)
+        : invariantTypeDecl.ThisType(member.Origin, typeArgs);
       wrapper = new TypeRefinementWrapper(type);
       thisTypes.Add(member, wrapper);
     }
@@ -144,8 +152,8 @@ class RawMemberFlow : Flow {
       return false;
     }
     var thisType = (UserDefinedType)memberThis.T;
-    Contract.Assert(thisType.ResolvedClass is InvariantTypeDecl);
-    memberThis.T = cl.InvariantTypeDecl!.RawType(thisType.Origin, thisType.TypeArgs);
+    Contract.Assert(!RawMemberInference.IsRaw(thisType, cl));
+    memberThis.T = cl.InvariantTypeDecl!.RawThisType(thisType.Origin, thisType.TypeArgs);
     if (context.DebugPrint) {
       context.Reporter.Options.OutputWriter.Debug($"refining {TokDescription()} to {memberThis.T}");
     }

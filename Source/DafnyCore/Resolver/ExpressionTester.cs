@@ -420,6 +420,19 @@ public class ExpressionTester {
       return false;
     }
 
+    // Issue 105: every object of a class with member invariants satisfies them, so for a reference that is not raw,
+    // a test against "C" or "C?" tests its dynamic type alone, as a test against "raw C" or "raw C?" does.  For a raw
+    // reference, it tests the invariants, which is ghost.
+    if (toType.NormalizeExpandKeepConstraints() is UserDefinedType { ResolvedClass: var toDecl } udtToClass &&
+        toDecl switch {
+          NonNullTypeDecl { Class.InvariantTypeDecl: { } invariants } and not RawNonNullTypeDecl =>
+            invariants.RawThisType(udtToClass.Origin, udtToClass.TypeArgs),
+          InvariantTypeDecl { Owner: ClassLikeDecl } invariants => invariants.RawType(udtToClass.Origin, udtToClass.TypeArgs),
+          _ => null
+        } is { } rawToType) {
+      return !InvariantTypeDecl.IsRawReferenceType(fromType) && IsTypeTestCompilable(fromType, rawToType);
+    }
+
     // part 1
     if (toType.NormalizeExpandKeepConstraints() is UserDefinedType { ResolvedClass: RedirectingTypeDecl { ConstraintIsCompilable: false } }) {
       // the constraint can't be evaluated at run time, so the type test cannot be compiled

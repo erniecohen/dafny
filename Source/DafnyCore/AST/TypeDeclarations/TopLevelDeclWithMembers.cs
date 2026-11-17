@@ -118,6 +118,11 @@ public abstract class TopLevelDeclWithMembers : TopLevelDecl, IHasSymbolChildren
   }
 
   public override List<Type> ParentTypes(List<Type> typeArgs, bool includeTypeBounds) {
+    if (this is ClassDecl && InvariantTypeDecl != null) {
+      // Issue 105: a class with member invariants denotes "raw C?", which is not a subtype of "object?" or of a
+      // parent trait. Its derived type "C?" is (see InvariantTypeDecl.ParentTypes).
+      return [];
+    }
     return RawTraitsWithArgument(typeArgs);
   }
 
@@ -269,6 +274,11 @@ public abstract class TopLevelDeclWithMembers : TopLevelDecl, IHasSymbolChildren
             }
           case Function { ByMethodBody: not null } f:
             resolver.RegisterByMethod(f, this);
+            break;
+          case MemberInvariant:
+            // Issue 105: a member invariant is part of the definition of its type, as a datatype's constructors are,
+            // so it is revealed wherever the type is, and nowhere else
+            m.InheritVisibility(this);
             break;
         }
       } else if (m is Constructor { HasName: false } constructor) {

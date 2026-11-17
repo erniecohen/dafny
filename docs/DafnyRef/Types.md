@@ -4909,8 +4909,8 @@ declaration.
 The hidden, experimental option `--member-invariants` defaults to `false` and
 requires `--type-system-refresh`. It is being implemented in stages
 (https://github.com/erniecohen/dafny/issues/105). So far, the invariants of an
-inductive datatype that extends no trait, declared in a module that refines no
-other, are verified. A program, libraries included,
+inductive datatype or a class that extends no trait, declared in a module that
+refines no other, are verified. A program, libraries included,
 that declares any other invariant can be parsed, printed and resolved, and
 compiled with `--no-verify`, but not verified: the verifier reports each such
 invariant as not yet supported, and verifies no module of the program. Compiled
@@ -4946,6 +4946,13 @@ invariant may not declare a codatatype. Libraries are part of the program, so
 the rule applies to them too; a library that declares neither may be used either
 way. A `.doo` library built with `--member-invariants` requires its client to
 enable the option too; one built without it records nothing.
+
+An invariant is part of the definition of its type, as a datatype's
+constructors are, so an export set does not name it: it is revealed wherever
+its type is revealed, and nowhere else. A client to which the type is revealed
+sees the invariants and may assume them of every value of the type. A client to
+which the type is only provided sees an abstract type, and none of its
+invariants.
 
 ### 6.6.1. Raw types {#sec-raw-types}
 
@@ -4991,8 +4998,8 @@ method Widen(i: Interval) returns (j: Interval) {
 
 `raw` applies to a type that can declare an invariant, and not to a type
 parameter, a type synonym, a subset type or a codatatype. So far it is
-supported only for a datatype; for a class, trait, newtype or abstract type it
-is parsed but not yet supported. With the option, `raw` is still an identifier
+supported for a datatype and for a class (section 6.6.5); for a trait, newtype
+or abstract type it is parsed but not yet supported. With the option, `raw` is still an identifier
 except directly before the name of a type, and `witness` is still the witness
 clause of a subset type or newtype.
 
@@ -5022,7 +5029,9 @@ datatype Cert = Cert(ghost p: int) {
   instantiate a type parameter that requires `(0)` or `(00)`. `raw D` can, as
   the datatype could without invariants.
 - A datatype declares at most one witness, and only if it declares an
-  invariant. A witness member of another kind of type is not yet supported.
+  invariant. A class may not declare one: a class type contains `null`, and its
+  objects are the ones its constructors return. A witness member of another
+  kind of type is not yet supported.
 
 ### 6.6.3. An invariant may not refer to its own type {#sec-invariant-extension}
 
@@ -5096,3 +5105,55 @@ method Convert(s: Box<Empty>) returns (r: raw Box<int>, t: Box<int>) {
   function of a generic type is generic in the type's parameters, so clause 2
   rejects such an invariant that calls one, where a type argument depends on
   `D`.
+
+### 6.6.5. Classes {#sec-invariant-classes}
+
+Every object of a class with invariants satisfies them, and so do the non-null
+values of `C?`. The invariants read only `const` fields, which a constructor
+assigns before `new;`, so the constructor checks them once, at `new;`, and
+they hold of the object from then on:
+
+<!-- %no-check -->
+```dafny
+class Buffer {
+  const data: array<int>
+  const cap: nat
+  invariant data.Length == cap && 0 < cap
+
+  constructor (n: nat)
+    requires 0 < n
+  {
+    data := new int[n];
+    cap := n;
+    new;                        // the invariant is checked here
+    Fill();                     // 'this' is a Buffer
+  }
+  method Fill() modifies data { }
+  method Get(i: nat) returns (x: int)
+    requires i < cap
+  {
+    x := data[i];               // i < data.Length, from the invariant
+  }
+}
+```
+
+- At `new;`, explicit or implicit at the end of the body, the verifier checks
+  each invariant of the object ("invariant might not hold"). Before it, the
+  object is a `raw C`, and after it, a `C`.
+- Every parameter, result, field, element and bound variable of type `C`, or
+  non-null `C?`, satisfies the invariants, whether or not it is allocated.
+- A class that declares or inherits an invariant must declare a constructor. A
+  constructor with no body is assumed to return an object that satisfies the
+  invariants, and `dafny audit` reports it.
+- `raw C` is the type of the objects of the class whether or not they satisfy
+  the invariants, and `raw C?` adds `null`. `C` is a `raw C`. A `raw C` used
+  where a `C` is expected is a conversion, and the verifier checks the
+  invariants. `raw C` is a subtype of nothing else: in particular, not of
+  `object`. A raw reference reaches `object`, a trait, a collection of those
+  or a type argument that is not raw only where the verifier proves that it
+  satisfies the invariants. A `reads` or `modifies` clause may mention a raw
+  reference without that proof.
+- For a reference `o` that is not raw, `o is C` tests the dynamic type alone,
+  and compiles. A test of a raw reference, `r is C`, evaluates the invariants,
+  so it is ghost.
+- `C`, `C?`, `raw C` and `raw C?` are the same type in compiled code.

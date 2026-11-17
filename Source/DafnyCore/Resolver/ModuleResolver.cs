@@ -1882,7 +1882,13 @@ namespace Microsoft.Dafny {
               }
             }
           }
-          if (!hasConstructor) {
+          if (!hasConstructor && MemberInvariantRequiringConstructor(cl) is var (invariant, holder)) {
+            // Issue 105: an object of the class exists only if a constructor checked the invariant at "new;"
+            reporter.Error(MessageSource.Resolver, holder == cl ? invariant.NameNode.Origin : cl.Origin,
+              holder == cl
+                ? $"class '{cl.Name}' declares a member invariant, so it must declare a constructor"
+                : $"class '{cl.Name}' inherits a member invariant from '{holder.Name}', so it must declare a constructor");
+          } else if (!hasConstructor) {
             if (fieldWithoutKnownInitializer == null) {
               // time to check inherited members
               foreach (var member in cl.InheritedMembers) {
@@ -2162,6 +2168,19 @@ namespace Microsoft.Dafny {
         CallGraphBuilder.VisitMethod(prefixLemma, reporter);
         new BoundsDiscoveryVisitor(this).VisitMethod(prefixLemma);
       }
+    }
+
+    /// <summary>
+    /// Issue 105: a member invariant that "cl" declares, or else one it inherits, with the declaration that declares
+    /// it; or null if "cl" has none.  A class that has or inherits an invariant must declare a constructor.
+    /// </summary>
+    private static (MemberInvariant Invariant, TopLevelDeclWithMembers Holder)? MemberInvariantRequiringConstructor(TopLevelDeclWithMembers cl) {
+      foreach (var holder in new[] { cl }.Concat<TopLevelDeclWithMembers>(cl.TraitAncestors().OrderBy(trait => trait.Name))) {
+        if (InvariantTypeDecl.Invariants(holder).FirstOrDefault() is { } invariant) {
+          return (invariant, holder);
+        }
+      }
+      return null;
     }
 
     private void CheckIsOkayWithoutRHS(ConstantField f, bool giveNonReferenceTypeTraitHint) {
@@ -3742,9 +3761,10 @@ namespace Microsoft.Dafny {
       Contract.Ensures(Contract.Result<UserDefinedType>() != null);
 
       var cl = (TopLevelDeclWithMembers)member.EnclosingClass;
-      if (member.IsRawMember) {
-        // Issue 105: the receiver of a raw member has the raw type
-        return UserDefinedType.FromTopLevelDecl(tok, cl, cl.TypeArgs);
+      if (member.IsRawMember || (RawMemberInference.IsStoredField(member) && cl is ClassLikeDecl { InvariantTypeDecl: not null })) {
+        // Issue 105: the receiver of a raw member has the raw type, and so does that of a stored field of a class,
+        // which a raw reference has
+        return cl.InvariantTypeDecl!.RawThisType(tok, cl.TypeArgs.ConvertAll(tp => (Type)new UserDefinedType(tp)));
       }
       return GetThisType(tok, cl);
     }

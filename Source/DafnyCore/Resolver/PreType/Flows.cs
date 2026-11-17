@@ -218,6 +218,9 @@ abstract class Flow {
 
     // Before we do anything else, make a note of whether or not both "a" and "b" are non-null types.
     var abNonNullTypes = a.IsNonNullRefType && b.IsNonNullRefType;
+    // Issue 105: and whether either is a raw reference type, whose only supertypes are based on its class
+    var rawA = InvariantTypeDecl.IsRawReferenceType(a);
+    var rawB = InvariantTypeDecl.IsRawReferenceType(b);
 
     var towerA = Type.GetTowerOfSubsetTypes(a, true);
     var towerB = Type.GetTowerOfSubsetTypes(b, true);
@@ -288,6 +291,9 @@ abstract class Flow {
     var commonSupertypeDecl = PreTypeConstraints.JoinHeads(aDecl, bDecl, context.SystemModuleManager);
     if (commonSupertypeDecl == null) {
       return null; // join does not exist (e.g., it is not unique)
+    }
+    if ((rawA && commonSupertypeDecl != aDecl) || (rawB && commonSupertypeDecl != bDecl)) {
+      return null; // issue 105: a raw reference type is not a subtype of "object" or of a parent trait
     }
     var aTypeSubstMap = TypeParameter.SubstitutionMap(aDecl.TypeArgs, a.TypeArgs);
     (aDecl as TopLevelDeclWithMembers)?.AddParentTypeParameterSubstitutions(aTypeSubstMap);

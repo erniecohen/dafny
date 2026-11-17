@@ -767,8 +767,8 @@ namespace Microsoft.Dafny {
     }
 
     /// <summary>
-    /// Issue 105: member invariants (--member-invariants) are verified for an inductive datatype that has no type
-    /// parameters and no parent traits, declared in a module that refines no other. If the program, libraries
+    /// Issue 105: member invariants (--member-invariants) are verified for an inductive datatype or a class that
+    /// declares no parent traits, declared in a module that refines no other. If the program, libraries
     /// included, declares any other invariant, no module of it is translated, since the types of every module may
     /// depend on the invariants. Then report each unsupported invariant of "forModule", or, if it declares none, the
     /// first of its declarations that would have been verified. Return whether the program declares an unsupported
@@ -807,11 +807,11 @@ namespace Microsoft.Dafny {
     private static string UnsupportedInvariantReason(MemberInvariant invariant) {
       const string notYet = "is not yet supported";
       return invariant.EnclosingClass switch {
-        IndDatatypeDecl { Traits.Count: not 0 } =>
-          $"verification of a member invariant of a datatype that extends a trait {notYet}",
-        IndDatatypeDecl { EnclosingModuleDefinition.Implements: not null } =>
+        TopLevelDeclWithMembers { Traits.Count: not 0 } and (IndDatatypeDecl or ClassDecl) =>
+          $"verification of a member invariant of a {invariant.EnclosingClass.WhatKind} that extends a trait {notYet}",
+        TopLevelDeclWithMembers { EnclosingModuleDefinition.Implements: not null } and (IndDatatypeDecl or ClassDecl) =>
           $"verification of a member invariant in a refining module {notYet}",
-        IndDatatypeDecl => null,
+        IndDatatypeDecl or ClassDecl => null,
         var decl => $"verification of a member invariant of a {decl.WhatKind} {notYet}"
       };
     }
@@ -947,6 +947,7 @@ namespace Microsoft.Dafny {
           if (cl.NonNullTypeDecl != null) {
             AddTypeDecl(cl.NonNullTypeDecl);
           }
+          AddClassInvariantTypeDecls(cl);
         } else {
           Contract.Assert(d is ValuetypeDecl);
         }
@@ -3103,8 +3104,15 @@ namespace Microsoft.Dafny {
         // An opaque reference type keeps the nullable declaration in its self synonym.
         // It must remain distinct from the separately provided non-null type.
         var underlyingDecl = cl is InternalTypeSynonymDecl { Rhs: UserDefinedType rhs } ? rhs.ResolvedClass : cl;
-        if (underlyingDecl is ClassLikeDecl { NonNullTypeDecl: { } }) {
-          name = name + "?";  // TODO: this doesn't seem like the best place to do this name transformation
+        if (underlyingDecl is InvariantTypeDecl { Owner: ClassLikeDecl { NonNullTypeDecl: not null } }) {
+          // Issue 105: the type "C?" that the name of a class with member invariants denotes
+          name = name + "?";
+        } else if (underlyingDecl is RawNonNullTypeDecl) {
+          // Issue 105: "raw C"
+          name = name + "#raw";
+        } else if (underlyingDecl is ClassLikeDecl { NonNullTypeDecl: { } } classLikeDecl) {
+          // Issue 105: a class with member invariants is "raw C?"
+          name = name + (classLikeDecl.InvariantTypeDecl != null ? "#raw?" : "?");  // TODO: this doesn't seem like the best place to do this name transformation
         } else if (underlyingDecl is TopLevelDeclWithMembers { InvariantTypeDecl: { } }) {
           // Issue 105: a declaration with member invariants is its raw type, and its name, as a type, denotes the
           // derived InvariantTypeDecl. As for "C?" and "C", the raw type takes the suffix; "#" cannot occur in a
@@ -4505,6 +4513,12 @@ namespace Microsoft.Dafny {
         cre = MkIs(BoxifyForTraitParent(bSource.tok, bSource, udt.ResolvedClass, sourceType), targetType, tok);
       } else {
         cre = MkIs(bSource, targetType, tok);
+      }
+
+      if (InvariantTypeDecl.FinishRawReferences(sourceType, targetType) is { } finished &&
+          GetSubrangeCheck(tok, bSource, sourceType, finished, null, null, out _) is { } finishedCheck) {
+        // Issue 105: a raw reference reaches a type that is not raw only if it satisfies the invariants of its class
+        cre = BplAnd(finishedCheck, cre);
       }
 
       Expression dafnyCheck = null;

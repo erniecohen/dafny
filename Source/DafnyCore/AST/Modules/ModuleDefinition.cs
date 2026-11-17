@@ -414,6 +414,9 @@ Generate module names in the older A_mB_mC style instead of the current A.B.C sc
       if (d is TopLevelDeclWithMembers { InvariantTypeDecl: { } invariantTypeDecl }) {
         yield return invariantTypeDecl;
       }
+      if (d is ClassLikeDecl { RawNonNullTypeDecl: { } rawNonNullTypeDecl }) {
+        yield return rawNonNullTypeDecl;
+      }
     }
   }
 
@@ -849,6 +852,12 @@ Generate module names in the older A_mB_mC style instead of the current A.B.C sc
       } else if (d is ClassLikeDecl) {
         var cl = (ClassLikeDecl)d;
         var preMemberErrs = resolver.reporter.Count(ErrorLevel.Error);
+
+        if (cl.InvariantTypeDecl == null && InvariantTypeDecl.Applies(cl)) {
+          // Issue 105: "C?" and "raw C" for a class with member invariants
+          cl.InvariantTypeDecl = new InvariantTypeDecl(cl);
+          cl.RawNonNullTypeDecl = new RawNonNullTypeDecl(cl);
+        }
 
         // register the names of the class members
         var members = new Dictionary<string, MemberDecl>();

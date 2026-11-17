@@ -1104,6 +1104,7 @@ public partial class BoogieGenerator {
         if (cl.NonNullTypeDecl != null) {
           AddTypeDecl(cl.NonNullTypeDecl);
         }
+        AddClassInvariantTypeDecls(cl);
         if (d is IteratorDecl) {
           AddIteratorSpecAndBody((IteratorDecl)d);
         }
@@ -1155,6 +1156,19 @@ public partial class BoogieGenerator {
     currentModule = null;
 
     this.fuelContext = oldFuelContext;
+  }
+
+  /// <summary>
+  /// Issue 105: for a class with member invariants, the types "C?", the raw class restricted by the invariants, and
+  /// "raw C", the non-null raw class.
+  /// </summary>
+  void AddClassInvariantTypeDecls(ClassLikeDecl cl) {
+    if (cl.InvariantTypeDecl != null) {
+      AddTypeDecl(cl.InvariantTypeDecl);
+    }
+    if (cl.RawNonNullTypeDecl != null) {
+      AddTypeDecl(cl.RawNonNullTypeDecl);
+    }
   }
 
   void AddTypeDecl(SubsetTypeDecl dd) {

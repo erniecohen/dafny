@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.Contracts;
 using DafnyCore.Verifier;
 using Bpl = Microsoft.Boogie;
 
@@ -47,11 +48,22 @@ public partial class BoogieGenerator {
   /// raw D, and each invariant of D must hold of it. Each invariant is a separate obligation, "invariant might not
   /// hold", whose related location is that invariant. Returns false, and checks nothing, unless the target is such
   /// a type and its invariants are visible here; the caller then checks membership in the target as a whole.
+  ///
+  /// For a class C, the target is "C?" (C? &lt;- raw C?), whose invariants are checked of a value that is not null, or
+  /// C (C &lt;- raw C?), for which the value must be in "raw C" before its invariants are checked.
   /// </summary>
   private bool CheckInvariantTypeMembership(IOrigin origin, Bpl.Expr value, Type sourceType, Type targetType,
     BoogieStmtListBuilder builder, ExpressionTranslator etran,
     Func<Bpl.Expr, Bpl.Expr> close, bool forget, bool universalClosure, Bpl.Expr valueCanCall) {
-    if (targetType.NormalizeExpandKeepConstraints() is not UserDefinedType { ResolvedClass: InvariantTypeDecl declaration } udt ||
+    var target = targetType.NormalizeExpandKeepConstraints();
+    if (target is UserDefinedType { ResolvedClass: NonNullTypeDecl { Class.InvariantTypeDecl: { } classInvariants } and not RawNonNullTypeDecl } nonNull &&
+        InvariantTypeDecl.IsRawReferenceType(sourceType) && RevealedInScope((RevealableTypeDecl)classInvariants)) {
+      var rawNonNull = classInvariants.RawThisType(origin, nonNull.TypeArgs);
+      CheckSubrange(origin, value, sourceType, rawNonNull, null, builder, etran: etran, close: close, forget: forget,
+        universalClosure: universalClosure, valueCanCall: valueCanCall);
+      target = classInvariants.FinishedType(origin, nonNull.TypeArgs);
+    }
+    if (target is not UserDefinedType { ResolvedClass: InvariantTypeDecl declaration } udt ||
         !RevealedInScope((RevealableTypeDecl)declaration)) {
       return false;
     }
@@ -62,9 +74,18 @@ public partial class BoogieGenerator {
     var wrapper = new BoogieWrapper(AdaptBoxing(origin, value, sourceType, rawType), rawType);
     var constraint = Substitute(declaration.Constraint, null,
       new Dictionary<IVariable, Expression> { { declaration.Var, wrapper } }, typeMap);
+    Bpl.Expr notNull = null;
+    if (InvariantTypeDecl.IsReferenceType(declaration.Owner)) {
+      // The constraint of "C?" is "v != null ==> invariants"; check each invariant of a value that is not null
+      var implication = (BinaryExpr)constraint.Resolved;
+      Contract.Assert(implication.Op == BinaryExpr.Opcode.Imp);
+      notNull = etran.TrExpr(implication.E0);
+      constraint = implication.E1;
+    }
     var description = new InvariantCheck(targetType.ToString());
     foreach (var conjunct in Expression.Conjuncts(constraint)) {
       var guard = etran.CanCallAssumption(conjunct);
+      if (notNull != null) { guard = BplAnd(notNull, guard); }
       if (valueCanCall != null) { guard = BplAnd(valueCanCall, guard); }
       var check = close(BplImp(guard, etran.TrExpr(conjunct)));
       var token = conjunct.Resolved is FunctionCallExpr { Function: MemberInvariant invariant }
@@ -88,7 +109,7 @@ public partial class BoogieGenerator {
       return;
     }
     var invariantTypeDecl = ((TopLevelDeclWithMembers)member.EnclosingClass).InvariantTypeDecl;
-    var targetType = new UserDefinedType(origin, invariantTypeDecl.Name, invariantTypeDecl, receiverType.TypeArgs);
+    var targetType = invariantTypeDecl.ThisType(origin, receiverType.TypeArgs);
     CheckSubrange(origin, etran.TrExpr(receiver), receiver.Type, targetType, receiver, builder, etran: etran);
   }
 
@@ -97,7 +118,17 @@ public partial class BoogieGenerator {
     BoogieStmtListBuilder builder, ExpressionTranslator etran,
     Func<Bpl.Expr, Bpl.Expr> close = null, bool forget = false, bool universalClosure = false, Bpl.Expr valueCanCall = null) {
     close ??= expression => expression;
-    if (etran != null && CheckInvariantTypeMembership(origin, value, sourceType, targetType, builder, etran, close, forget, universalClosure, valueCanCall)) {
+    if (etran != null && InvariantTypeDecl.FinishRawReferences(sourceType, targetType) is { } finished) {
+      // Issue 105: a raw reference reaches a type that is not raw, such as "object", only if it satisfies the
+      // invariants of its class. Check that first, and then the conversion of the finished value to the target.
+      CheckSubrange(origin, value, sourceType, finished, null, builder, etran: etran, close: close, forget: forget,
+        universalClosure: universalClosure, valueCanCall: valueCanCall);
+      var rest = GetSubrangeCheck(origin, value, finished, targetType, null, null, out var restDescription);
+      if (rest != null) {
+        CheckTypeMembership(origin, rest, value, finished, targetType, restDescription, builder, etran, close, forget,
+          universalClosure, valueCanCall);
+      }
+    } else if (etran != null && CheckInvariantTypeMembership(origin, value, sourceType, targetType, builder, etran, close, forget, universalClosure, valueCanCall)) {
       // As for a subset type, membership in the target follows from the checks under the type's introduction axiom.
       if (!forget) {
         var guardedMembership = valueCanCall == null ? membership : BplImp(valueCanCall, membership);

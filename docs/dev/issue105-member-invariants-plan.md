@@ -1178,7 +1178,11 @@ since they declare no invariant.
 **Trigger cost.**  The equivalence for a class triggers on
 `$Is(o, Tclass.C?)`, which is a common term.  It appears only for classes
 with invariants, but its cost must be measured in resource units on the first
-real examples.
+real examples.  Measured with the fifth step, on programs that state the same
+facts once with an invariant and once with the subset-type idiom of section
+3.7: the cost is of the same order.  A client of the class pays slightly
+more resource units; the class's own methods pay more, since there `this`
+carries the invariant.
 
 ## 6. Examples
 
@@ -1764,7 +1768,8 @@ soundness problem while nothing checks or assumes an invariant.
 - *Export sets.*  `export provides T` clones a type's members without their
   bodies, so a client sees an invariant without its body.  What a client that
   cannot see the body may assume about a value of `T` is to be decided before
-  invariants are assumed.
+  invariants are assumed.  Settled in the fifth step: an invariant is revealed
+  exactly where its type is.
 - *The language server's parse cache* keys on the file's name and contents,
   not on the parser's options, so toggling `--member-invariants` in a project
   does not reparse an unchanged file.  This predates member invariants and
@@ -2014,3 +2019,105 @@ section 7.2).**
   `git-issue-105-extension.dfy` the generic cases of each clause;
   `git-issue-105-compile.dfy` runs generic witnesses in compiled code, and
   `git-issue-105-raw-compile.dfy` is now verified first.
+
+**Verification of classes (fifth step; stage 3 of section 7.2).**
+
+- *The gate* is lifted for classes: the invariants of an inductive datatype
+  or a class that declares no parent trait, in a module that refines no other,
+  are verified.  A class that extends a trait stays behind the gate until
+  traits are verified (stage 4), since `raw C` is then a subtype of `raw P`.
+  So does an invariant in a trait, a newtype or an abstract type.
+- *The types.*  As for a datatype, the class declaration is the raw type,
+  here `raw C?`, and the names written as types are redirected:
+  - `C?` denotes a derived declaration (`InvariantTypeDecl`) whose constraint
+    is `v != null ==> ` the invariants.  Its parents are those of the class,
+    `object?` and the parent traits; the class declaration itself has none.
+  - `C` is the non-null type of `C?`, as before, and `C` is also a subtype of
+    `raw C`.
+  - `raw C` is a new declaration (`RawNonNullTypeDecl`), the non-null type of
+    `raw C?`, a subtype of `raw C?` and of nothing else.
+  - In Boogie they are `C?`, `C`, `C#raw?` and `C#raw`.  The dynamic type of
+    an object is its class, so `$Is(o, Tclass.C)` is the dynamic type, non-null
+    and the invariants.
+  - A class with invariants contains `null`, so `C?` is auto-initializable, and
+    a class may not declare a witness: its objects are the ones its
+    constructors return, so it needs none.
+  - A class pre-type stands for `C?`, not `raw C?`, when it is turned into a
+    type, so that an inferred type is a subtype of `object?`; type refinement
+    makes it raw where a raw type flows in.  A join of a raw reference type
+    with a type of another class or trait does not exist.
+- *The check at `new;`* (section 3.4).  Until `new;`, explicit or implicit,
+  the new object is assumed to be a `raw C` only; there each invariant is
+  asserted, "invariant might not hold", and from then on `this` is a `C`.  The
+  control `Bad` of section 6.4 verifies if `new;` assumes `C`.  The type of
+  `this` in a constructor is `C`, as in other members: before `new;` Dafny lets
+  a constructor only assign and read `this`'s fields, and a stored field (a
+  mutable field, or a `const` without an initializer) is a member of
+  `raw C`, so the first division never uses `this` as a `C`.  A raw member's
+  `this` is `raw C`.  `new by` blocks (open question 2) are not implemented.
+- *Constructors.*  A class that declares or inherits an invariant must declare
+  a constructor.  A constructor with no body (or an extern one) assumes the
+  invariants of the object it returns, as a method assumes that its output of
+  a subset type satisfies the constraint, so `dafny audit` reports it, and
+  `{:extern}` gets the warning for a declaration with a contract.
+- *Where a raw reference may go.*  `raw C` is not a subtype of `object` or of
+  a trait, so a conversion of a raw reference to one of them is checked.
+  Wherever a value whose type may contain a raw reference reaches a type not
+  based on that class, the verifier first checks that the reference is a
+  finished one, `C` or `C?` (`InvariantTypeDecl.FinishRawReferences`): at the
+  value itself and, covariantly, in the elements of sets, multisets, sequences
+  and maps, in the covariant type arguments of other types, and in the results
+  of arrows.  A type parameter instantiated with `raw C` is no exception:
+  `Id(r)` is a `raw C`, and `Id<object>(r)` is checked.  A parameter position
+  of an arrow type is checked only for membership, since in the verifier's
+  model `object` contains every reference that is not null.
+  This is defence in depth: in a verified program every object that exists has
+  passed `new;`, and `this` cannot escape before, so the run-time test and the
+  logical one already agree.  The resolver accepts such a conversion, as it
+  accepts one to a subset type, and leaves it to the verifier.
+- *Frames.*  A raw reference in a `reads` or `modifies` clause carries no
+  obligation, including in the default `decreases` that a function infers from
+  its `reads` clause.  Section 5.3 listed frames among the places a raw
+  reference must not reach, but a frame names locations: it neither assumes
+  nor yields the invariants of the objects in it.
+- *Type tests.*  For a reference that is not raw, `o is C` and `o is C?` test
+  the dynamic type alone and compile, since every object of the class
+  satisfies its invariants (section 3.4).  A test of a raw reference, `r is C`,
+  evaluates the invariants, so it is ghost.  A test against a user's subset
+  type of `C` stays ghost even where its own constraint is compilable, since
+  the derived constraint of `C?` is a ghost predicate; treating it as a test of
+  the dynamic type is a possible relaxation.
+- *The extension condition.*  `Max` of section 6.2, whose invariant quantifies
+  over `Max`, is rejected by the existing rule that a function body (an
+  invariant's, a lambda's in a method) quantifies over a class type only with a
+  bound, as section 3.3 expected; no new rule was needed.  Its message calls
+  the context "a invariant definition"; the article comes from the existing
+  message, which says "a function definition" and "a lambda expression" alike,
+  so it is left as upstream has it.
+- *Export sets*, settling the item left open after the first step.  A member
+  invariant is part of the definition of its type, as a datatype's
+  constructors are, so it is revealed wherever its type is, and nowhere else.
+  A client to which the type is revealed sees the invariants and assumes them
+  of every value; a client to which it is only provided sees an abstract type
+  and assumes nothing of it.  Before this step an invariant was exported like
+  any other member, only where an export set named it, which it cannot; so a
+  client to which a datatype was revealed saw its constraint without the
+  invariants' bodies, and could not use them.  `raw C` is visible where the
+  class is revealed.  Where the class is only provided, `raw C` is not yet
+  supported, as `raw D` is for a datatype (stage 5).
+- *Compilation.*  `C`, `C?`, `raw C` and `raw C?` compile to the class.  The Go
+  back end asks whether one type is a subtype of another to decide whether to
+  emit a type assertion; for the class, which is a subtype of `object` in the
+  target but not among Dafny's types, it now answers as the target does.
+  Ignoring nullity, `C` is compared as `C?` and `raw C` as `raw C?`.
+- *Translation cache.*  A class whose invariants are verified no longer makes
+  the cache step aside.
+- *Tests.*  `git-issue-105-classes.dfy` holds sections 6.1 and 6.3 for classes,
+  the controls V2, V6 and `Bad`, and each place a raw reference may and may not
+  go; `git-issue-105-class-errors.dfy` section 6.2's class examples and the
+  resolver's rules, including the lambda bodies of section 3.3;
+  `git-issue-105-class-witness.dfy` the witness rule;
+  `git-issue-105-class-compile.dfy` runs type tests and raw references in
+  compiled code; `git-issue-105-exports.dfy` and
+  `git-issue-105-class-exports.dfy` export sets, for datatypes and classes;
+  `git-issue-105-emptiness.dfy` adds a bodiless constructor to the audit.

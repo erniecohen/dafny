@@ -1,14 +1,12 @@
-git-issue-105-raw-errors.dfy(22,19): Error: 'raw' is not yet supported for class 'C'
-git-issue-105-raw-errors.dfy(22,29): Error: 'raw' is not yet supported for class 'C'
-git-issue-105-raw-errors.dfy(22,40): Error: 'raw' is not yet supported for trait 'Tr'
-git-issue-105-raw-errors.dfy(22,51): Error: 'raw' is not yet supported for newtype 'N'
-git-issue-105-raw-errors.dfy(22,61): Error: 'raw' is not yet supported for abstract type 'Abstract'
-git-issue-105-raw-errors.dfy(24,18): Error: 'raw' applies only to a type that can declare a member invariant (a datatype, class, trait, newtype or abstract type), not to type synonym 'Synonym'
-git-issue-105-raw-errors.dfy(24,34): Error: 'raw' applies only to a type that can declare a member invariant (a datatype, class, trait, newtype or abstract type), not to subset type 'Subset'
-git-issue-105-raw-errors.dfy(26,29): Error: 'raw' does not apply to type parameter 'T'
-git-issue-105-raw-errors.dfy(37,30): Error: type parameter (T) passed to type Auto must support auto-initialization (got D)
-git-issue-105-raw-errors.dfy(37,62): Error: type parameter (T) passed to type Nonempty must be nonempty (got D)
-git-issue-105-raw-errors.dfy(43,8): Error: type parameter (T) passed to method Z must support auto-initialization (got D)
-11 resolution/type errors detected in git-issue-105-raw-errors.dfy
+git-issue-105-raw-errors.dfy(23,19): Error: 'raw' is not yet supported for trait 'Tr'
+git-issue-105-raw-errors.dfy(23,30): Error: 'raw' is not yet supported for newtype 'N'
+git-issue-105-raw-errors.dfy(23,40): Error: 'raw' is not yet supported for abstract type 'Abstract'
+git-issue-105-raw-errors.dfy(25,18): Error: 'raw' applies only to a type that can declare a member invariant (a datatype, class, trait, newtype or abstract type), not to type synonym 'Synonym'
+git-issue-105-raw-errors.dfy(25,34): Error: 'raw' applies only to a type that can declare a member invariant (a datatype, class, trait, newtype or abstract type), not to subset type 'Subset'
+git-issue-105-raw-errors.dfy(27,29): Error: 'raw' does not apply to type parameter 'T'
+git-issue-105-raw-errors.dfy(38,30): Error: type parameter (T) passed to type Auto must support auto-initialization (got D)
+git-issue-105-raw-errors.dfy(38,62): Error: type parameter (T) passed to type Nonempty must be nonempty (got D)
+git-issue-105-raw-errors.dfy(44,8): Error: type parameter (T) passed to method Z must support auto-initialization (got D)
+9 resolution/type errors detected in git-issue-105-raw-errors.dfy
 git-issue-105-raw-codatatype.dfy(8,12): Error: 'raw' applies only to a type that can declare a member invariant (a datatype, class, trait, newtype or abstract type), not to codatatype 'Stream'
 1 resolution/type errors detected in git-issue-105-raw-codatatype.dfy

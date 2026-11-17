@@ -1,8 +1,8 @@
-git-issue-105-not-yet.dfy(19,31): Error: 'raw' is not yet supported for class 'Cell'
-git-issue-105-not-yet.dfy(19,79): Error: 'raw' is not yet supported for class 'Cell'
-git-issue-105-not-yet.dfy(26,4): Error: Function body type mismatch (expected bool, got int)
+git-issue-105-not-yet.dfy(28,14): Error: 'raw' is not yet supported for trait 'Named'
+git-issue-105-not-yet.dfy(28,32): Error: 'raw' is not yet supported for trait 'Named'
+git-issue-105-not-yet.dfy(33,4): Error: Function body type mismatch (expected bool, got int)
 3 resolution/type errors detected in git-issue-105-not-yet.dfy
-git-issue-105-not-yet.dfy.tmp.dfy(5,31): Error: 'raw' is not yet supported for class 'Cell'
-git-issue-105-not-yet.dfy.tmp.dfy(6,44): Error: 'raw' is not yet supported for class 'Cell'
-git-issue-105-not-yet.dfy.tmp.dfy(28,4): Error: Function body type mismatch (expected bool, got int)
+git-issue-105-not-yet.dfy.tmp.dfy(11,14): Error: 'raw' is not yet supported for trait 'Named'
+git-issue-105-not-yet.dfy.tmp.dfy(11,32): Error: 'raw' is not yet supported for trait 'Named'
+git-issue-105-not-yet.dfy.tmp.dfy(37,4): Error: Function body type mismatch (expected bool, got int)
 3 resolution/type errors detected in git-issue-105-not-yet.dfy.tmp.dfy
