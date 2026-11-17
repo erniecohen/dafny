@@ -735,6 +735,9 @@ git-issues/github-issue-417.dfy
 # Opt-in --verification-cache stores blobs compressed with zlib under the SHA-256 of their uncompressed bytes; earlier uncompressed and mixed caches still replay, and a truncated or corrupted compressed blob is a miss with the same report (https://github.com/erniecohen/dafny/issues/388).
 git-issues/git-issue-388.dfy
 
+# A statement added by a skeleton may not call a method that modifies state, which made inherited postconditions contradict new ones (https://github.com/erniecohen/dafny/issues/412).
+git-issues/github-issue-412.dfy
+
 # The resolved program that --rprint prints lists the bitvector types the program uses, in order and with the widths that lowering a shift adds, as the translator declares them; under --type-system-refresh, _System again declares each bvN with RotateLeft and RotateRight. git-issue-1665 prints the module-prefixed names generated for :- and the match source's type for an untyped case variable (https://github.com/erniecohen/dafny/issues/441).
 dafny0/TypeConversions.dfy
 traits/TraitResolution0.dfy
