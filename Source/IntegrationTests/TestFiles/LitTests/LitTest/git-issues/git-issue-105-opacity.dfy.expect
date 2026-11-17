@@ -1,14 +1,14 @@
-git-issue-105-opacity.dfy(11,2): Error: verification of member invariants is not yet supported
-git-issue-105-opacity.dfy(15,2): Error: verification of member invariants is not yet supported
-git-issue-105-opacity.dfy(18,2): Error: verification of member invariants is not yet supported
-git-issue-105-opacity.dfy(21,2): Error: verification of member invariants is not yet supported
-git-issue-105-opacity.dfy(25,2): Error: verification of member invariants is not yet supported
+git-issue-105-opacity.dfy(11,2): Error: verification of a program that declares member invariants is not yet supported
+git-issue-105-opacity.dfy(15,2): Error: verification of a program that declares member invariants is not yet supported
+git-issue-105-opacity.dfy(18,2): Error: verification of a program that declares member invariants is not yet supported
+git-issue-105-opacity.dfy(21,2): Error: verification of a program that declares member invariants is not yet supported
+git-issue-105-opacity.dfy(25,2): Error: verification of a program that declares member invariants is not yet supported
 
 Dafny program verifier finished with 0 verified, 0 errors
-git-issue-105-opacity.dfy(11,2): Error: verification of member invariants is not yet supported
-git-issue-105-opacity.dfy(15,2): Error: verification of member invariants is not yet supported
-git-issue-105-opacity.dfy(18,2): Error: verification of member invariants is not yet supported
-git-issue-105-opacity.dfy(21,2): Error: verification of member invariants is not yet supported
-git-issue-105-opacity.dfy(25,2): Error: verification of member invariants is not yet supported
+git-issue-105-opacity.dfy(11,2): Error: verification of a program that declares member invariants is not yet supported
+git-issue-105-opacity.dfy(15,2): Error: verification of a program that declares member invariants is not yet supported
+git-issue-105-opacity.dfy(18,2): Error: verification of a program that declares member invariants is not yet supported
+git-issue-105-opacity.dfy(21,2): Error: verification of a program that declares member invariants is not yet supported
+git-issue-105-opacity.dfy(25,2): Error: verification of a program that declares member invariants is not yet supported
 
-Dafny program verifier finished with 1 verified, 0 errors
+Dafny program verifier finished with 0 verified, 0 errors

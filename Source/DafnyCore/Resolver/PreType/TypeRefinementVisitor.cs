@@ -25,12 +25,28 @@ public class TypeRefinementVisitor : ASTVisitor<IASTVisitorContext> {
 
   private readonly SystemModuleManager systemModuleManager;
 
-  public TypeRefinementVisitor(string moduleDescription, SystemModuleManager systemModuleManager) {
+  /// <summary>
+  /// Issue 105: non-null when the declarations include a type with member invariants.
+  /// </summary>
+  private readonly RawMemberInference rawMemberInference;
+
+  public TypeRefinementVisitor(string moduleDescription, SystemModuleManager systemModuleManager,
+    RawMemberInference rawMemberInference = null) {
     this.moduleDescription = moduleDescription;
     this.systemModuleManager = systemModuleManager;
+    this.rawMemberInference = rawMemberInference;
   }
 
   private readonly List<Flow> flows = [];
+
+  /// <summary>
+  /// Issue 105: the application of "member" to "receiver" in "context" may make "member" a raw member.
+  /// </summary>
+  private void AddRawMemberFlow(IASTVisitorContext context, Expression receiver, MemberDecl member, IOrigin tok) {
+    if (rawMemberInference?.ApplicationFlow(context, receiver, member, tok) is { } flow) {
+      flows.Add(flow);
+    }
+  }
 
   public void DebugPrint() {
     var sw = new StringWriter();
@@ -95,6 +111,7 @@ public class TypeRefinementVisitor : ASTVisitor<IASTVisitorContext> {
       }
 
     } else if (expr is MemberSelectExpr memberSelectExpr) {
+      AddRawMemberFlow(context, memberSelectExpr.Obj, memberSelectExpr.Member, expr.Origin);
       if (memberSelectExpr.Member is Field field) {
         var dPreType = (DPreType)memberSelectExpr.Obj.PreType.Normalize();
         if (dPreType.Decl is ValuetypeDecl valuetypeDecl) {
@@ -119,6 +136,7 @@ public class TypeRefinementVisitor : ASTVisitor<IASTVisitorContext> {
       }
 
     } else if (expr is FunctionCallExpr functionCallExpr) {
+      AddRawMemberFlow(context, functionCallExpr.Receiver, functionCallExpr.Function, expr.Origin);
       Contract.Assert(functionCallExpr.Args.Count == functionCallExpr.Function.Ins.Count);
       for (var i = 0; i < functionCallExpr.Args.Count; i++) {
         var formal = functionCallExpr.Function.Ins[i];
@@ -436,6 +454,7 @@ public class TypeRefinementVisitor : ASTVisitor<IASTVisitorContext> {
       }
 
     } else if (stmt is CallStmt callStmt) {
+      AddRawMemberFlow(context, callStmt.MethodSelect.Obj, callStmt.Method, callStmt.Origin);
       Contract.Assert(callStmt.Args.Count == callStmt.Method.Ins.Count);
       for (var i = 0; i < callStmt.Args.Count; i++) {
         var formal = callStmt.Method.Ins[i];

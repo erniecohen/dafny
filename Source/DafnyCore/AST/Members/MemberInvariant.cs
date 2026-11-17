@@ -24,6 +24,13 @@ public class MemberInvariant : Predicate {
     return name.StartsWith(NamePrefix);
   }
 
+  /// <summary>
+  /// The number k of the reserved name "invariant#k". A refining declaration numbers its new invariants after
+  /// those it inherits, but may list its members in another order, so the numbers, not the order of the
+  /// members, give the order of the invariants.
+  /// </summary>
+  public int Number => int.Parse(Name[NamePrefix.Length..]);
+
   public MemberInvariant(IOrigin origin, IOrigin keywordToken, string name, Expression body, Attributes? attributes)
     : base(origin, new Name(keywordToken, name), false, true, false,
       [], [], null, [], new Specification<FrameExpression>([], null), [],

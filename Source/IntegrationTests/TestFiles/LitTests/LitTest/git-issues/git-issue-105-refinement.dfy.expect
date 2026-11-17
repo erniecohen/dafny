@@ -5,6 +5,11 @@ abstract module M0 {
   datatype Positive = Positive(n: int) {
     invariant /* invariant#0 */ n > 0
   }
+  /*-- type with member invariants
+  type Positive = v: raw Positive
+    | v.invariant#0()
+    witness *
+  */
 
   type Hidden {
     invariant /* invariant#0 */ true
@@ -34,12 +39,22 @@ abstract module M1 refines M0 {
     invariant /* invariant#1 */ n < 100
     invariant /* invariant#0 */ n > 0
   }
+  /*-- type with member invariants
+  type Positive = v: raw Positive
+    | v.invariant#0() && v.invariant#1()
+    witness *
+  */
 
   datatype Hidden = Hidden(b: bool) {
     invariant /* invariant#1 */ b || !b
     invariant /* invariant#2 */ true
     invariant /* invariant#0 */ true
   }
+  /*-- type with member invariants
+  type Hidden = v: raw Hidden
+    | v.invariant#0() && v.invariant#1() && v.invariant#2()
+    witness *
+  */
 
   class Counter ... {
     invariant /* invariant#1 */ limit < 10
@@ -78,6 +93,11 @@ module M2 refines M1 {
     invariant /* invariant#1 */ n < 100
     invariant /* invariant#0 */ n > 0
   }
+  /*-- type with member invariants
+  type Positive = v: raw Positive
+    | v.invariant#0() && v.invariant#1() && v.invariant#2() && v.invariant#3()
+    witness *
+  */
 
   datatype Hidden = Hidden(b: bool) {
     invariant /* invariant#3 */ b == b
@@ -85,6 +105,11 @@ module M2 refines M1 {
     invariant /* invariant#2 */ true
     invariant /* invariant#0 */ true
   }
+  /*-- type with member invariants
+  type Hidden = v: raw Hidden
+    | v.invariant#0() && v.invariant#1() && v.invariant#2() && v.invariant#3()
+    witness *
+  */
 
   class Counter ... {
     invariant /* invariant#2 */ limit != 5
@@ -125,12 +150,22 @@ module M3 refines M1 {
     invariant /* invariant#1 */ n < 100
     invariant /* invariant#0 */ n > 0
   }
+  /*-- type with member invariants
+  type Positive = v: raw Positive
+    | v.invariant#0() && v.invariant#1()
+    witness *
+  */
 
   datatype Hidden = Hidden(b: bool) {
     invariant /* invariant#1 */ b || !b
     invariant /* invariant#2 */ true
     invariant /* invariant#0 */ true
   }
+  /*-- type with member invariants
+  type Hidden = v: raw Hidden
+    | v.invariant#0() && v.invariant#1() && v.invariant#2()
+    witness *
+  */
 
   class Counter ... {
     invariant /* invariant#1 */ limit < 10

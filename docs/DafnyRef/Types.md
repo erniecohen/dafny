@@ -4902,8 +4902,53 @@ the rule applies to them too; a library that declares neither may be used either
 way. A `.doo` library built with `--member-invariants` requires its client to
 enable the option too; one built without it records nothing.
 
-The syntax `witness e` (or `ghost witness e`) for a witness member, and `raw T`
-for the raw type of a type `T` with invariants, is parsed, but neither is yet
-supported. With the option, `raw` is still an identifier except directly before
-the name of a type, and `witness` is still the witness clause of a subset type
-or newtype.
+### 6.6.1. Raw types {#sec-raw-types}
+
+The values of a datatype `D` that declares invariants need not satisfy them
+while they are being built. `raw D` is the type of all the values of `D`, and
+`D` is the subset of them that satisfy the invariants, as if `D` were declared
+as the subset type `type D = v: raw D | <the invariants of v>`. `raw` is a
+prefix on the name of a type, and composes with qualified names, type
+arguments and other types: `raw M.D<int>`, `seq<raw D>`.
+
+<!-- %no-check -->
+```dafny
+datatype Interval = Interval(lo: int, hi: int) {
+  invariant Ok()
+  predicate Ok() { lo <= hi }
+  function Width(): int { hi - lo }
+}
+
+method Widen(i: Interval) returns (j: Interval) {
+  var r := i.(lo := i.lo - 1);   // r: raw Interval
+  j := r;                        // a conversion, as from int to nat
+}
+```
+
+- A constructor application and an update have type `raw D`, so a variable
+  initialized with one and given no type has type `raw D`.
+- A `D` is a `raw D`. A `raw D` used where a `D` is expected is a conversion,
+  as for any subset type, which the verifier is to check.
+- Destructors, discriminators, `match` and updates apply to a `raw D`. The
+  components of a raw value have their declared types: they are finished.
+- A member that an invariant of `D` applies to `this`, or to another
+  `raw D`, is a *raw member*, and so is a member that a raw member applies to
+  a `raw D`. In a raw member, `this` has type `raw D`, and the member applies
+  to a `raw D`. In every other instance member, `this` has type `D`. Raw
+  members are inferred, not declared; `Ok` is one above, and `Width` is not.
+- Where `D` declares no invariant, `raw D` is `D`.
+- Where `D` is exported by `provides` only, it is an abstract type, and `raw D`
+  is not yet supported there.
+
+`raw` applies to a type that can declare an invariant, and not to a type
+parameter, a type synonym, a subset type or a codatatype. So far it is
+supported only for a datatype; for a class, trait, newtype or abstract type it
+is parsed but not yet supported. Until witnesses are supported, a datatype with
+invariants is possibly empty, so it cannot instantiate a type parameter that
+requires `(0)` or `(00)`; its raw type can, as the datatype could without
+invariants.
+
+The syntax `witness e` (or `ghost witness e`) for a witness member is parsed but
+not yet supported. With the option, `raw` is still an identifier except
+directly before the name of a type, and `witness` is still the witness clause of
+a subset type or newtype.

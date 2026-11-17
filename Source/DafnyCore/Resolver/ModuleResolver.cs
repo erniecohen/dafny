@@ -1370,6 +1370,7 @@ namespace Microsoft.Dafny {
       if (Options.Get(CommonOptionBag.TypeSystemRefresh)) {
         // Resolve all names and infer types.
         PreTypeResolver.ResolveDeclarations(declarations, this);
+        RawMemberInference rawMemberInference = null;
 
         if (reporter.Count(ErrorLevel.Error) == prevErrorCount) {
           // Look for any under-specified pre-types, and fill in all .ResolvedOp fields.
@@ -1378,15 +1379,20 @@ namespace Microsoft.Dafny {
         }
 
         if (reporter.Count(ErrorLevel.Error) == prevErrorCount) {
-          var preType2TypeVisitor = new PreTypeToTypeVisitor(SystemModuleManager);
+          // Issue 105: the raw members are inferred during type refinement
+          rawMemberInference = declarations.Exists(d => d is TopLevelDeclWithMembers { InvariantTypeDecl: not null })
+            ? new RawMemberInference()
+            : null;
+          var preType2TypeVisitor = new PreTypeToTypeVisitor(SystemModuleManager, rawMemberInference);
           preType2TypeVisitor.VisitConstantsAndRedirectingTypes(declarations);
           preType2TypeVisitor.VisitDeclarations(declarations);
         }
 
         if (reporter.Count(ErrorLevel.Error) == prevErrorCount) {
-          var typeAdjustor = new TypeRefinementVisitor(moduleDescription, SystemModuleManager);
+          var typeAdjustor = new TypeRefinementVisitor(moduleDescription, SystemModuleManager, rawMemberInference);
           typeAdjustor.VisitDeclarations(declarations);
           typeAdjustor.Solve(reporter, Options.Get(CommonOptionBag.NewTypeInferenceDebug));
+          rawMemberInference?.Finish();
         }
 
       } else {
@@ -3700,6 +3706,9 @@ namespace Microsoft.Dafny {
 
       if (cl is ClassLikeDecl { NonNullTypeDecl: { } } cls) {
         return UserDefinedType.FromTopLevelDecl(tok, cls.NonNullTypeDecl, cls.TypeArgs);
+      } else if (cl.InvariantTypeDecl != null) {
+        // Issue 105: in a member that is not raw, "this" satisfies the member invariants
+        return UserDefinedType.FromTopLevelDecl(tok, cl.InvariantTypeDecl, cl.TypeArgs);
       } else {
         return UserDefinedType.FromTopLevelDecl(tok, cl, cl.TypeArgs);
       }
@@ -3711,7 +3720,12 @@ namespace Microsoft.Dafny {
       Contract.Requires(member != null);
       Contract.Ensures(Contract.Result<UserDefinedType>() != null);
 
-      return GetThisType(tok, (TopLevelDeclWithMembers)member.EnclosingClass);
+      var cl = (TopLevelDeclWithMembers)member.EnclosingClass;
+      if (member.IsRawMember) {
+        // Issue 105: the receiver of a raw member has the raw type
+        return UserDefinedType.FromTopLevelDecl(tok, cl, cl.TypeArgs);
+      }
+      return GetThisType(tok, cl);
     }
 
     internal Expression VarDotFunction(IOrigin tok, string varName, string functionName) {

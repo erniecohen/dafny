@@ -293,7 +293,30 @@ public class ModuleTranslationCacheTests {
     Assert.Throws<InvalidOperationException>(() => cache.Translate(program, module, new(program.Options), default));
   }
 
-  internal static async Task<Microsoft.Dafny.Program> Resolve(string source, string? unrelated = null, bool refresh = false, bool modularTermination = false, int threads = 1, bool cached = true) {
+  /// <summary>
+  /// Issue 105: no module of a program that declares a member invariant is verified. A module's key covers only what
+  /// the module depends on, so its entry from before an unrelated file declared an invariant must not be reused.
+  /// </summary>
+  [Fact]
+  public async Task AMemberInvariantInAnUnrelatedFileStopsReuse() {
+    const string without = "module Unrelated { datatype D = D(x: int) }";
+    const string with = "module Unrelated { datatype D = D(x: int) { invariant x > 0 } }";
+    var cache = new ModuleTranslationCache();
+    var before = await Resolve(Source, without, refresh: true, memberInvariants: true);
+    var first = cache.Translate(before, before.RawModules().Single(m => m.Name == "M"), new(before.Options), default);
+    Assert.NotEmpty(first.Implementations);
+    Assert.Equal(1, cache.EntryCount);
+    var again = await Resolve(Source, without, refresh: true, memberInvariants: true);
+    cache.Translate(again, again.RawModules().Single(m => m.Name == "M"), new(again.Options), default);
+    Assert.Equal(1, cache.Hits);
+    var after = await Resolve(Source, with, refresh: true, memberInvariants: true);
+    var second = cache.Translate(after, after.RawModules().Single(m => m.Name == "M"), new(after.Options), default);
+    Assert.Equal(1, cache.Hits);
+    Assert.Empty(second.Implementations);
+    Assert.Equal(1, after.Reporter.ErrorCount);
+  }
+
+  internal static async Task<Microsoft.Dafny.Program> Resolve(string source, string? unrelated = null, bool refresh = false, bool modularTermination = false, int threads = 1, bool cached = true, bool memberInvariants = false) {
     DafnyType.ResetScopes();
     var options = new DafnyOptions(TextReader.Null, TextWriter.Null, TextWriter.Null);
     options.ApplyDefaultOptionsWithoutSettingsDefault();
@@ -301,6 +324,7 @@ public class ModuleTranslationCacheTests {
     options.Set(CommonOptionBag.ResolutionThreads, threads);
     options.Set(CommonOptionBag.TranslationCache, cached);
     options.Set(CommonOptionBag.TypeSystemRefresh, refresh);
+    options.Set(CommonOptionBag.MemberInvariants, memberInvariants);
     var reporter = new BatchErrorReporter(options);
     var uri = new Uri("file:///translation-cache.dfy");
     var sources = ImmutableDictionary<Uri, string>.Empty.Add(uri, source);

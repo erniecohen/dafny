@@ -765,14 +765,43 @@ namespace Microsoft.Dafny {
     }
 
     /// <summary>
-    /// Issue 105: member invariants (--member-invariants) are resolved, but not yet verified.
+    /// Issue 105: member invariants (--member-invariants) are resolved, but not yet verified. No module of a program
+    /// that declares one is translated, since the types of its modules may depend on the invariants. Report each
+    /// invariant of "forModule", or, if it declares none, the first of its declarations that would have been verified.
+    /// Return whether the program declares a member invariant.
     /// </summary>
-    private void ReportUnsupportedMemberInvariants(ModuleDefinition forModule) {
-      foreach (var decl in forModule.TopLevelDecls.OfType<TopLevelDeclWithMembers>()) {
-        foreach (var invariant in decl.Members.OfType<MemberInvariant>()) {
-          reporter.Error(MessageSource.Translator, invariant.NameNode.Origin, "verification of member invariants is not yet supported");
+    private bool ReportUnsupportedMemberInvariants(Program p, ModuleDefinition forModule) {
+      if (!DeclaresMemberInvariants(p)) {
+        return false;
+      }
+      const string notYet = "verification of a program that declares member invariants is not yet supported";
+      var invariants = Invariants(forModule).ToList();
+      foreach (var invariant in invariants) {
+        reporter.Error(MessageSource.Translator, invariant.NameNode.Origin, notYet);
+      }
+      if (invariants.Count == 0) {
+        var verifiable = forModule.TopLevelDecls
+          .SelectMany(decl => decl is TopLevelDeclWithMembers withMembers ? withMembers.Members.Prepend<Declaration>(decl) : [decl])
+          .FirstOrDefault(decl => decl is ICanVerify { ShouldVerify: true } && decl.NameNode.Origin.Uri != null);
+        if (verifiable != null) {
+          var moduleName = forModule.IsDefaultModule ? "the default module" : $"module '{forModule.FullDafnyName}'";
+          reporter.Error(MessageSource.Translator, verifiable.NameNode.Origin, $"{moduleName} is not verified: {notYet}");
         }
       }
+      return true;
+    }
+
+    private static IEnumerable<MemberInvariant> Invariants(ModuleDefinition module) {
+      return module.TopLevelDecls.OfType<TopLevelDeclWithMembers>().SelectMany(decl => decl.Members.OfType<MemberInvariant>());
+    }
+
+    /// <summary>
+    /// Issue 105: whether the program, libraries included, declares a member invariant under --member-invariants, in
+    /// which case no module of it is translated. The translation cache checks this too, since a module's key covers
+    /// only what the module depends on.
+    /// </summary>
+    internal static bool DeclaresMemberInvariants(Program p) {
+      return p.Options.Get(CommonOptionBag.MemberInvariants) && p.RawModules().Any(module => Invariants(module).Any());
     }
 
     public Bpl.Program DoTranslation(Program p, ModuleDefinition forModule) {
@@ -784,7 +813,9 @@ namespace Microsoft.Dafny {
     // Cached and uncached callers materialize exactly one graph through the same copier.
     internal Bpl.Program DoTranslationForSnapshot(Program p, ModuleDefinition forModule) {
       RequireCardinalityValidation(p);
-      ReportUnsupportedMemberInvariants(forModule);
+      if (ReportUnsupportedMemberInvariants(p, forModule)) {
+        return new Bpl.Program();
+      }
       using var moduleNames = new ModuleNamingScope(forModule.FullName, p.ModuleNamePrefixes);
       Type.ResetScopes();
       ancestorTypeCache.Clear();

@@ -751,3 +751,12 @@ git-issues/git-issue-105-refinement.dfy
 git-issues/git-issue-105-opacity.dfy
 git-issues/git-issue-105-not-yet.dfy
 git-issues/git-issue-105-verify.dfy
+# Second stage: raw types (raw T, inferred raw members, the derived subset type), with exports,
+# extends, refinement, libraries and compilation (https://github.com/erniecohen/dafny/issues/105).
+git-issues/git-issue-105-raw-types.dfy
+git-issues/git-issue-105-raw-errors.dfy
+git-issues/git-issue-105-raw-exports.dfy
+git-issues/git-issue-105-raw-refinement.dfy
+git-issues/git-issue-105-raw-extends.dfy
+git-issues/git-issue-105-raw-library.dfy
+git-issues/git-issue-105-raw-compile.dfy
