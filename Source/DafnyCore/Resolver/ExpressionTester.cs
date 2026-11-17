@@ -209,6 +209,12 @@ public class ExpressionTester {
       // ignore the statement
       return CheckIsCompilable(stmtExpr.E, codeContext, insideBranchesOnly);
 
+    } else if (expr is LemmaResultExpr) {
+      // The variables bound to a lemma's results are ghost, so the right-hand sides of that binding are not checked
+      // for compilability and this case is not expected to be reached.
+      ReportError(ErrorId.none, expr, "the results of a lemma are allowed only in specification and ghost contexts");
+      return false;
+
     } else if (expr is BinaryExpr binaryExpr) {
       if (reporter != null) {
         binaryExpr.InCompiledContext = true;
@@ -646,6 +652,8 @@ public class ExpressionTester {
     } else if (expr is StmtExpr) {
       var e = (StmtExpr)expr;
       return UsesSpecFeatures(e.E);
+    } else if (expr is LemmaResultExpr) {
+      return true;
     } else if (expr is ITEExpr) {
       ITEExpr e = (ITEExpr)expr;
       return UsesSpecFeatures(e.Test) || UsesSpecFeatures(e.Thn) || UsesSpecFeatures(e.Els);

@@ -134,6 +134,14 @@ public class TypeRefinementVisitor : ASTVisitor<IASTVisitorContext> {
         return functionCallExpr.Function.ResultType.Subst(typeMap);
       }, $"{functionCallExpr.Name}(...)"));
 
+    } else if (expr is LemmaResultExpr lemmaResultExpr) {
+      // The arguments are those of the call statement that precedes the result (see LetExpr.LemmaBinding), which
+      // has the flows from the actual to the formal parameters. Here, it remains to give the result its type.
+      flows.Add(new FlowFromComputedType(expr, () => {
+        var typeMap = lemmaResultExpr.TypeArgumentSubstitutionsWithParents();
+        return lemmaResultExpr.Out.Type.Subst(typeMap);
+      }, $"{lemmaResultExpr.Lemma.Name}(...)"));
+
     } else if (expr is DatatypeValue datatypeValue) {
       var ctor = datatypeValue.Ctor;
       var datatypeDecl = ctor.EnclosingDatatype;

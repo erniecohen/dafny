@@ -91,6 +91,10 @@ namespace Microsoft.Dafny {
         } else if (e.Function is TwoStateFunction) {
           usesOldHeap = true; // the translation of the call passes the previous heap
         }
+      } else if (expr is LemmaResultExpr lemmaResultExpr) {
+        if (lemmaResultExpr.Lemma.PostconditionUsesHeap(options)) {
+          usesHeap = true; // the result is chosen among the values that satisfy the postcondition in the current heap
+        }
       } else if (expr is UnchangedExpr) {
         var e = (UnchangedExpr)expr;
         // Note, we don't have to look out for const fields here, because const fields

@@ -29,6 +29,34 @@ public class Lemma : Method {
   }
 
   public override bool AllowsAllocation => false;
+
+  private bool? postconditionUsesHeap;
+  private bool computingPostconditionUsesHeap;
+
+  /// <summary>
+  /// Whether the postcondition of the lemma, as an expression, depends on the heap. If it does, then so do the
+  /// results of the lemma when they are bound in an expression (see LemmaResultExpr). To be called after resolution.
+  /// </summary>
+  public bool PostconditionUsesHeap(DafnyOptions options) {
+    if (postconditionUsesHeap == null) {
+      if (computingPostconditionUsesHeap) {
+        // The postcondition binds results whose own postcondition leads back here. The answer "yes" is always safe.
+        return true;
+      }
+      computingPostconditionUsesHeap = true;
+      bool usesHeap = false, usesOldHeap = false;
+      Type? usesThis = null;
+      var freeVariables = new HashSet<IVariable>();
+      var freeHeapAtVariables = new HashSet<Label>();
+      foreach (var postcondition in Ens) {
+        FreeVariablesUtil.ComputeFreeVariables(options, postcondition.E, freeVariables, ref usesHeap, ref usesOldHeap,
+          freeHeapAtVariables, ref usesThis, false);
+      }
+      computingPostconditionUsesHeap = false;
+      postconditionUsesHeap = usesHeap || usesOldHeap || freeHeapAtVariables.Count != 0;
+    }
+    return postconditionUsesHeap.Value;
+  }
 }
 
 public class TwoStateLemma : Method {

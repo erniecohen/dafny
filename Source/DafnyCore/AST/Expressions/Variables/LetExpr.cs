@@ -20,6 +20,34 @@ public class LetExpr : Expression, IAttributeBearingDeclaration, IBoundVarsBeari
   [FilledInDuringResolution] public List<BoundedPool>? Constraint_Bounds;
   // invariant Constraint_Bounds == null || Constraint_Bounds.Count == BoundVars.Count;
 
+  /// <summary>
+  /// Non-null for an expression that was written "var y1, ..., yk := L(args); e", where L is a lemma (see
+  /// --lemma-bindings).  Resolution rewrites such a let expression in place.  The rewritten form is
+  ///
+  ///     var t1, ..., tn := receiver-and-arguments;                 // omitted if there is nothing to name
+  ///     var y1, ..., yk := (var z1, ..., zk := L(t1, ..., tn); R1), R2, ..., Rk;
+  ///     e
+  ///
+  /// where the ti are fresh ghost variables, the parenthesized expression is a StmtExpr whose statement declares
+  /// fresh ghost locals zi and calls L, and each Ri is a LemmaResultExpr for out-parameter i of L at the ti.
+  /// "this" node is the outermost of these let expressions.  The record keeps what was written, for printing and
+  /// for cloning the unresolved form.
+  /// </summary>
+  [FilledInDuringResolution] public LemmaBindingSyntax? LemmaBinding;
+
+  public record LemmaBindingSyntax(List<CasePattern<BoundVar>> Lhss, ApplySuffix Rhs, bool HasArgumentLet);
+
+  /// <summary>
+  /// For a let expression with a non-null LemmaBinding, returns the let expression that binds the variables the
+  /// user wrote (which is either "this" or the body of "this").
+  /// </summary>
+  public LetExpr LemmaBindingResultLet {
+    get {
+      Contract.Requires(LemmaBinding != null);
+      return LemmaBinding!.HasArgumentLet ? (LetExpr)Body : this;
+    }
+  }
+
   // filled in during translation, lazily; to be accessed only via Translation.LetDesugaring; always null when Exact==true
   private Expression? translationDesugaring;
 
@@ -46,9 +74,17 @@ public class LetExpr : Expression, IAttributeBearingDeclaration, IBoundVarsBeari
   }
 
   public LetExpr(Cloner cloner, LetExpr original) : base(cloner, original) {
-    LHSs = original.LHSs.ConvertAll(cloner.CloneCasePattern);
-    RHSs = original.RHSs.ConvertAll(cloner.CloneExpr);
-    Body = cloner.CloneExpr(original.Body);
+    if (original.LemmaBinding != null && !cloner.CloneResolvedFields) {
+      // clone what was written, not what resolution made of it
+      LHSs = original.LemmaBinding.Lhss.ConvertAll(cloner.CloneCasePattern);
+      RHSs = [cloner.CloneExpr(original.LemmaBinding.Rhs)];
+      Body = cloner.CloneExpr(original.LemmaBindingResultLet.Body);
+    } else {
+      LHSs = original.LHSs.ConvertAll(cloner.CloneCasePattern);
+      RHSs = original.RHSs.ConvertAll(cloner.CloneExpr);
+      Body = cloner.CloneExpr(original.Body);
+      LemmaBinding = original.LemmaBinding;
+    }
     Exact = original.Exact;
     Attributes = cloner.CloneAttributes(original.Attributes);
     if (cloner.CloneResolvedFields) {
