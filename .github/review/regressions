@@ -830,7 +830,7 @@ git-issues/github-issue-89.dfy
 # Opt-in --refinement-extends: a class or trait in a refining module may add parent traits ('trait T ... extends S'); the override checks, the definite assignment of the parent's fields and the termination checks that the added parent calls for are made in the refining module also at inherited text, a refinement cannot make a trait a reference type, and with the option off the syntax is a parse error as before (https://github.com/erniecohen/dafny/issues/88).
 git-issues/github-issue-88.dfy
 
-# With --refinement-extends and --modular-termination, a parent added in a refinement meets the rules a new declaration meets: the bound of an inherited member that becomes an override, an inherited call put on a cycle, a sealed trait of another module, a sealed ancestor of an open trait; each case has a one-module control with the same verdict (https://github.com/erniecohen/dafny/issues/88).
+# With --refinement-extends and --modular-termination, a parent added in a refinement meets the rules a new declaration meets: the bound of an inherited member that becomes an override, an inherited call put on a cycle, and the leaf rule for an inherited member that becomes an implementation of a member of another module without a bound; each case has a one-module control with the same verdict (https://github.com/erniecohen/dafny/issues/88).
 git-issues/github-issue-88-modular-termination.dfy
 
 # A refining datatype, codatatype or newtype that adds a parent trait ('datatype D extends S ...') gets the override, termination, name-capture and cardinality checks in the refining module also at inherited text, across chains, abstract imports and libraries (https://github.com/erniecohen/dafny/issues/88).

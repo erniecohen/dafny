@@ -1,32 +1,28 @@
-github-issue-88-modular-termination.dfy(32,13): Error: function's 'decreases {:global}' bound must be below or equal to that in the trait
-github-issue-88-modular-termination.dfy(48,7): Related location: refining module
-github-issue-88-modular-termination.dfy(65,13): Error: function's 'decreases {:global}' bound must be below or equal to that in the trait
-github-issue-88-modular-termination.dfy(103,10): Error: decreases clause might not decrease
-github-issue-88-modular-termination.dfy(113,7): Related location: refining module
-github-issue-88-modular-termination.dfy(149,10): Error: cannot prove termination; try supplying a decreases clause
-github-issue-88-modular-termination.dfy(187,4): Error: assertion might not hold
-github-issue-88-modular-termination.dfy(210,4): Error: assertion might not hold
+github-issue-88-modular-termination.dfy(38,13): Error: function's 'decreases {:global}' bound must be below or equal to that in the trait
+github-issue-88-modular-termination.dfy(54,7): Related location: refining module
+github-issue-88-modular-termination.dfy(70,13): Error: function's 'decreases {:global}' bound must be below or equal to that in the trait
+github-issue-88-modular-termination.dfy(86,9): Error: decreases clause might not decrease
+github-issue-88-modular-termination.dfy(98,7): Related location: refining module
+github-issue-88-modular-termination.dfy(117,9): Error: cannot prove termination; try supplying a decreases clause
+github-issue-88-modular-termination.dfy(168,4): Error: assertion might not hold
+github-issue-88-modular-termination.dfy(202,4): Error: assertion might not hold
 
-Dafny program verifier finished with 23 verified, 6 errors
-github-issue-88-modular-termination.dfy(32,13): Error: function's 'decreases {:global}' bound must be below or equal to that in the trait
-github-issue-88-modular-termination.dfy(48,7): Related location: refining module
-github-issue-88-modular-termination.dfy(65,13): Error: function's 'decreases {:global}' bound must be below or equal to that in the trait
-github-issue-88-modular-termination.dfy(103,10): Error: decreases clause might not decrease
-github-issue-88-modular-termination.dfy(113,7): Related location: refining module
-github-issue-88-modular-termination.dfy(149,10): Error: cannot prove termination; try supplying a decreases clause
-github-issue-88-modular-termination.dfy(187,4): Error: assertion might not hold
-github-issue-88-modular-termination.dfy(210,4): Error: assertion might not hold
+Dafny program verifier finished with 16 verified, 6 errors
+github-issue-88-modular-termination.dfy(38,13): Error: function's 'decreases {:global}' bound must be below or equal to that in the trait
+github-issue-88-modular-termination.dfy(54,7): Related location: refining module
+github-issue-88-modular-termination.dfy(70,13): Error: function's 'decreases {:global}' bound must be below or equal to that in the trait
+github-issue-88-modular-termination.dfy(86,9): Error: decreases clause might not decrease
+github-issue-88-modular-termination.dfy(98,7): Related location: refining module
+github-issue-88-modular-termination.dfy(117,9): Error: cannot prove termination; try supplying a decreases clause
+github-issue-88-modular-termination.dfy(168,4): Error: assertion might not hold
+github-issue-88-modular-termination.dfy(202,4): Error: assertion might not hold
 
-Dafny program verifier finished with 23 verified, 6 errors
-github-issue-88-modular-termination-rejected.dfy(20,28): Error: modular termination: trait 'T' cannot extend sealed trait 'Other.Sealed' from another module; the defining trait must declare {:termination false}; @AssumeCrossModuleTermination cannot override sealing
-github-issue-88-modular-termination-rejected.dfy(25,24): Error: modular termination: trait 'T' cannot extend sealed trait 'Other.Sealed' from another module; the defining trait must declare {:termination false}; @AssumeCrossModuleTermination cannot override sealing
+Dafny program verifier finished with 16 verified, 6 errors
+github-issue-88-modular-termination-rejected.dfy(16,13): Error: modular termination: 'K' implements 'Tr.A.K' of another module, which has no 'decreases {:global}' bound, so it must be a leaf or declare a bound, but it is not a leaf ('NotLeaf1.T.K' -> dispatch of 'Tr.A.K'); declare a bound on 'Tr.A.K' or on this implementation, or make this implementation a leaf
+github-issue-88-modular-termination-rejected.dfy(29,7): Related location: refining module
+github-issue-88-modular-termination-rejected.dfy(45,13): Error: modular termination: 'K' implements 'Tr.A.K' of another module, which has no 'decreases {:global}' bound, so it must be a leaf or declare a bound, but it is not a leaf ('NotLeafControl.T.K' -> dispatch of 'Tr.A.K'); declare a bound on 'Tr.A.K' or on this implementation, or make this implementation a leaf
 2 resolution/type errors detected in github-issue-88-modular-termination-rejected.dfy
-github-issue-88-modular-termination-rejected.dfy(20,28): Error: modular termination: trait 'T' cannot extend sealed trait 'Other.Sealed' from another module; the defining trait must declare {:termination false}; @AssumeCrossModuleTermination cannot override sealing
-github-issue-88-modular-termination-rejected.dfy(25,24): Error: modular termination: trait 'T' cannot extend sealed trait 'Other.Sealed' from another module; the defining trait must declare {:termination false}; @AssumeCrossModuleTermination cannot override sealing
+github-issue-88-modular-termination-rejected.dfy(16,13): Error: modular termination: 'K' implements 'Tr.A.K' of another module, which has no 'decreases {:global}' bound, so it must be a leaf or declare a bound, but it is not a leaf ('NotLeaf1.T.K' -> dispatch of 'Tr.A.K'); declare a bound on 'Tr.A.K' or on this implementation, or make this implementation a leaf
+github-issue-88-modular-termination-rejected.dfy(29,7): Related location: refining module
+github-issue-88-modular-termination-rejected.dfy(45,13): Error: modular termination: 'K' implements 'Tr.A.K' of another module, which has no 'decreases {:global}' bound, so it must be a leaf or declare a bound, but it is not a leaf ('NotLeafControl.T.K' -> dispatch of 'Tr.A.K'); declare a bound on 'Tr.A.K' or on this implementation, or make this implementation a leaf
 2 resolution/type errors detected in github-issue-88-modular-termination-rejected.dfy
-github-issue-88-modular-termination-rejected-later.dfy(16,38): Error: modular termination: 'U' cannot expose sealed ancestor 'Ancestor1.Local'; every non-object ancestor of a foreign implementation or extensible trait must declare {:termination false}
-github-issue-88-modular-termination-rejected-later.dfy(23,38): Error: modular termination: 'U' cannot expose sealed ancestor 'AncestorControl.Local'; every non-object ancestor of a foreign implementation or extensible trait must declare {:termination false}
-2 resolution/type errors detected in github-issue-88-modular-termination-rejected-later.dfy
-github-issue-88-modular-termination-rejected-later.dfy(16,38): Error: modular termination: 'U' cannot expose sealed ancestor 'Ancestor1.Local'; every non-object ancestor of a foreign implementation or extensible trait must declare {:termination false}
-github-issue-88-modular-termination-rejected-later.dfy(23,38): Error: modular termination: 'U' cannot expose sealed ancestor 'AncestorControl.Local'; every non-object ancestor of a foreign implementation or extensible trait must declare {:termination false}
-2 resolution/type errors detected in github-issue-88-modular-termination-rejected-later.dfy

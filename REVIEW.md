@@ -1105,10 +1105,15 @@ resolver, and the regression runs under both.  The regression is
 Two neighbouring cases needed no change to the product, only regressions.  With
 `--modular-termination`, the added parent meets the existing rules where a new declaration would:
 the bound of an inherited member that becomes an override is compared with the parent's, an
-inherited call that the new overrides put on a cycle is checked, a sealed trait of another module
-cannot be added, and an open trait cannot be given a sealed ancestor
+inherited call that the new overrides put on a cycle is checked, and an inherited member that
+becomes an implementation of a member of another module that has no bound must be a leaf
 (`git-issues/github-issue-88-modular-termination.dfy`, each case beside a one-module control with
-the same verdict).  Datatypes, codatatypes and newtypes keep the grammar they had,
+the same verdict).  One case is open, and it does not need this option:
+[issue 493](https://github.com/erniecohen/dafny/issues/493).  A member that has no bound of its
+own and gets one in a refining module, here from the added parent, keeps the calls of its
+inherited body unchecked against that bound, and a program proves `false` with it.  The base
+line has the same gap where a refinement turns an abstract type into a class that extends a
+trait.  Datatypes, codatatypes and newtypes keep the grammar they had,
 `datatype D extends S ...`, which needs no option, and the same default-on fixes cover the parents
 they add: override checks at inherited members, termination, name capture, the cardinality
 admission, and trait axioms under `--inherited-trait-axioms`

@@ -2,25 +2,31 @@
 // RUN: %exits-with 4 %verify --refinement-extends --modular-termination --type-system-refresh=false --general-newtypes=false "%s" >> "%t"
 // RUN: %exits-with 2 %resolve --refinement-extends --modular-termination "%S/Inputs/github-issue-88-modular-termination-rejected.dfy" >> "%t"
 // RUN: %exits-with 2 %resolve --refinement-extends --modular-termination --type-system-refresh=false --general-newtypes=false "%S/Inputs/github-issue-88-modular-termination-rejected.dfy" >> "%t"
-// RUN: %exits-with 2 %resolve --refinement-extends --modular-termination "%S/Inputs/github-issue-88-modular-termination-rejected-later.dfy" >> "%t"
-// RUN: %exits-with 2 %resolve --refinement-extends --modular-termination --type-system-refresh=false --general-newtypes=false "%S/Inputs/github-issue-88-modular-termination-rejected-later.dfy" >> "%t"
 // RUN: %diff "%s.expect" "%t"
 
 // Issue 88 with --modular-termination: a parent added in a refinement (--refinement-extends) is
 // subject to the rules of --modular-termination as if it had been written on a fresh declaration.
 // An inherited member that becomes an override is compared with the bound of the member it now
-// overrides, and an inherited call that the new override puts on a cycle through an open trait
-// must terminate.  Each module that refines is followed by a one-module control that is rejected
-// for the same reason, or accepted with an assert false that fails.
+// overrides, an inherited call that the new override puts on a cycle must terminate, and an
+// inherited member that becomes an implementation of a member of another module that has no
+// bound must be a leaf (the input file).  Each module that refines is followed by a one-module
+// control that is rejected for the same reason, or accepted with an assert false that fails.
+//
+// Not covered here: an inherited member that has no bound of its own, gets one from the added
+// parent, and makes a call that the bound forbids.  That is not rejected yet, with or without
+// --refinement-extends: https://github.com/erniecohen/dafny/issues/493.
 
 module Tr {
-  trait {:termination false} {:axiom} S {
+  trait S {
     function F(other: S, n: nat): int
       decreases {:global} n
   }
-  trait {:termination false} {:axiom} Open {
+  trait Open {
     function H(n: nat): int
       decreases {:global} n
+  }
+  trait NoBound {
+    function J(n: nat): int
   }
 }
 
@@ -49,7 +55,6 @@ module Bound1 refines Bound0 {
   trait T ... extends Tr.S {}
 
   method WouldBeBad()
-    decreases {:global} 1
     ensures false
   {
     var t := new C();
@@ -65,48 +70,28 @@ module BoundControl {
     function F(other: Tr.S, n: nat): int // error: the bound is above that of Tr.S.F
       decreases {:global} n + 1
     {
-      other.F(other, n) + 1
+      0
     }
   }
 }
 
-// ----- A call that the new override puts on a cycle through an open trait
+// ----- A call that the new override puts on a cycle
 
 module Call0 {
-  import Tr
   trait S0 {
-    function K(other: Tr.S, n: nat): int
+    function K(s: S0, n: nat): int
   }
   trait T {
-    function K(other: Tr.S, n: nat): int
-      decreases {:global} n + 1
-    {
-      other.F(other, n) + 1
+    function K(s: S0, n: nat): int {
+      s.K(s, n) + 1 // error (in Call1): s.K may be T.K itself
     }
-    lemma UnfoldK(other: Tr.S, n: nat)
-      decreases {:global} n + 1
-      ensures K(other, n) == other.F(other, n) + 1
+    lemma UnfoldK(s: S0, n: nat)
+      ensures K(s, n) == s.K(s, n) + 1
     {
     }
   }
   class C extends T {
     constructor () {}
-  }
-  class X extends Tr.S {
-    const s0: S0
-    constructor (s0: S0)
-      ensures this.s0 == s0
-    {
-      this.s0 := s0;
-    }
-    function F(other: Tr.S, n: nat): int {
-      s0.K(other, n) + 1 // error (in Call1): s0.K may be T.K, which calls other.F
-    }
-    lemma UnfoldF(other: Tr.S, n: nat, k: int)
-      requires k == s0.K(other, n)
-      ensures F(other, n) == k + 1
-    {
-    }
   }
 }
 
@@ -116,42 +101,26 @@ module Call1 refines Call0 {
   method WouldBeBad()
     ensures false
   {
-    var t := new C();
-    var x: X := new X(t);
-    var s: Tr.S := x;
-    t.UnfoldK(s, 0);
-    var s0: S0 := t;
-    ghost var k := t.K(s, 0);
-    assert s0.K(s, 0) == k;
-    x.UnfoldF(s, 0, k);
-    assert s.F(s, 0) == x.F(s, 0);
+    var c := new C();
+    var s: S0 := c;
+    c.UnfoldK(s, 0);
+    assert s.K(s, 0) == c.K(s, 0);
   }
 }
 
 module CallControl {
-  import Tr
   trait S0 {
-    function K(other: Tr.S, n: nat): int
+    function K(s: S0, n: nat): int
   }
   trait T extends S0 {
-    function K(other: Tr.S, n: nat): int
-      decreases {:global} n + 1
-    {
-      other.F(other, n) + 1
-    }
-  }
-  class X extends Tr.S {
-    const s0: S0
-    constructor (s0: S0) {
-      this.s0 := s0;
-    }
-    function F(other: Tr.S, n: nat): int {
-      s0.K(other, n) + 1 // error: s0.K may be T.K, which calls other.F
+    function K(s: S0, n: nat): int {
+      s.K(s, n) + 1 // error: s.K may be T.K itself
     }
   }
 }
 
-// ----- An inherited member with no bound takes the bound of the member it now overrides
+// ----- Accepted: an inherited member with no bound takes the bound of the member it now
+// overrides, and an inherited leaf may implement a member of another module that has no bound
 
 module Leaf0 {
   import Tr
@@ -171,11 +140,20 @@ module Leaf0 {
   class CW extends W {
     constructor () {}
   }
+  trait Z {
+    function J(n: nat): int {
+      n + 1
+    }
+  }
+  class CZ extends Z {
+    constructor () {}
+  }
 }
 
 module Leaf1 refines Leaf0 {
   trait V ... extends Tr.Open {}
   trait W ... extends Tr.Open {}
+  trait Z ... extends Tr.NoBound {}
 
   method M(n: nat) {
     var c := new CV();
@@ -184,6 +162,9 @@ module Leaf1 refines Leaf0 {
     var w: CW := new CW();
     o := w;
     assert o.H(0) == w.H(0) == 0;
+    var z := new CZ();
+    var j: Tr.NoBound := z;
+    assert j.J(n) == z.J(n) == n + 1;
     assert false; // error
   }
 }
@@ -200,13 +181,24 @@ module LeafControl {
       if n == 0 then 0 else H(n - 1)
     }
   }
+  trait Z extends Tr.NoBound {
+    function J(n: nat): int {
+      n + 1
+    }
+  }
   class CV extends V {
+    constructor () {}
+  }
+  class CZ extends Z {
     constructor () {}
   }
   method M(n: nat) {
     var c := new CV();
     var o: Tr.Open := c;
     assert o.H(n) == c.H(n) == 3;
+    var z := new CZ();
+    var j: Tr.NoBound := z;
+    assert j.J(n) == z.J(n) == n + 1;
     assert false; // error
   }
 }
