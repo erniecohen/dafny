@@ -1,0 +1,129 @@
+positive, both resolvers
+
+Dafny program verifier finished with 24 verified, 0 errors
+
+Dafny program verifier finished with 24 verified, 0 errors
+false controls: one reachable assert false per family, both resolvers
+github-issue-266-m2-false.dfy(9,4): Error: assertion might not hold
+github-issue-266-m2-false.dfy(28,4): Error: assertion might not hold
+github-issue-266-m2-false.dfy(39,4): Error: assertion might not hold
+github-issue-266-m2-false.dfy(53,4): Error: assertion might not hold
+github-issue-266-m2-false.dfy(102,4): Error: assertion might not hold
+github-issue-266-m2-false.dfy(139,4): Error: assertion might not hold
+github-issue-266-m2-false.dfy(161,6): Error: assertion might not hold
+
+Dafny program verifier finished with 17 verified, 7 errors
+github-issue-266-m2-false.dfy(9,4): Error: assertion might not hold
+github-issue-266-m2-false.dfy(28,4): Error: assertion might not hold
+github-issue-266-m2-false.dfy(39,4): Error: assertion might not hold
+github-issue-266-m2-false.dfy(53,4): Error: assertion might not hold
+github-issue-266-m2-false.dfy(102,4): Error: assertion might not hold
+github-issue-266-m2-false.dfy(139,4): Error: assertion might not hold
+github-issue-266-m2-false.dfy(161,6): Error: assertion might not hold
+
+Dafny program verifier finished with 17 verified, 7 errors
+divergence kernels, both resolvers
+github-issue-266-m2-kernels.dfy(52,34): Error: decreases clause might not decrease (--modular-termination: the 'decreases {:global}' bound of the certified function must not exceed the bound it is certified under)
+github-issue-266-m2-kernels.dfy(58,34): Error: decreases clause might not decrease (--modular-termination: the bound of the bounded value must not exceed the bound it is certified under)
+github-issue-266-m2-kernels.dfy(61,56): Error: decreases clause might not decrease (--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
+github-issue-266-m2-kernels.dfy(64,24): Error: decreases clause might not decrease (--modular-termination: the 'decreases {:global}' bound of the certified function must not exceed the bound it is certified under)
+github-issue-266-m2-kernels.dfy(78,6): Error: decreases clause might not decrease (--modular-termination: the bound of the bounded value must be below the caller's 'decreases {:global}' bound)
+github-issue-266-m2-kernels.dfy(112,65): Error: decreases clause might not decrease (--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
+github-issue-266-m2-kernels.dfy(117,65): Error: decreases clause might not decrease (--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
+github-issue-266-m2-kernels.dfy(146,19): Error: value does not satisfy the subset constraints of 'Zero'
+
+Dafny program verifier finished with 23 verified, 8 errors
+github-issue-266-m2-kernels.dfy(52,34): Error: decreases clause might not decrease (--modular-termination: the 'decreases {:global}' bound of the certified function must not exceed the bound it is certified under)
+github-issue-266-m2-kernels.dfy(58,34): Error: decreases clause might not decrease (--modular-termination: the bound of the bounded value must not exceed the bound it is certified under)
+github-issue-266-m2-kernels.dfy(61,56): Error: decreases clause might not decrease (--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
+github-issue-266-m2-kernels.dfy(64,24): Error: decreases clause might not decrease (--modular-termination: the 'decreases {:global}' bound of the certified function must not exceed the bound it is certified under)
+github-issue-266-m2-kernels.dfy(78,6): Error: decreases clause might not decrease (--modular-termination: the bound of the bounded value must be below the caller's 'decreases {:global}' bound)
+github-issue-266-m2-kernels.dfy(112,65): Error: decreases clause might not decrease (--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
+github-issue-266-m2-kernels.dfy(117,65): Error: decreases clause might not decrease (--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
+github-issue-266-m2-kernels.dfy(146,19): Error: value does not satisfy the subset constraints of 'Zero'
+
+Dafny program verifier finished with 23 verified, 8 errors
+kernel K5: a field cannot hold a bounded function that reads the heap here (issue 479), both resolvers
+github-issue-266-m2-k5.dfy(24,37): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+1 resolution/type errors detected in github-issue-266-m2-k5.dfy
+github-issue-266-m2-k5.dfy(24,37): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+1 resolution/type errors detected in github-issue-266-m2-k5.dfy
+rule violations, both resolvers
+github-issue-266-m2-reject.dfy(6,4): Error: decreases clause might not decrease (--modular-termination: the bound of the bounded value must be below the caller's 'decreases {:global}' bound)
+github-issue-266-m2-reject.dfy(9,23): Error: decreases clause might not decrease (--modular-termination: the bound of the bounded value must be below the caller's 'decreases {:global}' bound)
+github-issue-266-m2-reject.dfy(18,13): Error: decreases clause might not decrease (--modular-termination: the bound of the bounded value must be below the caller's 'decreases {:global}' bound)
+github-issue-266-m2-reject.dfy(24,4): Error: decreases clause might not decrease (--modular-termination: the bound of the bounded value must be below the caller's 'decreases {:global}' bound)
+github-issue-266-m2-reject.dfy(32,7): Error: decreases clause might not decrease (--modular-termination: the bound of the bounded value must not exceed the 'decreases {:callback}' bound of the parameter 'f' it is passed for)
+github-issue-266-m2-reject.dfy(35,19): Error: decreases clause might not decrease (--modular-termination: the bound of the bounded value must not exceed the bound it is certified under)
+github-issue-266-m2-reject.dfy(38,28): Error: decreases clause might not decrease (--modular-termination: the bound of the bounded value must be below the bound under which the enclosing lambda runs)
+github-issue-266-m2-reject.dfy(41,34): Error: result of operation might violate subset type constraint for 'nat'
+github-issue-266-m2-reject.dfy(45,13): Error: function precondition could not be proved
+github-issue-266-m2-reject.dfy(64,9): Error: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so under --modular-termination it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
+github-issue-266-m2-reject.dfy(67,53): Error: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so under --modular-termination it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
+github-issue-266-m2-reject.dfy(70,50): Error: decreases clause might not decrease (--modular-termination: the bound of the bounded value must be below the bound under which the enclosing lambda runs)
+
+Dafny program verifier finished with 3 verified, 12 errors
+github-issue-266-m2-reject.dfy(6,4): Error: decreases clause might not decrease (--modular-termination: the bound of the bounded value must be below the caller's 'decreases {:global}' bound)
+github-issue-266-m2-reject.dfy(9,23): Error: decreases clause might not decrease (--modular-termination: the bound of the bounded value must be below the caller's 'decreases {:global}' bound)
+github-issue-266-m2-reject.dfy(18,13): Error: decreases clause might not decrease (--modular-termination: the bound of the bounded value must be below the caller's 'decreases {:global}' bound)
+github-issue-266-m2-reject.dfy(24,4): Error: decreases clause might not decrease (--modular-termination: the bound of the bounded value must be below the caller's 'decreases {:global}' bound)
+github-issue-266-m2-reject.dfy(32,7): Error: decreases clause might not decrease (--modular-termination: the bound of the bounded value must not exceed the 'decreases {:callback}' bound of the parameter 'f' it is passed for)
+github-issue-266-m2-reject.dfy(35,19): Error: decreases clause might not decrease (--modular-termination: the bound of the bounded value must not exceed the bound it is certified under)
+github-issue-266-m2-reject.dfy(38,28): Error: decreases clause might not decrease (--modular-termination: the bound of the bounded value must be below the bound under which the enclosing lambda runs)
+github-issue-266-m2-reject.dfy(41,34): Error: result of operation might violate subset type constraint for 'nat'
+github-issue-266-m2-reject.dfy(45,13): Error: function precondition could not be proved
+github-issue-266-m2-reject.dfy(64,9): Error: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so under --modular-termination it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
+github-issue-266-m2-reject.dfy(67,53): Error: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so under --modular-termination it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
+github-issue-266-m2-reject.dfy(70,50): Error: decreases clause might not decrease (--modular-termination: the bound of the bounded value must be below the bound under which the enclosing lambda runs)
+
+Dafny program verifier finished with 3 verified, 12 errors
+values that cannot be certified, both resolvers
+github-issue-266-m2-certify.dfy(39,32): Error: modular termination: in 'A.Raw', the value passed for parameter 'f' of '_System.bounded.certify', which has a 'decreases {:callback}' bound, must be a lambda expression, a parameter with such a bound (outside a lambda), a function that reaches no dispatched call, or the function of a bounded value
+github-issue-266-m2-certify.dfy(42,34): Error: modular termination: in 'A.Abstract', the function passed to '_System.bounded.certify' cannot be certified: it is a trait member, whose implementation dispatch chooses (certify a lambda that calls it)
+github-issue-266-m2-certify.dfy(45,32): Error: modular termination: in 'A.Parameter', the function passed to '_System.bounded.certify' cannot be certified: its 'decreases {:global}' bound depends on its parameters or on the heap (certify a lambda with a narrower precondition)
+github-issue-266-m2-certify.dfy(48,37): Error: modular termination: in 'A.HeapBound', the function passed to '_System.bounded.certify' cannot be certified: its 'decreases {:global}' bound depends on its parameters or on the heap (certify a lambda with a narrower precondition)
+github-issue-266-m2-certify.dfy(51,32): Error: modular termination: in 'A.NoBound', the function passed to '_System.bounded.certify' cannot be certified: it has no 'decreases {:global}' bound
+github-issue-266-m2-certify.dfy(54,32): Error: modular termination: 'A.Callback' has a parameter with a 'decreases {:callback}' bound, so it cannot be used as a function value
+github-issue-266-m2-certify.dfy(54,32): Error: modular termination: in 'A.WithCallback', the function passed to '_System.bounded.certify' cannot be certified: it has a parameter with a 'decreases {:callback}' bound
+github-issue-266-m2-certify.dfy(60,13): Error: modular termination: in 'A.RawEscape', a call through a function value needs the smaller-bound rule; rejected: the value's code is not known, so it has no bound, and the caller has one (pass the value for a parameter with a 'decreases {:callback}' bound)
+8 resolution/type errors detected in github-issue-266-m2-certify.dfy
+github-issue-266-m2-certify.dfy(39,32): Error: modular termination: in 'A.Raw', the value passed for parameter 'f' of '_System.bounded.certify', which has a 'decreases {:callback}' bound, must be a lambda expression, a parameter with such a bound (outside a lambda), a function that reaches no dispatched call, or the function of a bounded value
+github-issue-266-m2-certify.dfy(42,34): Error: modular termination: in 'A.Abstract', the function passed to '_System.bounded.certify' cannot be certified: it is a trait member, whose implementation dispatch chooses (certify a lambda that calls it)
+github-issue-266-m2-certify.dfy(45,32): Error: modular termination: in 'A.Parameter', the function passed to '_System.bounded.certify' cannot be certified: its 'decreases {:global}' bound depends on its parameters or on the heap (certify a lambda with a narrower precondition)
+github-issue-266-m2-certify.dfy(48,37): Error: modular termination: in 'A.HeapBound', the function passed to '_System.bounded.certify' cannot be certified: its 'decreases {:global}' bound depends on its parameters or on the heap (certify a lambda with a narrower precondition)
+github-issue-266-m2-certify.dfy(51,32): Error: modular termination: in 'A.NoBound', the function passed to '_System.bounded.certify' cannot be certified: it has no 'decreases {:global}' bound
+github-issue-266-m2-certify.dfy(54,32): Error: modular termination: 'A.Callback' has a parameter with a 'decreases {:callback}' bound, so it cannot be used as a function value
+github-issue-266-m2-certify.dfy(54,32): Error: modular termination: in 'A.WithCallback', the function passed to '_System.bounded.certify' cannot be certified: it has a parameter with a 'decreases {:callback}' bound
+github-issue-266-m2-certify.dfy(60,13): Error: modular termination: in 'A.RawEscape', a call through a function value needs the smaller-bound rule; rejected: the value's code is not known, so it has no bound, and the caller has one (pass the value for a parameter with a 'decreases {:callback}' bound)
+8 resolution/type errors detected in github-issue-266-m2-certify.dfy
+ghost errors, both resolvers
+github-issue-266-m2-resolve.dfy(5,10): Error: ghost variables such as b are allowed only in specification contexts. b was inferred to be ghost based on its declaration or initialization.
+github-issue-266-m2-resolve.dfy(10,10): Error: ghost variables such as g are allowed only in specification contexts. g was inferred to be ghost based on its declaration or initialization.
+2 resolution/type errors detected in github-issue-266-m2-resolve.dfy
+github-issue-266-m2-resolve.dfy(5,10): Error: ghost variables such as b are allowed only in specification contexts. b was inferred to be ghost based on its declaration or initialization.
+github-issue-266-m2-resolve.dfy(10,10): Error: ghost variables such as g are allowed only in specification contexts. g was inferred to be ghost based on its declaration or initialization.
+2 resolution/type errors detected in github-issue-266-m2-resolve.dfy
+knots through data, both resolvers
+github-issue-266-m2-datatype.dfy(5,33): Error: using the type being defined ('D') here would cause a logical inconsistency by defining a type whose cardinality exceeds itself (like the Continuum Transfunctioner, you might say its power would then be exceeded only by its mystery)
+github-issue-266-m2-datatype.dfy(13,34): Error: RHS (of type array<Zero>) not assignable to LHS (of type array<T -> int>) (non-variant type parameter would require T -> int = Zero)
+github-issue-266-m2-datatype.dfy(26,9): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+3 resolution/type errors detected in github-issue-266-m2-datatype.dfy
+github-issue-266-m2-datatype.dfy(5,33): Error: using the type being defined ('D') here would cause a logical inconsistency by defining a type whose cardinality exceeds itself (like the Continuum Transfunctioner, you might say its power would then be exceeded only by its mystery)
+github-issue-266-m2-datatype.dfy(12,11): Error: type array?<Zero> is not assignable to LHS (of type array?<T -> int>) (non-variant type parameter 'arg' would require T -> int = Zero)
+github-issue-266-m2-datatype.dfy(26,9): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+3 resolution/type errors detected in github-issue-266-m2-datatype.dfy
+knots through the parameter and result types of a bounded function, both resolvers
+github-issue-266-m2-wrapper.dfy(8,81): Error: To prevent the creation of non-terminating functions, storing functions into an object's fields that reads the object is disallowed
+github-issue-266-m2-wrapper.dfy(21,64): Error: To prevent the creation of non-terminating functions, storing functions into an object's fields that reads the object is disallowed
+github-issue-266-m2-wrapper.dfy(28,62): Error: To prevent the creation of non-terminating functions, storing functions into an object's fields that reads the object is disallowed
+github-issue-266-m2-wrapper.dfy(35,60): Error: To prevent the creation of non-terminating functions, storing functions into an object's fields that reads the object is disallowed
+4 resolution/type errors detected in github-issue-266-m2-wrapper.dfy
+github-issue-266-m2-wrapper.dfy(8,81): Error: To prevent the creation of non-terminating functions, storing functions into an object's fields that reads the object is disallowed
+github-issue-266-m2-wrapper.dfy(21,64): Error: To prevent the creation of non-terminating functions, storing functions into an object's fields that reads the object is disallowed
+github-issue-266-m2-wrapper.dfy(28,62): Error: To prevent the creation of non-terminating functions, storing functions into an object's fields that reads the object is disallowed
+github-issue-266-m2-wrapper.dfy(35,60): Error: To prevent the creation of non-terminating functions, storing functions into an object's fields that reads the object is disallowed
+4 resolution/type errors detected in github-issue-266-m2-wrapper.dfy
+a stored bounded value, compiled
+
+Dafny program verifier finished with 3 verified, 0 errors
+42 41 40

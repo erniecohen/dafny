@@ -931,10 +931,11 @@ unknown attribute, as before.
 Under `--modular-termination`, the system module declares the type `bounded<O, F>` of a
 _bounded callable_: a function value of the arrow type `F` together with persistent evidence that
 every call of it terminates below a ghost bound in the order `O`
-(https://github.com/erniecohen/dafny/issues/266). This version provides the type only. There is no
-way yet to form a value of it, apply one, or project its bound or its function, and each of these is
-a resolution error. So for now the type can appear only in signatures, fields and data that pass
-values along.
+(https://github.com/erniecohen/dafny/issues/266). A value is formed by `bounded.certify(a, f)`, its
+bound `c.bound` (ghost) and function `c.erase` are projected, and applying it, `c(x)` or
+`c.erase(x)`, spends the evidence. A value can be passed, returned and stored in locals, fields and collections,
+since each application checks the bound of the value it applies. A field still cannot hold one whose
+function reads the heap (see below), which a later version is planned to allow.
 
 - The order `O` is `nat` or `ORDINAL`, or a type synonym for one of them, with its built-in order.
   `O` is non-variant: `bounded<nat, F>` and `bounded<ORDINAL, F>` are unrelated.
@@ -948,6 +949,29 @@ values along.
 - The compilers erase `bounded<O, F>` to `F`, with no wrapper and no run-time cost.
 - A function value that reads the heap cannot be stored in a field. This rule applies to a
   `bounded<O, A ~> B>` field too.
+
+Formation and application:
+
+- `bounded.certify(a, f)`, with `a` of type `O` and `f` of type `F`, has type `bounded<O, F>`, and
+  `bounded.certify(a, f).bound == a` and `bounded.certify(a, f).erase == f`. It checks that `f` runs
+  under `a`. A lambda expression's body is checked as code with the global bound `a`. The function
+  of a bounded value, `c.erase`, needs `c.bound <= a`. A named function `g` (or `o.g`), which runs
+  its own code, needs a `decreases {:global}` bound that does not exceed `a`, unless it can reach no
+  dispatched call; its bound must not depend on its parameters or the heap, it may not be a trait
+  member whose implementation dispatch chooses, and it may not have a parameter with a
+  `decreases {:callback}` bound. Any other function value is rejected: certify a lambda that calls it.
+- An application `c(x)`, `c.erase(x)`, `c.requires(x)` or `c.reads(x)` needs `c.bound` strictly
+  below the bound of the code that applies it: the bound of the lambda expression around it, or
+  else the caller's `decreases {:global}` bound. Code without a bound is above every bound.
+- Passing `c.erase` for a parameter with a `decreases {:callback}` bound `E` needs `c.bound <= E`.
+  Otherwise `c.erase` is a function value whose code is not known, which code with a bound cannot
+  apply.
+- A constructor may store into a field of the object a bounded value whose function calls the
+  object's members. A call cycle through the field would apply the value under its own bound, which
+  the rule above rejects. Only the top-level arrow of the function type is exempt: a parameter or
+  result type that holds a function on the object, as in `bounded<nat, () -> (C -> int)>`, is
+  rejected as it would be anywhere else in the field's type, since the bounded function could hand
+  that raw function out to code without a bound.
 
 `bounded` is a contextual name. A module that declares a type named `bounded`, or opens an import
 that declares one, uses that declaration instead. Without the option the name is not declared,
