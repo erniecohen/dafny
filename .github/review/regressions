@@ -798,6 +798,9 @@ git-issues/github-issue-266-m2.dfy
 # A constructor that stores a function in a field is rejected when a function of the object could apply it to a value that reaches the object again, through a datatype, a tuple, the constants of another object, a newtype, or a generic class or trait; the old check looked only at the function's type and its type arguments, so false was provable (https://github.com/erniecohen/dafny/issues/453).
 git-issues/github-issue-453.dfy
 
+# Bounded callables, milestone 3: heap-reading bounded values in fields and collections, generic flow, higher-order bounded values, and callback parameters kept and applied inside lambdas, under --modular-termination (https://github.com/erniecohen/dafny/issues/266).
+git-issues/github-issue-266-m3.dfy
+
 # Revision 3 of the rules of --modular-termination: any trait may be extended from any module, a foreign implementation of a member without a global bound is a leaf or has a bound of its own, a member without a body reaches a dispatch unless it promises {:termination_closed}, and the VeriFast ports of ECOOP 2015 Fig. 4 and the CPS example (https://github.com/erniecohen/dafny/issues/211).
 git-issues/github-issue-211-rev3.dfy
 

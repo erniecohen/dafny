@@ -1,0 +1,82 @@
+positive, both resolvers
+
+Dafny program verifier finished with 27 verified, 0 errors
+
+Dafny program verifier finished with 27 verified, 0 errors
+false controls: one reachable assert false per family, both resolvers
+github-issue-266-m3-false.dfy(24,4): Error: assertion might not hold
+github-issue-266-m3-false.dfy(57,4): Error: assertion might not hold
+github-issue-266-m3-false.dfy(97,4): Error: assertion might not hold
+github-issue-266-m3-false.dfy(110,4): Error: assertion might not hold
+github-issue-266-m3-false.dfy(136,4): Error: assertion might not hold
+
+Dafny program verifier finished with 22 verified, 5 errors
+github-issue-266-m3-false.dfy(24,4): Error: assertion might not hold
+github-issue-266-m3-false.dfy(57,4): Error: assertion might not hold
+github-issue-266-m3-false.dfy(97,4): Error: assertion might not hold
+github-issue-266-m3-false.dfy(110,4): Error: assertion might not hold
+github-issue-266-m3-false.dfy(136,4): Error: assertion might not hold
+
+Dafny program verifier finished with 22 verified, 5 errors
+divergence kernels and rule violations, both resolvers
+github-issue-266-m3-kernels.dfy(14,48): Error: decreases clause might not decrease (--modular-termination: the bound of the bounded value must be below the bound under which the enclosing lambda runs)
+github-issue-266-m3-kernels.dfy(14,48): Error: function precondition could not be proved
+github-issue-266-m3-kernels.dfy(44,74): Error: decreases clause might not decrease (--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
+github-issue-266-m3-kernels.dfy(75,74): Error: decreases clause might not decrease (--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
+github-issue-266-m3-kernels.dfy(96,4): Error: assertion might not hold
+github-issue-266-m3-kernels.dfy(109,23): Error: receiver could not be proved to be allocated in the state in which its fields are accessed
+github-issue-266-m3-kernels.dfy(124,34): Error: decreases clause might not decrease (--modular-termination: the 'decreases {:callback}' bound of 'f' must be below the bound under which the enclosing lambda runs)
+github-issue-266-m3-kernels.dfy(132,34): Error: decreases clause might not decrease (--modular-termination: the 'decreases {:callback}' bound of 'f' must be below the bound under which the enclosing lambda runs)
+github-issue-266-m3-kernels.dfy(140,24): Error: decreases clause might not decrease (--modular-termination: the 'decreases {:callback}' bound of 'f' must not exceed that of the parameter it is passed for)
+github-issue-266-m3-kernels.dfy(152,44): Error: decreases clause might not decrease (--modular-termination: the 'decreases {:callback}' bound of 'f' must not exceed that of the parameter it is passed for)
+
+Dafny program verifier finished with 21 verified, 10 errors
+github-issue-266-m3-kernels.dfy(14,48): Error: decreases clause might not decrease (--modular-termination: the bound of the bounded value must be below the bound under which the enclosing lambda runs)
+github-issue-266-m3-kernels.dfy(14,48): Error: function precondition could not be proved
+github-issue-266-m3-kernels.dfy(44,74): Error: decreases clause might not decrease (--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
+github-issue-266-m3-kernels.dfy(75,74): Error: decreases clause might not decrease (--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
+github-issue-266-m3-kernels.dfy(96,4): Error: assertion might not hold
+github-issue-266-m3-kernels.dfy(109,23): Error: receiver could not be proved to be allocated in the state in which its fields are accessed
+github-issue-266-m3-kernels.dfy(124,34): Error: decreases clause might not decrease (--modular-termination: the 'decreases {:callback}' bound of 'f' must be below the bound under which the enclosing lambda runs)
+github-issue-266-m3-kernels.dfy(132,34): Error: decreases clause might not decrease (--modular-termination: the 'decreases {:callback}' bound of 'f' must be below the bound under which the enclosing lambda runs)
+github-issue-266-m3-kernels.dfy(140,24): Error: decreases clause might not decrease (--modular-termination: the 'decreases {:callback}' bound of 'f' must not exceed that of the parameter it is passed for)
+github-issue-266-m3-kernels.dfy(152,44): Error: decreases clause might not decrease (--modular-termination: the 'decreases {:callback}' bound of 'f' must not exceed that of the parameter it is passed for)
+
+Dafny program verifier finished with 22 verified, 10 errors
+knots through the parameter and result types of a bounded function, both resolvers
+github-issue-266-m3-wrapper.dfy(13,8): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+github-issue-266-m3-wrapper.dfy(8,83): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+github-issue-266-m3-wrapper.dfy(28,8): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+github-issue-266-m3-wrapper.dfy(26,8): Error: To prevent the creation of non-terminating functions, a type parameter whose values may be stored in memory cannot be instantiated with a type that contains a function with read effects: type parameter 'T' of 'Holder' is instantiated with 'bounded<nat, () -> () ~> bool>', and the mutable field 'f' of 'Holder' has a type that mentions it
+github-issue-266-m3-wrapper.dfy(42,9): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+github-issue-266-m3-wrapper.dfy(37,41): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+github-issue-266-m3-wrapper.dfy(52,9): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+github-issue-266-m3-wrapper.dfy(61,64): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+github-issue-266-m3-wrapper.dfy(74,8): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+github-issue-266-m3-wrapper.dfy(69,74): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+github-issue-266-m3-wrapper.dfy(85,23): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+github-issue-266-m3-wrapper.dfy(99,8): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+github-issue-266-m3-wrapper.dfy(94,67): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+github-issue-266-m3-wrapper.dfy(113,8): Error: To prevent the creation of non-terminating functions, a type parameter whose values may be stored in memory cannot be instantiated with a type that contains a function with read effects: type parameter 'T' of 'Holder' is instantiated with 'bounded<nat, () -> () ~> bool>', and the mutable field 'f' of 'Holder' has a type that mentions it
+14 resolution/type errors detected in github-issue-266-m3-wrapper.dfy
+github-issue-266-m3-wrapper.dfy(13,8): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+github-issue-266-m3-wrapper.dfy(8,83): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+github-issue-266-m3-wrapper.dfy(28,8): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+github-issue-266-m3-wrapper.dfy(26,8): Error: To prevent the creation of non-terminating functions, a type parameter whose values may be stored in memory cannot be instantiated with a type that contains a function with read effects: type parameter 'T' of 'Holder' is instantiated with 'bounded<nat, () -> () ~> bool>', and the mutable field 'f' of 'Holder' has a type that mentions it
+github-issue-266-m3-wrapper.dfy(42,9): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+github-issue-266-m3-wrapper.dfy(37,41): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+github-issue-266-m3-wrapper.dfy(52,9): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+github-issue-266-m3-wrapper.dfy(61,64): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+github-issue-266-m3-wrapper.dfy(74,8): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+github-issue-266-m3-wrapper.dfy(69,74): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+github-issue-266-m3-wrapper.dfy(85,23): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+github-issue-266-m3-wrapper.dfy(99,8): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+github-issue-266-m3-wrapper.dfy(94,67): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+github-issue-266-m3-wrapper.dfy(113,8): Error: To prevent the creation of non-terminating functions, a type parameter whose values may be stored in memory cannot be instantiated with a type that contains a function with read effects: type parameter 'T' of 'Holder' is instantiated with 'bounded<nat, () -> () ~> bool>', and the mutable field 'f' of 'Holder' has a type that mentions it
+14 resolution/type errors detected in github-issue-266-m3-wrapper.dfy
+stored bounded values, compiled
+
+Dafny program verifier finished with 6 verified, 0 errors
+22 24 22
+7
+11
