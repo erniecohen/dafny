@@ -1538,8 +1538,7 @@ namespace Microsoft.Dafny {
       _recursionDepth++;
       try {
         return AssignProxyAndHandleItsConstraints_aux(proxy, t, keepConstraints);
-      }
-      finally {
+      } finally {
         _recursionDepth--;
       }
     }
