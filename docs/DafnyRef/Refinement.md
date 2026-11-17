@@ -478,8 +478,36 @@ A renaming must not change what any name in the inherited text refers to. If the
 parameter is the name of a variable, constant or type that the inherited text uses, or is bound
 again inside the inherited text where the parameter is used, the refining module is rejected, and
 the error names the two declarations. Giving two parameters the same name is an error, as in any
-declaration. The types, the number of parameters, and their modifiers must still agree with the
-parent, and a refining declaration still cannot give a parameter a default value.
+declaration. The number of parameters and their modifiers must still agree with the parent, and
+a refining declaration still cannot give a parameter a default value.
+
+The type of a parameter, and the result type of a function, must be the type it is in the parent.
+With the option it need not be written the same way. A refining module that gives a type a second
+name can use that name in its signatures, and it can write an imported type with or without the
+name of its module:
+
+<!-- %check-verify %options --refinement-renaming -->
+```dafny
+abstract module Chains {
+  type T
+  function Next(t: T): T
+}
+
+module Lists refines Chains {
+  datatype Node = Nil | Cons(tail: Node)
+  type T = Node
+  function Next(n: Node): Node {
+    if n.Nil? then n else n.tail
+  }
+}
+```
+
+The two types are compared once the refining module's types are known, with type synonyms
+replaced by what they stand for. A subset type and a newtype are types of their own, so `nat` does
+not stand in for `int`. A type that the refining module knows only as an opaque type is the same as
+no other type. Whatever the refining declaration writes, the declaration that results has the
+types of the parent. The type of a `const` or a field and the bound of a type parameter must still
+be written as in the parent.
 
 The type parameters of an iterator cannot be renamed, nor can those of an abstract type with
 members that a type synonym refines (`--synonym-refines-abstract-type`). When one module is refined

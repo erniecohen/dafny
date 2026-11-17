@@ -2451,7 +2451,9 @@ or the Dafny 4 syntax (`ghost function` and `function`)
   newtype or abstract type rename its type parameters. A named argument still uses the name
   the parameter was first declared with. The inherited specification and body are renamed
   with the declaration, and a renaming that would change what a name in inherited code refers
-  to is an error. Disabled by default. Use `refinement-renaming = true` in a project file's
+  to is an error. The type of a parameter or result may be written differently from the
+  refined declaration if it is the same type, with type synonyms expanded. Disabled by
+  default. Use `refinement-renaming = true` in a project file's
   `[options]` section. See [renaming in a refinement](#sec-refinement-renaming).
 
 * `--decreases-orders` - (experimental) accept a decreases component `e by O`, where `O`

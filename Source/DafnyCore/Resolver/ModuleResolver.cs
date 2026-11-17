@@ -3414,7 +3414,44 @@ namespace Microsoft.Dafny {
       } else {
         ResolveType(f.Origin, f.ResultType, f, option, f.TypeArgs);
       }
+      ResolveRefinementDeclaredTypes(f);
       scope.PopMarker();
+    }
+
+    /// <summary>
+    /// Resolves the types that a refining signature spells differently from the signature it refines.
+    /// Unlike the types of the signature itself, they never add type parameters to the declaration.
+    /// Assumes the type parameters have been pushed.
+    /// </summary>
+    void ResolveRefinementDeclaredTypes(MethodOrFunction member) {
+      if (member.RefinementDeclaredTypes != null) {
+        foreach (var declared in member.RefinementDeclaredTypes) {
+          ResolveType(declared.Origin, declared.Declared, (ICodeContext)member, ResolveTypeOptionEnum.AllowPrefix, member.TypeArgs);
+        }
+      }
+    }
+
+    /// <summary>
+    /// With --refinement-renaming, a refining signature may spell a type differently from the signature it
+    /// refines, as long as the two spellings denote the same type. The merged declaration has the type of
+    /// the refined signature, so this check decides only which spellings are accepted. Type synonyms are
+    /// expanded; a subset type and a newtype are types of their own. This runs once the signatures of the
+    /// module have been resolved, which is when the right-hand sides of its type synonyms are known.
+    /// </summary>
+    public void CheckRefinementDeclaredTypes(List<TopLevelDecl> declarations) {
+      foreach (var declaration in declarations.OfType<TopLevelDeclWithMembers>()) {
+        foreach (var member in declaration.Members.OfType<MethodOrFunction>()) {
+          if (member.RefinementDeclaredTypes == null) {
+            continue;
+          }
+          foreach (var declared in member.RefinementDeclaredTypes) {
+            var inherited = declared.Parameter != null ? declared.Parameter.Type : ((Function)member).ResultType;
+            if (!inherited.Equals(declared.Declared, true)) {
+              reporter.Error(MessageSource.RefinementTransformer, declared.ErrorId, declared.Origin, declared.Mismatch);
+            }
+          }
+        }
+      }
     }
 
     /// <summary>
@@ -3449,6 +3486,7 @@ namespace Microsoft.Dafny {
         ScopePushAndReport(scope, p, "parameter");
         ResolveType(p.Origin, p.Type, m, option, m.TypeArgs);
       }
+      ResolveRefinementDeclaredTypes(m);
       scope.PopMarker();
     }
 

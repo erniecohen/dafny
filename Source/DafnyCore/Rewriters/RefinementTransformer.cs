@@ -549,6 +549,11 @@ namespace Microsoft.Dafny {
       var result = previousFunction.Result ?? newFunction.Result;
       if (result != null) {
         result = refinementCloner.CloneFormal(result, false);
+        if (previousFunction.Result == null && pendingTypeAgreements.Exists(pending => pending.Parameter == null)) {
+          // The refining function names the result and spells its type differently. Whether that is the
+          // type of the refined function is checked later; the merged function gets the refined type.
+          result.SyntacticType = refinementCloner.CloneType(previousFunction.ResultType);
+        }
       }
       // A function with a named result takes its result type from that result.
       var resultType = result != null ? result.Type : refinementCloner.CloneType(previousFunction.ResultType);
@@ -857,12 +862,17 @@ namespace Microsoft.Dafny {
                 Reporter.Info(MessageSource.RefinementTransformer, f.SignatureEllipsis, Printer.FunctionSignatureToString(Reporter.Options, prevFunction));
               } else {
                 CheckAgreement_TypeParameters(f.Origin, prevFunction.TypeArgs, f.TypeArgs, f.Name, "function", true);
-                CheckAgreement_Parameters(f.Origin, prevFunction.Ins, f.Ins, f.Name, "function", "parameter", true);
+                CheckAgreement_Parameters(f.Origin, prevFunction.Ins, f.Ins, f.Name, "function", "parameter", true, merged => merged.Ins);
                 if (!renamingAllowed && prevFunction.Result != null && f.Result != null && prevFunction.Result.Name != f.Result.Name) {
                   Error(ErrorId.ref_mismatched_function_return_name, f, "the name of function return value '{0}'({1}) differs from the name of corresponding function return value in the module it refines ({2})", f.Name, f.Result.Name, prevFunction.Result.Name);
                 }
                 if (!TypesAgree(prevFunction.ResultType, f.ResultType)) {
-                  Error(ErrorId.ref_mismatched_function_return_type, f, "the result type of function '{0}' ({1}) differs from the result type of the corresponding function in the module it refines ({2})", f.Name, f.ResultType, InRefinementNames(prevFunction.ResultType));
+                  var mismatch = string.Format("the result type of function '{0}' ({1}) differs from the result type of the corresponding function in the module it refines ({2})", f.Name, f.ResultType, InRefinementNames(prevFunction.ResultType));
+                  if (renamingAllowed) {
+                    pendingTypeAgreements.Add(new PendingTypeAgreement(f.Origin, f.ResultType, null, ErrorId.ref_mismatched_function_return_type, mismatch));
+                  } else {
+                    Error(ErrorId.ref_mismatched_function_return_type, f, mismatch);
+                  }
                 }
               }
 
@@ -875,6 +885,7 @@ namespace Microsoft.Dafny {
               }
               var newF = CloneFunction(f, prevFunction, moreBody, replacementBody, prevFunction.Body == null, f.Attributes);
               newF.RefinementBase = member;
+              AttachPendingTypeAgreements(newF);
               nw.Members[index] = newF;
             }
 
@@ -923,8 +934,9 @@ namespace Microsoft.Dafny {
                 Reporter.Info(MessageSource.RefinementTransformer, m.SignatureEllipsis, Printer.MethodSignatureToString(Reporter.Options, prevMethod));
               } else {
                 CheckAgreement_TypeParameters(m.Origin, prevMethod.TypeArgs, m.TypeArgs, m.Name, "method", true);
-                CheckAgreement_Parameters(m.Origin, prevMethod.Ins, m.Ins, m.Name, "method", "in-parameter", true);
-                CheckAgreement_Parameters(m.Origin, prevMethod.Outs, m.Outs, m.Name, "method", "out-parameter", true);
+                CheckAgreement_Parameters(m.Origin, prevMethod.Ins, m.Ins, m.Name, "method", "in-parameter", true, merged => merged.Ins);
+                CheckAgreement_Parameters(m.Origin, prevMethod.Outs, m.Outs, m.Name, "method", "out-parameter", true,
+                  merged => ((MethodOrConstructor)merged).Outs);
               }
               currentMethod = m;
               var replacementBody = m.Body;
@@ -937,6 +949,7 @@ namespace Microsoft.Dafny {
               }
               var newM = CloneMethod(prevMethod, m.Ens, decreases, replacementBody, prevMethod.Body == null, m.Attributes);
               newM.RefinementBase = prevMethod;
+              AttachPendingTypeAgreements(newM);
               nw.Members[index] = newM;
             }
           }
@@ -1024,8 +1037,13 @@ namespace Microsoft.Dafny {
       }
     }
 
+    /// <summary>
+    /// "mergedParameters", if given, says where the parameters that correspond to "nw" are in the declaration
+    /// that the refining declaration and the refined one are merged into. With --refinement-renaming, a type
+    /// that the two spell differently is then compared after resolution (see AttachPendingTypeAgreements).
+    /// </summary>
     void CheckAgreement_Parameters(IOrigin tok, List<Formal> old, List<Formal> nw, string name, string thing, string parameterKind,
-      bool mayRename = false) {
+      bool mayRename = false, Func<MethodOrFunction, List<Formal>> mergedParameters = null) {
       Contract.Requires(tok != null);
       Contract.Requires(old != null);
       Contract.Requires(nw != null);
@@ -1052,13 +1070,47 @@ namespace Microsoft.Dafny {
             Error(ErrorId.ref_mismatched_kind_older, n.Origin, "{0} '{1}' of {2} {3} cannot be changed, compared to the corresponding {2} in the module it refines, from non-older to older", parameterKind, n.Name, thing, name);
           } else if (o.IsOlder && !n.IsOlder) {
             Error(ErrorId.ref_mismatched_kind_non_older, n.Origin, "{0} '{1}' of {2} {3} cannot be changed, compared to the corresponding {2} in the module it refines, from older to non-older", parameterKind, n.Name, thing, name);
-          } else if (!TypesAgree(o.Type, n.Type)) {
+          } else if (!TypesAgree(o.Type, n.Type) && !(renamingAllowed && mergedParameters != null)) {
             Error(ErrorId.ref_mismatched_parameter_type, n.Origin, "the type of {0} '{1}' is different from the type of the same {0} in the corresponding {2} in the module it refines ('{3}' instead of '{4}')", parameterKind, n.Name, thing, n.Type, InRefinementNames(o.Type));
-          } else if (n.DefaultValue != null) {
-            Error(ErrorId.ref_refined_formal_may_not_have_default, n.Origin, "a refining formal parameter ('{0}') in a refinement module is not allowed to give a default-value expression", n.Name);
+          } else {
+            if (!TypesAgree(o.Type, n.Type)) {
+              var position = i;
+              pendingTypeAgreements.Add(new PendingTypeAgreement(n.Origin, n.Type, merged => mergedParameters(merged)[position],
+                ErrorId.ref_mismatched_parameter_type,
+                string.Format("the type of {0} '{1}' is different from the type of the same {0} in the corresponding {2} in the module it refines ('{3}' instead of '{4}')", parameterKind, n.Name, thing, n.Type, InRefinementNames(o.Type))));
+            }
+            if (n.DefaultValue != null) {
+              Error(ErrorId.ref_refined_formal_may_not_have_default, n.Origin, "a refining formal parameter ('{0}') in a refinement module is not allowed to give a default-value expression", n.Name);
+            }
           }
         }
       }
+    }
+
+    /// <summary>
+    /// A type "Declared" of a refining signature that is spelled differently from the type in its place in
+    /// the refined signature. "Parameter" finds the parameter in the merged declaration; it is null for the
+    /// result type of a function. "Mismatch" is the error to report if the two are different types.
+    /// </summary>
+    private record PendingTypeAgreement(IOrigin Origin, Type Declared, Func<MethodOrFunction, Formal> Parameter, ErrorId ErrorId, string Mismatch);
+
+    // The types of the signature being merged that await comparison as resolved types.
+    private readonly List<PendingTypeAgreement> pendingTypeAgreements = [];
+
+    /// <summary>
+    /// Under --refinement-renaming, the types of a refining signature need not be spelled as in the refined
+    /// signature; they must be the same types. That is known only once the refining module has been resolved.
+    /// The merged declaration "merged" has the types of the refined signature whatever the outcome, so the
+    /// comparison decides which spellings are accepted and nothing else. The types that the refining
+    /// signature spells differently are handed to the resolver with "merged", which resolves and compares them.
+    /// </summary>
+    private void AttachPendingTypeAgreements(MethodOrFunction merged) {
+      foreach (var pending in pendingTypeAgreements) {
+        merged.RefinementDeclaredTypes ??= [];
+        merged.RefinementDeclaredTypes.Add(new MethodOrFunction.RefinementDeclaredType(pending.Origin, pending.Declared,
+          pending.Parameter?.Invoke(merged), pending.ErrorId.ToString(), pending.Mismatch));
+      }
+      pendingTypeAgreements.Clear();
     }
 
     bool TypesAreSyntacticallyEqual(Type t, Type u) {

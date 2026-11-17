@@ -908,8 +908,8 @@ the release note is `docs/dev/news/410.fix`.
 
 ## Renaming in a refinement ([issue 106](https://github.com/erniecohen/dafny/issues/106), [issue 107](https://github.com/erniecohen/dafny/issues/107))
 
-`--refinement-renaming` is an opt-in feature: stage 1 and 2 of the refinement design draft
-([pull request 401](https://github.com/erniecohen/dafny/pull/401), sections 2.3 and 2.5).  A
+`--refinement-renaming` is an opt-in feature: stages 1 to 3 of the refinement design draft
+([pull request 401](https://github.com/erniecohen/dafny/pull/401), sections 2.3 to 2.5).  A
 declaration of a refining module `R` may rename the type parameters, the out-parameters, the
 result and the local names of the in-parameters of the declaration of `B` that it refines, by
 position.  With the option off, the name-agreement errors are those of 4.11.0, and nothing else in
@@ -943,10 +943,21 @@ Since the argument rests on the 410 check, the option is rejected together with
 or axiom; under the option, a renamed declaration is verified as the alpha-variant that the
 cloner wrote.
 
-*Signature agreement.*  The types of the parameters, the result type and the type-parameter
-bounds are still compared as text, after `B`'s side is put in `R`'s names.  Counts, modifiers and
-type characteristics are compared as before.  Comparing types by their resolved meaning is stage
-3 of the draft and not part of this change.
+*Signature agreement.*  Counts, modifiers and type characteristics are compared as before.  The
+types of the parameters and the result type are first compared as text, after `B`'s side is put in
+`R`'s names, as without the option.  Under the option, a type that is spelled differently is not
+an error yet: the refinement transformer hands the spelling to the merged declaration
+(`MethodOrFunction.RefinementDeclaredTypes`).  The resolver resolves it in the scope of the
+merged signature, and once all signatures of `R` are resolved it compares the spelling with the
+type the merged declaration has, by `Type.Equals` with constraints kept: type synonyms are
+expanded, a subset type or newtype equals only itself, and so does a type that `R` sees as
+opaque.  A mismatch is the error of the textual comparison, reported before any body is resolved.
+The comparison is not part of the soundness argument.  The merged declaration takes every
+parameter and result type from `B`, also where `R` names a result that `B` leaves unnamed, so
+`R`'s spelling occurs nowhere in the resolved program and the comparison decides only which
+spellings are accepted.  Type-parameter bounds and the types of constants and fields are still
+compared as text: a refining `const` keeps its own declaration, so for it the comparison would
+decide which type the program has.
 
 *Not renamable.*  An iterator's signature can only be repeated with `...`.  The type parameters of
 an abstract type with members that a type synonym refines (`--synonym-refines-abstract-type`) keep
