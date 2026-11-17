@@ -8,6 +8,8 @@
 // RUN: %exits-with 0 %verify --legacy-stored-function-callbacks "%S/Inputs/github-issue-453-nested-knot.dfy" >> "%t"
 // RUN: %exits-with 2 %resolve "%S/Inputs/github-issue-453-nested-knot.dfy" >> "%t"
 // RUN: %exits-with 2 %resolve --type-system-refresh=false --general-newtypes=false "%S/Inputs/github-issue-453-nested-knot.dfy" >> "%t"
+// RUN: %exits-with 2 %resolve --allow-warnings --modular-termination "%S/Inputs/github-issue-453-bounded.dfy" >> "%t"
+// RUN: %exits-with 2 %resolve --allow-warnings --modular-termination --type-system-refresh --general-traits=datatype "%S/Inputs/github-issue-453-bounded.dfy" >> "%t"
 // RUN: %diff "%s.expect" "%t"
 // Regression (https://github.com/erniecohen/dafny/issues/453): a function value that a constructor
 // stores in a field could be applied, by a function of the object, to a value from which it reaches
@@ -24,7 +26,10 @@
 // search, under which the knot verifies.  A nested datatype, whose recursion makes a larger
 // instantiation at every step, is expanded once on each path of the search, so the search ends: a
 // store of one is accepted (Inputs/github-issue-453-accepted.dfy), and a knot through one is rejected
-// (Inputs/github-issue-453-nested-knot.dfy, which also verifies under the legacy option).
+// (Inputs/github-issue-453-nested-knot.dfy, which also verifies under the legacy option).  Under
+// --modular-termination, the top-level arrow of a bounded value (https://github.com/erniecohen/dafny/issues/266)
+// is not searched, because its applications are checked against its bound, but the raw functions in its
+// parameter and result types are (Inputs/github-issue-453-bounded.dfy).
 
 // The reproducer of the issue: a datatype argument
 module Datatype {

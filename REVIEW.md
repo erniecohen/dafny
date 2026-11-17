@@ -1026,7 +1026,17 @@ step, so the search expands a declaration again, in the same position, only at a
 that is not larger.  At a larger one it searches the type arguments alone, as if left of an arrow;
 the expansion in progress searches the rest of the declaration.  So the search ends.  It is
 conservative there: a nested datatype instantiated with the object's class, such as `N<C?>` stored
-in a field of `C`, is rejected even when it holds no function.
+in a field of `C`, is rejected even when it holds no function.  Under `--modular-termination`, a
+bounded value ([issue 266](https://github.com/erniecohen/dafny/issues/266)) is exempt as it is in
+the old check: its top-level arrow is not searched, but its order type and its function's parameter
+and result types are, where the bounded type is.  A cycle through bounded values cannot form.
+Applying one is checked to run under a bound strictly below the global bound of the code that
+applies it, and its function is checked to run under the value's bound.  So the bounds strictly
+decrease along any chain of applications through bounded values, and they are well founded.  In
+`github-issue-266-m2.dfy`, `C.f` (global bound 1) applies `cb: bounded<nat, Stored.T -> int>`
+with bound 0 to `this`.  The function `cb` holds runs under bound 0, so it cannot call `f`.
+Raw functions inside a bounded type are applied without a bound, so a function on a datatype that
+holds the object, returned by a bounded function, is still rejected.
 Its kind is **weakens only**: it rejects programs and adds no fact or axiom.  It changes no
 resolution outside its regression in the test suite, the standard library (its sources,
 `modular-termination`, `orders`) or the standard library's examples.  The hidden

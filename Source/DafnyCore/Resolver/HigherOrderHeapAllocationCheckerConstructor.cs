@@ -140,6 +140,17 @@ class HigherOrderHeapAllocationCheckerConstructor : ASTVisitor<IASTVisitorContex
         return null;
       }
       var decl = Declaration(udt);
+      if (BoundedCallables.IsBoundedDecl(decl)) {
+        // A bounded value (--modular-termination, https://github.com/erniecohen/dafny/issues/266) is exempt as in
+        // the Occurs of the checker: applying it is checked to run under a bound strictly below that of the code
+        // that applies it, and its function is checked to run under the value's bound, so applications through
+        // bounded values cannot form a cycle, and its top-level arrow is not searched.  Its order type and the
+        // parameter and result types of its function may hold raw functions, which the bounded function can hand
+        // to code that applies them without a bound, so they are searched where the bounded type is.
+        var function = udt.TypeArgs[1].NormalizeExpand();
+        var components = function.IsArrowType ? function.TypeArgs : [function];
+        return Occurs(udt.TypeArgs[0], left) ?? components.Select(component => Occurs(component, left)).FirstOrDefault(t => t != null);
+      }
       if (left && ((ObjDecl != null && decl == ObjDecl) || decl is TraitDecl || decl is AbstractTypeDecl)) {
         return decl;
       }
