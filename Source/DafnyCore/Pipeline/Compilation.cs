@@ -327,6 +327,13 @@ public class Compilation : IDisposable {
     return resolution;
   }
 
+  /// <summary>
+  /// The ICanVerify that a verification task was translated from.
+  /// </summary>
+  public static ICanVerify GetCanVerify(IVerificationTask task) {
+    return ((CanVerifyOrigin)task.ScopeToken).CanVerify;
+  }
+
   public static string GetTaskName(IVerificationTask task) {
     var prefix = task.ScopeId + task.Split.SplitIndex;
 
@@ -415,12 +422,12 @@ public class Compilation : IDisposable {
             cancellationSource.Token);
 
           moduleProofDependencies[containingModule] = result.ProofDependencies;
-          return result.Tasks.GroupBy(t => {
-            var dafnyToken = (CanVerifyOrigin)t.ScopeToken;
-            return dafnyToken.CanVerify;
-          }).ToDictionary(
+          return result.Tasks.GroupBy(GetCanVerify).ToDictionary(
             g => g.Key,
-            g => (IReadOnlyList<IVerificationTask>)g.ToList());
+            // A copy from a refinement base is scheduled only for the override check its module makes again;
+            // its other tasks assert nothing.
+            g => (IReadOnlyList<IVerificationTask>)g.Where(t =>
+              !g.Key.Origin.IsCopy || ((CanVerifyOrigin)t.ScopeToken).IsReverifiedOverrideCheck).ToList());
         });
       } catch (OperationCanceledException) {
         throw;

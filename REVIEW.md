@@ -800,6 +800,47 @@ that does not make such a read is unchanged.  The hidden `--legacy-first-phase-c
 option restores the old rule for comparison and migration.  The regression is
 `git-issues/github-issue-339.dfy`; the release note is `docs/dev/news/339.fix`.
 
+## Override checks in refining modules ([issue 404](https://github.com/erniecohen/dafny/issues/404))
+
+A refining module could strengthen the contract of a trait member, or refine an abstract type into
+a class that extends a trait, while it inherited the overriding class member unchanged.  The
+override check asserts at the overriding member's origin, which the refining module inherits, and
+asserts at inherited origins become assumes, because the base module made them.  So the check
+against the new contract was never made, and a call through the trait proved `false`.  Even had it
+been made, the pipeline never scheduled a copied member's tasks.  `BoogieGenerator.MustReverifyInheritedOverrideCheck`
+now decides when a refining module makes the override check of an inherited member itself: unless
+the base counterpart of the member overrode the same member, unchanged (the base counterpart of the
+overridden member, or the overridden member itself when it lies outside the refining module).  So a
+changed overridden member, a new extension, and a replaced abstract import are checked, and a pair
+the module inherits unchanged is not checked again.  Such a check asserts at the inherited origin,
+reports the refining module as a related location, and is verified with the refining module even
+when the base comes from a library; the pipeline schedules that task, and no other, of the copy.
+In the IDE the copy shares the navigation range of the base member, so `IdeState` keeps the tasks of
+each `ICanVerify` at a range apart, and the base member's own errors stay shown beside the check.
+Its kind is **asserts more**: it rejects programs, by checking an obligation the old rule skipped,
+and adds no fact or axiom; a program whose refining modules change no override pair is unchanged.
+The hidden `--legacy-elided-override-checks` option restores the old rule for comparison and
+migration.  The regression is `git-issues/github-issue-404.dfy`; the release note is
+`docs/dev/news/404.fix`.
+
+## Calls added by a statement skeleton ([issue 412](https://github.com/erniecohen/dafny/issues/412))
+
+A refining method that uses a statement skeleton (`...`) inherits the parent's body, and the verifier
+assumes, rather than proves again, what that body established, including its postconditions.  That is
+sound only if the added statements cannot change state the parent module knows about.
+`RefinementTransformer.CheckIsOkayUpdateStmt` enforced this for the left-hand sides of assignments and
+for `new` with an initializer that modifies more than `this`, but not for calls: a call parses as an
+update statement and becomes a `CallStmt` only during resolution, so the `CallStmt` case of
+`CheckIsOkayNewStatement` never sees one.  `...; Set2(c);` after a body that ensures `c.f == 1` let the
+refined method ensure `c.f == 2` as well, and a caller proved `false`.  The post-resolution check now
+walks the resolved statements and rejects any call (other than the initializing call of a `new`) to a
+method or ghost method with a nonempty `modifies` clause, with the error `ref_invalid_call_modifies`.
+Its kind is **weakens only**: it rejects programs and adds no fact or axiom.  No program in the suite or
+the standard library makes such a call (every refining program in both was resolved with the check), so
+the fix costs no proofs.  Still, as for every soundness fix, the hidden
+`--legacy-skeleton-modifying-calls` option restores the old rule for comparison and migration.  The regression is
+`git-issues/github-issue-412.dfy`; the release note is `docs/dev/news/412.fix`.
+
 ## Comparing crossed component types ([issue 47](https://github.com/erniecohen/dafny/issues/47))
 
 With `--type-system-refresh`, `==`, `!=`, `in`, `!in` and prefix equality required, in their final
