@@ -607,7 +607,11 @@ bound comparison, but still obey the ordinary termination discipline. Closed can
 with callback bounds or promised by an overridable slot of a trait; such a slot may have a low
 global bound instead. An override or refinement must preserve the promise.
 
-Within a module, Dafny can infer whether exact code reaches open dispatch. A local closed
+Within a module, Dafny can infer whether exact code reaches open dispatch. A function, method or
+lemma without a body is taken to reach it, unless it promises `{:termination_closed}`: a refining
+module may give it a body, and the code it inherits, whose calls were checked in the base, is not
+checked again. To call such a member from a member with a bound, give it a bound of its own, which its
+body in a refinement must then keep, or the promise. A local closed
 callee needs no outer comparison; a local forwarding helper needs a global bound of its own:
 
 <!-- %no-check -->

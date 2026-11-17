@@ -8,7 +8,7 @@ module Ord {
   ghost predicate {:termination_closed} InnerLt(m: Lv, n: Lv) { m != n && InnerLe(m, n) }
   ghost predicate {:termination_closed} OuterLe(s: Stock, t: Stock) { forall a | a in s - t :: exists b | b in t - s :: InnerLt(a, b) }
   ghost predicate {:termination_closed} OuterGt(t: Stock, s: Stock) { s != t && OuterLe(s, t) }
-  lemma {:axiom} OuterWf() ensures forall c: Chain<Stock> :: stops<Stock>(OuterGt, c)
+  lemma {:axiom} {:termination_closed} OuterWf() ensures forall c: Chain<Stock> :: stops<Stock>(OuterGt, c)
   ghost function {:termination_closed} StockOrder(): Wfo<Stock> { OuterWf(); Of(OuterGt) }
 
   lemma {:termination_closed} InnerAdd(m: Lv, k: nat) ensures InnerLt(m, multiset{k} + m)

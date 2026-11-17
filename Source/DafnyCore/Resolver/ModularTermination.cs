@@ -434,6 +434,13 @@ public class ModularTerminationAnalysis {
                 }
                 // A default value is evaluated as part of the call that omits the argument.
                 c.Visit(((ICallable)member).Ins.Where(f => f.DefaultValue != null).Select(f => f.DefaultValue));
+                // A member without a body may be given one by a refining module, and code inherited from this module,
+                // whose calls were checked here, is not checked again there.  So, unless it promises
+                // {:termination_closed}, which a refinement must keep, it is taken to reach a dispatch.
+                if (member is Function { Body: null } or MethodOrConstructor { Body: null } &&
+                    !ModularTermination.IsDispatchSlot(member) && !ModularTermination.HasClosedContract(member)) {
+                  c.BodyToCome();
+                }
               });
               break;
             case ConstantField { Rhs: { } rhs } constant:
@@ -695,6 +702,11 @@ public class ModularTerminationAnalysis {
         Dispatches = true;
         DispatchDescription = description;
       }
+    }
+
+    /// <summary>The member being visited has no body, and a refining module may give it one.</summary>
+    public void BodyToCome() {
+      Dispatch("no body, which a refining module may give it");
     }
 
     private readonly ModuleDefinition? callerModule;
