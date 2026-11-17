@@ -14,16 +14,14 @@ github-issue-211-m4b-false.dfy(12,48): Error: assertion might not hold
 
 Dafny program verifier finished with 0 verified, 8 errors
 sealed, refresh false, consistent false
-github-issue-211-m4b-sealed.dfy(7,26): Error: modular termination: class 'C' cannot extend sealed trait 'Library.Sealed' from another module; the defining trait must declare {:termination false}; @AssumeCrossModuleTermination cannot override sealing
-1 resolution/type errors detected in github-issue-211-m4b-sealed.dfy
+
+Dafny program verifier finished with 1 verified, 0 errors
 sealed-alias, refresh false, consistent false
-github-issue-211-m4b-sealed-alias.dfy(8,24): Error: modular termination: class 'C' cannot extend sealed trait 'Library.Sealed' from another module; the defining trait must declare {:termination false}; @AssumeCrossModuleTermination cannot override sealing
-1 resolution/type errors detected in github-issue-211-m4b-sealed-alias.dfy
+
+Dafny program verifier finished with 0 verified, 0 errors
 ancestors, refresh false, consistent false
-github-issue-211-m4b-ancestors.dfy(3,29): Error: modular termination: 'Open' cannot expose sealed ancestor 'Library.Sealed'; every non-object ancestor of a foreign implementation or extensible trait must declare {:termination false}
-github-issue-211-m4b-ancestors.dfy(5,29): Error: modular termination: 'Grandchild' cannot expose sealed ancestor 'Library.Child'; every non-object ancestor of a foreign implementation or extensible trait must declare {:termination false}
-github-issue-211-m4b-ancestors.dfy(5,29): Error: modular termination: 'Grandchild' cannot expose sealed ancestor 'Library.Sealed'; every non-object ancestor of a foreign implementation or extensible trait must declare {:termination false}
-3 resolution/type errors detected in github-issue-211-m4b-ancestors.dfy
+
+Dafny program verifier finished with 0 verified, 0 errors
 open-producer, refresh false, consistent false
 github-issue-211-m4b-open-producer.dfy(5,52): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
 
@@ -132,16 +130,14 @@ github-issue-211-m4b-false.dfy(12,48): Error: assertion might not hold
 
 Dafny program verifier finished with 0 verified, 8 errors
 sealed, refresh false, consistent true
-github-issue-211-m4b-sealed.dfy(7,26): Error: modular termination: class 'C' cannot extend sealed trait 'Library.Sealed' from another module; the defining trait must declare {:termination false}; @AssumeCrossModuleTermination cannot override sealing
-1 resolution/type errors detected in github-issue-211-m4b-sealed.dfy
+
+Dafny program verifier finished with 1 verified, 0 errors
 sealed-alias, refresh false, consistent true
-github-issue-211-m4b-sealed-alias.dfy(8,24): Error: modular termination: class 'C' cannot extend sealed trait 'Library.Sealed' from another module; the defining trait must declare {:termination false}; @AssumeCrossModuleTermination cannot override sealing
-1 resolution/type errors detected in github-issue-211-m4b-sealed-alias.dfy
+
+Dafny program verifier finished with 0 verified, 0 errors
 ancestors, refresh false, consistent true
-github-issue-211-m4b-ancestors.dfy(3,29): Error: modular termination: 'Open' cannot expose sealed ancestor 'Library.Sealed'; every non-object ancestor of a foreign implementation or extensible trait must declare {:termination false}
-github-issue-211-m4b-ancestors.dfy(5,29): Error: modular termination: 'Grandchild' cannot expose sealed ancestor 'Library.Child'; every non-object ancestor of a foreign implementation or extensible trait must declare {:termination false}
-github-issue-211-m4b-ancestors.dfy(5,29): Error: modular termination: 'Grandchild' cannot expose sealed ancestor 'Library.Sealed'; every non-object ancestor of a foreign implementation or extensible trait must declare {:termination false}
-3 resolution/type errors detected in github-issue-211-m4b-ancestors.dfy
+
+Dafny program verifier finished with 0 verified, 0 errors
 open-producer, refresh false, consistent true
 github-issue-211-m4b-open-producer.dfy(5,52): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
 
@@ -250,16 +246,14 @@ github-issue-211-m4b-false.dfy(12,48): Error: assertion might not hold
 
 Dafny program verifier finished with 0 verified, 8 errors
 sealed, refresh true, consistent false
-github-issue-211-m4b-sealed.dfy(7,26): Error: modular termination: class 'C' cannot extend sealed trait 'Library.Sealed' from another module; the defining trait must declare {:termination false}; @AssumeCrossModuleTermination cannot override sealing
-1 resolution/type errors detected in github-issue-211-m4b-sealed.dfy
+
+Dafny program verifier finished with 1 verified, 0 errors
 sealed-alias, refresh true, consistent false
-github-issue-211-m4b-sealed-alias.dfy(8,24): Error: modular termination: class 'C' cannot extend sealed trait 'Library.Sealed' from another module; the defining trait must declare {:termination false}; @AssumeCrossModuleTermination cannot override sealing
-1 resolution/type errors detected in github-issue-211-m4b-sealed-alias.dfy
+
+Dafny program verifier finished with 0 verified, 0 errors
 ancestors, refresh true, consistent false
-github-issue-211-m4b-ancestors.dfy(3,29): Error: modular termination: 'Open' cannot expose sealed ancestor 'Library.Sealed'; every non-object ancestor of a foreign implementation or extensible trait must declare {:termination false}
-github-issue-211-m4b-ancestors.dfy(5,29): Error: modular termination: 'Grandchild' cannot expose sealed ancestor 'Library.Child'; every non-object ancestor of a foreign implementation or extensible trait must declare {:termination false}
-github-issue-211-m4b-ancestors.dfy(5,29): Error: modular termination: 'Grandchild' cannot expose sealed ancestor 'Library.Sealed'; every non-object ancestor of a foreign implementation or extensible trait must declare {:termination false}
-3 resolution/type errors detected in github-issue-211-m4b-ancestors.dfy
+
+Dafny program verifier finished with 0 verified, 0 errors
 open-producer, refresh true, consistent false
 github-issue-211-m4b-open-producer.dfy(5,52): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
 
@@ -368,16 +362,14 @@ github-issue-211-m4b-false.dfy(12,48): Error: assertion might not hold
 
 Dafny program verifier finished with 0 verified, 8 errors
 sealed, refresh true, consistent true
-github-issue-211-m4b-sealed.dfy(7,26): Error: modular termination: class 'C' cannot extend sealed trait 'Library.Sealed' from another module; the defining trait must declare {:termination false}; @AssumeCrossModuleTermination cannot override sealing
-1 resolution/type errors detected in github-issue-211-m4b-sealed.dfy
+
+Dafny program verifier finished with 1 verified, 0 errors
 sealed-alias, refresh true, consistent true
-github-issue-211-m4b-sealed-alias.dfy(8,24): Error: modular termination: class 'C' cannot extend sealed trait 'Library.Sealed' from another module; the defining trait must declare {:termination false}; @AssumeCrossModuleTermination cannot override sealing
-1 resolution/type errors detected in github-issue-211-m4b-sealed-alias.dfy
+
+Dafny program verifier finished with 0 verified, 0 errors
 ancestors, refresh true, consistent true
-github-issue-211-m4b-ancestors.dfy(3,29): Error: modular termination: 'Open' cannot expose sealed ancestor 'Library.Sealed'; every non-object ancestor of a foreign implementation or extensible trait must declare {:termination false}
-github-issue-211-m4b-ancestors.dfy(5,29): Error: modular termination: 'Grandchild' cannot expose sealed ancestor 'Library.Child'; every non-object ancestor of a foreign implementation or extensible trait must declare {:termination false}
-github-issue-211-m4b-ancestors.dfy(5,29): Error: modular termination: 'Grandchild' cannot expose sealed ancestor 'Library.Sealed'; every non-object ancestor of a foreign implementation or extensible trait must declare {:termination false}
-3 resolution/type errors detected in github-issue-211-m4b-ancestors.dfy
+
+Dafny program verifier finished with 0 verified, 0 errors
 open-producer, refresh true, consistent true
 github-issue-211-m4b-open-producer.dfy(5,52): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
 

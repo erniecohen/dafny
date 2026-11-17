@@ -512,26 +512,48 @@ not concatenated.  A member has at most one `decreases {:global}` clause.  An ov
 that declares none inherits its parent's; one that declares its own must give a bound no
 greater than its parent's, as an override's ordinary decreases clause must.
 
-Under the option, a trait is _extensible_ exactly when its defining declaration has
-`{:termination false}`; this declares checked extensibility. Otherwise it is sealed against
-foreign extension. Every non-`object` ancestor of a foreign implementation must also be
-extensible. A same-module descendant may remain sealed, but an extensible descendant cannot
-expose a sealed ancestor. `@AssumeCrossModuleTermination` cannot override sealing. Aliases,
-export views and refinement preserve the declaration's policy.
+Under the option, any trait may be extended from any module, with no `{:termination false}`
+or `@AssumeCrossModuleTermination`. What an implementation may do depends on whether the member
+it implements declares a global bound:
 
-A call to an overridable instance slot of an extensible trait must go to a smaller global
-bound. Bodyful methods can be overridden and remain open; a fully defined function has a fixed
-target even when its body is hidden by `provides`. The callee's global bound, at the call's
-arguments, must be below the caller's, evaluated on entry to the caller.  A missing bound
-is above every other.  So a call from a member without a global bound to one with a
-global bound always passes, and a call to a member without one always fails.  This rejects
+* A member with a declared or inherited global bound binds every implementation, in the trait's
+  module (its _home_) and in any other (a _foreign_ implementation). A dispatched call to it must
+  go to a smaller bound.
+* A foreign implementation of a member with no bound must be a _leaf_: it makes no dispatched call
+  through a trait and applies no function value whose code is not known, itself or through the code
+  it calls, including its specifications and implicit evaluations. It cannot declare a bound of its own.
+  A home implementation keeps the ordinary check of its module. A member with a global bound may not
+  dispatch to such a member, which is TOP; a member without a bound may.
+* A member marked `{:termination_leaf}` is an explicit leaf. Every implementation, home or foreign,
+  must be a leaf, and its bound is BOTTOM, so any member may dispatch to it. It cannot declare a
+  global bound. The attribute may also be put on a function, method, constant, type or iterator to promise that it
+  is a leaf, which other leaves may then call across an import.
+
+These rules apply to every call, including a call of a least or greatest predicate, of its prefix
+predicate, and a co-call: the clusters that exempt those from the ordinary decreases check do not see
+calls across modules. An extreme predicate cannot declare a decreases clause, so it has no bound: a
+member with a global bound may call one only if it reaches no dispatched call, and may dispatch to an
+extreme predicate slot only if that slot is an explicit leaf. A least or greatest lemma's body, which
+is checked as its prefix lemma's, runs under the lemma's global bound.
+
+A foreign subtrait may redeclare a member with no bound and give it one. Calls through the subtrait
+then see that bound, but its implementations still implement the member with no bound, so they must
+be leaves and cannot declare a bound of their own.
+
+The legacy forms keep their meaning: an undeclared member of a trait with `{:termination false}`, or
+implemented by a type with `@AssumeCrossModuleTermination`, is exempt from the leaf rule, as an
+unchecked premise that `--warn-unchecked-termination` reports. Declared bounds still bind it.
+
+A missing bound is above every other.  So a call from a member with a global bound to a member
+without one always fails, and so does a foreign implementation of a member without one that calls back
+through a trait. This rejects
 the program below, in which no module's call graph has a cycle, but `Tie(x, y)` never
 terminates: whatever bounds `A` and `B` declare, one of the two dispatched calls goes up.
 
 <!-- %no-check -->
 ```dafny
 module Tr {
-  trait {:termination false} T {
+  trait T {
     function A(other: T): int
     function B(other: T): int
   }
@@ -556,6 +578,7 @@ module L {
 }
 ```
 
+Here `Y.A` and `X.B` are foreign implementations of members without a bound that are not leaves.
 With a parameter `n: nat` and `decreases {:global} n` on both members, and
 `other.A(this, n - 1)` and `other.B(this, n - 1)` under `n != 0`, the program verifies.
 
@@ -572,8 +595,8 @@ an unknown function-value application or an imported General operation. Dafny ch
 promise in its defining module. Locally inferred closed helpers remain available there;
 imported helpers need their own public promise. Exact calls to Closed code need no outer
 bound comparison, but still obey the ordinary termination discipline. Closed cannot be combined
-with callback bounds or promised by an overridable slot of an extensible trait. A permitted
-sealed override or refinement must preserve the promise.
+with callback bounds or promised by an overridable slot of a trait; such a slot may promise
+`{:termination_leaf}` instead. An override or refinement must preserve the promise.
 
 Within a module, Dafny can infer whether exact code reaches open dispatch. A local closed
 callee needs no outer comparison; a local forwarding helper needs a global bound of its own:
@@ -600,11 +623,9 @@ before. Bounds of different lengths are compared as decreases tuples are, with m
 above every value: a bound `n, 7` is at most `n`, but `n` is not at most `n, 0`. The method of a
 function's `by method` body has the function's bound.
 
-A least or greatest lemma may declare a global bound, but not a callback bound. Its body is verified
-as the body of its prefix lemma, which has the same bound, and a call `L#[k](...)` of the prefix lemma
-is checked as a call of `L`. A least or greatest predicate cannot declare a bound; it and its prefix
-predicate are TOP when they can reach a dispatched call. A co-recursive call is checked against the
-caller's bound as any other call is.
+A least or greatest lemma may declare a global bound and callback bounds. Its body is verified
+as the body of its prefix lemma, which has the same bounds, and a call `L#[k](...)` of the prefix lemma
+is checked as a call of `L`.
 
 A lemma with a global bound that can reach a dispatched call runs under that bound, and so does every
 instance of itself that its proof uses. So under the option its automatic induction hypothesis covers

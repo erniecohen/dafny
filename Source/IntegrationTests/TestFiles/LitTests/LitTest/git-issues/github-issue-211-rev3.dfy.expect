@@ -1,0 +1,88 @@
+revision 3
+rules: any trait extendable, foreign leaves, explicit leaves, TOP callers: verifies
+
+Dafny program verifier finished with 21 verified, 0 errors
+rules vacuity control: assert false fails
+github-issue-211-rev3-rules-false.dfy(47,4): Error: assertion might not hold
+
+Dafny program verifier finished with 20 verified, 1 error
+errors: foreign non-leaves, rule 7, leaf promises
+github-issue-211-rev3-errors.dfy(7,33): Error: modular termination: an explicit leaf ({:termination_leaf}) cannot have a 'decreases {:global}' bound; its bound is BOTTOM
+github-issue-211-rev3-errors.dfy(37,29): Error: modular termination: the {:termination_leaf} promise of 'NotLeaf' is not established ('Y.NotLeaf' -> dispatch of 'Tr.T.Run'); a leaf makes no dispatched call through a trait and applies no function value whose code is not known, itself or through the code it calls, including its specifications and implicit evaluations
+github-issue-211-rev3-errors.dfy(17,13): Error: modular termination: 'Size' implements 'Tr.T.Size' of another module, which has no 'decreases {:global}' bound, so it must be a leaf, but it is not ('Y.Y.Size' -> dispatch of 'Tr.T.Size'); declare a bound on 'Tr.T.Size', or make this implementation a leaf
+github-issue-211-rev3-errors.dfy(18,13): Error: modular termination: the {:termination_leaf} promise of 'Weight' is not established ('Y.Y.Weight' -> dispatch of explicit leaf 'Tr.T.Weight'); a leaf makes no dispatched call through a trait and applies no function value whose code is not known, itself or through the code it calls, including its specifications and implicit evaluations
+github-issue-211-rev3-errors.dfy(19,11): Error: modular termination: 'Run' implements 'Tr.T.Run' of another module, which has no 'decreases {:global}' bound, so it cannot declare one: that would raise the member above the leaf that its foreign implementations must be
+github-issue-211-rev3-errors.dfy(25,13): Error: modular termination: 'Size' implements 'Tr.T.Size' of another module, which has no 'decreases {:global}' bound, so it must be a leaf, but it is not ('Y.Z.Size' -> General contract of 'Tr.G' (publish {:termination_closed} for independent closed code)); declare a bound on 'Tr.T.Size', or make this implementation a leaf
+github-issue-211-rev3-errors.dfy(26,13): Error: modular termination: the {:termination_leaf} promise of 'Weight' is not established ('Y.Z.Weight' -> a call through a function value whose code is not known); a leaf makes no dispatched call through a trait and applies no function value whose code is not known, itself or through the code it calls, including its specifications and implicit evaluations
+github-issue-211-rev3-errors.dfy(27,11): Error: modular termination: 'Run' implements 'Tr.T.Run' of another module, which has no 'decreases {:global}' bound, so it must be a leaf, but it is not ('Y.Z.Run' -> dispatch of 'Tr.T.Run'); declare a bound on 'Tr.T.Run', or make this implementation a leaf
+github-issue-211-rev3-errors.dfy(32,13): Error: modular termination: 'Size' implements 'Tr.T.Size' of another module, which has no 'decreases {:global}' bound, so it must be a leaf, but it is not ('Y.W.Size' -> Closed contract of 'Tr.C', which does not promise {:termination_leaf}); declare a bound on 'Tr.T.Size', or make this implementation a leaf
+9 resolution/type errors detected in github-issue-211-rev3-errors.dfy
+tie without bounds: both foreign implementations rejected
+github-issue-211-rev3-tie.dfy(3,70): Error: modular termination: 'Go' implements 'Tr.T.Go' of another module, which has no 'decreases {:global}' bound, so it must be a leaf, but it is not ('A.A.Go' -> dispatch of 'Tr.T.Go'); declare a bound on 'Tr.T.Go', or make this implementation a leaf
+github-issue-211-rev3-tie.dfy(4,70): Error: modular termination: 'Go' implements 'Tr.T.Go' of another module, which has no 'decreases {:global}' bound, so it must be a leaf, but it is not ('B.B.Go' -> dispatch of 'Tr.T.Go'); declare a bound on 'Tr.T.Go', or make this implementation a leaf
+2 resolution/type errors detected in github-issue-211-rev3-tie.dfy
+p2, an unbounded member is TOP: rejected
+github-issue-211-rev3-p2.dfy(19,64): Error: decreases clause might not decrease (the dispatched callee has no 'decreases {:global}' bound, so under --modular-termination it is TOP, above the caller's bound; declare a bound on it, or make it an explicit leaf with {:termination_leaf})
+
+Dafny program verifier finished with 5 verified, 1 error
+p3, a declared bound binds the home implementation: rejected
+github-issue-211-rev3-p3.dfy(12,61): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+
+Dafny program verifier finished with 5 verified, 1 error
+legacy forms: {:termination false} keeps its rule; @AssumeCrossModuleTermination is a premise
+github-issue-211-rev3-legacy.dfy(3,29): Warning: trait 'T' has {:termination false} and no {:axiom} annotation: --modular-termination checks the calls dispatched through it only in code verified with that option
+github-issue-211-rev3-legacy.dfy(12,38): Warning: class 'B' has @AssumeCrossModuleTermination and no {:axiom} annotation: code verified without it, such as the module of a trait it extends, did not check the calls dispatched to it for termination
+github-issue-211-rev3-legacy.dfy(9,37): Error: decreases clause might not decrease (the dispatched callee has no 'decreases {:global}' bound, which --modular-termination requires of a member of a {:termination false} trait)
+github-issue-211-rev3-legacy.dfy(10,77): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+github-issue-211-rev3-legacy.dfy(15,77): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+
+Dafny program verifier finished with 5 verified, 3 errors
+ECOOP 2015 Fig. 4: verifies
+
+Dafny program verifier finished with 17 verified, 0 errors
+Fig. 4 vacuity control
+github-issue-211-rev3-fig4-false.dfy(32,4): Error: assertion might not hold
+
+Dafny program verifier finished with 16 verified, 1 error
+Fig. 4 with the level increment removed: rejected
+github-issue-211-rev3-fig4-loopy.dfy(22,86): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+github-issue-211-rev3-fig4-loopy.dfy(23,95): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+
+Dafny program verifier finished with 15 verified, 2 errors
+ECOOP 2015 Figs. 16-17, CPS with nested stock: verifies
+
+Dafny program verifier finished with 57 verified, 0 errors
+CPS vacuity control
+github-issue-211-rev3-cps-false.dfy(216,4): Error: assertion might not hold
+
+Dafny program verifier finished with 56 verified, 1 error
+CPS passing itself as its continuation: rejected
+github-issue-211-rev3-cps-loopy.dfy(183,32): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+
+Dafny program verifier finished with 56 verified, 1 error
+a bounded caller calling a home least predicate that reaches an unbounded dispatch: rejected
+github-issue-211-rev3-extreme-callee.dfy(20,70): Error: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so under --modular-termination it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
+
+Dafny program verifier finished with 7 verified, 1 error
+a bounded caller dispatching to an unbounded least predicate slot: rejected
+github-issue-211-rev3-extreme-slot.dfy(18,73): Error: decreases clause might not decrease (the dispatched callee has no 'decreases {:global}' bound, so under --modular-termination it is TOP, above the caller's bound; declare a bound on it, or make it an explicit leaf with {:termination_leaf})
+
+Dafny program verifier finished with 6 verified, 1 error
+a least lemma's body runs under its bound: rejected
+github-issue-211-rev3-prefix-lemma.dfy(8,91): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+
+Dafny program verifier finished with 2 verified, 1 error
+extreme predicates and lemmas within the rules: verifies
+
+Dafny program verifier finished with 14 verified, 0 errors
+extreme vacuity control: assert false fails
+github-issue-211-rev3-extreme-ok-false.dfy(34,89): Error: assertion might not hold
+
+Dafny program verifier finished with 13 verified, 1 error
+a foreign subtrait's bound on an unbounded member: implementations must still be leaves
+github-issue-211-rev3-subtrait.dfy(20,13): Error: modular termination: 'm' implements 'A.T.m' of another module, which has no 'decreases {:global}' bound, so it cannot declare one: that would raise the member above the leaf that its foreign implementations must be
+github-issue-211-rev3-subtrait.dfy(20,13): Error: modular termination: 'm' implements 'A.T.m' of another module, which has no 'decreases {:global}' bound, so it must be a leaf, but it is not ('C.K.m' -> dispatch of 'A.T.m'); declare a bound on 'A.T.m', or make this implementation a leaf
+github-issue-211-rev3-subtrait.dfy(20,46): Error: modular termination: in 'C.K.m', this may evaluate the default values of the components of type 'C.K', which can reach dispatch to implementations that other modules may provide and has no 'decreases {:global}' bound, so it cannot run under the caller's bound (same-bound rule)
+github-issue-211-rev3-subtrait.dfy(24,13): Error: modular termination: 'm' implements 'A.T.m' of another module, which has no 'decreases {:global}' bound, so it must be a leaf, but it is not ('C.K2.m' -> General contract of type 'B.U' (publish {:termination_closed} for independent closed code)); declare a bound on 'A.T.m', or make this implementation a leaf
+github-issue-211-rev3-subtrait.dfy(24,24): Error: modular termination: in 'C.K2.m', this may evaluate the default values of the components of type 'C.K2', which can reach dispatch to implementations that other modules may provide and has no 'decreases {:global}' bound, so it cannot run under the caller's bound (same-bound rule)
+5 resolution/type errors detected in github-issue-211-rev3-subtrait.dfy

@@ -112,7 +112,7 @@ elif suite == '456':
     check('rules', 4)
     check('rules-slot', 4)
     check('rules-imported', 4)
-    check('rules-callback', 2)
+    check('rules-callback', 4)
     check('accepted', 4, accepted=True)
 else:
     failures.append('unknown suite ' + suite)

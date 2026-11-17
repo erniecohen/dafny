@@ -338,10 +338,9 @@ public partial class BoogieGenerator {
           calleeEtran ?? etran);
       }
     }
-    // A call of a prefix lemma (a recursive call in the body of a least or greatest lemma, or one written with
-    // "#[k]") is checked like any other call: the prefix lemma has the bound of its lemma, and the same-bound rule
-    // keeps the bound from growing along the unfoldings (https://github.com/erniecohen/dafny/issues/456).
-    if (codeContext != null && (!isCoCall || options.Get(CommonOptionBag.ModularTermination))) {
+    // Under --modular-termination, a co-call (a call of a prefix lemma from a greatest or least lemma's body) gets
+    // the check of the global bounds too: the bounds order calls across modules, which no cluster sees.
+    if (codeContext != null) {
       CheckModularTermination(tok, codeContext, callee, receiver, substMap, directSubstMap, tySubst,
         builder.Context.CallerTerminationTranslator ?? etran, builder, etran);
       if (callee.Ins.Count == Args.Count) {

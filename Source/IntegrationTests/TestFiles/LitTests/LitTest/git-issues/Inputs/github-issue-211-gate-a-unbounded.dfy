@@ -1,5 +1,5 @@
-// The library calls S.G knowing every implementation: S is not open, so no other module may implement it.
-// If this were accepted, G(0) == G(0) + 1.
+// S.G has no bound, so an implementation in another module must be a leaf.  This one calls the library,
+// which dispatches to it.  If it were accepted, G(0) == G(0) + 1.
 module Client {
   import opened Lib
   class C extends S {

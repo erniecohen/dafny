@@ -76,3 +76,38 @@ module Client {
     assert false; // control
   }
 }
+// Callback bounds on a least and a greatest lemma: each applies its function parameter under the callback
+// bound, and the lambdas passed stay within it.
+module Callbacks {
+  import opened Lib
+  import opened Mid
+  function Up(t: T, n: nat): nat
+    decreases {:global} n + 1
+  {
+    t.G(n)
+  }
+  least lemma Walk(g: nat -> nat, a: nat, b: nat, x: nat)
+    requires Even(x)
+    decreases {:global} a + 1
+    decreases {:callback g} a
+  {
+    var y := g(0);
+  }
+  greatest lemma Co(g: nat -> nat, a: nat, b: nat)
+    ensures true
+    decreases {:global} a + 1
+    decreases {:callback g} a
+  {
+    var y := g(0);
+  }
+  lemma A09(t: T, x: nat) requires Even(x) decreases {:global} 5 { Walk(n => Up(t, 2), 3, 0, x); }
+  lemma A10(t: T, x: nat, k: ORDINAL) requires Even#[k](x) decreases {:global} 5 { Walk#[k](n => Up(t, 2), 3, 0, x); }
+  lemma A11(t: T, k: ORDINAL) decreases {:global} 5 { Co(n => Up(t, 2), 3, 0); Co#[k](n => Up(t, 2), 3, 0); }
+  lemma A12(t: T, x: nat)
+    requires Even(x)
+    decreases {:global} 5
+  {
+    Walk(n => Up(t, 2), 3, 0, x);
+    assert false; // control
+  }
+}

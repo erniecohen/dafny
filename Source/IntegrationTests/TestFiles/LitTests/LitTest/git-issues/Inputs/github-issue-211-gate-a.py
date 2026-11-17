@@ -2,7 +2,8 @@
 by a later extension.
 
 Builds the library under --modular-termination with each resolver, then verifies clients that extend its
-traits against the built library.  Each rejected client would prove false if its extension were accepted.
+traits against the built library.  Each rejected client would prove false if its extension were accepted.  One client is accepted on an unchecked
+premise that it states itself and that the default warning reports.
 Prints one line per check with its exit code and its error lines, and keeps every command and output in the
 output directory.
 """
@@ -36,16 +37,16 @@ def source(name):
     return str(sources / ('github-issue-211-gate-a-' + name + '.dfy'))
 
 
-def run(name, args, expected_exit, diagnostic=None, verified=None):
+def run(name, args, expected_exit, diagnostic=None, verified=None, warnings=False):
     counter[0] += 1
-    cmd = launcher + args + common
+    cmd = launcher + args + [flag for flag in common if not (warnings and flag.startswith('--warn-unchecked-termination'))]
     process = subprocess.run(cmd, cwd=output, capture_output=True, text=True, timeout=600)
     text = process.stdout + process.stderr
     log = output / ('%02d-%s.txt' % (counter[0], re.sub(r'[^a-z0-9]+', '-', name)))
     log.write_text(json.dumps(cmd) + '\n' + text)
     print('%s: exit %d' % (name, process.returncode))
     for line in text.splitlines():
-        if 'Error' in line or 'verified' in line:
+        if 'Error' in line or 'verified' in line or (warnings and 'Warning' in line):
             print('  ' + line.strip().replace(str(output) + '/', ''))
     if process.returncode != expected_exit:
         failures.append('%s: expected exit %d' % (name, expected_exit))
@@ -61,10 +62,11 @@ for resolver, flags in resolvers.items():
     library = str(output / ('lib-%s.doo' % resolver))
     plain = str(output / ('plain-%s.doo' % resolver))
 
-    def client(name, client_source, expected_exit, diagnostic=None, verified=None, lib=library, enabled=True):
+    def client(name, client_source, expected_exit, diagnostic=None, verified=None, lib=library, enabled=True,
+               warnings=False):
         run('%s: %s' % (resolver, name),
             ['verify'] + (['--modular-termination'] if enabled else []) + flags + ['--library', lib, source(client_source)],
-            expected_exit, diagnostic, verified)
+            expected_exit, diagnostic, verified, warnings)
 
     # The library is verified alone, and gets a termination record.
     run(resolver + ': build library', ['build', '-t:lib', '--modular-termination'] + flags
@@ -77,10 +79,18 @@ for resolver, flags in resolvers.items():
     client('implementation above the bound of its slot', 'raise', 4, "bound must not exceed the caller's")
     client('bound raised by a trait of the client', 'via', 4, 'bound must be below or equal to that in the trait')
     client('open trait of the client without a bound', 'via-open', 4, "bound must not exceed the caller's")
-    client('class extends a sealed trait', 'sealed', 2, "cannot extend sealed trait 'Lib.S' from another module")
-    client('class extends a sealed trait, assuming termination', 'assume', 2,
-           "cannot extend sealed trait 'Lib.S' from another module")
+    client('implementation of a member with no bound that is not a leaf', 'unbounded', 2,
+           "which has no 'decreases {:global}' bound, so it must be a leaf, but it is not")
+    client('implementation of a member with no bound that is a leaf', 'leaf', 4,
+           'leaf.dfy(15,4): Error: assertion might not hold', '2 verified, 1 error')
     client('module refines the library module', 'refine', 2, "module 'Ext' refines module 'Lib' of a library")
+
+    # The legacy premise.  @AssumeCrossModuleTermination keeps its meaning under the option: the calls dispatched
+    # to the class are not checked for termination, so this client verifies, 'assert false' included.  It is an
+    # assumption of the client, which the default warning reports; the check runs with the warning on, and the
+    # warning fails the run.
+    client('legacy premise, reported by the default warning', 'assume', 2,
+           'has @AssumeCrossModuleTermination and no {:axiom} annotation', '3 verified, 0 errors', warnings=True)
 
     # A library that carries no checked record is not admitted under the option, and a library with a record
     # is not admitted without it.

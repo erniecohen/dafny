@@ -56,11 +56,15 @@ rules-imported, both resolvers: exit 4
   B08 rejected: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so under --modular-termination it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
   B08 rejected: decreases clause might not decrease (--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
   B09 rejected: decreases clause might not decrease (--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
-rules-callback, both resolvers: exit 2
-  A19 rejected: a least lemma cannot declare a 'decreases {:callback}' clause
-  A20 rejected: a greatest lemma cannot declare a 'decreases {:callback}' clause
+rules-callback, both resolvers: exit 4
+  A19 rejected: decreases clause might not decrease (--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
+  A20 rejected: decreases clause might not decrease (--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
+  A21 rejected: decreases clause might not decrease (--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
+  A22 rejected: decreases clause might not decrease (--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
+  A23 rejected: decreases clause might not decrease (--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
 accepted, both resolvers: exit 4
   github-issue-456-accepted.dfy(70,4): Error: assertion might not hold
   github-issue-456-accepted.dfy(76,4): Error: assertion might not hold
-  Dafny program verifier finished with 22 verified, 2 errors
+  github-issue-456-accepted.dfy(111,4): Error: assertion might not hold
+  Dafny program verifier finished with 28 verified, 3 errors
 456: all marked members rejected

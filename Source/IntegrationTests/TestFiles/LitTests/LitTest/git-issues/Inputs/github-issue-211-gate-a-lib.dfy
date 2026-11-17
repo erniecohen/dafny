@@ -7,7 +7,7 @@ module Lib {
       decreases {:global} n
   }
 
-  // Sealed: only this module may implement G.
+  // No bound: an implementation of G in another module must be a leaf.
   trait S {
     function G(n: nat): nat
   }

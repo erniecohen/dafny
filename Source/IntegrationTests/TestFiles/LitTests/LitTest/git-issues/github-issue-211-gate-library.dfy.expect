@@ -12,12 +12,16 @@ legacy: bound raised by a trait of the client: exit 4
 legacy: open trait of the client without a bound: exit 4
   github-issue-211-gate-a-via-open.dfy(12,11): Error: decreases clause might not decrease (--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
   Dafny program verifier finished with 3 verified, 1 error
-legacy: class extends a sealed trait: exit 2
-  github-issue-211-gate-a-sealed.dfy(5,18): Error: modular termination: class 'C' cannot extend sealed trait 'Lib.S' from another module; the defining trait must declare {:termination false}; @AssumeCrossModuleTermination cannot override sealing
-legacy: class extends a sealed trait, assuming termination: exit 2
-  github-issue-211-gate-a-assume.dfy(4,48): Error: modular termination: class 'C' cannot extend sealed trait 'Lib.S' from another module; the defining trait must declare {:termination false}; @AssumeCrossModuleTermination cannot override sealing
+legacy: implementation of a member with no bound that is not a leaf: exit 2
+  github-issue-211-gate-a-unbounded.dfy(7,13): Error: modular termination: 'G' implements 'Lib.S.G' of another module, which has no 'decreases {:global}' bound, so it must be a leaf, but it is not ('Client.C.G' -> General contract of 'Lib.UseS' (publish {:termination_closed} for independent closed code)); declare a bound on 'Lib.S.G', or make this implementation a leaf
+legacy: implementation of a member with no bound that is a leaf: exit 4
+  github-issue-211-gate-a-leaf.dfy(15,4): Error: assertion might not hold
+  Dafny program verifier finished with 2 verified, 1 error
 legacy: module refines the library module: exit 2
   github-issue-211-gate-a-refine.dfy(3,7): Error: modular termination: module 'Ext' refines module 'Lib' of a library; under --modular-termination a module cannot refine or replace a library module, since the bodies it would inherit are not part of the library's termination contracts
+legacy: legacy premise, reported by the default warning: exit 2
+  github-issue-211-gate-a-assume.dfy(7,38): Warning: class 'C' has @AssumeCrossModuleTermination and no {:axiom} annotation: code verified without it, such as the module of a trait it extends, did not check the calls dispatched to it for termination
+  Dafny program verifier finished with 3 verified, 0 errors
 legacy: source library: exit 1
   CLI: Error: cannot use github-issue-211-gate-a-lib.dfy as a library under --modular-termination: a source library carries no checked termination record; build it into a .doo with 'dafny build --target:lib --modular-termination' and pass that instead
 legacy: build library without the option: exit 0
@@ -50,12 +54,16 @@ refresh: bound raised by a trait of the client: exit 4
 refresh: open trait of the client without a bound: exit 4
   github-issue-211-gate-a-via-open.dfy(12,11): Error: decreases clause might not decrease (--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
   Dafny program verifier finished with 3 verified, 1 error
-refresh: class extends a sealed trait: exit 2
-  github-issue-211-gate-a-sealed.dfy(5,18): Error: modular termination: class 'C' cannot extend sealed trait 'Lib.S' from another module; the defining trait must declare {:termination false}; @AssumeCrossModuleTermination cannot override sealing
-refresh: class extends a sealed trait, assuming termination: exit 2
-  github-issue-211-gate-a-assume.dfy(4,48): Error: modular termination: class 'C' cannot extend sealed trait 'Lib.S' from another module; the defining trait must declare {:termination false}; @AssumeCrossModuleTermination cannot override sealing
+refresh: implementation of a member with no bound that is not a leaf: exit 2
+  github-issue-211-gate-a-unbounded.dfy(7,13): Error: modular termination: 'G' implements 'Lib.S.G' of another module, which has no 'decreases {:global}' bound, so it must be a leaf, but it is not ('Client.C.G' -> General contract of 'Lib.UseS' (publish {:termination_closed} for independent closed code)); declare a bound on 'Lib.S.G', or make this implementation a leaf
+refresh: implementation of a member with no bound that is a leaf: exit 4
+  github-issue-211-gate-a-leaf.dfy(15,4): Error: assertion might not hold
+  Dafny program verifier finished with 2 verified, 1 error
 refresh: module refines the library module: exit 2
   github-issue-211-gate-a-refine.dfy(3,7): Error: modular termination: module 'Ext' refines module 'Lib' of a library; under --modular-termination a module cannot refine or replace a library module, since the bodies it would inherit are not part of the library's termination contracts
+refresh: legacy premise, reported by the default warning: exit 2
+  github-issue-211-gate-a-assume.dfy(7,38): Warning: class 'C' has @AssumeCrossModuleTermination and no {:axiom} annotation: code verified without it, such as the module of a trait it extends, did not check the calls dispatched to it for termination
+  Dafny program verifier finished with 3 verified, 0 errors
 refresh: source library: exit 1
   CLI: Error: cannot use github-issue-211-gate-a-lib.dfy as a library under --modular-termination: a source library carries no checked termination record; build it into a .doo with 'dafny build --target:lib --modular-termination' and pass that instead
 refresh: build library without the option: exit 0
@@ -74,4 +82,4 @@ refresh: least lemma of the library called from implementations of its slot: exi
   github-issue-211-gate-a-prefix.dfy(23,14): Error: decreases clause might not decrease (--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
   github-issue-211-gate-a-prefix.dfy(34,6): Error: assertion might not hold
   Dafny program verifier finished with 11 verified, 3 errors
-library gate: 30 checks, all passed
+library gate: 32 checks, all passed
