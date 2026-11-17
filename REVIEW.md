@@ -1172,3 +1172,34 @@ binding must "adhere" to the target, and its example bound `import A = Implement
 change updates `docs/DafnyRef/Modules.md` §4.6, `docs/DafnyRef/Refinement.md` §10.2,
 `docs/HowToFAQ/FAQImportAbstractModule.md` and `docs/HowToFAQ/onepage.md` to the nominal rule
 and adds `refines Interface` to the example; `docs/OnlineTutorial/Modules.md` already had it.
+
+## Names captured in inherited code ([issue 410](https://github.com/erniecohen/dafny/issues/410))
+
+A module `R refines B` gets clones of `B`'s declarations and resolves them again in its own
+scope.  A declaration that `R` adds, or a module that `R` binds to an abstract import, could
+capture a name that the inherited text used: a function or type with the name of one from an
+opened import, a nested module, a class member hiding a module-level constant, a member of an
+added parent trait, a local variable of a statement skeleton, or a constant or constructor that
+turns a pattern variable into a pattern.  The inherited proofs are assumed in `R`, so they then
+held of the new meaning, and `R` proved `false`.  The fix is the exact resolution-stability check
+that section 4.3 of the refinement design draft
+([pull request 401](https://github.com/erniecohen/dafny/pull/401)) defines and its open question
+2 recommends.  The refinement cloner records each inherited occurrence of a name (an identifier,
+a qualified name, a type name, a pattern identifier) with the node it was cloned from, and after
+`R` is resolved, `RefinementCaptureCheck` requires each one to denote the counterpart of what it
+denoted in `B`: the clone or refinement of a declaration of `B` or of a module nested in it; the
+clone of a local binder, or the local of `R` that a statement skeleton merged with it; the same
+declaration through an import that `R` keeps; the declaration of the same name in the module
+bound to an abstract import, which must refine its target; a member of the same name in the
+counterpart of its type, or a member that overrides it, including a member of a type synonym
+that refines an abstract type (`--synonym-refines-abstract-type`).  A pattern identifier keeps its
+kind.  A default `decreases` clause needs no check: `R` inherits the clause that `B` inferred, so
+defining a parameter's abstract type does not change it.  The error names the captured name and
+both declarations.  Its kind is **weakens only**: it rejects programs and adds no fact or axiom;
+the check only reads the resolved program, so an accepted program gets the same solver input.  It
+rejects one program of the suite, `exports/OpenImportRefined.dfy`, whose `RefinedF` proved
+`false` through a captured `f`; its harmless twin `Refined`, where `type T = int` captures the
+`T` of an opened import that is also `int`, is rejected too, because the rule compares
+declarations, not their expansions.  The hidden `--legacy-inherited-name-capture` option restores
+the old rule for comparison and migration.  The regression is `git-issues/github-issue-410.dfy`;
+the release note is `docs/dev/news/410.fix`.
