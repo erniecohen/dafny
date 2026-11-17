@@ -138,6 +138,7 @@ public static class DafnyCommands {
     CommonOptionBag.LegacyInheritedConstructorFields,
     CommonOptionBag.LegacyInheritedTerminationChecks,
     CommonOptionBag.LegacyInheritedNameCapture,
+    CommonOptionBag.LegacyUncheckedImportBinding,
     CommonOptionBag.ModularTermination,
     CommonOptionBag.ModularTerminationTrust,
     CommonOptionBag.InvariantConstructorInference,
