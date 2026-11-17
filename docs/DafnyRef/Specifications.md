@@ -949,8 +949,8 @@ the value it applies.
   cannot be the element type of a compiled set or the argument of a `(0)` or `(00)` type
   parameter. Definite assignment applies to its variables and fields. Ghost equality is allowed.
 - The compilers erase `bounded<O, F>` to `F`, with no wrapper and no run-time cost.
-- A function value that reads the heap cannot be stored in a field, but a bounded value can, also
-  one of type `bounded<O, A ~> B>`. Its formation checked its function in every later state, so a
+- A function value that reads the heap cannot be stored in a field, nor passed for a type parameter
+  whose values may be stored, but a bounded value can, also one of type `bounded<O, A ~> B>`. Its formation checked its function in every later state, so a
   cycle through the heap would apply it under its own bound or a larger one, which the rule for
   applications below rejects. Only the top-level arrow of `F` is exempt: the order type `O`, and the
   parameter and result types of `F`, are checked as before, so `bounded<nat, () -> (() ~> bool)>`

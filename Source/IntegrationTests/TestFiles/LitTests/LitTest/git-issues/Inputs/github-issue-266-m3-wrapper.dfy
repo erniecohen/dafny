@@ -102,3 +102,18 @@ module SubsetFunction {
     assert knot() == !knot();
   }
 }
+// The same through a generic setter, which only the check of type parameters that may be stored sees (https://github.com/erniecohen/dafny/issues/481); without that check, this proves false.
+module GenericSetter {
+  class Holder<T> {
+    ghost var f: T
+    constructor (ghost f: T) ensures this.f == f { this.f := f; }
+    method Set(ghost x: T) modifies this ensures f == x { f := x; }
+  }
+  method Main() ensures false {
+    var r := new Holder<bounded<nat, () -> (() ~> bool)>>(bounded.certify(0, () => (() => true))); // error: () ~> bool in the result, through the type parameter
+    ghost var knot := () reads * => if r.f().requires() then !r.f()() else false;
+    r.Set(bounded.certify(0, () => knot));
+    assert r.f.erase() == knot;
+    assert knot() == !knot();
+  }
+}

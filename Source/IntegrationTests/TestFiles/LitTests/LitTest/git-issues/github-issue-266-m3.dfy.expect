@@ -47,6 +47,7 @@ knots through the parameter and result types of a bounded function, both resolve
 github-issue-266-m3-wrapper.dfy(13,8): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
 github-issue-266-m3-wrapper.dfy(8,83): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
 github-issue-266-m3-wrapper.dfy(28,8): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+github-issue-266-m3-wrapper.dfy(26,8): Error: To prevent the creation of non-terminating functions, a type parameter whose values may be stored in memory cannot be instantiated with a type that contains a function with read effects: type parameter 'T' of 'Holder' is instantiated with 'bounded<nat, () -> () ~> bool>', and the mutable field 'f' of 'Holder' has a type that mentions it
 github-issue-266-m3-wrapper.dfy(42,9): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
 github-issue-266-m3-wrapper.dfy(37,41): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
 github-issue-266-m3-wrapper.dfy(52,9): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
@@ -56,10 +57,12 @@ github-issue-266-m3-wrapper.dfy(69,74): Error: To prevent the creation of non-te
 github-issue-266-m3-wrapper.dfy(85,23): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
 github-issue-266-m3-wrapper.dfy(99,8): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
 github-issue-266-m3-wrapper.dfy(94,67): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
-12 resolution/type errors detected in github-issue-266-m3-wrapper.dfy
+github-issue-266-m3-wrapper.dfy(113,8): Error: To prevent the creation of non-terminating functions, a type parameter whose values may be stored in memory cannot be instantiated with a type that contains a function with read effects: type parameter 'T' of 'Holder' is instantiated with 'bounded<nat, () -> () ~> bool>', and the mutable field 'f' of 'Holder' has a type that mentions it
+14 resolution/type errors detected in github-issue-266-m3-wrapper.dfy
 github-issue-266-m3-wrapper.dfy(13,8): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
 github-issue-266-m3-wrapper.dfy(8,83): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
 github-issue-266-m3-wrapper.dfy(28,8): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+github-issue-266-m3-wrapper.dfy(26,8): Error: To prevent the creation of non-terminating functions, a type parameter whose values may be stored in memory cannot be instantiated with a type that contains a function with read effects: type parameter 'T' of 'Holder' is instantiated with 'bounded<nat, () -> () ~> bool>', and the mutable field 'f' of 'Holder' has a type that mentions it
 github-issue-266-m3-wrapper.dfy(42,9): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
 github-issue-266-m3-wrapper.dfy(37,41): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
 github-issue-266-m3-wrapper.dfy(52,9): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
@@ -69,7 +72,8 @@ github-issue-266-m3-wrapper.dfy(69,74): Error: To prevent the creation of non-te
 github-issue-266-m3-wrapper.dfy(85,23): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
 github-issue-266-m3-wrapper.dfy(99,8): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
 github-issue-266-m3-wrapper.dfy(94,67): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
-12 resolution/type errors detected in github-issue-266-m3-wrapper.dfy
+github-issue-266-m3-wrapper.dfy(113,8): Error: To prevent the creation of non-terminating functions, a type parameter whose values may be stored in memory cannot be instantiated with a type that contains a function with read effects: type parameter 'T' of 'Holder' is instantiated with 'bounded<nat, () -> () ~> bool>', and the mutable field 'f' of 'Holder' has a type that mentions it
+14 resolution/type errors detected in github-issue-266-m3-wrapper.dfy
 stored bounded values, compiled
 
 Dafny program verifier finished with 6 verified, 0 errors
