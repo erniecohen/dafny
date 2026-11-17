@@ -5,6 +5,10 @@
 // RUN: %exits-with 4 %verify --function-extensionality-axiom --show-snippets=false --allow-axioms "%S/Inputs/github-issue-374-negative.dfy" >> "%t"
 // RUN: %exits-with 4 %verify --additional-axioms=true --show-snippets=false --allow-axioms "%S/Inputs/github-issue-374-axiom.dfy" >> "%t"
 // RUN: %verify --function-extensionality-axiom --show-snippets=false --allow-axioms "%S/Inputs/github-issue-374-axiom.dfy" >> "%t"
+// RUN: %verify --additional-axioms=true --show-snippets=false --allow-axioms "%S/Inputs/github-issue-374-positive.dfy" >> "%t"
+// RUN: %verify --function-extensionality-axiom --show-snippets=false --allow-axioms "%S/Inputs/github-issue-374-positive.dfy" >> "%t"
+// RUN: %exits-with 4 %verify --additional-axioms=true --show-snippets=false --allow-axioms "%S/Inputs/github-issue-374-malformed.dfy" >> "%t"
+// RUN: %exits-with 4 %verify --function-extensionality-axiom --show-snippets=false --allow-axioms "%S/Inputs/github-issue-374-malformed.dfy" >> "%t"
 // RUN: %diff "%s.expect" "%t"
 
 // Function domains (https://github.com/erniecohen/dafny/issues/374), with extensionality

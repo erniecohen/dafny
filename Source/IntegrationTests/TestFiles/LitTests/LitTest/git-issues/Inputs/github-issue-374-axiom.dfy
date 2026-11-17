@@ -24,6 +24,19 @@ lemma RealToBool(f: real -> bool, g: real -> bool)
 {
 }
 
+lemma BoolArguments(f: bool -> int, g: bool -> int)
+  requires forall x :: f(x) == g(x)
+  ensures f == g
+{
+}
+
+// ORDINAL cannot instantiate a type parameter, so only the axiom can state this.
+lemma OrdinalArguments(f: ORDINAL -> int, g: ORDINAL -> int)
+  requires forall x :: f(x) == g(x)
+  ensures f == g
+{
+}
+
 lemma NatRestrictions(f: nat -> int, g: nat -> int)
   requires forall x: nat :: f(x) == g(x)
   ensures Restrict<nat, int>(f) == Restrict<nat, int>(g)

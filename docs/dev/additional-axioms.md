@@ -1228,7 +1228,8 @@ With `--additional-axioms` (or `--function-extensionality-axiom`), in
   body-less ghost functions of the default class with signatures
   `Restrict<A, B>(f: A -> B): A -> B` and `ExactDom<A, B>(f: A -> B): bool`:
   - `$FunDom1(Restrict(A, B, f), bx) <==> $IsBox(bx, A)`, and `Restrict(A, B, f)`
-    agrees with `f` on `A` in application, precondition and reads;
+    agrees with `f` on `A` in application (its precondition and reads on `A` are
+    already true and empty, by its result type `A -> B`, so no axiom states them);
   - `$ExactDom1(A, f) ==> Restrict(A, B, f) == f`;
   - `ExactDom(A, B, f) <==> $ExactDom1(A, f)`.
   With the option off they are opaque functions, so a program that does not
@@ -1290,6 +1291,13 @@ false` after each live fact, including restrictions of datatype lambdas that dif
 at a box of another datatype, equal named functions over a datatype and over
 `nat`, a lambda equal to a named function, and equal lambdas over `int`) under both; and `Inputs/github-issue-374-axiom.dfy`,
 whose equalities fail under `--additional-axioms` alone and hold with the axiom.
+Every axiom above has a positive control, a lemma in these files that fails when
+that axiom alone is removed: `Inputs/github-issue-374-positive.dfy` covers the
+precondition and reads selectors of `TagHandle1` and `BasicHandle1` and the exact
+domains of `bool` and `real`, and `Inputs/github-issue-374-axiom.dfy` that of
+`ORDINAL`, which cannot instantiate a type parameter. The `{:functionDomain}` check
+has a negative control, `Inputs/github-issue-374-malformed.dfy`, whose declarations
+are each rejected under both options.
 `git-issues/github-issue-34.dfy` (`Std.Axioms.FunctionExtensionality`) is
 unchanged under both options. Under the axiom, its control that an uncalled
 lemma cannot prove `f == g` becomes provable, as intended.

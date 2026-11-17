@@ -301,7 +301,9 @@ public partial class BoogieGenerator {
   /// <summary>
   /// For Restrict(A, B, f):
   ///   $FunDom1(Restrict(A, B, f), bx) <==> $IsBox(bx, A)
-  ///   $IsBox(bx, A) ==> Apply1(t0, t1, heap, Restrict(A, B, f), bx) == Apply1(t0, t1, heap, f, bx), and so for Requires1 and Reads1
+  ///   $IsBox(bx, A) ==> Apply1(t0, t1, heap, Restrict(A, B, f), bx) == Apply1(t0, t1, heap, f, bx)
+  /// Requires1 and Reads1 of Restrict(A, B, f) on A need no axiom: its result type A -> B
+  /// already makes them true and empty there, as they are for f.
   ///   $ExactDom1(A, f) ==> Restrict(A, B, f) == f
   /// For ExactDom(A, B, f):
   ///   ExactDom(A, B, f) <==> $ExactDom1(A, f)
@@ -325,7 +327,7 @@ public partial class BoogieGenerator {
         AddOtherDefinition(GetOrCreateFunction(f), new Axiom(tok,
           BplForall(bvars, BplTrigger(dom), BplIff(dom, MkIs(bx, a, true))), "domain of " + name));
       }
-      void Selector(string selector, Bpl.Type ty, bool member) {
+      {
         var bvars = new List<Bpl.Variable>();
         var a = BplBoundVar("A", Predef.Ty, bvars);
         var b = BplBoundVar("B", Predef.Ty, bvars);
@@ -335,19 +337,11 @@ public partial class BoogieGenerator {
         var heap = BplBoundVar("heap", Predef.HeapType, bvars);
         var bx = BplBoundVar("bx", Predef.BoxType, bvars);
         var restricted = FunctionCall(tok, name, Predef.HandleType, a, b, fn);
-        Bpl.Expr lhs = FunctionCall(tok, selector, ty, t0, t1, heap, restricted, bx);
-        Bpl.Expr rhs = FunctionCall(tok, selector, ty, t0, t1, heap, fn, bx);
-        if (member) {
-          var o = BplBoundVar("o", Predef.BoxType, bvars);
-          lhs = IsSetMember(tok, lhs, o, true);
-          rhs = IsSetMember(tok, rhs, o, true);
-        }
+        var lhs = FunctionCall(tok, Apply(1), Predef.BoxType, t0, t1, heap, restricted, bx);
+        var rhs = FunctionCall(tok, Apply(1), Predef.BoxType, t0, t1, heap, fn, bx);
         AddOtherDefinition(GetOrCreateFunction(f), new Axiom(tok,
-          BplForall(bvars, BplTrigger(lhs), BplImp(MkIs(bx, a, true), Bpl.Expr.Eq(lhs, rhs))), selector + " of " + name));
+          BplForall(bvars, BplTrigger(lhs), BplImp(MkIs(bx, a, true), Bpl.Expr.Eq(lhs, rhs))), Apply(1) + " of " + name));
       }
-      Selector(Apply(1), Predef.BoxType, false);
-      Selector(Requires(1), Bpl.Type.Bool, false);
-      Selector(Reads(1), TrType(program.SystemModuleManager.ObjectSetType()), true);
       {
         var bvars = new List<Bpl.Variable>();
         var a = BplBoundVar("A", Predef.Ty, bvars);
