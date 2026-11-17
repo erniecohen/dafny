@@ -583,6 +583,29 @@ Generate module names in the older A_mB_mC style instead of the current A.B.C sc
 
 
     // Build the AccessibleMembers dictionary
+    if (group == null) {
+      BuildAccessibleMembers();
+    } else {
+      // The accessible members of a module include those of the modules it imports.  The members of a
+      // recursive module group import each other, so they repeat until a round adds nothing.
+      do {
+        if (BuildAccessibleMembers()) {
+          group.RoundChanged = true;
+        }
+        yield return "accessibleMembers*";
+      } while (group.RepeatRound);
+    }
+
+    PipelineProfile.ModulePhase(resolver.Options, exportSetName == null ? "accessibleMembers" : "exportAccessibleMembers");
+    resolver.ModuleResolveResult = true;
+  }
+
+  /// <summary>
+  /// Adds to AccessibleMembers what the declarations of the module make accessible.  Returns whether
+  /// that changed AccessibleMembers.
+  /// </summary>
+  private bool BuildAccessibleMembers() {
+    accessibleMembersChanged = false;
     foreach (var d in TopLevelDecls) {
       if (d is AliasModuleDecl || d is AbstractModuleDecl) {
         ModuleSignature importSig;
@@ -643,10 +666,10 @@ Generate module names in the older A_mB_mC style instead of the current A.B.C sc
         }
       }
     }
-
-    PipelineProfile.ModulePhase(resolver.Options, exportSetName == null ? "accessibleMembers" : "exportAccessibleMembers");
-    resolver.ModuleResolveResult = true;
+    return accessibleMembersChanged;
   }
+
+  private bool accessibleMembersChanged;
 
   private static NameSegment TopLevelDeclToNameSegment(TopLevelDecl decl, IOrigin tok) {
     var typeArgs = new List<Type>();
@@ -684,6 +707,7 @@ Generate module names in the older A_mB_mC style instead of the current A.B.C sc
       newVal = !oldVal.IsRevealed && newVal.IsRevealed ? newVal : oldVal;
     }
 
+    accessibleMembersChanged = accessibleMembersChanged || newVal != oldVal;
     AccessibleMembers[accessibleDecl] = newVal;
   }
 
