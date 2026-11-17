@@ -781,6 +781,7 @@ namespace Microsoft.Dafny {
               }
               var newF = CloneFunction(f, prevFunction, moreBody, replacementBody, prevFunction.Body == null, f.Attributes);
               newF.RefinementBase = member;
+              KeepTraitAxiomStatus(nw, f, prevFunction, newF);
               nw.Members[index] = newF;
             }
 
@@ -842,6 +843,7 @@ namespace Microsoft.Dafny {
               }
               var newM = CloneMethod(prevMethod, m.Ens, decreases, replacementBody, prevMethod.Body == null, m.Attributes);
               newM.RefinementBase = prevMethod;
+              KeepTraitAxiomStatus(nw, m, prevMethod, newM);
               nw.Members[index] = newM;
             }
           }
@@ -849,6 +851,23 @@ namespace Microsoft.Dafny {
       }
 
       return nw;
+    }
+
+    /// <summary>
+    /// Whether a bodiless trait member is a trait axiom (--inherited-trait-axioms) is fixed where the member is
+    /// first declared.  The merged member keeps the status of the member it refines, and a refinement may not
+    /// add {:axiom} to a trait member that stays bodiless: it would change which types must implement the
+    /// member.  (A refinement cannot remove {:axiom}, since the merged member keeps the attributes of both.)
+    /// </summary>
+    void KeepTraitAxiomStatus(TopLevelDeclWithMembers nw, MemberDecl refining, MemberDecl prev, MemberDecl merged) {
+      merged.DeclaredUnderInheritedTraitAxioms = prev.DeclaredUnderInheritedTraitAxioms;
+      if (nw is TraitDecl && (refining.DeclaredUnderInheritedTraitAxioms || prev.DeclaredUnderInheritedTraitAxioms) &&
+          !prev.HasStaticKeyword && refining.HasAxiomAttribute && !prev.HasAxiomAttribute &&
+          merged is (Function { Body: null } or MethodOrConstructor { Body: null })) {
+        Reporter.Error(MessageSource.RefinementTransformer, "ref_no_added_trait_axiom", refining.Origin,
+          $"under --inherited-trait-axioms, a refinement is not allowed to add {{:axiom}} to {prev.WhatKindAndName} of trait '{nw.Name}' unless it gives it a body: " +
+          "whether types that inherit the member must implement it is fixed where the member is first declared");
+      }
     }
     void CheckAgreement_TypeParameters(IOrigin tok, List<TypeParameter> old, List<TypeParameter> nw, string name, string thing) {
       Contract.Requires(tok != null);

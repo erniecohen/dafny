@@ -590,6 +590,10 @@ This is typically used to mark that a lemma with no body (and is therefore assum
 The key purpose of the `audit` command is to ensure that all assumptions are intentional and acknowledged.
 To improve assurance, however, try to provide a proof.
 
+* Under `--inherited-trait-axioms`, any [trait axiom](#sec-trait-axioms), and any class, datatype or newtype that inherits one without overriding it.
+The axiom is assumed of every such type, and nothing checks that it holds there.
+Overriding it with a proof, or giving the trait member a body, will improve assurance.
+
 * Any declaration marked with the `{:verify false}` attribute, which tells the verifier to skip verifying this declaration.
 Removing the attribute and providing a proof will improve assurance.
 
@@ -2444,6 +2448,16 @@ or the Dafny 4 syntax (`ghost function` and `function`)
   the synonym is rejected because it cannot declare members. Disabled by default. Use
   `synonym-refines-abstract-type = true` in a project file's `[options]` section. See
   [type refinement](#sec-module-refinement).
+
+* `--inherited-trait-axioms` - let a class, datatype or newtype inherit a bodiless ghost
+  member of a trait that is marked `{:axiom}` (a lemma, a ghost method, a ghost function or
+  predicate, or a two-state lemma, function or predicate, none of them extreme) without
+  implementing it. The member's specification is then a declared axiom about every type
+  that extends the trait; an override is still checked, and `dafny audit` lists the axiom
+  and each type that inherits it. Under the option, `{:axiom}` on a bodiless compiled or
+  extreme trait member is an error. Without it, every bodiless trait member must be
+  implemented. Disabled by default. Use `inherited-trait-axioms = true` in a project file's
+  `[options]` section. See [trait axioms](#sec-trait-axioms).
 
 * `--decreases-orders` - (experimental) accept a decreases component `e by O`, where `O`
   is a closed ghost expression of the standard library's trait type

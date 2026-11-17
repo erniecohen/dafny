@@ -601,6 +601,12 @@ TraitDecl<DeclModifierData dmodIn, ModuleDefinition/*!*/ module, out TraitDecl/*
   "}"
   (. trait = new TraitDecl(new SourceOrigin(dmodIn.FirstToken, t, name.ReportingRange), name, module, typeArgs, members, dmodIn.Attributes, isRefining, parentTraits);
      trait.BodyStartTok = bodyStart;
+     if (theOptions.Get(CommonOptionBag.InheritedTraitAxioms)) {
+       // a member's status as a trait axiom is fixed here, by the options of the file that declares it
+       foreach (var member in members) {
+         member.DeclaredUnderInheritedTraitAxioms = true;
+       }
+     }
     .)
   .
 

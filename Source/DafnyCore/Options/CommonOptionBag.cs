@@ -339,6 +339,9 @@ true - All class instances are raw pointers and need to be manually deallocated"
   public static readonly Option<bool> AncestorQualifiedModuleIds = new("--ancestor-qualified-module-ids", () => false,
     "Let a refines clause or import whose qualified module name starts with modules that enclose it, as in 'module A.C refines A.B', depend on the module it names instead of on the enclosing module, which is otherwise reported as a cycle. Disabled by default.");
 
+  public static readonly Option<bool> InheritedTraitAxioms = new("--inherited-trait-axioms", () => false,
+    "Let a class, datatype or newtype inherit a bodiless ghost trait member that is marked {:axiom} (a lemma, two-state lemma, ghost method, ghost function or predicate, or two-state function or predicate that is not extreme) without implementing it: the member's specification is a declared axiom of the trait. An override is still checked. 'dafny audit' lists the axiom and each type that inherits it. Under this option, {:axiom} on a bodiless compiled or extreme trait member is an error. Disabled by default.");
+
   public static readonly Option<bool> SynonymRefinesAbstractType = new("--synonym-refines-abstract-type", () => false,
     "In a refining module, let a type synonym 'type O<Xs> = T<Xs>' refine an abstract type O that has members, where T is a class, trait, datatype, newtype or abstract type declared in the refining module: the members of O are merged into T, as they would be into a declaration of O itself. Disabled by default.");
 
@@ -804,6 +807,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterGlobalOption(EnforceDeterminism, OptionCompatibility.CheckOptionLocalImpliesLibrary);
     OptionRegistry.RegisterGlobalOption(RelaxDefiniteAssignment, OptionCompatibility.OptionLibraryImpliesLocalError);
     OptionRegistry.RegisterGlobalOption(AllowAxioms, OptionCompatibility.OptionLibraryImpliesLocalError);
+    OptionRegistry.RegisterGlobalOption(InheritedTraitAxioms, OptionCompatibility.OptionLibraryImpliesLocalError);
     OptionRegistry.RegisterGlobalOption(AllowWarnings, OptionCompatibility.OptionLibraryImpliesLocalWarning);
     OptionRegistry.RegisterGlobalOption(AllowDeprecation, OptionCompatibility.OptionLibraryImpliesLocalWarning);
     OptionRegistry.RegisterGlobalOption(WarnShadowing, OptionCompatibility.OptionLibraryImpliesLocalWarning);

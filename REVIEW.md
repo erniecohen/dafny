@@ -823,6 +823,32 @@ The hidden `--legacy-elided-override-checks` option restores the old rule for co
 migration.  The regression is `git-issues/github-issue-404.dfy`; the release note is
 `docs/dev/news/404.fix`.
 
+## Opt-in inherited trait axioms ([issue 89](https://github.com/erniecohen/dafny/issues/89))
+
+A bodiless trait lemma marked `{:axiom}` is already an assumption for every caller that holds a
+value of the trait type, yet each class that extends the trait had to repeat it, with another
+`{:axiom}`.  Under `--inherited-trait-axioms`, default off, a non-static, bodiless, ghost trait
+member with `{:axiom}` (a lemma, two-state lemma, ghost method, ghost function or predicate, or
+two-state function or predicate; not an extreme one) is a trait axiom, and
+`ModuleResolver.ProcessInheritedTraitMembers` no longer asks the classes, datatypes and newtypes
+that inherit it to implement it.  The parser records on each trait member whether its file was
+parsed under the option (`MemberDecl.DeclaredUnderInheritedTraitAxioms`), and the cloner and the
+refinement transformer keep that flag, so the status of a member is fixed where it is declared: a
+library built with the option keeps its trait axioms, one built without it has none, and the
+option must agree between a library and its client.  Under the option, `{:axiom}` on a bodiless
+compiled or extreme trait member is an error unless the member is `{:extern}`.  A refinement
+keeps an inherited axiom, may give it a body or strengthen it, and may not add `{:axiom}` to a
+bodiless trait member of the module it refines (`RefinementTransformer.KeepTraitAxiomStatus`).
+The verifier is unchanged: no axiom, no fact and no obligation is added or removed, since the
+trait member's specification was already assumed at every call and an inherited member has no
+override check to skip.  `dafny audit` reports each trait axiom, and each type that inherits one
+without overriding it.  Its kind is **accepts more, opt-in**: with the option on, programs that
+were rejected for a missing implementation are accepted, on the strength of an assumption the
+program states and the audit lists; with the option off, the member flag is never set and every
+verdict and resource count is as before.  The option does not depend on the resolver, and the
+regression runs under both.  The regression is `git-issues/github-issue-89.dfy`; the release note
+is `docs/dev/news/89.feat`.
+
 ## Comparing crossed component types ([issue 47](https://github.com/erniecohen/dafny/issues/47))
 
 With `--type-system-refresh`, `==`, `!=`, `in`, `!in` and prefix equality required, in their final

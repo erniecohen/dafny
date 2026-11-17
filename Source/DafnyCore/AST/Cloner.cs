@@ -253,6 +253,7 @@ namespace Microsoft.Dafny {
         }
       });
       result.TerminationContract = member.TerminationContract;
+      result.DeclaredUnderInheritedTraitAxioms = member.DeclaredUnderInheritedTraitAxioms;
       if (!isReference && !ReferenceEquals(member, result)) {
         operatorClones?.Register(member, result);
         OpaqueMemberRewriter.RecordCopy(member, result);

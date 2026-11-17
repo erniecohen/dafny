@@ -2536,6 +2536,67 @@ termination checks remain applicable, as do existing restrictions on newtype
 bases and compilation support.
 
 <!--PDF NEWPAGE-->
+### 5.9.5. Trait axioms {#sec-trait-axioms}
+
+A class, datatype or newtype that extends a trait must implement every member that the
+trait declares without a body.  That includes a bodiless lemma marked `{:axiom}`: a caller
+that holds a value of the trait type may assume the lemma's postcondition without proof, but
+each class is still asked to repeat the lemma, and can do so only with another `{:axiom}`.
+
+With the option `--inherited-trait-axioms`, a bodiless ghost member of a trait that is marked
+`{:axiom}` is a _trait axiom_: its specification is a declared assumption about every type that
+extends the trait, and such a type inherits the member without implementing it.
+
+<!-- %no-check -->
+```dafny
+trait Measured {  // needs --inherited-trait-axioms
+  ghost function Size(): nat
+  lemma {:axiom} SizeIsPositive()
+    ensures Size() > 0
+}
+
+class Leaf extends Measured {
+  ghost function Size(): nat { 1 }
+  // no SizeIsPositive here: Leaf inherits the axiom
+}
+
+lemma Use(x: Leaf)
+  ensures x.Size() > 0
+{
+  x.SizeIsPositive();
+}
+```
+
+The rules are:
+
+* A trait axiom is a member of a trait that is not `static`, has no body, has the `{:axiom}`
+  attribute, and is a lemma, a two-state lemma, a ghost method, a ghost function or
+  predicate, or a two-state function or predicate.  For a function, the assumption is that
+  every type that extends the trait has a function with that signature and specification;
+  if the result type is empty, or the postcondition cannot be met, that assumption is false.
+* A compiled member cannot be a trait axiom, since there would be no code to run, and neither
+  can an extreme predicate or lemma.  Under the option, `{:axiom}` on such a member of a trait,
+  when it has no body, is an error, unless the member is also `{:extern}`.
+* A type that extends the trait may still override a trait axiom.  The override is checked
+  as any override is: its body against its own specification, and its specification against
+  the trait's.
+* Nothing checks that the axiom holds of a type that inherits it.  [`dafny audit`](#sec-dafny-audit)
+  lists each trait axiom where it is declared, and each class, datatype or newtype that
+  inherits one without overriding it.
+* A subtrait may redeclare an inherited bodiless member as a trait axiom, and may redeclare
+  a trait axiom without `{:axiom}`; the nearest declaration decides for the types below it.
+* Whether a member is a trait axiom is decided where it is declared, by the option in
+  effect for that file.  A library built with the option keeps its trait axioms for a client,
+  and one built without it has none; a library and its client must agree on the option.
+* In a [refining module](#sec-module-refinement), a trait axiom stays one.  The refinement
+  may give it a body, which is then verified, or strengthen its specification, which is a
+  new assumption that `dafny audit` lists.  It may not add `{:axiom}` to a bodiless trait
+  member of the refined module, and so cannot release the classes of that module from
+  implementing it.
+
+Without the option, nothing changes: the class above is rejected because it does not
+implement `SizeIsPositive`.
+
 ## 5.10. Array types ([grammar](#g-array-type)) {#sec-array-type}
 
 Dafny supports mutable fixed-length _array types_ of any positive
