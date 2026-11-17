@@ -1481,7 +1481,10 @@ namespace Microsoft.Dafny {
       public Expr TrExprSpecialFunctionCall(FunctionCallExpr expr) {
         Contract.Requires(expr.Function is SpecialFunction);
         string name = expr.Function.Name;
-        if (name == "RotateLeft") {
+        if (BoundedCallables.IsCertify(expr.Function)) {
+          return BoogieGenerator.TrBoundedCertify(GetToken(expr),
+            TrExpr(expr.Args[0]), expr.Args[0].Type, TrExpr(expr.Args[1]), expr.Args[1].Type);
+        } else if (name == "RotateLeft") {
           var w = expr.Type.AsBitVectorType.Width;
           Expression arg = expr.Args[0];
           return TrToFunctionCall(GetToken(expr), "LeftRotate_bv" + w, BoogieGenerator.BplBvType(w), TrExpr(expr.Receiver), BoogieGenerator.ConvertExpression(GetToken(expr), TrExpr(arg), arg.Type, expr.Type), false);

@@ -57,6 +57,12 @@ class HigherOrderHeapAllocationCheckerConstructor : ASTVisitor<IASTVisitorContex
       return Occurs(obj, t.Arg, left);
     } else {
       var t = (UserDefinedType)type;
+      if (BoundedCallables.IsBoundedDecl(t.ResolvedClass)) {
+        // A bounded value (--modular-termination, issue 266) cannot close a knot: applying it is checked to run
+        // under a bound strictly below that of the code applying it, and its function, once erased to a plain
+        // arrow, is a value of unknown code, which code with a bound cannot apply.
+        return false;
+      }
       if (left && Type.Equal_Improved(obj, t)) {
         return true;
       }

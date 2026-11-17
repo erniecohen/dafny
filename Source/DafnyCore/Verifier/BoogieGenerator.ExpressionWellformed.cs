@@ -1779,6 +1779,10 @@ namespace Microsoft.Dafny {
       Variables locals, BoogieStmtListBuilder builder, ExpressionTranslator etran) {
       Contract.Requires(expr.Function is SpecialFunction);
 
+      if (BoundedCallables.IsCertify(expr.Function)) {
+        CheckWellformedBoundedCertify(expr, options, locals, builder, etran);
+        return;
+      }
       CheckWellformed(expr.Receiver, options, locals, builder, etran);
       foreach (var arg in expr.Args.Where(arg => arg is not DefaultValueExpression)) {
         CheckWellformed(arg, options, locals, builder, etran);
