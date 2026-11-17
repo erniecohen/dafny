@@ -5,6 +5,9 @@
 //
 //-----------------------------------------------------------------------------
 
+using System.Collections.Generic;
+using System.Linq;
+
 namespace Microsoft.Dafny;
 
 /// <summary>
@@ -23,9 +26,11 @@ namespace Microsoft.Dafny;
 /// </summary>
 class HigherOrderHeapAllocationCheckerConstructor : ASTVisitor<IASTVisitorContext> {
   private readonly ErrorReporter reporter;
+  private readonly bool legacy;
 
-  public HigherOrderHeapAllocationCheckerConstructor(ErrorReporter reporter) {
+  public HigherOrderHeapAllocationCheckerConstructor(ErrorReporter reporter, DafnyOptions options) {
     this.reporter = reporter;
+    legacy = options.Get(CommonOptionBag.LegacyStoredFunctionCallbacks);
   }
 
   public override IASTVisitorContext GetContext(IASTVisitorContext astVisitorContext, bool inFunctionPostcondition) {
@@ -72,6 +77,95 @@ class HigherOrderHeapAllocationCheckerConstructor : ASTVisitor<IASTVisitorContex
     }
   }
 
+  /// <summary>
+  /// The search that Occurs makes, extended to the declarations of the types it meets
+  /// (https://github.com/erniecohen/dafny/issues/453).  A function value that a constructor stores
+  /// in a field can be applied, by a function of the object, to a value from which the function
+  /// value reaches the object again without reading the heap: through the arguments of a datatype
+  /// constructor or the components of a tuple, the constants of a class or trait, or the base type
+  /// of a newtype.  Then neither call has a termination check, and the two functions are a cycle.
+  /// So, to the left of an arrow, the search follows those types, and it fails at the class of the
+  /// object, with any type arguments, and at any trait type or abstract type, which may stand for
+  /// such a type.  Elsewhere in the type of the stored value it looks for function values the same
+  /// way, through the same declarations; there the type arguments of a trait type or an abstract
+  /// type are taken to be left of an arrow, because an implementation or a definition may store a
+  /// function of them.  A type parameter of the enclosing declaration is not followed: the class
+  /// that is instantiated with the object's type is checked where an instance is stored.  The
+  /// hidden --legacy-stored-function-callbacks restores the search that Occurs makes alone.
+  /// </summary>
+  private sealed class Reach {
+    public readonly TopLevelDecl ObjDecl;
+    private readonly HashSet<(string, bool)> visited = [];
+
+    public Reach(Type obj) {
+      ObjDecl = Declaration(obj as UserDefinedType);
+    }
+
+    private static TopLevelDecl Declaration(UserDefinedType type) {
+      return type?.ResolvedClass is NonNullTypeDecl nonNull ? nonNull.Class : type?.ResolvedClass;
+    }
+
+    /// <summary>
+    /// The declaration of the type left of an arrow at which the search fails, or null.
+    /// </summary>
+    public TopLevelDecl Occurs(Type rhs, bool left) {
+      var type = rhs.NormalizeExpand();
+      if (type is BasicType) {
+        return null;
+      }
+      if (type is MapType map) {
+        return Occurs(map.Domain, left) ?? Occurs(map.Range, left);
+      }
+      if (type is CollectionType collection) {
+        return Occurs(collection.Arg, left);
+      }
+      if (type is not UserDefinedType udt) {
+        return null;
+      }
+      if (!visited.Add((udt.ToString(), left))) {
+        return null;
+      }
+      var decl = Declaration(udt);
+      if (left && ((ObjDecl != null && decl == ObjDecl) || decl is TraitDecl || decl is AbstractTypeDecl)) {
+        return decl;
+      }
+      if (udt.IsArrowType) {
+        return udt.TypeArgs.Select(typeArg => Occurs(typeArg, true)).FirstOrDefault(t => t != null);
+      }
+      var argumentsLeft = left || decl is TraitDecl || decl is AbstractTypeDecl;
+      var found = udt.TypeArgs.Select(typeArg => Occurs(typeArg, argumentsLeft)).FirstOrDefault(t => t != null);
+      if (found != null || decl is not TopLevelDeclWithMembers withMembers || decl is TraitDecl || decl is AbstractTypeDecl) {
+        return found;
+      }
+      var subst = TypeParameter.SubstitutionMap(withMembers.TypeArgs, udt.TypeArgs);
+      return Components(withMembers, subst).Select(component => Occurs(component, left)).FirstOrDefault(t => t != null);
+    }
+
+    /// <summary>
+    /// The types of the values that a function can get, without reading the heap, from a value of
+    /// the type that "decl" declares: the arguments of its constructors, its base type, and its
+    /// constants, with those of its parent traits.
+    /// </summary>
+    private static IEnumerable<Type> Components(TopLevelDeclWithMembers decl, Dictionary<TypeParameter, Type> subst) {
+      var types = new List<Type>();
+      if (decl is DatatypeDecl datatype) {
+        types.AddRange(datatype.Ctors.SelectMany(ctor => ctor.Formals).Select(formal => formal.Type.Subst(subst)));
+      }
+      if (decl is NewtypeDecl { BaseType: { } baseType }) {
+        types.Add(baseType.Subst(subst));
+      }
+      types.AddRange(decl.Members.OfType<Field>().Where(field => !field.IsStatic && !field.IsMutable)
+        .Select(field => field.Type.Subst(subst)));
+      foreach (var parent in decl.ParentTypes(decl.TypeArgs.ConvertAll(tp => (Type)new UserDefinedType(tp)), false)) {
+        if (parent.NormalizeExpand() is UserDefinedType { ResolvedClass: TopLevelDeclWithMembers parentDecl } parentType) {
+          var parentSubst = TypeParameter.SubstitutionMap(parentDecl.TypeArgs, parentType.TypeArgs.ConvertAll(t => t.Subst(subst)));
+          types.AddRange(Components(parentDecl, parentSubst));
+        }
+      }
+      return types;
+    }
+  }
+
   protected override bool VisitOneStatement(Statement stmt, IASTVisitorContext context) {
 
     // Assigments to constant fields in constructors boil down to an assignment.
@@ -97,6 +191,11 @@ class HigherOrderHeapAllocationCheckerConstructor : ASTVisitor<IASTVisitorContex
           if (Occurs(lhsType, type, false)) {
             reporter.Error(MessageSource.Resolver, stmt,
               "To prevent the creation of non-terminating functions, storing functions into an object's fields that reads the object is disallowed");
+          } else if (!legacy && new Reach(lhsType) is var reach && reach.Occurs(type, false) is { } via) {
+            reporter.Error(MessageSource.Resolver, stmt,
+              "To prevent the creation of non-terminating functions, storing functions into an object's fields that reads the object is disallowed: " +
+              $"a function in the stored value takes an argument from which a function can reach a value of type '{via.Name}' without reading the heap" +
+              (via == reach.ObjDecl ? "" : ", and such a value may be the object"));
           }
         }
       }

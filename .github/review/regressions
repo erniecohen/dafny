@@ -749,3 +749,6 @@ git-issues/github-issue-413.dfy
 
 # A refining module that adds a field subject to definite assignment to a class verifies the constructor it inherits unchanged, which cannot assign the field; dafny verify skipped the copy and proved false (https://github.com/erniecohen/dafny/issues/411).
 git-issues/github-issue-411.dfy
+
+# A constructor that stores a function in a field is rejected when a function of the object could apply it to a value that reaches the object again, through a datatype, a tuple, the constants of another object, a newtype, or a generic class or trait; the old check looked only at the function's type and its type arguments, so false was provable (https://github.com/erniecohen/dafny/issues/453).
+git-issues/github-issue-453.dfy
