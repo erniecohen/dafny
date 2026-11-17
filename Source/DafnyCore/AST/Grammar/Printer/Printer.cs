@@ -726,6 +726,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
       PrintClassMethodHelper(c is TraitDecl ? "trait" : "class", c.Attributes, c.Name, c.TypeArgs);
       if (c.IsRefining) {
         wr.Write(" ...");
+        PrintExtendsClause(c, c.ParentTraitsFromRefinementBase);
       } else {
         PrintExtendsClause(c);
       }
@@ -750,9 +751,9 @@ NoGhost - disable printing of functions, ghost methods, and proof
       }
     }
 
-    private void PrintExtendsClause(TopLevelDeclWithMembers c) {
+    private void PrintExtendsClause(TopLevelDeclWithMembers c, int skip = 0) {
       string sep = " extends ";
-      foreach (var trait in c.Traits) {
+      foreach (var trait in c.Traits.Skip(skip)) {
         wr.Write(sep);
         PrintType(trait);
         sep = ", ";

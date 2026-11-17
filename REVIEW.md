@@ -913,6 +913,41 @@ verdict and resource count is as before.  The option does not depend on the reso
 regression runs under both.  The regression is `git-issues/github-issue-89.dfy`; the release note
 is `docs/dev/news/89.feat`.
 
+## Opt-in added parents in a refinement ([issue 88](https://github.com/erniecohen/dafny/issues/88))
+
+A refining module could give a type a parent trait only by refining an abstract type into a class;
+`trait T ... extends S { }` was a parse error.  Under `--refinement-extends`, default off, the
+grammar of a class and of a trait accepts an `extends` clause after `...`, and
+`RefinementTransformer.MergeClass` puts the parents of the refined declaration first and the added
+ones after them (`TopLevelDecl.ParentTraitsFromRefinementBase` records how many were inherited, so
+that the printer, and with it a `.doo` library, writes only the added ones after `...`).  The
+merged declaration is then an ordinary declaration of the refining module with those parents, and
+every existing rule for an `extends` clause applies to it: cycles, type arguments, one
+instantiation per generic parent, cross-module parents, members that a class must implement,
+members that may not be redeclared, and the cardinality admission of general traits.  One rule is
+new: a refinement may not make a trait a reference type (`ref_added_parent_makes_reference_type`),
+because a module that imports the base abstractly may have declared a datatype below the trait.
+
+What makes the feature sound is that the obligations an added parent creates are checked in the
+refining module although the text they are checked at is inherited, and those checks are the
+fixes of [issue 404](https://github.com/erniecohen/dafny/issues/404) (override checks of members
+that become overrides), [issue 411](https://github.com/erniecohen/dafny/issues/411) (definite
+assignment of the parent's fields in inherited constructors),
+[issue 409](https://github.com/erniecohen/dafny/issues/409) (termination of inherited calls that
+the new overrides put on a cycle), [issue 410](https://github.com/erniecohen/dafny/issues/410) (a
+member of the parent capturing a name in inherited text) and
+[issue 408](https://github.com/erniecohen/dafny/issues/408) (an abstract import bound to a module
+that adds a parent).  The change adds no check of its own for them and must not be used without
+them: with their `--legacy-*` opt-outs, the regression's `WouldBeBad` methods prove `false`.  The
+verifier is unchanged: an added parent yields the axioms that the same parent yields on a new
+declaration, and no axiom of the base is removed or weakened.  Its kind is **accepts more,
+opt-in**: with the option off the new grammar branch reports a parse error, no merged declaration
+changes, and every verdict and resource count is as before.  The option does not depend on the
+resolver, and the regression runs under both.  Not covered: datatypes and newtypes (they keep the
+old grammar), and the interactions with `--modular-termination` bounds and with member invariants,
+which are later stages of the plan.  The regression is `git-issues/github-issue-88.dfy`; the
+release note is `docs/dev/news/88.feat`.
+
 ## Comparing crossed component types ([issue 47](https://github.com/erniecohen/dafny/issues/47))
 
 With `--type-system-refresh`, `==`, `!=`, `in`, `!in` and prefix equality required, in their final

@@ -140,6 +140,7 @@ public class ParseErrors {
     p_internal_exception,
     p_file_has_no_code,
     p_general_traits_datatype,
+    p_refinement_extends,
     p_general_traits_full,
     p_decreases_without_to,
     p_binding_in_decreases_to,
@@ -162,6 +163,12 @@ Such repetition would be superfluous even if allowed.
     @"
 Only modules may be declared abstract.
 ".TrimStart(), Remove(true));
+
+    Add(ErrorId.p_refinement_extends,
+      @"
+A class or trait declaration that refines another (`...`) may add parent traits to it,
+as in `trait T ... extends S { }`, only with the option --refinement-extends.
+".TrimStart());
 
     Add(ErrorId.p_general_traits_datatype,
       @"

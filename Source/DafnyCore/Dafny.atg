@@ -540,6 +540,13 @@ ClassDecl<DeclModifierData dmodClass, ModuleDefinition/*!*/ module, out TopLevel
   [ GenericParameters<typeArgs, true> ]
   [ ExtendsClause<parentTraits, null>
   | ellipsis                    (. isRefining = true; .)
+    [                           (. if (!theOptions.Get(CommonOptionBag.RefinementExtends)) {
+                                     SemErr(ErrorId.p_refinement_extends, la,
+                                       "a refining declaration (`...`) may add parent traits only with --refinement-extends");
+                                   }
+                                .)
+      ExtendsClause<parentTraits, null>
+    ]
   ]
   SYNC
   "{"                                            (. bodyStart = t;  .)
@@ -591,6 +598,13 @@ TraitDecl<DeclModifierData dmodIn, ModuleDefinition/*!*/ module, out TraitDecl/*
   [ GenericParameters<typeArgs, true> ]
   [ ExtendsClause<parentTraits, null>
   | ellipsis                    (. isRefining = true; .)
+    [                           (. if (!theOptions.Get(CommonOptionBag.RefinementExtends)) {
+                                     SemErr(ErrorId.p_refinement_extends, la,
+                                       "a refining declaration (`...`) may add parent traits only with --refinement-extends");
+                                   }
+                                .)
+      ExtendsClause<parentTraits, null>
+    ]
   ]
   "{"                                            (. bodyStart = t; .)
     { (. dmod = new DeclModifierData(); .)

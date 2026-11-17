@@ -2459,6 +2459,15 @@ or the Dafny 4 syntax (`ghost function` and `function`)
   implemented. Disabled by default. Use `inherited-trait-axioms = true` in a project file's
   `[options]` section. See [trait axioms](#sec-trait-axioms).
 
+* `--refinement-extends` - let a class or trait declaration in a refining module add parent
+  traits to the declaration it refines, as in `trait T ... extends S { }`. The parents of the
+  refined declaration are kept, and the added ones follow them. Every check that an added
+  parent calls for (members to implement, override checks, fields to assign, termination) is
+  made in the refining module, also for members it inherits. A refinement cannot make a
+  trait a reference type. Without the option, an `extends` clause after `...` is a parse
+  error. Disabled by default. Use `refinement-extends = true` in a project file's
+  `[options]` section. See [refinement of classes and traits](#sec-module-refinement).
+
 * `--decreases-orders` - (experimental) accept a decreases component `e by O`, where `O`
   is a closed ghost expression of the standard library's trait type
   `Std.Termination.Orders.Wfo<T>` and `e` has type `T`. A call or loop iteration must make
