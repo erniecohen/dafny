@@ -70,6 +70,20 @@ class HigherOrderHeapAllocationChecker : ASTVisitor<IASTVisitorContext> {
       if (t.IsArrowType && !t.IsArrowTypeWithoutReadEffects) {
         return true;
       }
+      if (BoundedCallables.IsBoundedDecl(t.ResolvedClass)) {
+        // Under --modular-termination, the function of a bounded value runs under its bound in every later
+        // state: its formation checks a lambda's body in every successor heap, against the bound evaluated when
+        // it is formed, and each application, from whatever field or element it is read, checks the bound it
+        // reads to be below that of the code applying it.  A cycle through the heap would apply a value under
+        // its own bound or a smaller one (issue 266, M3).  Only the top-level arrow of the function type is
+        // exempt: the order type and the function's parameter and result types may hold raw heap-reading
+        // functions, which the bounded function could hand out to code that applies them without a bound, as in
+        // "bounded<nat, () -> (() ~> bool)>".  They are searched as any other type is, inside datatypes, newtypes
+        // and subset types too (issue 479).
+        var function = t.TypeArgs[1].NormalizeExpandKeepConstraints();
+        var components = function.IsArrowType ? function.AsArrowType.TypeArgs : [function];
+        return ContainsRead(t.TypeArgs[0], visited) || components.Exists(component => ContainsRead(component, visited));
+      }
       if (t.TypeArgs.Exists(typeArg => ContainsRead(typeArg, visited))) {
         return true;
       }

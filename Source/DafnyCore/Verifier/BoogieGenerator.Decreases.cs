@@ -346,6 +346,9 @@ public partial class BoogieGenerator {
   // call evaluates its arguments, and the bounds under which the lambda bodies being checked run.
   private readonly Dictionary<LambdaExpr, List<Expression>> modularTerminationLambdaBounds = new(ReferenceEqualityComparer.Instance);
   private readonly List<List<Expression>> modularTerminationLambdaStack = [];
+  // Issue 266, M3: inside a lambda, the callback bounds of the enclosing callable's parameters, evaluated on entry by
+  // the translator of the code around the outermost lambda.
+  private readonly Dictionary<IVariable, List<Expression>> modularTerminationCallbackSnapshots = new();
 
   /// <summary>
   /// The bound under which the code being checked runs, if it is inside a lambda passed for a parameter with a
@@ -365,12 +368,20 @@ public partial class BoogieGenerator {
       return;
     }
     var bound = modularTerminationLambdaBounds.GetValueOrDefault(lambda) ?? CurrentLambdaBound;
-    if (bound == null && !InsideLambda && codeContext is ICallable caller && GlobalBound(caller) is { } callerBound) {
+    if (!InsideLambda && codeContext is ICallable caller) {
       var oldCaller = codeContext is MethodOrConstructor and not TwoStateLemma;
-      bound = callerBound.ConvertAll(e => {
+      List<Expression> OnEntry(List<Expression> exprs) => exprs.ConvertAll(e => {
         var onEntry = oldCaller ? new OldExpr(e.Origin, e) { Type = e.Type } : e;
         return DecreasesByExpr.WithOrderOf(e, new BoogieWrapper(etran.TrExpr(onEntry), e.Type));
       });
+      if (bound == null && GlobalBound(caller) is { } callerBound) {
+        bound = OnEntry(callerBound);
+      }
+      for (var k = 0; k < caller.Ins.Count; k++) {
+        if (CallbackBound(caller, k) is { } callbackBound) {
+          modularTerminationCallbackSnapshots[caller.Ins[k]] = OnEntry(callbackBound);
+        }
+      }
     }
     modularTerminationLambdaStack.Add(bound);
   }
@@ -380,6 +391,24 @@ public partial class BoogieGenerator {
       return;
     }
     modularTerminationLambdaStack.RemoveAt(modularTerminationLambdaStack.Count - 1);
+    if (!InsideLambda) {
+      modularTerminationCallbackSnapshots.Clear();
+    }
+  }
+
+  /// <summary>
+  /// The callback bound of the in-parameter "formal" (at "index" of "caller"), evaluated on entry to "caller": as
+  /// snapshotted for the lambda being checked, if any, or else under "old" in a method.
+  /// </summary>
+  List<Expression> CallbackBoundOnEntry(ICallable caller, ICodeContext codeContext, Formal formal, int index) {
+    if (InsideLambda) {
+      return modularTerminationCallbackSnapshots.GetValueOrDefault(formal);
+    }
+    if (CallbackBound(caller, index) is not { } callbackBound) {
+      return null;
+    }
+    var oldCaller = codeContext is MethodOrConstructor and not TwoStateLemma;
+    return oldCaller ? callbackBound.ConvertAll(e => (Expression)new OldExpr(e.Origin, e) { Type = e.Type }) : callbackBound;
   }
 
   /// <summary>
@@ -446,8 +475,8 @@ public partial class BoogieGenerator {
 
   /// <summary>
   /// Under --modular-termination, at a call of "callee": an in-parameter of the caller with a callback bound, passed
-  /// for a parameter of the callee with one, must not go to a larger bound (outside a lambda; the resolver rejects
-  /// the other arguments that are neither lambdas nor known code): the caller's callback bound, evaluated on entry,
+  /// for a parameter of the callee with one, must not go to a larger bound (the resolver rejects the other
+  /// arguments that are neither lambdas nor known code): the caller's callback bound, evaluated on entry,
   /// must be at most the callee's, at the call's arguments.
   /// </summary>
   void CheckCallbackArguments(IOrigin tok, ICodeContext codeContext, MemberDecl callee, List<Expression> args,
@@ -456,7 +485,7 @@ public partial class BoogieGenerator {
                               BoogieStmtListBuilder builder) {
     CheckBoundedArguments(tok, callee, args, receiverReplacement, substMap, typeMap, etranCurrent, builder);
     if (!options.Get(CommonOptionBag.ModularTermination) || codeContext is not ICallable caller ||
-        callee is not ICallable callable || InsideLambda) {
+        callee is not ICallable callable) {
       return;
     }
     for (var i = 0; i < args.Count && i < callable.Ins.Count; i++) {
@@ -464,14 +493,12 @@ public partial class BoogieGenerator {
         continue;
       }
       var k = caller.Ins.IndexOf(formal);
-      if (k < 0 || CallbackBound(caller, k) is not { } callerBound) {
+      if (k < 0 || CallbackBoundOnEntry(caller, codeContext, formal, k) is not { } lower) {
         continue;
       }
       // Both sides in the caller's terms: the callee's bound at the call's arguments, in the current state; the
       // caller's on entry.
       var upper = calleeBound.ConvertAll(e => Substitute(e, receiverReplacement, substMap, typeMap));
-      var oldCaller = codeContext is MethodOrConstructor and not TwoStateLemma;
-      var lower = oldCaller ? callerBound.ConvertAll(e => (Expression)new OldExpr(e.Origin, e) { Type = e.Type }) : callerBound;
       var contextBound = upper;
       var comparedBound = lower;
       if (!UseConsistentDecreasesOrder) {
@@ -486,9 +513,11 @@ public partial class BoogieGenerator {
 
   /// <summary>
   /// Under --modular-termination, at an application of "value" (or a call of its "requires" or "reads"): if it is
-  /// an in-parameter of the caller with a callback bound, and the application is not inside a lambda, the callback
-  /// bound must be below the caller's global bound, both evaluated on entry (smaller-bound rule).  A caller without
-  /// a bound is above every bound.  Other applications are checked by the resolver.
+  /// an in-parameter of the caller with a callback bound, its callback bound, evaluated on entry, must be below the
+  /// bound under which the application runs: the caller's global bound on entry, or inside a lambda the lambda's,
+  /// evaluated where the lambda is formed (smaller-bound rule; issue 266, M3).  The parameter's actual runs under its
+  /// bound in every later state, so a lambda may keep it and apply it later.  Code without a bound is above every
+  /// bound.  Other applications are checked by the resolver.
   /// </summary>
   void CheckCallbackApplication(IOrigin tok, ICodeContext codeContext, Expression value, ExpressionTranslator etranCurrent,
                                 BoogieStmtListBuilder builder) {
@@ -496,19 +525,21 @@ public partial class BoogieGenerator {
       CheckBoundedApplication(tok, codeContext, bounded, etranCurrent, builder);
       return;
     }
-    if (!options.Get(CommonOptionBag.ModularTermination) || codeContext is not ICallable caller || InsideLambda ||
+    if (!options.Get(CommonOptionBag.ModularTermination) || codeContext is not ICallable caller ||
         value.Resolved is not IdentifierExpr { Var: Formal formal }) {
       return;
     }
     var k = caller.Ins.IndexOf(formal);
-    if (k < 0 || CallbackBound(caller, k) is not { } callbackBound || GlobalBound(caller) is not { } callerBound) {
+    var callerBound = InsideLambda ? CurrentLambdaBound : GlobalBound(caller);
+    if (k < 0 || callerBound == null || CallbackBoundOnEntry(caller, codeContext, formal, k) is not { } compared) {
       return;
     }
-    var oldCaller = codeContext is MethodOrConstructor and not TwoStateLemma;
-    var compared = oldCaller ? callbackBound.ConvertAll(e => (Expression)new OldExpr(e.Origin, e) { Type = e.Type }) : callbackBound;
+    var oldCaller = !InsideLambda && codeContext is MethodOrConstructor and not TwoStateLemma;
     CheckCallTermination(tok, callerBound, compared, null, null, new Dictionary<IVariable, Expression>(),
       new Dictionary<IVariable, Expression>(), new Dictionary<TypeParameter, Type>(), etranCurrent, oldCaller, builder, false,
-      $"--modular-termination: the 'decreases {{:callback}}' bound of '{formal.Name}' must be below the caller's 'decreases {{:global}}' bound");
+      InsideLambda
+        ? $"--modular-termination: the 'decreases {{:callback}}' bound of '{formal.Name}' must be below the bound under which the enclosing lambda runs"
+        : $"--modular-termination: the 'decreases {{:callback}}' bound of '{formal.Name}' must be below the caller's 'decreases {{:global}}' bound");
   }
 
   /// <summary>

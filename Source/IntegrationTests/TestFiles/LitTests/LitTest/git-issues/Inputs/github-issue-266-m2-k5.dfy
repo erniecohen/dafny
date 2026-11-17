@@ -1,8 +1,8 @@
 // Kernel K5 of docs/dev/design/266-bounded-callables.md, section 5: the frame of a lambda runs under its bound too.
-// Its class keeps a bounded value whose function reads the heap, through the subset type Zero.  Milestone 2 does
-// not let a field hold one: the rule against storing functions that read the heap looks through Zero to the
-// function (https://github.com/erniecohen/dafny/issues/479), so the kernel is rejected at resolution.  Milestone 3
-// admits the field, and the kernel then fails at its intended obligation, the bound of the lambda's frame.
+// Its class keeps a bounded value whose function reads the heap, through the subset type Zero.  Milestone 2 did
+// not let a field hold one (the rule against storing functions that read the heap looks through Zero to the
+// function, https://github.com/erniecohen/dafny/issues/479).  Milestone 3 admits the field, and the kernel fails at
+// its intended obligation, the bound of the lambda's frame.
 
 // K5: the frame of a lambda runs under its bound too.
 module K5 {
