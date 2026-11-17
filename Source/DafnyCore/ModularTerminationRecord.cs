@@ -750,6 +750,7 @@ public static class ModularTerminationRecords {
     CommonOptionBag.LegacyInheritedTerminationChecks,
     CommonOptionBag.LegacyUncheckedImportBinding,
     CommonOptionBag.LegacyStoredFunctionCallbacks,
+    CommonOptionBag.LegacyInheritedNameCapture,
     CommonOptionBag.UncheckedInvariantExtension,
     CommonOptionBag.TypeSystemRefresh,
     CommonOptionBag.GeneralTraits,

@@ -2,7 +2,7 @@
 // RUN: %exits-with 2 %verify --type-system-refresh=false --general-newtypes=false "%s" >> "%t"
 // RUN: %exits-with 4 %verify "%S/Inputs/github-issue-408-positive.dfy" >> "%t"
 // RUN: %exits-with 4 %verify --type-system-refresh=false --general-newtypes=false "%S/Inputs/github-issue-408-positive.dfy" >> "%t"
-// RUN: %exits-with 0 %verify --legacy-unchecked-import-binding "%S/Inputs/github-issue-408-legacy.dfy" >> "%t"
+// RUN: %exits-with 0 %verify --legacy-unchecked-import-binding --legacy-inherited-name-capture "%S/Inputs/github-issue-408-legacy.dfy" >> "%t"
 // RUN: %diff "%s.expect" "%t"
 // Regression (https://github.com/erniecohen/dafny/issues/408): a module that refines B could bind
 // B's abstract import "X : A" to a module that does not refine A, and so prove false from A's

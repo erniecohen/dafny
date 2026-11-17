@@ -30,6 +30,16 @@ module Controls {
     c.Run(bag - multiset{L} + Copies(L - 1, k))
   }
 
+  function Lower(c: Callees.Callee, bag: multiset<nat>, m: nat): nat
+    requires m in bag
+    decreases {:global} bag by Bags()
+  {
+    MultisetSub<nat>(Gt, bag - multiset{m}, bag);
+    assert bag - multiset{m} != bag by { assert (bag - multiset{m})[m] < bag[m]; }
+    assert false; // error
+    c.Run(bag - multiset{m})
+  }
+
   function CallEmpty(c: Callees.Callee, bag: multiset<nat>): nat
     requires bag != multiset{}
     decreases {:global} bag by Bags()
@@ -79,8 +89,14 @@ module Controls {
     MultisetReplaceOne<multiset<nat>>(MultisetRel<nat>(Gt), bag, multiset{L}, Copies(B', k));
   }
 
-  // A dispatched call runs under the caller's bound, so its own bound may equal the caller's but not exceed it
-  // (the same-bound rule of --modular-termination).  Above: the empty bag, the bottom of the order, grows
+  // A dispatched call needs a bound strictly below the caller's.  Equal: the same bag
+  function Same(c: Callees.Callee, bag: multiset<nat>): nat
+    decreases {:global} bag by Bags()
+  {
+    c.Run(bag) // error
+  }
+
+  // Above: the empty bag, the bottom of the order, grows
   function FromEmpty(c: Callees.Callee, empty: multiset<nat>): nat
     requires empty == multiset{}
     decreases {:global} empty by Bags()

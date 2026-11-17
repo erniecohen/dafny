@@ -1,4 +1,4 @@
-// RUN: %testDafnyForEachResolver "%s"
+// RUN: %testDafnyForEachResolver --expect-exit-code=2 "%s"
 
 
 module GiveT {
@@ -12,7 +12,7 @@ module Base {
 }
 
 module Refined refines Base {
-  type T = int // OK -- local names take precedence over imported names
+  type T = int // error: captures the T of the inherited f, which is GiveT.T (issue 410)
 
 }
 
@@ -48,8 +48,8 @@ module BaseF{
 }
 
 module RefinedF refines BaseF {
-  ghost function f(): bool { false } // OK. Local f preferred over imported f
-                               // even if imported into refinement parent
+  ghost function f(): bool { false } // error: captures the f of the inherited Test,
+                               // which is GiveT.f; otherwise False proves false (issue 410)
 
   lemma False()
     ensures false

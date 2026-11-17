@@ -138,7 +138,13 @@ namespace Microsoft.Dafny {
     private ModuleSignature RefinedSig;  // the intention is to use this field only after a successful PreResolve
     private ModuleSignature refinedSigOpened;
 
+    // The error count when the refining module's PreResolve started. The capture check runs only
+    // if the refinement has reported no error, so that a program already rejected (for example,
+    // for renaming a type parameter) gets no second error about the same name (issue 410).
+    private int preResolveStartErrorCount;
+
     internal override void PreResolve(ModuleDefinition m) {
+      preResolveStartErrorCount = Reporter.ErrorCount;
 
       if (m.Implements?.Target.Decl == null) {
         // do this also for non-refining modules
@@ -197,6 +203,9 @@ namespace Microsoft.Dafny {
       }
       moduleUnderConstruction = module;
       refinementCloner = new RefinementCloner(moduleUnderConstruction);
+      if (!Reporter.Options.Get(CommonOptionBag.LegacyInheritedNameCapture)) {
+        refinementCloner.InheritedOccurrences = [];
+      }
       var refinementTarget = module.Implements.Target;
       var prev = refinementTarget.Def;
 
@@ -480,6 +489,12 @@ namespace Microsoft.Dafny {
 
     internal override void PostResolveIntermediate(ModuleDefinition m) {
       if (m == moduleUnderConstruction) {
+        if (refinementCloner.InheritedOccurrences is { } occurrences) {
+          if (Reporter.ErrorCount == preResolveStartErrorCount) {
+            new RefinementCaptureCheck(Reporter, m, refinementCloner.RefinedLocals).Run(occurrences);
+          }
+          refinementCloner.InheritedOccurrences = null;
+        }
         while (this.postTasks.Count != 0) {
           var a = postTasks.Dequeue();
           a();
@@ -1312,6 +1327,9 @@ namespace Microsoft.Dafny {
             if (doMerge) {
               // Go ahead with the merge:
               body.Add(cNew);
+              for (var k = 0; k < cNew.Locals.Count; k++) {
+                refinementCloner.RefinedLocals[cNew.Locals[k]] = ((VarDeclStmt)oldS).Locals[k];
+              }
               i++; j++;
               if (addedAssert != null) {
                 var tok = new BoogieGenerator.ForceCheckOrigin(addedAssert.Origin);
@@ -1736,6 +1754,62 @@ namespace Microsoft.Dafny {
       moduleUnderConstruction = m;
     }
 
+    // Issue 410: the (clone, original) pairs of name occurrences copied from the base module,
+    // recorded so that RefinementCaptureCheck can compare what each one resolves to on both
+    // sides. Null when the check is off.
+    internal List<(object Clone, object Original)> InheritedOccurrences;
+
+    private void Record(object clone, object original) {
+      InheritedOccurrences?.Add((clone, original));
+    }
+
+    // Issue 410: local variables of the refining module that refine an inherited local
+    // declaration (a skeleton's "var x := e;" in place of "var x;"), mapped to the base's local.
+    internal readonly Dictionary<IVariable, IVariable> RefinedLocals = new();
+
+    private T Unrecorded<T>(Func<T> action) {
+      var saved = InheritedOccurrences;
+      InheritedOccurrences = null;
+      try {
+        return action();
+      } finally {
+        InheritedOccurrences = saved;
+      }
+    }
+
+    public override Expression CloneExpr(Expression expr) {
+      var clone = base.CloneExpr(expr);
+      if (expr is NameSegment or ExprDotName or ApplySuffix) {
+        Record(clone, expr);
+      }
+      return clone;
+    }
+
+    public override Type CloneType(Type t) {
+      var clone = base.CloneType(t);
+      if (t is UserDefinedType) {
+        Record(clone, t);
+      }
+      return clone;
+    }
+
+    public override ExtendedPattern CloneExtendedPattern(ExtendedPattern pat) {
+      var clone = base.CloneExtendedPattern(pat);
+      if (pat is IdPattern) {
+        Record(clone, pat);
+      }
+      return clone;
+    }
+
+    public override CasePattern<VT> CloneCasePattern<VT>(CasePattern<VT> pat) {
+      var clone = base.CloneCasePattern(pat);
+      if (InheritedOccurrences != null) {
+        Record(new RefinementCaptureCheck.CasePatternView(() => (object)clone.Ctor ?? clone.Var, clone.Origin, clone.Id),
+          new RefinementCaptureCheck.CasePatternView(() => (object)pat.Ctor ?? pat.Var, pat.Origin, pat.Id));
+      }
+      return clone;
+    }
+
     public override BlockLikeStmt CloneMethodBody(MethodOrConstructor m) {
       if (m.Body is DividedBlockStmt) {
         return CloneDividedBlockStmt((DividedBlockStmt)m.Body);
@@ -1794,9 +1868,10 @@ namespace Microsoft.Dafny {
         return CloneAttributes(prevAttrs);
       } else if (moreAttrs is UserSuppliedAttributes) {
         var usa = (UserSuppliedAttributes)moreAttrs;
-        return new UserSuppliedAttributes(Origin(usa.Origin), Origin(usa.OpenBrace), Origin(usa.CloseBrace), moreAttrs.Args.ConvertAll(CloneExpr), MergeAttributes(prevAttrs, moreAttrs.Prev));
+        // The refining module's own attributes are not inherited occurrences.
+        return new UserSuppliedAttributes(Origin(usa.Origin), Origin(usa.OpenBrace), Origin(usa.CloseBrace), Unrecorded(() => moreAttrs.Args.ConvertAll(CloneExpr)), MergeAttributes(prevAttrs, moreAttrs.Prev));
       } else if (moreAttrs is UserSuppliedAtAttribute usaa) {
-        var arg = CloneExpr(usaa.Arg);
+        var arg = Unrecorded(() => CloneExpr(usaa.Arg));
         if (usaa.Arg.Type != null) { // The attribute has already been expanded
           arg.Type = usaa.Arg.Type;
           arg.PreType = usaa.Arg.PreType;
@@ -1805,7 +1880,7 @@ namespace Microsoft.Dafny {
           Builtin = usaa.Builtin
         };
       } else {
-        return new Attributes(moreAttrs.Name, moreAttrs.Args.ConvertAll(CloneExpr), MergeAttributes(prevAttrs, moreAttrs.Prev));
+        return new Attributes(moreAttrs.Name, Unrecorded(() => moreAttrs.Args.ConvertAll(CloneExpr)), MergeAttributes(prevAttrs, moreAttrs.Prev));
       }
     }
   }

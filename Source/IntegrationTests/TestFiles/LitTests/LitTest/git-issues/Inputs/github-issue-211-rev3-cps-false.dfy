@@ -1,5 +1,5 @@
-// Stand-in for stage 2(d): the Huet-Oppen multiset order, nested twice.
-// Well-foundedness is an axiom here; stage 2(d) proves it.
+// The Huet-Oppen multiset order, nested twice.  Well-foundedness comes from the multiset order of the orders
+// library: OuterGt is the order of MultisetOf(MultisetRel(Gt)).
 module Ord {
   import opened Std.Termination.Orders
   type {:termination_closed} Lv = multiset<nat>
@@ -8,8 +8,39 @@ module Ord {
   ghost predicate {:termination_closed} InnerLt(m: Lv, n: Lv) { m != n && InnerLe(m, n) }
   ghost predicate {:termination_closed} OuterLe(s: Stock, t: Stock) { forall a | a in s - t :: exists b | b in t - s :: InnerLt(a, b) }
   ghost predicate {:termination_closed} OuterGt(t: Stock, s: Stock) { s != t && OuterLe(s, t) }
-  lemma {:axiom} {:termination_closed} OuterWf() ensures forall c: Chain<Stock> :: stops<Stock>(OuterGt, c)
-  ghost function {:termination_closed} StockOrder(): Wfo<Stock> { OuterWf(); Of(OuterGt) }
+  ghost predicate {:termination_closed} Gt(x: nat, y: nat) { x > y }
+  lemma {:termination_closed} GtWellFounded() ensures wellFounded<nat>(Gt) {
+    forall c: Chain<nat> ensures stops<nat>(Gt, c) {
+      if forall n: nat :: Gt(c(n), c(n + 1)) {
+        Descends(c(0) + 1);
+      }
+    }
+  }
+  lemma Descends(n: nat)
+    ensures forall c: Chain<nat> :: (forall k: nat :: Gt(c(k), c(k + 1))) ==> c(n) + n <= c(0)
+  {
+    if n > 0 {
+      Descends(n - 1);
+      forall c: Chain<nat> | forall k: nat :: Gt(c(k), c(k + 1)) ensures c(n) + n <= c(0) {
+        assert Gt(c(n - 1), c(n));
+      }
+    }
+  }
+  // OuterGt is the multiset order over the multiset order over Gt
+  lemma {:termination_closed} OuterIsNested()
+    ensures forall t: Stock, s: Stock :: MultisetGt<Lv>(MultisetRel<nat>(Gt), t, s) == OuterGt(t, s)
+  {
+    forall m: Lv, n: Lv ensures MultisetRel<nat>(Gt)(n, m) == InnerLt(m, n) {
+      assert InnerLe(m, n) == MultisetGe<nat>(Gt, n, m);
+    }
+  }
+  ghost function {:termination_closed} StockOrder(): Wfo<Stock>
+    ensures forall t: Stock, s: Stock :: MultisetGt<Lv>(MultisetRel<nat>(Gt), t, s) == OuterGt(t, s)
+  {
+    GtWellFounded();
+    OuterIsNested();
+    MultisetOf<Lv>(MultisetRel<nat>(Gt))
+  }
 
   lemma {:termination_closed} InnerAdd(m: Lv, k: nat) ensures InnerLt(m, multiset{k} + m)
   { assert (multiset{k} + m)[k] == m[k] + 1; assert m - (multiset{k} + m) == multiset{}; }

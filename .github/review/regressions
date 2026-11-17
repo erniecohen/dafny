@@ -523,6 +523,10 @@ git-issues/github-issue-339.dfy
 # old rule proved false (https://github.com/erniecohen/dafny/issues/408).
 git-issues/github-issue-408.dfy
 
+# A refining module may not change what a name in inherited code refers to; the old rule let an
+# added declaration capture it and proved false (https://github.com/erniecohen/dafny/issues/410).
+git-issues/github-issue-410.dfy
+
 # Datatype and trait in one decreases order under --trait-rank-decreases, and the rank of trait-typed datatype
 # fields under --additional-axioms (https://github.com/erniecohen/dafny/issues/317).
 git-issues/github-issue-317.dfy
@@ -800,6 +804,12 @@ git-issues/github-issue-453.dfy
 
 # Bounded callables, milestone 3: heap-reading bounded values in fields and collections, generic flow, higher-order bounded values, and callback parameters kept and applied inside lambdas, under --modular-termination (https://github.com/erniecohen/dafny/issues/266).
 git-issues/github-issue-266-m3.dfy
+
+# Revision 3 of the rules of --modular-termination: any trait may be extended from any module, a foreign implementation of a member without a global bound is a leaf or has a bound of its own, a member without a body reaches a dispatch unless it promises {:termination_closed}, and the VeriFast ports of ECOOP 2015 Fig. 4 and the CPS example (https://github.com/erniecohen/dafny/issues/211).
+git-issues/github-issue-211-rev3.dfy
+
+# The multiset order of the orders library over any well-founded relation, and global bounds of --modular-termination by multiset orders, where a dispatched call needs a strictly smaller bag (https://github.com/erniecohen/dafny/issues/211).
+git-issues/github-issue-211-multiset.dfy
 
 # Member invariants under the hidden --member-invariants, first stage: syntax, printing and
 # resolution, the reads restriction, the codatatype rule for programs and libraries, refinement,

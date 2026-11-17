@@ -961,6 +961,7 @@ namespace Microsoft.Dafny {
 
       var module = new ModuleDefinition(SourceOrigin.NoToken, new Name(name + ".Abs"), [], ModuleKindEnum.Abstract, true, null, null, null);
       module.Height = height;
+      module.FacadeOf = origin.ModuleDef;
       foreach (var kv in origin.TopLevels) {
         if (!(kv.Value is NonNullTypeDecl or DefaultClassDecl)) {
           var clone = CloneDeclarationForAbstractSignature(origin.VisibilityScope, kv.Value, module, moduleSignatures, name);
