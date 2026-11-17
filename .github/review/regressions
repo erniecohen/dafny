@@ -771,3 +771,6 @@ git-issues/github-issue-485.dfy
 # A let-such-that expression whose condition depends on the allocation state (a quantifier or comprehension over the allocated objects or over a type parameter's values, a sequence constructor whose initializer reads the heap, "old" around either, a two-state call) has a choice function that takes that heap: two such expressions around an allocation or a heap update do not prove false, and the verifier does not crash (https://github.com/erniecohen/dafny/issues/431).
 git-issues/github-issue-431.dfy
 git-issues/github-issue-431-more.dfy
+
+# A refining module that gives a body to a member without one, closing a call cycle through an inherited call, checks the termination of that call; the base never checked it and the refinement assumed it, so false was provable (https://github.com/erniecohen/dafny/issues/409).
+git-issues/github-issue-409.dfy

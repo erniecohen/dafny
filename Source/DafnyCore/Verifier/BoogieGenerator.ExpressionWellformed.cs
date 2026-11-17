@@ -901,7 +901,7 @@ namespace Microsoft.Dafny {
                 Contract.Assert(calleeSCCLookup != null);
                 if (ModuleDefinition.InSameSCC(calleeSCCLookup, codeContext)) {
                   if (wfOptions.DoOnlyCoarseGrainedTerminationChecks) {
-                    builder.Add(Assert(GetToken(expr), Bpl.Expr.False, new IsNonRecursive(), builder.Context));
+                    builder.Add(Assert(InheritedTerminationOrigin(GetToken(expr), calleeSCCLookup), Bpl.Expr.False, new IsNonRecursive(), builder.Context));
                   } else {
                     if (e.Function == wfOptions.SelfCallsAllowance) {
                       allowance = Expression.CreateBoolLiteral(e.Origin, true);
@@ -954,7 +954,7 @@ namespace Microsoft.Dafny {
                     // function: the heap at its label, if the call has one.
                     var calleeEtran = e.Function is TwoStateFunction && e.AtLabel != null ? etran.WithOld(etran.OldAt(e.AtLabel)) : null;
                     var callerEtran = wfOptions.CallerTerminationTranslator ?? builder.Context.CallerTerminationTranslator ?? etran;
-                    CheckCallTermination(callExpr.Origin, contextDecreases, calleeDecreases, allowance, e.Receiver, substMap, directSubstMap, e.GetTypeArgumentSubstitutions(),
+                    CheckCallTermination(InheritedTerminationOrigin(callExpr.Origin, calleeSCCLookup), contextDecreases, calleeDecreases, allowance, e.Receiver, substMap, directSubstMap, e.GetTypeArgumentSubstitutions(),
                       callerEtran, false, builder, codeContext.InferredDecreases, hint, calleeEtran ?? etran);
                   }
                 }

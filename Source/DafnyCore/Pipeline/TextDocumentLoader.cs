@@ -75,7 +75,8 @@ namespace Microsoft.Dafny {
                    // the test of its own URI and of include filtering (ShouldVerify(Compilation)): its origin is in
                    // the base's file, which may be included or a library, and only its module's test above applies.
                    (v.Origin.IsCopy
-                     ? v is MemberDecl copy && BoogieGenerator.MustVerifyCopy(copy, compilation.Options)
+                     ? v is MemberDecl copy ? BoogieGenerator.MustVerifyCopy(copy, compilation.Options)
+                       : v is IteratorDecl iterator && BoogieGenerator.MustCheckInheritedTermination(iterator, compilation.Options)
                      : v.ShouldVerify(program.Compilation))
                   ).ToList()) {
           var forUri =
