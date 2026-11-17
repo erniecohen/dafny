@@ -800,6 +800,27 @@ that does not make such a read is unchanged.  The hidden `--legacy-first-phase-c
 option restores the old rule for comparison and migration.  The regression is
 `git-issues/github-issue-339.dfy`; the release note is `docs/dev/news/339.fix`.
 
+## Functions that read the heap, stored inside datatypes ([issue 479](https://github.com/erniecohen/dafny/issues/479))
+
+`HigherOrderHeapAllocationChecker` rejects storing, in a field or an array element, a value whose
+type contains a function that reads the heap (`~>`).  Otherwise the function could read itself
+through the field and apply itself, and applying a function value gets no termination check.
+`ContainsRead` looked only at the type and its type arguments, so `datatype W = W(f: () ~> bool)`
+passed as reading-free, and storing `W(knot)`, where `knot` reads the field, proved `false` under
+both resolvers.  `ContainsRead` now also searches the constructor arguments of inductive and
+coinductive datatypes (tuples among them), and the base types of newtypes and subset types, with
+the type arguments substituted.  It stops at arrow types, whose base is the reading arrow, and at
+the types of classes, traits and type parameters.  It searches each declaration once.  Since the
+type arguments of every occurrence are searched where they occur, a recursive or non-regular
+datatype ends the search.  Its kind is **weakens only**: it rejects programs and adds no fact or
+axiom.  Among the test suite's files that mention `~>`, it changes resolution only in its regression
+and in two inputs of `git-issues/github-issue-326.dfy`, `route-subset` and `route-tilde-field`.
+Those inputs store such a function in a datatype to test the rank axioms of arrow-typed fields, and
+they now run under the legacy option.  It changes no resolution in the standard library (its
+sources, `modular-termination`, `orders` and its examples).  The hidden `--legacy-reading-functions-in-datatypes` option restores the old check for comparison and
+migration.  The regression is `git-issues/github-issue-479.dfy`; the release note is
+`docs/dev/news/479.fix`.
+
 ## Override checks in refining modules ([issue 404](https://github.com/erniecohen/dafny/issues/404))
 
 A refining module could strengthen the contract of a trait member, or refine an abstract type into
@@ -949,3 +970,28 @@ four tests is byte-identical with and without the change, under both resolvers, 
 output.  The four tests are now in `.github/review/regressions`; the release note is
 `docs/dev/news/441.fix`.  The fifth test of the issue, `dafny0/Superposition.legacy.dfy`, is left
 to [issue 436](https://github.com/erniecohen/dafny/issues/436).
+
+## Yield parameters checked after grounding constructors ([issue 445](https://github.com/erniecohen/dafny/issues/445))
+
+The resolver checked that the type of each yield parameter supports auto-initialization in
+`ResolveIteratorSignature`, while `ResolveTopLevelDecls_Signatures` was still resolving the module's
+declarations in source order.  No datatype had a grounding constructor yet, so `Type.GetAutoInit`
+followed its fallback, the first ghost constructor or else the first constructor, and the
+constructors of a datatype declared after the iterator, or inherited by a refining module, still had
+unresolved types.  So a recursive first constructor made a datatype with values look empty, a false
+rejection or, before [issue 413](https://github.com/erniecohen/dafny/issues/413), a stack overflow;
+an unresolved type crashed the resolver; and a first constructor with a compilable value hid a
+grounding constructor without one, as in `datatype D<T> = C1(t: T) | C2(s: S)` with `S` declared
+`witness *`.  The compiler initializes a yield parameter with the default value of its type, made
+with the grounding constructor, so the compiled iterator left such a parameter null, and a verified
+program printed `null` or threw a `NullReferenceException`.  The check now runs in
+`ResolveTopLevelDecls_Core`, right after `SccStratosphereCheck` has found the grounding
+constructors, so it agrees with the compiler and with the checks of class fields and of `(0)` and
+`(00)` type arguments.  Ghost yield parameters are checked the same way, as ghost fields are, and,
+like the other checks in that block, the check is skipped when the module already has errors.  Its
+kind is a **crash and false-rejection fix**, and, for the null values, a soundness fix that **weakens
+only**: it rejects programs whose compiled iterator could read a value it never initialized, accepts
+only programs whose yield types have a default value the compiler makes, and adds no fact or axiom.
+The hidden `--legacy-early-yield-parameter-check` option restores the old check at its old place,
+crashes included, for comparison and migration.  The regression is
+`git-issues/github-issue-445.dfy`; the release note is `docs/dev/news/445.fix`.

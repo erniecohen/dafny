@@ -1546,6 +1546,21 @@ namespace Microsoft.Dafny {
             DetermineEqualitySupport(dtd, datatypeDependencies);
           }
         }
+
+        // The type of a yield parameter must support auto-initialization.  Whether a datatype does depends on its
+        // grounding constructor, which SccStratosphereCheck has just found, and which the compiler uses for the
+        // default value.  Checked while the signatures were being resolved, as under the hidden
+        // --legacy-early-yield-parameter-check, Type.GetAutoInit follows another constructor, and the constructors
+        // of a datatype declared after the iterator have unresolved types (https://github.com/erniecohen/dafny/issues/445).
+        if (!Options.Get(CommonOptionBag.LegacyEarlyYieldParameterCheck)) {
+          foreach (var iter in declarations.OfType<IteratorDecl>()) {
+            foreach (var p in iter.Outs) {
+              if (!p.Type.KnownToHaveToAValue(p.IsGhost)) {
+                reporter.Error(MessageSource.Resolver, p.Origin, "type of yield-parameter must support auto-initialization (got '{0}')", p.Type);
+              }
+            }
+          }
+        }
       }
 
       // Newtype bases are fully resolved here. Include visible nominal field
@@ -3465,7 +3480,9 @@ namespace Microsoft.Dafny {
       }
       foreach (var p in iter.Outs) {
         ResolveType(p.Origin, p.Type, iter, option, iter.TypeArgs);
-        if (!p.Type.KnownToHaveToAValue(p.IsGhost)) {
+        // Whether the type supports auto-initialization is checked after SccStratosphereCheck, in
+        // ResolveTopLevelDecls_Core.  The hidden --legacy-early-yield-parameter-check restores the old check here.
+        if (Options.Get(CommonOptionBag.LegacyEarlyYieldParameterCheck) && !p.Type.KnownToHaveToAValue(p.IsGhost)) {
           reporter.Error(MessageSource.Resolver, p.Origin, "type of yield-parameter must support auto-initialization (got '{0}')", p.Type);
         }
       }
