@@ -46,9 +46,8 @@ internal sealed class ContentAddressedCache {
           entry.Length < 0 || entry.Length > maximumPayloadBytes) {
         return null;
       }
-      var bytes = ReadBounded(BlobPath(entry.Blob), maximumPayloadBytes);
-      if (bytes == null || bytes.Length != entry.Length || CacheDigest.Blob(bytes) != entry.Blob ||
-          IsDisabled(table, key)) {
+      var bytes = ReadVerifiedBlob(entry.Blob);
+      if (bytes == null || bytes.Length != entry.Length || IsDisabled(table, key)) {
         return null;
       }
       return bytes;
@@ -70,8 +69,8 @@ internal sealed class ContentAddressedCache {
       }
       var blob = CacheDigest.Blob(payload);
       var blobPath = BlobPath(blob);
-      if (!PublishFile(blobPath, payload)) {
-        var existingBlob = ReadBounded(blobPath, maximumPayloadBytes);
+      if (!PublishFile(blobPath, BlobEncoding.Encode(payload))) {
+        var existingBlob = ReadVerifiedBlob(blob);
         if (existingBlob == null || !payload.SequenceEqual(existingBlob)) {
           Disable(table, key);
           return CachePublication.Conflict;
@@ -102,8 +101,7 @@ internal sealed class ContentAddressedCache {
       return null;
     }
     try {
-      var bytes = ReadBounded(BlobPath(digest), maximumPayloadBytes);
-      return bytes != null && CacheDigest.Blob(bytes) == digest ? bytes : null;
+      return ReadVerifiedBlob(digest);
     } catch (Exception exception) when (IsStorageFailure(exception)) {
       return null;
     }
@@ -115,7 +113,7 @@ internal sealed class ContentAddressedCache {
       return false;
     }
     try {
-      if (PublishFile(BlobPath(digest), bytes)) {
+      if (PublishFile(BlobPath(digest), BlobEncoding.Encode(bytes))) {
         return true;
       }
       var existing = TryReadBlob(digest);
@@ -123,6 +121,26 @@ internal sealed class ContentAddressedCache {
     } catch (Exception exception) when (IsStorageFailure(exception)) {
       return false;
     }
+  }
+
+  /// <summary>
+  /// The blob stored under <paramref name="digest"/>, decoded, or null. A blob is addressed by the
+  /// SHA-256 of its decoded bytes, and is returned only if those bytes hash to its address, so neither
+  /// a corrupt nor a truncated file, nor a stored encoding this reader does not know, can supply a value.
+  /// </summary>
+  private byte[] ReadVerifiedBlob(string digest) {
+    var stored = ReadBounded(BlobPath(digest), maximumPayloadBytes);
+    if (stored == null) {
+      return null;
+    }
+    var decoded = BlobEncoding.TryDecode(stored, maximumPayloadBytes);
+    if (decoded != null && CacheDigest.Blob(decoded) == digest) {
+      return decoded;
+    }
+    // A blob written before compression (issue 388), or one compression could not shrink, is its
+    // own bytes, under the same digest check every blob had before. This includes a raw blob that
+    // merely begins with the header.
+    return CacheDigest.Blob(stored) == digest ? stored : null;
   }
 
   private void Disable(CacheTable table, string key) {

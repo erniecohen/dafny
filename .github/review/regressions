@@ -731,3 +731,16 @@ git-issues/github-issue-404.dfy
 
 # The legacy resolver (--type-system-refresh:false) inherits no members from a non-numeric newtype base, which it rejects, so selecting one is an error rather than a crash, as with --type-system-refresh (https://github.com/erniecohen/dafny/issues/417).
 git-issues/github-issue-417.dfy
+
+# Opt-in --verification-cache stores blobs compressed with zlib under the SHA-256 of their uncompressed bytes; earlier uncompressed and mixed caches still replay, and a truncated or corrupted compressed blob is a miss with the same report (https://github.com/erniecohen/dafny/issues/388).
+git-issues/git-issue-388.dfy
+
+# Under --modular-termination, calls in the body of a least or greatest lemma, calls of least and greatest predicates, and co-recursive calls are checked against the caller's global bound; each proved false (https://github.com/erniecohen/dafny/issues/456).
+git-issues/github-issue-456.dfy
+
+# Under --modular-termination, the induction hypothesis of a lemma, of a prefix lemma and of its limit-ordinal case covers only the instances within the lemma's global bound; each proved false (https://github.com/erniecohen/dafny/issues/460).
+git-issues/github-issue-460.dfy
+
+# Soundness gates of the plan for https://github.com/erniecohen/dafny/issues/211: (a) a library verified alone under --modular-termination is not invalidated by a later extension, with both resolvers; (b) every context in which code runs is ordered by the rules, one marked member per context.
+git-issues/github-issue-211-gate-library.dfy
+git-issues/github-issue-211-gate-coverage.dfy

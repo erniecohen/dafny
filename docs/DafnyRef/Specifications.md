@@ -623,6 +623,17 @@ before. Bounds of different lengths are compared as decreases tuples are, with m
 above every value: a bound `n, 7` is at most `n`, but `n` is not at most `n, 0`. The method of a
 function's `by method` body has the function's bound.
 
+A least or greatest lemma may declare a global bound and callback bounds. Its body is verified
+as the body of its prefix lemma, which has the same bounds, and a call `L#[k](...)` of the prefix lemma
+is checked as a call of `L`.
+
+A lemma with a global bound that can reach a dispatched call runs under that bound, and so does every
+instance of itself that its proof uses. So under the option its automatic induction hypothesis covers
+only the instances whose bound is at most the lemma's own bound (below it, if the lemma is itself an
+overridable member of an extensible trait). The same holds for the induction hypothesis of a prefix
+lemma, and for the case that Dafny generates for a prefix lemma at a limit ordinal. A proof that used
+one of these at a larger bound does not verify under the option.
+
 Some code belongs to no method or function: the constraint and the witness of a subset type or
 newtype, the default values of a datatype's or class's components (which a witness or an allocation
 may evaluate), and the initializer of a constant. Such code has no global bound, so it is TOP.
@@ -793,6 +804,9 @@ It also rejects some programs that terminate:
   heap, in a datatype value or in a collection, or returned by a function, has no bound.
 * An iterator has no global bound, so a call of an iterator that reaches a dispatched call is
   rejected from a member with a bound.
+* A least or greatest predicate has no global bound, so one that reaches a dispatched call, or one
+  imported from a module that does not promise `{:termination_closed}` for it, cannot be used by a
+  member with a bound.
 * The C# parser is what turns `decreases {:global} E` and `decreases {:callback g} E` into bounds. A
   program that reaches Dafny through another front end, serialized, keeps them as ordinary decreases
   clauses with argument-less `{:global}` attributes or one-argument `{:callback g}` attributes.

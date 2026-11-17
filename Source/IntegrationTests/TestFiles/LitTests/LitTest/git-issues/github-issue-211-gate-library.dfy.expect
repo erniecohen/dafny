@@ -1,0 +1,85 @@
+legacy: build library: exit 0
+  Dafny program verifier finished with 3 verified, 0 errors
+legacy: extension within the rules: exit 4
+  github-issue-211-gate-a-ok.dfy(14,4): Error: assertion might not hold
+  Dafny program verifier finished with 2 verified, 1 error
+legacy: implementation above the bound of its slot: exit 4
+  github-issue-211-gate-a-raise.dfy(9,11): Error: decreases clause might not decrease (--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
+  Dafny program verifier finished with 2 verified, 1 error
+legacy: bound raised by a trait of the client: exit 4
+  github-issue-211-gate-a-via.dfy(5,13): Error: function's 'decreases {:global}' bound must be below or equal to that in the trait
+  Dafny program verifier finished with 3 verified, 1 error
+legacy: open trait of the client without a bound: exit 4
+  github-issue-211-gate-a-via-open.dfy(12,11): Error: decreases clause might not decrease (--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
+  Dafny program verifier finished with 3 verified, 1 error
+legacy: implementation of a member with no bound that is not a leaf: exit 2
+  github-issue-211-gate-a-unbounded.dfy(7,13): Error: modular termination: 'G' implements 'Lib.S.G' of another module, which has no 'decreases {:global}' bound, so it must be a leaf, but it is not ('Client.C.G' -> General contract of 'Lib.UseS' (publish {:termination_closed} for independent closed code)); declare a bound on 'Lib.S.G', or make this implementation a leaf
+legacy: implementation of a member with no bound that is a leaf: exit 4
+  github-issue-211-gate-a-leaf.dfy(15,4): Error: assertion might not hold
+  Dafny program verifier finished with 2 verified, 1 error
+legacy: module refines the library module: exit 2
+  github-issue-211-gate-a-refine.dfy(3,7): Error: modular termination: module 'Ext' refines module 'Lib' of a library; under --modular-termination a module cannot refine or replace a library module, since the bodies it would inherit are not part of the library's termination contracts
+legacy: legacy premise, reported by the default warning: exit 2
+  github-issue-211-gate-a-assume.dfy(7,38): Warning: class 'C' has @AssumeCrossModuleTermination and no {:axiom} annotation: code verified without it, such as the module of a trait it extends, did not check the calls dispatched to it for termination
+  Dafny program verifier finished with 3 verified, 0 errors
+legacy: source library: exit 1
+  CLI: Error: cannot use github-issue-211-gate-a-lib.dfy as a library under --modular-termination: a source library carries no checked termination record; build it into a .doo with 'dafny build --target:lib --modular-termination' and pass that instead
+legacy: build library without the option: exit 0
+  Dafny program verifier finished with 3 verified, 0 errors
+legacy: library built without the option: exit 1
+  CLI: Error: cannot load plain-legacy.doo under --modular-termination: it has no modular termination record, because it was built without --modular-termination; rebuild it with 'dafny build --target:lib --modular-termination'
+legacy: library with a record, option off: exit 1
+  CLI: Error: cannot load lib-legacy.doo: it was built with --modular-termination and is checked only under that option; use --modular-termination, or rebuild the library without it
+legacy: without the option (the hole that the option closes): exit 0
+  Dafny program verifier finished with 3 verified, 0 errors
+legacy: build library with a least predicate: exit 3
+  Dafny program verifier finished with 4 verified, 0 errors
+  CLI: Error: cannot build a library under --modular-termination: github-issue-211-gate-a-lib-extreme.dfy(12,42) has an assumption that 'dafny audit' reports: Declaration has explicit {:axiom} attribute. A library built with --modular-termination records that its own program was completely verified; build it without --no-verify, --boogie arguments, {:verify false}, {:only}, decreases *, assumptions (anything 'dafny audit' reports, bodyless members, --allow-axioms) or {:extern}, and with every verification task succeeding
+legacy: least lemma of the library called from implementations of its slot: exit 4
+  github-issue-211-gate-a-prefix.dfy(13,10): Error: decreases clause might not decrease (--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
+  github-issue-211-gate-a-prefix.dfy(23,14): Error: decreases clause might not decrease (--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
+  github-issue-211-gate-a-prefix.dfy(34,6): Error: assertion might not hold
+  Dafny program verifier finished with 11 verified, 3 errors
+refresh: build library: exit 0
+  Dafny program verifier finished with 3 verified, 0 errors
+refresh: extension within the rules: exit 4
+  github-issue-211-gate-a-ok.dfy(14,4): Error: assertion might not hold
+  Dafny program verifier finished with 2 verified, 1 error
+refresh: implementation above the bound of its slot: exit 4
+  github-issue-211-gate-a-raise.dfy(9,11): Error: decreases clause might not decrease (--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
+  Dafny program verifier finished with 2 verified, 1 error
+refresh: bound raised by a trait of the client: exit 4
+  github-issue-211-gate-a-via.dfy(5,13): Error: function's 'decreases {:global}' bound must be below or equal to that in the trait
+  Dafny program verifier finished with 3 verified, 1 error
+refresh: open trait of the client without a bound: exit 4
+  github-issue-211-gate-a-via-open.dfy(12,11): Error: decreases clause might not decrease (--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
+  Dafny program verifier finished with 3 verified, 1 error
+refresh: implementation of a member with no bound that is not a leaf: exit 2
+  github-issue-211-gate-a-unbounded.dfy(7,13): Error: modular termination: 'G' implements 'Lib.S.G' of another module, which has no 'decreases {:global}' bound, so it must be a leaf, but it is not ('Client.C.G' -> General contract of 'Lib.UseS' (publish {:termination_closed} for independent closed code)); declare a bound on 'Lib.S.G', or make this implementation a leaf
+refresh: implementation of a member with no bound that is a leaf: exit 4
+  github-issue-211-gate-a-leaf.dfy(15,4): Error: assertion might not hold
+  Dafny program verifier finished with 2 verified, 1 error
+refresh: module refines the library module: exit 2
+  github-issue-211-gate-a-refine.dfy(3,7): Error: modular termination: module 'Ext' refines module 'Lib' of a library; under --modular-termination a module cannot refine or replace a library module, since the bodies it would inherit are not part of the library's termination contracts
+refresh: legacy premise, reported by the default warning: exit 2
+  github-issue-211-gate-a-assume.dfy(7,38): Warning: class 'C' has @AssumeCrossModuleTermination and no {:axiom} annotation: code verified without it, such as the module of a trait it extends, did not check the calls dispatched to it for termination
+  Dafny program verifier finished with 3 verified, 0 errors
+refresh: source library: exit 1
+  CLI: Error: cannot use github-issue-211-gate-a-lib.dfy as a library under --modular-termination: a source library carries no checked termination record; build it into a .doo with 'dafny build --target:lib --modular-termination' and pass that instead
+refresh: build library without the option: exit 0
+  Dafny program verifier finished with 3 verified, 0 errors
+refresh: library built without the option: exit 1
+  CLI: Error: cannot load plain-refresh.doo under --modular-termination: it has no modular termination record, because it was built without --modular-termination; rebuild it with 'dafny build --target:lib --modular-termination'
+refresh: library with a record, option off: exit 1
+  CLI: Error: cannot load lib-refresh.doo: it was built with --modular-termination and is checked only under that option; use --modular-termination, or rebuild the library without it
+refresh: without the option (the hole that the option closes): exit 0
+  Dafny program verifier finished with 3 verified, 0 errors
+refresh: build library with a least predicate: exit 3
+  Dafny program verifier finished with 4 verified, 0 errors
+  CLI: Error: cannot build a library under --modular-termination: github-issue-211-gate-a-lib-extreme.dfy(12,42) has an assumption that 'dafny audit' reports: Declaration has explicit {:axiom} attribute. A library built with --modular-termination records that its own program was completely verified; build it without --no-verify, --boogie arguments, {:verify false}, {:only}, decreases *, assumptions (anything 'dafny audit' reports, bodyless members, --allow-axioms) or {:extern}, and with every verification task succeeding
+refresh: least lemma of the library called from implementations of its slot: exit 4
+  github-issue-211-gate-a-prefix.dfy(13,10): Error: decreases clause might not decrease (--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
+  github-issue-211-gate-a-prefix.dfy(23,14): Error: decreases clause might not decrease (--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
+  github-issue-211-gate-a-prefix.dfy(34,6): Error: assertion might not hold
+  Dafny program verifier finished with 11 verified, 3 errors
+library gate: 32 checks, all passed
