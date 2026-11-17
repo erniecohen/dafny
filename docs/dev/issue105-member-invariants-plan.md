@@ -2029,7 +2029,14 @@ section 7.2).**
        enclosing function, `S` is proved (an `assert` or a `calc` step is
        checked; a lemma's precondition is checked, and the lemma is verified
        on its own; a `forall` statement's body proves its conclusion) and its
-       conclusion is assumed after it.  Where the enclosing function's body
+       conclusion is assumed after it.  That includes a lemma whose
+       postcondition mentions the membership of `T` (`ensures f is F ==> ...`,
+       or `ensures !(Liar3(n, this) is Liar3)`, as in the controls below): the
+       postcondition is proved when the lemma is verified, from the same
+       axioms, and is assumed only after a call.  Such a lemma cannot make the
+       invariant mean something else, since the invariant's meaning is `E`; a
+       false postcondition about `T` fails where the lemma is verified, as
+       `Teller.Ok`'s does.  Where the enclosing function's body
        is inlined into a proof obligation (`TrSplitExpr`), `S; E` is proved as
        `C ==> E`, with `C` the conclusion of `S`, and the call itself is then
        assumed.  Each use rests on a fact proved from the axioms, or, for
@@ -2054,7 +2061,11 @@ section 7.2).**
     statements quantify over the type without a bound, test a raw `this`
     against it and call a lemma that does both are accepted; such a statement
     that is true is proved from the axioms, one that is false fails as an
-    obligation, and `false` is not provable after either.
+    obligation, and `false` is not provable after either.  The adversarial
+    review at the end of the feature, after its last step and before its
+    single CI run, targets this decision first: a lemma or `forall` statement
+    inside an invariant whose conclusion mentions `T`, an inlined invariant
+    body, and a statement reached through a function in the cone.
   - The hidden option `--unchecked-invariant-extension` turns the check off.  It
     exists for the vacuity controls V5 and V5b (section 6.4), which must show
     that the axioms of `Liar` and `Liar2` are inconsistent without it.  It is
@@ -2513,6 +2524,19 @@ removed when no program can reach it.
   invariant as related location, and the verification status of each.  It also
   checks hovers, document symbols, and that the reserved names `invariant#k`
   and `witness#k` are never shown, and that the error for the option without
-  `--type-system-refresh` is reported in the project file.  The test found one
-  fault, fixed at this step: the hover and the verification tree showed the
-  reserved names.
+  `--type-system-refresh` is reported in the project file.  It also verifies on
+  save (`VerifyOnMode.Save`), with the option set in `dfyconfig.toml`: nothing
+  is verified when the document opens, and the invariants are when it is saved.
+  The test found one fault, fixed at this step: the hover and the verification
+  tree showed the reserved names.
+- *Incremental reuse in the IDE.*  With `--translation-cache`, the language
+  server translates each module through the same `ModuleTranslationCache` as
+  the command line, so it steps aside exactly when the command line does: only
+  while the program-wide gate is active.  A program the gate stops is not
+  translated at all; it gets the gate's errors instead of verification, so
+  there is nothing to reuse.  A program whose invariants are all of kinds that
+  are verified is cached as any program is, in the IDE too.  So the step-aside
+  is lifted kind by kind with the gate.  It goes entirely, with the gate and `DeclaresUnsupportedMemberInvariants`,
+  at the step that verifies the last kind: newtypes (step 8).  Until then a
+  refining module or abstract type with invariants (step 7) and newtypes are
+  the only cases left.

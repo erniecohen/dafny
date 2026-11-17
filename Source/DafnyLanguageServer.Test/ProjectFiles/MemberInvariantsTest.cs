@@ -94,6 +94,21 @@ datatype Even = Even(n: int) {
   }
 
   [Fact]
+  public async Task VerificationOnSave() {
+    await SetUp(options => options.Set(ProjectManager.Verification, VerifyOnMode.Save));
+    var (projectPath, document) = await OpenInProject("member-invariants = true\n");
+
+    // Nothing is verified until the document is saved, and then the invariants are
+    await AssertNoDiagnosticsAreComing(CancellationToken);
+    await client.SaveDocumentAndWaitAsync(document, CancellationToken);
+    var diagnostics = await GetLastDiagnostics(document);
+    Assert.Equal(["invariant might not hold", "possible division by zero"], diagnostics.Select(d => d.Message).Order());
+    var failure = Assert.Single(diagnostics, d => d.Message == "invariant might not hold");
+    Assert.Equal(new Range(4, 7, 4, 8), failure.Range);
+    Directory.Delete(Path.GetDirectoryName(projectPath)!, true);
+  }
+
+  [Fact]
   public async Task OptionsFromTheProjectFile() {
     await SetUp(options => options.Set(CachingProjectFileOpener.ProjectFileCacheExpiry, 0));
     var (projectPath, document) = await OpenInProject("");
