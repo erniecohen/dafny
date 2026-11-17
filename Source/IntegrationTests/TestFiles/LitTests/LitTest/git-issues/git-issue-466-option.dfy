@@ -1,15 +1,15 @@
 // Recursion across module boundaries (https://github.com/erniecohen/dafny/issues/466) is opt-in.
 // Without --recursive-modules, a cycle of imports is the same error as before, under both resolvers
 // and with --member-invariants.  The option requires --member-invariants, which requires
-// --type-system-refresh.  With the option, the cycle is reported as a recursive module group, which
-// at this stage is still rejected.
+// --type-system-refresh.  With the option, the modules of the cycle are a recursive module group and
+// the program is accepted.
 // RUN: %exits-with 2 %baredafny resolve --use-basename-for-filename --show-snippets:false --standard-libraries:false --type-system-refresh:false "%s" > "%t"
 // RUN: %exits-with 2 %baredafny resolve --use-basename-for-filename --show-snippets:false --standard-libraries:false --type-system-refresh "%s" >> "%t"
 // RUN: %exits-with 2 %baredafny resolve --use-basename-for-filename --show-snippets:false --standard-libraries:false --type-system-refresh --member-invariants "%s" >> "%t"
 // RUN: %exits-with 2 %baredafny resolve --use-basename-for-filename --show-snippets:false --standard-libraries:false --type-system-refresh --recursive-modules "%s" >> "%t"
 // RUN: %exits-with 2 %baredafny resolve --use-basename-for-filename --show-snippets:false --standard-libraries:false --type-system-refresh:false --recursive-modules "%s" >> "%t"
 // RUN: %exits-with 2 %baredafny resolve --use-basename-for-filename --show-snippets:false --standard-libraries:false --type-system-refresh:false --member-invariants --recursive-modules "%s" >> "%t"
-// RUN: %exits-with 2 %baredafny resolve --use-basename-for-filename --show-snippets:false --standard-libraries:false --type-system-refresh --member-invariants --recursive-modules "%s" >> "%t"
+// RUN: %baredafny resolve --use-basename-for-filename --show-snippets:false --standard-libraries:false --type-system-refresh --member-invariants --recursive-modules "%s" >> "%t"
 // RUN: %diff "%s.expect" "%t"
 
 module A {

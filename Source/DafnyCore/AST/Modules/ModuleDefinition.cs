@@ -293,7 +293,22 @@ Generate module names in the older A_mB_mC style instead of the current A.B.C sc
   public static bool InSameSCC(ICallable a, ICallable b) {
     if (a is SpecialFunction || b is SpecialFunction) { return false; }
     var module = a.EnclosingModule;
-    return module == b.EnclosingModule && module.CallGraph.GetSCCRepresentative(a) == module.CallGraph.GetSCCRepresentative(b);
+    return InSameRecursiveGroup(module, b.EnclosingModule) && module.CallGraph.GetSCCRepresentative(a) == module.CallGraph.GetSCCRepresentative(b);
+  }
+
+  /// <summary>
+  /// The recursive module group of this module (--recursive-modules, issue 466), or null if the module
+  /// is in no cycle of imports.  The members of a group share one CallGraph, and every analysis that asks
+  /// whether two declarations are in the same module, in order to decide whether they can be mutually
+  /// recursive, asks InSameRecursiveGroup instead.
+  /// </summary>
+  public RecursiveModuleGroup? RecursiveGroup;
+
+  /// <summary>
+  /// True if "a" and "b" are the same module or members of the same recursive module group.
+  /// </summary>
+  public static bool InSameRecursiveGroup(ModuleDefinition? a, ModuleDefinition? b) {
+    return a == b || (a?.RecursiveGroup != null && a.RecursiveGroup == b?.RecursiveGroup);
   }
 
   /// <summary>
@@ -473,6 +488,26 @@ Generate module names in the older A_mB_mC style instead of the current A.B.C sc
   /// return value.
   /// </summary>
   public bool Resolve(ModuleSignature sig, ModuleResolver resolver, string? exportSetName = null) {
+    // An export view, an abstract signature and the system module are resolved alone, also by the resolver
+    // of a member of a recursive module group.
+    var group = resolver.Group;
+    var groupOfExportView = resolver.GroupOfExportView;
+    resolver.Group = null;
+    resolver.GroupOfExportView = group ?? groupOfExportView;
+    foreach (var _ in ResolveInPhases(sig, resolver, exportSetName)) {
+    }
+    resolver.Group = group;
+    resolver.GroupOfExportView = groupOfExportView;
+    return resolver.ModuleResolveResult;
+  }
+
+  /// <summary>
+  /// Resolve, phase by phase (see LiteralModuleDecl.ResolveInPhases).  The result is left in
+  /// resolver.ModuleResolveResult.
+  /// </summary>
+  public IEnumerable<string> ResolveInPhases(ModuleSignature sig, ModuleResolver resolver, string? exportSetName = null) {
+    resolver.ModuleResolveResult = false;
+    var group = resolver.Group;
     Contract.Requires(resolver.AllTypeConstraints.Count == 0);
     Contract.Ensures(resolver.AllTypeConstraints.Count == 0);
 
@@ -481,13 +516,15 @@ Generate module names in the older A_mB_mC style instead of the current A.B.C sc
     foreach (var d in TopLevelDecls) {
       if (d is AliasModuleDecl importDecl) {
         var importSig = importDecl.TargetQId.Root != null ? importDecl.TargetQId.Root.Signature : importDecl.Signature;
-        if (importSig is not { ModuleDef: { SuccessfullyResolved: true } }) {
-          return false;
+        if ((group ?? resolver.GroupOfExportView) is { } importingGroup && importSig?.ModuleDef is { } imported && importingGroup.Contains(imported)) {
+          // a member of the group, which is being resolved with this module
+        } else if (importSig is not { ModuleDef: { SuccessfullyResolved: true } }) {
+          yield break;
         }
       } else if (d is AbstractModuleDecl abstractImportDecl) {
         var importSig = abstractImportDecl.OriginalSignature;
         if (importSig is not { ModuleDef: { SuccessfullyResolved: true } }) {
-          return false;
+          yield break;
         }
       } else if (d is LiteralModuleDecl nestedModuleDecl) {
         if (!nestedModuleDecl.ModuleDef.SuccessfullyResolved) {
@@ -498,7 +535,7 @@ Generate module names in the older A_mB_mC style instead of the current A.B.C sc
               nestedModuleDecl.Name);
           }
 
-          return false;
+          yield break;
         }
       }
     }
@@ -507,14 +544,20 @@ Generate module names in the older A_mB_mC style instead of the current A.B.C sc
     resolver.moduleInfo = ModuleResolver.MergeSignature(sig, resolver.ProgramResolver.SystemModuleManager.systemNameInfo);
     Type.PushScope(resolver.moduleInfo.VisibilityScope);
     ModuleResolver.ResolveOpenedImports(resolver.moduleInfo, this, resolver.Reporter, resolver); // opened imports do not persist
-    var datatypeDependencies = new Graph<IndDatatypeDecl>();
-    var codatatypeDependencies = new Graph<CoDatatypeDecl>();
+    var datatypeDependencies = group?.DatatypeDependencies ?? new Graph<IndDatatypeDecl>();
+    var codatatypeDependencies = group?.CodatatypeDependencies ?? new Graph<CoDatatypeDecl>();
     var allDeclarations = AllDeclarationsAndNonNullTypeDecls(TopLevelDecls).ToList();
+    if (group != null) {
+      group.MemberDeclarations[this] = allDeclarations;
+    }
     int prevErrorCount = resolver.reporter.Count(ErrorLevel.Error);
     // Close setup before timing the actual member signatures. Export-view Resolve calls
     // share the containing module's phase list, but have distinct constant phase names.
     PipelineProfile.ModulePhase(resolver.Options, exportSetName == null ? "resolveSetup" : "exportViewSetup");
-    resolver.ResolveTopLevelDecls_Signatures(this, sig, allDeclarations, datatypeDependencies, codatatypeDependencies);
+    yield return "setup";
+    foreach (var phase in resolver.ResolveTopLevelDecls_SignaturesInPhases(this, sig, allDeclarations, datatypeDependencies, codatatypeDependencies)) {
+      yield return phase;
+    }
     PipelineProfile.ModulePhase(resolver.Options, exportSetName == null ? "signature" : "exportSignature");
     Contract.Assert(resolver.AllTypeConstraints.Count == 0); // signature resolution does not add any type constraints
 
@@ -524,13 +567,17 @@ Generate module names in the older A_mB_mC style instead of the current A.B.C sc
       resolver.ResolveModuleAttributes(this, allDeclarations);
       PipelineProfile.ModulePhase(resolver.Options, exportSetName == null ? "moduleAttributes" : "exportModuleAttributes");
     }
+    yield return "moduleAttributes";
 
     if (resolver.reporter.Count(ErrorLevel.Error) == prevErrorCount) {
-      resolver.ResolveTopLevelDecls_Core(allDeclarations, datatypeDependencies, codatatypeDependencies,
-        exportSetName == null ? Name : $"{Name} export {exportSetName}", exportSetName != null);
+      foreach (var phase in resolver.ResolveTopLevelDecls_CoreInPhases(allDeclarations, datatypeDependencies, codatatypeDependencies,
+                 exportSetName == null ? Name : $"{Name} export {exportSetName}", exportSetName != null)) {
+        yield return phase;
+      }
       PipelineProfile.ModulePhase(resolver.Options, exportSetName == null ? "body" : "exportBody");
     }
 
+    yield return "body";
     Type.PopScope(resolver.moduleInfo.VisibilityScope);
     resolver.moduleInfo = oldModuleInfo;
 
@@ -598,7 +645,7 @@ Generate module names in the older A_mB_mC style instead of the current A.B.C sc
     }
 
     PipelineProfile.ModulePhase(resolver.Options, exportSetName == null ? "accessibleMembers" : "exportAccessibleMembers");
-    return true;
+    resolver.ModuleResolveResult = true;
   }
 
   private static NameSegment TopLevelDeclToNameSegment(TopLevelDecl decl, IOrigin tok) {

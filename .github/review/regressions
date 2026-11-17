@@ -770,6 +770,17 @@ git-issues/git-issue-466-codatatype.dfy
 git-issues/git-issue-466-libraries.dfy
 git-issues/git-issue-466-accepted.dfy
 
+# Recursion across module boundaries, second stage: a recursive module group is resolved and verified
+# as one module would be.  Accepted programs with false controls, the termination gate (every cycle of
+# calls across members is broken by an error), the programs the resolver rejects, what is not yet
+# supported, and the tools (https://github.com/erniecohen/dafny/issues/466).
+git-issues/git-issue-466-stage2-accepted.dfy
+git-issues/git-issue-466-stage2-termination.dfy
+git-issues/git-issue-466-stage2-rejected.dfy
+git-issues/git-issue-466-stage2-rejected-names.dfy
+git-issues/git-issue-466-stage2-unsupported.dfy
+git-issues/git-issue-466-stage2-tools.dfy
+
 # A module that replaces a replaceable module may not import it or depend on a module that depends on it; the module graph is acyclic once every use of the replaced module means the replacement, and the old rule let a lemma cycle through the two prove false (https://github.com/erniecohen/dafny/issues/405).
 git-issues/github-issue-405.dfy
 

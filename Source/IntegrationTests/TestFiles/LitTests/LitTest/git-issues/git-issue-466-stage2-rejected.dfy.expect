@@ -1,0 +1,9 @@
+git-issue-466-stage2-rejected.dfy(10,8): Error: const definition contains a cycle: x -> y -> x
+git-issue-466-stage2-rejected.dfy(26,7): Error: recursive constraint dependency involving a subset type: Pos -> Ok -> Pos
+git-issue-466-stage2-rejected.dfy(37,10): Error: recursive constraint dependency involving a newtype: N -> Ok -> N
+git-issue-466-stage2-rejected.dfy(48,20): Error: cannot use naked function in recursive setting. Possible solution: eta expansion.
+git-issue-466-stage2-rejected.dfy(60,30): Error: using the type being defined ('E') here would cause a logical inconsistency by defining a type whose cardinality exceeds itself (like the Continuum Transfunctioner, you might say its power would then be exceeded only by its mystery)
+git-issue-466-stage2-rejected.dfy(70,28): Error: sorry, tail-call optimizations are not supported for mutually recursive functions
+git-issue-466-stage2-rejected.dfy(86,13): Error: == can only be applied to expressions of types that support equality (got D<int -> int>)
+git-issue-466-stage2-rejected.dfy(89,13): Error: == can only be applied to expressions of types that support equality (got D<U>) (perhaps try declaring type parameter 'U' on line 88 as 'U(==)', which says it can only be instantiated with a type that supports equality)
+8 resolution/type errors detected in git-issue-466-stage2-rejected.dfy

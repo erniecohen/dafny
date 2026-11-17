@@ -915,21 +915,44 @@ the option, any cycle of module dependencies is an error, as described above.
 
 With the option, modules that import each other form a _recursive module
 group_: the modules of a cycle of imports, together with every other module on
-a cycle with them. A group is meant to mean what one module with the
-declarations of all its members would mean, with the names and export sets of
-the modules kept.
+a cycle with them. A group means what one module with the declarations of all
+its members would mean, with the names and export sets of the modules kept.
 
-<!-- %no-check -->
+<!-- %check-verify %options --type-system-refresh --member-invariants --recursive-modules -->
 ```dafny
 module A {
   import B
   datatype T = Leaf | Node(u: B.U)
+  function Size(t: T): nat {
+    match t
+    case Leaf => 1
+    case Node(u) => 1 + B.Size(u)
+  }
 }
 module B {
   import A
   datatype U = U(t: A.T)
+  function Size(u: U): nat { A.Size(u.t) }
 }
 ```
+
+The declarations of the members are resolved and verified together:
+
+* Types, constants, functions, methods and lemmas of the members may use each
+  other. A call from one member to another is checked for termination as a
+  call inside one module is, with the same `decreases` clauses and the same
+  errors, so mutual recursion across the members needs a measure that
+  decreases.
+* Each rule about the declarations of one module applies to the declarations
+  of the group: a cycle among constants, type synonyms, or the constraints of
+  subset types and newtypes is an error; a datatype may not occur left of an
+  arrow in its own definition; a cycle of datatypes with no value is reported;
+  and whether a type supports equality or can be auto-initialized is computed
+  for the group.
+* An export set hides from the other members what it hides from any other
+  importer: a function that a member provides and does not reveal is opaque to
+  the other members, and a name that it does not export is not visible to them.
+* `--show-hints` lists the members of each group at each member.
 
 Only plain imports (`import B`, `import X = B`, `import opened B`, and imports
 of export sets) may be part of a cycle. Each of the following must lead from a
@@ -948,12 +971,25 @@ an error that names it:
 A replaceable module may not be in a group, a module may not import itself, and
 a program that has a group may not declare a codatatype.
 
-In this stage the groups are computed and checked, and `--show-hints` lists the
-members of each group at each member, but a group of more than one module is
-then rejected as not yet supported. So no program is accepted with the option
-that is rejected without it. A `.doo` library built with `--recursive-modules`
-requires its client to enable the option too; one built without it records
-nothing.
+The following are not yet supported. Each is an error, so nothing is accepted
+that a later stage would have to reject:
+
+* a member of a group that is abstract, that refines or replaces a module, or
+  that declares an abstract import or an invariant;
+* a class or other type of one member that extends a trait of another member
+  (a type may extend a trait of its own module, and a trait of a module
+  outside the group under the rules that apply without the option);
+* a module outside a group that refines a member, or that names a member in an
+  abstract import;
+* imports of the members of one group that name their targets through each
+  other (such as `import X = B.Y` in `A` beside `import Y = A.X` in `B`);
+* a group in a library: a module of a group must be among the files being
+  verified;
+* compiling a program that has a group: `dafny build`, `dafny run`,
+  `dafny translate` and a library build stop with an error after verification.
+
+A `.doo` library built with `--recursive-modules` requires its client to enable
+the option too; one built without it records nothing.
 
 ## 4.8. Name Resolution {#sec-name-resolution}
 

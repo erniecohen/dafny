@@ -519,20 +519,26 @@ public class TypeRefinementVisitor : ASTVisitor<IASTVisitorContext> {
     base.VisitExtendedPattern(pattern, context);
   }
 
-  public void Solve(ErrorReporter reporter, bool debugPrint) {
+  /// <summary>
+  /// Returns whether any type changed.
+  /// </summary>
+  public bool Solve(ErrorReporter reporter, bool debugPrint) {
     var context = new FlowContext(systemModuleManager, reporter, debugPrint,
       InvariantConstructorInference: systemModuleManager.Options.Get(CommonOptionBag.InvariantConstructorInference));
+    var changed = false;
     bool anythingChanged;
     do {
       anythingChanged = false;
       foreach (var flow in flows.Where(flow => !flow.HasError)) {
         anythingChanged |= flow.Update(context);
       }
+      changed |= anythingChanged;
     } while (anythingChanged);
 
     if (debugPrint) {
       DebugPrint();
     }
+    return changed;
   }
 
 }

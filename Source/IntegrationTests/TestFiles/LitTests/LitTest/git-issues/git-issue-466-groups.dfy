@@ -1,9 +1,8 @@
 // Recursion across module boundaries (https://github.com/erniecohen/dafny/issues/466), first stage:
 // with --recursive-modules, the modules of a cycle of plain imports form a recursive module group.
-// --show-hints lists the members of each group at each member.  A group of more than one module is
-// not yet supported, so each is an error.  Modules that are only above or below a group, and the
-// modules of a diamond, are in no group.
-// RUN: %exits-with 2 %resolve --member-invariants --recursive-modules --show-hints "%s" > "%t"
+// --show-hints lists the members of each group at each member.  Modules that are only above or
+// below a group, and the modules of a diamond, are in no group.
+// RUN: %resolve --member-invariants --recursive-modules --show-hints "%s" > "%t"
 // RUN: %diff "%s.expect" "%t"
 
 // a group of two
@@ -45,13 +44,13 @@ module Outer {
 
 // imports of export sets, opened imports and renamed imports
 module Exp1 {
-  export E provides T
+  export E reveals T
   import Exp2`E
   type T = int
   const c: Exp2.U := 0
 }
 module Exp2 {
-  export E provides U
+  export E reveals U
   import opened Exp3
   type U = int
   const d: V := 0

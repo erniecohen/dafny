@@ -1,0 +1,12 @@
+git-issue-466-stage2-unsupported.dfy(13,16): Error: abstract module Abstract1 is in a recursive module group; this is not yet supported
+git-issue-466-stage2-unsupported.dfy(18,16): Error: abstract module Abstract2 is in a recursive module group; this is not yet supported
+git-issue-466-stage2-unsupported.dfy(27,25): Error: module Refining1, which is in a recursive module group, refines or replaces module Spec; this is not yet supported
+git-issue-466-stage2-unsupported.dfy(40,27): Error: module Replacing1, which is in a recursive module group, refines or replaces module Service; this is not yet supported
+git-issue-466-stage2-unsupported.dfy(50,16): Error: abstract module Importing1 is in a recursive module group; this is not yet supported
+git-issue-466-stage2-unsupported.dfy(52,9): Error: module Importing1, which is in a recursive module group, declares the abstract import X; this is not yet supported
+git-issue-466-stage2-unsupported.dfy(62,4): Error: datatype 'Range' declares an invariant in module Invariant1, which is in a recursive module group; this is not yet supported
+git-issue-466-stage2-unsupported.dfy(81,23): Error: module Refiner refines or replaces module Plain1, which is in a recursive module group; this is not yet supported
+git-issue-466-stage2-unsupported.dfy(88,9): Error: the abstract import X names module Plain2, which is in a recursive module group; this is not yet supported
+9 resolution/type errors detected in git-issue-466-stage2-unsupported.dfy
+git-issue-466-trait.dfy(14,25): Error: class 'C' extends trait 'Trait1.T', which is declared in another module of its recursive module group; this is not yet supported
+1 resolution/type errors detected in git-issue-466-trait.dfy

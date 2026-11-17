@@ -7,5 +7,5 @@ git-issue-466-option.dfy(15,7): Error: module definition contains a cycle (note:
 Error: --recursive-modules requires --member-invariants
 Error: --recursive-modules requires --member-invariants
 Error: --member-invariants requires --type-system-refresh
-git-issue-466-option.dfy(15,7): Error: modules A and B import each other; a recursive module group of more than one module is not yet supported
-1 resolution/type errors detected in git-issue-466-option.dfy
+
+Dafny program verifier did not attempt verification

@@ -514,6 +514,8 @@ namespace Microsoft.Dafny {
       public readonly ISet<Declaration> StillNeedsPreTypeSignature;
       public readonly Stack<Declaration> InFirstPhase = new Stack<Declaration>();
       public readonly Dictionary<string, TopLevelDecl> PreTypeBuiltins;
+      /// <summary>If non-null, the state is that of this recursive module group, not of one module.</summary>
+      public RecursiveModuleGroup Group;
 
       public PreTypeInferenceModuleState(List<Declaration> declarations, Dictionary<string, TopLevelDecl> preTypeBuiltins) {
         StillNeedsPreTypeSignature = new HashSet<Declaration>(declarations);
@@ -809,6 +811,20 @@ namespace Microsoft.Dafny {
     /// For every declaration in "declarations", resolve names and determine pre-types.
     /// </summary>
     public static void ResolveDeclarations(List<TopLevelDecl> declarations, ModuleResolver resolver, bool firstPhaseOnly = false) {
+      var group = resolver.Group;
+      resolver.Group = null;
+      foreach (var _ in ResolveDeclarationsInPhases(declarations, resolver, firstPhaseOnly)) {
+      }
+      resolver.Group = group;
+    }
+
+    /// <summary>
+    /// ResolveDeclarations, phase by phase (see LiteralModuleDecl.ResolveInPhases).  In a recursive module
+    /// group, the first phase of every member is done before the second phase of any, and the lazy order of
+    /// the first phase runs over the declarations of all members: what one member needs of another is
+    /// resolved by the resolver of the other.
+    /// </summary>
+    public static IEnumerable<string> ResolveDeclarationsInPhases(List<TopLevelDecl> declarations, ModuleResolver resolver, bool firstPhaseOnly = false) {
       // Each (top-level or member) declaration is done in two phases.
       //
       // The goal of the first phase is to fill in the pre-types in the declaration's signature (and, if the declaration is a
@@ -830,17 +846,29 @@ namespace Microsoft.Dafny {
       // for each declaration, in the order given.
 
       var allDeclarations = AllTopLevelOrMemberDeclarations(declarations).ToList();
-      var preTypeInferenceModuleState = new PreTypeInferenceModuleState(allDeclarations, resolver.SystemModuleManager.PreTypeBuiltins);
+      PreTypeInferenceModuleState preTypeInferenceModuleState;
+      var group = resolver.Group;
+      if (group == null) {
+        preTypeInferenceModuleState = new PreTypeInferenceModuleState(allDeclarations, resolver.SystemModuleManager.PreTypeBuiltins);
+      } else {
+        if (!group.Shared.TryGetValue("preTypeInference", out var shared)) {
+          shared = new PreTypeInferenceModuleState(AllTopLevelOrMemberDeclarations(group.AllDeclarations()).ToList(),
+            resolver.SystemModuleManager.PreTypeBuiltins) { Group = group };
+          group.Shared["preTypeInference"] = shared;
+        }
+        preTypeInferenceModuleState = (PreTypeInferenceModuleState)shared;
+      }
       foreach (var d in allDeclarations) {
         Contract.Assert(resolver.VisibleInScope(d));
         ResolvePreTypeSignature(d, preTypeInferenceModuleState, resolver);
       }
+      yield return "preTypeSignatures";
 
       if (resolver.Options.Get(CommonOptionBag.UserDefinedOperators)) {
         var operatorErrorCount = resolver.Reporter.ErrorCount;
         OperatorResolution.Validate(declarations, resolver);
         if (resolver.Reporter.ErrorCount != operatorErrorCount) {
-          return;
+          yield break;
         }
       }
       if (!firstPhaseOnly) {
@@ -862,6 +890,17 @@ namespace Microsoft.Dafny {
     /// and parent types are inherited.
     /// </summary>
     private static void ResolvePreTypeSignature(Declaration d, PreTypeInferenceModuleState preTypeInferenceModuleState, ModuleResolver resolver) {
+      if (preTypeInferenceModuleState.Group is { } group && preTypeInferenceModuleState.StillNeedsPreTypeSignature.Contains(d)) {
+        // The declaration is resolved by the resolver of its module, with the names and the visibility of that module.
+        var module = d is TopLevelDecl topLevel ? topLevel.EnclosingModuleDefinition : ((MemberDecl)d).EnclosingClass.EnclosingModuleDefinition;
+        var owner = group.Resolvers[module];
+        if (owner != resolver) {
+          Type.PushScope(owner.moduleInfo.VisibilityScope);
+          ResolvePreTypeSignature(d, preTypeInferenceModuleState, owner);
+          Type.PopScope(owner.moduleInfo.VisibilityScope);
+          return;
+        }
+      }
       var preTypeResolver = new PreTypeResolver(resolver, preTypeInferenceModuleState);
       var previousErrorCount = preTypeResolver.ErrorCount;
 

@@ -1,0 +1,50 @@
+git-issue-466-stage2-termination.dfy(420,11): Warning: because of cyclic dependencies among constructor argument types, no instances of datatype 'D' can be constructed
+git-issue-466-stage2-termination.dfy(428,11): Warning: because of cyclic dependencies among constructor argument types, no instances of datatype 'E' can be constructed
+git-issue-466-stage2-termination.dfy(14,43): Error: cannot prove termination; try supplying a decreases clause
+git-issue-466-stage2-termination.dfy(23,43): Error: cannot prove termination; try supplying a decreases clause
+git-issue-466-stage2-termination.dfy(32,16): Error: cannot prove termination; try supplying a decreases clause
+git-issue-466-stage2-termination.dfy(40,16): Error: cannot prove termination; try supplying a decreases clause
+git-issue-466-stage2-termination.dfy(52,15): Error: decreases clause might not decrease
+git-issue-466-stage2-termination.dfy(72,22): Error: cannot prove termination; try supplying a decreases clause
+git-issue-466-stage2-termination.dfy(80,22): Error: cannot prove termination; try supplying a decreases clause
+git-issue-466-stage2-termination.dfy(98,15): Error: decreases clause might not decrease
+git-issue-466-stage2-termination.dfy(106,15): Error: decreases clause might not decrease
+git-issue-466-stage2-termination.dfy(114,28): Error: cannot prove termination; try supplying a decreases clause
+git-issue-466-stage2-termination.dfy(121,39): Error: cannot prove termination; try supplying a decreases clause
+git-issue-466-stage2-termination.dfy(128,26): Error: cannot prove termination; try supplying a decreases clause
+git-issue-466-stage2-termination.dfy(142,26): Error: cannot prove termination; try supplying a decreases clause
+git-issue-466-stage2-termination.dfy(152,22): Error: cannot prove termination; try supplying a decreases clause
+git-issue-466-stage2-termination.dfy(163,22): Error: cannot prove termination; try supplying a decreases clause
+git-issue-466-stage2-termination.dfy(173,37): Error: cannot prove termination; try supplying a decreases clause
+git-issue-466-stage2-termination.dfy(184,40): Error: cannot prove termination; try supplying a decreases clause
+git-issue-466-stage2-termination.dfy(193,48): Error: decreases clause might not decrease
+git-issue-466-stage2-termination.dfy(207,30): Error: cannot prove termination; try supplying a decreases clause
+git-issue-466-stage2-termination.dfy(218,19): Error: cannot prove termination; try supplying a decreases clause
+git-issue-466-stage2-termination.dfy(228,19): Error: cannot prove termination; try supplying a decreases clause
+git-issue-466-stage2-termination.dfy(237,27): Error: cannot prove termination; try supplying a decreases clause
+git-issue-466-stage2-termination.dfy(255,21): Error: cannot prove termination; try supplying a decreases clause
+git-issue-466-stage2-termination.dfy(271,21): Error: cannot prove termination; try supplying a decreases clause
+git-issue-466-stage2-termination.dfy(280,2): Error: a postcondition could not be proved on this return path
+git-issue-466-stage2-termination.dfy(279,12): Related location: this is the postcondition that could not be proved
+git-issue-466-stage2-termination.dfy(281,22): Error: cannot prove termination; try supplying a decreases clause
+git-issue-466-stage2-termination.dfy(288,2): Error: a postcondition could not be proved on this return path
+git-issue-466-stage2-termination.dfy(287,12): Related location: this is the postcondition that could not be proved
+git-issue-466-stage2-termination.dfy(289,22): Error: cannot prove termination; try supplying a decreases clause
+git-issue-466-stage2-termination.dfy(301,2): Error: a postcondition could not be proved on this return path
+git-issue-466-stage2-termination.dfy(300,22): Related location: this is the postcondition that could not be proved
+git-issue-466-stage2-termination.dfy(310,2): Error: a postcondition could not be proved on this return path
+git-issue-466-stage2-termination.dfy(309,22): Related location: this is the postcondition that could not be proved
+git-issue-466-stage2-termination.dfy(321,5): Error: cannot prove termination; try supplying a decreases clause
+git-issue-466-stage2-termination.dfy(329,7): Error: cannot prove termination; try supplying a decreases clause
+git-issue-466-stage2-termination.dfy(340,17): Error: cannot prove termination; try supplying a decreases clause
+git-issue-466-stage2-termination.dfy(351,17): Error: cannot prove termination; try supplying a decreases clause
+git-issue-466-stage2-termination.dfy(359,48): Error: cannot prove termination; try supplying a decreases clause
+git-issue-466-stage2-termination.dfy(370,48): Error: cannot prove termination; try supplying a decreases clause
+git-issue-466-stage2-termination.dfy(383,39): Error: cannot prove termination; try supplying a decreases clause
+git-issue-466-stage2-termination.dfy(387,21): Error: cannot prove termination; try supplying a decreases clause
+git-issue-466-stage2-termination.dfy(398,43): Error: cannot prove termination; try supplying a decreases clause
+git-issue-466-stage2-termination.dfy(402,7): Error: cannot prove termination; try supplying a decreases clause
+git-issue-466-stage2-termination.dfy(409,45): Error: default-value expression is not allowed to involve recursive or mutually recursive calls
+git-issue-466-stage2-termination.dfy(423,13): Error: variable 'x', which is subject to definite-assignment rules, might be uninitialized here
+
+Dafny program verifier finished with 15 verified, 42 errors
