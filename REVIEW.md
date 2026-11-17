@@ -909,6 +909,37 @@ unchanged.  The hidden `--legacy-replacement-cycles` option restores the old rul
 and migration.  The regression is `git-issues/github-issue-405.dfy`; the release note is
 `docs/dev/news/405.fix`.
 
+## Type parameters stored in memory ([issue 481](https://github.com/erniecohen/dafny/issues/481))
+
+`HigherOrderHeapAllocationChecker` rejects storing a value whose static type contains a function
+with read effects (`~>`) in a mutable field or an array element.  In generic code that static type
+is a type parameter, so a generic class could store a `() ~> bool` in a field of type `T`, the
+stored function could read itself, and a program proved `false`.  The new
+`HigherOrderHeapAllocationCheckerGeneric` runs right after it and infers, for each type parameter of
+the module, whether its values may be stored in memory: it occurs in the type of a mutable field of
+its class, trait or iterator; a store (an assignment or call result into a mutable field, an array
+element or a multi-dimensional array element, or an array initializer) has a value type that
+mentions it; or it occurs in a type argument passed, anywhere in its scope, to a type parameter that
+may be stored (explicit and inferred type arguments, expression types, `extends` clauses, datatype
+constructor arguments, newtype and synonym right-hand sides).  Arrays are not stored by fiat: an
+array's writes are stores in whatever code makes them.  Instantiating a stored type parameter with
+a type that contains a reading function, through datatypes, newtypes and synonyms, is an error that
+names the field or store that makes it stored.  The inferred reason is part of the declaration's
+interface: the cloner copies it, so it survives export sets and abstract imports, whose signatures
+drop bodies, and a `.doo` library is resolved from its source with its bodies.  An overriding
+member, or a declaration in a refining module (bodiless trait methods, and classes and other
+declarations of abstract modules), may store a type parameter only if the member it overrides, or
+the declaration it refines, may.  A base without a body that must allow a store declares its type
+parameter with the new characteristic `(!reads)`, spelled like `(!new)`; it is allowed only on a
+type parameter, and is the only marker the rule adds.
+Its kind is **rejects more**: it adds no fact or axiom, and changes no Boogie program it accepts.
+In a resolution screen of the 3,053 other `.dfy` files of the test suite it rejects
+no program that was accepted; the only negative test whose output changes is `Landin/Knot8.dfy`,
+which gets a second error at the instantiation.  The standard library resolves with no error under
+both resolvers.  Still, as for every soundness fix, the hidden `--legacy-generic-function-stores`
+option restores the old rule for comparison and migration.  The regression is
+`git-issues/github-issue-481.dfy`; the release note is `docs/dev/news/481.fix`.
+
 ## Comparing crossed component types ([issue 47](https://github.com/erniecohen/dafny/issues/47))
 
 With `--type-system-refresh`, `==`, `!=`, `in`, `!in` and prefix equality required, in their final
