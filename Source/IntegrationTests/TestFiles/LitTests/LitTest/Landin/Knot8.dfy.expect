@@ -1,2 +1,3 @@
 Knot8.dfy(14,9): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
-1 resolution/type errors detected in Knot8.dfy
+Knot8.dfy(12,6): Error: To prevent the creation of non-terminating functions, a type parameter whose values may be stored in memory cannot be instantiated with a type that contains a function with read effects: type parameter 'T' of 'Ref' is instantiated with '() ~> int', and the mutable field 'hogp' of 'Ref' has a type that mentions it
+2 resolution/type errors detected in Knot8.dfy

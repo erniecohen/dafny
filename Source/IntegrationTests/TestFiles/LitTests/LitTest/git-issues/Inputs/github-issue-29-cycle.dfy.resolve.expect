@@ -1,0 +1,2 @@
+github-issue-29-cycle.dfy(3,21): Error: replacing module Spec by Impl makes the module dependencies cyclic, because Impl uses Spec other than by replacing it: Impl -> Client -> Spec
+1 resolution/type errors detected in github-issue-29-cycle.dfy
