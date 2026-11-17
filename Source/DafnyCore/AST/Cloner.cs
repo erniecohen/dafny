@@ -491,7 +491,7 @@ namespace Microsoft.Dafny {
         c.Body.ConvertAll(stmt => CloneStmt(stmt, false)), CloneAttributes(c.Attributes));
     }
 
-    public ExtendedPattern CloneExtendedPattern(ExtendedPattern pat) {
+    public virtual ExtendedPattern CloneExtendedPattern(ExtendedPattern pat) {
       switch (pat) {
         case LitPattern p:
           return new LitPattern(p.Origin, CloneExpr(p.OrigLit));

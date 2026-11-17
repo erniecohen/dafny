@@ -360,6 +360,9 @@ true - All class instances are raw pointers and need to be manually deallocated"
   public static readonly Option<bool> LegacyFirstPhaseConstReads = new("--legacy-first-phase-const-reads", () => false,
     "Use the legacy, unsound rule that lets the first division of a constructor body (before 'new;') read a constant whose initializer depends on 'this', for migration and comparison only.") { IsHidden = true };
 
+  public static readonly Option<bool> LegacyInheritedNameCapture = new("--legacy-inherited-name-capture", () => false,
+    "Use the legacy, unsound rule that lets a refining module change what a name in inherited code refers to, for migration and comparison only.") { IsHidden = true };
+
   public static readonly Option<bool> LegacyUnguardedChar = new("--legacy-unguarded-char", () => false,
     "Use the legacy, inconsistent unguarded character axioms for migration and comparison only.") { IsHidden = true };
 
@@ -890,6 +893,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(LegacyElidedOverrideChecks, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacyInheritedConstructorFields, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacyInheritedTerminationChecks, OptionScope.Cli);
+    OptionRegistry.RegisterOption(LegacyInheritedNameCapture, OptionScope.Cli);
     OptionRegistry.RegisterOption(ModularTermination, OptionScope.Cli);
     OptionRegistry.RegisterOption(ModularTerminationTrust, OptionScope.Cli);
     OptionRegistry.RegisterOption(WarnUncheckedTermination, OptionScope.Cli);
