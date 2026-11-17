@@ -46,6 +46,10 @@ internal sealed class ModuleTranslationInputs {
       if (node is IVariable variable) { Visit(variable.UnnormalizedType); }
       if (node is TypeProxy { T: { } target }) { Visit(target); }
       if (node is BitvectorType bitvector) {
+        // The resolver declares each width the program uses, with its RotateLeft and RotateRight,
+        // as "bvN" in _System. A bitvector type does not name that declaration, so record it here,
+        // or the published _System loses it (https://github.com/erniecohen/dafny/issues/441).
+        BuiltinNames.Add(bitvector.Name);
         Bitwidths.Add(bitvector.Width);
         // Shift lowering can introduce the width's bit-length even when its
         // converted expression is not exposed as a structural AST child.
