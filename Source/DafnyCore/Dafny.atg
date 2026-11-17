@@ -1206,13 +1206,16 @@ TPCharOption<ref TypeParameterCharacteristics characteristics>
                       characteristics.AutoInit = Microsoft.Dafny.Type.AutoInitInfo.Nonempty;
                     }
                   } else {
-                    SemErr(ErrorId.p_unexpected_type_characteristic, t, $"unexpected type characteristic: '{t.val}' should be one of == or 0 or 00 or !new");
+                    SemErr(ErrorId.p_unexpected_type_characteristic, t, $"unexpected type characteristic: '{t.val}' should be one of == or 0 or 00 or !new or !reads");
                   }
                .)
-  | "!" "new"  (. characteristics.ContainsNoReferenceTypes = true; .)
+  | "!"
+    ( "new"    (. characteristics.ContainsNoReferenceTypes = true; .)
+    | "reads"  (. characteristics.ContainsNoReadingFunctions = true; .)
+    )
   | ANY        (. if (t.kind == _closeparen || t.kind == _comma) 
-                      SemErr(ErrorId.p_missing_type_characteristic, t, $"extra comma or missing type characteristic: should be one of == or 0 or 00 or !new");
-                  else SemErr(ErrorId.p_illegal_type_characteristic, t, $"illegal type characteristic: '{t.val}' should be one of == or 0 or 00 or !new");
+                      SemErr(ErrorId.p_missing_type_characteristic, t, $"extra comma or missing type characteristic: should be one of == or 0 or 00 or !new or !reads");
+                  else SemErr(ErrorId.p_illegal_type_characteristic, t, $"illegal type characteristic: '{t.val}' should be one of == or 0 or 00 or !new or !reads");
                 .)
   )
   .
@@ -1445,6 +1448,7 @@ MethodSpec<.bool isGhost, List<AttributedExpression> req, List<FrameExpression> 
      Contract.Requires(Cce.NonNullElements(mod));
      Contract.Requires(Cce.NonNullElements(ens));
      Contract.Requires(Cce.NonNullElements(decreases));
+     RetagMemberKeyword(); // a member invariant or witness may follow a method without a body (issue 105)
   .)
   SYNC
   { ReadsClause<reads, ref readsAttrs, false, false, true>
@@ -1655,13 +1659,11 @@ TypeAndToken<out Token tok, out Type ty, bool inExpressionContext>
   | NamedType<out ty, out tok, inExpressionContext>
   | rawType                         (. startToken = t; var retagged = CheckRetaggedToken(t); .)
     NamedType<out ty, out tok, inExpressionContext>
-                                    (. if (!retagged) {
-                                         // reported by CheckRetaggedToken
-                                       } else if (ty is UserDefinedType rawUdt) {
+                                    (. if (retagged) {   // otherwise reported by CheckRetaggedToken
+                                         // RetagRawType retags "raw" only before a name, and NamedType yields a UserDefinedType
+                                         var rawUdt = (UserDefinedType)ty;
                                          rawUdt.IsRawSyntax = true;
                                          rawUdt.SetOrigin(new SourceOrigin(startToken, t));
-                                       } else {
-                                         SemErr(ErrorId.p_raw_needs_named_type, startToken, "'raw' must be followed by the name of a type");
                                        }
                                     .)
   )
@@ -2114,6 +2116,7 @@ FunctionSpec<.List<AttributedExpression> reqs, List<FrameExpression> reads, List
 = (. Contract.Requires(Cce.NonNullElements(reqs));
      Contract.Requires(Cce.NonNullElements(reads));
      Contract.Requires(decreases == null || Cce.NonNullElements(decreases));
+     RetagMemberKeyword(); // a member invariant or witness may follow a function without a body (issue 105)
   .)
   SYNC
   { RequiresClause<reqs, true>

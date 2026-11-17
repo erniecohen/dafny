@@ -1,5 +1,5 @@
-git-issue-105-verify.dfy(8,2): Error: verification of a program that declares member invariants is not yet supported
-git-issue-105-verify.dfy(14,4): Error: verification of a program that declares member invariants is not yet supported
-git-issue-105-verify.dfy(22,11): Error: module 'Plain' is not verified: verification of a program that declares member invariants is not yet supported
+git-issue-105-verify.dfy(23,6): Error: the default module is not verified: the program declares a member invariant whose verification is not yet supported
+git-issue-105-verify.dfy(19,4): Error: verification of a member invariant of a newtype is not yet supported
+git-issue-105-verify.dfy(26,11): Error: module 'Plain' is not verified: the program declares a member invariant whose verification is not yet supported
 
 Dafny program verifier finished with 0 verified, 0 errors

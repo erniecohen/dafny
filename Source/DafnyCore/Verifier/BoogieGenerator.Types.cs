@@ -1104,6 +1104,7 @@ public partial class BoogieGenerator {
         if (cl.NonNullTypeDecl != null) {
           AddTypeDecl(cl.NonNullTypeDecl);
         }
+        AddClassInvariantTypeDecls(cl);
         if (d is IteratorDecl) {
           AddIteratorSpecAndBody((IteratorDecl)d);
         }
@@ -1111,6 +1112,10 @@ public partial class BoogieGenerator {
         var dd = (DatatypeDecl)d;
         AddDatatype(dd);
         AddClassMembers(dd, true, true);
+        if (dd.InvariantTypeDecl != null) {
+          // Issue 105: the type that the datatype's name denotes, the raw type restricted by the invariants
+          AddTypeDecl(dd.InvariantTypeDecl);
+        }
       } else if (d is SubsetTypeDecl) {
         AddTypeDecl((SubsetTypeDecl)d);
       } else if (d is TypeSynonymDecl) {
@@ -1153,6 +1158,19 @@ public partial class BoogieGenerator {
     this.fuelContext = oldFuelContext;
   }
 
+  /// <summary>
+  /// Issue 105: for a class with member invariants, the types "C?", the raw class restricted by the invariants, and
+  /// "raw C", the non-null raw class.
+  /// </summary>
+  void AddClassInvariantTypeDecls(ClassLikeDecl cl) {
+    if (cl.InvariantTypeDecl != null) {
+      AddTypeDecl(cl.InvariantTypeDecl);
+    }
+    if (cl.RawNonNullTypeDecl != null) {
+      AddTypeDecl(cl.RawNonNullTypeDecl);
+    }
+  }
+
   void AddTypeDecl(SubsetTypeDecl dd) {
     Contract.Requires(dd != null);
     Contract.Ensures(fuelContext == Contract.OldValue(fuelContext));
@@ -1160,7 +1178,9 @@ public partial class BoogieGenerator {
     FuelContext oldFuelContext = this.fuelContext;
     this.fuelContext = FuelSetting.NewFuelContext(dd);
 
-    if (!Attributes.Contains(dd.Attributes, "axiom")) {
+    // Issue 105: the well-formedness of the type of a declaration with member invariants is that of its invariants,
+    // which are checked as predicates, and of its witness, which is checked as a const of the type.
+    if (!Attributes.Contains(dd.Attributes, "axiom") && dd is not InvariantTypeDecl) {
       AddWellformednessCheck(dd);
     }
     currentModule = dd.EnclosingModuleDefinition;
@@ -1747,7 +1767,7 @@ public partial class BoogieGenerator {
 
     proofDependencies.SetCurrentDefinition(MethodVerboseName(decl.FullDafnyName, MethodTranslationKind.SpecWellformedness), null);
 
-    if (!InVerificationScope(decl)) {
+    if (!InVerificationScope(decl) && !AddedInvariantsInVerificationScope((Declaration)decl)) {
       // Checked in other file
       return;
     }

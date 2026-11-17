@@ -216,7 +216,7 @@ namespace Microsoft.Dafny {
       }
 
       return new TypeParameterCharacteristics(eqSupport, characteristics.AutoInit,
-        characteristics.ContainsNoReferenceTypes);
+        characteristics.ContainsNoReferenceTypes, characteristics.ContainsNoReadingFunctions);
     }
 
     public DatatypeCtor CloneCtor(DatatypeCtor ct) {
@@ -227,7 +227,11 @@ namespace Microsoft.Dafny {
     public TypeParameter CloneTypeParam(TypeParameter tp) {
       var result = (TypeParameter)typeParameterClones.GetOrCreate(tp,
         () => new TypeParameter(Origin(tp.Origin), tp.NameNode.Clone(this), tp.VarianceSyntax,
-          CloneTPChar(tp.Characteristics), tp.TypeBounds.ConvertAll(CloneType), tp.Attributes));
+          CloneTPChar(tp.Characteristics), tp.TypeBounds.ConvertAll(CloneType), tp.Attributes) {
+          // A clone that drops bodies (the signature of an abstract import, or of an export set) keeps
+          // what they stored (https://github.com/erniecohen/dafny/issues/481).
+          StoredInMemoryReason = tp.StoredInMemoryReason
+        });
       operatorClones?.Register(tp, result);
       return result;
     }
@@ -490,7 +494,7 @@ namespace Microsoft.Dafny {
         c.Body.ConvertAll(stmt => CloneStmt(stmt, false)), CloneAttributes(c.Attributes));
     }
 
-    public ExtendedPattern CloneExtendedPattern(ExtendedPattern pat) {
+    public virtual ExtendedPattern CloneExtendedPattern(ExtendedPattern pat) {
       switch (pat) {
         case LitPattern p:
           return new LitPattern(p.Origin, CloneExpr(p.OrigLit));

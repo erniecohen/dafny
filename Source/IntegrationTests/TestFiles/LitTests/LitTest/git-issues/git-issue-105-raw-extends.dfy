@@ -1,7 +1,7 @@
 // Member invariants (https://github.com/erniecohen/dafny/issues/105): "raw D" and raw members of a
 // datatype that extends traits, directly, through a diamond and generically, and of mutually
 // recursive datatypes. A raw value converts to a parent trait as to D itself: the resolver accepts
-// the conversion, and the verifier is to check it.
+// the conversion, and the verifier checks it (git-issue-105-general-traits.dfy).
 // RUN: %resolve --member-invariants --print-mode NoIncludes --rprint:- "%s" > "%t"
 // RUN: %diff "%s.expect" "%t"
 
@@ -64,12 +64,13 @@ module GenericExtends {
 }
 
 // Mutually recursive datatypes, each with an invariant. Only the invariants and raw members of a type
-// make its members raw: an invariant of Tree applies Forest.Count to a raw Forest, but Count is not raw.
-// Applying it there is a conversion of the raw value to Forest, which the verifier is to check.
+// make its members raw: an invariant of Tree applies Forest.Count to its component, a Forest, and Count
+// is not raw. (Applying Count to a raw Forest there would convert it to Forest, a type built from Tree,
+// which the extension condition rejects: see git-issue-105-extension.dfy.)
 module Mutual {
   datatype Tree = Leaf(key: int) | Node(key: int, kids: Forest) {
     invariant Node? ==> kids.Above(key)
-    invariant Forest.Nil.Count() == 0
+    invariant Node? ==> kids.Count() < 100
     function Size(): nat { if Leaf? then 1 else 1 + kids.Size() }
   }
 

@@ -1,0 +1,44 @@
+git-issue-105-variance.dfy(17,36): Warning: Could not find a trigger for this quantifier. Without a trigger, the quantifier may cause brittle verification. To silence this warning, add an explicit trigger using the {:trigger} attribute. For more information, see the section on quantifier instantiation rules in the reference manual.
+git-issue-105-variance.dfy(18,38): Warning: Could not find a trigger for this quantifier. Without a trigger, the quantifier may cause brittle verification. To silence this warning, add an explicit trigger using the {:trigger} attribute. For more information, see the section on quantifier instantiation rules in the reference manual.
+git-issue-105-variance.dfy(36,36): Warning: Could not find a trigger for this quantifier. Without a trigger, the quantifier may cause brittle verification. To silence this warning, add an explicit trigger using the {:trigger} attribute. For more information, see the section on quantifier instantiation rules in the reference manual.
+git-issue-105-variance.dfy(37,53): Warning: Could not find a trigger for this quantifier. Without a trigger, the quantifier may cause brittle verification. To silence this warning, add an explicit trigger using the {:trigger} attribute. For more information, see the section on quantifier instantiation rules in the reference manual.
+git-issue-105-variance.dfy(40,64): Warning: Could not find a trigger for this quantifier. Without a trigger, the quantifier may cause brittle verification. To silence this warning, add an explicit trigger using the {:trigger} attribute. For more information, see the section on quantifier instantiation rules in the reference manual.
+git-issue-105-variance.dfy(44,73): Warning: Could not find a trigger for this quantifier. Without a trigger, the quantifier may cause brittle verification. To silence this warning, add an explicit trigger using the {:trigger} attribute. For more information, see the section on quantifier instantiation rules in the reference manual.
+git-issue-105-variance.dfy(45,74): Warning: Could not find a trigger for this quantifier. Without a trigger, the quantifier may cause brittle verification. To silence this warning, add an explicit trigger using the {:trigger} attribute. For more information, see the section on quantifier instantiation rules in the reference manual.
+git-issue-105-variance.dfy(46,74): Warning: Could not find a trigger for this quantifier. Without a trigger, the quantifier may cause brittle verification. To silence this warning, add an explicit trigger using the {:trigger} attribute. For more information, see the section on quantifier instantiation rules in the reference manual.
+git-issue-105-variance.dfy(64,29): Error: formal type parameter 'X' is not used according to its variance specification (it is used left of an arrow) (perhaps try declaring 'X' as '-X' or '!X')
+git-issue-105-variance.dfy(79,16): Error: type parameter 'X' of 'Box' is declared covariant, but the invariants of 'Box' are not monotone in it: the universal quantifier over 'y: X' uses 'X' negatively
+git-issue-105-variance.dfy(79,65): Related location: the occurrence
+git-issue-105-variance.dfy(80,19): Error: type parameter 'X' of 'Exists' is declared contravariant, but the invariants of 'Exists' are not antitone in it: the existential quantifier over 'y: X' uses 'X' positively
+git-issue-105-variance.dfy(80,71): Related location: the occurrence
+git-issue-105-variance.dfy(81,24): Error: type parameter 'X' of 'ArrowExists' is declared covariant, but the invariants of 'ArrowExists' are not monotone in it: the existential quantifier over 'f: X -> int' uses 'X' negatively
+git-issue-105-variance.dfy(81,81): Related location: the occurrence
+git-issue-105-variance.dfy(82,24): Error: type parameter 'X' of 'ArrowForall' is declared contravariant, but the invariants of 'ArrowForall' are not antitone in it: the universal quantifier over 'f: X -> int' uses 'X' positively
+git-issue-105-variance.dfy(82,81): Related location: the occurrence
+git-issue-105-variance.dfy(83,23): Error: type parameter 'X' of 'NonVariant' is declared covariant, but the invariants of 'NonVariant' are not monotone in it: the existential quantifier over 'g: G<X>' uses 'X' both positively and negatively
+git-issue-105-variance.dfy(83,79): Related location: the occurrence
+git-issue-105-variance.dfy(84,19): Error: type parameter 'X' of 'Callee' is declared covariant, but the invariants of 'Callee' are not monotone in it: the call of 'All' uses 'X' negatively
+git-issue-105-variance.dfy(84,70): Related location: the occurrence
+git-issue-105-variance.dfy(85,22): Error: type parameter 'X' of 'Recursive' is declared covariant, but the invariants of 'Recursive' are not monotone in it: the call of 'RecBad' uses 'X' negatively
+git-issue-105-variance.dfy(85,72): Related location: the occurrence
+git-issue-105-variance.dfy(86,19): Error: type parameter 'X' of 'Opaque' is declared covariant, but the invariants of 'Opaque' are not monotone in it: the call of 'Bodiless', whose body is not known here, uses 'X' both positively and negatively
+git-issue-105-variance.dfy(86,75): Related location: the occurrence
+git-issue-105-variance.dfy(87,19): Error: type parameter 'X' of 'Hidden' is declared covariant, but the invariants of 'Hidden' are not monotone in it: the call of 'Hidden', whose body is not known here, uses 'X' both positively and negatively
+git-issue-105-variance.dfy(87,77): Related location: the occurrence
+git-issue-105-variance.dfy(88,16): Error: type parameter 'X' of 'Not' is declared covariant, but the invariants of 'Not' are not monotone in it: the existential quantifier over 'y: X' uses 'X' negatively
+git-issue-105-variance.dfy(88,61): Related location: the occurrence
+git-issue-105-variance.dfy(89,16): Error: type parameter 'X' of 'Iff' is declared covariant, but the invariants of 'Iff' are not monotone in it: the existential quantifier over 'y: X' uses 'X' both positively and negatively
+git-issue-105-variance.dfy(89,66): Related location: the occurrence
+git-issue-105-variance.dfy(90,16): Error: type parameter 'X' of 'Ite' is declared covariant, but the invariants of 'Ite' are not monotone in it: the existential quantifier over 'y: X' uses 'X' both positively and negatively
+git-issue-105-variance.dfy(90,62): Related location: the occurrence
+git-issue-105-variance.dfy(91,26): Error: type parameter 'X' of 'Comprehension' is declared covariant, but the invariants of 'Comprehension' are not monotone in it: the set comprehension over 'y: X' uses 'X' both positively and negatively
+git-issue-105-variance.dfy(91,84): Related location: the occurrence
+git-issue-105-variance.dfy(92,21): Error: type parameter 'X' of 'TypeTest' is declared contravariant, but the invariants of 'TypeTest' are not antitone in it: the type test against 'X' uses 'X' positively
+git-issue-105-variance.dfy(92,73): Related location: the occurrence
+git-issue-105-variance.dfy(93,21): Error: type parameter 'X' of 'Constant' is declared covariant, but the invariants of 'Constant' are not monotone in it: the constant 'k' uses 'X' negatively
+git-issue-105-variance.dfy(95,20): Related location: the occurrence
+git-issue-105-variance.dfy(97,17): Error: type parameter 'X' of 'Used' is declared covariant, but the invariants of 'Used' are not monotone in it: the function 'F', used as a value, uses 'X' both positively and negatively
+git-issue-105-variance.dfy(97,69): Related location: the occurrence
+git-issue-105-variance.dfy(98,19): Error: type parameter 'X' of 'Contra' is declared contravariant, but the invariants of 'Contra' are not antitone in it: the existential quantifier over 'y: X' uses 'X' positively
+git-issue-105-variance.dfy(98,71): Related location: the occurrence
+18 resolution/type errors detected in git-issue-105-variance.dfy

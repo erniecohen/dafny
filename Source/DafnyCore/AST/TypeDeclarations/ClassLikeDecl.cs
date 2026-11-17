@@ -8,6 +8,12 @@ namespace Microsoft.Dafny;
 public abstract class ClassLikeDecl : TopLevelDeclWithMembers, RevealableTypeDecl, ICanFormat, IHasDocstring {
   public NonNullTypeDecl? NonNullTypeDecl; // returns non-null value iff IsReferenceTypeDecl
 
+  /// <summary>
+  /// For a class with member invariants, the type "raw C" (issue 105): the non-null references of the class, whether
+  /// or not they satisfy the invariants. Set, with InvariantTypeDecl, when the module's names are registered.
+  /// </summary>
+  [FilledInDuringResolution] public RawNonNullTypeDecl? RawNonNullTypeDecl;
+
   public override bool CanBeRevealed() { return true; }
 
   public bool IsObjectTrait {

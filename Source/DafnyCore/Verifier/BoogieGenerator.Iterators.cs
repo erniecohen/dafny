@@ -31,6 +31,30 @@ using static Microsoft.Dafny.GenericErrors;
 
 namespace Microsoft.Dafny {
   public partial class BoogieGenerator {
+    /// <summary>
+    /// The body of an iterator is in the verification scope with the iterator.  The body of a copy whose SCC its module
+    /// changed is also in the scope with that module, when the copy comes from a refinement base outside the scope.
+    /// </summary>
+    bool IteratorBodyInVerificationScope(IteratorDecl iter) {
+      if (InVerificationScope(iter) || AddedInvariantsInVerificationScope(iter)) {
+        return true;
+      }
+      var module = iter.EnclosingModuleDefinition;
+      return MustCheckInheritedTermination(iter, options) && !module.IsFacade &&
+             module.ShouldVerify(program.Compilation) && iter.IsVisibleInScope(verificationScope);
+    }
+
+    /// <summary>
+    /// The scope token of the body of "iter".  It marks the body of a copy whose SCC the current module changed, so
+    /// that the pipeline verifies it.
+    /// </summary>
+    private CanVerifyOrigin IteratorBodyToken(IteratorDecl iter) {
+      var token = GetToken(iter);
+      return MustCheckInheritedTermination(iter, options)
+        ? new CanVerifyOrigin(token.CanVerify) { IsReverifiedInheritedCheck = true }
+        : token;
+    }
+
     void AddIteratorSpecAndBody(IteratorDecl iter) {
       Contract.Requires(iter != null);
       Contract.Ensures(fuelContext == Contract.OldValue(fuelContext));
@@ -42,11 +66,11 @@ namespace Microsoft.Dafny {
       // wellformedness check for method specification
       Bpl.Procedure proc = AddIteratorProc(iter, MethodTranslationKind.SpecWellformedness);
       sink.AddTopLevelDeclaration(proc);
-      if (InVerificationScope(iter)) {
+      if (InVerificationScope(iter) || AddedInvariantsInVerificationScope(iter)) {
         AddIteratorWellformednessCheck(iter, proc);
       }
       // the method itself
-      if (iter.Body != null && InVerificationScope(iter)) {
+      if (iter.Body != null && IteratorBodyInVerificationScope(iter)) {
         proc = AddIteratorProc(iter, MethodTranslationKind.Implementation);
         sink.AddTopLevelDeclaration(proc);
         // ...and its implementation
@@ -332,7 +356,7 @@ namespace Microsoft.Dafny {
         // emit the impl only when there are proof obligations.
         QKeyValue kv = etran.TrAttributes(iter.Attributes, null);
 
-        AddImplementationWithAttributes(GetToken(iter), proc, inParams,
+        AddImplementationWithAttributes(IteratorBodyToken(iter), proc, inParams,
           [], localVariables, stmts, kv);
       }
 

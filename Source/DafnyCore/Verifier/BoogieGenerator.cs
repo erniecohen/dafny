@@ -44,11 +44,16 @@ namespace Microsoft.Dafny {
     public ICanVerify CanVerify { get; }
 
     /// <summary>
-    /// Whether this is the override check of a member that a refining module copied from its refinement base and
-    /// must check again (see BoogieGenerator.MustReverifyInheritedOverrideCheck).  The pipeline verifies only such
-    /// tasks of a copy: whatever else the copy produces asserts nothing and was verified with the base.
+    /// Whether this is a check of a member that a refining module copied from its refinement base and must make
+    /// itself (see BoogieGenerator.MustVerifyCopy): an override check
+    /// (BoogieGenerator.MustReverifyInheritedOverrideCheck), the body of a constructor of a class to which the
+    /// module added fields (BoogieGenerator.MustCheckInheritedConstructorFields), a check of the termination of
+    /// calls in an SCC the module changed (BoogieGenerator.MustCheckInheritedTermination), or, under
+    /// --member-invariants, a check that converts to a type with an invariant the module added, or of a member that
+    /// became raw (BoogieGenerator.MustCheckAddedInvariants).  The pipeline verifies only such tasks of a copy:
+    /// whatever else the copy produces asserts nothing new and was verified with the base.
     /// </summary>
-    public bool IsReverifiedOverrideCheck { get; init; }
+    public bool IsReverifiedInheritedCheck { get; init; }
   }
 
   public partial class BoogieGenerator {
@@ -765,27 +770,28 @@ namespace Microsoft.Dafny {
     }
 
     /// <summary>
-    /// Issue 105: member invariants (--member-invariants) are resolved, but not yet verified. No module of a program
-    /// that declares one is translated, since the types of its modules may depend on the invariants. Report each
-    /// invariant of "forModule", or, if it declares none, the first of its declarations that would have been verified.
-    /// Return whether the program declares a member invariant.
+    /// Issue 105: member invariants (--member-invariants) are verified for inductive datatypes, classes, traits and
+    /// abstract types, declared or inherited, in any module. If the program, libraries included, has any other
+    /// invariant, declared or inherited, no module of it is translated, since the types of every module may depend
+    /// on the invariants. Then report each unsupported invariant of "forModule", or, if it has none, the first of its
+    /// declarations that would have been verified. Return whether the program has an unsupported invariant.
     /// </summary>
     private bool ReportUnsupportedMemberInvariants(Program p, ModuleDefinition forModule) {
-      if (!DeclaresMemberInvariants(p)) {
+      if (!DeclaresUnsupportedMemberInvariants(p)) {
         return false;
       }
-      const string notYet = "verification of a program that declares member invariants is not yet supported";
-      var invariants = Invariants(forModule).ToList();
-      foreach (var invariant in invariants) {
-        reporter.Error(MessageSource.Translator, invariant.NameNode.Origin, notYet);
+      var unsupported = UnsupportedInvariants(forModule).ToList();
+      foreach (var (origin, reason) in unsupported) {
+        reporter.Error(MessageSource.Translator, origin, reason);
       }
-      if (invariants.Count == 0) {
+      if (unsupported.Count == 0) {
         var verifiable = forModule.TopLevelDecls
           .SelectMany(decl => decl is TopLevelDeclWithMembers withMembers ? withMembers.Members.Prepend<Declaration>(decl) : [decl])
           .FirstOrDefault(decl => decl is ICanVerify { ShouldVerify: true } && decl.NameNode.Origin.Uri != null);
         if (verifiable != null) {
           var moduleName = forModule.IsDefaultModule ? "the default module" : $"module '{forModule.FullDafnyName}'";
-          reporter.Error(MessageSource.Translator, verifiable.NameNode.Origin, $"{moduleName} is not verified: {notYet}");
+          reporter.Error(MessageSource.Translator, verifiable.NameNode.Origin,
+            $"{moduleName} is not verified: the program declares a member invariant whose verification is not yet supported");
         }
       }
       return true;
@@ -796,11 +802,42 @@ namespace Microsoft.Dafny {
     }
 
     /// <summary>
-    /// Issue 105: whether the program, libraries included, declares a member invariant under --member-invariants, in
-    /// which case no module of it is translated. The translation cache checks this too, since a module's key covers
-    /// only what the module depends on.
+    /// Issue 105: the invariants of "module" whose verification is not yet supported, each with where to report it and
+    /// why: an invariant of a newtype, and a newtype that extends a trait with invariants (reported at its name).
     /// </summary>
-    internal static bool DeclaresMemberInvariants(Program p) {
+    private static IEnumerable<(IOrigin Origin, string Reason)> UnsupportedInvariants(ModuleDefinition module) {
+      const string notYet = "is not yet supported";
+      foreach (var decl in module.TopLevelDecls.OfType<TopLevelDeclWithMembers>()) {
+        var invariants = decl.Members.OfType<MemberInvariant>().ToList();
+        if (!InvariantTypeDecl.MayHaveInvariants(decl)) {
+          var kind = ("aeiou".Contains(decl.WhatKind[0]) ? "an " : "a ") + decl.WhatKind;
+          foreach (var invariant in invariants) {
+            yield return (invariant.NameNode.Origin, $"verification of a member invariant of {kind} {notYet}");
+          }
+          if (decl.Traits.Any(ExtendsTraitWithInvariants)) {
+            yield return (decl.NameNode.Origin, $"verification of {kind} that extends a trait with member invariants {notYet}");
+          }
+        }
+      }
+    }
+
+    private static bool ExtendsTraitWithInvariants(Type parent) {
+      return parent is UserDefinedType { ResolvedClass: InvariantTypeDecl or NonNullTypeDecl { Class.InvariantTypeDecl: not null } };
+    }
+
+    /// <summary>
+    /// Issue 105: whether the program, libraries included, declares a member invariant under --member-invariants
+    /// whose verification is not yet supported, in which case no module of it is translated. The translation cache
+    /// does not reuse a module of such a program, since a module's key covers only what the module depends on.
+    /// </summary>
+    internal static bool DeclaresUnsupportedMemberInvariants(Program p) {
+      return DeclaresMemberInvariants(p) && p.RawModules().Any(module => UnsupportedInvariants(module).Any());
+    }
+
+    /// <summary>
+    /// Issue 105: whether the program, libraries included, declares a member invariant under --member-invariants.
+    /// </summary>
+    private static bool DeclaresMemberInvariants(Program p) {
       return p.Options.Get(CommonOptionBag.MemberInvariants) && p.RawModules().Any(module => Invariants(module).Any());
     }
 
@@ -891,7 +928,9 @@ namespace Microsoft.Dafny {
       }
       foreach (TopLevelDecl d in systemDeclarations) {
         CurrentDeclaration = d;
-        if (d is AbstractTypeDecl abstractType) {
+        if (d is AbstractTypeDecl boundedDecl && BoundedCallables.IsBoundedDecl(boundedDecl)) {
+          AddBoundedCallableDeclarations(boundedDecl);
+        } else if (d is AbstractTypeDecl abstractType) {
           GetOrCreateTypeConstructor(abstractType);
           AddClassMembers(abstractType, true, true);
         } else if (d is NewtypeDecl) {
@@ -916,6 +955,7 @@ namespace Microsoft.Dafny {
           if (cl.NonNullTypeDecl != null) {
             AddTypeDecl(cl.NonNullTypeDecl);
           }
+          AddClassInvariantTypeDecls(cl);
         } else {
           Contract.Assert(d is ValuetypeDecl);
         }
@@ -948,6 +988,12 @@ namespace Microsoft.Dafny {
         CurrentDeclaration = d;
         if (d is AbstractTypeDecl abstractType) {
           AddClassMembers(abstractType, true, true);
+          if (abstractType.InvariantTypeDecl != null && RevealedInScope((RevealableTypeDecl)abstractType)) {
+            // Issue 105: the type that the abstract type's name denotes, the raw type restricted by the invariants.
+            // Where the abstract type is only provided, so are its invariants, and the name denotes an opaque type,
+            // as for a datatype (see AddRevealableTypeDecl).
+            AddTypeDecl(abstractType.InvariantTypeDecl);
+          }
         } else if (d is ModuleDecl) {
           // submodules have already been added as a top level module, ignore this.
         } else if (d is RevealableTypeDecl revealableTypeDecl) {
@@ -1434,7 +1480,16 @@ namespace Microsoft.Dafny {
           foreach (var parentTypeInExtendsClause in c.Traits) {
             var childType = UserDefinedType.FromTopLevelDecl(c.Origin, c);
             var parentType = (UserDefinedType)parentTypeInExtendsClause;
-            if (parentType.IsRefType) {
+            if (ExtendsTraitWithInvariants(parentType)) {
+              // Issue 105: a parent with member invariants. A raw value of the child is a raw value of the parent, "raw P?"
+              // or "raw G" (a finished one is a finished one by the subset-type axioms, since the child's invariants
+              // include the parent's). A class that extends a general trait relates "raw C" to it.
+              var parentTrait = TopLevelDeclWithMembers.ParentTraitDecl(parentType);
+              parentType = TopLevelDeclWithMembers.RawParentType(parentType);
+              if (!parentTrait.IsReferenceTypeDecl && c is ClassLikeDecl { RawNonNullTypeDecl: { } rawNonNull }) {
+                childType = UserDefinedType.FromTopLevelDecl(c.Origin, rawNonNull, c.TypeArgs);
+              }
+            } else if (parentType.IsRefType) {
               // use the nullable versions of the types
               Contract.Assert(childType.IsRefType);
               parentType = UserDefinedType.CreateNullableType(parentType);
@@ -1759,6 +1814,12 @@ namespace Microsoft.Dafny {
 
     private Implementation AddImplementationWithAttributes(CanVerifyOrigin tok, Procedure proc, List<Variable> inParams,
       List<Variable> outParams, Variables localVariables, StmtList stmts, QKeyValue kv) {
+      if (addedInvariantChecks != 0 || codeContext is MemberDecl member && BecameRaw(member)) {
+        // Issue 105: the implementation checks a conjunct that the refining module added, at an inherited site, or
+        // verifies again a member that became raw, so the pipeline verifies it even where it belongs to a copy
+        tok = new CanVerifyOrigin(tok.CanVerify) { IsReverifiedInheritedCheck = true };
+      }
+      addedInvariantChecks = 0;
       Bpl.Implementation impl = new Bpl.Implementation(tok, proc.Name,
         [], inParams, outParams,
         localVariables.Values.ToList<Variable>(), stmts, kv);
@@ -1789,6 +1850,7 @@ namespace Microsoft.Dafny {
       currentModule = null;
       codeContext = null;
       reverifyInheritedOverrideCheck = false;
+      addedInvariantChecks = 0;
       CurrentIdGenerator.Reset();
       _tmpIEs.Clear();
       assertionCount = 0;
@@ -2115,9 +2177,11 @@ namespace Microsoft.Dafny {
 
     /// <summary>
     /// Whether asserts at origins inherited from the refinement base are checked in the current code context, rather
-    /// than assumed on the grounds that the base module already checked them.
+    /// than assumed on the grounds that the base module already checked them.  Issue 105: a member that became raw
+    /// in the refining module is verified again in full (BecameRaw).
     /// </summary>
-    bool MustReverifyInheritedCode => reverifyInheritedOverrideCheck || codeContext is { MustReverify: true };
+    bool MustReverifyInheritedCode => reverifyInheritedOverrideCheck || codeContext is { MustReverify: true } ||
+                                      codeContext is MemberDecl member && BecameRaw(member);
     ModuleDefinition forModule = null;  // the root module
     ICallable codeContext = null;  // the method/iterator whose implementation is currently being translated or the function whose specification is being checked for well-formedness
     Bpl.LocalVariable yieldCountVariable = null;  // non-null when an iterator body is being translated
@@ -3072,8 +3136,20 @@ namespace Microsoft.Dafny {
         // An opaque reference type keeps the nullable declaration in its self synonym.
         // It must remain distinct from the separately provided non-null type.
         var underlyingDecl = cl is InternalTypeSynonymDecl { Rhs: UserDefinedType rhs } ? rhs.ResolvedClass : cl;
-        if (underlyingDecl is ClassLikeDecl { NonNullTypeDecl: { } }) {
-          name = name + "?";  // TODO: this doesn't seem like the best place to do this name transformation
+        if (underlyingDecl is InvariantTypeDecl { Owner: ClassLikeDecl { NonNullTypeDecl: not null } }) {
+          // Issue 105: the type "C?" that the name of a class with member invariants denotes
+          name = name + "?";
+        } else if (underlyingDecl is RawNonNullTypeDecl) {
+          // Issue 105: "raw C"
+          name = name + "#raw";
+        } else if (underlyingDecl is ClassLikeDecl { NonNullTypeDecl: { } } classLikeDecl) {
+          // Issue 105: a class with member invariants is "raw C?"
+          name = name + (classLikeDecl.InvariantTypeDecl != null ? "#raw?" : "?");  // TODO: this doesn't seem like the best place to do this name transformation
+        } else if (underlyingDecl is TopLevelDeclWithMembers { InvariantTypeDecl: { } }) {
+          // Issue 105: a declaration with member invariants is its raw type, and its name, as a type, denotes the
+          // derived InvariantTypeDecl. As for "C?" and "C", the raw type takes the suffix; "#" cannot occur in a
+          // Dafny name, so the result cannot be the name of another declaration.
+          name = name + "#raw";
         }
         cc = new Bpl.Constant(cl.Origin, new Bpl.TypedIdent(cl.Origin, "class." + name, Predef.ClassNameType), !cl.EnclosingModuleDefinition.IsFacade);
         classes.Add(cl, cc);
@@ -4469,6 +4545,12 @@ namespace Microsoft.Dafny {
         cre = MkIs(BoxifyForTraitParent(bSource.tok, bSource, udt.ResolvedClass, sourceType), targetType, tok);
       } else {
         cre = MkIs(bSource, targetType, tok);
+      }
+
+      if (InvariantTypeDecl.FinishRawReferences(sourceType, targetType) is { } finished &&
+          GetSubrangeCheck(tok, bSource, sourceType, finished, null, null, out _) is { } finishedCheck) {
+        // Issue 105: a raw reference reaches a type that is not raw only if it satisfies the invariants of its class
+        cre = BplAnd(finishedCheck, cre);
       }
 
       Expression dafnyCheck = null;

@@ -1,0 +1,26 @@
+extreme predicates and lemmas: the library builds
+
+Dafny program verifier finished with 4 verified, 0 errors
+a client verifies against it
+
+Dafny program verifier finished with 2 verified, 0 errors
+control: {:axiom} on a least lemma
+
+Dafny program verifier finished with 3 verified, 0 errors
+CLI: Error: cannot build a library under --modular-termination: github-issue-461-axiom.dfy(5,25) has an assumption that 'dafny audit' reports: Declaration has explicit {:axiom} attribute. A library built with --modular-termination records that its own program was completely verified; build it without --no-verify, --boogie arguments, {:verify false}, {:only}, decreases *, assumptions (anything 'dafny audit' reports, bodyless members, --allow-axioms) or {:extern}, and with every verification task succeeding
+Translation was aborted because errors were found
+control: {:verify false} on a least lemma
+github-issue-461-verify-false.dfy(5,30): Warning: The {:verify false} attribute should only be used during development. Consider using a bodyless least lemma together with the {:axiom} attribute instead
+github-issue-461-verify-false.dfy(5,30): Warning: The {:verify false} attribute should only be used during development. Consider using a bodyless prefix lemma together with the {:axiom} attribute instead
+github-issue-461-verify-false.dfy(5,30): Warning: The {:verify false} attribute should only be used during development. Consider using a bodyless prefix lemma together with the {:axiom} attribute instead
+
+Dafny program verifier finished with 2 verified, 0 errors
+CLI: Error: cannot build a library under --modular-termination: github-issue-461-verify-false.dfy(5,32) has an assumption that 'dafny audit' reports: Declaration has {:verify false} attribute. A library built with --modular-termination records that its own program was completely verified; build it without --no-verify, --boogie arguments, {:verify false}, {:only}, decreases *, assumptions (anything 'dafny audit' reports, bodyless members, --allow-axioms) or {:extern}, and with every verification task succeeding
+Translation was aborted because errors were found
+control: assume in a least lemma
+github-issue-461-assume.dfy(5,73): Warning: assume statement has no {:axiom} annotation
+github-issue-461-assume.dfy(5,73): Warning: assume statement has no {:axiom} annotation
+
+Dafny program verifier finished with 4 verified, 0 errors
+CLI: Error: cannot build a library under --modular-termination: github-issue-461-assume.dfy(5,75) has an assumption that 'dafny audit' reports: Definition has assume statement in body. A library built with --modular-termination records that its own program was completely verified; build it without --no-verify, --boogie arguments, {:verify false}, {:only}, decreases *, assumptions (anything 'dafny audit' reports, bodyless members, --allow-axioms) or {:extern}, and with every verification task succeeding
+Translation was aborted because errors were found

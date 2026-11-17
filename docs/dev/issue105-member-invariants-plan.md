@@ -247,7 +247,7 @@ it one value at a time:
 
 ```dafny
 datatype Liar2 = Liar2(f: int) {
-  predicate No() { !(this is Liar2) }     // 'this' is raw here, so the test is not trivial
+  ghost predicate No() { !(this is Liar2) }  // 'this' is raw here, so the test is not trivial
   invariant No()
 }
 ```
@@ -361,6 +361,24 @@ So for clauses 1 to 4 the cone analysis has real work only for a value type
 with no reference components, and there clause 4 rejects dynamically bound
 calls until there is a way to bound the overrides.  Clause 5 is new work for
 every kind of type.
+
+**A correction (stage 1 of section 7.2).**  The argument above shows that no
+override can violate clause 1 where `T` may involve references.  It does not
+cover clause 5: an override may test a constructor application, which is raw,
+against `T`, and that is the `Liar2` paradox again.
+
+```dafny
+trait Oracle extends object { ghost predicate Ok(n: int) }
+datatype Liar3 = Liar3(f: int, o: Oracle) {
+  invariant o.Ok(f)                         // error: 'Ok' is dynamically bound
+}
+class Teller extends Oracle {
+  ghost predicate Ok(n: int) { !(Liar3(n, this) is Liar3) }
+}
+```
+
+So clause 4 rejects every dynamically bound call, for every kind of type, and
+the `Box` example, first listed in section 6.1, is rejected (section 6.2).
 
 Two cautions.
 
@@ -538,6 +556,95 @@ without subset-type constraints, and the verifier enforces the difference
 (`docs/dev/TypeSystemRefresh.md`).  `raw T` is the pre-type of `T`, given a
 name.  Resolution infers pre-types as it does today.  The conversion check is
 the one the verifier already makes for subset types.
+
+**Generic types and variance.**  For a generic `D<X>` with invariants, `D<A>`
+is `{ v in raw D<A> | Inv[X := A](v) }`.  `D` declares a variance for `X`, and
+`D<A>` keeps it, as `raw D<A>` does; the invariants must justify it.  Where `X`
+is covariant and `A` is a subtype of `B`, `raw D<A>` is a subtype of
+`raw D<B>` by the ordinary rule, so `D<A>` is a subtype of `D<B>` exactly where
+`Inv[X := A](v)` implies `Inv[X := B](v)` for every raw `v`: the invariants are
+*monotone* in `X`.  Where `X` is contravariant they must be *antitone*.  An
+invariant may quantify over `X`, so neither is automatic:
+
+```dafny
+ghost predicate Never<X>(x: X) { false }
+datatype Box<+X(!new)> = Box(b: bool) {
+  invariant b ==> forall y: X :: Never(y)   // Box(true) is a Box<X> exactly where X is empty
+}
+```
+
+`Box(true)` is a `Box<Empty>` and not a `Box<int>`, so a covariant `Box` would
+let a `Box<Empty>` become a `Box<int>` with no check, and prove `false`.
+
+*Rule (the owner's decision).*  A declared `+X` or `-X` stands only where the
+invariants, own and inherited, closed over the functions and constants they
+call, are monotone (antitone) in `X`.  Otherwise it is a resolution error at
+the declaration that names the offending occurrence.  `raw D` keeps its
+declared variance in any case.
+
+*The check is by polarity.*  Each occurrence of `X` in the invariants has a
+polarity, positive, negative or both, in the lattice none < positive,
+negative < both.  The invariant itself is in a positive context.
+
+- `forall y: X :: P` is negative in `X`; `exists y: X :: P` and `e is X` are
+  positive.  The quantifier's domain grows with `X`: an existential that holds
+  keeps its witness, a universal may meet a new counterexample.  A type test
+  against a larger type holds of more values.
+- Within the bound variable's type, the occurrence composes with the type's
+  variance: in `A -> R` the parameter position flips (an arrow type shrinks as
+  its domain grows), and in `G<..X..>` it composes with the variance `G`
+  declares there, a non-variant parameter giving both.  Collections are
+  covariant.
+- Negation and the antecedent of an implication flip the context (`A <== B`
+  is `B ==> A`).  `<==>`, `==` and `!=` of booleans, and the condition of an
+  `if`, are in both contexts.  Conjunction, disjunction, the consequent and the
+  branches of an `if` keep it.  The range of `forall` is flipped, that of
+  `exists` kept.
+- A set or map comprehension, a lambda, a `:|` binding and a function used as
+  a value give `X` both polarities: their meaning is a value that is not
+  ordered by implication.
+- A call of a generic function contributes, for each of its type parameters,
+  its polarity in the function's body, composed with the context and with the
+  occurrence of `X` in the type argument.  The body is in a positive context if
+  the function returns `bool`, and in both otherwise.  A constant with a
+  right-hand side is a nullary function.  The polarities are the least
+  fixpoint of these equations over the call graph, computed by iteration from
+  none.  For a function defined by well-founded recursion, induction on its
+  decreases measure shows that its result is monotone (antitone) where the
+  fixpoint says so.  For an extreme predicate, if the defining operator
+  `F[X := A]` is pointwise below `F[X := B]`, then `lfp F[X := B]` is a
+  pre-fixed point of `F[X := A]` and `gfp F[X := A]` a post-fixed point of
+  `F[X := B]`, so both fixpoints are monotone as the operator is.
+- Anything opaque is both: a function with no body (abstract, or declared
+  without one), a call that is dynamically dispatched (a trait function
+  without a body; a function with a body cannot be overridden), and a function
+  whose body the invariant's module cannot see because the exporting module
+  does not reveal it.  Any interpretation of such a function is a model of what
+  the verifier knows, so nothing can be assumed of its dependence on `X`.  A
+  function declared `opaque` is analysed by its body, which is its meaning;
+  `opaque` concerns only when a proof may unfold it.
+- `X` used only as the type of a value does not count: a component of `D`'s
+  constructors, an operand of `==` on values of type `X`, an argument.  A value
+  is the same value at `A` and at `B`; its components of type `X` are in `A`,
+  so in `B`.
+- A statement inside an expression (`S; E`) is a proof hint, and its value is
+  that of `E` (section 10, the extension condition of the second step), so
+  only `E` is analysed.
+
+*Soundness.*  By induction on the formula, an expression all of whose
+occurrences of `X` are positive (negative) in a positive context is monotone
+(antitone) in `X`: each rule above preserves the direction it states, and the
+calls are covered by the fixpoint.  So a declaration that passes the check has
+`D<A>` a subtype of `D<B>` (or `D<B>` of `D<A>`) as its variance says.
+
+*What is trusted.*  The analysis trusts the declared variance of every other
+type, as subtyping does.  For a datatype or a type with invariants that is
+justified, by the ordinary variance check of its components and by this check.
+For a subset type or a newtype it is not: a covariant subset type whose
+constraint quantifies over its parameter has the same hole without this
+feature (https://github.com/erniecohen/dafny/issues/491).  That issue's
+intended fix is this analysis applied to the constraint, which then justifies
+the trust here.
 
 **Newtypes.**  The owner's ruling is that the "such that" constraint goes away
 in favour of the member invariant.
@@ -1160,7 +1267,11 @@ since they declare no invariant.
 **Trigger cost.**  The equivalence for a class triggers on
 `$Is(o, Tclass.C?)`, which is a common term.  It appears only for classes
 with invariants, but its cost must be measured in resource units on the first
-real examples.
+real examples.  Measured with the fifth step, on programs that state the same
+facts once with an invariant and once with the subset-type idiom of section
+3.7: the cost is of the same order.  A client of the class pays slightly
+more resource units; the class's own methods pay more, since there `this`
+carries the invariant.
 
 ## 6. Examples
 
@@ -1175,7 +1286,7 @@ datatype Interval = Interval(lo: int, hi: int) {
   function Width(): nat { hi - lo }                    // nat: uses the invariant
   function Shift(d: int): Interval { this.(lo := lo + d).(hi := hi + d) }
                                                        // the middle value is raw; one check, at the result
-  predicate Tightest()
+  ghost predicate Tightest()
   { forall j: Interval :: j.lo <= lo && hi <= j.hi ==> j == this }   // quantifies over the type: not in the cone
 }
 
@@ -1273,21 +1384,11 @@ module M1 refines M0 {
 ```
 
 ```dafny
-// A bounded quantifier over the type itself, inside the invariant.
+// A bounded quantifier over the type itself, inside the invariant.  (In a module apart from Tree, whose
+// constructor has the same name.)
 datatype Rose = Node(size: nat, kids: seq<Rose>) {
   invariant forall k <- kids :: k.size < size
   witness Node(0, [])
-}
-```
-
-```dafny
-// An object invariant through a trait-typed component: accepted by clause 4 of section 3.3.
-trait Shape { predicate Fits(n: int) }               // no reads clause
-class Box {
-  const s: Shape
-  const n: int
-  invariant s.Fits(n)
-  constructor (s: Shape, n: int) requires s.Fits(n) { this.s := s; this.n := n; }
 }
 ```
 
@@ -1317,7 +1418,7 @@ datatype Liar = Liar(f: int) {
 }                                           // error: the invariant of 'Liar' refers to the set of values of 'Liar'
 
 datatype Liar2 = Liar2(f: int) {
-  predicate No() { !(this is Liar2) }       // error: 'No' is used by the invariant of 'Liar2' and tests a raw value against 'Liar2'
+  ghost predicate No() { !(this is Liar2) } // error: 'No' is used by the invariant of 'Liar2' and tests a raw value against 'Liar2'
   invariant No()
 }
 
@@ -1328,6 +1429,15 @@ module Bad refines Spec {                   // Spec from section 4.3
 class NoCtor {
   const k: int
   invariant k > 0              // error: a class with an invariant must declare a constructor
+}
+
+// An object invariant through a trait-typed component: rejected by clause 4 of section 3.3 (see its correction).
+trait Shape extends object { predicate Fits(n: int) }   // no reads clause
+class Box {
+  const s: Shape
+  const n: int
+  invariant s.Fits(n)          // error: 'Fits' is dynamically bound
+  constructor (s: Shape, n: int) requires s.Fits(n) { this.s := s; this.n := n; }
 }
 
 codatatype NonNeg = Cons(head: int, tail: NonNeg) {
@@ -1350,7 +1460,7 @@ datatype Bounded = Bounded(bound: int, s: Stream) {
 datatype D = D(x: nat, y: nat) {
   invariant x == y
   witness D(0, 1)                              // error: invariant might not hold
-  function Inc(): D { this.(x := x + 1) }      // error at the result: invariant might not hold
+  function Inc(): D { this.(x := x + 1) }      // error at the result, once for each invariant: invariant might not hold
   function Gap(): nat { x - y }                // error: result might be negative.  'Gap' is used by an invariant,
   invariant Gap() == 0                         //        so 'this' is raw here and x == y is not known
 }
@@ -1363,8 +1473,8 @@ class Pos {
 
 method M() {
   var e: Empty;                                // Empty from section 3.6: no witness
-  Consume(e);                                  // error: variable 'e' is used before it is assigned
-}
+  Consume(e);                                  // error: variable 'e', which is subject to definite-assignment
+}                                              //        rules, might be uninitialized here
 ```
 
 ### 6.4 Vacuity controls
@@ -1388,7 +1498,10 @@ assumed the finished type, `Bad` would verify with no error at all.
 disabled by a test-only switch, and a method `method V5() { assert false; }`
 that mentions the type.  Its `assert false` must verify.  It records why the
 condition exists, and that the vacuity tests can tell the difference.  `V5b`
-is the same for `Liar2`.
+is the same for `Liar2`.  (The switch is `--unchecked-invariant-extension`.  The
+inconsistency is in the axioms of `$Is` for the type, which are instantiated
+only for a value of it, so each method states a raw value and splits on whether
+it is one; a bare `assert false` does not verify.)
 
 `V6` is `class F { const x: int  invariant false  constructor () { new; } }`.
 It must report an error at `new;`, and a method that takes an `F` must be
@@ -1648,12 +1761,14 @@ parents, with their raw types.**
 ## 10. Implementation decisions
 
 Decisions made while implementing, on the principle of consistent semantics.
-Each is also recorded in the pull request that makes it.
+Each is also recorded in the message of the commit that makes it.  The
+feature lands as one pull request, a sequence of commits, one or a few for
+each step below.
 
-**Stage 0 and the resolution part of stage 1 (first pull request).**
+**Stage 0 and the resolution part of stage 1 (first step).**
 
 - *Split.*  Section 7.2's stage 0 has the resolver reject every invariant.
-  Instead, the first pull request resolves invariants, applies the reads
+  Instead, the first step resolves invariants, applies the reads
   restriction of section 3.2, the codatatype ban and the declaration rule of
   section 3.8, and the verifier reports each invariant as not yet supported.
   `witness` members and `raw T` are parsed and rejected by the resolver as not
@@ -1720,7 +1835,12 @@ Each is also recorded in the pull request that makes it.
   (also through slices and multi-dimensional selection), no `old`, `fresh`,
   `allocated`, `unchanged`, no two-state function or lemma, no function with a
   reads clause (called or used as a value), and no application of a function
-  value whose type allows reading the heap (`~>`).  A function value's
+  value whose type allows reading the heap (`~>`).  The checks of every
+  function body already reject `old`, `fresh`, `allocated`, `unchanged` and
+  two-state functions and lemmas in an invariant, which is a single-state
+  predicate with no reads clause, so the restriction adds only the rest (its
+  own checks of these were removed at the controls step, since no program
+  reaches them).  A function value's
   `requires` and `reads` read what the value may read, so they are allowed on a
   `->` or `-->` value and rejected on a `~>` value.  A lambda with a reads
   clause may be built, since building it reads nothing, but its body is held to
@@ -1729,26 +1849,27 @@ Each is also recorded in the pull request that makes it.
   be applied.  Inside an invariant, `this` has the type itself until `raw T`
   exists.
 
-**Open after the first pull request.**  Recorded at review; none is a
+**Open after the first step.**  Recorded at review; none is a
 soundness problem while nothing checks or assumes an invariant.
 
 - *The not-yet-supported error is per translated module.*  A module given only
   as a library, one left out by `--filter-symbol`, or a program that is
   compiled with `--no-verify`, is never translated, so its invariants are not
-  reported.  The second pull request makes the error program-wide: if any
+  reported.  The second step makes the error program-wide: if any
   module, a library's included, declares an invariant, no module is verified.
   Compiling with `--no-verify` remains allowed, and the compiled code ignores
   the invariants.
 - *Export sets.*  `export provides T` clones a type's members without their
   bodies, so a client sees an invariant without its body.  What a client that
   cannot see the body may assume about a value of `T` is to be decided before
-  invariants are assumed.
+  invariants are assumed.  Settled in the fifth step: an invariant is revealed
+  exactly where its type is.
 - *The language server's parse cache* keys on the file's name and contents,
   not on the parser's options, so toggling `--member-invariants` in a project
   does not reparse an unchanged file.  This predates member invariants and
   applies to every parser option.
 
-**`raw T` for datatypes (second pull request).**
+**`raw T` for datatypes (second step).**
 
 - *The derived type.*  A datatype `D` that declares an invariant is itself the
   raw type, `raw D`.  The name `D` written as a type denotes a derived
@@ -1798,7 +1919,7 @@ soundness problem while nothing checks or assumes an invariant.
   constraint calls the invariants, and its conversions carry obligations.  So
   the verifier translates no module of a program that declares an invariant:
   it reports each invariant, and in each other module the first declaration it
-  would have verified.  The first pull request verified the modules without
+  would have verified.  The first step verified the modules without
   invariants.  The translation cache (`--translation-cache`) keys a module on
   what the module depends on, so in the language server a module could be
   reused from before an unrelated module declared an invariant; it therefore
@@ -1812,3 +1933,750 @@ soundness problem while nothing checks or assumes an invariant.
   the same target type.
 - *Printing.*  `/rprint` shows the derived declaration, in a comment after the
   datatype, and marks each raw member.
+
+**Verification of datatypes (third step; the rest of stage 1 of
+section 7.2).**
+
+- *The gate.*  The invariants of an inductive datatype with no type parameters
+  and no parent traits, declared in a module that refines no other, are
+  verified.  The program-wide gate of the second step stays for every
+  other invariant: if the program, libraries included, declares one, no module
+  is translated, and each such invariant is reported with its reason (a
+  datatype with type parameters, a datatype that extends a trait, a refining
+  module, or a class, trait, newtype or abstract type).  It is decided per
+  invariant, not per module, since the types of every module may depend on any
+  invariant.  The conversion of a `raw D` to a parent trait under
+  `--general-traits=datatype`, left open above, therefore cannot reach the
+  verifier: a datatype with parents stays behind the gate until stage 4, which
+  must add that obligation.
+- *Encoding.*  Section 5.1's pattern, built from existing machinery instead of
+  new axioms.  The derived declaration is translated as a subset type, so
+  `$Is(v, Tclass.D) <==> $Is(v, Tclass.D#raw) ∧ D.invariant#0(v) ∧ …`.  The
+  datatype is the raw type: `Tclass.D#raw` carries the constructor, allocation,
+  box and discriminator axioms, in which a component declared with type `D` has
+  the finished type.  The invariants are the Boogie functions of the
+  `MemberInvariant` predicates.  An invariant is always a raw member, even one
+  that never mentions `this`, so their axioms are guarded by the raw type.
+  There is no separate `T#Inv`: the subset type's constraint is that
+  conjunction.  The prelude is unchanged, and so is the Boogie of a program
+  without invariants.  The raw type's class constant is `class.D#raw`, as `C?`
+  takes the suffix for a class; `#` cannot occur in a Dafny name.
+- *Conversions.*  Where a value is converted to `D` and its invariants are
+  visible, membership in `raw D` is checked as before, and then each invariant
+  is a separate assertion, "invariant might not hold", whose related location is
+  that invariant; membership in `D` is then assumed, as for a subset type.  This
+  is a new obligation description, `InvariantCheck`.  A member that is not raw,
+  applied to a `raw D` (called, or selected as a value), checks
+  that the receiver is a `D`.  So `Inc` in section 6.3 is reported once for each
+  invariant, and a raw member's `x - y` is reported where `nat` needs it.
+- *Witnesses* (section 3.6).  A witness member is a static const of type `D`,
+  so checking it is the ordinary check of a const's initializer, and it is the
+  witness of the derived declaration: `witness e` makes `D` auto-initializable,
+  `ghost witness e` nonempty, and with neither `D` is possibly empty.  The
+  derived declaration gets no well-formedness check of its own, since its
+  constraint is the invariants, checked as predicates, and its witness is
+  checked as a const.  Where the witness is compiled, the derived declaration is
+  compiled as a subset type, under the name `D#` (sanitized for each target),
+  whose default value is the witness; otherwise it is not compiled, and `D` and
+  `raw D` are the same target type.  A datatype declares at most one witness,
+  and none if it has no invariant, own or inherited (a refining declaration may
+  supply one for inherited invariants, section 4.2).  A witness member of a
+  generic datatype, or of another kind of type, is not yet supported.
+- *The extension condition* (section 3.3) is `InvariantExtensionCondition`,
+  run for each type with invariants after the reads restriction, and only if
+  that reported nothing, since the cone analysis assumes a resolved,
+  restriction-respecting body.  Decisions:
+  - Clauses 3 and 4 apply to every type, not only to types that cannot involve
+    references: the correction in section 3.3.  So the `Box` example moved from
+    section 6.1 to section 6.2.
+  - The cone includes the types of the components of `raw D`, since its values
+    are built from them, and the constraints of the subset types, newtypes and
+    types with invariants that it quantifies over, tests, converts to or passes
+    as type arguments.  A generic subset type or newtype is analysed with the
+    dependence of each of its type parameters, so a constraint that does not
+    quantify over a dependent parameter is accepted.  A generic function given
+    a dependent type argument is rejected, the first-stage form of clause 2.
+  - Clause 1 accepts a bound variable that the resolver bounds by the elements
+    of a collection, by a single given value, or by the subsets of a given set.
+    If that collection holds raw values and the variable's type is not raw,
+    ranging over it tests them against the type, so clause 5 rejects it.  A
+    bound variable whose type is inferred as `raw D` makes `k is D` a test of a
+    raw value; the program writes `k: D` to range over values of `D`.
+  - Built-in arrow types.  `A -> B` and `A --> B` are subset types of `A ~> B`
+    whose constraints quantify over `A`.  So an arrow type whose parameter type
+    depends on `D`, wherever the cone reaches it, refers to the set of values of
+    `D` (clause 1), and is reported there, since the built-in declaration has no
+    place in the program.  Skipping these constraints was unsound: an invariant
+    could test a lambda that requires something of every `D` against
+    `D -> bool`, and `assert false` verified.
+  - Statements inside expressions (`assert`, `assume`, `calc`, `reveal`, a
+    lemma call or a `forall` statement, in a statement expression `S; E`) are
+    proof hints and give no meaning, so they are not in the cone.  The
+    argument has three parts.
+    1. *They are not in the axioms.*  The condition exists so that the axioms
+       of section 5.1 have a model (section 5.2).  Every axiom that mentions
+       the extension of `T` (the definition and consequence axioms of the
+       functions, constants and constraints in the cone, and the `$Is`
+       equivalence of `T`) is built by the expression translator, which
+       translates `S; E` as `E` alone.  A lemma that `S` calls contributes no
+       axiom: its postcondition is used only at a call, after its
+       precondition is checked.  So the axioms are exactly those of the
+       program with every statement inside an expression erased.  That
+       program satisfies the condition, since the analysis looks at nothing
+       the erasure removes, so section 5.2 gives it a model, and that is a
+       model of the axioms.
+    2. *They are used only in proofs.*  In the well-formedness check of the
+       enclosing function, `S` is proved (an `assert` or a `calc` step is
+       checked; a lemma's precondition is checked, and the lemma is verified
+       on its own; a `forall` statement's body proves its conclusion) and its
+       conclusion is assumed after it.  That includes a lemma whose
+       postcondition mentions the membership of `T` (`ensures f is F ==> ...`,
+       or `ensures !(Liar3(n, this) is Liar3)`, as in the controls below): the
+       postcondition is proved when the lemma is verified, from the same
+       axioms, and is assumed only after a call.  Such a lemma cannot make the
+       invariant mean something else, since the invariant's meaning is `E`; a
+       false postcondition about `T` fails where the lemma is verified, as
+       `Teller.Ok`'s does.  Where the enclosing function's body
+       is inlined into a proof obligation (`TrSplitExpr`), `S; E` is proved as
+       `C ==> E`, with `C` the conclusion of `S`, and the call itself is then
+       assumed.  Each use rests on a fact proved from the axioms, or, for
+       `assume`, on the program's own unchecked assumption, as anywhere else.
+       The axioms have a model, so a statement may refer to the extension of
+       `T` freely (`assert forall e: T :: P(e)`, a test `this is T` of a raw
+       `this`, a dynamically bound lemma call): it can only be an obligation
+       that fails, never a source of inconsistency.
+    3. *A caution particular to invariants.*  The inlining rule of part 2
+       relies on `C` holding wherever the call is made, which Dafny ensures
+       by checking `S` under the function's preconditions.  The
+       well-formedness check of `invariant#k` also assumes the earlier
+       invariants, which are not its preconditions.  So an invariant's body
+       must never be inlined where the earlier invariants are not known.  It
+       never is: `invariant#k` cannot be named in source, and the translator
+       asserts each invariant whole, as a call, at a conversion
+       (`CheckInvariantTypeMembership`), at `new;` and for a witness, while
+       `TrSplitExpr` sees only source expressions.  A change that inlines an
+       invariant's body must guard it with the earlier invariants.
+
+    `git-issue-105-statements.dfy` holds the controls: invariants whose
+    statements quantify over the type without a bound, test a raw `this`
+    against it and call a lemma that does both are accepted; such a statement
+    that is true is proved from the axioms, one that is false fails as an
+    obligation, and `false` is not provable after either.  The adversarial
+    review at the end of the feature, after its last step and before its
+    single CI run, targets this decision first: a lemma or `forall` statement
+    inside an invariant whose conclusion mentions `T`, an inlined invariant
+    body, and a statement reached through a function in the cone.
+  - The hidden option `--unchecked-invariant-extension` turns the check off.  It
+    exists for the vacuity controls V5 and V5b (section 6.4), which must show
+    that the axioms of `Liar` and `Liar2` are inconsistent without it.  It is
+    recorded as an input option, and in the options that the modular
+    termination record keys.
+- *Ordering.*  The resolver's analysis of subset type constraints visits the
+  declarations in the call graph's order, in which a derived declaration is not
+  a vertex, so a subset type of `D` could be analysed before `D`'s derived
+  type.  It now analyses a declaration's base type first when that is still to
+  be done.  Without invariants the call graph already puts base types first, so
+  the order is unchanged.
+- *Translation cache.*  The cache steps aside only for a program that
+  declares an invariant whose verification is not yet supported: then no
+  module is translated, and a module's key covers only the modules it depends
+  on.  Otherwise a module's translation depends only on what its key covers,
+  the source and resolution of the module and of the modules it depends on,
+  and the options, `--member-invariants` among them.  So a module of a program
+  whose invariants are all verified is cached as any module is.
+- *Tests.*  `git-issue-105-datatypes.dfy` holds sections 6.1 and 6.3 for
+  datatypes and the controls V1, V4 and V8; `git-issue-105-vacuity.dfy` holds V5
+  and V5b; `git-issue-105-extension.dfy` holds section 6.2's datatype examples
+  and each clause of the condition; `git-issue-105-compile.dfy` runs witnesses
+  as default values in compiled code.  V7 is the declaration rule, already
+  tested by `git-issue-105-codatatypes.dfy` and `git-issue-105-libraries.dfy`.
+  Section 3.3's test of lambda bodies in methods belongs to classes (stage 3).
+
+**Emptiness, the raw-typing audit and generic datatypes (fourth step; stage
+2 of section 7.2).**
+
+- *The gate* is lifted for generic datatypes: the invariants of an inductive
+  datatype with no parent traits, declared in a module that refines no other,
+  are verified, and such a datatype may declare a witness whatever its type
+  parameters.
+- *Emptiness.*  Every consumer of "is this value type inhabited" asks
+  `Type.GetAutoInit`, directly or through `IsNonempty`, `HasCompilableValue`
+  and the characteristics checks: definite assignment of locals and
+  out-parameters, a havoc, a such-that, a new array without an initializer,
+  `(0)` and `(00)`, the constructor rule for class fields, and the trimming of
+  possibly empty bound variables from CanCall assumptions.  Its branch for
+  subset types reads the witness kind, which the derived declaration has, and
+  its branch for datatypes propagates through the components of a grounding
+  constructor.  No consumer decides emptiness by asking whether a type is a
+  `SubsetTypeDecl`; the translator's remaining branches on `SubsetTypeDecl`
+  choose a constraint to check (subrange checks, a declaration's witness
+  check), which a derived declaration takes as a subset type does.  So nothing
+  needed to change.  A datatype with invariants behaves exactly as a subset
+  type with the corresponding witness clause, under strict and relaxed definite
+  assignment.  Each row of the vacuous-types table of section 5.3 that applies
+  to datatypes has a test, with an `assert false` that must fail after each
+  channel; the rows for classes, abstract types and refinement come with their
+  stages.
+- *Raw typing.*  The translator uses the raw type where the datatype is the
+  subject (its constructor, allocation, box and discriminator axioms, and
+  `this` in a raw member) and the declared type everywhere else.  With type
+  parameters, `Tclass.D(X)` and `Tclass.D#raw(X)` take the same type
+  descriptors, and the constraint of `Tclass.D(X)` is the invariants
+  instantiated with `X`.
+- *Variance.*  The derived declaration's type parameters keep the datatype's
+  declared variance and their strictness, and the resolver checks that the
+  invariants justify it (section 3.5, and "Variance by polarity" below).  This
+  step first made them non-variant, whatever the datatype declared, so that
+  `D<A>` was a subtype of `D<B>` only where `A` and `B` were the same type and a
+  type using `D<X>` could not declare `X` co- or contravariant; the owner
+  replaced that rule, and the later step implements the replacement.  Pre-types
+  use the datatype's variance, since a subset type's pre-type is its base's.
+- *Witnesses of generic datatypes.*  The witness member is the static const
+  `witness#k: D<X, ...>`, as if written with the datatype's own type
+  parameters, and the derived declaration's witness is `D<Y, ...>.witness#k`
+  with the derived declaration's.  So it is checked for every instantiation.
+  Where it is compiled, the derived declaration compiles as the generic subset
+  type `D#<X, ...>`, whose default value is the witness at each instantiation.
+- *The extension condition.*  A generic type with invariants that the cone
+  reaches is analysed as a generic subset type is: its invariants are analysed
+  as its constraint, with each of its type parameters dependent where the type
+  argument depends on the type being checked, rather than as calls of generic
+  functions.  A datatype `T` with a component of type `Box<T>`, where `Box`'s
+  invariant does not quantify over its parameter, is accepted.  A member
+  function of the reached type, called from its invariant, is a generic
+  function, so clause 2 rejects the call where a type argument is dependent;
+  the exact form of clause 2 is a stage 7 relaxation.  V5c, a generic form of
+  V5 in which a `Liar3` needs a `P<Liar3>` whose invariant holds only where its
+  type parameter is empty, is rejected, and verifies `false` without the check.
+- *Tests.*  `git-issue-105-generics.dfy` holds the controls V1 and V4 over a
+  type parameter, conversions between instantiations, and witnesses;
+  `git-issue-105-variance.dfy` the variance a declaration may give;
+  `git-issue-105-emptiness.dfy` and `git-issue-105-emptiness-errors.dfy` the
+  rows of the vacuous-types table, the first also running `dafny audit` for
+  bodiless and extern functions; `git-issue-105-vacuity.dfy` adds V5c and
+  `git-issue-105-extension.dfy` the generic cases of each clause;
+  `git-issue-105-compile.dfy` runs generic witnesses in compiled code, and
+  `git-issue-105-raw-compile.dfy` is now verified first.
+
+**Verification of classes (fifth step; stage 3 of section 7.2).**
+
+- *The gate* is lifted for classes: the invariants of an inductive datatype
+  or a class that declares no parent trait, in a module that refines no other,
+  are verified.  A class that extends a trait stays behind the gate until
+  traits are verified (stage 4), since `raw C` is then a subtype of `raw P`.
+  So does an invariant in a trait, a newtype or an abstract type.
+- *The types.*  As for a datatype, the class declaration is the raw type,
+  here `raw C?`, and the names written as types are redirected:
+  - `C?` denotes a derived declaration (`InvariantTypeDecl`) whose constraint
+    is `v != null ==> ` the invariants.  Its parents are those of the class,
+    `object?` and the parent traits; the class declaration itself has none.
+  - `C` is the non-null type of `C?`, as before, and `C` is also a subtype of
+    `raw C`.
+  - `raw C` is a new declaration (`RawNonNullTypeDecl`), the non-null type of
+    `raw C?`, a subtype of `raw C?` and of nothing else.
+  - In Boogie they are `C?`, `C`, `C#raw?` and `C#raw`.  The dynamic type of
+    an object is its class, so `$Is(o, Tclass.C)` is the dynamic type, non-null
+    and the invariants.
+  - A class with invariants contains `null`, so `C?` is auto-initializable, and
+    a class may not declare a witness: its objects are the ones its
+    constructors return, so it needs none.
+  - A class pre-type stands for `C?`, not `raw C?`, when it is turned into a
+    type, so that an inferred type is a subtype of `object?`; type refinement
+    makes it raw where a raw type flows in.  A join of a raw reference type
+    with a type of another class or trait does not exist.
+- *The check at `new;`* (section 3.4).  Until `new;`, explicit or implicit,
+  the new object is assumed to be a `raw C` only; there each invariant is
+  asserted, "invariant might not hold", and from then on `this` is a `C`.  The
+  control `Bad` of section 6.4 verifies if `new;` assumes `C`.  The type of
+  `this` in a constructor is `C`, as in other members: before `new;` Dafny lets
+  a constructor only assign and read `this`'s fields, and a stored field (a
+  mutable field, or a `const` without an initializer) is a member of
+  `raw C`, so the first division never uses `this` as a `C`.  A raw member's
+  `this` is `raw C`.  `new by` blocks (open question 2) are not implemented.
+- *Constructors.*  A class that declares or inherits an invariant must declare
+  a constructor.  A constructor with no body (or an extern one) assumes the
+  invariants of the object it returns, as a method assumes that its output of
+  a subset type satisfies the constraint, so `dafny audit` reports it, and
+  `{:extern}` gets the warning for a declaration with a contract.
+- *Where a raw reference may go.*  `raw C` is not a subtype of `object` or of
+  a trait, so a conversion of a raw reference to one of them is checked.
+  Wherever a value whose type may contain a raw reference reaches a type not
+  based on that class, the verifier first checks that the reference is a
+  finished one, `C` or `C?` (`InvariantTypeDecl.FinishRawReferences`): at the
+  value itself and, covariantly, in the elements of sets, multisets, sequences
+  and maps, in the covariant type arguments of other types, and in the results
+  of arrows.  A type parameter instantiated with `raw C` is no exception:
+  `Id(r)` is a `raw C`, and `Id<object>(r)` is checked.  A parameter position
+  of an arrow type is checked only for membership, since in the verifier's
+  model `object` contains every reference that is not null.
+  This is defence in depth: in a verified program every object that exists has
+  passed `new;`, and `this` cannot escape before, so the run-time test and the
+  logical one already agree.  The resolver accepts such a conversion, as it
+  accepts one to a subset type, and leaves it to the verifier.
+- *Frames.*  A raw reference in a `reads` or `modifies` clause carries no
+  obligation, including in the default `decreases` that a function infers from
+  its `reads` clause.  Section 5.3 listed frames among the places a raw
+  reference must not reach, but a frame names locations: it neither assumes
+  nor yields the invariants of the objects in it.
+- *Type tests.*  For a reference that is not raw, `o is C` and `o is C?` test
+  the dynamic type alone and compile, since every object of the class
+  satisfies its invariants (section 3.4).  A test of a raw reference, `r is C`,
+  evaluates the invariants, so it is ghost.  A test against a user's subset
+  type of `C` stays ghost even where its own constraint is compilable, since
+  the derived constraint of `C?` is a ghost predicate; treating it as a test of
+  the dynamic type is a possible relaxation.
+- *The extension condition.*  `Max` of section 6.2, whose invariant quantifies
+  over `Max`, is rejected by the existing rule that a function body (an
+  invariant's, a lambda's in a method) quantifies over a class type only with a
+  bound, as section 3.3 expected; no new rule was needed.  Its message calls
+  the context "a invariant definition"; the article comes from the existing
+  message, which says "a function definition" and "a lambda expression" alike,
+  so it is left as upstream has it.
+- *Export sets*, settling the item left open after the first step.  A member
+  invariant is part of the definition of its type, as a datatype's
+  constructors are, so it is revealed wherever its type is, and nowhere else.
+  A client to which the type is revealed sees the invariants and assumes them
+  of every value; a client to which it is only provided sees an abstract type
+  and assumes nothing of it.  Before this step an invariant was exported like
+  any other member, only where an export set named it, which it cannot; so a
+  client to which a datatype was revealed saw its constraint without the
+  invariants' bodies, and could not use them.  `raw C` is visible where the
+  class is revealed.  Where the class is only provided, `raw C` is not yet
+  supported, as `raw D` is for a datatype (stage 5).
+- *Compilation.*  `C`, `C?`, `raw C` and `raw C?` compile to the class.  The Go
+  back end asks whether one type is a subtype of another to decide whether to
+  emit a type assertion; for the class, which is a subtype of `object` in the
+  target but not among Dafny's types, it now answers as the target does.
+  Ignoring nullity, `C` is compared as `C?` and `raw C` as `raw C?`.
+- *Translation cache.*  A class whose invariants are verified no longer makes
+  the cache step aside.
+- *Tests.*  `git-issue-105-classes.dfy` holds sections 6.1 and 6.3 for classes,
+  the controls V2, V6 and `Bad`, and each place a raw reference may and may not
+  go; `git-issue-105-class-errors.dfy` section 6.2's class examples and the
+  resolver's rules, including the lambda bodies of section 3.3;
+  `git-issue-105-class-witness.dfy` the witness rule;
+  `git-issue-105-class-compile.dfy` runs type tests and raw references in
+  compiled code; `git-issue-105-exports.dfy` and
+  `git-issue-105-class-exports.dfy` export sets, for datatypes and classes;
+  `git-issue-105-emptiness.dfy` adds a bodiless constructor to the audit.
+
+**Verification of traits (sixth step; stage 4 of section 7.2).**
+
+- *The gate* is lifted for traits, reference and general, and for the
+  datatypes and classes that extend them: the invariants of inductive
+  datatypes, classes and traits, declared or inherited, in a module that
+  refines no other, are verified.  Still behind it: an invariant of a newtype
+  or an abstract type, a newtype or abstract type that extends a trait with
+  invariants (reported at its name), and any declaration with invariants,
+  declared or inherited, in a refining module.  The messages now read "an
+  abstract type" rather than "a abstract type".
+- *The types.*  A datatype, class or trait that declares no invariant but
+  inherits some gets the derived declarations that one that declares an
+  invariant gets.  Its name written as a type must denote the derived
+  declaration before the module's signatures are resolved, but whether it
+  inherits invariants is known only from its resolved extends clauses.  So
+  `CreateInheritedInvariantTypeDecls` resolves clones of the extends clauses
+  first, into a sink (they are resolved again, with errors reported, in the
+  usual place), and makes the derived declarations to a fixpoint, since a trait
+  of the module may inherit invariants from another.  The derived declarations
+  of classes and traits are now made after `DetermineReferenceTypes`, which
+  decides which traits are reference types.  A reference trait `P` is treated
+  as a class is: the trait declaration is `raw P?`, `P?` the derived
+  declaration, `P` its non-null type, and `raw P` a `RawNonNullTypeDecl`.  A
+  general trait `G` is treated as a datatype is: the declaration is `raw G`,
+  and `G` the derived declaration.
+- *The constraint* (section 4.4).  The invariants of a type, in the order its
+  constraint conjoins them, are the inherited ones, in a post-order walk of
+  the extends clauses, each trait once however many paths reach it, and then
+  its own.  An inherited conjunct is `(v as raw P<args>).invariant#k()`, with
+  the parent type arguments of the extends clauses; for a reference type it is
+  guarded by `v != null`.  A diamond proves the top trait's conjuncts once.
+- *Subtyping.*  `raw C` is a subtype of `raw P` for each parent trait `P` with
+  invariants, and `C` of `P` through the subset-type axioms, since the
+  conjuncts of `C` include those of `P`.  A raw value is not a subtype of
+  `object`, nor of a parent trait without invariants: it reaches them only as
+  a finished value of its own type, so that conversion checks all the
+  invariants of `C`, the inherited ones included.  Through `raw P`, only those
+  of `P` are checked, so a `P` may hold a value that is a `raw C` and not a
+  `C` (`AShapeThatIsNotASquare` in `git-issue-105-general-traits.dfy`).  The
+  Boogie parent axiom relates raw to raw (`raw C?` to `raw P?`, or `raw G`);
+  relating the raw child to the finished parent would have been unsound.  The
+  variance check of an extends clause uses the raw parent type.
+- *Type tests.*  At run time every object satisfies the invariants of its
+  class, the inherited ones included, since they read only constants and are
+  checked before the constructor's `this` can be used.  So, from a type that
+  is not raw, a test against a class or a reference trait tests the dynamic
+  type alone and compiles, even where the static type does not tell the
+  verifier that the object satisfies the class's own invariants.  A datatype
+  has raw values at run time, so a test of a general trait's value against a
+  datatype with invariants (`g is D`) is ghost, as is a test against a general
+  trait with invariants; `g is raw D` compiles.  A test of a raw reference
+  against a class or a trait with invariants stays ghost.
+- *Joins.*  Where the least common supertype of two types has invariants, the
+  join is its finished type (`P`, `P?` or `G`) if neither type is raw, and its
+  raw type otherwise, with the type arguments joined by the declared variance
+  (until the polarity step, finished only where the type arguments agreed).  Before this step a join
+  of a raw reference type with any other class or trait did not exist.
+- *Receivers.*  A member applied to a raw receiver is checked unless it is
+  static, a stored field or a datatype destructor (`SpecialField`), or a raw
+  member; otherwise the receiver is checked against the finished type of its
+  own static type, all of its invariants included, even where the member is
+  inherited from a trait without invariants.  Before this step only members of
+  the receiver's own declaration were considered.
+- *Well-formedness* (sections 4.1 and 4.4).  An invariant is well formed where
+  the invariants before it in its type's constraint hold, as successive
+  `requires` clauses are: the inherited ones, then the type's own earlier ones.
+  The earlier steps checked each invariant with no assumption, which rejected a
+  datatype whose second invariant divides by a component that its first one
+  says is nonzero; this fixes that too.  The well-formedness check of each
+  invariant gains one more `CanCall` assumption in the obligation inventory.
+- *The extension condition* runs for every declaration with derived
+  declarations, the inherited invariants in its cone, with the type parameters
+  of each trait mapped through the extends clauses.  Two consequences:
+  - The traits a type extends, the types that extend it, and `object` for a
+    reference type, are `T`-dependent (section 3.3), so an invariant may not
+    convert `this` to `raw P` or test it against `P`.  This is conservative: a
+    raw ancestor depends on `T` only through its components, as section 3.3
+    says of `raw U`.  It is a candidate relaxation (stage 7).
+  - Clause 4 rejects a dynamically bound call, so the remark of section 4.1
+    that an invariant may call a function a later class overrides does not
+    apply: such an invariant is rejected.  An invariant may call a function
+    with a body, which no type overrides.
+- *Witnesses.*  A datatype that only inherits invariants may declare a witness,
+  which is checked against the inherited invariants as well as its own; one
+  that extends only traits without invariants, and so has none, may not (the
+  syntactic check of the first step cannot see that, so the resolver reports
+  it).  A trait may not declare a witness, a general trait included ("not yet
+  supported"): its values are those of the types that extend it, each with its
+  own witness or none, and what a trait's witness would promise is not yet
+  settled.
+- *Visibility.*  To extend a trait with invariants, a module must see them
+  (section 4.1).  The existing rules already ensure it: a trait exported by
+  `provides` alone is not a trait where it is imported, so the existing "can
+  only extend traits" error rejects the extends clause, and an export set that
+  reveals a trait must reveal the traits it extends.  The resolver asserts it.
+  (An error for this case was removed at the controls step: no program reaches
+  it.)
+- *Two fixes to earlier steps.*  The parser now accepts `invariant` or
+  `witness` directly after a method or function with no body (the member
+  keyword is retagged before the specification's synchronization point); the
+  first step's grammar missed it.  The printer names a general trait's derived
+  declaration without `?`.
+- *Translation cache.*  A trait whose invariants are verified, and a class
+  that extends one, no longer make the cache step aside; an abstract type with
+  an invariant still does.
+- *Tests.*  `git-issue-105-traits.dfy` holds reference traits: V3, the check at
+  `new;` of inherited invariants, a diamond, a trait of another module, raw
+  receivers and joins; `git-issue-105-general-traits.dfy` general traits, the
+  values of `raw G`, generic traits, witnesses that inherit, and a class that
+  extends a general trait; `git-issue-105-trait-errors.dfy` the resolver's
+  rules, including the paradoxes of section 3.3 built through a trait;
+  `git-issue-105-trait-witness.dfy` the witness rule;
+  `git-issue-105-wellformedness.dfy` the order of well-formedness assumptions;
+  `git-issue-105-trait-compile.dfy` runs trait values and type tests in
+  compiled code; `git-issue-105-trait-gates.dfy` what stays behind the gate.
+  `git-issue-105-syntax.dfy` adds members after bodiless ones, and
+  `git-issue-105-opacity.dfy` now verifies.
+
+**Refinement and abstract types (seventh step; stage 5 of section 7.2).**
+
+- *The gate* is lifted for refining modules and for abstract types: the
+  invariants of inductive datatypes, classes, traits and abstract types,
+  declared or inherited, are verified in any module.  Only newtypes are still
+  behind it: an invariant of a newtype, and a newtype that extends a trait with
+  invariants (reported at its name).
+- *Inherited sites* (section 4.2).  A refining module `M1` adds invariants to a
+  type `T` of its refinement base `M0` by declaring them in the refining
+  declaration, in a trait that `T` extends, or by giving `T` a parent with
+  invariants.  `M1.T` is then a different type, with more conjuncts.  An assert
+  at an inherited origin is an assume in a copy, since the base proved it, but
+  for a conversion to `M1.T` that is sound only for the conjuncts the base
+  checked at the same site.  So at an inherited site, each conjunct that the
+  base did not check is checked (`ForceCheckOrigin`), with the refining module
+  as a related location, and the others are assumed.  Conjunct `k` of the
+  constraint was checked by the base if the constraint of the declaration the
+  base converted to has an invariant numbered `k`, declared by a declaration
+  that the conjunct's own declaration refines, directly or not.  Invariant
+  numbers are stable under refinement, since a refining declaration numbers
+  its own after the inherited ones.  So an expensive inherited conjunct costs
+  nothing in `M1`, as section 4.2 asks.  The code is in
+  `BoogieGenerator.InheritedInvariants.cs`.
+- *Checks that are not split.*  A check of membership that is not split into
+  the conjuncts of the types it involves, such as the conversion of a
+  `seq<raw P>` to a `seq<P>`, is checked whole at an inherited site if one of
+  those types has a conjunct the base did not check.  This is conservative: it
+  also checks again the conjuncts the base checked.
+- *Abstract imports.*  Where `M1` binds an abstract import of `M0` to a module,
+  `M0` converted to the declarations of the signature, which the bound module
+  refines.  So the conjuncts assumed are those of the first declaration in the
+  chain that the bound one refines, its root.  That is conservative.  Under the
+  hidden `--legacy-unchecked-import-binding`, which accepts a binding that is
+  not a refinement, none is assumed.
+- *What is verified again.*  The pipeline verifies, of a copied member, only the
+  checks that the refining module must make itself (`IsReverifiedInheritedCheck`).
+  A module that may convert, at an inherited site, to a type with a conjunct its
+  base did not check (`AddsInvariantConjuncts`: it declares such a type, has a
+  member that became raw, or binds an abstract import) schedules its copies
+  (`MustCheckAddedInvariants`).  An implementation is marked when it forces a
+  check or belongs to a member that became raw; the copy's other tasks assert
+  nothing new and are dropped.  A refining module that adds no invariant
+  verifies no inherited code again.  A copy from a refinement base outside the
+  verification scope, such as a library, enters the scope when its module must
+  check it.
+- *Members that became raw.*  An invariant that `M1` adds may apply to `this` a
+  member that was not raw in `M0`, which makes it raw (section 3.4).  Its
+  `this` no longer satisfies the invariants that the base's proof of it may
+  have used, so its inherited body is verified again in full, with its
+  inherited postconditions (`$_reverifyPost` is set), which a by-method body
+  needs.
+- *A fix to an earlier step.*  The by-method part of a raw function was
+  verified with a receiver that satisfied the invariants, although it runs on
+  raw receivers: a program proved that a call returned 2 and printed 1.  The
+  receiver of a by-method body, and of a prefix predicate or lemma, now has the
+  rawness of the member it belongs to (`ModuleResolver.GetReceiverType`).
+- *`new;`.*  The check at the `new;` of an inherited constructor is at the
+  origin of `new;` itself, so the conjuncts the base checked there are assumed.
+  Where `new;` is implicit, its origin is the end of the body, which the cloner
+  does not mark as inherited, so it is marked here.
+- *Witnesses.*  A witness of the refining declaration replaces the inherited
+  one, and is checked against all the invariants.  An inherited witness is
+  checked against the added conjuncts only.
+- *Abstract types.*  An abstract type may declare invariants (section 4.3).
+  Its name denotes the derived declaration, the raw type restricted by the
+  invariants, and `raw T` the abstract type itself.  These rules settle what
+  the plan left open:
+  - The characteristics in its header, `(0)` and `(00)`, are promises about the
+    type with its invariants.  The derived declaration takes its
+    auto-initialization from the header, and opts out of the witness check: an
+    abstract type has no witness of its own.  Where it is compiled, its default
+    value is that of `raw T`.
+  - Each refinement keeps the promise.  The existing check that a refinement
+    respects the characteristics runs against the refining declaration's
+    derived declaration, so a datatype that refines `type T(0)` needs a
+    compiled witness that satisfies all the invariants.
+  - An abstract type may not declare a witness (a resolver error): its
+    characteristics promise one, and each refinement supplies it.
+  - An abstract type exported by `provides` alone is opaque where it is
+    imported: its invariants are hidden with it, as for a datatype, and its
+    characteristics are still promised.  `raw` of it is rejected (below).
+  - It may extend a trait with invariants.
+  - Section 4.3 says a synonym cannot refine an abstract type with an
+    invariant.  The fork's `--synonym-refines-abstract-type` lets one refine it,
+    and moves the abstract type's members to the type the synonym names.  So
+    its invariants become invariants of that type: `T` and that type denote the
+    same values, which satisfy the invariants of both, and every one of them is
+    checked where the refining module makes a value.  `raw T`, in the code the
+    module inherits, is rejected, since a synonym is not a type that can declare
+    an invariant.  This follows the option's own meaning rather than refusing
+    the combination.
+- *`raw` and export sets.*  A declaration that is provided but not revealed has
+  no members where it is seen, its invariants among them.  The rule that
+  rejects `raw` of it also covers the view that an export set makes of it,
+  which is checked for consistency on its own: `ScopeCloner` marks that view
+  (`ProvidedOnlyViewOf`), and the message names the original kind ("'raw' is
+  not yet supported for class 'Cell', which is provided but not revealed
+  here").  Before this step, a provided datatype or class gave an abstract type
+  in the view, which the old message named.  The earlier steps left it to this
+  stage, and it stays "not yet supported": where `D` is provided only, the
+  view of `D` is an abstract type without its invariants, so supporting `raw D`
+  needs a view that keeps the raw type while hiding the invariants.  That is a
+  candidate relaxation (stage 7).
+- *Translation cache.*  A refining module with invariants and an abstract type
+  with invariants no longer make the cache step aside; only newtypes still do.
+- *Tests.*  `git-issue-105-refinement-verify.dfy` holds the inherited sites:
+  added invariants checked and inherited ones assumed (a base failure is not
+  reported again), constructors with an explicit and an implicit `new;`, a
+  trait's added invariant, an abstract import bound to a refinement, the
+  witness rules, members that became raw (a body and a by-method), an unsplit
+  check, and a refinement of a library base.  `git-issue-105-abstract-types.dfy`
+  holds the characteristics as promises, witnesses in refinements, layered
+  refinements, traits and the export of an abstract type;
+  `git-issue-105-abstract-errors.dfy` the resolver's rules;
+  `git-issue-105-abstract-synonym.dfy` the synonym option.
+  `git-issue-105-datatypes.dfy` adds the by-method controls, and
+  `git-issue-105-trait-gates.dfy` now holds only newtypes.
+
+**Variance by polarity (the owner's decision, replacing the variance rule of the step for generic datatypes).**
+
+- *The rule* is section 3.5's: a declared `+X` or `-X` of a type with
+  invariants stands only where the invariants are monotone (antitone) in `X`,
+  checked by polarity; otherwise the resolver reports an error at the type
+  parameter, with the occurrence as a related location, naming it ("the
+  universal quantifier over 'y: X' uses 'X' negatively", "the call of 'F',
+  whose body is not known here, uses 'X' both positively and negatively").
+  The derived declaration keeps the declared variance, so `D<nat>` is a
+  subtype of `D<int>` for a covariant `X` and that conversion is not checked;
+  a conversion against the variance is checked against the invariants.
+- *Where it lives.*  `TypeParameterPolarity` in the resolver computes the
+  polarity of type parameters in formulas and the least-fixpoint summaries of
+  functions and constants, independently of invariants, so that the fix for
+  https://github.com/erniecohen/dafny/issues/491 can apply it to the
+  constraint of a subset type or newtype.  `CheckInvariantVariance` applies it
+  to the invariants.  It runs after the extension condition, and only where
+  resolution has reported no error.
+- *Trust.*  The analysis trusts the variance every other type declares, as
+  subtyping does (section 3.5).  It does not compute an "effective" variance of
+  a subset type from its constraint: that would make this feature's rule
+  differ from the subtyping relation the verifier uses everywhere else, and the
+  hole it would close is issue 491's, whose fix belongs to subset types and
+  newtypes.
+- *What is opaque.*  A function is analysed by its body where its body is
+  visible: in its own module, or where the module signature's visibility scope
+  reveals it.  A function with no body (abstract, bodiless, or a trait
+  function, so possibly dynamically dispatched) and a function exported by
+  `provides` alone give each type argument both polarities.  The body of a
+  function declared `opaque` is its meaning, and is analysed.  Deciding by
+  visibility rather than by the body itself keeps a client's well-formedness
+  independent of what an export hides.
+- *Inherited invariants.*  An inherited invariant enters as the call of the
+  trait's invariant with the extends clause's type arguments.  Traits are
+  non-variant (a class or reference trait by the existing rule, and a general
+  trait cannot pass a variant parameter to a non-variant one), so a variant `X`
+  never reaches an inherited invariant today; the path is there for abstract
+  types and newtypes.
+- *Bounded quantifiers.*  `forall y: X | y in s :: P(y)` and
+  `forall y <- s :: P(y)` still count as quantifiers over `X`, although where
+  `s` is a value of type `set<X>` the quantifier ranges over `s` alone, which is
+  the same at `A` and at `B`.  Recognising that is a candidate relaxation
+  (stage 7 of section 7.2), with the condition of section 3.3 that bounds by a
+  collection.
+- *Statements inside expressions* are not analysed (section 3.5), for the
+  reason the extension condition ignores them.
+- *Joins and inference.*  The join of `D<A>` and `D<B>` is `D<C>`, `C` the
+  join of `A` and `B` by the declared variance, where neither is raw.
+- *Tests.*  `git-issue-105-variance.dfy` holds the resolver's controls: the
+  declarations accepted only because `D<X>` keeps the declared variance, and
+  one rejected declaration for each rule (`forall` under `+X`, `exists` under
+  `-X`, the arrow's flip both ways, a non-variant type argument, a generic
+  callee used negatively, a recursive one, a bodiless one, one not revealed, a
+  negation, an equivalence, an `if` condition, a comprehension, a type test
+  under `-X`, a constant, a function used as a value).
+  `git-issue-105-generics.dfy` holds the verifier's positive controls: a
+  covariant `L<nat>` used as an `L<int>` where the invariant is needed at
+  `int`, and a contravariant `N<int>` used as an `N<Empty>`, each of which
+  verifies only because the conversion is a subtyping (the check would need
+  induction), and conversions against the variance, which are checked.
+
+**Controls (the owner's rule for every feature).**  Every addition, meaning
+every axiom or assumption, has a positive control: a test that verifies only
+because the addition is there.  Every check has a negative control: a test
+that is rejected exactly at that check.  A local mutation run confirms it.  It
+disables each emission site of the translator, and each check of the resolver,
+in turn, rebuilds, and runs the `git-issue-105` tests.  For each site, some
+test changes its result.  A site that no test caught got a new control, or was
+removed when no program can reach it.
+
+- *Translator and resolver sites.*  "Producer" names the entries of
+  `docs/dev/obligation-producers.json` (file, member, producer) that a site
+  adds; a site that adds no obligation has none.  "Flips" lists the tests that
+  change their result when the site is disabled, from a run of each site
+  against the whole suite (step 7).  The runs of steps 6 and 6a covered only
+  the tests predicted for each site, and their lists were incomplete.
+
+  | Site | Kind | Where | Producer | Flips |
+  |---|---|---|---|---|
+  | earlier invariants assumed in the well-formedness of a later one | assumption | `BoogieGenerator.Functions.Wellformedness.cs`, `Check` | `Check/1`, `CanCallAssumptionForVerification` (2 to 3) | wellformedness |
+  | the `$Is` axioms of `D` use its constraint | axiom | `BoogieGenerator.Types.cs`, the axioms of a subset type | none | abstract-synonym, abstract-types, class-compile, classes, compile, datatypes, emptiness, exports, general-traits, generics, raw-compile, refinement-verify, statements, traits, vacuity |
+  | each invariant checked at a conversion to `D` | check | `BoogieGenerator.TypeObligations.cs` | `CheckInvariantTypeMembership/10`, `Assert`, `AssertAndForget`, `CanCallAssumption` | abstract-synonym, abstract-types, class-compile, classes, compile, datatypes, emptiness, exports, general-traits, generics, opacity, raw-compile, refinement-verify, trait-compile, traits, wellformedness |
+  | the value is in `raw D` before the invariants are checked | check | same | `CheckInvariantTypeMembership/10`, the second `CheckSubrange` | generics (`Components`) |
+  | a value converted to `C` is not null | check | same | `CheckInvariantTypeMembership/10`, the first `CheckSubrange` | classes (`RawQToCell`) |
+  | a member that is not raw is applied to a raw receiver only if it satisfies the invariants | check | same | `CheckReceiverInvariants/5`, `CheckSubrange` | traits |
+  | a raw reference reaches a type that is not raw only if it satisfies the invariants | check | same | `CheckTypeMembership/12`, `CheckSubrange`, `GetSubrangeCheck`, `CheckTypeMembership` | classes, general-traits, trait-compile, traits |
+  | the same, in the type test and the membership check of a raw reference | check | `BoogieGenerator.cs`, `GetSubrangeCheck` | `GetSubrangeCheck/8`, `GetSubrangeCheck` | classes (`TestRawObjectChecked`) |
+  | the invariants checked at `new;` | check | `BoogieGenerator.TrStatement.cs`, `TrStmt` | `TrStmt/4`, `CheckSubrange` (1 to 2) | class-compile, classes, exports, general-traits, opacity, refinement-verify, trait-compile, traits, wellformedness |
+  | the object is raw until `new;` | restriction | same | none | classes, general-traits, refinement-verify, traits |
+  | the parent axioms of a raw class reach the raw types of its traits | axiom | `BoogieGenerator.cs` | none | general-traits, refinement-verify, traits |
+  | the constraint includes the inherited invariants | constraint | `InvariantTypeDecl.cs` | none | general-traits, refinement, refinement-verify, traits |
+  | the translator's gate for what is not yet verified | check | `BoogieGenerator.cs`, `DeclaresUnsupportedMemberInvariants` | none | trait-gates, verify |
+  | `D` keeps the declared variance | subtyping | `InvariantTypeDecl.cs`, `TypeParametersOf` | none | generics, variance |
+  | variance by polarity | check | `TypeParameterPolarity.cs`, `CheckInvariantVariance` | none | variance |
+  | the extension condition | check | `InvariantExtensionCondition.cs` | none | abstract-errors, class-errors, extension, trait-errors |
+  | the reads restriction | check | `MemberInvariantChecks.cs`, `CheckReadsRestrictions` | none | class-errors, reads |
+  | the program-wide checks | check | `MemberInvariantChecks.cs`, `Check` | none | abstract-errors, class-witness, codatatypes, libraries, trait-witness |
+  | at an inherited site, a conjunct the base did not check is checked | check | `BoogieGenerator.InheritedInvariants.cs`, `InheritedConjunctOrigin` | `CheckInvariantTypeMembership/10`, `Assert`, `AssertAndForget` | refinement-verify |
+  | at an inherited site, a conjunct the base checked is assumed | assumption | same | same | refinement-verify |
+  | at an inherited site, a membership check that is not split is checked whole | check | `BoogieGenerator.TypeObligations.cs`, `InheritedMembershipOrigin` | `CheckTypeMembership/12`, `CheckTypeMembership` (1 to 2) | refinement-verify |
+  | a member that became raw is verified again | check | `BoogieGenerator.InheritedInvariants.cs`, `BecameRaw` | none | refinement-verify |
+  | the inherited postconditions of a member that became raw are checked | check | `BoogieGenerator.Methods.cs`, `$_reverifyPost` | none | refinement-verify |
+  | the copies of a module that adds conjuncts are scheduled | check | `BoogieGenerator.Methods.cs`, `MustVerifyCopy` | none | refinement-verify |
+  | an implementation of a copy that makes such a check is marked | check | `BoogieGenerator.cs`, `AddImplementationWithAttributes` | none | refinement-verify |
+  | a copy from a library base enters the verification scope | check | `BoogieGenerator.InheritedInvariants.cs`, `AddedInvariantsInVerificationScope` | none | refinement-verify |
+  | the implicit `new;` of an inherited constructor is at an inherited origin | check | `BoogieGenerator.TrStatement.cs`, `TrStmt` | `TrStmt/4`, `CheckSubrange` | refinement-verify |
+  | a witness of the refining declaration replaces the inherited one | rule | `RefinementTransformer.cs` | none | refinement-verify |
+  | the receiver of a by-method body has the rawness of its function | check | `ModuleResolver.cs`, `GetReceiverType` | none | datatypes, refinement-verify |
+  | the axioms of an abstract type's derived declaration | axiom | `BoogieGenerator.cs`, the declarations of a module | none | abstract-types, abstract-synonym |
+  | the same, only where the abstract type is revealed | visibility | same | none | abstract-types |
+  | the characteristics of an abstract type are promised, for the type | characteristics | `Types.cs`, `GetAutoInit` | none | abstract-types |
+  | the same, for the derived declaration | characteristics | `InvariantTypeDecl.cs`, `PromisedAutoInit` | none | abstract-types |
+  | a refinement keeps the promised characteristics | check | `RefinementTransformer.cs`, the characteristics of a refinement | none | abstract-errors |
+  | an abstract type may not declare a witness | check | `MemberInvariantChecks.cs`, `Check` | none | abstract-errors |
+  | `raw` of an export set's view of a declaration that is provided only | check | `ScopeCloner.cs`; `NameResolutionAndTypeInference.cs`, `CheckRawType` | none | raw-exports, class-exports |
+  | an abstract type's name denotes its derived declaration | rule | `NameResolutionAndTypeInference.cs` | none | abstract-errors, abstract-synonym, abstract-types |
+
+- *Resolver errors.*  Each error that the feature adds has a negative control
+  in the expect files named:
+
+  | Error | Tests |
+  |---|---|
+  | an invariant or witness outside a type declaration | modifiers |
+  | a witness in a class | class-witness |
+  | a witness or an invariant in a codatatype | codatatypes, libraries |
+  | a witness of a declaration other than a datatype (not yet) | trait-witness |
+  | a witness of an abstract type | abstract-errors |
+  | a refinement that does not keep the characteristics an abstract type with invariants promises | abstract-errors |
+  | a witness without an invariant, two witnesses | trait-witness |
+  | the declaration rule (an invariant and a codatatype in one program) | codatatypes, libraries |
+  | the reads restriction | reads, class-errors |
+  | an inherited witness | trait-errors |
+  | a class with invariants and no constructor, an inherited constructor | class-errors |
+  | `raw` applied to a type parameter | raw-errors |
+  | `raw` of a type that is provided but not revealed | class-exports, raw-exports |
+  | `raw` where it is not yet supported | not-yet, raw-errors, class-exports, raw-exports |
+  | an opaque invariant | modifiers |
+  | `allocated` in an invariant | class-errors, two-state |
+  | the translator's gate | trait-gates, verify |
+  | variance by polarity | variance |
+  | `--member-invariants` without `--type-system-refresh` | option (command line); `MemberInvariantsRequireTypeSystemRefresh` in `DafnyCore.Test` (resolver); `MemberInvariantsTest.OptionsFromTheProjectFile` in `DafnyLanguageServer.Test` (a project file) |
+
+- *Polarity controls.*  `git-issue-105-variance.dfy` has the negative ones
+  (`forall` under `+X`, `exists` under `-X`, the arrow's flip, a non-variant
+  type argument, a generic callee used negatively, an opaque callee, and the
+  rest listed under variance by polarity above).  `git-issue-105-generics.dfy`
+  has the positive ones, a covariant `L<nat>` used as an `L<int>` and a
+  contravariant `N<int>` used as an `N<Empty>`.
+- *Removed at this step.*  Four things that no test could catch:
+  - The assumption, after the checks of a conversion to `D`, that the value is
+    in `D`.  It is redundant: the introduction axiom of `D`, "`$Is(v, raw D)`
+    and `CanCall ==> constraint` imply `$Is(v, D)`", derives it from the checks
+    themselves.
+  - The parser's error for `raw` before something other than a named type.
+    `raw` is a keyword only before an identifier, so the error was
+    unreachable.
+  - The reads restriction's own errors for `old`, `fresh`, `allocated`,
+    `unchanged` and two-state functions and lemmas.  The existing checks of a
+    function body reject them first (`git-issue-105-two-state.dfy` holds the
+    controls).
+  - The error for extending a trait whose invariants are not revealed.  The
+    existing rules reject such a program first (see the step for traits); the
+    resolver now asserts it.
+- *The IDE.*  `MemberInvariantsTest` in `DafnyLanguageServer.Test` sets the
+  option in a project file.  It checks the diagnostics of the invariant's
+  well-formedness and of a failing conversion, at the conversion with the
+  invariant as related location, and the verification status of each.  It also
+  checks hovers, document symbols, and that the reserved names `invariant#k`
+  and `witness#k` are never shown, and that the error for the option without
+  `--type-system-refresh` is reported in the project file.  It also verifies on
+  save (`VerifyOnMode.Save`), with the option set in `dfyconfig.toml`: nothing
+  is verified when the document opens, and the invariants are when it is saved.
+  The test found one fault, fixed at this step: the hover and the verification
+  tree showed the reserved names.
+- *Incremental reuse in the IDE.*  With `--translation-cache`, the language
+  server translates each module through the same `ModuleTranslationCache` as
+  the command line, so it steps aside exactly when the command line does: only
+  while the program-wide gate is active.  A program the gate stops is not
+  translated at all; it gets the gate's errors instead of verification, so
+  there is nothing to reuse.  A program whose invariants are all of kinds that
+  are verified is cached as any program is, in the IDE too.  So the step-aside
+  is lifted kind by kind with the gate.  It goes entirely, with the gate and `DeclaresUnsupportedMemberInvariants`,
+  at the step that verifies the last kind: newtypes (step 8).  Since step 7,
+  newtypes are the only case left.

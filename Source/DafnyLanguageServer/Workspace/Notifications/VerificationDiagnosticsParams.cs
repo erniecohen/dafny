@@ -58,14 +58,41 @@ namespace Microsoft.Dafny.LanguageServer.Workspace.Notifications {
       var oneMemberHasOnly =
         verificationTrees.Any(tree => tree is TopLevelDeclMemberVerificationTree { MarkedAsOnly: true });
 
-      // Render verification tree content into lines.
+      // Render verification tree content into lines.  Each member is rendered on its own, into memberLines, and then
+      // merged into the result: a line keeps the highest status of its members.  But a line that would read plainly
+      // verified while another member on it is still scheduled or verifying reads VerifiedObsolete or
+      // VerifiedVerifying instead, until that member finishes (https://github.com/erniecohen/dafny/issues/426).
+      var memberLines = new LineVerificationStatus[numberOfLines];
+      var pendingMembers = new LineVerificationStatus[numberOfLines];
       foreach (var verificationTree in verificationTrees) {
         if (verificationTree.Uri == uri) {
           if (oneMemberHasOnly && verificationTree is TopLevelDeclMemberVerificationTree { MarkedAsOnly: false }) {
             verificationTree.StatusCurrent = CurrentStatus.Current;
             verificationTree.StatusVerification = GutterVerificationStatus.Skipped;
           }
-          verificationTree.RenderInto(result);
+          verificationTree.RenderInto(memberLines);
+          var (firstLine, lastLine) = verificationTree.RenderedLines();
+          for (var line = Math.Max(firstLine, 0); line <= Math.Min(lastLine, numberOfLines - 1); line++) {
+            var status = memberLines[line];
+            if (result[line] < status) {
+              result[line] = status;
+            }
+            if (status is LineVerificationStatus.Scheduled or LineVerificationStatus.Verifying && pendingMembers[line] < status) {
+              pendingMembers[line] = status;
+            }
+            memberLines[line] = LineVerificationStatus.Nothing;
+          }
+          Debug.Assert(memberLines.All(status => status == LineVerificationStatus.Nothing),
+            "A member rendered a line outside the lines of its tree");
+        }
+      }
+      for (var line = 0; line < numberOfLines; line++) {
+        if (result[line] == LineVerificationStatus.Verified) {
+          result[line] = pendingMembers[line] switch {
+            LineVerificationStatus.Scheduled => LineVerificationStatus.VerifiedObsolete,
+            LineVerificationStatus.Verifying => LineVerificationStatus.VerifiedVerifying,
+            _ => LineVerificationStatus.Verified
+          };
         }
       }
 
@@ -228,6 +255,21 @@ namespace Microsoft.Dafny.LanguageServer.Workspace.Notifications {
 
     public void ResetNewChildren() {
       NewChildren = [];
+    }
+
+    /// <summary>
+    /// The first and the last line that RenderInto may paint: the lines of this tree and of its descendants.  An
+    /// assertion also paints its related ranges, but only those within its parent's range.
+    /// </summary>
+    public (int First, int Last) RenderedLines() {
+      var first = Range.Start.Line;
+      var last = Range.End.Line;
+      foreach (var child in Children) {
+        var (childFirst, childLast) = child.RenderedLines();
+        first = Math.Min(first, childFirst);
+        last = Math.Max(last, childLast);
+      }
+      return (first, last);
     }
 
     public VerificationTree SetObsolete() {

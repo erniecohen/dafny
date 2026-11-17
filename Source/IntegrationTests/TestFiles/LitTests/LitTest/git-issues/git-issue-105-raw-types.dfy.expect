@@ -216,22 +216,15 @@ module RawMembers {
     witness *
   */
 
-  datatype Span = Span(lo: int, hi: int) {
-    invariant /* invariant#0 */ Span(lo, hi).Ok()
-    invariant /* invariant#1 */ Finished().Len() >= 0
+  datatype Span = Span(lo: int, hi: int, parts: seq<Span>) {
+    invariant /* invariant#0 */ Span(lo, hi, []).Ok()
+    invariant /* invariant#1 */ forall p: Span {:trigger p.Len()} {:trigger p in parts} | p in parts :: p.Len() >= 0
 
     // raw member: 'this' has type 'raw Span'
     predicate Ok()
       decreases this
     {
       lo <= hi
-    }
-
-    // raw member: 'this' has type 'raw Span'
-    function Finished(): Span
-      decreases this
-    {
-      this
     }
 
     function Len(): int

@@ -77,6 +77,10 @@ public static class PreType2TypeUtil {
       return new ArrowType(pt.Decl.Origin, arrowTypeDecl, arguments);
     } else if (pt.Decl is ValuetypeDecl valuetypeDecl) {
       return valuetypeDecl.CreateType(arguments);
+    } else if (pt.Decl is ClassLikeDecl { IsReferenceTypeDecl: true, InvariantTypeDecl: { } invariantTypeDecl }) {
+      // Issue 105: a class pre-type stands for "C?", not for "raw C?", which is not a subtype of "object?". Where a
+      // raw type flows in, type refinement makes the type raw.
+      return invariantTypeDecl.FinishedType(pt.Decl.Origin, arguments);
     } else if (pt.Decl is ClassLikeDecl { IsReferenceTypeDecl: true }) {
       return new UserDefinedType(pt.Decl.Origin, pt.Decl.Name + "?", pt.Decl, arguments);
     } else {
@@ -137,7 +141,11 @@ public static class PreType2TypeUtil {
       // Even if the head type of preTypeConverted is a refinement wrapper, we're going to stick with the user-defined type, so we Normalize() here.
       preTypeConverted = preTypeConverted.Normalize();
 
-      if ((type as UserDefinedType)?.ResolvedClass == (preTypeConverted as UserDefinedType)?.ResolvedClass) {
+      var typeDecl = (type as UserDefinedType)?.ResolvedClass;
+      var preTypeDecl = (preTypeConverted as UserDefinedType)?.ResolvedClass;
+      if (typeDecl == preTypeDecl ||
+          // Issue 105: a class pre-type converts to "C?", and the type may be the class itself, "raw C?"
+          typeDecl is ClassLikeDecl { InvariantTypeDecl: { } invariantTypeDecl } && preTypeDecl == invariantTypeDecl) {
         Contract.Assert(type.TypeArgs.Count == preTypeConverted.TypeArgs.Count);
         for (var i = 0; i < type.TypeArgs.Count; i++) {
           Combine(type.TypeArgs[i], preTypeConverted.TypeArgs[i], expandPreTypeSynonyms);

@@ -38,6 +38,12 @@ result may exist in a different enclosing module and with a different set of
 imports than the refinement parent, so that if names were reresolved, the
 result might be different (and possibly not semantically valid).
 This is why Dafny does not re-resolve the names in their new context.
+Dafny enforces this by checking that every name in a copied declaration denotes, in the
+refinement result, the counterpart of what it denoted in the parent. If a declaration that the
+refining module adds would capture such a name (for example, a function with the same name as
+one that the parent uses from an opened import, or a constant with the name of a pattern
+variable), the refining module is rejected, and the error names both declarations; rename the
+added declaration.
 
 2) All the declarations of the refining module that have different names
 than the declarations in the refinement parent are also copied into the
@@ -84,8 +90,9 @@ There must be no names in common among them.
 
 Abstract import declarations (declared with `:` instead of `=`, [Section 4.6](#sec-module-abstraction)) are refined. The refinement parent contains the
 abstract import and the refining module contains a regular aliasing
-import for the same name. Dafny checks that the refining import _adheres_ to
-the abstract import.
+import for the same name. The module that the refining import names must be a
+refinement of the abstract import's module: that module itself, or a module that
+reaches it along a chain of `refines` clauses.
 
 ## 10.3. Sub-module declarations
 
@@ -294,6 +301,14 @@ that now overrides a member of the new parent. It does so even when it inherits 
 overriding member unchanged. A failure is reported at the inherited member, with the
 refining module as a related location. An override pair that the refining module
 inherits unchanged is not checked again.
+
+A refining module may add fields to a class whose constructor it inherits unchanged. A
+constructor must assign every field that is subject to definite-assignment rules before `new;`,
+or by the end of its body if it has no `new;`. An inherited constructor cannot assign a field
+that the refining module adds. So when the refining module adds such a field, it verifies the
+inherited constructor's body, which reports the unassigned field at the inherited constructor,
+with the refining module as a related location. To initialize the new field, the refining
+module declares the constructor itself.
 
 ## 10.9. Type declarations
 

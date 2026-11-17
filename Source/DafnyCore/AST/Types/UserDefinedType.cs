@@ -105,7 +105,8 @@ public class UserDefinedType : NonProxyType, IHasReferences {
   public static UserDefinedType FromTopLevelDecl(IOrigin tok, TopLevelDecl cd, List<Type> typeArguments) {
     if (cd is ArrowTypeDecl) {
       return new ArrowType(tok, (ArrowTypeDecl)cd, typeArguments);
-    } else if (cd is ClassLikeDecl { IsReferenceTypeDecl: true }) {
+    } else if (cd is ClassLikeDecl { IsReferenceTypeDecl: true } or InvariantTypeDecl { Owner: ClassLikeDecl { NonNullTypeDecl: not null } }) {
+      // Issue 105: the type derived from a class with member invariants is "C?"
       return new UserDefinedType(tok, cd.Name + "?", cd, typeArguments);
     } else {
       return new UserDefinedType(tok, cd.Name, cd, typeArguments);
@@ -183,17 +184,32 @@ public class UserDefinedType : NonProxyType, IHasReferences {
     }
   }
 
+  /// <summary>
+  /// The non-null type of a possibly-null reference type. Issue 105: for a class C with member invariants, that of
+  /// "C?" is C, and that of "raw C?" is "raw C".
+  /// </summary>
   public static UserDefinedType CreateNonNullType(UserDefinedType udtNullableType) {
     Contract.Requires(udtNullableType != null);
-    Contract.Requires(udtNullableType.ResolvedClass is ClassLikeDecl { IsReferenceTypeDecl: true });
+    Contract.Requires(udtNullableType.ResolvedClass is ClassLikeDecl { IsReferenceTypeDecl: true } or InvariantTypeDecl { Owner: ClassLikeDecl { IsReferenceTypeDecl: true } });
+    if (udtNullableType.ResolvedClass is InvariantTypeDecl { Owner: ClassLikeDecl owner }) {
+      return new UserDefinedType(udtNullableType.Origin, owner.NonNullTypeDecl.Name, owner.NonNullTypeDecl, udtNullableType.TypeArgs);
+    }
     var cl = (ClassLikeDecl)udtNullableType.ResolvedClass;
-    return new UserDefinedType(udtNullableType.Origin, cl.NonNullTypeDecl.Name, cl.NonNullTypeDecl, udtNullableType.TypeArgs);
+    NonNullTypeDecl nonNullTypeDecl = cl.RawNonNullTypeDecl ?? cl.NonNullTypeDecl;
+    return new UserDefinedType(udtNullableType.Origin, nonNullTypeDecl.Name, nonNullTypeDecl, udtNullableType.TypeArgs);
   }
 
+  /// <summary>
+  /// The possibly-null type of a non-null reference type. Issue 105: for a class C with member invariants, that of
+  /// C is "C?", and that of "raw C" is "raw C?".
+  /// </summary>
   public static UserDefinedType CreateNullableType(UserDefinedType udtNonNullType) {
     Contract.Requires(udtNonNullType != null);
     Contract.Requires(udtNonNullType.ResolvedClass is NonNullTypeDecl);
     var nntd = (NonNullTypeDecl)udtNonNullType.ResolvedClass;
+    if (nntd is not RawNonNullTypeDecl && nntd.Class.InvariantTypeDecl is { } invariantTypeDecl) {
+      return invariantTypeDecl.FinishedType(udtNonNullType.Origin, udtNonNullType.TypeArgs);
+    }
     return new UserDefinedType(udtNonNullType.Origin, nntd.Class.Name + "?", nntd.Class, udtNonNullType.TypeArgs);
   }
 
@@ -334,6 +350,10 @@ public class UserDefinedType : NonProxyType, IHasReferences {
   /// </summary>
   [CanBeNull]
   public TraitDecl AsParentTraitDecl() {
+    if (IsRawSyntax) {
+      // Issue 105: an extends clause names a trait, not its raw type
+      return null;
+    }
     // If .Name == "Tr" and "Tr" is a reference-type trait, then .ResolvedClass will be a NonNullTypeDecl
     // whose .ViewAsClass is that trait declaration we're looking for.
     if (ResolvedClass is NonNullTypeDecl { ViewAsClass: TraitDecl trait0 }) {
@@ -346,6 +366,11 @@ public class UserDefinedType : NonProxyType, IHasReferences {
     if (ResolvedClass is TraitDecl trait1 && trait1.Name == Name) {
       Contract.Assert(!trait1.IsReferenceTypeDecl);
       return trait1;
+    }
+    // Issue 105: if "Tr" is a general trait with member invariants, .ResolvedClass is its derived InvariantTypeDecl
+    if (ResolvedClass is InvariantTypeDecl { Owner: TraitDecl trait2 } && trait2.Name == Name) {
+      Contract.Assert(!trait2.IsReferenceTypeDecl);
+      return trait2;
     }
     return null;
   }
@@ -379,7 +404,7 @@ public class UserDefinedType : NonProxyType, IHasReferences {
       }
       // Issue 105: once resolved, the declaration of a type with member invariants denotes its raw type, whether
       // or not "raw" was written.
-      var isRaw = IsRawSyntax || ResolvedClass is TopLevelDeclWithMembers { InvariantTypeDecl: not null };
+      var isRaw = IsRawSyntax || ResolvedClass is TopLevelDeclWithMembers { InvariantTypeDecl: not null } or RawNonNullTypeDecl;
       return isRaw ? "raw " + s : s;
     }
   }
@@ -552,9 +577,9 @@ public class UserDefinedType : NonProxyType, IHasReferences {
     // "object?" is handled by Builtins rather than the Type hierarchy, so unfortunately
     // it can't be returned in ParentTypes().
     if (super.IsObjectQ) {
-      return IsRefType;
+      return IsRefType && !InvariantTypeDecl.IsRawReferenceType(this);
     } else if (super.IsObject) {
-      return ignoreNullity ? IsRefType : IsNonNullRefType;
+      return (ignoreNullity ? IsRefType : IsNonNullRefType) && !InvariantTypeDecl.IsRawReferenceType(this);
     }
 
     return base.IsSubtypeOf(super, ignoreTypeArguments, ignoreNullity);

@@ -894,7 +894,7 @@ namespace Microsoft.Dafny {
 
       proofDependencies.SetCurrentDefinition(MethodVerboseName(ctor.FullName, MethodTranslationKind.SpecWellformedness), ctor.EnclosingDatatype);
 
-      if (!InVerificationScope(ctor)) {
+      if (!InVerificationScope(ctor) && !AddedInvariantsInVerificationScope(ctor)) {
         // Checked in other file
         return;
       }

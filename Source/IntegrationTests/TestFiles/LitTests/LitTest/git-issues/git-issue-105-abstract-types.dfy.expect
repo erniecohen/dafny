@@ -1,0 +1,27 @@
+git-issue-105-abstract-types.dfy(18,30): Error: invariant might not hold
+git-issue-105-abstract-types.dfy(14,21): Related location: this is the invariant that might not hold
+git-issue-105-abstract-types.dfy(25,9): Error: invariant might not hold
+git-issue-105-abstract-types.dfy(14,21): Related location: this is the invariant that might not hold
+git-issue-105-abstract-types.dfy(20,7): Related location: refining module
+git-issue-105-abstract-types.dfy(53,13): Error: unless an initializer is provided for the array elements, a new array of 'V' must have empty size
+git-issue-105-abstract-types.dfy(56,13): Error: unless an initializer is provided for the array elements, a new array of 'raw V' must have empty size
+git-issue-105-abstract-types.dfy(79,15): Error: invariant might not hold
+git-issue-105-abstract-types.dfy(39,21): Related location: this is the invariant that might not hold
+git-issue-105-abstract-types.dfy(72,7): Related location: refining module
+git-issue-105-abstract-types.dfy(108,30): Error: possible division by zero
+git-issue-105-abstract-types.dfy(119,9): Error: invariant might not hold
+git-issue-105-abstract-types.dfy(90,21): Related location: this is the invariant that might not hold
+git-issue-105-abstract-types.dfy(106,7): Related location: refining module
+git-issue-105-abstract-types.dfy(120,10): Error: invariant might not hold
+git-issue-105-abstract-types.dfy(99,21): Related location: this is the invariant that might not hold
+git-issue-105-abstract-types.dfy(106,7): Related location: refining module
+git-issue-105-abstract-types.dfy(121,9): Error: invariant might not hold
+git-issue-105-abstract-types.dfy(102,21): Related location: this is the invariant that might not hold
+git-issue-105-abstract-types.dfy(106,7): Related location: refining module
+git-issue-105-abstract-types.dfy(146,9): Error: invariant might not hold
+git-issue-105-abstract-types.dfy(133,21): Related location: this is the invariant that might not hold
+git-issue-105-abstract-types.dfy(139,7): Related location: refining module
+git-issue-105-abstract-types.dfy(169,39): Error: a postcondition could not be proved on this return path
+git-issue-105-abstract-types.dfy(169,35): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 14 verified, 11 errors

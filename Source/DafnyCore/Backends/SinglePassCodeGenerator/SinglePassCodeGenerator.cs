@@ -1672,6 +1672,12 @@ namespace Microsoft.Dafny.Compilers {
           } else if (DatatypeDeclarationAndMemberCompilationAreSeparate) {
             continue;
           }
+          if (dt.InvariantTypeDecl is { WitnessKind: SubsetTypeDecl.WKind.Compiled } invariantTypeDecl) {
+            // Issue 105: the type of a datatype with member invariants is compiled as a subset type, under a name
+            // of its own, where it has a compiled witness, which is then its default value
+            DeclareSubsetType(invariantTypeDecl, wr);
+            v.Visit(invariantTypeDecl);
+          }
         } else if (d is IteratorDecl) {
           var iter = (IteratorDecl)d;
 
@@ -4113,6 +4119,7 @@ namespace Microsoft.Dafny.Compilers {
             case SpecialField.ID.Keys:
             case SpecialField.ID.Values:
             case SpecialField.ID.Items:
+            case SpecialField.ID.BoundedErase:
               return true;
             default:
               return false;
@@ -5335,7 +5342,10 @@ namespace Microsoft.Dafny.Compilers {
         ConcreteSyntaxTree wStmts, FCE_Arg_Translator tr) {
       string name = e.Function.Name;
 
-      if (name == "RotateLeft") {
+      if (BoundedCallables.IsCertify(e.Function)) {
+        // A bounded callable compiles to its function value (issue 266).
+        tr(e.Args[1], wr, inLetExprBody, wStmts);
+      } else if (name == "RotateLeft") {
         EmitRotate(e.Receiver, e.Args[0], true, wr, inLetExprBody, wStmts, tr);
       } else if (name == "RotateRight") {
         EmitRotate(e.Receiver, e.Args[0], false, wr, inLetExprBody, wStmts, tr);

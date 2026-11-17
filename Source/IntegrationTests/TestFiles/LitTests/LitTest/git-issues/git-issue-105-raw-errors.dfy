@@ -1,6 +1,7 @@
 // Member invariants (https://github.com/erniecohen/dafny/issues/105): where 'raw' applies.  It
-// applies to a type that can declare an invariant, and so far is supported only for a datatype.
-// A datatype with invariants is possibly empty (until witnesses are supported), but its raw type
+// applies to a type that can declare an invariant, and so far is supported for a datatype, a class, a
+// trait and an abstract type, but not yet for a newtype.
+// A datatype with invariants and no witness clause is possibly empty, but its raw type
 // is as inhabited as the datatype is without them.
 // RUN: %exits-with 2 %resolve --member-invariants "%s" > "%t"
 // RUN: %exits-with 2 %resolve --member-invariants "%S/Inputs/git-issue-105-raw-codatatype.dfy" >> "%t"
@@ -17,9 +18,9 @@ module Kinds {
   type Synonym = D
   type Subset = d: D | d.x > 1 witness *
 
-  method Supported(d: raw D, s: seq<raw D>, m: map<int, raw D>) { }
+  method Supported(d: raw D, s: seq<raw D>, m: map<int, raw D>, c: raw C, e: raw C?, t: raw Tr, a: raw Abstract) { }
 
-  method NotYet(c: raw C, d: raw C?, t: raw Tr, n: raw N, a: raw Abstract) { }
+  method NotYet(n: raw N) { }
 
   method Never(s: raw Synonym, u: raw Subset) { }
 

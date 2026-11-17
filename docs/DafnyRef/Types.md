@@ -838,6 +838,48 @@ method m() {
 }
 ```
 
+#### 5.3.1.5. No functions that read the heap: `T(!reads)` {#sec-no-reading-functions}
+
+A function that reads the heap must not be stored in the heap, because it could then read
+itself and call itself without decreasing, which would make its definition unsound.
+Dafny rejects storing a value whose type contains a general arrow `A ~> B` in a mutable
+field or an array element. In generic code the type of the stored value is a type parameter,
+so Dafny also infers which type parameters a declaration may store in memory, and rejects
+instantiating such a type parameter with a type that contains `~>`, also inside a datatype,
+a newtype or a type synonym. A type parameter may be stored in memory if it occurs in the
+type of a mutable field of its class, trait or iterator; if a value whose type mentions it
+is stored in a mutable field or an array element, or placed in a new array by an
+initializer; or if it is passed to a type parameter that may be stored in memory.
+Constant fields do not count, and neither does the element type of an array type by itself.
+This check is made where the type parameter is instantiated, and also holds when the
+declaration comes from another module, a library, or an export set or abstract import that
+hides its body.
+
+A trait member without a body, or a declaration in an abstract module, stores nothing, so
+callers that go through it would not see what an overriding member or a refining module
+stores. Therefore a type parameter of an overriding member, or of a declaration in a
+refining module, may be stored in memory only if the corresponding type parameter of the
+member it overrides, or of the declaration it refines, may be. Where the base has no body
+but must allow the store, its type parameter is declared with the characteristic `(!reads)`:
+<!-- %check-resolve -->
+```dafny
+trait Writer {
+  method Put<U(!reads)>(a: array<U>, u: U) modifies a requires a.Length > 0
+}
+class ArrayWriter extends Writer {
+  method Put<U>(a: array<U>, u: U) modifies a requires a.Length > 0 { a[0] := u; }
+}
+method Client(w: Writer, a: array<int -> int>) modifies a requires a.Length > 0 {
+  w.Put(a, x => x + 1); // fine: int -> int reads nothing
+}
+```
+Instantiating `Put` with `() ~> bool` is an error. Unlike `(!new)`, `(!reads)` allows
+reference types and arrows that read nothing (`A -> B` and `A --> B`). It applies only to
+type parameters, not to abstract types.
+
+The hidden option `--legacy-generic-function-stores` turns off the check for type
+parameters, for migration and comparison only; it is unsound.
+
 ### 5.3.2. Type parameter variance {#sec-type-parameter-variance}
 
 Type parameters have several different variance and cardinality properties.
@@ -4866,10 +4908,15 @@ declaration.
 
 The hidden, experimental option `--member-invariants` defaults to `false` and
 requires `--type-system-refresh`. It is being implemented in stages
-(https://github.com/erniecohen/dafny/issues/105); in this stage a program with
-member invariants can be parsed, printed and resolved, and compiled with
-`--no-verify`, but not verified. Nothing yet checks or assumes an invariant: the
-verifier reports each one as not yet supported, and compiled code ignores them.
+(https://github.com/erniecohen/dafny/issues/105). So far, the invariants of
+inductive datatypes, classes and traits, declared or inherited, are verified,
+except in a module that refines another. A program, libraries included, that
+declares an invariant of a newtype or an abstract type, a newtype or abstract
+type that extends a trait with invariants, or a type with invariants in a
+refining module, can be parsed, printed and resolved, and compiled with
+`--no-verify`, but not verified: the verifier reports each such declaration as
+not yet supported, and verifies no module of the program. Compiled code does not
+check invariants.
 
 With the option, a datatype, class, trait, newtype or abstract type may declare
 invariants among its members:
@@ -4896,16 +4943,29 @@ declaration in a refining module has those of the declaration it refines as
 well as any it adds. An inherited invariant cannot be removed or changed: an
 invariant has no name, so it never overrides another.
 
+The invariants of a type are, in order, those it inherits (section 6.6.6) and
+then its own. Each is well formed where the ones before it hold, as successive
+`requires` clauses are: an invariant may divide by a component that an earlier
+one says is nonzero, but not by one that only a later invariant, or one of a
+type that extends it, constrains.
+
 A codatatype may not declare an invariant, and a program that declares a member
 invariant may not declare a codatatype. Libraries are part of the program, so
 the rule applies to them too; a library that declares neither may be used either
 way. A `.doo` library built with `--member-invariants` requires its client to
 enable the option too; one built without it records nothing.
 
+An invariant is part of the definition of its type, as a datatype's
+constructors are, so an export set does not name it: it is revealed wherever
+its type is revealed, and nowhere else. A client to which the type is revealed
+sees the invariants and may assume them of every value of the type. A client to
+which the type is only provided sees an abstract type, and none of its
+invariants.
+
 ### 6.6.1. Raw types {#sec-raw-types}
 
-The values of a datatype `D` that declares invariants need not satisfy them
-while they are being built. `raw D` is the type of all the values of `D`, and
+The values of a datatype `D` with invariants, declared or inherited, need not
+satisfy them while they are being built. `raw D` is the type of all the values of `D`, and
 `D` is the subset of them that satisfy the invariants, as if `D` were declared
 as the subset type `type D = v: raw D | <the invariants of v>`. `raw` is a
 prefix on the name of a type, and composes with qualified names, type
@@ -4928,7 +4988,9 @@ method Widen(i: Interval) returns (j: Interval) {
 - A constructor application and an update have type `raw D`, so a variable
   initialized with one and given no type has type `raw D`.
 - A `D` is a `raw D`. A `raw D` used where a `D` is expected is a conversion,
-  as for any subset type, which the verifier is to check.
+  as for any subset type, and the verifier checks that each invariant of `D`
+  holds of the value ("invariant might not hold", with the invariant as the
+  related location).
 - Destructors, discriminators, `match` and updates apply to a `raw D`. The
   components of a raw value have their declared types: they are finished.
 - A member that an invariant of `D` applies to `this`, or to another
@@ -4936,19 +4998,264 @@ method Widen(i: Interval) returns (j: Interval) {
   a `raw D`. In a raw member, `this` has type `raw D`, and the member applies
   to a `raw D`. In every other instance member, `this` has type `D`. Raw
   members are inferred, not declared; `Ok` is one above, and `Width` is not.
-- Where `D` declares no invariant, `raw D` is `D`.
+  Where anything else applies a member that is not raw to a `raw D`, the
+  verifier checks that the value is a `D`.
+- Where `D` neither declares nor inherits an invariant, `raw D` is `D`.
 - Where `D` is exported by `provides` only, it is an abstract type, and `raw D`
   is not yet supported there.
 
 `raw` applies to a type that can declare an invariant, and not to a type
 parameter, a type synonym, a subset type or a codatatype. So far it is
-supported only for a datatype; for a class, trait, newtype or abstract type it
-is parsed but not yet supported. Until witnesses are supported, a datatype with
-invariants is possibly empty, so it cannot instantiate a type parameter that
-requires `(0)` or `(00)`; its raw type can, as the datatype could without
-invariants.
+supported for a datatype, a class (section 6.6.5) and a trait (section 6.6.6);
+for a newtype or abstract type it is parsed but not yet supported. With the
+option, `raw` is still an identifier
+except directly before the name of a type, and `witness` is still the witness
+clause of a subset type or newtype.
 
-The syntax `witness e` (or `ghost witness e`) for a witness member is parsed but
-not yet supported. With the option, `raw` is still an identifier except
-directly before the name of a type, and `witness` is still the witness clause of
-a subset type or newtype.
+### 6.6.2. Witnesses {#sec-member-witnesses}
+
+An invariant may leave a datatype with no values, so a datatype with invariants
+is possibly empty unless it declares a witness member:
+
+<!-- %no-check -->
+```dafny
+datatype Interval = Interval(lo: int, hi: int) {
+  invariant lo <= hi
+  witness Interval(0, 0)        // auto-initializable: satisfies (0)
+}
+datatype Cert = Cert(ghost p: int) {
+  invariant p > 3
+  ghost witness Cert(4)         // nonempty, not compilable: satisfies (00) only
+}
+```
+
+- The witness is an expression of type `D`, so the verifier checks that it
+  satisfies the invariants.
+- With `witness e`, `D` is auto-initializable, and where compiled code needs a
+  default value of `D`, it is `e`. With `ghost witness e`, `D` is nonempty.
+- With no witness, `D` behaves as a subset type with `witness *` does: a
+  variable of type `D` must be assigned before it is used, and `D` cannot
+  instantiate a type parameter that requires `(0)` or `(00)`. `raw D` can, as
+  the datatype could without invariants.
+- A datatype declares at most one witness, and only if it declares or inherits
+  an invariant. The witness must satisfy the inherited invariants as well as
+  its own. A class may not declare one: a class type contains `null`, and its
+  objects are the ones its constructors return. A witness member of another
+  kind of type, a trait included, is not yet supported.
+
+### 6.6.3. An invariant may not refer to its own type {#sec-invariant-extension}
+
+The values of `D` are the raw values that satisfy its invariants. If an
+invariant refers to the set of values of `D` itself, that sentence defines `D`
+in terms of itself, and the definition may have no solution:
+
+<!-- %no-check -->
+```dafny
+datatype Liar = Liar(f: int) {
+  invariant f == 0 ==> !(exists e: Liar :: e.f == 0)   // error
+}
+```
+
+So the resolver checks a conservative condition. A type *depends on* `D` if its
+set of values is defined with `D`'s: `D`, `raw D`, the traits `D` extends and
+the types that extend `D` (and their raw types), `object` where `D` is a
+reference type, and every type built from one of these, as a datatype
+component, a type argument, the base type of a subset type or newtype, or a
+parameter or result of an arrow. The invariants of `D`,
+and everything they reach (the specifications and bodies of the functions they
+call, the initializers of the constants they read, and the constraints of the
+types they use), must not:
+
+1. quantify over a type that depends on `D` except through the elements of a
+   collection: `forall k <- kids :: k.size < size` is allowed, and
+   `forall k: D :: ...` is not;
+2. call a generic function with a type argument that depends on `D`;
+3. apply a function value, other than a lambda expression or a named function
+   applied on the spot;
+4. call a dynamically bound function, since its overrides are not all known;
+5. test a raw value against, or convert it to, a type that depends on `D`,
+   explicitly or implicitly. In particular, a raw member cannot pass `this`
+   where a `D` is expected.
+
+Statements inside expressions are proof hints, and are not checked. A bound
+variable whose type is inferred as `raw D` makes a test `k is D` a test of a raw
+value; write `k: D` to range over values of `D`.
+
+### 6.6.4. Generic datatypes {#sec-invariant-generics}
+
+For a datatype `D<X>` with invariants, `D<A>` is the subset of `raw D<A>` whose
+values satisfy the invariants with `A` for `X`. `D<A>` has the variance that `D`
+declares, as `raw D<A>` does, so the invariants must justify it: where `X` is
+covariant, they must be monotone in `X` (if they hold with `A` for `X`, they
+hold with any supertype of `A`), and where `X` is contravariant, antitone. An
+invariant may quantify over `X`, so this is not automatic:
+
+<!-- %no-check -->
+```dafny
+ghost predicate Never<X>(x: X) { false }
+datatype Box<+X(!new)> = Box(b: bool) {
+  invariant b ==> forall y: X :: Never(y)   // error: X is covariant, and is used negatively
+}
+datatype Sink<-X(!new)> = Sink(b: bool) {
+  invariant b ==> forall y: X :: Never(y)   // Sink(true) is a Sink<X> where X is empty
+}
+```
+
+The resolver checks each covariant or contravariant type parameter `X` by the
+polarity of its uses in the invariants of `D`, those it inherits included, and
+in the functions and constants that they call, closed over what those call:
+
+- A universal quantifier over `X` uses `X` negatively; an existential quantifier
+  over `X` and a type test `e is X` use it positively.
+- The parameter type of an arrow, a negation and the antecedent of an
+  implication flip the polarity. An equivalence, the condition of an `if`, a
+  comprehension, a lambda and a function used as a value use `X` both ways.
+- In a type `G<..X..>`, the polarity composes with the variance that `G`
+  declares for that parameter; a non-variant parameter uses `X` both ways.
+- A call of a generic function, or a use of a generic constant, contributes the
+  polarity of its type parameters in its body, computed as a least fixpoint
+  where functions call each other. A function whose body is not known at the
+  invariant, because it is abstract, has no body, or is not revealed by the
+  export of the module that declares it, uses each type argument both ways.
+- A use of `X` only as the type of a value, such as a component of `D`'s
+  constructors or an operand of `==`, does not count, and neither does a
+  statement in an expression, such as an `assert` or a `calc`, which is a proof
+  hint and not part of the invariant.
+
+A covariant type parameter used negatively, or a contravariant one used
+positively, is an error at the type parameter, which names the use. The analysis
+trusts the variance that every other type declares, as subtyping does.
+
+- So `D<A>` is a subtype of `D<B>` where the declared variance makes it one, and
+  such a conversion is not checked. A conversion against the variance, such as
+  from `D<int>` to `D<nat>` for a covariant `X`, is checked against the
+  invariants with `nat` for `X`. `raw D` has the variance that `D` declares too.
+- A type parameter keeps its strictness (`*` or not), which concerns the
+  cardinality of the type, not its subtyping.
+- A witness is checked for every `X`, and `witness e` gives every
+  instantiation of `D` its default value.
+- In the condition of section 6.6.3, a generic type with invariants that the
+  invariants of `D` reach is analysed with the dependence of each of its type
+  arguments on `D`, as the constraint of a generic subset type is. A member
+  function of a generic type is generic in the type's parameters, so clause 2
+  rejects such an invariant that calls one, where a type argument depends on
+  `D`.
+
+### 6.6.5. Classes {#sec-invariant-classes}
+
+Every object of a class with invariants satisfies them, and so do the non-null
+values of `C?`. The invariants read only `const` fields, which a constructor
+assigns before `new;`, so the constructor checks them once, at `new;`, and
+they hold of the object from then on:
+
+<!-- %no-check -->
+```dafny
+class Buffer {
+  const data: array<int>
+  const cap: nat
+  invariant data.Length == cap && 0 < cap
+
+  constructor (n: nat)
+    requires 0 < n
+  {
+    data := new int[n];
+    cap := n;
+    new;                        // the invariant is checked here
+    Fill();                     // 'this' is a Buffer
+  }
+  method Fill() modifies data { }
+  method Get(i: nat) returns (x: int)
+    requires i < cap
+  {
+    x := data[i];               // i < data.Length, from the invariant
+  }
+}
+```
+
+- At `new;`, explicit or implicit at the end of the body, the verifier checks
+  each invariant of the object ("invariant might not hold"). Before it, the
+  object is a `raw C`, and after it, a `C`.
+- Every parameter, result, field, element and bound variable of type `C`, or
+  non-null `C?`, satisfies the invariants, whether or not it is allocated.
+- A class that declares or inherits an invariant must declare a constructor. A
+  constructor with no body is assumed to return an object that satisfies the
+  invariants, and `dafny audit` reports it.
+- `raw C` is the type of the objects of the class whether or not they satisfy
+  the invariants, and `raw C?` adds `null`. `C` is a `raw C`. A `raw C` used
+  where a `C` is expected is a conversion, and the verifier checks the
+  invariants. `raw C` is a subtype of `raw P` for each trait `P` with
+  invariants that `C` extends (section 6.6.6), and of nothing else: in
+  particular, not of `object`. A raw reference reaches `object`, a trait, a
+  collection of those or a type argument that is not raw only where the
+  verifier proves that it satisfies the invariants. A `reads` or `modifies`
+  clause may mention a raw reference without that proof.
+- For a reference `o` that is not raw, `o is C` tests the dynamic type alone,
+  and compiles. A test of a raw reference, `r is C`, evaluates the invariants,
+  so it is ghost.
+- `C`, `C?`, `raw C` and `raw C?` are the same type in compiled code.
+
+### 6.6.6. Traits {#sec-invariant-traits}
+
+A trait may declare invariants, and every type that extends it, directly or
+through other traits, inherits them, instantiated at the parent type arguments.
+The invariants of a type are those of its ancestors, each ancestor once however
+many paths reach it, in a post-order walk of the `extends` clauses, followed by
+its own:
+
+<!-- %no-check -->
+```dafny
+trait Account extends object {
+  const balance: int
+  invariant balance >= 0
+}
+class Savings extends Account {
+  const rate: int
+  invariant rate > 0
+  constructor (b: int, r: int)
+    requires b >= 0 && r > 0
+  {
+    balance := b;
+    rate := r;                  // both invariants are checked at the implicit 'new;'
+  }
+}
+method Interest(a: Account) returns (x: int) {
+  x := a.balance / 10;          // a.balance >= 0, from the invariant
+}
+```
+
+- A trait constructs nothing, so its invariants are checked where the types
+  that extend it construct their values: at `new;` for a class, and where a raw
+  value is converted to its finished type for a datatype. Every value of a trait
+  type `P`, and every non-null value of `P?`, satisfies the invariants of `P`.
+- `raw P` is the type of the values of the types that extend `P`, whether or
+  not they satisfy the invariants of `P`, and for a reference trait `raw P?` adds
+  `null`. For a type `C` that extends `P`, `raw C` is a subtype of `raw P`, and
+  `C` of `P`. A `raw P` used where a `P` is expected is a conversion, and the
+  verifier checks the invariants of `P`.
+- A raw value reaches `P`, or a trait without invariants, or `object`, as a
+  finished value of its own type: a `raw C` used where a `P` is expected checks
+  all the invariants of `C`, the inherited ones included. Through `raw P`, only
+  those of `P` are checked, so a `P` may hold a value that is a `raw C` and not
+  a `C`.
+- So, for a general trait `G` and a datatype `D` that extends it, `g is D` is
+  ghost, and `g is raw D` compiles. A class's objects satisfy its invariants,
+  the inherited ones included, once they are constructed, so for a value that
+  is not raw, a test against a class `C` or a reference trait `P` tests the
+  dynamic type alone, and compiles. A test of a raw reference against `C` or
+  `P` evaluates the invariants, so it is ghost.
+- Where the least common supertype of two types is a trait `P` with
+  invariants, as in the branches of an `if` expression or the elements of a
+  display, the two join at `P` (or `P?`) if neither is raw and both instantiate
+  `P` alike, and at `raw P` (or `raw P?`) otherwise.
+- A member that is not raw, applied to a raw value, checks the value against the
+  finished type of its own static type, all of its invariants included, even
+  where the member is inherited from a trait without invariants. Static members
+  and fields need no check.
+- An invariant may apply to `this` only raw members, its own or inherited, and
+  may not call a member that a type extending the trait may override (clause 4
+  of section 6.6.3). The traits that a type extends depend on it, so an
+  invariant may not convert `this` to `raw P`, or test it against `P`.
+- A trait may not yet declare a witness: its values are those of the types that
+  extend it, each with its own witness or none. A newtype or abstract type that
+  extends a trait with invariants is not yet verified.
+- `P`, `P?`, `raw P` and `raw P?` are the same type in compiled code.

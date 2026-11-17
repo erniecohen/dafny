@@ -19,7 +19,17 @@ class AnalyzeTypeConstraints {
     // It's important to do the declarations in topological order from how they depend on each other.
     declarations = TopologicallySortedTopLevelDecls(declarations);
 
+    // The type a member invariant derives (issue 105) is not a vertex of the call graph, so the order above may
+    // put a subset type of it first.  So a declaration's base type is done first if it is still to be done.
+    var pending = declarations.Where(decl => decl is SubsetTypeDecl or NewtypeDecl).ToHashSet();
     foreach (var d in declarations.Where(decl => decl is SubsetTypeDecl or NewtypeDecl)) {
+      Assign(d);
+    }
+
+    void Assign(TopLevelDecl d) {
+      if (!pending.Remove(d)) {
+        return;
+      }
       var declWithConstraints = (RedirectingTypeDecl)d;
 
       var constraintIsCompilable = true;
@@ -27,6 +37,9 @@ class AnalyzeTypeConstraints {
       // Check base type
       var baseType = (declWithConstraints.Var?.Type ?? ((NewtypeDecl)declWithConstraints).BaseType).NormalizeExpandKeepConstraints();
       if (baseType.AsRedirectingType is (SubsetTypeDecl or NewtypeDecl) and var baseDecl) {
+        if (baseDecl is TopLevelDecl baseTopLevelDecl) {
+          Assign(baseTopLevelDecl);
+        }
         constraintIsCompilable &= baseDecl.ConstraintIsCompilable;
       }
 

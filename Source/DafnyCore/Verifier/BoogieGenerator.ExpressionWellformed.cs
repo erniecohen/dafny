@@ -382,6 +382,7 @@ namespace Microsoft.Dafny {
             } else if (e.Member is DatatypeDiscriminator discriminator) {
               CheckNotGhostVariant(e, "discriminator", ((DatatypeDecl)discriminator.EnclosingClass).Ctors, builder, etran);
             }
+            CheckReceiverInvariants(e.Obj.Origin, e.Member, e.Obj, builder, etran);
             if (!e.Member.IsStatic) {
               if (e.Member is TwoStateFunction) {
                 Bpl.Expr wh = AllocationObligation(selectExpr.Origin, etran.TrExpr(e.Obj), e.Obj.Type, etran.OldAt(e.AtLabel));
@@ -703,6 +704,7 @@ namespace Microsoft.Dafny {
               if (!e.Function.IsStatic && !(e.Receiver is ThisExpr) && !e.Receiver.Type.IsArrowType) {
                 CheckNonNull(callExpr.Origin, e.Receiver, builder, etran, wfOptions.AssertKv);
               }
+              CheckReceiverInvariants(e.Receiver.Origin, e.Function, e.Receiver, builder, etran);
               if (!e.Function.IsStatic && !etran.UsesOldHeap) {
                 // the argument can't be assumed to be allocated for the old heap
                 Type et = UserDefinedType.FromTopLevelDecl(e.Origin, e.Function.EnclosingClass).Subst(e.GetTypeArgumentSubstitutions());
@@ -893,15 +895,20 @@ namespace Microsoft.Dafny {
                 }
               }
               Expression allowance = null;
-              if (codeContext != null && e.CoCall != FunctionCallExpr.CoCallResolution.Yes && !(e.Function is ExtremePredicate)) {
+              // Under --modular-termination, every call gets the check of the global bounds, including a co-call and a
+              // call of an extreme or prefix predicate: those need no decrease within their cluster, but the bounds
+              // order calls across modules, which no cluster sees.
+              if (codeContext != null) {
                 CheckCallbackArguments(callExpr.Origin, codeContext, e.Function, e.Args, e.Receiver, substMap, e.GetTypeArgumentSubstitutions(),
                   wfOptions.CallerTerminationTranslator ?? builder.Context.CallerTerminationTranslator ?? etran, builder);
+              }
+              if (codeContext != null && e.CoCall != FunctionCallExpr.CoCallResolution.Yes && !(e.Function is ExtremePredicate)) {
                 // check that the decreases measure goes down
                 var calleeSCCLookup = e.IsByMethodCall ? (ICallable)e.Function.ByMethodDecl : e.Function;
                 Contract.Assert(calleeSCCLookup != null);
                 if (ModuleDefinition.InSameSCC(calleeSCCLookup, codeContext)) {
                   if (wfOptions.DoOnlyCoarseGrainedTerminationChecks) {
-                    builder.Add(Assert(GetToken(expr), Bpl.Expr.False, new IsNonRecursive(), builder.Context));
+                    builder.Add(Assert(InheritedTerminationOrigin(GetToken(expr), calleeSCCLookup), Bpl.Expr.False, new IsNonRecursive(), builder.Context));
                   } else {
                     if (e.Function == wfOptions.SelfCallsAllowance) {
                       allowance = Expression.CreateBoolLiteral(e.Origin, true);
@@ -954,15 +961,15 @@ namespace Microsoft.Dafny {
                     // function: the heap at its label, if the call has one.
                     var calleeEtran = e.Function is TwoStateFunction && e.AtLabel != null ? etran.WithOld(etran.OldAt(e.AtLabel)) : null;
                     var callerEtran = wfOptions.CallerTerminationTranslator ?? builder.Context.CallerTerminationTranslator ?? etran;
-                    CheckCallTermination(callExpr.Origin, contextDecreases, calleeDecreases, allowance, e.Receiver, substMap, directSubstMap, e.GetTypeArgumentSubstitutions(),
+                    CheckCallTermination(InheritedTerminationOrigin(callExpr.Origin, calleeSCCLookup), contextDecreases, calleeDecreases, allowance, e.Receiver, substMap, directSubstMap, e.GetTypeArgumentSubstitutions(),
                       callerEtran, false, builder, codeContext.InferredDecreases, hint, calleeEtran ?? etran);
                   }
                 }
-                if (e.Function != wfOptions.SelfCallsAllowance) {
-                  CheckModularTermination(callExpr.Origin, codeContext, e.Function, e.Receiver, substMap, directSubstMap,
-                    e.GetTypeArgumentSubstitutions(), wfOptions.CallerTerminationTranslator ?? builder.Context.CallerTerminationTranslator ?? etran,
-                    builder, etran);
-                }
+              }
+              if (codeContext != null && e.Function != wfOptions.SelfCallsAllowance) {
+                CheckModularTermination(callExpr.Origin, codeContext, e.Function, e.Receiver, substMap, directSubstMap,
+                  e.GetTypeArgumentSubstitutions(), wfOptions.CallerTerminationTranslator ?? builder.Context.CallerTerminationTranslator ?? etran,
+                  builder, etran);
               }
               // all is okay, so allow this function application access to the function's axiom, except if it was okay because of the self-call allowance.
               Bpl.IdentifierExpr canCallFuncID = new Bpl.IdentifierExpr(callExpr.Origin, e.Function.FullSanitizedName + "#canCall", Bpl.Type.Bool);
@@ -1779,6 +1786,10 @@ namespace Microsoft.Dafny {
       Variables locals, BoogieStmtListBuilder builder, ExpressionTranslator etran) {
       Contract.Requires(expr.Function is SpecialFunction);
 
+      if (BoundedCallables.IsCertify(expr.Function)) {
+        CheckWellformedBoundedCertify(expr, options, locals, builder, etran);
+        return;
+      }
       CheckWellformed(expr.Receiver, options, locals, builder, etran);
       foreach (var arg in expr.Args.Where(arg => arg is not DefaultValueExpression)) {
         CheckWellformed(arg, options, locals, builder, etran);

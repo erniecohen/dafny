@@ -206,6 +206,18 @@ class PreTypeToTypeVisitor : ASTVisitor<IASTVisitorContext> {
       return;
     } else if (expr is FunctionCallExpr functionCallExpr) {
       functionCallExpr.TypeApplication_AtEnclosingClass = functionCallExpr.PreTypeApplication_AtEnclosingClass.ConvertAll(PreType2TypeUtil.PreType2FixedType);
+      if (BoundedCallables.IsCertify(functionCallExpr.Function)) {
+        // Pre-types do not tell nat from int, and nat is the only int-based order a bounded type admits; nor do they
+        // tell the arrow families apart, so the payload is refined from the function argument (issue 266).  The
+        // call's type map comes from its static receiver, so that receiver carries both.
+        var typeArgs = functionCallExpr.TypeApplication_AtEnclosingClass;
+        if (typeArgs[0].NormalizeExpand() is IntType) {
+          typeArgs[0] = systemModuleManager.Nat();
+        }
+        typeArgs[1] = PreType2TypeUtil.PreType2RefinableType(functionCallExpr.PreTypeApplication_AtEnclosingClass[1]);
+        functionCallExpr.Receiver.Type = new UserDefinedType(functionCallExpr.Receiver.Origin, BoundedCallables.TypeName,
+          functionCallExpr.Function.EnclosingClass, functionCallExpr.TypeApplication_AtEnclosingClass);
+      }
       functionCallExpr.TypeApplication_JustFunction = PreType2TypeUtil.Combine(functionCallExpr.TypeApplication_JustFunction,
         functionCallExpr.PreTypeApplication_JustFunction, true);
     } else if (expr is MemberSelectExpr memberSelectExpr) {

@@ -522,7 +522,9 @@ NoGhost - disable printing of functions, ghost methods, and proof
 
     private void PrintSubsetTypeDecl(SubsetTypeDecl dd, int indent) {
       Indent(indent);
-      PrintClassMethodHelper("type", dd.Attributes, dd.Name + TPCharacteristicsSuffix(dd.Characteristics), dd.TypeArgs);
+      // Issue 105: the type derived from a class or reference trait with member invariants is named "C?"
+      var name = dd is InvariantTypeDecl invariantTypeDecl && InvariantTypeDecl.IsReferenceType(invariantTypeDecl.Owner) ? dd.Name + "?" : dd.Name;
+      PrintClassMethodHelper("type", dd.Attributes, name + TPCharacteristicsSuffix(dd.Characteristics), dd.TypeArgs);
       wr.Write(" = ");
       wr.Write(dd.Var.DisplayName);
       if (ShowType(dd.Var.Type)) {
@@ -739,6 +741,18 @@ NoGhost - disable printing of functions, ghost methods, and proof
         wr.WriteLine("}");
       }
 
+      if (options.DafnyPrintResolvedFile != null && c.InvariantTypeDecl != null) {
+        // Issue 105: the type "C?" that the name of a class or reference trait with member invariants denotes, or the type
+        // G that the name of a general trait denotes
+        if (!printingExportSet) {
+          Indent(indent); wr.WriteLine("/*-- type with member invariants");
+        }
+        PrintSubsetTypeDecl(c.InvariantTypeDecl, indent);
+        if (!printingExportSet) {
+          Indent(indent); wr.WriteLine("*/");
+        }
+      }
+
       if (options.DafnyPrintResolvedFile != null && c.NonNullTypeDecl != null) {
         if (!printingExportSet) {
           Indent(indent); wr.WriteLine("/*-- non-null type");
@@ -899,8 +913,11 @@ NoGhost - disable printing of functions, ghost methods, and proof
       Indent(indent);
       PrintClassMethodHelper(dt is IndDatatypeDecl ? "datatype" : "codatatype", dt.Attributes, dt.Name, dt.TypeArgs);
       PrintExtendsClause(dt);
-      // Before refinement merging, the constructors are inherited, not an empty definition.
-      wr.Write(printMode == PrintModes.Serialization && dt.IsRefining && dt.Ctors.Count == 0 ? " ..." : " =");
+      // A refining datatype declares no constructors. It inherits them when refinement merges it with the datatype
+      // it refines, so before then it has none. Print it as it was written, with "..." in place of "=" and the
+      // constructors, in every print mode: "=" with no constructors after it does not parse
+      // (https://github.com/erniecohen/dafny/issues/415).
+      wr.Write(dt.IsRefining && dt.Ctors.Count == 0 ? " ..." : " =");
       string sep = "";
       foreach (DatatypeCtor ctor in dt.Ctors) {
         wr.Write(sep);
@@ -1427,6 +1444,10 @@ NoGhost - disable printing of functions, ghost methods, and proof
       if (characteristics.ContainsNoReferenceTypes) {
         var prefix = s == null ? "" : s + ",";
         s = prefix + "!new";
+      }
+      if (characteristics.ContainsNoReadingFunctions) {
+        var prefix = s == null ? "" : s + ",";
+        s = prefix + "!reads";
       }
       if (s == null) {
         return "";

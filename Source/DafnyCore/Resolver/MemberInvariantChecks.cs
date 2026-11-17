@@ -9,6 +9,8 @@ namespace Microsoft.Dafny;
 /// modules are resolved:
 ///  * the option requires --type-system-refresh;
 ///  * a codatatype may not declare an invariant or a witness member;
+///  * a datatype declares at most one witness member, and only if it has an invariant; a class or an abstract type
+///    declares none (witness members of traits and newtypes are not yet supported);
 ///  * the declaration rule: a program that declares a member invariant may not declare a codatatype.
 ///    Libraries are part of the program, so the rule covers them too.
 /// The checks are syntactic, so they see every declaration, including those of abstract modules and of
@@ -51,9 +53,24 @@ public static class MemberInvariantChecks {
           if (decl is CoDatatypeDecl) {
             reporter.Error(MessageSource.Resolver, witness.NameNode.Origin,
               "a codatatype may not declare a witness: a witness is only needed by a type with an invariant");
-          } else {
+          } else if (decl is ClassDecl) {
             reporter.Error(MessageSource.Resolver, witness.NameNode.Origin,
-              "witness members are not yet supported");
+              "a class may not declare a witness: its objects are the ones its constructors return, so it needs none");
+          } else if (decl is AbstractTypeDecl) {
+            reporter.Error(MessageSource.Resolver, witness.NameNode.Origin,
+              "an abstract type may not declare a witness: its characteristics, '(0)' or '(00)', promise one, and each refinement that defines the type supplies it");
+          } else if (decl is not IndDatatypeDecl datatype) {
+            reporter.Error(MessageSource.Resolver, witness.NameNode.Origin,
+              $"a witness member of a {decl.WhatKind} is not yet supported");
+          } else if (withMembers.Members.OfType<MemberWitness>().First() != witness) {
+            reporter.Error(MessageSource.Resolver, witness.NameNode.Origin,
+              $"'{decl.Name}' declares more than one witness");
+          } else if (!withMembers.Members.OfType<MemberInvariant>().Any() && datatype.Traits.Count == 0 &&
+                     datatype.EnclosingModuleDefinition.Implements == null) {
+            // A refining declaration may add a witness for the invariants of the declaration it refines, and a
+            // datatype may inherit invariants from its parent traits.
+            reporter.Error(MessageSource.Resolver, witness.NameNode.Origin,
+              $"'{decl.Name}' declares no invariant, so it needs no witness: its values are its constructors' values");
           }
         }
       }
@@ -81,7 +98,9 @@ public static class MemberInvariantChecks {
   /// invariant declared in "declarations": an invariant depends on no mutable state, so that it can be
   /// translated to a function with no heap argument.  It reads no mutable field and no array element, uses no
   /// old, fresh, allocated or unchanged, calls no two-state function or lemma, uses no function that has a
-  /// reads clause, and applies no function value that may read the heap.
+  /// reads clause, and applies no function value that may read the heap.  Of these, the checks of every
+  /// function body already reject old, fresh, unchanged, allocated and two-state functions and lemmas (an
+  /// invariant is not a two-state context, and has no reads clause), so they are not repeated here.
   /// </summary>
   public static void CheckReadsRestrictions(IEnumerable<TopLevelDecl> declarations, ErrorReporter reporter) {
     var visitor = new ReadsRestrictionVisitor(reporter);
@@ -104,14 +123,8 @@ public static class MemberInvariantChecks {
         case MemberSelectExpr { Member: Field { IsMutable: true } field }:
           Error(expr, $"read the mutable field '{field.Name}'");
           break;
-        case MemberSelectExpr { Member: TwoStateFunction function }:
-          Error(expr, $"use the two-state function '{function.Name}'");
-          break;
         case MemberSelectExpr { Member: Function function } select when MayReadHeap(function, select.Obj):
           Error(expr, HeapReadingUse("use", function));
-          break;
-        case FunctionCallExpr { Function: TwoStateFunction function }:
-          Error(expr, $"call the two-state function '{function.Name}'");
           break;
         case FunctionCallExpr { Function: { } function } call when MayReadHeap(function, call.Receiver):
           Error(expr, HeapReadingUse("call", function));
@@ -124,18 +137,6 @@ public static class MemberInvariantChecks {
           break;
         case ApplyExpr apply when !apply.Function.Type.IsArrowTypeWithoutReadEffects:
           Error(expr, "apply a function value that may read the heap");
-          break;
-        case OldExpr:
-          Error(expr, "use 'old'");
-          break;
-        case UnchangedExpr:
-          Error(expr, "use 'unchanged'");
-          break;
-        case FreshExpr:
-          Error(expr, "use 'fresh'");
-          break;
-        case UnaryOpExpr { Op: UnaryOpExpr.Opcode.Allocated }:
-          Error(expr, "use 'allocated'");
           break;
       }
     }
@@ -155,13 +156,6 @@ public static class MemberInvariantChecks {
         return !receiver.Type.IsArrowTypeWithoutReadEffects;
       }
       return function.Reads.Expressions.Count != 0;
-    }
-
-    protected override void VisitOneStmt(Statement stmt) {
-      if (stmt is CallStmt { Method: TwoStateLemma lemma }) {
-        reporter.Error(MessageSource.Resolver, stmt.Origin,
-          $"an invariant may not call the two-state lemma '{lemma.Name}': it depends on no mutable state");
-      }
     }
   }
 

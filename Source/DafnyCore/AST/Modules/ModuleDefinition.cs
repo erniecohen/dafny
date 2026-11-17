@@ -75,6 +75,8 @@ Generate module names in the older A_mB_mC style instead of the current A.B.C sc
   public bool SuccessfullyResolved;  // set to true upon successful resolution; modules that import an unsuccessfully resolved module are not themselves resolved
   public ModuleKindEnum ModuleKind;
   public bool IsFacade; // True iff this module represents a module facade (that is, an abstract interface)
+  // For a facade, the module whose abstract signature it presents (issue 410).
+  internal ModuleDefinition? FacadeOf;
   private bool IsBuiltinName => Name is "_System" or "_module"; // true if this is something like _System that shouldn't have it's name mangled.
 
   public DefaultClassDecl? DefaultClass { get; set; }
@@ -132,6 +134,7 @@ Generate module names in the older A_mB_mC style instead of the current A.B.C sc
     NameNode = original.NameNode;
     PrefixIds = original.PrefixIds.Select(cloner.Origin).ToList();
     IsFacade = original.IsFacade;
+    FacadeOf = original.FacadeOf;
     Attributes = original.Attributes;
     ModuleKind = original.ModuleKind;
     Implements = original.Implements == null ? null : original.Implements with { Target = new ModuleQualifiedId(cloner, original.Implements.Target) };
@@ -429,6 +432,9 @@ Generate module names in the older A_mB_mC style instead of the current A.B.C sc
       if (d is TopLevelDeclWithMembers { InvariantTypeDecl: { } invariantTypeDecl }) {
         yield return invariantTypeDecl;
       }
+      if (d is ClassLikeDecl { RawNonNullTypeDecl: { } rawNonNullTypeDecl }) {
+        yield return rawNonNullTypeDecl;
+      }
     }
   }
 
@@ -544,6 +550,7 @@ Generate module names in the older A_mB_mC style instead of the current A.B.C sc
     resolver.moduleInfo = ModuleResolver.MergeSignature(sig, resolver.ProgramResolver.SystemModuleManager.systemNameInfo);
     Type.PushScope(resolver.moduleInfo.VisibilityScope);
     ModuleResolver.ResolveOpenedImports(resolver.moduleInfo, this, resolver.Reporter, resolver); // opened imports do not persist
+    resolver.CreateInheritedInvariantTypeDecls(this);
     var datatypeDependencies = group?.DatatypeDependencies ?? new Graph<IndDatatypeDecl>();
     var codatatypeDependencies = group?.CodatatypeDependencies ?? new Graph<CoDatatypeDecl>();
     var allDeclarations = AllDeclarationsAndNonNullTypeDecls(TopLevelDecls).ToList();
@@ -901,6 +908,9 @@ Generate module names in the older A_mB_mC style instead of the current A.B.C sc
         // nothing more to register
       } else if (d is NewtypeDecl or AbstractTypeDecl) {
         var cl = (TopLevelDeclWithMembers)d;
+        if (cl.InvariantTypeDecl == null && InvariantTypeDecl.Applies(cl)) {
+          cl.InvariantTypeDecl = new InvariantTypeDecl(cl);
+        }
         // register the names of the type members
         var members = new Dictionary<string, MemberDecl>();
         resolver.AddClassMembers(cl, members);
@@ -1053,6 +1063,17 @@ Generate module names in the older A_mB_mC style instead of the current A.B.C sc
 
     void RegisterReferenceTypes() {
       DetermineReferenceTypes(resolver, sig);
+
+      // Issue 105: "C?" and "raw C" for a class or reference trait with member invariants, or the derived type G of a
+      // general trait. This waits for DetermineReferenceTypes, which decides which traits are reference types.
+      foreach (var cl in TopLevelDecls.OfType<ClassLikeDecl>()) {
+        if (cl.InvariantTypeDecl == null && InvariantTypeDecl.Applies(cl)) {
+          cl.InvariantTypeDecl = new InvariantTypeDecl(cl);
+          if (cl.NonNullTypeDecl != null) {
+            cl.RawNonNullTypeDecl = new RawNonNullTypeDecl(cl);
+          }
+        }
+      }
 
       // Now, for each reference type (class and some traits), register its possibly-null type.
       // In the big loop above, each class and trait was registered under its own name. We're now going to change that for the reference types.

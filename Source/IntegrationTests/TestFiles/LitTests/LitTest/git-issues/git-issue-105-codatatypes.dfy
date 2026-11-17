@@ -1,6 +1,6 @@
 // Member invariants (https://github.com/erniecohen/dafny/issues/105): a codatatype may not declare an
 // invariant or a witness, and a program that declares a member invariant may not declare a codatatype
-// (the declaration rule).  Witness members are not yet supported.
+// (the declaration rule).  A datatype's witness members are accepted.
 // RUN: %exits-with 2 %resolve --member-invariants "%s" > "%t"
 // RUN: %diff "%s.expect" "%t"
 

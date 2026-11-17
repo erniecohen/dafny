@@ -102,12 +102,12 @@ module RawMembers {
     predicate Odd() decreases n { n != 0 && Parity(n - 1).Even() }
   }
 
-  // An invariant may apply a member to another raw value.
-  datatype Span = Span(lo: int, hi: int) {
-    invariant Span(lo, hi).Ok()
-    invariant Finished().Len() >= 0
+  // An invariant may apply a member to another raw value, and to a component, which is a Span.
+  // (It may not convert a raw value to a Span: see git-issue-105-extension.dfy.)
+  datatype Span = Span(lo: int, hi: int, parts: seq<Span>) {
+    invariant Span(lo, hi, []).Ok()
+    invariant forall p: Span <- parts :: p.Len() >= 0
     predicate Ok() { lo <= hi }
-    function Finished(): Span { this }
     // not raw: it is applied to a Span
     function Len(): int { hi - lo }
   }
