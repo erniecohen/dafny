@@ -523,6 +523,10 @@ git-issues/github-issue-339.dfy
 # old rule proved false (https://github.com/erniecohen/dafny/issues/408).
 git-issues/github-issue-408.dfy
 
+# A refining module may not change what a name in inherited code refers to; the old rule let an
+# added declaration capture it and proved false (https://github.com/erniecohen/dafny/issues/410).
+git-issues/github-issue-410.dfy
+
 # Datatype and trait in one decreases order under --trait-rank-decreases, and the rank of trait-typed datatype
 # fields under --additional-axioms (https://github.com/erniecohen/dafny/issues/317).
 git-issues/github-issue-317.dfy

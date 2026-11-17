@@ -38,6 +38,12 @@ result may exist in a different enclosing module and with a different set of
 imports than the refinement parent, so that if names were reresolved, the
 result might be different (and possibly not semantically valid).
 This is why Dafny does not re-resolve the names in their new context.
+Dafny enforces this by checking that every name in a copied declaration denotes, in the
+refinement result, the counterpart of what it denoted in the parent. If a declaration that the
+refining module adds would capture such a name (for example, a function with the same name as
+one that the parent uses from an opened import, or a constant with the name of a pattern
+variable), the refining module is rejected, and the error names both declarations; rename the
+added declaration.
 
 2) All the declarations of the refining module that have different names
 than the declarations in the refinement parent are also copied into the
