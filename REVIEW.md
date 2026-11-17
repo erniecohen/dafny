@@ -500,7 +500,8 @@ those v4.11.0 already has, and leaves out the paths that are not product (tests,
 `docs`, `.github`, `friction` and the documents at the top of the tree):
 
     git diff --no-renames --abbrev=7 v4.11.0 <last product commit> -- . \
-      ':(exclude)Source/IntegrationTests' ':(exclude)docs' ':(exclude).github' \
+      ':(exclude)Source/IntegrationTests' ':(exclude,glob)Source/*.Test/**' \
+      ':(exclude,glob)Source/*.Tests/**' ':(exclude)docs' ':(exclude).github' \
       ':(exclude)friction' ':(exclude)REVIEW.md' ':(exclude)ROADMAP.md' \
       ':(exclude)AGENTS.md' ':(exclude)CLAUDE.md' | sha256sum
 
@@ -546,14 +547,17 @@ change no product file, so the version stays.  The rule on this branch:
   and gets a new version and a new tag;
 - any other commit keeps them.
 
-The product is everything outside `Source/IntegrationTests/`, `docs/`,
+The product is everything outside `Source/IntegrationTests/`, the unit-test
+projects (`Source/*.Test/` and `Source/*.Tests/`, which no release ships; left out
+since 2026-11-16), `docs/`,
 `.github/`, `friction/`, this file, and the other documents at the top of the
 tree: `ROADMAP.md`, `AGENTS.md` and `CLAUDE.md`.  `.github/review/base` names the base
 and the last product commit, and CI's `.github/review/version.sh` computes the
 version from them and fails if a later commit changes a product file.  By hand,
 this prints nothing:
 
-    git diff --name-only b97a6fe <commit> -- . ':!Source/IntegrationTests' ':!docs' ':!.github' \
+    git diff --name-only b97a6fe <commit> -- . ':!Source/IntegrationTests' \
+      ':(exclude,glob)Source/*.Test/**' ':(exclude,glob)Source/*.Tests/**' ':!docs' ':!.github' \
       ':!friction' ':!REVIEW.md' ':!ROADMAP.md' ':!AGENTS.md' ':!CLAUDE.md'
 
 A release binary built from the tag prints the version with `dafny --version`.
@@ -821,6 +825,22 @@ sources, `modular-termination`, `orders` and its examples).  The hidden `--legac
 migration.  The regression is `git-issues/github-issue-479.dfy`; the release note is
 `docs/dev/news/479.fix`.
 
+## `allocated` in lambda expressions ([issue 457](https://github.com/erniecohen/dafny/issues/457))
+
+A function, a constant or a redirecting type could not depend on the set of allocated references,
+but a lambda expression in a method could mention `allocated(c)`.  The verifier translates a
+lambda's body, precondition and reads clause in the heap the lambda is applied in, so its value
+depended on that heap's allocation state, while the frame axiom of its arrow equates its values in
+any two heaps that agree on its reads frame.  With an empty reads frame, `(x: int) =>
+allocated(c)` applied after `c` was allocated proved `false`.  `BoundsDiscoveryVisitor`, which
+already rejected quantifiers that depend on the allocation state inside a lambda, now also reports
+`allocated(...)` in a lambda's body, precondition or reads clause, under both resolvers, unless it is
+inside an `old` (or `old@L`) expression within that lambda; an `old` around the lambda does not
+count, since the lambda is still evaluated in the heap it is applied in.  Its kind is **weakens
+only**: it rejects programs and adds no fact or axiom.  The hidden `--legacy-allocated-in-lambdas`
+option restores the old rule for comparison and migration.  The regression is
+`git-issues/github-issue-457.dfy`; the release note is `docs/dev/news/457.fix`.
+
 ## Override checks in refining modules ([issue 404](https://github.com/erniecohen/dafny/issues/404))
 
 A refining module could strengthen the contract of a trait member, or refine an abstract type into
@@ -978,6 +998,50 @@ postconditions and their refinements define the opaque `State` and `Path`, which
 decreases clauses.  The hidden `--legacy-inherited-termination-checks` option
 restores the old rule for comparison and migration.  The regression is
 `git-issues/github-issue-409.dfy`; the release note is `docs/dev/news/409.fix`.
+
+## Functions stored in objects that call back ([issue 453](https://github.com/erniecohen/dafny/issues/453))
+
+`HigherOrderHeapAllocationCheckerConstructor` rejects an assignment to a field whose value's type
+has, left of an arrow, the object's type or a trait type, so that a function the object stores
+cannot be applied by a function of the object to the object itself: applying a function value gets
+no termination check, and the two functions would be a cycle.  A stored function cannot read the
+heap (`HigherOrderHeapAllocationChecker`), but it can reach the object through its argument without
+reading it: through a datatype constructor's argument, a tuple component, a constant of a class or
+trait, or the base of a newtype.  The check looked only at the type and its type arguments, so
+`const g: Box -> nat` with `datatype Box = Box(c: C)` proved `false`.  So did a function stored in
+another object whose argument reaches that object, a function inside a stored datatype value, and a
+class or trait with a permissive (`!T`) type parameter instantiated with the type of the object
+that stores the instance.  `HigherOrderHeapAllocationCheckerConstructor.Reach` now follows, left of
+an arrow, the arguments of datatype constructors, the constants of classes, traits, datatypes and
+newtypes (with those of parent traits), and the bases of newtypes, substituting type arguments.  It
+fails at the object's class, with any type arguments, at a trait type, and at an abstract type,
+which a refining module or an export may give such a definition.  Elsewhere in the stored value's
+type it looks for function values in the same declarations, and it takes the type arguments of a
+trait type or an abstract type to be left of an arrow, because an implementation or definition may
+store a function of them.  A type parameter is not followed: an instance of a generic class is
+checked where it is stored, with the type arguments substituted.  Mutable fields are not followed,
+since a function without a `reads` clause cannot read them.  A nested datatype, such as
+`N<A> = Leaf(a: A) | Node(n: N<seq<A>>)`, makes a larger instantiation of its declaration at each
+step, so the search expands a declaration again, in the same position, only at an instantiation
+that is not larger.  At a larger one it searches the type arguments alone, as if left of an arrow;
+the expansion in progress searches the rest of the declaration.  So the search ends.  It is
+conservative there: a nested datatype instantiated with the object's class, such as `N<C?>` stored
+in a field of `C`, is rejected even when it holds no function.  Under `--modular-termination`, a
+bounded value ([issue 266](https://github.com/erniecohen/dafny/issues/266)) is exempt as it is in
+the old check: its top-level arrow is not searched, but its order type and its function's parameter
+and result types are, where the bounded type is.  A cycle through bounded values cannot form.
+Applying one is checked to run under a bound strictly below the global bound of the code that
+applies it, and its function is checked to run under the value's bound.  So the bounds strictly
+decrease along any chain of applications through bounded values, and they are well founded.  In
+`github-issue-266-m2.dfy`, `C.f` (global bound 1) applies `cb: bounded<nat, Stored.T -> int>`
+with bound 0 to `this`.  The function `cb` holds runs under bound 0, so it cannot call `f`.
+Raw functions inside a bounded type are applied without a bound, so a function on a datatype that
+holds the object, returned by a bounded function, is still rejected.
+Its kind is **weakens only**: it rejects programs and adds no fact or axiom.  It changes no
+resolution outside its regression in the test suite, the standard library (its sources,
+`modular-termination`, `orders`) or the standard library's examples.  The hidden
+`--legacy-stored-function-callbacks` option restores the old check for comparison and migration.
+The regression is `git-issues/github-issue-453.dfy`; the release note is `docs/dev/news/453.fix`.
 
 ## Comparing crossed component types ([issue 47](https://github.com/erniecohen/dafny/issues/47))
 

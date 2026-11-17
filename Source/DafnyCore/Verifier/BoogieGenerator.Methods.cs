@@ -826,6 +826,14 @@ namespace Microsoft.Dafny {
             DecreasesCheck(decrToks, null, decrCalleeDafny, decrCallerDafny, decrCallee, decrCaller, null, null, false, true));
         };
 
+        // Under --modular-termination, the induction hypothesis is a recursive call like any other: it covers
+        // only the instances that the global bound allows (https://github.com/erniecohen/dafny/issues/460).
+        if (RecursiveInstanceWithinGlobalBound(m, receiverSubst, substMap) is { } withinGlobalBound) {
+          var decreasesCheck = decrCheck;
+          decrCheck = (decrSubstMap, exprTran) =>
+            BplAnd(decreasesCheck(decrSubstMap, exprTran), withinGlobalBound(decrSubstMap, exprTran));
+        }
+
         var triggers = m.Attributes.AsEnumerable()
           .Where(attr => attr.Name is "inductionTrigger" or "_inductionTrigger")
           .Select(attr => attr.Args)

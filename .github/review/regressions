@@ -782,3 +782,31 @@ git-issues/github-issue-431-more.dfy
 
 # A refining module that gives a body to a member without one, closing a call cycle through an inherited call, checks the termination of that call; the base never checked it and the refinement assumed it, so false was provable (https://github.com/erniecohen/dafny/issues/409).
 git-issues/github-issue-409.dfy
+
+# Under --modular-termination, calls in the body of a least or greatest lemma, calls of least and greatest predicates, and co-recursive calls are checked against the caller's global bound; each proved false (https://github.com/erniecohen/dafny/issues/456).
+git-issues/github-issue-456.dfy
+
+# Under --modular-termination, the induction hypothesis of a lemma, of a prefix lemma and of its limit-ordinal case covers only the instances within the lemma's global bound; each proved false (https://github.com/erniecohen/dafny/issues/460).
+git-issues/github-issue-460.dfy
+
+# Soundness gates of the plan for https://github.com/erniecohen/dafny/issues/211: (a) a library verified alone under --modular-termination is not invalidated by a later extension, with both resolvers; (b) every context in which code runs is ordered by the rules, one marked member per context.
+git-issues/github-issue-211-gate-library.dfy
+git-issues/github-issue-211-gate-coverage.dfy
+
+# A lambda expression may not mention allocated(...) in its body, precondition or reads clause outside an old within the lambda, under both resolvers; old(...) inside is allowed, the control does not prove false, and --legacy-allocated-in-lambdas restores the old rule (https://github.com/erniecohen/dafny/issues/457).
+git-issues/github-issue-457.dfy
+
+# Bounded callables, milestone 2: bounded.certify, application below the bound, the bound and erase members, admitted named functions, stored values and the divergence kernels, under --modular-termination (https://github.com/erniecohen/dafny/issues/266).
+git-issues/github-issue-266-m2.dfy
+
+# A constructor that stores a function in a field is rejected when a function of the object could apply it to a value that reaches the object again, through a datatype, a tuple, the constants of another object, a newtype, or a generic class or trait; the old check looked only at the function's type and its type arguments, so false was provable (https://github.com/erniecohen/dafny/issues/453).
+git-issues/github-issue-453.dfy
+
+# Bounded callables, milestone 3: heap-reading bounded values in fields and collections, generic flow, higher-order bounded values, and callback parameters kept and applied inside lambdas, under --modular-termination (https://github.com/erniecohen/dafny/issues/266).
+git-issues/github-issue-266-m3.dfy
+
+# Revision 3 of the rules of --modular-termination: any trait may be extended from any module, a foreign implementation of a member without a global bound is a leaf or has a bound of its own, a member without a body reaches a dispatch unless it promises {:termination_closed}, and the VeriFast ports of ECOOP 2015 Fig. 4 and the CPS example (https://github.com/erniecohen/dafny/issues/211).
+git-issues/github-issue-211-rev3.dfy
+
+# The multiset order of the orders library over any well-founded relation, and global bounds of --modular-termination by multiset orders, where a dispatched call needs a strictly smaller bag (https://github.com/erniecohen/dafny/issues/211).
+git-issues/github-issue-211-multiset.dfy

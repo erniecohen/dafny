@@ -83,7 +83,10 @@ namespace Microsoft.Dafny.Compilers {
           }
         case MemberSelectExpr selectExpr: {
             MemberSelectExpr e = selectExpr;
-            if (e.Member is Field field and (ConstantField or SpecialField)) {
+            if (e.Member is SpecialField { SpecialId: SpecialField.ID.BoundedErase }) {
+              // A bounded callable compiles to its function value (issue 266).
+              TrParenExpr(e.Obj, wr, inLetExprBody, wStmts);
+            } else if (e.Member is Field field and (ConstantField or SpecialField)) {
               string preStr;
               string postStr;
               if (field is SpecialField specialField) {
