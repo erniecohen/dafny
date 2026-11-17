@@ -502,6 +502,12 @@ namespace Microsoft.Dafny.LanguageServer.Workspace.Notifications {
     // The position as used by Boogie
     Position Position
   ) : VerificationTree("Implementation", DisplayName, Identifier, Filename, Uri, Range, Position) {
+    /// <summary>
+    /// The module that copied the ICanVerify this implementation comes from, or null if it is not a copy
+    /// (IdeState.CopyingModule).  It tells apart the implementations of the ICanVerify that share a node.
+    /// </summary>
+    public string? CopyingModule { get; init; }
+
     // The index of ImplementationVerificationTree.AssertionBatchTimes
     // is the same as the AssertionVerificationTree.AssertionBatchIndex
     public ImmutableDictionary<int, AssertionBatchMetrics> AssertionBatchMetrics { get; private set; } =

@@ -75,6 +75,8 @@ Generate module names in the older A_mB_mC style instead of the current A.B.C sc
   public bool SuccessfullyResolved;  // set to true upon successful resolution; modules that import an unsuccessfully resolved module are not themselves resolved
   public ModuleKindEnum ModuleKind;
   public bool IsFacade; // True iff this module represents a module facade (that is, an abstract interface)
+  // For a facade, the module whose abstract signature it presents (issue 410).
+  internal ModuleDefinition? FacadeOf;
   private bool IsBuiltinName => Name is "_System" or "_module"; // true if this is something like _System that shouldn't have it's name mangled.
 
   public DefaultClassDecl? DefaultClass { get; set; }
@@ -132,6 +134,7 @@ Generate module names in the older A_mB_mC style instead of the current A.B.C sc
     NameNode = original.NameNode;
     PrefixIds = original.PrefixIds.Select(cloner.Origin).ToList();
     IsFacade = original.IsFacade;
+    FacadeOf = original.FacadeOf;
     Attributes = original.Attributes;
     ModuleKind = original.ModuleKind;
     Implements = original.Implements == null ? null : original.Implements with { Target = new ModuleQualifiedId(cloner, original.Implements.Target) };

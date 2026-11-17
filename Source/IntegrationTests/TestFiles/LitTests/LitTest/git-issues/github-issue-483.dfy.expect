@@ -1,0 +1,22 @@
+github-issue-483.dfy(19,10): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+github-issue-483.dfy(29,3): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+github-issue-483.dfy(38,3): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+github-issue-483.dfy(56,4): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+github-issue-483.dfy(67,6): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+github-issue-483.dfy(47,4): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+github-issue-483.dfy(74,2): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+7 resolution/type errors detected in github-issue-483.dfy
+github-issue-483.dfy(19,10): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+github-issue-483.dfy(29,3): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+github-issue-483.dfy(38,3): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+github-issue-483.dfy(56,4): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+github-issue-483.dfy(67,6): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+github-issue-483.dfy(47,4): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+github-issue-483.dfy(74,2): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+7 resolution/type errors detected in github-issue-483.dfy
+
+Dafny program verifier finished with 9 verified, 0 errors
+
+Dafny program verifier finished with 9 verified, 0 errors
+
+Dafny program verifier finished with 11 verified, 0 errors

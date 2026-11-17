@@ -433,7 +433,7 @@ Such designations are allowed in generic type declarations but not in generic me
 
 <!-- There are two instances of this error, one for the first item in a type parameter list, and one for subsequent items -->
 
-## **Error: unexpected type characteristic: '000' should be one of == or 0 or 00 or !new** {#p_unexpected_type_characteristic}
+## **Error: unexpected type characteristic: '000' should be one of == or 0 or 00 or !new or !reads** {#p_unexpected_type_characteristic}
 
 ```dafny
 type T(000)
@@ -443,7 +443,7 @@ type T(000)
 indicated in parentheses after the type name, state properties of the otherwise uninterpreted or abstract type.
 The currently defined type characteristics are designated by `==` (equality-supporting), `0` (auto-initializable), `00` (non-empty), and `!new` (non-reference).
 
-## **Error: extra comma or missing type characteristic: should be one of == or 0 or 00 or !new** {#p_missing_type_characteristic}
+## **Error: extra comma or missing type characteristic: should be one of == or 0 or 00 or !new or !reads** {#p_missing_type_characteristic}
 
 <!-- %no-check - TODO - fix to better error recovery after 4.0 -->
 ```dafny
@@ -456,7 +456,7 @@ They are given in a parentheses-enclosed, comma-separated list after the type na
 The currently defined type characteristics are designated by `==` (equality - supporting),
 `0` (auto - initializable), `00` (non - empty), and `!new` (non - reference).
 
-## **Error: illegal type characteristic: '_token_' should be one of == or 0 or 00 or !new** {#p_illegal_type_characteristic}
+## **Error: illegal type characteristic: '_token_' should be one of == or 0 or 00 or !new or !reads** {#p_illegal_type_characteristic}
 
 ```dafny
 type T(X)
