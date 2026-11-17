@@ -767,3 +767,7 @@ git-issues/github-issue-483.dfy
 
 # A function that reads nothing, reading a constant whose initializer applies an arrow or calls a function that reads the heap, no longer crashes the verifier; such an initializer is inlined into the function's axioms only when it needs no heap (https://github.com/erniecohen/dafny/issues/485).
 git-issues/github-issue-485.dfy
+
+# A let-such-that expression whose condition depends on the allocation state (a quantifier or comprehension over the allocated objects or over a type parameter's values, a sequence constructor whose initializer reads the heap, "old" around either, a two-state call) has a choice function that takes that heap: two such expressions around an allocation or a heap update do not prove false, and the verifier does not crash (https://github.com/erniecohen/dafny/issues/431).
+git-issues/github-issue-431.dfy
+git-issues/github-issue-431-more.dfy
