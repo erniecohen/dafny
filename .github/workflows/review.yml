@@ -187,7 +187,10 @@ jobs:
       - name: Version
         id: version
         run: |
-          sh .github/review/version.sh | tee -a "$GITHUB_OUTPUT"
+          # Not a pipe into tee: without pipefail a failing version.sh left the version empty.
+          out=$(sh .github/review/version.sh)
+          echo "$out" | tee -a "$GITHUB_OUTPUT"
+          echo "$out" | grep -q '^version=.'
           harness=$(sed -n 's/.*DefaultZ3Version = "\(.*\)";.*/\1/p' Source/DafnyCore/DafnyOptions.cs)
           echo "harness_z3=$harness" >> "$GITHUB_OUTPUT"
       - uses: ./.github/actions/setup-dotnet
@@ -912,10 +915,11 @@ jobs:
             --filter 'FullyQualifiedName~ResolutionPipelineTests|FullyQualifiedName~PipelineProfileResolutionTests' \
             --logger "console;verbosity=normal"
       - name: Resolution and cardinality tests with Debug contract assertions
-        # Release builds compile Contract.Assert out; a failed assertion here ends the run.
+        # Release builds compile Contract.Assert and Debug.Assert out; here a failed assertion fails the step.
+        # NewtypeWitnessResolutionTests: https://github.com/erniecohen/dafny/issues/422.
         run: |
           dotnet test --settings .github/review/ci.runsettings Source/DafnyCore.Test -c Debug \
-            --filter 'FullyQualifiedName~ResolutionPipelineTests|FullyQualifiedName~PipelineProfileResolutionTests|FullyQualifiedName~Cardinality|FullyQualifiedName~NewtypeReferenceCharacteristicTests' \
+            --filter 'FullyQualifiedName~ResolutionPipelineTests|FullyQualifiedName~PipelineProfileResolutionTests|FullyQualifiedName~Cardinality|FullyQualifiedName~NewtypeReferenceCharacteristicTests|FullyQualifiedName~NewtypeWitnessResolutionTests' \
             --logger "console;verbosity=normal"
       - name: Run the tests named in .github/review/regressions
         continue-on-error: ${{ github.event_name == 'workflow_dispatch' && inputs.review_followup_probe && startsWith(github.ref, 'refs/heads/scratch/') }}
@@ -931,6 +935,8 @@ jobs:
         run: |
           dotnet test --settings .github/review/ci.runsettings Source/DafnyCore.Test -c Release --filter FullyQualifiedName~OperatorSelectionTests --logger "console;verbosity=normal"
           dotnet test --settings .github/review/ci.runsettings Source/DafnyLanguageServer.Test -c Release --filter 'FullyQualifiedName~OperatorSymbolsAreReferencesButAreNeverRenamed|FullyQualifiedName~OperatorHoverDistinguishesRankFromAnOrdinaryFallbackCall' --logger "console;verbosity=normal"
+      - name: The IDE reports override checks that refining modules make, in its diagnostics and its gutter, each member's warnings once, and a member's status only once all its checks are prepared (issues 404, 423, 424 and 433)
+        run: dotnet test --settings .github/review/ci.runsettings Source/DafnyLanguageServer.Test -c Release --filter FullyQualifiedName~Refinement.RefinementTests --logger "console;verbosity=normal"
       - name: Batch requests reuse resolution and create fresh proof tasks
         env:
           Z3: ${{ github.workspace }}/Binaries/z3/bin/z3-5.1.0
@@ -969,6 +975,8 @@ jobs:
         run: dotnet test --settings .github/review/ci.runsettings Source/DafnyLanguageServer.Test -c Release --filter FullyQualifiedName~ConsistentObligationChecksTest --logger "console;verbosity=normal"
       - name: Editor option changes invalidate verification results
         run: dotnet test --settings .github/review/ci.runsettings Source/DafnyLanguageServer.Test -c Release --filter FullyQualifiedName~AdditionalAxiomsTest --logger "console;verbosity=normal"
+      - name: The gutter does not mark a line verified while a member on it is pending (issue 426)
+        run: dotnet test --settings .github/review/ci.runsettings Source/DafnyLanguageServer.Test -c Release --filter FullyQualifiedName~GutterStatus --logger "console;verbosity=normal"
 
 
   regressions-linux:
@@ -1070,6 +1078,15 @@ jobs:
           dotnet test --settings .github/review/ci.runsettings Source/DafnyLanguageServer.Test -c Release --no-build \
             --logger "console;verbosity=normal" \
             --filter "FullyQualifiedName~Synchronization.CachingTest" \
+            --blame-hang --blame-hang-timeout 90s --blame-hang-dump-type none
+      # https://github.com/erniecohen/dafny/issues/421: the code actions. Some of them come from
+      # verification failures. These tests do not set a solver path, and this job has no z3 next to
+      # the test binaries, so Dafny takes the solver from PATH.
+      - name: Test code actions
+        run: |
+          PATH="$(dirname "$Z3"):$PATH" dotnet test --settings .github/review/ci.runsettings Source/DafnyLanguageServer.Test -c Release --no-build \
+            --logger "console;verbosity=normal" \
+            --filter "FullyQualifiedName~IntegrationTest.CodeActions.CodeActionTest" \
             --blame-hang --blame-hang-timeout 90s --blame-hang-dump-type none
 
   finite-support:
@@ -1279,6 +1296,10 @@ jobs:
           test "$v" = "${{ needs.build.outputs.version }}"
           out/dafny/dafny verify --solver-path "$z/bin/z3" \
             Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/git-issue-6537.dfy
+          # The persistent verification cache works on the self-contained layout, which has
+          # no host/fxr (https://github.com/erniecohen/dafny/issues/387).
+          python3 .github/review/verification-cache-self-contained.py out/dafny/dafny "$z/bin/z3" \
+            Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/github-issue-387.dfy "$RUNNER_TEMP/cache-387"
       - name: Zip
         run: |
           name=dafny-${{ needs.build.outputs.version }}-${{ matrix.rid }}.zip

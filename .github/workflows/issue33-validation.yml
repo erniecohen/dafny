@@ -40,7 +40,8 @@ jobs:
       - name: Build pinned baseline with fixed Boogie
         run: |
           sh Scripts/fetch-boogie-packages.sh
-          eval "$(sh .github/review/version.sh)"
+          version=$(sh .github/review/version.sh)
+          eval "$version"
           dotnet publish Source/Dafny/Dafny.csproj -c Release -o out/dafny -p:SourceRevisionId="$revision"
           tar -C out -czf dafny.tar.gz dafny
       - uses: actions/upload-artifact@v4
@@ -64,7 +65,8 @@ jobs:
       - name: Build with fixed Boogie
         run: |
           sh Scripts/fetch-boogie-packages.sh
-          eval "$(sh .github/review/version.sh)"
+          version=$(sh .github/review/version.sh)
+          eval "$version"
           dotnet publish Source/Dafny/Dafny.csproj -c Release -o out/dafny -p:SourceRevisionId="$revision"
           tar -C out -czf dafny.tar.gz dafny
       - uses: actions/upload-artifact@v4

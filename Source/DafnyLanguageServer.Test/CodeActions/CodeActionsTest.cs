@@ -100,7 +100,7 @@ datatype L = N | C(t: L)
 method Dec(c: L)
   decreases c, 1, 1
 {(>Insert explicit failing assertion->
-  assert (old(c), old(1) decreases to c, 1);<)
+  assert (old(c), old(1), old(1) decreases to c, 1);<)
   Da><c(c);
 }
 method Dac(c: L) 

@@ -101,8 +101,14 @@ public class StaticReceiverExpr : LiteralExpr, ICloneable<StaticReceiverExpr> {
     }
   }
 
+  /// <summary>
+  /// A receiver made for a static member selected through an object, under the pre-type resolver, gets its Type
+  /// only when the pass from pre-types to types reaches it. The names that a hide or reveal statement lists are
+  /// resolved only to find the members they denote. They are not among its SubExpressions, so that pass never
+  /// reaches them, and their receivers keep no Type (https://github.com/erniecohen/dafny/issues/416).
+  /// </summary>
   public override IEnumerable<INode> Children =>
-    new[] { ObjectToDiscard, ContainerExpression }.Where(x => x != null).Concat(Type.Nodes);
+    new[] { ObjectToDiscard, ContainerExpression }.Where(x => x != null).Concat(Type?.Nodes ?? []);
 
   public new StaticReceiverExpr Clone(Cloner cloner) {
     return new StaticReceiverExpr(cloner, this);

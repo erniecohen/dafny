@@ -1,0 +1,78 @@
+github-issue-410.dfy(96,46): Warning: the ... refinement feature in statements is deprecated
+github-issue-410.dfy(26,20): Error: refining module 'B1' captures the name 'F' used in code inherited from module 'A1': in 'A1' it refers to function 'L1.F' (declared at github-issue-410.dfy(22,11)), but in 'B1' it would refer to function 'B1.F' (declared at github-issue-410.dfy(29,11))
+github-issue-410.dfy(28,7): Related location: refining module
+github-issue-410.dfy(39,13): Error: refining module 'B2' captures the name 'T' used in code inherited from module 'A2': in 'A2' it refers to newtype 'L2.T' (declared at github-issue-410.dfy(35,10)), but in 'B2' it would refer to newtype 'B2.T' (declared at github-issue-410.dfy(42,10))
+github-issue-410.dfy(41,7): Related location: refining module
+github-issue-410.dfy(52,20): Error: refining module 'B3' captures the name 'N' used in code inherited from module 'A3': in 'A3' it refers to module 'Outer3.N' (declared at github-issue-410.dfy(48,9)), but in 'B3' it would refer to module 'B3.N' (declared at github-issue-410.dfy(55,9))
+github-issue-410.dfy(54,7): Related location: refining module
+github-issue-410.dfy(63,22): Error: refining module 'B4' captures the name 'x' used in code inherited from module 'A4': in 'A4' it refers to const field 'A4.x' (declared at github-issue-410.dfy(61,8)), but in 'B4' it would refer to const field 'B4.C.x' (declared at github-issue-410.dfy(68,10))
+github-issue-410.dfy(66,7): Related location: refining module
+github-issue-410.dfy(78,22): Error: refining module 'B5' captures the name 'f' used in code inherited from module 'A5': in 'A5' it refers to function 'A5.f' (declared at github-issue-410.dfy(75,11)), but in 'B5' it would refer to function 'B5.S.f' (declared at github-issue-410.dfy(76,21))
+github-issue-410.dfy(81,7): Related location: refining module
+github-issue-410.dfy(93,22): Error: refining module 'B6' captures the name 'x' used in code inherited from module 'A6': in 'A6' it refers to const field 'A6.x' (declared at github-issue-410.dfy(92,8)), but in 'B6' it would refer to local variable 'x' (declared at github-issue-410.dfy(96,35))
+github-issue-410.dfy(95,7): Related location: refining module
+github-issue-410.dfy(102,48): Warning: this branch is redundant
+github-issue-410.dfy(102,39): Error: refining module 'B7' captures the name 'foo' used in code inherited from module 'A7': in 'A7' it refers to bound variable 'foo' (declared at github-issue-410.dfy(102,39)), but in 'B7' it would refer to datatype constructor 'B7.T.foo' (declared at github-issue-410.dfy(106,15))
+github-issue-410.dfy(105,7): Related location: refining module
+github-issue-410.dfy(116,20): Error: refining module 'B8' captures the name 'F' used in code inherited from module 'A8a': in 'A8a' it refers to function 'L8.F' (declared at github-issue-410.dfy(112,11)), but in 'B8' it would refer to function 'B8.F' (declared at github-issue-410.dfy(120,11))
+github-issue-410.dfy(119,7): Related location: refining module
+github-issue-410.dfy(126,51): Warning: this branch is redundant
+github-issue-410.dfy(126,41): Error: refining module 'B9' captures the name 'zero' used in code inherited from module 'A9': in 'A9' it refers to bound variable 'zero' (declared at github-issue-410.dfy(126,41)), but in 'B9' it would refer to the constant 'zero', a pattern that matches only 0
+github-issue-410.dfy(129,7): Related location: refining module
+github-issue-410.dfy(138,50): Warning: this branch is redundant
+github-issue-410.dfy(138,41): Error: refining module 'B10' captures the name 'foo' used in code inherited from module 'A10': in 'A10' it refers to bound variable 'foo' (declared at github-issue-410.dfy(138,41)), but in 'B10' it would refer to datatype constructor 'I10a.T.foo' (declared at github-issue-410.dfy(141,39))
+github-issue-410.dfy(142,7): Related location: refining module
+github-issue-410.dfy(154,20): Error: refining module 'B11' captures the name 'F' used in code inherited from module 'A11': in 'A11' it refers to function 'I11.F' (declared at github-issue-410.dfy(149,11)), but in 'B11' it would refer to function 'B11.F' (declared at github-issue-410.dfy(157,11))
+github-issue-410.dfy(156,16): Related location: refining module
+11 resolution/type errors detected in github-issue-410.dfy
+github-issue-410.dfy(96,46): Warning: the ... refinement feature in statements is deprecated
+github-issue-410.dfy(26,20): Error: refining module 'B1' captures the name 'F' used in code inherited from module 'A1': in 'A1' it refers to function 'L1.F' (declared at github-issue-410.dfy(22,11)), but in 'B1' it would refer to function 'B1.F' (declared at github-issue-410.dfy(29,11))
+github-issue-410.dfy(28,7): Related location: refining module
+github-issue-410.dfy(39,13): Error: refining module 'B2' captures the name 'T' used in code inherited from module 'A2': in 'A2' it refers to newtype 'L2.T' (declared at github-issue-410.dfy(35,10)), but in 'B2' it would refer to newtype 'B2.T' (declared at github-issue-410.dfy(42,10))
+github-issue-410.dfy(41,7): Related location: refining module
+github-issue-410.dfy(52,20): Error: refining module 'B3' captures the name 'N' used in code inherited from module 'A3': in 'A3' it refers to module 'Outer3.N' (declared at github-issue-410.dfy(48,9)), but in 'B3' it would refer to module 'B3.N' (declared at github-issue-410.dfy(55,9))
+github-issue-410.dfy(54,7): Related location: refining module
+github-issue-410.dfy(63,22): Error: refining module 'B4' captures the name 'x' used in code inherited from module 'A4': in 'A4' it refers to const field 'A4.x' (declared at github-issue-410.dfy(61,8)), but in 'B4' it would refer to const field 'B4.C.x' (declared at github-issue-410.dfy(68,10))
+github-issue-410.dfy(66,7): Related location: refining module
+github-issue-410.dfy(78,22): Error: refining module 'B5' captures the name 'f' used in code inherited from module 'A5': in 'A5' it refers to function 'A5.f' (declared at github-issue-410.dfy(75,11)), but in 'B5' it would refer to function 'B5.S.f' (declared at github-issue-410.dfy(76,21))
+github-issue-410.dfy(81,7): Related location: refining module
+github-issue-410.dfy(93,22): Error: refining module 'B6' captures the name 'x' used in code inherited from module 'A6': in 'A6' it refers to const field 'A6.x' (declared at github-issue-410.dfy(92,8)), but in 'B6' it would refer to local variable 'x' (declared at github-issue-410.dfy(96,35))
+github-issue-410.dfy(95,7): Related location: refining module
+github-issue-410.dfy(102,48): Warning: this branch is redundant
+github-issue-410.dfy(102,39): Error: refining module 'B7' captures the name 'foo' used in code inherited from module 'A7': in 'A7' it refers to bound variable 'foo' (declared at github-issue-410.dfy(102,39)), but in 'B7' it would refer to datatype constructor 'B7.T.foo' (declared at github-issue-410.dfy(106,15))
+github-issue-410.dfy(105,7): Related location: refining module
+github-issue-410.dfy(116,20): Error: refining module 'B8' captures the name 'F' used in code inherited from module 'A8a': in 'A8a' it refers to function 'L8.F' (declared at github-issue-410.dfy(112,11)), but in 'B8' it would refer to function 'B8.F' (declared at github-issue-410.dfy(120,11))
+github-issue-410.dfy(119,7): Related location: refining module
+github-issue-410.dfy(126,51): Warning: this branch is redundant
+github-issue-410.dfy(126,41): Error: refining module 'B9' captures the name 'zero' used in code inherited from module 'A9': in 'A9' it refers to bound variable 'zero' (declared at github-issue-410.dfy(126,41)), but in 'B9' it would refer to the constant 'zero', a pattern that matches only 0
+github-issue-410.dfy(129,7): Related location: refining module
+github-issue-410.dfy(138,50): Warning: this branch is redundant
+github-issue-410.dfy(138,41): Error: refining module 'B10' captures the name 'foo' used in code inherited from module 'A10': in 'A10' it refers to bound variable 'foo' (declared at github-issue-410.dfy(138,41)), but in 'B10' it would refer to datatype constructor 'I10a.T.foo' (declared at github-issue-410.dfy(141,39))
+github-issue-410.dfy(142,7): Related location: refining module
+github-issue-410.dfy(154,20): Error: refining module 'B11' captures the name 'F' used in code inherited from module 'A11': in 'A11' it refers to function 'I11.F' (declared at github-issue-410.dfy(149,11)), but in 'B11' it would refer to function 'B11.F' (declared at github-issue-410.dfy(157,11))
+github-issue-410.dfy(156,16): Related location: refining module
+11 resolution/type errors detected in github-issue-410.dfy
+github-issue-410-positive.dfy(28,57): Warning: the ... refinement feature in statements is deprecated
+github-issue-410-positive.dfy(70,20): Warning: the ... refinement feature in statements is deprecated
+github-issue-410-positive.dfy(15,65): Warning: this branch is redundant
+github-issue-410-positive.dfy(15,65): Warning: this branch is redundant
+github-issue-410-positive.dfy(23,7): Related location: refining module
+github-issue-410-positive.dfy(15,65): Warning: this branch is redundant
+github-issue-410-positive.dfy(31,7): Related location: refining module
+github-issue-410-positive.dfy(87,32): Error: a postcondition could not be proved on this return path
+github-issue-410-positive.dfy(87,26): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 15 verified, 1 error
+github-issue-410-positive.dfy(28,57): Warning: the ... refinement feature in statements is deprecated
+github-issue-410-positive.dfy(70,20): Warning: the ... refinement feature in statements is deprecated
+github-issue-410-positive.dfy(15,65): Warning: this branch is redundant
+github-issue-410-positive.dfy(15,65): Warning: this branch is redundant
+github-issue-410-positive.dfy(23,7): Related location: refining module
+github-issue-410-positive.dfy(15,65): Warning: this branch is redundant
+github-issue-410-positive.dfy(31,7): Related location: refining module
+github-issue-410-positive.dfy(87,32): Error: a postcondition could not be proved on this return path
+github-issue-410-positive.dfy(87,26): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 15 verified, 1 error
+
+Dafny program verifier finished with 2 verified, 0 errors

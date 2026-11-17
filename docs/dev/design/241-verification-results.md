@@ -46,6 +46,21 @@ table, key, payload SHA-256 and length. Payloads reside at
 are versioned independently; incompatible formats miss. A reserved translation
 table in the generic store is unused by this feature.
 
+A blob's address is the SHA-256 of its payload, never of the stored file
+([issue 388](https://github.com/erniecohen/dafny/issues/388)). A writer stores a
+payload compressed, as a 10-byte header (magic `00 64 63 7a`, format version 1,
+algorithm 1 for zlib, decoded length as a big-endian 32-bit integer) followed by a
+zlib stream (RFC 1950), unless compression would not make it smaller, in which case
+it stores the payload's own bytes. Readers accept both forms, so a cache written
+before compression still reads, and its blobs are reused by new entries as they
+are. A reader decodes a compressed blob within the payload bound, requires the
+stream to end at the recorded length and the file to end with the stream's
+Adler-32, and then requires the decoded bytes to hash to the blob's address. A
+stored file that fails any of these is a miss, never a different value. Neither
+keys nor addresses depend on the compression level or the library that compressed
+the blob. zlib, not Brotli, because the CI audit of a persisted cache reads blobs
+with the standard library of a scripting language that has zlib and not Brotli.
+
 Publish payloads before lookup records. A writer creates a uniquely named private
 temporary directory beside the destination, writes and flushes `data` to disk,
 then renames the directory atomically. A nonempty published directory cannot be
@@ -177,9 +192,11 @@ and the explicit lifecycle/retry boundary described below. It must pass the same
 completeness and differential gates; publishing a draft is not acceptance.
 
 CLI filters select today's task inventory. Each task independently hits or runs;
-all selected tasks contribute to the current aggregate exit code. Initially bypass
-persistent reads for `--filter-position-batch` and unsupported side effects or
-callbacks. Solver logs, trace/timing output, model/split files and verification
+all selected tasks contribute to the current aggregate exit code. V1 bypassed
+persistent reads for `--filter-position-batch`; since
+https://github.com/erniecohen/dafny/issues/387 each batch request reads and writes
+the cache as a separate `--filter-position` run does. Unsupported side effects or
+callbacks bypass. Solver logs, trace/timing output, model/split files and verification
 plugins either have tested replay support or bypass. CSV/JSON per-task outcomes
 and RU are identical on cold and warm runs; actual execution timestamps and
 durations describe the current invocation. Default stdout, stderr and exit code
@@ -210,7 +227,9 @@ reject publication. Unit controls and native Std pattern-warning tasks exercise
 this distinction.
 
 The environment descriptor includes an ABI identifier and actual bytes of all
-application/runtime managed assemblies, the native solver and host, hostfxr,
+application/runtime managed assemblies, the native solver and host, hostfxr
+(the installation's `host/fxr`, or, in a self-contained publish, the bundled
+`libhostfxr` and `libhostpolicy`; https://github.com/erniecohen/dafny/issues/387),
 runtime native libraries and resolved native dependencies. The macOS profile
 also hashes the actual OS dyld shared-cache files; Linux resolves dependencies
 with `ldd` and records actual mapped libraries, including dlopen-only ICU/OpenSSL

@@ -1,0 +1,49 @@
+the orders library, verified from its sources
+
+Dafny program verifier finished with 47 verified, 0 errors
+positive: one element for many smaller ones, the empty bag, pairs, bags of bags, a mixed tuple, absorption, the lemmas of VeriFast
+
+Dafny program verifier finished with 29 verified, 0 errors
+controls (assert false in each positive context) and bags that do not go down
+github-issue-211-multiset-verify.dfy(16,6): Error: assertion might not hold
+github-issue-211-multiset-verify.dfy(33,6): Error: assertion might not hold
+github-issue-211-multiset-verify.dfy(43,6): Error: assertion might not hold
+github-issue-211-multiset-verify.dfy(56,6): Error: assertion might not hold
+github-issue-211-multiset-verify.dfy(70,4): Error: assertion might not hold
+github-issue-211-multiset-verify.dfy(83,6): Error: assertion might not hold
+github-issue-211-multiset-verify.dfy(98,4): Error: assertion might not hold
+github-issue-211-multiset-verify.dfy(110,6): Error: assertion might not hold
+github-issue-211-multiset-verify.dfy(130,4): Error: assertion might not hold
+github-issue-211-multiset-verify.dfy(144,6): Error: assertion might not hold
+github-issue-211-multiset-verify.dfy(152,30): Error: decreases clause might not decrease
+github-issue-211-multiset-verify.dfy(160,13): Error: decreases clause might not decrease
+github-issue-211-multiset-verify.dfy(168,8): Error: decreases clause might not decrease
+github-issue-211-multiset-verify.dfy(176,29): Error: decreases clause might not decrease
+github-issue-211-multiset-verify.dfy(184,9): Error: decreases clause might not decrease
+github-issue-211-multiset-verify.dfy(192,32): Error: decreases clause might not decrease
+github-issue-211-multiset-verify.dfy(201,11): Error: decreases clause might not decrease
+
+Dafny program verifier finished with 11 verified, 17 errors
+--modular-termination: global bounds by multiset orders, the orders library verified with the client
+
+Dafny program verifier finished with 66 verified, 0 errors
+--modular-termination: controls, the same bag, and bounds above the caller's
+github-issue-211-multiset-mt-verify.dfy(29,4): Error: assertion might not hold
+github-issue-211-multiset-mt-verify.dfy(39,4): Error: assertion might not hold
+github-issue-211-multiset-mt-verify.dfy(48,4): Error: assertion might not hold
+github-issue-211-multiset-mt-verify.dfy(56,4): Error: assertion might not hold
+github-issue-211-multiset-mt-verify.dfy(67,4): Error: assertion might not hold
+github-issue-211-multiset-mt-verify.dfy(76,4): Error: assertion might not hold
+github-issue-211-multiset-mt-verify.dfy(96,9): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+github-issue-211-multiset-mt-verify.dfy(104,9): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+github-issue-211-multiset-mt-verify.dfy(112,9): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+github-issue-211-multiset-mt-verify.dfy(120,9): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+github-issue-211-multiset-mt-verify.dfy(128,9): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+
+Dafny program verifier finished with 60 verified, 11 errors
+--modular-termination: a relation that is not known, passed to the library's multiset functions and lemmas
+github-issue-211-multiset-mt-resolve.dfy(9,33): Error: modular termination: the {:termination_closed} promise of 'ByLemma' is not established; its body, specifications or implicit evaluations can reach open dispatch, an unknown application or an imported General contract
+github-issue-211-multiset-mt-resolve.dfy(15,39): Error: modular termination: the {:termination_closed} promise of 'ByRel' is not established; its body, specifications or implicit evaluations can reach open dispatch, an unknown application or an imported General contract
+github-issue-211-multiset-mt-resolve.dfy(18,39): Error: modular termination: the {:termination_closed} promise of 'ByGt' is not established; its body, specifications or implicit evaluations can reach open dispatch, an unknown application or an imported General contract
+github-issue-211-multiset-mt-resolve.dfy(21,39): Error: modular termination: the {:termination_closed} promise of 'ByGe' is not established; its body, specifications or implicit evaluations can reach open dispatch, an unknown application or an imported General contract
+4 resolution/type errors detected in github-issue-211-multiset-mt-resolve.dfy

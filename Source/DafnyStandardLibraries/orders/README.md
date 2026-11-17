@@ -11,6 +11,14 @@ section "Well-founded orders").
 - `WfoOf` is the datatype that implements `Of`.
 - `Chain` and `WfoOf` are marked `{:termination_closed}`, so that under `--modular-termination`
   other modules may use them in bounds.
+- `MultisetOf(r)` is the multiset order over a well-founded relation `r`, in the form of Huet
+  and Oppen that VeriFast uses (https://github.com/erniecohen/dafny/issues/211): `M` is at least
+  `N` (`MultisetGe`) when each element of `N - M` is below some element of `M - N`, and above it
+  (`MultisetGt`) when also `M != N`. Each such step is a step of the Dershowitz-Manna order, whose
+  well-foundedness is proved here by accessibility, as in Nipkow's proof. `MultisetRel(r)` is the
+  relation itself, so multiset orders nest. The lemmas, with the names of the corresponding
+  lemmas of VeriFast's `termination.gh` in the comments, prove the usual steps and, when `r` is
+  transitive, transitivity and both absorption laws (`MultisetGtGe`, `MultisetGeGt`).
 
 The module is a library of its own, `binaries/DafnyStandardLibraries-orders.doo`, built
 against `binaries/DafnyStandardLibraries.doo`. Dafny loads it with the standard library only
@@ -20,5 +28,6 @@ not load the standard library, Dafny loads this library on its own. It is then v
 the program that loads it, under that program's options, instead of being admitted by a
 modular termination record. Programs that do not use the option are unaffected.
 
-Rebuild the binary with `make update-orders`, then rebuild Dafny to embed it. The lit test
-`git-issues/github-issue-245.dfy` verifies the library from these sources.
+Rebuild the binary with `make update-orders`, then rebuild Dafny to embed it. The lit tests
+`git-issues/github-issue-245.dfy` and `git-issues/github-issue-211-multiset.dfy` verify the
+library from these sources.
