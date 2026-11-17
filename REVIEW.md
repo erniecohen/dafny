@@ -896,3 +896,22 @@ rejected.  The legacy resolver ignores the option.  When a pattern does not matc
 default decisions are made before the error is reported, so that the message names the types
 they give.  The regression is `git-issues/github-issue-48.dfy`; the release note is
 `docs/dev/news/conservative-match-inference-default.fix`.
+
+## Printing the resolved program ([issue 441](https://github.com/erniecohen/dafny/issues/441))
+
+Four printing tests had fallen behind the fork.  Three are printer output that the fork changed on
+purpose, so their `.expect` files are updated.  The comment `// bitvector types in use` lists the
+widths that the translator declares: in increasing order, and including the bit length of a width
+that a shift lowers to (`bv67` adds `bv7`).  `git-issues/git-issue-1665.dfy` prints the
+module-qualified names generated for `:-` and gives an untyped case variable the type of the match
+source, `nat`.  One was a bug: under `--type-system-refresh`, the published `_System` lost each
+`bvN` declaration with its `RotateLeft` and `RotateRight`, because the dependency-local translation
+inputs recorded a bitvector type's width but not its declaration, so `--rprint` no longer listed
+them.  `ModuleTranslationInputs` now records the name too.  `dafny0/BitvectorsMore.dfy.refresh.expect`
+had been rewritten to the broken output when dependency-local translation became the default; it
+now lists the declarations again, as 4.11.0 did.  Its kind is **no effect on
+verification**: the translator does nothing for these declarations, the solver input of each of the
+four tests is byte-identical with and without the change, under both resolvers, and so is compiled
+output.  The four tests are now in `.github/review/regressions`; the release note is
+`docs/dev/news/441.fix`.  The fifth test of the issue, `dafny0/Superposition.legacy.dfy`, is left
+to [issue 436](https://github.com/erniecohen/dafny/issues/436).
