@@ -1,0 +1,156 @@
+// git-issue-105-refinement.dfy
+
+
+abstract module M0 {
+  datatype Positive = Positive(n: int) {
+    invariant /* invariant#0 */ n > 0
+  }
+
+  type Hidden {
+    invariant /* invariant#0 */ true
+  }
+
+  class Counter {
+    const limit: int
+    invariant /* invariant#0 */ limit > 0
+
+    constructor ()
+    {
+      limit := 1;
+    }
+  }
+  /*-- non-null type
+  type {:axiom} Counter(==) = c: Counter? | c != null /*special witness*/
+  */
+
+  trait Named {
+    const name: string
+    invariant /* invariant#0 */ |name| > 0
+  }
+}
+
+abstract module M1 refines M0 {
+  datatype Positive = Positive(n: int) {
+    invariant /* invariant#1 */ n < 100
+    invariant /* invariant#0 */ n > 0
+  }
+
+  datatype Hidden = Hidden(b: bool) {
+    invariant /* invariant#1 */ b || !b
+    invariant /* invariant#2 */ true
+    invariant /* invariant#0 */ true
+  }
+
+  class Counter ... {
+    invariant /* invariant#1 */ limit < 10
+    const limit: int
+    invariant /* invariant#0 */ limit > 0
+
+    constructor ()
+    {
+      limit := 1;
+    }
+  }
+  /*-- non-null type
+  type {:axiom} Counter(==) = c: Counter? | c != null /*special witness*/
+  */
+
+  trait Named ... {
+    invariant /* invariant#1 */ |name| < 10
+    const name: string
+    invariant /* invariant#0 */ |name| > 0
+  }
+}
+
+module M2 refines M1 {
+  function Get(p: Positive, h: Hidden): int
+    decreases p, h
+  {
+    if h.b then
+      p.n
+    else
+      0
+  }
+
+  datatype Positive = Positive(n: int) {
+    invariant /* invariant#2 */ n != 50
+    invariant /* invariant#3 */ n != 51
+    invariant /* invariant#1 */ n < 100
+    invariant /* invariant#0 */ n > 0
+  }
+
+  datatype Hidden = Hidden(b: bool) {
+    invariant /* invariant#3 */ b == b
+    invariant /* invariant#1 */ b || !b
+    invariant /* invariant#2 */ true
+    invariant /* invariant#0 */ true
+  }
+
+  class Counter ... {
+    invariant /* invariant#2 */ limit != 5
+    invariant /* invariant#1 */ limit < 10
+    const limit: int
+    invariant /* invariant#0 */ limit > 0
+
+    constructor ()
+    {
+      limit := 1;
+    }
+  }
+  /*-- non-null type
+  type {:axiom} Counter(==) = c: Counter? | c != null /*special witness*/
+  */
+
+  class Thing extends Named {
+    invariant /* invariant#0 */ |name| != 5
+
+    constructor ()
+    {
+      name := "thing";
+    }
+  }
+  /*-- non-null type
+  type {:axiom} Thing(==) = c: Thing? | c != null /*special witness*/
+  */
+
+  trait Named ... {
+    invariant /* invariant#1 */ |name| < 10
+    const name: string
+    invariant /* invariant#0 */ |name| > 0
+  }
+}
+
+module M3 refines M1 {
+  datatype Positive = Positive(n: int) {
+    invariant /* invariant#1 */ n < 100
+    invariant /* invariant#0 */ n > 0
+  }
+
+  datatype Hidden = Hidden(b: bool) {
+    invariant /* invariant#1 */ b || !b
+    invariant /* invariant#2 */ true
+    invariant /* invariant#0 */ true
+  }
+
+  class Counter ... {
+    invariant /* invariant#1 */ limit < 10
+    const limit: int
+    invariant /* invariant#0 */ limit > 0
+
+    constructor ()
+    {
+      limit := 1;
+    }
+  }
+  /*-- non-null type
+  type {:axiom} Counter(==) = c: Counter? | c != null /*special witness*/
+  */
+
+  trait Named ... {
+    invariant /* invariant#1 */ |name| < 10
+    const name: string
+    invariant /* invariant#0 */ |name| > 0
+  }
+}
+
+Dafny program verifier did not attempt verification

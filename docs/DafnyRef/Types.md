@@ -4861,3 +4861,49 @@ expressions may not read anything. A default-value expression may not be
 involved in any recursive or mutually recursive calls with the enclosing
 declaration.
 
+
+## 6.6. Member Invariants (experimental, incomplete) {#sec-member-invariants}
+
+The hidden, experimental option `--member-invariants` defaults to `false` and
+requires `--type-system-refresh`. It is being implemented in stages
+(https://github.com/erniecohen/dafny/issues/105); in this stage a program with
+member invariants can be parsed, printed and resolved, and compiled with
+`--no-verify`, but not verified. Nothing yet checks or assumes an invariant: the
+verifier reports each one as not yet supported, and compiled code ignores them.
+
+With the option, a datatype, class, trait, newtype or abstract type may declare
+invariants among its members:
+
+<!-- %no-check -->
+```dafny
+datatype Interval = Interval(lo: int, hi: int) {
+  invariant lo <= hi
+}
+```
+
+An invariant is a boolean expression over `this`. It takes no modifiers and has
+no name, and a type may declare several. It is never opaque, so it cannot be
+declared `{:opaque}`, and `--default-function-opacity` does not apply to it. An
+invariant depends on no mutable
+state: it may not read a mutable field or an array element, use `old`, `fresh`,
+`allocated` or `unchanged`, call a two-state function or lemma, use a function
+that has a `reads` clause, or apply a function value that may read the heap
+(or use its `requires` or `reads`). It may follow `const` fields and read the
+lengths of arrays.
+
+A type has the invariants of the traits it extends as well as its own, and a
+declaration in a refining module has those of the declaration it refines as
+well as any it adds. An inherited invariant cannot be removed or changed: an
+invariant has no name, so it never overrides another.
+
+A codatatype may not declare an invariant, and a program that declares a member
+invariant may not declare a codatatype. Libraries are part of the program, so
+the rule applies to them too; a library that declares neither may be used either
+way. A `.doo` library built with `--member-invariants` requires its client to
+enable the option too; one built without it records nothing.
+
+The syntax `witness e` (or `ghost witness e`) for a witness member, and `raw T`
+for the raw type of a type `T` with invariants, is parsed, but neither is yet
+supported. With the option, `raw` is still an identifier except directly before
+the name of a type, and `witness` is still the witness clause of a subset type
+or newtype.

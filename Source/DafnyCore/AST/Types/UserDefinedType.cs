@@ -41,6 +41,12 @@ public class UserDefinedType : NonProxyType, IHasReferences {
     return s + "_Companion_" + ResolvedClass.GetCompileName(options);
   }
 
+  /// <summary>
+  /// True if this type was written "raw N" (issue 105, under --member-invariants): the raw type of the type
+  /// named N, whose values need not satisfy N's member invariants.
+  /// </summary>
+  public bool IsRawSyntax;
+
   [FilledInDuringResolution] public TopLevelDecl ResolvedClass;  // if Name denotes a class/datatype/iterator and TypeArgs match the type parameters of that class/datatype/iterator
 
   public UserDefinedType(IOrigin origin, string name, List<Type> optTypeArgs)
@@ -70,6 +76,7 @@ public class UserDefinedType : NonProxyType, IHasReferences {
   }
   public UserDefinedType(Cloner cloner, UserDefinedType original)
     : this(cloner.Origin(original.Origin), cloner.CloneExpr(original.NamePath)) {
+    IsRawSyntax = original.IsRawSyntax;
     if (cloner.CloneResolvedFields) {
       ResolvedClass = original.ResolvedClass == null ? null : cloner.GetCloneIfAvailable(original.ResolvedClass);
       TypeArgs = original.TypeArgs.Select(cloner.CloneType).ToList();
@@ -370,7 +377,7 @@ public class UserDefinedType : NonProxyType, IHasReferences {
           s += this.TypeArgsToString(options, context, parseAble);
         }
       }
-      return s;
+      return IsRawSyntax ? "raw " + s : s;
     }
   }
 

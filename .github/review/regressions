@@ -734,3 +734,20 @@ git-issues/github-issue-417.dfy
 
 # Opt-in --verification-cache stores blobs compressed with zlib under the SHA-256 of their uncompressed bytes; earlier uncompressed and mixed caches still replay, and a truncated or corrupted compressed blob is a miss with the same report (https://github.com/erniecohen/dafny/issues/388).
 git-issues/git-issue-388.dfy
+
+# Member invariants under the hidden --member-invariants, first stage: syntax, printing and
+# resolution, the reads restriction, the codatatype rule for programs and libraries, refinement,
+# opacity, and unchanged behaviour without the option (https://github.com/erniecohen/dafny/issues/105).
+git-issues/git-issue-105-option.dfy
+git-issues/git-issue-105-syntax.dfy
+git-issues/git-issue-105-raw-identifier.dfy
+git-issues/git-issue-105-control.dfy
+git-issues/git-issue-105-modifiers.dfy
+git-issues/git-issue-105-reads.dfy
+git-issues/git-issue-105-two-state.dfy
+git-issues/git-issue-105-codatatypes.dfy
+git-issues/git-issue-105-libraries.dfy
+git-issues/git-issue-105-refinement.dfy
+git-issues/git-issue-105-opacity.dfy
+git-issues/git-issue-105-not-yet.dfy
+git-issues/git-issue-105-verify.dfy

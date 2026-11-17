@@ -1,0 +1,4 @@
+git-issue-105-verify.dfy(7,2): Error: verification of member invariants is not yet supported
+git-issue-105-verify.dfy(13,4): Error: verification of member invariants is not yet supported
+
+Dafny program verifier finished with 1 verified, 0 errors

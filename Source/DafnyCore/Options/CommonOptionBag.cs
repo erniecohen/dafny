@@ -399,6 +399,11 @@ Value implementations must retain their type parameters in compatible parent pos
     IsHidden = true
   };
 
+  public static readonly Option<bool> MemberInvariants = new("--member-invariants", () => false,
+    "(experimental, incomplete) Allow 'invariant' and 'witness' members in types, and the raw type 'raw T' (issue 105). Requires --type-system-refresh. A program that declares a member invariant may not declare a codatatype.") {
+    IsHidden = true
+  };
+
   public static readonly Option<bool> GeneralNewtypes = new("--general-newtypes", () => false,
     @"
 false - A newtype can only be based on numeric types or another newtype.
@@ -857,6 +862,12 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(TypeInferenceDebug, OptionScope.Cli);
     OptionRegistry.RegisterOption(GeneralTraits, OptionScope.Cli);
     OptionRegistry.RegisterOption(GeneralNewtypes, OptionScope.Cli);
+    // A library built with --member-invariants may declare invariants, so a program that uses it needs the
+    // option too.  The manifest records the option only when it is on (see DooFile.ManifestData), so a
+    // library built without it is unchanged and may be used either way.
+    OptionRegistry.RegisterGlobalOption(MemberInvariants,
+      (reporter, origin, prefix, option, localValue, libraryValue) =>
+        OptionCompatibility.OptionLibraryImpliesLocalError(reporter, origin, prefix, option, localValue, libraryValue ?? false));
     OptionRegistry.RegisterGlobalOption(ExtendedNewtypeBases,
       (reporter, origin, prefix, option, localValue, libraryValue) =>
         OptionCompatibility.OptionLibraryImpliesLocalError(reporter, origin, prefix, option, localValue, libraryValue ?? false));

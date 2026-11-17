@@ -1,0 +1,10 @@
+git-issue-105-not-yet.dfy(12,14): Error: raw types are not yet supported
+git-issue-105-not-yet.dfy(12,44): Error: raw types are not yet supported
+git-issue-105-not-yet.dfy(12,66): Error: raw types are not yet supported
+git-issue-105-not-yet.dfy(19,4): Error: Function body type mismatch (expected bool, got int)
+4 resolution/type errors detected in git-issue-105-not-yet.dfy
+git-issue-105-not-yet.dfy.tmp.dfy(5,14): Error: raw types are not yet supported
+git-issue-105-not-yet.dfy.tmp.dfy(5,44): Error: raw types are not yet supported
+git-issue-105-not-yet.dfy.tmp.dfy(5,66): Error: raw types are not yet supported
+git-issue-105-not-yet.dfy.tmp.dfy(17,4): Error: Function body type mismatch (expected bool, got int)
+4 resolution/type errors detected in git-issue-105-not-yet.dfy.tmp.dfy

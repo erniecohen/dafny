@@ -210,6 +210,17 @@ TOKENS
   qarrow = "~>".
   larrow = "-->".
   minus = "-".
+  /* The next three tokens stand for 'invariant' and 'witness' in a member position, and for 'raw'
+     before a type name (issue 105).  The parser retags those tokens as these only under
+     --member-invariants.  Coco requires every token to have a definition, so each is given one that
+     starts with the control character U+0001.  The scanner therefore also produces them, for that
+     character followed by the word, and before these definitions it reported the character as an
+     error.  So each production that uses one of these tokens reports it as an error unless the
+     parser retagged it (CheckRetaggedToken), with or without the option. */
+  memberInvariant = "\u0001invariant".
+  memberWitness = "\u0001witness".
+  rawType = "\u0001raw".
+
 COMMENTS FROM "/*" TO "*/" NESTED
 COMMENTS FROM "//" TO lf
 IGNORE cr + lf + tab
@@ -237,8 +248,11 @@ Dafny
                                }
                             .)
   }
+  (. RetagMemberKeyword(); .)
   { AtAttributes<ref attrs>
-    TopDecl<theModule, /* isTopLevel */ true, ref attrs> }
+    TopDecl<theModule, /* isTopLevel */ true, ref attrs>
+    (. RetagMemberKeyword(); .)
+  }
   (. CheckNoAttributes(ref attrs); .)
   (. 
     theModule.SetOrigin(new SourceOrigin(fileStartToken.Next, t));
@@ -267,6 +281,7 @@ TopDecl<ModuleDefinition module, bool isTopLevel, ref Attributes attrs>
      TraitDecl/*!*/ trait;
   .)
   { DeclModifier<ref dmod> }
+  (. RetagMemberKeyword(); .)
   ( SubModuleDecl<dmod, module, out submodule, isTopLevel>
                                                (. var litmod = submodule as LiteralModuleDecl;
                                                   if (litmod != null && litmod.ModuleDef.PrefixIds.Count != 0) {
@@ -347,9 +362,11 @@ ModuleDefinition<DeclModifierData dmod, ModuleDefinition parent, out ModuleDecl 
                                         idRefined == null ? null : new Implements(implementationKind, new ModuleQualifiedId(idRefined)), parent, dmod.Attributes, []);
    .)
    SYNC
-   "{"                                 (. module.BodyStartTok = t; .)
+   "{"                                 (. module.BodyStartTok = t; RetagMemberKeyword(); .)
      { AtAttributes<ref attrs>
-       TopDecl<module, /* isTopLevel */ false, ref attrs>}
+       TopDecl<module, /* isTopLevel */ false, ref attrs>
+       (. RetagMemberKeyword(); .)
+     }
    "}"
    (. CheckNoAttributes(ref attrs); .)
     (.
@@ -542,12 +559,13 @@ ClassDecl<DeclModifierData dmodClass, ModuleDefinition/*!*/ module, out TopLevel
   | ellipsis                    (. isRefining = true; .)
   ]
   SYNC
-  "{"                                            (. bodyStart = t;  .)
+  "{"                                            (. bodyStart = t; RetagMemberKeyword(); .)
     {
       (. dmod = new DeclModifierData(); .)
       AtAttributes<ref dmod.Attributes>
       { DeclModifier<ref dmod> }
       ClassMemberDecl<dmod, members, true, false>
+      (. RetagMemberKeyword(); .)
     }
   "}"
   (. c = new ClassDecl(new SourceOrigin(dmodClass.FirstToken, t, name.ReportingRange), name, dmodClass.Attributes, typeArgs, module, members, parentTraits, isRefining);
@@ -592,11 +610,12 @@ TraitDecl<DeclModifierData dmodIn, ModuleDefinition/*!*/ module, out TraitDecl/*
   [ ExtendsClause<parentTraits, null>
   | ellipsis                    (. isRefining = true; .)
   ]
-  "{"                                            (. bodyStart = t; .)
+  "{"                                            (. bodyStart = t; RetagMemberKeyword(); .)
     { (. dmod = new DeclModifierData(); .)
       AtAttributes<ref dmod.Attributes>
       { DeclModifier<ref dmod> }
       ClassMemberDecl<dmod, members, true, false>
+      (. RetagMemberKeyword(); .)
     }
   "}"
   (. trait = new TraitDecl(new SourceOrigin(dmodIn.FirstToken, t, name.ReportingRange), name, module, typeArgs, members, dmodIn.Attributes, isRefining, parentTraits);
@@ -609,8 +628,11 @@ ClassMemberDecl<. DeclModifierData dmod, List<MemberDecl> mm, bool allowConstruc
 = (. Contract.Requires(Cce.NonNullElements(mm));
      MethodOrConstructor/*!*/ m;
      Function/*!*/ f;
+     RetagMemberKeyword();
   .)
-  ( (. if (moduleLevelDecl) {
+  ( MemberInvariantDecl<dmod, mm, moduleLevelDecl>
+  | MemberWitnessDecl<dmod, mm, moduleLevelDecl>
+  | (. if (moduleLevelDecl) {
          SemErr(ErrorId.p_top_level_field, la, "fields are not allowed to be declared at the module level; instead, wrap the field in a 'class' declaration");
          dmod.IsStatic = false;
        }
@@ -631,6 +653,49 @@ ClassMemberDecl<. DeclModifierData dmod, List<MemberDecl> mm, bool allowConstruc
     .)
     MethodDecl<dmod, allowConstructors, out m>  (. mm.Add(m); .)
   )
+  .
+
+/*------------------------------------------------------------------------*/
+/* A member invariant (issue 105), under --member-invariants. */
+MemberInvariantDecl<. DeclModifierData dmod, List<MemberDecl> mm, bool moduleLevelDecl .>
+= (. Expression e;
+     CheckDeclModifiers(ref dmod, "invariant", AllowedDeclModifiers.None);
+  .)
+  memberInvariant                    (. var startToken = dmod.FirstToken ?? t; var keywordToken = t;
+                                        var retagged = CheckRetaggedToken(t); .)
+  { Attribute<ref dmod.Attributes> }
+  Expression<out e, false, true>
+  (. if (!retagged) {
+       // reported by CheckRetaggedToken
+     } else if (moduleLevelDecl) {
+       SemErr(ErrorId.p_top_level_member_invariant, keywordToken, "an invariant is not allowed at the module level; it is a member of a type");
+     } else if (Attributes.Find(dmod.Attributes, "opaque") is { } opaqueAttribute) {
+       SemErr(ErrorId.p_opaque_member_invariant, opaqueAttribute.Origin, "an invariant cannot be declared {:opaque}");
+     } else {
+       mm.Add(new MemberInvariant(new SourceOrigin(startToken, t, keywordToken), keywordToken,
+         MemberInvariant.NextName(mm), e, dmod.Attributes));
+     }
+  .)
+  .
+
+/* A witness member (issue 105), under --member-invariants. */
+MemberWitnessDecl<. DeclModifierData dmod, List<MemberDecl> mm, bool moduleLevelDecl .>
+= (. Expression e;
+     CheckDeclModifiers(ref dmod, "witness", AllowedDeclModifiers.Ghost);
+  .)
+  memberWitness                      (. var startToken = dmod.FirstToken ?? t; var keywordToken = t;
+                                        var retagged = CheckRetaggedToken(t); .)
+  { Attribute<ref dmod.Attributes> }
+  Expression<out e, false, true>
+  (. if (!retagged) {
+       // reported by CheckRetaggedToken
+     } else if (moduleLevelDecl) {
+       SemErr(ErrorId.p_top_level_member_invariant, keywordToken, "a witness is not allowed at the module level; it is a member of a type");
+     } else {
+       mm.Add(new MemberWitness(new SourceOrigin(startToken, t, keywordToken), keywordToken,
+         MemberWitness.NextName(mm), dmod.IsGhost, e, dmod.Attributes));
+     }
+  .)
   .
 
 /*------------------------------------------------------------------------*/
@@ -701,12 +766,13 @@ DatatypeMemberDecl<.List<DatatypeCtor/*!*/>/*!*/ ctors.>
 TypeMembers<. ModuleDefinition/*!*/ module, List<MemberDecl> members .>
 = (. DeclModifierData dmod;
   .)
-  "{"
+  "{"                                      (. RetagMemberKeyword(); .)
   { (. dmod = new DeclModifierData();
     .)
     AtAttributes<ref dmod.Attributes>
     { DeclModifier<ref dmod> }
     ClassMemberDecl<dmod, members, false, false>
+    (. RetagMemberKeyword(); .)
   }
   "}"
   .
@@ -1494,6 +1560,7 @@ TypeAndToken<out Token tok, out Type ty, bool inExpressionContext>
      List<Type> gt;
      List<Type> tupleArgTypes = null;
      List<Token> argumentGhostTokens = null;
+     RetagRawType();
   .)
   ( "bool"                          (. tok = t; startToken = t; ty = new BoolType(); ty.SetOrigin(t); .)
   | "char"                          (. tok = t; startToken = t; ty = new CharType(); ty.SetOrigin(t); .)
@@ -1586,6 +1653,17 @@ TypeAndToken<out Token tok, out Type ty, bool inExpressionContext>
                                     .)
   | TupleType<out ty, out tok, out tupleArgTypes, out argumentGhostTokens>
   | NamedType<out ty, out tok, inExpressionContext>
+  | rawType                         (. startToken = t; var retagged = CheckRetaggedToken(t); .)
+    NamedType<out ty, out tok, inExpressionContext>
+                                    (. if (!retagged) {
+                                         // reported by CheckRetaggedToken
+                                       } else if (ty is UserDefinedType rawUdt) {
+                                         rawUdt.IsRawSyntax = true;
+                                         rawUdt.SetOrigin(new SourceOrigin(startToken, t));
+                                       } else {
+                                         SemErr(ErrorId.p_raw_needs_named_type, startToken, "'raw' must be followed by the name of a type");
+                                       }
+                                    .)
   )
   (. startToken = startToken ?? ty.StartToken ?? tok;
   .)
