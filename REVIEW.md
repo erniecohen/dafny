@@ -823,6 +823,70 @@ The hidden `--legacy-elided-override-checks` option restores the old rule for co
 migration.  The regression is `git-issues/github-issue-404.dfy`; the release note is
 `docs/dev/news/404.fix`.
 
+## Inherited constructors of classes with new fields ([issue 411](https://github.com/erniecohen/dafny/issues/411))
+
+A refining module may add a field to a class whose constructor it inherits unchanged.  The copied
+constructor cannot assign the new field, and its body's definite-assignment check for the field,
+at `new;` or at the end of the body, is not at an inherited origin, so it survives as an assert.
+But the pipeline never scheduled a copied member's tasks, so `dafny verify` never checked it, and
+a read of the uninitialized field proved `false` (the compile commands, which verify the whole
+Boogie program, did report it).  `BoogieGenerator.MustCheckInheritedConstructorFields` now decides
+when a refining module verifies an inherited constructor: when the constructor has a body and the
+module adds an instance field that is subject to definite-assignment rules (one that the base
+class's constructed object lacks).  `MustVerifyCopy` joins it with issue 404's
+`MustReverifyInheritedOverrideCheck`, and the pipeline schedules the body task of such a
+constructor the way it schedules a reverified override check (`IsReverifiedInheritedCheck`).
+Every other assert of the copied body stays where refinement put it: asserts at inherited origins
+are assumed.  The field checks assert at the base's origin, since a copied `new;` is inherited,
+with the refining module as a related location.  A module that adds no such field, or that
+declares the constructor itself, gets the same Boogie program as before.
+Its kind is **asserts more**: it rejects programs, by verifying an existing assert the old
+pipeline skipped, and adds no fact or axiom.  It costs no proof: the inherited body cannot assign
+the new field, so a check it adds fails unless the body cannot reach `new;` or its end, and in the
+test suite it adds a check only to its regression.  Still, as for every soundness fix, the hidden
+`--legacy-inherited-constructor-fields` option restores the old rule for comparison and migration.
+The regression is `git-issues/github-issue-411.dfy`; the release note is
+`docs/dev/news/411.fix`.
+
+## Termination of inherited calls in new cycles ([issue 409](https://github.com/erniecohen/dafny/issues/409))
+
+A call between two members of one strongly connected component (SCC) of the call graph gets a
+termination check.  A refining module that gives a body to a member without one can close a cycle
+through a call it inherits: in the base the callee did not call back, so the base made no check,
+and in the refining module the check's origin is inherited, so `Assert` made it an assume.  Lemmas
+proved `false`, and compiled methods recursed forever.  The rule follows the design in
+https://github.com/erniecohen/dafny/pull/397 (`docs/dev/design/xmod-recursion.md`, section 2.5 and
+milestone P2): `BoogieGenerator.InheritedRecursionUnchanged` holds for an SCC when every member has
+a counterpart in the refinement base, all in one module, each member's decreases clause is the
+counterpart's, copied by the refinement (all its expressions at inherited origins), and every call
+between two members is a call between their counterparts in the base's call graph.  The last
+condition makes the counterparts strongly connected in the base, so the base placed the inherited
+call in one SCC and checked it against the same decreases clauses.  Comparing only the caller and
+the callee with the base's SCCs is not enough when a third member joins the cycle.  An inherited
+termination check (and the coarse `IsNonRecursive` check) whose SCC fails the test is wrapped in
+`ForceCheckOrigin` and asserted, at the base's origin with the refining module as a related
+location.  `MustCheckInheritedTermination` decides which copies hold such a call: a member, an
+iterator (whose calls are MoveNext's) or a by-method body, copied from the base, recursive in a
+changed SCC.  `MustVerifyCopy` and the pipeline schedule them as for issues 404 and 411
+(`IsReverifiedInheritedCheck`), with function well-formedness and iterator bodies now marked too,
+also when the base comes from an included file or a library; every other assert of a copied body
+stays assumed.  A refinement that adds no body to a recursive SCC gets the same Boogie program and
+the same tasks as before, with one exception: when the base inferred an empty decreases clause, because
+no parameter's type was then decreasable, the refinement infers it again, and a refinement that gives
+such a type a definition gets a longer clause.  The SCC then counts as changed, and its intra-SCC
+calls are checked against the new clause.  With an empty clause the base can have proved only calls
+that need no decrease, such as a function's reference to itself in its own postcondition, so these
+checks hold where the base's did.
+Its kind is **asserts more**: it rejects programs, by checking an obligation the old rule
+assumed, and adds no fact or axiom.  In the test suite it adds three tasks outside its regression,
+and all of them verify.  One is in `git-issues/github-issue-404.dfy`, whose module `Decreases` closes a cycle
+through an inherited call that decreases, so the new check holds.  Two are in
+`cloudmake/CloudMake-ParallelBuilds.dfy`, where `M1.Union` and `M3.GetCert` mention themselves in their
+postconditions and their refinements define the opaque `State` and `Path`, which re-infers their empty
+decreases clauses.  The hidden `--legacy-inherited-termination-checks` option
+restores the old rule for comparison and migration.  The regression is
+`git-issues/github-issue-409.dfy`; the release note is `docs/dev/news/409.fix`.
+
 ## Opt-in inherited trait axioms ([issue 89](https://github.com/erniecohen/dafny/issues/89))
 
 A bodiless trait lemma marked `{:axiom}` is already an assumption for every caller that holds a

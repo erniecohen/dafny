@@ -99,6 +99,26 @@ module B refines A {
     Assert.DoesNotContain(diagnostic.RelatedInformation ?? [], r => r.Message.Contains("refining module"));
   }
 
+  // https://github.com/erniecohen/dafny/issues/411: a refining module that adds a field subject to definite
+  // assignment verifies the constructor it inherits unchanged, which cannot assign the field.
+  [Fact]
+  public async Task AddedFieldChecksInheritedConstructor() {
+    var source = @"
+module A {
+  class C { constructor () { } }
+}
+module B refines A {
+  type Empty = x: int | false witness *
+  class C ... { var e: Empty }
+}".TrimStart();
+    var document = await CreateOpenAndWaitForResolve(source);
+    var diagnostics = await GetLastDiagnostics(document, DiagnosticSeverity.Error);
+    var diagnostic = Assert.Single(diagnostics);
+    Assert.Contains("field 'e'", diagnostic.Message);
+    Assert.Equal(1, diagnostic.Range.Start.Line);
+    Assert.Contains(diagnostic.RelatedInformation ?? [], r => r.Message.Contains("refining module"));
+  }
+
   // https://github.com/erniecohen/dafny/issues/423: B checks the override of the member it inherits, which has the
   // position of C.L in A, so the two share one node of the verification tree.  Each reports its implementations to
   // that node, and the gutter shows the results of both, whichever reports last.  The order depends on scheduling, so
