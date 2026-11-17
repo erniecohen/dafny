@@ -374,6 +374,8 @@ true - All class instances are raw pointers and need to be manually deallocated"
 
   public static readonly Option<bool> LegacyInheritedConstructorFields = new("--legacy-inherited-constructor-fields", () => false,
     "Use the legacy, unsound rule that does not verify a constructor a refining module inherits unchanged, even when the module adds a field the constructor must assign, for migration and comparison only.") { IsHidden = true };
+  public static readonly Option<bool> LegacyReplacementCycles = new("--legacy-replacement-cycles", () => false,
+    "Use the legacy, unsound rule that lets a module that replaces a replaceable module depend on a module that uses the replaced module, for migration and comparison only.") { IsHidden = true };
 
   public static readonly Option<bool> LegacyGenericFunctionStores = new("--legacy-generic-function-stores", () => false,
     "Use the legacy, unsound rule that lets a type parameter whose values may be stored in memory be instantiated with a type that contains a function with read effects, for migration and comparison only.") { IsHidden = true };
@@ -897,6 +899,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(LegacySkeletonModifyingCalls, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacyInheritedConstructorFields, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacyEarlyYieldParameterCheck, OptionScope.Cli);
+    OptionRegistry.RegisterOption(LegacyReplacementCycles, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacyGenericFunctionStores, OptionScope.Cli);
     OptionRegistry.RegisterOption(ModularTermination, OptionScope.Cli);
     OptionRegistry.RegisterOption(ModularTerminationTrust, OptionScope.Cli);

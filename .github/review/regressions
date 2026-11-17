@@ -756,5 +756,8 @@ git-issues/github-issue-411.dfy
 # The type of an iterator's yield parameter is checked for auto-initialization after the grounding constructors are found: a datatype whose first constructor is recursive is accepted, one declared after the iterator or inherited by a refining module no longer crashes the resolver, and one whose grounding constructor has no compilable value is rejected rather than left null by the compiled iterator; the hidden --legacy-early-yield-parameter-check restores the old check (https://github.com/erniecohen/dafny/issues/445).
 git-issues/github-issue-445.dfy
 
+# A module that replaces a replaceable module may not import it or depend on a module that depends on it; the module graph is acyclic once every use of the replaced module means the replacement, and the old rule let a lemma cycle through the two prove false (https://github.com/erniecohen/dafny/issues/405).
+git-issues/github-issue-405.dfy
+
 # A type parameter whose values may be stored in memory (a mutable field, a store, or an instantiation of such a parameter) may not be instantiated with a type that contains a function reading the heap; a generic class could store such a function that read itself and prove false, through a class, a trait, a datatype wrapper or a nested class. The rule holds across modules, export sets and .doo libraries, and for overriding and refining declarations, with the characteristic (!reads) for a base without a body (https://github.com/erniecohen/dafny/issues/481).
 git-issues/github-issue-481.dfy
