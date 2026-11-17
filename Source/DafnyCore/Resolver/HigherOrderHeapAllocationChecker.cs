@@ -77,7 +77,7 @@ class HigherOrderHeapAllocationChecker : ASTVisitor<IASTVisitorContext> {
         // "bounded<nat, () -> (() ~> bool)>".  They are searched as any other type is, inside datatypes, newtypes
         // and subset types too (issue 479).
         var function = t.TypeArgs[1].NormalizeExpandKeepConstraints();
-        var components = function.IsArrowType ? function.TypeArgs : [function];
+        var components = function.IsArrowType ? function.AsArrowType.TypeArgs : [function];
         return ContainsRead(t.TypeArgs[0], visited) || components.Exists(component => ContainsRead(component, visited));
       }
       if (t.TypeArgs.Exists(typeArg => ContainsRead(typeArg, visited))) {

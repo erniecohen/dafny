@@ -61,3 +61,44 @@ module Parameter {
     constructor (f: bounded<nat, (() ~> bool) -> int>) { this.f := f; } // error: () ~> bool in a parameter
   }
 }
+// A raw heap-reading function inside a datatype in the result of the bounded function (issue 479).
+module DatatypeResult {
+  datatype Box = Box(g: () ~> bool)
+  class Ref {
+    ghost var f: bounded<nat, () -> Box>
+    constructor (f: bounded<nat, () -> Box>) ensures this.f == f { this.f := f; } // error: Box holds () ~> bool
+  }
+  method Main() ensures false {
+    var r := new Ref(bounded.certify(0, () => Box(() => true)));
+    ghost var knot := () reads * => if r.f().g.requires() then !r.f().g() else false;
+    r.f := bounded.certify(0, () => Box(knot)); // error: Box holds () ~> bool
+    assert r.f.erase() == Box(knot);
+    assert knot.requires();
+    assert knot() == !knot();
+  }
+}
+// The same inside a datatype parameter of the bounded function.
+module DatatypeParameter {
+  datatype Box = Box(g: () ~> bool)
+  class R {
+    var f: bounded<nat, Box -> int>
+    constructor () { f := bounded.certify(0, (b: Box) => 0); } // error: Box holds () ~> bool
+  }
+}
+// The same through a function type that is a subset type, whose result is a heap-reading function only in its
+// definition.
+module SubsetFunction {
+  type Fn = f: () -> (() ~> bool) | true
+  class Ref {
+    ghost var f: bounded<nat, Fn>
+    constructor (f: bounded<nat, Fn>) ensures this.f == f { this.f := f; } // error: () ~> bool in the result
+  }
+  method Main() ensures false {
+    var r := new Ref(bounded.certify(0, () => (() => true)));
+    ghost var knot := () reads * => if r.f().requires() then !r.f()() else false;
+    r.f := bounded.certify(0, () => knot); // error: () ~> bool in the result
+    assert r.f.erase() == knot;
+    assert knot.requires();
+    assert knot() == !knot();
+  }
+}

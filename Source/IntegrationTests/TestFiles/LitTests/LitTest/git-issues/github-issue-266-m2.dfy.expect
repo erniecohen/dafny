@@ -43,11 +43,13 @@ github-issue-266-m2-kernels.dfy(117,65): Error: decreases clause might not decre
 github-issue-266-m2-kernels.dfy(146,19): Error: value does not satisfy the subset constraints of 'Zero'
 
 Dafny program verifier finished with 23 verified, 8 errors
-kernel K5: a field cannot hold a bounded function that reads the heap here (issue 479), both resolvers
-github-issue-266-m2-k5.dfy(24,37): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
-1 resolution/type errors detected in github-issue-266-m2-k5.dfy
-github-issue-266-m2-k5.dfy(24,37): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
-1 resolution/type errors detected in github-issue-266-m2-k5.dfy
+kernel K5: milestone 3 admits its field, and it fails at its obligation, both resolvers
+github-issue-266-m2-k5.dfy(32,67): Error: decreases clause might not decrease (--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
+
+Dafny program verifier finished with 4 verified, 1 error
+github-issue-266-m2-k5.dfy(32,67): Error: decreases clause might not decrease (--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
+
+Dafny program verifier finished with 4 verified, 1 error
 rule violations, both resolvers
 github-issue-266-m2-reject.dfy(6,4): Error: decreases clause might not decrease (--modular-termination: the bound of the bounded value must be below the caller's 'decreases {:global}' bound)
 github-issue-266-m2-reject.dfy(9,23): Error: decreases clause might not decrease (--modular-termination: the bound of the bounded value must be below the caller's 'decreases {:global}' bound)
