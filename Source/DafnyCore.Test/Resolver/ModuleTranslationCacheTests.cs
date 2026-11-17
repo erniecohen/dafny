@@ -294,13 +294,15 @@ public class ModuleTranslationCacheTests {
   }
 
   /// <summary>
-  /// Issue 105: no module of a program that declares a member invariant is verified. A module's key covers only what
-  /// the module depends on, so its entry from before an unrelated file declared an invariant must not be reused.
+  /// Issue 105: no module of a program that declares a member invariant whose verification is not yet supported is
+  /// verified. A module's key covers only what the module depends on, so its entry from before an unrelated file
+  /// declared an invariant must not be reused, whether or not that invariant's verification is supported.
   /// </summary>
-  [Fact]
-  public async Task AMemberInvariantInAnUnrelatedFileStopsReuse() {
+  [Theory]
+  [InlineData("module Unrelated { datatype D = D(x: int) { invariant x > 0 } }", true)]
+  [InlineData("module Unrelated { datatype D<X> = D(x: X) { invariant true } }", false)]
+  public async Task AMemberInvariantInAnUnrelatedFileStopsReuse(string with, bool supported) {
     const string without = "module Unrelated { datatype D = D(x: int) }";
-    const string with = "module Unrelated { datatype D = D(x: int) { invariant x > 0 } }";
     var cache = new ModuleTranslationCache();
     var before = await Resolve(Source, without, refresh: true, memberInvariants: true);
     var first = cache.Translate(before, before.RawModules().Single(m => m.Name == "M"), new(before.Options), default);
@@ -312,8 +314,13 @@ public class ModuleTranslationCacheTests {
     var after = await Resolve(Source, with, refresh: true, memberInvariants: true);
     var second = cache.Translate(after, after.RawModules().Single(m => m.Name == "M"), new(after.Options), default);
     Assert.Equal(1, cache.Hits);
-    Assert.Empty(second.Implementations);
-    Assert.Equal(1, after.Reporter.ErrorCount);
+    if (supported) {
+      Assert.NotEmpty(second.Implementations);
+      Assert.Equal(0, after.Reporter.ErrorCount);
+    } else {
+      Assert.Empty(second.Implementations);
+      Assert.Equal(1, after.Reporter.ErrorCount);
+    }
   }
 
   internal static async Task<Microsoft.Dafny.Program> Resolve(string source, string? unrelated = null, bool refresh = false, bool modularTermination = false, int threads = 1, bool cached = true, bool memberInvariants = false) {

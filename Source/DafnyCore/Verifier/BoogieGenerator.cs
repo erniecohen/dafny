@@ -767,27 +767,31 @@ namespace Microsoft.Dafny {
     }
 
     /// <summary>
-    /// Issue 105: member invariants (--member-invariants) are resolved, but not yet verified. No module of a program
-    /// that declares one is translated, since the types of its modules may depend on the invariants. Report each
-    /// invariant of "forModule", or, if it declares none, the first of its declarations that would have been verified.
-    /// Return whether the program declares a member invariant.
+    /// Issue 105: member invariants (--member-invariants) are verified for an inductive datatype that has no type
+    /// parameters and no parent traits, declared in a module that refines no other. If the program, libraries
+    /// included, declares any other invariant, no module of it is translated, since the types of every module may
+    /// depend on the invariants. Then report each unsupported invariant of "forModule", or, if it declares none, the
+    /// first of its declarations that would have been verified. Return whether the program declares an unsupported
+    /// invariant.
     /// </summary>
     private bool ReportUnsupportedMemberInvariants(Program p, ModuleDefinition forModule) {
-      if (!DeclaresMemberInvariants(p)) {
+      if (!DeclaresUnsupportedMemberInvariants(p)) {
         return false;
       }
-      const string notYet = "verification of a program that declares member invariants is not yet supported";
-      var invariants = Invariants(forModule).ToList();
-      foreach (var invariant in invariants) {
-        reporter.Error(MessageSource.Translator, invariant.NameNode.Origin, notYet);
+      var unsupported = Invariants(forModule)
+        .Select(invariant => (Invariant: invariant, Reason: UnsupportedInvariantReason(invariant)))
+        .Where(pair => pair.Reason != null).ToList();
+      foreach (var (invariant, reason) in unsupported) {
+        reporter.Error(MessageSource.Translator, invariant.NameNode.Origin, reason);
       }
-      if (invariants.Count == 0) {
+      if (unsupported.Count == 0) {
         var verifiable = forModule.TopLevelDecls
           .SelectMany(decl => decl is TopLevelDeclWithMembers withMembers ? withMembers.Members.Prepend<Declaration>(decl) : [decl])
           .FirstOrDefault(decl => decl is ICanVerify { ShouldVerify: true } && decl.NameNode.Origin.Uri != null);
         if (verifiable != null) {
           var moduleName = forModule.IsDefaultModule ? "the default module" : $"module '{forModule.FullDafnyName}'";
-          reporter.Error(MessageSource.Translator, verifiable.NameNode.Origin, $"{moduleName} is not verified: {notYet}");
+          reporter.Error(MessageSource.Translator, verifiable.NameNode.Origin,
+            $"{moduleName} is not verified: the program declares a member invariant whose verification is not yet supported");
         }
       }
       return true;
@@ -798,9 +802,35 @@ namespace Microsoft.Dafny {
     }
 
     /// <summary>
-    /// Issue 105: whether the program, libraries included, declares a member invariant under --member-invariants, in
-    /// which case no module of it is translated. The translation cache checks this too, since a module's key covers
-    /// only what the module depends on.
+    /// Issue 105: why the verification of "invariant" is not yet supported, or null if it is.
+    /// </summary>
+    private static string UnsupportedInvariantReason(MemberInvariant invariant) {
+      const string notYet = "is not yet supported";
+      return invariant.EnclosingClass switch {
+        IndDatatypeDecl { TypeArgs.Count: not 0 } =>
+          $"verification of a member invariant of a datatype with type parameters {notYet}",
+        IndDatatypeDecl { Traits.Count: not 0 } =>
+          $"verification of a member invariant of a datatype that extends a trait {notYet}",
+        IndDatatypeDecl { EnclosingModuleDefinition.Implements: not null } =>
+          $"verification of a member invariant in a refining module {notYet}",
+        IndDatatypeDecl => null,
+        var decl => $"verification of a member invariant of a {decl.WhatKind} {notYet}"
+      };
+    }
+
+    /// <summary>
+    /// Issue 105: whether the program, libraries included, declares a member invariant under --member-invariants
+    /// whose verification is not yet supported, in which case no module of it is translated.
+    /// </summary>
+    private static bool DeclaresUnsupportedMemberInvariants(Program p) {
+      return DeclaresMemberInvariants(p) &&
+             p.RawModules().Any(module => Invariants(module).Any(invariant => UnsupportedInvariantReason(invariant) != null));
+    }
+
+    /// <summary>
+    /// Issue 105: whether the program, libraries included, declares a member invariant under --member-invariants.
+    /// The translation cache does not reuse a module of such a program, since a module's key covers only what the
+    /// module depends on, and whether it is translated at all depends on the invariants of every module.
     /// </summary>
     internal static bool DeclaresMemberInvariants(Program p) {
       return p.Options.Get(CommonOptionBag.MemberInvariants) && p.RawModules().Any(module => Invariants(module).Any());
@@ -3076,6 +3106,11 @@ namespace Microsoft.Dafny {
         var underlyingDecl = cl is InternalTypeSynonymDecl { Rhs: UserDefinedType rhs } ? rhs.ResolvedClass : cl;
         if (underlyingDecl is ClassLikeDecl { NonNullTypeDecl: { } }) {
           name = name + "?";  // TODO: this doesn't seem like the best place to do this name transformation
+        } else if (underlyingDecl is TopLevelDeclWithMembers { InvariantTypeDecl: { } }) {
+          // Issue 105: a declaration with member invariants is its raw type, and its name, as a type, denotes the
+          // derived InvariantTypeDecl. As for "C?" and "C", the raw type takes the suffix; "#" cannot occur in a
+          // Dafny name, so the result cannot be the name of another declaration.
+          name = name + "#raw";
         }
         cc = new Bpl.Constant(cl.Origin, new Bpl.TypedIdent(cl.Origin, "class." + name, Predef.ClassNameType), !cl.EnclosingModuleDefinition.IsFacade);
         classes.Add(cl, cc);

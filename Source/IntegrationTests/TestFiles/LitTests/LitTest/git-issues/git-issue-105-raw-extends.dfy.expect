@@ -120,7 +120,7 @@ module Mutual {
 
   datatype Tree = Leaf(key: int) | Node(key: int, kids: Forest) {
     invariant /* invariant#0 */ Node? ==> kids.Above(key)
-    invariant /* invariant#1 */ Forest.Nil.Count() == 0
+    invariant /* invariant#1 */ Node? ==> kids.Count() < 100
 
     function Size(): nat
       decreases this

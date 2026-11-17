@@ -4908,10 +4908,13 @@ declaration.
 
 The hidden, experimental option `--member-invariants` defaults to `false` and
 requires `--type-system-refresh`. It is being implemented in stages
-(https://github.com/erniecohen/dafny/issues/105); in this stage a program with
-member invariants can be parsed, printed and resolved, and compiled with
-`--no-verify`, but not verified. Nothing yet checks or assumes an invariant: the
-verifier reports each one as not yet supported, and compiled code ignores them.
+(https://github.com/erniecohen/dafny/issues/105). So far, the invariants of an
+inductive datatype that has no type parameters and extends no trait, declared
+in a module that refines no other, are verified. A program, libraries included,
+that declares any other invariant can be parsed, printed and resolved, and
+compiled with `--no-verify`, but not verified: the verifier reports each such
+invariant as not yet supported, and verifies no module of the program. Compiled
+code does not check invariants.
 
 With the option, a datatype, class, trait, newtype or abstract type may declare
 invariants among its members:
@@ -4970,7 +4973,9 @@ method Widen(i: Interval) returns (j: Interval) {
 - A constructor application and an update have type `raw D`, so a variable
   initialized with one and given no type has type `raw D`.
 - A `D` is a `raw D`. A `raw D` used where a `D` is expected is a conversion,
-  as for any subset type, which the verifier is to check.
+  as for any subset type, and the verifier checks that each invariant of `D`
+  holds of the value ("invariant might not hold", with the invariant as the
+  related location).
 - Destructors, discriminators, `match` and updates apply to a `raw D`. The
   components of a raw value have their declared types: they are finished.
 - A member that an invariant of `D` applies to `this`, or to another
@@ -4978,6 +4983,8 @@ method Widen(i: Interval) returns (j: Interval) {
   a `raw D`. In a raw member, `this` has type `raw D`, and the member applies
   to a `raw D`. In every other instance member, `this` has type `D`. Raw
   members are inferred, not declared; `Ok` is one above, and `Width` is not.
+  Where anything else applies a member that is not raw to a `raw D`, the
+  verifier checks that the value is a `D`.
 - Where `D` declares no invariant, `raw D` is `D`.
 - Where `D` is exported by `provides` only, it is an abstract type, and `raw D`
   is not yet supported there.
@@ -4985,12 +4992,71 @@ method Widen(i: Interval) returns (j: Interval) {
 `raw` applies to a type that can declare an invariant, and not to a type
 parameter, a type synonym, a subset type or a codatatype. So far it is
 supported only for a datatype; for a class, trait, newtype or abstract type it
-is parsed but not yet supported. Until witnesses are supported, a datatype with
-invariants is possibly empty, so it cannot instantiate a type parameter that
-requires `(0)` or `(00)`; its raw type can, as the datatype could without
-invariants.
+is parsed but not yet supported. With the option, `raw` is still an identifier
+except directly before the name of a type, and `witness` is still the witness
+clause of a subset type or newtype.
 
-The syntax `witness e` (or `ghost witness e`) for a witness member is parsed but
-not yet supported. With the option, `raw` is still an identifier except
-directly before the name of a type, and `witness` is still the witness clause of
-a subset type or newtype.
+### 6.6.2. Witnesses {#sec-member-witnesses}
+
+An invariant may leave a datatype with no values, so a datatype with invariants
+is possibly empty unless it declares a witness member:
+
+<!-- %no-check -->
+```dafny
+datatype Interval = Interval(lo: int, hi: int) {
+  invariant lo <= hi
+  witness Interval(0, 0)        // auto-initializable: satisfies (0)
+}
+datatype Cert = Cert(ghost p: int) {
+  invariant p > 3
+  ghost witness Cert(4)         // nonempty, not compilable: satisfies (00) only
+}
+```
+
+- The witness is an expression of type `D`, so the verifier checks that it
+  satisfies the invariants.
+- With `witness e`, `D` is auto-initializable, and where compiled code needs a
+  default value of `D`, it is `e`. With `ghost witness e`, `D` is nonempty.
+- With no witness, `D` behaves as a subset type with `witness *` does: a
+  variable of type `D` must be assigned before it is used, and `D` cannot
+  instantiate a type parameter that requires `(0)` or `(00)`. `raw D` can, as
+  the datatype could without invariants.
+- A datatype declares at most one witness, and only if it declares an
+  invariant. A witness member of a generic datatype, or of another kind of
+  type, is not yet supported.
+
+### 6.6.3. An invariant may not refer to its own type {#sec-invariant-extension}
+
+The values of `D` are the raw values that satisfy its invariants. If an
+invariant refers to the set of values of `D` itself, that sentence defines `D`
+in terms of itself, and the definition may have no solution:
+
+<!-- %no-check -->
+```dafny
+datatype Liar = Liar(f: int) {
+  invariant f == 0 ==> !(exists e: Liar :: e.f == 0)   // error
+}
+```
+
+So the resolver checks a conservative condition. A type *depends on* `D` if its
+set of values is defined with `D`'s: `D`, `raw D`, and every type built from
+one of them, as a datatype component, a type argument, the base type of a subset
+type or newtype, or a parameter or result of an arrow. The invariants of `D`,
+and everything they reach (the specifications and bodies of the functions they
+call, the initializers of the constants they read, and the constraints of the
+types they use), must not:
+
+1. quantify over a type that depends on `D` except through the elements of a
+   collection: `forall k <- kids :: k.size < size` is allowed, and
+   `forall k: D :: ...` is not;
+2. call a generic function with a type argument that depends on `D`;
+3. apply a function value, other than a lambda expression or a named function
+   applied on the spot;
+4. call a dynamically bound function, since its overrides are not all known;
+5. test a raw value against, or convert it to, a type that depends on `D`,
+   explicitly or implicitly. In particular, a raw member cannot pass `this`
+   where a `D` is expected.
+
+Statements inside expressions are proof hints, and are not checked. A bound
+variable whose type is inferred as `raw D` makes a test `k is D` a test of a raw
+value; write `k: D` to range over values of `D`.

@@ -1,7 +1,7 @@
 // Member invariants (https://github.com/erniecohen/dafny/issues/105) are never opaque.  Under
 // --default-function-opacity, every other function gets a reveal lemma, but an invariant gets none,
 // so the invariants of traits that meet in a diamond, or that a trait inherits and adds to, do not
-// clash.  (The verifier reports invariants as not yet supported.)
+// clash.  (The verifier reports the invariants of traits and classes as not yet supported.)
 // RUN: %exits-with 2 %verify --member-invariants --default-function-opacity opaque "%s" > "%t"
 // RUN: %exits-with 2 %verify --member-invariants --default-function-opacity autoRevealDependencies "%s" >> "%t"
 // RUN: %diff "%s.expect" "%t"

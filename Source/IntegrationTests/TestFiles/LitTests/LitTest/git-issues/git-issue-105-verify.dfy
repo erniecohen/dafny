@@ -1,6 +1,7 @@
-// Member invariants (https://github.com/erniecohen/dafny/issues/105) are resolved but not yet
-// verified, so no module of a program that declares one is verified. The verifier reports each
-// invariant, and, for a module without invariants, its first declaration that it would verify.
+// Member invariants (https://github.com/erniecohen/dafny/issues/105) of a non-generic datatype without
+// parents are verified. Those of other types are resolved but not yet verified, so no module of a
+// program that declares one is verified. The verifier reports each such invariant, and, for every other
+// module, its first declaration that it would verify.
 // RUN: %exits-with 2 %verify --member-invariants "%s" > "%t"
 // RUN: %diff "%s.expect" "%t"
 

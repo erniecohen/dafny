@@ -165,6 +165,7 @@ public partial class BoogieGenerator {
         if (!(dafnyReceiver is ThisExpr)) {
           CheckNonNull(dafnyReceiver.Origin, dafnyReceiver, builder, etran, null);
         }
+        CheckReceiverInvariants(dafnyReceiver.Origin, method, dafnyReceiver, builder, etran);
       }
       var obj = etran.TrExpr(receiver);
       if (bReceiver == null) {

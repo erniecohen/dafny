@@ -804,3 +804,9 @@ git-issues/git-issue-105-raw-refinement.dfy
 git-issues/git-issue-105-raw-extends.dfy
 git-issues/git-issue-105-raw-library.dfy
 git-issues/git-issue-105-raw-compile.dfy
+# Third stage: verification of non-generic datatypes without parents (conversion obligations, witnesses,
+# the extension condition) (https://github.com/erniecohen/dafny/issues/105).
+git-issues/git-issue-105-datatypes.dfy
+git-issues/git-issue-105-vacuity.dfy
+git-issues/git-issue-105-extension.dfy
+git-issues/git-issue-105-compile.dfy

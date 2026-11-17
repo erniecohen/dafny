@@ -1111,6 +1111,10 @@ public partial class BoogieGenerator {
         var dd = (DatatypeDecl)d;
         AddDatatype(dd);
         AddClassMembers(dd, true, true);
+        if (dd.InvariantTypeDecl != null) {
+          // Issue 105: the type that the datatype's name denotes, the raw type restricted by the invariants
+          AddTypeDecl(dd.InvariantTypeDecl);
+        }
       } else if (d is SubsetTypeDecl) {
         AddTypeDecl((SubsetTypeDecl)d);
       } else if (d is TypeSynonymDecl) {
@@ -1160,7 +1164,9 @@ public partial class BoogieGenerator {
     FuelContext oldFuelContext = this.fuelContext;
     this.fuelContext = FuelSetting.NewFuelContext(dd);
 
-    if (!Attributes.Contains(dd.Attributes, "axiom")) {
+    // Issue 105: the well-formedness of the type of a declaration with member invariants is that of its invariants,
+    // which are checked as predicates, and of its witness, which is checked as a const of the type.
+    if (!Attributes.Contains(dd.Attributes, "axiom") && dd is not InvariantTypeDecl) {
       AddWellformednessCheck(dd);
     }
     currentModule = dd.EnclosingModuleDefinition;

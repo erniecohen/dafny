@@ -533,6 +533,9 @@ git-issues/git-issue-1005.dfy	2		11,12,13,18,19,20,24,26,27,31,32,33,34,44,45,46
 git-issues/git-issue-1016.dfy	2		66,82,101,117,129
 git-issues/git-issue-1016a.dfy	2		34
 git-issues/git-issue-1029.dfy	0	3 verified, 0 errors	
+git-issues/git-issue-105-compile.dfy	0	4 verified, 0 errors	
+git-issues/git-issue-105-datatypes.dfy	4	13 verified, 8 errors	28,31,72,79,80,81,92
+git-issues/git-issue-105-vacuity.dfy	0	2 verified, 0 errors	
 git-issues/git-issue-1074.dfy	0	3 verified, 0 errors	
 git-issues/git-issue-1093.dfy	0	2 verified, 0 errors	
 git-issues/git-issue-1094.dfy	0	12 verified, 0 errors	

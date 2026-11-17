@@ -64,12 +64,13 @@ module GenericExtends {
 }
 
 // Mutually recursive datatypes, each with an invariant. Only the invariants and raw members of a type
-// make its members raw: an invariant of Tree applies Forest.Count to a raw Forest, but Count is not raw.
-// Applying it there is a conversion of the raw value to Forest, which the verifier is to check.
+// make its members raw: an invariant of Tree applies Forest.Count to its component, a Forest, and Count
+// is not raw. (Applying Count to a raw Forest there would convert it to Forest, a type built from Tree,
+// which the extension condition rejects: see git-issue-105-extension.dfy.)
 module Mutual {
   datatype Tree = Leaf(key: int) | Node(key: int, kids: Forest) {
     invariant Node? ==> kids.Above(key)
-    invariant Forest.Nil.Count() == 0
+    invariant Node? ==> kids.Count() < 100
     function Size(): nat { if Leaf? then 1 else 1 + kids.Size() }
   }
 

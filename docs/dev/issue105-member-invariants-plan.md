@@ -247,7 +247,7 @@ it one value at a time:
 
 ```dafny
 datatype Liar2 = Liar2(f: int) {
-  predicate No() { !(this is Liar2) }     // 'this' is raw here, so the test is not trivial
+  ghost predicate No() { !(this is Liar2) }  // 'this' is raw here, so the test is not trivial
   invariant No()
 }
 ```
@@ -361,6 +361,24 @@ So for clauses 1 to 4 the cone analysis has real work only for a value type
 with no reference components, and there clause 4 rejects dynamically bound
 calls until there is a way to bound the overrides.  Clause 5 is new work for
 every kind of type.
+
+**A correction (stage 1 of section 7.2).**  The argument above shows that no
+override can violate clause 1 where `T` may involve references.  It does not
+cover clause 5: an override may test a constructor application, which is raw,
+against `T`, and that is the `Liar2` paradox again.
+
+```dafny
+trait Oracle extends object { ghost predicate Ok(n: int) }
+datatype Liar3 = Liar3(f: int, o: Oracle) {
+  invariant o.Ok(f)                         // error: 'Ok' is dynamically bound
+}
+class Teller extends Oracle {
+  ghost predicate Ok(n: int) { !(Liar3(n, this) is Liar3) }
+}
+```
+
+So clause 4 rejects every dynamically bound call, for every kind of type, and
+the `Box` example, first listed in section 6.1, is rejected (section 6.2).
 
 Two cautions.
 
@@ -1175,7 +1193,7 @@ datatype Interval = Interval(lo: int, hi: int) {
   function Width(): nat { hi - lo }                    // nat: uses the invariant
   function Shift(d: int): Interval { this.(lo := lo + d).(hi := hi + d) }
                                                        // the middle value is raw; one check, at the result
-  predicate Tightest()
+  ghost predicate Tightest()
   { forall j: Interval :: j.lo <= lo && hi <= j.hi ==> j == this }   // quantifies over the type: not in the cone
 }
 
@@ -1273,21 +1291,11 @@ module M1 refines M0 {
 ```
 
 ```dafny
-// A bounded quantifier over the type itself, inside the invariant.
+// A bounded quantifier over the type itself, inside the invariant.  (In a module apart from Tree, whose
+// constructor has the same name.)
 datatype Rose = Node(size: nat, kids: seq<Rose>) {
   invariant forall k <- kids :: k.size < size
   witness Node(0, [])
-}
-```
-
-```dafny
-// An object invariant through a trait-typed component: accepted by clause 4 of section 3.3.
-trait Shape { predicate Fits(n: int) }               // no reads clause
-class Box {
-  const s: Shape
-  const n: int
-  invariant s.Fits(n)
-  constructor (s: Shape, n: int) requires s.Fits(n) { this.s := s; this.n := n; }
 }
 ```
 
@@ -1317,7 +1325,7 @@ datatype Liar = Liar(f: int) {
 }                                           // error: the invariant of 'Liar' refers to the set of values of 'Liar'
 
 datatype Liar2 = Liar2(f: int) {
-  predicate No() { !(this is Liar2) }       // error: 'No' is used by the invariant of 'Liar2' and tests a raw value against 'Liar2'
+  ghost predicate No() { !(this is Liar2) } // error: 'No' is used by the invariant of 'Liar2' and tests a raw value against 'Liar2'
   invariant No()
 }
 
@@ -1328,6 +1336,15 @@ module Bad refines Spec {                   // Spec from section 4.3
 class NoCtor {
   const k: int
   invariant k > 0              // error: a class with an invariant must declare a constructor
+}
+
+// An object invariant through a trait-typed component: rejected by clause 4 of section 3.3 (see its correction).
+trait Shape extends object { predicate Fits(n: int) }   // no reads clause
+class Box {
+  const s: Shape
+  const n: int
+  invariant s.Fits(n)          // error: 'Fits' is dynamically bound
+  constructor (s: Shape, n: int) requires s.Fits(n) { this.s := s; this.n := n; }
 }
 
 codatatype NonNeg = Cons(head: int, tail: NonNeg) {
@@ -1350,7 +1367,7 @@ datatype Bounded = Bounded(bound: int, s: Stream) {
 datatype D = D(x: nat, y: nat) {
   invariant x == y
   witness D(0, 1)                              // error: invariant might not hold
-  function Inc(): D { this.(x := x + 1) }      // error at the result: invariant might not hold
+  function Inc(): D { this.(x := x + 1) }      // error at the result, once for each invariant: invariant might not hold
   function Gap(): nat { x - y }                // error: result might be negative.  'Gap' is used by an invariant,
   invariant Gap() == 0                         //        so 'this' is raw here and x == y is not known
 }
@@ -1363,8 +1380,8 @@ class Pos {
 
 method M() {
   var e: Empty;                                // Empty from section 3.6: no witness
-  Consume(e);                                  // error: variable 'e' is used before it is assigned
-}
+  Consume(e);                                  // error: variable 'e', which is subject to definite-assignment
+}                                              //        rules, might be uninitialized here
 ```
 
 ### 6.4 Vacuity controls
@@ -1388,7 +1405,10 @@ assumed the finished type, `Bad` would verify with no error at all.
 disabled by a test-only switch, and a method `method V5() { assert false; }`
 that mentions the type.  Its `assert false` must verify.  It records why the
 condition exists, and that the vacuity tests can tell the difference.  `V5b`
-is the same for `Liar2`.
+is the same for `Liar2`.  (The switch is `--unchecked-invariant-extension`.  The
+inconsistency is in the axioms of `$Is` for the type, which are instantiated
+only for a value of it, so each method states a raw value and splits on whether
+it is one; a bare `assert false` does not verify.)
 
 `V6` is `class F { const x: int  invariant false  constructor () { new; } }`.
 It must report an error at `new;`, and a method that takes an `F` must be
@@ -1812,3 +1832,103 @@ soundness problem while nothing checks or assumes an invariant.
   the same target type.
 - *Printing.*  `/rprint` shows the derived declaration, in a comment after the
   datatype, and marks each raw member.
+
+**Verification of datatypes (third pull request; the rest of stage 1 of
+section 7.2).**
+
+- *The gate.*  The invariants of an inductive datatype with no type parameters
+  and no parent traits, declared in a module that refines no other, are
+  verified.  The program-wide gate of the second pull request stays for every
+  other invariant: if the program, libraries included, declares one, no module
+  is translated, and each such invariant is reported with its reason (a
+  datatype with type parameters, a datatype that extends a trait, a refining
+  module, or a class, trait, newtype or abstract type).  It is decided per
+  invariant, not per module, since the types of every module may depend on any
+  invariant.  The conversion of a `raw D` to a parent trait under
+  `--general-traits=datatype`, left open above, therefore cannot reach the
+  verifier: a datatype with parents stays behind the gate until stage 4, which
+  must add that obligation.
+- *Encoding.*  Section 5.1's pattern, built from existing machinery instead of
+  new axioms.  The derived declaration is translated as a subset type, so
+  `$Is(v, Tclass.D) <==> $Is(v, Tclass.D#raw) ∧ D.invariant#0(v) ∧ …`.  The
+  datatype is the raw type: `Tclass.D#raw` carries the constructor, allocation,
+  box and discriminator axioms, in which a component declared with type `D` has
+  the finished type.  The invariants are the Boogie functions of the
+  `MemberInvariant` predicates.  An invariant is always a raw member, even one
+  that never mentions `this`, so their axioms are guarded by the raw type.
+  There is no separate `T#Inv`: the subset type's constraint is that
+  conjunction.  The prelude is unchanged, and so is the Boogie of a program
+  without invariants.  The raw type's class constant is `class.D#raw`, as `C?`
+  takes the suffix for a class; `#` cannot occur in a Dafny name.
+- *Conversions.*  Where a value is converted to `D` and its invariants are
+  visible, membership in `raw D` is checked as before, and then each invariant
+  is a separate assertion, "invariant might not hold", whose related location is
+  that invariant; membership in `D` is then assumed, as for a subset type.  This
+  is a new obligation description, `InvariantCheck`.  A member that is not raw,
+  applied to a `raw D` (called, or selected as a value), checks
+  that the receiver is a `D`.  So `Inc` in section 6.3 is reported once for each
+  invariant, and a raw member's `x - y` is reported where `nat` needs it.
+- *Witnesses* (section 3.6).  A witness member is a static const of type `D`,
+  so checking it is the ordinary check of a const's initializer, and it is the
+  witness of the derived declaration: `witness e` makes `D` auto-initializable,
+  `ghost witness e` nonempty, and with neither `D` is possibly empty.  The
+  derived declaration gets no well-formedness check of its own, since its
+  constraint is the invariants, checked as predicates, and its witness is
+  checked as a const.  Where the witness is compiled, the derived declaration is
+  compiled as a subset type, under the name `D#` (sanitized for each target),
+  whose default value is the witness; otherwise it is not compiled, and `D` and
+  `raw D` are the same target type.  A datatype declares at most one witness,
+  and none if it has no invariant, own or inherited (a refining declaration may
+  supply one for inherited invariants, section 4.2).  A witness member of a
+  generic datatype, or of another kind of type, is not yet supported.
+- *The extension condition* (section 3.3) is `InvariantExtensionCondition`,
+  run for each type with invariants after the reads restriction, and only if
+  that reported nothing, since the cone analysis assumes a resolved,
+  restriction-respecting body.  Decisions:
+  - Clauses 3 and 4 apply to every type, not only to types that cannot involve
+    references: the correction in section 3.3.  So the `Box` example moved from
+    section 6.1 to section 6.2.
+  - The cone includes the types of the components of `raw D`, since its values
+    are built from them, and the constraints of the subset types, newtypes and
+    types with invariants that it quantifies over, tests, converts to or passes
+    as type arguments.  A generic subset type or newtype is analysed with the
+    dependence of each of its type parameters, so a constraint that does not
+    quantify over a dependent parameter is accepted.  A generic function given
+    a dependent type argument is rejected, the first-stage form of clause 2.
+  - Clause 1 accepts a bound variable that the resolver bounds by the elements
+    of a collection, by a single given value, or by the subsets of a given set.
+    If that collection holds raw values and the variable's type is not raw,
+    ranging over it tests them against the type, so clause 5 rejects it.  A
+    bound variable whose type is inferred as `raw D` makes `k is D` a test of a
+    raw value; the program writes `k: D` to range over values of `D`.
+  - Built-in arrow types.  `A -> B` and `A --> B` are subset types of `A ~> B`
+    whose constraints quantify over `A`.  So an arrow type whose parameter type
+    depends on `D`, wherever the cone reaches it, refers to the set of values of
+    `D` (clause 1), and is reported there, since the built-in declaration has no
+    place in the program.  Skipping these constraints was unsound: an invariant
+    could test a lambda that requires something of every `D` against
+    `D -> bool`, and `assert false` verified.
+  - Statements inside expressions (`assert`, `calc`, lemma calls in a
+    statement expression) are proof hints and give no meaning, so they are not
+    in the cone.
+  - The hidden option `--unchecked-invariant-extension` turns the check off.  It
+    exists for the vacuity controls V5 and V5b (section 6.4), which must show
+    that the axioms of `Liar` and `Liar2` are inconsistent without it.  It is
+    recorded as an input option, and in the options that the modular
+    termination record keys.
+- *Ordering.*  The resolver's analysis of subset type constraints visits the
+  declarations in the call graph's order, in which a derived declaration is not
+  a vertex, so a subset type of `D` could be analysed before `D`'s derived
+  type.  It now analyses a declaration's base type first when that is still to
+  be done.  Without invariants the call graph already puts base types first, so
+  the order is unchanged.
+- *Translation cache.*  Still bypassed for a program that declares an
+  invariant: whether a module is translated depends on the invariants of every
+  module, and the cache does not yet key on them.
+- *Tests.*  `git-issue-105-datatypes.dfy` holds sections 6.1 and 6.3 for
+  datatypes and the controls V1, V4 and V8; `git-issue-105-vacuity.dfy` holds V5
+  and V5b; `git-issue-105-extension.dfy` holds section 6.2's datatype examples
+  and each clause of the condition; `git-issue-105-compile.dfy` runs witnesses
+  as default values in compiled code.  V7 is the declaration rule, already
+  tested by `git-issue-105-codatatypes.dfy` and `git-issue-105-libraries.dfy`.
+  Section 3.3's test of lambda bodies in methods belongs to classes (stage 3).

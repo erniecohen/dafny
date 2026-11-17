@@ -428,6 +428,11 @@ Value implementations must retain their type parameters in compatible parent pos
     IsHidden = true
   };
 
+  public static readonly Option<bool> UncheckedInvariantExtension = new("--unchecked-invariant-extension", () => false,
+    "Do not check the extension condition of member invariants (issue 105). The axioms of a type whose invariant refers to its own set of values may then be inconsistent. For the vacuity controls of the test suite only.") {
+    IsHidden = true
+  };
+
   public static readonly Option<bool> GeneralNewtypes = new("--general-newtypes", () => false,
     @"
 false - A newtype can only be based on numeric types or another newtype.
@@ -922,6 +927,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(LegacyGenericFunctionStores, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacyInheritedTerminationChecks, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacyUncheckedImportBinding, OptionScope.Cli);
+    OptionRegistry.RegisterOption(UncheckedInvariantExtension, OptionScope.Cli);
     OptionRegistry.RegisterOption(ModularTermination, OptionScope.Cli);
     OptionRegistry.RegisterOption(ModularTerminationTrust, OptionScope.Cli);
     OptionRegistry.RegisterOption(WarnUncheckedTermination, OptionScope.Cli);

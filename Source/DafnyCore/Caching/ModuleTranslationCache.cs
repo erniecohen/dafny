@@ -70,9 +70,10 @@ public sealed class ModuleTranslationCache {
     cancellationToken.ThrowIfCancellationRequested();
     var options = program.Options;
     if (BoogieGenerator.DeclaresMemberInvariants(program)) {
-      // Issue 105: no module of a program that declares a member invariant is verified, but a module's key covers
-      // only what the module depends on, so an entry made before another module declared one must not be reused.
-      lock (gate) { Bypasses++; LastBypassReason = "member invariants are not yet verified"; }
+      // Issue 105: whether a module of a program that declares a member invariant is verified depends on the
+      // invariants of every module, but a module's key covers only what the module depends on, so an entry made
+      // before another module declared one must not be reused. The cache does not yet key on invariants at all.
+      lock (gate) { Bypasses++; LastBypassReason = "member invariants are not yet cached"; }
       var snapshot = Fresh(program, module, flags, program.Reporter, manager);
       return new ModuleTranslation(BoogieSnapshotCloner.TryClone(snapshot, out var fresh, out _) ? fresh! : snapshot, manager);
     }

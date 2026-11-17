@@ -19,7 +19,10 @@ namespace Microsoft.Dafny;
 /// and the resolver maps D, written as a type, to this declaration. A derived declaration shares its visibility
 /// with the declaration it is derived from.
 ///
-/// With no witness member, the type is possibly empty, as a subset type with "witness *" is.
+/// With no witness member, the type is possibly empty, as a subset type with "witness *" is. A witness member
+/// "witness e" (or "ghost witness e") is a static const of type D, so its well-formedness is the ordinary check that
+/// e satisfies the invariants, and the witness of this declaration is that const. The type is then auto-initializable
+/// (or nonempty), and where it is compiled, the default value of D is the witness.
 /// </summary>
 public class InvariantTypeDecl : SubsetTypeDecl {
   public override string WhatKind => Owner.WhatKind;
@@ -34,14 +37,55 @@ public class InvariantTypeDecl : SubsetTypeDecl {
   }
 
   private InvariantTypeDecl(TopLevelDeclWithMembers owner, List<TypeParameter> tps, BoundVar var)
+    : this(owner, tps, var, owner.Members.OfType<MemberWitness>().FirstOrDefault()) {
+  }
+
+  private InvariantTypeDecl(TopLevelDeclWithMembers owner, List<TypeParameter> tps, BoundVar var, MemberWitness? witness)
     : base(owner.Origin, owner.NameNode,
-      new TypeParameterCharacteristics(TypeParameter.EqualitySupportValue.Unspecified, Type.AutoInitInfo.MaybeEmpty, false),
-      tps, owner.EnclosingModuleDefinition, var, Constraint(owner, var), WKind.OptOut, null, null) {
+      new TypeParameterCharacteristics(TypeParameter.EqualitySupportValue.Unspecified, AutoInit(witness), false),
+      tps, owner.EnclosingModuleDefinition, var, Constraint(owner, var), WitnessKindOf(witness), WitnessReference(owner, witness), null) {
     Owner = owner;
+    if (witness is { ExplicitType: null }) {
+      // As if the witness had been written "static const witness#k: D := e".
+      witness.ExplicitType = new UserDefinedType(witness.Origin, owner.Name, null);
+      witness.Type = witness.ExplicitType;
+    }
     InheritVisibility(owner, false);
     // The base constructor made the synonym that stands for this type where it is provided but not revealed,
     // before this type took on the visibility of its owner. Make it again, so that it has that visibility too.
     this.NewSelfSynonym();
+  }
+
+  private static Type.AutoInitInfo AutoInit(MemberWitness? witness) {
+    return witness == null ? Type.AutoInitInfo.MaybeEmpty
+      : witness.IsGhost ? Type.AutoInitInfo.Nonempty : Type.AutoInitInfo.CompilableValue;
+  }
+
+  private static WKind WitnessKindOf(MemberWitness? witness) {
+    return witness == null ? WKind.OptOut : witness.IsGhost ? WKind.Ghost : WKind.Compiled;
+  }
+
+  /// <summary>
+  /// The expression "D.witness#k", which denotes the witness member "witness". Like the invariants, the reserved name
+  /// cannot be written in source, but name resolution finds it like any other member.
+  /// </summary>
+  private static Expression? WitnessReference(TopLevelDeclWithMembers owner, MemberWitness? witness) {
+    if (witness == null) {
+      return null;
+    }
+    var tok = witness.Origin;
+    return new ExprDotName(tok, new NameSegment(tok, owner.Name, null), new Name(tok, witness.Name), null);
+  }
+
+  /// <summary>
+  /// Where it has a compiled witness, the type is compiled as a subset type is, with a class of its own that gives
+  /// its default value, so it needs a name other than the name of its owner. A Dafny name cannot contain "#", so
+  /// the sanitized result cannot be the name of another declaration. Otherwise, it is not compiled, and its values
+  /// are values of the owner's target type.
+  /// </summary>
+  public override string GetCompileName(DafnyOptions options) {
+    var name = base.GetCompileName(options); // this also determines the name of the enclosing module
+    return WitnessKind == WKind.Compiled ? NonglobalVariable.SanitizeName(Owner.Name + "#") : name;
   }
 
   private static UserDefinedType RawType(TopLevelDeclWithMembers owner, List<TypeParameter> tps) {

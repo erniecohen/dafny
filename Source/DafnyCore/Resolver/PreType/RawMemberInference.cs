@@ -76,6 +76,14 @@ public class RawMemberInference {
   }
 
   /// <summary>
+  /// Whether "member" is applied to raw receivers.  A member invariant is, by definition, even one whose body does
+  /// not mention "this", so that the inference never sees its receiver.
+  /// </summary>
+  public static bool IsRawMember(MemberDecl member) {
+    return member.IsRawMember || member is MemberInvariant;
+  }
+
+  /// <summary>
   /// Whether a value of type "type" is not known to satisfy the member invariants of "cl", that is, whether "type"
   /// is not "cl" (as the subset type that its name denotes) or a subset type of it.
   /// </summary>

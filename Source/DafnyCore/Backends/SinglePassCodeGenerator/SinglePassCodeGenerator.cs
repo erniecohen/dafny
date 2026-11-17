@@ -1672,6 +1672,12 @@ namespace Microsoft.Dafny.Compilers {
           } else if (DatatypeDeclarationAndMemberCompilationAreSeparate) {
             continue;
           }
+          if (dt.InvariantTypeDecl is { WitnessKind: SubsetTypeDecl.WKind.Compiled } invariantTypeDecl) {
+            // Issue 105: the type of a datatype with member invariants is compiled as a subset type, under a name
+            // of its own, where it has a compiled witness, which is then its default value
+            DeclareSubsetType(invariantTypeDecl, wr);
+            v.Visit(invariantTypeDecl);
+          }
         } else if (d is IteratorDecl) {
           var iter = (IteratorDecl)d;
 
