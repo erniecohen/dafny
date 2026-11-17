@@ -15,10 +15,14 @@ namespace Microsoft.Dafny;
 /// read frame.
 /// </summary>
 class HigherOrderHeapAllocationChecker : ASTVisitor<IASTVisitorContext> {
+  private const string Message =
+    "To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed";
   private readonly ErrorReporter reporter;
+  private readonly bool legacy;
 
-  public HigherOrderHeapAllocationChecker(ErrorReporter reporter) {
+  public HigherOrderHeapAllocationChecker(ErrorReporter reporter, DafnyOptions options) {
     this.reporter = reporter;
+    legacy = options.Get(CommonOptionBag.LegacyFunctionStoreLocations);
   }
 
   public override IASTVisitorContext GetContext(IASTVisitorContext astVisitorContext, bool inFunctionPostcondition) {
@@ -63,7 +67,8 @@ class HigherOrderHeapAllocationChecker : ASTVisitor<IASTVisitorContext> {
 
       // Memory can be updated either by writing to a sequence-like collection
       // or by writing to an object's field.
-      if (lhs is MemberSelectExpr or SeqSelectExpr) {
+      // A multi-dimensional array element is memory too (https://github.com/erniecohen/dafny/issues/483).
+      if (lhs is MemberSelectExpr or SeqSelectExpr || (!legacy && lhs is MultiSelectExpr)) {
 
         // The only case of interest is when the right hand side of the assignment 
         // is an expression. The case where it is a type expression (new) is handled
@@ -77,9 +82,21 @@ class HigherOrderHeapAllocationChecker : ASTVisitor<IASTVisitorContext> {
           // by ensuring that the read frame of the function and the write frame of the context
           // are disjoint, but this would require an inter-procedural analysis.
           if (ContainsRead(type)) {
-            reporter.Error(MessageSource.Resolver, stmt,
-              "To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed");
+            reporter.Error(MessageSource.Resolver, stmt, Message);
           }
+        }
+      }
+    }
+
+    // A method call stores its out-parameters in its left-hand sides, and a left-hand side may be a
+    // field or an array element (https://github.com/erniecohen/dafny/issues/483).  The value stored
+    // has the type of the out-parameter, with the call's type arguments.
+    if (!legacy && stmt is CallStmt call) {
+      var subst = call.MethodSelect.TypeArgumentSubstitutionsWithParents();
+      for (var i = 0; i < call.Lhs.Count && i < call.Method.Outs.Count; i++) {
+        if (call.Lhs[i].Resolved is MemberSelectExpr or SeqSelectExpr or MultiSelectExpr &&
+            ContainsRead(call.Method.Outs[i].Type.Subst(subst))) {
+          reporter.Error(MessageSource.Resolver, call.Lhs[i].Origin, Message);
         }
       }
     }

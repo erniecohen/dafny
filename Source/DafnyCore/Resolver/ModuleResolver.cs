@@ -1788,7 +1788,7 @@ namespace Microsoft.Dafny {
       }
 
       if (reporter.Count(ErrorLevel.Error) == prevErrorCount) {
-        new HigherOrderHeapAllocationChecker(reporter).VisitDeclarations(declarations);
+        new HigherOrderHeapAllocationChecker(reporter, Options).VisitDeclarations(declarations);
       }
 
       if (reporter.Count(ErrorLevel.Error) == prevErrorCount) {
