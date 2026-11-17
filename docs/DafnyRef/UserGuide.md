@@ -1953,6 +1953,20 @@ module ConcreteFoo replaces Foo {
 
 When replacing a replaceable module, the same rules apply as when refining an abstract module. However, unlike an abstract module, a placeholder module can be used as if it is a concrete module. When executing code, using for example `dafny run` or `dafny translate`, any program that contains a placeholder module must also contain a replacement of this placeholder. When using `dafny verify`, placeholder modules do not have to be replaced.
 
+In a program that contains a replacement, every use of the replaceable module is a use of its replacement. So a replacement may not use the module it replaces, other than by replacing it: it may not import that module, and it may not depend on a module that depends on that module. A module depends on the modules it imports, on the modules nested in it, on the module it refines, and on whatever those depend on; a use of a replaceable module also counts as a use of its replacement. Otherwise the replacement and a client of the replaceable module would depend on each other, which Dafny does not allow of any two modules. In the following program, `FooImpl` imports `Bar`, which imports `Foo`, so Dafny reports an error at `replaces Foo`:
+
+<!-- %no-check -->
+```dafny
+replaceable module Foo { function G(n: nat): nat }
+module Bar { import Foo  function F(n: nat): nat { Foo.G(n) } }
+module FooImpl replaces Foo {
+  import Bar // error: FooImpl -> Bar -> Foo
+  function G(n: nat): nat { Bar.F(n) + 1 }
+}
+```
+
+A replacement may import any module that does not depend on the module it replaces, and it may use what the replaceable module itself imports.
+
 Replaceable modules are particularly useful for defining behavior that depends on which target language Dafny is translated to.
 
 ### 13.8.4. C\#

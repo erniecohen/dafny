@@ -44,11 +44,13 @@ namespace Microsoft.Dafny {
     public ICanVerify CanVerify { get; }
 
     /// <summary>
-    /// Whether this is the override check of a member that a refining module copied from its refinement base and
-    /// must check again (see BoogieGenerator.MustReverifyInheritedOverrideCheck).  The pipeline verifies only such
-    /// tasks of a copy: whatever else the copy produces asserts nothing and was verified with the base.
+    /// Whether this is a check of a member that a refining module copied from its refinement base and must make
+    /// itself (see BoogieGenerator.MustVerifyCopy): an override check
+    /// (BoogieGenerator.MustReverifyInheritedOverrideCheck), or the body of a constructor of a class to which the
+    /// module added fields (BoogieGenerator.MustCheckInheritedConstructorFields).  The pipeline verifies only such
+    /// tasks of a copy: whatever else the copy produces asserts nothing new and was verified with the base.
     /// </summary>
-    public bool IsReverifiedOverrideCheck { get; init; }
+    public bool IsReverifiedInheritedCheck { get; init; }
   }
 
   public partial class BoogieGenerator {
@@ -848,7 +850,9 @@ namespace Microsoft.Dafny {
       }
       foreach (TopLevelDecl d in systemDeclarations) {
         CurrentDeclaration = d;
-        if (d is AbstractTypeDecl abstractType) {
+        if (d is AbstractTypeDecl boundedDecl && BoundedCallables.IsBoundedDecl(boundedDecl)) {
+          AddBoundedCallableDeclarations(boundedDecl);
+        } else if (d is AbstractTypeDecl abstractType) {
           GetOrCreateTypeConstructor(abstractType);
           AddClassMembers(abstractType, true, true);
         } else if (d is NewtypeDecl) {

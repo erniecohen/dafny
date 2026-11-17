@@ -251,8 +251,13 @@ class CheckTypeCharacteristicsVisitor : ResolverTopDownVisitor<bool> {
     } else if (expr is FunctionCallExpr) {
       var e = (FunctionCallExpr)expr;
       CheckTypeInstantiation(e.Origin, e.Function.WhatKind, e.Function.Name, e.Function.TypeArgs, e.TypeApplication_JustFunction, inGhostContext);
+      if (BoundedCallables.IsCertify(e.Function)) {
+        // the certified package's own type carries the order it is formed at (issue 266)
+        VisitType(e.Origin, e.Type, inGhostContext);
+      } else {
+        Visit(e.Receiver, inGhostContext);
+      }
       // recursively visit all subexpressions (all actual parameters), noting which ones correspond to ghost formal parameters
-      Visit(e.Receiver, inGhostContext);
       Contract.Assert(e.Args.Count == e.Function.Ins.Count);
       for (var i = 0; i < e.Args.Count; i++) {
         Visit(e.Args[i], inGhostContext || e.Function.Ins[i].IsGhost);

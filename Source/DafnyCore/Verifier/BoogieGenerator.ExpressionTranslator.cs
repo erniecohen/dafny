@@ -1481,7 +1481,10 @@ namespace Microsoft.Dafny {
       public Expr TrExprSpecialFunctionCall(FunctionCallExpr expr) {
         Contract.Requires(expr.Function is SpecialFunction);
         string name = expr.Function.Name;
-        if (name == "RotateLeft") {
+        if (BoundedCallables.IsCertify(expr.Function)) {
+          return BoogieGenerator.TrBoundedCertify(GetToken(expr),
+            TrExpr(expr.Args[0]), expr.Args[0].Type, TrExpr(expr.Args[1]), expr.Args[1].Type);
+        } else if (name == "RotateLeft") {
           var w = expr.Type.AsBitVectorType.Width;
           Expression arg = expr.Args[0];
           return TrToFunctionCall(GetToken(expr), "LeftRotate_bv" + w, BoogieGenerator.BplBvType(w), TrExpr(expr.Receiver), BoogieGenerator.ConvertExpression(GetToken(expr), TrExpr(arg), arg.Type, expr.Type), false);
@@ -2050,6 +2053,33 @@ namespace Microsoft.Dafny {
         return typeAntecedent;
       }
 
+      /// <summary>
+      /// Whether translating "expr" needs a heap: whether it reads a mutable location, calls a function that
+      /// reads the heap, applies an arrow with read effects, or refers to a previous or allocation state.
+      /// The bodies of lambdas, which are translated in their own heap, are not considered.
+      /// </summary>
+      private static bool NeedsHeap(Expression expr) {
+        switch (expr) {
+          case null or LambdaExpr:
+            return false;
+          case OldExpr or UnchangedExpr or MultiSelectExpr:
+            return true;
+          case UnaryOpExpr { Op: UnaryOpExpr.Opcode.Fresh or UnaryOpExpr.Opcode.Allocated }:
+            return true;
+          case FunctionCallExpr call when call.Function == null || call.Function.ReadsHeap || call.Function is TwoStateFunction:
+            return true;
+          case MemberSelectExpr { Member: Field { IsMutable: true } or TwoStateFunction }:
+            return true;
+          case ApplyExpr apply when !apply.Function.Type.IsArrowTypeWithoutReadEffects:
+            return true;
+          case SeqSelectExpr select when select.Seq.Type.IsArrayType:
+            return true;
+          case SeqConstructionExpr construction when !construction.Initializer.Type.IsArrowTypeWithoutReadEffects:
+            return true;
+        }
+        return expr.SubExpressions.Any(NeedsHeap);
+      }
+
       public List<Boogie.Expr> FunctionInvocationArguments(FunctionCallExpr e, Boogie.Expr layerArgument, Boogie.Expr revealArgument) {
         bool dummy;
         return FunctionInvocationArguments(e, layerArgument, revealArgument, false, out dummy);
@@ -2412,7 +2442,11 @@ namespace Microsoft.Dafny {
                 ctor => FunctionCall(e.Origin, ctor.QueryField.FullSanitizedName, Boogie.Type.Bool, TrExpr(e.Obj))));
               r = BplAnd(r, correctConstructor);
             }
-          } else if (e.Member is ConstantField { Rhs: { } rhs } && BoogieGenerator.RevealedInScope(e.Member)) {
+          } else if (e.Member is ConstantField { Rhs: { } rhs } && BoogieGenerator.RevealedInScope(e.Member) &&
+                     !(_the_heap_expr == null && NeedsHeap(rhs))) {
+            // A translator without a heap (the axioms of a function that reads nothing) cannot state the
+            // facts of a right-hand side that reads the heap, so it does not inline one.  Such a right-hand
+            // side fails its own reads check, except in ghost uses of an arrow's requires or reads.
             // The type arguments are substituted too: the right-hand side is stated in terms of the enclosing
             // type's type parameters, which are not in scope here.
             r = CanCallAssumption(Substitute(rhs, e.Obj, new Dictionary<IVariable, Expression>(), e.TypeArgumentSubstitutionsWithParents()),
@@ -2451,13 +2485,20 @@ namespace Microsoft.Dafny {
             }
           };
 
+          // A translator without a heap (the axioms of a function that reads nothing) reaches an application
+          // here through the right-hand side of a constant it reads.  A total arrow's precondition does not
+          // depend on the heap, so it is stated in $OneHeap, as its application is (HeapExprForArrow).  The
+          // right-hand side is not inlined if it applies any other arrow (NeedsHeap), so the fallback to true
+          // below, which only weakens the assumption, is a safeguard.
+          var heap = HeapExpr ?? (e.Function.Type.IsArrowTypeWithoutReadEffects ? BoogieGenerator.NewOneHeapExpr(e.Origin) : null);
           var args = Concat(
             Map(e.Function.Type.AsArrowType.TypeArgs, BoogieGenerator.TypeToTy),
-            Cons(HeapExpr,
+            Cons(heap,
               Cons(TrExpr(e.Function),
                 e.Args.ConvertAll(arg => TrArg(arg)))));
 
-          var requiresk = options.Get(CommonOptionBag.ConsistentObligationChecks)
+          var requiresk = heap == null ? Boogie.Expr.True
+            : options.Get(CommonOptionBag.ConsistentObligationChecks)
             ? BoogieGenerator.HigherOrderRequirement(e.Origin, e.Args.Count, args)
             : FunctionCall(e.Origin, Requires(e.Args.Count), Boogie.Type.Bool, args);
           var facts = BplAnd(
