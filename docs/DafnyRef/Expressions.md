@@ -959,6 +959,14 @@ method, then [`old(allocated(d))`](#sec-old-expression) is `false`.
 If the expression `e` is of a reference type, then `!old(allocated(e))`
 is the same as [`fresh(e)`](#sec-fresh-expression).
 
+The value of a function, a constant or a [lambda expression](#sec-lambda-expression)
+may not depend on the set of allocated references in the state it is evaluated in, so
+`allocated(e)` may appear in their definitions only inside an [`old`](#sec-old-expression)
+expression (which a function allows only if it is a two-state function).  In a lambda expression,
+this applies to its body, its precondition and its reads clause, and the `old` must be within the
+lambda expression: `(x: int) => old(allocated(c))` is allowed, `(x: int) => allocated(c)` and
+`old((x: int) => allocated(c))` are not.
+
 A function value can capture object references and previous or labeled heap states.
 Its allocation depends on those captures: captured references must be allocated
 in the heap being considered, and captured heap states must be that heap or precede
