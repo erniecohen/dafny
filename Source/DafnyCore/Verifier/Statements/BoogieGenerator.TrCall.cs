@@ -322,7 +322,7 @@ public partial class BoogieGenerator {
     if (isRecursiveCall) {
       Contract.Assert(codeContext != null);
       if (codeContext is DatatypeDecl) {
-        builder.Add(Assert(tok, Bpl.Expr.False, new IsNonRecursive(), builder.Context));
+        builder.Add(Assert(InheritedTerminationOrigin(tok, method), Bpl.Expr.False, new IsNonRecursive(), builder.Context));
       } else {
         List<Expression> contextDecreases = codeContext.Decreases.Expressions;
         List<Expression> calleeDecreases = callee.Decreases.Expressions;
@@ -334,7 +334,7 @@ public partial class BoogieGenerator {
         // previous heap of a two-state lemma: the heap at its label, if the call has one.
         var calleeEtran = method is TwoStateLemma && atLabel != null ? etran.WithOld(etran.OldAt(atLabel)) : null;
         var callerEtran = builder.Context.CallerTerminationTranslator ?? etran;
-        CheckCallTermination(tok, contextDecreases, calleeDecreases, null, receiver, substMap, directSubstMap, tySubst, callerEtran, oldCaller, builder, codeContext.InferredDecreases, null,
+        CheckCallTermination(InheritedTerminationOrigin(tok, method), contextDecreases, calleeDecreases, null, receiver, substMap, directSubstMap, tySubst, callerEtran, oldCaller, builder, codeContext.InferredDecreases, null,
           calleeEtran ?? etran);
       }
     }
