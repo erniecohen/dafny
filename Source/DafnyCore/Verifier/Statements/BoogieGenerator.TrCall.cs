@@ -322,7 +322,7 @@ public partial class BoogieGenerator {
     if (isRecursiveCall) {
       Contract.Assert(codeContext != null);
       if (codeContext is DatatypeDecl) {
-        builder.Add(Assert(tok, Bpl.Expr.False, new IsNonRecursive(), builder.Context));
+        builder.Add(Assert(InheritedTerminationOrigin(tok, method), Bpl.Expr.False, new IsNonRecursive(), builder.Context));
       } else {
         List<Expression> contextDecreases = codeContext.Decreases.Expressions;
         List<Expression> calleeDecreases = callee.Decreases.Expressions;
@@ -334,11 +334,13 @@ public partial class BoogieGenerator {
         // previous heap of a two-state lemma: the heap at its label, if the call has one.
         var calleeEtran = method is TwoStateLemma && atLabel != null ? etran.WithOld(etran.OldAt(atLabel)) : null;
         var callerEtran = builder.Context.CallerTerminationTranslator ?? etran;
-        CheckCallTermination(tok, contextDecreases, calleeDecreases, null, receiver, substMap, directSubstMap, tySubst, callerEtran, oldCaller, builder, codeContext.InferredDecreases, null,
+        CheckCallTermination(InheritedTerminationOrigin(tok, method), contextDecreases, calleeDecreases, null, receiver, substMap, directSubstMap, tySubst, callerEtran, oldCaller, builder, codeContext.InferredDecreases, null,
           calleeEtran ?? etran);
       }
     }
-    if (codeContext != null && !isCoCall) {
+    // Under --modular-termination, a co-call (a call of a prefix lemma from a greatest or least lemma's body) gets
+    // the check of the global bounds too: the bounds order calls across modules, which no cluster sees.
+    if (codeContext != null) {
       CheckModularTermination(tok, codeContext, callee, receiver, substMap, directSubstMap, tySubst,
         builder.Context.CallerTerminationTranslator ?? etran, builder, etran);
       if (callee.Ins.Count == Args.Count) {
@@ -376,7 +378,7 @@ public partial class BoogieGenerator {
     proofDependencies?.AddProofDependencyId(call, tok, new CallDependency(cs));
     if (
       (assertionOnlyFilter != null && !assertionOnlyFilter(tok.ReportingRange.StartToken)) ||
-      (module != currentModule && tok.IsInherited(currentModule) && (codeContext == null || !codeContext.MustReverify))) {
+      (module != currentModule && tok.IsInherited(currentModule) && !MustReverifyInheritedCode)) {
       // The call statement is inherited, so the refined module already checked that the precondition holds.  Note,
       // preconditions are not allowed to be strengthened, except if they use a predicate whose body has been strengthened.
       // But if the callee sits in a different module, then any predicate it uses will be treated as opaque (that is,

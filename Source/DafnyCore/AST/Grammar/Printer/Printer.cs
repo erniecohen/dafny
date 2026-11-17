@@ -1376,6 +1376,10 @@ NoGhost - disable printing of functions, ghost methods, and proof
         var prefix = s == null ? "" : s + ",";
         s = prefix + "!new";
       }
+      if (characteristics.ContainsNoReadingFunctions) {
+        var prefix = s == null ? "" : s + ",";
+        s = prefix + "!reads";
+      }
       if (s == null) {
         return "";
       } else {

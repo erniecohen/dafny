@@ -138,7 +138,13 @@ namespace Microsoft.Dafny {
     private ModuleSignature RefinedSig;  // the intention is to use this field only after a successful PreResolve
     private ModuleSignature refinedSigOpened;
 
+    // The error count when the refining module's PreResolve started. The capture check runs only
+    // if the refinement has reported no error, so that a program already rejected (for example,
+    // for renaming a type parameter) gets no second error about the same name (issue 410).
+    private int preResolveStartErrorCount;
+
     internal override void PreResolve(ModuleDefinition m) {
+      preResolveStartErrorCount = Reporter.ErrorCount;
 
       if (m.Implements?.Target.Decl == null) {
         // do this also for non-refining modules
@@ -197,6 +203,9 @@ namespace Microsoft.Dafny {
       }
       moduleUnderConstruction = module;
       refinementCloner = new RefinementCloner(moduleUnderConstruction);
+      if (!Reporter.Options.Get(CommonOptionBag.LegacyInheritedNameCapture)) {
+        refinementCloner.InheritedOccurrences = [];
+      }
       var refinementTarget = module.Implements.Target;
       var prev = refinementTarget.Def;
 
@@ -226,10 +235,17 @@ namespace Microsoft.Dafny {
           } else if (newDeclaration is TypeSynonymDecl) {
             var msg = $"a type synonym ({newDeclaration.Name}) is not allowed to replace a {originalDeclaration.WhatKind} from the refined module ({module.Implements.Target}), even if it denotes the same type";
             Error(ErrorId.ref_refinement_type_must_match_base, newDeclaration.Origin, msg);
-          } else if (originalDeclaration is AbstractModuleDecl && newDeclaration is ModuleDecl) {
+          } else if (originalDeclaration is AbstractModuleDecl abstractImport && newDeclaration is ModuleDecl binding) {
             // Abstract-import overrides do not use refining notation or the type
             // merger. Retain their exact correspondence for selected environments.
             newDeclaration.CardinalityRefinementBase = originalDeclaration;
+            // The inherited text was proved for an arbitrary refinement of the import's target, so the
+            // module that takes its place must be one (https://github.com/erniecohen/dafny/issues/408).
+            if (!Reporter.Options.Get(CommonOptionBag.LegacyUncheckedImportBinding) &&
+                BindsRefinementOf(binding, abstractImport) == false) {
+              Error(ErrorId.ref_module_must_refine_module_2, binding.Origin,
+                "a module ({0}) can only be replaced by a refinement of the original module", originalDeclaration.Name);
+            }
           } else if (!(originalDeclaration is AbstractModuleDecl)) {
             Error(ErrorId.ref_refining_notation_needed, newDeclaration.Origin, $"to redeclare and refine declaration '{originalDeclaration.Name}' from module '{module.Implements.Target}', you must use the refining (`...`) notation");
           }
@@ -411,6 +427,43 @@ namespace Microsoft.Dafny {
       nwPointer.Get().CardinalityRefinementBase = d;
     }
 
+    /// <summary>
+    /// The module definition whose refines chain decides what <paramref name="decl"/> may stand for. An
+    /// abstract import stands for a refinement of its original target, not for its signature facade, and
+    /// an alias stands for whatever the declaration it names stands for, so an alias of another module's
+    /// abstract import (import X = D.Y) is judged by Y's target.
+    /// </summary>
+    private static ModuleDefinition RefinementSubject(ModuleDecl decl) {
+      var seen = new HashSet<ModuleDecl>();
+      while (decl is AliasModuleDecl alias && alias.TargetQId?.Decl is { } named && seen.Add(decl)) {
+        decl = named;
+      }
+      return decl is AbstractModuleDecl abstractDecl ? abstractDecl.OriginalSignature?.ModuleDef : decl.Signature?.ModuleDef;
+    }
+
+    /// <summary>
+    /// Whether the module that <paramref name="binding"/> denotes is the target of
+    /// <paramref name="abstractImport"/> or reaches it along its chain of refines clauses. The binding
+    /// can be an alias import, a literal or refining nested module, or another abstract import, which
+    /// stands for a refinement of its own target. Null if either module is unknown because its
+    /// resolution failed, which has been reported already.
+    /// </summary>
+    private static bool? BindsRefinementOf(ModuleDecl binding, AbstractModuleDecl abstractImport) {
+      var target = abstractImport.OriginalSignature?.ModuleDef;
+      var current = RefinementSubject(binding);
+      if (target == null || current == null) {
+        return null;
+      }
+      var visited = new HashSet<ModuleDefinition>();
+      while (current != null && visited.Add(current)) {
+        if (current == target) {
+          return true;
+        }
+        current = current.Implements?.Target.Def;
+      }
+      return false;
+    }
+
     public bool CheckIsRefinement(ModuleDecl derived, AbstractModuleDecl original) {
       // Check explicit refinement
       // TODO syntactic analysis of export sets is not quite right
@@ -436,6 +489,12 @@ namespace Microsoft.Dafny {
 
     internal override void PostResolveIntermediate(ModuleDefinition m) {
       if (m == moduleUnderConstruction) {
+        if (refinementCloner.InheritedOccurrences is { } occurrences) {
+          if (Reporter.ErrorCount == preResolveStartErrorCount) {
+            new RefinementCaptureCheck(Reporter, m, refinementCloner.RefinedLocals).Run(occurrences);
+          }
+          refinementCloner.InheritedOccurrences = null;
+        }
         while (this.postTasks.Count != 0) {
           var a = postTasks.Dequeue();
           a();
@@ -1257,6 +1316,9 @@ namespace Microsoft.Dafny {
             if (doMerge) {
               // Go ahead with the merge:
               body.Add(cNew);
+              for (var k = 0; k < cNew.Locals.Count; k++) {
+                refinementCloner.RefinedLocals[cNew.Locals[k]] = ((VarDeclStmt)oldS).Locals[k];
+              }
               i++; j++;
               if (addedAssert != null) {
                 var tok = new BoogieGenerator.ForceCheckOrigin(addedAssert.Origin);
@@ -1631,6 +1693,22 @@ namespace Microsoft.Dafny {
           }
         }
       }
+      // A call statement parses as an update statement and becomes a CallStmt only during resolution, so the
+      // CallStmt case of CheckIsOkayNewStatement never sees it.  A call to a method with a nonempty modifies clause
+      // can change state the parent module knows about, which would invalidate what the inherited body established
+      // (https://github.com/erniecohen/dafny/issues/412).  The initializing call of a "new" belongs to its RHS and is
+      // checked above.  The hidden --legacy-skeleton-modifying-calls restores the old, unsound rule.
+      if (Reporter.Options.Get(CommonOptionBag.LegacySkeletonModifyingCalls)) {
+        return;
+      }
+      var descendants = stmt.DescendantsAndSelf.ToList();
+      var initCalls = descendants.OfType<SingleAssignStmt>().Select(a => a.Rhs).OfType<AllocateClass>()
+        .Select(a => a.InitCall).Where(c => c != null).ToHashSet();
+      foreach (var call in descendants.OfType<CallStmt>()) {
+        if (!initCalls.Contains(call) && call.Method.Mod.Expressions.Count != 0) {
+          Error(ErrorId.ref_invalid_call_modifies, call.Origin, "refinement method cannot call a method that may modify state ('{0}')", call.Method.Name);
+        }
+      }
     }
     // ---------------------- additional methods -----------------------------------------------------------------------------
 
@@ -1663,6 +1741,62 @@ namespace Microsoft.Dafny {
 
     public RefinementCloner(ModuleDefinition m) : base(false, false) {
       moduleUnderConstruction = m;
+    }
+
+    // Issue 410: the (clone, original) pairs of name occurrences copied from the base module,
+    // recorded so that RefinementCaptureCheck can compare what each one resolves to on both
+    // sides. Null when the check is off.
+    internal List<(object Clone, object Original)> InheritedOccurrences;
+
+    private void Record(object clone, object original) {
+      InheritedOccurrences?.Add((clone, original));
+    }
+
+    // Issue 410: local variables of the refining module that refine an inherited local
+    // declaration (a skeleton's "var x := e;" in place of "var x;"), mapped to the base's local.
+    internal readonly Dictionary<IVariable, IVariable> RefinedLocals = new();
+
+    private T Unrecorded<T>(Func<T> action) {
+      var saved = InheritedOccurrences;
+      InheritedOccurrences = null;
+      try {
+        return action();
+      } finally {
+        InheritedOccurrences = saved;
+      }
+    }
+
+    public override Expression CloneExpr(Expression expr) {
+      var clone = base.CloneExpr(expr);
+      if (expr is NameSegment or ExprDotName or ApplySuffix) {
+        Record(clone, expr);
+      }
+      return clone;
+    }
+
+    public override Type CloneType(Type t) {
+      var clone = base.CloneType(t);
+      if (t is UserDefinedType) {
+        Record(clone, t);
+      }
+      return clone;
+    }
+
+    public override ExtendedPattern CloneExtendedPattern(ExtendedPattern pat) {
+      var clone = base.CloneExtendedPattern(pat);
+      if (pat is IdPattern) {
+        Record(clone, pat);
+      }
+      return clone;
+    }
+
+    public override CasePattern<VT> CloneCasePattern<VT>(CasePattern<VT> pat) {
+      var clone = base.CloneCasePattern(pat);
+      if (InheritedOccurrences != null) {
+        Record(new RefinementCaptureCheck.CasePatternView(() => (object)clone.Ctor ?? clone.Var, clone.Origin, clone.Id),
+          new RefinementCaptureCheck.CasePatternView(() => (object)pat.Ctor ?? pat.Var, pat.Origin, pat.Id));
+      }
+      return clone;
     }
 
     public override BlockLikeStmt CloneMethodBody(MethodOrConstructor m) {
@@ -1723,9 +1857,10 @@ namespace Microsoft.Dafny {
         return CloneAttributes(prevAttrs);
       } else if (moreAttrs is UserSuppliedAttributes) {
         var usa = (UserSuppliedAttributes)moreAttrs;
-        return new UserSuppliedAttributes(Origin(usa.Origin), Origin(usa.OpenBrace), Origin(usa.CloseBrace), moreAttrs.Args.ConvertAll(CloneExpr), MergeAttributes(prevAttrs, moreAttrs.Prev));
+        // The refining module's own attributes are not inherited occurrences.
+        return new UserSuppliedAttributes(Origin(usa.Origin), Origin(usa.OpenBrace), Origin(usa.CloseBrace), Unrecorded(() => moreAttrs.Args.ConvertAll(CloneExpr)), MergeAttributes(prevAttrs, moreAttrs.Prev));
       } else if (moreAttrs is UserSuppliedAtAttribute usaa) {
-        var arg = CloneExpr(usaa.Arg);
+        var arg = Unrecorded(() => CloneExpr(usaa.Arg));
         if (usaa.Arg.Type != null) { // The attribute has already been expanded
           arg.Type = usaa.Arg.Type;
           arg.PreType = usaa.Arg.PreType;
@@ -1734,7 +1869,7 @@ namespace Microsoft.Dafny {
           Builtin = usaa.Builtin
         };
       } else {
-        return new Attributes(moreAttrs.Name, moreAttrs.Args.ConvertAll(CloneExpr), MergeAttributes(prevAttrs, moreAttrs.Prev));
+        return new Attributes(moreAttrs.Name, Unrecorded(() => moreAttrs.Args.ConvertAll(CloneExpr)), MergeAttributes(prevAttrs, moreAttrs.Prev));
       }
     }
   }

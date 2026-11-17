@@ -246,6 +246,8 @@ public class SystemModuleManager {
     if (options.Get(CommonOptionBag.ModularTermination)) {
       BoundedDecl = BoundedCallables.CreateDecl(SystemModule, DontCompile());
       SystemModule.SourceDecls.Add(BoundedDecl);
+      // bounded.certify is a two-argument function, so its arrow type must exist
+      CreateArrowTypeDecl(2);
     }
     // add one-dimensional arrays, since they may arise during type checking
     // Arrays of other dimensions may be added during parsing as the parser detects the need for these
