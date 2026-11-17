@@ -2569,29 +2569,31 @@ removed when no program can reach it.
 - *Translator and resolver sites.*  "Producer" names the entries of
   `docs/dev/obligation-producers.json` (file, member, producer) that a site
   adds; a site that adds no obligation has none.  "Flips" lists the tests that
-  change their result when the site is disabled.
+  change their result when the site is disabled, from a run of each site
+  against the whole suite (step 7).  The runs of steps 6 and 6a covered only
+  the tests predicted for each site, and their lists were incomplete.
 
   | Site | Kind | Where | Producer | Flips |
   |---|---|---|---|---|
   | earlier invariants assumed in the well-formedness of a later one | assumption | `BoogieGenerator.Functions.Wellformedness.cs`, `Check` | `Check/1`, `CanCallAssumptionForVerification` (2 to 3) | wellformedness |
-  | the `$Is` axioms of `D` use its constraint | axiom | `BoogieGenerator.Types.cs`, the axioms of a subset type | none | datatypes, vacuity, classes |
-  | each invariant checked at a conversion to `D` | check | `BoogieGenerator.TypeObligations.cs` | `CheckInvariantTypeMembership/10`, `Assert`, `AssertAndForget`, `CanCallAssumption` | datatypes |
+  | the `$Is` axioms of `D` use its constraint | axiom | `BoogieGenerator.Types.cs`, the axioms of a subset type | none | abstract-synonym, abstract-types, class-compile, classes, compile, datatypes, emptiness, exports, general-traits, generics, raw-compile, refinement-verify, statements, traits, vacuity |
+  | each invariant checked at a conversion to `D` | check | `BoogieGenerator.TypeObligations.cs` | `CheckInvariantTypeMembership/10`, `Assert`, `AssertAndForget`, `CanCallAssumption` | abstract-synonym, abstract-types, class-compile, classes, compile, datatypes, emptiness, exports, general-traits, generics, opacity, raw-compile, refinement-verify, trait-compile, traits, wellformedness |
   | the value is in `raw D` before the invariants are checked | check | same | `CheckInvariantTypeMembership/10`, the second `CheckSubrange` | generics (`Components`) |
   | a value converted to `C` is not null | check | same | `CheckInvariantTypeMembership/10`, the first `CheckSubrange` | classes (`RawQToCell`) |
   | a member that is not raw is applied to a raw receiver only if it satisfies the invariants | check | same | `CheckReceiverInvariants/5`, `CheckSubrange` | traits |
-  | a raw reference reaches a type that is not raw only if it satisfies the invariants | check | same | `CheckTypeMembership/12`, `CheckSubrange`, `GetSubrangeCheck`, `CheckTypeMembership` | classes, traits |
+  | a raw reference reaches a type that is not raw only if it satisfies the invariants | check | same | `CheckTypeMembership/12`, `CheckSubrange`, `GetSubrangeCheck`, `CheckTypeMembership` | classes, general-traits, trait-compile, traits |
   | the same, in the type test and the membership check of a raw reference | check | `BoogieGenerator.cs`, `GetSubrangeCheck` | `GetSubrangeCheck/8`, `GetSubrangeCheck` | classes (`TestRawObjectChecked`) |
-  | the invariants checked at `new;` | check | `BoogieGenerator.TrStatement.cs`, `TrStmt` | `TrStmt/4`, `CheckSubrange` (1 to 2) | classes, traits |
-  | the object is raw until `new;` | restriction | same | none | classes, traits |
-  | the parent axioms of a raw class reach the raw types of its traits | axiom | `BoogieGenerator.cs` | none | traits, general-traits |
-  | the constraint includes the inherited invariants | constraint | `InvariantTypeDecl.cs` | none | traits, general-traits |
-  | the translator's gate for what is not yet verified | check | `BoogieGenerator.cs`, `DeclaresUnsupportedMemberInvariants` | none | trait-gates |
+  | the invariants checked at `new;` | check | `BoogieGenerator.TrStatement.cs`, `TrStmt` | `TrStmt/4`, `CheckSubrange` (1 to 2) | class-compile, classes, exports, general-traits, opacity, refinement-verify, trait-compile, traits, wellformedness |
+  | the object is raw until `new;` | restriction | same | none | classes, general-traits, refinement-verify, traits |
+  | the parent axioms of a raw class reach the raw types of its traits | axiom | `BoogieGenerator.cs` | none | general-traits, refinement-verify, traits |
+  | the constraint includes the inherited invariants | constraint | `InvariantTypeDecl.cs` | none | general-traits, refinement, refinement-verify, traits |
+  | the translator's gate for what is not yet verified | check | `BoogieGenerator.cs`, `DeclaresUnsupportedMemberInvariants` | none | trait-gates, verify |
   | `D` keeps the declared variance | subtyping | `InvariantTypeDecl.cs`, `TypeParametersOf` | none | generics, variance |
   | variance by polarity | check | `TypeParameterPolarity.cs`, `CheckInvariantVariance` | none | variance |
-  | the extension condition | check | `InvariantExtensionCondition.cs` | none | extension, trait-errors |
-  | the reads restriction | check | `MemberInvariantChecks.cs`, `CheckReadsRestrictions` | none | reads |
-  | the program-wide checks | check | `MemberInvariantChecks.cs`, `Check` | none | codatatypes |
-  | at an inherited site, a conjunct the base did not check is checked | check | `BoogieGenerator.InheritedInvariants.cs`, `InheritedConjunctOrigin` | `CheckInvariantTypeMembership/10`, `Assert`, `AssertAndForget` | refinement-verify, abstract-types |
+  | the extension condition | check | `InvariantExtensionCondition.cs` | none | abstract-errors, class-errors, extension, trait-errors |
+  | the reads restriction | check | `MemberInvariantChecks.cs`, `CheckReadsRestrictions` | none | class-errors, reads |
+  | the program-wide checks | check | `MemberInvariantChecks.cs`, `Check` | none | abstract-errors, class-witness, codatatypes, libraries, trait-witness |
+  | at an inherited site, a conjunct the base did not check is checked | check | `BoogieGenerator.InheritedInvariants.cs`, `InheritedConjunctOrigin` | `CheckInvariantTypeMembership/10`, `Assert`, `AssertAndForget` | refinement-verify |
   | at an inherited site, a conjunct the base checked is assumed | assumption | same | same | refinement-verify |
   | at an inherited site, a membership check that is not split is checked whole | check | `BoogieGenerator.TypeObligations.cs`, `InheritedMembershipOrigin` | `CheckTypeMembership/12`, `CheckTypeMembership` (1 to 2) | refinement-verify |
   | a member that became raw is verified again | check | `BoogieGenerator.InheritedInvariants.cs`, `BecameRaw` | none | refinement-verify |
@@ -2609,7 +2611,7 @@ removed when no program can reach it.
   | a refinement keeps the promised characteristics | check | `RefinementTransformer.cs`, the characteristics of a refinement | none | abstract-errors |
   | an abstract type may not declare a witness | check | `MemberInvariantChecks.cs`, `Check` | none | abstract-errors |
   | `raw` of an export set's view of a declaration that is provided only | check | `ScopeCloner.cs`; `NameResolutionAndTypeInference.cs`, `CheckRawType` | none | raw-exports, class-exports |
-  | an abstract type's name denotes its derived declaration | rule | `NameResolutionAndTypeInference.cs` | none | abstract-types |
+  | an abstract type's name denotes its derived declaration | rule | `NameResolutionAndTypeInference.cs` | none | abstract-errors, abstract-synonym, abstract-types |
 
 - *Resolver errors.*  Each error that the feature adds has a negative control
   in the expect files named:
