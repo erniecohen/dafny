@@ -61,21 +61,17 @@ module Controls {
   codatatype C<T> = C(c: C<T>)
   datatype E<T> = E(c: C<T>)
   datatype R = R(e: E<R>)
+  // no grounding constructor, for the same reason.  W is met again with a larger type, W<Big<V>>,
+  // but only after the recursion went into the type argument of W<V>, so the recursion does not repeat
+  datatype W<T> = W(a: T, e: E<W<T>>)
+  datatype Big<A> = Big(b: int)
+  datatype V = V(w: W<Big<V>>)
   method M<X(00)>() { }
   method Use() {
     M<L>();
     M<Nest<int>>();
     M<G<G<int>>>();
     M<R>();
+    M<W<V>>();
   }
-
-  // The resolver checks the types of yield parameters before it looks for grounding constructors
-  // (https://github.com/erniecohen/dafny/issues/445).
-  datatype L' = Nil | Cons(int, L')
-  // Box is met again, with a larger type, after the recursion went into the type argument of Box<K>,
-  // so the recursion does not repeat
-  datatype Box<T> = Box(t: T)
-  datatype Unused<A> = Unused(n: int)
-  datatype K = K(b: Box<Unused<K>>)
-  iterator I() yields (x: G<G<int>>, y: L', z: Box<K>) { }
 }

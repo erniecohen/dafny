@@ -918,3 +918,28 @@ four tests is byte-identical with and without the change, under both resolvers, 
 output.  The four tests are now in `.github/review/regressions`; the release note is
 `docs/dev/news/441.fix`.  The fifth test of the issue, `dafny0/Superposition.legacy.dfy`, is left
 to [issue 436](https://github.com/erniecohen/dafny/issues/436).
+
+## Yield parameters checked after grounding constructors ([issue 445](https://github.com/erniecohen/dafny/issues/445))
+
+The resolver checked that the type of each yield parameter supports auto-initialization in
+`ResolveIteratorSignature`, while `ResolveTopLevelDecls_Signatures` was still resolving the module's
+declarations in source order.  No datatype had a grounding constructor yet, so `Type.GetAutoInit`
+followed its fallback, the first ghost constructor or else the first constructor, and the
+constructors of a datatype declared after the iterator, or inherited by a refining module, still had
+unresolved types.  So a recursive first constructor made a datatype with values look empty, a false
+rejection or, before [issue 413](https://github.com/erniecohen/dafny/issues/413), a stack overflow;
+an unresolved type crashed the resolver; and a first constructor with a compilable value hid a
+grounding constructor without one, as in `datatype D<T> = C1(t: T) | C2(s: S)` with `S` declared
+`witness *`.  The compiler initializes a yield parameter with the default value of its type, made
+with the grounding constructor, so the compiled iterator left such a parameter null, and a verified
+program printed `null` or threw a `NullReferenceException`.  The check now runs in
+`ResolveTopLevelDecls_Core`, right after `SccStratosphereCheck` has found the grounding
+constructors, so it agrees with the compiler and with the checks of class fields and of `(0)` and
+`(00)` type arguments.  Ghost yield parameters are checked the same way, as ghost fields are, and,
+like the other checks in that block, the check is skipped when the module already has errors.  Its
+kind is a **crash and false-rejection fix**, and, for the null values, a soundness fix that **weakens
+only**: it rejects programs whose compiled iterator could read a value it never initialized, accepts
+only programs whose yield types have a default value the compiler makes, and adds no fact or axiom.
+The hidden `--legacy-early-yield-parameter-check` option restores the old check at its old place,
+crashes included, for comparison and migration.  The regression is
+`git-issues/github-issue-445.dfy`; the release note is `docs/dev/news/445.fix`.
