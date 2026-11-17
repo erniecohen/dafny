@@ -815,6 +815,9 @@ git-issues/github-issue-211-multiset.dfy
 git-issues/github-issue-416.dfy
 ast/reveal/revealQualified.dfy
 
+# --print writes a refining datatype or codatatype that declares no constructors with "...", as it was written, in every print mode, so the printed program parses (https://github.com/erniecohen/dafny/issues/415).
+git-issues/github-issue-415.dfy
+
 # Termination checks on integer measures keep the shape they had before the corrected decreases order (https://github.com/erniecohen/dafny/issues/414)
 git-issues/github-issue-414.dfy
 # With integer termination checks back in the legacy shape, --isolate-assertions splits them into two tasks again, so these two upstream tests read their .expect counts of 20 and 25 verified (https://github.com/erniecohen/dafny/issues/436).
