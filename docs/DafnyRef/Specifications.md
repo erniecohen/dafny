@@ -483,6 +483,70 @@ dispatch, and that includes the code of `O`:
   that code is not known. A bound with an order then reaches it, and the bound
   is rejected. Build orders with `Of` instead.
 
+**The multiset order.** `Std.Termination.Orders.MultisetOf(r)` is the multiset
+order over a relation `r` proved `wellFounded`, in the form of Huet and Oppen
+that VeriFast uses for its bags of call permission levels.
+`MultisetGe(r, M, N)` (`M` is at least `N`) holds when each element of `N - M`
+is below some element of `M - N`, where `-` is multiset difference, and
+`MultisetGt(r, M, N)` (`M` is above `N`) when also `M != N`. So one element may
+be exchanged for any finite number of smaller ones. The library proves this
+order well-founded; nothing about it is assumed. `MultisetRel(r)` is the order
+as a relation, so multiset orders nest (`MultisetOf(MultisetRel(r))` orders
+multisets of multisets). Lemmas prove the usual steps: `MultisetReplaceOne`
+(an element of a multiset replaced by finitely many below it),
+`MultisetReplaceLower`, `MultisetReplaceByLower`, `MultisetAddOne`,
+`MultisetDrop`, `MultisetSub`, `MultisetGeAdd`, `MultisetGeUnion` and
+`MultisetGeCons`. When `r` is also transitive, `MultisetGeTransitive`,
+`MultisetGtGe`, `MultisetGeGt` and `MultisetTransitive` show that the order is
+transitive and that `>=` followed by `>`, in either order, gives `>`. Those
+lemmas that need `r` to be irreflexive or transitive require
+`wellFounded(r)` or `Transitive(r)`:
+
+<!-- %check-verify %options --standard-libraries --type-system-refresh --general-traits=datatype --decreases-orders -->
+```dafny
+import opened Std.Termination.Orders
+
+ghost predicate Gt(x: nat, y: nat) { x > y }
+
+lemma GtWellFounded() ensures wellFounded<nat>(Gt) {
+  forall c: Chain<nat> ensures stops<nat>(Gt, c) {
+    if forall n: nat :: Gt(c(n), c(n + 1)) {
+      Descends(c(0) + 1);
+    }
+  }
+}
+
+lemma Descends(n: nat)
+  ensures forall c: Chain<nat> :: (forall k: nat :: Gt(c(k), c(k + 1))) ==> c(n) + n <= c(0)
+{
+  if n > 0 {
+    Descends(n - 1);
+    forall c: Chain<nat> | forall k: nat :: Gt(c(k), c(k + 1)) ensures c(n) + n <= c(0) {
+      assert Gt(c(n - 1), c(n));
+    }
+  }
+}
+
+ghost function Bags(): Wfo<multiset<nat>> { GtWellFounded(); MultisetOf(Gt) }
+
+// One permission at level L is exchanged for two at level L - 1
+function Spend(bag: multiset<nat>, L: nat): nat
+  requires L in bag
+  decreases bag by Bags()
+{
+  if L == 0 then 0 else
+    var next := bag - multiset{L} + multiset{L - 1, L - 1};
+    GtWellFounded();
+    MultisetReplaceOne<nat>(Gt, bag, L, multiset{L - 1, L - 1});
+    1 + Spend(next, L - 1)
+}
+```
+
+Under `--modular-termination`, `MultisetOf`, `MultisetRel`, `MultisetGe`,
+`MultisetGt` and `Transitive`, and calls of the lemmas, count as applications of
+the relation they are given, as `Of` does. The relation must itself be known code,
+such as a function marked `{:termination_closed}` when another module uses it.
+
 The design is described in https://github.com/erniecohen/dafny/issues/245.
 
 #### 7.1.3.2. Global bounds: `decreases {:global}` (experimental) {#sec-global-decreases}

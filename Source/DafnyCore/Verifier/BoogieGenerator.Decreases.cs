@@ -243,7 +243,8 @@ public partial class BoogieGenerator {
     }
     var analysis = ModularTerminationAnalysis.Of(program);
     var dispatched = ModularTermination.IsOpenDispatch(callee, analysis.OpenTraits);
-    if (!dispatched && !analysis.ReachesOpenDispatch(callee, caller.EnclosingModule)) {
+    if (!dispatched && (DecreasesOrders.CallAppliesOnlyItsArguments(callee) ||
+                        !analysis.ReachesOpenDispatch(callee, caller.EnclosingModule))) {
       return;
     }
     var calleeBound = GlobalBound((ICallable)callee);
