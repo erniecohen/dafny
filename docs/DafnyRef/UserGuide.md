@@ -2445,6 +2445,15 @@ or the Dafny 4 syntax (`ghost function` and `function`)
   `synonym-refines-abstract-type = true` in a project file's `[options]` section. See
   [type refinement](#sec-module-refinement).
 
+* `--refinement-renaming` - in a refining module, let the redeclaration of a function,
+  method, lemma or constructor rename its type parameters, its out-parameters, its result and
+  the local names of its in-parameters, and let the redeclaration of a class, trait, datatype,
+  newtype or abstract type rename its type parameters. A named argument still uses the name
+  the parameter was first declared with. The inherited specification and body are renamed
+  with the declaration, and a renaming that would change what a name in inherited code refers
+  to is an error. Disabled by default. Use `refinement-renaming = true` in a project file's
+  `[options]` section. See [renaming in a refinement](#sec-refinement-renaming).
+
 * `--decreases-orders` - (experimental) accept a decreases component `e by O`, where `O`
   is a closed ghost expression of the standard library's trait type
   `Std.Termination.Orders.Wfo<T>` and `e` has type `T`. A call or loop iteration must make

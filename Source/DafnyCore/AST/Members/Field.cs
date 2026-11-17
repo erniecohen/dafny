@@ -31,7 +31,8 @@ public class Field : MemberDecl, ICanFormat, IHasDocstring {
   public Field(Cloner cloner, Field original) : base(cloner, original) {
     ExplicitType = cloner.CloneType(original.ExplicitType);
     // This is set even before resolution
-    Type = cloner.CloneType(original.Type);
+    // The parser makes the two one object, and the resolver resolves that one.
+    Type = ReferenceEquals(original.Type, original.ExplicitType) ? ExplicitType! : cloner.CloneType(original.Type);
   }
 
   [SyntaxConstructor]

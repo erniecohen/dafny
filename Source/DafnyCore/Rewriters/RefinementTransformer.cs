@@ -206,6 +206,10 @@ namespace Microsoft.Dafny {
       if (!Reporter.Options.Get(CommonOptionBag.LegacyInheritedNameCapture)) {
         refinementCloner.InheritedOccurrences = [];
       }
+      // A renaming is sound only if it captures nothing, which the check of inherited names
+      // establishes (issue 410). Without that check, nothing may be renamed.
+      renamingAllowed = Reporter.Options.Get(CommonOptionBag.RefinementRenaming) &&
+                        !Reporter.Options.Get(CommonOptionBag.LegacyInheritedNameCapture);
       var refinementTarget = module.Implements.Target;
       var prev = refinementTarget.Def;
 
@@ -257,6 +261,17 @@ namespace Microsoft.Dafny {
       }
       refinementTarget.Sig = RefinedSig;
 
+      var untraceable = new HashSet<(string, int, int, string)>();
+      foreach (var (origin, name) in refinementCloner.UntraceableOccurrences) {
+        // If an earlier error stopped the resolution of the base module, the inherited code is unresolved for that reason.
+        if (preResolveStartErrorCount == 0 && untraceable.Add((origin.Uri?.ToString(), origin.line, origin.col, name))) {
+          Reporter.Error(MessageSource.RefinementTransformer, "ref_renaming_untraceable_name",
+            new RefinementOrigin(origin is RefinementOrigin r ? r.WrappedOrigin : origin, module),
+            $"refining module '{module.Name}' renames a parameter or type parameter from or to '{name}', but module '{prev.Name}' " +
+            $"did not resolve this use of '{name}' in the code that '{module.Name}' inherits, so the renaming cannot tell what it refers to");
+        }
+      }
+
       Contract.Assert(moduleUnderConstruction == module);  // this should be as it was set earlier in this method
     }
 
@@ -295,6 +310,20 @@ namespace Microsoft.Dafny {
 
     private void MergeTopLevelDecls(ModuleDefinition m, IPointer<TopLevelDecl> nwPointer, TopLevelDecl d) {
       var nw = nwPointer.Get();
+      // The type parameters of a class, trait, datatype, newtype or abstract type may be renamed.
+      // An iterator's may not, nor those of a synonym that refines an abstract type with members.
+      var typeParametersMayBeRenamed = d is not ModuleDecl && nw is not ModuleDecl && nw is not IteratorDecl &&
+        !(d is AbstractTypeDecl { Members.Count: not 0 } && nw is not TopLevelDeclWithMembers);
+      var typeParameterRenames = typeParametersMayBeRenamed ? TypeParameterRenames(d.TypeArgs, nw.TypeArgs) : [];
+      using var renaming = refinementCloner.Renaming(typeParameterRenames);
+      if (typeParameterRenames.Count != 0) {
+        // The refining declaration keeps its own type parameters. Record which base parameter each one stands for.
+        for (var i = 0; i < d.TypeArgs.Count; i++) {
+          if (d.TypeArgs[i].Name != nw.TypeArgs[i].Name) {
+            refinementCloner.RenamedBinders[nw.TypeArgs[i]] = d.TypeArgs[i];
+          }
+        }
+      }
       var commonMsg = "a {0} declaration ({1}) in a refinement module can only refine a {0} declaration or replace an abstract type declaration";
       // Prefix decls.
 
@@ -354,7 +383,7 @@ namespace Microsoft.Dafny {
               "a {0} ({1}) cannot declare members, so it cannot refine an abstract type with members",
               nw.WhatKind, nw.Name);
           } else {
-            CheckAgreement_TypeParameters(nw.Origin, d.TypeArgs, nw.TypeArgs, nw.Name, "type");
+            CheckAgreement_TypeParameters(nw.Origin, d.TypeArgs, nw.TypeArgs, nw.Name, "type", true);
             // A synonym or subset replacement has no ordinary parent-trait list.
             // Keep the contract in the refining environment for global analysis.
             nw.CardinalityParentObligations = nw.CardinalityParentObligations
@@ -447,7 +476,8 @@ namespace Microsoft.Dafny {
       if (m == moduleUnderConstruction) {
         if (refinementCloner.InheritedOccurrences is { } occurrences) {
           if (Reporter.ErrorCount == preResolveStartErrorCount) {
-            new RefinementCaptureCheck(Reporter, m, refinementCloner.RefinedLocals).Run(occurrences);
+            new RefinementCaptureCheck(Reporter, m, refinementCloner.RefinedLocals,
+              refinementCloner.RenamedBinders, refinementCloner.RenamedOccurrences).Run(occurrences);
           }
           refinementCloner.InheritedOccurrences = null;
         }
@@ -459,6 +489,52 @@ namespace Microsoft.Dafny {
         postTasks.Clear();
       }
       moduleUnderConstruction = null;
+    }
+
+    // Whether a refining declaration may rename the parameters, result and type parameters of the
+    // declaration it refines (issue 106, --refinement-renaming).
+    private bool renamingAllowed;
+
+    /// <summary>
+    /// The binders of "old" that the corresponding binders of "nw" rename, with their new names.
+    /// Empty unless renaming is allowed and the two lists have the same length.
+    /// </summary>
+    private void AddRenames<T>(List<(object Binder, string NewName)> renames, List<T> old, List<T> nw, Func<T, string> name) {
+      if (renamingAllowed && old.Count == nw.Count) {
+        for (var i = 0; i < old.Count; i++) {
+          if (name(old[i]) != name(nw[i])) {
+            renames.Add((old[i], name(nw[i])));
+          }
+        }
+      }
+    }
+
+    private List<(object Binder, string NewName)> TypeParameterRenames(List<TypeParameter> old, List<TypeParameter> nw) {
+      var renames = new List<(object Binder, string NewName)>();
+      AddRenames(renames, old, nw, tp => tp.Name);
+      return renames;
+    }
+
+    private List<(object Binder, string NewName)> MemberRenames(Function nw, Function old) {
+      var renames = new List<(object Binder, string NewName)>();
+      if (!nw.SignatureIsOmitted) {
+        AddRenames(renames, old.TypeArgs, nw.TypeArgs, tp => tp.Name);
+        AddRenames(renames, old.Ins, nw.Ins, formal => formal.Name);
+        if (renamingAllowed && old.Result != null && nw.Result != null && old.Result.Name != nw.Result.Name) {
+          renames.Add((old.Result, nw.Result.Name));
+        }
+      }
+      return renames;
+    }
+
+    private List<(object Binder, string NewName)> MemberRenames(MethodOrConstructor nw, MethodOrConstructor old) {
+      var renames = new List<(object Binder, string NewName)>();
+      if (!nw.SignatureIsOmitted) {
+        AddRenames(renames, old.TypeArgs, nw.TypeArgs, tp => tp.Name);
+        AddRenames(renames, old.Ins, nw.Ins, formal => formal.Name);
+        AddRenames(renames, old.Outs, nw.Outs, formal => formal.Name);
+      }
+      return renames;
     }
 
     Function CloneFunction(Function newFunction, Function previousFunction, Expression moreBody, Expression replacementBody, bool checkPrevPostconditions, Attributes moreAttributes) {
@@ -474,6 +550,8 @@ namespace Microsoft.Dafny {
       if (result != null) {
         result = refinementCloner.CloneFormal(result, false);
       }
+      // A function with a named result takes its result type from that result.
+      var resultType = result != null ? result.Type : refinementCloner.CloneType(previousFunction.ResultType);
 
       var ens = refinementCloner.WithRefinementTokenWrapping(
         () => previousFunction.Ens.ConvertAll(refinementCloner.CloneAttributedExpr),
@@ -520,10 +598,10 @@ namespace Microsoft.Dafny {
         return new TwoStatePredicate(origin, nameNode, previousFunction.HasStaticKeyword, previousFunction.IsOpaque, tps, formals, result,
           req, reads, ens, decreases, body, refinementCloner.MergeAttributes(previousFunction.Attributes, moreAttributes), null);
       } else if (previousFunction is TwoStateFunction) {
-        return new TwoStateFunction(origin, nameNode, previousFunction.HasStaticKeyword, previousFunction.IsOpaque, tps, formals, result, refinementCloner.CloneType(previousFunction.ResultType),
+        return new TwoStateFunction(origin, nameNode, previousFunction.HasStaticKeyword, previousFunction.IsOpaque, tps, formals, result, resultType,
           req, reads, ens, decreases, body, refinementCloner.MergeAttributes(previousFunction.Attributes, moreAttributes), null);
       } else {
-        return new Function(origin, nameNode, previousFunction.HasStaticKeyword, newFunction.IsGhost, previousFunction.IsOpaque, tps, formals, result, refinementCloner.CloneType(previousFunction.ResultType),
+        return new Function(origin, nameNode, previousFunction.HasStaticKeyword, newFunction.IsGhost, previousFunction.IsOpaque, tps, formals, result, resultType,
           req, reads, ens, decreases, body,
           previousFunction.ByMethodTok == null ? null : refinementCloner.Origin(previousFunction.ByMethodTok), byMethodBody,
           refinementCloner.MergeAttributes(previousFunction.Attributes, moreAttributes), null);
@@ -682,7 +760,7 @@ namespace Microsoft.Dafny {
     }
 
     TopLevelDeclWithMembers MergeClass(TopLevelDeclWithMembers nw, TopLevelDeclWithMembers prev) {
-      CheckAgreement_TypeParameters(nw.Origin, prev.TypeArgs, nw.TypeArgs, nw.Name, nw.WhatKind);
+      CheckAgreement_TypeParameters(nw.Origin, prev.TypeArgs, nw.TypeArgs, nw.Name, nw.WhatKind, true);
 
       prev.Traits.ForEach(item => nw.Traits.Add(refinementCloner.CloneType(item)));
       nw.CardinalityParentObligations = nw.CardinalityParentObligations
@@ -754,6 +832,7 @@ namespace Microsoft.Dafny {
               Error(ErrorId.ref_mismatched_refinement_kind, nwMember, "a {0} declaration ({1}) can only refine a {0}", f.WhatKind, nwMember.Name);
             } else {
               var prevFunction = (Function)member;
+              using var renaming = refinementCloner.Renaming(MemberRenames(f, prevFunction));
               if (f.Req.Count != 0) {
                 Error(ErrorId.ref_refinement_no_new_preconditions, f.Req[0].E.Origin, "a refining {0} is not allowed to add preconditions", f.WhatKind);
               }
@@ -777,13 +856,13 @@ namespace Microsoft.Dafny {
                 Contract.Assert(f.Ins.Count == 0);
                 Reporter.Info(MessageSource.RefinementTransformer, f.SignatureEllipsis, Printer.FunctionSignatureToString(Reporter.Options, prevFunction));
               } else {
-                CheckAgreement_TypeParameters(f.Origin, prevFunction.TypeArgs, f.TypeArgs, f.Name, "function");
-                CheckAgreement_Parameters(f.Origin, prevFunction.Ins, f.Ins, f.Name, "function", "parameter");
-                if (prevFunction.Result != null && f.Result != null && prevFunction.Result.Name != f.Result.Name) {
+                CheckAgreement_TypeParameters(f.Origin, prevFunction.TypeArgs, f.TypeArgs, f.Name, "function", true);
+                CheckAgreement_Parameters(f.Origin, prevFunction.Ins, f.Ins, f.Name, "function", "parameter", true);
+                if (!renamingAllowed && prevFunction.Result != null && f.Result != null && prevFunction.Result.Name != f.Result.Name) {
                   Error(ErrorId.ref_mismatched_function_return_name, f, "the name of function return value '{0}'({1}) differs from the name of corresponding function return value in the module it refines ({2})", f.Name, f.Result.Name, prevFunction.Result.Name);
                 }
-                if (!TypesAreSyntacticallyEqual(prevFunction.ResultType, f.ResultType)) {
-                  Error(ErrorId.ref_mismatched_function_return_type, f, "the result type of function '{0}' ({1}) differs from the result type of the corresponding function in the module it refines ({2})", f.Name, f.ResultType, prevFunction.ResultType);
+                if (!TypesAgree(prevFunction.ResultType, f.ResultType)) {
+                  Error(ErrorId.ref_mismatched_function_return_type, f, "the result type of function '{0}' ({1}) differs from the result type of the corresponding function in the module it refines ({2})", f.Name, f.ResultType, InRefinementNames(prevFunction.ResultType));
                 }
               }
 
@@ -804,6 +883,7 @@ namespace Microsoft.Dafny {
             if (!(member is MethodOrConstructor prevMethod)) {
               Error(ErrorId.ref_method_refines_method, nwMember, "a method declaration ({0}) can only refine a method", nwMember.Name);
             } else {
+              using var renaming = refinementCloner.Renaming(MemberRenames(m, prevMethod));
               if (m.Req.Count != 0) {
                 Error(ErrorId.ref_no_new_method_precondition, m.Req[0].E.Origin, "a refining method is not allowed to add preconditions");
               }
@@ -842,9 +922,9 @@ namespace Microsoft.Dafny {
                 Contract.Assert(m.Outs.Count == 0);
                 Reporter.Info(MessageSource.RefinementTransformer, m.SignatureEllipsis, Printer.MethodSignatureToString(Reporter.Options, prevMethod));
               } else {
-                CheckAgreement_TypeParameters(m.Origin, prevMethod.TypeArgs, m.TypeArgs, m.Name, "method");
-                CheckAgreement_Parameters(m.Origin, prevMethod.Ins, m.Ins, m.Name, "method", "in-parameter");
-                CheckAgreement_Parameters(m.Origin, prevMethod.Outs, m.Outs, m.Name, "method", "out-parameter");
+                CheckAgreement_TypeParameters(m.Origin, prevMethod.TypeArgs, m.TypeArgs, m.Name, "method", true);
+                CheckAgreement_Parameters(m.Origin, prevMethod.Ins, m.Ins, m.Name, "method", "in-parameter", true);
+                CheckAgreement_Parameters(m.Origin, prevMethod.Outs, m.Outs, m.Name, "method", "out-parameter", true);
               }
               currentMethod = m;
               var replacementBody = m.Body;
@@ -865,7 +945,8 @@ namespace Microsoft.Dafny {
 
       return nw;
     }
-    void CheckAgreement_TypeParameters(IOrigin tok, List<TypeParameter> old, List<TypeParameter> nw, string name, string thing) {
+    void CheckAgreement_TypeParameters(IOrigin tok, List<TypeParameter> old, List<TypeParameter> nw, string name, string thing,
+      bool mayRename = false) {
       Contract.Requires(tok != null);
       Contract.Requires(old != null);
       Contract.Requires(nw != null);
@@ -877,7 +958,7 @@ namespace Microsoft.Dafny {
         for (int i = 0; i < old.Count; i++) {
           var o = old[i];
           var n = nw[i];
-          if (o.Name != n.Name) {
+          if (o.Name != n.Name && !(mayRename && renamingAllowed)) {
             Error(ErrorId.ref_mismatched_type_parameter_name, n.Origin, "type parameters are not allowed to be renamed from the names given in the {0} in the module being refined (expected '{1}', found '{2}')", thing, o.Name, n.Name);
           } else {
             // This explains what we want to do and why:
@@ -935,15 +1016,16 @@ namespace Microsoft.Dafny {
       for (var i = 0; i < old.TypeBounds.Count; i++) {
         var oldBound = old.TypeBounds[i];
         var newBound = nw.TypeBounds[i];
-        if (!TypesAreSyntacticallyEqual(oldBound, newBound)) {
+        if (!TypesAgree(oldBound, newBound)) {
           Error(ErrorId.ref_mismatched_type_parameter_bound, tok,
             $"type bound for type parameter '{nw.Name}' of {thing} '{name}' is different from the corresponding type bound of the " +
-            $"corresponding type parameter of the corresponding {thing} in the module it refines (expected '{oldBound}', found '{newBound}')");
+            $"corresponding type parameter of the corresponding {thing} in the module it refines (expected '{InRefinementNames(oldBound)}', found '{newBound}')");
         }
       }
     }
 
-    void CheckAgreement_Parameters(IOrigin tok, List<Formal> old, List<Formal> nw, string name, string thing, string parameterKind) {
+    void CheckAgreement_Parameters(IOrigin tok, List<Formal> old, List<Formal> nw, string name, string thing, string parameterKind,
+      bool mayRename = false) {
       Contract.Requires(tok != null);
       Contract.Requires(old != null);
       Contract.Requires(nw != null);
@@ -956,7 +1038,7 @@ namespace Microsoft.Dafny {
         for (int i = 0; i < old.Count; i++) {
           var o = old[i];
           var n = nw[i];
-          if (o.Name != n.Name) {
+          if (o.Name != n.Name && !(mayRename && renamingAllowed)) {
             Error(ErrorId.ref_mismatched_kind_name, n.Origin, "there is a difference in name of {0} {1} ('{2}' versus '{3}') of {4} {5} compared to corresponding {4} in the module it refines", parameterKind, i, n.Name, o.Name, thing, name);
           } else if (!o.IsGhost && n.IsGhost) {
             Error(ErrorId.ref_mismatched_kind_ghost, n.Origin, "{0} '{1}' of {2} {3} cannot be changed, compared to the corresponding {2} in the module it refines, from non-ghost to ghost", parameterKind, n.Name, thing, name);
@@ -970,8 +1052,8 @@ namespace Microsoft.Dafny {
             Error(ErrorId.ref_mismatched_kind_older, n.Origin, "{0} '{1}' of {2} {3} cannot be changed, compared to the corresponding {2} in the module it refines, from non-older to older", parameterKind, n.Name, thing, name);
           } else if (o.IsOlder && !n.IsOlder) {
             Error(ErrorId.ref_mismatched_kind_non_older, n.Origin, "{0} '{1}' of {2} {3} cannot be changed, compared to the corresponding {2} in the module it refines, from older to non-older", parameterKind, n.Name, thing, name);
-          } else if (!TypesAreSyntacticallyEqual(o.Type, n.Type)) {
-            Error(ErrorId.ref_mismatched_parameter_type, n.Origin, "the type of {0} '{1}' is different from the type of the same {0} in the corresponding {2} in the module it refines ('{3}' instead of '{4}')", parameterKind, n.Name, thing, n.Type, o.Type);
+          } else if (!TypesAgree(o.Type, n.Type)) {
+            Error(ErrorId.ref_mismatched_parameter_type, n.Origin, "the type of {0} '{1}' is different from the type of the same {0} in the corresponding {2} in the module it refines ('{3}' instead of '{4}')", parameterKind, n.Name, thing, n.Type, InRefinementNames(o.Type));
           } else if (n.DefaultValue != null) {
             Error(ErrorId.ref_refined_formal_may_not_have_default, n.Origin, "a refining formal parameter ('{0}') in a refinement module is not allowed to give a default-value expression", n.Name);
           }
@@ -983,6 +1065,22 @@ namespace Microsoft.Dafny {
       Contract.Requires(t != null);
       Contract.Requires(u != null);
       return t.ToString() == u.ToString();
+    }
+
+    /// <summary>
+    /// Whether a type "old" of the base declaration and the type "nw" that the refining declaration wrote
+    /// in its place are syntactically the same, once "old" is put in the names of the refining declaration.
+    /// </summary>
+    bool TypesAgree(Type old, Type nw) {
+      return TypesAreSyntacticallyEqual(InRefinementNames(old), nw);
+    }
+
+    /// <summary>
+    /// A type of the refined module, written with the names the refining declaration gives
+    /// the type parameters. This is the type itself unless a renaming is in effect.
+    /// </summary>
+    Type InRefinementNames(Type old) {
+      return refinementCloner.HasRenames ? refinementCloner.RenamedForComparison(old) : old;
     }
 
     /// <summary>
@@ -1298,7 +1396,7 @@ namespace Microsoft.Dafny {
             if (cOld != null && cNew.Lhs.WasResolved() && cOld.Lhs.WasResolved()) {
               var newLhs = cNew.Lhs.Resolved as IdentifierExpr;
               var oldLhs = cOld.Lhs.Resolved as IdentifierExpr;
-              if (newLhs != null && oldLhs != null && newLhs.Name == oldLhs.Name) {
+              if (newLhs != null && oldLhs != null && newLhs.Name == refinementCloner.NameInRefinement(oldLhs.Var)) {
                 if (!(cNew.Rhs is TypeRhs) && cOld.Rhs is HavocRhs) {
                   doMerge = true;
                 }
@@ -1411,7 +1509,7 @@ namespace Microsoft.Dafny {
       for (int i = 0; i < old.Count; i++) {
         var a = old[i].WasResolved() ? old[i].Resolved as IdentifierExpr : null;
         var b = nw[i] as NameSegment;
-        if (a != null && b != null && a.Name == b.Name) {
+        if (a != null && b != null && refinementCloner.NameInRefinement(a.Var) == b.Name) {
           // cool
         } else {
           return false;
@@ -1696,18 +1794,157 @@ namespace Microsoft.Dafny {
     // declaration (a skeleton's "var x := e;" in place of "var x;"), mapped to the base's local.
     internal readonly Dictionary<IVariable, IVariable> RefinedLocals = new();
 
+    // Copies text of the refining module itself, which is neither an inherited occurrence nor
+    // subject to a renaming: it is written in the new names.
     private T Unrecorded<T>(Func<T> action) {
+      var saved = InheritedOccurrences;
+      var savedRenames = renames;
+      InheritedOccurrences = null;
+      renames = null;
+      try {
+        return action();
+      } finally {
+        InheritedOccurrences = saved;
+        renames = savedRenames;
+      }
+    }
+
+    // Issue 106 (--refinement-renaming): the parameters, results and type parameters of the base
+    // declaration being merged that the refining declaration renames, each with its new name. The
+    // keys are Formals and TypeParameters of the base module. Null when nothing is renamed.
+    //
+    // The inherited text is renamed by what each name was resolved to in the base module: an
+    // occurrence that the base resolved to a renamed binder gets the new name, and no other does.
+    private Dictionary<object, string> renames;
+
+    // The renamed binders of the refining module, each with the base binder it stands for.
+    internal readonly Dictionary<object, object> RenamedBinders = new(ReferenceEqualityComparer.Instance);
+
+    // The inherited occurrences that were given a new name. Each must resolve, to its renamed binder.
+    internal readonly HashSet<object> RenamedOccurrences = new(ReferenceEqualityComparer.Instance);
+
+    // Inherited occurrences of a name that a renaming gives up or takes, in text that the base
+    // module left unresolved, so that the renaming cannot tell what they refer to.
+    internal readonly List<(IOrigin Origin, string Name)> UntraceableOccurrences = [];
+
+    internal bool HasRenames => renames != null;
+
+    private sealed class RenameScope(RefinementCloner cloner, Dictionary<object, string> saved) : IDisposable {
+      public void Dispose() {
+        cloner.renames = saved;
+      }
+    }
+
+    /// <summary>
+    /// Adds the given renamings to those in force, until the result is disposed.
+    /// </summary>
+    internal IDisposable Renaming(List<(object Binder, string NewName)> more) {
+      var scope = new RenameScope(this, renames);
+      if (more.Count != 0) {
+        renames = renames == null
+          ? new Dictionary<object, string>(ReferenceEqualityComparer.Instance)
+          : new Dictionary<object, string>(renames, ReferenceEqualityComparer.Instance);
+        foreach (var (binder, newName) in more) {
+          renames[binder] = newName;
+        }
+      }
+      return scope;
+    }
+
+    /// <summary>
+    /// The name that a binder of the base module has in the merged declaration.
+    /// </summary>
+    internal string NameInRefinement(IVariable variable) {
+      return renames != null && variable != null && renames.TryGetValue(variable, out var newName) ? newName : variable?.Name;
+    }
+
+    /// <summary>
+    /// A type of the base declaration, under the renaming in force, to compare with the type that
+    /// the refining declaration wrote.
+    /// </summary>
+    internal Type RenamedForComparison(Type t) {
       var saved = InheritedOccurrences;
       InheritedOccurrences = null;
       try {
-        return action();
+        return CloneType(t);
       } finally {
         InheritedOccurrences = saved;
       }
     }
 
+    private bool IsRenamedName(string name) {
+      foreach (var (binder, newName) in renames) {
+        if (newName == name || (binder is IVariable v ? v.Name : ((TypeParameter)binder).Name) == name) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    public override Name CloneBinderName(NonglobalVariable variable) {
+      if (renames != null && renames.TryGetValue(variable, out var newName)) {
+        return new Name(Origin(variable.NameNode.Origin), newName);
+      }
+      return base.CloneBinderName(variable);
+    }
+
+    public override Name CloneTypeParamName(TypeParameter tp) {
+      if (renames != null && renames.TryGetValue(tp, out var newName)) {
+        return new Name(Origin(tp.NameNode.Origin), newName);
+      }
+      return base.CloneTypeParamName(tp);
+    }
+
+    public override Formal CloneFormal(Formal formal, bool isReference) {
+      var clone = base.CloneFormal(formal, isReference);
+      if (renames != null && !isReference && renames.ContainsKey(formal)) {
+        RenamedBinders[clone] = formal;
+      }
+      return clone;
+    }
+
+    public override TypeParameter CloneTypeParam(TypeParameter tp) {
+      var clone = base.CloneTypeParam(tp);
+      if (renames != null && renames.ContainsKey(tp)) {
+        RenamedBinders[clone] = tp;
+      }
+      return clone;
+    }
+
+    // The renamed binder, if any, that an expression of the base module was resolved to.
+    private string NewNameOf(Expression expr) {
+      var seen = 0;
+      var e = expr;
+      while (e is ConcreteSyntaxExpression { ResolvedExpression: { } resolved } && seen++ < 8) {
+        e = resolved;
+      }
+      object target = e switch {
+        IdentifierExpr id => id.Var,
+        ResolverIdentifierExpr rid => rid.Decl,
+        _ => null
+      };
+      return target != null && renames.TryGetValue(target, out var newName) ? newName : null;
+    }
+
+    // Nonzero while the name path of a type is being copied. Its segments are not expressions,
+    // and the base module does not resolve them as such.
+    private int typePathDepth;
+
     public override Expression CloneExpr(Expression expr) {
       var clone = base.CloneExpr(expr);
+      if (renames != null && typePathDepth == 0) {
+        if (expr is NameSegment segment && clone is NameSegment segmentClone) {
+          if (NewNameOf(segment) is { } newName) {
+            segmentClone.Name = newName;
+            RenamedOccurrences.Add(segmentClone);
+          } else if (segment.ResolvedExpression == null && InheritedOccurrences != null && IsRenamedName(segment.Name)) {
+            UntraceableOccurrences.Add((segment.Origin, segment.Name));
+          }
+        } else if (expr is IdentifierExpr { Var: { } variable } && clone is IdentifierExpr identifierClone &&
+                   renames.TryGetValue(variable, out var newName)) {
+          identifierClone.Name = newName;
+        }
+      }
       if (expr is NameSegment or ExprDotName or ApplySuffix) {
         Record(clone, expr);
       }
@@ -1715,7 +1952,22 @@ namespace Microsoft.Dafny {
     }
 
     public override Type CloneType(Type t) {
-      var clone = base.CloneType(t);
+      Type clone;
+      if (renames != null && t is UserDefinedType { ResolvedClass: TypeParameter tp } && renames.TryGetValue(tp, out var newName)) {
+        clone = new UserDefinedType(Origin(t.Origin), newName, null);
+        RenamedOccurrences.Add(clone);
+      } else {
+        if (renames != null && t is UserDefinedType { ResolvedClass: null, NamePath: NameSegment } unresolved &&
+            InheritedOccurrences != null && IsRenamedName(unresolved.Name)) {
+          UntraceableOccurrences.Add((unresolved.Origin, unresolved.Name));
+        }
+        typePathDepth += t is UserDefinedType ? 1 : 0;
+        try {
+          clone = base.CloneType(t);
+        } finally {
+          typePathDepth -= t is UserDefinedType ? 1 : 0;
+        }
+      }
       if (t is UserDefinedType) {
         Record(clone, t);
       }

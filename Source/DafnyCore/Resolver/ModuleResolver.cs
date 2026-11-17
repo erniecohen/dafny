@@ -1360,6 +1360,13 @@ namespace Microsoft.Dafny {
         return;
       }
 
+      if (Options.Get(CommonOptionBag.RefinementRenaming) && Options.Get(CommonOptionBag.LegacyInheritedNameCapture)) {
+        // A renaming is sound only if it captures no name in inherited code, which is what the legacy option stops checking.
+        reporter.Error(MessageSource.Resolver, Token.NoToken,
+          "--refinement-renaming cannot be used with --legacy-inherited-name-capture");
+        return;
+      }
+
       // ---------------------------------- Pass 0 ----------------------------------
       // This pass:
       // * resolves names, introduces (and may solve) type constraints

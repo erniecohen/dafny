@@ -1,0 +1,101 @@
+
+Dafny program verifier finished with 26 verified, 0 errors
+
+Dafny program verifier finished with 26 verified, 0 errors
+
+Dafny program verifier finished with 27 verified, 0 errors
+
+Dafny program verifier finished with 27 verified, 0 errors
+github-issue-106-rejected.dfy(5,32): Error: a renaming to 'k' in refining module 'B0' changes what the name 'k' refers to in code inherited from module 'A': in 'A' it refers to const field 'A.k' (declared at github-issue-106-rejected.dfy(4,8)), but in 'B0' it would refer to parameter 'k' (declared at github-issue-106-rejected.dfy(5,13))
+github-issue-106-rejected.dfy(22,7): Related location: refining module
+github-issue-106-rejected.dfy(6,74): Error: a renaming to 'y' in refining module 'B1' changes what the name 'x' refers to in code inherited from module 'A': in 'A' it refers to parameter 'x' (declared at github-issue-106-rejected.dfy(6,19)), but in 'B1' it would refer to bound variable 'y' (declared at github-issue-106-rejected.dfy(6,42))
+github-issue-106-rejected.dfy(24,7): Related location: refining module
+github-issue-106-rejected.dfy(6,89): Error: a renaming to 'y' in refining module 'B1' changes what the name 'x' refers to in code inherited from module 'A': in 'A' it refers to parameter 'x' (declared at github-issue-106-rejected.dfy(6,19)), but in 'B1' it would refer to bound variable 'y' (declared at github-issue-106-rejected.dfy(6,42))
+github-issue-106-rejected.dfy(24,7): Related location: refining module
+github-issue-106-rejected.dfy(7,23): Error: Duplicate parameter name: z
+github-issue-106-rejected.dfy(26,7): Related location: refining module
+github-issue-106-rejected.dfy(8,55): Error: a renaming to 'c' in refining module 'B3' changes what the name 'a' refers to in code inherited from module 'A': in 'A' it refers to parameter 'a' (declared at github-issue-106-rejected.dfy(8,11)), but in 'B3' it would refer to local variable 'c' (declared at github-issue-106-rejected.dfy(8,42))
+github-issue-106-rejected.dfy(28,7): Related location: refining module
+github-issue-106-rejected.dfy(11,23): Error: a renaming to 'V' in refining module 'B4' changes what the name 'V' refers to in code inherited from module 'A': in 'A' it refers to abstract type 'A.V' (declared at github-issue-106-rejected.dfy(10,7)), but in 'B4' it would refer to type parameter 'V' (declared at github-issue-106-rejected.dfy(11,13))
+github-issue-106-rejected.dfy(30,7): Related location: refining module
+github-issue-106-rejected.dfy(32,34): Error: the type of parameter 'y' is different from the type of the same parameter in the corresponding function in the module it refines ('nat' instead of 'int')
+github-issue-106-rejected.dfy(34,31): Error: function 'Two' is declared with a different number of parameter (1 instead of 2) than the corresponding function in the module it refines
+github-issue-106-rejected.dfy(13,50): Error: a renaming to 'y' in refining module 'B7' changes what the name 'x' refers to in code inherited from module 'A': in 'A' it refers to parameter 'x' (declared at github-issue-106-rejected.dfy(13,15)), but in 'B7' it would refer to bound variable 'y' (declared at github-issue-106-rejected.dfy(13,34))
+github-issue-106-rejected.dfy(36,7): Related location: refining module
+github-issue-106-rejected.dfy(14,30): Error: Duplicate parameter name: b
+github-issue-106-rejected.dfy(38,7): Related location: refining module
+github-issue-106-rejected.dfy(16,27): Error: a renaming to 'U' in refining module 'B9' changes what the name 'U' refers to in code inherited from module 'A': in 'A' it refers to type parameter 'U' (declared at github-issue-106-rejected.dfy(15,10)), but in 'B9' it would refer to type parameter 'U' (declared at github-issue-106-rejected.dfy(16,21))
+github-issue-106-rejected.dfy(40,7): Related location: refining module
+github-issue-106-rejected.dfy(16,27): Error: a renaming to 'S' in refining module 'B10' changes what the name 'U' refers to in code inherited from module 'A': in 'A' it refers to type parameter 'U' (declared at github-issue-106-rejected.dfy(15,10)), but in 'B10' it would refer to type parameter 'S' (declared at github-issue-106-rejected.dfy(16,21))
+github-issue-106-rejected.dfy(42,7): Related location: refining module
+github-issue-106-rejected.dfy(49,17): Error: the parameter labelled 'x' is called 'p' only inside function 'Two'; a named argument uses its label 'x'
+github-issue-106-rejected.dfy(49,16): Error: function parameter 'x' at index 0 requires an argument of type int
+github-issue-106-rejected.dfy(50,15): Error: the parameter labelled 't' is called 'T' only inside function 'G'; a named argument uses its label 't'
+github-issue-106-rejected.dfy(50,14): Error: function parameter 't' requires an argument of type T
+github-issue-106-rejected.dfy(52,20): Error: the parameter named 'x' is already given positionally
+github-issue-106-rejected.dfy(52,16): Error: function parameter 'y' at index 1 requires an argument of type int
+18 resolution/type errors detected in github-issue-106-rejected.dfy
+github-issue-106-rejected.dfy(5,32): Error: a renaming to 'k' in refining module 'B0' changes what the name 'k' refers to in code inherited from module 'A': in 'A' it refers to const field 'A.k' (declared at github-issue-106-rejected.dfy(4,8)), but in 'B0' it would refer to parameter 'k' (declared at github-issue-106-rejected.dfy(5,13))
+github-issue-106-rejected.dfy(22,7): Related location: refining module
+github-issue-106-rejected.dfy(6,74): Error: a renaming to 'y' in refining module 'B1' changes what the name 'x' refers to in code inherited from module 'A': in 'A' it refers to parameter 'x' (declared at github-issue-106-rejected.dfy(6,19)), but in 'B1' it would refer to bound variable 'y' (declared at github-issue-106-rejected.dfy(6,42))
+github-issue-106-rejected.dfy(24,7): Related location: refining module
+github-issue-106-rejected.dfy(6,89): Error: a renaming to 'y' in refining module 'B1' changes what the name 'x' refers to in code inherited from module 'A': in 'A' it refers to parameter 'x' (declared at github-issue-106-rejected.dfy(6,19)), but in 'B1' it would refer to bound variable 'y' (declared at github-issue-106-rejected.dfy(6,42))
+github-issue-106-rejected.dfy(24,7): Related location: refining module
+github-issue-106-rejected.dfy(7,23): Error: Duplicate parameter name: z
+github-issue-106-rejected.dfy(26,7): Related location: refining module
+github-issue-106-rejected.dfy(8,55): Error: a renaming to 'c' in refining module 'B3' changes what the name 'a' refers to in code inherited from module 'A': in 'A' it refers to parameter 'a' (declared at github-issue-106-rejected.dfy(8,11)), but in 'B3' it would refer to local variable 'c' (declared at github-issue-106-rejected.dfy(8,42))
+github-issue-106-rejected.dfy(28,7): Related location: refining module
+github-issue-106-rejected.dfy(11,23): Error: a renaming to 'V' in refining module 'B4' changes what the name 'V' refers to in code inherited from module 'A': in 'A' it refers to abstract type 'A.V' (declared at github-issue-106-rejected.dfy(10,7)), but in 'B4' it would refer to type parameter 'V' (declared at github-issue-106-rejected.dfy(11,13))
+github-issue-106-rejected.dfy(30,7): Related location: refining module
+github-issue-106-rejected.dfy(32,34): Error: the type of parameter 'y' is different from the type of the same parameter in the corresponding function in the module it refines ('nat' instead of 'int')
+github-issue-106-rejected.dfy(34,31): Error: function 'Two' is declared with a different number of parameter (1 instead of 2) than the corresponding function in the module it refines
+github-issue-106-rejected.dfy(13,50): Error: a renaming to 'y' in refining module 'B7' changes what the name 'x' refers to in code inherited from module 'A': in 'A' it refers to parameter 'x' (declared at github-issue-106-rejected.dfy(13,15)), but in 'B7' it would refer to bound variable 'y' (declared at github-issue-106-rejected.dfy(13,34))
+github-issue-106-rejected.dfy(36,7): Related location: refining module
+github-issue-106-rejected.dfy(14,30): Error: Duplicate parameter name: b
+github-issue-106-rejected.dfy(38,7): Related location: refining module
+github-issue-106-rejected.dfy(16,27): Error: a renaming to 'U' in refining module 'B9' changes what the name 'U' refers to in code inherited from module 'A': in 'A' it refers to type parameter 'U' (declared at github-issue-106-rejected.dfy(15,10)), but in 'B9' it would refer to type parameter 'U' (declared at github-issue-106-rejected.dfy(16,21))
+github-issue-106-rejected.dfy(40,7): Related location: refining module
+github-issue-106-rejected.dfy(16,27): Error: a renaming to 'S' in refining module 'B10' changes what the name 'U' refers to in code inherited from module 'A': in 'A' it refers to type parameter 'U' (declared at github-issue-106-rejected.dfy(15,10)), but in 'B10' it would refer to type parameter 'S' (declared at github-issue-106-rejected.dfy(16,21))
+github-issue-106-rejected.dfy(42,7): Related location: refining module
+github-issue-106-rejected.dfy(49,17): Error: the parameter labelled 'x' is called 'p' only inside function 'Two'; a named argument uses its label 'x'
+github-issue-106-rejected.dfy(49,16): Error: function parameter 'x' at index 0 requires an argument of type int
+github-issue-106-rejected.dfy(50,15): Error: the parameter labelled 't' is called 'T' only inside function 'G'; a named argument uses its label 't'
+github-issue-106-rejected.dfy(50,14): Error: function parameter 't' requires an argument of type T
+github-issue-106-rejected.dfy(52,20): Error: the parameter named 'x' is already given positionally
+github-issue-106-rejected.dfy(52,16): Error: function parameter 'y' at index 1 requires an argument of type int
+18 resolution/type errors detected in github-issue-106-rejected.dfy
+github-issue-106-off.dfy(10,13): Error: there is a difference in name of parameter 0 ('y' versus 'x') of function F compared to corresponding function in the module it refines
+github-issue-106-off.dfy(11,11): Error: the name of function return value 'R'(s) differs from the name of corresponding function return value in the module it refines (r)
+github-issue-106-off.dfy(12,13): Error: type parameters are not allowed to be renamed from the names given in the function in the module being refined (expected 'T', found 'S')
+github-issue-106-off.dfy(12,16): Error: the type of parameter 't' is different from the type of the same parameter in the corresponding function in the module it refines ('S' instead of 'T')
+github-issue-106-off.dfy(12,11): Error: the result type of function 'G' (S) differs from the result type of the corresponding function in the module it refines (T)
+github-issue-106-off.dfy(13,11): Error: there is a difference in name of in-parameter 0 ('p' versus 'a') of method M compared to corresponding method in the module it refines
+github-issue-106-off.dfy(13,28): Error: there is a difference in name of out-parameter 0 ('q' versus 'b') of method M compared to corresponding method in the module it refines
+github-issue-106-off.dfy(14,10): Error: type parameters are not allowed to be renamed from the names given in the class in the module being refined (expected 'U', found 'W')
+github-issue-106-off.dfy(10,28): Error: unresolved identifier: y
+9 resolution/type errors detected in github-issue-106-off.dfy
+github-issue-106-off.dfy(10,13): Error: there is a difference in name of parameter 0 ('y' versus 'x') of function F compared to corresponding function in the module it refines
+github-issue-106-off.dfy(11,11): Error: the name of function return value 'R'(s) differs from the name of corresponding function return value in the module it refines (r)
+github-issue-106-off.dfy(12,13): Error: type parameters are not allowed to be renamed from the names given in the function in the module being refined (expected 'T', found 'S')
+github-issue-106-off.dfy(12,16): Error: the type of parameter 't' is different from the type of the same parameter in the corresponding function in the module it refines ('S' instead of 'T')
+github-issue-106-off.dfy(12,11): Error: the result type of function 'G' (S) differs from the result type of the corresponding function in the module it refines (T)
+github-issue-106-off.dfy(13,11): Error: there is a difference in name of in-parameter 0 ('p' versus 'a') of method M compared to corresponding method in the module it refines
+github-issue-106-off.dfy(13,28): Error: there is a difference in name of out-parameter 0 ('q' versus 'b') of method M compared to corresponding method in the module it refines
+github-issue-106-off.dfy(14,10): Error: type parameters are not allowed to be renamed from the names given in the class in the module being refined (expected 'U', found 'W')
+github-issue-106-off.dfy(10,28): Error: unresolved identifier: y
+9 resolution/type errors detected in github-issue-106-off.dfy
+(0,-1): Error: --refinement-renaming cannot be used with --legacy-inherited-name-capture
+github-issue-106-off.dfy(10,13): Error: there is a difference in name of parameter 0 ('y' versus 'x') of function F compared to corresponding function in the module it refines
+github-issue-106-off.dfy(11,11): Error: the name of function return value 'R'(s) differs from the name of corresponding function return value in the module it refines (r)
+github-issue-106-off.dfy(12,13): Error: type parameters are not allowed to be renamed from the names given in the function in the module being refined (expected 'T', found 'S')
+github-issue-106-off.dfy(12,16): Error: the type of parameter 't' is different from the type of the same parameter in the corresponding function in the module it refines ('S' instead of 'T')
+github-issue-106-off.dfy(12,11): Error: the result type of function 'G' (S) differs from the result type of the corresponding function in the module it refines (T)
+github-issue-106-off.dfy(13,11): Error: there is a difference in name of in-parameter 0 ('p' versus 'a') of method M compared to corresponding method in the module it refines
+github-issue-106-off.dfy(13,28): Error: there is a difference in name of out-parameter 0 ('q' versus 'b') of method M compared to corresponding method in the module it refines
+github-issue-106-off.dfy(14,10): Error: type parameters are not allowed to be renamed from the names given in the class in the module being refined (expected 'U', found 'W')
+(0,-1): Error: --refinement-renaming cannot be used with --legacy-inherited-name-capture
+10 resolution/type errors detected in github-issue-106-off.dfy
+
+Dafny program verifier finished with 0 verified, 0 errors
+
+Dafny program verifier finished with 0 verified, 0 errors

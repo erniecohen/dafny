@@ -864,3 +864,62 @@ rejects one program of the suite, `exports/OpenImportRefined.dfy`, whose `Refine
 declarations, not their expansions.  The hidden `--legacy-inherited-name-capture` option restores
 the old rule for comparison and migration.  The regression is `git-issues/github-issue-410.dfy`;
 the release note is `docs/dev/news/410.fix`.
+
+## Renaming in a refinement ([issue 106](https://github.com/erniecohen/dafny/issues/106), [issue 107](https://github.com/erniecohen/dafny/issues/107))
+
+`--refinement-renaming` is an opt-in feature: stage 1 and 2 of the refinement design draft
+([pull request 401](https://github.com/erniecohen/dafny/pull/401), sections 2.3 and 2.5).  A
+declaration of a refining module `R` may rename the type parameters, the out-parameters, the
+result and the local names of the in-parameters of the declaration of `B` that it refines, by
+position.  With the option off, the name-agreement errors are those of 4.11.0, and nothing else in
+this change is reached.
+
+*Labels.*  A `Formal` has a `Label`, the name a named argument uses.  It is the parameter's name
+in the first declaration of the chain, and both resolvers bind named arguments by it, so no call,
+inherited or not, is affected by a renaming.  The label is derived where a formal is copied under
+a different name, and so follows every later copy.
+
+*The renaming.*  The refinement cloner copies `B`'s declaration under a map from `B`'s binders to
+their new names.  It renames by what `B` resolved each name to, not by spelling: a name segment
+or type name that `B` resolved to a renamed binder gets the new name, and no other occurrence is
+touched.  The copy is then resolved in `R` like any inherited code.
+
+*Why it is sound.*  The copy must mean what `B`'s text meant.  The check of
+[issue 410](https://github.com/erniecohen/dafny/issues/410) already requires every inherited
+occurrence to denote the counterpart of what it denoted in `B`; three clauses extend it to
+renamed binders.
+(1) The counterpart of a renamed binder of `B` is exactly its renamed copy in `R`, and a renamed
+copy is the counterpart of nothing else.  This rejects a new name that an inner binder of the
+inherited code captures, and a new name that captures an inherited use of another variable,
+constant or type.  (Without a renaming, 410 accepts any parameter of the same name, which is not
+enough here.)
+(2) A renamed occurrence that `R`'s resolver does not resolve itself (because a desugaring
+resolves a copy instead) is an error, where 410 skips an unresolved occurrence.
+(3) An inherited occurrence that `B` left unresolved and that spells an old or a new name of a
+renaming in force is an error, since the map cannot tell what it refers to.
+Since the argument rests on the 410 check, the option is rejected together with
+`--legacy-inherited-name-capture`.  Its kind is **weakens only** for the verifier: it adds no fact
+or axiom; under the option, a renamed declaration is verified as the alpha-variant that the
+cloner wrote.
+
+*Signature agreement.*  The types of the parameters, the result type and the type-parameter
+bounds are still compared as text, after `B`'s side is put in `R`'s names.  Counts, modifiers and
+type characteristics are compared as before.  Comparing types by their resolved meaning is stage
+3 of the draft and not part of this change.
+
+*Not renamable.*  An iterator's signature can only be repeated with `...`.  The type parameters of
+an abstract type with members that a type synonym refines (`--synonym-refines-abstract-type`) keep
+their names.  A label has no syntax of its own: a refining declaration cannot rename it, and the
+printer prints local names.
+
+*Three copies made once.*  A field and an array allocation each cloned their explicit type twice,
+for a syntactic and a working slot that the parser fills with one object; the resolver resolves
+one, so the other copy could not be checked by clause (2).  The copy constructors now keep them
+one object, as the parser does.  A `match` pattern's type annotation was not cloned at all: the
+copy shared the type object that `B` had resolved, so a pattern inherited by `R` kept a type of
+`B`, and the resolver crashed or reported a mismatch whenever that type is a type parameter or a
+type that `R` refines.  It is now cloned and resolved in `R`.  This last change is not behind the
+option; it turns a crash or a spurious error into an accepted program.
+
+The regression is `git-issues/github-issue-106.dfy` with its inputs; the release note is
+`docs/dev/news/106.feat`; the manual's section is "Renaming parameters and type parameters".
