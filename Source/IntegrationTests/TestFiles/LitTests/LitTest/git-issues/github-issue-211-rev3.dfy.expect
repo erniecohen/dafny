@@ -116,5 +116,6 @@ github-issue-211-rev3-refine-body-loopy.dfy(12,41): Error: decreases clause migh
 
 Dafny program verifier finished with 1 verified, 1 error
 a refinement body that breaks a {:termination_closed} promise: rejected
-github-issue-211-rev3-refine-body-closed.dfy(12,39): Error: modular termination: the {:termination_closed} promise of 'K' is not established; its body, specifications or implicit evaluations can reach open dispatch, an unknown application or an imported General contract
-1 resolution/type errors detected in github-issue-211-rev3-refine-body-closed.dfy
+github-issue-211-rev3-refine-body-closed.dfy(13,39): Error: modular termination: the {:termination_closed} promise of 'K' is not established; its body, specifications or implicit evaluations can reach open dispatch, an unknown application or an imported General contract
+github-issue-211-rev3-refine-body-closed.dfy(16,17): Error: modular termination: the {:termination_closed} promise of 'K' is not established; its body, specifications or implicit evaluations can reach open dispatch, an unknown application or an imported General contract
+2 resolution/type errors detected in github-issue-211-rev3-refine-body-closed.dfy
