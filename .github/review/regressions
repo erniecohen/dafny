@@ -746,3 +746,6 @@ git-issues/git-issue-1665.dfy
 
 # Asking whether a recursive datatype with no values is nonempty (a (00) type argument, a (00) type refined by it, a local of it) reports an error instead of overflowing the stack in Type.GetAutoInit, for direct, mutual, arrow and non-regular recursion, while types with values keep their answers (https://github.com/erniecohen/dafny/issues/413).
 git-issues/github-issue-413.dfy
+
+# A refining module that adds a field subject to definite assignment to a class verifies the constructor it inherits unchanged, which cannot assign the field; dafny verify skipped the copy and proved false (https://github.com/erniecohen/dafny/issues/411).
+git-issues/github-issue-411.dfy
