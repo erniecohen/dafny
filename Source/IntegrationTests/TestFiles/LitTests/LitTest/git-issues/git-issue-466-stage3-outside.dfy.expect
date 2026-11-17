@@ -2,7 +2,7 @@ git-issue-466-stage3-outside.dfy(16,29): Warning: trait 'T' has {:termination fa
 
 Dafny program verifier finished with 5 verified, 0 errors
 git-issue-466-stage3-outside.dfy(16,29): Warning: trait 'T' has {:termination false} and no {:axiom} annotation: --modular-termination checks the calls dispatched through it only in code verified with that option
-git-issue-466-stage3-outside.dfy(26,42): Error: decreases clause might not decrease (the dispatched callee has no 'decreases {:global}' bound, which --modular-termination requires)
-git-issue-466-stage3-outside.dfy(35,42): Error: decreases clause might not decrease (the dispatched callee has no 'decreases {:global}' bound, which --modular-termination requires)
+git-issue-466-stage3-outside.dfy(26,42): Error: decreases clause might not decrease (the dispatched callee has no 'decreases {:global}' bound, which --modular-termination requires of a member of a {:termination false} trait)
+git-issue-466-stage3-outside.dfy(35,42): Error: decreases clause might not decrease (the dispatched callee has no 'decreases {:global}' bound, which --modular-termination requires of a member of a {:termination false} trait)
 
 Dafny program verifier finished with 5 verified, 2 errors

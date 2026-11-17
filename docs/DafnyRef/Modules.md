@@ -1023,7 +1023,8 @@ The following are not yet supported. Each is an error, so nothing is accepted
 that a later stage would have to reject:
 
 * a member of a group that is abstract, that refines or replaces a module, or
-  that declares an abstract import or an invariant;
+  that declares an abstract import or an invariant, and a type of a member that
+  inherits an invariant from a trait;
 * a module outside a group that refines a member, or that names a member in an
   abstract import;
 * imports of the members of one group that name their targets through each

@@ -2,10 +2,11 @@
 // stage: what a recursive module group may not have yet.  Each needs a rule of its own, which a
 // later stage adds, so until then each is an error and not an unchecked acceptance: an abstract
 // member, a member that refines or replaces a module, an abstract import in a member, an invariant
-// in a member, and a module outside the group that refines a member or names one in an
-// abstract import.  (A type that extends a trait of another member was in this list until the
-// third stage; see git-issue-466-stage3-termination.dfy.)
+// in a member, declared or inherited from a trait below the group, and a module outside the group
+// that refines a member or names one in an abstract import.  (A type that extends a trait of
+// another member was in this list until the third stage; see git-issue-466-stage3-termination.dfy.)
 // RUN: %exits-with 2 %resolve --member-invariants --recursive-modules "%s" > "%t"
+// RUN: %exits-with 2 %resolve --member-invariants --recursive-modules --allow-warnings "%S/Inputs/git-issue-466-inherited-invariant.dfy" >> "%t"
 // RUN: %diff "%s.expect" "%t"
 
 // an abstract member

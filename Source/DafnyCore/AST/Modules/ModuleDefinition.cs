@@ -551,6 +551,15 @@ Generate module names in the older A_mB_mC style instead of the current A.B.C sc
     Type.PushScope(resolver.moduleInfo.VisibilityScope);
     ModuleResolver.ResolveOpenedImports(resolver.moduleInfo, this, resolver.Reporter, resolver); // opened imports do not persist
     resolver.CreateInheritedInvariantTypeDecls(this);
+    if (group != null) {
+      // An invariant in a member of a recursive module group is not supported yet (RecursiveModuleGroups.CheckSupported
+      // reports the declared ones).  A type of a member may also inherit one from a trait below the group.
+      foreach (var inheritor in TopLevelDecls.OfType<TopLevelDeclWithMembers>().Where(d => d.InvariantTypeDecl != null)) {
+        resolver.reporter.Error(MessageSource.Resolver, inheritor.Origin,
+          $"{inheritor.WhatKind} '{inheritor.Name}' inherits an invariant in module {(FullDafnyName.Length == 0 ? Name : FullDafnyName)}, " +
+          "which is in a recursive module group; this is not yet supported");
+      }
+    }
     var datatypeDependencies = group?.DatatypeDependencies ?? new Graph<IndDatatypeDecl>();
     var codatatypeDependencies = group?.CodatatypeDependencies ?? new Graph<CoDatatypeDecl>();
     var allDeclarations = AllDeclarationsAndNonNullTypeDecls(TopLevelDecls).ToList();
