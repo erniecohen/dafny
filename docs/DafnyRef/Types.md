@@ -838,6 +838,48 @@ method m() {
 }
 ```
 
+#### 5.3.1.5. No functions that read the heap: `T(!reads)` {#sec-no-reading-functions}
+
+A function that reads the heap must not be stored in the heap, because it could then read
+itself and call itself without decreasing, which would make its definition unsound.
+Dafny rejects storing a value whose type contains a general arrow `A ~> B` in a mutable
+field or an array element. In generic code the type of the stored value is a type parameter,
+so Dafny also infers which type parameters a declaration may store in memory, and rejects
+instantiating such a type parameter with a type that contains `~>`, also inside a datatype,
+a newtype or a type synonym. A type parameter may be stored in memory if it occurs in the
+type of a mutable field of its class, trait or iterator; if a value whose type mentions it
+is stored in a mutable field or an array element, or placed in a new array by an
+initializer; or if it is passed to a type parameter that may be stored in memory.
+Constant fields do not count, and neither does the element type of an array type by itself.
+This check is made where the type parameter is instantiated, and also holds when the
+declaration comes from another module, a library, or an export set or abstract import that
+hides its body.
+
+A trait member without a body, or a declaration in an abstract module, stores nothing, so
+callers that go through it would not see what an overriding member or a refining module
+stores. Therefore a type parameter of an overriding member, or of a declaration in a
+refining module, may be stored in memory only if the corresponding type parameter of the
+member it overrides, or of the declaration it refines, may be. Where the base has no body
+but must allow the store, its type parameter is declared with the characteristic `(!reads)`:
+<!-- %check-resolve -->
+```dafny
+trait Writer {
+  method Put<U(!reads)>(a: array<U>, u: U) modifies a requires a.Length > 0
+}
+class ArrayWriter extends Writer {
+  method Put<U>(a: array<U>, u: U) modifies a requires a.Length > 0 { a[0] := u; }
+}
+method Client(w: Writer, a: array<int -> int>) modifies a requires a.Length > 0 {
+  w.Put(a, x => x + 1); // fine: int -> int reads nothing
+}
+```
+Instantiating `Put` with `() ~> bool` is an error. Unlike `(!new)`, `(!reads)` allows
+reference types and arrows that read nothing (`A -> B` and `A --> B`). It applies only to
+type parameters, not to abstract types.
+
+The hidden option `--legacy-generic-function-stores` turns off the check for type
+parameters, for migration and comparison only; it is unsound.
+
 ### 5.3.2. Type parameter variance {#sec-type-parameter-variance}
 
 Type parameters have several different variance and cardinality properties.

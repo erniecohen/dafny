@@ -1,0 +1,1 @@
+Fix a crash of the legacy resolver (`--type-system-refresh:false`) when a program selects a member of a newtype whose base type is not numeric, as in `f.requires(x)` for `newtype Partial = int --> int`. Like `--type-system-refresh`, it now reports that the newtype must be based on a numeric type and that the member does not exist (https://github.com/erniecohen/dafny/issues/417).

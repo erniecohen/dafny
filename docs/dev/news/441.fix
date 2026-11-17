@@ -1,0 +1,1 @@
+Under `--type-system-refresh`, `--rprint` again lists the `bvN` declarations, with `RotateLeft` and `RotateRight`, of the bitvector types the program uses.
