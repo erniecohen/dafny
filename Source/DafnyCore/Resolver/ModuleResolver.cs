@@ -1795,7 +1795,7 @@ namespace Microsoft.Dafny {
       }
 
       if (reporter.Count(ErrorLevel.Error) == prevErrorCount) {
-        new HigherOrderHeapAllocationCheckerConstructor(reporter).VisitDeclarations(declarations);
+        new HigherOrderHeapAllocationCheckerConstructor(reporter, Options).VisitDeclarations(declarations);
       }
 
       if (reporter.Count(ErrorLevel.Error) == prevErrorCount) {
@@ -2416,25 +2416,22 @@ namespace Microsoft.Dafny {
           if (trait != null) {
             // disallowing inheritance in multi module case
             bool termination = true;
+            // Under --modular-termination every trait may be extended from any module (rule 1 of revision 3 of
+            // https://github.com/erniecohen/dafny/issues/211): a foreign implementation is checked instead.
             if (cl.EnclosingModuleDefinition == trait.EnclosingModuleDefinition ||
                 trait.IsObjectTrait ||
+                Options.Get(CommonOptionBag.ModularTermination) ||
                 (Attributes.ContainsBool(trait.Attributes, "termination", ref termination) && !termination) ||
-                (!Options.Get(CommonOptionBag.ModularTermination) && Attributes.Contains(cl.Attributes, "AssumeCrossModuleTermination"))) {
+                Attributes.Contains(cl.Attributes, "AssumeCrossModuleTermination")) {
               // all is good (or the user takes responsibility for the lack of termination checking)
               if (!cl.ParentTraitHeads.Contains(trait)) {
                 cl.ParentTraitHeads.Add(trait);
                 parentRelation.AddEdge(cl, trait);
               }
             } else {
-              if (Options.Get(CommonOptionBag.ModularTermination)) {
-                reporter.Error(MessageSource.Resolver, parentTypeToken,
-                  $"modular termination: {cl.WhatKind} '{cl.Name}' cannot extend sealed trait '{trait.FullName}' from another module; " +
-                  "the defining trait must declare {:termination false}; @AssumeCrossModuleTermination cannot override sealing");
-              } else {
-                reporter.Error(MessageSource.Resolver, parentTypeToken,
-                  $"{cl.WhatKind} '{cl.Name}' is in a different module than trait '{trait.FullName}'. A {cl.WhatKind} may only extend a trait " +
-                  $"in the same module, unless the parent trait is annotated with {{:termination false}} or the {cl.WhatKind} with @AssumeCrossModuleTermination.");
-              }
+              reporter.Error(MessageSource.Resolver, parentTypeToken,
+                $"{cl.WhatKind} '{cl.Name}' is in a different module than trait '{trait.FullName}'. A {cl.WhatKind} may only extend a trait " +
+                $"in the same module, unless the parent trait is annotated with {{:termination false}} or the {cl.WhatKind} with @AssumeCrossModuleTermination.");
             }
 
             if (cl is TraitDecl td) {

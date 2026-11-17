@@ -500,7 +500,8 @@ those v4.11.0 already has, and leaves out the paths that are not product (tests,
 `docs`, `.github`, `friction` and the documents at the top of the tree):
 
     git diff --no-renames --abbrev=7 v4.11.0 <last product commit> -- . \
-      ':(exclude)Source/IntegrationTests' ':(exclude)docs' ':(exclude).github' \
+      ':(exclude)Source/IntegrationTests' ':(exclude,glob)Source/*.Test/**' \
+      ':(exclude,glob)Source/*.Tests/**' ':(exclude)docs' ':(exclude).github' \
       ':(exclude)friction' ':(exclude)REVIEW.md' ':(exclude)ROADMAP.md' \
       ':(exclude)AGENTS.md' ':(exclude)CLAUDE.md' | sha256sum
 
@@ -546,14 +547,17 @@ change no product file, so the version stays.  The rule on this branch:
   and gets a new version and a new tag;
 - any other commit keeps them.
 
-The product is everything outside `Source/IntegrationTests/`, `docs/`,
+The product is everything outside `Source/IntegrationTests/`, the unit-test
+projects (`Source/*.Test/` and `Source/*.Tests/`, which no release ships; left out
+since 2026-11-16), `docs/`,
 `.github/`, `friction/`, this file, and the other documents at the top of the
 tree: `ROADMAP.md`, `AGENTS.md` and `CLAUDE.md`.  `.github/review/base` names the base
 and the last product commit, and CI's `.github/review/version.sh` computes the
 version from them and fails if a later commit changes a product file.  By hand,
 this prints nothing:
 
-    git diff --name-only b97a6fe <commit> -- . ':!Source/IntegrationTests' ':!docs' ':!.github' \
+    git diff --name-only b97a6fe <commit> -- . ':!Source/IntegrationTests' \
+      ':(exclude,glob)Source/*.Test/**' ':(exclude,glob)Source/*.Tests/**' ':!docs' ':!.github' \
       ':!friction' ':!REVIEW.md' ':!ROADMAP.md' ':!AGENTS.md' ':!CLAUDE.md'
 
 A release binary built from the tag prints the version with `dafny --version`.
@@ -821,6 +825,22 @@ sources, `modular-termination`, `orders` and its examples).  The hidden `--legac
 migration.  The regression is `git-issues/github-issue-479.dfy`; the release note is
 `docs/dev/news/479.fix`.
 
+## `allocated` in lambda expressions ([issue 457](https://github.com/erniecohen/dafny/issues/457))
+
+A function, a constant or a redirecting type could not depend on the set of allocated references,
+but a lambda expression in a method could mention `allocated(c)`.  The verifier translates a
+lambda's body, precondition and reads clause in the heap the lambda is applied in, so its value
+depended on that heap's allocation state, while the frame axiom of its arrow equates its values in
+any two heaps that agree on its reads frame.  With an empty reads frame, `(x: int) =>
+allocated(c)` applied after `c` was allocated proved `false`.  `BoundsDiscoveryVisitor`, which
+already rejected quantifiers that depend on the allocation state inside a lambda, now also reports
+`allocated(...)` in a lambda's body, precondition or reads clause, under both resolvers, unless it is
+inside an `old` (or `old@L`) expression within that lambda; an `old` around the lambda does not
+count, since the lambda is still evaluated in the heap it is applied in.  Its kind is **weakens
+only**: it rejects programs and adds no fact or axiom.  The hidden `--legacy-allocated-in-lambdas`
+option restores the old rule for comparison and migration.  The regression is
+`git-issues/github-issue-457.dfy`; the release note is `docs/dev/news/457.fix`.
+
 ## Override checks in refining modules ([issue 404](https://github.com/erniecohen/dafny/issues/404))
 
 A refining module could strengthen the contract of a trait member, or refine an abstract type into
@@ -940,6 +960,89 @@ both resolvers.  Still, as for every soundness fix, the hidden `--legacy-generic
 option restores the old rule for comparison and migration.  The regression is
 `git-issues/github-issue-481.dfy`; the release note is `docs/dev/news/481.fix`.
 
+## Termination of inherited calls in new cycles ([issue 409](https://github.com/erniecohen/dafny/issues/409))
+
+A call between two members of one strongly connected component (SCC) of the call graph gets a
+termination check.  A refining module that gives a body to a member without one can close a cycle
+through a call it inherits: in the base the callee did not call back, so the base made no check,
+and in the refining module the check's origin is inherited, so `Assert` made it an assume.  Lemmas
+proved `false`, and compiled methods recursed forever.  The rule follows the design in
+https://github.com/erniecohen/dafny/pull/397 (`docs/dev/design/xmod-recursion.md`, section 2.5 and
+milestone P2): `BoogieGenerator.InheritedRecursionUnchanged` holds for an SCC when every member has
+a counterpart in the refinement base, all in one module, each member's decreases clause is the
+counterpart's, copied by the refinement (all its expressions at inherited origins), and every call
+between two members is a call between their counterparts in the base's call graph.  The last
+condition makes the counterparts strongly connected in the base, so the base placed the inherited
+call in one SCC and checked it against the same decreases clauses.  Comparing only the caller and
+the callee with the base's SCCs is not enough when a third member joins the cycle.  An inherited
+termination check (and the coarse `IsNonRecursive` check) whose SCC fails the test is wrapped in
+`ForceCheckOrigin` and asserted, at the base's origin with the refining module as a related
+location.  `MustCheckInheritedTermination` decides which copies hold such a call: a member, an
+iterator (whose calls are MoveNext's) or a by-method body, copied from the base, recursive in a
+changed SCC.  `MustVerifyCopy` and the pipeline schedule them as for issues 404 and 411
+(`IsReverifiedInheritedCheck`), with function well-formedness and iterator bodies now marked too,
+also when the base comes from an included file or a library; every other assert of a copied body
+stays assumed.  A refinement that adds no body to a recursive SCC gets the same Boogie program and
+the same tasks as before, with one exception: when the base inferred an empty decreases clause, because
+no parameter's type was then decreasable, the refinement infers it again, and a refinement that gives
+such a type a definition gets a longer clause.  The SCC then counts as changed, and its intra-SCC
+calls are checked against the new clause.  With an empty clause the base can have proved only calls
+that need no decrease, such as a function's reference to itself in its own postcondition, so these
+checks hold where the base's did.
+Its kind is **asserts more**: it rejects programs, by checking an obligation the old rule
+assumed, and adds no fact or axiom.  In the test suite it adds three tasks outside its regression,
+and all of them verify.  One is in `git-issues/github-issue-404.dfy`, whose module `Decreases` closes a cycle
+through an inherited call that decreases, so the new check holds.  Two are in
+`cloudmake/CloudMake-ParallelBuilds.dfy`, where `M1.Union` and `M3.GetCert` mention themselves in their
+postconditions and their refinements define the opaque `State` and `Path`, which re-infers their empty
+decreases clauses.  The hidden `--legacy-inherited-termination-checks` option
+restores the old rule for comparison and migration.  The regression is
+`git-issues/github-issue-409.dfy`; the release note is `docs/dev/news/409.fix`.
+
+## Functions stored in objects that call back ([issue 453](https://github.com/erniecohen/dafny/issues/453))
+
+`HigherOrderHeapAllocationCheckerConstructor` rejects an assignment to a field whose value's type
+has, left of an arrow, the object's type or a trait type, so that a function the object stores
+cannot be applied by a function of the object to the object itself: applying a function value gets
+no termination check, and the two functions would be a cycle.  A stored function cannot read the
+heap (`HigherOrderHeapAllocationChecker`), but it can reach the object through its argument without
+reading it: through a datatype constructor's argument, a tuple component, a constant of a class or
+trait, or the base of a newtype.  The check looked only at the type and its type arguments, so
+`const g: Box -> nat` with `datatype Box = Box(c: C)` proved `false`.  So did a function stored in
+another object whose argument reaches that object, a function inside a stored datatype value, and a
+class or trait with a permissive (`!T`) type parameter instantiated with the type of the object
+that stores the instance.  `HigherOrderHeapAllocationCheckerConstructor.Reach` now follows, left of
+an arrow, the arguments of datatype constructors, the constants of classes, traits, datatypes and
+newtypes (with those of parent traits), and the bases of newtypes, substituting type arguments.  It
+fails at the object's class, with any type arguments, at a trait type, and at an abstract type,
+which a refining module or an export may give such a definition.  Elsewhere in the stored value's
+type it looks for function values in the same declarations, and it takes the type arguments of a
+trait type or an abstract type to be left of an arrow, because an implementation or definition may
+store a function of them.  A type parameter is not followed: an instance of a generic class is
+checked where it is stored, with the type arguments substituted.  Mutable fields are not followed,
+since a function without a `reads` clause cannot read them.  A nested datatype, such as
+`N<A> = Leaf(a: A) | Node(n: N<seq<A>>)`, makes a larger instantiation of its declaration at each
+step, so the search expands a declaration again, in the same position, only at an instantiation
+that is not larger.  At a larger one it searches the type arguments alone, as if left of an arrow;
+the expansion in progress searches the rest of the declaration.  So the search ends.  It is
+conservative there: a nested datatype instantiated with the object's class, such as `N<C?>` stored
+in a field of `C`, is rejected even when it holds no function.  Under `--modular-termination`, a
+bounded value ([issue 266](https://github.com/erniecohen/dafny/issues/266)) is exempt as it is in
+the old check: its top-level arrow is not searched, but its order type and its function's parameter
+and result types are, where the bounded type is.  A cycle through bounded values cannot form.
+Applying one is checked to run under a bound strictly below the global bound of the code that
+applies it, and its function is checked to run under the value's bound.  So the bounds strictly
+decrease along any chain of applications through bounded values, and they are well founded.  In
+`github-issue-266-m2.dfy`, `C.f` (global bound 1) applies `cb: bounded<nat, Stored.T -> int>`
+with bound 0 to `this`.  The function `cb` holds runs under bound 0, so it cannot call `f`.
+Raw functions inside a bounded type are applied without a bound, so a function on a datatype that
+holds the object, returned by a bounded function, is still rejected.
+Its kind is **weakens only**: it rejects programs and adds no fact or axiom.  It changes no
+resolution outside its regression in the test suite, the standard library (its sources,
+`modular-termination`, `orders`) or the standard library's examples.  The hidden
+`--legacy-stored-function-callbacks` option restores the old check for comparison and migration.
+The regression is `git-issues/github-issue-453.dfy`; the release note is `docs/dev/news/453.fix`.
+
 ## Comparing crossed component types ([issue 47](https://github.com/erniecohen/dafny/issues/47))
 
 With `--type-system-refresh`, `==`, `!=`, `in`, `!in` and prefix equality required, in their final
@@ -1042,3 +1145,30 @@ code or its errors, and the standard library resolves with no error under both r
 Still, as for every soundness fix, the hidden `--legacy-function-store-locations` option restores
 the old check for comparison and migration.  The regression is `git-issues/github-issue-483.dfy`;
 the release note is `docs/dev/news/483.fix`.
+
+## Abstract imports bound to non-refinements ([issue 408](https://github.com/erniecohen/dafny/issues/408))
+
+A module `C refines B` may say which module stands for `B`'s abstract import `import X : A`,
+and the language requires that module to refine `A`: `B`'s proofs were made from `A`'s contracts,
+and `C` inherits them as assumptions.  `RefinementTransformer.PreResolve` accepted any module
+declaration in that place without a check (`CheckIsRefinement` is reached only for declarations
+written with refining notation, which an import never is), so `import X = Other`, where `Other`
+merely has members with `A`'s names, proved `false`.  The transformer now requires the module that
+the new declaration denotes to be `A` or to reach `A` along its chain of `refines` clauses.  An
+alias is followed to the declaration it names, and an abstract import, including an alias of
+another module's abstract import, stands for its original target, not for its signature facade.
+The check runs only where an inherited abstract import is overridden, after the overriding
+declaration has been resolved.  Its kind is **weakens only**: it rejects programs and adds no
+fact or axiom; a program whose bindings refine their targets is unchanged.  The hidden
+`--legacy-unchecked-import-binding` option restores the old rule for comparison and migration.
+It does not check that an export set of the binding reveals what the import's own export set
+does; the import's facade is resolved from the target's signature, and a binding through a
+narrower export set is caught where an inherited member is missing.  The regression is
+`git-issues/github-issue-408.dfy`; the release note is `docs/dev/news/408.fix`.
+The rule is nominal, as in the design drafts of [PR 401](https://github.com/erniecohen/dafny/pull/401)
+and [PR 397](https://github.com/erniecohen/dafny/pull/397).  The reference manual had said the
+binding must "adhere" to the target, and its example bound `import A = Implementation` where
+`Implementation` did not declare `refines`; no structural check of that kind ever existed.  The
+change updates `docs/DafnyRef/Modules.md` §4.6, `docs/DafnyRef/Refinement.md` §10.2,
+`docs/HowToFAQ/FAQImportAbstractModule.md` and `docs/HowToFAQ/onepage.md` to the nominal rule
+and adds `refines Interface` to the example; `docs/OnlineTutorial/Modules.md` already had it.

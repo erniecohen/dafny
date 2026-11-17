@@ -224,6 +224,15 @@ class HigherOrderHeapAllocationCheckerGeneric : ASTVisitor<IASTVisitorContext> {
     if (normalized is UserDefinedType { ResolvedClass: ArrowTypeDecl }) {
       return true;
     }
+    if (normalized is UserDefinedType { ResolvedClass: var cl } && BoundedCallables.IsBoundedDecl(cl)) {
+      // A bounded value's function runs under its bound in every later state, so a type parameter may hold one
+      // whose function reads the heap, as a field may (issue 266, M3, and HigherOrderHeapAllocationChecker).
+      // Only the top-level arrow of the function type is exempt: the order type and the function's parameter
+      // and result types are searched as any other type is.
+      var function = normalized.TypeArgs[1].NormalizeExpandKeepConstraints();
+      var parts = function.IsArrowType ? function.AsArrowType.TypeArgs : [function];
+      return ContainsRead(normalized.TypeArgs[0], visited) || parts.Any(part => ContainsRead(part, visited));
+    }
     if (normalized.TypeArgs.Any(typeArg => ContainsRead(typeArg, visited))) {
       return true;
     }

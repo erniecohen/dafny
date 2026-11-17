@@ -1311,7 +1311,10 @@ git-issues/github-issue-4004_v2.dfy	0	1 verified, 0 errors
 git-issues/github-issue-4017.dfy	0	1 verified, 0 errors	
 git-issues/github-issue-404.dfy	4	50 verified, 15 errors	33,43,54,67,79,90,103,119,136,146,158,174,189,199
 git-issues/github-issue-405.dfy	2		25,38,43,50,54,58,69,75,83,84,89,95
+git-issues/github-issue-404.dfy	4	51 verified, 15 errors	33,43,54,67,79,90,103,119,136,146,158,174,189,199
+git-issues/github-issue-409.dfy	4	27 verified, 12 errors	27,36,46,55,64,74,87,88,98,108,117,126
 git-issues/github-issue-411.dfy	4	3 verified, 5 errors	21,38,56,72,90
+git-issues/github-issue-408.dfy	2		33,38,46,51,58,77
 git-issues/github-issue-4144.dfy	0	2 verified, 0 errors	
 git-issues/github-issue-422.dfy	0	4 verified, 0 errors	
 git-issues/github-issue-431-more.dfy	4	12 verified, 10 errors	26,35,44,61,63,81,93,103,113,152
@@ -1321,3 +1324,4 @@ git-issues/github-issue-4804.dfy	4	3 verified, 0 errors, 1 out of resource; 2 ou
 git-issues/github-issue-5029.dfy	0	3 verified, 0 errors	
 git-issues/github-issue-5814.dfy	0	3 verified, 0 errors	
 git-issues/github-issue-90.dfy	4	9 verified, 1 error	23
+git-issues/github-issue-457.dfy	2		21,28,32,37,44,48
