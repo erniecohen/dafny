@@ -534,14 +534,15 @@ git-issues/git-issue-1016.dfy	2		66,82,101,117,129
 git-issues/git-issue-1016a.dfy	2		34
 git-issues/git-issue-1029.dfy	0	3 verified, 0 errors	
 git-issues/git-issue-105-class-compile.dfy	0	11 verified, 0 errors	
-git-issues/git-issue-105-classes.dfy	4	29 verified, 17 errors	38,52,60,69,138,141,160,163,166,185,188,191,194,197,200,204,207
+git-issues/git-issue-105-classes.dfy	4	31 verified, 19 errors	38,52,60,69,138,141,144,163,166,169,176,197,200,203,206,209,212,216,219
 git-issues/git-issue-105-compile.dfy	0	7 verified, 0 errors	
 git-issues/git-issue-105-datatypes.dfy	4	13 verified, 8 errors	28,31,72,79,80,81,92
 git-issues/git-issue-105-emptiness.dfy	4	5 verified, 15 errors	33,37,44,45,48,56,59,64,65,68,70,76,79,85,93
 git-issues/git-issue-105-exports.dfy	4	11 verified, 1 error	109
 git-issues/git-issue-105-general-traits.dfy	4	14 verified, 11 errors	22,36,39,77,103,115,126,147,153
-git-issues/git-issue-105-generics.dfy	4	16 verified, 8 errors	20,25,32,36,59,62,66,92
+git-issues/git-issue-105-generics.dfy	4	21 verified, 10 errors	20,25,32,36,74,77,80,87,95,115
 git-issues/git-issue-105-raw-compile.dfy	0	3 verified, 0 errors	
+git-issues/git-issue-105-statements.dfy	4	7 verified, 4 errors	36,41,54,66
 git-issues/git-issue-105-trait-compile.dfy	0	8 verified, 0 errors	
 git-issues/git-issue-105-trait-gates.dfy	2	0 verified, 0 errors	14,15,17,24,28
 git-issues/git-issue-105-traits.dfy	4	21 verified, 22 errors	25,30,55,58,64,89,122,151,154,157,194,198
