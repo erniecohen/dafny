@@ -40,37 +40,52 @@ module Intervals {
   lemma Nested(k: Keyed<Interval<int>>) requires k.Cons? ensures k.val.Len() == k.val.hi - k.val.lo {}
 }
 
-// D<A> is a subtype of D<B> only where A and B are the same type, whatever the declared variance, since
-// an invariant may quantify over a type parameter.  A conversion between them is checked as a conversion
-// to any subset type is.  raw D keeps the declared variance.
+// D<X> has the variance that D declares, since resolution checks that the invariants are monotone in
+// each covariant type parameter and antitone in each contravariant one (git-issue-105-variance.dfy).
+// So L<nat> is a subtype of L<int> and N<int> of N<Empty>, and a conversion between them is not
+// checked.  Each of Up, InSeq and Contra verifies only because of that: the conversions would otherwise
+// be checked as conversions to a subset type are, and proving Inhabited<int>(n) from Inhabited<nat>(n)
+// (or Uninhabited<Empty>(n) from Uninhabited<int>(n)) needs induction on n.  A conversion against the
+// variance is checked.
 module Variance {
   type Empty = x: int | false witness *
   ghost predicate F<X(!new)>(y: X) { false }
+  ghost predicate Inhabited<X(!new)>(n: nat) { n == 0 || ((exists y: X :: true) && Inhabited<X>(n - 1)) }
+  ghost predicate Uninhabited<X(!new)>(n: nat) { n == 0 || ((forall y: X :: F(y)) && Uninhabited<X>(n - 1)) }
 
-  // Box(true) is a Box<X> exactly where X is empty.
-  datatype Box<+X(!new)> = Box(b: bool) {
-    invariant b ==> forall y: X :: F(y)
-  }
+  datatype L<+X(!new)> = L(n: nat) { invariant Inhabited<X>(n) }
+  datatype N<-X(!new)> = N(n: nat) { invariant Uninhabited<X>(n) }
 
-  method Raw(s: Box<Empty>) returns (r: raw Box<int>) {
-    r := s;
-  }
-  method Direct(s: Box<Empty>) returns (t: Box<int>) {
-    t := s;  // error: the invariant might not hold
-  }
-  method InSeq(s: Box<Empty>) returns (u: seq<Box<int>>) {
-    u := [s];  // error: the invariant might not hold
-  }
-  method ViaRaw(s: Box<Empty>) returns (t: Box<int>) {
-    var r: raw Box<int> := s;
-    t := r;  // error: the invariant might not hold
-  }
-  method Proved(s: Box<nat>) returns (t: Box<int>) requires !s.b {
-    t := s;
-  }
+  lemma UseL(l: L<int>) ensures Inhabited<int>(l.n) {}
+  lemma UseN(m: N<Empty>) ensures Uninhabited<Empty>(m.n) {}
 
-  // Without the check, Box(true) would be a Box<int>, and this would prove false.
-  lemma Unsound(t: Box<int>) requires t.b ensures false { assert F(0); }
+  method Up(l: L<nat>) returns (r: L<int>) ensures Inhabited<int>(r.n) {
+    r := l;
+    UseL(l);
+  }
+  method InSeq(l: L<nat>) returns (s: seq<L<int>>) {
+    s := [l];
+  }
+  method Contra(m: N<int>) returns (r: N<Empty>) ensures Uninhabited<Empty>(r.n) {
+    r := m;
+    UseN(m);
+  }
+  method Down(l: L<int>) returns (r: L<nat>) {
+    r := l;  // error: the invariant might not hold (it does, but proving it needs induction)
+  }
+  method ToEmpty(l: L<int>) returns (r: L<Empty>) {
+    r := l;  // error: the invariant might not hold
+  }
+  method ContraDown(m: N<Empty>) returns (r: N<int>) {
+    r := m;  // error: the invariant might not hold
+  }
+  method RawUp(l: raw L<nat>) returns (r: raw L<int>) {
+    r := l;
+  }
+  method ViaRaw(l: L<int>) returns (r: L<Empty>) {
+    var w: raw L<Empty> := l;
+    r := w;  // error: the invariant might not hold
+  }
 }
 
 // The witness of a generic datatype is a static const of type D<X>, so it is checked for every X.

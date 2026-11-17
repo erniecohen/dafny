@@ -557,6 +557,95 @@ without subset-type constraints, and the verifier enforces the difference
 name.  Resolution infers pre-types as it does today.  The conversion check is
 the one the verifier already makes for subset types.
 
+**Generic types and variance.**  For a generic `D<X>` with invariants, `D<A>`
+is `{ v in raw D<A> | Inv[X := A](v) }`.  `D` declares a variance for `X`, and
+`D<A>` keeps it, as `raw D<A>` does; the invariants must justify it.  Where `X`
+is covariant and `A` is a subtype of `B`, `raw D<A>` is a subtype of
+`raw D<B>` by the ordinary rule, so `D<A>` is a subtype of `D<B>` exactly where
+`Inv[X := A](v)` implies `Inv[X := B](v)` for every raw `v`: the invariants are
+*monotone* in `X`.  Where `X` is contravariant they must be *antitone*.  An
+invariant may quantify over `X`, so neither is automatic:
+
+```dafny
+ghost predicate Never<X>(x: X) { false }
+datatype Box<+X(!new)> = Box(b: bool) {
+  invariant b ==> forall y: X :: Never(y)   // Box(true) is a Box<X> exactly where X is empty
+}
+```
+
+`Box(true)` is a `Box<Empty>` and not a `Box<int>`, so a covariant `Box` would
+let a `Box<Empty>` become a `Box<int>` with no check, and prove `false`.
+
+*Rule (the owner's decision).*  A declared `+X` or `-X` stands only where the
+invariants, own and inherited, closed over the functions and constants they
+call, are monotone (antitone) in `X`.  Otherwise it is a resolution error at
+the declaration that names the offending occurrence.  `raw D` keeps its
+declared variance in any case.
+
+*The check is by polarity.*  Each occurrence of `X` in the invariants has a
+polarity, positive, negative or both, in the lattice none < positive,
+negative < both.  The invariant itself is in a positive context.
+
+- `forall y: X :: P` is negative in `X`; `exists y: X :: P` and `e is X` are
+  positive.  The quantifier's domain grows with `X`: an existential that holds
+  keeps its witness, a universal may meet a new counterexample.  A type test
+  against a larger type holds of more values.
+- Within the bound variable's type, the occurrence composes with the type's
+  variance: in `A -> R` the parameter position flips (an arrow type shrinks as
+  its domain grows), and in `G<..X..>` it composes with the variance `G`
+  declares there, a non-variant parameter giving both.  Collections are
+  covariant.
+- Negation and the antecedent of an implication flip the context (`A <== B`
+  is `B ==> A`).  `<==>`, `==` and `!=` of booleans, and the condition of an
+  `if`, are in both contexts.  Conjunction, disjunction, the consequent and the
+  branches of an `if` keep it.  The range of `forall` is flipped, that of
+  `exists` kept.
+- A set or map comprehension, a lambda, a `:|` binding and a function used as
+  a value give `X` both polarities: their meaning is a value that is not
+  ordered by implication.
+- A call of a generic function contributes, for each of its type parameters,
+  its polarity in the function's body, composed with the context and with the
+  occurrence of `X` in the type argument.  The body is in a positive context if
+  the function returns `bool`, and in both otherwise.  A constant with a
+  right-hand side is a nullary function.  The polarities are the least
+  fixpoint of these equations over the call graph, computed by iteration from
+  none.  For a function defined by well-founded recursion, induction on its
+  decreases measure shows that its result is monotone (antitone) where the
+  fixpoint says so.  For an extreme predicate, if the defining operator
+  `F[X := A]` is pointwise below `F[X := B]`, then `lfp F[X := B]` is a
+  pre-fixed point of `F[X := A]` and `gfp F[X := A]` a post-fixed point of
+  `F[X := B]`, so both fixpoints are monotone as the operator is.
+- Anything opaque is both: a function with no body (abstract, or declared
+  without one), a call that is dynamically dispatched (a trait function
+  without a body; a function with a body cannot be overridden), and a function
+  whose body the invariant's module cannot see because the exporting module
+  does not reveal it.  Any interpretation of such a function is a model of what
+  the verifier knows, so nothing can be assumed of its dependence on `X`.  A
+  function declared `opaque` is analysed by its body, which is its meaning;
+  `opaque` concerns only when a proof may unfold it.
+- `X` used only as the type of a value does not count: a component of `D`'s
+  constructors, an operand of `==` on values of type `X`, an argument.  A value
+  is the same value at `A` and at `B`; its components of type `X` are in `A`,
+  so in `B`.
+- A statement inside an expression (`S; E`) is a proof hint, and its value is
+  that of `E` (section 10, the extension condition of the second step), so
+  only `E` is analysed.
+
+*Soundness.*  By induction on the formula, an expression all of whose
+occurrences of `X` are positive (negative) in a positive context is monotone
+(antitone) in `X`: each rule above preserves the direction it states, and the
+calls are covered by the fixpoint.  So a declaration that passes the check has
+`D<A>` a subtype of `D<B>` (or `D<B>` of `D<A>`) as its variance says.
+
+*What is trusted.*  The analysis trusts the declared variance of every other
+type, as subtyping does.  For a datatype or a type with invariants that is
+justified, by the ordinary variance check of its components and by this check.
+For a subset type or a newtype it is not: a covariant subset type whose
+constraint quantifies over its parameter has the same hole without this
+feature (https://github.com/erniecohen/dafny/issues/491).  That issue's
+intended fix is this analysis applied to the constraint, which then justifies
+the trust here.
+
 **Newtypes.**  The owner's ruling is that the "such that" constraint goes away
 in favour of the member invariant.
 
@@ -1915,9 +2004,52 @@ section 7.2).**
     place in the program.  Skipping these constraints was unsound: an invariant
     could test a lambda that requires something of every `D` against
     `D -> bool`, and `assert false` verified.
-  - Statements inside expressions (`assert`, `calc`, lemma calls in a
-    statement expression) are proof hints and give no meaning, so they are not
-    in the cone.
+  - Statements inside expressions (`assert`, `assume`, `calc`, `reveal`, a
+    lemma call or a `forall` statement, in a statement expression `S; E`) are
+    proof hints and give no meaning, so they are not in the cone.  The
+    argument has three parts.
+    1. *They are not in the axioms.*  The condition exists so that the axioms
+       of section 5.1 have a model (section 5.2).  Every axiom that mentions
+       the extension of `T` (the definition and consequence axioms of the
+       functions, constants and constraints in the cone, and the `$Is`
+       equivalence of `T`) is built by the expression translator, which
+       translates `S; E` as `E` alone.  A lemma that `S` calls contributes no
+       axiom: its postcondition is used only at a call, after its
+       precondition is checked.  So the axioms are exactly those of the
+       program with every statement inside an expression erased.  That
+       program satisfies the condition, since the analysis looks at nothing
+       the erasure removes, so section 5.2 gives it a model, and that is a
+       model of the axioms.
+    2. *They are used only in proofs.*  In the well-formedness check of the
+       enclosing function, `S` is proved (an `assert` or a `calc` step is
+       checked; a lemma's precondition is checked, and the lemma is verified
+       on its own; a `forall` statement's body proves its conclusion) and its
+       conclusion is assumed after it.  Where the enclosing function's body
+       is inlined into a proof obligation (`TrSplitExpr`), `S; E` is proved as
+       `C ==> E`, with `C` the conclusion of `S`, and the call itself is then
+       assumed.  Each use rests on a fact proved from the axioms, or, for
+       `assume`, on the program's own unchecked assumption, as anywhere else.
+       The axioms have a model, so a statement may refer to the extension of
+       `T` freely (`assert forall e: T :: P(e)`, a test `this is T` of a raw
+       `this`, a dynamically bound lemma call): it can only be an obligation
+       that fails, never a source of inconsistency.
+    3. *A caution particular to invariants.*  The inlining rule of part 2
+       relies on `C` holding wherever the call is made, which Dafny ensures
+       by checking `S` under the function's preconditions.  The
+       well-formedness check of `invariant#k` also assumes the earlier
+       invariants, which are not its preconditions.  So an invariant's body
+       must never be inlined where the earlier invariants are not known.  It
+       never is: `invariant#k` cannot be named in source, and the translator
+       asserts each invariant whole, as a call, at a conversion
+       (`CheckInvariantTypeMembership`), at `new;` and for a witness, while
+       `TrSplitExpr` sees only source expressions.  A change that inlines an
+       invariant's body must guard it with the earlier invariants.
+
+    `git-issue-105-statements.dfy` holds the controls: invariants whose
+    statements quantify over the type without a bound, test a raw `this`
+    against it and call a lemma that does both are accepted; such a statement
+    that is true is proved from the axioms, one that is false fails as an
+    obligation, and `false` is not provable after either.
   - The hidden option `--unchecked-invariant-extension` turns the check off.  It
     exists for the vacuity controls V5 and V5b (section 6.4), which must show
     that the axioms of `Liar` and `Liar2` are inconsistent without it.  It is
@@ -1975,24 +2107,14 @@ section 7.2).**
   parameters, `Tclass.D(X)` and `Tclass.D#raw(X)` take the same type
   descriptors, and the constraint of `Tclass.D(X)` is the invariants
   instantiated with `X`.
-- *Variance.*  The derived declaration's type parameters are non-variant,
-  whatever the datatype declares, and keep their strictness.  A value of `D<A>`
-  satisfies the invariants instantiated with `A`, which need not imply them
-  instantiated with `B` where `A` is a subtype of `B`, since an invariant may
-  quantify over a type parameter: with `invariant b ==> forall y: X :: F(y)`
-  and `F` false, `Box(true)` is a `Box<Empty>` and not a `Box<int>`.  Keeping
-  the declared variance would let a `Box<Empty>` become a `Box<int>` with no
-  check, and prove `false`.  So `D<A>` is a subtype of `D<B>` only where `A`
-  and `B` are the same type, and a conversion between them is checked as a
-  conversion to any subset type is.  `raw D` keeps the declared variance.
-  Pre-types use the datatype's variance, since a subset type's pre-type is its
-  base's, so inference accepts a `D<A>` where a `D<B>` is expected and the
-  verifier checks it, and joining two different instantiations of `D` gives
-  `raw D`.  A consequence: a type whose definition uses `D<X>`, `D` itself
-  included, cannot declare `X` co- or contravariant, and uses `raw D<X>`
-  instead.  The same hole exists without this feature, for a covariant subset
-  type whose constraint quantifies over its type parameter, under both type
-  systems.  It is outside this feature, and is reported separately.
+- *Variance.*  The derived declaration's type parameters keep the datatype's
+  declared variance and their strictness, and the resolver checks that the
+  invariants justify it (section 3.5, and "Variance by polarity" below).  This
+  step first made them non-variant, whatever the datatype declared, so that
+  `D<A>` was a subtype of `D<B>` only where `A` and `B` were the same type and a
+  type using `D<X>` could not declare `X` co- or contravariant; the owner
+  replaced that rule, and the later step implements the replacement.  Pre-types
+  use the datatype's variance, since a subset type's pre-type is its base's.
 - *Witnesses of generic datatypes.*  The witness member is the static const
   `witness#k: D<X, ...>`, as if written with the datatype's own type
   parameters, and the derived declaration's witness is `D<Y, ...>.witness#k`
@@ -2175,8 +2297,9 @@ section 7.2).**
   trait with invariants; `g is raw D` compiles.  A test of a raw reference
   against a class or a trait with invariants stays ghost.
 - *Joins.*  Where the least common supertype of two types has invariants, the
-  join is its finished type (`P`, `P?` or `G`) if neither type is raw and their
-  type arguments agree, and its raw type otherwise.  Before this step a join
+  join is its finished type (`P`, `P?` or `G`) if neither type is raw, and its
+  raw type otherwise, with the type arguments joined by the declared variance
+  (until the polarity step, finished only where the type arguments agreed).  Before this step a join
   of a raw reference type with any other class or trait did not exist.
 - *Receivers.*  A member applied to a raw receiver is checked unless it is
   static, a stored field or a datatype destructor (`SpecialField`), or a raw
@@ -2236,3 +2359,65 @@ section 7.2).**
   compiled code; `git-issue-105-trait-gates.dfy` what stays behind the gate.
   `git-issue-105-syntax.dfy` adds members after bodiless ones, and
   `git-issue-105-opacity.dfy` now verifies.
+
+**Variance by polarity (the owner's decision, replacing the variance rule of the step for generic datatypes).**
+
+- *The rule* is section 3.5's: a declared `+X` or `-X` of a type with
+  invariants stands only where the invariants are monotone (antitone) in `X`,
+  checked by polarity; otherwise the resolver reports an error at the type
+  parameter, with the occurrence as a related location, naming it ("the
+  universal quantifier over 'y: X' uses 'X' negatively", "the call of 'F',
+  whose body is not known here, uses 'X' both positively and negatively").
+  The derived declaration keeps the declared variance, so `D<nat>` is a
+  subtype of `D<int>` for a covariant `X` and that conversion is not checked;
+  a conversion against the variance is checked against the invariants.
+- *Where it lives.*  `TypeParameterPolarity` in the resolver computes the
+  polarity of type parameters in formulas and the least-fixpoint summaries of
+  functions and constants, independently of invariants, so that the fix for
+  https://github.com/erniecohen/dafny/issues/491 can apply it to the
+  constraint of a subset type or newtype.  `CheckInvariantVariance` applies it
+  to the invariants.  It runs after the extension condition, and only where
+  resolution has reported no error.
+- *Trust.*  The analysis trusts the variance every other type declares, as
+  subtyping does (section 3.5).  It does not compute an "effective" variance of
+  a subset type from its constraint: that would make this feature's rule
+  differ from the subtyping relation the verifier uses everywhere else, and the
+  hole it would close is issue 491's, whose fix belongs to subset types and
+  newtypes.
+- *What is opaque.*  A function is analysed by its body where its body is
+  visible: in its own module, or where the module signature's visibility scope
+  reveals it.  A function with no body (abstract, bodiless, or a trait
+  function, so possibly dynamically dispatched) and a function exported by
+  `provides` alone give each type argument both polarities.  The body of a
+  function declared `opaque` is its meaning, and is analysed.  Deciding by
+  visibility rather than by the body itself keeps a client's well-formedness
+  independent of what an export hides.
+- *Inherited invariants.*  An inherited invariant enters as the call of the
+  trait's invariant with the extends clause's type arguments.  Traits are
+  non-variant (a class or reference trait by the existing rule, and a general
+  trait cannot pass a variant parameter to a non-variant one), so a variant `X`
+  never reaches an inherited invariant today; the path is there for abstract
+  types and newtypes.
+- *Bounded quantifiers.*  `forall y: X | y in s :: P(y)` and
+  `forall y <- s :: P(y)` still count as quantifiers over `X`, although where
+  `s` is a value of type `set<X>` the quantifier ranges over `s` alone, which is
+  the same at `A` and at `B`.  Recognising that is a candidate relaxation
+  (stage 7 of section 7.2), with the condition of section 3.3 that bounds by a
+  collection.
+- *Statements inside expressions* are not analysed (section 3.5), for the
+  reason the extension condition ignores them.
+- *Joins and inference.*  The join of `D<A>` and `D<B>` is `D<C>`, `C` the
+  join of `A` and `B` by the declared variance, where neither is raw.
+- *Tests.*  `git-issue-105-variance.dfy` holds the resolver's controls: the
+  declarations accepted only because `D<X>` keeps the declared variance, and
+  one rejected declaration for each rule (`forall` under `+X`, `exists` under
+  `-X`, the arrow's flip both ways, a non-variant type argument, a generic
+  callee used negatively, a recursive one, a bodiless one, one not revealed, a
+  negation, an equivalence, an `if` condition, a comprehension, a type test
+  under `-X`, a constant, a function used as a value).
+  `git-issue-105-generics.dfy` holds the verifier's positive controls: a
+  covariant `L<nat>` used as an `L<int>` where the invariant is needed at
+  `int`, and a contravariant `N<int>` used as an `N<Empty>`, each of which
+  verifies only because the conversion is a subtyping (the check would need
+  induction), and conversions against the variance, which are checked.
+

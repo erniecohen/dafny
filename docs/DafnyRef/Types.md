@@ -5084,31 +5084,54 @@ value; write `k: D` to range over values of `D`.
 ### 6.6.4. Generic datatypes {#sec-invariant-generics}
 
 For a datatype `D<X>` with invariants, `D<A>` is the subset of `raw D<A>` whose
-values satisfy the invariants with `A` for `X`. An invariant may quantify over
-`X`, so a `D<A>` need not be a `D<B>`, even where every `A` is a `B`:
+values satisfy the invariants with `A` for `X`. `D<A>` has the variance that `D`
+declares, as `raw D<A>` does, so the invariants must justify it: where `X` is
+covariant, they must be monotone in `X` (if they hold with `A` for `X`, they
+hold with any supertype of `A`), and where `X` is contravariant, antitone. An
+invariant may quantify over `X`, so this is not automatic:
 
 <!-- %no-check -->
 ```dafny
 ghost predicate Never<X>(x: X) { false }
 datatype Box<+X(!new)> = Box(b: bool) {
-  invariant b ==> forall y: X :: Never(y)   // Box(true) is a Box<X> where X is empty
+  invariant b ==> forall y: X :: Never(y)   // error: X is covariant, and is used negatively
 }
-type Empty = x: int | false witness *
-
-method Convert(s: Box<Empty>) returns (r: raw Box<int>, t: Box<int>) {
-  r := s;                       // raw Box is covariant
-  t := s;                       // error: invariant might not hold
+datatype Sink<-X(!new)> = Sink(b: bool) {
+  invariant b ==> forall y: X :: Never(y)   // Sink(true) is a Sink<X> where X is empty
 }
 ```
 
-- `D<A>` is a subtype of `D<B>` only where `A` and `B` are the same type,
-  whatever variance `D` declares for `X`. A `D<A>` used where a `D<B>` is
-  expected is a conversion, and the verifier checks the invariants with `B` for
-  `X`. `raw D` has the variance that `D` declares.
-- So a type whose definition uses `D<X>`, `D` itself included, cannot declare
-  `X` covariant or contravariant; it may use `raw D<X>` instead. A type
-  parameter keeps its strictness (`*` or not), which concerns the cardinality
-  of the type, not its subtyping.
+The resolver checks each covariant or contravariant type parameter `X` by the
+polarity of its uses in the invariants of `D`, those it inherits included, and
+in the functions and constants that they call, closed over what those call:
+
+- A universal quantifier over `X` uses `X` negatively; an existential quantifier
+  over `X` and a type test `e is X` use it positively.
+- The parameter type of an arrow, a negation and the antecedent of an
+  implication flip the polarity. An equivalence, the condition of an `if`, a
+  comprehension, a lambda and a function used as a value use `X` both ways.
+- In a type `G<..X..>`, the polarity composes with the variance that `G`
+  declares for that parameter; a non-variant parameter uses `X` both ways.
+- A call of a generic function, or a use of a generic constant, contributes the
+  polarity of its type parameters in its body, computed as a least fixpoint
+  where functions call each other. A function whose body is not known at the
+  invariant, because it is abstract, has no body, or is not revealed by the
+  export of the module that declares it, uses each type argument both ways.
+- A use of `X` only as the type of a value, such as a component of `D`'s
+  constructors or an operand of `==`, does not count, and neither does a
+  statement in an expression, such as an `assert` or a `calc`, which is a proof
+  hint and not part of the invariant.
+
+A covariant type parameter used negatively, or a contravariant one used
+positively, is an error at the type parameter, which names the use. The analysis
+trusts the variance that every other type declares, as subtyping does.
+
+- So `D<A>` is a subtype of `D<B>` where the declared variance makes it one, and
+  such a conversion is not checked. A conversion against the variance, such as
+  from `D<int>` to `D<nat>` for a covariant `X`, is checked against the
+  invariants with `nat` for `X`. `raw D` has the variance that `D` declares too.
+- A type parameter keeps its strictness (`*` or not), which concerns the
+  cardinality of the type, not its subtyping.
 - A witness is checked for every `X`, and `witness e` gives every
   instantiation of `D` its default value.
 - In the condition of section 6.6.3, a generic type with invariants that the

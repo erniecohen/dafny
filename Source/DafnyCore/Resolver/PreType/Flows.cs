@@ -308,13 +308,10 @@ abstract class Flow {
 
     if (commonInvariants != null) {
       // Issue 105: the common supertype has invariants. Two values that are not raw join at the type its name denotes,
-      // if its type arguments, which are non-variant, agree; otherwise, and where either value is raw, at its raw type.
+      // and where either value is raw, at its raw type; both have the variance of the declaration.
       var isReference = InvariantTypeDecl.IsReferenceType(commonInvariants.Owner);
-      var finished = !rawA && !rawB && aSubst.TypeArgs.Zip(bSubst.TypeArgs).All(pair =>
-        TypeRefinementWrapper.NormalizesToBottom(pair.First) || TypeRefinementWrapper.NormalizesToBottom(pair.Second) ||
-        pair.First.Equals(pair.Second, true));
-      var typeArgs = Joins(TypeParameter.Variances((finished ? commonInvariants : commonSupertypeDecl).TypeArgs),
-        aSubst.TypeArgs, bSubst.TypeArgs, context);
+      var finished = !rawA && !rawB;
+      var typeArgs = Joins(TypeParameter.Variances(commonSupertypeDecl.TypeArgs), aSubst.TypeArgs, bSubst.TypeArgs, context);
       if (typeArgs == null) {
         return null;
       }

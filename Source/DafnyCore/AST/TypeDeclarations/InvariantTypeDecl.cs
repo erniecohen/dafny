@@ -34,21 +34,20 @@ public class InvariantTypeDecl : SubsetTypeDecl {
   public readonly TopLevelDeclWithMembers Owner;
 
   public InvariantTypeDecl(TopLevelDeclWithMembers owner)
-    : this(owner, NonVariantTypeParameters(owner.TypeArgs)) {
+    : this(owner, TypeParametersOf(owner.TypeArgs)) {
   }
 
   /// <summary>
-  /// Unresolved clones of the owner's type parameters, each non-variant. A value of D&lt;A&gt; satisfies the invariants
-  /// as instantiated with A, which need not imply them as instantiated with B, even where A is a subtype of B: an
-  /// invariant may quantify over a type parameter. So D&lt;A&gt; is a subtype of D&lt;B&gt; only where A and B are the same
-  /// type, whatever the variance of the owner, and a conversion between them is checked as a conversion to any
-  /// subset type is. "raw D" keeps the owner's variance. Each parameter keeps its strictness, which concerns the
-  /// cardinality of the type, not its subtyping.
+  /// Unresolved clones of the owner's type parameters, with the owner's variance. A value of D&lt;A&gt; satisfies the
+  /// invariants as instantiated with A, which implies them as instantiated with a larger type B only where they are
+  /// monotone in the type parameter: an invariant may quantify over it. So a covariant (or contravariant) type
+  /// parameter requires the invariants to be monotone (or antitone) in it, which the resolver checks
+  /// (TypeParameterPolarity.CheckInvariantVariance); a conversion between instances that are not subtypes is checked
+  /// as a conversion to any subset type is. "raw D" has the owner's variance too.
   /// </summary>
-  private static List<TypeParameter> NonVariantTypeParameters(List<TypeParameter> typeParameters) {
+  private static List<TypeParameter> TypeParametersOf(List<TypeParameter> typeParameters) {
     var cloner = new Cloner();
-    return typeParameters.ConvertAll(tp => new TypeParameter(tp.Origin, tp.NameNode,
-      tp.StrictVariance ? TPVarianceSyntax.NonVariant_Strict : TPVarianceSyntax.NonVariant_Permissive,
+    return typeParameters.ConvertAll(tp => new TypeParameter(tp.Origin, tp.NameNode, tp.VarianceSyntax,
       tp.Characteristics, tp.TypeBounds.ConvertAll(cloner.CloneType), tp.Attributes));
   }
 

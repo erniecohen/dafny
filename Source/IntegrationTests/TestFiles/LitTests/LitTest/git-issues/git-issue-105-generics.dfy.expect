@@ -1,3 +1,4 @@
+git-issue-105-generics.dfy(53,59): Warning: Could not find a trigger for this quantifier. Without a trigger, the quantifier may cause brittle verification. To silence this warning, add an explicit trigger using the {:trigger} attribute. For more information, see the section on quantifier instantiation rules in the reference manual.
 git-issue-105-generics.dfy(20,28): Error: invariant might not hold
 git-issue-105-generics.dfy(13,17): Related location: this is the invariant that might not hold
 git-issue-105-generics.dfy(25,49): Error: a postcondition could not be proved on this return path
@@ -6,12 +7,15 @@ git-issue-105-generics.dfy(32,46): Error: a postcondition could not be proved on
 git-issue-105-generics.dfy(32,40): Related location: this is the postcondition that could not be proved
 git-issue-105-generics.dfy(36,9): Error: invariant might not hold
 git-issue-105-generics.dfy(29,34): Related location: this is the invariant that might not hold
-git-issue-105-generics.dfy(59,9): Error: invariant might not hold
-git-issue-105-generics.dfy(52,16): Related location: this is the invariant that might not hold
-git-issue-105-generics.dfy(62,9): Error: value of expression (of type 'seq<Box<Empty>>') is not known to be an instance of type 'seq<Box<int>>'
-git-issue-105-generics.dfy(66,9): Error: invariant might not hold
-git-issue-105-generics.dfy(52,16): Related location: this is the invariant that might not hold
-git-issue-105-generics.dfy(92,15): Error: invariant might not hold
-git-issue-105-generics.dfy(91,16): Related location: this is the invariant that might not hold
+git-issue-105-generics.dfy(74,9): Error: invariant might not hold
+git-issue-105-generics.dfy(56,59): Related location: this is the invariant that might not hold
+git-issue-105-generics.dfy(77,9): Error: invariant might not hold
+git-issue-105-generics.dfy(56,59): Related location: this is the invariant that might not hold
+git-issue-105-generics.dfy(80,9): Error: invariant might not hold
+git-issue-105-generics.dfy(57,61): Related location: this is the invariant that might not hold
+git-issue-105-generics.dfy(87,9): Error: invariant might not hold
+git-issue-105-generics.dfy(56,59): Related location: this is the invariant that might not hold
+git-issue-105-generics.dfy(107,15): Error: invariant might not hold
+git-issue-105-generics.dfy(106,16): Related location: this is the invariant that might not hold
 
-Dafny program verifier finished with 16 verified, 8 errors
+Dafny program verifier finished with 21 verified, 9 errors

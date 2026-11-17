@@ -867,3 +867,6 @@ git-issues/git-issue-105-trait-witness.dfy
 git-issues/git-issue-105-wellformedness.dfy
 git-issues/git-issue-105-trait-compile.dfy
 git-issues/git-issue-105-trait-gates.dfy
+# Variance by polarity, and statements inside expressions, which are outside the cone of the extension
+# condition (https://github.com/erniecohen/dafny/issues/105).
+git-issues/git-issue-105-statements.dfy
