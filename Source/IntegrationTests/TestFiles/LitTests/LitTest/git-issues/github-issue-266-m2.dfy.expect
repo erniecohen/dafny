@@ -109,6 +109,17 @@ github-issue-266-m2-datatype.dfy(5,33): Error: using the type being defined ('D'
 github-issue-266-m2-datatype.dfy(12,11): Error: type array?<Zero> is not assignable to LHS (of type array?<T -> int>) (non-variant type parameter 'arg' would require T -> int = Zero)
 github-issue-266-m2-datatype.dfy(26,9): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
 3 resolution/type errors detected in github-issue-266-m2-datatype.dfy
+knots through the parameter and result types of a bounded function, both resolvers
+github-issue-266-m2-wrapper.dfy(8,81): Error: To prevent the creation of non-terminating functions, storing functions into an object's fields that reads the object is disallowed
+github-issue-266-m2-wrapper.dfy(21,64): Error: To prevent the creation of non-terminating functions, storing functions into an object's fields that reads the object is disallowed
+github-issue-266-m2-wrapper.dfy(28,62): Error: To prevent the creation of non-terminating functions, storing functions into an object's fields that reads the object is disallowed
+github-issue-266-m2-wrapper.dfy(35,60): Error: To prevent the creation of non-terminating functions, storing functions into an object's fields that reads the object is disallowed
+4 resolution/type errors detected in github-issue-266-m2-wrapper.dfy
+github-issue-266-m2-wrapper.dfy(8,81): Error: To prevent the creation of non-terminating functions, storing functions into an object's fields that reads the object is disallowed
+github-issue-266-m2-wrapper.dfy(21,64): Error: To prevent the creation of non-terminating functions, storing functions into an object's fields that reads the object is disallowed
+github-issue-266-m2-wrapper.dfy(28,62): Error: To prevent the creation of non-terminating functions, storing functions into an object's fields that reads the object is disallowed
+github-issue-266-m2-wrapper.dfy(35,60): Error: To prevent the creation of non-terminating functions, storing functions into an object's fields that reads the object is disallowed
+4 resolution/type errors detected in github-issue-266-m2-wrapper.dfy
 a stored bounded value, compiled
 
 Dafny program verifier finished with 3 verified, 0 errors

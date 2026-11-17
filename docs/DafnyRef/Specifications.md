@@ -918,7 +918,10 @@ Formation and application:
   apply.
 - A constructor may store into a field of the object a bounded value whose function calls the
   object's members. A call cycle through the field would apply the value under its own bound, which
-  the rule above rejects.
+  the rule above rejects. Only the top-level arrow of the function type is exempt: a parameter or
+  result type that holds a function on the object, as in `bounded<nat, () -> (C -> int)>`, is
+  rejected as it would be anywhere else in the field's type, since the bounded function could hand
+  that raw function out to code without a bound.
 
 `bounded` is a contextual name. A module that declares a type named `bounded`, or opens an import
 that declares one, uses that declaration instead. Without the option the name is not declared,
