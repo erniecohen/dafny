@@ -747,5 +747,8 @@ git-issues/git-issue-1665.dfy
 # Asking whether a recursive datatype with no values is nonempty (a (00) type argument, a (00) type refined by it, a local of it) reports an error instead of overflowing the stack in Type.GetAutoInit, for direct, mutual, arrow and non-regular recursion, while types with values keep their answers (https://github.com/erniecohen/dafny/issues/413).
 git-issues/github-issue-413.dfy
 
+# Storing a value that holds a function that reads the heap is rejected when the function is inside a datatype, a codatatype, a newtype or a subset type; the old check looked only at the type and its type arguments, so a function stored in a datatype could read itself and false was provable (https://github.com/erniecohen/dafny/issues/479).
+git-issues/github-issue-479.dfy
+
 # A refining module that adds a field subject to definite assignment to a class verifies the constructor it inherits unchanged, which cannot assign the field; dafny verify skipped the copy and proved false (https://github.com/erniecohen/dafny/issues/411).
 git-issues/github-issue-411.dfy
