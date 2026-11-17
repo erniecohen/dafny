@@ -1081,3 +1081,30 @@ code or its errors, and the standard library resolves with no error under both r
 Still, as for every soundness fix, the hidden `--legacy-function-store-locations` option restores
 the old check for comparison and migration.  The regression is `git-issues/github-issue-483.dfy`;
 the release note is `docs/dev/news/483.fix`.
+
+## Abstract imports bound to non-refinements ([issue 408](https://github.com/erniecohen/dafny/issues/408))
+
+A module `C refines B` may say which module stands for `B`'s abstract import `import X : A`,
+and the language requires that module to refine `A`: `B`'s proofs were made from `A`'s contracts,
+and `C` inherits them as assumptions.  `RefinementTransformer.PreResolve` accepted any module
+declaration in that place without a check (`CheckIsRefinement` is reached only for declarations
+written with refining notation, which an import never is), so `import X = Other`, where `Other`
+merely has members with `A`'s names, proved `false`.  The transformer now requires the module that
+the new declaration denotes to be `A` or to reach `A` along its chain of `refines` clauses.  An
+alias is followed to the declaration it names, and an abstract import, including an alias of
+another module's abstract import, stands for its original target, not for its signature facade.
+The check runs only where an inherited abstract import is overridden, after the overriding
+declaration has been resolved.  Its kind is **weakens only**: it rejects programs and adds no
+fact or axiom; a program whose bindings refine their targets is unchanged.  The hidden
+`--legacy-unchecked-import-binding` option restores the old rule for comparison and migration.
+It does not check that an export set of the binding reveals what the import's own export set
+does; the import's facade is resolved from the target's signature, and a binding through a
+narrower export set is caught where an inherited member is missing.  The regression is
+`git-issues/github-issue-408.dfy`; the release note is `docs/dev/news/408.fix`.
+The rule is nominal, as in the design drafts of [PR 401](https://github.com/erniecohen/dafny/pull/401)
+and [PR 397](https://github.com/erniecohen/dafny/pull/397).  The reference manual had said the
+binding must "adhere" to the target, and its example bound `import A = Implementation` where
+`Implementation` did not declare `refines`; no structural check of that kind ever existed.  The
+change updates `docs/DafnyRef/Modules.md` §4.6, `docs/DafnyRef/Refinement.md` §10.2,
+`docs/HowToFAQ/FAQImportAbstractModule.md` and `docs/HowToFAQ/onepage.md` to the nominal rule
+and adds `refines Interface` to the example; `docs/OnlineTutorial/Modules.md` already had it.
