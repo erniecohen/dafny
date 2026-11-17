@@ -362,9 +362,17 @@ inherited:
   declaration.
 - A refinement cannot make a trait a reference type: if the refined trait does not have
   `object` as an ancestor, no added parent may have it either.
+- Under `--modular-termination`, an added parent is subject to the rules for a parent trait
+  there: a sealed trait of another module cannot be added, an open trait cannot be given a
+  sealed ancestor, and the `decreases {:global}` bound of an inherited member that becomes an
+  override must be below or equal to the bound in the added parent. A member that declares no
+  bound inherits the parent's.
 
 A module that imports `A` abstractly and declares a type below `T` gets the same obligations
 when the import is bound to `B`.
+
+A datatype, codatatype or newtype adds parents with a different spelling and without the
+option; see the next section.
 
 ## 10.9. Type declarations
 
@@ -431,6 +439,42 @@ Note that datatype constructors, codatatype destructors, and newtype definitions
 cannot be refined: it is not possible to add or remove `datatype` constructors,
 nor to change destructors of a `codatatype`, nor to change the base
 type, constraint, or witness of a `newtype`.
+
+A refining datatype, codatatype or newtype may add parent traits, by writing an `extends`
+clause before the `...`. (A datatype extends a trait under `--general-traits=datatype`, and a
+newtype under `--general-traits=full`.) This needs no other option.
+
+<!-- %no-check -->
+```dafny
+module A {
+  datatype Color = Red | Green {
+    function Code(): nat { if this == Red then 1 else 2 }
+  }
+}
+
+module B refines A {
+  trait Coded {
+    function Code(): nat
+    predicate IsFirst() { Code() == 1 }
+  }
+  datatype Color extends Coded ... {}
+  method Test() {
+    var c: Coded := Red;
+    assert c.IsFirst();
+  }
+}
+```
+
+The parents of `B.Color` are the added ones and those of `A.Color`. An added parent is checked
+in the refining module as it would be on a new declaration, by the rules listed for classes
+and traits in the previous section: an inherited member with the name of a member of the added
+parent becomes an override of it and is checked as one, the refined type must implement the
+parent's bodiless members, a call in inherited text that a new override puts on a cycle is
+checked for termination, and a member of the parent cannot capture a name that inherited text
+uses for another declaration. A value type cannot have a reference type as a parent, and the
+admission rules for the parents of a datatype apply to the added ones. A type parameter of a
+datatype gets the characteristics that its parents require, so an added parent can make an
+inherited use of the datatype an error in the refining module.
 
 When a type takes arguments, its refinement must use the same type arguments
 with the same type constraints and the same variance.

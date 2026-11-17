@@ -961,10 +961,22 @@ verifier is unchanged: an added parent yields the axioms that the same parent yi
 declaration, and no axiom of the base is removed or weakened.  Its kind is **accepts more,
 opt-in**: with the option off the new grammar branch reports a parse error, no merged declaration
 changes, and every verdict and resource count is as before.  The option does not depend on the
-resolver, and the regression runs under both.  Not covered: datatypes and newtypes (they keep the
-old grammar), and the interactions with `--modular-termination` bounds and with member invariants,
-which are later stages of the plan.  The regression is `git-issues/github-issue-88.dfy`; the
-release note is `docs/dev/news/88.feat`.
+resolver, and the regression runs under both.  The regression is
+`git-issues/github-issue-88.dfy`; the release note is `docs/dev/news/88.feat`.
+
+Two neighbouring cases needed no change to the product, only regressions.  With
+`--modular-termination`, the added parent meets the existing rules where a new declaration would:
+the bound of an inherited member that becomes an override is compared with the parent's, an
+inherited call that the new overrides put on a cycle is checked, a sealed trait of another module
+cannot be added, and an open trait cannot be given a sealed ancestor
+(`git-issues/github-issue-88-modular-termination.dfy`, each case beside a one-module control with
+the same verdict).  Datatypes, codatatypes and newtypes keep the grammar they had,
+`datatype D extends S ...`, which needs no option, and the same default-on fixes cover the parents
+they add: override checks at inherited members, termination, name capture, the cardinality
+admission, and trait axioms under `--inherited-trait-axioms`
+(`git-issues/github-issue-88-value-types.dfy`).  The legacy resolver has no conversion from a
+datatype or a newtype to a trait, so the cases that upcast run under the new resolver only.  Not
+covered: member invariants, whose option is not in this line yet.
 
 ## Comparing crossed component types ([issue 47](https://github.com/erniecohen/dafny/issues/47))
 

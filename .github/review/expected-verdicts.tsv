@@ -1320,6 +1320,8 @@ git-issues/github-issue-4483.dfy	0	2 verified, 0 errors
 git-issues/github-issue-4804.dfy	4	3 verified, 0 errors, 1 out of resource; 2 out of resource	19
 git-issues/github-issue-5029.dfy	0	3 verified, 0 errors	
 git-issues/github-issue-5814.dfy	0	3 verified, 0 errors	
+git-issues/github-issue-88-modular-termination.dfy	4	25 verified, 6 errors	32,65,103,149,187,210
+git-issues/github-issue-88-value-types.dfy	4	20 verified, 9 errors	68,76,85,106,120,139,184,200,227
 git-issues/github-issue-88.dfy	4	46 verified, 17 errors	45,77,107,115,116,133,134,178,184,193,228,239,286,326,346,367,404
 git-issues/github-issue-89.dfy	4	59 verified, 20 errors	40,54,55,88,90,91,92,93,105,123,124,139,161,178,179,183,205,214,222,231
 git-issues/github-issue-90.dfy	4	9 verified, 1 error	23
