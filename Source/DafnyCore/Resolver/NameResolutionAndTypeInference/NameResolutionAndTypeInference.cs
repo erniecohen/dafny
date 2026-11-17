@@ -5754,6 +5754,11 @@ namespace Microsoft.Dafny {
         }
       } else if (lhs != null) {
         // ----- 4. Look up name in the type of the Lhs
+        if (name is "requires" or "reads" &&
+            BoundedCallables.Select(expr.Lhs, PartiallyResolveTypeForMemberSelection(expr.Origin, expr.Lhs.Type), BoundedCallables.EraseName) is { } erased) {
+          // "c.requires" and "c.reads", for a value "c" of a bounded type, are those of "c.erase" (issue 266)
+          expr.Lhs = erased;
+        }
         member = ResolveMember(expr.Origin, expr.Lhs.Type, name, out var tentativeReceiverType);
         if (member != null) {
           Expression receiver;
@@ -5922,6 +5927,11 @@ namespace Microsoft.Dafny {
       }
       if (r == null) {
         var improvedType = PartiallyResolveTypeForMemberSelection(e.Lhs.Origin, e.Lhs.Type, "_#apply");
+        if (e.Lhs.Resolved != null && BoundedCallables.Select(e.Lhs, improvedType, BoundedCallables.EraseName) is { } erased) {
+          // "c(args)", for a value "c" of a bounded type, applies "c.erase" (issue 266)
+          e.Lhs = erased;
+          improvedType = PartiallyResolveTypeForMemberSelection(e.Lhs.Origin, e.Lhs.Type, "_#apply");
+        }
         var fnType = improvedType.AsArrowType;
         if (fnType == null) {
           var lhs = e.Lhs.Resolved;

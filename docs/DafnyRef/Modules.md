@@ -844,7 +844,7 @@ all that is needed is a module that implements some interface.  In
 that case, you can use an _abstract_ module import. In Dafny, this is
 written `import A : B`.  This means bind the name `A` as before, but
 instead of getting the exact module `B`, you get any module which
-_adheres_ to `B`.  Typically, the module `B` may have abstract type
+_refines_ `B`.  Typically, the module `B` may have abstract type
 definitions, classes with bodiless methods, or otherwise be unsuitable
 to use directly.  Because of the way refinement is defined, any
 refinement of `B` can be used safely. For example, suppose we start with
@@ -895,7 +895,7 @@ abstract module Mod {
     assert 6 <= A.addSome(5);
   }
 }
-module Implementation {
+module Implementation refines Interface {
   function addSome(n: nat): nat
     ensures addSome(n) == n + 1
   {
@@ -908,12 +908,14 @@ module Mod2 refines Mod {
 }
 ```
 
-When you refine an abstract import into a concrete one
-Dafny checks that the concrete module is a
-refinement of the abstract one. This means that the methods must have
-compatible signatures, all the classes and datatypes with their
-constructors and fields in the abstract one must be present in the
-concrete one, the specifications must be compatible, etc.
+When you refine an abstract import into a concrete one, the concrete module
+must be a refinement of the abstract one: it must be the abstract import's
+module itself, or be declared to refine it with `refines`, directly or through
+a chain of `refines` clauses. A module that merely has members with the same
+names is not accepted. Because the concrete module is a refinement, Dafny has
+checked that its methods have compatible signatures, that all the classes and
+datatypes with their constructors and fields in the abstract one are present
+in the concrete one, that the specifications are compatible, etc.
 
 A module that includes an abstract import must be declared `abstract`.
 

@@ -116,6 +116,12 @@ public class TypeParameter : TopLevelDecl {
   }
 
   public bool NecessaryForEqualitySupportOfSurroundingInductiveDatatype = false;  // computed during resolution; relevant only when Parent denotes an IndDatatypeDecl
+  /// <summary>
+  /// Why a value of this type parameter may be stored in memory, or null if it may not
+  /// (https://github.com/erniecohen/dafny/issues/481).  Computed during resolution, with the module
+  /// that declares the parameter, and never cloned.
+  /// </summary>
+  [FilledInDuringResolution] public string? StoredInMemoryReason;
 
   public bool IsToplevelScope { // true if this type parameter is on a toplevel (ie. class C<T>), and false if it is on a member (ie. method m<T>(...))
     get { return Parent is TopLevelDecl; }
@@ -190,7 +196,7 @@ public class TypeParameter : TopLevelDecl {
       characteristics = dd.Characteristics;
     }
     if (characteristics.EqualitySupport == EqualitySupportValue.InferredRequired) {
-      return new TypeParameterCharacteristics(EqualitySupportValue.Unspecified, characteristics.AutoInit, characteristics.ContainsNoReferenceTypes);
+      return new TypeParameterCharacteristics(EqualitySupportValue.Unspecified, characteristics.AutoInit, characteristics.ContainsNoReferenceTypes, characteristics.ContainsNoReadingFunctions);
     } else {
       return characteristics;
     }

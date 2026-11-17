@@ -1,6 +1,9 @@
-﻿using System.Threading.Tasks;
+﻿using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.Dafny.LanguageServer.IntegrationTest.Extensions;
 using Microsoft.Dafny.LanguageServer.Workspace;
+using Microsoft.Dafny.LanguageServer.Workspace.Notifications;
 using Microsoft.Extensions.Logging;
 using Xunit;
 using Xunit.Abstractions;
@@ -276,6 +279,25 @@ method Foo() ensures false { } ";
  .  .  |  |  | :predicate test2(x: nat) {
  .  .  |  |  | :  true
  .  .  |  |  | :}", true);
+  }
+
+  // https://github.com/erniecohen/dafny/issues/426: a line that holds two members does not read verified while one of
+  // them is still pending.  The first case is the issue's: the constructor verifies while M, which fails, is still
+  // scheduled.  The second checks that the line does read verified once both members have verified.
+  [Theory]
+  [InlineData("assert 1 == 2;", LineVerificationStatus.AssertionFailed)]
+  [InlineData("assert 1 == 1;", LineVerificationStatus.Verified)]
+  public async Task LineWithAPendingMemberIsNotVerified(string assertion, LineVerificationStatus settled) {
+    var documentItem = CreateTestDocument($"class C {{ constructor () {{}} method M() {{ {assertion} }} }}", "OneLine.dfy", 1);
+    client.OpenDocument(documentItem);
+    var lineStatuses = new List<LineVerificationStatus>();
+    while (lineStatuses.Count == 0 || lineStatuses[^1] != settled) {
+      var gutter = await verificationStatusGutterReceiver.AwaitNextNotificationAsync(CancellationToken);
+      if (gutter.Uri == documentItem.Uri) {
+        lineStatuses.Add(gutter.PerLineStatus[0]);
+      }
+    }
+    Assert.DoesNotContain(LineVerificationStatus.Verified, lineStatuses.SkipLast(1));
   }
 
   public SimpleLinearVerificationGutterStatusTester(ITestOutputHelper output) : base(output) {
