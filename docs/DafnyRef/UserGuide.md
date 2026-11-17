@@ -2456,6 +2456,14 @@ or the Dafny 4 syntax (`ghost function` and `function`)
   default. Use `refinement-renaming = true` in a project file's
   `[options]` section. See [renaming in a refinement](#sec-refinement-renaming).
 
+* `--copy-imports` - accept the copying import `import X := Q`, which gives the importing
+  module a copy of the module `Q`, named `X`. The types of the copy are different from those
+  of `Q` and of every other copy of `Q`; its functions and constants have the definitions of
+  `Q`. A module that refines the importing module gets copies of its own. Without the option,
+  the syntax is a parse error. A library built with the option can be used only with the
+  option. Disabled by default. Use `copy-imports = true` in a project file's `[options]`
+  section. See [copying imports](#sec-copying-imports).
+
 * `--decreases-orders` - (experimental) accept a decreases component `e by O`, where `O`
   is a closed ghost expression of the standard library's trait type
   `Std.Termination.Orders.Wfo<T>` and `e` has type `T`. A call or loop iteration must make

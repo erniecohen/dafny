@@ -1,0 +1,213 @@
+
+Dafny program verifier finished with 28 verified, 0 errors
+
+Dafny program verifier finished with 28 verified, 0 errors
+github-issue-107-controls.dfy(28,2): Error: a postcondition could not be proved on this return path
+github-issue-107-controls.dfy(27,30): Related location: this is the postcondition that could not be proved
+github-issue-107-controls.dfy(33,2): Error: a postcondition could not be proved on this return path
+github-issue-107-controls.dfy(32,30): Related location: this is the postcondition that could not be proved
+github-issue-107-controls.dfy(38,2): Error: a postcondition could not be proved on this return path
+github-issue-107-controls.dfy(37,32): Related location: this is the postcondition that could not be proved
+github-issue-107-controls.dfy(43,2): Error: a postcondition could not be proved on this return path
+github-issue-107-controls.dfy(42,20): Related location: this is the postcondition that could not be proved
+github-issue-107-controls.dfy(52,2): Error: a postcondition could not be proved on this return path
+github-issue-107-controls.dfy(51,30): Related location: this is the postcondition that could not be proved
+github-issue-107-controls.dfy(57,2): Error: a postcondition could not be proved on this return path
+github-issue-107-controls.dfy(56,24): Related location: this is the postcondition that could not be proved
+github-issue-107-controls.dfy(66,2): Error: a postcondition could not be proved on this return path
+github-issue-107-controls.dfy(65,30): Related location: this is the postcondition that could not be proved
+github-issue-107-controls.dfy(83,2): Error: a postcondition could not be proved on this return path
+github-issue-107-controls.dfy(82,32): Related location: this is the postcondition that could not be proved
+github-issue-107-controls.dfy(88,2): Error: a postcondition could not be proved on this return path
+github-issue-107-controls.dfy(87,30): Related location: this is the postcondition that could not be proved
+github-issue-107-controls.dfy(93,2): Error: a postcondition could not be proved on this return path
+github-issue-107-controls.dfy(92,32): Related location: this is the postcondition that could not be proved
+github-issue-107-controls.dfy(98,2): Error: a postcondition could not be proved on this return path
+github-issue-107-controls.dfy(97,30): Related location: this is the postcondition that could not be proved
+github-issue-107-controls.dfy(111,2): Error: a postcondition could not be proved on this return path
+github-issue-107-controls.dfy(110,32): Related location: this is the postcondition that could not be proved
+github-issue-107-controls.dfy(116,2): Error: a postcondition could not be proved on this return path
+github-issue-107-controls.dfy(115,30): Related location: this is the postcondition that could not be proved
+github-issue-107-controls.dfy(121,2): Error: a postcondition could not be proved on this return path
+github-issue-107-controls.dfy(120,34): Related location: this is the postcondition that could not be proved
+github-issue-107-controls.dfy(126,2): Error: a postcondition could not be proved on this return path
+github-issue-107-controls.dfy(125,32): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 0 verified, 15 errors
+github-issue-107-controls.dfy(28,2): Error: a postcondition could not be proved on this return path
+github-issue-107-controls.dfy(27,30): Related location: this is the postcondition that could not be proved
+github-issue-107-controls.dfy(33,2): Error: a postcondition could not be proved on this return path
+github-issue-107-controls.dfy(32,30): Related location: this is the postcondition that could not be proved
+github-issue-107-controls.dfy(38,2): Error: a postcondition could not be proved on this return path
+github-issue-107-controls.dfy(37,32): Related location: this is the postcondition that could not be proved
+github-issue-107-controls.dfy(43,2): Error: a postcondition could not be proved on this return path
+github-issue-107-controls.dfy(42,20): Related location: this is the postcondition that could not be proved
+github-issue-107-controls.dfy(52,2): Error: a postcondition could not be proved on this return path
+github-issue-107-controls.dfy(51,30): Related location: this is the postcondition that could not be proved
+github-issue-107-controls.dfy(57,2): Error: a postcondition could not be proved on this return path
+github-issue-107-controls.dfy(56,24): Related location: this is the postcondition that could not be proved
+github-issue-107-controls.dfy(66,2): Error: a postcondition could not be proved on this return path
+github-issue-107-controls.dfy(65,30): Related location: this is the postcondition that could not be proved
+github-issue-107-controls.dfy(83,2): Error: a postcondition could not be proved on this return path
+github-issue-107-controls.dfy(82,32): Related location: this is the postcondition that could not be proved
+github-issue-107-controls.dfy(88,2): Error: a postcondition could not be proved on this return path
+github-issue-107-controls.dfy(87,30): Related location: this is the postcondition that could not be proved
+github-issue-107-controls.dfy(93,2): Error: a postcondition could not be proved on this return path
+github-issue-107-controls.dfy(92,32): Related location: this is the postcondition that could not be proved
+github-issue-107-controls.dfy(98,2): Error: a postcondition could not be proved on this return path
+github-issue-107-controls.dfy(97,30): Related location: this is the postcondition that could not be proved
+github-issue-107-controls.dfy(111,2): Error: a postcondition could not be proved on this return path
+github-issue-107-controls.dfy(110,32): Related location: this is the postcondition that could not be proved
+github-issue-107-controls.dfy(116,2): Error: a postcondition could not be proved on this return path
+github-issue-107-controls.dfy(115,30): Related location: this is the postcondition that could not be proved
+github-issue-107-controls.dfy(121,2): Error: a postcondition could not be proved on this return path
+github-issue-107-controls.dfy(120,34): Related location: this is the postcondition that could not be proved
+github-issue-107-controls.dfy(126,2): Error: a postcondition could not be proved on this return path
+github-issue-107-controls.dfy(125,32): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 0 verified, 15 errors
+github-issue-107-rejected.dfy(22,14): Error: replaceable module cannot be copied by a copying import
+github-issue-107-rejected.dfy(44,15): Error: a copying import cannot copy module 'ExternModule', because the module has an {:extern} attribute
+github-issue-107-rejected.dfy(45,15): Error: a copying import cannot copy module 'ExternFunction', because function 'F' has an {:extern} attribute
+github-issue-107-rejected.dfy(46,15): Error: a copying import cannot copy module 'ExternClass', because class 'C' has an {:extern} attribute
+github-issue-107-rejected.dfy(47,15): Error: a copying import cannot copy module 'ExternMethod', because method 'P' has an {:extern} attribute
+github-issue-107-rejected.dfy(55,14): Error: a compiled module (CopiesAbstract) is not allowed to import an abstract module (Abstract)
+github-issue-107-rejected.dfy(62,7): Error: a compiled module (InheritsAbstractCopy) is not allowed to import an abstract module (Abstract), which it does by the copying import 'X' that it inherits
+github-issue-107-rejected.dfy(59,14): Related location: inherited copying import
+github-issue-107-rejected.dfy(62,7): Related location: refining module
+github-issue-107-rejected.dfy(74,14): Error: no default export set declared in module: OnlyNamed
+github-issue-107-rejected.dfy(78,20): Error: no export set 'Nope' in module 'Plain'
+github-issue-107-rejected.dfy(82,9): Error: the copying import 'Named' cannot copy module 'Plain', because that module has an export set named 'Named', which is the name of the default export set of the copy
+github-issue-107-rejected.dfy(89,24): Error: unresolved identifier: Two
+github-issue-107-rejected.dfy(90,24): Error: unresolved identifier: Hidden
+github-issue-107-rejected.dfy(101,20): Error: RHS (of type Colour) not assignable to LHS (of type Colour)
+github-issue-107-rejected.dfy(102,24): Error: RHS (of type Colour) not assignable to LHS (of type Colour)
+github-issue-107-rejected.dfy(114,28): Error: RHS (of type Colour) not assignable to LHS (of type Colour)
+github-issue-107-rejected.dfy(132,21): Error: RHS (of type Shape) not assignable to LHS (of type Shape)
+github-issue-107-rejected.dfy(133,37): Error: RHS (of type Shape) not assignable to LHS (of type Shape)
+github-issue-107-rejected.dfy(144,9): Error: module 'RedeclaresAsCopy' cannot redeclare 'X', which is a copying import of the module 'Original' that it refines
+github-issue-107-rejected.dfy(148,9): Error: module 'RedeclaresAsImport' cannot redeclare 'X', which is a copying import of the module 'Original' that it refines
+github-issue-107-rejected.dfy(152,9): Error: module 'RedeclaresAsModule' cannot redeclare 'X', which is a copying import of the module 'Original' that it refines
+github-issue-107-rejected.dfy(157,7): Error: duplicate name of top-level declaration: X
+github-issue-107-rejected.dfy(156,9): Related location
+21 resolution/type errors detected in github-issue-107-rejected.dfy
+github-issue-107-rejected.dfy(22,14): Error: replaceable module cannot be copied by a copying import
+github-issue-107-rejected.dfy(44,15): Error: a copying import cannot copy module 'ExternModule', because the module has an {:extern} attribute
+github-issue-107-rejected.dfy(45,15): Error: a copying import cannot copy module 'ExternFunction', because function 'F' has an {:extern} attribute
+github-issue-107-rejected.dfy(46,15): Error: a copying import cannot copy module 'ExternClass', because class 'C' has an {:extern} attribute
+github-issue-107-rejected.dfy(47,15): Error: a copying import cannot copy module 'ExternMethod', because method 'P' has an {:extern} attribute
+github-issue-107-rejected.dfy(55,14): Error: a compiled module (CopiesAbstract) is not allowed to import an abstract module (Abstract)
+github-issue-107-rejected.dfy(62,7): Error: a compiled module (InheritsAbstractCopy) is not allowed to import an abstract module (Abstract), which it does by the copying import 'X' that it inherits
+github-issue-107-rejected.dfy(59,14): Related location: inherited copying import
+github-issue-107-rejected.dfy(62,7): Related location: refining module
+github-issue-107-rejected.dfy(74,14): Error: no default export set declared in module: OnlyNamed
+github-issue-107-rejected.dfy(78,20): Error: no export set 'Nope' in module 'Plain'
+github-issue-107-rejected.dfy(82,9): Error: the copying import 'Named' cannot copy module 'Plain', because that module has an export set named 'Named', which is the name of the default export set of the copy
+github-issue-107-rejected.dfy(89,24): Error: unresolved identifier: Two
+github-issue-107-rejected.dfy(90,24): Error: unresolved identifier: Hidden
+github-issue-107-rejected.dfy(101,20): Error: RHS (of type X.Colour) not assignable to LHS (of type Z.Colour)
+github-issue-107-rejected.dfy(102,24): Error: RHS (of type X.Colour) not assignable to LHS (of type Plain.Colour)
+github-issue-107-rejected.dfy(114,28): Error: RHS (of type X.Colour) not assignable to LHS (of type OneCopy.X.Colour)
+github-issue-107-rejected.dfy(132,21): Error: RHS (of type X.A.Shape) not assignable to LHS (of type Z.A.Shape)
+github-issue-107-rejected.dfy(133,37): Error: RHS (of type X.A.Shape) not assignable to LHS (of type HasAbstractImport.A.Shape)
+github-issue-107-rejected.dfy(144,9): Error: module 'RedeclaresAsCopy' cannot redeclare 'X', which is a copying import of the module 'Original' that it refines
+github-issue-107-rejected.dfy(148,9): Error: module 'RedeclaresAsImport' cannot redeclare 'X', which is a copying import of the module 'Original' that it refines
+github-issue-107-rejected.dfy(152,9): Error: module 'RedeclaresAsModule' cannot redeclare 'X', which is a copying import of the module 'Original' that it refines
+github-issue-107-rejected.dfy(157,7): Error: duplicate name of top-level declaration: X
+github-issue-107-rejected.dfy(156,9): Related location
+21 resolution/type errors detected in github-issue-107-rejected.dfy
+github-issue-107-names.dfy(10,9): Error: Duplicate module name: X
+github-issue-107-names.dfy(9,9): Related location
+github-issue-107-names.dfy(15,9): Error: Import declaration uses same name as a module in the same scope: X
+2 resolution/type errors detected in github-issue-107-names.dfy
+github-issue-107-names.dfy(10,9): Error: Duplicate module name: X
+github-issue-107-names.dfy(9,9): Related location
+github-issue-107-names.dfy(15,9): Error: Import declaration uses same name as a module in the same scope: X
+2 resolution/type errors detected in github-issue-107-names.dfy
+github-issue-107-cycle.dfy(24,14): Error: module Missing does not exist
+github-issue-107-cycle.dfy(5,7): Error: module definition contains a cycle (note: parent modules implicitly depend on submodules): module Self -> module X -> module Self
+github-issue-107-cycle.dfy(9,7): Error: module definition contains a cycle (note: parent modules implicitly depend on submodules): module Outer -> module Inner -> module X -> module Outer
+github-issue-107-cycle.dfy(15,7): Error: module definition contains a cycle (note: parent modules implicitly depend on submodules): module A -> module X -> module B -> module Y -> module A
+4 resolution/type errors detected in github-issue-107-cycle.dfy
+github-issue-107-cycle.dfy(24,14): Error: module Missing does not exist
+github-issue-107-cycle.dfy(5,7): Error: module definition contains a cycle (note: parent modules implicitly depend on submodules): module Self -> module X -> module Self
+github-issue-107-cycle.dfy(9,7): Error: module definition contains a cycle (note: parent modules implicitly depend on submodules): module Outer -> module Inner -> module X -> module Outer
+github-issue-107-cycle.dfy(15,7): Error: module definition contains a cycle (note: parent modules implicitly depend on submodules): module A -> module X -> module B -> module Y -> module A
+4 resolution/type errors detected in github-issue-107-cycle.dfy
+github-issue-107.dfy(56,11): Error: rbrace expected
+1 parse errors detected in github-issue-107.dfy
+github-issue-107.dfy(56,11): Error: rbrace expected
+1 parse errors detected in github-issue-107.dfy
+
+Dafny program verifier finished with 10 verified, 0 errors
+4 10 20 3
+Show X.Shape.Line(1) 7
+Show Z.Shape.Dot 7
+Show Base.Shape.Line(2) 7
+5
+true false false
+true false false
+4 10 20 3
+Show X.Shape.Line(1) 7
+Show Z.Shape.Dot 7
+Show Base.Shape.Line(2) 7
+5
+true false false
+
+Dafny program verifier finished with 10 verified, 0 errors
+4 10 20 3
+Show X.Shape.Line(1) 7
+Show Z.Shape.Dot 7
+Show Base.Shape.Line(2) 7
+5
+true false false
+true false false
+4 10 20 3
+Show X.Shape.Line(1) 7
+Show Z.Shape.Dot 7
+Show Base.Shape.Line(2) 7
+5
+true false false
+
+Dafny program verifier finished with 10 verified, 0 errors
+4 10 20 3
+Show X.Shape.Line(1) 7
+Show Z.Shape.Dot 7
+Show Base.Shape.Line(2) 7
+5
+true false false
+true false false
+4 10 20 3
+Show X.Shape.Line(1) 7
+Show Z.Shape.Dot 7
+Show Base.Shape.Line(2) 7
+5
+true false false
+
+Dafny program verifier did not attempt verification
+
+Dafny program verifier finished with 10 verified, 0 errors
+4 10 20 3
+Show X.Shape.Line(1) 7
+Show Z.Shape.Dot 7
+Show Base.Shape.Line(2) 7
+5
+true false false
+true false false
+4 10 20 3
+Show X.Shape.Line(1) 7
+Show Z.Shape.Dot 7
+Show Base.Shape.Line(2) 7
+5
+true false false
+
+Dafny program verifier finished with 1 verified, 0 errors
+github-issue-107-library-user.dfy(18,2): Error: a postcondition could not be proved on this return path
+github-issue-107-library-user.dfy(17,30): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 2 verified, 1 error
+github-issue-107-library-user.dfy(18,2): Error: a postcondition could not be proved on this return path
+github-issue-107-library-user.dfy(17,30): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 2 verified, 1 error
+CLI: Error: cannot load github-issue-107.dfy.tmp.library.doo: --copy-imports is set locally to False, but the library was built with True

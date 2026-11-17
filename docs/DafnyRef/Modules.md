@@ -161,6 +161,7 @@ import A : B
 import A.B
 import A`E
 import X = A.B`{E,F}
+import X := A
 ```
 
 Sometimes you want to refer to
@@ -172,7 +173,8 @@ the form `import A = B`. This declaration creates a reference to the
 module `B` (which must already exist), and binds it to the new local name
 `A`. This form can also be used to create a reference to a nested
 module, as in `import A = B.C`. The other form, using a `:`, is
-described in [Section 4.6](#sec-module-abstraction).
+described in [Section 4.6](#sec-module-abstraction). A third form, using `:=`, needs the option
+`--copy-imports` and is described in [Section 4.3.1](#sec-copying-imports).
 
 As modules in the same scope must have different names, this ability
 to bind a module to a new name allows disambiguating separately developed
@@ -235,6 +237,88 @@ import MyModule  // error: cannot add a module named MyModule
                  // because there already is one
 import M = MyModule // OK. M and MyModule are equivalent
 ```
+
+### 4.3.1. Copying imports {#sec-copying-imports}
+
+With the option `--copy-imports`, an import can also be written with `:=`:
+
+<!-- %no-check -->
+```dafny
+import X := Q
+import opened Y := Q`E
+```
+
+The declaration `import X := Q` gives the importing module a _copy_ of the module `Q`, named `X`.
+It means what the nested module `module X refines Q { }` means: `X` has every declaration of `Q`,
+and it is a module of its own.
+
+* A class, trait, datatype, codatatype, newtype or abstract type of `X` is a type of its own.
+  It is different from the type of that name in `Q` and in every other copy of `Q`.
+* A function, constant, method or lemma of `X` has the definition that `Q` gives it.
+* A type synonym or subset type of `X` stands for what it stands for in `Q`, with the types of
+  `Q` replaced by those of `X`.
+
+<!-- %check-verify %options --copy-imports -->
+```dafny
+module Counters {
+  class Counter {
+    var count: nat
+    constructor ()
+      ensures count == 0
+    {
+      count := 0;
+    }
+  }
+  function Limit(): nat { 10 }
+}
+
+module Client {
+  import Requests := Counters
+  import Failures := Counters
+
+  lemma DifferentTypes(o: object)
+    ensures o is Requests.Counter ==> !(o is Failures.Counter)
+  {
+  }
+
+  lemma SameDefinitions()
+    ensures Requests.Limit() == Failures.Limit() == 10
+  {
+  }
+}
+```
+
+**What is copied.** The copy has the declarations of `Q` itself. A module that `Q` declares, or
+imports with `import A = B`, is not copied: `X.A` is the module that `Q.A` is. A copying import
+inside `Q` is copied again, so `X` has copies of its own. An abstract import `import A : B` of `Q`
+stands for some refinement of `B`; in `X` it stands for a refinement of `B` that may be another one.
+
+**Export sets.** The copy has the export sets of `Q`. The name `X` gives the default export set
+of `Q`. `` import X := Q`E `` makes the name `X` give the export set `E` instead, and
+`` import X := Q`{E, F} `` the two sets together. The default export set of a module has the
+module's name, so in the copy it is called `X`; `Q` therefore cannot have another export set that
+is called `X`.
+
+**Refinement.** A module that refines the importing module gets a new copy at each copying import
+that it inherits. With `module Client' refines Client { }`, the module `Client'.Requests` is a
+copy of `Counters` that is different from `Client.Requests`, and the inherited declarations of
+`Client'` are about the copies of `Client'`. A refining module cannot declare a module or import
+with the name of a copying import that it inherits. Through an abstract import `import I : Client`,
+the types of `I.Requests` are known neither to be the types of `Client.Requests` nor to differ
+from them.
+
+**Verification and compilation.** A copy adds nothing to verify: what is proved in `Q` is not
+proved again for `X`. Each copy is a module of the compiled program.
+
+**Restrictions.**
+
+* `Q` cannot be a `replaceable` module.
+* `Q` cannot have a declaration with an `{:extern}` attribute, because the attribute names one
+  thing of the target program.
+* A copying import depends on `Q` as an ordinary import does. So `Q` cannot be the importing
+  module, a module that encloses it, or a module that depends on it.
+* If `Q` is abstract, the copy is abstract, and the importing module must be abstract.
+* A library that is built with `--copy-imports` can be used only with `--copy-imports`.
 
 ## 4.4. Opening Modules {#sec-opening-modules}
 

@@ -975,3 +975,58 @@ option; it turns a crash or a spurious error into an accepted program.
 
 The regression is `git-issues/github-issue-106.dfy` with its inputs; the release note is
 `docs/dev/news/106.feat`; the manual's section is "Renaming parameters and type parameters".
+
+## Copying imports ([issue 107](https://github.com/erniecohen/dafny/issues/107))
+
+`--copy-imports` is an opt-in feature: stage 4 of the refinement design draft
+([pull request 401](https://github.com/erniecohen/dafny/pull/401), sections 3.2, 3.3 and 3.5).  It adds one
+declaration, `import [opened] X := Q` with an optional export suffix, which gives the importing
+module `M` a copy of `Q` named `X`.  With the option off, the parser does not accept the
+declaration, and nothing else in this change is reached.
+
+*What a copy is.*  The parser builds a nested module `X` of `M` that refines `Q` and has no
+declarations of its own, marked as a copying import.  Everything after that is the existing
+machinery of refinement: the refinement transformer clones `Q`'s declarations into `X`, and the
+resolver, the translator and the compilers see an ordinary module.  So the types of `X` are new
+types, and its functions get the bodies of `Q`, by the rules that already hold for
+`module X refines Q { }`.  No axiom is added, and a program without the declaration gets the
+same solver input.
+
+*What differs from a written-out refinement.*
+(1) The default export set of `Q` is the default export set of the copy and takes the copy's
+name, also where another export set extends it.  (A written-out refinement keeps it as a
+non-default set called `Q`.)  `Q` may therefore not have another export set with the copy's name.
+(2) The name `X` gives the default export set, or the sets named after the backquote; the
+signature it gives is kept on the declaration and is used for `X.a`, for an alias `import A = M.X`
+and for an export of `M` that provides `X`.
+(3) A copy of an abstract module is abstract, and a compiled module may not have one.
+(4) An `{:extern}` declaration of `Q`, or `Q` being `replaceable`, is an error: the first would
+give two Dafny declarations for one thing of the target program, and the second is already an
+error for a written-out refinement.
+
+*Copies in a refining module.*  When `M'` refines `M`, the transformer does not clone `M`'s copy
+`X` (which would give `M'` the types of `M.X`) but declares a new copying import of the same
+module, with the same export suffix.  That module is not a declaration of the program's module
+graph, so `M'` resolves it itself, before its own declarations, and hands its signature to the
+program with its own.  A redeclaration of `X` in `M'` is an error.  The same holds for each
+further refinement.
+
+*What is deliberately unknown.*  An abstract import `import A : B` inside `Q` stands for an
+unknown refinement of `B`.  Each copy gets a signature of its own for it, so nothing relates
+`X.A` to `Q.A` or to `Z.A`.  Through `import I : M`, the copy `I.X` is likewise an abstract
+signature: `I` may be any refinement of `M`, each of which has copies of its own, so the types of
+`I.X` are known neither to be those of `M.X` nor to differ from them.  The controls of the
+regression test fail in both directions.
+
+*Proof cost.*  The verifier does not verify the members that a refining module inherits
+unchanged, so a copy adds no proof.  The regression test has a module with six copies of a module
+with a lemma; the count of proofs in its expected output would change if copies were verified.
+A change that makes refining modules verify inherited members again must decide what it does for
+copies.
+
+*Libraries.*  The option is recorded in a library, and a library built with it is loaded only
+under it, with the error `--copy-imports is set locally to False, but the library was built with
+True`.  The text of a library that uses the declaration does not parse without the option.
+
+The regression is `git-issues/github-issue-107.dfy` with its inputs; the release note is
+`docs/dev/news/107.feat`; the manual's section is "Copying imports".

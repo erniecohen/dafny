@@ -744,3 +744,6 @@ git-issues/github-issue-412.dfy
 
 # With --refinement-renaming a refining declaration renames type parameters, out-parameters, results and the local names of in-parameters; named arguments use the unchanged labels; a renaming that changes what an inherited name refers to is rejected; without the option the old errors remain; and a typed match pattern is inherited with a type of the refining module (https://github.com/erniecohen/dafny/issues/106, https://github.com/erniecohen/dafny/issues/107).
 git-issues/github-issue-106.dfy
+
+# With --copy-imports, `import X := Q` gives the importing module a copy of Q with types of its own; a refining module gets new copies; lemmas that identify two copies fail; the rejected declarations are errors; a program with copies compiles and runs, also after printing; a library with copies loads only under the option; and without the option the syntax is the parse error it was (https://github.com/erniecohen/dafny/issues/107).
+git-issues/github-issue-107.dfy

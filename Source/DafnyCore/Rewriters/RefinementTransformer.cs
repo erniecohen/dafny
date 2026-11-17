@@ -161,7 +161,7 @@ namespace Microsoft.Dafny {
         var refinementTarget = m.Implements.Target;
         if (m.Implements.Kind == ImplementationKind.Refinement && refinementTarget.Def.ModuleKind == ModuleKindEnum.Replaceable) {
           Reporter.Error(MessageSource.RefinementTransformer, "refineReplaceable", refinementTarget.Origin,
-            "replaceable module cannot be refined");
+            m.IsCopyImport ? "replaceable module cannot be copied by a copying import" : "replaceable module cannot be refined");
 
           return;
         }
@@ -193,6 +193,31 @@ namespace Microsoft.Dafny {
 
         PreResolveWorker(m);
       }
+    }
+
+    /// <summary>
+    /// A module that refines a module with a copying import "import X := Q" gets its own copy of Q.  The
+    /// types of the refined module's X are therefore not types of the refining module's X.
+    /// </summary>
+    private LiteralModuleDecl CopyForRefiningModule(LiteralModuleDecl inheritedCopy, ModuleDefinition module) {
+      var inheritedDefinition = inheritedCopy.ModuleDef;
+      var inheritedTarget = inheritedDefinition.Implements.Target;
+      // The name of the copied module keeps its meaning in the refined module.
+      var target = new ModuleQualifiedId(refinementCloner, inheritedTarget) { Root = inheritedTarget.Root };
+      target.SetTarget(inheritedTarget.Decl);
+      var definition = new ModuleDefinition(refinementCloner.Origin(inheritedDefinition.Origin),
+        inheritedDefinition.NameNode.Clone(refinementCloner), new List<IOrigin>(), ModuleKindEnum.Concrete,
+        new Implements(ImplementationKind.Refinement, target), module, null, []) {
+        BodyStartTok = inheritedDefinition.BodyStartTok,
+        // above the copied module and the modules that it depends on, and below the refining module
+        Height = module.Height - 1
+      };
+      var copy = new LiteralModuleDecl(inheritedCopy.Options, definition, module, Guid.NewGuid()) {
+        CopyImport = inheritedCopy.CopyImport with { Inherited = true },
+        Height = definition.Height,
+        CardinalityRefinementBase = inheritedCopy
+      };
+      return copy;
     }
 
     void PreResolveWorker(ModuleDefinition module) {
@@ -230,11 +255,16 @@ namespace Microsoft.Dafny {
       foreach (var originalDeclaration in prev.TopLevelDecls) {
         processedDecl.Add(originalDeclaration.Name);
         if (!declaredNames.TryGetValue(originalDeclaration.Name, out var newPointer)) {
-          var clone = refinementCloner.CloneDeclaration(originalDeclaration, module);
+          var clone = originalDeclaration is LiteralModuleDecl { CopyImport: not null, ModuleDef.Implements.Target.Decl: not null } inheritedCopy
+            ? CopyForRefiningModule(inheritedCopy, module)
+            : refinementCloner.CloneDeclaration(originalDeclaration, module);
           module.SourceDecls.Add(clone);
         } else {
           var newDeclaration = newPointer.Get();
-          if (originalDeclaration.Name == "_default" || newDeclaration.IsRefining || originalDeclaration is AbstractTypeDecl) {
+          if (originalDeclaration is LiteralModuleDecl { CopyImport: not null }) {
+            Reporter.Error(MessageSource.RefinementTransformer, "ref_copying_import_redeclared", newDeclaration.Origin,
+              $"module '{module.Name}' cannot redeclare '{originalDeclaration.Name}', which is a copying import of the module '{module.Implements.Target}' that it refines");
+          } else if (originalDeclaration.Name == "_default" || newDeclaration.IsRefining || originalDeclaration is AbstractTypeDecl) {
             MergeTopLevelDecls(module, newPointer, originalDeclaration);
           } else if (newDeclaration is TypeSynonymDecl) {
             var msg = $"a type synonym ({newDeclaration.Name}) is not allowed to replace a {originalDeclaration.WhatKind} from the refined module ({module.Implements.Target}), even if it denotes the same type";
@@ -2093,7 +2123,22 @@ namespace Microsoft.Dafny {
         // In refinement cloning, a default export set from the parent should, in the
         // refining module, retain its name but not be default, unless the refining module has the same name
         ModuleExportDecl dex = d as ModuleExportDecl;
-        if (dex.IsDefault && d.Name != newParent.Name) {
+        if (newParent.IsCopyImport) {
+          // A copying import keeps the export sets of the module it copies, and the default export of that
+          // module is the default export of the copy.  A default export has the name of its module, so here
+          // it gets the name of the copy, also where another export set extends it.
+          var baseName = dex.EnclosingModuleDefinition.Name;
+          var extends = ddex.Extends.ConvertAll(e => e.val == baseName
+            ? new Token(e.line, e.col) { pos = e.pos, Uri = e.Uri, val = newParent.Name }
+            : e);
+          if (dex.IsDefault && !LiteralModuleDecl.HasExportSetNamedLikeCopy(dex.EnclosingModuleDefinition, newParent.Name)) {
+            // (In the other case, the resolver reports the clash of the two names.)
+            ddex = new ModuleExportDecl(ddex.Options, dex.Origin, new Name(dex.NameNode.Origin, newParent.Name), d.Attributes,
+              newParent, ddex.Exports, extends, dex.ProvideAll, dex.RevealAll, true, false, Guid.NewGuid());
+          } else {
+            ddex.Extends = extends;
+          }
+        } else if (dex.IsDefault && d.Name != newParent.Name) {
           // ExportSignature.Decl is written during resolution. Sibling refinements
           // must not borrow the base's export signatures under module isolation.
           var exports = ModuleNamingScope.Current == null ? dex.Exports : ddex.Exports;
