@@ -84,8 +84,9 @@ There must be no names in common among them.
 
 Abstract import declarations (declared with `:` instead of `=`, [Section 4.6](#sec-module-abstraction)) are refined. The refinement parent contains the
 abstract import and the refining module contains a regular aliasing
-import for the same name. Dafny checks that the refining import _adheres_ to
-the abstract import.
+import for the same name. The module that the refining import names must be a
+refinement of the abstract import's module: that module itself, or a module that
+reaches it along a chain of `refines` clauses.
 
 ## 10.3. Sub-module declarations
 

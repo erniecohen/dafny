@@ -40,7 +40,19 @@ public partial class BoogieGenerator {
       } else {
         var s0 = (CallStmt)forallStmt.S0;
         if (Attributes.Contains(forallStmt.Attributes, "_trustWellformed")) {
-          TrForallStmtCall(forallStmt.Origin, forallStmt.BoundVars, forallStmt.Bounds, forallStmt.Range, null,
+          // This is the generated limit-ordinal case of a prefix lemma: recursive calls of the prefix lemma for
+          // every smaller ordinal and all values of the other parameters.  Nothing checks these calls, so
+          // under --modular-termination they are limited here to the instances that the lemma's global bound
+          // allows (https://github.com/erniecohen/dafny/issues/460).
+          ExpressionConverter withinGlobalBound = null;
+          if (s0.Method == codeContext) {
+            var instance = new Dictionary<IVariable, Expression>();
+            for (var i = 0; i < s0.Method.Ins.Count; i++) {
+              instance.Add(s0.Method.Ins[i], s0.Args[i]);
+            }
+            withinGlobalBound = RecursiveInstanceWithinGlobalBound(s0.Method, null, instance);
+          }
+          TrForallStmtCall(forallStmt.Origin, forallStmt.BoundVars, forallStmt.Bounds, forallStmt.Range, withinGlobalBound,
             forallStmt.EffectiveEnsuresClauses, null, s0, null, builder, locals, etran);
         } else {
           var definedness = new BoogieStmtListBuilder(this, options, builder.Context);
