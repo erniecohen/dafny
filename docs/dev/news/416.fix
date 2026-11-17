@@ -1,0 +1,1 @@
+Fix a resolver crash under `--type-system-refresh` when a `hide` or `reveal` statement names a static function or constant through an object, as in `reveal foo.Q` (https://github.com/erniecohen/dafny/issues/416).
