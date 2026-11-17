@@ -75,6 +75,7 @@ cli	legacy-module-names	--legacy-module-names	System.CommandLine.Option`1[System
 cli	length-limit	--length-limit	System.CommandLine.Option`1[System.UInt32]	command-setup	setup or another command; executes before/outside proof transport
 cli	legacy-no-unchecked-termination-warning	--legacy-no-unchecked-termination-warning	System.CommandLine.Option`1[System.Boolean]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
 cli	legacy-noncanonical-map-payloads	--legacy-noncanonical-map-payloads	System.CommandLine.Option`1[System.Boolean]	input	map encoding is lowered before task lookup; exact SMT and current assertion map
+cli	legacy-skeleton-modifying-calls	--legacy-skeleton-modifying-calls	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	legacy-replacement-cycles	--legacy-replacement-cycles	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	legacy-unguarded-char	--legacy-unguarded-char	System.CommandLine.Option`1[System.Boolean]	input	character encoding is lowered before task lookup; exact SMT and current assertion map
 cli	library	--library	System.CommandLine.Option`1[System.Collections.Generic.IList`1[System.IO.FileInfo]]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map

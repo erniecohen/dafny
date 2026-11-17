@@ -735,6 +735,9 @@ git-issues/github-issue-417.dfy
 # Opt-in --verification-cache stores blobs compressed with zlib under the SHA-256 of their uncompressed bytes; earlier uncompressed and mixed caches still replay, and a truncated or corrupted compressed blob is a miss with the same report (https://github.com/erniecohen/dafny/issues/388).
 git-issues/git-issue-388.dfy
 
+# A statement added by a skeleton may not call a method that modifies state, which made inherited postconditions contradict new ones (https://github.com/erniecohen/dafny/issues/412).
+git-issues/github-issue-412.dfy
+
 # Member invariants under the hidden --member-invariants, first stage: syntax, printing and
 # resolution, the reads restriction, the codatatype rule for programs and libraries, refinement,
 # opacity, and unchanged behaviour without the option (https://github.com/erniecohen/dafny/issues/105).
