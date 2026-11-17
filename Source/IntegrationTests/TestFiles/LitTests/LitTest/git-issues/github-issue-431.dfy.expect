@@ -1,0 +1,16 @@
+github-issue-431.dfy(24,2): Error: assertion might not hold
+github-issue-431.dfy(33,2): Error: assertion might not hold
+github-issue-431.dfy(41,2): Error: assertion might not hold
+github-issue-431.dfy(48,2): Error: assertion might not hold
+github-issue-431.dfy(66,4): Error: assertion might not hold
+github-issue-431.dfy(68,4): Error: assertion might not hold
+
+Dafny program verifier finished with 11 verified, 6 errors
+github-issue-431.dfy(24,2): Error: assertion might not hold
+github-issue-431.dfy(33,2): Error: assertion might not hold
+github-issue-431.dfy(41,2): Error: assertion might not hold
+github-issue-431.dfy(48,2): Error: assertion might not hold
+github-issue-431.dfy(66,4): Error: assertion might not hold
+github-issue-431.dfy(68,4): Error: assertion might not hold
+
+Dafny program verifier finished with 11 verified, 6 errors

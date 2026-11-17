@@ -1547,6 +1547,21 @@ namespace Microsoft.Dafny {
             DetermineEqualitySupport(dtd, datatypeDependencies);
           }
         }
+
+        // The type of a yield parameter must support auto-initialization.  Whether a datatype does depends on its
+        // grounding constructor, which SccStratosphereCheck has just found, and which the compiler uses for the
+        // default value.  Checked while the signatures were being resolved, as under the hidden
+        // --legacy-early-yield-parameter-check, Type.GetAutoInit follows another constructor, and the constructors
+        // of a datatype declared after the iterator have unresolved types (https://github.com/erniecohen/dafny/issues/445).
+        if (!Options.Get(CommonOptionBag.LegacyEarlyYieldParameterCheck)) {
+          foreach (var iter in declarations.OfType<IteratorDecl>()) {
+            foreach (var p in iter.Outs) {
+              if (!p.Type.KnownToHaveToAValue(p.IsGhost)) {
+                reporter.Error(MessageSource.Resolver, p.Origin, "type of yield-parameter must support auto-initialization (got '{0}')", p.Type);
+              }
+            }
+          }
+        }
       }
 
       // Newtype bases are fully resolved here. Include visible nominal field
@@ -1775,10 +1790,13 @@ namespace Microsoft.Dafny {
 
       if (reporter.Count(ErrorLevel.Error) == prevErrorCount) {
         new HigherOrderHeapAllocationChecker(reporter).VisitDeclarations(declarations);
+        if (!Options.Get(CommonOptionBag.LegacyGenericFunctionStores)) {
+          new HigherOrderHeapAllocationCheckerGeneric(reporter).Check(declarations);
+        }
       }
 
       if (reporter.Count(ErrorLevel.Error) == prevErrorCount) {
-        new HigherOrderHeapAllocationCheckerConstructor(reporter).VisitDeclarations(declarations);
+        new HigherOrderHeapAllocationCheckerConstructor(reporter, Options).VisitDeclarations(declarations);
       }
 
       if (reporter.Count(ErrorLevel.Error) == prevErrorCount) {
@@ -2399,25 +2417,22 @@ namespace Microsoft.Dafny {
           if (trait != null) {
             // disallowing inheritance in multi module case
             bool termination = true;
+            // Under --modular-termination every trait may be extended from any module (rule 1 of revision 3 of
+            // https://github.com/erniecohen/dafny/issues/211): a foreign implementation is checked instead.
             if (cl.EnclosingModuleDefinition == trait.EnclosingModuleDefinition ||
                 trait.IsObjectTrait ||
+                Options.Get(CommonOptionBag.ModularTermination) ||
                 (Attributes.ContainsBool(trait.Attributes, "termination", ref termination) && !termination) ||
-                (!Options.Get(CommonOptionBag.ModularTermination) && Attributes.Contains(cl.Attributes, "AssumeCrossModuleTermination"))) {
+                Attributes.Contains(cl.Attributes, "AssumeCrossModuleTermination")) {
               // all is good (or the user takes responsibility for the lack of termination checking)
               if (!cl.ParentTraitHeads.Contains(trait)) {
                 cl.ParentTraitHeads.Add(trait);
                 parentRelation.AddEdge(cl, trait);
               }
             } else {
-              if (Options.Get(CommonOptionBag.ModularTermination)) {
-                reporter.Error(MessageSource.Resolver, parentTypeToken,
-                  $"modular termination: {cl.WhatKind} '{cl.Name}' cannot extend sealed trait '{trait.FullName}' from another module; " +
-                  "the defining trait must declare {:termination false}; @AssumeCrossModuleTermination cannot override sealing");
-              } else {
-                reporter.Error(MessageSource.Resolver, parentTypeToken,
-                  $"{cl.WhatKind} '{cl.Name}' is in a different module than trait '{trait.FullName}'. A {cl.WhatKind} may only extend a trait " +
-                  $"in the same module, unless the parent trait is annotated with {{:termination false}} or the {cl.WhatKind} with @AssumeCrossModuleTermination.");
-              }
+              reporter.Error(MessageSource.Resolver, parentTypeToken,
+                $"{cl.WhatKind} '{cl.Name}' is in a different module than trait '{trait.FullName}'. A {cl.WhatKind} may only extend a trait " +
+                $"in the same module, unless the parent trait is annotated with {{:termination false}} or the {cl.WhatKind} with @AssumeCrossModuleTermination.");
             }
 
             if (cl is TraitDecl td) {
@@ -3481,7 +3496,9 @@ namespace Microsoft.Dafny {
       }
       foreach (var p in iter.Outs) {
         ResolveType(p.Origin, p.Type, iter, option, iter.TypeArgs);
-        if (!p.Type.KnownToHaveToAValue(p.IsGhost)) {
+        // Whether the type supports auto-initialization is checked after SccStratosphereCheck, in
+        // ResolveTopLevelDecls_Core.  The hidden --legacy-early-yield-parameter-check restores the old check here.
+        if (Options.Get(CommonOptionBag.LegacyEarlyYieldParameterCheck) && !p.Type.KnownToHaveToAValue(p.IsGhost)) {
           reporter.Error(MessageSource.Resolver, p.Origin, "type of yield-parameter must support auto-initialization (got '{0}')", p.Type);
         }
       }

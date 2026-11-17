@@ -19,14 +19,29 @@ public record IdeVerificationTaskState(Range Range, PublishedVerificationStatus 
   IReadOnlyList<Diagnostic> Diagnostics, bool HitErrorLimit, IVerificationTask Task, IVerificationStatus RawStatus);
 
 public enum VerificationPreparationState { NotStarted, InProgress, Done }
+/// <param name="PreparationPerCopy">
+/// How far the preparation of each ICanVerify at a range has come, keyed like their tasks (IdeState.BelongsTo,
+/// IdeState.CopyKey), so that one of them being prepared does not make the range read as prepared while another is
+/// still being prepared (https://github.com/erniecohen/dafny/issues/433).
+/// </param>
 /// <param name="DiagnosticsPerCopy">
 /// The diagnostics computed once an implementation has verified, such as the proof dependency warnings.  They are
-/// keyed like the tasks of the ICanVerify at a range (IdeState.BelongsTo, IdeState.DiagnosticsKey), so that each
+/// keyed like the tasks of the ICanVerify at a range (IdeState.BelongsTo, IdeState.CopyKey), so that each
 /// keeps and replaces only its own (https://github.com/erniecohen/dafny/issues/424).
 /// </param>
-public record IdeCanVerifyState(VerificationPreparationState PreparationProgress,
+public record IdeCanVerifyState(ImmutableDictionary<string, VerificationPreparationState> PreparationPerCopy,
   ImmutableDictionary<string, IdeVerificationTaskState> VerificationTasks,
   ImmutableDictionary<string, IReadOnlyList<Diagnostic>> DiagnosticsPerCopy) {
+  /// <summary>
+  /// The range is in progress while an ICanVerify at it has been scheduled and its tasks are not yet identified.
+  /// Otherwise it is done once the tasks of one of them have been identified.  An ICanVerify that is never scheduled,
+  /// such as one whose module is not verified, does not hold the range back, as before.
+  /// </summary>
+  public VerificationPreparationState PreparationProgress =>
+    PreparationPerCopy.Values.Contains(VerificationPreparationState.InProgress) ? VerificationPreparationState.InProgress
+    : PreparationPerCopy.Values.Contains(VerificationPreparationState.Done) ? VerificationPreparationState.Done
+    : VerificationPreparationState.NotStarted;
+
   public IEnumerable<Diagnostic> Diagnostics => DiagnosticsPerCopy.Values.SelectMany(diagnostics => diagnostics);
 }
 
@@ -245,9 +260,13 @@ public record IdeState(
     var range = scheduledVerification.CanVerify.NavigationRange.ToLspRange();
     var previousVerificationResult = previousState.CanVerifyStates[uri][range];
     var previousImplementations = previousVerificationResult.VerificationTasks;
-    var preparationProgress = new[]
-      { previousVerificationResult.PreparationProgress, VerificationPreparationState.InProgress }.Max();
-    var verificationResult = new IdeCanVerifyState(PreparationProgress: preparationProgress,
+    var key = CopyKey(scheduledVerification.CanVerify);
+    var preparationProgress = new[] {
+      previousVerificationResult.PreparationPerCopy.GetValueOrDefault(key, VerificationPreparationState.NotStarted),
+      VerificationPreparationState.InProgress
+    }.Max();
+    var verificationResult = new IdeCanVerifyState(
+      PreparationPerCopy: previousVerificationResult.PreparationPerCopy.SetItem(key, preparationProgress),
       VerificationTasks: previousImplementations.ToImmutableDictionary(kv => kv.Key,
         kv => !BelongsTo(kv.Value, scheduledVerification.CanVerify) ? kv.Value : kv.Value with {
           Status = PublishedVerificationStatus.Stale,
@@ -339,7 +358,7 @@ public record IdeState(
 
   private static IdeCanVerifyState MergeResults(IEnumerable<IdeCanVerifyState> results) {
     return results.Aggregate((a, b) => new IdeCanVerifyState(
-      MergeStates(a.PreparationProgress, b.PreparationProgress),
+      a.PreparationPerCopy.ToImmutableDictionary().Merge(b.PreparationPerCopy, MergeStates),
       a.VerificationTasks.ToImmutableDictionary().Merge(b.VerificationTasks,
         (aView, bView) => aView /* Merge should not occur */),
       // ICanVerify with the same key carry over the same diagnostics (MergeVerifiable), so these are kept once.
@@ -360,9 +379,11 @@ public record IdeState(
     var previousImplementations =
       previousIdeCanVerifyState?.VerificationTasks ??
       ImmutableDictionary<string, IdeVerificationTaskState>.Empty;
-    var key = DiagnosticsKey(canVerify);
+    var key = CopyKey(canVerify);
     var previousDiagnostics = previousIdeCanVerifyState?.DiagnosticsPerCopy.GetValueOrDefault(key);
-    return new IdeCanVerifyState(PreparationProgress: VerificationPreparationState.NotStarted,
+    return new IdeCanVerifyState(
+      PreparationPerCopy: ImmutableDictionary<string, VerificationPreparationState>.Empty.Add(key,
+        VerificationPreparationState.NotStarted),
       VerificationTasks: previousImplementations.Where(kv => BelongsTo(kv.Value, canVerify)).ToImmutableDictionary(
         kv => kv.Key, kv => kv.Value with {
           Status = PublishedVerificationStatus.Stale,
@@ -389,10 +410,10 @@ public record IdeState(
   }
 
   /// <summary>
-  /// The key of an ICanVerify's diagnostics in IdeCanVerifyState.DiagnosticsPerCopy, the same as BelongsTo's.  A
-  /// dictionary key cannot be null, and no module's full name is empty.
+  /// The key of an ICanVerify in IdeCanVerifyState.PreparationPerCopy and IdeCanVerifyState.DiagnosticsPerCopy, the
+  /// same as BelongsTo's.  A dictionary key cannot be null, and no module's full name is empty.
   /// </summary>
-  private static string DiagnosticsKey(ICanVerify canVerify) {
+  private static string CopyKey(ICanVerify canVerify) {
     return CopyingModule(canVerify) ?? "";
   }
 
@@ -432,9 +453,11 @@ public record IdeState(
     var range = canVerifyPartsIdentified.CanVerify.NavigationRange.ToLspRange();
     var previousImplementations = previousState.CanVerifyStates[uri][range].VerificationTasks;
     var tasksOfOthers = previousImplementations.Where(kv => !BelongsTo(kv.Value, canVerifyPartsIdentified.CanVerify));
-    var diagnosticsOfOthers = previousState.CanVerifyStates[uri][range].DiagnosticsPerCopy
-      .Remove(DiagnosticsKey(canVerifyPartsIdentified.CanVerify));
-    var verificationResult = new IdeCanVerifyState(PreparationProgress: VerificationPreparationState.Done,
+    var key = CopyKey(canVerifyPartsIdentified.CanVerify);
+    var diagnosticsOfOthers = previousState.CanVerifyStates[uri][range].DiagnosticsPerCopy.Remove(key);
+    var verificationResult = new IdeCanVerifyState(
+      PreparationPerCopy: previousState.CanVerifyStates[uri][range].PreparationPerCopy.SetItem(key,
+        VerificationPreparationState.Done),
       VerificationTasks: ImmutableDictionary.CreateRange(tasksOfOthers).SetItems(
         canVerifyPartsIdentified.Parts.ToImmutableDictionary(Compilation.GetTaskName,
         k => {
@@ -515,7 +538,7 @@ public record IdeState(
     }
 
     // An event replaces only the diagnostics of the ICanVerify whose task it is.
-    var diagnosticsKey = DiagnosticsKey(boogieUpdate.CanVerify);
+    var diagnosticsKey = CopyKey(boogieUpdate.CanVerify);
     var newCanVerifyDiagnostics = new List<Diagnostic>();
     var taskState = new IdeVerificationTaskState(range, status, diagnostics.ToList(),
       hitErrorLimit, boogieUpdate.VerificationTask, rawStatus);

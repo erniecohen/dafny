@@ -183,6 +183,9 @@ class CheckTypeInferenceVisitor : ASTVisitor<TypeInferenceCheckingContext> {
       }
     } else if (expr is FunctionCallExpr) {
       var e = (FunctionCallExpr)expr;
+      if (BoundedCallables.IsCertify(e.Function)) {
+        BoundedCallables.DefaultOrderToNat(e.TypeApplication_AtEnclosingClass[0], resolver.SystemModuleManager);
+      }
       var i = 0;
       foreach (var p in Util.Concat(e.TypeApplication_AtEnclosingClass, e.TypeApplication_JustFunction)) {
         var tp = i < e.TypeApplication_AtEnclosingClass.Count
@@ -194,7 +197,7 @@ class CheckTypeInferenceVisitor : ASTVisitor<TypeInferenceCheckingContext> {
             : "";
           resolver.ReportError(ResolutionErrors.ErrorId.r_function_type_parameter_undetermined, e.Origin,
             $"type parameter '{tp.Name}' (inferred to be '{p}') in the function call to '{e.Name}' could not be determined{hint}");
-        } else if (!context.IsPrefixPredicate) { // this check is done in extreme predicates, so no need to repeat it here for prefix predicates
+        } else if (!context.IsPrefixPredicate && !(i == 0 && BoundedCallables.IsCertify(e.Function))) { // the order of bounded.certify may be ORDINAL; this check is done in extreme predicates, so no need to repeat it here for prefix predicates
           CheckContainsNoOrdinal(ResolutionErrors.ErrorId.r_function_type_parameter_may_not_be_ORDINAL, e.Origin, p,
             $"type parameter '{tp.Name}' (passed in as '{p}') to function call '{e.Name}' is not allowed to use ORDINAL");
         }
@@ -423,7 +426,9 @@ class CheckTypeInferenceVisitor : ASTVisitor<TypeInferenceCheckingContext> {
       // need to do them here again for the prefix predicates/lemmas.
     } else {
       t = t.NormalizeExpand();
-      t.TypeArgs.ForEach(rg => CheckContainsNoOrdinal(ResolutionErrors.ErrorId.r_no_ORDINAL_as_type_parameter, tok, rg, "an ORDINAL type is not allowed to be used as a type argument"));
+      foreach (var rg in BoundedCallables.OrdinalCheckedTypeArgs(t)) {
+        CheckContainsNoOrdinal(ResolutionErrors.ErrorId.r_no_ORDINAL_as_type_parameter, tok, rg, "an ORDINAL type is not allowed to be used as a type argument");
+      }
     }
   }
 
@@ -435,6 +440,8 @@ class CheckTypeInferenceVisitor : ASTVisitor<TypeInferenceCheckingContext> {
     if (t.IsBigOrdinalType) {
       resolver.ReportError(errorId, tok, errMsg);
     }
-    t.TypeArgs.ForEach(rg => CheckContainsNoOrdinal(errorId, tok, rg, errMsg));
+    foreach (var rg in BoundedCallables.OrdinalCheckedTypeArgs(t)) {
+      CheckContainsNoOrdinal(errorId, tok, rg, errMsg);
+    }
   }
 }

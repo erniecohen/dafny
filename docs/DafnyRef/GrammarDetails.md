@@ -349,7 +349,7 @@ Variance = ( "*" | "+" | "!" | "-" )
 
 TypeParameterCharacteristics = "(" TPCharOption { "," TPCharOption } ")"
 
-TPCharOption = ( "==" | "0" | "00" | "!" "new" )
+TPCharOption = ( "==" | "0" | "00" | "!" ( "new" | "reads" ) )
 ````
 
 #### 17.2.3.4. Collection types {#g-collection-type}
