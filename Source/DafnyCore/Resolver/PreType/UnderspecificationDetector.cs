@@ -381,7 +381,7 @@ namespace Microsoft.Dafny {
           if (!IsDetermined(p)) {
             var hint = e.Name.StartsWith(HideRevealStmt.RevealLemmaPrefix) ? ". If you are making an opaque function, make sure that the function can be called." : "";
             cus.ReportError(e.Origin, $"type parameter '{tp.Name}' (inferred to be '{p}') in the function call to '{e.Name}' could not be determined{hint}");
-          } else {
+          } else if (!(i == 0 && BoundedCallables.IsCertify(e.Function))) { // the order of bounded.certify may be ORDINAL
             CheckContainsNoOrdinal(e.Origin, p, $"type parameter '{tp.Name}' (passed in as '{p}') to function call '{e.Name}' is not allowed to use ORDINAL");
           }
           i++;
@@ -645,7 +645,9 @@ namespace Microsoft.Dafny {
       Contract.Requires(tok != null);
       Contract.Requires(preType != null);
       if (preType.Normalize() is DPreType dp) {
-        dp.Arguments.ForEach(tt => CheckContainsNoOrdinal(tok, tt, "an ORDINAL type is not allowed to be used as a type argument"));
+        foreach (var tt in BoundedCallables.OrdinalCheckedArguments(dp)) {
+          CheckContainsNoOrdinal(tok, tt, "an ORDINAL type is not allowed to be used as a type argument");
+        }
       }
     }
 
@@ -657,7 +659,9 @@ namespace Microsoft.Dafny {
         if (PreTypeResolver.AncestorName(dp) == PreType.TypeNameORDINAL) {
           cus.ReportError(tok, errMsg);
         }
-        dp.Arguments.ForEach(tt => CheckContainsNoOrdinal(tok, tt, errMsg));
+        foreach (var tt in BoundedCallables.OrdinalCheckedArguments(dp)) {
+          CheckContainsNoOrdinal(tok, tt, errMsg);
+        }
       }
     }
   }

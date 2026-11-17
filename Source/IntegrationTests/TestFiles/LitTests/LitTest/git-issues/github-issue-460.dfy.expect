@@ -1,0 +1,52 @@
+induction, legacy resolver
+github-issue-460-induction.dfy(22,16): Error: assertion might not hold
+github-issue-460-induction.dfy(14,46): Related location: this proposition could not be proved
+
+Dafny program verifier finished with 3 verified, 1 error
+induction, refresh resolver
+github-issue-460-induction.dfy(22,16): Error: assertion might not hold
+github-issue-460-induction.dfy(14,46): Related location: this proposition could not be proved
+
+Dafny program verifier finished with 3 verified, 1 error
+prefix-induction, legacy resolver
+github-issue-460-prefix-induction.dfy(26,16): Error: assertion might not hold
+github-issue-460-prefix-induction.dfy(16,46): Related location: this proposition could not be proved
+
+Dafny program verifier finished with 3 verified, 1 error
+prefix-induction, refresh resolver
+github-issue-460-prefix-induction.dfy(26,16): Error: assertion might not hold
+github-issue-460-prefix-induction.dfy(16,46): Related location: this proposition could not be proved
+
+Dafny program verifier finished with 3 verified, 1 error
+limit, legacy resolver
+github-issue-460-limit.dfy(29,6): Warning: Could not find a trigger for this quantifier. Without a trigger, the quantifier may cause brittle verification. To silence this warning, add an explicit trigger using the {:trigger} attribute. For more information, see the section on quantifier instantiation rules in the reference manual.
+github-issue-460-limit.dfy(29,6): Warning: Could not find a trigger for this quantifier. Without a trigger, the quantifier may cause brittle verification. To silence this warning, add an explicit trigger using the {:trigger} attribute. For more information, see the section on quantifier instantiation rules in the reference manual.
+github-issue-460-limit.dfy(27,2): Error: a postcondition could not be proved on this return path
+github-issue-460-limit.dfy(25,15): Related location: this is the postcondition that could not be proved
+github-issue-460-limit.dfy(18,30): Related location: this proposition could not be proved
+
+Dafny program verifier finished with 7 verified, 1 error
+limit, refresh resolver
+github-issue-460-limit.dfy(29,6): Warning: Could not find a trigger for this quantifier. Without a trigger, the quantifier may cause brittle verification. To silence this warning, add an explicit trigger using the {:trigger} attribute. For more information, see the section on quantifier instantiation rules in the reference manual.
+github-issue-460-limit.dfy(29,6): Warning: Could not find a trigger for this quantifier. Without a trigger, the quantifier may cause brittle verification. To silence this warning, add an explicit trigger using the {:trigger} attribute. For more information, see the section on quantifier instantiation rules in the reference manual.
+github-issue-460-limit.dfy(27,2): Error: a postcondition could not be proved on this return path
+github-issue-460-limit.dfy(25,15): Related location: this is the postcondition that could not be proved
+github-issue-460-limit.dfy(18,30): Related location: this proposition could not be proved
+
+Dafny program verifier finished with 7 verified, 1 error
+accepted, legacy resolver
+github-issue-460-accepted.dfy(17,29): Warning: Could not find a trigger for the induction hypothesis. Without a trigger, this may cause brittle verification. Change or remove the {:induction} attribute to generate a different induction hypothesis, or add {:nowarn} to silence this warning. For more information, see the section on quantifier instantiation rules in the reference manual.
+github-issue-460-accepted.dfy(25,4): Error: assertion might not hold
+github-issue-460-accepted.dfy(41,4): Error: assertion might not hold
+github-issue-460-accepted.dfy(59,4): Error: assertion might not hold
+github-issue-460-accepted.dfy(94,4): Error: assertion might not hold
+
+Dafny program verifier finished with 7 verified, 4 errors
+accepted, refresh resolver
+github-issue-460-accepted.dfy(17,29): Warning: Could not find a trigger for the induction hypothesis. Without a trigger, this may cause brittle verification. Change or remove the {:induction} attribute to generate a different induction hypothesis, or add {:nowarn} to silence this warning. For more information, see the section on quantifier instantiation rules in the reference manual.
+github-issue-460-accepted.dfy(25,4): Error: assertion might not hold
+github-issue-460-accepted.dfy(41,4): Error: assertion might not hold
+github-issue-460-accepted.dfy(59,4): Error: assertion might not hold
+github-issue-460-accepted.dfy(94,4): Error: assertion might not hold
+
+Dafny program verifier finished with 7 verified, 4 errors

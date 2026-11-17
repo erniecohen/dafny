@@ -19,7 +19,7 @@ public partial class BoogieGenerator {
 
     public void Check(Function f) {
 
-      Contract.Assert(generator.InVerificationScope(f));
+      Contract.Assert(generator.FunctionWellformednessInVerificationScope(f));
 
       generator.proofDependencies.SetCurrentDefinition(MethodVerboseName(f.FullDafnyName,
         MethodTranslationKind.SpecWellformedness), f);
@@ -170,7 +170,7 @@ public partial class BoogieGenerator {
         // emit the impl only when there are proof obligations.
         QKeyValue kv = etran.TrAttributes(f.Attributes, null);
         var parameters = Concat(Concat(Bpl.Formal.StripWhereClauses(typeInParams), heapParameters), implementationParameters);
-        var impl = generator.AddImplementationWithAttributes(generator.GetToken(f), proc,
+        var impl = generator.AddImplementationWithAttributes(generator.FunctionWellformednessToken(f), proc,
           parameters,
           Bpl.Formal.StripWhereClauses(outParams),
           locals, implBody, kv);

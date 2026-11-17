@@ -1,0 +1,43 @@
+github-issue-479.dfy(25,51): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+github-issue-479.dfy(31,50): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+github-issue-479.dfy(38,42): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+github-issue-479.dfy(44,42): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+github-issue-479.dfy(51,47): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+github-issue-479.dfy(60,50): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+github-issue-479.dfy(60,60): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+github-issue-479.dfy(65,70): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+github-issue-479.dfy(71,42): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+github-issue-479.dfy(78,38): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+10 resolution/type errors detected in github-issue-479.dfy
+github-issue-479.dfy(25,51): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+github-issue-479.dfy(31,50): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+github-issue-479.dfy(38,42): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+github-issue-479.dfy(44,42): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+github-issue-479.dfy(51,47): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+github-issue-479.dfy(60,50): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+github-issue-479.dfy(60,60): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+github-issue-479.dfy(65,70): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+github-issue-479.dfy(71,42): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+github-issue-479.dfy(78,38): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+10 resolution/type errors detected in github-issue-479.dfy
+github-issue-479-newtype.dfy(9,65): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+github-issue-479-newtype.dfy(9,75): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+2 resolution/type errors detected in github-issue-479-newtype.dfy
+github-issue-479-accepted.dfy(23,32): Error: a postcondition could not be proved on this return path
+github-issue-479-accepted.dfy(23,26): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 6 verified, 1 error
+github-issue-479-accepted.dfy(23,32): Error: a postcondition could not be proved on this return path
+github-issue-479-accepted.dfy(23,26): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 6 verified, 1 error
+
+Dafny program verifier finished with 2 verified, 0 errors
+
+Dafny program verifier finished with 2 verified, 0 errors
+github-issue-479-knot.dfy(11,8): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+github-issue-479-knot.dfy(6,58): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+2 resolution/type errors detected in github-issue-479-knot.dfy
+github-issue-479-knot.dfy(11,8): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+github-issue-479-knot.dfy(6,58): Error: To prevent the creation of non-terminating functions, storing functions with read effects into memory is disallowed
+2 resolution/type errors detected in github-issue-479-knot.dfy

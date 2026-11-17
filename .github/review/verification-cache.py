@@ -10,6 +10,7 @@ from pathlib import Path
 import shutil
 import subprocess
 import sys
+import zlib
 
 exe, solver, source, destination = map(lambda x: Path(x).resolve(), sys.argv[1:])
 if destination.exists():
@@ -111,7 +112,9 @@ shutil.copytree(cache, divergent_cache)
 for index in (divergent_cache / "v1/results").glob("*/*/data"):
     entry = json.loads(index.read_text())
     blob = divergent_cache / "v1/blobs/sha256" / entry["Blob"][:2] / entry["Blob"] / "data"
-    record = json.loads(blob.read_text())
+    stored = blob.read_bytes()
+    # A compressed blob is a 10-byte header and a zlib stream (issue 388); the replacement below is raw.
+    record = json.loads(zlib.decompress(stored[10:]) if stored.startswith(b"\0dcz") else stored)
     if record["Outcome"] != 1:  # Errors
         continue
     exchange = json.loads(base64.b64decode(record["ReportData"]))
