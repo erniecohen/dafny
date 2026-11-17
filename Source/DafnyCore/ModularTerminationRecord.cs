@@ -744,6 +744,7 @@ public static class ModularTerminationRecords {
     CommonOptionBag.LegacyEarlyYieldParameterCheck,
     CommonOptionBag.LegacyReplacementCycles,
     CommonOptionBag.LegacyGenericFunctionStores,
+    CommonOptionBag.LegacyInheritedTerminationChecks,
     CommonOptionBag.TypeSystemRefresh,
     CommonOptionBag.GeneralTraits,
     CommonOptionBag.GeneralNewtypes,
