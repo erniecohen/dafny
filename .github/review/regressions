@@ -749,6 +749,9 @@ git-issues/github-issue-409.dfy
 # Opt-in --verification-cache stores blobs compressed with zlib under the SHA-256 of their uncompressed bytes; earlier uncompressed and mixed caches still replay, and a truncated or corrupted compressed blob is a miss with the same report (https://github.com/erniecohen/dafny/issues/388).
 git-issues/git-issue-388.dfy
 
+# A statement added by a skeleton may not call a method that modifies state, which made inherited postconditions contradict new ones (https://github.com/erniecohen/dafny/issues/412).
+git-issues/github-issue-412.dfy
+
 # Opt-in --inherited-trait-axioms: a bodiless ghost trait member marked {:axiom} is inherited without an implementation, an override is still checked, 'dafny audit' lists the axiom and its inheritors, and with the option off every such type is rejected as before (https://github.com/erniecohen/dafny/issues/89).
 git-issues/github-issue-89.dfy
 
