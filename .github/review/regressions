@@ -755,3 +755,6 @@ git-issues/github-issue-411.dfy
 
 # The type of an iterator's yield parameter is checked for auto-initialization after the grounding constructors are found: a datatype whose first constructor is recursive is accepted, one declared after the iterator or inherited by a refining module no longer crashes the resolver, and one whose grounding constructor has no compilable value is rejected rather than left null by the compiled iterator; the hidden --legacy-early-yield-parameter-check restores the old check (https://github.com/erniecohen/dafny/issues/445).
 git-issues/github-issue-445.dfy
+
+# A function that reads nothing, reading a constant whose initializer applies an arrow or calls a function that reads the heap, no longer crashes the verifier; such an initializer is inlined into the function's axioms only when it needs no heap (https://github.com/erniecohen/dafny/issues/485).
+git-issues/github-issue-485.dfy
