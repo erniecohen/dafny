@@ -893,9 +893,14 @@ namespace Microsoft.Dafny {
                 }
               }
               Expression allowance = null;
-              if (codeContext != null && e.CoCall != FunctionCallExpr.CoCallResolution.Yes && !(e.Function is ExtremePredicate)) {
+              // Under --modular-termination, every call gets the check of the global bounds, including a co-call and a
+              // call of an extreme or prefix predicate: those need no decrease within their cluster, but the bounds
+              // order calls across modules, which no cluster sees.
+              if (codeContext != null) {
                 CheckCallbackArguments(callExpr.Origin, codeContext, e.Function, e.Args, e.Receiver, substMap, e.GetTypeArgumentSubstitutions(),
                   wfOptions.CallerTerminationTranslator ?? builder.Context.CallerTerminationTranslator ?? etran, builder);
+              }
+              if (codeContext != null && e.CoCall != FunctionCallExpr.CoCallResolution.Yes && !(e.Function is ExtremePredicate)) {
                 // check that the decreases measure goes down
                 var calleeSCCLookup = e.IsByMethodCall ? (ICallable)e.Function.ByMethodDecl : e.Function;
                 Contract.Assert(calleeSCCLookup != null);
@@ -958,11 +963,11 @@ namespace Microsoft.Dafny {
                       callerEtran, false, builder, codeContext.InferredDecreases, hint, calleeEtran ?? etran);
                   }
                 }
-                if (e.Function != wfOptions.SelfCallsAllowance) {
-                  CheckModularTermination(callExpr.Origin, codeContext, e.Function, e.Receiver, substMap, directSubstMap,
-                    e.GetTypeArgumentSubstitutions(), wfOptions.CallerTerminationTranslator ?? builder.Context.CallerTerminationTranslator ?? etran,
-                    builder, etran);
-                }
+              }
+              if (codeContext != null && e.Function != wfOptions.SelfCallsAllowance) {
+                CheckModularTermination(callExpr.Origin, codeContext, e.Function, e.Receiver, substMap, directSubstMap,
+                  e.GetTypeArgumentSubstitutions(), wfOptions.CallerTerminationTranslator ?? builder.Context.CallerTerminationTranslator ?? etran,
+                  builder, etran);
               }
               // all is okay, so allow this function application access to the function's axiom, except if it was okay because of the self-call allowance.
               Bpl.IdentifierExpr canCallFuncID = new Bpl.IdentifierExpr(callExpr.Origin, e.Function.FullSanitizedName + "#canCall", Bpl.Type.Bool);
