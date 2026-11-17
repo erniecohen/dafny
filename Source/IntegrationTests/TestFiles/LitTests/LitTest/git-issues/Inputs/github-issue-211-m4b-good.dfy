@@ -14,7 +14,7 @@ module Library {
   type {:termination_closed} Alias = Small
   datatype {:termination_closed} D = D(n: nat)
   trait Sealed {
-    method {:termination_leaf} Done()
+    method Done() decreases {:global} 0
   }
   class Local extends Sealed {
     method Done() { }

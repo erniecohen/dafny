@@ -519,26 +519,35 @@ it implements declares a global bound:
 * A member with a declared or inherited global bound binds every implementation, in the trait's
   module (its _home_) and in any other (a _foreign_ implementation). A dispatched call to it must
   go to a smaller bound.
-* A foreign implementation of a member with no bound must be a _leaf_: it makes no dispatched call
-  through a trait and applies no function value whose code is not known, itself or through the code
-  it calls, including its specifications and implicit evaluations. It cannot declare a bound of its own.
+* A foreign implementation of a member with no bound must either be a _leaf_ or have a global bound
+  of its own, declared on it or inherited from a subtrait. A leaf makes no dispatched call through a
+  trait and applies no function value whose code is not known, itself or through the code it calls,
+  including its specifications and implicit evaluations; an imported helper it calls must promise
+  `{:termination_closed}`. An implementation with a bound is checked like any other code with a bound.
   A home implementation keeps the ordinary check of its module. A member with a global bound may not
-  dispatch to such a member, which is TOP; a member without a bound may.
-* A member marked `{:termination_leaf}` is an explicit leaf. Every implementation, home or foreign,
-  must be a leaf, and its bound is BOTTOM, so any member may dispatch to it. It cannot declare a
-  global bound. The attribute may also be put on a function, method, constant, type or iterator to promise that it
-  is a leaf, which other leaves may then call across an import.
+  dispatch to a member without one, which is TOP; a member without a bound may.
+* A member that every implementation should be able to call, as a leaf could, is given a low bound,
+  such as `decreases {:global} 0`. A dispatched call to it then needs a caller whose bound is above it.
 
 These rules apply to every call, including a call of a least or greatest predicate, of its prefix
 predicate, and a co-call: the clusters that exempt those from the ordinary decreases check do not see
 calls across modules. An extreme predicate cannot declare a decreases clause, so it has no bound: a
-member with a global bound may call one only if it reaches no dispatched call, and may dispatch to an
-extreme predicate slot only if that slot is an explicit leaf. A least or greatest lemma's body, which
+member with a global bound may call one only if it reaches no dispatched call, and may not dispatch to
+an extreme predicate slot. A least or greatest lemma's body, which
 is checked as its prefix lemma's, runs under the lemma's global bound.
 
 A foreign subtrait may redeclare a member with no bound and give it one. Calls through the subtrait
-then see that bound, but its implementations still implement the member with no bound, so they must
-be leaves and cannot declare a bound of their own.
+then see that bound, and its implementations inherit it, so they are checked under it.
+
+The order of global bounds has no bottom. An `int` bound needs only the caller's bound to be at least
+0, so `-1` is below `0`; and a shorter tuple is padded with TOP, so `0, 5` is below `0`. So a bound such
+as `0` is not the least, and a foreign implementation with a bound may sit below every bound in the
+trait's module. That is sound because what the rules protect is TOP, not the bottom: code with a bound
+can never reach a dispatched call to a member without one, whether directly, through a known call, a
+function value or an extreme predicate, so no cycle through such a dispatch can close. A cycle through
+code with bounds needs a dispatched call that goes down, and each step down passes Dafny's ordinary
+decreases check, which admits no infinite descent: a caller at `-1` can make no call that needs a
+smaller bound, and a padded tuple descends as any tuple does.
 
 The legacy forms keep their meaning: an undeclared member of a trait with `{:termination false}`, or
 implemented by a type with `@AssumeCrossModuleTermination`, is exempt from the leaf rule, as an
@@ -546,7 +555,7 @@ unchecked premise that `--warn-unchecked-termination` reports. Declared bounds s
 
 A missing bound is above every other.  So a call from a member with a global bound to a member
 without one always fails, and so does a foreign implementation of a member without one that calls back
-through a trait. This rejects
+through a trait without a bound of its own. This rejects
 the program below, in which no module's call graph has a cycle, but `Tie(x, y)` never
 terminates: whatever bounds `A` and `B` declare, one of the two dispatched calls goes up.
 
@@ -595,8 +604,8 @@ an unknown function-value application or an imported General operation. Dafny ch
 promise in its defining module. Locally inferred closed helpers remain available there;
 imported helpers need their own public promise. Exact calls to Closed code need no outer
 bound comparison, but still obey the ordinary termination discipline. Closed cannot be combined
-with callback bounds or promised by an overridable slot of a trait; such a slot may promise
-`{:termination_leaf}` instead. An override or refinement must preserve the promise.
+with callback bounds or promised by an overridable slot of a trait; such a slot may have a low
+global bound instead. An override or refinement must preserve the promise.
 
 Within a module, Dafny can infer whether exact code reaches open dispatch. A local closed
 callee needs no outer comparison; a local forwarding helper needs a global bound of its own:

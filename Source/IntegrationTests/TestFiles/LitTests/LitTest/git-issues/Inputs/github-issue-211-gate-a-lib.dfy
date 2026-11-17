@@ -7,7 +7,7 @@ module Lib {
       decreases {:global} n
   }
 
-  // No bound: an implementation of G in another module must be a leaf.
+  // No bound: an implementation of G in another module must be a leaf, or declare a bound of its own.
   trait S {
     function G(n: nat): nat
   }

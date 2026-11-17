@@ -265,7 +265,7 @@ public partial class BoogieGenerator {
       hint = legacySlot
         ? "the dispatched callee has no 'decreases {:global}' bound, which --modular-termination requires of a member of a {:termination false} trait"
         : calleeBound == null
-        ? "the dispatched callee has no 'decreases {:global}' bound, so under --modular-termination it is TOP, above the caller's bound; declare a bound on it, or make it an explicit leaf with {:termination_leaf}"
+        ? "the dispatched callee has no 'decreases {:global}' bound, so under --modular-termination it is TOP, above the caller's bound; declare a bound on it"
         : "--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's";
     } else {
       hint = calleeBound == null

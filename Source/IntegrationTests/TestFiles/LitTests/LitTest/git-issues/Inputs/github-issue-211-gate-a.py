@@ -80,7 +80,9 @@ for resolver, flags in resolvers.items():
     client('bound raised by a trait of the client', 'via', 4, 'bound must be below or equal to that in the trait')
     client('open trait of the client without a bound', 'via-open', 4, "bound must not exceed the caller's")
     client('implementation of a member with no bound that is not a leaf', 'unbounded', 2,
-           "which has no 'decreases {:global}' bound, so it must be a leaf, but it is not")
+           "which has no 'decreases {:global}' bound, so it must be a leaf or declare a bound, but it is not a leaf")
+    client('implementation of a member with no bound that declares one', 'bounded', 4,
+           'bounded.dfy(11,10): Error: decreases clause might not decrease', '2 verified, 1 error')
     client('implementation of a member with no bound that is a leaf', 'leaf', 4,
            'leaf.dfy(15,4): Error: assertion might not hold', '2 verified, 1 error')
     client('module refines the library module', 'refine', 2, "module 'Ext' refines module 'Lib' of a library")

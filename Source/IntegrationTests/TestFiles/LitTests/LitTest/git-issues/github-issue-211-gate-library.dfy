@@ -9,8 +9,10 @@
 //  - raise: an implementation of an open slot that calls library code with a larger bound than the slot;
 //  - via, via-open: the same through a trait of the client, which cannot raise the bound of the slot
 //    (a declared bound binds every implementation);
-//  - unbounded: an implementation of a member with no bound that is not a leaf (a foreign implementation
-//    of such a member may not reach a dispatched call);
+//  - unbounded: an implementation of a member with no bound that is not a leaf and declares no bound (a
+//    foreign implementation of such a member must be a leaf or declare a bound of its own);
+//  - bounded: the same with a bound of its own, rejected because it calls library code that has no bound and
+//    dispatches, which is TOP;
 //  - refine: the same from a module that refines the library's module.
 // The accepted clients (ok, and leaf, a leaf implementation of the member with no bound) have 'assert
 // false' controls.  One client (assume) uses @AssumeCrossModuleTermination, which keeps its meaning under
