@@ -237,7 +237,10 @@ namespace Microsoft.Dafny {
               reporter.Error(MessageSource.Resolver, syn.Origin, "type '{0}' declared as supporting equality, but the RHS type ({1}) might not{2}",
                 syn.Name, syn.Rhs, CheckTypeCharacteristicsVisitor.TypeEqualityErrorMessageHint(syn.Rhs));
             }
-            if (syn.Characteristics.IsNonempty && !syn.Rhs.IsNonempty) {
+            if (syn is InvariantTypeDecl) {
+              // Issue 105: what the characteristics of an InvariantTypeDecl say about emptiness comes from its witness,
+              // which the verifier checks against "raw T" and the invariants, as for a subset type with a witness clause
+            } else if (syn.Characteristics.IsNonempty && !syn.Rhs.IsNonempty) {
               reporter.Error(MessageSource.Resolver, syn.Origin, "type '{0}' declared as being nonempty, but the RHS type ({1}) may be empty",
                 syn.Name, syn.Rhs);
             } else if (syn.Characteristics.HasCompiledValue && !syn.Rhs.HasCompilableValue) {

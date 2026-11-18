@@ -29,6 +29,21 @@ public abstract class MethodOrFunction : MemberDecl, ICodeContainer {
   public IOrigin? SignatureEllipsis;
   public override bool IsRefining => SignatureIsOmitted;
 
+  /// <summary>
+  /// A type that the signature of a refining declaration spells differently from the declaration it
+  /// refines (--refinement-renaming). This declaration is the merge of the two and has the types of the
+  /// refined one. "Parameter" is the parameter of this declaration that "Declared" was written for, or
+  /// null if it was written for the result of a function. "Declared" occurs nowhere else in the program.
+  /// </summary>
+  public record RefinementDeclaredType(IOrigin Origin, Type Declared, Formal? Parameter, string ErrorId, string Mismatch);
+
+  /// <summary>
+  /// The types of the refining signature that are to be compared, as resolved types, with the types this
+  /// declaration inherits. The resolver resolves them in the scope of the signature and reports those
+  /// that denote another type (see ModuleResolver.CheckRefinementDeclaredTypes). Null if there are none.
+  /// </summary>
+  public List<RefinementDeclaredType>? RefinementDeclaredTypes;
+
   [SyntaxConstructor]
   protected MethodOrFunction(IOrigin origin, Name nameNode, bool isGhost,
     Attributes? attributes, IOrigin? signatureEllipsis, List<TypeParameter> typeArgs, List<Formal> ins,

@@ -1,0 +1,12 @@
+git-issue-105-control.dfy(5,2): Error: the control character U+0001 is not allowed in a Dafny program
+git-issue-105-control.dfy(6,2): Error: the control character U+0001 is not allowed in a Dafny program
+git-issue-105-control.dfy(8,12): Error: the control character U+0001 is not allowed in a Dafny program
+3 parse errors detected in git-issue-105-control.dfy
+git-issue-105-control.dfy(5,2): Error: the control character U+0001 is not allowed in a Dafny program
+git-issue-105-control.dfy(6,2): Error: the control character U+0001 is not allowed in a Dafny program
+git-issue-105-control.dfy(8,12): Error: the control character U+0001 is not allowed in a Dafny program
+3 parse errors detected in git-issue-105-control.dfy
+git-issue-105-control.dfy(5,2): Error: the control character U+0001 is not allowed in a Dafny program
+git-issue-105-control.dfy(6,2): Error: the control character U+0001 is not allowed in a Dafny program
+git-issue-105-control.dfy(8,12): Error: the control character U+0001 is not allowed in a Dafny program
+3 parse errors detected in git-issue-105-control.dfy

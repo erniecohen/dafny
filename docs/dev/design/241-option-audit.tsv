@@ -22,6 +22,7 @@ cli	conservative-match-inference	--conservative-match-inference	System.CommandLi
 cli	consistent-obligation-checks	--consistent-obligation-checks	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	contextual-lambda-domains	--contextual-lambda-domains	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	contextual-quantifier-domains	--contextual-quantifier-domains	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
+cli	copy-imports	--copy-imports	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	cores	--cores	System.CommandLine.Option`1[System.UInt32]	execution	effective prover interfaces/options plus exact SMT command stream; overrides retained
 cli	coverage-report	--coverage-report	System.CommandLine.Option`1[System.String]	command-setup	setup or another command; executes before/outside proof transport
 cli	cs-replacement-types	--cs-replacement-types	System.CommandLine.Option`1[System.Boolean]	command-setup	setup or another command; executes before/outside proof transport
@@ -85,6 +86,7 @@ cli	legacy-no-unchecked-termination-warning	--legacy-no-unchecked-termination-wa
 cli	legacy-noncanonical-map-payloads	--legacy-noncanonical-map-payloads	System.CommandLine.Option`1[System.Boolean]	input	map encoding is lowered before task lookup; exact SMT and current assertion map
 cli	legacy-reading-functions-in-datatypes	--legacy-reading-functions-in-datatypes	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	legacy-skeleton-modifying-calls	--legacy-skeleton-modifying-calls	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
+cli	legacy-inferred-newtype-base-conversions	--legacy-inferred-newtype-base-conversions	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	legacy-replacement-cycles	--legacy-replacement-cycles	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	legacy-unchecked-import-binding	--legacy-unchecked-import-binding	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	legacy-stored-function-callbacks	--legacy-stored-function-callbacks	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
@@ -98,6 +100,7 @@ cli	main-method	--main-method	System.CommandLine.Option`1[System.String]	command
 cli	manual-lemma-induction	--manual-lemma-induction	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	manual-triggers	--manual-triggers	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	map-comprehension-domain-triggers	--map-comprehension-domain-triggers	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
+cli	member-invariants	--member-invariants	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	methods-to-test	--methods-to-test	System.CommandLine.Option`1[System.String]	command-setup	setup or another command; executes before/outside proof transport
 cli	migrate-signature-and-completion-table	--migrate-signature-and-completion-table	System.CommandLine.Option`1[System.Boolean]	command-setup	setup or another command; executes before/outside proof transport
 cli	modify-time	--modify-time	System.CommandLine.Option`1[System.Boolean]	command-setup	setup or another command; executes before/outside proof transport
@@ -137,6 +140,7 @@ cli	random-seed	--random-seed	System.CommandLine.Option`1[System.UInt32]	executi
 cli	raw-pointers	--raw-pointers	System.CommandLine.Option`1[System.Boolean]	command-setup	setup or another command; executes before/outside proof transport
 cli	reads-clauses-on-methods	--reads-clauses-on-methods	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	referrers	--referrers	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
+cli	refinement-renaming	--refinement-renaming	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	relax-definite-assignment	--relax-definite-assignment	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	report-file	--report-file	System.CommandLine.Option`1[System.String]	command-setup	setup or another command; executes before/outside proof transport
 cli	report-format	--report-format	System.CommandLine.Option`1[System.Nullable`1[Microsoft.Dafny.Auditor.Auditor+ReportFormat]]	command-setup	setup or another command; executes before/outside proof transport
@@ -172,6 +176,7 @@ cli	type-inference-trace	--type-inference-trace	System.CommandLine.Option`1[Syst
 cli	type-system-debug	--type-system-debug	System.CommandLine.Option`1[System.Boolean]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
 cli	translation-cache	--translation-cache	System.CommandLine.Option`1[System.Boolean]	input	process-local translation snapshots precede task lookup; exact prepared SMT and current assertion map
 cli	type-system-refresh	--type-system-refresh	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
+cli	unchecked-invariant-extension	--unchecked-invariant-extension	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	unicode-char	--unicode-char	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	update-throttling	--update-throttling	System.CommandLine.Option`1[System.Int32]	command-setup	setup or another command; executes before/outside proof transport
 cli	use-basename-for-filename	--use-basename-for-filename	System.CommandLine.Option`1[System.Boolean]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces

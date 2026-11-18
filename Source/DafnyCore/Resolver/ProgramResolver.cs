@@ -52,6 +52,9 @@ public class ProgramResolver {
       profile.FrontEnd("resolve.prefixNamed", profileStart!.Value);
       profileStart = profile.BeginThread();
     }
+    if (!MemberInvariantChecks.Check(Program, Reporter)) {
+      return Task.CompletedTask;
+    }
     ComputeModuleDependencyGraph(Program, out var moduleDeclarationPointers);
 
     if (Reporter.ErrorCount != startingErrorCount) {
@@ -690,6 +693,19 @@ public class ProgramResolver {
   private void ProcessDependenciesDefinition(LiteralModuleDecl literalDecl, ModuleBindings bindings,
     IDictionary<ModuleDecl, Action<ModuleDecl>> declarationPointers) {
     var module = literalDecl.ModuleDef;
+    if (literalDecl.CopyImport != null) {
+      // A copying import, "import X := Q", names Q as an import does. The copy has no declarations of its own.
+      var copied = module.Implements.Target;
+      if (!bindings.ResolveQualifiedModuleIdRootCopy(literalDecl, copied, out var root)) {
+        Reporter.Error(MessageSource.Resolver, copied.Origin, ModuleNotFoundErrorMessage(0, copied.Path));
+      } else {
+        root = SkipEnclosingModules(copied, root);
+        copied.Root = root;
+        declarationPointers.AddOrUpdate(root, v => copied.Root = v, Util.Concat);
+        dependencies.AddEdge(literalDecl, root);
+      }
+      return;
+    }
     if (module.Implements != null) {
       var refinementTarget = module.Implements.Target;
       bool res = bindings.ResolveQualifiedModuleIdRootRefines(literalDecl.ModuleDef, refinementTarget, out var other);

@@ -340,6 +340,20 @@ public partial class BoogieGenerator {
           }
 
           CommitAllocatedObject(tok, bplThis, null, builder, etran);
+          if (cl.InvariantTypeDecl != null) {
+            // Issue 105: the new object is "raw C" until here, where its invariants must hold. They depend only on the
+            // const fields that the constructor has now assigned, so they hold for the rest of the object's life.  The
+            // check is at the origin of "new;" itself, not newTok, so that in a copy of the constructor the conjuncts
+            // the refinement base checked here are assumed, and those the refining module added are checked.  Where
+            // "new;" is implicit, that is the end of the body, which the cloner does not mark as inherited.
+            IOrigin newOrigin = s.SeparatorTok ?? s.EndToken;
+            if (s.SeparatorTok == null && codeContext is Constructor { Origin: { IsCopy: true } constructorOrigin } &&
+                constructorOrigin.IsInherited(currentModule)) {
+              newOrigin = new RefinementOrigin(newOrigin, currentModule);
+            }
+            var rawThisType = cl.InvariantTypeDecl.RawThisType(tok, th.Type.TypeArgs);
+            CheckSubrange(newOrigin, bplThis, rawThisType, th.Type, null, builder, etran: etran);
+          }
 
           AddComment(builder, blockStmt1, "divided block after new;");
           TrStmtList(s.BodyProper, builder, locals, etran);
@@ -830,7 +844,11 @@ public partial class BoogieGenerator {
     Contract.Requires(builder != null);
     Contract.Requires(etran != null);
     if (type is UserDefinedType { ResolvedClass: NonNullTypeDecl nnt }) {
-      type = nnt.RhsWithArgument(type.TypeArgs);
+      // Issue 105: a new object of a class with member invariants is "raw C" until its constructor checks the
+      // invariants at "new;"
+      type = nnt.Class.InvariantTypeDecl != null
+        ? UserDefinedType.FromTopLevelDecl(tok, nnt.Class, type.TypeArgs)
+        : nnt.RhsWithArgument(type.TypeArgs);
     }
 
     if (includeHavoc) {

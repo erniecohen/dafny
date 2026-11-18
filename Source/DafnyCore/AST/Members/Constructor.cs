@@ -17,6 +17,13 @@ public class Constructor : MethodOrConstructor {
     Contract.Invariant(Body == null || Body is DividedBlockStmt);
   }
 
+  /// <summary>
+  /// Issue 105: the object a constructor of a class with member invariants returns satisfies them, as a method's
+  /// output of a subset type satisfies its constraint, so a constructor with no body assumes them.
+  /// </summary>
+  public override bool HasPostcondition =>
+    base.HasPostcondition || EnclosingClass is TopLevelDeclWithMembers { InvariantTypeDecl: not null };
+
   public override SymbolKind? Kind => SymbolKind.Constructor;
   protected override string GetQualifiedName() {
     return EnclosingClass.Name;

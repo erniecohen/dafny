@@ -406,12 +406,19 @@ Generate module names in the older A_mB_mC style instead of the current A.B.C sc
   /// <summary>
   /// Emits the declarations in "declarations", but for each such declaration that is a class with
   /// a corresponding non-null type, also emits that non-null type *after* the class declaration.
+  /// Likewise, a declaration with member invariants is followed by its derived InvariantTypeDecl.
   /// </summary>
   public static IEnumerable<TopLevelDecl> AllDeclarationsAndNonNullTypeDecls(IEnumerable<TopLevelDecl> declarations) {
     foreach (var d in declarations) {
       yield return d;
       if (d is ClassLikeDecl { NonNullTypeDecl: { } } cl) {
         yield return cl.NonNullTypeDecl;
+      }
+      if (d is TopLevelDeclWithMembers { InvariantTypeDecl: { } invariantTypeDecl }) {
+        yield return invariantTypeDecl;
+      }
+      if (d is ClassLikeDecl { RawNonNullTypeDecl: { } rawNonNullTypeDecl }) {
+        yield return rawNonNullTypeDecl;
       }
     }
   }
@@ -506,6 +513,7 @@ Generate module names in the older A_mB_mC style instead of the current A.B.C sc
     resolver.moduleInfo = ModuleResolver.MergeSignature(sig, resolver.ProgramResolver.SystemModuleManager.systemNameInfo);
     Type.PushScope(resolver.moduleInfo.VisibilityScope);
     ModuleResolver.ResolveOpenedImports(resolver.moduleInfo, this, resolver.Reporter, resolver); // opened imports do not persist
+    resolver.CreateInheritedInvariantTypeDecls(this);
     var datatypeDependencies = new Graph<IndDatatypeDecl>();
     var codatatypeDependencies = new Graph<CoDatatypeDecl>();
     var allDeclarations = AllDeclarationsAndNonNullTypeDecls(TopLevelDecls).ToList();
@@ -516,6 +524,10 @@ Generate module names in the older A_mB_mC style instead of the current A.B.C sc
     resolver.ResolveTopLevelDecls_Signatures(this, sig, allDeclarations, datatypeDependencies, codatatypeDependencies);
     PipelineProfile.ModulePhase(resolver.Options, exportSetName == null ? "signature" : "exportSignature");
     Contract.Assert(resolver.AllTypeConstraints.Count == 0); // signature resolution does not add any type constraints
+
+    if (resolver.reporter.Count(ErrorLevel.Error) == prevErrorCount) {
+      resolver.CheckRefinementDeclaredTypes(allDeclarations);
+    }
 
     if (resolver.reporter.Count(ErrorLevel.Error) == prevErrorCount) {
       // Attributes may refer to members, so signatures must resolve first. Failed signatures can contain
@@ -813,6 +825,9 @@ Generate module names in the older A_mB_mC style instead of the current A.B.C sc
         // nothing more to register
       } else if (d is NewtypeDecl or AbstractTypeDecl) {
         var cl = (TopLevelDeclWithMembers)d;
+        if (cl.InvariantTypeDecl == null && InvariantTypeDecl.Applies(cl)) {
+          cl.InvariantTypeDecl = new InvariantTypeDecl(cl);
+        }
         // register the names of the type members
         var members = new Dictionary<string, MemberDecl>();
         resolver.AddClassMembers(cl, members);
@@ -858,6 +873,10 @@ Generate module names in the older A_mB_mC style instead of the current A.B.C sc
 
       } else if (d is DatatypeDecl) {
         var dt = (DatatypeDecl)d;
+
+        if (dt.InvariantTypeDecl == null && InvariantTypeDecl.Applies(dt)) {
+          dt.InvariantTypeDecl = new InvariantTypeDecl(dt);
+        }
 
         // register the names of the constructors
         dt.ConstructorsByName = new();
@@ -961,6 +980,17 @@ Generate module names in the older A_mB_mC style instead of the current A.B.C sc
 
     DetermineReferenceTypes(resolver, sig);
 
+    // Issue 105: "C?" and "raw C" for a class or reference trait with member invariants, or the derived type G of a
+    // general trait. This waits for DetermineReferenceTypes, which decides which traits are reference types.
+    foreach (var cl in TopLevelDecls.OfType<ClassLikeDecl>()) {
+      if (cl.InvariantTypeDecl == null && InvariantTypeDecl.Applies(cl)) {
+        cl.InvariantTypeDecl = new InvariantTypeDecl(cl);
+        if (cl.NonNullTypeDecl != null) {
+          cl.RawNonNullTypeDecl = new RawNonNullTypeDecl(cl);
+        }
+      }
+    }
+
     // Now, for each reference type (class and some traits), register its possibly-null type.
     // In the big loop above, each class and trait was registered under its own name. We're now going to change that for the reference types.
     foreach (TopLevelDecl d in TopLevelDecls) {
@@ -1026,7 +1056,8 @@ Generate module names in the older A_mB_mC style instead of the current A.B.C sc
           // is referring to some top-level declaration that won't accurately answer the question of whether "path" is referring to a reference
           // type or not.
           foreach (var importDecl in openedImports) {
-            Contract.Assert(importDecl is AliasModuleDecl or AbstractModuleDecl); // only these ModuleDecl's can be .Opened
+            // only these ModuleDecl's can be .Opened
+            Contract.Assert(importDecl is AliasModuleDecl or AbstractModuleDecl or LiteralModuleDecl { CopyImport: not null });
             if (importDecl.AccessibleSignature(false).TopLevels.TryGetValue(nameSegment.Name, out topLevelDecl)) {
               // For "object" and other reference-type declarations from other modules, we're picking up the NonNullTypeDecl; if so, return
               // the original declaration.
@@ -1098,6 +1129,11 @@ Generate module names in the older A_mB_mC style instead of the current A.B.C sc
   }
 
   public LiteralModuleDecl? EnclosingLiteralModuleDecl { get; set; }
+
+  /// <summary>
+  /// The module is the one that a copying import "import X := Q" (--copy-imports) declares.
+  /// </summary>
+  public bool IsCopyImport => EnclosingLiteralModuleDecl is { CopyImport: not null };
 
   public string GetDescription(DafnyOptions options) {
     return $"module {Name}";
