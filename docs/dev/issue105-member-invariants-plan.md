@@ -2716,8 +2716,9 @@ section 7.2).**
     through, so the conversion to `Y` did not check the constraint of
     `NewSix`.  With member invariants it does.  Without them that is a
     soundness bug of its own: a program that converts `3` to such a `Y` proves
-    `false`.  It is reported separately, and is not changed here, since the
-    option off must not change.
+    `false`.  It is https://github.com/erniecohen/dafny/issues/495, to be
+    fixed separately, and is not changed here, since the option off must not
+    change.
   - A conversion from a newtype to a trait that it extends and that is not a
     reference type failed an internal assertion, without the option too,
     since the translation looked at the newtype's base type, which does not
