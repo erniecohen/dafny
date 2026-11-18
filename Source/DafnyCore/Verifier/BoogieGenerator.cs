@@ -5202,12 +5202,7 @@ namespace Microsoft.Dafny {
       Contract.Requires(letExpr.LHSs.All(p => p.Var != null));
       var substMap = new Dictionary<IVariable, Expression>();
       for (var i = 0; i < letExpr.LHSs.Count; i++) {
-        var rhs = letExpr.RHSs[i];
-        if (rhs is StmtExpr { LemmaBindingCall: not null, E: LemmaResultExpr lemmaResult }) {
-          // The call that comes with the first result of a lemma (see LetExpr.LemmaBinding) is not part of its value.
-          rhs = lemmaResult;
-        }
-        substMap.Add(letExpr.LHSs[i].Var, rhs);
+        substMap.Add(letExpr.LHSs[i].Var, letExpr.RHSs[i]);
       }
       return BoogieGenerator.Substitute(letExpr.Body, null, substMap);
     }

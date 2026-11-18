@@ -1706,16 +1706,9 @@ namespace Microsoft.Dafny {
       BoogieStmtListBuilder builder, ExpressionTranslator etran, AddResultCommands addResultCommands) {
 
       var statements = new List<Statement>() { stmtExpr.S };
-      var lemmaBindingCalls = new List<CallStmt>();
-      if (stmtExpr.LemmaBindingCall is { } lemmaBindingCall) {
-        lemmaBindingCalls.Add(lemmaBindingCall);
-      }
       Expression expression = stmtExpr.E;
       while (expression is StmtExpr nestedStmtExpr) {
         statements.Add(nestedStmtExpr.S);
-        if (nestedStmtExpr.LemmaBindingCall is { } nestedLemmaBindingCall) {
-          lemmaBindingCalls.Add(nestedLemmaBindingCall);
-        }
         expression = nestedStmtExpr.E;
       }
 
@@ -1744,10 +1737,10 @@ namespace Microsoft.Dafny {
         statementExpressionDepth--;
       }
 
-      if (lemmaBindingCalls.Count != 0) {
-        foreach (var call in lemmaBindingCalls) {
-          AssumeLemmaBinding(call, wfOptions, locals, builder, etran);
-        }
+      if (stmtExpr.LemmaBindingCall is { } lemmaBindingCall) {
+        // The expression of such a statement expression is a result of the call (see LetExpr.LemmaBinding), so
+        // this call is the only statement here.
+        AssumeLemmaBinding(lemmaBindingCall, wfOptions, locals, builder, etran);
         DefiniteAssignmentTrackers = previousTrackers;
       }
 

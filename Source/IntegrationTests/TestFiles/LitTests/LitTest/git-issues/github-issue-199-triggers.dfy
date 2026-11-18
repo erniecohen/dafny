@@ -1,4 +1,4 @@
-// RUN: %verify --lemma-bindings --show-hints "%s" > "%t"
+// RUN: %verify --type-system-refresh --lemma-bindings --show-hints "%s" > "%t"
 // RUN: %diff "%s.expect" "%t"
 
 // https://github.com/erniecohen/dafny/issues/199: a bound result of a lemma is a term that a quantifier can be
@@ -47,5 +47,28 @@ lemma Instantiate(s: seq<nat>, i: nat)
 lemma WithAnotherTerm(s: seq<nat>)
   requires forall i :: 0 <= i < |s| ==> s[i] == (var m := Find(i); m)
   ensures forall i :: 0 <= i < |s| ==> s[i] > i
+{
+}
+
+lemma Further(n: nat) returns (m: nat)
+  ensures m > n + 1
+{
+  m := n + 2;
+}
+
+// Results of different lemmas at the same arguments are different terms.
+lemma TwoLemmas()
+  ensures forall n: nat :: (var m := Find(n); m) + (var m := Further(n); m) > 2 * n
+{
+}
+
+ghost predicate Positive(n: nat) {
+  n > 0
+}
+
+// A binding has a statement in it, the call. So, as for any expression with a statement in it, a term that
+// contains the binding is not a trigger. The result that the binding returns is.
+lemma InsideAnotherTerm()
+  ensures forall n: nat :: Positive(var m := Find(n); m)
 {
 }
