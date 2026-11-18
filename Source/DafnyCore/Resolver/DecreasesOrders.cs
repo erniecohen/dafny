@@ -122,7 +122,7 @@ public static class DecreasesOrders {
   /// identity, not a user-supplied name or attribute. Ordinary calls still apply their actual chain argument.
   /// </summary>
   public static bool IsChainWitness(MemberDecl member) {
-    for (MemberDecl current = member; current != null; current = current.OverriddenMember) {
+    for (MemberDecl? current = member; current != null; current = current.OverriddenMember) {
       if (current.Name == AhaName && IsStandardLibraryWfo(current.EnclosingClass)) {
         return true;
       }
