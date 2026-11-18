@@ -89,7 +89,10 @@ jobs:
           SHA: ${{ steps.commit.outputs.sha }}
         run: |
           refuse() { echo "verdict=refused: $1" >> "$GITHUB_OUTPUT"; echo "::error::$1"; exit 1; }
-          version=$(sh .github/review/version.sh | sed -n 's/^version=//p') || refuse "version.sh failed at $SHA"
+          # Capture before filtering so a failed HEAD-based derivation cannot be hidden.
+          out=$(sh .github/review/version.sh) || refuse "version.sh failed at $SHA"
+          version=$(printf '%s\n' "$out" | sed -n 's/^version=//p')
+          [ -n "$version" ] || refuse "version.sh returned no version at $SHA"
           tag="v$version"
           echo "tag=$tag" | tee -a "$GITHUB_OUTPUT"
 
