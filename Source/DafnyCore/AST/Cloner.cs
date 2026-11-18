@@ -111,9 +111,10 @@ namespace Microsoft.Dafny {
           newParent, CloneType(dd.Rhs), CloneAttributes(dd.Attributes));
       } else if (d is NewtypeDecl) {
         var dd = (NewtypeDecl)d;
-        if (dd.Var == null) {
+        // Issue 105: the clone has the clauses of the header as written; resolving it moves them again
+        if (dd.WrittenVar == null) {
           return new NewtypeDecl(Origin(dd.Origin), dd.NameNode.Clone(this), dd.TypeArgs.ConvertAll(CloneTypeParam), newParent,
-            CloneType(dd.BaseType), dd.WitnessKind, CloneExpr(dd.Witness),
+            CloneType(dd.BaseType), dd.WrittenWitnessKind, CloneExpr(dd.WrittenWitness),
             dd.Traits.ConvertAll(CloneType),
             dd.Members.ConvertAll(d => CloneMember(d, false)), CloneAttributes(dd.Attributes), dd.IsRefining) {
             UseBaseReferenceCharacteristics = CloneResolvedFields && dd.UseBaseReferenceCharacteristics,
@@ -121,7 +122,7 @@ namespace Microsoft.Dafny {
           };
         } else {
           return new NewtypeDecl(Origin(dd.Origin), dd.NameNode.Clone(this), dd.TypeArgs.ConvertAll(CloneTypeParam), newParent,
-            CloneBoundVar(dd.Var, false), CloneExpr(dd.Constraint), dd.WitnessKind, CloneExpr(dd.Witness),
+            CloneBoundVar(dd.WrittenVar, false), CloneExpr(dd.WrittenConstraint), dd.WrittenWitnessKind, CloneExpr(dd.WrittenWitness),
             dd.Traits.ConvertAll(CloneType),
             dd.Members.ConvertAll(d => CloneMember(d, false)), CloneAttributes(dd.Attributes), dd.IsRefining) {
             UseBaseReferenceCharacteristics = CloneResolvedFields && dd.UseBaseReferenceCharacteristics,

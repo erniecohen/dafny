@@ -1,8 +1,9 @@
 // RUN: %verify --type-system-refresh=true --general-traits=datatype --general-newtypes=true --member-invariants --unchecked-invariant-extension "%s" > "%t"
 // RUN: %diff "%s.expect" "%t"
 // Member invariants (https://github.com/erniecohen/dafny/issues/105): the vacuity controls V5 and V5b
-// of section 6.4 of docs/dev/issue105-member-invariants-plan.md, and V5c, a generic form of V5.  The
-// invariants of Liar, Liar2 and Liar3 refer to the set of values of their own type, so the resolver
+// of section 6.4 of docs/dev/issue105-member-invariants-plan.md, V5c, a generic form of V5, and V5d, the
+// same through a constant of a generic type.  The invariants of Liar, Liar2, Liar3 and Liar4 refer to the
+// set of values of their own type, so the resolver
 // rejects them (the extension condition, git-issue-105-extension.dfy).  Here the test-only
 // --unchecked-invariant-extension turns the condition off, and the type's axioms are inconsistent: each
 // 'assert false' verifies.  This records why the condition exists, and that the vacuity controls V1 and
@@ -58,6 +59,36 @@ method V5c() {
     assert !(P(true) is P<Liar3>);
     ghost var x: Liar3 :| Yes(x);
     assert x.p.b;
+  }
+  assert false;
+}
+
+// V5d, through a constant of a generic type: a Liar4 needs a Box<Liar4> whose constant AllEqual holds, so
+// that every Liar4 is its x, and whether Liar4(Box(Leaf)) is a Liar4 is the liar's paradox again.  Before
+// stage 7 the resolver missed this one: it analysed a constant without the dependence of its type
+// arguments (module ExactClause2 of git-issue-105-extension.dfy).
+function Id<X>(y: X): X { y }
+
+datatype Box<X(!new,==)> = Box(x: X) {
+  ghost const AllEqual: bool := forall y: X :: Id(y) == x
+}
+
+datatype Liar4 = Liar4(b: Box<Liar4>) | Leaf {
+  invariant this.Liar4? ==> b.AllEqual
+}
+
+method V5d() {
+  ghost var r: raw Liar4 := Liar4(Box(Leaf));
+  if r is Liar4 {
+    ghost var w: Liar4 := r;
+    assert w.b.AllEqual;
+    assert Id(w) == w.b.x;
+  } else {
+    assert !r.b.AllEqual;
+    ghost var y: Liar4 :| Id(y) != Leaf;
+    assert y.b.AllEqual;
+    assert Id(Leaf) == y.b.x;
+    assert y == r;
   }
   assert false;
 }

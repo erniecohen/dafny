@@ -1,6 +1,8 @@
 // Member invariants (https://github.com/erniecohen/dafny/issues/105): "raw" is parsed and printed
-// for every type, but so far supported for a datatype, a class, a trait or an abstract type, and not
-// yet for a newtype, and an invariant body must be a boolean expression.
+// for every type.  It is supported for a datatype, a class, a trait, an abstract type and a newtype
+// with member invariants, but not yet for a newtype whose constraint is given in its header and which
+// has no member invariant: "raw" of it would be its base type without the constraint, a type the
+// program does not otherwise have.  An invariant body must be a boolean expression.
 // RUN: %exits-with 2 %resolve --member-invariants --print "%t.dfy" "%s" > "%t"
 // RUN: %exits-with 2 %resolve --member-invariants "%t.dfy" >> "%t"
 // RUN: %diff "%s.expect" "%t"
@@ -28,10 +30,12 @@ module RawTypes {
   method N(t: raw Named, u: seq<raw Named?>, v: raw Cell?) { }
 
   newtype Small = x: int | x < 10 {
-    invariant x > 0
+    invariant this as int > 0
   }
 
-  method S(s: raw Small) { }
+  newtype Tiny = x: int | x < 10
+
+  method S(s: raw Small, t: raw Tiny) { }
 }
 
 module NotBool {

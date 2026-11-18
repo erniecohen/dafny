@@ -1,0 +1,111 @@
+github-issue-374.dfy(26,18): Error: a precondition for this call could not be proved
+github-issue-374-decls.dfy(10,21): Related location: this is the precondition that could not be proved
+github-issue-374.dfy(26,18): Error: a precondition for this call could not be proved
+github-issue-374-decls.dfy(10,36): Related location: this is the precondition that could not be proved
+github-issue-374.dfy(26,18): Error: a precondition for this call could not be proved
+github-issue-374-decls.dfy(11,13): Related location: this is the precondition that could not be proved
+github-issue-374.dfy(34,18): Error: a precondition for this call could not be proved
+github-issue-374-decls.dfy(10,21): Related location: this is the precondition that could not be proved
+github-issue-374.dfy(34,18): Error: a precondition for this call could not be proved
+github-issue-374-decls.dfy(10,36): Related location: this is the precondition that could not be proved
+github-issue-374.dfy(43,0): Error: a postcondition could not be proved on this return path
+github-issue-374.dfy(41,18): Related location: this is the postcondition that could not be proved
+github-issue-374.dfy(43,0): Error: a postcondition could not be proved on this return path
+github-issue-374.dfy(42,22): Related location: this is the postcondition that could not be proved
+github-issue-374.dfy(51,8): Error: a precondition for this call could not be proved
+github-issue-374-decls.dfy(10,21): Related location: this is the precondition that could not be proved
+github-issue-374.dfy(51,8): Error: a precondition for this call could not be proved
+github-issue-374-decls.dfy(10,36): Related location: this is the precondition that could not be proved
+github-issue-374.dfy(57,0): Error: a postcondition could not be proved on this return path
+github-issue-374.dfy(56,35): Related location: this is the postcondition that could not be proved
+github-issue-374.dfy(66,8): Error: a precondition for this call could not be proved
+github-issue-374-decls.dfy(10,21): Related location: this is the precondition that could not be proved
+github-issue-374.dfy(66,8): Error: a precondition for this call could not be proved
+github-issue-374-decls.dfy(10,36): Related location: this is the precondition that could not be proved
+github-issue-374.dfy(66,8): Error: a precondition for this call could not be proved
+github-issue-374-decls.dfy(11,13): Related location: this is the precondition that could not be proved
+github-issue-374.dfy(75,8): Error: a precondition for this call could not be proved
+github-issue-374-decls.dfy(10,21): Related location: this is the precondition that could not be proved
+github-issue-374.dfy(75,8): Error: a precondition for this call could not be proved
+github-issue-374-decls.dfy(10,36): Related location: this is the precondition that could not be proved
+github-issue-374.dfy(78,8): Error: a precondition for this call could not be proved
+github-issue-374-decls.dfy(10,21): Related location: this is the precondition that could not be proved
+github-issue-374.dfy(81,8): Error: a precondition for this call could not be proved
+github-issue-374-decls.dfy(10,21): Related location: this is the precondition that could not be proved
+github-issue-374.dfy(81,8): Error: a precondition for this call could not be proved
+github-issue-374-decls.dfy(10,36): Related location: this is the precondition that could not be proved
+
+Dafny program verifier finished with 0 verified, 18 errors
+
+Dafny program verifier finished with 7 verified, 0 errors
+
+Dafny program verifier finished with 7 verified, 0 errors
+github-issue-374-negative.dfy(12,2): Error: assertion might not hold
+github-issue-374-negative.dfy(18,2): Error: assertion might not hold
+github-issue-374-negative.dfy(25,0): Error: a postcondition could not be proved on this return path
+github-issue-374-negative.dfy(24,12): Related location: this is the postcondition that could not be proved
+github-issue-374-negative.dfy(34,2): Error: assertion might not hold
+github-issue-374-negative.dfy(41,2): Error: assertion might not hold
+github-issue-374-negative.dfy(49,2): Error: assertion might not hold
+github-issue-374-negative.dfy(62,2): Error: assertion might not hold
+github-issue-374-negative.dfy(68,2): Error: assertion might not hold
+github-issue-374-negative.dfy(79,2): Error: assertion might not hold
+github-issue-374-negative.dfy(86,2): Error: assertion might not hold
+github-issue-374-negative.dfy(94,2): Error: assertion might not hold
+github-issue-374-negative.dfy(106,2): Error: assertion might not hold
+github-issue-374-negative.dfy(118,2): Error: assertion might not hold
+
+Dafny program verifier finished with 1 verified, 13 errors
+github-issue-374-negative.dfy(12,2): Error: assertion might not hold
+github-issue-374-negative.dfy(18,2): Error: assertion might not hold
+github-issue-374-negative.dfy(25,0): Error: a postcondition could not be proved on this return path
+github-issue-374-negative.dfy(24,12): Related location: this is the postcondition that could not be proved
+github-issue-374-negative.dfy(34,2): Error: assertion might not hold
+github-issue-374-negative.dfy(41,2): Error: assertion might not hold
+github-issue-374-negative.dfy(49,2): Error: assertion might not hold
+github-issue-374-negative.dfy(62,2): Error: assertion might not hold
+github-issue-374-negative.dfy(68,2): Error: assertion might not hold
+github-issue-374-negative.dfy(79,2): Error: assertion might not hold
+github-issue-374-negative.dfy(86,2): Error: assertion might not hold
+github-issue-374-negative.dfy(94,2): Error: assertion might not hold
+github-issue-374-negative.dfy(106,2): Error: assertion might not hold
+github-issue-374-negative.dfy(118,2): Error: assertion might not hold
+
+Dafny program verifier finished with 1 verified, 13 errors
+github-issue-374-axiom.dfy(12,2): Error: assertion might not hold
+github-issue-374-axiom.dfy(18,0): Error: a postcondition could not be proved on this return path
+github-issue-374-axiom.dfy(17,12): Related location: this is the postcondition that could not be proved
+github-issue-374-axiom.dfy(24,0): Error: a postcondition could not be proved on this return path
+github-issue-374-axiom.dfy(23,12): Related location: this is the postcondition that could not be proved
+github-issue-374-axiom.dfy(30,0): Error: a postcondition could not be proved on this return path
+github-issue-374-axiom.dfy(29,12): Related location: this is the postcondition that could not be proved
+github-issue-374-axiom.dfy(37,0): Error: a postcondition could not be proved on this return path
+github-issue-374-axiom.dfy(36,12): Related location: this is the postcondition that could not be proved
+github-issue-374-axiom.dfy(43,0): Error: a postcondition could not be proved on this return path
+github-issue-374-axiom.dfy(42,32): Related location: this is the postcondition that could not be proved
+github-issue-374-axiom.dfy(50,2): Error: assertion might not hold
+github-issue-374-axiom.dfy(59,2): Error: assertion might not hold
+
+Dafny program verifier finished with 0 verified, 8 errors
+
+Dafny program verifier finished with 8 verified, 0 errors
+
+Dafny program verifier finished with 6 verified, 0 errors
+
+Dafny program verifier finished with 6 verified, 0 errors
+github-issue-374-malformed.dfy(7,53): Error: {:functionDomain} expects "restrict" on a body-less ghost function <A, B>(f: A -> B): A -> B, or "exactDom" on a body-less ghost predicate <A, B>(f: A -> B), with no other specification
+github-issue-374-malformed.dfy(9,46): Error: {:functionDomain} expects "restrict" on a body-less ghost function <A, B>(f: A -> B): A -> B, or "exactDom" on a body-less ghost predicate <A, B>(f: A -> B), with no other specification
+github-issue-374-malformed.dfy(11,55): Error: {:functionDomain} expects "restrict" on a body-less ghost function <A, B>(f: A -> B): A -> B, or "exactDom" on a body-less ghost predicate <A, B>(f: A -> B), with no other specification
+github-issue-374-malformed.dfy(14,55): Error: {:functionDomain} expects "restrict" on a body-less ghost function <A, B>(f: A -> B): A -> B, or "exactDom" on a body-less ghost predicate <A, B>(f: A -> B), with no other specification
+github-issue-374-malformed.dfy(16,56): Error: {:functionDomain} expects "restrict" on a body-less ghost function <A, B>(f: A -> B): A -> B, or "exactDom" on a body-less ghost predicate <A, B>(f: A -> B), with no other specification
+github-issue-374-malformed.dfy(18,55): Error: {:functionDomain} expects "restrict" on a body-less ghost function <A, B>(f: A -> B): A -> B, or "exactDom" on a body-less ghost predicate <A, B>(f: A -> B), with no other specification
+
+Dafny program verifier finished with 1 verified, 0 errors
+github-issue-374-malformed.dfy(7,53): Error: {:functionDomain} expects "restrict" on a body-less ghost function <A, B>(f: A -> B): A -> B, or "exactDom" on a body-less ghost predicate <A, B>(f: A -> B), with no other specification
+github-issue-374-malformed.dfy(9,46): Error: {:functionDomain} expects "restrict" on a body-less ghost function <A, B>(f: A -> B): A -> B, or "exactDom" on a body-less ghost predicate <A, B>(f: A -> B), with no other specification
+github-issue-374-malformed.dfy(11,55): Error: {:functionDomain} expects "restrict" on a body-less ghost function <A, B>(f: A -> B): A -> B, or "exactDom" on a body-less ghost predicate <A, B>(f: A -> B), with no other specification
+github-issue-374-malformed.dfy(14,55): Error: {:functionDomain} expects "restrict" on a body-less ghost function <A, B>(f: A -> B): A -> B, or "exactDom" on a body-less ghost predicate <A, B>(f: A -> B), with no other specification
+github-issue-374-malformed.dfy(16,56): Error: {:functionDomain} expects "restrict" on a body-less ghost function <A, B>(f: A -> B): A -> B, or "exactDom" on a body-less ghost predicate <A, B>(f: A -> B), with no other specification
+github-issue-374-malformed.dfy(18,55): Error: {:functionDomain} expects "restrict" on a body-less ghost function <A, B>(f: A -> B): A -> B, or "exactDom" on a body-less ghost predicate <A, B>(f: A -> B), with no other specification
+
+Dafny program verifier finished with 1 verified, 0 errors

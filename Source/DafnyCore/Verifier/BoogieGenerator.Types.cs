@@ -124,6 +124,9 @@ public partial class BoogieGenerator {
       SelectorSemantics(Apply(arity), Predef.BoxType, "h", apply_ty, Requires(arity), requires_ty);
       SelectorSemantics(Requires(arity), Bpl.Type.Bool, "r", requires_ty, null, null);
       SelectorSemantics(Reads(arity), objset_ty, "rd", reads_ty, null, null);
+      if (FunctionDomainTags) {
+        AddTaggedHandleAxioms(ad, apply_ty, requires_ty, reads_ty, objset_ty);
+      }
 
       // function {:inline true}
       //   FuncN._requires#canCall(G...G G: Ty, H:Heap, f:Handle, x ... x :Box): bool
@@ -1096,6 +1099,10 @@ public partial class BoogieGenerator {
         var dd = (NewtypeDecl)d;
         AddTypeDecl(dd);
         AddClassMembers(dd, true, true);
+        if (dd.InvariantTypeDecl != null) {
+          // Issue 105: the type that the newtype's name denotes, "raw N" restricted by the invariants
+          AddTypeDecl(dd.InvariantTypeDecl);
+        }
       } else if (d is DefaultClassDecl defaultClassDecl) {
         AddClassMembers(defaultClassDecl, options.OptimizeResolution < 1, true);
       } else if (d is ClassLikeDecl) {
@@ -1147,7 +1154,12 @@ public partial class BoogieGenerator {
     FuelContext oldFuelContext = this.fuelContext;
     this.fuelContext = FuelSetting.NewFuelContext(dd);
 
-    AddWellformednessCheck(dd);
+    // Issue 105: where the header has moved into the InvariantTypeDecl (see NewtypeDecl.TakeHeaderClauses), "raw N"
+    // is the base type with no constraint, as inhabited as the base type, and ghost, so it has nothing to check. The
+    // header's constraint and witness are checked as those of the InvariantTypeDecl (see AddTypeDecl(SubsetTypeDecl)).
+    if (dd.MovedHeaderClauses == null) {
+      AddWellformednessCheck(dd);
+    }
 
     // Add $Is and $IsAlloc axioms for the newtype
     currentModule = dd.EnclosingModuleDefinition;
@@ -1179,8 +1191,11 @@ public partial class BoogieGenerator {
     this.fuelContext = FuelSetting.NewFuelContext(dd);
 
     // Issue 105: the well-formedness of the type of a declaration with member invariants is that of its invariants,
-    // which are checked as predicates, and of its witness, which is checked as a const of the type.
-    if (!Attributes.Contains(dd.Attributes, "axiom") && dd is not InvariantTypeDecl) {
+    // which are checked as predicates, and of its witness, which is checked as a const of the type. A newtype whose
+    // header has moved into the type (see NewtypeDecl.TakeHeaderClauses) is checked here instead, for the header's
+    // constraint and witness, the default witness included, against every conjunct.
+    if (!Attributes.Contains(dd.Attributes, "axiom") &&
+        dd is not InvariantTypeDecl || dd is InvariantTypeDecl { Owner: NewtypeDecl { MovedHeaderClauses: not null } }) {
       AddWellformednessCheck(dd);
     }
     currentModule = dd.EnclosingModuleDefinition;
@@ -1348,6 +1363,10 @@ public partial class BoogieGenerator {
     fromType = CachedAncestorType(fromType);
     if (fromType.IsTypeParameter) {
       return UnboxUnlessInherentlyBoxed(r, toType);
+    } else if (toType.IsTraitType && !toType.IsRefType && !fromType.IsTraitType && !fromType.IsRefType) {
+      // cast to a non-reference trait, from a datatype or from a newtype that extends it (which the ancestor of
+      // "fromType", its base type, no longer shows)
+      return BoxIfNecessary(r.tok, r, fromType);
     } else if (fromType.IsNumericBased(Type.NumericPersuasion.Int)) {
       if (toType.IsNumericBased(Type.NumericPersuasion.Int)) {
         // do nothing
@@ -1708,7 +1727,10 @@ public partial class BoogieGenerator {
       baseType = ((SubsetTypeDecl)rdt).RhsWithArgument(udt.TypeArgs);
       kind = "subset type";
     } else if (rdt is NewtypeDecl) {
-      baseType = options.Get(CommonOptionBag.ConsistentObligationChecks) || options.Get(CommonOptionBag.ExtendedNewtypeBases)
+      // Issue 105: with member invariants, the base type is instantiated, since the check of an invariant of a
+      // generic type in it uses its type arguments
+      baseType = options.Get(CommonOptionBag.ConsistentObligationChecks) || options.Get(CommonOptionBag.ExtendedNewtypeBases) ||
+                 options.Get(CommonOptionBag.MemberInvariants)
         ? ((NewtypeDecl)rdt).ConcreteBaseType(udt.TypeArgs)
         : ((NewtypeDecl)rdt).BaseType;
       kind = "newtype";
@@ -1717,8 +1739,25 @@ public partial class BoogieGenerator {
       kind = "type synonym";
     }
 
+    if (rdt is NewtypeDecl { InvariantTypeDecl: not null }) {
+      // Issue 105: a base type that was inferred is a type proxy, which AsRedirectingType does not look through, so
+      // the constraint of a newtype base would not be checked. Without member invariants, that is a separate issue.
+      baseType = baseType.NormalizeExpandKeepConstraints();
+    }
     if (baseType.AsRedirectingType != null) {
       CheckResultToBeInType_Aux(tok, boogieExpr, origExpr, baseType, builder, etran, errorMsgPrefix, establishedArrowBase);
+    }
+    if (rdt is InvariantTypeDecl invariantTypeDecl && !InvariantTypeDecl.IsReferenceType(invariantTypeDecl.Owner) &&
+        RevealedInScope((RevealableTypeDecl)invariantTypeDecl)) {
+      // Issue 105: the result of an operation of a newtype with member invariants, each invariant a separate obligation,
+      // as at a conversion to the type. The value is one of "raw N<A>", which has the representation of the base type,
+      // so that each invariant, applied to it, has the type arguments A.
+      var typeMap = TypeParameter.SubstitutionMap(rdt.TypeArgs, udt.TypeArgs);
+      var rawValue = new BoogieWrapper(etran.TrExpr(boogieExpr), rdt.Var.Type.Subst(typeMap));
+      var invariantConstraint = Substitute(rdt.Constraint, null, new() { { rdt.Var, rawValue } }, typeMap);
+      CheckInvariantConjuncts(tok, invariantTypeDecl, invariantConstraint, toType, builder, etran, b => b, false, Bpl.Expr.True,
+        errorMsgPrefix);
+      return;
     }
     // Check any constraint defined in 'dd'
     if (rdt.Var != null) {
@@ -1766,6 +1805,11 @@ public partial class BoogieGenerator {
     Contract.Ensures(currentModule == null && codeContext == null && IsAllocContext == null);
 
     proofDependencies.SetCurrentDefinition(MethodVerboseName(decl.FullDafnyName, MethodTranslationKind.SpecWellformedness), null);
+    // Issue 105: the InvariantTypeDecl of a newtype whose header has moved into it is checked in place of the newtype
+    // (see AddTypeDecl(NewtypeDecl)), under the newtype's attributes and as part of its verification, and a witness
+    // member is checked as a const of the type.
+    var invariantTypeDecl = decl as InvariantTypeDecl;
+    var attributes = invariantTypeDecl != null ? invariantTypeDecl.Owner.Attributes : decl.Attributes;
 
     if (!InVerificationScope(decl) && !AddedInvariantsInVerificationScope((Declaration)decl)) {
       // Checked in other file
@@ -1800,7 +1844,7 @@ public partial class BoogieGenerator {
     var name = MethodName(decl, MethodTranslationKind.SpecWellformedness);
     var proc = new Bpl.Procedure(decl.Tok, name, [],
       inParams, [],
-      false, req, mod, [], etran.TrAttributes(decl.Attributes, null));
+      false, req, mod, [], etran.TrAttributes(attributes, null));
     AddVerboseNameAttribute(proc, decl.FullDafnyName, MethodTranslationKind.SpecWellformedness);
     sink.AddTopLevelDeclaration(proc);
 
@@ -1841,7 +1885,9 @@ public partial class BoogieGenerator {
     var witnessCheckBuilder = new BoogieStmtListBuilder(this, options, context);
     witnessCheckBuilder.Add(new Bpl.CommentCmd($"check well-formedness of {decl.WhatKind} witness, and that it satisfies the constraint"));
     string witnessString = null;
-    if (decl.Witness != null) {
+    if (invariantTypeDecl != null && invariantTypeDecl.Owner.Members.Exists(member => member is MemberWitness)) {
+      witnessCheckBuilder.Add(new Bpl.CommentCmd("the witness member is checked as a const of the type"));
+    } else if (decl.Witness != null) {
       // check well-formedness of the witness expression (including termination, and reads checks)
       var ghostCodeContext = codeContext;
       codeContext = decl.WitnessKind == SubsetTypeDecl.WKind.Compiled ? new CallableWrapper(decl, false) : ghostCodeContext;
@@ -1892,11 +1938,12 @@ public partial class BoogieGenerator {
     var s1 = builder.Collect(decl.Tok);
     var implBody = new StmtList(new List<BigBlock>(s0.BigBlocks.Concat(s1.BigBlocks)), decl.Tok);
 
-    if (EmitImplementation(decl.Attributes)) {
+    if (EmitImplementation(attributes)) {
       // emit the impl only when there are proof obligations.
-      QKeyValue kv = etran.TrAttributes(decl.Attributes, null);
+      QKeyValue kv = etran.TrAttributes(attributes, null);
 
-      AddImplementationWithAttributes(GetToken(decl), proc, implInParams, [], locals, implBody, kv);
+      // A task is verified as part of a declaration of the program, which an InvariantTypeDecl is not
+      AddImplementationWithAttributes(GetToken(invariantTypeDecl?.Owner as ICanVerify ?? decl), proc, implInParams, [], locals, implBody, kv);
     }
 
     // TODO: Should a checksum be inserted here?

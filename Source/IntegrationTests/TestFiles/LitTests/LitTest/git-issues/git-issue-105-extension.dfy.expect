@@ -9,25 +9,30 @@ git-issue-105-extension.dfy(54,30): Error: the invariant of 'ThroughLet' refers 
 git-issue-105-extension.dfy(58,43): Error: 'Wrap' is used by the invariant of 'ThroughGeneric' and refers to the set of values of 'X', which depends on 'ThroughGeneric'
 git-issue-105-extension.dfy(71,71): Error: the invariant of 'ThroughArrow' refers to the set of values of 'ThroughArrow', in the constraint of the arrow type 'ThroughArrow -> bool'
 git-issue-105-extension.dfy(75,21): Error: the invariant of 'RawElements' tests a raw value against 'RawElements'
-git-issue-105-extension.dfy(91,16): Error: the invariant of 'T' instantiates 'Id' with 'raw T', a type that depends on 'T', which is not yet supported
-git-issue-105-extension.dfy(101,14): Error: the invariant of 'Stored' applies a function value that is not a lambda expression or a named function, so the body it applies is not known
-git-issue-105-extension.dfy(104,14): Error: the invariant of 'StoredRequires' applies a function value that is not a lambda expression or a named function, so the body it applies is not known
-git-issue-105-extension.dfy(119,18): Error: the invariant of 'Liar3' uses 'Ok', which is dynamically bound, so the bodies it stands for are not all known
-git-issue-105-extension.dfy(130,20): Error: the invariant of 'Box' uses 'Fits', which is dynamically bound, so the bodies it stands for are not all known
-git-issue-105-extension.dfy(140,27): Error: the invariant of 'Argument' converts a raw value to 'Argument'
-git-issue-105-extension.dfy(143,31): Error: the invariant of 'Conversion' converts a raw value to 'Conversion'
-git-issue-105-extension.dfy(146,28): Error: the invariant of 'Let' converts a raw value to 'Let'
-git-issue-105-extension.dfy(149,35): Error: the invariant of 'Test' tests a raw value against 'Test'
-git-issue-105-extension.dfy(153,29): Error: the invariant of 'Component' converts a raw value to 'Component'
-git-issue-105-extension.dfy(157,26): Error: 'G' is used by the invariant of 'Receiver' and converts a raw value to 'Receiver'
-git-issue-105-extension.dfy(161,21): Error: the invariant of 'Tree' converts a raw value to 'Forest', by applying 'Count', which is not a raw member, to it
-git-issue-105-extension.dfy(168,36): Error: the invariant of 'Sub' tests a raw value against 'Small'
+git-issue-105-extension.dfy(102,14): Error: the invariant of 'Stored' applies a function value that is not a lambda expression or a named function, so the body it applies is not known
+git-issue-105-extension.dfy(105,14): Error: the invariant of 'StoredRequires' applies a function value that is not a lambda expression or a named function, so the body it applies is not known
+git-issue-105-extension.dfy(120,18): Error: the invariant of 'Liar3' uses 'Ok', which is dynamically bound, so the bodies it stands for are not all known
+git-issue-105-extension.dfy(131,20): Error: the invariant of 'Box' uses 'Fits', which is dynamically bound, so the bodies it stands for are not all known
+git-issue-105-extension.dfy(141,27): Error: the invariant of 'Argument' converts a raw value to 'Argument'
+git-issue-105-extension.dfy(144,31): Error: the invariant of 'Conversion' converts a raw value to 'Conversion'
+git-issue-105-extension.dfy(147,28): Error: the invariant of 'Let' converts a raw value to 'Let'
+git-issue-105-extension.dfy(150,35): Error: the invariant of 'Test' tests a raw value against 'Test'
+git-issue-105-extension.dfy(154,29): Error: the invariant of 'Component' converts a raw value to 'Component'
+git-issue-105-extension.dfy(158,26): Error: 'G' is used by the invariant of 'Receiver' and converts a raw value to 'Receiver'
+git-issue-105-extension.dfy(162,21): Error: the invariant of 'Tree' converts a raw value to 'Forest', by applying 'Count', which is not a raw member, to it
+git-issue-105-extension.dfy(169,36): Error: the invariant of 'Sub' tests a raw value against 'Small'
 git-issue-105-extension.dfy(195,21): Error: the invariant of 'R1' refers to the set of values of 'R1<X>', which depends on 'R1'
 git-issue-105-extension.dfy(198,21): Error: the invariant of 'R2' refers to the set of values of 'R2<int>', which depends on 'R2'
 git-issue-105-extension.dfy(201,21): Error: the invariant of 'R3' refers to the set of values of 'raw R3<X>', which depends on 'R3'
 git-issue-105-extension.dfy(210,35): Error: the invariant of 'R6' tests a raw value against 'R6<X>'
 git-issue-105-extension.dfy(213,21): Error: the invariant of 'Q' refers to the set of values of 'R4<Q<X>>', which depends on 'Q'
-git-issue-105-extension.dfy(228,17): Error: the invariant of 'L' is used by the invariant of 'V' and instantiates 'Len' with 'X', a type that depends on 'V', which is not yet supported
 git-issue-105-extension.dfy(238,28): Error: the invariant of 'P' is used by the invariant of 'Liar3' and refers to the set of values of 'X', which depends on 'Liar3'
-git-issue-105-extension.dfy(238,40): Error: the invariant of 'P' is used by the invariant of 'Liar3' and instantiates 'Yes' with 'X', a type that depends on 'Liar3', which is not yet supported
-32 resolution/type errors detected in git-issue-105-extension.dfy
+git-issue-105-extension.dfy(249,46): Error: 'All' is used by the invariant of 'Direct' and refers to the set of values of 'X', which depends on 'Direct'
+git-issue-105-extension.dfy(254,48): Error: 'Inner' is used by the invariant of 'Transitive' and refers to the set of values of 'X', which depends on 'Transitive'
+git-issue-105-extension.dfy(260,64): Error: 'Pick' is used by the invariant of 'Specified' and refers to the set of values of 'X', which depends on 'Specified'
+git-issue-105-extension.dfy(266,55): Error: 'Arrow' is used by the invariant of 'ThroughArrow' and refers to the set of values of 'X', which depends on 'ThroughArrow', in the constraint of the arrow type 'X -> bool'
+git-issue-105-extension.dfy(271,46): Error: 'Chosen' is used by the invariant of 'ThroughChoice' and refers to the set of values of 'X', which depends on 'ThroughChoice'
+git-issue-105-extension.dfy(277,47): Error: 'Both' is used by the invariant of 'Twice' and refers to the set of values of 'X', which depends on 'Twice'
+git-issue-105-extension.dfy(285,41): Error: 'AllEqual' is used by the invariant of 'Liar' and refers to the set of values of 'X', which depends on 'Liar'
+git-issue-105-extension.dfy(288,37): Error: 'Other' is used by the invariant of 'ThroughMember' and refers to the set of values of 'X', which depends on 'ThroughMember'
+37 resolution/type errors detected in git-issue-105-extension.dfy

@@ -811,6 +811,12 @@ git-issues/github-issue-211-rev3.dfy
 # The multiset order of the orders library over any well-founded relation, and global bounds of --modular-termination by multiset orders, where a dispatched call needs a strictly smaller bag (https://github.com/erniecohen/dafny/issues/211).
 git-issues/github-issue-211-multiset.dfy
 
+# Function domains: under --additional-axioms lambdas carry their parameter types as domain tags,
+# {:functionDomain} declarations give Restrict and ExactDom, and --function-extensionality-axiom makes
+# total functions of one argument with the same exact domain equal when they agree on it
+# (https://github.com/erniecohen/dafny/issues/374).
+git-issues/github-issue-374.dfy
+
 # Hiding or revealing a static function or constant through an object, as in `reveal foo.Q`, resolves under --type-system-refresh instead of crashing, and verifies (https://github.com/erniecohen/dafny/issues/416).
 git-issues/github-issue-416.dfy
 ast/reveal/revealQualified.dfy
@@ -889,6 +895,24 @@ git-issues/git-issue-105-refinement-verify.dfy
 git-issues/git-issue-105-abstract-types.dfy
 git-issues/git-issue-105-abstract-errors.dfy
 git-issues/git-issue-105-abstract-synonym.dfy
+# A conversion from a newtype to a trait that it extends and that is not a reference type failed an
+# internal assertion of the verifier; the value is now boxed, as a datatype's is. Found with member
+# invariants, but the test runs without the option (https://github.com/erniecohen/dafny/issues/105).
+git-issues/git-issue-105-newtype-trait-cast.dfy
+# Eighth stage: newtypes (a newtype N with member invariants is a subset of "raw N"; the header
+# constraint moves into N, the witness rules, raw N is ghost, operations checked per invariant, native
+# types, compilation, and the instantiated and inferred base types of the newtype check); the gate is
+# gone, so trait-gates, raw-errors, verify and not-yet changed (https://github.com/erniecohen/dafny/issues/105).
+git-issues/git-issue-105-newtypes.dfy
+git-issues/git-issue-105-newtype-witness-errors.dfy
+git-issues/git-issue-105-newtype-errors.dfy
+git-issues/git-issue-105-newtype-witness-checks.dfy
+git-issues/git-issue-105-newtype-generics.dfy
+git-issues/git-issue-105-newtype-native.dfy
+git-issues/git-issue-105-newtype-compile.dfy
+git-issues/git-issue-105-opaque.dfy
+git-issues/git-issue-105-auto-reveal.dfy
+git-issues/git-issue-105-false-proofs.dfy
 
 # Recursion across module boundaries, first stage: the option, the groups, the edges that may not be on
 # a cycle, the codatatype rule, libraries, and an accepted control
@@ -921,3 +945,5 @@ git-issues/git-issue-466-stage3-termination.dfy
 git-issues/git-issue-466-stage3-accepted.dfy
 git-issues/git-issue-466-stage3-rejected.dfy
 git-issues/git-issue-466-stage3-outside.dfy
+git-issues/git-issue-466-invariants.dfy
+git-issues/git-issue-466-invariants-rejected.dfy

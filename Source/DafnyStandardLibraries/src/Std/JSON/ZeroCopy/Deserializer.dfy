@@ -81,11 +81,19 @@ module Std.JSON.ZeroCopy.Deserializer {
       : (sp: Split<Structural<jopt>>)
       ensures sp.SplitFrom?(cs, (st: Structural<jopt>) => Spec.Structural(st, SpecView))
     {
-      var SP(before, cs) := WS(cs);
-      var SP(val, cs) := cs.SkipByte().Split();
+      var SP(before, cs1) := WS(cs);
+      var SP(val, cs2) := cs1.SkipByte().Split();
       assert val.Length() <= 1;
-      var SP(after, cs) := WS(cs);
-      SP(Grammar.Structural(before, val, after), cs)
+      var SP(after, cs3) := WS(cs2);
+      var st: Structural<jopt> := Grammar.Structural(before, val, after);
+      assert SpecView(before) == Spec.View(before) && SpecView(val) == Spec.View(val) && SpecView(after) == Spec.View(after);
+      assert cs.Bytes() == Spec.View(before) + cs1.Bytes();
+      assert cs1.Bytes() == Spec.View(val) + cs2.Bytes();
+      assert cs2.Bytes() == Spec.View(after) + cs3.Bytes();
+      assert cs.Bytes() == Spec.View(before) + (Spec.View(val) + (Spec.View(after) + cs3.Bytes()));
+      assert cs.Bytes() == Spec.View(before) + Spec.View(val) + Spec.View(after) + cs3.Bytes();
+      assert Spec.Structural(st, SpecView) == Spec.View(before) + Spec.View(val) + Spec.View(after);
+      SP(st, cs3)
     }
 
     ghost predicate ValueParserValid(sp: SubParser<Value>) {

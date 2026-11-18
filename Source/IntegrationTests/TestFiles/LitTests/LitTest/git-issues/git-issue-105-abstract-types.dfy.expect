@@ -24,4 +24,4 @@ git-issue-105-abstract-types.dfy(139,7): Related location: refining module
 git-issue-105-abstract-types.dfy(169,39): Error: a postcondition could not be proved on this return path
 git-issue-105-abstract-types.dfy(169,35): Related location: this is the postcondition that could not be proved
 
-Dafny program verifier finished with 14 verified, 11 errors
+Dafny program verifier finished with 16 verified, 11 errors

@@ -1024,12 +1024,17 @@ that resolution finds later give a different answer, that is an error. It
 arises only where a name means one trait with the export sets and another
 without them, and naming the parent trait through its module avoids it.
 
+Member invariants are checked across the whole group. An invariant may call a
+function of another member, and a type may inherit invariants from a trait of
+another member. The extension condition still follows every dependency, so an
+invariant may not define its meaning by quantifying over its own set of values,
+including through a function of another member.
+
 The following are not yet supported. Each is an error, so nothing is accepted
 that a later stage would have to reject:
 
 * a member of a group that is abstract, that refines or replaces a module, or
-  that declares an abstract import or an invariant, and a type of a member that
-  inherits an invariant from a trait;
+  that declares an abstract import;
 * a module outside a group that refines a member, or that names a member in an
   abstract import;
 * imports of the members of one group that name their targets through each

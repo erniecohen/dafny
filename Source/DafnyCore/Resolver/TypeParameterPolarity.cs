@@ -25,6 +25,10 @@ public enum Polarity { None = 0, Positive = 1, Negative = 2, Mixed = Positive | 
 /// conversion does not depend on it.  So:
 ///  - a universal quantifier over a variable of type U uses the type parameters in U negatively, as U's set of values
 ///    does, and an existential quantifier or a type test "e is U" uses them positively;
+///  - a bound variable that ranges over the values of an expression of its own type U (the elements of a collection,
+///    one value, or the subsets of a set: the bounds that the extension condition accepts) does not use U: it ranges
+///    over the same values whatever the type arguments are, as long as that expression does not depend on them, which
+///    the analysis of the expression, part of the range, decides;
 ///  - a type parameter is positive in itself, and in a type G&lt;..., U, ...&gt; as G's declared variance and its
 ///    polarity in U compose: a covariant parameter keeps it, a contravariant one (such as an arrow's parameter
 ///    types) flips it, and a non-variant one makes it mixed;
@@ -33,7 +37,10 @@ public enum Polarity { None = 0, Positive = 1, Negative = 2, Mixed = Positive | 
 ///    let and match expressions keep it, and every other operand is mixed (the condition of a conditional, the
 ///    operands of an equality or an equivalence, the arguments of a call, and any operand that is not boolean);
 ///  - a comprehension, a lambda expression or a let-such-that expression whose bound variables have a type built
-///    from a type parameter uses it mixed;
+///    from a type parameter uses it mixed, unless, for a set or map comprehension, the variable ranges over the values
+///    of an expression of its type, as above (the resolver finds no bounds for a lambda expression); a let-such-that
+///    expression is not covered, since the value it chooses may depend on the type arguments even where the values it
+///    chooses from do not;
 ///  - a call of a generic function, or a use of a constant, contributes the polarity of its type parameters in its
 ///    body, composed with its type arguments; the polarities of the functions a formula reaches are computed
 ///    together, as a least fixpoint;
@@ -245,7 +252,11 @@ public class TypeParameterPolarity {
         return;
       case QuantifierExpr quantifier: {
           var universal = quantifier is ForallExpr;
-          foreach (var boundVar in quantifier.BoundVars) {
+          for (var i = 0; i < quantifier.BoundVars.Count; i++) {
+            var boundVar = quantifier.BoundVars[i];
+            if (RangesOverAValue(boundVar, quantifier.Bounds?.ElementAtOrDefault(i))) {
+              continue;
+            }
             AddType(boundVar.Type, Times(context, universal ? Polarity.Negative : Polarity.Positive), boundVar.Origin,
               $"the {(universal ? "universal" : "existential")} quantifier over '{boundVar.Name}: {boundVar.Type}'", collector);
           }
@@ -260,7 +271,11 @@ public class TypeParameterPolarity {
             MapComprehension => "map comprehension",
             _ => "set comprehension"
           };
-          foreach (var boundVar in comprehension.BoundVars) {
+          for (var i = 0; i < comprehension.BoundVars.Count; i++) {
+            var boundVar = comprehension.BoundVars[i];
+            if (RangesOverAValue(boundVar, comprehension.Bounds?.ElementAtOrDefault(i))) {
+              continue;
+            }
             AddType(boundVar.Type, Polarity.Mixed, boundVar.Origin, $"the {what} over '{boundVar.Name}: {boundVar.Type}'", collector);
           }
           VisitMixed(comprehension.SubExpressions, collector);
@@ -317,6 +332,25 @@ public class TypeParameterPolarity {
         VisitMixed(expr.SubExpressions, collector);
         return;
     }
+  }
+
+  /// <summary>
+  /// Whether "boundVar" ranges over the values of an expression whose type is the type of "boundVar": the elements of
+  /// a collection, one value, or the subsets of a set, by the bound "bound" that the resolver found for it (the
+  /// bounds that the extension condition accepts, section 3.3 of the plan).  Every value of that expression is then a
+  /// value of the variable's type at every instantiation, so the binder ranges over the values of the expression
+  /// alone, which do not depend on the set of values of the variable's type.  The types must be the same, constraints
+  /// included: a variable of a subset type of the elements ranges over those elements that satisfy its constraint.
+  /// (Issue 105, stage 7 of section 7.2 of the plan.)
+  /// </summary>
+  private static bool RangesOverAValue(BoundVar boundVar, BoundedPool? bound) {
+    var source = bound switch {
+      CollectionBoundedPool collection => collection.CollectionElementType,
+      ExactBoundedPool exact => exact.E.Type,
+      SubSetBoundedPool subset => subset.UpperBound.Type,
+      _ => null
+    };
+    return source != null && source.Equals(boundVar.Type, true);
   }
 
   private void VisitMixed(IEnumerable<Expression> exprs, Collector collector) {

@@ -20,13 +20,14 @@ namespace Microsoft.Dafny;
 /// result of an arrow).  Within the cone:
 ///  1. a bound variable of a T-dependent type must range over the elements of a collection (or be equal to a given
 ///     value), rather than over the set of values of its type;
-///  2. no generic function is instantiated with a T-dependent type argument (the first-stage approximation of the
-///     rule that such an argument may only go to a type parameter the callee does not quantify over);
+///  2. a generic function or constant given a T-dependent type argument is analysed with that type parameter
+///     T-dependent, so the other clauses hold in it as instantiated (the exact form of the rule that such an argument
+///     may only go to a type parameter the callee does not quantify over without a bound);
 ///  3. no function value is applied other than a lambda expression or a named function, applied on the spot;
 ///  4. no dynamically bound function is called or mentioned, since its overrides are not all known;
 ///  5. no raw value is tested against, or converted to, a T-dependent type, explicitly or implicitly.
-/// The constraint of a generic type in the cone (a subset type, a newtype, or a type with invariants, whose
-/// constraint is its invariants) is analysed with each type parameter T-dependent where its type argument is.
+/// In the same way, the constraint of a generic type in the cone (a subset type, a newtype, or a type with invariants,
+/// whose constraint is its invariants) is analysed with each type parameter T-dependent where its type argument is.
 /// Statements inside expressions are proof hints and do not contribute to the meaning, so they are not in the cone.
 ///
 /// The plan notes that, where T may involve references, the existing restriction on function bodies discharges
@@ -44,9 +45,8 @@ public class InvariantExtensionCondition {
 
   /// <summary>
   /// A part of the cone: a member (an invariant, a function or a constant), or a type declaration, instantiated with
-  /// type arguments of which those at "DependentParameters" are T-dependent.  Only an invariant reached through the
-  /// type it constrains has dependent parameters as a member: a generic function given a dependent type argument
-  /// is rejected (clause 2).
+  /// type arguments of which those at "DependentParameters" are T-dependent.  The parameters of a member are those of
+  /// its enclosing declaration and, for a function, its own.
   /// </summary>
   private record Node(MemberDecl? Member, TopLevelDecl? Type, ISet<TypeParameter> DependentParameters);
 
@@ -162,7 +162,8 @@ public class InvariantExtensionCondition {
   private void Enqueue(MemberDecl member) => Enqueue(member, new HashSet<TypeParameter>());
 
   private void Enqueue(MemberDecl member, ISet<TypeParameter> dependentParameters) {
-    var key = string.Join(",", member.EnclosingClass.TypeArgs.Select(dependentParameters.Contains));
+    var typeParameters = member is Function function ? member.EnclosingClass.TypeArgs.Concat(function.TypeArgs) : member.EnclosingClass.TypeArgs;
+    var key = string.Join(",", typeParameters.Select(dependentParameters.Contains));
     if (visitedMembers.Add((member, key))) {
       worklist.Enqueue(new Node(member, null, dependentParameters));
     }
@@ -366,19 +367,23 @@ public class InvariantExtensionCondition {
   }
 
   /// <summary>
-  /// Clauses 2 and 4 for a use of "function", called or as a value, and the function's place in the cone.
+  /// The type parameters among "formals" whose type arguments, "actuals", are T-dependent.
   /// </summary>
-  private void CheckFunctionUse(Function function, IEnumerable<Type>? typeArgs, IOrigin origin) {
-    foreach (var typeArg in typeArgs ?? []) {
-      if (DependsOnOwner(typeArg)) {
-        Error(origin, $"instantiates '{function.Name}' with '{typeArg}', a type that depends on '{owner.Name}', which is not yet supported");
-        break;
-      }
-    }
+  private ISet<TypeParameter> DependentFormals(IEnumerable<TypeParameter> formals, IEnumerable<Type>? actuals) {
+    return formals.Zip(actuals ?? []).Where(pair => DependsOnOwner(pair.Second)).Select(pair => pair.First).ToHashSet();
+  }
+
+  /// <summary>
+  /// Clauses 2 and 4 for a use of "function", called or as a value, with the type arguments "classTypeArgs" of its
+  /// enclosing declaration and "functionTypeArgs" of its own, and the function's place in the cone (clause 2).
+  /// </summary>
+  private void CheckFunctionUse(Function function, IEnumerable<Type>? classTypeArgs, IEnumerable<Type>? functionTypeArgs, IOrigin origin) {
     if (function is { IsStatic: false, Body: null, EnclosingClass: TraitDecl }) {
       Error(origin, $"uses '{function.Name}', which is dynamically bound, so the bodies it stands for are not all known");
     }
-    Enqueue(function);
+    var dependent = DependentFormals(function.EnclosingClass.TypeArgs, classTypeArgs);
+    dependent.UnionWith(DependentFormals(function.TypeArgs, functionTypeArgs));
+    Enqueue(function, dependent);
   }
 
   /// <summary>
@@ -437,7 +442,7 @@ public class InvariantExtensionCondition {
           // f.requires(x) or f.reads(x): the specification of a function value
           CheckApplied(call.Receiver);
         } else {
-          CheckFunctionUse(call.Function, (call.TypeApplication_AtEnclosingClass ?? []).Concat(call.TypeApplication_JustFunction ?? []), call.Origin);
+          CheckFunctionUse(call.Function, call.TypeApplication_AtEnclosingClass, call.TypeApplication_JustFunction, call.Origin);
           CheckReceiver(call.Receiver, call.Function);
         }
         var typeMap = call.GetTypeArgumentSubstitutions();
@@ -447,9 +452,10 @@ public class InvariantExtensionCondition {
         break;
       case MemberSelectExpr select:
         if (select.Member is Function function) {
-          CheckFunctionUse(function, (select.TypeApplicationAtEnclosingClass ?? []).Concat(select.TypeApplicationJustMember ?? []), select.Origin);
+          CheckFunctionUse(function, select.TypeApplicationAtEnclosingClass, select.TypeApplicationJustMember, select.Origin);
         } else if (select.Member is ConstantField { Rhs: not null } constant) {
-          Enqueue(constant);
+          // clause 2 for a constant of a generic declaration: its initializer is analysed as instantiated
+          Enqueue(constant, DependentFormals(constant.EnclosingClass.TypeArgs, select.TypeApplicationAtEnclosingClass));
         }
         CheckReceiver(select.Obj, select.Member);
         break;

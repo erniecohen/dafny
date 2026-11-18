@@ -41,4 +41,10 @@ git-issue-105-variance.dfy(97,17): Error: type parameter 'X' of 'Used' is declar
 git-issue-105-variance.dfy(97,69): Related location: the occurrence
 git-issue-105-variance.dfy(98,19): Error: type parameter 'X' of 'Contra' is declared contravariant, but the invariants of 'Contra' are not antitone in it: the existential quantifier over 'y: X' uses 'X' positively
 git-issue-105-variance.dfy(98,71): Related location: the occurrence
-18 resolution/type errors detected in git-issue-105-variance.dfy
+git-issue-105-variance.dfy(117,22): Error: type parameter 'X' of 'Unbounded' is declared covariant, but the invariants of 'Unbounded' are not monotone in it: the universal quantifier over 'y: X' uses 'X' negatively
+git-issue-105-variance.dfy(117,74): Related location: the occurrence
+git-issue-105-variance.dfy(118,24): Error: type parameter 'X' of 'Constrained' is declared covariant, but the invariants of 'Constrained' are not monotone in it: the universal quantifier over 's: NonEmpty<X>' uses 'X' both positively and negatively
+git-issue-105-variance.dfy(118,84): Related location: the occurrence
+git-issue-105-variance.dfy(119,19): Error: type parameter 'X' of 'Choice' is declared covariant, but the invariants of 'Choice' are not monotone in it: the let-such-that expression over 'y: X' uses 'X' both positively and negatively
+git-issue-105-variance.dfy(119,78): Related location: the occurrence
+21 resolution/type errors detected in git-issue-105-variance.dfy

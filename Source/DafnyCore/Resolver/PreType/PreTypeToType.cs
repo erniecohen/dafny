@@ -194,7 +194,12 @@ class PreTypeToTypeVisitor : ASTVisitor<IASTVisitorContext> {
   }
 
   protected override void PostVisitOneExpression(Expression expr, IASTVisitorContext context) {
-    if (expr is ThisExpr && rawMemberInference?.ThisType(context) is { } thisType) {
+    if (IsNewtypeArithmetic(expr)) {
+      // Issue 105: the type of a literal or of an arithmetic operation of a newtype with member invariants is refined,
+      // to "raw N" or N (see TypeRefinementVisitor.AddNewtypeArithmeticFlows); with nothing raw, it is N
+      expr.UnnormalizedType = PreType2TypeUtil.PreType2RefinableType(expr.PreType);
+      return;
+    } else if (expr is ThisExpr && rawMemberInference?.ThisType(context) is { } thisType) {
       // Issue 105: every "this" in the member shares one type, which becomes "raw T" if the member is raw
       expr.UnnormalizedType = thisType;
       return;
@@ -326,6 +331,16 @@ class PreTypeToTypeVisitor : ASTVisitor<IASTVisitorContext> {
 
     // Case: refinement-wrapper pre-type type
     expr.UnnormalizedType = PreType2TypeUtil.PreType2RefinableType(expr.PreType);
+  }
+
+  /// <summary>
+  /// Issue 105: whether "expr" is a literal, or a unary or binary operation, whose pre-type is a newtype with member
+  /// invariants (a conversion and a type test are not). Its type is "raw N" if a value of "raw N" takes part, and N
+  /// otherwise (see TypeRefinementVisitor.AddNewtypeArithmeticFlows).
+  /// </summary>
+  public static bool IsNewtypeArithmetic(Expression expr) {
+    return expr is LiteralExpr or UnaryOpExpr or BinaryExpr &&
+           expr.PreType?.Normalize() is DPreType { Decl: NewtypeDecl { InvariantTypeDecl: not null } };
   }
 
   private void VisitPattern<VT>(CasePattern<VT> casePattern, IASTVisitorContext context) where VT : class, IVariable {

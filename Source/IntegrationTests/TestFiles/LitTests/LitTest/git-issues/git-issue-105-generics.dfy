@@ -132,3 +132,22 @@ module Witnesses {
     Nonempty<WrapG<int>>();
   }
 }
+
+// A bound variable that ranges over the elements of a collection does not use its type (stage 7 of
+// section 7.2 of the plan), so B may be covariant (git-issue-105-variance.dfy), and B<nat> is a subtype
+// of B<int>: UpBounded verifies only because of that, as Up does.
+module BoundedVariance {
+  import opened Variance
+
+  datatype B<+X(!new)> = B(xs: set<X>, n: nat) { invariant forall y <- xs :: Inhabited<X>(n) }
+
+  lemma UseB(b: B<int>) ensures forall y <- b.xs :: Inhabited<int>(b.n) {}
+
+  method UpBounded(b: B<nat>) returns (r: B<int>) ensures forall y <- r.xs :: Inhabited<int>(r.n) {
+    r := b;
+    UseB(b);
+  }
+  method DownBounded(b: B<int>) returns (r: B<nat>) requires forall y <- b.xs :: y >= 0 {
+    r := b;  // error: the invariant might not hold (it does, but proving it needs induction)
+  }
+}

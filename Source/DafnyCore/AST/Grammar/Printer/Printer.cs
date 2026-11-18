@@ -340,28 +340,29 @@ NoGhost - disable printing of functions, ghost methods, and proof
           PrintExtendsClause(dd);
           // The parsed refinement omits its base type, constraint and witness.
           // Keep the ellipsis so that reading a serialized library inherits them again.
+          // Issue 105: the clauses of the header as written, which the newtype's invariants may have taken over
           if (dd.BaseType == null && dd.IsRefining) {
             wr.WriteLine(" ...");
-          } else if (dd.Var == null) {
+          } else if (dd.WrittenVar == null) {
             wr.Write(" = ");
             PrintType(dd.BaseType);
             wr.WriteLine();
           } else {
             wr.Write(" = ");
-            wr.Write(dd.Var.DisplayName);
-            if (ShowType(dd.Var.Type)) {
+            wr.Write(dd.WrittenVar.DisplayName);
+            if (ShowType(dd.WrittenVar.Type)) {
               wr.Write(": ");
               PrintType(dd.BaseType);
             }
             wr.WriteLine();
             Indent(indent + IndentAmount);
             wr.Write("| ");
-            PrintExpression(dd.Constraint, true);
+            PrintExpression(dd.WrittenConstraint, true);
             wr.WriteLine();
           }
-          if (dd.WitnessKind != SubsetTypeDecl.WKind.CompiledZero) {
+          if (dd.WrittenWitnessKind != SubsetTypeDecl.WKind.CompiledZero) {
             Indent(indent + IndentAmount);
-            PrintWitnessClause(dd);
+            PrintWitnessClause(dd.WrittenWitnessKind, dd.WrittenWitness);
             wr.WriteLine();
           }
           if (dd.Members.Count != 0) {
@@ -557,15 +558,19 @@ NoGhost - disable printing of functions, ghost methods, and proof
 
     private void PrintWitnessClause(RedirectingTypeDecl dd) {
       Contract.Requires(dd != null);
-      Contract.Requires(dd.WitnessKind != SubsetTypeDecl.WKind.CompiledZero);
+      PrintWitnessClause(dd.WitnessKind, dd.Witness);
+    }
 
-      switch (dd.WitnessKind) {
+    private void PrintWitnessClause(SubsetTypeDecl.WKind witnessKind, Expression witness) {
+      Contract.Requires(witnessKind != SubsetTypeDecl.WKind.CompiledZero);
+
+      switch (witnessKind) {
         case SubsetTypeDecl.WKind.Ghost:
           wr.Write("ghost ");
           goto case SubsetTypeDecl.WKind.Compiled;
         case SubsetTypeDecl.WKind.Compiled:
           wr.Write("witness ");
-          PrintExpression(dd.Witness, true);
+          PrintExpression(witness, true);
           break;
         case SubsetTypeDecl.WKind.OptOut:
           wr.Write("witness *");

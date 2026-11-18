@@ -1,7 +1,5 @@
-// Input of git-issue-466-stage2-unsupported.dfy: a type of a member of a recursive module group that
-// declares no invariant but inherits one from a trait below the group.  The trait and its invariant
-// are finished before the group, but the type with the invariant is a type of the group, and what an
-// invariant needs across the modules of a group is a later stage.  So each is an error.
+// Input of git-issue-466-stage2-unsupported.dfy: inherited invariants are supported in a recursive
+// module group, including when a trait of another member inherits one from below the group.
 
 module Shapes {
   trait {:termination false} Shape {
@@ -18,7 +16,7 @@ module Shapes {
 module Datatype1 {
   import Shapes
   import Datatype2
-  datatype Square extends Shapes.Shape = Square(s: int)  // error
+  datatype Square extends Shapes.Shape = Square(s: int)
   function F(b: Datatype2.Box): int { 0 }
 }
 module Datatype2 {
@@ -35,7 +33,7 @@ module Datatype2 {
 module Class1 {
   import Shapes
   import Class2
-  class Counter extends Shapes.Cell {  // error
+  class Counter extends Shapes.Cell {
     constructor ()
     {
       limit := 0;
@@ -66,7 +64,7 @@ module Trait1 {
 module Trait2 {
   import Shapes
   import Trait1
-  trait Round extends Shapes.Shape {  // error
+  trait Round extends Shapes.Shape {
   }
   function Radius(c: Trait1.Circle): int { c.r }
 }

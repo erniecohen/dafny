@@ -248,12 +248,6 @@ public static class RecursiveModuleGroups {
           reporter.Error(MessageSource.Resolver, declaration.Origin,
             $"module {name}, which is in a recursive module group, declares the abstract import {declaration.Name}; {notYet}");
           break;
-        case TopLevelDeclWithMembers type:
-          foreach (var invariant in type.Members.OfType<MemberInvariant>()) {
-            reporter.Error(MessageSource.Resolver, invariant.NameNode.Origin,
-              $"{type.WhatKind} '{type.Name}' declares an invariant in module {name}, which is in a recursive module group; {notYet}");
-          }
-          break;
       }
     }
   }

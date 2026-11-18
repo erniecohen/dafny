@@ -821,10 +821,6 @@ namespace Microsoft.Dafny {
       }
     }
 
-    private static bool ExtendsTraitWithInvariants(Type parent) {
-      return parent is UserDefinedType { ResolvedClass: InvariantTypeDecl or NonNullTypeDecl { Class.InvariantTypeDecl: not null } };
-    }
-
     /// <summary>
     /// Issue 105: whether the program, libraries included, declares a member invariant under --member-invariants
     /// whose verification is not yet supported, in which case no module of it is translated. The translation cache
@@ -1455,6 +1451,14 @@ namespace Microsoft.Dafny {
           AddOtherDefinition(revealTrigger, new Axiom(f.Origin, implication));
         }
       }
+    }
+
+    /// <summary>
+    /// Issue 105: whether "parent" is a trait with member invariants, a general trait (its name resolves to the derived
+    /// declaration) or a reference trait (its non-null type is over a trait with one).
+    /// </summary>
+    private static bool ExtendsTraitWithInvariants(Type parent) {
+      return parent is UserDefinedType { ResolvedClass: InvariantTypeDecl or NonNullTypeDecl { Class.InvariantTypeDecl: not null } };
     }
 
     /// <summary>
@@ -4404,11 +4408,37 @@ namespace Microsoft.Dafny {
         (verificationType.IsNumericBased() || verificationType.IsBitVectorType || verificationType.IsBoolType)) {
         var constraint = ModuleResolver.GetImpliedTypeConstraint(new BoogieWrapper(x, normType), normType);
         isPred = etran.TrExpr(constraint);
+        if (HasInvariantTypeDeclInConstraints(normType)) {
+          // Issue 105: the constraint calls the invariant functions of a newtype, whose definition axioms need their
+          // "canCall"s. Its well-formedness was checked for every value of the base type, so they hold, as the $Is
+          // axioms of a subset type say.
+          isPred = BplAnd(etran.CanCallAssumption(constraint), isPred);
+        }
       } else {
         // go for the symbolic name
         isPred = MkIs(x, normType);
       }
       return isAlloc == null ? isPred : isPred == null ? isAlloc : BplAnd(isPred, isAlloc);
+    }
+
+    /// <summary>
+    /// Issue 105: whether the constraints that "type" implies, through its subset types and newtypes, include those of
+    /// the derived declaration of a newtype with member invariants.
+    /// </summary>
+    private static bool HasInvariantTypeDeclInConstraints(Type type) {
+      while (type.NormalizeExpandKeepConstraints() is UserDefinedType { ResolvedClass: RedirectingTypeDecl redirecting } udt) {
+        if (redirecting is InvariantTypeDecl) {
+          return true;
+        }
+        if (redirecting is NewtypeDecl newtypeDecl) {
+          type = newtypeDecl.RhsWithArgument(udt.TypeArgs);
+        } else if (redirecting is SubsetTypeDecl subsetTypeDecl) {
+          type = subsetTypeDecl.RhsWithArgument(udt.TypeArgs);
+        } else {
+          return false;
+        }
+      }
+      return false;
     }
 
     // Returns expressions, which, if false, means that the two LHS expressions are

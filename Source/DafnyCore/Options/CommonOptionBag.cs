@@ -293,6 +293,9 @@ true - All class instances are raw pointers and need to be manually deallocated"
   public static readonly Option<bool> AdditionalAxioms = new("--additional-axioms", () => false,
     "Enable additional verifier axioms. May change verification performance and proof stability. Disabled by default.");
 
+  public static readonly Option<bool> FunctionExtensionalityAxiom = new("--function-extensionality-axiom", () => false,
+    "Give function values domain tags, as --additional-axioms does, and make two total functions of one argument with the same exact domain equal when they agree on it, at each equality between them. May change verification performance. Disabled by default.");
+
   public static readonly Option<bool> HeapFreeLambdaFacts = new("--heap-free-lambda-facts", () => false,
     "Check a lambda without a reads clause, whose body observes neither the heap nor allocation, in every heap and without assuming its parameters allocated, and let the calls in its body unfold wherever it is applied. May change verification performance. Disabled by default.");
 
@@ -435,7 +438,7 @@ Value implementations must retain their type parameters in compatible parent pos
   };
 
   public static readonly Option<bool> RecursiveModules = new("--recursive-modules", () => false,
-    "(experimental, incomplete) Allow modules to import each other. The modules of an import cycle form a recursive module group, which means what one module with all their declarations would mean. Only imports may form a cycle. Requires --member-invariants. A program that has a recursive module group may not declare a codatatype. At this stage a member of a group may not be abstract, refine or be refined, declare an abstract import or an invariant, or extend a trait of another member, and a program that has a group is not compiled.") {
+    "(experimental, incomplete) Allow modules to import each other. The modules of an import cycle form a recursive module group, which means what one module with all their declarations would mean. Only imports may form a cycle. Requires --member-invariants. A program that has a recursive module group may not declare a codatatype. At this stage a member of a group may not be abstract, refine or be refined, declare an abstract import, and a program that has a group is not compiled.") {
     IsHidden = true
   };
 
@@ -876,6 +879,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(AdditionalAxioms, OptionScope.Cli);
     OptionRegistry.RegisterOption(MapComprehensionDomainTriggers, OptionScope.Cli);
     OptionRegistry.RegisterOption(HeapFreeLambdaFacts, OptionScope.Cli);
+    OptionRegistry.RegisterOption(FunctionExtensionalityAxiom, OptionScope.Cli);
     OptionRegistry.RegisterOption(InlinedBodyCallPermissions, OptionScope.Cli);
     OptionRegistry.RegisterOption(DetectWitnessMatchingLoops, OptionScope.Cli);
     OptionRegistry.RegisterOption(StatementExpressionConclusions, OptionScope.Cli);

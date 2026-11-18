@@ -4,13 +4,10 @@ git-issue-466-stage2-unsupported.dfy(27,25): Error: module Refining1, which is i
 git-issue-466-stage2-unsupported.dfy(40,27): Error: module Replacing1, which is in a recursive module group, refines or replaces module Service; this is not yet supported
 git-issue-466-stage2-unsupported.dfy(50,16): Error: abstract module Importing1 is in a recursive module group; this is not yet supported
 git-issue-466-stage2-unsupported.dfy(52,9): Error: module Importing1, which is in a recursive module group, declares the abstract import X; this is not yet supported
-git-issue-466-stage2-unsupported.dfy(62,4): Error: datatype 'Range' declares an invariant in module Invariant1, which is in a recursive module group; this is not yet supported
 git-issue-466-stage2-unsupported.dfy(81,23): Error: module Refiner refines or replaces module Plain1, which is in a recursive module group; this is not yet supported
 git-issue-466-stage2-unsupported.dfy(88,9): Error: the abstract import X names module Plain2, which is in a recursive module group; this is not yet supported
-9 resolution/type errors detected in git-issue-466-stage2-unsupported.dfy
-git-issue-466-inherited-invariant.dfy(7,29): Warning: trait 'Shape' has {:termination false} and no {:axiom} annotation: calls dispatched through it are not checked for termination
-git-issue-466-inherited-invariant.dfy(11,29): Warning: trait 'Cell' has {:termination false} and no {:axiom} annotation: calls dispatched through it are not checked for termination
-git-issue-466-inherited-invariant.dfy(21,11): Error: datatype 'Square' inherits an invariant in module Datatype1, which is in a recursive module group; this is not yet supported
-git-issue-466-inherited-invariant.dfy(38,8): Error: class 'Counter' inherits an invariant in module Class1, which is in a recursive module group; this is not yet supported
-git-issue-466-inherited-invariant.dfy(69,8): Error: trait 'Round' inherits an invariant in module Trait2, which is in a recursive module group; this is not yet supported
-3 resolution/type errors detected in git-issue-466-inherited-invariant.dfy
+8 resolution/type errors detected in git-issue-466-stage2-unsupported.dfy
+git-issue-466-inherited-invariant.dfy(5,29): Warning: trait 'Shape' has {:termination false} and no {:axiom} annotation: calls dispatched through it are not checked for termination
+git-issue-466-inherited-invariant.dfy(9,29): Warning: trait 'Cell' has {:termination false} and no {:axiom} annotation: calls dispatched through it are not checked for termination
+
+Dafny program verifier did not attempt verification

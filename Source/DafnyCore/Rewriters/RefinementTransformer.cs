@@ -385,11 +385,12 @@ namespace Microsoft.Dafny {
         var (dn, nwn) = ((NewtypeDecl)d, (NewtypeDecl)nw);
         Contract.Assert(nwn.BaseType == null && nwn.Var == null &&
                         nwn.Constraint == null && nwn.Witness == null);
-        nwn.Var = dn.Var == null ? null : refinementCloner.CloneBoundVar(dn.Var, false);
+        // Issue 105: the clauses of the header as written, which the base may have moved to its invariants
+        nwn.Var = dn.WrittenVar == null ? null : refinementCloner.CloneBoundVar(dn.WrittenVar, false);
         nwn.BaseType = nwn.Var?.Type ?? refinementCloner.CloneType(dn.BaseType); // Preserve newtype invariant that Var.Type is BaseType
-        nwn.Constraint = dn.Constraint == null ? null : refinementCloner.CloneExpr(dn.Constraint);
-        nwn.WitnessKind = dn.WitnessKind;
-        nwn.Witness = dn.Witness == null ? null : refinementCloner.CloneExpr(dn.Witness);
+        nwn.Constraint = dn.WrittenConstraint == null ? null : refinementCloner.CloneExpr(dn.WrittenConstraint);
+        nwn.WitnessKind = dn.WrittenWitnessKind;
+        nwn.Witness = dn.WrittenWitness == null ? null : refinementCloner.CloneExpr(dn.WrittenWitness);
         nwPointer.Set(MergeClass((NewtypeDecl)nw, (NewtypeDecl)d));
       } else if (nw is NewtypeDecl) {
         // `.Basetype` will be set in AddDefaultBaseTypeToUnresolvedNewtypes

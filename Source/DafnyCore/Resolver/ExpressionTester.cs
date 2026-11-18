@@ -79,6 +79,16 @@ public class ExpressionTester {
     // "subexpressionsAreInsideBranchesOnlyExcept" is its condition.
     Expression subexpressionsAreInsideBranchesOnlyExcept = null;
 
+    if (options.Get(CommonOptionBag.MemberInvariants) && expr is not ThisExpr && expr.Type != null &&
+        InvariantTypeDecl.GhostRawNewtype(expr.Type) is { } newtypeDecl) {
+      // Issue 105: a compiled value of a newtype with member invariants satisfies them (see GhostRawNewtype). A "this"
+      // of type "raw N" is in a raw member, which the resolver requires to be ghost.
+      ReportError(ErrorId.none, expr,
+        $"a value of type '{expr.Type}' is allowed only in specification contexts, since 'raw {newtypeDecl.Name}' is ghost: " +
+        $"a compiled value of newtype '{newtypeDecl.Name}' satisfies its invariants");
+      return false;
+    }
+
     if (expr is IdentifierExpr expression) {
       if (expression.Var is { IsGhost: true }) {
         ReportError(ErrorId.r_ghost_var_only_in_specifications, expression,
