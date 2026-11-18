@@ -23,3 +23,13 @@ module B {
 module C {
   import X := Missing  // error: no such module
 }
+
+module Plain {
+  function One(): int { 1 }
+}
+
+// Not a cycle: a copy may have the name of the module it copies.  The name after ":=" is looked up
+// outside the copy, so this is a copy of the module Plain above.
+module SameName {
+  import Plain := Plain
+}

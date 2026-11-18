@@ -15,6 +15,8 @@
 // RUN: %exits-with 2 %verify --refinement-renaming --type-system-refresh=false --general-newtypes=false "%S/Inputs/github-issue-106-types-rejected.dfy" >> "%t"
 // RUN: %exits-with 2 %verify "%S/Inputs/github-issue-106-types.dfy" >> "%t"
 // RUN: %exits-with 2 %verify --type-system-refresh=false --general-newtypes=false "%S/Inputs/github-issue-106-types.dfy" >> "%t"
+// RUN: %exits-with 2 %verify --refinement-renaming --synonym-refines-abstract-type "%S/Inputs/github-issue-106-not-renamed.dfy" >> "%t"
+// RUN: %exits-with 2 %verify --refinement-renaming --synonym-refines-abstract-type --type-system-refresh=false --general-newtypes=false "%S/Inputs/github-issue-106-not-renamed.dfy" >> "%t"
 // RUN: %diff "%s.expect" "%t"
 // Issues https://github.com/erniecohen/dafny/issues/106 and https://github.com/erniecohen/dafny/issues/107:
 // with --refinement-renaming, a declaration in a refining module may rename the type parameters,
@@ -26,11 +28,13 @@
 // would change what a name in the inherited code refers to, or because the signatures disagree in
 // more than names; and the same renamings without the option, which are errors as before.  The
 // option cannot be combined with --legacy-inherited-name-capture, since a renaming is sound only
-// under the check that the legacy option turns off.  The last input needs no option: a match
+// under the check that the legacy option turns off.  The next input needs no option: a match
 // pattern with a type annotation is inherited with a type of the refining module.  The two inputs
 // about types hold signatures that spell a type differently from the signature they refine: with
 // the option, the spelling is accepted if it denotes the same type, and rejected otherwise; without
-// the option, each difference in spelling is an error as before.
+// the option, each difference in spelling is an error as before.  One more input holds the two
+// kinds of declaration that take no renaming even with the option: an abstract type with members
+// that a type synonym refines, and an iterator.
 
 abstract module A {
   function F(x: int): int

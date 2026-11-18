@@ -486,9 +486,11 @@ module B refines A {
 A renaming must not change what any name in the inherited text refers to. If the new name of a
 parameter is the name of a variable, constant or type that the inherited text uses, or is bound
 again inside the inherited text where the parameter is used, the refining module is rejected, and
-the error names the two declarations. Giving two parameters the same name is an error, as in any
-declaration. The number of parameters and their modifiers must still agree with the parent, and
-a refining declaration still cannot give a parameter a default value.
+the error names the two declarations. A renaming is also rejected if the old or the new name of a
+parameter or type parameter is the name of a label that the inherited text names in a `reveal`
+statement. Giving two parameters the same name is an error, as in any declaration. The number of
+parameters and their modifiers must still agree with the parent, and a refining declaration still
+cannot give a parameter a default value.
 
 The type of a parameter, and the result type of a function, must be the type it is in the parent.
 With the option it need not be written the same way. A refining module that gives a type a second

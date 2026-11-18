@@ -52,3 +52,20 @@ module B11 refines A {
     var t := Two(1, x := 2);
   }
 }
+
+// "reveal L" names a label.  The refined module does not resolve it as an expression, so a renaming
+// from or to "L" cannot tell what this use of the name refers to.
+abstract module Labels {
+  method New(x: int) {
+    assert L: x == x;
+    reveal L;
+  }
+  method Old(L: int) {
+    assert L: L == L;
+    reveal L;
+  }
+}
+// a parameter takes the name of a label that the inherited body reveals
+module B12 refines Labels { method New(L: int) }
+// a parameter gives up the name of a label that the inherited body reveals
+module B13 refines Labels { method Old(z: int) }
