@@ -41,7 +41,9 @@ public class IdPattern : ExtendedPattern, IHasReferences {
     Id = original.Id;
     Arguments = original.Arguments?.Select(cloner.CloneExtendedPattern).ToList();
     HasParenthesis = original.HasParenthesis;
-    SyntacticType = original.SyntacticType;
+    // The copy gets its own type, to be resolved where the copy lives. Sharing the original's
+    // would leave a pattern inherited by a refining module with a type of the refined module.
+    SyntacticType = original.SyntacticType == null ? null : cloner.CloneType(original.SyntacticType);
     if (cloner.CloneResolvedFields) {
       type = cloner.CloneType(original.type);
       BoundVar = cloner.CloneIVariable(original.BoundVar, false);

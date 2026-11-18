@@ -764,6 +764,8 @@ public static class ModularTerminationRecords {
     CommonOptionBag.DatatypeSubsetConversions,
     CommonOptionBag.AncestorQualifiedModuleIds,
     CommonOptionBag.SynonymRefinesAbstractType,
+    CommonOptionBag.RefinementRenaming,
+    CommonOptionBag.CopyImports,
     CommonOptionBag.InvariantConstructorInference,
     CommonOptionBag.UserDefinedOperators,
     CommonOptionBag.AdditionalAxioms,

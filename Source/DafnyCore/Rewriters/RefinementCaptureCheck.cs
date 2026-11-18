@@ -22,18 +22,34 @@ namespace Microsoft.Dafny;
 ///   member that overrides it.
 /// A pattern identifier must also keep its kind: a variable stays a variable, and a constructor
 /// or constant stays the same constructor or constant.
+///
+/// Issue 106: under --refinement-renaming the refining module may rename a parameter, a result or
+/// a type parameter, and the copy of the inherited code is renamed with it. The counterpart of a
+/// renamed binder of B is then exactly its renamed copy in R, and nothing else: the copy's new
+/// name must not be captured by a binder of the inherited code, and a use of some other variable
+/// in the inherited code must not be captured by the renamed copy. A renamed use that R does not
+/// resolve cannot be checked, and is an error.
 /// </summary>
 internal sealed class RefinementCaptureCheck {
   private readonly ErrorReporter reporter;
   private readonly ModuleDefinition refining;
   private readonly ModuleDefinition? refined;
   private readonly IReadOnlyDictionary<IVariable, IVariable> refinedLocals;
+  // A renamed binder of the refining module, mapped to the binder of the base module that it renames.
+  private readonly IReadOnlyDictionary<object, object> renamedBinders;
+  private readonly HashSet<object> renamedBaseBinders;
+  // The inherited occurrences that the refinement cloner renamed.
+  private readonly IReadOnlySet<object> renamedOccurrences;
 
   public RefinementCaptureCheck(ErrorReporter reporter, ModuleDefinition refining,
-    IReadOnlyDictionary<IVariable, IVariable> refinedLocals) {
+    IReadOnlyDictionary<IVariable, IVariable> refinedLocals,
+    IReadOnlyDictionary<object, object> renamedBinders, IReadOnlySet<object> renamedOccurrences) {
     this.reporter = reporter;
     this.refining = refining;
     this.refinedLocals = refinedLocals;
+    this.renamedBinders = renamedBinders;
+    this.renamedOccurrences = renamedOccurrences;
+    renamedBaseBinders = new HashSet<object>(renamedBinders.Values, ReferenceEqualityComparer.Instance);
     refined = refining.Implements?.Target.Def;
   }
 
@@ -62,6 +78,19 @@ internal sealed class RefinementCaptureCheck {
       }
       var then = Target(original);
       var now = Target(clone);
+      var renamed = renamedOccurrences.Contains(clone);
+      if (renamed && then != null && now == null) {
+        // The resolver did not resolve this node itself, so nothing shows what the new name refers to here.
+        reportedNodes.Add(clone);
+        var where = OccurrenceOrigin(clone);
+        if (where != null && reported.Add((where.Uri?.ToString(), where.line, where.col, then))) {
+          reporter.Error(MessageSource.RefinementTransformer, "ref_renaming_unchecked_name",
+            new RefinementOrigin(where is RefinementOrigin w ? w.WrappedOrigin : where, refining),
+            $"refining module '{refining.Name}' renames '{OccurrenceName(original) ?? NameOf(then)}' to '{OccurrenceName(clone)}', " +
+            $"but the use of it here, in code inherited from module '{refined.Name}', cannot be checked after the renaming");
+        }
+        continue;
+      }
       if (then == null || now == null || Corresponds(now, then)) {
         continue;
       }
@@ -72,6 +101,13 @@ internal sealed class RefinementCaptureCheck {
       }
       var name = OccurrenceName(original) ?? NameOf(then);
       var at = new RefinementOrigin(origin is RefinementOrigin r ? r.WrappedOrigin : origin, refining);
+      if (renamed || renamedBinders.ContainsKey(now) || renamedBaseBinders.Contains(then)) {
+        var newName = renamed ? OccurrenceName(clone) ?? NameOf(now) : NameOf(now);
+        reporter.Error(MessageSource.RefinementTransformer, "ref_renaming_captures_name", at,
+          $"a renaming to '{newName}' in refining module '{refining.Name}' changes what the name '{name}' refers to in code inherited from module '{refined.Name}': " +
+          $"in '{refined.Name}' it refers to {Describe(then)}, but in '{refining.Name}' it would refer to {Describe(now)}");
+        continue;
+      }
       reporter.Error(MessageSource.RefinementTransformer, "ref_inherited_name_captured", at,
         $"refining module '{refining.Name}' captures the name '{name}' used in code inherited from module '{refined.Name}': " +
         $"in '{refined.Name}' it refers to {Describe(then)}, but in '{refining.Name}' it would refer to {Describe(now)}");
@@ -142,6 +178,11 @@ internal sealed class RefinementCaptureCheck {
   private bool Corresponds(object now, object then) {
     if (ReferenceEquals(now, then)) {
       return true;
+    }
+    // A renamed binder corresponds only to the binder it renames, and the other way around.
+    var nowIsRenamed = renamedBinders.TryGetValue(now, out var renamedFrom);
+    if (nowIsRenamed || renamedBaseBinders.Contains(then)) {
+      return nowIsRenamed && ReferenceEquals(renamedFrom, then);
     }
     switch (then) {
       case ConstantPattern c:

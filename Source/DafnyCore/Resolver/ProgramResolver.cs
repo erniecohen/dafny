@@ -818,6 +818,19 @@ public class ProgramResolver {
   private void ProcessDependenciesDefinition(LiteralModuleDecl literalDecl, ModuleBindings bindings,
     IDictionary<ModuleDecl, Action<ModuleDecl>> declarationPointers) {
     var module = literalDecl.ModuleDef;
+    if (literalDecl.CopyImport != null) {
+      // A copying import, "import X := Q", names Q as an import does. The copy has no declarations of its own.
+      var copied = module.Implements.Target;
+      if (!bindings.ResolveQualifiedModuleIdRootCopy(literalDecl, copied, out var root)) {
+        Reporter.Error(MessageSource.Resolver, copied.Origin, ModuleNotFoundErrorMessage(0, copied.Path));
+      } else {
+        root = SkipEnclosingModules(copied, root);
+        copied.Root = root;
+        declarationPointers.AddOrUpdate(root, v => copied.Root = v, Util.Concat);
+        AddDependency(literalDecl, root, ModuleDependencyKind.Refinement);
+      }
+      return;
+    }
     if (module.Implements != null) {
       var refinementTarget = module.Implements.Target;
       bool res = bindings.ResolveQualifiedModuleIdRootRefines(literalDecl.ModuleDef, refinementTarget, out var other);

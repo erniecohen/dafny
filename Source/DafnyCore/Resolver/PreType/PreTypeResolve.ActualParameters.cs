@@ -67,7 +67,8 @@ namespace Microsoft.Dafny {
 
       // resolve given arguments and populate the "namesToActuals" map
       var namesToActuals = new Dictionary<string, ActualBinding>();
-      formals.ForEach(f => namesToActuals.Add(f.Name, null)); // a name mapping to "null" says it hasn't been filled in yet
+      // A named argument binds a parameter by its label, which is its name unless a refining module renamed it.
+      formals.ForEach(f => namesToActuals.Add(f.Label, null)); // a name mapping to "null" says it hasn't been filled in yet
       var stillAcceptingPositionalArguments = true;
       var bindingIndex = 0;
       foreach (var binding in bindings.ArgumentBindings) {
@@ -77,7 +78,12 @@ namespace Microsoft.Dafny {
           var pname = binding.FormalParameterName.val;
           stillAcceptingPositionalArguments = false;
           if (!namesToActuals.TryGetValue(pname, out var b)) {
-            ReportError(binding.FormalParameterName, $"the binding named '{pname}' does not correspond to any formal parameter");
+            if (formals.Find(f => f.Name == pname) is { } renamed) {
+              ReportError(binding.FormalParameterName, 
+                $"the parameter labelled '{renamed.Label}' is called '{pname}' only inside {name}; a named argument uses its label '{renamed.Label}'");
+            } else {
+              ReportError(binding.FormalParameterName, $"the binding named '{pname}' does not correspond to any formal parameter");
+            }
           } else if (b == null) {
             // all is good
             namesToActuals[pname] = binding;
@@ -91,7 +97,7 @@ namespace Microsoft.Dafny {
         } else if (bindingIndex < formals.Count) {
           // use the name of formal corresponding to this positional argument, unless the parameter is name-only
           var formal = formals[bindingIndex];
-          var pname = formal.Name;
+          var pname = formal.Label;
           if (formal.IsNameOnly) {
             ReportError(arg.Origin, $"nameonly parameter '{pname}' must be passed using a name binding; it cannot be passed positionally");
           }
@@ -118,7 +124,7 @@ namespace Microsoft.Dafny {
       var formalIndex = 0;
       var substMap = new Dictionary<IVariable, Expression>();
       foreach (var formal in formals) {
-        var b = namesToActuals[formal.Name];
+        var b = namesToActuals[formal.Label];
         if (b != null) {
           actuals.Add(b.Actual);
           substMap.Add(formal, b.Actual);
@@ -141,7 +147,7 @@ namespace Microsoft.Dafny {
           // parameter has no value
           if (!simpleErrorReported) {
             var formalDescription = whatKind + (context is Method ? " in-parameter" : " parameter");
-            var nameWithIndex = formal.HasName && formal is not ImplicitFormal ? "'" + formal.Name + "'" : "";
+            var nameWithIndex = formal.HasName && formal is not ImplicitFormal ? "'" + formal.Label + "'" : "";
             if (formals.Count > 1 || nameWithIndex == "") {
               nameWithIndex += nameWithIndex == "" ? "" : " ";
               nameWithIndex += $"at index {formalIndex}";

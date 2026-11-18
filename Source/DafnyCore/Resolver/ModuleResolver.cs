@@ -329,6 +329,10 @@ namespace Microsoft.Dafny {
       Dictionary<ModuleDefinition, ModuleSignature> signatures = new();
       if (decl is LiteralModuleDecl literalModuleDecl) {
         var signature = literalModuleDecl.Resolve(this, compilation);
+        // The modules that this module declares for itself come first: it depends on them.
+        foreach (var (definition, itsSignature) in copySignatures) {
+          signatures[definition] = itsSignature;
+        }
         signatures[literalModuleDecl.ModuleDef] = signature;
       } else if (decl is AliasModuleDecl alias) {
         if (ResolveExport(alias, alias.EnclosingModuleDefinition, alias.TargetQId, alias.Exports, out var p, reporter)) {
@@ -349,6 +353,69 @@ namespace Microsoft.Dafny {
       }
 
       return new ModuleResolutionResult(decl, (BatchErrorReporter)reporter, signatures, moduleClassMembers);
+    }
+
+    /// <summary>
+    /// The signatures of the modules that the module being resolved declares for itself under --copy-imports,
+    /// each after those it depends on: the copies of the copying imports that a refining module inherits,
+    /// and the signatures of the abstract imports of a copy.
+    /// </summary>
+    private readonly Dictionary<ModuleDefinition, ModuleSignature> copySignatures = new();
+
+    /// <summary>
+    /// Resolves the copy that a refining module has of a copying import that it inherits.  The copy is not
+    /// a declaration of the program's module graph, so it is resolved as part of the refining module.
+    /// </summary>
+    internal void ResolveInheritedCopy(CompilationData compilation, LiteralModuleDecl copy) {
+      var copyResolver = new ModuleResolver(ProgramResolver, Options);
+      var result = copyResolver.ResolveModuleDeclaration(compilation, copy);
+      foreach (var diagnostic in result.ErrorReporter.AllMessages) {
+        reporter.MessageCore(diagnostic);
+      }
+      foreach (var (declaration, members) in result.ClassMembers) {
+        moduleClassMembers[declaration] = members;
+      }
+      foreach (var (definition, signature) in result.Signatures) {
+        copySignatures[definition] = signature;
+      }
+    }
+
+    /// <summary>
+    /// Gives each abstract import that a copying import's module has from the copied module a signature of
+    /// its own.  Otherwise the copy would share the unknown module with the copied module, and two copies
+    /// would share it with each other.
+    /// </summary>
+    internal void GiveCopyItsOwnAbstractImports(ModuleDefinition copy) {
+      foreach (var abstractImport in copy.TopLevelDecls.OfType<AbstractModuleDecl>()) {
+        if (abstractImport.OriginalSignature != null) {
+          abstractImport.Signature = MakeAbstractSignature(abstractImport.OriginalSignature,
+            abstractImport.FullSanitizedName, copy.Height, copySignatures);
+        }
+      }
+    }
+
+    /// <summary>
+    /// What the importing module sees of a copying import with export sets, "import X := Q`E".  Null if
+    /// an export set does not exist.
+    /// </summary>
+    internal ModuleSignature CopyImportViewOf(LiteralModuleDecl copy, string copiedModuleName) {
+      ModuleSignature view = null;
+      foreach (var export in copy.CopyImport.Exports) {
+        // The default export of the copied module, which has that module's name, is the default export of the copy.
+        var exportName = export.val == copiedModuleName ? copy.Name : export.val;
+        if (!copy.Signature.ExportSets.TryGetValue(exportName, out var exportDecl)) {
+          reporter.Error(MessageSource.Resolver, export, "no export set '{0}' in module '{1}'", export.val, copiedModuleName);
+          return null;
+        }
+        if (view == null) {
+          view = exportDecl.AccessibleSignature();
+        } else {
+          var merged = MergeSignature(view, exportDecl.Signature);
+          merged.ModuleDef = exportDecl.Signature.ModuleDef;
+          view = merged;
+        }
+      }
+      return view;
     }
 
     // Resolve the exports and detect cycles.
@@ -1079,6 +1146,17 @@ namespace Microsoft.Dafny {
           CardinalityViewOf = abstractDecl
         };
         return result;
+      } else if (d is LiteralModuleDecl { CopyImport: not null } copy) {
+        // A module that refines the module of this signature gets its own copy at a copying import.  So
+        // which module the copy is, is as unknown here as for an abstract import.
+        var view = copy.AccessibleSignature();
+        var sig = MakeAbstractSignature(view, name + "." + copy.Name, copy.Height, mods);
+        return new AbstractModuleDecl(copy.Options, copy.Origin, copy.ModuleDef.Implements.Target, copy.NameNode, copy.Attributes,
+          newParent, copy.Opened, copy.CopyImport.Exports, Guid.NewGuid()) {
+          Signature = sig,
+          OriginalSignature = view,
+          CardinalityViewOf = copy
+        };
       } else {
         return new AbstractSignatureCloner(scope, SystemModuleManager.SystemModule,
           SystemModuleManager.GetBuiltinTypeIdentities()).CloneDeclaration(d, newParent);
@@ -1099,7 +1177,10 @@ namespace Microsoft.Dafny {
       }
       p = decl.Signature;
       if (exports.Count == 0) {
-        if (p.ExportSets.Count == 0) {
+        if (decl is LiteralModuleDecl { CopyImportView: { } copyImportView }) {
+          // the copying import "import X := Q`E" makes X stand for that view of the copy
+          p = copyImportView;
+        } else if (p.ExportSets.Count == 0) {
           if (decl is LiteralModuleDecl) {
             p = ((LiteralModuleDecl)decl).DefaultExport;
           } else {
@@ -1268,6 +1349,18 @@ namespace Microsoft.Dafny {
           if (def.ModuleKind == ModuleKindEnum.Concrete && decl is AliasModuleDecl am && decl.Signature.IsAbstract) {
             reporter.Error(MessageSource.Resolver, am.TargetQId.RootToken(),
               "a compiled module ({0}) is not allowed to import an abstract module ({1})", def.Name, am.TargetQId.ToString());
+          } else if (def.ModuleKind == ModuleKindEnum.Concrete &&
+                     decl is LiteralModuleDecl { CopyImport: not null, ModuleDef.ModuleKind: ModuleKindEnum.Abstract } copy) {
+            // The copy of an abstract module is abstract.
+            var copied = copy.ModuleDef.Implements.Target;
+            if (copy.CopyImport.Inherited) {
+              reporter.Error(MessageSource.Resolver, new NestedOrigin(def.Origin, copied.Origin, "inherited copying import"),
+                "a compiled module ({0}) is not allowed to import an abstract module ({1}), which it does by the copying import '{2}' that it inherits",
+                def.Name, copied.ToString(), copy.Name);
+            } else {
+              reporter.Error(MessageSource.Resolver, copied.RootToken(),
+                "a compiled module ({0}) is not allowed to import an abstract module ({1})", def.Name, copied.ToString());
+            }
           }
         } else if (d is DatatypeDecl) {
           var dd = (DatatypeDecl)d;
@@ -1475,6 +1568,13 @@ namespace Microsoft.Dafny {
 
       if (Options.Get(CommonOptionBag.GeneralNewtypes) && !Options.Get(CommonOptionBag.TypeSystemRefresh)) {
         reporter.Error(MessageSource.Resolver, Token.NoToken, "use of --general-newtypes requires --type-system-refresh");
+        yield break;
+      }
+
+      if (Options.Get(CommonOptionBag.RefinementRenaming) && Options.Get(CommonOptionBag.LegacyInheritedNameCapture)) {
+        // A renaming is sound only if it captures no name in inherited code, which is what the legacy option stops checking.
+        reporter.Error(MessageSource.Resolver, Token.NoToken,
+          "--refinement-renaming cannot be used with --legacy-inherited-name-capture");
         yield break;
       }
 
@@ -3777,7 +3877,44 @@ namespace Microsoft.Dafny {
       } else {
         ResolveType(f.Origin, f.ResultType, f, option, f.TypeArgs);
       }
+      ResolveRefinementDeclaredTypes(f);
       scope.PopMarker();
+    }
+
+    /// <summary>
+    /// Resolves the types that a refining signature spells differently from the signature it refines.
+    /// Unlike the types of the signature itself, they never add type parameters to the declaration.
+    /// Assumes the type parameters have been pushed.
+    /// </summary>
+    void ResolveRefinementDeclaredTypes(MethodOrFunction member) {
+      if (member.RefinementDeclaredTypes != null) {
+        foreach (var declared in member.RefinementDeclaredTypes) {
+          ResolveType(declared.Origin, declared.Declared, (ICodeContext)member, ResolveTypeOptionEnum.AllowPrefix, member.TypeArgs);
+        }
+      }
+    }
+
+    /// <summary>
+    /// With --refinement-renaming, a refining signature may spell a type differently from the signature it
+    /// refines, as long as the two spellings denote the same type. The merged declaration has the type of
+    /// the refined signature, so this check decides only which spellings are accepted. Type synonyms are
+    /// expanded; a subset type and a newtype are types of their own. This runs once the signatures of the
+    /// module have been resolved, which is when the right-hand sides of its type synonyms are known.
+    /// </summary>
+    public void CheckRefinementDeclaredTypes(List<TopLevelDecl> declarations) {
+      foreach (var declaration in declarations.OfType<TopLevelDeclWithMembers>()) {
+        foreach (var member in declaration.Members.OfType<MethodOrFunction>()) {
+          if (member.RefinementDeclaredTypes == null) {
+            continue;
+          }
+          foreach (var declared in member.RefinementDeclaredTypes) {
+            var inherited = declared.Parameter != null ? declared.Parameter.Type : ((Function)member).ResultType;
+            if (!inherited.Equals(declared.Declared, true)) {
+              reporter.Error(MessageSource.RefinementTransformer, declared.ErrorId, declared.Origin, declared.Mismatch);
+            }
+          }
+        }
+      }
     }
 
     /// <summary>
@@ -3812,6 +3949,7 @@ namespace Microsoft.Dafny {
         ScopePushAndReport(scope, p, "parameter");
         ResolveType(p.Origin, p.Type, m, option, m.TypeArgs);
       }
+      ResolveRefinementDeclaredTypes(m);
       scope.PopMarker();
     }
 
