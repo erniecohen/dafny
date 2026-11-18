@@ -64,6 +64,17 @@ for refresh in [False, True]:
     run('ordinary-client', 'verify', [str(client), '--library:' + str(ordinary)])
     run('ordinary-legacy-client', 'verify', [str(client), '--library:' + str(ordinary),
         '--legacy-no-modular-termination'])
+    # No two-argument function is parsed here: the intrinsic certify signature must
+    # be initialized before builtin resolution, independently of user declarations.
+    formation = ('function Leaf(x: int): int { x } '
+                 'method Use() { var c: bounded<nat, (int -> int)> := bounded.certify(0, Leaf); '
+                 'assert c(3) == 3; // CONTROL\n}')
+    source.write_text(formation)
+    run('bounded-formation', 'verify', [str(source)])
+    source.write_text(formation.replace('// CONTROL', 'assert false;'))
+    text = run('bounded-formation-false', 'verify', [str(source)], 4,
+               ['Error: assertion might not hold', '1 error'])
+    assert text.count('Error: assertion might not hold') == 1, text
     source.write_text('function Bad(c: bounded<ORDINAL, (int -> int)>, x: int): int '
                       'decreases {:global} c.bound { c(x) }')
     run('bounded-application', 'verify', [str(source)], 4, ['decreases clause might not decrease'])

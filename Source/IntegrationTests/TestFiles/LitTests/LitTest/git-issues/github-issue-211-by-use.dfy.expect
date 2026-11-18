@@ -8,6 +8,8 @@ legacy: forged-option PASS
 legacy: ordinary-producer PASS
 legacy: ordinary-client PASS
 legacy: ordinary-legacy-client PASS
+legacy: bounded-formation PASS
+legacy: bounded-formation-false PASS
 legacy: bounded-application PASS
 legacy: unchecked-ordinary-producer PASS
 legacy: unrecorded-dependency PASS
@@ -21,6 +23,8 @@ refresh: forged-option PASS
 refresh: ordinary-producer PASS
 refresh: ordinary-client PASS
 refresh: ordinary-legacy-client PASS
+refresh: bounded-formation PASS
+refresh: bounded-formation-false PASS
 refresh: bounded-application PASS
 refresh: unchecked-ordinary-producer PASS
 refresh: unrecorded-dependency PASS
