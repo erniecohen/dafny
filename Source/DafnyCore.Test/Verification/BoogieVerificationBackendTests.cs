@@ -11,6 +11,11 @@ using Bpl = Microsoft.Boogie;
 namespace DafnyCore.Test.Verification;
 
 public class BoogieVerificationBackendTests {
+  [Fact]
+  public void InvalidStatusCannotBecomeWorkProgress() {
+    Assert.Throws<ArgumentOutOfRangeException>(() => BoogieVerificationWork.ConvertStatus(null!));
+  }
+
   [Theory]
   [InlineData(SolverOutcome.Valid, VerificationOutcome.Verified)]
   [InlineData(SolverOutcome.Invalid, VerificationOutcome.Failed)]
@@ -95,6 +100,8 @@ public class BoogieVerificationBackendTests {
     Assert.Equal(ready, preparation.IsReady);
     if (ready) {
       var work = Assert.IsType<BoogieVerificationWork>(Assert.Single(preparation.GetWorkOrThrow()));
+      Assert.IsType<VerificationWorkStale>(work.CacheStatus);
+      Assert.True(work.IsIdle);
       Assert.Same(work.NativeTask, Assert.Single(BoogieVerificationBackend.GetNativeTasks(preparation)));
       Assert.Equal(work.NativeTask.ScopeId, work.Source.Id.Scope);
       Assert.Equal(work.NativeTask.Split.SplitIndex, work.Source.Id.Part);
