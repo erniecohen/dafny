@@ -121,6 +121,7 @@ public static class DafnyCommands {
     CommonOptionBag.RecursiveModules,
     CommonOptionBag.TypeSystemRefresh,
     CommonOptionBag.ResolutionThreads,
+    CommonOptionBag.ResolutionCache,
     CommonOptionBag.UserDefinedOperators,
     CommonOptionBag.BitvectorMapKeys,
     CommonOptionBag.ContextualLambdaDomains,

@@ -3,8 +3,10 @@
 ## Status, scope, and recommendation
 
 This is the design study requested in [issue #241, final design request][request].
-It proposes implementation work; it implements none of it. No Dafny executable,
-build, solver, or verification test was run for this study. Numerical observations
+The original study proposes implementation work; no Dafny executable, build,
+solver, or verification test was run for that study. The subsequently implemented
+first alias-snapshot subset is described in
+[its schema inventory](241-resolution-snapshot-schema.md). Numerical observations
 below are the measurements published in that request, or calculations explicitly
 derived from them. Other performance claims are models to be measured, not results.
 
@@ -903,17 +905,17 @@ malformed references, and downstream cardinality invalidation.
 
 ### 6.4.1 Draft resolution-result envelope, version 1
 
-This is a format proposal, not a cache implementation. There is no `.dres` codec,
-new cache option, frozen in-memory cache or cold/warm performance result in this
-specification. The closed typed-record inventory and its tests remain required
-before version 1 can ship. The integration boundary follows
+This section specifies the target envelope. The first closed implementation
+subset, its complete record inventory and its limitations are documented in
+[the alias snapshot schema](241-resolution-snapshot-schema.md). Literal-body
+snapshots and the full inventory below remain future work. The integration boundary follows
 https://github.com/erniecohen/dafny/issues/241#issuecomment-6805195480,
 https://github.com/erniecohen/dafny/issues/241#issuecomment-6805266011 and
 https://github.com/erniecohen/dafny/issues/241#issuecomment-6805327364, and the
 local/global/final split in [the cache design](261-content-addressed-caches.md).
 
 The unit is the existing `ModuleResolutionResult` for a semantic resolution-graph
-node. Its owner key is the section 6.2.1 `ModuleResolutionKey`, called `L(m)` here.
+node. Its owner key is the shared `ModuleResolutionKey`, called `L(m)` here.
 Literal modules, import/export views, refinement and nested prerequisites retain
 their graph identities and dependency roles. A directory contains `<L>.<ctx>.dres`
 files, with one payload per local-key/naming-context pair. Several generated abstract signatures can belong to one owner result;
@@ -950,7 +952,7 @@ The manifest has the following required fields:
 | `profile` | The audited module-local resolution profile, including resolver engine and exact built-in plugin identity/order. |
 | `module_key`, `module_identity` | The full lowercase SHA-256 owner key and fully qualified graph-node identity. |
 | `naming_context`, `naming_context_sha256` | Canonically ordered owner and prerequisite graph identities, owner keys, generated-signature identities and their effective resolver naming prefixes; `ctx` is the domain-separated SHA-256 digest of this complete projection. |
-| `options` | Canonical effective modern/legacy options and verification-membership records used by `Compute`; execution/report/cache locations are excluded as in section 6.2.1. |
+| `options` | Canonical effective modern/legacy options and verification-membership records used by `Compute`; execution/report/cache locations are excluded by `ModuleResolutionKey.Options`. |
 | `prerequisites` | Canonically ordered role, qualified graph identity and full local key for every direct semantic prerequisite; include selected export-view selectors. |
 | `payload_length`, `payload_sha256` | Uncompressed CBOR byte length and SHA-256 digest. |
 
@@ -970,7 +972,7 @@ Distinct contexts coexist as `<L>.<ctx>.dres`; determinism disputes concern one
 `(L, ctx)` pair. This follows the coordinator's
 [decision](https://github.com/erniecohen/dafny/issues/241#issuecomment-6991588268).
 Keep the shipped naming algorithm unchanged. Generated-name relocation is outside
-this milestone. In particular, adding `SnapshotModule51712` changes the prefix of
+this milestone. In the naming table without the top-level graph prefix, adding `SnapshotModule51712` changes the prefix of
 `SnapshotModule4829` from `Mdwj6dt_` to `Mdwj6dtb_`; a snapshot from the first
 context cannot hit in the second. Do not accept a
 matching filename without recomputing source/options/prerequisite/producer inputs.
