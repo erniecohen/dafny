@@ -56,7 +56,7 @@ try:
     client = out / 'client.dfy'
     client.write_text(source)
     base = command + ['verify'] + options + ['--library:' + str(common), str(client)]
-    run('common-no-ghost-opt-in', base, expected=2, contains=[ghost])
+    run('common-no-ghost-opt-in', base, expected=1, contains=[ghost])
     run('common-client', base + [ghost])
     client.write_text(source.replace('// CONTROL', 'hide *; assert false;'))
     text = run('common-false', base + [ghost], expected=4,
@@ -65,8 +65,14 @@ try:
     assert 'out of resource' not in text and 'timed out' not in text
     client.write_text("""module Client {
   import Std.FileIOInternalExterns
+  import Std.ActionsExterns
   method Use() {
     var failed, bytes, message := FileIOInternalExterns.INTERNAL_ReadBytesFromFile("unused");
+    var producer, proof := ActionsExterns.MakeSetReader({7});
+    assert proof.Valid();
+    assert proof.Producer() == producer;
+    assert producer.allowance <= proof.allowance;
+    proof.ProducesSet([]);
     // CONTROL
   }
 }
@@ -82,7 +88,7 @@ try:
         client.write_text(original)
         base = command + ['verify'] + options + [ghost, '--library:' + str(common),
             '--library:' + str(bundle), str(client)]
-        run(target + '-no-runtime-opt-in', base, expected=2, contains=[runtime])
+        run(target + '-no-runtime-opt-in', base, expected=1, contains=[runtime])
         run(target + '-client', base + [runtime], contains=names + ['including termination'])
         client.write_text(original.replace('// CONTROL', 'assert false;'))
         text = run(target + '-false', base + [runtime], expected=4,

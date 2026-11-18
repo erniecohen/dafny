@@ -137,7 +137,8 @@ ghost premises. Neither list approves unnamed assumptions or changed contracts.
 See [the trust boundary](../../../docs/dev/design/211-m5b-trusted-premises.md).
 
 `github-issue-211-checked-std.dfy` exercises the five field families, a
-producer-of-producers client and hexadecimal conversion under both resolvers.
+producer-of-producers client, hexadecimal conversion, and concrete verified witnesses
+for all three pure proof protocols under both resolvers.
 Each positive has a reachable-false companion. Hiding function bodies immediately
 before the false assertion keeps that control focused on consistency rather than
 unrelated unfolding. Certificate admission, target bundles and backend erasure

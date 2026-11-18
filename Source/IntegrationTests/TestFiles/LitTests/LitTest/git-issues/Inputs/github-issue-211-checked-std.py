@@ -19,7 +19,8 @@ rows = []
 for refresh in [True, False]:
     for name, source, scope in [('families', 'five-families', 'Client'),
                                 ('factory', 'fresh-factory', 'FactoryControl'),
-                                ('json', 'json-controls', 'JSONControl')]:
+                                ('json', 'json-controls', 'JSONControl'),
+                                ('proofs', 'proofs', 'ProofWitnesses')]:
         original = (here / ('github-issue-211-checked-std-' + source + '.dfy')).read_text()
         assert original.count('// CONTROL') == 1
         for negative in [False, True]:
