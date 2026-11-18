@@ -93,13 +93,18 @@ def boogie(base, branch, root, out, jobs):
         rows = dict(pool.map(one, sources))
     (out / 'rows.json').write_text(json.dumps(rows, indent=1))
 
+    def same(x, y):
+        # Boogie resolves the files of a program in parallel, so the order of their error lines varies from run to
+        # run; the translations themselves are compared by digest.
+        return (x['exit'], x['boogie'], sorted(x['out'].splitlines())) == (y['exit'], y['boogie'], sorted(y['out'].splitlines()))
+
     failures, changed = [], []
     for name, row in rows.items():
         for config in CONFIGS:
             r = row[config]
-            if r['legacy-off'] != r['base']:
+            if not same(r['legacy-off'], r['base']):
                 failures.append('(a) %s [%s]: legacy-off differs from the base' % (name, config))
-            if r['default'] != r['base']:
+            if not same(r['default'], r['base']):
                 if row['uses']:
                     changed.append('%s [%s]' % (name, config))
                 else:
