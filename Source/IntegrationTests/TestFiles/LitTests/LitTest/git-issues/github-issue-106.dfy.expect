@@ -1,0 +1,261 @@
+
+Dafny program verifier finished with 26 verified, 0 errors
+
+Dafny program verifier finished with 26 verified, 0 errors
+
+Dafny program verifier finished with 27 verified, 0 errors
+
+Dafny program verifier finished with 27 verified, 0 errors
+github-issue-106-rejected.dfy(5,32): Error: a renaming to 'k' in refining module 'B0' changes what the name 'k' refers to in code inherited from module 'A': in 'A' it refers to const field 'A.k' (declared at github-issue-106-rejected.dfy(4,8)), but in 'B0' it would refer to parameter 'k' (declared at github-issue-106-rejected.dfy(5,13))
+github-issue-106-rejected.dfy(22,7): Related location: refining module
+github-issue-106-rejected.dfy(6,74): Error: a renaming to 'y' in refining module 'B1' changes what the name 'x' refers to in code inherited from module 'A': in 'A' it refers to parameter 'x' (declared at github-issue-106-rejected.dfy(6,19)), but in 'B1' it would refer to bound variable 'y' (declared at github-issue-106-rejected.dfy(6,42))
+github-issue-106-rejected.dfy(24,7): Related location: refining module
+github-issue-106-rejected.dfy(6,89): Error: a renaming to 'y' in refining module 'B1' changes what the name 'x' refers to in code inherited from module 'A': in 'A' it refers to parameter 'x' (declared at github-issue-106-rejected.dfy(6,19)), but in 'B1' it would refer to bound variable 'y' (declared at github-issue-106-rejected.dfy(6,42))
+github-issue-106-rejected.dfy(24,7): Related location: refining module
+github-issue-106-rejected.dfy(7,23): Error: Duplicate parameter name: z
+github-issue-106-rejected.dfy(26,7): Related location: refining module
+github-issue-106-rejected.dfy(8,55): Error: a renaming to 'c' in refining module 'B3' changes what the name 'a' refers to in code inherited from module 'A': in 'A' it refers to parameter 'a' (declared at github-issue-106-rejected.dfy(8,11)), but in 'B3' it would refer to local variable 'c' (declared at github-issue-106-rejected.dfy(8,42))
+github-issue-106-rejected.dfy(28,7): Related location: refining module
+github-issue-106-rejected.dfy(11,23): Error: a renaming to 'V' in refining module 'B4' changes what the name 'V' refers to in code inherited from module 'A': in 'A' it refers to abstract type 'A.V' (declared at github-issue-106-rejected.dfy(10,7)), but in 'B4' it would refer to type parameter 'V' (declared at github-issue-106-rejected.dfy(11,13))
+github-issue-106-rejected.dfy(30,7): Related location: refining module
+github-issue-106-rejected.dfy(32,34): Error: the type of parameter 'y' is different from the type of the same parameter in the corresponding function in the module it refines ('nat' instead of 'int')
+github-issue-106-rejected.dfy(34,31): Error: function 'Two' is declared with a different number of parameter (1 instead of 2) than the corresponding function in the module it refines
+github-issue-106-rejected.dfy(13,50): Error: a renaming to 'y' in refining module 'B7' changes what the name 'x' refers to in code inherited from module 'A': in 'A' it refers to parameter 'x' (declared at github-issue-106-rejected.dfy(13,15)), but in 'B7' it would refer to bound variable 'y' (declared at github-issue-106-rejected.dfy(13,34))
+github-issue-106-rejected.dfy(36,7): Related location: refining module
+github-issue-106-rejected.dfy(14,30): Error: Duplicate parameter name: b
+github-issue-106-rejected.dfy(38,7): Related location: refining module
+github-issue-106-rejected.dfy(16,27): Error: a renaming to 'U' in refining module 'B9' changes what the name 'U' refers to in code inherited from module 'A': in 'A' it refers to type parameter 'U' (declared at github-issue-106-rejected.dfy(15,10)), but in 'B9' it would refer to type parameter 'U' (declared at github-issue-106-rejected.dfy(16,21))
+github-issue-106-rejected.dfy(40,7): Related location: refining module
+github-issue-106-rejected.dfy(16,27): Error: a renaming to 'S' in refining module 'B10' changes what the name 'U' refers to in code inherited from module 'A': in 'A' it refers to type parameter 'U' (declared at github-issue-106-rejected.dfy(15,10)), but in 'B10' it would refer to type parameter 'S' (declared at github-issue-106-rejected.dfy(16,21))
+github-issue-106-rejected.dfy(42,7): Related location: refining module
+github-issue-106-rejected.dfy(49,17): Error: the parameter labelled 'x' is called 'p' only inside function 'Two'; a named argument uses its label 'x'
+github-issue-106-rejected.dfy(49,16): Error: function parameter 'x' at index 0 requires an argument of type int
+github-issue-106-rejected.dfy(50,15): Error: the parameter labelled 't' is called 'T' only inside function 'G'; a named argument uses its label 't'
+github-issue-106-rejected.dfy(50,14): Error: function parameter 't' requires an argument of type T
+github-issue-106-rejected.dfy(52,20): Error: the parameter named 'x' is already given positionally
+github-issue-106-rejected.dfy(52,16): Error: function parameter 'y' at index 1 requires an argument of type int
+github-issue-106-rejected.dfy(61,11): Error: refining module 'B12' renames a parameter or type parameter from or to 'L', but module 'Labels' did not resolve this use of 'L' in the code that 'B12' inherits, so the renaming cannot tell what it refers to
+github-issue-106-rejected.dfy(69,7): Related location: refining module
+github-issue-106-rejected.dfy(65,11): Error: refining module 'B13' renames a parameter or type parameter from or to 'L', but module 'Labels' did not resolve this use of 'L' in the code that 'B13' inherits, so the renaming cannot tell what it refers to
+github-issue-106-rejected.dfy(71,7): Related location: refining module
+20 resolution/type errors detected in github-issue-106-rejected.dfy
+github-issue-106-rejected.dfy(5,32): Error: a renaming to 'k' in refining module 'B0' changes what the name 'k' refers to in code inherited from module 'A': in 'A' it refers to const field 'A.k' (declared at github-issue-106-rejected.dfy(4,8)), but in 'B0' it would refer to parameter 'k' (declared at github-issue-106-rejected.dfy(5,13))
+github-issue-106-rejected.dfy(22,7): Related location: refining module
+github-issue-106-rejected.dfy(6,74): Error: a renaming to 'y' in refining module 'B1' changes what the name 'x' refers to in code inherited from module 'A': in 'A' it refers to parameter 'x' (declared at github-issue-106-rejected.dfy(6,19)), but in 'B1' it would refer to bound variable 'y' (declared at github-issue-106-rejected.dfy(6,42))
+github-issue-106-rejected.dfy(24,7): Related location: refining module
+github-issue-106-rejected.dfy(6,89): Error: a renaming to 'y' in refining module 'B1' changes what the name 'x' refers to in code inherited from module 'A': in 'A' it refers to parameter 'x' (declared at github-issue-106-rejected.dfy(6,19)), but in 'B1' it would refer to bound variable 'y' (declared at github-issue-106-rejected.dfy(6,42))
+github-issue-106-rejected.dfy(24,7): Related location: refining module
+github-issue-106-rejected.dfy(7,23): Error: Duplicate parameter name: z
+github-issue-106-rejected.dfy(26,7): Related location: refining module
+github-issue-106-rejected.dfy(8,55): Error: a renaming to 'c' in refining module 'B3' changes what the name 'a' refers to in code inherited from module 'A': in 'A' it refers to parameter 'a' (declared at github-issue-106-rejected.dfy(8,11)), but in 'B3' it would refer to local variable 'c' (declared at github-issue-106-rejected.dfy(8,42))
+github-issue-106-rejected.dfy(28,7): Related location: refining module
+github-issue-106-rejected.dfy(11,23): Error: a renaming to 'V' in refining module 'B4' changes what the name 'V' refers to in code inherited from module 'A': in 'A' it refers to abstract type 'A.V' (declared at github-issue-106-rejected.dfy(10,7)), but in 'B4' it would refer to type parameter 'V' (declared at github-issue-106-rejected.dfy(11,13))
+github-issue-106-rejected.dfy(30,7): Related location: refining module
+github-issue-106-rejected.dfy(32,34): Error: the type of parameter 'y' is different from the type of the same parameter in the corresponding function in the module it refines ('nat' instead of 'int')
+github-issue-106-rejected.dfy(34,31): Error: function 'Two' is declared with a different number of parameter (1 instead of 2) than the corresponding function in the module it refines
+github-issue-106-rejected.dfy(13,50): Error: a renaming to 'y' in refining module 'B7' changes what the name 'x' refers to in code inherited from module 'A': in 'A' it refers to parameter 'x' (declared at github-issue-106-rejected.dfy(13,15)), but in 'B7' it would refer to bound variable 'y' (declared at github-issue-106-rejected.dfy(13,34))
+github-issue-106-rejected.dfy(36,7): Related location: refining module
+github-issue-106-rejected.dfy(14,30): Error: Duplicate parameter name: b
+github-issue-106-rejected.dfy(38,7): Related location: refining module
+github-issue-106-rejected.dfy(16,27): Error: a renaming to 'U' in refining module 'B9' changes what the name 'U' refers to in code inherited from module 'A': in 'A' it refers to type parameter 'U' (declared at github-issue-106-rejected.dfy(15,10)), but in 'B9' it would refer to type parameter 'U' (declared at github-issue-106-rejected.dfy(16,21))
+github-issue-106-rejected.dfy(40,7): Related location: refining module
+github-issue-106-rejected.dfy(16,27): Error: a renaming to 'S' in refining module 'B10' changes what the name 'U' refers to in code inherited from module 'A': in 'A' it refers to type parameter 'U' (declared at github-issue-106-rejected.dfy(15,10)), but in 'B10' it would refer to type parameter 'S' (declared at github-issue-106-rejected.dfy(16,21))
+github-issue-106-rejected.dfy(42,7): Related location: refining module
+github-issue-106-rejected.dfy(49,17): Error: the parameter labelled 'x' is called 'p' only inside function 'Two'; a named argument uses its label 'x'
+github-issue-106-rejected.dfy(49,16): Error: function parameter 'x' at index 0 requires an argument of type int
+github-issue-106-rejected.dfy(50,15): Error: the parameter labelled 't' is called 'T' only inside function 'G'; a named argument uses its label 't'
+github-issue-106-rejected.dfy(50,14): Error: function parameter 't' requires an argument of type T
+github-issue-106-rejected.dfy(52,20): Error: the parameter named 'x' is already given positionally
+github-issue-106-rejected.dfy(52,16): Error: function parameter 'y' at index 1 requires an argument of type int
+github-issue-106-rejected.dfy(61,11): Error: refining module 'B12' renames a parameter or type parameter from or to 'L', but module 'Labels' did not resolve this use of 'L' in the code that 'B12' inherits, so the renaming cannot tell what it refers to
+github-issue-106-rejected.dfy(69,7): Related location: refining module
+github-issue-106-rejected.dfy(65,11): Error: refining module 'B13' renames a parameter or type parameter from or to 'L', but module 'Labels' did not resolve this use of 'L' in the code that 'B13' inherits, so the renaming cannot tell what it refers to
+github-issue-106-rejected.dfy(71,7): Related location: refining module
+20 resolution/type errors detected in github-issue-106-rejected.dfy
+github-issue-106-off.dfy(10,13): Error: there is a difference in name of parameter 0 ('y' versus 'x') of function F compared to corresponding function in the module it refines
+github-issue-106-off.dfy(11,11): Error: the name of function return value 'R'(s) differs from the name of corresponding function return value in the module it refines (r)
+github-issue-106-off.dfy(12,13): Error: type parameters are not allowed to be renamed from the names given in the function in the module being refined (expected 'T', found 'S')
+github-issue-106-off.dfy(12,16): Error: the type of parameter 't' is different from the type of the same parameter in the corresponding function in the module it refines ('S' instead of 'T')
+github-issue-106-off.dfy(12,11): Error: the result type of function 'G' (S) differs from the result type of the corresponding function in the module it refines (T)
+github-issue-106-off.dfy(13,11): Error: there is a difference in name of in-parameter 0 ('p' versus 'a') of method M compared to corresponding method in the module it refines
+github-issue-106-off.dfy(13,28): Error: there is a difference in name of out-parameter 0 ('q' versus 'b') of method M compared to corresponding method in the module it refines
+github-issue-106-off.dfy(14,10): Error: type parameters are not allowed to be renamed from the names given in the class in the module being refined (expected 'U', found 'W')
+github-issue-106-off.dfy(10,28): Error: unresolved identifier: y
+9 resolution/type errors detected in github-issue-106-off.dfy
+github-issue-106-off.dfy(10,13): Error: there is a difference in name of parameter 0 ('y' versus 'x') of function F compared to corresponding function in the module it refines
+github-issue-106-off.dfy(11,11): Error: the name of function return value 'R'(s) differs from the name of corresponding function return value in the module it refines (r)
+github-issue-106-off.dfy(12,13): Error: type parameters are not allowed to be renamed from the names given in the function in the module being refined (expected 'T', found 'S')
+github-issue-106-off.dfy(12,16): Error: the type of parameter 't' is different from the type of the same parameter in the corresponding function in the module it refines ('S' instead of 'T')
+github-issue-106-off.dfy(12,11): Error: the result type of function 'G' (S) differs from the result type of the corresponding function in the module it refines (T)
+github-issue-106-off.dfy(13,11): Error: there is a difference in name of in-parameter 0 ('p' versus 'a') of method M compared to corresponding method in the module it refines
+github-issue-106-off.dfy(13,28): Error: there is a difference in name of out-parameter 0 ('q' versus 'b') of method M compared to corresponding method in the module it refines
+github-issue-106-off.dfy(14,10): Error: type parameters are not allowed to be renamed from the names given in the class in the module being refined (expected 'U', found 'W')
+github-issue-106-off.dfy(10,28): Error: unresolved identifier: y
+9 resolution/type errors detected in github-issue-106-off.dfy
+(0,-1): Error: --refinement-renaming cannot be used with --legacy-inherited-name-capture
+github-issue-106-off.dfy(10,13): Error: there is a difference in name of parameter 0 ('y' versus 'x') of function F compared to corresponding function in the module it refines
+github-issue-106-off.dfy(11,11): Error: the name of function return value 'R'(s) differs from the name of corresponding function return value in the module it refines (r)
+github-issue-106-off.dfy(12,13): Error: type parameters are not allowed to be renamed from the names given in the function in the module being refined (expected 'T', found 'S')
+github-issue-106-off.dfy(12,16): Error: the type of parameter 't' is different from the type of the same parameter in the corresponding function in the module it refines ('S' instead of 'T')
+github-issue-106-off.dfy(12,11): Error: the result type of function 'G' (S) differs from the result type of the corresponding function in the module it refines (T)
+github-issue-106-off.dfy(13,11): Error: there is a difference in name of in-parameter 0 ('p' versus 'a') of method M compared to corresponding method in the module it refines
+github-issue-106-off.dfy(13,28): Error: there is a difference in name of out-parameter 0 ('q' versus 'b') of method M compared to corresponding method in the module it refines
+github-issue-106-off.dfy(14,10): Error: type parameters are not allowed to be renamed from the names given in the class in the module being refined (expected 'U', found 'W')
+(0,-1): Error: --refinement-renaming cannot be used with --legacy-inherited-name-capture
+10 resolution/type errors detected in github-issue-106-off.dfy
+
+Dafny program verifier finished with 0 verified, 0 errors
+
+Dafny program verifier finished with 0 verified, 0 errors
+
+Dafny program verifier finished with 14 verified, 0 errors
+
+Dafny program verifier finished with 14 verified, 0 errors
+github-issue-106-types-rejected.dfy(25,18): Error: the type of parameter 't' is different from the type of the same parameter in the corresponding function in the module it refines ('Small' instead of 'T')
+github-issue-106-types-rejected.dfy(26,16): Error: the type of parameter 'x' is different from the type of the same parameter in the corresponding function in the module it refines ('nat' instead of 'int')
+github-issue-106-types-rejected.dfy(26,11): Error: the result type of function 'Ints' (Num) differs from the result type of the corresponding function in the module it refines (int)
+github-issue-106-types-rejected.dfy(27,23): Error: the type of parameter 's' is different from the type of the same parameter in the corresponding function in the module it refines ('set<Node>' instead of 'seq<T>')
+github-issue-106-types-rejected.dfy(28,26): Error: the type of parameter 'a' is different from the type of the same parameter in the corresponding function in the module it refines ('X' instead of 'Y')
+github-issue-106-types-rejected.dfy(28,32): Error: the type of parameter 'b' is different from the type of the same parameter in the corresponding function in the module it refines ('Y' instead of 'X')
+github-issue-106-types-rejected.dfy(28,11): Error: the result type of function 'Permuted' (X) differs from the result type of the corresponding function in the module it refines (Y)
+github-issue-106-types-rejected.dfy(29,11): Error: the result type of function 'Result' (bool) differs from the result type of the corresponding function in the module it refines (T)
+github-issue-106-types-rejected.dfy(30,32): Error: the type of out-parameter 'u' is different from the type of the same out-parameter in the corresponding method in the module it refines ('Small' instead of 'T')
+github-issue-106-types-rejected.dfy(30,42): Error: the type of out-parameter 'n' is different from the type of the same out-parameter in the corresponding method in the module it refines ('Num' instead of 'int')
+github-issue-106-types-rejected.dfy(32,17): Error: the type of in-parameter 't' is different from the type of the same in-parameter in the corresponding method in the module it refines ('bool' instead of 'T')
+github-issue-106-types-rejected.dfy(49,13): Error: the type of parameter 'u' is different from the type of the same parameter in the corresponding function in the module it refines ('Lib.V' instead of 'Lib.U')
+github-issue-106-types-rejected.dfy(65,8): Error: the type of a const declaration (c) in a refining class (_default) must be syntactically the same as for the const being refined
+github-issue-106-types-rejected.dfy(66,17): Error: type bound for type parameter 'X' of function 'Bound' is different from the corresponding type bound of the corresponding type parameter of the corresponding function in the module it refines (expected 'Tr', found 'Tr'')
+github-issue-106-types-rejected.dfy(77,16): Error: Type or type parameter is not declared in this scope: Undeclared (did you forget to qualify a name or declare a module import 'opened'?) (note that names in outer modules are not visible in contained modules)
+15 resolution/type errors detected in github-issue-106-types-rejected.dfy
+github-issue-106-types-rejected.dfy(25,18): Error: the type of parameter 't' is different from the type of the same parameter in the corresponding function in the module it refines ('Small' instead of 'T')
+github-issue-106-types-rejected.dfy(26,16): Error: the type of parameter 'x' is different from the type of the same parameter in the corresponding function in the module it refines ('nat' instead of 'int')
+github-issue-106-types-rejected.dfy(26,11): Error: the result type of function 'Ints' (Num) differs from the result type of the corresponding function in the module it refines (int)
+github-issue-106-types-rejected.dfy(27,23): Error: the type of parameter 's' is different from the type of the same parameter in the corresponding function in the module it refines ('set<Node>' instead of 'seq<T>')
+github-issue-106-types-rejected.dfy(28,26): Error: the type of parameter 'a' is different from the type of the same parameter in the corresponding function in the module it refines ('X' instead of 'Y')
+github-issue-106-types-rejected.dfy(28,32): Error: the type of parameter 'b' is different from the type of the same parameter in the corresponding function in the module it refines ('Y' instead of 'X')
+github-issue-106-types-rejected.dfy(28,11): Error: the result type of function 'Permuted' (X) differs from the result type of the corresponding function in the module it refines (Y)
+github-issue-106-types-rejected.dfy(29,11): Error: the result type of function 'Result' (bool) differs from the result type of the corresponding function in the module it refines (T)
+github-issue-106-types-rejected.dfy(30,32): Error: the type of out-parameter 'u' is different from the type of the same out-parameter in the corresponding method in the module it refines ('Small' instead of 'T')
+github-issue-106-types-rejected.dfy(30,42): Error: the type of out-parameter 'n' is different from the type of the same out-parameter in the corresponding method in the module it refines ('Num' instead of 'int')
+github-issue-106-types-rejected.dfy(32,17): Error: the type of in-parameter 't' is different from the type of the same in-parameter in the corresponding method in the module it refines ('bool' instead of 'T')
+github-issue-106-types-rejected.dfy(49,13): Error: the type of parameter 'u' is different from the type of the same parameter in the corresponding function in the module it refines ('Lib.V' instead of 'Lib.U')
+github-issue-106-types-rejected.dfy(65,8): Error: the type of a const declaration (c) in a refining class (_default) must be syntactically the same as for the const being refined
+github-issue-106-types-rejected.dfy(66,17): Error: type bound for type parameter 'X' of function 'Bound' is different from the corresponding type bound of the corresponding type parameter of the corresponding function in the module it refines (expected 'Tr', found 'Tr'')
+github-issue-106-types-rejected.dfy(77,16): Error: Type or type parameter is not declared in this scope: Undeclared (did you forget to qualify a name or declare a module import 'opened'?) (note that names in outer modules are not visible in contained modules)
+15 resolution/type errors detected in github-issue-106-types-rejected.dfy
+github-issue-106-types.dfy(54,13): Error: the type of parameter 't' is different from the type of the same parameter in the corresponding function in the module it refines ('Node' instead of 'T')
+github-issue-106-types.dfy(54,11): Error: the result type of function 'F' (Node) differs from the result type of the corresponding function in the module it refines (T)
+github-issue-106-types.dfy(58,14): Error: the type of parameter 't' is different from the type of the same parameter in the corresponding function in the module it refines ('Node' instead of 'T')
+github-issue-106-types.dfy(62,11): Error: the type of in-parameter 't' is different from the type of the same in-parameter in the corresponding method in the module it refines ('Node' instead of 'T')
+github-issue-106-types.dfy(62,29): Error: the type of out-parameter 'u' is different from the type of the same out-parameter in the corresponding method in the module it refines ('Node' instead of 'T')
+github-issue-106-types.dfy(66,10): Error: the type of in-parameter 't' is different from the type of the same in-parameter in the corresponding method in the module it refines ('Node' instead of 'T')
+github-issue-106-types.dfy(66,19): Error: the type of in-parameter 's' is different from the type of the same in-parameter in the corresponding method in the module it refines ('Nodes' instead of 'seq<T>')
+github-issue-106-types.dfy(69,17): Error: the type of parameter 't' is different from the type of the same parameter in the corresponding function in the module it refines ('Node' instead of 'T')
+github-issue-106-types.dfy(69,11): Error: the result type of function 'Named' (Node) differs from the result type of the corresponding function in the module it refines (T)
+github-issue-106-types.dfy(74,19): Error: the type of parameter 't' is different from the type of the same parameter in the corresponding function in the module it refines ('Node' instead of 'T')
+github-issue-106-types.dfy(74,11): Error: the result type of function 'Unnamed' (Node) differs from the result type of the corresponding function in the module it refines (T)
+github-issue-106-types.dfy(80,23): Error: the type of parameter 't' is different from the type of the same parameter in the corresponding function in the module it refines ('Node' instead of 'T')
+github-issue-106-types.dfy(80,32): Error: the type of parameter 'u' is different from the type of the same parameter in the corresponding function in the module it refines ('Node' instead of 'T')
+github-issue-106-types.dfy(80,11): Error: the result type of function 'WithDefault' (Node) differs from the result type of the corresponding function in the module it refines (T)
+github-issue-106-types.dfy(82,18): Error: the type of parameter 'm' is different from the type of the same parameter in the corresponding function in the module it refines ('map<Node, set<T>>' instead of 'map<T, set<T>>')
+github-issue-106-types.dfy(82,40): Error: the type of parameter 'f' is different from the type of the same parameter in the corresponding function in the module it refines ('Node -> Nodes' instead of 'T -> seq<T>')
+github-issue-106-types.dfy(82,58): Error: the type of parameter 'p' is different from the type of the same parameter in the corresponding function in the module it refines ('(T, Node)' instead of '(T, T)')
+github-issue-106-types.dfy(82,72): Error: the type of parameter 'a' is different from the type of the same parameter in the corresponding function in the module it refines ('array<Node>' instead of 'array<T>')
+github-issue-106-types.dfy(82,11): Error: the result type of function 'Nested' (Node ~> multiset<Node>) differs from the result type of the corresponding function in the module it refines (T ~> multiset<T>)
+github-issue-106-types.dfy(86,24): Error: the type of parameter 't' is different from the type of the same parameter in the corresponding function in the module it refines ('Node' instead of 'T')
+github-issue-106-types.dfy(86,37): Error: the type of parameter 'u' is different from the type of the same parameter in the corresponding function in the module it refines ('Node' instead of 'T')
+github-issue-106-types.dfy(86,20): Error: the result type of function 'Two' (Node) differs from the result type of the corresponding function in the module it refines (T)
+github-issue-106-types.dfy(90,24): Error: the type of parameter 't' is different from the type of the same parameter in the corresponding function in the module it refines ('Node' instead of 'T')
+github-issue-106-types.dfy(94,22): Error: the type of in-parameter 't' is different from the type of the same in-parameter in the corresponding method in the module it refines ('Node' instead of 'T')
+github-issue-106-types.dfy(98,17): Error: the type of in-parameter 't0' is different from the type of the same in-parameter in the corresponding method in the module it refines ('Node' instead of 'T')
+github-issue-106-types.dfy(101,26): Error: the type of out-parameter 'r' is different from the type of the same out-parameter in the corresponding method in the module it refines ('Node' instead of 'T')
+github-issue-106-types.dfy(104,23): Error: the type of parameter 't' is different from the type of the same parameter in the corresponding function in the module it refines ('Node' instead of 'T')
+github-issue-106-types.dfy(104,20): Error: the result type of function 'Id' (Node) differs from the result type of the corresponding function in the module it refines (T)
+github-issue-106-types.dfy(112,11): Error: the result type of function 'F' (Node) differs from the result type of the corresponding function in the module it refines (T)
+github-issue-106-types.dfy(113,11): Error: the type of in-parameter 't' is different from the type of the same in-parameter in the corresponding method in the module it refines ('Node' instead of 'T')
+github-issue-106-types.dfy(129,13): Error: the type of parameter 't' is different from the type of the same parameter in the corresponding function in the module it refines ('Node' instead of 'T')
+github-issue-106-types.dfy(129,11): Error: the result type of function 'F' (Node) differs from the result type of the corresponding function in the module it refines (T)
+github-issue-106-types.dfy(146,13): Error: type parameters are not allowed to be renamed from the names given in the function in the module being refined (expected 'X', found 'U')
+github-issue-106-types.dfy(146,16): Error: type parameters are not allowed to be renamed from the names given in the function in the module being refined (expected 'Y', found 'V')
+github-issue-106-types.dfy(146,19): Error: the type of parameter 'b' is different from the type of the same parameter in the corresponding function in the module it refines ('Boxed<U>' instead of 'Box<X>')
+github-issue-106-types.dfy(146,32): Error: the type of parameter 'm' is different from the type of the same parameter in the corresponding function in the module it refines ('Pairs<U, V>' instead of 'map<X, Y>')
+github-issue-106-types.dfy(146,11): Error: the name of function return value 'G'(q) differs from the name of corresponding function return value in the module it refines (r)
+github-issue-106-types.dfy(146,11): Error: the result type of function 'G' (Boxed<U>) differs from the result type of the corresponding function in the module it refines (Box<X>)
+github-issue-106-types.dfy(148,14): Error: type parameters are not allowed to be renamed from the names given in the method in the module being refined (expected 'X', found 'P')
+github-issue-106-types.dfy(148,17): Error: type parameters are not allowed to be renamed from the names given in the method in the module being refined (expected 'Y', found 'Q')
+github-issue-106-types.dfy(148,20): Error: there is a difference in name of in-parameter 0 ('p' versus 'x') of method Swap compared to corresponding method in the module it refines
+github-issue-106-types.dfy(148,26): Error: there is a difference in name of in-parameter 1 ('q' versus 'y') of method Swap compared to corresponding method in the module it refines
+github-issue-106-types.dfy(148,41): Error: there is a difference in name of out-parameter 0 ('q'' versus 'y'') of method Swap compared to corresponding method in the module it refines
+github-issue-106-types.dfy(148,48): Error: there is a difference in name of out-parameter 1 ('p'' versus 'x'') of method Swap compared to corresponding method in the module it refines
+github-issue-106-types.dfy(147,12): Error: unresolved identifier: q
+github-issue-106-types.dfy(149,14): Error: unresolved identifier: q
+github-issue-106-types.dfy(149,17): Error: unresolved identifier: p
+github-issue-106-types.dfy(149,4): Error: unresolved identifier: q'
+github-issue-106-types.dfy(149,8): Error: unresolved identifier: p'
+github-issue-106-types.dfy(167,13): Error: the type of parameter 'u' is different from the type of the same parameter in the corresponding function in the module it refines ('int' instead of 'Lib.U')
+github-issue-106-types.dfy(167,21): Error: the type of parameter 'w' is different from the type of the same parameter in the corresponding function in the module it refines ('W' instead of 'Lib.W')
+github-issue-106-types.dfy(167,11): Error: the result type of function 'F' (U) differs from the result type of the corresponding function in the module it refines (int)
+52 resolution/type errors detected in github-issue-106-types.dfy
+github-issue-106-types.dfy(54,13): Error: the type of parameter 't' is different from the type of the same parameter in the corresponding function in the module it refines ('Node' instead of 'T')
+github-issue-106-types.dfy(54,11): Error: the result type of function 'F' (Node) differs from the result type of the corresponding function in the module it refines (T)
+github-issue-106-types.dfy(58,14): Error: the type of parameter 't' is different from the type of the same parameter in the corresponding function in the module it refines ('Node' instead of 'T')
+github-issue-106-types.dfy(62,11): Error: the type of in-parameter 't' is different from the type of the same in-parameter in the corresponding method in the module it refines ('Node' instead of 'T')
+github-issue-106-types.dfy(62,29): Error: the type of out-parameter 'u' is different from the type of the same out-parameter in the corresponding method in the module it refines ('Node' instead of 'T')
+github-issue-106-types.dfy(66,10): Error: the type of in-parameter 't' is different from the type of the same in-parameter in the corresponding method in the module it refines ('Node' instead of 'T')
+github-issue-106-types.dfy(66,19): Error: the type of in-parameter 's' is different from the type of the same in-parameter in the corresponding method in the module it refines ('Nodes' instead of 'seq<T>')
+github-issue-106-types.dfy(69,17): Error: the type of parameter 't' is different from the type of the same parameter in the corresponding function in the module it refines ('Node' instead of 'T')
+github-issue-106-types.dfy(69,11): Error: the result type of function 'Named' (Node) differs from the result type of the corresponding function in the module it refines (T)
+github-issue-106-types.dfy(74,19): Error: the type of parameter 't' is different from the type of the same parameter in the corresponding function in the module it refines ('Node' instead of 'T')
+github-issue-106-types.dfy(74,11): Error: the result type of function 'Unnamed' (Node) differs from the result type of the corresponding function in the module it refines (T)
+github-issue-106-types.dfy(80,23): Error: the type of parameter 't' is different from the type of the same parameter in the corresponding function in the module it refines ('Node' instead of 'T')
+github-issue-106-types.dfy(80,32): Error: the type of parameter 'u' is different from the type of the same parameter in the corresponding function in the module it refines ('Node' instead of 'T')
+github-issue-106-types.dfy(80,11): Error: the result type of function 'WithDefault' (Node) differs from the result type of the corresponding function in the module it refines (T)
+github-issue-106-types.dfy(82,18): Error: the type of parameter 'm' is different from the type of the same parameter in the corresponding function in the module it refines ('map<Node, set<T>>' instead of 'map<T, set<T>>')
+github-issue-106-types.dfy(82,40): Error: the type of parameter 'f' is different from the type of the same parameter in the corresponding function in the module it refines ('Node -> Nodes' instead of 'T -> seq<T>')
+github-issue-106-types.dfy(82,58): Error: the type of parameter 'p' is different from the type of the same parameter in the corresponding function in the module it refines ('(T, Node)' instead of '(T, T)')
+github-issue-106-types.dfy(82,72): Error: the type of parameter 'a' is different from the type of the same parameter in the corresponding function in the module it refines ('array<Node>' instead of 'array<T>')
+github-issue-106-types.dfy(82,11): Error: the result type of function 'Nested' (Node ~> multiset<Node>) differs from the result type of the corresponding function in the module it refines (T ~> multiset<T>)
+github-issue-106-types.dfy(86,24): Error: the type of parameter 't' is different from the type of the same parameter in the corresponding function in the module it refines ('Node' instead of 'T')
+github-issue-106-types.dfy(86,37): Error: the type of parameter 'u' is different from the type of the same parameter in the corresponding function in the module it refines ('Node' instead of 'T')
+github-issue-106-types.dfy(86,20): Error: the result type of function 'Two' (Node) differs from the result type of the corresponding function in the module it refines (T)
+github-issue-106-types.dfy(90,24): Error: the type of parameter 't' is different from the type of the same parameter in the corresponding function in the module it refines ('Node' instead of 'T')
+github-issue-106-types.dfy(94,22): Error: the type of in-parameter 't' is different from the type of the same in-parameter in the corresponding method in the module it refines ('Node' instead of 'T')
+github-issue-106-types.dfy(98,17): Error: the type of in-parameter 't0' is different from the type of the same in-parameter in the corresponding method in the module it refines ('Node' instead of 'T')
+github-issue-106-types.dfy(101,26): Error: the type of out-parameter 'r' is different from the type of the same out-parameter in the corresponding method in the module it refines ('Node' instead of 'T')
+github-issue-106-types.dfy(104,23): Error: the type of parameter 't' is different from the type of the same parameter in the corresponding function in the module it refines ('Node' instead of 'T')
+github-issue-106-types.dfy(104,20): Error: the result type of function 'Id' (Node) differs from the result type of the corresponding function in the module it refines (T)
+github-issue-106-types.dfy(112,11): Error: the result type of function 'F' (Node) differs from the result type of the corresponding function in the module it refines (T)
+github-issue-106-types.dfy(113,11): Error: the type of in-parameter 't' is different from the type of the same in-parameter in the corresponding method in the module it refines ('Node' instead of 'T')
+github-issue-106-types.dfy(129,13): Error: the type of parameter 't' is different from the type of the same parameter in the corresponding function in the module it refines ('Node' instead of 'T')
+github-issue-106-types.dfy(129,11): Error: the result type of function 'F' (Node) differs from the result type of the corresponding function in the module it refines (T)
+github-issue-106-types.dfy(146,13): Error: type parameters are not allowed to be renamed from the names given in the function in the module being refined (expected 'X', found 'U')
+github-issue-106-types.dfy(146,16): Error: type parameters are not allowed to be renamed from the names given in the function in the module being refined (expected 'Y', found 'V')
+github-issue-106-types.dfy(146,19): Error: the type of parameter 'b' is different from the type of the same parameter in the corresponding function in the module it refines ('Boxed<U>' instead of 'Box<X>')
+github-issue-106-types.dfy(146,32): Error: the type of parameter 'm' is different from the type of the same parameter in the corresponding function in the module it refines ('Pairs<U, V>' instead of 'map<X, Y>')
+github-issue-106-types.dfy(146,11): Error: the name of function return value 'G'(q) differs from the name of corresponding function return value in the module it refines (r)
+github-issue-106-types.dfy(146,11): Error: the result type of function 'G' (Boxed<U>) differs from the result type of the corresponding function in the module it refines (Box<X>)
+github-issue-106-types.dfy(148,14): Error: type parameters are not allowed to be renamed from the names given in the method in the module being refined (expected 'X', found 'P')
+github-issue-106-types.dfy(148,17): Error: type parameters are not allowed to be renamed from the names given in the method in the module being refined (expected 'Y', found 'Q')
+github-issue-106-types.dfy(148,20): Error: there is a difference in name of in-parameter 0 ('p' versus 'x') of method Swap compared to corresponding method in the module it refines
+github-issue-106-types.dfy(148,26): Error: there is a difference in name of in-parameter 1 ('q' versus 'y') of method Swap compared to corresponding method in the module it refines
+github-issue-106-types.dfy(148,41): Error: there is a difference in name of out-parameter 0 ('q'' versus 'y'') of method Swap compared to corresponding method in the module it refines
+github-issue-106-types.dfy(148,48): Error: there is a difference in name of out-parameter 1 ('p'' versus 'x'') of method Swap compared to corresponding method in the module it refines
+github-issue-106-types.dfy(147,12): Error: unresolved identifier: q
+github-issue-106-types.dfy(149,4): Error: unresolved identifier: q'
+github-issue-106-types.dfy(149,8): Error: unresolved identifier: p'
+github-issue-106-types.dfy(149,14): Error: unresolved identifier: q
+github-issue-106-types.dfy(149,17): Error: unresolved identifier: p
+github-issue-106-types.dfy(167,13): Error: the type of parameter 'u' is different from the type of the same parameter in the corresponding function in the module it refines ('int' instead of 'Lib.U')
+github-issue-106-types.dfy(167,21): Error: the type of parameter 'w' is different from the type of the same parameter in the corresponding function in the module it refines ('W' instead of 'Lib.W')
+github-issue-106-types.dfy(167,11): Error: the result type of function 'F' (U) differs from the result type of the corresponding function in the module it refines (int)
+52 resolution/type errors detected in github-issue-106-types.dfy
+github-issue-106-not-renamed.dfy(25,11): Error: type parameters are not allowed to be renamed from the names given in the type in the module being refined (expected 'T', found 'U')
+github-issue-106-not-renamed.dfy(6,20): Error: Type or type parameter is not declared in this scope: T (did you forget to qualify a name or declare a module import 'opened'?) (note that names in outer modules are not visible in contained modules)
+github-issue-106-not-renamed.dfy(19,7): Related location: refining module
+github-issue-106-not-renamed.dfy(37,11): Error: to redeclare and refine declaration 'Count' from module 'Iterators', you must use the refining (`...`) notation
+3 resolution/type errors detected in github-issue-106-not-renamed.dfy
+github-issue-106-not-renamed.dfy(25,11): Error: type parameters are not allowed to be renamed from the names given in the type in the module being refined (expected 'T', found 'U')
+github-issue-106-not-renamed.dfy(6,20): Error: Type or type parameter is not declared in this scope: T (did you forget to qualify a name or declare a module import 'opened'?) (note that names in outer modules are not visible in contained modules)
+github-issue-106-not-renamed.dfy(19,7): Related location: refining module
+github-issue-106-not-renamed.dfy(37,11): Error: to redeclare and refine declaration 'Count' from module 'Iterators', you must use the refining (`...`) notation
+3 resolution/type errors detected in github-issue-106-not-renamed.dfy

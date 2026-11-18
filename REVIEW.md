@@ -1203,3 +1203,146 @@ rejects one program of the suite, `exports/OpenImportRefined.dfy`, whose `Refine
 declarations, not their expansions.  The hidden `--legacy-inherited-name-capture` option restores
 the old rule for comparison and migration.  The regression is `git-issues/github-issue-410.dfy`;
 the release note is `docs/dev/news/410.fix`.
+
+## Renaming in a refinement ([issue 106](https://github.com/erniecohen/dafny/issues/106), [issue 107](https://github.com/erniecohen/dafny/issues/107))
+
+`--refinement-renaming` is an opt-in feature: stages 1 to 3 of the refinement design draft
+([pull request 401](https://github.com/erniecohen/dafny/pull/401), sections 2.3 to 2.5).  A
+declaration of a refining module `R` may rename the type parameters, the out-parameters, the
+result and the local names of the in-parameters of the declaration of `B` that it refines, by
+position.  With the option off, the name-agreement errors are those of 4.11.0, and nothing else in
+this change is reached.
+
+*Labels.*  A `Formal` has a `Label`, the name a named argument uses.  It is the parameter's name
+in the first declaration of the chain, and both resolvers bind named arguments by it, so no call,
+inherited or not, is affected by a renaming.  The label is derived where a formal is copied under
+a different name, and so follows every later copy.
+
+*The renaming.*  The refinement cloner copies `B`'s declaration under a map from `B`'s binders to
+their new names.  It renames by what `B` resolved each name to, not by spelling: a name segment
+or type name that `B` resolved to a renamed binder gets the new name, and no other occurrence is
+touched.  The copy is then resolved in `R` like any inherited code.
+
+*Why it is sound.*  The copy must mean what `B`'s text meant.  The check of
+[issue 410](https://github.com/erniecohen/dafny/issues/410) already requires every inherited
+occurrence to denote the counterpart of what it denoted in `B`; three clauses extend it to
+renamed binders.
+(1) The counterpart of a renamed binder of `B` is exactly its renamed copy in `R`, and a renamed
+copy is the counterpart of nothing else.  This rejects a new name that an inner binder of the
+inherited code captures, and a new name that captures an inherited use of another variable,
+constant or type.  (Without a renaming, 410 accepts any parameter of the same name, which is not
+enough here.)
+(2) A renamed occurrence that `R`'s resolver does not resolve itself (because a desugaring
+resolves a copy instead) is an error, where 410 skips an unresolved occurrence.
+(3) An inherited occurrence that `B` left unresolved and that spells an old or a new name of a
+renaming in force is an error, since the map cannot tell what it refers to.
+Since the argument rests on the 410 check, the option is rejected together with
+`--legacy-inherited-name-capture`.  Its kind is **weakens only** for the verifier: it adds no fact
+or axiom; under the option, a renamed declaration is verified as the alpha-variant that the
+cloner wrote.
+
+*Signature agreement.*  Counts, modifiers and type characteristics are compared as before.  The
+types of the parameters and the result type are first compared as text, after `B`'s side is put in
+`R`'s names, as without the option.  Under the option, a type that is spelled differently is not
+an error yet: the refinement transformer hands the spelling to the merged declaration
+(`MethodOrFunction.RefinementDeclaredTypes`).  The resolver resolves it in the scope of the
+merged signature, and once all signatures of `R` are resolved it compares the spelling with the
+type the merged declaration has, by `Type.Equals` with constraints kept: type synonyms are
+expanded, a subset type or newtype equals only itself, and so does a type that `R` sees as
+opaque.  A mismatch is the error of the textual comparison, reported before any body is resolved.
+The comparison is not part of the soundness argument.  The merged declaration takes every
+parameter and result type from `B`, also where `R` names a result that `B` leaves unnamed, so
+`R`'s spelling occurs nowhere in the resolved program and the comparison decides only which
+spellings are accepted.  Type-parameter bounds and the types of constants and fields are still
+compared as text: a refining `const` keeps its own declaration, so for it the comparison would
+decide which type the program has.
+
+*Not renamable.*  An iterator's signature can only be repeated with `...`.  The type parameters of
+an abstract type with members that a type synonym refines (`--synonym-refines-abstract-type`) keep
+their names.  A label has no syntax of its own: a refining declaration cannot rename it, and the
+printer prints local names.
+
+*Three copies made once.*  A field and an array allocation each cloned their explicit type twice,
+for a syntactic and a working slot that the parser fills with one object; the resolver resolves
+one, so the other copy could not be checked by clause (2).  The copy constructors now keep them
+one object, as the parser does.  A `match` pattern's type annotation was not cloned at all: the
+copy shared the type object that `B` had resolved, so a pattern inherited by `R` kept a type of
+`B`, and the resolver crashed or reported a mismatch whenever that type is a type parameter or a
+type that `R` refines.  It is now cloned and resolved in `R`.  This last change is not behind the
+option; it turns a crash or a spurious error into an accepted program.
+
+The regression is `git-issues/github-issue-106.dfy` with its inputs; the release note is
+`docs/dev/news/106.feat`; the manual's section is "Renaming parameters and type parameters".
+
+## Copying imports ([issue 107](https://github.com/erniecohen/dafny/issues/107))
+
+`--copy-imports` is an opt-in feature: stage 4 of the refinement design draft
+([pull request 401](https://github.com/erniecohen/dafny/pull/401), sections 3.2, 3.3 and 3.5).  It adds one
+declaration, `import [opened] X := Q` with an optional export suffix, which gives the importing
+module `M` a copy of `Q` named `X`.  With the option off, the parser does not accept the
+declaration, and nothing else in this change is reached.
+
+*What a copy is.*  The parser builds a nested module `X` of `M` that refines `Q` and has no
+declarations of its own, marked as a copying import.  Everything after that is the existing
+machinery of refinement: the refinement transformer clones `Q`'s declarations into `X`, and the
+resolver, the translator and the compilers see an ordinary module.  So the types of `X` are new
+types, and its functions get the bodies of `Q`, by the rules that already hold for
+`module X refines Q { }`.  No axiom is added, and a program without the declaration gets the
+same solver input.
+
+*What differs from a written-out refinement.*
+(1) The default export set of `Q` is the default export set of the copy and takes the copy's
+name, also where another export set extends it.  (A written-out refinement keeps it as a
+non-default set called `Q`.)  `Q` may therefore not have another export set with the copy's name.
+(2) The name `X` gives the default export set, or the sets named after the backquote; the
+signature it gives is kept on the declaration and is used for `X.a`, for an alias `import A = M.X`
+and for an export of `M` that provides `X`.
+(3) A copy of an abstract module is abstract, and a compiled module may not have one.
+(4) An `{:extern}` declaration of `Q`, or `Q` being `replaceable`, is an error: the first would
+give two Dafny declarations for one thing of the target program, and the second is already an
+error for a written-out refinement.
+
+*Copies in a refining module.*  When `M'` refines `M`, the transformer does not clone `M`'s copy
+`X` (which would give `M'` the types of `M.X`) but declares a new copying import of the same
+module, with the same export suffix.  That module is not a declaration of the program's module
+graph, so `M'` resolves it itself, before its own declarations, and hands its signature to the
+program with its own.  A redeclaration of `X` in `M'` is an error.  The same holds for each
+further refinement.
+
+*What is deliberately unknown.*  An abstract import `import A : B` inside `Q` stands for an
+unknown refinement of `B`.  Each copy gets a signature of its own for it, so nothing relates
+`X.A` to `Q.A` or to `Z.A`.  Through `import I : M`, the copy `I.X` is likewise an abstract
+signature: `I` may be any refinement of `M`, each of which has copies of its own, so the types of
+`I.X` are known neither to be those of `M.X` nor to differ from them.  The controls of the
+regression test fail in both directions.
+
+*Binding an abstract import.*  A copying import in a refining module may take the place of an
+abstract import `import A : B` that the module inherits, as a nested module may.  The rule of
+https://github.com/erniecohen/dafny/issues/408 applies to it unchanged: the copy refines the
+module it copies, so `import A := R` is accepted when `R` is `B` or refines it, and is otherwise
+the error `a module (A) can only be replaced by a refinement of the original module`.  The
+regression test has both cases.
+
+*Proof cost.*  The verifier does not verify the members that a refining module inherits
+unchanged, so a copy adds no proof, with one exception.  The checks that a refining module makes
+again for an inherited member are those of https://github.com/erniecohen/dafny/issues/404 (an
+override whose overridden member is not the one the refined module checked),
+https://github.com/erniecohen/dafny/issues/411 (a constructor of a class to which the module
+added a field) and https://github.com/erniecohen/dafny/issues/409 (the termination of a group of
+recursive members that the module changed).  A copy has no declaration of its own, so the last
+two do not apply to it, and the first applies in one case: `Q` has a copying import `Y`, and a
+class of `Q` extends a trait of `Y`.  In a copy `X` of `Q` the trait belongs to the new copy
+`X.Y`, which is not the module that `Q` checked the class against, so the check of each override
+is made again, once for each copy of `Q`.  The same check is made for a written-out
+`module X refines Q { }`.  It is redundant, because `X.Y` and `Q.Y` copy the same module, and it
+is kept because the rule that makes it is the simple one.  The regression test has six copies of
+a module with a lemma, six copies of a module with an override, a constructor and a recursive
+function, which add no proof, and four copies of a module of the excepted kind, which add one
+proof each.
+
+*Libraries.*  The option is recorded in a library, and a library built with it is loaded only
+under it, with the error `--copy-imports is set locally to False, but the library was built with
+True`.  The text of a library that uses the declaration does not parse without the option.
+
+The regression is `git-issues/github-issue-107.dfy` with its inputs; the release note is
+`docs/dev/news/107.feat`; the manual's section is "Copying imports".
