@@ -62,6 +62,8 @@ for refresh in [False, True]:
         assert b'legacy-no-modular-termination' not in archive.read('manifest.toml')
     client.write_text('module Client { import Ordinary method Use() { assert Ordinary.F() == 1; } }')
     run('ordinary-client', 'verify', [str(client), '--library:' + str(ordinary)])
+    run('ordinary-legacy-client', 'verify', [str(client), '--library:' + str(ordinary),
+        '--legacy-no-modular-termination'])
     source.write_text('function Bad(c: bounded<ORDINAL, (int -> int)>, x: int): int '
                       'decreases {:global} c.bound { c(x) }')
     run('bounded-application', 'verify', [str(source)], 4, ['decreases clause might not decrease'])
@@ -74,3 +76,10 @@ for refresh in [False, True]:
     run('unrecorded-dependency', 'build', [str(client), '--library:' + str(unchecked),
         '--target:lib', '--output:' + str(result)], 3, ['depends on unrecorded library'])
     assert not result.exists()
+
+# The order-library autoloader requires the refreshed type system. Check the opt-out
+# independently of library option compatibility, with an import that needs that loader.
+source.write_text('module Client { import Std.Termination.Orders }')
+run('order-autoload-default', 'verify', [str(source), '--decreases-orders', '--general-traits=datatype'])
+run('order-autoload-legacy', 'verify', [str(source), '--decreases-orders', '--general-traits=datatype',
+    '--legacy-no-modular-termination'], 2, ['Error:'])

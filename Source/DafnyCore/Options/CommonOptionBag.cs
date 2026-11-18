@@ -851,10 +851,10 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterGlobalOption(WarnShadowing, OptionCompatibility.OptionLibraryImpliesLocalWarning);
     OptionRegistry.RegisterGlobalOption(UseStandardLibraries, OptionCompatibility.OptionLibraryImpliesLocalError);
     OptionRegistry.RegisterGlobalOption(Referrers, OptionCompatibility.CheckOptionMatches);
-    // A library verified under one setting cannot be used under the other: "decreases {:global} E" is a bound under one
-    // and an ordinary decreases clause under the other, and the obligations of the rules of termination across modules
-    // are verified only under the first.
-    OptionRegistry.RegisterGlobalOption(LegacyNoModularTermination, OptionCompatibility.CheckOptionMatches);
+    // The opt-out weakens the local checks. A legacy consumer may use an ordinary library
+    // from an older/default build; complete certificates are separately refused under the opt-out.
+    // The checked consumer still refuses a library explicitly built under the legacy opt-out.
+    OptionRegistry.RegisterGlobalOption(LegacyNoModularTermination, OptionCompatibility.OptionLibraryImpliesLocalError);
     OptionRegistry.RegisterOption(TranslateStandardLibrary, OptionScope.Cli);
     OptionRegistry.RegisterOption(WarnAsErrors, OptionScope.Cli);
     OptionRegistry.RegisterOption(ProgressOption, OptionScope.Cli);

@@ -955,14 +955,14 @@ build of Dafny or its prelude, the Z3 binary that the current run uses (the libr
 with the same one; every command that loads libraries, `dafny resolve`, `dafny audit`, `dafny doc`,
 `dafny extract` and `dafny format` included, takes `--solver-path` to name it), or an option whose value differs from the current one. A library verified against another must be loaded
 with it, and with one that provides the same contracts: a dependency whose method bodies changed is
-accepted, and one whose contracts changed is rejected. Under the option, Dafny also rejects a source
-file given with `--library`, a `.dll` library and the bundled standard library, which carry no record;
-`--standard-libraries:false` leaves the standard library out. In its place, the part of the standard
-library that verifies with no unchecked premise can be built as a recorded library from
-`Source/DafnyStandardLibraries/modular-termination` and loaded with `--library`; its `README.md` lists the
-modules it leaves out and why. Without the option, a library built with
-it is rejected, so that its record is never ignored; libraries built without the option are read as
-before.
+accepted, and one whose contracts changed is rejected. An unverified source or ordinary library
+that uses the design is rejected; ordinary libraries that use none of it remain usable as TOP code.
+They cannot serve as unverified dependencies of a complete certificate. The default standard-library
+catalog remains the ordinary legacy catalog. A certified core can be built from
+`Source/DafnyStandardLibraries/modular-termination` and loaded with `--library`; its `README.md`
+lists the included modules and trust boundaries. The separate checked catalog and its named
+trust-list opt-ins are described below. The hidden legacy opt-out rejects recorded libraries,
+so that their records are never silently ignored.
 
 The record certifies the program stored in the library, which is the program Dafny parsed from the
 library's sources, printed back. After verifying the sources, the build checks that the stored program
@@ -1097,7 +1097,7 @@ Formation and application:
   that raw function out to code without a bound.
 
 `bounded` is a contextual name. A module that declares a type named `bounded`, or opens an import
-that declares one, uses that declaration instead. Without the option the name is not declared,
+that declares one, uses that declaration instead. Under the hidden legacy opt-out the name is not declared,
 and programs are compiled and verified exactly as before.
 
 ### 7.1.4. Framing ([grammar](#g-frame-expression)) {#sec-frame-expression}

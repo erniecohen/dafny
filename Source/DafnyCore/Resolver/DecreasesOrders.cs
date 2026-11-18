@@ -100,7 +100,8 @@ public static class DecreasesOrders {
   /// not load the bundled standard library, on its own (it imports nothing).
   /// </summary>
   public static bool LoadsOrdersLibrary(DafnyOptions options) {
-    return options.Get(CommonOptionBag.DecreasesOrders) && TypeSystemSupportsOrders(options);
+    return options.Get(CommonOptionBag.DecreasesOrders) && TypeSystemSupportsOrders(options) &&
+           (options.Get(CommonOptionBag.UseStandardLibraries) || ModularTermination.RulesEnabled(options));
   }
 
   /// <summary>

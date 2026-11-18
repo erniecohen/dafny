@@ -8,7 +8,7 @@ namespace DafnyCore.Test;
 public class DooFileTest {
   [Fact]
   public async Task RoundTripCurrentVersion() {
-    var options = DafnyOptions.Default;
+    var options = new DafnyOptions(TextReader.Null, TextWriter.Null, TextWriter.Null);
     options.ApplyDefaultOptionsWithoutSettingsDefault();
     var program = await ParseProgram("module MyModule { function TheAnswer(): int { 42 } }", options);
     options.ProcessSolverOptions(program.Reporter, Token.Cli);
@@ -26,7 +26,7 @@ public class DooFileTest {
 
   [Fact]
   public async Task RecordedWildcardSerializationSurvivesMergedInputs() {
-    var options = DafnyOptions.Default;
+    var options = new DafnyOptions(TextReader.Null, TextWriter.Null, TextWriter.Null);
     options.ApplyDefaultOptionsWithoutSettingsDefault();
     options.PrintMode = PrintModes.Serialization;
     var first = await ParseProgram("module A { function F(): (int -> int) { _ => 0 } }", options);
@@ -43,7 +43,7 @@ public class DooFileTest {
 
   [Fact]
   public void OrdinaryManifestDoesNotInventVerificationEvidence() {
-    var options = DafnyOptions.Default;
+    var options = new DafnyOptions(TextReader.Null, TextWriter.Null, TextWriter.Null);
     options.ApplyDefaultOptionsWithoutSettingsDefault();
     Assert.DoesNotContain(CommonOptionBag.LegacyNoModularTermination.Name,
       new DooFile.ManifestData(options).Options.Keys);
