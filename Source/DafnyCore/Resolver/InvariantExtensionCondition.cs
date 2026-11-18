@@ -228,8 +228,8 @@ public class InvariantExtensionCondition {
 
   /// <summary>
   /// Whether the values of "typeDecl", instantiated with type arguments that are not T-dependent, are defined with
-  /// the values of T.  A declaration whose dependence is being computed counts as independent, which gives the
-  /// least solution for recursive datatypes.
+  /// the values of T. An active recursive visit counts as independent to break cycles. Only positive
+  /// answers are retained afterwards: a negative reached on the stack may precede a path to T.
   /// </summary>
   private bool DeclDependsOnOwner(TopLevelDecl typeDecl) {
     if (declDependence.TryGetValue(typeDecl, out var result)) {
@@ -250,6 +250,11 @@ public class InvariantExtensionCondition {
       _ => false
     };
     declDependence[typeDecl] = result;
+    if (!result && !reporter.Options.Get(CommonOptionBag.LegacyMemberInvariantDependence)) {
+      // A sibling branch may reach the owner after this visit has returned false through an active
+      // ancestor. Such a negative is provisional; a later query must search this declaration again.
+      declDependence.Remove(typeDecl);
+    }
     return result;
   }
 

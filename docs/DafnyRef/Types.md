@@ -5163,6 +5163,12 @@ types they use), must not:
    explicitly or implicitly. In particular, a raw member cannot pass `this`
    where a `D` is expected.
 
+Dependence follows every path through a cycle of datatype components, regardless
+of the type at which the search enters the cycle. A cycle with no path to `D`
+is independent of `D`. The hidden `--legacy-member-invariant-dependence` option
+restores the former unsound cache of provisional negative answers, for migration
+and comparison only.
+
 Statements inside expressions are proof hints, and are not checked. A bound
 variable whose type is inferred as `raw D` makes a test `k is D` a test of a raw
 value; write `k: D` to range over values of `D`.

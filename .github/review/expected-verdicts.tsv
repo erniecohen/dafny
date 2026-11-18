@@ -1131,6 +1131,8 @@ git-issues/git-issue-5017b.dfy	2		31,34,38,44,66,69,94,117,118,119,120,124,125,1
 git-issues/git-issue-5017c.dfy	4	11 verified, 2 errors	33,75
 git-issues/git-issue-5023.dfy	4	7 verified, 9 errors	13,22,25,69,78,81,157,167,170
 git-issues/git-issue-503.dfy	4	0 verified, 1 error	18
+git-issues/git-issue-504-dependence.dfy	2		14,42,71,100,129
+git-issues/git-issue-504-positive.dfy	0	4 verified, 0 errors
 git-issues/git-issue-504.dfy	0	0 verified, 0 errors	
 git-issues/git-issue-5048.dfy	0	0 verified, 0 errors	
 git-issues/git-issue-505.dfy	0	2 verified, 0 errors	
