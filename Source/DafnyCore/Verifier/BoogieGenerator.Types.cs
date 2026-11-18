@@ -1348,6 +1348,10 @@ public partial class BoogieGenerator {
     fromType = CachedAncestorType(fromType);
     if (fromType.IsTypeParameter) {
       return UnboxUnlessInherentlyBoxed(r, toType);
+    } else if (toType.IsTraitType && !toType.IsRefType && !fromType.IsTraitType && !fromType.IsRefType) {
+      // cast to a non-reference trait, from a datatype or from a newtype that extends it (which the ancestor of
+      // "fromType", its base type, no longer shows)
+      return BoxIfNecessary(r.tok, r, fromType);
     } else if (fromType.IsNumericBased(Type.NumericPersuasion.Int)) {
       if (toType.IsNumericBased(Type.NumericPersuasion.Int)) {
         // do nothing
