@@ -1,0 +1,12 @@
+git-issue-491-positive.dfy(32,37): Error: assertion might not hold
+git-issue-491-positive.dfy(43,37): Error: assertion might not hold
+git-issue-491-positive.dfy(54,37): Error: assertion might not hold
+
+Dafny program verifier finished with 5 verified, 3 errors
+
+Dafny program verifier did not attempt verification
+git-issue-491-positive.dfy(32,37): Error: assertion might not hold
+git-issue-491-positive.dfy(43,37): Error: assertion might not hold
+git-issue-491-positive.dfy(54,37): Error: assertion might not hold
+
+Dafny program verifier finished with 5 verified, 3 errors

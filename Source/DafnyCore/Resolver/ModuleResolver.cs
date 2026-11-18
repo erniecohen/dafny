@@ -2059,6 +2059,10 @@ namespace Microsoft.Dafny {
         }
       }
 
+      if (reporter.Count(ErrorLevel.Error) == prevErrorCount && !Options.Get(CommonOptionBag.LegacyUncheckedTypeVariance)) {
+        TypeParameterPolarity.CheckConstraintVariance(declarations, moduleInfo.VisibilityScope, reporter);
+      }
+
       foreach (var member in declarations.OfType<TopLevelDeclWithMembers>().SelectMany(d => d.Members)) {
         if (Attributes.Find(member.Attributes, "only") is { } attribute) {
           reporter.Warning(MessageSource.Verifier, ResolutionErrors.ErrorId.r_member_only_assumes_other.ToString(), attribute.Origin,

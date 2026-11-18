@@ -383,6 +383,8 @@ true - All class instances are raw pointers and need to be manually deallocated"
 
   public static readonly Option<bool> LegacyEarlyYieldParameterCheck = new("--legacy-early-yield-parameter-check", () => false,
     "Use the legacy, unsound check of the types of iterator yield parameters, made before the resolver knows how each datatype is constructed, for migration and comparison only.") { IsHidden = true };
+  public static readonly Option<bool> LegacyUncheckedTypeVariance = new("--legacy-unchecked-type-variance", () => false,
+    "Use the legacy, unsound rule that ignores subset-type and newtype constraints when checking declared variance, for migration and comparison only.") { IsHidden = true };
   public static readonly Option<bool> LegacyUncheckedImportBinding = new("--legacy-unchecked-import-binding", () => false,
     "Use the legacy, unsound rule that lets a refining module bind an inherited abstract import to a module that does not refine the import's target, for migration and comparison only.") { IsHidden = true };
   public static readonly Option<bool> LegacyAllocatedInLambdas = new("--legacy-allocated-in-lambdas", () => false,
@@ -970,6 +972,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(LegacyReplacementCycles, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacyGenericFunctionStores, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacyInheritedTerminationChecks, OptionScope.Cli);
+    OptionRegistry.RegisterOption(LegacyUncheckedTypeVariance, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacyUncheckedImportBinding, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacyStoredFunctionCallbacks, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacyInheritedNameCapture, OptionScope.Cli);
