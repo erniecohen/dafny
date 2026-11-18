@@ -1,7 +1,7 @@
 // Recursive groups can use a renamed refinement and opened copies of a lower module.
 // RUN: %verify --allow-warnings --member-invariants --recursive-modules --copy-imports --refinement-renaming "%s" > "%t"
 // RUN: %exits-with 4 %verify --allow-warnings --member-invariants --recursive-modules --copy-imports --refinement-renaming "%S/Inputs/git-issue-466-refinement-imports-false.dfy" >> "%t"
-// RUN: %exits-with 2 %resolve --member-invariants --recursive-modules --copy-imports "%S/Inputs/git-issue-466-copy-group.dfy" >> "%t"
+// RUN: %resolve --member-invariants --recursive-modules --copy-imports "%S/Inputs/git-issue-466-copy-group.dfy" >> "%t"
 // RUN: %diff "%s.expect" "%t"
 
 module Original {

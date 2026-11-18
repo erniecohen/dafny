@@ -1,0 +1,19 @@
+
+Dafny program verifier finished with 14 verified, 0 errors
+git-issue-466-clause5-false.dfy(10,4): Error: assertion might not hold
+git-issue-466-clause5-false.dfy(15,4): Error: assertion might not hold
+
+Dafny program verifier finished with 0 verified, 2 errors
+git-issue-466-clause5-2-is.dfy(10,40): Error: 'Bad' is used by the invariant of 'T' and tests a raw value against 'A.T'
+1 resolution/type errors detected in git-issue-466-clause5-2-is.dfy
+git-issue-466-clause5-2-as.dfy(10,39): Error: 'Bad' is used by the invariant of 'T' and converts a raw value to 'A.T'
+1 resolution/type errors detected in git-issue-466-clause5-2-as.dfy
+git-issue-466-clause5-2-implicit.dfy(10,50): Error: 'Bad' is used by the invariant of 'T' and converts a raw value to 'A.T'
+1 resolution/type errors detected in git-issue-466-clause5-2-implicit.dfy
+git-issue-466-clause5-3-is.dfy(15,40): Error: 'Bad' is used by the invariant of 'T' and tests a raw value against 'A.T'
+1 resolution/type errors detected in git-issue-466-clause5-3-is.dfy
+git-issue-466-clause5-3-as.dfy(15,39): Error: 'Bad' is used by the invariant of 'T' and converts a raw value to 'A.T'
+1 resolution/type errors detected in git-issue-466-clause5-3-as.dfy
+git-issue-466-clause5-3-implicit.dfy(15,50): Error: 'Bad' is used by the invariant of 'T' and converts a raw value to 'A.T'
+1 resolution/type errors detected in git-issue-466-clause5-3-implicit.dfy
+Error: --member-invariants requires --type-system-refresh

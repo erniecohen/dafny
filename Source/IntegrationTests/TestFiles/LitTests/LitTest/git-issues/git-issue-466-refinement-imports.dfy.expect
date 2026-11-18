@@ -7,5 +7,5 @@ git-issue-466-refinement-imports-false.dfy(21,2): Error: a postcondition could n
 git-issue-466-refinement-imports-false.dfy(20,25): Related location: this is the postcondition that could not be proved
 
 Dafny program verifier finished with 0 verified, 2 errors
-git-issue-466-copy-group.dfy(11,17): Error: module Outside.Copy refines or replaces module Left, which is in a recursive module group; this is not yet supported
-1 resolution/type errors detected in git-issue-466-copy-group.dfy
+
+Dafny program verifier did not attempt verification
