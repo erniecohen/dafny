@@ -189,7 +189,7 @@ before the normal gate passes.
 | let-permissions, visibility | Exact binding/Skolem permissions and hide/reveal availability; neither is an extra proof of P. |
 | value-translation, value-permission-translation | Value semantics, can-call traversal and heap/arrow representation; no body-term discovery or global fuel policy. |
 | extreme-prefix-contracts | Rank/prefix proof construction retains its specialized rule and SCC boundary. |
-| definition-consequence-axioms | Existing definitions, guarded consequences and result axioms; outside local-check migration and unchanged. |
+| definition-consequence-axioms | Existing definitions, guarded consequences and result axioms; outside local-check migration and unchanged. `BoogieGenerator.FunctionDomains.cs` (opt-in function domains and extensionality) emits only axioms; its matches are `Requires(n)`, which names the arrow `Requires#n` function in handle-selector axioms, not a precondition. |
 | assertion-contract-sinks, diagnostics-only | Checking/filtering/provenance sinks retained. Display-only obligation ASTs are never used as operational predicates. |
 
 This inventory supplies coverage and makes exclusions reviewable; it does not
