@@ -743,6 +743,30 @@ rewritten application did not resolve: an assertion failed. The erased value is
 now kept apart from the syntax. The legacy resolver rewrites it too, but resolves
 the rewritten clone (`github-issue-266-refine-bounded.dfy` checks both).
 
+### 7.6 Triage after portable contracts
+
+The same 65 suspect tests were compared on the prerequisite build `b831b6b8c`
+and portable-contract build `f1bc5595b`, with three concurrent tests, C# selected
+for multi-backend tests, and Z3 5.1.0. Of these, 64 failed on both builds and one
+failed only on the portable-contract build. The latter,
+`github-issue-241-frontend.dfy`, expected 16 resolution rewriters rather than 17
+and omitted `ModularTerminationRewriter` from the phase inventory. Registering
+that pass by default intentionally changes the profile's event inventory even
+when the pass adds no obligation. Its expected profile now includes the pass.
+This fixes the one branch-only failure; it changes no verifier verdict.
+
+The verifier-output comparison matters independently of those counts.
+`dafny0/RealCompare.dfy` reports “decreases clause might not decrease” at line 50
+on **both** builds, where its older expectation says “decreases expression must
+be bounded below by 0.0”. Its four error locations and summary agree. It is not a
+portable-contract regression. After replacing input-directory names, all other
+shared failure messages agree except four cache-profile tests (timing/image
+inventory metadata with the same unaudited-execution-profile refusal) and one
+Python packaging test (installation versus execution failure). The snapshots,
+Apply/ReadsReads, Abstemious, Inc/Zip/Circ and the four 2827 cases all fail on the
+prerequisite too. These shared failures remain open baseline failures; this
+triage is not whole-suite acceptance.
+
 ## 8. Open questions
 
 1. Settled: no explicit leaf (rule 5 is dropped; bounds are the only openness

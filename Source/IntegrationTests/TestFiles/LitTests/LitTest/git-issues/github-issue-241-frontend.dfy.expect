@@ -2,8 +2,8 @@ kinds: fe, manifest, moduleGraph, span, summary
 parse.file: 1
 resolve.bind: 1
 resolve.global.cardinality: 1
-resolve.global.postResolve: 16
-resolve.global.preResolve: 16
+resolve.global.postResolve: 17
+resolve.global.preResolve: 17
 resolve.global.replaceable: 1
 resolve.module: 7
 resolve.prefixNamed: 1
@@ -28,14 +28,14 @@ module graph: 7 nodes, 8 edges
   _module -> B
   _module -> C
 resolve.module events match graph ids: True
-phases of a module: preResolve, registrationAndExports, resolveSetup, signature, moduleAttributes, body, accessibleMembers, exportsAndIntermediate, isRecursive, decreases, postDecreasesResolve:RefinementTransformer, postDecreasesResolve:ExpandAtAttributes, postDecreasesResolve:AutoContractsRewriter, postDecreasesResolve:OpaqueMemberRewriter, postDecreasesResolve:AutoReqFunctionRewriter, postDecreasesResolve:TimeLimitRewriter, postDecreasesResolve:ForallStmtRewriter, postDecreasesResolve:ProvideRevealAllRewriter, postDecreasesResolve:MatchFlattener, postDecreasesResolve:QuantifierSplittingRewriter, postDecreasesResolve:TriggerGeneratingRewriter, postDecreasesResolve:InductionRewriter, postDecreasesResolve:PrintEffectEnforcement, postDecreasesResolve:BitvectorOptimization, postDecreasesResolve:LocalLinter, postDecreasesResolve:PrecedenceLinter, additionalInformation, postResolve:RefinementTransformer, postResolve:ExpandAtAttributes, postResolve:AutoContractsRewriter, postResolve:OpaqueMemberRewriter, postResolve:AutoReqFunctionRewriter, postResolve:TimeLimitRewriter, postResolve:ForallStmtRewriter, postResolve:ProvideRevealAllRewriter, postResolve:MatchFlattener, postResolve:QuantifierSplittingRewriter, postResolve:TriggerGeneratingRewriter, postResolve:InductionRewriter, postResolve:PrintEffectEnforcement, postResolve:BitvectorOptimization, postResolve:LocalLinter, postResolve:PrecedenceLinter
+phases of a module: preResolve, registrationAndExports, resolveSetup, signature, moduleAttributes, body, accessibleMembers, exportsAndIntermediate, isRecursive, decreases, postDecreasesResolve:RefinementTransformer, postDecreasesResolve:ExpandAtAttributes, postDecreasesResolve:AutoContractsRewriter, postDecreasesResolve:OpaqueMemberRewriter, postDecreasesResolve:AutoReqFunctionRewriter, postDecreasesResolve:TimeLimitRewriter, postDecreasesResolve:ForallStmtRewriter, postDecreasesResolve:ProvideRevealAllRewriter, postDecreasesResolve:MatchFlattener, postDecreasesResolve:QuantifierSplittingRewriter, postDecreasesResolve:TriggerGeneratingRewriter, postDecreasesResolve:InductionRewriter, postDecreasesResolve:PrintEffectEnforcement, postDecreasesResolve:BitvectorOptimization, postDecreasesResolve:LocalLinter, postDecreasesResolve:PrecedenceLinter, postDecreasesResolve:ModularTerminationRewriter, additionalInformation, postResolve:RefinementTransformer, postResolve:ExpandAtAttributes, postResolve:AutoContractsRewriter, postResolve:OpaqueMemberRewriter, postResolve:AutoReqFunctionRewriter, postResolve:TimeLimitRewriter, postResolve:ForallStmtRewriter, postResolve:ProvideRevealAllRewriter, postResolve:MatchFlattener, postResolve:QuantifierSplittingRewriter, postResolve:TriggerGeneratingRewriter, postResolve:InductionRewriter, postResolve:PrintEffectEnforcement, postResolve:BitvectorOptimization, postResolve:LocalLinter, postResolve:PrecedenceLinter, postResolve:ModularTerminationRewriter
 summary: resolve
 kinds: fe, gc, gcpause, heap, manifest, module, moduleGraph, span, summary, symbol, task
 parse.file: 1
 resolve.bind: 1
 resolve.global.cardinality: 1
-resolve.global.postResolve: 16
-resolve.global.preResolve: 16
+resolve.global.postResolve: 17
+resolve.global.preResolve: 17
 resolve.global.replaceable: 1
 resolve.module: 7
 resolve.prefixNamed: 1
@@ -61,7 +61,7 @@ module graph: 7 nodes, 8 edges
   _module -> B
   _module -> C
 resolve.module events match graph ids: True
-phases of a module: preResolve, registrationAndExports, resolveSetup, signature, moduleAttributes, body, accessibleMembers, exportsAndIntermediate, isRecursive, decreases, postDecreasesResolve:RefinementTransformer, postDecreasesResolve:ExpandAtAttributes, postDecreasesResolve:AutoContractsRewriter, postDecreasesResolve:OpaqueMemberRewriter, postDecreasesResolve:AutoReqFunctionRewriter, postDecreasesResolve:TimeLimitRewriter, postDecreasesResolve:ForallStmtRewriter, postDecreasesResolve:ProvideRevealAllRewriter, postDecreasesResolve:MatchFlattener, postDecreasesResolve:QuantifierSplittingRewriter, postDecreasesResolve:TriggerGeneratingRewriter, postDecreasesResolve:InductionRewriter, postDecreasesResolve:PrintEffectEnforcement, postDecreasesResolve:BitvectorOptimization, postDecreasesResolve:LocalLinter, postDecreasesResolve:PrecedenceLinter, additionalInformation, postResolve:RefinementTransformer, postResolve:ExpandAtAttributes, postResolve:AutoContractsRewriter, postResolve:OpaqueMemberRewriter, postResolve:AutoReqFunctionRewriter, postResolve:TimeLimitRewriter, postResolve:ForallStmtRewriter, postResolve:ProvideRevealAllRewriter, postResolve:MatchFlattener, postResolve:QuantifierSplittingRewriter, postResolve:TriggerGeneratingRewriter, postResolve:InductionRewriter, postResolve:PrintEffectEnforcement, postResolve:BitvectorOptimization, postResolve:LocalLinter, postResolve:PrecedenceLinter
+phases of a module: preResolve, registrationAndExports, resolveSetup, signature, moduleAttributes, body, accessibleMembers, exportsAndIntermediate, isRecursive, decreases, postDecreasesResolve:RefinementTransformer, postDecreasesResolve:ExpandAtAttributes, postDecreasesResolve:AutoContractsRewriter, postDecreasesResolve:OpaqueMemberRewriter, postDecreasesResolve:AutoReqFunctionRewriter, postDecreasesResolve:TimeLimitRewriter, postDecreasesResolve:ForallStmtRewriter, postDecreasesResolve:ProvideRevealAllRewriter, postDecreasesResolve:MatchFlattener, postDecreasesResolve:QuantifierSplittingRewriter, postDecreasesResolve:TriggerGeneratingRewriter, postDecreasesResolve:InductionRewriter, postDecreasesResolve:PrintEffectEnforcement, postDecreasesResolve:BitvectorOptimization, postDecreasesResolve:LocalLinter, postDecreasesResolve:PrecedenceLinter, postDecreasesResolve:ModularTerminationRewriter, additionalInformation, postResolve:RefinementTransformer, postResolve:ExpandAtAttributes, postResolve:AutoContractsRewriter, postResolve:OpaqueMemberRewriter, postResolve:AutoReqFunctionRewriter, postResolve:TimeLimitRewriter, postResolve:ForallStmtRewriter, postResolve:ProvideRevealAllRewriter, postResolve:MatchFlattener, postResolve:QuantifierSplittingRewriter, postResolve:TriggerGeneratingRewriter, postResolve:InductionRewriter, postResolve:PrintEffectEnforcement, postResolve:BitvectorOptimization, postResolve:LocalLinter, postResolve:PrecedenceLinter, postResolve:ModularTerminationRewriter
 heap points: parsed, resolved, module:A, module:B, module:B.Inner
 heap points measured: True
 gc events well-formed: True
