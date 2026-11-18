@@ -3,6 +3,7 @@ using System.Reactive.Subjects;
 using System.Reactive.Threading.Tasks;
 using Microsoft.Boogie;
 using Microsoft.Dafny;
+using Microsoft.Dafny.Caching;
 using VC;
 using Xunit;
 using Bpl = Microsoft.Boogie;
@@ -25,6 +26,7 @@ public class BoogieVerificationBackendTests {
     var completed = Assert.IsType<VerificationWorkCompleted>(
       BoogieVerificationWork.ConvertStatus(new Completed(result)));
     Assert.Equal(outcome, completed.Result.Outcome);
+    Assert.Null(completed.Result.Diagnostics); // Native reporting still owns diagnostic materialization.
     Assert.Equal(123, completed.Result.Metrics!.ResourceCount);
     Assert.Equal(TimeSpan.FromSeconds(3), completed.Result.Metrics.RunTime);
     Assert.Same(result, Assert.IsType<BoogieVerificationResult>(completed.Result.Payload).NativeResult);
@@ -63,6 +65,22 @@ public class BoogieVerificationBackendTests {
     Assert.Same(error, await Assert.ThrowsAsync<TaskCanceledException>(() => completion));
   }
 
+  [Fact]
+  public async Task CompletedCacheAndObservableRetainTheSameEvidence() {
+    var result = new VerificationRunResult(0, 0, DateTime.UnixEpoch, SolverOutcome.Invalid,
+      TimeSpan.Zero, 5, [], [], [], 99, null, []);
+    var native = new NativeTask { Status = new Completed(result) };
+    var work = new BoogieVerificationWork(native);
+    var cached = Assert.IsType<VerificationWorkCompleted>(work.CacheStatus);
+    Assert.Same(result, Assert.IsType<BoogieVerificationResult>(cached.Result.Payload).NativeResult);
+    var completion = work.TryRun()!.LastAsync().ToTask();
+    native.Updates.OnNext(new Completed(result));
+    native.Updates.OnCompleted();
+    var completed = Assert.IsType<VerificationWorkCompleted>(await completion);
+    Assert.Same(result, Assert.IsType<BoogieVerificationResult>(completed.Result.Payload).NativeResult);
+    Assert.Equal(VerificationOutcome.Failed, completed.Result.Outcome);
+  }
+
   [Theory]
   [InlineData("procedure P(); implementation P() { assert true; }", true)]
   [InlineData("procedure P(); implementation P() { assert 0; }", false)]
@@ -94,6 +112,28 @@ public class BoogieVerificationBackendTests {
       BoogieVerificationBackend.GetNativeTasks(VerificationPreparation.Ready([new ForeignWork()])));
   }
 
+  [Theory]
+  [InlineData(false)]
+  [InlineData(true)]
+  public async Task NativePreparationPreservesOptInCacheWrapping(bool enabled) {
+    var directory = Path.Combine(Path.GetTempPath(), "verification-boundary-" + Guid.NewGuid());
+    try {
+      Assert.Equal(0, Bpl.Parser.Parse("procedure P(); implementation P() { assert true; }",
+        "boundary.bpl", out var input));
+      var options = new DafnyOptions(TextReader.Null, TextWriter.Null, TextWriter.Null);
+      options.ApplyDefaultOptionsWithoutSettingsDefault();
+      if (enabled) { options.Set(CommonOptionBag.VerificationCache, directory); }
+      using var engine = new ExecutionEngine(options, new EmptyVerificationResultCache(), TaskScheduler.Default);
+      var backend = new BoogieVerificationBackend(engine, TaskCacheSession.For(options));
+      var prepared = await backend.PrepareAsync(input, CancellationToken.None);
+      var native = Assert.Single(BoogieVerificationBackend.GetNativeTasks(prepared));
+      Assert.Equal(enabled, native is IReplayedVerificationTask);
+      Assert.Same(native, Assert.IsType<BoogieVerificationWork>(Assert.Single(prepared.GetWorkOrThrow())).NativeTask);
+    } finally {
+      if (Directory.Exists(directory)) { Directory.Delete(directory, true); }
+    }
+  }
+
   private class ForeignWork : IVerificationWork {
     public VerificationSource Source => new(new("foreign", 0), Microsoft.Dafny.Token.NoToken, Microsoft.Dafny.Token.NoToken);
     public VerificationWorkStatus CacheStatus => new VerificationWorkStale();
@@ -110,11 +150,12 @@ public class BoogieVerificationBackendTests {
     public int Runs;
     public int Cancellations;
     public bool NoRun;
+    public IVerificationStatus Status = new Stale();
     public IVerificationTask FromSeed(int seed) {
       Seed = seed;
       return SeededTask = new NativeTask();
     }
-    public IVerificationStatus CacheStatus => new Stale();
+    public IVerificationStatus CacheStatus => Status;
     public ManualSplit Split => throw new NotSupportedException();
     public Bpl.IToken ScopeToken => Bpl.Token.NoToken;
     public string ScopeId => "native";

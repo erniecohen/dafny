@@ -59,7 +59,7 @@ public sealed class BoogieVerificationWork(IVerificationTask nativeTask) : IVeri
     Queued => new VerificationWorkQueued(),
     Running => new VerificationWorkRunning(),
     Completed completed => new VerificationWorkCompleted(new VerificationWorkResult(
-      ConvertOutcome(completed.Result.Outcome), [],
+      ConvertOutcome(completed.Result.Outcome), null,
       new VerificationMetrics(completed.Result.ResourceCount, completed.Result.RunTime),
       new BoogieVerificationResult(completed.Result))),
     _ => throw new ArgumentOutOfRangeException(nameof(status), status, "Unknown Boogie verification status")

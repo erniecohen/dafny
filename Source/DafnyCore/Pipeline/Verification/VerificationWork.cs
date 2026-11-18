@@ -26,7 +26,7 @@ public record VerificationMetrics(long? ResourceCount = null, TimeSpan? RunTime 
 public interface IVerificationPayload { }
 
 public record VerificationWorkResult(VerificationOutcome Outcome,
-  IReadOnlyList<DafnyDiagnostic> Diagnostics, VerificationMetrics? Metrics = null,
+  IReadOnlyList<DafnyDiagnostic>? Diagnostics = null, VerificationMetrics? Metrics = null,
   IVerificationPayload? Payload = null) {
   public bool IsVerified => Outcome == VerificationOutcome.Verified;
 }
