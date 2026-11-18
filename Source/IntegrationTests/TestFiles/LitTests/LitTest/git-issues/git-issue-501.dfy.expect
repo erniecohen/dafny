@@ -1,0 +1,9 @@
+git-issue-501.dfy(19,2): Error: assertion might not hold
+
+Dafny program verifier finished with 4 verified, 1 error
+git-issue-501-invalid.dfy(6,12): Error: result of operation might violate newtype constraint for 'NZ'
+git-issue-501-invalid.dfy(13,12): Error: invariant might not hold
+git-issue-501-invalid.dfy(12,26): Related location: this is the invariant that might not hold
+git-issue-501-invalid.dfy(18,10): Error: trying witness 0: result of operation might violate newtype constraint for 'NZ'
+
+Dafny program verifier finished with 3 verified, 3 errors

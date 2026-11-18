@@ -590,6 +590,10 @@ This is typically used to mark that a lemma with no body (and is therefore assum
 The key purpose of the `audit` command is to ensure that all assumptions are intentional and acknowledged.
 To improve assurance, however, try to provide a proof.
 
+* Under `--inherited-trait-axioms`, any [trait axiom](#sec-trait-axioms), and any class, datatype or newtype that inherits one without overriding it.
+The axiom is assumed of every such type, and nothing checks that it holds there.
+Overriding it with a proof, or giving the trait member a body, will improve assurance.
+
 * Any declaration marked with the `{:verify false}` attribute, which tells the verifier to skip verifying this declaration.
 Removing the attribute and providing a proof will improve assurance.
 
@@ -2458,6 +2462,44 @@ or the Dafny 4 syntax (`ghost function` and `function`)
   the synonym is rejected because it cannot declare members. Disabled by default. Use
   `synonym-refines-abstract-type = true` in a project file's `[options]` section. See
   [type refinement](#sec-module-refinement).
+
+* `--inherited-trait-axioms` - let a class, datatype or newtype inherit a bodiless ghost
+  member of a trait that is marked `{:axiom}` (a lemma, a ghost method, a ghost function or
+  predicate, or a two-state lemma, function or predicate, none of them extreme) without
+  implementing it. The member's specification is then a declared axiom about every type
+  that extends the trait; an override is still checked, and `dafny audit` lists the axiom
+  and each type that inherits it. Under the option, `{:axiom}` on a bodiless compiled or
+  extreme trait member is an error. Without it, every bodiless trait member must be
+  implemented. Disabled by default. Use `inherited-trait-axioms = true` in a project file's
+  `[options]` section. See [trait axioms](#sec-trait-axioms).
+
+* `--refinement-extends` - let a class or trait declaration in a refining module add parent
+  traits to the declaration it refines, as in `trait T ... extends S { }`. The parents of the
+  refined declaration are kept, and the added ones follow them. Every check that an added
+  parent calls for (members to implement, override checks, fields to assign, termination) is
+  made in the refining module, also for members it inherits. A refinement cannot make a
+  trait a reference type. Without the option, an `extends` clause after `...` is a parse
+  error. Disabled by default. Use `refinement-extends = true` in a project file's
+  `[options]` section. See [refinement of classes and traits](#sec-module-refinement).
+
+* `--refinement-renaming` - in a refining module, let the redeclaration of a function,
+  method, lemma or constructor rename its type parameters, its out-parameters, its result and
+  the local names of its in-parameters, and let the redeclaration of a class, trait, datatype,
+  newtype or abstract type rename its type parameters. A named argument still uses the name
+  the parameter was first declared with. The inherited specification and body are renamed
+  with the declaration, and a renaming that would change what a name in inherited code refers
+  to is an error. The type of a parameter or result may be written differently from the
+  refined declaration if it is the same type, with type synonyms expanded. Disabled by
+  default. Use `refinement-renaming = true` in a project file's
+  `[options]` section. See [renaming in a refinement](#sec-refinement-renaming).
+
+* `--copy-imports` - accept the copying import `import X := Q`, which gives the importing
+  module a copy of the module `Q`, named `X`. The types of the copy are different from those
+  of `Q` and of every other copy of `Q`; its functions and constants have the definitions of
+  `Q`. A module that refines the importing module gets copies of its own. Without the option,
+  the syntax is a parse error. A library built with the option can be used only with the
+  option. Disabled by default. Use `copy-imports = true` in a project file's `[options]`
+  section. See [copying imports](#sec-copying-imports).
 
 * `--decreases-orders` - (experimental) accept a decreases component `e by O`, where `O`
   is a closed ghost expression of the standard library's trait type

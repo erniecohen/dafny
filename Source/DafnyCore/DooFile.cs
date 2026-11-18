@@ -72,6 +72,11 @@ public class DooFile {
           continue;
         }
         var optionValue = options.Get((dynamic)option);
+        if ((option == CommonOptionBag.MemberInvariants || option == CommonOptionBag.RecursiveModules) && optionValue is false) {
+          // Recorded only when on, so that a library built without the option is unchanged (issue 105, and
+          // recursion across module boundaries).
+          continue;
+        }
         if (option == CommonOptionBag.QuantifierSyntax) {
           switch (optionValue) {
             case QuantifierSyntaxOptions.Version4:

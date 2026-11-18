@@ -25,12 +25,28 @@ public class TypeRefinementVisitor : ASTVisitor<IASTVisitorContext> {
 
   private readonly SystemModuleManager systemModuleManager;
 
-  public TypeRefinementVisitor(string moduleDescription, SystemModuleManager systemModuleManager) {
+  /// <summary>
+  /// Issue 105: non-null when the declarations include a type with member invariants.
+  /// </summary>
+  private readonly RawMemberInference rawMemberInference;
+
+  public TypeRefinementVisitor(string moduleDescription, SystemModuleManager systemModuleManager,
+    RawMemberInference rawMemberInference = null) {
     this.moduleDescription = moduleDescription;
     this.systemModuleManager = systemModuleManager;
+    this.rawMemberInference = rawMemberInference;
   }
 
   private readonly List<Flow> flows = [];
+
+  /// <summary>
+  /// Issue 105: the application of "member" to "receiver" in "context" may make "member" a raw member.
+  /// </summary>
+  private void AddRawMemberFlow(IASTVisitorContext context, Expression receiver, MemberDecl member, IOrigin tok) {
+    if (rawMemberInference?.ApplicationFlow(context, receiver, member, tok) is { } flow) {
+      flows.Add(flow);
+    }
+  }
 
   public void DebugPrint() {
     var sw = new StringWriter();
@@ -62,7 +78,49 @@ public class TypeRefinementVisitor : ASTVisitor<IASTVisitorContext> {
     return base.VisitOneExpression(expr, context);
   }
 
+  /// <summary>
+  /// Issue 105: the flows of an arithmetic expression of a newtype N with member invariants, a tree of operations and
+  /// literals of N (see PreTypeToTypeVisitor.IsNewtypeArithmetic). The type of an operation is the join of the types
+  /// of its operands of N, as for any operation (below), and that type also flows down into the operands that are
+  /// literals or operations, never into a variable. So every node of the tree has the join of its other leaves: "raw N"
+  /// if one of them is raw, and N otherwise, which the verifier checks at each node, as it checks the constraint of
+  /// a newtype in the old syntax. A comparison has no result of N, so each of its operands flows into the other, if
+  /// that is a literal or an operation: in "r < 3", where "r" is raw, so is "3".
+  /// </summary>
+  private void AddNewtypeArithmeticFlows(Expression expr) {
+    void FlowDown(Expression source, Expression sink, string description) {
+      if (PreTypeToTypeVisitor.IsNewtypeArithmetic(sink.Resolved) && SamePreTypeDecl(source, sink.Resolved)) {
+        flows.Add(new FlowBetweenExpressions(sink.Resolved, source, description));
+      }
+    }
+    switch (expr) {
+      case BinaryExpr binaryExpr when PreTypeToTypeVisitor.IsNewtypeArithmetic(expr):
+        FlowDown(expr, binaryExpr.E0, BinaryExpr.OpcodeString(binaryExpr.Op));
+        if (binaryExpr.ResolvedOp is not (BinaryExpr.ResolvedOpcode.LeftShift or BinaryExpr.ResolvedOpcode.RightShift)) {
+          FlowDown(expr, binaryExpr.E1, BinaryExpr.OpcodeString(binaryExpr.Op));
+        }
+        break;
+      case UnaryOpExpr unaryOpExpr when PreTypeToTypeVisitor.IsNewtypeArithmetic(expr) && SamePreTypeDecl(expr, unaryOpExpr.E):
+        flows.Add(new FlowBetweenExpressions(expr, unaryOpExpr.E, "unary " + unaryOpExpr.Op));
+        FlowDown(expr, unaryOpExpr.E, "unary " + unaryOpExpr.Op);
+        break;
+      case BinaryExpr {
+        ResolvedOp: BinaryExpr.ResolvedOpcode.EqCommon or BinaryExpr.ResolvedOpcode.NeqCommon or BinaryExpr.ResolvedOpcode.Lt or
+        BinaryExpr.ResolvedOpcode.Le or BinaryExpr.ResolvedOpcode.Ge or BinaryExpr.ResolvedOpcode.Gt
+      } comparison:
+        FlowDown(comparison.E0, comparison.E1, BinaryExpr.OpcodeString(comparison.Op));
+        FlowDown(comparison.E1, comparison.E0, BinaryExpr.OpcodeString(comparison.Op));
+        break;
+    }
+  }
+
+  private static bool SamePreTypeDecl(Expression a, Expression b) {
+    return a.PreType?.Normalize() is DPreType { Decl: var declA } && b.PreType?.Normalize() is DPreType { Decl: var declB } &&
+           declA == declB;
+  }
+
   protected override void PostVisitOneExpression(Expression expr, IASTVisitorContext context) {
+    AddNewtypeArithmeticFlows(expr);
     if (expr is IdentifierExpr identifierExpr) {
       flows.Add(new FlowFromType(expr, identifierExpr.Var.UnnormalizedType, identifierExpr.Name));
 
@@ -95,6 +153,7 @@ public class TypeRefinementVisitor : ASTVisitor<IASTVisitorContext> {
       }
 
     } else if (expr is MemberSelectExpr memberSelectExpr) {
+      AddRawMemberFlow(context, memberSelectExpr.Obj, memberSelectExpr.Member, expr.Origin);
       if (memberSelectExpr.Member is Field field) {
         var dPreType = (DPreType)memberSelectExpr.Obj.PreType.Normalize();
         if (dPreType.Decl is ValuetypeDecl valuetypeDecl) {
@@ -119,6 +178,7 @@ public class TypeRefinementVisitor : ASTVisitor<IASTVisitorContext> {
       }
 
     } else if (expr is FunctionCallExpr functionCallExpr) {
+      AddRawMemberFlow(context, functionCallExpr.Receiver, functionCallExpr.Function, expr.Origin);
       Contract.Assert(functionCallExpr.Args.Count == functionCallExpr.Function.Ins.Count);
       for (var i = 0; i < functionCallExpr.Args.Count; i++) {
         var formal = functionCallExpr.Function.Ins[i];
@@ -444,6 +504,7 @@ public class TypeRefinementVisitor : ASTVisitor<IASTVisitorContext> {
       }
 
     } else if (stmt is CallStmt callStmt) {
+      AddRawMemberFlow(context, callStmt.MethodSelect.Obj, callStmt.Method, callStmt.Origin);
       Contract.Assert(callStmt.Args.Count == callStmt.Method.Ins.Count);
       for (var i = 0; i < callStmt.Args.Count; i++) {
         var formal = callStmt.Method.Ins[i];
@@ -508,20 +569,26 @@ public class TypeRefinementVisitor : ASTVisitor<IASTVisitorContext> {
     base.VisitExtendedPattern(pattern, context);
   }
 
-  public void Solve(ErrorReporter reporter, bool debugPrint) {
+  /// <summary>
+  /// Returns whether any type changed.
+  /// </summary>
+  public bool Solve(ErrorReporter reporter, bool debugPrint) {
     var context = new FlowContext(systemModuleManager, reporter, debugPrint,
       InvariantConstructorInference: systemModuleManager.Options.Get(CommonOptionBag.InvariantConstructorInference));
+    var changed = false;
     bool anythingChanged;
     do {
       anythingChanged = false;
       foreach (var flow in flows.Where(flow => !flow.HasError)) {
         anythingChanged |= flow.Update(context);
       }
+      changed |= anythingChanged;
     } while (anythingChanged);
 
     if (debugPrint) {
       DebugPrint();
     }
+    return changed;
   }
 
 }

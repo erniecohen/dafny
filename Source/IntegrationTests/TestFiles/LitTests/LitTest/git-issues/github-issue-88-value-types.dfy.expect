@@ -1,0 +1,127 @@
+github-issue-88-value-types.dfy(68,4): Error: assertion might not hold
+github-issue-88-value-types.dfy(76,13): Error: the function must provide an equal or more detailed postcondition than in its parent trait
+github-issue-88-value-types.dfy(91,7): Related location: refining module
+github-issue-88-value-types.dfy(85,13): Error: the function must provide an equal or more detailed postcondition than in its parent trait
+github-issue-88-value-types.dfy(91,7): Related location: refining module
+github-issue-88-value-types.dfy(106,13): Error: the function must provide an equal or more detailed postcondition than in its parent trait
+github-issue-88-value-types.dfy(120,9): Error: decreases clause might not decrease
+github-issue-88-value-types.dfy(129,7): Related location: refining module
+github-issue-88-value-types.dfy(139,9): Error: cannot prove termination; try supplying a decreases clause
+github-issue-88-value-types.dfy(184,4): Error: assertion might not hold
+github-issue-88-value-types.dfy(200,4): Error: assertion might not hold
+github-issue-88-value-types.dfy(227,4): Error: assertion might not hold
+
+Dafny program verifier finished with 20 verified, 9 errors
+github-issue-88-value-types.dfy(68,4): Error: assertion might not hold
+github-issue-88-value-types.dfy(76,13): Error: the function must provide an equal or more detailed postcondition than in its parent trait
+github-issue-88-value-types.dfy(91,7): Related location: refining module
+github-issue-88-value-types.dfy(85,13): Error: the function must provide an equal or more detailed postcondition than in its parent trait
+github-issue-88-value-types.dfy(91,7): Related location: refining module
+github-issue-88-value-types.dfy(106,13): Error: the function must provide an equal or more detailed postcondition than in its parent trait
+github-issue-88-value-types.dfy(120,9): Error: decreases clause might not decrease
+github-issue-88-value-types.dfy(129,7): Related location: refining module
+github-issue-88-value-types.dfy(139,9): Error: cannot prove termination; try supplying a decreases clause
+github-issue-88-value-types.dfy(184,4): Error: assertion might not hold
+github-issue-88-value-types.dfy(200,4): Error: assertion might not hold
+github-issue-88-value-types.dfy(227,4): Error: assertion might not hold
+
+Dafny program verifier finished with 20 verified, 9 errors
+github-issue-88-value-types-newtypes.dfy(30,4): Error: assertion might not hold
+github-issue-88-value-types-newtypes.dfy(38,13): Error: the function must provide an equal or more detailed postcondition than in its parent trait
+github-issue-88-value-types-newtypes.dfy(44,7): Related location: refining module
+github-issue-88-value-types-newtypes.dfy(58,13): Error: the function must provide an equal or more detailed postcondition than in its parent trait
+github-issue-88-value-types-newtypes.dfy(72,9): Error: decreases clause might not decrease
+github-issue-88-value-types-newtypes.dfy(77,7): Related location: refining module
+github-issue-88-value-types-newtypes.dfy(87,9): Error: cannot prove termination; try supplying a decreases clause
+github-issue-88-value-types-newtypes.dfy(133,4): Error: assertion might not hold
+
+Dafny program verifier finished with 24 verified, 6 errors
+github-issue-88-value-types-newtypes.dfy(30,4): Error: assertion might not hold
+github-issue-88-value-types-newtypes.dfy(38,13): Error: the function must provide an equal or more detailed postcondition than in its parent trait
+github-issue-88-value-types-newtypes.dfy(44,7): Related location: refining module
+github-issue-88-value-types-newtypes.dfy(58,13): Error: the function must provide an equal or more detailed postcondition than in its parent trait
+github-issue-88-value-types-newtypes.dfy(72,9): Error: decreases clause might not decrease
+github-issue-88-value-types-newtypes.dfy(77,7): Related location: refining module
+github-issue-88-value-types-newtypes.dfy(87,9): Error: cannot prove termination; try supplying a decreases clause
+github-issue-88-value-types-newtypes.dfy(133,4): Error: assertion might not hold
+
+Dafny program verifier finished with 24 verified, 6 errors
+github-issue-88-value-types-upcasts.dfy(55,4): Error: assertion might not hold
+github-issue-88-value-types-upcasts.dfy(63,13): Error: the function must provide an equal or more detailed postcondition than in its parent trait
+github-issue-88-value-types-upcasts.dfy(82,7): Related location: refining module
+github-issue-88-value-types-upcasts.dfy(72,13): Error: the function must provide an equal or more detailed postcondition than in its parent trait
+github-issue-88-value-types-upcasts.dfy(82,7): Related location: refining module
+github-issue-88-value-types-upcasts.dfy(117,9): Error: decreases clause might not decrease
+github-issue-88-value-types-upcasts.dfy(126,7): Related location: refining module
+
+Dafny program verifier finished with 19 verified, 4 errors
+github-issue-88-value-types-axioms.dfy(27,4): Error: assertion might not hold
+github-issue-88-value-types-axioms.dfy(39,4): Error: assertion might not hold
+
+Dafny program verifier finished with 3 verified, 2 errors
+github-issue-88-value-types-axioms.dfy(27,4): Error: assertion might not hold
+github-issue-88-value-types-axioms.dfy(39,4): Error: assertion might not hold
+
+Dafny program verifier finished with 3 verified, 2 errors
+github-issue-88-value-types-rejected.dfy(14,11): Error: datatype 'D' does not implement trait function 'S.F'
+github-issue-88-value-types-rejected.dfy(15,10): Error: newtype 'N' does not implement trait function 'S.F'
+github-issue-88-value-types-rejected.dfy(26,21): Error: datatype is not allowed to extend 'R', because it is a reference type
+github-issue-88-value-types-rejected.dfy(37,11): Error: duplicate trait parents with the same head type must also have the same type arguments; got S<int> and S<X>
+4 resolution/type errors detected in github-issue-88-value-types-rejected.dfy
+github-issue-88-value-types-rejected.dfy(14,11): Error: datatype 'D' does not implement trait function 'S.F'
+github-issue-88-value-types-rejected.dfy(15,10): Error: newtype 'N' does not implement trait function 'S.F'
+github-issue-88-value-types-rejected.dfy(26,21): Error: datatype is not allowed to extend 'R', because it is a reference type
+github-issue-88-value-types-rejected.dfy(37,11): Error: duplicate trait parents with the same head type must also have the same type arguments; got S<int> and S<X>
+4 resolution/type errors detected in github-issue-88-value-types-rejected.dfy
+github-issue-88-value-types-rejected-later.dfy(12,14): Error: refining module 'Capture1' captures the name 'G' used in code inherited from module 'Capture0': in 'Capture0' it refers to function 'Capture0.G' (declared at github-issue-88-value-types-rejected-later.dfy(7,11)), but in 'Capture1' it would refer to function 'Capture1.S.G' (declared at github-issue-88-value-types-rejected-later.dfy(26,13))
+github-issue-88-value-types-rejected-later.dfy(24,7): Related location: refining module
+github-issue-88-value-types-rejected-later.dfy(18,14): Error: refining module 'Capture1' captures the name 'G' used in code inherited from module 'Capture0': in 'Capture0' it refers to function 'Capture0.G' (declared at github-issue-88-value-types-rejected-later.dfy(7,11)), but in 'Capture1' it would refer to function 'Capture1.S.G' (declared at github-issue-88-value-types-rejected-later.dfy(26,13))
+github-issue-88-value-types-rejected-later.dfy(24,7): Related location: refining module
+2 resolution/type errors detected in github-issue-88-value-types-rejected-later.dfy
+github-issue-88-value-types-rejected-later.dfy(12,14): Error: refining module 'Capture1' captures the name 'G' used in code inherited from module 'Capture0': in 'Capture0' it refers to function 'Capture0.G' (declared at github-issue-88-value-types-rejected-later.dfy(7,11)), but in 'Capture1' it would refer to function 'Capture1.S.G' (declared at github-issue-88-value-types-rejected-later.dfy(26,13))
+github-issue-88-value-types-rejected-later.dfy(24,7): Related location: refining module
+github-issue-88-value-types-rejected-later.dfy(18,14): Error: refining module 'Capture1' captures the name 'G' used in code inherited from module 'Capture0': in 'Capture0' it refers to function 'Capture0.G' (declared at github-issue-88-value-types-rejected-later.dfy(7,11)), but in 'Capture1' it would refer to function 'Capture1.S.G' (declared at github-issue-88-value-types-rejected-later.dfy(26,13))
+github-issue-88-value-types-rejected-later.dfy(24,7): Related location: refining module
+2 resolution/type errors detected in github-issue-88-value-types-rejected-later.dfy
+github-issue-88-value-types-rejected-cardinality.dfy(23,24): Error: Type parameter 'X' of 'Retained1.G' is not retained as a direct type argument of parent 'Retained1.S'. One fixed parent instance must not contain implementations for arbitrary type arguments.
+github-issue-88-value-types-rejected-cardinality.dfy(23,13): Related location: The child type parameter is declared here.
+github-issue-88-value-types-rejected-cardinality.dfy(18,8): Related location: The parent cardinality contract is declared here.
+github-issue-88-value-types-rejected-cardinality.dfy(12,21): Error: This type definition creates a potentially cardinality-expanding cycle:
+   'Cardinality1.D' depends on 'Cardinality1.V' through constructor 'D.f' -> arrow input 0 (potentially expansive)
+   'Cardinality1.V' contains 'Cardinality1.D' because 'Cardinality1.D' extends 'Cardinality1.V'
+ Such a cycle is not admissible under the cardinality discipline.
+github-issue-88-value-types-rejected-cardinality.dfy(8,17): Related location: 'Cardinality1.D' depends on 'Cardinality1.V' through constructor 'D.f' -> arrow input 0
+github-issue-88-value-types-rejected-cardinality.dfy(7,8): Related location: Type 'Cardinality1.V' is declared here.
+github-issue-88-value-types-rejected-cardinality.dfy(12,21): Related location: 'Cardinality1.V' contains 'Cardinality1.D' because 'Cardinality1.D' extends 'Cardinality1.V'
+github-issue-88-value-types-rejected-cardinality.dfy(12,11): Related location: Type 'Cardinality1.D' is declared here.
+2 resolution/type errors detected in github-issue-88-value-types-rejected-cardinality.dfy
+github-issue-88-value-types-rejected-cardinality.dfy(23,24): Error: Type parameter 'X' of 'Retained1.G' is not retained as a direct type argument of parent 'Retained1.S'. One fixed parent instance must not contain implementations for arbitrary type arguments.
+github-issue-88-value-types-rejected-cardinality.dfy(23,13): Related location: The child type parameter is declared here.
+github-issue-88-value-types-rejected-cardinality.dfy(18,8): Related location: The parent cardinality contract is declared here.
+github-issue-88-value-types-rejected-cardinality.dfy(12,21): Error: This type definition creates a potentially cardinality-expanding cycle:
+   'Cardinality1.D' depends on 'Cardinality1.V' through constructor 'D.f' -> arrow input 0 (potentially expansive)
+   'Cardinality1.V' contains 'Cardinality1.D' because 'Cardinality1.D' extends 'Cardinality1.V'
+ Such a cycle is not admissible under the cardinality discipline.
+github-issue-88-value-types-rejected-cardinality.dfy(8,17): Related location: 'Cardinality1.D' depends on 'Cardinality1.V' through constructor 'D.f' -> arrow input 0
+github-issue-88-value-types-rejected-cardinality.dfy(7,8): Related location: Type 'Cardinality1.V' is declared here.
+github-issue-88-value-types-rejected-cardinality.dfy(12,21): Related location: 'Cardinality1.V' contains 'Cardinality1.D' because 'Cardinality1.D' extends 'Cardinality1.V'
+github-issue-88-value-types-rejected-cardinality.dfy(12,11): Related location: Type 'Cardinality1.D' is declared here.
+2 resolution/type errors detected in github-issue-88-value-types-rejected-cardinality.dfy
+github-issue-88-value-types-rejected-characteristics.dfy(9,27): Error: type parameter (X) passed to type H must support equality (got int -> int)
+github-issue-88-value-types-rejected-characteristics.dfy(14,7): Related location: refining module
+github-issue-88-value-types-rejected-characteristics.dfy(10,9): Error: type parameter (X) passed to type H must support equality (got int -> int)
+github-issue-88-value-types-rejected-characteristics.dfy(14,7): Related location: refining module
+2 resolution/type errors detected in github-issue-88-value-types-rejected-characteristics.dfy
+github-issue-88-value-types-rejected-characteristics.dfy(9,27): Error: type parameter (X) passed to type H must support equality (got int -> int)
+github-issue-88-value-types-rejected-characteristics.dfy(14,7): Related location: refining module
+github-issue-88-value-types-rejected-characteristics.dfy(10,9): Error: type parameter (X) passed to type H must support equality (got int -> int)
+github-issue-88-value-types-rejected-characteristics.dfy(14,7): Related location: refining module
+2 resolution/type errors detected in github-issue-88-value-types-rejected-characteristics.dfy
+
+Dafny program verifier finished with 5 verified, 0 errors
+github-issue-88-value-types-client.dfy(14,4): Error: assertion might not hold
+github-issue-88-value-types-client.dfy(36,4): Error: assertion might not hold
+
+Dafny program verifier finished with 3 verified, 2 errors
+github-issue-88-value-types-client-rejected.dfy(9,11): Error: datatype 'D' inherits a member named 'One' from both trait 'Q' and trait 'P'
+1 resolution/type errors detected in github-issue-88-value-types-client-rejected.dfy

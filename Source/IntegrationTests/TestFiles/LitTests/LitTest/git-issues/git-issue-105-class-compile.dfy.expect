@@ -1,0 +1,26 @@
+
+Dafny program verifier finished with 11 verified, 0 errors
+Cell 25
+Plain
+null
+Cell? area 4
+not a Cell?
+Cell? null
+raw non-null
+raw null
+1
+25
+true
+
+Dafny program verifier finished with 11 verified, 0 errors
+Cell 25
+Plain
+null
+Cell? area 4
+not a Cell?
+Cell? null
+raw non-null
+raw null
+1
+25
+true

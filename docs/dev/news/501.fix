@@ -1,0 +1,1 @@
+Member-form newtypes with a witness no longer also check an implicit zero against the base constraint. The member witness is still checked against the base constraint and every invariant.

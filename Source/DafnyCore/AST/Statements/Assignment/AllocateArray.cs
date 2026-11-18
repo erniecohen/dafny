@@ -43,7 +43,8 @@ public class AllocateArray : TypeRhs, ICloneable<AllocateArray> {
   public AllocateArray(Cloner cloner, AllocateArray original)
     : base(cloner, original) {
     ExplicitType = cloner.CloneType(original.ExplicitType);
-    ElementType = cloner.CloneType(original.ElementType);
+    // The parser makes the two one object, and the resolver resolves that one.
+    ElementType = ReferenceEquals(original.ElementType, original.ExplicitType) ? ExplicitType! : cloner.CloneType(original.ElementType);
     if (original.InitDisplay != null) {
       Contract.Assert(original.ArrayDimensions.Count == 1);
       ArrayDimensions = [cloner.CloneExpr(original.ArrayDimensions[0])];

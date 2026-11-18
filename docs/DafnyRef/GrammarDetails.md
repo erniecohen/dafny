@@ -261,6 +261,7 @@ ModuleImport =
   ( QualifiedModuleExport
   | ModuleName "=" QualifiedModuleExport
   | ModuleName ":" QualifiedModuleExport
+  | ModuleName ":=" QualifiedModuleExport
   )
 
 QualifiedModuleExport =
@@ -271,6 +272,9 @@ ModuleExportSuffix =
   | "{" ExportId { "," ExportId } "}"
   )
 ````
+
+The form with `:=` is a [copying import](#sec-copying-imports). It is accepted only with the
+option `--copy-imports`.
 
 #### 17.2.2.3. Module Export Definitions {#g-module-export}
 ([discussion](#sec-export-sets)) 
@@ -438,7 +442,7 @@ NewtypeDecl = "newtype" { Attribute } NewtypeName "="
 
 ````grammar
 ClassDecl = "class" { Attribute } ClassName [ GenericParameters ]
-  ["extends" Type {"," Type} | ellipsis ]
+  ["extends" Type {"," Type} | ellipsis [ "extends" Type {"," Type} ] ]
   "{" { { DeclModifier }
         ClassMemberDecl(modifiers,
                         allowConstructors: true,
@@ -462,7 +466,7 @@ ClassMemberDecl(modifiers, allowConstructors, isValueType, moduleLevelDecl) =
 ````grammar
 TraitDecl =
   "trait" { Attribute } ClassName [ GenericParameters ]
-  [ "extends" Type { "," Type } | ellipsis ]
+  [ "extends" Type { "," Type } | ellipsis [ "extends" Type { "," Type } ] ]
   "{"
    { { DeclModifier } ClassMemberDecl(allowConstructors: true,
                                       isValueType: false,

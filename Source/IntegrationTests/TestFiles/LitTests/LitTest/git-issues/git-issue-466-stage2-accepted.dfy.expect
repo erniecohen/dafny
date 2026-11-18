@@ -1,0 +1,96 @@
+git-issue-466-stage2-accepted.dfy(44,2): Error: a postcondition could not be proved on this return path
+git-issue-466-stage2-accepted.dfy(43,20): Related location: this is the postcondition that could not be proved
+git-issue-466-stage2-accepted.dfy(79,4): Error: a postcondition could not be proved on this return path
+git-issue-466-stage2-accepted.dfy(75,27): Related location: this is the postcondition that could not be proved
+git-issue-466-stage2-accepted.dfy(99,2): Error: a postcondition could not be proved on this return path
+git-issue-466-stage2-accepted.dfy(98,17): Related location: this is the postcondition that could not be proved
+git-issue-466-stage2-accepted.dfy(145,4): Error: a postcondition could not be proved on this return path
+git-issue-466-stage2-accepted.dfy(142,27): Related location: this is the postcondition that could not be proved
+git-issue-466-stage2-accepted.dfy(152,31): Related location: this proposition could not be proved
+git-issue-466-stage2-accepted.dfy(175,4): Error: a postcondition could not be proved on this return path
+git-issue-466-stage2-accepted.dfy(172,14): Related location: this is the postcondition that could not be proved
+git-issue-466-stage2-accepted.dfy(152,31): Related location: this proposition could not be proved
+git-issue-466-stage2-accepted.dfy(219,2): Error: a postcondition could not be proved on this return path
+git-issue-466-stage2-accepted.dfy(218,19): Related location: this is the postcondition that could not be proved
+git-issue-466-stage2-accepted.dfy(256,2): Error: a postcondition could not be proved on this return path
+git-issue-466-stage2-accepted.dfy(255,21): Related location: this is the postcondition that could not be proved
+git-issue-466-stage2-accepted.dfy(276,2): Error: a postcondition could not be proved on this return path
+git-issue-466-stage2-accepted.dfy(275,19): Related location: this is the postcondition that could not be proved
+git-issue-466-stage2-accepted.dfy(293,2): Error: a postcondition could not be proved on this return path
+git-issue-466-stage2-accepted.dfy(292,17): Related location: this is the postcondition that could not be proved
+git-issue-466-stage2-accepted.dfy(315,2): Error: a postcondition could not be proved on this return path
+git-issue-466-stage2-accepted.dfy(314,23): Related location: this is the postcondition that could not be proved
+git-issue-466-stage2-accepted.dfy(344,2): Error: a postcondition could not be proved on this return path
+git-issue-466-stage2-accepted.dfy(343,13): Related location: this is the postcondition that could not be proved
+git-issue-466-stage2-accepted.dfy(322,37): Related location: this proposition could not be proved
+git-issue-466-stage2-accepted.dfy(349,2): Error: a postcondition could not be proved on this return path
+git-issue-466-stage2-accepted.dfy(348,14): Related location: this is the postcondition that could not be proved
+git-issue-466-stage2-accepted.dfy(374,2): Error: a postcondition could not be proved on this return path
+git-issue-466-stage2-accepted.dfy(373,17): Related location: this is the postcondition that could not be proved
+git-issue-466-stage2-accepted.dfy(371,39): Related location: this proposition could not be proved
+git-issue-466-stage2-accepted.dfy(389,2): Error: a postcondition could not be proved on this return path
+git-issue-466-stage2-accepted.dfy(388,17): Related location: this is the postcondition that could not be proved
+git-issue-466-stage2-accepted.dfy(386,39): Related location: this proposition could not be proved
+git-issue-466-stage2-accepted.dfy(415,4): Error: a postcondition could not be proved on this return path
+git-issue-466-stage2-accepted.dfy(414,16): Related location: this is the postcondition that could not be proved
+git-issue-466-stage2-accepted.dfy(457,2): Error: a postcondition could not be proved on this return path
+git-issue-466-stage2-accepted.dfy(456,19): Related location: this is the postcondition that could not be proved
+git-issue-466-stage2-accepted.dfy(488,2): Error: a postcondition could not be proved on this return path
+git-issue-466-stage2-accepted.dfy(487,14): Related location: this is the postcondition that could not be proved
+git-issue-466-stage2-accepted.dfy(500,9): Error: value does not satisfy the subset constraints of 'Const1.Small'
+git-issue-466-stage2-accepted.dfy(515,2): Error: a postcondition could not be proved on this return path
+git-issue-466-stage2-accepted.dfy(514,17): Related location: this is the postcondition that could not be proved
+git-issue-466-stage2-accepted.dfy(540,4): Error: a postcondition could not be proved on this return path
+git-issue-466-stage2-accepted.dfy(539,23): Related location: this is the postcondition that could not be proved
+git-issue-466-stage2-accepted.dfy(562,2): Error: a postcondition could not be proved on this return path
+git-issue-466-stage2-accepted.dfy(561,14): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 94 verified, 21 errors
+git-issue-466-stage2-accepted.dfy(44,2): Error: a postcondition could not be proved on this return path
+git-issue-466-stage2-accepted.dfy(43,20): Related location: this is the postcondition that could not be proved
+git-issue-466-stage2-accepted.dfy(79,4): Error: a postcondition could not be proved on this return path
+git-issue-466-stage2-accepted.dfy(75,27): Related location: this is the postcondition that could not be proved
+git-issue-466-stage2-accepted.dfy(99,2): Error: a postcondition could not be proved on this return path
+git-issue-466-stage2-accepted.dfy(98,17): Related location: this is the postcondition that could not be proved
+git-issue-466-stage2-accepted.dfy(145,4): Error: a postcondition could not be proved on this return path
+git-issue-466-stage2-accepted.dfy(142,27): Related location: this is the postcondition that could not be proved
+git-issue-466-stage2-accepted.dfy(152,31): Related location: this proposition could not be proved
+git-issue-466-stage2-accepted.dfy(175,4): Error: a postcondition could not be proved on this return path
+git-issue-466-stage2-accepted.dfy(172,14): Related location: this is the postcondition that could not be proved
+git-issue-466-stage2-accepted.dfy(152,31): Related location: this proposition could not be proved
+git-issue-466-stage2-accepted.dfy(219,2): Error: a postcondition could not be proved on this return path
+git-issue-466-stage2-accepted.dfy(218,19): Related location: this is the postcondition that could not be proved
+git-issue-466-stage2-accepted.dfy(256,2): Error: a postcondition could not be proved on this return path
+git-issue-466-stage2-accepted.dfy(255,21): Related location: this is the postcondition that could not be proved
+git-issue-466-stage2-accepted.dfy(276,2): Error: a postcondition could not be proved on this return path
+git-issue-466-stage2-accepted.dfy(275,19): Related location: this is the postcondition that could not be proved
+git-issue-466-stage2-accepted.dfy(293,2): Error: a postcondition could not be proved on this return path
+git-issue-466-stage2-accepted.dfy(292,17): Related location: this is the postcondition that could not be proved
+git-issue-466-stage2-accepted.dfy(315,2): Error: a postcondition could not be proved on this return path
+git-issue-466-stage2-accepted.dfy(314,23): Related location: this is the postcondition that could not be proved
+git-issue-466-stage2-accepted.dfy(344,2): Error: a postcondition could not be proved on this return path
+git-issue-466-stage2-accepted.dfy(343,13): Related location: this is the postcondition that could not be proved
+git-issue-466-stage2-accepted.dfy(322,37): Related location: this proposition could not be proved
+git-issue-466-stage2-accepted.dfy(349,2): Error: a postcondition could not be proved on this return path
+git-issue-466-stage2-accepted.dfy(348,14): Related location: this is the postcondition that could not be proved
+git-issue-466-stage2-accepted.dfy(374,2): Error: a postcondition could not be proved on this return path
+git-issue-466-stage2-accepted.dfy(373,17): Related location: this is the postcondition that could not be proved
+git-issue-466-stage2-accepted.dfy(371,39): Related location: this proposition could not be proved
+git-issue-466-stage2-accepted.dfy(389,2): Error: a postcondition could not be proved on this return path
+git-issue-466-stage2-accepted.dfy(388,17): Related location: this is the postcondition that could not be proved
+git-issue-466-stage2-accepted.dfy(386,39): Related location: this proposition could not be proved
+git-issue-466-stage2-accepted.dfy(415,4): Error: a postcondition could not be proved on this return path
+git-issue-466-stage2-accepted.dfy(414,16): Related location: this is the postcondition that could not be proved
+git-issue-466-stage2-accepted.dfy(457,2): Error: a postcondition could not be proved on this return path
+git-issue-466-stage2-accepted.dfy(456,19): Related location: this is the postcondition that could not be proved
+git-issue-466-stage2-accepted.dfy(488,2): Error: a postcondition could not be proved on this return path
+git-issue-466-stage2-accepted.dfy(487,14): Related location: this is the postcondition that could not be proved
+git-issue-466-stage2-accepted.dfy(500,9): Error: value does not satisfy the subset constraints of 'Const1.Small'
+git-issue-466-stage2-accepted.dfy(515,2): Error: a postcondition could not be proved on this return path
+git-issue-466-stage2-accepted.dfy(514,17): Related location: this is the postcondition that could not be proved
+git-issue-466-stage2-accepted.dfy(540,4): Error: a postcondition could not be proved on this return path
+git-issue-466-stage2-accepted.dfy(539,23): Related location: this is the postcondition that could not be proved
+git-issue-466-stage2-accepted.dfy(562,2): Error: a postcondition could not be proved on this return path
+git-issue-466-stage2-accepted.dfy(561,14): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 94 verified, 21 errors

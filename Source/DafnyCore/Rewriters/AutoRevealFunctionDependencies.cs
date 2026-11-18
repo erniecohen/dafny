@@ -46,6 +46,13 @@ public class AutoRevealFunctionDependencies : IRewriter {
             mem.AutoRevealDependencies(this, Options, Reporter);
           }
         }
+
+        if (cl.InvariantTypeDecl is { Witness: { } witness } invariantTypeDecl && !cl.Members.OfType<MemberWitness>().Any()) {
+          // Issue 105: the witness clause of the header of a newtype with member invariants is sugar for a witness
+          // member (section 3.5 of the plan), so it needs what a witness member needs (see ConstantField)
+          invariantTypeDecl.Witness = AddRevealStmtsToExpression(witness,
+            InvariantFunctionalDependencies(invariantTypeDecl, witness.Origin, moduleDefinition).Distinct());
+        }
       }
     }
   }
@@ -145,7 +152,6 @@ public class AutoRevealFunctionDependencies : IRewriter {
       yield break;
     }  //vertex can be null if m is a Test method.
 
-    var visited = new HashSet<GraphTraversalVertex>();
     var queue = new Queue<GraphTraversalVertex>();
 
     var defaultRootModule = rootModule is null ? currentClass.EnclosingModuleDefinition : rootModule;
@@ -154,6 +160,12 @@ public class AutoRevealFunctionDependencies : IRewriter {
     // Here this function may be called with a callable that is in a different module than the original one.
 
     foreach (var callable in origVertex.Successors) {
+      if (callable.N.EnclosingModule != m.EnclosingModule && !IsRevealable(defaultRootModule.AccessibleMembers, (Declaration)callable.N)) {
+        // A callee in another module is in this call graph only when the two modules are in one recursive
+        // module group.  It is followed if the root module sees its body, as a callee of an imported
+        // module is.
+        continue;
+      }
       queue.Enqueue(new GraphTraversalVertex(callable, true, 1));
     }
 
@@ -178,8 +190,18 @@ public class AutoRevealFunctionDependencies : IRewriter {
             }
           }
         }
+        foreach (var dependency in InvariantDependencies(newType.AsSubsetType, defaultRootModule, 1)) {
+          queue.Enqueue(dependency);
+        }
       }
     });
+
+    if (m is Constructor) {
+      // Issue 105: a constructor forms a value of the type of its class, as a function forms one of its result type
+      foreach (var dependency in InvariantDependencies(currentClass, defaultRootModule, 1)) {
+        queue.Enqueue(dependency);
+      }
+    }
 
     if (interModuleVertex is not null) {
       foreach (var callable in interModuleVertex.Successors) {
@@ -190,6 +212,18 @@ public class AutoRevealFunctionDependencies : IRewriter {
         }
       }
     }
+
+    foreach (var functionWithDepth in Reachable(queue, defaultRootModule)) {
+      yield return functionWithDepth;
+    }
+  }
+
+  /// <summary>
+  /// The functions made implicitly opaque that the traversal of the call graphs reaches from the vertices in "queue",
+  /// breadth first, each with its depth.
+  /// </summary>
+  private IEnumerable<FunctionWithDepth> Reachable(Queue<GraphTraversalVertex> queue, ModuleDefinition defaultRootModule) {
+    var visited = new HashSet<GraphTraversalVertex>();
 
     while (queue.Any()) {
       var vertex = queue.Dequeue();
@@ -231,11 +265,97 @@ public class AutoRevealFunctionDependencies : IRewriter {
           }
         }
 
+        foreach (var dependency in InvariantDependencies(graphVertex.N, defaultRootModule, 1 + vertex.Depth)) {
+          if (!visited.Contains(dependency)) {
+            queue.Enqueue(dependency);
+          }
+        }
+
         var callable = graphVertex.N;
 
         if (callable is Function func && func.IsMadeImplicitlyOpaque(Options)) {
           yield return new FunctionWithDepth(func, vertex.Depth);
         }
+      }
+    }
+  }
+
+  /// <summary>
+  /// Issue 105 (--member-invariants): the type with member invariants that "decl" stands for, or null. That is the
+  /// InvariantTypeDecl itself; that of the declaration that owns one, since the call graph records a use of the type
+  /// with the invariants as a use of its owner (see CallGraphBuilder.AddTypeDependencyEdges); or that of the class or
+  /// trait whose non-null type "decl" is. The call graph records a use of "raw D" as a use of D's declaration too, so
+  /// a use of "raw D" or "raw C" reveals what the invariants call as well: a reveal only adds what holds.
+  /// </summary>
+  private static InvariantTypeDecl InvariantTypeOf(object decl) {
+    return decl switch {
+      InvariantTypeDecl invariantTypeDecl => invariantTypeDecl,
+      NonNullTypeDecl nonNullTypeDecl => nonNullTypeDecl.Class.InvariantTypeDecl,
+      TopLevelDeclWithMembers owner => owner.InvariantTypeDecl,
+      _ => null
+    };
+  }
+
+  /// <summary>
+  /// Issue 105 (--member-invariants): a callable that depends on a type with member invariants depends on what its
+  /// invariants call, as one that depends on a subset type depends on what the constraint calls. These are the callees
+  /// of the invariants, own and inherited, in the call graphs, and the functions that the constraint of a newtype's
+  /// header calls, which is a conjunct of the invariants (see InvariantTypeDecl.HeaderConjunct). An invariant is never
+  /// opaque, so it is not revealed itself, and its callees have the depth that the type has.
+  /// </summary>
+  private IEnumerable<GraphTraversalVertex> InvariantDependencies(object decl, ModuleDefinition rootModule, int depth) {
+    var invariantTypeDecl = InvariantTypeOf(decl);
+    if (invariantTypeDecl is null) {
+      yield break;
+    }
+
+    var invariants = invariantTypeDecl.InheritedInvariants.Select(inherited => inherited.Invariant)
+      .Concat(InvariantTypeDecl.Invariants(invariantTypeDecl.Owner));
+    foreach (var invariant in invariants) {
+      var module = invariant.EnclosingClass.EnclosingModuleDefinition;
+      var vertex = module.CallGraph.FindVertex(invariant);
+      if (vertex is not null) {
+        foreach (var callee in vertex.Successors) {
+          if (IsRevealable(rootModule.AccessibleMembers, (Declaration)callee.N)) {
+            yield return new GraphTraversalVertex(callee, true, depth);
+          }
+        }
+      }
+
+      var interModuleVertex = module.InterModuleCallGraph.FindVertex(invariant);
+      if (interModuleVertex is not null) {
+        foreach (var callee in interModuleVertex.Successors) {
+          if (IsRevealable(rootModule.AccessibleMembers, (Declaration)callee.N)) {
+            yield return new GraphTraversalVertex(callee, false, depth);
+          }
+        }
+      }
+    }
+
+    if (invariantTypeDecl.HeaderConjunct is not null) {
+      foreach (var expr in Triggers.ExprExtensions.AllSubExpressions(invariantTypeDecl.HeaderConjunct, false, false)) {
+        if (expr is FunctionCallExpr { Function: var func } && IsRevealable(rootModule.AccessibleMembers, func)) {
+          var vertex = func.EnclosingClass.EnclosingModuleDefinition.CallGraph.FindVertex(func);
+          if (vertex is not null) {
+            yield return new GraphTraversalVertex(vertex, false, depth);
+          }
+        }
+      }
+    }
+  }
+
+  /// <summary>
+  /// Issue 105 (--member-invariants): the reveal statements that the witness of the type with member invariants
+  /// "invariantTypeDecl" needs, as the witness clause of a subset type needs those of the functions its constraint
+  /// calls (see SubsetTypeDecl.AutoRevealDependencies).
+  /// </summary>
+  public IEnumerable<RevealStmtWithDepth> InvariantFunctionalDependencies(InvariantTypeDecl invariantTypeDecl, IOrigin tok,
+    ModuleDefinition rootModule) {
+    var queue = new Queue<GraphTraversalVertex>(InvariantDependencies(invariantTypeDecl, rootModule, 1));
+    foreach (var functionWithDepth in Reachable(queue, rootModule)) {
+      var revealStmt = BuildRevealStmt(functionWithDepth.Function, tok, rootModule);
+      if (revealStmt is not null) {
+        yield return new RevealStmtWithDepth(revealStmt, functionWithDepth.Depth);
       }
     }
   }

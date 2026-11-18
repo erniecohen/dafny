@@ -1,0 +1,10 @@
+git-issue-105-verify.dfy(13,43): Error: invariant might not hold
+git-issue-105-verify.dfy(10,15): Related location: this is the invariant that might not hold
+git-issue-105-verify.dfy(20,33): Error: invariant might not hold
+git-issue-105-verify.dfy(18,16): Related location: this is the invariant that might not hold
+git-issue-105-verify.dfy(26,46): Error: invariant might not hold
+git-issue-105-verify.dfy(23,19): Related location: this is the invariant that might not hold
+git-issue-105-verify.dfy(34,34): Error: a postcondition could not be proved on this return path
+git-issue-105-verify.dfy(34,29): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 5 verified, 4 errors

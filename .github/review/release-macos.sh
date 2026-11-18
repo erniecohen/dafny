@@ -25,7 +25,9 @@ mkdir -p "$work"
 cd "$work"
 rm -rf src out
 git clone -q --filter=blob:none --depth 1 --branch "$tag" "https://github.com/$repo.git" src
-(cd src && sh .github/review/version.sh) | grep -qx "version=$version"
+# Capture before filtering: a derivation failure must stop the release.
+out=$(cd src && sh .github/review/version.sh)
+printf '%s\n' "$out" | grep -qx "version=$version"
 (cd src && sh Scripts/fetch-boogie-packages.sh)
 (cd src && dotnet publish Source/Dafny/Dafny.csproj -c Release -r osx-arm64 --self-contained \
   -o ../out/dafny -p:GeneratePackageOnBuild=false -p:SourceRevisionId="$revision")

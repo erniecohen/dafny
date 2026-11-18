@@ -2915,7 +2915,7 @@ namespace Microsoft.Dafny {
 
       tp = tp.NormalizeExpand();
       var dependee = tp.AsIndDatatype;
-      if (dependee != null && dt.EnclosingModuleDefinition == dependee.EnclosingModuleDefinition) {
+      if (dependee != null && ModuleDefinition.InSameRecursiveGroup(dt.EnclosingModuleDefinition, dependee.EnclosingModuleDefinition)) {
         dependencies.AddEdge(dt, dependee);
         foreach (var ta in ((UserDefinedType)tp).TypeArgs) {
           AddDatatypeDependencyEdge(dt, ta, dependencies);
@@ -3303,7 +3303,8 @@ namespace Microsoft.Dafny {
 
       // resolve given arguments and populate the "namesToActuals" map
       var namesToActuals = new Dictionary<string, ActualBinding>();
-      formals.ForEach(f => namesToActuals.Add(f.Name, null)); // a name mapping to "null" says it hasn't been filled in yet
+      // A named argument binds a parameter by its label, which is its name unless a refining module renamed it.
+      formals.ForEach(f => namesToActuals.Add(f.Label, null)); // a name mapping to "null" says it hasn't been filled in yet
       var stillAcceptingPositionalArguments = true;
       var bindingIndex = 0;
       foreach (var binding in bindings.ArgumentBindings) {
@@ -3313,7 +3314,12 @@ namespace Microsoft.Dafny {
           var pname = binding.FormalParameterName.val;
           stillAcceptingPositionalArguments = false;
           if (!namesToActuals.TryGetValue(pname, out var b)) {
-            reporter.Error(MessageSource.Resolver, binding.FormalParameterName, $"the binding named '{pname}' does not correspond to any formal parameter");
+            if (formals.Find(f => f.Name == pname) is { } renamed) {
+              reporter.Error(MessageSource.Resolver, binding.FormalParameterName, 
+                $"the parameter labelled '{renamed.Label}' is called '{pname}' only inside {name}; a named argument uses its label '{renamed.Label}'");
+            } else {
+              reporter.Error(MessageSource.Resolver, binding.FormalParameterName, $"the binding named '{pname}' does not correspond to any formal parameter");
+            }
           } else if (b == null) {
             // all is good
             namesToActuals[pname] = binding;
@@ -3327,7 +3333,7 @@ namespace Microsoft.Dafny {
         } else if (bindingIndex < formals.Count) {
           // use the name of formal corresponding to this positional argument, unless the parameter is named-only
           var formal = formals[bindingIndex];
-          var pname = formal.Name;
+          var pname = formal.Label;
           if (formal.IsNameOnly) {
             reporter.Error(MessageSource.Resolver, arg.Origin,
               $"nameonly parameter '{pname}' must be passed using a name binding; it cannot be passed positionally");
@@ -3356,7 +3362,7 @@ namespace Microsoft.Dafny {
       var formalIndex = 0;
       var substMap = new Dictionary<IVariable, Expression>();
       foreach (var formal in formals) {
-        var b = namesToActuals[formal.Name];
+        var b = namesToActuals[formal.Label];
         if (b != null) {
           actuals.Add(b.Actual);
           substMap.Add(formal, b.Actual);
@@ -3379,7 +3385,7 @@ namespace Microsoft.Dafny {
           // parameter has no value
           if (!simpleErrorReported) {
             var formalDescription = whatKind + (context is Method ? " in-parameter" : " parameter");
-            var nameWithIndex = formal.HasName && formal is not ImplicitFormal ? "'" + formal.Name + "'" : "";
+            var nameWithIndex = formal.HasName && formal is not ImplicitFormal ? "'" + formal.Label + "'" : "";
             if (formals.Count > 1 || nameWithIndex == "") {
               nameWithIndex += nameWithIndex == "" ? "" : " ";
               nameWithIndex += $"at index {formalIndex}";
@@ -4237,9 +4243,11 @@ namespace Microsoft.Dafny {
             reporter.Error(MessageSource.Resolver, t.Origin, "expected type");
           } else if (r.Type is ResolverIdentifierExpr.ResolverTypeType) {
             var d = r.Decl;
-            if (d is AbstractTypeDecl) {
+            if (d is AbstractTypeDecl abstractTypeDecl) {
               // resolve like a type parameter, and it may have type parameters if it's an abstract type
-              t.ResolvedClass = d;  // Store the decl, so the compiler will generate the fully qualified name
+              // Store the decl, so the compiler will generate the fully qualified name. Issue 105: for an abstract
+              // type with member invariants, the name denotes the derived subset type, and "raw T" the declaration.
+              t.ResolvedClass = t.IsRawSyntax ? d : (TopLevelDecl)abstractTypeDecl.InvariantTypeDecl ?? d;
             } else if (d is RedirectingTypeDecl) {
               var dd = (RedirectingTypeDecl)d;
               var caller = CodeContextWrapper.Unwrap(resolutionContext.CodeContext) as ICallable;
@@ -4253,12 +4261,26 @@ namespace Microsoft.Dafny {
                   reporter.Error(MessageSource.Resolver, d.Origin, "recursive constraint dependency involving a {0}: {1} -> {1}", d.WhatKind, d.Name);
                 }
               }
-              t.ResolvedClass = d;
-            } else if (d is DatatypeDecl) {
-              t.ResolvedClass = d;
+              // Issue 105: for a class with member invariants, "raw C" denotes the raw non-null type. For a newtype with
+              // member invariants, the name denotes the derived subset type, and "raw N" the newtype itself.
+              t.ResolvedClass = t.IsRawSyntax && d is NonNullTypeDecl { Class.RawNonNullTypeDecl: { } rawNonNullTypeDecl }
+                ? rawNonNullTypeDecl
+                : !t.IsRawSyntax && d is NewtypeDecl { InvariantTypeDecl: { } newtypeInvariantTypeDecl } ? newtypeInvariantTypeDecl
+                : d;
+            } else if (d is DatatypeDecl datatypeDecl) {
+              // Issue 105: for a datatype with member invariants, the name denotes the derived subset type, and
+              // "raw D" denotes the datatype itself.
+              t.ResolvedClass = t.IsRawSyntax ? d : (TopLevelDecl)datatypeDecl.InvariantTypeDecl ?? d;
+            } else if (d is ClassLikeDecl { InvariantTypeDecl: { } classInvariantTypeDecl } && !t.IsRawSyntax) {
+              // Issue 105: for a class with member invariants, "C?" denotes the derived subset type, and "raw C?"
+              // denotes the class itself.
+              t.ResolvedClass = classInvariantTypeDecl;
             } else {
               // d is a type parameter, coinductive datatype, or class, and it may have type parameters
               t.ResolvedClass = d;
+            }
+            if (t.IsRawSyntax) {
+              CheckRawType(t, d);
             }
             if (option.Opt == ResolveTypeOptionEnum.DontInfer) {
               // don't add anything
@@ -4291,6 +4313,46 @@ namespace Microsoft.Dafny {
         Contract.Assert(false); throw new Cce.UnreachableException();  // unexpected type
       }
       return null;
+    }
+
+    /// <summary>
+    /// Issue 105: "raw T" (parsed only under --member-invariants) applies to a declaration that can declare a
+    /// member invariant: a datatype, class, trait, newtype or abstract type. So far, inductive datatypes, classes,
+    /// traits, abstract types and newtypes are supported, but not a newtype whose header in the old syntax gives a
+    /// constraint while it has no invariant: "raw N" would be the base type with no constraint, a type the program
+    /// does not otherwise have.
+    /// </summary>
+    private void CheckRawType(UserDefinedType t, TopLevelDecl d) {
+      var decl = d is NonNullTypeDecl nonNullTypeDecl ? nonNullTypeDecl.Class : d;
+      if (decl is NewtypeDecl { InvariantTypeDecl: null, Var: not null } oldSyntaxNewtype) {
+        reporter.Error(MessageSource.Resolver, t.Origin,
+          "'raw' is not yet supported for newtype '{0}', whose constraint is given in its header and which has no member invariant",
+          oldSyntaxNewtype.Name);
+        return;
+      }
+      if (decl is IndDatatypeDecl or ClassDecl or TraitDecl or AbstractTypeDecl or NewtypeDecl) {
+        // Where a declaration is provided but not revealed, its members, the invariants among them, are not. That is so
+        // in a scope that sees it as provided only, and in the view that an export set makes of it, which is checked for
+        // consistency on its own.
+        var providedOnly = decl is AbstractTypeDecl { ProvidedOnlyViewOf: { } original } ? original
+          : !decl.IsRevealedInScope(Type.GetScope()) ? decl : null;
+        if (providedOnly != null) {
+          reporter.Error(MessageSource.Resolver, t.Origin,
+            "'raw' is not yet supported for {0} '{1}', which is provided but not revealed here", providedOnly.WhatKind,
+            providedOnly.Name);
+        }
+        return;
+      }
+      if (decl is TypeParameter) {
+        reporter.Error(MessageSource.Resolver, t.Origin, "'raw' does not apply to type parameter '{0}'", decl.Name);
+      } else if (decl.EnclosingModuleDefinition == SystemModuleManager.SystemModule ||
+                 decl is not (ClassLikeDecl or NewtypeDecl or AbstractTypeDecl)) {
+        reporter.Error(MessageSource.Resolver, t.Origin,
+          "'raw' applies only to a type that can declare a member invariant (a datatype, class, trait, newtype or abstract type), not to {0} '{1}'",
+          decl.WhatKind, decl.Name);
+      } else {
+        reporter.Error(MessageSource.Resolver, t.Origin, "'raw' is not yet supported for {0} '{1}'", decl.WhatKind, decl.Name);
+      }
     }
 
     /// <summary>

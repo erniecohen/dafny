@@ -342,8 +342,20 @@ true - All class instances are raw pointers and need to be manually deallocated"
   public static readonly Option<bool> AncestorQualifiedModuleIds = new("--ancestor-qualified-module-ids", () => false,
     "Let a refines clause or import whose qualified module name starts with modules that enclose it, as in 'module A.C refines A.B', depend on the module it names instead of on the enclosing module, which is otherwise reported as a cycle. Disabled by default.");
 
+  public static readonly Option<bool> RefinementExtends = new("--refinement-extends", () => false,
+    "Let a class or trait declaration in a refining module add parent traits to the declaration it refines, as in 'trait T ... extends S { }'. The parents of the refined declaration are kept, and the added ones follow them. Every check an added parent calls for (members to implement, override checks, fields to assign, termination) is made in the refining module. A refinement cannot make a trait a reference type by giving it 'object' as an ancestor. Disabled by default.");
+
+  public static readonly Option<bool> InheritedTraitAxioms = new("--inherited-trait-axioms", () => false,
+    "Let a class, datatype or newtype inherit a bodiless ghost trait member that is marked {:axiom} (a lemma, two-state lemma, ghost method, ghost function or predicate, or two-state function or predicate that is not extreme) without implementing it: the member's specification is a declared axiom of the trait. An override is still checked. 'dafny audit' lists the axiom and each type that inherits it. Under this option, {:axiom} on a bodiless compiled or extreme trait member is an error. Disabled by default.");
+
   public static readonly Option<bool> SynonymRefinesAbstractType = new("--synonym-refines-abstract-type", () => false,
     "In a refining module, let a type synonym 'type O<Xs> = T<Xs>' refine an abstract type O that has members, where T is a class, trait, datatype, newtype or abstract type declared in the refining module: the members of O are merged into T, as they would be into a declaration of O itself. Disabled by default.");
+
+  public static readonly Option<bool> RefinementRenaming = new("--refinement-renaming", () => false,
+    "In a refining module, let the redeclaration of a function, method, lemma or constructor rename its type parameters, its out-parameters, its result and the local names of its in-parameters, and let the redeclaration of a class, trait, datatype or newtype rename its type parameters. A named argument still uses the name the parameter was first declared with. Inherited specifications and bodies are renamed with the declaration; a renaming that changes what a name in inherited code refers to is an error. The type of a parameter or result may be written differently from the refined declaration if it is the same type, with type synonyms expanded. Disabled by default.");
+
+  public static readonly Option<bool> CopyImports = new("--copy-imports", () => false,
+    "Allow the copying import 'import X := Q' (optionally 'opened', optionally with an export set of Q): it declares in the importing module a module X that refines Q and adds nothing. The types of X are new types, different from those of Q and of every other copy of Q; X keeps the export sets of Q, with Q's default export as its own. A module that refines the importing module gets its own copy. Disabled by default.");
 
   public static readonly Option<bool> DecreasesOrders = new("--decreases-orders", () => false,
     "Allow a decreases-clause component 'e by O', where O is a closed ghost expression of the trait type Std.Termination.Orders.Wfo<T> from the standard library and e has type T; a call or loop iteration must make O.gt(old e, e) true or leave e unchanged. Requires --type-system-refresh and --general-traits=datatype or full. With --modular-termination, such components are also allowed in {:global} and {:callback} bounds, and the orders library is verified with the program. Disabled by default.");
@@ -366,11 +378,16 @@ true - All class instances are raw pointers and need to be manually deallocated"
   public static readonly Option<bool> LegacyFirstPhaseConstReads = new("--legacy-first-phase-const-reads", () => false,
     "Use the legacy, unsound rule that lets the first division of a constructor body (before 'new;') read a constant whose initializer depends on 'this', for migration and comparison only.") { IsHidden = true };
 
+  public static readonly Option<bool> LegacyInferredNewtypeBaseConversions = new("--legacy-inferred-newtype-base-conversions", () => false,
+    "Use the legacy, unsound check of a conversion to a newtype whose base type is inferred, which skips the constraints of that base type, for migration and comparison only.") { IsHidden = true };
+
   public static readonly Option<bool> LegacySkeletonModifyingCalls = new("--legacy-skeleton-modifying-calls", () => false,
     "Use the legacy, unsound rule that lets a statement a refinement skeleton adds call a method with a nonempty modifies clause, for migration and comparison only.") { IsHidden = true };
 
   public static readonly Option<bool> LegacyEarlyYieldParameterCheck = new("--legacy-early-yield-parameter-check", () => false,
     "Use the legacy, unsound check of the types of iterator yield parameters, made before the resolver knows how each datatype is constructed, for migration and comparison only.") { IsHidden = true };
+  public static readonly Option<bool> LegacyUncheckedTypeVariance = new("--legacy-unchecked-type-variance", () => false,
+    "Use the legacy, unsound rule that ignores subset-type and newtype constraints when checking declared variance, for migration and comparison only.") { IsHidden = true };
   public static readonly Option<bool> LegacyUncheckedImportBinding = new("--legacy-unchecked-import-binding", () => false,
     "Use the legacy, unsound rule that lets a refining module bind an inherited abstract import to a module that does not refine the import's target, for migration and comparison only.") { IsHidden = true };
   public static readonly Option<bool> LegacyAllocatedInLambdas = new("--legacy-allocated-in-lambdas", () => false,
@@ -432,6 +449,21 @@ legacy (default) - Every trait implicitly extends 'object', and thus is a refere
 datatype - A trait is a reference type only if it or one of its ancestor traits is 'object'. Any non-'newtype' type with members can extend traits.
 full - (don't use; not yet completely supported) A trait is a reference type only if it or one of its ancestor traits is 'object'. Any type with members can extend traits.
 Value implementations must retain their type parameters in compatible parent positions and satisfy cardinality admissibility.".TrimStart()) {
+    IsHidden = true
+  };
+
+  public static readonly Option<bool> MemberInvariants = new("--member-invariants", () => false,
+    "(experimental, incomplete) Allow 'invariant' and 'witness' members in types, and the raw type 'raw T' (issue 105). Requires --type-system-refresh. A program that declares a member invariant may not declare a codatatype.") {
+    IsHidden = true
+  };
+
+  public static readonly Option<bool> RecursiveModules = new("--recursive-modules", () => false,
+    "(experimental, incomplete) Allow modules to import each other. The modules of an import cycle form a recursive module group, which means what one module with all their declarations would mean. Only imports may form a cycle. Requires --member-invariants. A program that has a recursive module group may not declare a codatatype. At this stage a member of a group may not be abstract, refine or be refined, declare an abstract import, and a program that has a group is not compiled.") {
+    IsHidden = true
+  };
+
+  public static readonly Option<bool> UncheckedInvariantExtension = new("--unchecked-invariant-extension", () => false,
+    "Do not check the extension condition of member invariants (issue 105). The axioms of a type whose invariant refers to its own set of values may then be inconsistent. For the vacuity controls of the test suite only.") {
     IsHidden = true
   };
 
@@ -840,6 +872,8 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterGlobalOption(EnforceDeterminism, OptionCompatibility.CheckOptionLocalImpliesLibrary);
     OptionRegistry.RegisterGlobalOption(RelaxDefiniteAssignment, OptionCompatibility.OptionLibraryImpliesLocalError);
     OptionRegistry.RegisterGlobalOption(AllowAxioms, OptionCompatibility.OptionLibraryImpliesLocalError);
+    OptionRegistry.RegisterGlobalOption(InheritedTraitAxioms, OptionCompatibility.OptionLibraryImpliesLocalError);
+    OptionRegistry.RegisterGlobalOption(RefinementExtends, OptionCompatibility.OptionLibraryImpliesLocalError);
     OptionRegistry.RegisterGlobalOption(AllowWarnings, OptionCompatibility.OptionLibraryImpliesLocalWarning);
     OptionRegistry.RegisterGlobalOption(AllowDeprecation, OptionCompatibility.OptionLibraryImpliesLocalWarning);
     OptionRegistry.RegisterGlobalOption(WarnShadowing, OptionCompatibility.OptionLibraryImpliesLocalWarning);
@@ -894,6 +928,17 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(TypeInferenceDebug, OptionScope.Cli);
     OptionRegistry.RegisterOption(GeneralTraits, OptionScope.Cli);
     OptionRegistry.RegisterOption(GeneralNewtypes, OptionScope.Cli);
+    // A library built with --member-invariants may declare invariants, so a program that uses it needs the
+    // option too.  The manifest records the option only when it is on (see DooFile.ManifestData), so a
+    // library built without it is unchanged and may be used either way.
+    OptionRegistry.RegisterGlobalOption(MemberInvariants,
+      (reporter, origin, prefix, option, localValue, libraryValue) =>
+        OptionCompatibility.OptionLibraryImpliesLocalError(reporter, origin, prefix, option, localValue, libraryValue ?? false));
+    // A library built with --recursive-modules may contain a recursive module group, so a program that uses
+    // it needs the option too.  Like --member-invariants, the manifest records it only when it is on.
+    OptionRegistry.RegisterGlobalOption(RecursiveModules,
+      (reporter, origin, prefix, option, localValue, libraryValue) =>
+        OptionCompatibility.OptionLibraryImpliesLocalError(reporter, origin, prefix, option, localValue, libraryValue ?? false));
     OptionRegistry.RegisterGlobalOption(ExtendedNewtypeBases,
       (reporter, origin, prefix, option, localValue, libraryValue) =>
         OptionCompatibility.OptionLibraryImpliesLocalError(reporter, origin, prefix, option, localValue, libraryValue ?? false));
@@ -905,6 +950,11 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(DatatypeSubsetConversions, OptionScope.Cli);
     OptionRegistry.RegisterOption(AncestorQualifiedModuleIds, OptionScope.Cli);
     OptionRegistry.RegisterOption(SynonymRefinesAbstractType, OptionScope.Cli);
+    OptionRegistry.RegisterOption(RefinementRenaming, OptionScope.Cli);
+    // A library that uses copying imports is parsed with the option on, and its user must opt in as well.
+    OptionRegistry.RegisterGlobalOption(CopyImports,
+      (reporter, origin, prefix, option, localValue, libraryValue) =>
+        OptionCompatibility.OptionLibraryImpliesLocalError(reporter, origin, prefix, option, localValue, libraryValue ?? false));
     OptionRegistry.RegisterOption(DecreasesOrders, OptionScope.Cli);
     // A library is resolved again by its client, with the client's value of the option. So a client of a library
     // that binds the results of a lemma needs the option as well, and without it gets the library's bindings rejected.
@@ -920,6 +970,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(LegacyFirstPhaseConstReads, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacyAllocatedInLambdas, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacyElidedOverrideChecks, OptionScope.Cli);
+    OptionRegistry.RegisterOption(LegacyInferredNewtypeBaseConversions, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacySkeletonModifyingCalls, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacyInheritedConstructorFields, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacyFunctionStoreLocations, OptionScope.Cli);
@@ -927,9 +978,11 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(LegacyReplacementCycles, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacyGenericFunctionStores, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacyInheritedTerminationChecks, OptionScope.Cli);
+    OptionRegistry.RegisterOption(LegacyUncheckedTypeVariance, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacyUncheckedImportBinding, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacyStoredFunctionCallbacks, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacyInheritedNameCapture, OptionScope.Cli);
+    OptionRegistry.RegisterOption(UncheckedInvariantExtension, OptionScope.Cli);
     OptionRegistry.RegisterOption(ModularTermination, OptionScope.Cli);
     OptionRegistry.RegisterOption(ModularTerminationTrust, OptionScope.Cli);
     OptionRegistry.RegisterOption(WarnUncheckedTermination, OptionScope.Cli);

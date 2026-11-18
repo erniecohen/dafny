@@ -45,6 +45,7 @@ jobs:
         id: version
         # Not a pipe into tee: without pipefail a failing version.sh left the version empty.
         run: |
+          # version.sh fetches the upstream tag; HEAD supplies the product tree.
           out=$(sh .github/review/version.sh)
           echo "$out" | tee -a "$GITHUB_OUTPUT"
           echo "$out" | grep -q '^version=.'

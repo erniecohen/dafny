@@ -1,0 +1,33 @@
+git-issue-105-refinement-verify.dfy(22,4): Error: invariant might not hold
+git-issue-105-refinement-verify.dfy(16,22): Related location: this is the invariant that might not hold
+git-issue-105-refinement-verify.dfy(19,4): Error: invariant might not hold
+git-issue-105-refinement-verify.dfy(28,22): Related location: this is the invariant that might not hold
+git-issue-105-refinement-verify.dfy(26,7): Related location: refining module
+git-issue-105-refinement-verify.dfy(41,39): Error: invariant might not hold
+git-issue-105-refinement-verify.dfy(59,16): Related location: this is the invariant that might not hold
+git-issue-105-refinement-verify.dfy(57,7): Related location: refining module
+git-issue-105-refinement-verify.dfy(50,6): Error: invariant might not hold
+git-issue-105-refinement-verify.dfy(62,21): Related location: this is the invariant that might not hold
+git-issue-105-refinement-verify.dfy(57,7): Related location: refining module
+git-issue-105-refinement-verify.dfy(81,27): Error: invariant might not hold
+git-issue-105-refinement-verify.dfy(76,16): Related location: this is the invariant that might not hold
+git-issue-105-refinement-verify.dfy(84,7): Related location: refining module
+git-issue-105-refinement-verify.dfy(92,13): Error: invariant might not hold
+git-issue-105-refinement-verify.dfy(103,16): Related location: this is the invariant that might not hold
+git-issue-105-refinement-verify.dfy(101,7): Related location: refining module
+git-issue-105-refinement-verify.dfy(112,27): Error: possible division by zero
+git-issue-105-refinement-verify.dfy(117,7): Related location: refining module
+git-issue-105-refinement-verify.dfy(114,62): Error: a postcondition could not be proved on this return path
+git-issue-105-refinement-verify.dfy(114,50): Related location: this is the postcondition that could not be proved
+git-issue-105-refinement-verify.dfy(117,7): Related location: refining module
+git-issue-105-refinement-verify.dfy(117,7): Related location: refining module
+git-issue-105-refinement-verify.dfy(132,4): Error: value of expression (of type 'seq<raw P>') is not known to be an instance of type 'seq<P>'
+git-issue-105-refinement-verify.dfy(135,7): Related location: refining module
+
+Dafny program verifier finished with 20 verified, 9 errors
+CLI: Warning: The file 'git-issue-105-refinement-library.dfy' was passed to --library. Verification for that file might have used options incompatible with the current ones, or might have been skipped entirely. Use a .doo file to enable Dafny to check that compatible options were used
+git-issue-105-refinement-library.dfy(9,4): Error: invariant might not hold
+git-issue-105-refines-library.dfy(7,22): Related location: this is the invariant that might not hold
+git-issue-105-refines-library.dfy(5,7): Related location: refining module
+
+Dafny program verifier finished with 1 verified, 1 error
