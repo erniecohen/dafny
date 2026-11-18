@@ -986,6 +986,16 @@ module Impl refines Spec {
   value.  The refinement must supply a `witness`, and the existing check that
   a refining type has the declared characteristics is where that is enforced.
   An abstract type with an invariant and no `(0)` or `(00)` is possibly empty.
+  Only an abstract module may make the promise.  A client of any other
+  module, concrete or replaceable, uses the type as it is written, and
+  nothing obliges a refinement to exist, so nothing would keep the promise:
+  `module M { type T(0) { invariant false } }` would let a client prove
+  `false` with `var t: M.T :| true`.  An abstract module cannot be imported
+  into a concrete module, so every concrete use of one is through a
+  refinement, and a concrete refinement either defines the type, whose
+  witness is then checked, or inherits it unrefined, which is the same error
+  as declaring it there.  An invariant inherited from a trait counts as one.
+
 - **The extension condition** is checked in the abstract module against what
   is visible there, the specifications of the bodiless functions, and again in
   each refinement, against the bodies.
@@ -1203,6 +1213,7 @@ so anything verifies there.  The channels, and what closes each:
 | Enclosing datatype believed inhabited through a component | `GetAutoInit` propagation |
 | A value of a type with an invariant built around a guarded co-recursive call | The declaration rule: a program with invariants declares no codatatype, so it has no co-recursive calls (section 3.8) |
 | Abstract type with an invariant, refined by a type that cannot carry it | Rejected (section 4.3) |
+| Abstract type with an invariant, declared `(0)` or `(00)` in a module that is not abstract, or inherited unrefined by one | Rejected: only an abstract module, which is refined before any concrete use, may make the promise, and each refinement that defines the type keeps it with a witness (section 4.3) |
 | Bodiless function or method returning the type | An assumption today, for any possibly-empty type; unchanged, and it should appear in `dafny audit` |
 | `new C` on a class with no constructor | Rejected: the class must declare one |
 | Extern or bodiless constructors, extern datatype values | Assumptions; reported by `dafny audit` |
@@ -2968,6 +2979,100 @@ section 7.2).**
   bounded-variable sites `variance` and, for quantifiers over collections,
   `generics`, and the clause 2 sites `extension`.
 
+**A soundness hole found at review, a latent `#canCall`, and checks of
+newtypes (after the ninth step).**  An independent review of the pull request
+found a hole that a program can reach and a gap in the axioms that none can.
+
+- *The hole.*  The characteristic `(0)` or `(00)` of an abstract type with
+  invariants is a promise, and a refinement that defines the type keeps it
+  with a witness (section 4.3, `PromisedAutoInit`).  Nothing obliged a
+  refinement to exist, so a module that is never refined made the promise
+  unchecked.  `module M { type T(0) { invariant false } }` with a client
+  `lemma X() ensures false { var t: M.T :| true; }` verified, and so did
+  `type T(00) { invariant false }` with the `:|` in the same module.
+- *The decision.*  The promise is allowed only where a refinement must keep
+  it, in an abstract module.  The resolver rejects an abstract type with
+  invariants, declared or inherited from a trait, that is declared `(0)` or
+  `(00)` in a module that is not abstract (`ResolveTopLevelDecls_Signatures`).
+  The other choice, requiring a witness of the abstract type, contradicts
+  section 4.3's rule that an abstract type has none, and fixes a value that
+  every refinement must then contain, whatever invariants the refinement adds.
+  The check runs after refinement has copied the declarations, so a concrete
+  refinement that inherits the type without defining it gets the same error,
+  at the declaration, with the refining module as a related location.  A
+  replaceable module is treated as a concrete one: a program is verified
+  whether or not it replaces the module.  A concrete module nested in an
+  abstract one is concrete too.
+- *Why that is enough.*  A concrete module cannot import an abstract module.
+  An abstract import (`import A : M`) is allowed only in an abstract or a
+  replaceable module, and a replaceable module may not use an abstract one.
+  A module nested in an abstract module that imports its parent is a cycle.
+  So every concrete use of an abstract module goes through a refinement, which
+  either defines the type, and its witness is checked, or inherits it, and is
+  rejected.  A proof inside the abstract module that uses the promise holds of
+  each refinement, as every proof in an abstract module does: `Kept` in
+  `git-issue-105-abstract-errors.dfy` proves `false` there and is accepted.
+- *The latent `#canCall`.*  The well-formedness of an invariant assumes the
+  invariants before it (`EarlierInvariants`: those inherited, the header's
+  conjunct, then its own earlier ones), as successive requires clauses are
+  assumed.  So an invariant's body may call a partial function that only an
+  earlier invariant protects, as `invariant n > 0  invariant H(n)` does with
+  `function H(n: int): bool requires n > 0`.  An invariant's precondition was
+  `true`, so its `#requires` axiom made `invariant_h1#requires(v)` true of
+  every raw value, the `#requires ==> #canCall` axiom gave
+  `invariant_h1#canCall(v)`, and the definition axiom then gave
+  `H#canCall(v.n)` at `v.n <= 0`, outside `H`'s precondition.  A precondition
+  is now each invariant's earlier invariants, so its `#requires` is their
+  conjunction, and its `#canCall` follows only where they hold, as for a
+  function with those requires clauses.  No program could reach the gap.  The
+  axioms are triggered by a term `invariant_hk#requires(...)`, and only a
+  function handle or a `.requires` produces one.  An invariant's name is
+  reserved, so neither can name it, and the translator assumes the `#canCall`s
+  of the constraint conjunct by conjunct, each guarded by the ones before.  So
+  the change leaves every verdict as it was, and its control is textual:
+  `git-issue-105-false-proofs.dfy` checks the three `#requires` axioms of
+  `Inputs/git-issue-105-requires-axiom.dfy` in the printed Boogie.  Guarding
+  the definition axiom instead would have done the same; the precondition is
+  the form Dafny already gives successive requires clauses, and it changes only
+  the `#requires` axioms.
+- *Newtypes and `new by`, against false proofs.*  The review asked for newtypes
+  with invariants, through operators, native types and the header's sugar, and
+  for `new by`, each against an attempt to prove `false`.  The new test
+  `git-issue-105-false-proofs.dfy` holds them, with positive controls:
+  - operators: `^`, `!`, a shift and a rotation of a bitvector newtype, `+`
+    and `-` of a real one, a conversion of a `char` literal, the range of a
+    `for` loop over an integer newtype, and a conversion to a newtype based on
+    one with invariants, which has the invariants of both;
+  - native types: `+` and unary `-` of a newtype that fits a byte, and `-` of
+    one that names `{:nativeType "byte"}`;
+  - the header: a witness clause that fails an invariant, the default witness
+    `0`, `witness *` and a `ghost witness`, each with a `:|` that would need
+    the promise;
+  - constructors: `new;` and the implicit `new;` at the end of a body;
+  - raw values: a raw datatype value that fails an earlier invariant, in a
+    variable and as a parameter.
+
+  Each attempt is rejected at the check that should catch it.  `new by` is not
+  implemented (open question 2): `Inputs/git-issue-105-new-by.dfy` uses it and
+  is a parse error.
+- *What the checks showed, consistent with Dafny without invariants.*  A
+  literal of a newtype must satisfy its invariants, as it must satisfy a
+  newtype's constraint.  A havoc `x := *` of a newtype assumes nothing of the
+  value, for a subset newtype too, so an assertion after it fails either way.
+  `RotateLeft` of a bitvector newtype returns the base type.
+- *Not fixed: a member witness over a base with invariants.*  In
+  `newtype NZ2 = NZ { invariant this != 1  witness 2 }`, where `NZ` has
+  invariants that `0` fails, the header still checks its default witness `0`
+  of the raw type against `NZ`'s invariants, and reports it, though the
+  witness member gives `2`.  Without the option `newtype B = A` checks `0`
+  against `A`'s constraint the same way.  It is incomplete, not unsound, and
+  the header form `newtype NZ2 = NZ witness 2 { invariant this != 1 }`
+  verifies.  The fix, skipping the header's default witness when the type
+  declares a witness member, is left as a follow-up.
+- *Controls from the mutation run.*  The two new sites, run against the whole
+  suite, each change one test: the rule for the promise `abstract-errors`, and
+  the precondition of an invariant `false-proofs`, at its textual check only.
+
 **Controls (the owner's rule for every feature).**  Every addition, meaning
 every axiom or assumption, has a positive control: a test that verifies only
 because the addition is there.  Every check has a negative control: a test
@@ -3085,6 +3190,8 @@ removed when no program can reach it.
   | a generic function's parameters are dependent where its own type arguments are | check | same | none | extension |
   | a generic function is analysed once for each pattern of dependent parameters, its own included | check | same, `Enqueue` | none | extension |
   | a constant of a generic declaration is analysed with the dependence of its type arguments | check | same, the member selection case | none | extension |
+  | an abstract type with invariants promises `(0)` or `(00)` only in an abstract module | check | `ModuleResolver.cs`, `ResolveTopLevelDecls_Signatures` | none | abstract-errors |
+  | an invariant's precondition, and its `#requires`, is the invariants before it | axiom | `BoogieGenerator.Functions.cs`, the axioms of a function | none | false-proofs (its `%OutputCheck` only) |
 
 - *Resolver errors.*  Each error that the feature adds has a negative control
   in the expect files named:
@@ -3097,6 +3204,7 @@ removed when no program can reach it.
   | a witness of a declaration other than a datatype or a newtype (not yet) | trait-witness |
   | a witness of an abstract type | abstract-errors |
   | a refinement that does not keep the characteristics an abstract type with invariants promises | abstract-errors |
+  | an abstract type with invariants that promises `(0)` or `(00)` outside an abstract module | abstract-errors |
   | a witness without an invariant, two witnesses | trait-witness, newtype-witness-errors |
   | a witness in the header of a newtype and a witness member | newtype-witness-errors |
   | a compiled use of `raw N`, and a member that an invariant uses that is not ghost | newtype-errors |
