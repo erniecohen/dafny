@@ -1,0 +1,6 @@
+git-issue-105-two-state.dfy(10,12): Error: old expressions are not allowed in this context
+git-issue-105-two-state.dfy(11,12): Error: unchanged expressions are not allowed in this context
+git-issue-105-two-state.dfy(12,12): Error: fresh expressions are not allowed in this context
+git-issue-105-two-state.dfy(13,12): Error: an invariant definition is not allowed to depend on the set of allocated references
+git-issue-105-two-state.dfy(14,12): Error: two-state function ('Changed') can only be called in a two-state context
+5 resolution/type errors detected in git-issue-105-two-state.dfy

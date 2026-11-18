@@ -830,6 +830,90 @@ git-issues/github-issue-414.dfy
 ast/reveal/revealInBlock.dfy
 ast/reveal/revealFunctions.dfy
 
+# Member invariants under the hidden --member-invariants, first stage: syntax, printing and
+# resolution, the reads restriction, the codatatype rule for programs and libraries, refinement,
+# opacity, and unchanged behaviour without the option (https://github.com/erniecohen/dafny/issues/105).
+git-issues/git-issue-105-option.dfy
+git-issues/git-issue-105-syntax.dfy
+git-issues/git-issue-105-raw-identifier.dfy
+git-issues/git-issue-105-control.dfy
+git-issues/git-issue-105-modifiers.dfy
+git-issues/git-issue-105-reads.dfy
+git-issues/git-issue-105-two-state.dfy
+git-issues/git-issue-105-codatatypes.dfy
+git-issues/git-issue-105-libraries.dfy
+git-issues/git-issue-105-refinement.dfy
+git-issues/git-issue-105-opacity.dfy
+git-issues/git-issue-105-not-yet.dfy
+git-issues/git-issue-105-verify.dfy
+# Second stage: raw types (raw T, inferred raw members, the derived subset type), with exports,
+# extends, refinement, libraries and compilation (https://github.com/erniecohen/dafny/issues/105).
+git-issues/git-issue-105-raw-types.dfy
+git-issues/git-issue-105-raw-errors.dfy
+git-issues/git-issue-105-raw-exports.dfy
+git-issues/git-issue-105-raw-refinement.dfy
+git-issues/git-issue-105-raw-extends.dfy
+git-issues/git-issue-105-raw-library.dfy
+git-issues/git-issue-105-raw-compile.dfy
+# Third stage: verification of non-generic datatypes without parents (conversion obligations, witnesses,
+# the extension condition) (https://github.com/erniecohen/dafny/issues/105).
+git-issues/git-issue-105-datatypes.dfy
+git-issues/git-issue-105-vacuity.dfy
+git-issues/git-issue-105-extension.dfy
+git-issues/git-issue-105-compile.dfy
+# Fourth stage: emptiness, the raw-typing audit and generic datatypes (variance, witnesses, the
+# extension condition over type parameters) (https://github.com/erniecohen/dafny/issues/105).
+git-issues/git-issue-105-generics.dfy
+git-issues/git-issue-105-variance.dfy
+git-issues/git-issue-105-emptiness.dfy
+git-issues/git-issue-105-emptiness-errors.dfy
+# Fifth stage: verification of classes (the check at 'new;', raw references and where they may go,
+# the constructor and witness rules) and the visibility of member invariants across export sets
+# (https://github.com/erniecohen/dafny/issues/105).
+git-issues/git-issue-105-classes.dfy
+git-issues/git-issue-105-class-errors.dfy
+git-issues/git-issue-105-class-witness.dfy
+git-issues/git-issue-105-class-compile.dfy
+git-issues/git-issue-105-exports.dfy
+git-issues/git-issue-105-class-exports.dfy
+# Sixth stage: verification of traits, reference and general (inherited invariants, raw parent types,
+# type tests, joins and receivers), the order of well-formedness assumptions, and what stays behind
+# the gate (https://github.com/erniecohen/dafny/issues/105).
+git-issues/git-issue-105-traits.dfy
+git-issues/git-issue-105-general-traits.dfy
+git-issues/git-issue-105-trait-errors.dfy
+git-issues/git-issue-105-trait-witness.dfy
+git-issues/git-issue-105-wellformedness.dfy
+git-issues/git-issue-105-trait-compile.dfy
+git-issues/git-issue-105-trait-gates.dfy
+# Variance by polarity, and statements inside expressions, which are outside the cone of the extension
+# condition (https://github.com/erniecohen/dafny/issues/105).
+git-issues/git-issue-105-statements.dfy
+# Member invariants in refining modules, and of abstract types
+# (https://github.com/erniecohen/dafny/issues/105).
+git-issues/git-issue-105-refinement-verify.dfy
+git-issues/git-issue-105-abstract-types.dfy
+git-issues/git-issue-105-abstract-errors.dfy
+git-issues/git-issue-105-abstract-synonym.dfy
+# A conversion from a newtype to a trait that it extends and that is not a reference type failed an
+# internal assertion of the verifier; the value is now boxed, as a datatype's is. Found with member
+# invariants, but the test runs without the option (https://github.com/erniecohen/dafny/issues/105).
+git-issues/git-issue-105-newtype-trait-cast.dfy
+# Eighth stage: newtypes (a newtype N with member invariants is a subset of "raw N"; the header
+# constraint moves into N, the witness rules, raw N is ghost, operations checked per invariant, native
+# types, compilation, and the instantiated and inferred base types of the newtype check); the gate is
+# gone, so trait-gates, raw-errors, verify and not-yet changed (https://github.com/erniecohen/dafny/issues/105).
+git-issues/git-issue-105-newtypes.dfy
+git-issues/git-issue-105-newtype-witness-errors.dfy
+git-issues/git-issue-105-newtype-errors.dfy
+git-issues/git-issue-105-newtype-witness-checks.dfy
+git-issues/git-issue-105-newtype-generics.dfy
+git-issues/git-issue-105-newtype-native.dfy
+git-issues/git-issue-105-newtype-compile.dfy
+git-issues/git-issue-105-opaque.dfy
+git-issues/git-issue-105-auto-reveal.dfy
+git-issues/git-issue-105-false-proofs.dfy
+
 # With --refinement-renaming a refining declaration renames type parameters, out-parameters, results and the local names of in-parameters; named arguments use the unchanged labels; a renaming that changes what an inherited name refers to is rejected; without the option the old errors remain; and a typed match pattern is inherited with a type of the refining module; a renaming from or to the name of a label that the inherited code reveals is rejected; and an abstract type with members that a synonym refines, and an iterator, take no renaming (https://github.com/erniecohen/dafny/issues/106, https://github.com/erniecohen/dafny/issues/107).
 git-issues/github-issue-106.dfy
 

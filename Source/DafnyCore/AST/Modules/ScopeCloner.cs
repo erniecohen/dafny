@@ -125,6 +125,7 @@ class ScopeCloner : DeepModuleSignatureCloner {
         members, CloneAttributes(d.Attributes), d.IsRefining);
       otd.TerminationContract = d.TerminationContract;
       otd.CardinalityParentObligations = based.CardinalityParentObligations;
+      otd.ProvidedOnlyViewOf = d;
       based = otd;
       ExistingOperatorClones?.Register(d, based);
       based.CardinalityViewOf = d;

@@ -387,9 +387,12 @@ namespace Microsoft.Dafny {
         } else {
           var od = (AbstractTypeDecl)d;
           postTasks.Enqueue(() => {
-            // check that od's type characteristics are respected by nw's
+            // check that od's type characteristics are respected by nw's. Issue 105: by the type that the name of
+            // nw denotes, which for a declaration with member invariants is its derived subset type, so that the
+            // refinement keeps a promise of od's characteristics with a witness.
             var newType = UserDefinedType.FromTopLevelDecl(nw.Origin,
-              nw is ClassLikeDecl { NonNullTypeDecl: { } nonNullTypeDecl } ? nonNullTypeDecl : nw);
+              nw is ClassLikeDecl { NonNullTypeDecl: { } nonNullTypeDecl } ? nonNullTypeDecl
+              : nw is TopLevelDeclWithMembers { InvariantTypeDecl: { } invariantTypeDecl } ? invariantTypeDecl : nw);
             if (!CheckTypeCharacteristicsVisitor.CheckCharacteristics(od.Characteristics, newType, false, out var whatIsNeeded, out var hint, out var errorId)) {
               var typeCharacteristicsSyntax = od.Characteristics.ToString();
               Error(errorId, nw.Origin,
@@ -441,11 +444,12 @@ namespace Microsoft.Dafny {
         var (dn, nwn) = ((NewtypeDecl)d, (NewtypeDecl)nw);
         Contract.Assert(nwn.BaseType == null && nwn.Var == null &&
                         nwn.Constraint == null && nwn.Witness == null);
-        nwn.Var = dn.Var == null ? null : refinementCloner.CloneBoundVar(dn.Var, false);
+        // Issue 105: the clauses of the header as written, which the base may have moved to its invariants
+        nwn.Var = dn.WrittenVar == null ? null : refinementCloner.CloneBoundVar(dn.WrittenVar, false);
         nwn.BaseType = nwn.Var?.Type ?? refinementCloner.CloneType(dn.BaseType); // Preserve newtype invariant that Var.Type is BaseType
-        nwn.Constraint = dn.Constraint == null ? null : refinementCloner.CloneExpr(dn.Constraint);
-        nwn.WitnessKind = dn.WitnessKind;
-        nwn.Witness = dn.Witness == null ? null : refinementCloner.CloneExpr(dn.Witness);
+        nwn.Constraint = dn.WrittenConstraint == null ? null : refinementCloner.CloneExpr(dn.WrittenConstraint);
+        nwn.WitnessKind = dn.WrittenWitnessKind;
+        nwn.Witness = dn.WrittenWitness == null ? null : refinementCloner.CloneExpr(dn.WrittenWitness);
         nwPointer.Set(MergeClass((NewtypeDecl)nw, (NewtypeDecl)d));
       } else if (nw is NewtypeDecl) {
         // `.Basetype` will be set in AddDefaultBaseTypeToUnresolvedNewtypes
@@ -846,6 +850,17 @@ namespace Microsoft.Dafny {
         .AddRange(prev.CardinalityParentObligations.Select(refinementCloner.CloneType));
       nw.Attributes = refinementCloner.MergeAttributes(prev.Attributes, nw.Attributes);
 
+      // Member invariants (issue 105) are anonymous: an invariant of the refining declaration does not refine one of
+      // the refinement base, it is added to the inherited ones.  Number the refining declaration's invariants after
+      // the inherited ones, so that their reserved names differ and give the order of the conjuncts.
+      var inheritedInvariantCount = prev.Members.OfType<MemberInvariant>().Count();
+      if (inheritedInvariantCount != 0) {
+        var k = inheritedInvariantCount;
+        foreach (var invariant in nw.Members.OfType<MemberInvariant>()) {
+          invariant.NameNode.Value = MemberInvariant.NamePrefix + k++;
+        }
+      }
+
       // Create a simple name-to-member dictionary.  Ignore any duplicates at this time.
       var declaredNames = new Dictionary<string, int>();
       for (int i = 0; i < nw.Members.Count; i++) {
@@ -861,6 +876,13 @@ namespace Microsoft.Dafny {
           nw.Members.Add(nwMember);
         } else {
           var nwMember = nw.Members[index];
+          if (nwMember is MemberWitness && member is MemberWitness) {
+            // Issue 105: a witness of the refining declaration replaces the inherited one, which need not satisfy the
+            // invariants that the refining module adds.  It is checked against all of the invariants, like any
+            // witness.  The characteristics it gives the type are checked where the module uses the type, since a
+            // refining module resolves the code it inherits again.
+            continue;
+          }
           if (nwMember is ConstantField) {
             var newConst = (ConstantField)nwMember;
             var origConst = member as ConstantField;

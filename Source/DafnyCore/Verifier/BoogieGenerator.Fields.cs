@@ -172,7 +172,7 @@ namespace Microsoft.Dafny {
       Contract.Ensures(currentModule == null && codeContext == null && IsAllocContext == null && fuelContext == null);
 
       proofDependencies.SetCurrentDefinition(MethodVerboseName(decl.FullDafnyName, MethodTranslationKind.SpecWellformedness), null);
-      if (!InVerificationScope(decl)) {
+      if (!InVerificationScope(decl) && !AddedInvariantsInVerificationScope(decl)) {
         // Checked in other file
         return;
       }
