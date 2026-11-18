@@ -1465,6 +1465,14 @@ namespace Microsoft.Dafny {
           CheckWellformedStmtExpr(stmtExpr, wfOptions, locals, builder, etran, addResultCommands);
           addResultCommands = null;
           break;
+        case LemmaResultExpr lemmaResultExpr:
+          // The call that justifies the result is a statement in front of it (see CheckWellformedStmtExpr). The
+          // result itself has nothing to check but its arguments.
+          CheckWellformed(lemmaResultExpr.Receiver, wfOptions, locals, builder, etran);
+          foreach (var argument in lemmaResultExpr.Args) {
+            CheckWellformed(argument, wfOptions, locals, builder, etran);
+          }
+          break;
         case ITEExpr iteExpr: {
             ITEExpr e = iteExpr;
             CheckWellformed(e.Test, wfOptions, locals, builder, etran);
@@ -1710,6 +1718,8 @@ namespace Microsoft.Dafny {
       // expressions. However, here, we're also having to translate e.S, which is a
       // Statement. Since statement translation (in particular, translation of CallStmt's)
       // work directly on the global variable $Heap, we temporarily change its value here.
+      // The call statement of a lemma binding declares local variables, which go out of scope after that binding.
+      var previousTrackers = DefiniteAssignmentTrackers;
       statementExpressionDepth++;
       try {
         if (etran.UsesOldHeap) {
@@ -1727,6 +1737,13 @@ namespace Microsoft.Dafny {
       }
       finally {
         statementExpressionDepth--;
+      }
+
+      if (stmtExpr.LemmaBindingCall is { } lemmaBindingCall) {
+        // The expression of such a statement expression is a result of the call (see LetExpr.LemmaBinding), so
+        // this call is the only statement here.
+        AssumeLemmaBinding(lemmaBindingCall, wfOptions, locals, builder, etran);
+        DefiniteAssignmentTrackers = previousTrackers;
       }
 
       CheckWellformedWithResult(expression, wfOptions, locals, builder, etran, addResultCommands);

@@ -360,6 +360,9 @@ true - All class instances are raw pointers and need to be manually deallocated"
   public static readonly Option<bool> DecreasesOrders = new("--decreases-orders", () => false,
     "Allow a decreases-clause component 'e by O', where O is a closed ghost expression of the trait type Std.Termination.Orders.Wfo<T> from the standard library and e has type T; a call or loop iteration must make O.gt(old e, e) true or leave e unchanged. Requires --type-system-refresh and --general-traits=datatype or full. With --modular-termination, such components are also allowed in {:global} and {:callback} bounds, and the orders library is verified with the program. Disabled by default.");
 
+  public static readonly Option<bool> LemmaBindings = new("--lemma-bindings", () => false,
+    "Allow an expression 'var y1, ..., yk := L(args); e', where L is a lemma with k out-parameters: the call is checked as a lemma call statement is, and in e the variables denote results that satisfy L's postcondition. The results are a fixed function of the lemma, its arguments and, if L's postcondition reads the heap, the heap, so two bindings of the same lemma at equal arguments in the same heap are equal. A function that binds the results must be allowed to read what the postcondition reads. The bound variables are ghost. The lemma must not be a twostate, least, greatest or prefix lemma, its out-parameter types must not contain references, and its postcondition must be an expression that a function could contain. Requires --type-system-refresh. Disabled by default.");
+
   public static readonly Option<bool> LegacyDecreasesOrder = new("--legacy-decreases-order", () => false,
     "Use the legacy, unsound decreases-tuple comparison for migration and comparison only.") { IsHidden = true };
 
@@ -956,6 +959,9 @@ NoGhost - disable printing of functions, ghost methods, and proof
       (reporter, origin, prefix, option, localValue, libraryValue) =>
         OptionCompatibility.OptionLibraryImpliesLocalError(reporter, origin, prefix, option, localValue, libraryValue ?? false));
     OptionRegistry.RegisterOption(DecreasesOrders, OptionScope.Cli);
+    // A library is resolved again by its client, with the client's value of the option. So a client of a library
+    // that binds the results of a lemma needs the option as well, and without it gets the library's bindings rejected.
+    OptionRegistry.RegisterOption(LemmaBindings, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacyDecreasesOrder, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacyReadingFunctionsInDatatypes, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacyNoncanonicalMapPayloads, OptionScope.Cli);
