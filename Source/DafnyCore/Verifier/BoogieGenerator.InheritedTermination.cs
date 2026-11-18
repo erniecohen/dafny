@@ -76,10 +76,10 @@ namespace Microsoft.Dafny {
     }
 
     /// <summary>
-    /// Whether a refining module must make the termination checks of the calls that "declaration", a member or an
-    /// iterator copied from its refinement base, makes to members of its own SCC, because the SCC is not inherited
-    /// unchanged.  The pipeline then schedules the copy, and the asserts of its body other than those checks stay
-    /// assumed.  The hidden --legacy-inherited-termination-checks restores the old, unsound rule.
+    /// Whether a refining module must check termination in an inherited body: either its local SCC has changed,
+    /// or global/callback bounds require checking calls against the refined contracts and dispatch effects.
+    /// The pipeline schedules the copy; unrelated assertions in its body remain assumed. The legacy switches
+    /// independently restore the old local-SCC and modular-termination rules.
     /// </summary>
     public static bool MustCheckInheritedTermination(Declaration declaration, DafnyOptions options) {
       var module = declaration switch {
@@ -87,11 +87,43 @@ namespace Microsoft.Dafny {
         IteratorDecl iterator => iterator.EnclosingModuleDefinition,
         _ => null
       };
-      if (module == null || options.Get(CommonOptionBag.LegacyInheritedTerminationChecks) ||
-          !declaration.Origin.IsInherited(module)) {
+      if (module == null || !declaration.Origin.IsInherited(module)) {
+        return false;
+      }
+      // Global and callback bounds are checked against the refined program, not just its local SCC.
+      // Refinement can introduce a bound through a new parent trait, or change the contracts and
+      // dispatch effects of callees while leaving this body and its own bound unchanged (#493).
+      // Schedule the inherited body even when no ordinary recursive edge needs to be rechecked.
+      if (ModularTermination.RulesEnabled(options) &&
+          (TerminationVertices(declaration).Any(vertex =>
+            ModularTermination.HasGlobalBound(vertex) || ModularTermination.HasCallbackBounds(vertex)) ||
+           UsesBoundedCallable(declaration))) {
+        return true;
+      }
+      if (options.Get(CommonOptionBag.LegacyInheritedTerminationChecks)) {
         return false;
       }
       return TerminationVertices(declaration).Any(vertex => IsRecursive(vertex) && !InheritedRecursionUnchanged(vertex));
+    }
+
+    // Even a caller at TOP must check a bounded argument against a callee's callback contract.
+    // That contract can be acquired through refinement while this caller's signature stays unchanged.
+    private static bool UsesBoundedCallable(Declaration declaration) {
+      var pending = new Stack<INode>([declaration]);
+      var seen = new HashSet<INode>();
+      while (pending.TryPop(out var node)) {
+        if (!seen.Add(node)) {
+          continue;
+        }
+        if (node is Type type && BoundedCallables.Payload(type) != null ||
+            node is Expression { Type: { } expressionType } && BoundedCallables.Payload(expressionType) != null) {
+          return true;
+        }
+        foreach (var child in node.Children) {
+          pending.Push(child);
+        }
+      }
+      return false;
     }
 
     /// <summary>

@@ -1,0 +1,4 @@
+github-issue-493.dfy(18,9): Error: decreases clause might not decrease (the dispatched callee has no 'decreases {:global}' bound, so it is TOP, above the caller's bound; declare a bound on it)
+github-issue-493.dfy(25,7): Related location: refining module
+
+Dafny program verifier finished with 7 verified, 1 error

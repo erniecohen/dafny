@@ -121,7 +121,8 @@ public partial class BoogieGenerator {
       new Dictionary<IVariable, Expression>(), new Dictionary<TypeParameter, Type>(), etranCurrent, oldCaller, builder, false,
       InsideLambda
         ? "--modular-termination: the bound of the bounded value must be below the bound under which the enclosing lambda runs"
-        : "--modular-termination: the bound of the bounded value must be below the caller's 'decreases {:global}' bound");
+        : "--modular-termination: the bound of the bounded value must be below the caller's 'decreases {:global}' bound",
+      modularCheck: true);
   }
 
   /// <summary>
@@ -163,7 +164,7 @@ public partial class BoogieGenerator {
         BoundedCallables.IsCertify(callee)
           ? $"--modular-termination: {what} must not exceed the bound it is certified under"
           : $"--modular-termination: {what} must not exceed the 'decreases {{:callback}}' bound of the parameter '{callable.Ins[i].Name}' it is passed for",
-        nonincrease: true);
+        nonincrease: true, modularCheck: true);
     }
   }
 

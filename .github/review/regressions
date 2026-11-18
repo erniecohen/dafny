@@ -852,3 +852,7 @@ git-issues/github-issue-211-runtime-trust.dfy
 git-issues/github-issue-211-checked-std.dfy
 git-issues/github-issue-211-recorded-wildcards.dfy
 git-issues/github-issue-211-by-use.dfy
+
+# Inherited bodies acquire or retain modular bounds in the refined context; recheck their calls (https://github.com/erniecohen/dafny/issues/493).
+git-issues/github-issue-493.dfy
+git-issues/github-issue-493-refinement.dfy

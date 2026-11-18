@@ -84,7 +84,7 @@ public partial class BoogieGenerator {
                             Dictionary<IVariable, Expression> directSubstMap,
                             Dictionary<TypeParameter, Type> typeMap,
                             ExpressionTranslator etranCurrent, bool oldCaller, BoogieStmtListBuilder builder, bool inferredDecreases, string hint,
-                            ExpressionTranslator etranCallee = null, bool nonincrease = false) {
+                            ExpressionTranslator etranCallee = null, bool nonincrease = false, bool modularCheck = false) {
     Contract.Requires(tok != null);
     Contract.Requires(Cce.NonNullElements(contextDecreases));
     Contract.Requires(Cce.NonNullElements(calleeDecreases));
@@ -92,6 +92,12 @@ public partial class BoogieGenerator {
     Contract.Requires(etranCurrent != null);
     Contract.Requires(builder != null);
     etranCallee ??= etranCurrent;
+
+    // A refinement can change a global/callback bound or a callee's dispatch effect. The base
+    // did not necessarily establish this modular obligation, even if it checked the same body.
+    if (modularCheck && tok.IsInherited(currentModule)) {
+      tok = new ForceCheckOrigin(tok);
+    }
 
     // The interpretation of the given decreases-clause expression tuples is as a lexicographic tuple, extended into
     // an infinite tuple by appending TOP elements.  The TOP element is strictly larger than any other value given
@@ -283,7 +289,7 @@ public partial class BoogieGenerator {
       AtMost(tok, callerBound, calleeBound, out contextBound, out comparedBound);
     }
     CheckCallTermination(tok, contextBound, comparedBound, null, receiverReplacement, substMap, directSubstMap, typeMap,
-      etranCurrent, oldCaller, builder, false, hint, etranCallee, nonincrease);
+      etranCurrent, oldCaller, builder, false, hint, etranCallee, nonincrease, modularCheck: true);
   }
 
   /// <summary>
@@ -529,7 +535,7 @@ public partial class BoogieGenerator {
       CheckCallTermination(tok, contextBound, comparedBound, null, null, new Dictionary<IVariable, Expression>(),
         new Dictionary<IVariable, Expression>(), new Dictionary<TypeParameter, Type>(), etranCurrent, false, builder, false,
         $"modular termination: the 'decreases {{:callback}}' bound of '{formal.Name}' must not exceed that of the parameter it is passed for",
-        nonincrease: true);
+        nonincrease: true, modularCheck: true);
     }
   }
 
@@ -561,7 +567,8 @@ public partial class BoogieGenerator {
       new Dictionary<IVariable, Expression>(), new Dictionary<TypeParameter, Type>(), etranCurrent, oldCaller, builder, false,
       InsideLambda
         ? $"modular termination: the 'decreases {{:callback}}' bound of '{formal.Name}' must be below the bound under which the enclosing lambda runs"
-        : $"modular termination: the 'decreases {{:callback}}' bound of '{formal.Name}' must be below the caller's 'decreases {{:global}}' bound");
+        : $"modular termination: the 'decreases {{:callback}}' bound of '{formal.Name}' must be below the caller's 'decreases {{:global}}' bound",
+      modularCheck: true);
   }
 
   /// <summary>

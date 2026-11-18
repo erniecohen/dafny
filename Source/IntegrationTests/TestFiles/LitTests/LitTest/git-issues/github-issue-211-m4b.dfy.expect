@@ -97,7 +97,7 @@ github-issue-211-m4b-views-false.dfy(7,45): Error: assertion might not hold
 Dafny program verifier finished with 0 verified, 3 errors
 refinement, refresh false, consistent false
 
-Dafny program verifier finished with 1 verified, 0 errors
+Dafny program verifier finished with 2 verified, 0 errors
 refinement-bad, refresh false, consistent false
 github-issue-211-m4b-refinement-bad.dfy(8,9): Error: modular termination: the {:termination_closed} promise of 'Closed' is not established; its body, specifications or implicit evaluations can reach open dispatch, an unknown application or an imported General contract
 1 resolution/type errors detected in github-issue-211-m4b-refinement-bad.dfy
@@ -213,7 +213,7 @@ github-issue-211-m4b-views-false.dfy(7,45): Error: assertion might not hold
 Dafny program verifier finished with 0 verified, 3 errors
 refinement, refresh false, consistent true
 
-Dafny program verifier finished with 1 verified, 0 errors
+Dafny program verifier finished with 2 verified, 0 errors
 refinement-bad, refresh false, consistent true
 github-issue-211-m4b-refinement-bad.dfy(8,9): Error: modular termination: the {:termination_closed} promise of 'Closed' is not established; its body, specifications or implicit evaluations can reach open dispatch, an unknown application or an imported General contract
 1 resolution/type errors detected in github-issue-211-m4b-refinement-bad.dfy
@@ -329,7 +329,7 @@ github-issue-211-m4b-views-false.dfy(7,45): Error: assertion might not hold
 Dafny program verifier finished with 0 verified, 3 errors
 refinement, refresh true, consistent false
 
-Dafny program verifier finished with 1 verified, 0 errors
+Dafny program verifier finished with 2 verified, 0 errors
 refinement-bad, refresh true, consistent false
 github-issue-211-m4b-refinement-bad.dfy(8,9): Error: modular termination: the {:termination_closed} promise of 'Closed' is not established; its body, specifications or implicit evaluations can reach open dispatch, an unknown application or an imported General contract
 1 resolution/type errors detected in github-issue-211-m4b-refinement-bad.dfy
@@ -445,7 +445,7 @@ github-issue-211-m4b-views-false.dfy(7,45): Error: assertion might not hold
 Dafny program verifier finished with 0 verified, 3 errors
 refinement, refresh true, consistent true
 
-Dafny program verifier finished with 1 verified, 0 errors
+Dafny program verifier finished with 2 verified, 0 errors
 refinement-bad, refresh true, consistent true
 github-issue-211-m4b-refinement-bad.dfy(8,9): Error: modular termination: the {:termination_closed} promise of 'Closed' is not established; its body, specifications or implicit evaluations can reach open dispatch, an unknown application or an imported General contract
 1 resolution/type errors detected in github-issue-211-m4b-refinement-bad.dfy

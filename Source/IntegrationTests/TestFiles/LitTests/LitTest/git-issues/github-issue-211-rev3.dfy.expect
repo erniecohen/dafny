@@ -105,16 +105,18 @@ github-issue-211-rev3-bounded-param.dfy(13,64): Error: modular termination: in '
 1 resolution/type errors detected in github-issue-211-rev3-bounded-param.dfy
 a refinement gives a body that reaches a dispatch to a function its base left without one, which an inherited bounded caller calls: rejected in the base
 github-issue-211-rev3-refine-body.dfy(12,57): Error: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
+github-issue-211-rev3-refine-body.dfy(12,57): Error: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
+github-issue-211-rev3-refine-body.dfy(14,7): Related location: refining module
 
-Dafny program verifier finished with 4 verified, 1 error
+Dafny program verifier finished with 4 verified, 2 errors
 bodiless functions with a bound or a {:termination_closed} promise, called below it, and given bodies by a refinement: verifies, but for the assert false control
 github-issue-211-rev3-refine-body-ok.dfy(24,4): Error: assertion might not hold
 
-Dafny program verifier finished with 4 verified, 1 error
+Dafny program verifier finished with 5 verified, 1 error
 a refinement body above the bound of its function: rejected
 github-issue-211-rev3-refine-body-loopy.dfy(12,41): Error: decreases clause might not decrease (modular termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
 
-Dafny program verifier finished with 1 verified, 1 error
+Dafny program verifier finished with 2 verified, 1 error
 a refinement body that breaks a {:termination_closed} promise: rejected
 github-issue-211-rev3-refine-body-closed.dfy(13,39): Error: modular termination: the {:termination_closed} promise of 'K' is not established; its body, specifications or implicit evaluations can reach open dispatch, an unknown application or an imported General contract
 github-issue-211-rev3-refine-body-closed.dfy(16,17): Error: modular termination: the {:termination_closed} promise of 'K' is not established; its body, specifications or implicit evaluations can reach open dispatch, an unknown application or an imported General contract

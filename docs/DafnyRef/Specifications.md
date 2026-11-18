@@ -703,6 +703,13 @@ module Y {
 }
 ```
 
+Refinement checks inherited bodies against their global and callback bounds in the refined
+module, including bounds acquired through a new parent trait. The inherited calls must satisfy
+the refined contracts even when the refinement base had no bound. This includes forwarding
+bounded values from an unbounded caller to a refined callback contract. Unrelated assertions already
+checked by the refinement base remain assumed. `--legacy-no-modular-termination` restores the
+previous modular-termination behavior.
+
 Here `Y.F` inherits the bound `n` and calls `L.H(this, n)`, whose bound `n` is not larger;
 `L.H` makes the dispatched call at the smaller bound `n - 1`. Without the bound on `H`, or with
 `t.F(n)` in place of `t.F(n - 1)`, or with a larger bound such as `n + 1` on `H`, the program is
