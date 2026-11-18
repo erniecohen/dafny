@@ -1,0 +1,5 @@
+With `--decreases-orders`, a checked user implementation of `Wfo.aha` may apply its total chain
+parameter in the well-foundedness proof of an order used in modular-termination bounds. Ordinary
+calls still account for their actual chain argument, and the witness's postcondition and termination
+remain checked. Passing chains to ordinary helper parameters remains subject to the existing
+closed-code rules. The option remains disabled by default.

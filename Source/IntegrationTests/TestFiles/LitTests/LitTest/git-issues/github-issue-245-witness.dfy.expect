@@ -1,0 +1,27 @@
+user witness: local/imported global and callback bounds
+
+Dafny program verifier finished with 57 verified, 0 errors
+well-foundedness, strict-descent and nonvacuity controls
+github-issue-245-witness-verify.dfy(12,21): Error: a postcondition could not be proved on this return path
+github-issue-245-witness-verify.dfy(11,14): Related location: this is the postcondition that could not be proved
+github-issue-245-witness-verify.dfy(17,10): Error: decreases clause might not decrease (modular termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+github-issue-245-witness-verify.dfy(21,10): Error: decreases clause might not decrease (modular termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+github-issue-245-witness-verify.dfy(27,4): Error: assertion might not hold
+
+Dafny program verifier finished with 50 verified, 4 errors
+actual chains, function values and name spoofing
+github-issue-245-witness-resolve.dfy(38,39): Error: modular termination: the {:termination_closed} promise of 'Closed' is not established; its body, specifications or implicit evaluations can reach open dispatch, an unknown application or an imported General contract
+github-issue-245-witness-resolve.dfy(10,23): Error: modular termination: in 'Controls.Unknown', this may evaluate the chain argument of a well-foundedness witness, which can reach dispatch to implementations that other modules may provide and has no 'decreases {:global}' bound, so it cannot run under the caller's bound (same-bound rule)
+github-issue-245-witness-resolve.dfy(16,23): Error: modular termination: in 'Controls.Callback', this may evaluate the chain argument of a well-foundedness witness, which can reach dispatch to implementations that other modules may provide and has no 'decreases {:global}' bound, so it cannot run under the caller's bound (same-bound rule)
+github-issue-245-witness-resolve.dfy(21,34): Error: modular termination: in 'Controls.Value', a call through a function value needs the smaller-bound rule; rejected: the value's code is not known, so it has no bound, and the caller has one (pass the value for a parameter with a 'decreases {:callback}' bound)
+github-issue-245-witness-resolve.dfy(25,16): Error: modular termination: the 'decreases {:global}' bound of 'Controls.ValueBound' can reach dispatch to implementations that other modules may provide (bound -> a chain-stopping witness used as a function value); a bound may only use code that cannot reach one, since its value must not depend on the termination that the bounds establish
+github-issue-245-witness-resolve.dfy(35,25): Error: modular termination: in 'Controls.Passing', the value passed for parameter 'f' of 'Controls.Take', which has a 'decreases {:callback}' bound, must be a lambda expression, a parameter with such a bound, a function that reaches no dispatched call, or the function of a bounded value
+github-issue-245-witness-resolve.dfy(44,16): Error: modular termination: the 'decreases {:global}' bound of 'Controls.Fake' can reach dispatch to implementations that other modules may provide (bound -> 'Controls.aha' -> a call through a function value whose code is not known); a bound may only use code that cannot reach one, since its value must not depend on the termination that the bounds establish
+7 resolution/type errors detected in github-issue-245-witness-resolve.dfy
+verify-false: rejected as unknown code
+termination-false: rejected as unknown code
+axiom: rejected as unknown code
+extern: rejected as unknown code
+assumed: rejected as unknown code
+inherited-assumption: rejected as unknown code
+helper: rejected as unknown code

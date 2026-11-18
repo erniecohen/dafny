@@ -1049,3 +1049,6 @@ git-issues/github-issue-199-substitution.dfy
 git-issues/git-issue-504-dependence.dfy
 git-issues/git-issue-504-positive.dfy
 git-issues/git-issue-496.dfy
+
+# User chain-stopping witnesses in modular-termination bounds (issue 245).
+git-issues/github-issue-245-witness.dfy
