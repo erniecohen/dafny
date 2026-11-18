@@ -1,10 +1,10 @@
+// RUN: %verify --type-system-refresh=true --general-traits=datatype --general-newtypes=true --member-invariants --default-function-opacity opaque "%s" > "%t"
+// RUN: %verify --type-system-refresh=true --general-traits=datatype --general-newtypes=true --member-invariants --default-function-opacity autoRevealDependencies "%s" >> "%t"
+// RUN: %diff "%s.expect" "%t"
 // Member invariants (https://github.com/erniecohen/dafny/issues/105) are never opaque.  Under
 // --default-function-opacity, every other function gets a reveal lemma, but an invariant gets none,
 // so the invariants of traits that meet in a diamond, or that a trait inherits and adds to, do not
 // clash, and each invariant's well-formedness, which assumes the invariants before it, verifies.
-// RUN: %verify --member-invariants --default-function-opacity opaque "%s" > "%t"
-// RUN: %verify --member-invariants --default-function-opacity autoRevealDependencies "%s" >> "%t"
-// RUN: %diff "%s.expect" "%t"
 
 trait Top {
   const k: int
