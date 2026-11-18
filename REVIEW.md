@@ -570,6 +570,11 @@ names their bytes.
 
 ## Friction cases
 
+To assess an encoding change's proof cost across many namings, use the opt-in
+[`seed-sweep.py`](.github/review/seed-sweep.md) review tool. It reports per-member
+success fractions, resource-unit quantiles and unpaired distribution verdicts,
+retaining every run rather than judging a change by one seed.
+
 `friction/` holds small Dafny programs that show where a proof is much harder
 than it should be, as candidates for fixes here and as regression checks once
 fixed, and tips: workarounds for non-obvious blockers that are accepted as
