@@ -1303,6 +1303,13 @@ git-issues/github-issue-106.dfy	0	26 verified, 0 errors
 git-issues/github-issue-107.dfy	0	28 verified, 0 errors	
 git-issues/github-issue-1267.dfy	0	1 verified, 0 errors	
 git-issues/github-issue-191.dfy	2	3 verified, 0 errors	14,19
+git-issues/github-issue-199-conclusions.dfy	4	4 verified, 3 errors	30,31,39
+git-issues/github-issue-199-heap.dfy	4	38 verified, 14 errors	32,38,44,72,98,100,111,130,140,176,217,240,252,271
+git-issues/github-issue-199-opaque.dfy	4	8 verified, 4 errors	22,53,71,78
+git-issues/github-issue-199-substitution.dfy	4	10 verified, 5 errors	72,73,74,75,76
+git-issues/github-issue-199-termination.dfy	4	12 verified, 20 errors	18,27,31,39,43,45,51,55,62,67,77,81,91,97,106,110,120,123,137,168
+git-issues/github-issue-199-triggers.dfy	0	18 verified, 0 errors	
+git-issues/github-issue-199.dfy	4	84 verified, 15 errors	32,53,92,119,124,142,144,171,200,349,381,413,417,461,518
 git-issues/github-issue-205.dfy	0	89 verified, 0 errors	
 git-issues/github-issue-2174.dfy	0	17 verified, 0 errors	
 git-issues/github-issue-2230.dfy	0	2 verified, 0 errors	

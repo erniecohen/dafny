@@ -594,11 +594,30 @@ namespace Microsoft.Dafny {
                   bv.PreType = Type2PreType(bv.Type);
                 }
               }
+              var lemmaBindingFailed = false;
+              if (e.RHSs.Count == 1 && e.RHSs[0] is ApplySuffix applySuffix && !ReferenceEquals(letExpr, desugaredLetOrFail)) {
+                if (resolver.Options.Get(CommonOptionBag.LemmaBindings)) {
+                  // "var y1, ..., yk := L(args); body", where L is a lemma, binds results of L
+                  EnclosingInputParameterFormals.PushMarker();
+                  var previousEnclosingMethodCall = EnclosingMethodCall;
+                  var methodCallInfo = ResolveApplySuffix(applySuffix, resolutionContext, true);
+                  EnclosingInputParameterFormals.PopMarker();
+                  EnclosingMethodCall = previousEnclosingMethodCall;
+                  if (methodCallInfo != null) {
+                    var resultLet = ResolveLemmaBinding(e, applySuffix, methodCallInfo, resolutionContext);
+                    lemmaBindingFailed = resultLet == null;
+                    e = resultLet ?? e;
+                  }
+                } else if (applySuffix.Lhs is NameSegment or ExprDotName) {
+                  lemmaBindingHintOrigin = applySuffix.Lhs.Origin;
+                }
+              }
               foreach (var rhs in e.RHSs) {
                 ResolveExpression(rhs, resolutionContext);
               }
+              lemmaBindingHintOrigin = null;
               scope.PushMarker();
-              if (e.LHSs.Count != e.RHSs.Count) {
+              if (e.LHSs.Count != e.RHSs.Count && !lemmaBindingFailed) {
                 ReportError(letExpr, "let expression must have same number of LHSs (found {0}) as RHSs (found {1})", e.LHSs.Count, e.RHSs.Count);
               }
               var i = 0;
@@ -641,14 +660,16 @@ namespace Microsoft.Dafny {
               }
             }
             ResolveExpression(e.Body, resolutionContext);
-            ResolveAttributes(e, resolutionContext, false);
+            ResolveAttributes(letExpr, resolutionContext, false);
             scope.PopMarker();
+            e.PreType = e.Body.PreType; // "e" is "letExpr" or, for a lemma binding with arguments, the body of "letExpr"
             letExpr.PreType = e.Body.PreType;
             break;
           }
         case LetOrFailExpr failExpr: {
             var e = failExpr;
             e.ResolvedExpression = DesugarElephantExpr(e, resolutionContext);
+            desugaredLetOrFail = e.ResolvedExpression;
             ResolveExpression(e.ResolvedExpression, resolutionContext);
             e.PreType = e.ResolvedExpression.PreType;
             Constraints.AddGuardedConstraint(() => {
@@ -2048,6 +2069,9 @@ namespace Microsoft.Dafny {
         if (!allowMethodCall) {
           // it's a method and method calls are not allowed in the given resolutionContext
           ReportError(tok, "expression is not allowed to invoke a {0} ({1})", member.WhatKind, member.Name);
+          if (member is Lemma && ReferenceEquals(tok, lemmaBindingHintOrigin)) {
+            ReportInfo(tok, "a lemma's results can be bound in an expression under --lemma-bindings");
+          }
           return null;
         }
         int suppliedTypeArguments = optTypeArguments == null ? 0 : optTypeArguments.Count;

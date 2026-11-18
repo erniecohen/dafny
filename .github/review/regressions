@@ -984,3 +984,21 @@ git-issues/git-issue-491-positive.dfy
 git-issues/git-issue-501.dfy
 
 git-issues/github-issue-492.dfy
+
+# Under --lemma-bindings, `var y1, ..., yk := L(args); e` binds results of the lemma L in an expression: the call is checked as a call statement, the results satisfy the postcondition and depend only on the arguments (and the heap the postcondition reads), and inadmissible lemmas and forms are rejected (https://github.com/erniecohen/dafny/issues/199).
+git-issues/github-issue-199.dfy
+git-issues/github-issue-199-heap.dfy
+git-issues/github-issue-199-termination.dfy
+git-issues/github-issue-199-opaque.dfy
+git-issues/github-issue-199-triggers.dfy
+git-issues/github-issue-199-forms.dfy
+git-issues/github-issue-199-conditions.dfy
+git-issues/github-issue-199-ghost.dfy
+git-issues/github-issue-199-off.dfy
+git-issues/github-issue-199-compile.dfy
+git-issues/github-issue-199-print.dfy
+git-issues/github-issue-199-library.dfy
+git-issues/github-issue-199-modular-termination.dfy
+git-issues/github-issue-199-referrers.dfy
+git-issues/github-issue-199-conclusions.dfy
+git-issues/github-issue-199-substitution.dfy

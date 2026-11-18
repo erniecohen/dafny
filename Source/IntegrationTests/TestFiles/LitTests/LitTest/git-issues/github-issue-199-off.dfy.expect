@@ -1,0 +1,31 @@
+github-issue-199-off.dfy(27,11): Error: expression is not allowed to invoke a lemma (Find)
+github-issue-199-off.dfy(31,17): Error: expression is not allowed to invoke a lemma (Find)
+github-issue-199-off.dfy(35,11): Error: expression is not allowed to invoke a method (M)
+github-issue-199-off.dfy(39,11): Error: expression is not allowed to invoke a lemma (Fallible)
+github-issue-199-off.dfy(39,2): Error: type of the receiver is not fully determined at this program point
+github-issue-199-off.dfy(39,2): Error: type of the receiver is not fully determined at this program point
+github-issue-199-off.dfy(39,2): Error: type of the receiver is not fully determined at this program point
+github-issue-199-off.dfy(43,15): Error: expression is not allowed to invoke a lemma (Find)
+8 resolution/type errors detected in github-issue-199-off.dfy
+github-issue-199-off.dfy(27,11): Error: expression is not allowed to invoke a lemma (Find)
+github-issue-199-off.dfy(27,11): Info: a lemma's results can be bound in an expression under --lemma-bindings
+github-issue-199-off.dfy(31,17): Error: expression is not allowed to invoke a lemma (Find)
+github-issue-199-off.dfy(31,17): Info: a lemma's results can be bound in an expression under --lemma-bindings
+github-issue-199-off.dfy(35,11): Error: expression is not allowed to invoke a method (M)
+github-issue-199-off.dfy(39,11): Error: expression is not allowed to invoke a lemma (Fallible)
+github-issue-199-off.dfy(39,2): Error: type of the receiver is not fully determined at this program point
+github-issue-199-off.dfy(39,2): Error: type of the receiver is not fully determined at this program point
+github-issue-199-off.dfy(39,2): Error: type of the receiver is not fully determined at this program point
+github-issue-199-off.dfy(43,15): Error: expression is not allowed to invoke a lemma (Find)
+8 resolution/type errors detected in github-issue-199-off.dfy
+github-issue-199-off.dfy(27,11): Error: expression is not allowed to invoke a lemma (Find)
+github-issue-199-off.dfy(31,17): Error: expression is not allowed to invoke a lemma (Find)
+github-issue-199-off.dfy(35,11): Error: expression is not allowed to invoke a method (M)
+github-issue-199-off.dfy(39,11): Error: expression is not allowed to invoke a lemma (Fallible)
+github-issue-199-off.dfy(39,2): Error: type of the receiver is not fully determined at this program point
+github-issue-199-off.dfy(39,2): Error: type of the receiver is not fully determined at this program point
+github-issue-199-off.dfy(39,2): Error: type of the receiver is not fully determined at this program point
+github-issue-199-off.dfy(43,15): Error: expression is not allowed to invoke a lemma (Find)
+8 resolution/type errors detected in github-issue-199-off.dfy
+(0,-1): Error: use of --lemma-bindings requires --type-system-refresh
+1 resolution/type errors detected in github-issue-199-off.dfy

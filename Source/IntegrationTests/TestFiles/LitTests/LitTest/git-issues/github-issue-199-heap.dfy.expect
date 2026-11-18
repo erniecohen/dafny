@@ -1,0 +1,24 @@
+github-issue-199-heap.dfy(32,14): Error: insufficient reads clause to read field; Consider adding 'reads c' or 'reads c`f' in the enclosing function specification for resolution
+github-issue-199-heap.dfy(15,17): Related location: this is in the postcondition of the lemma whose results are bound
+github-issue-199-heap.dfy(38,14): Error: insufficient reads clause to read field; Consider adding 'reads c' or 'reads c`f' in the enclosing function specification for resolution
+github-issue-199-heap.dfy(15,17): Related location: this is in the postcondition of the lemma whose results are bound
+github-issue-199-heap.dfy(44,14): Error: insufficient reads clause to read field; Consider adding 'reads c' or 'reads c`f' in the enclosing function specification for resolution
+github-issue-199-heap.dfy(15,17): Related location: this is in the postcondition of the lemma whose results are bound
+github-issue-199-heap.dfy(72,22): Error: insufficient reads clause to read field; Consider adding 'reads c' or 'reads c`f' in the enclosing function specification for resolution
+github-issue-199-heap.dfy(66,33): Related location: this is in the postcondition of the lemma whose results are bound
+github-issue-199-heap.dfy(98,4): Error: assertion might not hold
+github-issue-199-heap.dfy(100,4): Error: assertion might not hold
+github-issue-199-heap.dfy(111,2): Error: assertion might not hold
+github-issue-199-heap.dfy(130,40): Error: a precondition for this call could not be proved
+github-issue-199-heap.dfy(117,15): Related location: this is the precondition that could not be proved
+github-issue-199-heap.dfy(140,2): Error: assertion might not hold
+github-issue-199-heap.dfy(176,23): Error: insufficient reads clause to read field; Consider adding 'reads c' or 'reads c`f' in the enclosing function specification for resolution
+github-issue-199-heap.dfy(163,18): Related location: this is in the postcondition of the lemma whose results are bound
+github-issue-199-heap.dfy(217,2): Error: assertion might not hold
+github-issue-199-heap.dfy(240,19): Error: insufficient reads clause to read field; Consider adding 'reads c' or 'reads c`f' in the enclosing function specification for resolution
+github-issue-199-heap.dfy(15,17): Related location: this is in the postcondition of the lemma whose results are bound
+github-issue-199-heap.dfy(252,2): Error: assertion might not hold
+github-issue-199-heap.dfy(271,28): Error: insufficient reads clause to read field; Consider adding 'reads c' or 'reads c`g' in the enclosing function specification for resolution
+github-issue-199-heap.dfy(259,17): Related location: this is in the postcondition of the lemma whose results are bound
+
+Dafny program verifier finished with 38 verified, 14 errors
