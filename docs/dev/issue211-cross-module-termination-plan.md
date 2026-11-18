@@ -841,10 +841,10 @@ reachable false assertion in the companion control.
 
 The legacy source projection is unchanged. Its four verdict inventories and issue
 205 diagnostic locations describe that unchanged source; checked-projection counts
-belong to the separate catalog gate. The release validation below records the legacy rebuild and serial mutation
-evidence. Final option-off byte identity and resource-unit comparison remain release
-obligations. No gate is satisfied by a
-source-only run or by a skipped-verification artifact.
+belong to the separate catalog gate. The release validation below records the
+legacy rebuild, serial mutations and final option-off byte identity and
+resource-unit comparisons. No gate is satisfied by a source-only run or by a
+skipped-verification artifact.
 
 ### 7.8 Certification and bounded callables by use
 
@@ -863,8 +863,8 @@ axiomatic dependency in both resolvers. Existing artifact and substitution contr
 now exercise by-use activation. Tests of the strict legacy interpretation retain
 the migration flag explicitly. The focused matrix has 45 passing tests, including
 the updated library-admission controls. The obligation inventory and coverage test,
-`.doo` unit controls, and review-bookkeeping tests pass. The catalog reproduction, mutations and censuses are recorded below. Final
-byte/resource identity remains a release gate.
+`.doo` unit controls, and review-bookkeeping tests pass. The catalog reproduction,
+mutations, censuses and final byte/resource identity are recorded below.
 
 
 ### 7.9 Checked catalog, migration census and mutation evidence
@@ -918,12 +918,54 @@ produced-allowances control. Two cache tests in both mutants and issue 194 in th
 ceiling mutant fail from reused output directories and receive no mutation credit.
 These runs precede the by-use follow-up and do not establish whole-suite green.
 
-Eight further implementation sites have detecting focused controls, run serially:
+Ten further implementation sites have detecting focused controls, run serially:
 active-program cache bypass, generated reveal provenance, recorded wildcard
 serialization, runtime opt-in, runtime statement/context identity, complete dependency
-inventory, legacy order loading and intrinsic binary-signature initialization.
-The last mutation initially survived because a parsed binary function masked it;
+inventory, legacy order loading, intrinsic binary-signature initialization,
+library-option compatibility direction and omission of default opt-out metadata.
+The signature mutation initially survived because a parsed binary function masked it;
 the new unary formation and sole-false controls close that gap. All 32 by-use
-controls now pass in the unmutated build. No new axiom is introduced by these
-follow-ups. Final byte/resource comparisons and the owner's soundness declaration
-remain separate obligations.
+controls now pass in the unmutated build. The compatibility follow-up has a
+passing lit baseline and four passing `.doo` unit tests. Reversing library-option
+compatibility rejects the intended ordinary-library/legacy-client positive
+control; restoring default-false opt-out metadata fails the ordinary-manifest
+unit assertion. Both mutations are detected at their intended sites.
+No new axiom is introduced by these follow-ups. The final compatibility evidence
+is recorded next. The owner's soundness declaration remains a separate release
+obligation; the Reference Manual retains the experimental status.
+
+### 7.10 Final option-off identity and resource comparison
+
+Against prerequisite `b831b6b8c`, the final product passes
+`.github/review/termination-identity.py boogie` under both resolver configurations.
+The gate compares exit status, diagnostics and printed Boogie with its documented
+normalization of command-line headers, deprecation messages and stack frames.
+
+| Corpus | Sources | Translations | Option-off comparisons identical |
+| --- | ---: | ---: | ---: |
+| Suite | 3,241 | 19,446 | 6,482 / 6,482 |
+| Legacy standard library | 85 | 510 | 170 / 170 |
+
+The independent oracle identifies 219 suite sources as design users; 266 of
+their resolver-specific default translations change. None of the 3,022 suite
+nonusers or 85 legacy standard-library sources changes by default.
+
+The final resource gate uses Z3 5.1.0 and compares every per-proof
+`(name, outcome, resourceCount)` vector with `termination-identity.py ru`, as well
+as checking verdict equality. Resource figures below are ratios to the same
+prerequisite run; no absolute resource measurements are recorded here.
+
+| Scope | Proof results per run | Default / base | Option-off / base | Changed vectors |
+| --- | ---: | ---: | ---: | ---: |
+| 1,327 ordinary suite programs | 7,695 | 1.000000 | 1.000000 | 0 |
+| Legacy Std, additional axioms off | 2,207 | 1.000000 | 1.000000 | 0 |
+| Legacy Std, additional axioms on | 2,207 | 1.000000 | 1.000000 | 0 |
+
+All 1,327 suite verdict rows agree. The suite evidence contains 1,289 result
+logs and includes the same 19 out-of-resource proof results across eight programs
+on every build role; there are no program timeouts. This is an identity gate,
+not a claim that the suite is entirely verified. Each of the six Std passes has
+seven partition logs and 2,207 Correct results, with no errors or resource
+exhaustion. Both branch roles agree with the expected verdict inventory in each
+additional-axioms mode. These comparisons use the same final product as the
+catalog reproduction; only tests, CI gates and documentation follow it.
