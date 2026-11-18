@@ -209,7 +209,7 @@ def main():
                     contents = archive.read(entry)
                     if entry.filename == 'manifest.toml':
                         contents = (manifest[:binding.start()] + replacement + manifest[binding.end():]).encode()
-                    target.writestr(entry, contents)
+                    target.writestr(entry.filename, contents)
             invoke(['resolve', str(client), '--integer-bitwise', '--standard-libraries:false',
                     '--library', str(incompatible)],
                    'library-abi-' + name, 1, ['integer-bitwise reference ABI does not match this Dafny product version; rebuild the library with this version'])
