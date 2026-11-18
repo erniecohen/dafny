@@ -841,9 +841,9 @@ reachable false assertion in the companion control.
 
 The legacy source projection is unchanged. Its four verdict inventories and issue
 205 diagnostic locations describe that unchanged source; checked-projection counts
-belong to the separate catalog gate. Rebuilding and comparing the legacy binary,
-final option-off byte identity, resource-unit comparison, and serial whole-suite
-mutation evidence are still release obligations. No gate is satisfied by a
+belong to the separate catalog gate. The release validation below records the legacy rebuild and serial mutation
+evidence. Final option-off byte identity and resource-unit comparison remain release
+obligations. No gate is satisfied by a
 source-only run or by a skipped-verification artifact.
 
 ### 7.8 Certification and bounded callables by use
@@ -863,5 +863,67 @@ axiomatic dependency in both resolvers. Existing artifact and substitution contr
 now exercise by-use activation. Tests of the strict legacy interpretation retain
 the migration flag explicitly. The focused matrix has 45 passing tests, including
 the updated library-admission controls. The obligation inventory and coverage test,
-`.doo` unit controls, and review-bookkeeping tests pass. Final catalog reproduction,
-whole-suite mutations, censuses, and byte/resource identity remain release gates.
+`.doo` unit controls, and review-bookkeeping tests pass. The catalog reproduction, mutations and censuses are recorded below. Final
+byte/resource identity remains a release gate.
+
+
+### 7.9 Checked catalog, migration census and mutation evidence
+
+The final product passes the normal complete common producer (2,426 verified,
+zero errors), all six target producers, 27 direct client/audit controls, and 11
+embedded-catalog/backend controls. The latter preserve default legacy selection,
+reject either missing named trust opt-in, accept the opted-in client and reject its
+sole reachable false assertion. All five advertised backends erase the ghost
+allowances, and the five-family C# example executes. The M5a/M5b producers report
+934 and 1,064 verified, respectively, with zero errors; all 14 accompanying core
+controls pass. Runtime-dependent results remain conditional on their named runtime
+contracts, including termination, separately from the 18 ghost premises.
+
+The normal legacy rebuild reports 2,322 verified and zero errors. Its program entry
+is identical to the committed archive. Its entry contents also agree exactly with
+a normal prerequisite rebuild: both producers add the already existing default
+`extended-newtype-bases = false` to the manifest. This pre-existing metadata
+restamping difference is not a change in the retained program. Preserve the shipped
+legacy archive bytes, the four legacy inventories (2,207 Correct declaration rows
+each), and issue 205's unchanged source locations. The checked catalog has its own
+production and admission gates; it does not replace that legacy projection.
+
+The census uses the prerequisite's required migration flag before migration and
+by-use classification afterward, trying the refreshed resolver when necessary:
+
+| Suite census | Before | After |
+| --- | ---: | ---: |
+| Sources | 3,194 | 3,241 |
+| Resolve under default types | 2,297 | 2,315 |
+| Resolve only under refreshed types | 137 | 137 |
+| Unresolved under these bare census options | 760 | 789 |
+| Rejected same-bound sites | 68 | 68 |
+| Rejected callback sites | 32 | 32 |
+| Rejected bound sites | 11 | 11 |
+
+No previously resolved source becomes unresolved. The 47 added sources account
+for the difference: 18 resolve here and 29 are control inputs whose dedicated gates
+supply configurations, libraries or expected-error checks. This census is not a
+proof-verdict gate. Before migration the strict standard-library census reports
+435 dispatch sites with no public callee bound and cannot resolve the legacy
+foreign implementations. The checked projection resolves and reports 491 dispatch
+sites, all with public callee bounds, and zero rejected same-bound, callback or
+bound sites. The strict historical scan and current by-use scan collect different
+ordinary-program hints; their total hint counts are not a coverage comparison.
+
+The serial whole-suite protocol campaign has 2,235 passed / 173 failed / four
+not executed in its baseline, 2,232 / 176 / four for mutable allowance, and
+2,231 / 177 / four for mutable produced ceiling. Both mutants fail the intended
+produced-allowances control. Two cache tests in both mutants and issue 194 in the
+ceiling mutant fail from reused output directories and receive no mutation credit.
+These runs precede the by-use follow-up and do not establish whole-suite green.
+
+Eight further implementation sites have detecting focused controls, run serially:
+active-program cache bypass, generated reveal provenance, recorded wildcard
+serialization, runtime opt-in, runtime statement/context identity, complete dependency
+inventory, legacy order loading and intrinsic binary-signature initialization.
+The last mutation initially survived because a parsed binary function masked it;
+the new unary formation and sole-false controls close that gap. All 32 by-use
+controls now pass in the unmutated build. No new axiom is introduced by these
+follow-ups. Final byte/resource comparisons and the owner's soundness declaration
+remain separate obligations.
