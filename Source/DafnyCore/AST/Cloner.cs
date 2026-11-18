@@ -83,6 +83,7 @@ namespace Microsoft.Dafny {
         parentObligations = parentObligations.AddRange(iterator.Traits);
       }
       clone.CardinalityParentObligations = parentObligations.Select(CloneType).ToImmutableArray();
+      clone.ParentTraitsFromRefinementBase = d.ParentTraitsFromRefinementBase;
       // A generic clone may create a distinct refinement specialization. Only
       // a pure view cloner is allowed to identify it with the source declaration.
       operatorClones?.Register(d, clone);
@@ -273,6 +274,7 @@ namespace Microsoft.Dafny {
         }
       });
       result.TerminationContract = member.TerminationContract;
+      result.DeclaredUnderInheritedTraitAxioms = member.DeclaredUnderInheritedTraitAxioms;
       if (!isReference && !ReferenceEquals(member, result)) {
         operatorClones?.Register(member, result);
         OpaqueMemberRewriter.RecordCopy(member, result);

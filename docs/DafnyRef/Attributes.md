@@ -260,6 +260,9 @@ To prevent Dafny from running all these checks, one would use [`{:verify false}`
 
 The compiler will still emit code for an [`{:axiom}`](#sec-axiom), if it is a [`function`, a `method` or a `function by method`](#sec-function-declarations) with a body.
 
+With the option `--inherited-trait-axioms`, a bodiless ghost member of a trait that is marked `{:axiom}` is a [trait axiom](#sec-trait-axioms):
+the types that extend the trait inherit it without implementing it.
+
 ### 11.2.5. `{:compile}`
 The `{:compile}` attribute takes a boolean argument. It may be applied to
 any top-level declaration. If that argument is false, then that declaration

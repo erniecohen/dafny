@@ -130,6 +130,8 @@ public static class DafnyCommands {
     CommonOptionBag.SynonymRefinesAbstractType,
     CommonOptionBag.RefinementRenaming,
     CommonOptionBag.CopyImports,
+    CommonOptionBag.InheritedTraitAxioms,
+    CommonOptionBag.RefinementExtends,
     CommonOptionBag.DecreasesOrders,
     CommonOptionBag.LegacyDecreasesOrder,
     CommonOptionBag.LegacyReadingFunctionsInDatatypes,

@@ -59,6 +59,7 @@ cli	ignore-warnings	--ignore-warnings	System.CommandLine.Option`1[System.Boolean
 cli	include-runtime	--include-runtime	System.CommandLine.Option`1[System.Boolean]	command-setup	setup or another command; executes before/outside proof transport
 cli	include-runtime	--include-runtime	System.CommandLine.Option`1[System.Boolean]	command-setup	setup or another command; executes before/outside proof transport
 cli	include-test-runner	--include-test-runner	System.CommandLine.Option`1[System.Boolean]	command-setup	setup or another command; executes before/outside proof transport
+cli	inherited-trait-axioms	--inherited-trait-axioms	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	input	--input	System.CommandLine.Option`1[System.Collections.Generic.IEnumerable`1[System.String]]	command-setup	setup or another command; executes before/outside proof transport
 cli	input-format	--input-format	System.CommandLine.Option`1[Microsoft.Dafny.CommonOptionBag+InputTypeEnum]	command-setup	setup or another command; executes before/outside proof transport
 cli	invariant-constructor-inference	--invariant-constructor-inference	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
@@ -141,6 +142,7 @@ cli	raw-pointers	--raw-pointers	System.CommandLine.Option`1[System.Boolean]	comm
 cli	reads-clauses-on-methods	--reads-clauses-on-methods	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	referrers	--referrers	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	refinement-renaming	--refinement-renaming	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
+cli	refinement-extends	--refinement-extends	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	relax-definite-assignment	--relax-definite-assignment	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	report-file	--report-file	System.CommandLine.Option`1[System.String]	command-setup	setup or another command; executes before/outside proof transport
 cli	report-format	--report-format	System.CommandLine.Option`1[System.Nullable`1[Microsoft.Dafny.Auditor.Auditor+ReportFormat]]	command-setup	setup or another command; executes before/outside proof transport
