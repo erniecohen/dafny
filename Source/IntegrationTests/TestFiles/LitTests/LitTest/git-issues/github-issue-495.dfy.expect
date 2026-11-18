@@ -1,0 +1,26 @@
+github-issue-495.dfy(22,9): Error: result of operation might violate newtype constraint for 'NewSix'
+github-issue-495.dfy(31,15): Error: result of operation might violate newtype constraint for 'NewSix'
+github-issue-495.dfy(35,13): Error: result of operation might violate newtype constraint for 'NewSix'
+github-issue-495.dfy(39,13): Error: result of operation might violate newtype constraint for 'NewSix'
+github-issue-495.dfy(43,13): Error: result of operation might violate newtype constraint for 'NewSix'
+github-issue-495.dfy(47,4): Error: result of operation might violate newtype constraint for 'NewSix'
+github-issue-495.dfy(55,13): Error: result of operation might violate newtype constraint for 'NewSix'
+github-issue-495.dfy(55,13): Error: result of operation might violate newtype constraint for 'Y4'
+
+Dafny program verifier finished with 4 verified, 8 errors
+github-issue-495.dfy(22,9): Error: result of operation might violate newtype constraint for 'NewSix'
+github-issue-495.dfy(31,15): Error: result of operation might violate newtype constraint for 'NewSix'
+github-issue-495.dfy(35,13): Error: result of operation might violate newtype constraint for 'NewSix'
+github-issue-495.dfy(39,13): Error: result of operation might violate newtype constraint for 'NewSix'
+github-issue-495.dfy(43,13): Error: result of operation might violate newtype constraint for 'NewSix'
+github-issue-495.dfy(47,4): Error: result of operation might violate newtype constraint for 'NewSix'
+github-issue-495.dfy(55,13): Error: result of operation might violate newtype constraint for 'NewSix'
+github-issue-495.dfy(55,13): Error: result of operation might violate newtype constraint for 'Y4'
+
+Dafny program verifier finished with 4 verified, 8 errors
+
+Dafny program verifier finished with 13 verified, 0 errors
+
+Dafny program verifier finished with 13 verified, 0 errors
+
+Dafny program verifier finished with 4 verified, 0 errors
