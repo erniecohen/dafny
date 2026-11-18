@@ -65,10 +65,15 @@ def capture(args):
                    "--verification-time-limit", "120", "--resource-limit", "16000000",
                    "--type-system-refresh", "--general-traits=datatype", "--general-newtypes",
                    "--allow-warnings", "--show-snippets:false", "--use-basename-for-filename",
-                   "--solver-path", str(args.solver.resolve()),
-                   "--boogie", "/deterministicLiteralHashes:1", "--boogie", "/restartProver",
-                   "--solver-log", str(active / "@PROC@.smt2"),
-                   "--log-format", "csv;LogFileName=" + str(active / "resources.csv")] + inputs
+                   "--solver-path", str(args.solver.resolve())]
+        # Imported .doo files require the manifest's original Boogie option list.
+        # Main-library/source-only cases can request deterministic literal hashes
+        # and a fresh prover explicitly; target libraries keep native defaults.
+        # Target-specific projects import a library whose manifest records no extra Boogie flags.
+        if not name.startswith("library-"):
+            command += ["--boogie", "/deterministicLiteralHashes:1", "--boogie", "/restartProver"]
+        command += ["--solver-log", str(active / "@PROC@.smt2"),
+                    "--log-format", "csv;LogFileName=" + str(active / "resources.csv")] + inputs
         print(args.name, name, flush=True)
         with (active / "stdout").open("wb") as stdout, (active / "stderr").open("wb") as stderr:
             result = subprocess.run(command, stdout=stdout, stderr=stderr, timeout=7200)
