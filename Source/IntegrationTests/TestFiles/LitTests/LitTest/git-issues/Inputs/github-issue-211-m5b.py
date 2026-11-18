@@ -89,14 +89,14 @@ def run(name, args, expected_exit, diagnostic=None, options=None):
 
 def build(name, sources, *extra, expected_exit=0, diagnostic=None):
     target = doo(name)
-    run('build ' + name, ['build', '-t:lib', '--modular-termination'] + list(sources) + ['--output=' + target] +
+    run('build ' + name, ['build', '-t:lib'] + list(sources) + [write('certificate-request', 'module CertificateRequest { const {:termination_closed} Enabled: bool := true }')] + ['--output=' + target] +
         list(extra), expected_exit, diagnostic)
     if (expected_exit == 0) != Path(target).exists():
         failures.append('build %s: library file %s' % (name, 'missing' if expected_exit == 0 else 'written'))
 
 
 def verify(name, libraries, client, expected_exit, diagnostic=None, extra=()):
-    args = ['verify', '--modular-termination']
+    args = ['verify']
     for library in libraries:
         args += ['--library', library]
     return run(name, args + [client] + list(extra), expected_exit, diagnostic)
@@ -214,7 +214,7 @@ verify('client not opted in', [doo('trusted')], CLIENT, 1,
        'and 8 more; use --modular-termination-trust:standard-library to admit it')
 verify('client trust none', [doo('trusted')], CLIENT, 1, 'use --modular-termination-trust:standard-library',
        extra=['--modular-termination-trust:none'])
-run('client audit', ['audit', '--modular-termination', trust, '--library', doo('trusted'), CLIENT], 0,
+run('client audit', ['audit', trust, '--library', doo('trusted'), CLIENT], 0,
     'the library relies on the trusted premise Std.Axioms.Reals.Complete (lemma) of the standard-library trust list',
     options=audit_common)
 

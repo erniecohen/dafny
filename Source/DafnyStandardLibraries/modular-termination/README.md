@@ -1,13 +1,16 @@
-# The certified standard-library core under `--modular-termination`
+# The certified standard-library core
 
-Under the opt-in option `--modular-termination`
-([issue 211](https://github.com/erniecohen/dafny/issues/211)), Dafny admits a library only as a
-`.doo` file whose termination record shows that its own program was completely verified, with no
-unchecked premise.  The bundled standard library carries no record, so it is rejected under the
-option.  This directory is milestone M5a of the design
+A library that uses the checked design of termination across modules
+([issue 211](https://github.com/erniecohen/dafny/issues/211)) needs a complete `.doo`
+certificate. This core requests certification with the literal Closed declaration in
+`CheckedCore.dfy`; it needs no migration flag. The record shows that its whole program
+was verified without unchecked premises. Ordinary libraries remain usable as TOP code
+in clients, but cannot supply unchecked dependencies of a complete certificate.
+
+This directory is milestone M5a of
 [`docs/dev/design/211-m4b-library-openness.md`](../../../docs/dev/design/211-m4b-library-openness.md)
-(section 13, "Std migration"): the part of `src/Std` that can be certified as it is, without
-changing a line of it.
+(section 13, "Std migration"): the part of `src/Std` that can be certified without
+changing its source. The expanded and checked overlays below have separate trust boundaries.
 
 ## Building it
 
@@ -28,7 +31,7 @@ Load the library with `--library` and leave the bundled standard library out
 change what a proof means, which the record lists; for this core they are those of
 `src/Std/dfyconfig.toml`:
 
-    dafny verify --modular-termination --library:DafnyStandardLibraries-modular-termination.doo \
+    dafny verify --library:DafnyStandardLibraries-modular-termination.doo \
       --type-system-refresh --general-traits=datatype --general-newtypes \
       --reads-clauses-on-methods --enforce-determinism program.dfy
 
@@ -93,3 +96,53 @@ The project sets `--modular-termination-trust:standard-library`, and a client of
 set it too, or the library is refused; the client's verification summary then says how many trusted
 premises its results assume, and `dafny audit` lists each of them.  Without the option a client
 admits only premise-free libraries, and the core built from `dfyconfig.toml` is unchanged.
+
+
+## Checked Actions and complete common source (M5)
+
+`overlay/build-source.py` materializes a separate, reviewed source projection. The
+legacy source and its binary remain the option-off library. The checked projection
+removes the twenty cross-module termination exemptions and checks public bounds.
+Constructors establish immutable ghost allowances; fresh-producing operations prove
+each result allowance strictly below an immutable ceiling. Virtual metrics still
+check local termination. The five stored callback fields carry `bounded` evidence.
+The three proof protocols have pure validity and allowance-bounded getters.
+
+The projection also replaces the Unicode character-conversion assumption with its
+proof, proves the JSON serializer by-methods, and repairs hexadecimal conversion's
+canonical alphabet: sixteen digits, with uppercase aliases in the conversion map.
+The checked JSON bound proof uses that sixteen-digit base. These changes do not
+add axioms. Existing ghost premises remain conditional on the separately selected
+M5b list, whose checked-source entries bind exact statements and contexts.
+
+Build with the normal complete producer, from `Source/DafnyStandardLibraries`:
+
+```
+make build-checked-standard-libraries Z3=path/to/z3
+```
+
+This verifies both the original and retained source before issuing each common or
+six-target certificate. Never use `--hidden-no-verify` for a checked artifact.
+Generated checked binaries are ignored: each is bound to the exact verifier and
+solver that produced it. Rebuild the pipeline after generation to embed them.
+`--standard-libraries` with either named standard-library trust list selects this distinct catalog; if the
+catalog has not been built, the error gives the build instruction. An existing
+common certificate from a different overlay recipe cannot be reused by the target
+builder. The retained source records the recipe digest.
+
+Target certificates additionally require the explicit
+`--modular-termination-runtime-trust:standard-library` opt-in, empty by default.
+Every assumed runtime contract, including termination and effects, is named in
+`Source/DafnyCore/ModularTerminationRuntimeContracts.tsv`, bound to its statement
+and context, retained in the certificate, and printed in verification/audit output.
+It is separate from `--modular-termination-trust:standard-library`, which selects
+ghost premises. Neither list approves unnamed assumptions or changed contracts.
+See [the trust boundary](../../../docs/dev/design/211-m5b-trusted-premises.md).
+
+`github-issue-211-checked-std.dfy` exercises the five field families, a
+producer-of-producers client, hexadecimal conversion, and concrete verified witnesses
+for all three pure proof protocols under both resolvers.
+Each positive has a reachable-false companion. Hiding function bodies immediately
+before the false assertion keeps that control focused on consistency rather than
+unrelated unfolding. Certificate admission, target bundles and backend erasure
+are additional release gates; source-only verification is not their substitute.

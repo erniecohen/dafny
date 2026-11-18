@@ -19,9 +19,9 @@
 // --refinement-extends, so a library built without it loads for a client that does not use the
 // option and is refused for one that does.
 //
-// Not covered here: an inherited member that has no bound of its own, gets one from the added
-// parent, and makes a call that the bound forbids.  That is not rejected yet, with or without
-// --refinement-extends: https://github.com/erniecohen/dafny/issues/493.
+// An inherited member that acquires a bound from the added parent must also recheck its body.
+// The acquisition and refined-callee controls live in github-issue-493-refinement.dfy
+// (https://github.com/erniecohen/dafny/issues/493).
 
 module Tr {
   trait S {

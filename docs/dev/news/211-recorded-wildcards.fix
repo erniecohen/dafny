@@ -1,0 +1,1 @@
+Keep recorded multi-file libraries stable when reparsing their retained source by omitting generated wildcard-name comments. Ordinary source and library printing retain their existing output.

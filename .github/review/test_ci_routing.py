@@ -57,6 +57,14 @@ class RoutingTests(unittest.TestCase):
                 self.assertIn('renice 10 -p "$PPID" "$$"', first)
                 self.assertIn('ps -o nice= -p "$PPID"', first)
 
+    def test_mac_jobs_use_host_python(self):
+        for name, _ in mac_jobs():
+            workflow, job = name.split('/')
+            text = (ROOT / workflow).read_text()
+            body = re.search(r'^  ' + re.escape(job) + r':\n(.*?)(?=^  [\w-]+:|\Z)', text, re.M | re.S)[1]
+            with self.subTest(job=name):
+                self.assertNotIn('actions/setup-python@', body)
+
     def test_only_approved_library_version_routes_to_mac(self):
         text = (ROOT / 'review.yml').read_text()
         body = re.search(r'^  stdlib:\n(.*?)(?=^  [\w-]+:|\Z)', text, re.M | re.S)[1]

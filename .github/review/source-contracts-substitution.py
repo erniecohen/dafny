@@ -48,8 +48,7 @@ def main():
                 text = text.replace('VALUE', str(bool(index) * 1))
                 text = text.replace('CONSTRAINT', ('1' if index else '0') + ' <= x')
                 source.write_text(text.replace('CONTROL', ''))
-                common = [str(args.binary), 'verify', str(source), '--modular-termination',
-                          '--solver-path', str(args.solver), '--cores', '1', '--resource-limit', '16000000',
+                common = [str(args.binary), 'verify', str(source), '--solver-path', str(args.solver), '--cores', '1', '--resource-limit', '16000000',
                           '--verification-time-limit', '0', '--standard-libraries:false', '--show-snippets:false',
                           '--warn-unchecked-termination=false',
                           '--type-system-refresh:' + refresh, '--general-traits:legacy',

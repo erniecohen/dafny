@@ -17,6 +17,13 @@ public class CompilationData(
   public ISet<Uri> AlreadyVerifiedRoots { get; } = alreadyVerifiedRoots;
   public ISet<Uri> AlreadyCompiledRoots { get; } = alreadyCompiledRoots;
 
+  /// <summary>
+  /// The library roots that Dafny does not verify here and that were not verified under the rules of termination
+  /// across modules: source and .dll libraries, and .doo files whose manifest does not record
+  /// --legacy-no-modular-termination (https://github.com/erniecohen/dafny/issues/211, §6).
+  /// </summary>
+  public ISet<Uri> UncheckedTerminationRoots { get; set; } = new HashSet<Uri>();
+
   public List<Include> Includes = includes;
   // TODO move to DocumentAfterParsing once that's used by the CLI
   [FilledInDuringResolution]
@@ -39,4 +46,6 @@ public class CompilationData(
   /// </summary>
   public IReadOnlyList<(string Library, string TrustList, DafnyCore.ModularTerminationPremise Premise)>
     ModularTerminationPremises { get; set; } = [];
+  public IReadOnlyList<(string Library, string TrustList, DafnyCore.ModularTerminationPremise Premise)>
+    ModularTerminationRuntimePremises { get; set; } = [];
 }

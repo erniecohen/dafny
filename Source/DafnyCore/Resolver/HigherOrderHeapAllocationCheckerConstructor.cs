@@ -70,9 +70,12 @@ class HigherOrderHeapAllocationCheckerConstructor : ASTVisitor<IASTVisitorContex
         // raw functions, which the bounded function can hand out to code that applies them without a bound: a
         // value of type "bounded<nat, () -> (Y -> int)>" can return a function on "Y" that applies it again.
         // They are checked as if they appeared where the bounded type does.
+        // An argument-dependent order (issue 211) is applied only to compute a bound, and the bound given to
+        // certify is checked to apply no such order itself, so only its result type is searched.
         var function = t.TypeArgs[1].NormalizeExpand();
         var components = function.IsArrowType ? function.TypeArgs : [function];
-        return Occurs(obj, t.TypeArgs[0], left) || components.Exists(typeArg => Occurs(obj, typeArg, left));
+        var order = BoundedCallables.ArgumentOrderResult(t.TypeArgs[0]) ?? t.TypeArgs[0];
+        return Occurs(obj, order, left) || components.Exists(typeArg => Occurs(obj, typeArg, left));
       }
       if (left && Type.Equal_Improved(obj, t)) {
         return true;
@@ -147,9 +150,11 @@ class HigherOrderHeapAllocationCheckerConstructor : ASTVisitor<IASTVisitorContex
         // bounded values cannot form a cycle, and its top-level arrow is not searched.  Its order type and the
         // parameter and result types of its function may hold raw functions, which the bounded function can hand
         // to code that applies them without a bound, so they are searched where the bounded type is.
+        // Only the result type of an argument-dependent order (issue 211) is searched, as in the checker.
         var function = udt.TypeArgs[1].NormalizeExpand();
         var components = function.IsArrowType ? function.TypeArgs : [function];
-        return Occurs(udt.TypeArgs[0], left) ?? components.Select(component => Occurs(component, left)).FirstOrDefault(t => t != null);
+        var order = BoundedCallables.ArgumentOrderResult(udt.TypeArgs[0]) ?? udt.TypeArgs[0];
+        return Occurs(order, left) ?? components.Select(component => Occurs(component, left)).FirstOrDefault(t => t != null);
       }
       if (left && ((ObjDecl != null && decl == ObjDecl) || decl is TraitDecl || decl is AbstractTypeDecl)) {
         return decl;

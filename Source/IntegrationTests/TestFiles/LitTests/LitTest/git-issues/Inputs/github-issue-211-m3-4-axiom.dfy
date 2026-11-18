@@ -1,5 +1,5 @@
 // The contract of Count is that of github-issue-211-m3-4-lib.dfy, but its body only assumes it.
-module Lib {
+module Lib { const {:termination_closed} CertificateRequested: bool := true
   function Double(x: nat): nat { x + x }
 
   method Count(n: nat) returns (r: nat)

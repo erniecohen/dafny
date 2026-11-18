@@ -1,0 +1,11 @@
+closed-functions-refresh: PASS
+false-refresh: PASS
+visibility-only-refresh: PASS
+forged-provenance-refresh: PASS
+constant-evaluation-refresh: PASS
+closed-functions-legacy: PASS
+false-legacy: PASS
+visibility-only-legacy: PASS
+forged-provenance-legacy: PASS
+constant-evaluation-legacy: PASS
+Function reveal termination: 10/10 checks passed

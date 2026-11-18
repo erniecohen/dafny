@@ -31,6 +31,7 @@ public class ModularTerminationManifest {
   /// CurrentSchema, and is byte for byte what a build without a trust list writes.
   /// </summary>
   public const long PremisesSchema = 2;
+  public const long RuntimePremisesSchema = 3;
   public const long CurrentContractSchema = 1;
   public const string CompleteStatus = "complete";
 
@@ -48,6 +49,10 @@ public class ModularTerminationManifest {
   public string? TrustList { get; set; }
   public string? TrustListSha256 { get; set; }
   public string? PremisesSha256 { get; set; }
+  public string? RuntimeTrustList { get; set; }
+  public string? RuntimeTrustListSha256 { get; set; }
+  public string? RuntimePremisesSha256 { get; set; }
+  public List<ModularTerminationPremise>? RuntimePremises { get; set; }
   public Dictionary<string, string>? SemanticOptions { get; set; }
   public List<ModularTerminationContractRef>? Exports { get; set; }
   public List<ModularTerminationContractRef>? Imports { get; set; }
@@ -87,13 +92,15 @@ public sealed class ModularTerminationCompletion {
   public ModularTerminationSolver Solver { get; private init; } = null!;
   public string? TrustList { get; private init; }
   public IReadOnlyList<ModularTerminationPremise> Premises { get; private init; } = [];
+  public IReadOnlyList<ModularTerminationPremise> RuntimePremises { get; private init; } = [];
 
   public static ModularTerminationCompletion Failed(string failure) => new() { Failure = failure };
 
   public static ModularTerminationCompletion Complete(string programText, ModularTerminationContracts contracts,
     IReadOnlyList<ModularTerminationContractRef> imports, SortedDictionary<string, string> semanticOptions,
     string forkBuildId, ModularTerminationSolver solver, string? trustList = null,
-    IReadOnlyList<ModularTerminationPremise>? premises = null) =>
+    IReadOnlyList<ModularTerminationPremise>? premises = null,
+    IReadOnlyList<ModularTerminationPremise>? runtimePremises = null) =>
     new() {
       ProgramText = programText,
       Contracts = contracts,
@@ -102,7 +109,8 @@ public sealed class ModularTerminationCompletion {
       ForkBuildId = forkBuildId,
       Solver = solver,
       TrustList = premises is { Count: > 0 } ? trustList : null,
-      Premises = premises ?? []
+      Premises = premises ?? [],
+      RuntimePremises = runtimePremises ?? []
     };
 
   public ModularTerminationManifest CreateRecord() {
@@ -127,6 +135,13 @@ public sealed class ModularTerminationCompletion {
       record.TrustListSha256 = ModularTerminationTrustList.Sha256(TrustList!);
       record.Premises = Premises.OrderBy(p => p.Id, StringComparer.Ordinal).ToList();
       record.PremisesSha256 = ModularTerminationTrustList.PremisesSha256(record.Premises);
+    }
+    if (RuntimePremises.Count != 0) {
+      record.Schema = ModularTerminationManifest.RuntimePremisesSchema;
+      record.RuntimeTrustList = ModularTerminationRuntimeTrust.StandardLibrary;
+      record.RuntimeTrustListSha256 = ModularTerminationRuntimeTrust.Sha256();
+      record.RuntimePremises = RuntimePremises.OrderBy(p => p.Id, StringComparer.Ordinal).ToList();
+      record.RuntimePremisesSha256 = ModularTerminationTrustList.PremisesSha256(record.RuntimePremises);
     }
     record.RecordSha256 = ModularTerminationRecords.RecordSha256(ModularTerminationRecords.RecordedDooFileVersion, record);
     return record;
@@ -245,6 +260,13 @@ public static class ModularTerminationProducer {
     if (program.Compilation.Includes.Count != 0 && !options.VerifyAllModules) {
       return ModularTerminationCompletion.Failed("it includes files that this build did not verify (use --verify-included-files, or pass them as inputs)");
     }
+    // Ordinary libraries may be consumed as TOP code, but a portable complete certificate must
+    // account for every unverified dependency. Its functional assumptions and future replacement
+    // cannot be vouched for by the absence of termination annotations.
+    if (inputs.FirstOrDefault(f => f.ShouldNotVerify && f.TerminationRecord == null) is { } unrecorded) {
+      return ModularTerminationCompletion.Failed(
+        $"it depends on unrecorded library {options.GetPrintPath(unrecorded.Uri.LocalPath)}; verify the dependency with this program, or supply its complete modular certificate");
+    }
     if (program.AfterParsingClone == null) {
       return ModularTerminationCompletion.Failed("its parsed program was not retained");
     }
@@ -265,7 +287,7 @@ public static class ModularTerminationProducer {
       return ModularTerminationCompletion.Failed(inventoryFailure);
     }
 
-    var programText = new DooFile(program.AfterParsingClone).ProgramText;
+    var programText = new DooFile(program.AfterParsingClone, canonicalWildcards: true).ProgramText;
     var (reparsedText, reparseError) = await RoundTrip(options, programText, StoredProgramUri);
     if (reparsedText == null) {
       return ModularTerminationCompletion.Failed($"its retained program does not parse: {reparseError}");
@@ -287,6 +309,10 @@ public static class ModularTerminationProducer {
       }
       premises = sourcePremises!;
     }
+    var (runtimePremises, runtimeFailure) = RuntimePremises(program, contracts);
+    if (runtimeFailure != null) {
+      return ModularTerminationCompletion.Failed(runtimeFailure);
+    }
     // The record certifies the program that is stored, so that program is the one that must verify:
     // resolve and verify it again, with the same libraries and options, and take its inventory,
     // contracts, imports and premises from it.  This covers every way the printed program can differ
@@ -304,18 +330,42 @@ public static class ModularTerminationProducer {
         return ModularTerminationCompletion.Failed("the trusted premises of its stored program are not those of the verified program");
       }
     }
+    var (storedRuntimePremises, storedRuntimeFailure) = RuntimePremises(stored, contracts);
+    if (storedRuntimeFailure != null) {
+      return ModularTerminationCompletion.Failed($"in its stored program, {storedRuntimeFailure}");
+    }
+    if (storedRuntimePremises.Count != runtimePremises.Count ||
+        storedRuntimePremises.Zip(runtimePremises).Any(p => !p.First.SameAs(p.Second))) {
+      return ModularTerminationCompletion.Failed("the runtime premises of its stored program differ from its verified program");
+    }
     if (ModularTerminationRecords.Solver(options) is not { } solver) {
       return ModularTerminationCompletion.Failed("the Z3 binary that verified it could not be identified");
     }
     return ModularTerminationCompletion.Complete(programText, contracts, stored.Compilation.ModularTerminationImports,
       ModularTerminationRecords.SemanticOptions(options), ModularTerminationRecords.ForkBuildId(options), solver,
-      trustList, premises);
+      trustList, premises, runtimePremises);
   }
 
   /// <summary>
   /// The trusted premises of a program's own files, sorted by id, or why one does not match its entry in
   /// the selected trust list.
   /// </summary>
+  private static (List<ModularTerminationPremise> Premises, string? Failure) RuntimePremises(Program program,
+    ModularTerminationContracts contracts) {
+    if (ModularTerminationRuntimeTrust.Selected(program.Options) == null) {
+      return ([], null);
+    }
+    var evaluation = ModularTerminationTrustList.Evaluation.Compute(program, contracts,
+      program.Compilation.ModularTerminationImports, program.Compilation.UrisToVerify ?? new HashSet<Uri>(), runtime: true);
+    var premises = evaluation.Premises.OrderBy(kv => kv.Value.Id, StringComparer.Ordinal).ToList();
+    foreach (var (member, premise) in premises) {
+      if (ModularTerminationRuntimeTrust.Mismatch(premise) is { } mismatch) {
+        return ([], $"{Where(member.Origin)} {mismatch} (statement {premise.StatementSha256}, context {premise.ContextSha256})");
+      }
+    }
+    return (premises.Select(kv => kv.Value).ToList(), null);
+  }
+
   private static (List<ModularTerminationPremise>? Premises, string? Failure) Premises(Program program,
     ModularTerminationContracts contracts, IReadOnlyList<ModularTerminationContractRef> imports) {
     var evaluation = ModularTerminationTrustList.Evaluation.Compute(program, contracts, imports,
@@ -348,7 +398,10 @@ public static class ModularTerminationProducer {
     var reporter = new BatchErrorReporter(storedOptions);
     string FirstError() => reporter.AllMessagesByLevel[ErrorLevel.Error].FirstOrDefault()?.Message ?? "unknown error";
 
-    var files = inputs.Where(f => f.ShouldNotVerify)
+    // The libraries, and the orders library of --decreases-orders, which is verified with the program that loads it
+    // (DecreasesOrders.VerifiesOrdersLibrary) and is not part of the stored program: without it, an order of the
+    // stored program would not be the orders library's.
+    var files = inputs.Where(f => f.ShouldNotVerify || DecreasesOrders.VerifiesOrdersLibrary(options, f.Uri))
       .Append(DafnyFile.FromText(storedOptions, StoredProgramUri, programText)).ToList();
     var parsed = await new ProgramParser(Microsoft.Extensions.Logging.Abstractions.NullLogger<ProgramParser>.Instance,
       OnDiskFileSystem.Instance).ParseFiles("the stored program", files, reporter, System.Threading.CancellationToken.None);
@@ -429,14 +482,27 @@ public static class ModularTerminationProducer {
     bool Listed(INode? node) => trustList != null && node != null &&
                                 ModularTerminationTrustList.CandidateId(node) is { } id &&
                                 ModularTerminationTrustList.Find(trustList, id) != null;
+    bool RuntimeListed(INode? node) => ModularTerminationRuntimeTrust.Selected(program.Options) != null &&
+      ModularTerminationRuntimeTrust.CandidateId(node) is { } id && ModularTerminationRuntimeTrust.Find(id) != null;
     var urisToVerify = program.Compilation.UrisToVerify ?? new HashSet<Uri>();
     bool Owned(IOrigin? origin) => origin?.Uri != null && urisToVerify.Contains(origin.Uri);
     // Dafny's own assumption inventory, the one `dafny audit` reports: every assumption it finds in the
     // library's own program refuses the record.
     foreach (var assumption in program.Assumptions(null!)) {
       if (Owned(assumption.Tok) && AuditExemption(assumption) == null &&
-          !(assumption.desc == AuditAssumptionDescription.HasAxiomAttribute && Listed(assumption.decl))) {
-        return $"{Where(assumption.Tok)} has an assumption that 'dafny audit' reports: {AuditAssumption.UpdateVerbatim(assumption.desc.Issue, "", "").TrimEnd('.')}";
+          !(assumption.desc == AuditAssumptionDescription.HasAxiomAttribute && Listed(assumption.decl)) &&
+          !(RuntimeListed(assumption.decl) &&
+            (assumption.desc == AuditAssumptionDescription.HasAxiomAttribute ||
+             assumption.desc == AuditAssumptionDescription.ExternFunction ||
+             assumption.desc == AuditAssumptionDescription.ExternWithPrecondition ||
+             assumption.desc == AuditAssumptionDescription.ExternWithPostcondition ||
+             assumption.desc == AuditAssumptionDescription.NoBody(false)))) {
+        return $"{Where(assumption.Tok)} has an assumption that 'dafny audit' reports: {AuditAssumption.UpdateVerbatim(assumption.desc.Issue, "", "").TrimEnd('.')}" +
+          (ModularTerminationRuntimeTrust.CandidateId(assumption.decl) is { } id
+            ? ModularTerminationRuntimeTrust.Selected(program.Options) == null
+              ? $"; reviewed runtime contracts require explicit opt-in with {ModularTerminationRuntimeTrust.Option}"
+              : $"; runtime contract '{id}' is missing from the reviewed runtime list"
+            : "");
       }
     }
     // What the inventory does not report: premises outside method and function bodies, bodyless members
@@ -446,8 +512,19 @@ public static class ModularTerminationProducer {
       if (!Owned(node.Origin) || OpaqueMemberRewriter.IsGeneratedRevealLemma(node)) {
         continue;
       }
-      if (UncheckedPremise(node, Listed(node)) is { } premise) {
-        return $"{Where(node.Origin!)} {premise}";
+      // An extern namespace/class selects a foreign representation; its callable contracts are
+      // checked individually below. It supplies no exemption for any member or body assumption.
+      var runtimeContainer = ModularTerminationRuntimeTrust.Selected(program.Options) != null &&
+        node is ModuleDefinition or ClassDecl;
+      if (UncheckedPremise(node, Listed(node) || RuntimeListed(node), runtimeContainer) is { } premise) {
+        return $"{Where(node.Origin!)} {premise}" +
+          (ModularTerminationRuntimeTrust.CandidateId(node) is { } id
+            ? ModularTerminationRuntimeTrust.Selected(program.Options) == null
+              ? $"; reviewed runtime contracts require explicit opt-in with {ModularTerminationRuntimeTrust.Option}"
+              : $"; runtime contract '{id}' is missing from the reviewed runtime list"
+            : ModularTerminationRuntimeTrust.Selected(program.Options) == null &&
+              node is IAttributeBearingDeclaration declaration && Attributes.Contains(declaration.Attributes, "extern")
+              ? $"; reviewed runtime contracts require explicit opt-in with {ModularTerminationRuntimeTrust.Option}" : "");
       }
     }
     return null;
@@ -500,7 +577,7 @@ public static class ModularTerminationProducer {
   /// </summary>
   /// <param name="listed">The node is a candidate premise that the selected trust list names: its {:axiom}
   /// and its missing body are left to the digest match.</param>
-  private static string? UncheckedPremise(INode node, bool listed) {
+  private static string? UncheckedPremise(INode node, bool listed, bool runtimeContainer = false) {
     // A prefix predicate or lemma carries Dafny's own {:axiom}, for the axioms that Dafny generates to define it,
     // and copies of the attributes of its extreme predicate or lemma, which are checked there.
     if (node is IAttributeBearingDeclaration attributed && node is not (PrefixPredicate or PrefixLemma)) {
@@ -514,7 +591,7 @@ public static class ModularTerminationProducer {
       if (!listed && Attributes.Find(attributed.Attributes, "axiom") != null) {
         return "is marked {:axiom}, an unchecked premise";
       }
-      if (Attributes.Find(attributed.Attributes, "extern") != null) {
+      if (!listed && !runtimeContainer && Attributes.Find(attributed.Attributes, "extern") != null) {
         return "is marked {:extern}, whose implementation is not verified";
       }
       if (Attributes.Find(attributed.Attributes, "AssumeCrossModuleTermination") != null) {
@@ -575,7 +652,7 @@ public static class ModularTerminationProducer {
       return (null, reporter.AllMessagesByLevel[ErrorLevel.Error].First().Message);
     }
     var tw = new StringWriter { NewLine = "\n" };
-    new Printer(tw, parseOptions, PrintModes.Serialization).PrintProgram(parsed.Program, false);
+    new Printer(tw, parseOptions, PrintModes.Serialization, new PrintFlags(CanonicalWildcards: true)).PrintProgram(parsed.Program, false);
     return (tw.ToString(), null);
   }
 }
@@ -722,6 +799,15 @@ public static class ModularTerminationRecords {
         Line("premise", premise.Id, premise.Kind, premise.StatementSha256, premise.ContextSha256);
       }
     }
+    if (record.RuntimeTrustList != null || record.RuntimeTrustListSha256 != null ||
+        record.RuntimePremisesSha256 != null || record.RuntimePremises != null) {
+      Line("runtime_trust_list", record.RuntimeTrustList);
+      Line("runtime_trust_list_sha256", record.RuntimeTrustListSha256);
+      Line("runtime_premises_sha256", record.RuntimePremisesSha256);
+      foreach (var premise in record.RuntimePremises ?? []) {
+        Line("runtime_premise", premise.Id, premise.Kind, premise.StatementSha256, premise.ContextSha256);
+      }
+    }
     return Sha256(sb.ToString());
   }
 
@@ -731,7 +817,6 @@ public static class ModularTerminationRecords {
   /// all of them exactly.
   /// </summary>
   public static IEnumerable<Option> SemanticOptionList => [
-    CommonOptionBag.ModularTermination,
     CommonOptionBag.DecreasesOrders,
     CommonOptionBag.LemmaBindings,
     CommonOptionBag.LegacyDecreasesOrder,

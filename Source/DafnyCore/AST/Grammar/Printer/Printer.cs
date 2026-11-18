@@ -29,11 +29,18 @@ namespace Microsoft.Dafny {
   /// <param name="InterfaceOnly">Print only what a client of a declaration may depend on: method, lemma,
   /// constructor and iterator bodies and by-method bodies are omitted.  Used for the termination contracts
   /// of --modular-termination libraries; nothing else sets it.</param>
-  public record PrintFlags(bool UseOriginalDafnyNames = false, bool InterfaceOnly = false);
+  /// <param name="CanonicalWildcards">Omit per-file generated wildcard-name comments in a retained
+  /// modular certificate, whose merged source must print identically after reparsing.</param>
+  public record PrintFlags(bool UseOriginalDafnyNames = false, bool InterfaceOnly = false, bool CanonicalWildcards = false);
 
   public partial class Printer {
     private DafnyOptions options;
     private const int AtAttributesOnSameLineIndent = -1;
+
+    // Per-file parser counters are diagnostic names, not source bindings. A recorded
+    // library merges files, so retaining those comments would make reparsing unstable.
+    private string VariableDisplayName(IVariable variable) =>
+      printFlags.CanonicalWildcards && LocalVariable.HasWildcardName(variable) ? "_" : variable.DisplayName;
     static Printer() {
       DafnyOptions.RegisterLegacyBinding(PrintMode, (options, value) => {
         options.PrintMode = value;
@@ -349,7 +356,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
             wr.WriteLine();
           } else {
             wr.Write(" = ");
-            wr.Write(dd.WrittenVar.DisplayName);
+            wr.Write(VariableDisplayName(dd.WrittenVar));
             if (ShowType(dd.WrittenVar.Type)) {
               wr.Write(": ");
               PrintType(dd.BaseType);
@@ -462,6 +469,13 @@ NoGhost - disable printing of functions, ghost methods, and proof
               // so it's consistent to skip those modules here too. 
               continue;
             }
+            if (printMode == PrintModes.Serialization && DecreasesOrders.VerifiesOrdersLibrary(options, modDecl.Origin.Uri)) {
+              // Under --modular-termination the orders library is loaded by every program that uses it and verified
+              // with that program, so a library does not store a copy of it, which would be a second module of
+              // the same name, and whose orders would not be the orders library's
+              // (https://github.com/erniecohen/dafny/issues/266, M4).
+              continue;
+            }
 
             VisibilityScope scope = null;
             if (modDecl.Signature != null) {
@@ -541,7 +555,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
       var name = dd is InvariantTypeDecl invariantTypeDecl && InvariantTypeDecl.IsReferenceType(invariantTypeDecl.Owner) ? dd.Name + "?" : dd.Name;
       PrintClassMethodHelper("type", dd.Attributes, name + TPCharacteristicsSuffix(dd.Characteristics), dd.TypeArgs);
       wr.Write(" = ");
-      wr.Write(dd.Var.DisplayName);
+      wr.Write(VariableDisplayName(dd.Var));
       if (ShowType(dd.Var.Type)) {
         wr.Write(": ");
         PrintType(dd.Rhs);
@@ -1291,7 +1305,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
         wr.Write("nameonly ");
       }
       if (f.HasName) {
-        wr.Write("{0}: ", f.DisplayName);
+        wr.Write("{0}: ", VariableDisplayName(f));
       }
       PrintType(f.Type);
       if (f.DefaultValue != null) {
@@ -1351,11 +1365,11 @@ NoGhost - disable printing of functions, ghost methods, and proof
 
     /// <summary>
     /// Whether the printer writes callback clauses (--modular-termination, milestone M3b) as
-    /// "decreases {:callback g} E".  Only under the option, which is the only case in which the parser reads
-    /// that form back; otherwise a {:callback} attribute is printed as any other attribute, as before.
+    /// "decreases {:callback g} E".  Only while the rules are enabled, which is the only case in which the parser
+    /// reads that form back; otherwise a {:callback} attribute is printed as any other attribute, as before.
     /// </summary>
     private bool PrintsCallbackClauses(Attributes attrs) {
-      return options.Get(CommonOptionBag.ModularTermination) && ModularTermination.CallbackClauses(attrs).Any();
+      return ModularTermination.RulesEnabled(options) && ModularTermination.CallbackClauses(attrs).Any();
     }
 
     private void PrintOrdinaryDecreasesAttributes(Attributes a) {
@@ -1364,7 +1378,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
       }
       PrintOrdinaryDecreasesAttributes(a.Prev);
       if (!ModularTermination.IsGlobalClause(a) &&
-          !(options.Get(CommonOptionBag.ModularTermination) && ModularTermination.IsCallbackClause(a)) &&
+          !(ModularTermination.RulesEnabled(options) && ModularTermination.IsCallbackClause(a)) &&
           a is not UserSuppliedAtAttribute) {
         wr.Write(" ");
         PrintOneAttribute(a);

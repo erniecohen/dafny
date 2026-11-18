@@ -675,7 +675,7 @@ namespace Microsoft.Dafny {
       foreach (Expression p in m.Decreases.Expressions) {
         CheckWellformed(p, wfOptions, localVariables, builder, etran);
       }
-      if (options.Get(CommonOptionBag.ModularTermination)) {
+      if (ModularTerminationActive) {
         foreach (var p in ModularTermination.DeclaredGlobalBound(m) ?? []) {
           CheckWellformed(p, wfOptions, localVariables, builder, etran);
         }
@@ -1786,7 +1786,7 @@ namespace Microsoft.Dafny {
       AddOverrideTerminationChk(original, overryd, overryd.Decreases.Expressions, original.Decreases.Expressions,
         builder, etran, substMap, typeMap);
       // Under --modular-termination, an override's global bound may be no greater than its parent's.
-      if (options.Get(CommonOptionBag.ModularTermination) &&
+      if (ModularTerminationActive &&
           ModularTermination.DeclaredGlobalBound(original) is { } originalBound && GlobalBound(overryd) is { } overriddenBound) {
         AddOverrideTerminationChk(original, overryd, overriddenBound, originalBound, builder, etran, substMap, typeMap, true);
       }

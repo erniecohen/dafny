@@ -333,14 +333,14 @@ public partial class Parser {
   }
 
   /// <summary>
-  /// Under --modular-termination, returns the {:global} attribute, without arguments, that the
+  /// Unless --legacy-no-modular-termination is given, returns the {:global} attribute, without arguments, that the
   /// current decreases clause added in front of "before", so that the clause's expressions become
   /// its arguments: the clause's global bound.  The same for a {:callback f} attribute with its one
-  /// argument, whose expressions become the callback bound of f.  Returns null otherwise, and always when the option
-  /// is off, so that the clause is then parsed as it always was.
+  /// argument, whose expressions become the callback bound of f.  Returns null otherwise, and always under
+  /// --legacy-no-modular-termination, so that the clause is then parsed as it was in 4.11.
   /// </summary>
   Attributes GlobalDecreasesAttribute(Attributes current, Attributes before) {
-    if (!theOptions.Get(CommonOptionBag.ModularTermination)) {
+    if (!ModularTermination.RulesEnabled(theOptions)) {
       return null;
     }
     for (var a = current; a != null && a != before; a = a.Prev) {

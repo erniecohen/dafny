@@ -1,0 +1,1 @@
+Introduce immutable ghost entry allowances and produced-result ceilings for the checked standard-library overlay. A producer establishes its result's strict allowance bound separately from the existing virtual local-termination metrics.

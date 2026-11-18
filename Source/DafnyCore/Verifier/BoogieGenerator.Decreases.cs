@@ -84,7 +84,7 @@ public partial class BoogieGenerator {
                             Dictionary<IVariable, Expression> directSubstMap,
                             Dictionary<TypeParameter, Type> typeMap,
                             ExpressionTranslator etranCurrent, bool oldCaller, BoogieStmtListBuilder builder, bool inferredDecreases, string hint,
-                            ExpressionTranslator etranCallee = null, bool nonincrease = false) {
+                            ExpressionTranslator etranCallee = null, bool nonincrease = false, bool modularCheck = false) {
     Contract.Requires(tok != null);
     Contract.Requires(Cce.NonNullElements(contextDecreases));
     Contract.Requires(Cce.NonNullElements(calleeDecreases));
@@ -92,6 +92,12 @@ public partial class BoogieGenerator {
     Contract.Requires(etranCurrent != null);
     Contract.Requires(builder != null);
     etranCallee ??= etranCurrent;
+
+    // A refinement can change a global/callback bound or a callee's dispatch effect. The base
+    // did not necessarily establish this modular obligation, even if it checked the same body.
+    if (modularCheck && !options.Get(CommonOptionBag.LegacyNoModularTermination) && tok.IsInherited(currentModule)) {
+      tok = new ForceCheckOrigin(tok);
+    }
 
     // The interpretation of the given decreases-clause expression tuples is as a lexicographic tuple, extended into
     // an infinite tuple by appending TOP elements.  The TOP element is strictly larger than any other value given
@@ -238,7 +244,7 @@ public partial class BoogieGenerator {
                                Dictionary<IVariable, Expression> substMap, Dictionary<IVariable, Expression> directSubstMap,
                                Dictionary<TypeParameter, Type> typeMap, ExpressionTranslator etranCurrent,
                                BoogieStmtListBuilder builder, ExpressionTranslator etranCallee) {
-    if (!options.Get(CommonOptionBag.ModularTermination) || codeContext is not ICallable caller) {
+    if (!ModularTerminationActive || codeContext is not ICallable caller) {
       return;
     }
     var analysis = ModularTerminationAnalysis.Of(program);
@@ -254,9 +260,11 @@ public partial class BoogieGenerator {
     var callerBound = lambdaBound ?? GlobalBound(caller);
     // A caller without a bound is TOP: it may make any call, including one dispatched to a member without a bound
     // (rule 4 of revision 3), whose foreign implementations are leaves.  A member without a bound of a legacy
-    // {:termination false} trait keeps its earlier rule: its foreign implementations need not be leaves, so a
-    // dispatched call to it always fails.
-    var legacySlot = dispatched && calleeBound == null && callee.EnclosingClass is TraitDecl calleeTrait &&
+    // {:termination false} trait is TOP as well, and its foreign implementations are an unchecked premise (section 2.4
+    // of the plan), as in 4.11.  Only --modular-termination, which checks a program as if the legacy forms were absent,
+    // keeps its earlier rule: a dispatched call to it always fails.
+    var legacySlot = options.Get(CommonOptionBag.ModularTermination) &&
+                     dispatched && calleeBound == null && callee.EnclosingClass is TraitDecl calleeTrait &&
                      ModularTermination.IsExtensible(calleeTrait);
     if (callerBound == null && !legacySlot) {
       return;
@@ -266,12 +274,12 @@ public partial class BoogieGenerator {
       hint = legacySlot
         ? "the dispatched callee has no 'decreases {:global}' bound, which --modular-termination requires of a member of a {:termination false} trait"
         : calleeBound == null
-        ? "the dispatched callee has no 'decreases {:global}' bound, so under --modular-termination it is TOP, above the caller's bound; declare a bound on it"
-        : "--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's";
+        ? "the dispatched callee has no 'decreases {:global}' bound, so it is TOP, above the caller's bound; declare a bound on it"
+        : "modular termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's";
     } else {
       hint = calleeBound == null
-        ? "the callee can reach a call dispatched to implementations that other modules may provide, so under --modular-termination it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it"
-        : "--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's";
+        ? "the callee can reach a call dispatched to implementations that other modules may provide, so it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it"
+        : "modular termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's";
     }
     var oldCaller = lambdaBound == null && codeContext is MethodOrConstructor and not TwoStateLemma;
     var contextBound = callerBound ?? [];
@@ -281,7 +289,7 @@ public partial class BoogieGenerator {
       AtMost(tok, callerBound, calleeBound, out contextBound, out comparedBound);
     }
     CheckCallTermination(tok, contextBound, comparedBound, null, receiverReplacement, substMap, directSubstMap, typeMap,
-      etranCurrent, oldCaller, builder, false, hint, etranCallee, nonincrease);
+      etranCurrent, oldCaller, builder, false, hint, etranCallee, nonincrease, modularCheck: true);
   }
 
   /// <summary>
@@ -295,7 +303,7 @@ public partial class BoogieGenerator {
   /// </summary>
   ExpressionConverter RecursiveInstanceWithinGlobalBound(MethodOrConstructor m, Expression receiverReplacement,
                                                         Dictionary<IVariable, Expression> substMap) {
-    if (!options.Get(CommonOptionBag.ModularTermination) || GlobalBound(m) is not { } bound) {
+    if (!ModularTerminationActive || GlobalBound(m) is not { } bound) {
       // A lemma without a bound runs under TOP, and so may any call it makes.
       return null;
     }
@@ -364,7 +372,7 @@ public partial class BoogieGenerator {
   /// the translator of the code around the lambda, on entry: the lambda's body is checked in a heap of its own.
   /// </summary>
   void EnterLambda(LambdaExpr lambda, ICodeContext codeContext, ExpressionTranslator etran) {
-    if (!options.Get(CommonOptionBag.ModularTermination)) {
+    if (!ModularTerminationActive) {
       return;
     }
     var bound = modularTerminationLambdaBounds.GetValueOrDefault(lambda) ?? CurrentLambdaBound;
@@ -386,8 +394,19 @@ public partial class BoogieGenerator {
     modularTerminationLambdaStack.Add(bound);
   }
 
+  /// <summary>
+  /// The body of the lambda entered last is checked with its parameters renamed by "substMap"; an argument-dependent
+  /// bound (issue 211), which names them, is renamed with them.
+  /// </summary>
+  void RenameLambdaBound(Dictionary<IVariable, Expression> substMap) {
+    if (!ModularTerminationActive || CurrentLambdaBound is not { } bound) {
+      return;
+    }
+    modularTerminationLambdaStack[^1] = bound.ConvertAll(e => DecreasesByExpr.WithOrderOf(e, Substitute(e, null, substMap)));
+  }
+
   void ExitLambda() {
-    if (!options.Get(CommonOptionBag.ModularTermination)) {
+    if (!ModularTerminationActive) {
       return;
     }
     modularTerminationLambdaStack.RemoveAt(modularTerminationLambdaStack.Count - 1);
@@ -452,7 +471,7 @@ public partial class BoogieGenerator {
   /// </summary>
   void RegisterCallbackLambdas(MemberDecl callee, Expression receiver, List<Expression> args,
                                Dictionary<TypeParameter, Type> typeMap, ExpressionTranslator etran) {
-    if (!options.Get(CommonOptionBag.ModularTermination) || callee is not ICallable callable) {
+    if (!ModularTerminationActive || callee is not ICallable callable) {
       return;
     }
     Dictionary<IVariable, Expression> directSubstMap = null;
@@ -467,7 +486,16 @@ public partial class BoogieGenerator {
         }
       }
       modularTerminationLambdaBounds[lambda] = bound.ConvertAll(e => {
-        var actual = Substitute(e, receiver, directSubstMap, typeMap);
+        if (BoundedCallables.IsCertify(callee) && BoundedCallables.ArgumentOrderResult(e.Type.Subst(typeMap)) is { } result) {
+          // An argument-dependent bound b (issue 211): the body runs under b at the lambda's own arguments.  b is
+          // evaluated here, where the value is formed, and applied in the body's terms.
+          var b = Substitute(e, receiver, directSubstMap, typeMap);
+          var handle = new BoogieWrapper(etran.TrExpr(b), b.Type);
+          var apply = new ApplyExpr(lambda.Origin, handle, lambda.BoundVars.Select(bv => (Expression)Expression.CreateIdentExpr(bv)).ToList(),
+            Token.NoToken) { Type = result };
+          return DecreasesOrders.WithTypeOrder(apply, result);
+        }
+        var actual = DecreasesOrders.WithTypeOrder(Substitute(e, receiver, directSubstMap, typeMap), e.Type.Subst(typeMap));
         return DecreasesByExpr.WithOrderOf(actual, new BoogieWrapper(etran.TrExpr(actual), actual.Type));
       });
     }
@@ -484,7 +512,7 @@ public partial class BoogieGenerator {
                               Dictionary<TypeParameter, Type> typeMap, ExpressionTranslator etranCurrent,
                               BoogieStmtListBuilder builder) {
     CheckBoundedArguments(tok, callee, args, receiverReplacement, substMap, typeMap, etranCurrent, builder);
-    if (!options.Get(CommonOptionBag.ModularTermination) || codeContext is not ICallable caller ||
+    if (!ModularTerminationActive || codeContext is not ICallable caller ||
         callee is not ICallable callable) {
       return;
     }
@@ -498,7 +526,7 @@ public partial class BoogieGenerator {
       }
       // Both sides in the caller's terms: the callee's bound at the call's arguments, in the current state; the
       // caller's on entry.
-      var upper = calleeBound.ConvertAll(e => Substitute(e, receiverReplacement, substMap, typeMap));
+      var upper = calleeBound.ConvertAll(e => DecreasesOrders.WithTypeOrder(Substitute(e, receiverReplacement, substMap, typeMap), e.Type.Subst(typeMap)));
       var contextBound = upper;
       var comparedBound = lower;
       if (!UseConsistentDecreasesOrder) {
@@ -506,8 +534,8 @@ public partial class BoogieGenerator {
       }
       CheckCallTermination(tok, contextBound, comparedBound, null, null, new Dictionary<IVariable, Expression>(),
         new Dictionary<IVariable, Expression>(), new Dictionary<TypeParameter, Type>(), etranCurrent, false, builder, false,
-        $"--modular-termination: the 'decreases {{:callback}}' bound of '{formal.Name}' must not exceed that of the parameter it is passed for",
-        nonincrease: true);
+        $"modular termination: the 'decreases {{:callback}}' bound of '{formal.Name}' must not exceed that of the parameter it is passed for",
+        nonincrease: true, modularCheck: true);
     }
   }
 
@@ -519,13 +547,13 @@ public partial class BoogieGenerator {
   /// bound in every later state, so a lambda may keep it and apply it later.  Code without a bound is above every
   /// bound.  Other applications are checked by the resolver.
   /// </summary>
-  void CheckCallbackApplication(IOrigin tok, ICodeContext codeContext, Expression value, ExpressionTranslator etranCurrent,
-                                BoogieStmtListBuilder builder) {
-    if (options.Get(CommonOptionBag.ModularTermination) && BoundedCallables.ErasedCallable(value.Resolved) is { } bounded) {
-      CheckBoundedApplication(tok, codeContext, bounded, etranCurrent, builder);
+  void CheckCallbackApplication(IOrigin tok, ICodeContext codeContext, Expression value, List<Expression> args,
+                                ExpressionTranslator etranCurrent, BoogieStmtListBuilder builder) {
+    if (ModularTerminationActive && BoundedCallables.ErasedCallable(value.Resolved) is { } bounded) {
+      CheckBoundedApplication(tok, codeContext, bounded, args, etranCurrent, builder);
       return;
     }
-    if (!options.Get(CommonOptionBag.ModularTermination) || codeContext is not ICallable caller ||
+    if (!ModularTerminationActive || codeContext is not ICallable caller ||
         value.Resolved is not IdentifierExpr { Var: Formal formal }) {
       return;
     }
@@ -538,8 +566,9 @@ public partial class BoogieGenerator {
     CheckCallTermination(tok, callerBound, compared, null, null, new Dictionary<IVariable, Expression>(),
       new Dictionary<IVariable, Expression>(), new Dictionary<TypeParameter, Type>(), etranCurrent, oldCaller, builder, false,
       InsideLambda
-        ? $"--modular-termination: the 'decreases {{:callback}}' bound of '{formal.Name}' must be below the bound under which the enclosing lambda runs"
-        : $"--modular-termination: the 'decreases {{:callback}}' bound of '{formal.Name}' must be below the caller's 'decreases {{:global}}' bound");
+        ? $"modular termination: the 'decreases {{:callback}}' bound of '{formal.Name}' must be below the bound under which the enclosing lambda runs"
+        : $"modular termination: the 'decreases {{:callback}}' bound of '{formal.Name}' must be below the caller's 'decreases {{:global}}' bound",
+      modularCheck: true);
   }
 
   /// <summary>
@@ -651,7 +680,7 @@ public partial class BoogieGenerator {
   /// </summary>
   static bool AllIntComponents(List<Expression> dafny0, List<Expression> dafny1) {
     for (var i = 0; i < dafny0.Count; i++) {
-      if (DecreasesByExpr.OrderOf(dafny0[i]) != null || DecreasesByExpr.OrderOf(dafny1[i]) != null) {
+      if (DecreasesOrders.ComponentOrder(dafny0[i]) != null || DecreasesOrders.ComponentOrder(dafny1[i]) != null) {
         return false;
       }
       // Not reals: a weak real step "0 <= y && x <= y" that is not strict ("x <= y - 1") may precede strict progress
@@ -678,10 +707,11 @@ public partial class BoogieGenerator {
       var ty0 = dafny0[i].Type.NormalizeToAncestorType();
       var ty1 = dafny1[i].Type.NormalizeToAncestorType();
       Bpl.Expr strict, weak;
-      var order0 = DecreasesByExpr.OrderOf(dafny0[i]);
-      var order1 = DecreasesByExpr.OrderOf(dafny1[i]);
+      var order0 = DecreasesOrders.ComponentOrder(dafny0[i]);
+      var order1 = DecreasesOrders.ComponentOrder(dafny1[i]);
       if (order0 != null || order1 != null) {
-        // A component "e by O" (--decreases-orders) is compared by O.gt(caller, callee), and only with a component with the same O.
+        // A component "e by O" (--decreases-orders), or one of an order type with order O, is compared by
+        // O.gt(caller, callee), and only with a component with the same O.
         if (order0 != null && order1 != null && DecreasesOrders.SameOrder(order0, order1) &&
             DecreasesOrders.WfoOf(order1.Type) != null && CompatibleDecreasesTypesForComparison(ty0, ty1)) {
           OrderedComponent(toks[i], order1, dafny0[i].Type, ee0[i], ee1[i], out strict, out weak);

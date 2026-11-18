@@ -159,7 +159,7 @@ public partial class BoogieGenerator {
       foreach (Expression p in f.Decreases.Expressions) {
         generator.CheckWellformed(p, new WFOptions(null, false), locals, builder, etran);
       }
-      if (generator.options.Get(CommonOptionBag.ModularTermination)) {
+      if (generator.ModularTerminationActive) {
         foreach (var p in ModularTermination.DeclaredGlobalBound(f) ?? []) {
           generator.CheckWellformed(p, new WFOptions(null, false), locals, builder, etran);
         }

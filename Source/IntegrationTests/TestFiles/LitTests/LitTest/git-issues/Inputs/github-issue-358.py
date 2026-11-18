@@ -30,7 +30,7 @@ failures = []
 counter = [0]
 
 library = output / 'lib.dfy'
-library.write_text('''module Lib {
+library.write_text('''module Lib { const {:termination_closed} CertificateRequested: bool := true
   function Double(x: nat): nat { 2 * x }
 }
 ''')
@@ -67,7 +67,7 @@ def run(name, args, expected_exit, diagnostic=None, absent=None):
         failures.append(name + ': infrastructure or resource failure')
 
 
-run('build', ['build', '-t:lib', '--modular-termination', str(library), '--output=' + doo, '--solver-path', solver] +
+run('build', ['build', '-t:lib', str(library), '--output=' + doo, '--solver-path', solver] +
     common + verifier, 0)
 if not Path(doo).exists():
     failures.append('build: library file missing')
@@ -84,7 +84,7 @@ commands = [
     ('translate', ['translate', 'cs', '--output', str(output / 'translated')], verifier),
 ]
 for name, head, extra in commands:
-    args = head + ['--modular-termination', '--library', doo, str(client)] + common + extra
+    args = head + ['--library', doo, str(client)] + common + extra
     run(name + ' same solver', args + ['--solver-path', solver], 0, absent='cannot load')
     run(name + ' other solver', args + ['--solver-path', other_solver], 1, refusal)
 

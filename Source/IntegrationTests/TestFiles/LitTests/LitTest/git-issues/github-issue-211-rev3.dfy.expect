@@ -18,19 +18,19 @@ github-issue-211-rev3-tie.dfy(3,70): Error: modular termination: 'Go' implements
 github-issue-211-rev3-tie.dfy(4,70): Error: modular termination: 'Go' implements 'Tr.T.Go' of another module, which has no 'decreases {:global}' bound, so it must be a leaf or declare a bound, but it is not a leaf ('B.B.Go' -> dispatch of 'Tr.T.Go'); declare a bound on 'Tr.T.Go' or on this implementation, or make this implementation a leaf
 2 resolution/type errors detected in github-issue-211-rev3-tie.dfy
 p2, an unbounded member is TOP: rejected
-github-issue-211-rev3-p2.dfy(19,64): Error: decreases clause might not decrease (the dispatched callee has no 'decreases {:global}' bound, so under --modular-termination it is TOP, above the caller's bound; declare a bound on it)
+github-issue-211-rev3-p2.dfy(19,64): Error: decreases clause might not decrease (the dispatched callee has no 'decreases {:global}' bound, so it is TOP, above the caller's bound; declare a bound on it)
 
 Dafny program verifier finished with 5 verified, 1 error
 p3, a declared bound binds the home implementation: rejected
-github-issue-211-rev3-p3.dfy(12,61): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+github-issue-211-rev3-p3.dfy(12,61): Error: decreases clause might not decrease (modular termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
 
 Dafny program verifier finished with 5 verified, 1 error
 legacy forms: {:termination false} keeps its rule; @AssumeCrossModuleTermination is a premise
 github-issue-211-rev3-legacy.dfy(3,29): Warning: trait 'T' has {:termination false} and no {:axiom} annotation: --modular-termination checks the calls dispatched through it only in code verified with that option
 github-issue-211-rev3-legacy.dfy(12,38): Warning: class 'B' has @AssumeCrossModuleTermination and no {:axiom} annotation: code verified without it, such as the module of a trait it extends, did not check the calls dispatched to it for termination
 github-issue-211-rev3-legacy.dfy(9,37): Error: decreases clause might not decrease (the dispatched callee has no 'decreases {:global}' bound, which --modular-termination requires of a member of a {:termination false} trait)
-github-issue-211-rev3-legacy.dfy(10,77): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
-github-issue-211-rev3-legacy.dfy(15,77): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+github-issue-211-rev3-legacy.dfy(10,77): Error: decreases clause might not decrease (modular termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+github-issue-211-rev3-legacy.dfy(15,77): Error: decreases clause might not decrease (modular termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
 
 Dafny program verifier finished with 5 verified, 3 errors
 ECOOP 2015 Fig. 4: verifies
@@ -41,8 +41,8 @@ github-issue-211-rev3-fig4-false.dfy(32,4): Error: assertion might not hold
 
 Dafny program verifier finished with 56 verified, 1 error
 Fig. 4 with the level increment removed: rejected
-github-issue-211-rev3-fig4-loopy.dfy(22,86): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
-github-issue-211-rev3-fig4-loopy.dfy(23,95): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+github-issue-211-rev3-fig4-loopy.dfy(22,86): Error: decreases clause might not decrease (modular termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+github-issue-211-rev3-fig4-loopy.dfy(23,95): Error: decreases clause might not decrease (modular termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
 
 Dafny program verifier finished with 55 verified, 2 errors
 ECOOP 2015 Figs. 16-17, CPS with nested stock: verifies
@@ -53,19 +53,19 @@ github-issue-211-rev3-cps-false.dfy(247,4): Error: assertion might not hold
 
 Dafny program verifier finished with 100 verified, 1 error
 CPS passing itself as its continuation: rejected
-github-issue-211-rev3-cps-loopy.dfy(214,32): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+github-issue-211-rev3-cps-loopy.dfy(214,32): Error: decreases clause might not decrease (modular termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
 
 Dafny program verifier finished with 100 verified, 1 error
 a bounded caller calling a home least predicate that reaches an unbounded dispatch: rejected
-github-issue-211-rev3-extreme-callee.dfy(20,70): Error: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so under --modular-termination it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
+github-issue-211-rev3-extreme-callee.dfy(20,70): Error: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
 
 Dafny program verifier finished with 7 verified, 1 error
 a bounded caller dispatching to an unbounded least predicate slot: rejected
-github-issue-211-rev3-extreme-slot.dfy(18,73): Error: decreases clause might not decrease (the dispatched callee has no 'decreases {:global}' bound, so under --modular-termination it is TOP, above the caller's bound; declare a bound on it)
+github-issue-211-rev3-extreme-slot.dfy(18,73): Error: decreases clause might not decrease (the dispatched callee has no 'decreases {:global}' bound, so it is TOP, above the caller's bound; declare a bound on it)
 
 Dafny program verifier finished with 6 verified, 1 error
 a least lemma's body runs under its bound: rejected
-github-issue-211-rev3-prefix-lemma.dfy(8,91): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+github-issue-211-rev3-prefix-lemma.dfy(8,91): Error: decreases clause might not decrease (modular termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
 
 Dafny program verifier finished with 2 verified, 1 error
 extreme predicates and lemmas within the rules: verifies
@@ -76,7 +76,7 @@ github-issue-211-rev3-extreme-ok-false.dfy(34,89): Error: assertion might not ho
 
 Dafny program verifier finished with 12 verified, 1 error
 a foreign subtrait's bound on an unbounded member binds its implementations: one that dispatches to the unbounded member is rejected
-github-issue-211-rev3-subtrait.dfy(24,33): Error: decreases clause might not decrease (the dispatched callee has no 'decreases {:global}' bound, so under --modular-termination it is TOP, above the caller's bound; declare a bound on it)
+github-issue-211-rev3-subtrait.dfy(24,33): Error: decreases clause might not decrease (the dispatched callee has no 'decreases {:global}' bound, so it is TOP, above the caller's bound; declare a bound on it)
 
 Dafny program verifier finished with 11 verified, 1 error
 bounded foreign implementations of an unbounded member calling home code below their bounds, through a known call, a function value and an extreme predicate: verifies, but for the assert false control
@@ -84,37 +84,39 @@ github-issue-211-rev3-bounded-ok.dfy(44,4): Error: assertion might not hold
 
 Dafny program verifier finished with 14 verified, 1 error
 a bounded foreign implementation of an unbounded member, dispatching to it directly or through a bounded member: rejected
-github-issue-211-rev3-bounded-dispatch.dfy(16,70): Error: decreases clause might not decrease (the dispatched callee has no 'decreases {:global}' bound, so under --modular-termination it is TOP, above the caller's bound; declare a bound on it)
-github-issue-211-rev3-bounded-dispatch.dfy(20,89): Error: decreases clause might not decrease (the dispatched callee has no 'decreases {:global}' bound, so under --modular-termination it is TOP, above the caller's bound; declare a bound on it)
+github-issue-211-rev3-bounded-dispatch.dfy(16,70): Error: decreases clause might not decrease (the dispatched callee has no 'decreases {:global}' bound, so it is TOP, above the caller's bound; declare a bound on it)
+github-issue-211-rev3-bounded-dispatch.dfy(20,89): Error: decreases clause might not decrease (the dispatched callee has no 'decreases {:global}' bound, so it is TOP, above the caller's bound; declare a bound on it)
 
 Dafny program verifier finished with 6 verified, 2 errors
 a bounded foreign implementation calling home code that dispatches to the unbounded member: rejected
-github-issue-211-rev3-bounded-known.dfy(14,60): Error: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so under --modular-termination it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
+github-issue-211-rev3-bounded-known.dfy(14,60): Error: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
 
 Dafny program verifier finished with 3 verified, 1 error
 the same through a function value made by home code: rejected
-github-issue-211-rev3-bounded-value.dfy(13,60): Error: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so under --modular-termination it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
+github-issue-211-rev3-bounded-value.dfy(13,60): Error: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
 
 Dafny program verifier finished with 3 verified, 1 error
 the same through a home least predicate: rejected
-github-issue-211-rev3-bounded-extreme.dfy(14,61): Error: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so under --modular-termination it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
+github-issue-211-rev3-bounded-extreme.dfy(14,61): Error: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
 
 Dafny program verifier finished with 3 verified, 1 error
 a bounded foreign implementation applying a function value it is given: rejected
 github-issue-211-rev3-bounded-param.dfy(13,64): Error: modular termination: in 'Y.Y.F', a call through a function value needs the smaller-bound rule; rejected: the value's code is not known, so it has no bound, and the caller has one (pass the value for a parameter with a 'decreases {:callback}' bound)
 1 resolution/type errors detected in github-issue-211-rev3-bounded-param.dfy
 a refinement gives a body that reaches a dispatch to a function its base left without one, which an inherited bounded caller calls: rejected in the base
-github-issue-211-rev3-refine-body.dfy(12,57): Error: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so under --modular-termination it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
+github-issue-211-rev3-refine-body.dfy(12,57): Error: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
+github-issue-211-rev3-refine-body.dfy(12,57): Error: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
+github-issue-211-rev3-refine-body.dfy(14,7): Related location: refining module
 
-Dafny program verifier finished with 4 verified, 1 error
+Dafny program verifier finished with 4 verified, 2 errors
 bodiless functions with a bound or a {:termination_closed} promise, called below it, and given bodies by a refinement: verifies, but for the assert false control
 github-issue-211-rev3-refine-body-ok.dfy(24,4): Error: assertion might not hold
 
-Dafny program verifier finished with 4 verified, 1 error
+Dafny program verifier finished with 5 verified, 1 error
 a refinement body above the bound of its function: rejected
-github-issue-211-rev3-refine-body-loopy.dfy(12,41): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+github-issue-211-rev3-refine-body-loopy.dfy(12,41): Error: decreases clause might not decrease (modular termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
 
-Dafny program verifier finished with 1 verified, 1 error
+Dafny program verifier finished with 2 verified, 1 error
 a refinement body that breaks a {:termination_closed} promise: rejected
 github-issue-211-rev3-refine-body-closed.dfy(13,39): Error: modular termination: the {:termination_closed} promise of 'K' is not established; its body, specifications or implicit evaluations can reach open dispatch, an unknown application or an imported General contract
 github-issue-211-rev3-refine-body-closed.dfy(16,17): Error: modular termination: the {:termination_closed} promise of 'K' is not established; its body, specifications or implicit evaluations can reach open dispatch, an unknown application or an imported General contract

@@ -2,6 +2,8 @@
 """Exact option-off diagnostics/Boogie bytes and per-VC resource identity.
 
 Run both products on the same sources, observation paths and solver profile.
+For a current PR, --candidate-legacy-no-modular-termination restores the
+pre-default termination rules on the candidate only. Historical replays omit it.
 No semantic output is renamed, reordered or normalized before comparison.
 The suite population comes from the standing verdict gate; Std includes all
 six target-specific parts. Existing negative verdicts are compared, not blessed.
@@ -71,6 +73,8 @@ def pair(args, name, cwd, options):
             controlled += ['--cores', '1']
         if '--verification-time-limit' not in names:
             controlled += ['--verification-time-limit', '0']
+        if variant == 'candidate' and args.candidate_legacy_no_modular_termination:
+            controlled += ['--legacy-no-modular-termination']
         command = [str(binary), 'verify'] + controlled + [
             '--solver-path', str(args.solver),
             '--bprint', str(observation / 'program.bpl'),
@@ -165,6 +169,8 @@ def main():
     for name in ['base', 'candidate', 'solver', 'sources', 'output']:
         parser.add_argument(name, type=lambda value: Path(value).resolve())
     parser.add_argument('--shard', default='0/1')
+    parser.add_argument('--candidate-legacy-no-modular-termination', action='store_true',
+                        help='restore pre-default termination rules on the candidate only; omit for historical products')
     args = parser.parse_args()
     args.output.mkdir(parents=True, exist_ok=True)
     reports = suite(args) if args.kind == 'suite' else std(args)

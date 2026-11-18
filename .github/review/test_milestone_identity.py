@@ -169,5 +169,49 @@ class ScopeTests(unittest.TestCase):
                 self.assertEqual(value, expected, (label, name))
 
 
+contracts_spec = importlib.util.spec_from_file_location(
+    'contracts', Path(__file__).with_name('source-contracts-identity.py'))
+contracts = importlib.util.module_from_spec(contracts_spec)
+contracts_spec.loader.exec_module(contracts)
+
+
+class ContractIdentityTests(unittest.TestCase):
+    def compare(self, legacy):
+        from types import SimpleNamespace as NS
+        directory = tempfile.TemporaryDirectory(prefix='contract-identity-')
+        self.addCleanup(directory.cleanup)
+        args = NS(output=Path(directory.name), base=Path('base'), candidate=Path('candidate'),
+                  solver=Path('solver'), kind='suite', candidate_legacy_no_modular_termination=legacy)
+        with patch.object(contracts.subprocess, 'run', return_value=NS(
+                stdout=b'exact output\n', stderr=b'', returncode=0)) as run:
+            result = contracts.pair(args, 'control', Path(directory.name), ['control.dfy'])
+        self.assertTrue(result['equal'])
+        return [call.args[0] for call in run.call_args_list]
+
+    def test_only_candidate_gets_the_legacy_opt_out(self):
+        base, candidate = self.compare(True)
+        option = '--legacy-no-modular-termination'
+        self.assertNotIn(option, base)
+        self.assertEqual(candidate.count(option), 1)
+        self.assertEqual(base[1:], [arg for arg in candidate[1:] if arg != option])
+
+    def test_historical_products_keep_identical_arguments(self):
+        base, candidate = self.compare(False)
+        self.assertNotIn('--legacy-no-modular-termination', base + candidate)
+        self.assertEqual(base[1:], candidate[1:])
+
+    def test_workflow_opts_out_only_for_current_prs(self):
+        import re
+        from types import SimpleNamespace as NS
+        text = (Path(__file__).resolve().parents[1] / 'workflows/issue211-contracts.yml').read_text()
+        expression = re.search(r'^          CANDIDATE_LEGACY: \$\{\{ (.*) \}\}$', text, re.M)[1]
+        expression = expression.replace('&&', ' and ').replace('||', ' or ')
+        for event, expected in [('pull_request', '--candidate-legacy-no-modular-termination'),
+                                ('workflow_dispatch', '')]:
+            self.assertEqual(eval(expression, {'__builtins__': {}},
+                                  {'github': NS(event_name=event)}), expected)
+        self.assertIn("--shard '${{ matrix.shard }}' $CANDIDATE_LEGACY", text)
+
+
 if __name__ == '__main__':
     unittest.main()

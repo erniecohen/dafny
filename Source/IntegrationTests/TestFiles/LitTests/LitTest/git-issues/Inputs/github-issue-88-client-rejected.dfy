@@ -1,5 +1,5 @@
-// A client of github-issue-88-library.dfy that adds a library trait as a parent without
-// @AssumeCrossModuleTermination: the library trait is not open to extension from another module.
+// Legacy control: adding a library trait as a parent without @AssumeCrossModuleTermination
+// is rejected under --legacy-no-modular-termination; revision 3 permits this bodyless subtrait.
 
 module App0 {
   trait T extends object {}

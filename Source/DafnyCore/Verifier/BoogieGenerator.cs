@@ -188,6 +188,12 @@ namespace Microsoft.Dafny {
     public IsAllocContext IsAllocContext { get; set; } = null;
     Program program;
 
+    /// <summary>
+    /// Whether the checks of modular termination (https://github.com/erniecohen/dafny/issues/211) apply to the program
+    /// being translated: see <see cref="ModularTermination.Active"/>.  When they do not, the translation is that of 4.11.
+    /// </summary>
+    internal bool ModularTerminationActive => program != null && ModularTermination.Active(options, program);
+
     [ContractInvariantMethod]
     void ObjectInvariant() {
       Contract.Invariant(Cce.NonNullDictionaryAndValues(classes));
@@ -877,7 +883,7 @@ namespace Microsoft.Dafny {
       }
 
       program = p;
-      if (options.Get(CommonOptionBag.ModularTermination)) {
+      if (ModularTermination.Active(options, p)) {
         proofDependencies = proofDependencies.ForModule(forModule.FullDafnyName);
       }
       this.forModule = forModule;
@@ -923,9 +929,16 @@ namespace Microsoft.Dafny {
           .OrderBy(d => d.Name, StringComparer.Ordinal);
       }
       foreach (TopLevelDecl d in systemDeclarations) {
+        if (!ModularTerminationActive && program.SystemModuleManager.BoundedArrowAdded &&
+            (d.Name == ArrowType.ArrowTypeName(2) || d.Name == ArrowType.PartialArrowTypeName(2) ||
+             d.Name == ArrowType.TotalArrowTypeName(2))) {
+          continue;
+        }
         CurrentDeclaration = d;
         if (d is AbstractTypeDecl boundedDecl && BoundedCallables.IsBoundedDecl(boundedDecl)) {
-          AddBoundedCallableDeclarations(boundedDecl);
+          if (ModularTerminationActive) {
+            AddBoundedCallableDeclarations(boundedDecl);
+          }
         } else if (d is AbstractTypeDecl abstractType) {
           GetOrCreateTypeConstructor(abstractType);
           AddClassMembers(abstractType, true, true);

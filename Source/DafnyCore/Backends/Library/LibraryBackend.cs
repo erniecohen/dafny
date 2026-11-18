@@ -64,8 +64,9 @@ public class LibraryBackend : ExecutableBackend {
       throw new UnsupportedFeatureException(dafnyProgram.GetStartOfFirstFileToken(), Feature.LegacyCLI);
     }
 
-    var dooFile = new DooFile(dafnyProgram.AfterParsingClone);
-    if (Options.Get(CommonOptionBag.ModularTermination)) {
+    var dooFile = new DooFile(dafnyProgram.AfterParsingClone,
+      canonicalWildcards: ModularTermination.Active(Options, dafnyProgram));
+    if (ModularTermination.Active(Options, dafnyProgram)) {
       var completion = dafnyProgram.ModularTerminationCompletion;
       string failure = completion == null
         ? "its program was not completely verified in this build (for example, --no-verify was used)"

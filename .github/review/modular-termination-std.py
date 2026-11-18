@@ -7,7 +7,7 @@ Milestones M5a and M5b of https://github.com/erniecohen/dafny/issues/211.
 
 DAFNY is the dafny executable (or Dafny.dll), Z3 the Z3 binary the record names.  The script
 builds Source/DafnyStandardLibraries/modular-termination/dfyconfig.toml with
-`dafny build --target:lib`, which under the project's `modular-termination = true` writes a
+`dafny build --target:lib`, which uses a Closed promise to request a checked record and writes a
 library only when every verification task of the core, and of the program stored in it, succeeds.
 It then checks the library's record and loads it into clients:
 
@@ -15,7 +15,7 @@ It then checks the library's record and loads it into clients:
   - a client with a false lemma fails verification (exit 4), so the library is not vacuous;
   - a client that imports Std.Strings, which the core leaves out, does not resolve;
   - a client run without one of the core's semantic options is rejected at admission;
-  - the bundled standard library is still rejected under the option.
+  - the ordinary bundled standard library remains usable as TOP code in clients.
 
 M5b: it then builds the expanded core, Source/DafnyStandardLibraries/modular-termination/trusted,
 which adds the modules whose only premises are on the standard-library trust list, under
@@ -133,7 +133,7 @@ class Run:
         path = os.path.join(self.out, f'{name}.dfy')
         with open(path, 'w') as f:
             f.write(text)
-        code, output = self.run(name, ['verify', '--modular-termination', '--use-basename-for-filename',
+        code, output = self.run(name, ['verify', '--use-basename-for-filename',
                                        '--solver-path', self.z3, '--library', library] + extra + [path])
         ok = (code != 0 if expected_exit is None else code == expected_exit) and (expected_text is None or expected_text in output)
         lines = [line for line in output.splitlines() if line.strip()]
@@ -196,11 +196,11 @@ def main():
         run.client('excluded-client', EXCLUDED_CLIENT, CORE_OPTIONS, 2, 'Strings')
         run.client('option-mismatch', CLIENT, [o for o in CORE_OPTIONS if o != '--enforce-determinism'], None,
                    'enforce-determinism')
-    code, output = run.run('bundled', ['verify', '--modular-termination', '--use-basename-for-filename',
+    code, output = run.run('bundled', ['verify', '--use-basename-for-filename',
                                        '--standard-libraries:true', '--solver-path', z3] + CORE_OPTIONS +
                            [os.path.join(out, 'client.dfy') if built else PROJECT])
-    run.check('bundled', code != 0 and 'certified standard-library core' in output,
-              f'exit {code}; bundled standard library rejected: {"certified standard-library core" in output}')
+    run.check('bundled', code == 0 and '0 errors' in output,
+              f'exit {code}; ordinary bundled standard library remains usable as TOP code')
 
     # M5b: the expanded core, with the premises of the standard-library trust list.
     code, output = run.run('trusted build', ['build', '--target:lib', '--use-basename-for-filename', '--solver-path', z3,
@@ -228,7 +228,7 @@ def main():
                    f'use {TRUST} to admit it', library='trusted.doo')
     if built:
         _, plain = run.client('core-client-trust', CLIENT, CORE_OPTIONS + [TRUST], 0, '0 errors')
-        _, without = run.run('core-client-again', ['verify', '--modular-termination', '--use-basename-for-filename',
+        _, without = run.run('core-client-again', ['verify', '--use-basename-for-filename',
                                                    '--solver-path', z3, '--library', 'core.doo'] + CORE_OPTIONS +
                              [os.path.join(out, 'core-client-trust.dfy')])
         run.check('core-client-unchanged', plain == without and 'trusted premise' not in plain,

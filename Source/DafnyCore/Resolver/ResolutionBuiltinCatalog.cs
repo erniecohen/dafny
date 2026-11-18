@@ -28,6 +28,14 @@ internal sealed class ResolutionBuiltinCatalog {
     }
   }
 
+  public void Bounded(SystemModuleManager view) {
+    lock (gate) {
+      using var naming = new ModuleNamingScope("_System.bounded");
+      factory.CreateBoundedTypeDecl();
+      view.ImportBounded(factory);
+    }
+  }
+
   public void Arrow(SystemModuleManager view, int arity) {
     lock (gate) {
       using var naming = new ModuleNamingScope("_System.arrow" + arity);

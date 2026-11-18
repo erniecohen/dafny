@@ -47,6 +47,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="ModularTerminationRuntimeContracts.tsv" LogicalName="ModularTerminationRuntimeContracts.tsv" />
     <EmbeddedResource Include="assets\audit_template.html">
       <LogicalName>audit_template.html</LogicalName>
     </EmbeddedResource>

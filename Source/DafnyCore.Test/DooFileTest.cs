@@ -8,7 +8,7 @@ namespace DafnyCore.Test;
 public class DooFileTest {
   [Fact]
   public async Task RoundTripCurrentVersion() {
-    var options = DafnyOptions.Default;
+    var options = new DafnyOptions(TextReader.Null, TextWriter.Null, TextWriter.Null);
     options.ApplyDefaultOptionsWithoutSettingsDefault();
     var program = await ParseProgram("module MyModule { function TheAnswer(): int { 42 } }", options);
     options.ProcessSolverOptions(program.Reporter, Token.Cli);
@@ -63,6 +63,34 @@ public class DooFileTest {
     options.Set(CommonOptionBag.RecursiveModules, true);
     var with = new DooFile.ManifestData(options);
     Assert.Equal(true, with.Options[name]);
+  }
+
+  [Fact]
+  public async Task RecordedWildcardSerializationSurvivesMergedInputs() {
+    var options = new DafnyOptions(TextReader.Null, TextWriter.Null, TextWriter.Null);
+    options.ApplyDefaultOptionsWithoutSettingsDefault();
+    options.PrintMode = PrintModes.Serialization;
+    var first = await ParseProgram("module A { function F(): (int -> int) { _ => 0 } }", options);
+    var second = await ParseProgram("module B { function G(): int { match 0 case _ => 1 } }", options);
+    first.DefaultModuleDef.SourceDecls.AddRange(second.DefaultModuleDef.SourceDecls);
+    var legacy = new DooFile(first).ProgramText;
+    Assert.Contains("/* _v0 */", legacy);
+    var recorded = new DooFile(first, canonicalWildcards: true).ProgramText;
+    Assert.DoesNotContain("/* _v", recorded);
+    var reparsed = await ParseProgram(recorded, options);
+    Assert.Equal(recorded, new DooFile(reparsed, canonicalWildcards: true).ProgramText);
+    Assert.Equal(legacy, new DooFile(first).ProgramText);
+  }
+
+  [Fact]
+  public void OrdinaryManifestDoesNotInventVerificationEvidence() {
+    var options = new DafnyOptions(TextReader.Null, TextWriter.Null, TextWriter.Null);
+    options.ApplyDefaultOptionsWithoutSettingsDefault();
+    Assert.DoesNotContain(CommonOptionBag.LegacyNoModularTermination.Name,
+      new DooFile.ManifestData(options).Options.Keys);
+    options.Set(CommonOptionBag.LegacyNoModularTermination, true);
+    Assert.Equal(true, new DooFile.ManifestData(options).Options[
+      CommonOptionBag.LegacyNoModularTermination.Name]);
   }
 
   [Fact]

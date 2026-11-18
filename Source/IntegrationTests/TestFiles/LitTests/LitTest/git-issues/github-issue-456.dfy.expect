@@ -1,67 +1,67 @@
 least-lemma, legacy resolver
-github-issue-456-least-lemma.dfy(18,7): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+github-issue-456-least-lemma.dfy(18,7): Error: decreases clause might not decrease (modular termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
 
 Dafny program verifier finished with 3 verified, 1 error
 least-lemma, refresh resolver
-github-issue-456-least-lemma.dfy(18,7): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+github-issue-456-least-lemma.dfy(18,7): Error: decreases clause might not decrease (modular termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
 
 Dafny program verifier finished with 3 verified, 1 error
 least-predicate, legacy resolver
-github-issue-456-least-predicate.dfy(15,6): Error: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so under --modular-termination it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
+github-issue-456-least-predicate.dfy(15,6): Error: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
 
 Dafny program verifier finished with 4 verified, 1 error
 least-predicate, refresh resolver
-github-issue-456-least-predicate.dfy(15,6): Error: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so under --modular-termination it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
+github-issue-456-least-predicate.dfy(15,6): Error: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
 
 Dafny program verifier finished with 4 verified, 1 error
 co-recursion, legacy resolver
-github-issue-456-co-recursion.dfy(15,43): Error: decreases clause might not decrease (--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
+github-issue-456-co-recursion.dfy(15,43): Error: decreases clause might not decrease (modular termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
 
 Dafny program verifier finished with 6 verified, 1 error
 co-recursion, refresh resolver
-github-issue-456-co-recursion.dfy(15,43): Error: decreases clause might not decrease (--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
+github-issue-456-co-recursion.dfy(15,43): Error: decreases clause might not decrease (modular termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
 
 Dafny program verifier finished with 6 verified, 1 error
 rules, both resolvers: exit 4
-  A01 rejected: decreases clause might not decrease (--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
-  A02 rejected: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so under --modular-termination it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
-  A03 rejected: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
-  A04 rejected: decreases clause might not decrease (--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
-  A05 rejected: decreases clause might not decrease (--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
-  A06 rejected: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so under --modular-termination it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
-  A07 rejected: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so under --modular-termination it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
-  A08 rejected: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so under --modular-termination it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
-  A09 rejected: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so under --modular-termination it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
-  A10 rejected: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so under --modular-termination it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
-  A11 rejected: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
-  A12 rejected: decreases clause might not decrease (--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
-  A12 rejected: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
-  A13 rejected: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
-  A15 rejected: decreases clause might not decrease (--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
-  A16 rejected: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so under --modular-termination it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
+  A01 rejected: decreases clause might not decrease (modular termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
+  A02 rejected: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
+  A03 rejected: decreases clause might not decrease (modular termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+  A04 rejected: decreases clause might not decrease (modular termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
+  A05 rejected: decreases clause might not decrease (modular termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
+  A06 rejected: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
+  A07 rejected: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
+  A08 rejected: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
+  A09 rejected: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
+  A10 rejected: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
+  A11 rejected: decreases clause might not decrease (modular termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+  A12 rejected: decreases clause might not decrease (modular termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
+  A12 rejected: decreases clause might not decrease (modular termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+  A13 rejected: decreases clause might not decrease (modular termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+  A15 rejected: decreases clause might not decrease (modular termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
+  A16 rejected: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
 rules-slot, both resolvers: exit 4
-  A14 rejected: decreases clause might not decrease (--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
-  A17 rejected: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
-  A18 rejected: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+  A14 rejected: decreases clause might not decrease (modular termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
+  A17 rejected: decreases clause might not decrease (modular termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+  A18 rejected: decreases clause might not decrease (modular termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
   github-issue-456-rules-slot.dfy(16,2): Error: a postcondition could not be proved on this return path
   github-issue-456-rules-slot.dfy(17,68): Error: a postcondition could not be proved on this return path
   github-issue-456-rules-slot.dfy(21,16): Error: least lemma's 'decreases {:global}' bound must be below or equal to that in the trait
   github-issue-456-rules-slot.dfy(21,67): Error: a postcondition could not be proved on this return path
 rules-imported, both resolvers: exit 4
-  B04 rejected: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so under --modular-termination it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
-  B05 rejected: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so under --modular-termination it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
-  B06 rejected: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so under --modular-termination it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
-  B07 rejected: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so under --modular-termination it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
-  B07 rejected: decreases clause might not decrease (--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
-  B08 rejected: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so under --modular-termination it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
-  B08 rejected: decreases clause might not decrease (--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
-  B09 rejected: decreases clause might not decrease (--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
+  B04 rejected: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
+  B05 rejected: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
+  B06 rejected: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
+  B07 rejected: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
+  B07 rejected: decreases clause might not decrease (modular termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
+  B08 rejected: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
+  B08 rejected: decreases clause might not decrease (modular termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
+  B09 rejected: decreases clause might not decrease (modular termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
 rules-callback, both resolvers: exit 4
-  A19 rejected: decreases clause might not decrease (--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
-  A20 rejected: decreases clause might not decrease (--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
-  A21 rejected: decreases clause might not decrease (--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
-  A22 rejected: decreases clause might not decrease (--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
-  A23 rejected: decreases clause might not decrease (--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
+  A19 rejected: decreases clause might not decrease (modular termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
+  A20 rejected: decreases clause might not decrease (modular termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
+  A21 rejected: decreases clause might not decrease (modular termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
+  A22 rejected: decreases clause might not decrease (modular termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
+  A23 rejected: decreases clause might not decrease (modular termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
 accepted, both resolvers: exit 4
   github-issue-456-accepted.dfy(70,4): Error: assertion might not hold
   github-issue-456-accepted.dfy(76,4): Error: assertion might not hold

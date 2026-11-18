@@ -1,0 +1,29 @@
+intersects, with argument-dependent bounds in bags of levels
+
+Dafny program verifier finished with 76 verified, 0 errors
+controls (assert false in each positive context), and bounds at arguments that do not go down
+github-issue-211-stored-arguments-verify.dfy(20,9): Error: assertion might not hold
+github-issue-211-stored-arguments-verify.dfy(33,4): Error: assertion might not hold
+github-issue-211-stored-arguments-verify.dfy(47,6): Error: decreases clause might not decrease (--modular-termination: the bound of the bounded value must be below the caller's 'decreases {:global}' bound)
+github-issue-211-stored-arguments-verify.dfy(55,6): Error: decreases clause might not decrease (--modular-termination: the bound of the bounded value must be below the caller's 'decreases {:global}' bound)
+github-issue-211-stored-arguments-verify.dfy(65,39): Error: decreases clause might not decrease (modular termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
+github-issue-211-stored-arguments-verify.dfy(74,23): Error: decreases clause might not decrease (modular termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
+
+Dafny program verifier finished with 79 verified, 6 errors
+argument-dependent bounds that are not closed, or that may apply their own
+github-issue-211-stored-arguments-resolve.dfy(35,6): Error: modular termination: in 'RejectedBounds.Bad', the argument-dependent bound given to '_System.bounded.certifyAt' may apply the argument-dependent bound of a bounded value, which could be itself; it must compute from data alone
+github-issue-211-stored-arguments-resolve.dfy(36,77): Error: modular termination: in 'RejectedBounds.Bad', the argument-dependent bound given to '_System.bounded.certifyAt' may apply the argument-dependent bound of a bounded value, which could be itself; it must compute from data alone
+github-issue-211-stored-arguments-resolve.dfy(38,6): Error: modular termination: in 'RejectedBounds.Bad', the argument-dependent bound given to '_System.bounded.certifyAt' may apply the argument-dependent bound of a bounded value, which could be itself; it must compute from data alone
+github-issue-211-stored-arguments-resolve.dfy(40,72): Error: modular termination: in 'RejectedBounds.Bad', the argument-dependent bound given to '_System.bounded.certifyAt' must be a lambda expression, a call of a function whose body is one, a function that reaches no dispatched call, or the argument-dependent bound of a bounded value
+github-issue-211-stored-arguments-resolve.dfy(43,29): Error: modular termination: in 'RejectedBounds.Bad', a call through a function value needs the smaller-bound rule; rejected: the value's code is not known, so it has no bound, and the caller has one (pass the value for a parameter with a 'decreases {:callback}' bound)
+github-issue-211-stored-arguments-resolve.dfy(43,6): Error: modular termination: in 'RejectedBounds.Bad', the argument-dependent bound given to '_System.bounded.certifyAt' can reach dispatch to implementations that other modules may provide (bound -> a call through a function value whose code is not known); a bound may only use code that cannot reach one, since its value must not depend on the termination that the bounds establish
+github-issue-211-stored-arguments-resolve.dfy(46,6): Error: modular termination: in 'RejectedBounds.Bad', the argument-dependent bound given to '_System.bounded.certifyAt' can reach dispatch to implementations that other modules may provide (bound -> dispatch of 'OpenLevels.Leveled.Lv'); a bound may only use code that cannot reach one, since its value must not depend on the termination that the bounds establish
+github-issue-211-stored-arguments-resolve.dfy(47,82): Error: modular termination: in 'RejectedBounds.Bad', the argument-dependent bound given to '_System.bounded.certifyAt' can reach dispatch to implementations that other modules may provide (bound -> 'RejectedBounds.ByDispatch' -> dispatch of 'OpenLevels.Leveled.Lv'); a bound may only use code that cannot reach one, since its value must not depend on the termination that the bounds establish
+github-issue-211-stored-arguments-resolve.dfy(49,84): Error: modular termination: in 'RejectedBounds.Bad', the function certified by '_System.bounded.certifyAt' at an argument-dependent bound must be a lambda expression
+9 resolution/type errors detected in github-issue-211-stored-arguments.dfy
+argument-dependent orders that are not total arrows from the payload's parameters to an order
+github-issue-211-stored-arguments-orders.dfy(7,17): Error: the order of a bounded type must be nat, ORDINAL, an order type (a subset type declared with {:order O}), or a total arrow to one of these (got ListObject --> Level)
+github-issue-211-stored-arguments-orders.dfy(8,15): Error: the order of a bounded type must be nat, ORDINAL, an order type (a subset type declared with {:order O}), or a total arrow to one of these (got ListObject ~> Level)
+github-issue-211-stored-arguments-orders.dfy(10,18): Error: an argument-dependent order of a bounded type must take the parameters of its payload (got int -> Level for payload ListObject -> bool)
+github-issue-211-stored-arguments-orders.dfy(12,17): Error: the order of a bounded type must be nat, ORDINAL, an order type (a subset type declared with {:order O}), or a total arrow to one of these (got ListObject -> ListObject -> Level)
+4 resolution/type errors detected in github-issue-211-stored-arguments.dfy

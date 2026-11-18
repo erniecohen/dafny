@@ -1,6 +1,6 @@
-// RUN: %exits-with 0 %baredafny build --target:lib --solver-path %review-z3 --use-basename-for-filename --show-snippets:false --standard-libraries:false --modular-termination "%s" --output "%t.doo" > "%t"
-// RUN: %exits-with 0 %baredafny verify --solver-path %review-z3 --use-basename-for-filename --show-snippets:false --standard-libraries:false --modular-termination --library "%t.doo" "%S/Inputs/github-issue-357-client.dfy" >> "%t"
-// RUN: %exits-with 3 %baredafny build --target:lib --solver-path %review-z3 --use-basename-for-filename --show-snippets:false --standard-libraries:false --modular-termination "%S/Inputs/github-issue-357-user.dfy" --output "%t-user.doo" >> "%t"
+// RUN: %exits-with 0 %baredafny build --target:lib --solver-path %review-z3 --use-basename-for-filename --show-snippets:false --standard-libraries:false "%s" --output "%t.doo" > "%t"
+// RUN: %exits-with 0 %baredafny verify --solver-path %review-z3 --use-basename-for-filename --show-snippets:false --standard-libraries:false --library "%t.doo" "%S/Inputs/github-issue-357-client.dfy" >> "%t"
+// RUN: %exits-with 3 %baredafny build --target:lib --solver-path %review-z3 --use-basename-for-filename --show-snippets:false --standard-libraries:false "%S/Inputs/github-issue-357-user.dfy" --output "%t-user.doo" >> "%t"
 // RUN: %diff "%s.expect" "%t"
 
 // Under --modular-termination, a library may refine a module with opaque functions

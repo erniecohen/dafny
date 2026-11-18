@@ -1,19 +1,19 @@
 name: Certified standard-library core
 # Milestones M5a and M5b of https://github.com/erniecohen/dafny/issues/211: build the certified core of the
-# standard library under --modular-termination with Z3 5.1.0, and the expanded core with the
-# standard-library trust list, then load them into clients.
+# standard library with Z3 5.1.0, and the expanded core with the named trust lists.
+# Produce the checked catalog, then validate its clients, embedding and compilation.
 on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
     branches: ['review/**']
     paths:
       - 'Source/DafnyStandardLibraries/**'
-      - 'Source/DafnyCore/ModularTerminationRecord.cs'
-      - 'Source/DafnyCore/ModularTerminationTrust.cs'
-      - 'Source/DafnyCore/DooFile.cs'
-      - 'Source/DafnyCore/DafnyFile.cs'
-      - 'Source/DafnyCore/Backends/Library/LibraryBackend.cs'
+      - 'Source/DafnyCore/**'
+      - 'Source/DafnyPipeline/**'
+      - 'Source/DafnyDriver/**'
       - '.github/review/modular-termination-std.py'
+      - '.github/review/modular-termination-checked-std.py'
+      - '.github/review/modular-termination-catalog.py'
       - '.github/workflows/issue211-std.yml'
   workflow_dispatch:
 permissions:
@@ -26,6 +26,8 @@ jobs:
     if: ${{ github.event_name != 'pull_request' || !github.event.pull_request.draft }}
     runs-on: ubuntu-24.04
     timeout-minutes: 240
+    env:
+      DOTNET_PROCESSOR_COUNT: '3'
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-dotnet
@@ -33,10 +35,17 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23.6'
+          cache: false
+      - name: Install the Go import formatter
+        run: go install golang.org/x/tools/cmd/goimports@v0.30.0
       - name: Build Dafny
         run: |
           sh Scripts/fetch-boogie-packages.sh
-          dotnet publish Source/Dafny/Dafny.csproj -c Release -o out/dafny -p:GeneratePackageOnBuild=false
+          dotnet msbuild Source/DafnyCore/DafnyCore.csproj -t:RunCoco -p:Configuration=Release
+          dotnet publish Source/Dafny/Dafny.csproj -c Release -o out/dafny -p:GeneratePackageOnBuild=false -p:PathMap="$PWD=/_/"
       - name: Install Z3 5.1.0
         id: z3
         run: echo "path=$(sh .github/review/setup-z3.sh 5.1.0 ci-z3)" >> "$GITHUB_OUTPUT"
@@ -44,12 +53,32 @@ jobs:
         run: |
           status=0
           python3 .github/review/modular-termination-std.py out/dafny/Dafny '${{ steps.z3.outputs.path }}' \
-            std-core-results --cores 4 || status=$?
+            std-core-results --cores 3 || status=$?
           cat std-core-results/summary.md >> "$GITHUB_STEP_SUMMARY"
+          exit $status
+      - name: Produce and admit the checked common and target catalog
+        run: |
+          status=0
+          python3 .github/review/modular-termination-checked-std.py out/dafny/Dafny '${{ steps.z3.outputs.path }}' \
+            checked-std-results --cores 3 || status=$?
+          cat checked-std-results/summary.md >> "$GITHUB_STEP_SUMMARY"
+          exit $status
+      - name: Embed the checked catalog and validate selection and backends
+        run: |
+          cp out/dafny/DafnyCore.dll checked-catalog-core.dll
+          dotnet publish Source/Dafny/Dafny.csproj -c Release -o out/dafny -p:GeneratePackageOnBuild=false -p:PathMap="$PWD=/_/" -p:RequireCheckedStandardLibraries=true
+          cmp checked-catalog-core.dll out/dafny/DafnyCore.dll
+          status=0
+          python3 .github/review/modular-termination-catalog.py out/dafny/Dafny '${{ steps.z3.outputs.path }}' \
+            checked-catalog-results || status=$?
+          cat checked-catalog-results/summary.md >> "$GITHUB_STEP_SUMMARY"
           exit $status
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: std-core-results
-          path: std-core-results
+          path: |
+            std-core-results
+            checked-std-results
+            checked-catalog-results
           retention-days: 30

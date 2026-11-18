@@ -807,12 +807,31 @@ git-issues/github-issue-453.dfy
 
 # Bounded callables, milestone 3: heap-reading bounded values in fields and collections, generic flow, higher-order bounded values, and callback parameters kept and applied inside lambdas, under --modular-termination (https://github.com/erniecohen/dafny/issues/266).
 git-issues/github-issue-266-m3.dfy
+# Bounded callables, milestone 4: portable contracts of order types, bounded values and argument-dependent bounds in .doo libraries, private replacement, contract changes, tampered, refined and incomplete libraries, under --modular-termination (https://github.com/erniecohen/dafny/issues/266).
+git-issues/github-issue-266-m4.dfy
+# Bounded callables: a module that refines one with bounded applications resolves, under both resolvers (the pre-type resolver used to fail an assertion) (https://github.com/erniecohen/dafny/issues/266).
+git-issues/github-issue-266-refine-bounded.dfy
 
 # Revision 3 of the rules of --modular-termination: any trait may be extended from any module, a foreign implementation of a member without a global bound is a leaf or has a bound of its own, a member without a body reaches a dispatch unless it promises {:termination_closed}, and the VeriFast ports of ECOOP 2015 Fig. 4 and the CPS example (https://github.com/erniecohen/dafny/issues/211).
 git-issues/github-issue-211-rev3.dfy
 
 # The multiset order of the orders library over any well-founded relation, and global bounds of --modular-termination by multiset orders, where a dispatched call needs a strictly smaller bag (https://github.com/erniecohen/dafny/issues/211).
 git-issues/github-issue-211-multiset.dfy
+
+# The ECOOP 2015 Figs. 10-14 (RealFunc, LinearFunc, Sum, integrate and main) in their own measure, bags of method levels under the multiset order, by default and under --modular-termination, with controls (https://github.com/erniecohen/dafny/issues/211).
+git-issues/github-issue-211-integrate.dfy
+
+# The stored-value forms of funcptr.c and cons.c (contains) of the VeriFast examples: a function object holding a bounded value, certified one level below its creator, with controls (https://github.com/erniecohen/dafny/issues/211).
+git-issues/github-issue-211-stored.dfy
+
+# Order types, `type {:order O} L = x: T | C`: funcptr.c in VeriFast's bags of levels, an order type admitted as the order of a bounded value, with controls, two order types of one carrier that do not mix, and order attributes that are not closed orders of the base type (https://github.com/erniecohen/dafny/issues/211).
+git-issues/github-issue-211-order-types.dfy
+
+# Argument-dependent bounds, `bounded.certifyAt(b, f)` and `c.boundAt(x)`: cons.c's intersects, whose bound at another list grows with that list's, with controls, bounds that are not closed or that may apply their own, and orders that are not total arrows from the payload's parameters (https://github.com/erniecohen/dafny/issues/211).
+git-issues/github-issue-211-stored-arguments.dfy
+
+# The ECOOP 2015 Figs. 16-17 with stored continuations: containsCPS and intersectsCPS take a bounded continuation whose bound is its stock, in an order type of bags of bags of levels, with controls (https://github.com/erniecohen/dafny/issues/211).
+git-issues/github-issue-211-cps-stored.dfy
 
 # Function domains: under --additional-axioms lambdas carry their parameter types as domain tags,
 # {:functionDomain} declarations give Restrict and ExactDom, and --function-extensionality-axiom makes
@@ -832,6 +851,20 @@ git-issues/github-issue-414.dfy
 # With integer termination checks back in the legacy shape, --isolate-assertions splits them into two tasks again, so these two upstream tests read their .expect counts of 20 and 25 verified (https://github.com/erniecohen/dafny/issues/436).
 ast/reveal/revealInBlock.dfy
 ast/reveal/revealFunctions.dfy
+
+# The rules of termination across modules by default, by use (https://github.com/erniecohen/dafny/issues/211): without --modular-termination, a program with a global or callback bound, a {:termination_closed} promise or an unmarked extension of a trait of another module is checked by the rules of revision 3; one without is translated as before; a legacy form on the edge that crosses modules covers the types below it, as in 4.11; the hidden --legacy-no-modular-termination restores the rules of 4.11, and a library built under one setting is refused under the other. traits/TraitMultiModule.dfy keeps its 4.11 errors under the hidden option.
+git-issues/github-issue-211-xmod.dfy
+traits/TraitMultiModule.dfy
+git-issues/github-issue-211-produced-allowances.dfy
+git-issues/github-issue-211-reveal-termination.dfy
+git-issues/github-issue-211-runtime-trust.dfy
+git-issues/github-issue-211-checked-std.dfy
+git-issues/github-issue-211-recorded-wildcards.dfy
+git-issues/github-issue-211-by-use.dfy
+
+# Inherited bodies acquire or retain modular bounds in the refined context; recheck their calls (https://github.com/erniecohen/dafny/issues/493).
+git-issues/github-issue-493.dfy
+git-issues/github-issue-493-refinement.dfy
 
 # Member invariants under the hidden --member-invariants, first stage: syntax, printing and
 # resolution, the reads restriction, the codatatype rule for programs and libraries, refinement,

@@ -1,4 +1,4 @@
-abstract module Base {
+abstract module Base { const {:termination_closed} CertificateRequested: bool := true
   opaque function Double(n: nat): nat { n + n }
 }
 

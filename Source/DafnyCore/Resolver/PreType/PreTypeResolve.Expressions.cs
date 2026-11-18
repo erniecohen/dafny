@@ -1968,17 +1968,25 @@ namespace Microsoft.Dafny {
 
       } else if (lhs != null) {
         // ----- 4. Look up name in the type of the Lhs
+        if (name == BoundedCallables.BoundAtName && Constraints.FindDefinedPreType(expr.Lhs.PreType, false) is { } boundedPreType &&
+            BoundedCallables.SelectByPreType(expr.Lhs, boundedPreType, BoundedCallables.BoundName) != null) {
+          // "c.boundAt", for a value "c" of a bounded type, is "c.bound" (issue 211): applied to arguments, the bound
+          // of a call with them
+          name = BoundedCallables.BoundName;
+        }
+        // The erased value is kept apart from the syntax: a refinement clones the syntax of a resolved module (issue 266)
+        var selected = expr.Lhs;
         if (name is "requires" or "reads" && Constraints.FindDefinedPreType(expr.Lhs.PreType, false) is { } lhsPreType &&
             BoundedCallables.SelectByPreType(expr.Lhs, lhsPreType, BoundedCallables.EraseName) is { } erased) {
           // "c.requires" and "c.reads", for a value "c" of a bounded type, are those of "c.erase" (issue 266)
-          expr.Lhs = erased;
+          selected = erased;
         }
-        var (member, tentativeReceiverPreType) = FindMember(expr.Origin, expr.Lhs.PreType, name, resolutionContext,
-          expr.Lhs.Resolved != null);
+        var (member, tentativeReceiverPreType) = FindMember(expr.Origin, selected.PreType, name, resolutionContext,
+          selected.Resolved != null);
         if (member != null) {
           if (!member.IsStatic) {
             var receiver = resolver.Options.Get(CommonOptionBag.ExtendedNewtypeBases)
-              ? BaseOperationExpression(expr.Lhs, tentativeReceiverPreType) : expr.Lhs;
+              ? BaseOperationExpression(selected, tentativeReceiverPreType) : selected;
             AddSubtypeConstraint(tentativeReceiverPreType, receiver.PreType, expr.Origin,
               $"receiver type ({{1}}) does not have a member named '{name}'");
             r = ResolveExprDotCall(expr.Origin, expr.SuffixNameNode, receiver, tentativeReceiverPreType, member, args, expr.OptTypeArguments,
@@ -2167,21 +2175,23 @@ namespace Microsoft.Dafny {
           ReportError(e.AtTok, "no label '{0}' in scope at this time", e.AtTok.val);
         }
       }
+      // The erased value is kept apart from the syntax: a refinement clones the syntax of a resolved module (issue 266)
+      var applied = e.Lhs;
       if (r == null && e.Lhs.Resolved != null && Constraints.FindDefinedPreType(e.Lhs.PreType, false) is { } lhsPreType &&
           BoundedCallables.SelectByPreType(e.Lhs, lhsPreType, BoundedCallables.EraseName) is { } erased) {
         // "c(args)", for a value "c" of a bounded type, applies "c.erase" (issue 266)
-        e.Lhs = erased;
+        applied = erased;
       }
       if (r == null) {
         // e.Lhs denotes a function value, or at least it's used as if it were
-        var nominalFunctionPreType = Constraints.FindDefinedPreType(e.Lhs.PreType, false);
+        var nominalFunctionPreType = Constraints.FindDefinedPreType(applied.PreType, false);
         var dp = resolver.Options.Get(CommonOptionBag.ExtendedNewtypeBases) && nominalFunctionPreType != null
           ? OperationPreType(nominalFunctionPreType) : nominalFunctionPreType;
         if (dp != null && DPreType.IsArrowType(dp.Decl)) {
           // e.Lhs does denote a function value
           // In the general case, we'll resolve this as an ApplyExpr, but in the more common case of the Lhs
           // naming a function directly, we resolve this as a FunctionCallExpr.
-          var mse = e.Lhs is NameSegment or ExprDotName ? e.Lhs.Resolved as MemberSelectExpr : null;
+          var mse = applied is NameSegment or ExprDotName ? applied.Resolved as MemberSelectExpr : null;
           var callee = mse?.Member as Function;
           if (atLabel != null && !(callee is TwoStateFunction)) {
             ReportError(e.AtTok, "an @-label can only be applied to a two-state function");
@@ -2200,14 +2210,14 @@ namespace Microsoft.Dafny {
             }
             ResolveActualParameters(e.Bindings, formals, e.Origin, dp, resolutionContext, new Dictionary<TypeParameter, PreType>(), null);
             var function = resolver.Options.Get(CommonOptionBag.ExtendedNewtypeBases)
-              ? BaseOperationExpression(e.Lhs, dp) : e.Lhs;
-            r = new ApplyExpr(e.Lhs.Origin, function, e.Args, e.CloseParen);
+              ? BaseOperationExpression(applied, dp) : applied;
+            r = new ApplyExpr(applied.Origin, function, e.Args, e.CloseParen);
             ResolveExpression(r, resolutionContext);
             r.PreType = dp.Arguments.Last();
           }
         } else {
           // e.Lhs is used as if it were a function value, but it isn't
-          var lhs = e.Lhs.Resolved;
+          var lhs = applied.Resolved;
           if (lhs is { PreType: PreTypePlaceholderModule }) {
             ReportError(e.Origin, "name of module ({0}) is used as a function", ((ResolverIdentifierExpr)lhs).Decl.Name);
           } else if (lhs is { PreType: PreTypePlaceholderType }) {
@@ -2240,7 +2250,7 @@ namespace Microsoft.Dafny {
                 ReportError(e.Origin, "{0} call is not allowed to be used in an expression resolutionContext ({1})", mse.Member.WhatKind, mse.Member.Name);
               }
             } else if (lhs != null) {  // if e.Lhs.Resolved is null, then e.Lhs was not successfully resolved and an error has already been reported
-              ReportError(e.Origin, "non-function expression (of type {0}) is called with parameters", e.Lhs.PreType);
+              ReportError(e.Origin, "non-function expression (of type {0}) is called with parameters", applied.PreType);
             }
           }
           // resolve the arguments, even in the presence of the errors above

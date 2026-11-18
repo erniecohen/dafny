@@ -7,7 +7,7 @@ github-issue-88-modular-termination.dfy(124,9): Error: cannot prove termination;
 github-issue-88-modular-termination.dfy(175,4): Error: assertion might not hold
 github-issue-88-modular-termination.dfy(209,4): Error: assertion might not hold
 
-Dafny program verifier finished with 16 verified, 6 errors
+Dafny program verifier finished with 18 verified, 6 errors
 github-issue-88-modular-termination.dfy(45,13): Error: function's 'decreases {:global}' bound must be below or equal to that in the trait
 github-issue-88-modular-termination.dfy(61,7): Related location: refining module
 github-issue-88-modular-termination.dfy(77,13): Error: function's 'decreases {:global}' bound must be below or equal to that in the trait
@@ -17,7 +17,7 @@ github-issue-88-modular-termination.dfy(124,9): Error: cannot prove termination;
 github-issue-88-modular-termination.dfy(175,4): Error: assertion might not hold
 github-issue-88-modular-termination.dfy(209,4): Error: assertion might not hold
 
-Dafny program verifier finished with 16 verified, 6 errors
+Dafny program verifier finished with 18 verified, 6 errors
 github-issue-88-modular-termination-rejected.dfy(16,13): Error: modular termination: 'K' implements 'Tr.A.K' of another module, which has no 'decreases {:global}' bound, so it must be a leaf or declare a bound, but it is not a leaf ('NotLeaf1.T.K' -> dispatch of 'Tr.A.K'); declare a bound on 'Tr.A.K' or on this implementation, or make this implementation a leaf
 github-issue-88-modular-termination-rejected.dfy(29,7): Related location: refining module
 github-issue-88-modular-termination-rejected.dfy(45,13): Error: modular termination: 'K' implements 'Tr.A.K' of another module, which has no 'decreases {:global}' bound, so it must be a leaf or declare a bound, but it is not a leaf ('NotLeafControl.T.K' -> dispatch of 'Tr.A.K'); declare a bound on 'Tr.A.K' or on this implementation, or make this implementation a leaf

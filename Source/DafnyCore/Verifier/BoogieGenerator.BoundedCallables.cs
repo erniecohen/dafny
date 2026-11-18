@@ -101,13 +101,13 @@ public partial class BoogieGenerator {
 
 public partial class BoogieGenerator {
   /// <summary>
-  /// Under --modular-termination, at an application of "X.erase" (or a call of its "requires" or "reads"), where
-  /// "bounded" is "X": the bound of "X" must be below the bound under which the application runs, that of the
+  /// Under --modular-termination, at an application of "X.erase" to "args" (or a call of its "requires" or "reads"),
+  /// where "bounded" is "X": the bound of "X" at "args" must be below the bound under which the application runs, that of the
   /// lambda around it, or else the caller's global bound on entry (smaller-bound rule).  Code without a bound is
   /// above every bound.
   /// </summary>
-  void CheckBoundedApplication(IOrigin tok, ICodeContext codeContext, Expression bounded, ExpressionTranslator etranCurrent,
-                               BoogieStmtListBuilder builder) {
+  void CheckBoundedApplication(IOrigin tok, ICodeContext codeContext, Expression bounded, List<Expression> args,
+                               ExpressionTranslator etranCurrent, BoogieStmtListBuilder builder) {
     if (codeContext is not ICallable caller) {
       return;
     }
@@ -117,11 +117,12 @@ public partial class BoogieGenerator {
       return;
     }
     var oldCaller = !InsideLambda && codeContext is MethodOrConstructor and not TwoStateLemma;
-    CheckCallTermination(tok, callerBound, [BoundOf(bounded)], null, null, new Dictionary<IVariable, Expression>(),
+    CheckCallTermination(tok, callerBound, [BoundedCallables.BoundAt(bounded, args)], null, null, new Dictionary<IVariable, Expression>(),
       new Dictionary<IVariable, Expression>(), new Dictionary<TypeParameter, Type>(), etranCurrent, oldCaller, builder, false,
       InsideLambda
         ? "--modular-termination: the bound of the bounded value must be below the bound under which the enclosing lambda runs"
-        : "--modular-termination: the bound of the bounded value must be below the caller's 'decreases {:global}' bound");
+        : "--modular-termination: the bound of the bounded value must be below the caller's 'decreases {:global}' bound",
+      modularCheck: true);
   }
 
   /// <summary>
@@ -133,7 +134,7 @@ public partial class BoogieGenerator {
   void CheckBoundedArguments(IOrigin tok, MemberDecl callee, List<Expression> args, Expression receiverReplacement,
                              Dictionary<IVariable, Expression> substMap, Dictionary<TypeParameter, Type> typeMap,
                              ExpressionTranslator etranCurrent, BoogieStmtListBuilder builder) {
-    if (!options.Get(CommonOptionBag.ModularTermination) || callee is not ICallable callable) {
+    if (!ModularTerminationActive || callee is not ICallable callable) {
       return;
     }
     for (var i = 0; i < args.Count && i < callable.Ins.Count; i++) {
@@ -151,7 +152,8 @@ public partial class BoogieGenerator {
       } else {
         continue;
       }
-      var upper = calleeBound.ConvertAll(e => Substitute(e, receiverReplacement, substMap, typeMap));
+      var upper = calleeBound.ConvertAll(e =>
+        DecreasesOrders.WithTypeOrder(Substitute(e, receiverReplacement, substMap, typeMap), e.Type.Subst(typeMap)));
       var contextBound = upper;
       var comparedBound = lower;
       if (!UseConsistentDecreasesOrder) {
@@ -162,7 +164,7 @@ public partial class BoogieGenerator {
         BoundedCallables.IsCertify(callee)
           ? $"--modular-termination: {what} must not exceed the bound it is certified under"
           : $"--modular-termination: {what} must not exceed the 'decreases {{:callback}}' bound of the parameter '{callable.Ins[i].Name}' it is passed for",
-        nonincrease: true);
+        nonincrease: true, modularCheck: true);
     }
   }
 

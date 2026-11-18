@@ -3,7 +3,7 @@ the orders library, verified from its sources
 Dafny program verifier finished with 47 verified, 0 errors
 positive: functions, methods, loops, mixed components, a user implementation of Wfo
 
-Dafny program verifier finished with 18 verified, 0 errors
+Dafny program verifier finished with 65 verified, 0 errors
 verification errors: wrong direction, another order, an order that is not well-founded, an ill-formed order
 github-issue-245-verify.dfy(16,32): Error: decreases clause might not decrease
 github-issue-245-verify.dfy(24,27): Error: decreases clause might not decrease
@@ -13,7 +13,7 @@ github-issue-245-verify.dfy(54,24): Error: function precondition could not be pr
 github-issue-245-verify.dfy(47,13): Related location: this proposition could not be proved
 github-issue-245-verify.dfy(62,2): Error: decreases expression might not decrease
 
-Dafny program verifier finished with 2 verified, 6 errors
+Dafny program verifier finished with 49 verified, 6 errors
 resolution errors
 github-issue-245-resolve.dfy(10,17): Error: the order O of a decreases component 'e by O' must have type Std.Termination.Orders.Wfo<T> (got (nat, nat) -> bool)
 github-issue-245-resolve.dfy(17,12): Error: the expression of a decreases component 'e by O' must have exactly the element type of O (got int, expected nat)
@@ -26,10 +26,10 @@ github-issue-245-resolve.dfy(31,12): Error: a decreases component 'e by O' is no
 
 Dafny program verifier finished with 55 verified, 0 errors
 --modular-termination: bounds that are not below, or name another order
-github-issue-245-mt-verify.dfy(53,7): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
-github-issue-245-mt-verify.dfy(61,7): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
-github-issue-245-mt-verify.dfy(69,7): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
-github-issue-245-mt-verify.dfy(78,4): Error: decreases clause might not decrease (--modular-termination: the 'decreases {:callback}' bound of 'g' must be below the caller's 'decreases {:global}' bound)
+github-issue-245-mt-verify.dfy(53,7): Error: decreases clause might not decrease (modular termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+github-issue-245-mt-verify.dfy(61,7): Error: decreases clause might not decrease (modular termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+github-issue-245-mt-verify.dfy(69,7): Error: decreases clause might not decrease (modular termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+github-issue-245-mt-verify.dfy(78,4): Error: decreases clause might not decrease (modular termination: the 'decreases {:callback}' bound of 'g' must be below the caller's 'decreases {:global}' bound)
 
 Dafny program verifier finished with 52 verified, 4 errors
 --modular-termination: bounds that reach open dispatch, outside the binder rule
