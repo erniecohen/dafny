@@ -1398,6 +1398,26 @@ newtype Even  = x: int | x % 2 == 0
 newtype Even' = int { invariant this as int % 2 == 0  witness 0 }
 ```
 
+```dafny
+// An invariant that a proof must invoke explicitly (question 15 of section 8).  The conjunct is the
+// atom Even(n): checked wherever a D is formed, assumed wherever one is used, and its body unfolds
+// only under reveal.
+opaque predicate Even(x: int) { x % 2 == 0 }
+datatype D = D(n: int) {
+  invariant Even(n)
+  witness (reveal Even(); D(0))
+}
+method Make() returns (d: D) {
+  reveal Even();                    // without it, an error below: the body is hidden
+  d := D(4);                        // D(3) here: invariant might not hold
+}
+method Use(d: D) {
+  assert Even(d.n);                 // the atom, without the body
+  reveal Even();                    // without it, an error below: the body is hidden
+  assert d.n % 2 == 0;
+}
+```
+
 The abstract type of section 4.3 is the remaining accepted example.
 
 ### 6.2 Rejected by the resolver
@@ -1711,7 +1731,12 @@ Each remaining question has a recommendation.  The plan above assumes it.
 
 8. **Witness as a member (`witness e`) rather than a clause on the type header?**
    *Recommend member.*  A refinement can then replace it with the syntax it
-   already uses to add members.
+   already uses to add members.  This covers the owner's request that a
+   refinement can add a witness: a refining declaration declares the member
+   where the base has none, or replaces the base's, and its witness is checked
+   against all the invariants, the added ones included; an inherited witness
+   is checked against the added conjuncts only (stage 5; section 10,
+   *Witnesses*).
 
 9. **Must a class with an invariant declare a constructor?**
    *Recommend yes.*  The alternative is a check at every `new C` site that the
@@ -1741,6 +1766,94 @@ Each remaining question has a recommendation.  The plan above assumes it.
     and opacity.
     *Recommend defer.*  Attributes already attach, and `{:error "..."}` covers
     messages.
+
+14. **Invariants that carry a proof:** facts that follow from the type's
+    invariants, assumed wherever the type is, and never checked when a value
+    is formed.
+    The owner's proposal: `invariant Q by { proof }`, read as `assert Q by`
+    is.  Its obligation is proved once: of a raw `this` that satisfies the
+    type's own and inherited conjuncts, `Q` holds.  It is emitted one way
+    only, `$Is(v, T) ==> Q(v)`, outside the equivalence of section 5.1, so no
+    conversion, construction or `new;` obligation changes.  Inheritance and
+    refinement only add conjuncts, so `Q` stays implied and an heir never
+    proves it again.
+    *Recommend the `by` form, as a stage of its own after this plan's, with
+    the rules below.*  A probe found the first of them necessary.
+    - *Circularity.*  With the axiom written by hand as a lemma
+      `{:axiom} ensures Q(v)` of every `v: T`, the obligation can be
+      discharged by converting `this` to `T` and applying the axiom, and a
+      method then forms a value that falsifies `Q` (it satisfies every
+      conjunct) and proves `false`.  The emitted axiom is the same hazard
+      without the user's help: the equivalence gives `$Is(this, T)` from the
+      conjuncts the obligation assumes.  Two rules close it.  The proof obeys
+      the extension condition (section 3.3): neither it nor anything it
+      reaches refers to the set of values of `T`, by quantifying over it or
+      testing membership in it, which converting `this` to `T` does.  And the
+      axiom is guarded by a constant that every procedure assumes except the
+      obligation of `Q` and those of the callables its proof reaches.  The
+      obligation of a later proved invariant may assume the guards of the
+      earlier ones, as an invariant's well-formedness assumes the invariants
+      before it, so the order is well founded.  The guard is needed even
+      where no term `$Is(this, T)` appears today: soundness may not rest on
+      which terms a proof happens to produce.
+    - *Frame.*  `Q` obeys the invariants' reads restriction (section 3.2):
+      `$Is` does not depend on the heap, so neither may `Q`.
+    - *Generics and variance.*  The axiom is stated for every instantiation
+      and the obligation is proved for arbitrary type arguments, so nothing
+      changes.  The variance check of section 3.5 does not apply to `Q`,
+      which is a consequence of the conjuncts, not one of them.
+    - *Where `T` is not known.*  An inherited obligation site of section 4.4
+      assumes the inherited conjuncts, not `$Is(v, T)`, so `Q` is not
+      available there unless the site also states the type.
+    - *Trust.*  Under `--legacy-unchecked-import-binding`, `Q` is trusted as
+      the conjuncts are.
+    - *Trigger cost.*  `Q` is a separate axiom triggered by `$Is(v, T)`, so
+      it is instantiated wherever a value of `T` is.  A costly `Q` should be
+      an opaque predicate (question 15): the two combine, opaque conjuncts
+      with proved consequences.
+    - *Syntax.*  The `by` form changes proof obligations, not the type's set
+      of values, as `assert ... by` does.  The alternative, a lemma tagged
+      `{:invariant}`, has a parameter of the finished type, which is the
+      circularity above, and would be an attribute that changes meaning.
+    - *Controls.*  The axiom gets a positive control: an invariant of
+      adjacent sortedness, `Q` global sortedness (its proof is an
+      induction), and a use site that asserts `xs[0] <= xs[|xs| - 1]`, which
+      fails without the axiom.  The obligation gets negative controls: a
+      `Q` that does not follow from the conjuncts, with an empty proof, which
+      the verifier rejects; and a proof that converts `this` to `T`, which
+      the resolver rejects by the extension condition.
+
+15. **Invariants that are checked whenever a value is formed, but that a
+    proof must invoke explicitly**, to limit their trigger cost.
+    *Settled by the design: the invariant calls an `opaque` predicate.*
+    `invariant P(this)`, with `P` opaque, makes the conjunct the atom
+    `P(v)`.  It is checked wherever a value is formed and assumed wherever
+    one is used, and `P`'s body unfolds only under `reveal P()`.  The
+    invariant itself is never opaque (section 10); only the predicate's body
+    is hidden, so the type's meaning is fixed.  The example is in section
+    6.1, and the test is `git-issue-105-opaque`.  What the probes found:
+    - Forming a value proves the atom, so a site that forms one needs
+      `reveal P()` (or a lemma that ensures `P`), even where the value
+      plainly satisfies the body.  That is what opacity means.  A witness
+      can carry its own: `witness (reveal P(); D(0))`.
+    - An opaque member predicate works the same way, with `reveal T.P()` or
+      `reveal v.P()`.  When an object's invariant calls it, it is a raw
+      member, so the constructor can reveal it before `new;`.
+    - `hide P;` hides an ordinary predicate's body at a site, with the same
+      effect there.
+    - The variance check looks through an opaque body (section 3.5), since
+      the body is the predicate's meaning.
+    - Under `--default-function-opacity opaque`, every predicate an
+      invariant calls is opaque, as it is for a subset type's constraint.
+    - *A gap.*  Under `--default-function-opacity autoRevealDependencies`,
+      the predicates in a subset type's constraint are revealed where the
+      type is used, but those an invariant calls are not.  The call graph
+      maps a use of the type to its declaration (for the extension
+      condition, section 10), and the rewriter does not go on from there to
+      the invariants.  Consistent semantics asks for the same treatment.
+      *Recommend fixing it in stage 7:* the rewriter adds the predicates
+      called by a type's invariants, own and inherited, as it adds those of
+      a subset type's constraint.
 
 ## 9. Settled enough to implement first
 
@@ -1811,7 +1924,8 @@ each step below.
   `{:opaque}` (or `opaque`), `--default-function-opacity` does not make it
   opaque, and it gets no reveal lemma.  A reveal lemma would also be inherited
   by name, which invariants are not, so traits meeting in a diamond would
-  clash on it.
+  clash on it.  The predicates an invariant calls may be opaque (question 15
+  of section 8).
 - *Printing.*  The printed program is source: `invariant e`, with the reserved
   name omitted.  The resolved program (`--rprint`) also shows the reserved name
   as a comment, `invariant /* invariant#k */ e`, so the numbering of section 4.2
