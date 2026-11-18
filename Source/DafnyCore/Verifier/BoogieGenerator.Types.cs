@@ -124,6 +124,9 @@ public partial class BoogieGenerator {
       SelectorSemantics(Apply(arity), Predef.BoxType, "h", apply_ty, Requires(arity), requires_ty);
       SelectorSemantics(Requires(arity), Bpl.Type.Bool, "r", requires_ty, null, null);
       SelectorSemantics(Reads(arity), objset_ty, "rd", reads_ty, null, null);
+      if (FunctionDomainTags) {
+        AddTaggedHandleAxioms(ad, apply_ty, requires_ty, reads_ty, objset_ty);
+      }
 
       // function {:inline true}
       //   FuncN._requires#canCall(G...G G: Ty, H:Heap, f:Handle, x ... x :Box): bool

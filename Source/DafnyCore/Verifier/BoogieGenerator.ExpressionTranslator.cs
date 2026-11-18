@@ -1575,10 +1575,23 @@ namespace Microsoft.Dafny {
         var reads = e.Reads.Expressions.ConvertAll(environment.Substituter.SubstFrameExpr);
         var footprint = et.BuildBoxedReadsFootprint(GetToken(e), reads);
         return new Boogie.LambdaExpr(GetToken(e), [], environment.LayerBinders, null,
-          FunctionCall(GetToken(e), BoogieGenerator.Handle(e.BoundVars.Count), Predef.BoxType,
-            new Boogie.LambdaExpr(GetToken(e), [], environment.Binders, null, body),
-            new Boogie.LambdaExpr(GetToken(e), [], environment.Binders, null, requires),
-            new Boogie.LambdaExpr(GetToken(e), [], environment.Binders, null, footprint.SetValue)));
+          BoogieGenerator.FunctionDomainTags
+            // With domain tags (issue 374), the handle records its parameters' declared types.
+            // A lambda over int, real, bool and ORDINAL only uses BasicHandleN, whose selectors
+            // are unguarded.
+            ? FunctionCall(GetToken(e),
+              e.BoundVars.All(bv => BoogieGenerator.IsBasicDomainType(bv.Type))
+                ? BoogieGenerator.BasicHandle(e.BoundVars.Count)
+                : BoogieGenerator.TagHandle(e.BoundVars.Count), Predef.HandleType,
+              e.BoundVars.Select(bv => BoogieGenerator.TypeToTy(bv.Type)).Concat(new List<Expr> {
+                new Boogie.LambdaExpr(GetToken(e), [], environment.Binders, null, body),
+                new Boogie.LambdaExpr(GetToken(e), [], environment.Binders, null, requires),
+                new Boogie.LambdaExpr(GetToken(e), [], environment.Binders, null, footprint.SetValue)
+              }).ToList())
+            : FunctionCall(GetToken(e), BoogieGenerator.Handle(e.BoundVars.Count), Predef.BoxType,
+              new Boogie.LambdaExpr(GetToken(e), [], environment.Binders, null, body),
+              new Boogie.LambdaExpr(GetToken(e), [], environment.Binders, null, requires),
+              new Boogie.LambdaExpr(GetToken(e), [], environment.Binders, null, footprint.SetValue)));
       }
 
       private Expr TrLambdaExpr(LambdaExpr e) {
