@@ -309,6 +309,8 @@ Let `T` be a type with an invariant.  Define:
    a type parameter the callee does not quantify over without a bound.  This
    needs a per-function, per-type-parameter flag, computed bottom-up.  The
    first stage may approximate it by rejecting every such type argument.
+   (Stage 7 implements the exact form by analysing the callee as
+   instantiated; section 10, ninth step.)
 3. No application of a function value other than a lambda expression or a
    named function applied on the spot.  A stored function is a body the cone
    cannot see.
@@ -1853,7 +1855,7 @@ Each remaining question has a recommendation.  The plan above assumes it.
       the invariants.  Consistent semantics asks for the same treatment.
       *Recommend fixing it in stage 7:* the rewriter adds the predicates
       called by a type's invariants, own and inherited, as it adds those of
-      a subset type's constraint.
+      a subset type's constraint.  (Fixed in the ninth step, section 10.)
 
 ## 9. Settled enough to implement first
 
@@ -2109,7 +2111,8 @@ section 7.2).**
     as type arguments.  A generic subset type or newtype is analysed with the
     dependence of each of its type parameters, so a constraint that does not
     quantify over a dependent parameter is accepted.  A generic function given
-    a dependent type argument is rejected, the first-stage form of clause 2.
+    a dependent type argument is rejected, the first-stage form of clause 2
+    (the ninth step replaces it with the exact form).
   - Clause 1 accepts a bound variable that the resolver bounds by the elements
     of a collection, by a single given value, or by the subsets of a given set.
     If that collection holds raw values and the variable's type is not raw,
@@ -2259,7 +2262,8 @@ section 7.2).**
   invariant does not quantify over its parameter, is accepted.  A member
   function of the reached type, called from its invariant, is a generic
   function, so clause 2 rejects the call where a type argument is dependent;
-  the exact form of clause 2 is a stage 7 relaxation.  V5c, a generic form of
+  the exact form of clause 2 is a stage 7 relaxation (made in the ninth
+  step).  V5c, a generic form of
   V5 in which a `Liar3` needs a `P<Liar3>` whose invariant holds only where its
   type parameter is empty, is rejected, and verifies `false` without the check.
 - *Tests.*  `git-issue-105-generics.dfy` holds the controls V1 and V4 over a
@@ -2812,12 +2816,10 @@ section 7.2).**
   trait cannot pass a variant parameter to a non-variant one), so a variant `X`
   never reaches an inherited invariant today; the path is there for abstract
   types and newtypes.
-- *Bounded quantifiers.*  `forall y: X | y in s :: P(y)` and
-  `forall y <- s :: P(y)` still count as quantifiers over `X`, although where
-  `s` is a value of type `set<X>` the quantifier ranges over `s` alone, which is
-  the same at `A` and at `B`.  Recognising that is a candidate relaxation
-  (stage 7 of section 7.2), with the condition of section 3.3 that bounds by a
-  collection.
+- *Bounded variables.*  `forall y: X | y in s :: P(y)` and
+  `forall y <- s :: P(y)`, where `s` is a value of type `set<X>`, range over
+  `s` alone, which is the same at `A` and at `B`.  They counted as quantifiers
+  over `X` until the ninth step, which recognises them (see there).
 - *Statements inside expressions* are not analysed (section 3.5), for the
   reason the extension condition ignores them.
 - *Joins and inference.*  The join of `D<A>` and `D<B>` is `D<C>`, `C` the
@@ -2828,12 +2830,138 @@ section 7.2).**
   `-X`, the arrow's flip both ways, a non-variant type argument, a generic
   callee used negatively, a recursive one, a bodiless one, one not revealed, a
   negation, an equivalence, an `if` condition, a comprehension, a type test
-  under `-X`, a constant, a function used as a value).
+  under `-X`, a constant, a function used as a value), and, from the ninth
+  step, the bounded variables accepted and rejected (module
+  `BoundedVariables`).
   `git-issue-105-generics.dfy` holds the verifier's positive controls: a
   covariant `L<nat>` used as an `L<int>` where the invariant is needed at
   `int`, and a contravariant `N<int>` used as an `N<Empty>`, each of which
   verifies only because the conversion is a subtyping (the check would need
   induction), and conversions against the variance, which are checked.
+
+**Relaxations and the `autoRevealDependencies` gap (ninth step; stage 7 of section 7.2).**
+
+- *What the invariants call is revealed.*  Under
+  `--default-function-opacity autoRevealDependencies`, a callable that depends
+  on a type with invariants now has the functions that its invariants call
+  revealed, as one that depends on a subset type has those that the
+  constraint calls (the gap of question 15 of section 8, decided there on
+  consistent semantics).  `AutoRevealFunctionDependencies` goes on from a
+  type with invariants, wherever its traversal of the call graphs reaches
+  one (the declaration that owns it, its derived declaration, or a class's
+  non-null type), to the callees of the type's invariants, own and inherited,
+  in the module's call graph and in the inter-module one, and to the
+  functions that a newtype's header constraint calls, a conjunct of the
+  invariants.  The rest follows the subset type's rule:
+  - A constructor depends on the type of its class, since it forms a value of
+    it, as a function depends on its result type.
+  - A witness member, and the witness clause of a newtype's header (sugar for
+    one, section 3.5), get the reveals that their check needs, as a subset
+    type's witness clause does.
+  - An invariant is never opaque, so it is not revealed itself; its callees
+    have the type's depth.
+  - The call graph records a use of `raw D` as a use of `D`'s declaration, so
+    such a use reveals the same functions; a reveal only adds what holds.
+  - A callable in another module that depends on the type reveals nothing,
+    and an opaque predicate is revealed only explicitly, as for a subset type.
+
+  Without the option no declaration has a derived declaration, so nothing
+  changes; the traversal's loop was moved, unchanged, into `Reachable`, which
+  the witnesses share.
+- *Bounded variables in the variance analysis* (the relaxation that variance
+  by polarity named).  A bound variable of a quantifier, or of a set or map
+  comprehension, that the resolver bounds by the elements of a collection, by
+  a single value, or by the subsets of a given set, ranges over the values of
+  that expression.  Where the type of those values is the variable's type,
+  constraints included, it ranges over the same values whatever the type
+  argument is, so the variable does not use the type parameter.  The
+  expression it ranges over is analysed as any other.  So
+  `forall y <- xs :: P(y)`, with `xs: set<X>`, is as monotone in `X` as
+  `P` is.  The conditions, each decided on the meaning of the bound:
+  - The types must be equal, constraints included.  A variable of type
+    `NonEmpty<X>` bounded by `xss: set<set<X>>` ranges over the elements that
+    satisfy `NonEmpty`'s constraint, and that constraint may depend on `X`.
+  - A lambda expression has no bounds (the resolver finds none for one).
+  - A let-such-that expression is not covered.  The value it chooses may
+    depend on the type argument even where the values it chooses from do
+    not.
+- *The exact clause 2.*  The cone analyses a generic function reached with
+  dependent type arguments with the corresponding type parameters, of its
+  enclosing declaration and its own, dependent, as it analyses a generic
+  subset type.  So every clause holds in its body and specification as
+  instantiated.  The function is analysed once for each pattern of dependent
+  parameters, and there are finitely many.  This is section 3.3's rule
+  (a dependent type argument only for a parameter the callee does not
+  quantify over without a bound), computed by analysing the callee as
+  instantiated rather than by a flag per parameter.  It also covers the other
+  ways a callee can depend on a type parameter: an arrow type over it, whose
+  constraint quantifies over it, and a let-such-that over it.  The error
+  saying that such a call is not yet supported is gone.  Clause 5 needs
+  nothing on the callee's side.  `raw T` does not meet a trait bound, so a
+  callee cannot convert a raw value through a type parameter, and an
+  unbounded type parameter admits no conversion.  So every conversion of a raw
+  value is at the caller's argument slots, which the caller's own analysis
+  checks.
+- *A hole closed: the constant of a generic declaration.*  The cone entered
+  the initializer of a constant of a generic declaration without the
+  dependence of its type arguments.  So `ghost const AllEqual: bool :=
+  forall y: X :: y == x`, in a `Box<X>` used by the invariant of a `Liar4`
+  with a component of type `Box<Liar4>`, was accepted, and a program proved
+  `false` with it.  The constant is now analysed with the dependence of the
+  type arguments, as a generic function is.  V5d, at the end of
+  `git-issue-105-vacuity.dfy`, keeps that proof under
+  `--unchecked-invariant-extension`, and `Liar` in the module `ExactClause2`
+  of `git-issue-105-extension.dfy` is its negative control.
+- *Not done.*  The other relaxations of stage 7, and the candidates the
+  earlier steps named, each lack a clean argument or a mechanism Dafny has, so
+  each stays as it was:
+  - `new by { ... }` (open question 2) is an addition of syntax rather than a
+    relaxation.  It needs the grammar, the merging of a constructor's two
+    divisions in a refinement, and the typing of `this` as `raw C` in the
+    block.  Until then a proof about an unfinished object is a lemma about its
+    constants, called in the first division.
+  - Conversions of raw values in the cone (the conversion half of clause 5).
+    No argument is written that the conversion's proof obligation cannot make
+    an invariant's meaning circular.  Open question 5 leaves dropping it to the
+    owner.
+  - Stored function values and dynamic dispatch in a reference-free type's
+    cone (clauses 3 and 4).  Both need a bound on bodies that the cone cannot
+    see, a stored function's or a later override's, and Dafny has no way to
+    state one.
+  - Positive occurrences under a fixed-point reading.  Open question 5
+    recommends against them.
+  - A raw ancestor (sixth step): `raw P` stays `T`-dependent.  A `P` may hold
+    a raw `T` that is not a `T` (subtyping, sixth step), so making `raw P` and
+    `P` independent of `T` needs clause 5 to treat a value of a trait as
+    possibly raw.  That argument is not written.
+  - `raw` of a type that is provided but not revealed (seventh step).  It
+    needs a view of the type that keeps its raw type and hides its
+    invariants, and export sets have none.
+  - A test of an object against a user's subset type of `C` as a test of the
+    dynamic type (fifth step).  That is a change to compilation in every back
+    end, not to the checks.
+- *Tests.*  `git-issue-105-auto-reveal.dfy` (new) holds the reveals: uses and
+  formation of a datatype, a class through its constructor and its possibly
+  null type, a trait's inherited invariant, a newtype's header constraint and
+  header witness, an invariant that calls another module's function, and the
+  negative controls (a body that is false, `{:autoRevealDependencies false}`,
+  an opaque predicate, a client module).  Each method there that verifies does
+  so only because of the reveals.  `git-issue-105-variance.dfy` gains the
+  module `BoundedVariables`, which accepts each kind of bound and rejects an
+  unbounded variable, a constrained one and a let-such-that.
+  `git-issue-105-generics.dfy` gains `BoundedVariance`, a covariant datatype
+  whose invariant quantifies over the elements of a component: its conversion
+  up verifies, and one down is checked.  `git-issue-105-extension.dfy` gains
+  the module `ExactClause2`.  It rejects a generic function that quantifies
+  over its own dependent parameter, directly, through another function, in
+  its specification, through an arrow type and through a let-such-that.  It
+  rejects a function analysed with one pattern of dependent parameters and
+  then reached with another, a constant and a member function of a generic
+  datatype, and `Liar`.  It accepts a generic function whose quantifier
+  ranges over a collection, and a constant and a member function of a generic
+  datatype that do not quantify.  Three accepted lines of the module
+  `Generic` earlier in that test, which the first-stage form rejected, now
+  carry comments that say why they are accepted.
 
 **Controls (the owner's rule for every feature).**  Every addition, meaning
 every axiom or assumption, has a positive control: a test that verifies only

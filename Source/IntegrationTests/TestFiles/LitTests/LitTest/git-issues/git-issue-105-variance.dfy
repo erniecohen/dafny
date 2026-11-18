@@ -97,3 +97,24 @@ module Rejected {
   datatype Used<+X(!new)> = Used(b: bool) { invariant b ==> var f := F<X>; f == F<X> }  // error
   datatype Contra<-X(!new)> = Contra(b: bool) { invariant b ==> exists y: X :: true }  // error
 }
+
+// Issue 105, stage 7 of section 7.2 of the plan: a bound variable that ranges over the values of an
+// expression of its own type (the elements of a collection, one value, or the subsets of a set) does not
+// use the type, since it ranges over the same values whatever the type argument is.  The types must be the
+// same, constraints included, and a let-such-that expression is not covered, since its choice may depend on
+// the type argument.
+module BoundedVariables {
+  ghost predicate F<X(!new)>(y: X) { false }
+  type NonEmpty<X> = s: set<X> | |s| > 0 witness *
+
+  datatype Elements<+X(!new)> = Elements(xs: set<X>, ys: set<X>) { invariant forall y <- xs :: y in ys }
+  datatype SetOf<+X(!new)> = SetOf(xs: set<X>, ys: set<X>) { invariant (set y <- xs | y in ys) == xs }
+  datatype MapOf<+X(!new)> = MapOf(xs: set<X>) { invariant (map y <- xs :: 0) == map[] ==> xs == {} }
+  datatype Keys<+X(!new)> = Keys(m: map<X, int>) { invariant forall k <- m :: m[k] > 0 }
+  datatype Exact<+X(!new)> = Exact(x: X, ys: set<X>) { invariant forall y: X | y == x :: y in ys }
+  datatype Subsets<+X(!new)> = Subsets(xs: set<X>) { invariant forall s: set<X> | s <= xs :: |s| <= |xs| }
+
+  datatype Unbounded<+X(!new)> = Unbounded(xs: set<X>) { invariant forall y: X :: y in xs }  // error
+  datatype Constrained<+X(!new)> = Constrained(xss: set<set<X>>) { invariant forall s: NonEmpty<X> | s in xss :: F(s) }  // error
+  datatype Choice<+X(!new)> = Choice(xs: set<X>) { invariant xs != {} ==> var y: X :| y in xs; !F(y) }  // error
+}

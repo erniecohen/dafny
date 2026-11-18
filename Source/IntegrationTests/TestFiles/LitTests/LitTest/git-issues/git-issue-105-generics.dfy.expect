@@ -18,5 +18,7 @@ git-issue-105-generics.dfy(56,59): Related location: this is the invariant that 
 git-issue-105-generics.dfy(95,21): Error: value of expression (of type 'P<int>') is not known to be an instance of type 'raw P<nat>'
 git-issue-105-generics.dfy(115,15): Error: invariant might not hold
 git-issue-105-generics.dfy(114,16): Related location: this is the invariant that might not hold
+git-issue-105-generics.dfy(151,9): Error: invariant might not hold
+git-issue-105-generics.dfy(142,59): Related location: this is the invariant that might not hold
 
-Dafny program verifier finished with 21 verified, 10 errors
+Dafny program verifier finished with 23 verified, 11 errors

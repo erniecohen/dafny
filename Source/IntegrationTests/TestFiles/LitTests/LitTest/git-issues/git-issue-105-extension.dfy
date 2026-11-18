@@ -84,11 +84,12 @@ module Quantifiers {
   }
 }
 
-// Clause 2: a generic function instantiated with a type that depends on T.
+// Clause 2: a generic function instantiated with a type that depends on T is analysed with its type
+// parameter dependent (more in the module ExactClause2).
 module Generic {
   function Id<X>(x: X): X { x }
   datatype T = T(f: int) {
-    invariant Id(this).f >= 0  // error
+    invariant Id(this).f >= 0  // accepted: Id does not refer to the set of values of X
   }
   datatype Independent = Independent(f: int) {
     invariant Id(f) >= 0  // accepted
@@ -188,8 +189,7 @@ module Others {
 }
 
 // Generic datatypes.  A type with invariants reached in the cone is analysed with the dependence of each
-// of its type parameters, as a generic subset type is.  Clause 2 is in its first-stage form: a generic
-// member function given a type argument that depends on T is rejected even where its body would pass.
+// of its type parameters, as a generic subset type is, and so is a generic member function (clause 2).
 module Generics {
   datatype R1<X(!new)> = R1(n: int) {
     invariant forall r: R1<X> :: r.n == 0  // error: clause 1
@@ -225,7 +225,7 @@ module Generics {
     invariant true
   }
   datatype L<X> = Nil | Cons(x: X, t: L<X>) {
-    invariant Len() < 100  // error: clause 2, where V instantiates L
+    invariant Len() < 100  // accepted where V instantiates L: Len does not refer to the set of values of X
     function Len(): nat { if Nil? then 0 else 1 + t.Len() }
   }
   datatype V = V(l: L<V>) | VLeaf {
@@ -235,9 +235,71 @@ module Generics {
   // V5c of git-issue-105-vacuity.dfy: the invariant of P<Liar3> refers to the set of values of Liar3.
   ghost predicate Yes<X>(x: X) { true }
   datatype P<X(!new)> = P(b: bool) {
-    invariant b <==> forall x: X :: !Yes(x)  // error: clause 1 and clause 2, where Liar3 instantiates P
+    invariant b <==> forall x: X :: !Yes(x)  // error: clause 1, where Liar3 instantiates P
   }
   datatype Liar3 = Liar3(p: P<Liar3>) {
     invariant p.b
+  }
+}
+
+// Clause 2 (stage 7 of section 7.2 of the plan): a generic function or constant given a type argument that
+// depends on T is analysed with that type parameter dependent, so the other clauses are checked in its
+// specification and body as instantiated, and in what they reach in turn.
+module ExactClause2 {
+  ghost predicate All<X(!new)>(x: X) { forall y: X :: y == x }  // error: clause 1, where Direct instantiates All
+  datatype Direct = Direct(f: int) {
+    invariant All(this)
+  }
+
+  ghost predicate Inner<X(!new)>(x: X) { exists y: X :: y != x }  // error: clause 1, where Outer instantiates Inner
+  ghost predicate Outer<Y(!new)>(y: Y) { Inner(y) }
+  datatype Transitive = Transitive(f: int) {
+    invariant Outer(this)
+  }
+
+  ghost function {:axiom} Pick<X(!new)>(x: X): X ensures forall y: X :: y == x  // error: clause 1, in a specification
+
+  datatype Specified = Specified(f: int) {
+    invariant Pick(this) == this
+  }
+
+  ghost predicate Arrow<X>(x: X) { var f: X -> bool := y => true; f == f }  // error: the arrow type's constraint
+  datatype ThroughArrow = ThroughArrow(f: int) {
+    invariant Arrow(this)
+  }
+
+  ghost predicate Chosen<X(!new)>(x: X) { var y: X :| true; y == x }  // error: clause 1, a let-such-that
+  datatype ThroughChoice = ThroughChoice(f: int) {
+    invariant Chosen(this)
+  }
+
+  // A function reached at two instantiations is analysed at each.
+  ghost predicate Both<X(!new)>(x: X) { forall y: X :: y == x }  // error: clause 1, where Twice instantiates Both
+  datatype Twice = Twice(f: int) {
+    invariant Both(f) && Both(this)
+  }
+
+  // A constant of a generic type: V5d of git-issue-105-vacuity.dfy.  Before stage 7 the cone reached the
+  // constant without the dependence of its type argument, so the quantifier went unchecked.
+  datatype Box<X(!new)> = Box(x: X) {
+    ghost const AllEqual: bool := forall y: X :: y == x  // error: clause 1, where Liar instantiates Box
+    ghost const Same: bool := x == x
+    function Get(): X { x }
+    ghost predicate Other() { exists y: X :: y != x }  // error: clause 1, where ThroughMember instantiates Box
+  }
+  datatype Liar = Liar(b: Box<Liar>) | Leaf {
+    invariant this.Liar? ==> b.AllEqual
+  }
+  datatype ThroughMember = ThroughMember(b: Box<ThroughMember>) | TLeaf {
+    invariant this.ThroughMember? ==> b.Other()
+  }
+
+  // Accepted: the callees use their parameter only through values and bounded variables.
+  ghost predicate AllIn<X>(xs: set<X>, ys: set<X>) { forall y <- xs :: y in ys }
+  datatype Sets = Sets(kids: set<Sets>, more: set<Sets>) {
+    invariant AllIn(kids, more)
+  }
+  datatype Member = Member(b: Box<Member>) | MLeaf {
+    invariant this.Member? ==> b.Same && b.Get().MLeaf?
   }
 }
