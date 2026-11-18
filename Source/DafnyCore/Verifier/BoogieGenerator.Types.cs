@@ -1157,7 +1157,10 @@ public partial class BoogieGenerator {
     // Issue 105: where the header has moved into the InvariantTypeDecl (see NewtypeDecl.TakeHeaderClauses), "raw N"
     // is the base type with no constraint, as inhabited as the base type, and ghost, so it has nothing to check. The
     // header's constraint and witness are checked as those of the InvariantTypeDecl (see AddTypeDecl(SubsetTypeDecl)).
-    if (dd.MovedHeaderClauses == null) {
+    // A member witness is likewise checked as a const of the invariant type, including membership in the base
+    // type. In that case raw N needs no separate default-zero check, even when there were no header clauses.
+    if (dd.MovedHeaderClauses == null &&
+        !(dd.InvariantTypeDecl != null && dd.Members.Exists(member => member is MemberWitness))) {
       AddWellformednessCheck(dd);
     }
 

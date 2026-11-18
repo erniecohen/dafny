@@ -1125,6 +1125,7 @@ git-issues/git-issue-4982.dfy	0	10 verified, 0 errors
 git-issues/git-issue-4983.dfy	2		6,12,18,25
 git-issues/git-issue-4994.dfy	2		12,14,16,18,25,27,29,31,35,36,38,39,41,42,44,45
 git-issues/git-issue-4998.dfy	0	1 verified, 0 errors	
+git-issues/git-issue-501.dfy	4	4 verified, 1 error	19
 git-issues/git-issue-5017a.dfy	4	14 verified, 4 errors	45,72,79,127
 git-issues/git-issue-5017b.dfy	2		31,34,38,44,66,69,94,117,118,119,120,124,125,132,133,134,135,136,140,141
 git-issues/git-issue-5017c.dfy	4	11 verified, 2 errors	33,75
