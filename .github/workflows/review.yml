@@ -738,6 +738,12 @@ jobs:
             echo
             echo "Verdict fingerprint \`$vfp\`, resource fingerprint \`$rfp\`."
           } >> "$GITHUB_STEP_SUMMARY"
+      - name: Check target-specific library binaries
+        if: matrix.z3 == '5.1.0' && matrix.axioms == 'off'
+        run: |
+          make -C Source/DafnyStandardLibraries/src/Std/TargetSpecific check-binary-all \
+            DAFNY="$PWD/out/dafny/Dafny" \
+            VERIFY_OPTIONS="--solver-path $Z3 --cores 3 --verification-time-limit 0"
       - name: Record per-program resource counts and headroom
         if: always()
         run: |
