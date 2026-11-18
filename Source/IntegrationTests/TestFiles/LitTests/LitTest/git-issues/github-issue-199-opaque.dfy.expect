@@ -1,0 +1,24 @@
+github-issue-199-opaque.dfy(22,0): Error: a postcondition could not be proved on this return path
+github-issue-199-opaque.dfy(21,19): Related location: this is the postcondition that could not be proved
+github-issue-199-opaque.dfy(53,0): Error: a postcondition could not be proved on this return path
+github-issue-199-opaque.dfy(52,28): Related location: this is the postcondition that could not be proved
+github-issue-199-opaque.dfy(71,0): Error: a postcondition could not be proved on this return path
+github-issue-199-opaque.dfy(70,28): Related location: this is the postcondition that could not be proved
+github-issue-199-opaque.dfy(78,0): Error: a postcondition could not be proved on this return path
+github-issue-199-opaque.dfy(77,17): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 8 verified, 4 errors
+github-issue-199-opaque.dfy(22,0): Error: a postcondition could not be proved on this return path
+github-issue-199-opaque.dfy(21,19): Related location: this is the postcondition that could not be proved
+github-issue-199-opaque.dfy(48,0): Error: a postcondition could not be proved on this return path
+github-issue-199-opaque.dfy(47,17): Related location: this is the postcondition that could not be proved
+github-issue-199-opaque.dfy(53,0): Error: a postcondition could not be proved on this return path
+github-issue-199-opaque.dfy(52,28): Related location: this is the postcondition that could not be proved
+github-issue-199-opaque.dfy(58,0): Error: a postcondition could not be proved on this return path
+github-issue-199-opaque.dfy(57,28): Related location: this is the postcondition that could not be proved
+github-issue-199-opaque.dfy(71,0): Error: a postcondition could not be proved on this return path
+github-issue-199-opaque.dfy(70,28): Related location: this is the postcondition that could not be proved
+github-issue-199-opaque.dfy(78,0): Error: a postcondition could not be proved on this return path
+github-issue-199-opaque.dfy(77,17): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 6 verified, 6 errors

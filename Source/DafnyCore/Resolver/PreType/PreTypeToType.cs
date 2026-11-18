@@ -248,6 +248,16 @@ class PreTypeToTypeVisitor : ASTVisitor<IASTVisitorContext> {
       foreach (var lhs in letExpr.LHSs) {
         VisitPattern(lhs, context);
       }
+      if (letExpr.Exact && letExpr.RHSs.Count != 0 && letExpr.RHSs[0] is StmtExpr { LemmaBindingCall: { } lemmaBindingCall, E: LemmaResultExpr }) {
+        // This let binds the results of a lemma (see LetExpr.LemmaBinding). The result expressions take the very type
+        // arguments of the call statement, so that the call and the results it justifies cannot come to differ.
+        var callSelection = (MemberSelectExpr)lemmaBindingCall.MethodSelect;
+        foreach (var rhs in letExpr.RHSs) {
+          var result = (LemmaResultExpr)(rhs is StmtExpr rhsStmtExpr ? rhsStmtExpr.E : rhs);
+          result.TypeApplicationAtEnclosingClass = callSelection.TypeApplicationAtEnclosingClass;
+          result.TypeApplicationJustMember = callSelection.TypeApplicationJustMember;
+        }
+      }
     } else if (expr is DatatypeValue datatypeValue) {
       // If the datatype has no type parameters, then .InferredTypeArgs.Count == .InferredPreTypeArgs.Count == 0.
       // If it has type parameters, say n of them, then:

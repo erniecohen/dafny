@@ -90,6 +90,7 @@ internal class TriggersCollector {
 
   public bool IsPotentialTriggerCandidate(Expression expr) {
     if (expr is FunctionCallExpr ||
+        expr is LemmaResultExpr ||
         expr is SeqSelectExpr ||
         expr is MultiSelectExpr ||
         expr is MemberSelectExpr ||

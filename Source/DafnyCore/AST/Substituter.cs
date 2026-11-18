@@ -186,6 +186,18 @@ namespace Microsoft.Dafny {
           }
         }
 
+      } else if (expr is LemmaResultExpr lemmaResultExpr) {
+        var receiver = Substitute(lemmaResultExpr.Receiver);
+        var newArgs = SubstituteExprList(lemmaResultExpr.Args);
+        var newTypeApplicationAtEnclosingClass = SubstituteTypeList(lemmaResultExpr.TypeApplicationAtEnclosingClass);
+        var newTypeApplicationJustMember = SubstituteTypeList(lemmaResultExpr.TypeApplicationJustMember);
+        if (receiver != lemmaResultExpr.Receiver || newArgs != lemmaResultExpr.Args ||
+            newTypeApplicationAtEnclosingClass != lemmaResultExpr.TypeApplicationAtEnclosingClass ||
+            newTypeApplicationJustMember != lemmaResultExpr.TypeApplicationJustMember) {
+          newExpr = new LemmaResultExpr(expr.Origin, lemmaResultExpr.Lemma, receiver, newArgs, lemmaResultExpr.OutIndex,
+            newTypeApplicationAtEnclosingClass, newTypeApplicationJustMember);
+        }
+
       } else if (expr is ApplyExpr) {
         ApplyExpr e = (ApplyExpr)expr;
         Expression fn = Substitute(e.Function);
@@ -498,7 +510,10 @@ namespace Microsoft.Dafny {
 
         // Put things together
         if (anythingChanged || body != letExpr.Body) {
-          return new LetExpr(letExpr.Origin, newCasePatterns, rhss, body, letExpr.Exact);
+          return new LetExpr(letExpr.Origin, newCasePatterns, rhss, body, letExpr.Exact) {
+            // the call that was written does not have the new receiver and arguments
+            LemmaBinding = letExpr.LemmaBinding == null ? null : letExpr.LemmaBinding with { Rhs = null }
+          };
         }
 
         return null;

@@ -187,6 +187,7 @@ before the normal gate passes.
 | definite-assignment | Internal tracker-bit state invariant; no source-expression counterpart. |
 | if-guards, match-completeness | Ordered guard/query/domain predicates, pattern membership and binding scopes; existential witness/completeness proof rules retained. |
 | let-permissions, visibility | Exact binding/Skolem permissions and hide/reveal availability; neither is an extra proof of P. |
+| lemma-result-bindings | Under `--lemma-bindings`: the read permissions of a heap-dependent postcondition, re-checked at the values a checked lemma call returned, and the can-call guard of the axiom that says the chosen results satisfy the postcondition. The guard is assumed only after that call's own checks; nothing is assumed without one. |
 | value-translation, value-permission-translation | Value semantics, can-call traversal and heap/arrow representation; no body-term discovery or global fuel policy. |
 | extreme-prefix-contracts | Rank/prefix proof construction retains its specialized rule and SCC boundary. |
 | definition-consequence-axioms | Existing definitions, guarded consequences and result axioms; outside local-check migration and unchanged. `BoogieGenerator.FunctionDomains.cs` (opt-in function domains and extensionality) emits only axioms; its matches are `Requires(n)`, which names the arrow `Requires#n` function in handle-selector axioms, not a precondition. |

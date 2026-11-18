@@ -134,6 +134,7 @@ public static class DafnyCommands {
     CommonOptionBag.InheritedTraitAxioms,
     CommonOptionBag.RefinementExtends,
     CommonOptionBag.DecreasesOrders,
+    CommonOptionBag.LemmaBindings,
     CommonOptionBag.LegacyDecreasesOrder,
     CommonOptionBag.LegacyReadingFunctionsInDatatypes,
     CommonOptionBag.LegacyNoncanonicalMapPayloads,

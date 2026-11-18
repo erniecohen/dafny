@@ -1578,6 +1578,11 @@ namespace Microsoft.Dafny {
         yield break;
       }
 
+      if (Options.Get(CommonOptionBag.LemmaBindings) && !Options.Get(CommonOptionBag.TypeSystemRefresh)) {
+        reporter.Error(MessageSource.Resolver, Token.NoToken, "use of --lemma-bindings requires --type-system-refresh");
+        yield break;
+      }
+
       // ---------------------------------- Pass 0 ----------------------------------
       // This pass:
       // * resolves names, introduces (and may solve) type constraints
@@ -1706,6 +1711,12 @@ namespace Microsoft.Dafny {
       if (reporter.Count(ErrorLevel.Error) == prevErrorCount) {
         var boundsDiscoveryVisitor = new BoundsDiscoveryVisitor(this);
         boundsDiscoveryVisitor.VisitDeclarations(declarations);
+      }
+
+      // Check the expressions that bind the results of a lemma. This uses the bounds of the quantifiers in the
+      // lemma's postcondition.
+      if (reporter.Count(ErrorLevel.Error) == prevErrorCount) {
+        new LemmaBindingChecker(reporter).VisitDeclarations(declarations);
       }
 
       if (reporter.Count(ErrorLevel.Error) == prevErrorCount && Options.Get(Method.ReadsClausesOnMethods)) {
