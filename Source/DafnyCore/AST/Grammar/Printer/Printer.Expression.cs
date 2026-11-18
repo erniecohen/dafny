@@ -32,7 +32,30 @@ namespace Microsoft.Dafny {
       if (e.LemmaBinding == null) {
         return (e.LHSs, e.RHSs, e.Body);
       }
-      return (e.LemmaBinding.Lhss, [e.LemmaBinding.Rhs], e.LemmaBindingResultLet.Body);
+      var resultLet = e.LemmaBindingResultLet;
+      return (resultLet.LHSs, [e.LemmaBinding.Rhs ?? LemmaBindingCallToPrint(e, resultLet)], resultLet.Body);
+    }
+
+    /// <summary>
+    /// Returns the call of the lemma binding "e" as an expression to print, for a binding that does not have the
+    /// call that was written. The call is that of the result expressions, with the value of each variable of
+    /// the argument let in the variable's place.
+    /// </summary>
+    static Expression LemmaBindingCallToPrint(LetExpr e, LetExpr resultLet) {
+      var result = (LemmaResultExpr)((StmtExpr)resultLet.RHSs[0]).E;
+      Expression Value(Expression argument) {
+        if (e != resultLet && argument.Resolved is IdentifierExpr identifierExpr) {
+          var index = e.LHSs.FindIndex(lhs => lhs.Var == identifierExpr.Var);
+          if (index != -1) {
+            return e.RHSs[index];
+          }
+        }
+        return argument;
+      }
+      var callee = new ExprDotName(result.Origin, Value(result.Receiver), new Name(result.Lemma.Name), null);
+      var arguments = result.Bindings.ArgumentBindings.ConvertAll(binding =>
+        new ActualBinding(binding.FormalParameterName, Value(binding.Actual), binding.IsGhost));
+      return new ApplySuffix(result.Origin, null, callee, arguments, null);
     }
 
     public void PrintExtendedExpr(Expression expr, int indent, bool isRightmost, bool endWithCloseParen) {

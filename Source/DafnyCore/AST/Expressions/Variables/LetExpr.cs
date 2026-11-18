@@ -30,12 +30,14 @@ public class LetExpr : Expression, IAttributeBearingDeclaration, IBoundVarsBeari
   ///
   /// where the ti are fresh ghost variables, the parenthesized expression is a StmtExpr whose statement declares
   /// fresh ghost locals zi and calls L, and each Ri is a LemmaResultExpr for out-parameter i of L at the ti.
-  /// "this" node is the outermost of these let expressions.  The record keeps what was written, for printing and
-  /// for cloning the unresolved form.
+  /// "this" node is the outermost of these let expressions.  The record keeps the call that was written, for
+  /// printing and for cloning the unresolved form.  A substitution changes the receiver and arguments in the
+  /// rewritten form only, so it leaves a let expression whose "Rhs" is null, which is printed from the rewritten form
+  /// and has no unresolved form.
   /// </summary>
   [FilledInDuringResolution] public LemmaBindingSyntax? LemmaBinding;
 
-  public record LemmaBindingSyntax(List<CasePattern<BoundVar>> Lhss, ApplySuffix Rhs, bool HasArgumentLet);
+  public record LemmaBindingSyntax(ApplySuffix? Rhs, bool HasArgumentLet);
 
   /// <summary>
   /// For a let expression with a non-null LemmaBinding, returns the let expression that binds the variables the
@@ -76,8 +78,10 @@ public class LetExpr : Expression, IAttributeBearingDeclaration, IBoundVarsBeari
   public LetExpr(Cloner cloner, LetExpr original) : base(cloner, original) {
     if (original.LemmaBinding != null && !cloner.CloneResolvedFields) {
       // clone what was written, not what resolution made of it
-      LHSs = original.LemmaBinding.Lhss.ConvertAll(cloner.CloneCasePattern);
-      RHSs = [cloner.CloneExpr(original.LemmaBinding.Rhs)];
+      var written = original.LemmaBinding.Rhs ??
+                    throw new System.InvalidOperationException("a lemma binding that a substitution has changed has no unresolved form");
+      LHSs = original.LemmaBindingResultLet.LHSs.ConvertAll(cloner.CloneCasePattern);
+      RHSs = [cloner.CloneExpr(written)];
       Body = cloner.CloneExpr(original.LemmaBindingResultLet.Body);
     } else {
       LHSs = original.LHSs.ConvertAll(cloner.CloneCasePattern);

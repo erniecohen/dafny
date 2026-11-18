@@ -511,7 +511,8 @@ namespace Microsoft.Dafny {
         // Put things together
         if (anythingChanged || body != letExpr.Body) {
           return new LetExpr(letExpr.Origin, newCasePatterns, rhss, body, letExpr.Exact) {
-            LemmaBinding = letExpr.LemmaBinding
+            // the call that was written does not have the new receiver and arguments
+            LemmaBinding = letExpr.LemmaBinding == null ? null : letExpr.LemmaBinding with { Rhs = null }
           };
         }
 

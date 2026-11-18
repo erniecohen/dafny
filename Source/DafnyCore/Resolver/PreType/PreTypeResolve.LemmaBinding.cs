@@ -162,7 +162,7 @@ namespace Microsoft.Dafny {
         e.RHSs = argumentValues;
         e.Body = resultLet;
       }
-      e.LemmaBinding = new LetExpr.LemmaBindingSyntax(written, applySuffix, argumentVariables.Count != 0);
+      e.LemmaBinding = new LetExpr.LemmaBindingSyntax(applySuffix, argumentVariables.Count != 0);
       return resultLet;
     }
   }
