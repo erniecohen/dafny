@@ -2962,6 +2962,11 @@ section 7.2).**
   datatype that do not quantify.  Three accepted lines of the module
   `Generic` earlier in that test, which the first-stage form rejected, now
   carry comments that say why they are accepted.
+- *Controls from the mutation run.*  The 22 sites of this step, run against
+  the whole suite, each change at least one test (the table under
+  *Controls*).  The auto-reveal sites flip `auto-reveal` only, the
+  bounded-variable sites `variance` and, for quantifiers over collections,
+  `generics`, and the clause 2 sites `extension`.
 
 **Controls (the owner's rule for every feature).**  Every addition, meaning
 every axiom or assumption, has a positive control: a test that verifies only
@@ -2976,7 +2981,8 @@ removed when no program can reach it.
   `docs/dev/obligation-producers.json` (file, member, producer) that a site
   adds; a site that adds no obligation has none.  "Flips" lists the tests that
   change their result when the site is disabled, from a run of every site
-  against the whole suite (step 8; step 7's run was the first of that kind).
+  against the whole suite (step 8, and step 9 for its own sites; step 7's
+  run was the first of that kind).
   The runs of steps 6 and 6a covered only the tests predicted for each site,
   and their lists were incomplete.
 
@@ -3057,6 +3063,28 @@ removed when no program can reach it.
   | a witness member is checked once, as a const of the type | check | same, `AddWellformednessCheck` | none | newtype-compile, newtype-generics, newtypes |
   | the where clause of a variable of type `N` assumes the `CanCall`s of its invariants | assumption | `BoogieGenerator.cs`, `GetWhereClause` | `GetWhereClause/7`, `CanCallAssumption` | newtype-compile, newtype-generics, newtypes |
   | the message of a default witness that fails an invariant of the base type names the witness | message | `ProofObligationDescription.cs`, `InvariantCheck` | none | newtype-witness-checks |
+  | a use of a type with invariants reveals what its own invariants call | reveal | `AutoRevealFunctionDependencies.cs`, `InvariantDependencies` | none | auto-reveal |
+  | a use of a type with invariants reveals what its inherited invariants call | reveal | same | none | auto-reveal |
+  | a use of a type with invariants reveals what its invariants call in another module | reveal | same | none | auto-reveal |
+  | a use of a newtype with invariants reveals what its header constraint calls | reveal | same | none | auto-reveal |
+  | a class's non-null type stands for the class's invariants | reveal | same, `InvariantTypeOf` | none | auto-reveal |
+  | a callable that names a type with invariants in its signature | reveal | same, `GetEnumerator` | none | auto-reveal |
+  | a constructor depends on the type of its class | reveal | same | none | auto-reveal |
+  | a function the traversal reaches that uses a type with invariants | reveal | same, `Reachable` | none | auto-reveal |
+  | a newtype's header witness gets the reveals its check needs | reveal | same, `PostResolveIntermediate` | none | auto-reveal |
+  | a witness member gets the reveals its check needs | reveal | `ConstantField.cs`, `AutoRevealDependencies` | none | auto-reveal |
+  | a quantifier's variable that ranges over the values of an expression of its type does not use the type | relaxation | `TypeParameterPolarity.cs`, the quantifier case | none | generics, variance |
+  | the same for a variable of a set or map comprehension | relaxation | same, the comprehension case | none | variance |
+  | a variable bounded by the elements of a collection ranges over values of an expression | relaxation | same, `RangesOverAValue` | none | generics, variance |
+  | a variable bounded by a single value ranges over values of an expression | relaxation | same | none | variance |
+  | a variable bounded by the subsets of a given set ranges over values of an expression | relaxation | same | none | variance |
+  | a bounded variable does not use the type only where the bound's type is the variable's | check | same | none | variance |
+  | the bound's type and the variable's are compared with their constraints | check | same | none | variance |
+  | a generic function reached with dependent type arguments is analysed with those parameters dependent | check | `InvariantExtensionCondition.cs`, `CheckFunctionUse` | none | extension |
+  | a generic function's parameters are dependent where its enclosing declaration's type arguments are | check | same | none | extension |
+  | a generic function's parameters are dependent where its own type arguments are | check | same | none | extension |
+  | a generic function is analysed once for each pattern of dependent parameters, its own included | check | same, `Enqueue` | none | extension |
+  | a constant of a generic declaration is analysed with the dependence of its type arguments | check | same, the member selection case | none | extension |
 
 - *Resolver errors.*  Each error that the feature adds has a negative control
   in the expect files named:
