@@ -1,0 +1,2 @@
+# Checked snapshots bind to the exact verifier build and are generated after that build.
+DafnyStandardLibraries-checked*.doo

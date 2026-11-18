@@ -258,6 +258,11 @@ public class DafnyFile {
       var resourceName = uri.LocalPath[1..];
       await using var stream = assembly.GetManifestResourceStream(resourceName);
       if (stream is null) {
+        if (resourceName.StartsWith("DafnyStandardLibraries-checked", StringComparison.Ordinal)) {
+          reporter.Error(MessageSource.Project, "modular_termination_admission", origin,
+            $"the checked standard-library bundle '{resourceName}' is unavailable; rebuild the checked standard libraries with 'make build-checked-standard-libraries'");
+          yield break;
+        }
         throw new Exception($"Cannot find embedded resource: {resourceName}");
       }
 

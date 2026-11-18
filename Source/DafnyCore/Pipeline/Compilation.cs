@@ -195,7 +195,7 @@ public class Compilation : IDisposable {
 
       if (Options.CompilerName is null or "cs" or "java" or "go" or "py" or "js") {
         var targetName = Options.CompilerName ?? "notarget";
-        var stdlibDooUri = DafnyMain.StandardLibrariesDooUriTarget[targetName];
+        var stdlibDooUri = DafnyMain.StandardLibraryUri(Options, targetName);
         await foreach (var targetSpecificFile in DafnyFile.CreateAndValidate(OnDiskFileSystem.Instance, errorReporter,
                          Options, stdlibDooUri, Project.StartingToken, asLibrary)) {
           result.Add(targetSpecificFile);
@@ -203,7 +203,7 @@ public class Compilation : IDisposable {
       }
 
       await foreach (var file in DafnyFile.CreateAndValidate(fileSystem, errorReporter, Options,
-                       DafnyMain.StandardLibrariesDooUri, Project.StartingToken, asLibrary)) {
+                       DafnyMain.StandardLibraryUri(Options), Project.StartingToken, asLibrary)) {
         result.Add(file);
       }
     }

@@ -10,10 +10,13 @@ on:
       - 'Source/DafnyStandardLibraries/**'
       - 'Source/DafnyCore/ModularTerminationRecord.cs'
       - 'Source/DafnyCore/ModularTerminationTrust.cs'
+      - 'Source/DafnyCore/ModularTerminationRuntimeTrust.cs'
+      - 'Source/DafnyCore/ModularTerminationRuntimeContracts.tsv'
       - 'Source/DafnyCore/DooFile.cs'
       - 'Source/DafnyCore/DafnyFile.cs'
       - 'Source/DafnyCore/Backends/Library/LibraryBackend.cs'
       - '.github/review/modular-termination-std.py'
+      - '.github/review/modular-termination-checked-std.py'
       - '.github/workflows/issue211-std.yml'
   workflow_dispatch:
 permissions:
@@ -44,12 +47,21 @@ jobs:
         run: |
           status=0
           python3 .github/review/modular-termination-std.py out/dafny/Dafny '${{ steps.z3.outputs.path }}' \
-            std-core-results --cores 4 || status=$?
+            std-core-results --cores 3 || status=$?
           cat std-core-results/summary.md >> "$GITHUB_STEP_SUMMARY"
+          exit $status
+      - name: Produce and admit the checked common and target catalog
+        run: |
+          status=0
+          python3 .github/review/modular-termination-checked-std.py out/dafny/Dafny '${{ steps.z3.outputs.path }}' \
+            checked-std-results --cores 3 || status=$?
+          cat checked-std-results/summary.md >> "$GITHUB_STEP_SUMMARY"
           exit $status
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: std-core-results
-          path: std-core-results
+          path: |
+            std-core-results
+            checked-std-results
           retention-days: 30

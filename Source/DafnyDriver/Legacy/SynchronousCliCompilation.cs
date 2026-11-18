@@ -215,15 +215,16 @@ namespace Microsoft.Dafny {
         var reporter = new ConsoleErrorReporter(options);
         if (options.CompilerName is null or "cs" or "java" or "go" or "py" or "js") {
           var targetName = options.CompilerName ?? "notarget";
-          var stdlibDooUri = DafnyMain.StandardLibrariesDooUriTarget[targetName];
+          var stdlibDooUri = DafnyMain.StandardLibraryUri(options, targetName);
           options.CliRootSourceUris.Add(stdlibDooUri);
           await foreach (var targetSpecificFile in DafnyFile.CreateAndValidate(OnDiskFileSystem.Instance, reporter, options, stdlibDooUri, Token.Cli, asLibrary)) {
             dafnyFiles.Add(targetSpecificFile);
           }
         }
 
-        options.CliRootSourceUris.Add(DafnyMain.StandardLibrariesDooUri);
-        await foreach (var targetAgnosticFile in DafnyFile.CreateAndValidate(OnDiskFileSystem.Instance, reporter, options, DafnyMain.StandardLibrariesDooUri, Token.Cli, asLibrary)) {
+        var commonStdlibUri = DafnyMain.StandardLibraryUri(options);
+        options.CliRootSourceUris.Add(commonStdlibUri);
+        await foreach (var targetAgnosticFile in DafnyFile.CreateAndValidate(OnDiskFileSystem.Instance, reporter, options, commonStdlibUri, Token.Cli, asLibrary)) {
           dafnyFiles.Add(targetAgnosticFile);
         }
       }
