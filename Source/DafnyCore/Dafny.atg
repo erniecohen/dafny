@@ -4477,6 +4477,9 @@ NameSegment<out Expression e>
   (. if (AcceptReferrers() && id.val == "locals") {
        e = new LocalsObjectExpression(id);
      } else { 
+       if (id.val == BoundedCallables.TypeName) {
+         SystemModuleModifiers.Add(b => b.CreateBoundedTypeDecl());
+       }
        e = new NameSegment(new SourceOrigin(id, t), id.val, typeArgs);
        if (openParen != null) {
          e = new ApplySuffix(new SourceOrigin(id, t, openParen), atLabel, e, args, t);
@@ -4493,7 +4496,10 @@ NameSegmentForTypeName<out Expression e, bool inExpressionContext>
 = (. Token id = la;  List<Type> typeArgs; .)
   Ident<out id>
   OptGenericInstantiation<out typeArgs, inExpressionContext>
-  (. e = new NameSegment(new SourceOrigin(id, t, id), id.val, typeArgs);
+  (. if (id.val == BoundedCallables.TypeName) {
+       SystemModuleModifiers.Add(b => b.CreateBoundedTypeDecl());
+     }
+     e = new NameSegment(new SourceOrigin(id, t, id), id.val, typeArgs);
   .)
   .
 

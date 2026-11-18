@@ -112,6 +112,7 @@ public class SystemModuleManager {
     var catalog = ResolutionCatalog ?? new ResolutionBuiltinCatalog(this);
     var view = new SystemModuleManager(this, catalog) { ResolvedSystem = ResolvedSystem };
     foreach (var arity in parsed.ArrowTypeDecls.Keys) { view.CreateArrowTypeDecl(arity); }
+    if (parsed.BoundedDecl != null) { view.CreateBoundedTypeDecl(); }
     view.BoundedArrowAdded = parsed.BoundedArrowAdded;
     foreach (var dimensions in parsed.arrayTypeDecls.Keys) {
       var (_, modify) = ArrayType(Token.NoToken, dimensions, null, true);
@@ -213,9 +214,28 @@ public class SystemModuleManager {
   public UserDefinedType Nat() { return new UserDefinedType(Token.NoToken, "nat", NatDecl, []); }
   public readonly TraitDecl ObjectDecl;
   /// <summary>
-  /// The abstract type "bounded&lt;O, F&gt;" of bounded callables (issue 266), available whenever the rules of termination across modules are enabled.
+  /// The abstract type "bounded&lt;O, F&gt;" of bounded callables (issue 266), created on demand by parsing a use.
   /// </summary>
-  public readonly AbstractTypeDecl BoundedDecl;
+  public AbstractTypeDecl BoundedDecl { get; private set; }
+
+  public void CreateBoundedTypeDecl() {
+    if (BoundedDecl != null || !ModularTermination.RulesEnabled(Options)) {
+      return;
+    }
+    if (ResolutionCatalog != null) {
+      ResolutionCatalog.Bounded(this);
+      return;
+    }
+    BoundedDecl = BoundedCallables.CreateDecl(SystemModule, DontCompile());
+    RecordBuiltin(BoundedDecl);
+    hash = null;
+  }
+
+  internal void ImportBounded(SystemModuleManager source) {
+    BoundedDecl = source.BoundedDecl;
+    RecordBuiltin(BoundedDecl);
+    hash = null;
+  }
   // The parser did not require a binary arrow, but bounded.certify needs its intrinsic signature.
   // Keep that availability separate from emitting unused arrow axioms for ordinary programs.
   private bool boundedArrowAdded;
@@ -256,10 +276,6 @@ public class SystemModuleManager {
     // create trait 'object'
     ObjectDecl = new TraitDecl(SourceOrigin.NoToken, new Name("object"), SystemModule, [], [], DontCompile(), false, []);
     SystemModule.SourceDecls.Add(ObjectDecl);
-    if (ModularTermination.RulesEnabled(options)) {
-      BoundedDecl = BoundedCallables.CreateDecl(SystemModule, DontCompile());
-      SystemModule.SourceDecls.Add(BoundedDecl);
-    }
     // add one-dimensional arrays, since they may arise during type checking
     // Arrays of other dimensions may be added during parsing as the parser detects the need for these
     UserDefinedType tmp = ArrayType(1, Type.Int, true);

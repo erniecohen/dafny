@@ -80,6 +80,43 @@ public class PipelineProfileResolutionTests {
     Assert.False(PipelineProfile.RecordingModulePhases);
   }
 
+  [Theory]
+  [InlineData(0, false)]
+  [InlineData(2, false)]
+  [InlineData(0, true)]
+  [InlineData(2, true)]
+  public async Task BoundedBuiltinsAreDemandedAndInternedAcrossViews(int threads, bool refresh) {
+    var cache = new OutputCache();
+    var ordinary = await Parse("module A { function F(x: int): int { x } }", threads, refresh);
+    await new ReusingResolver(ordinary, cache).Resolve(CancellationToken.None);
+    Assert.False(ordinary.Reporter.HasErrors);
+    Assert.Null(ordinary.SystemModuleManager.BoundedDecl);
+    Assert.False(ordinary.SystemModuleManager.ArrowTypeDecls.ContainsKey(2));
+
+    // The type and the static formation each demand the intrinsic independently.
+    const string typed = "module A { function F(c: bounded<nat, (int -> int)>): int -> int { c.erase } }";
+    const string formation = "module A { function F(): int -> int { bounded.certify(1, x => x).erase } }";
+    AbstractTypeDecl? canonical = null;
+    foreach (var text in new[] { typed, formation, typed }) {
+      var cold = await Parse(text, threads, refresh);
+      await new ProgramResolver(cold).Resolve(CancellationToken.None);
+      Assert.False(cold.Reporter.HasErrors, string.Join("\n",
+        ((BatchErrorReporter)cold.Reporter).AllMessages.Select(message => message.Message)));
+      Assert.NotNull(cold.SystemModuleManager.BoundedDecl);
+      var program = await Parse(text, threads, refresh);
+      await new ReusingResolver(program, cache).Resolve(CancellationToken.None);
+      Assert.False(program.Reporter.HasErrors, string.Join("\n",
+        ((BatchErrorReporter)program.Reporter).AllMessages.Select(message => message.Message)));
+      var intrinsic = program.SystemModuleManager.BoundedDecl;
+      Assert.NotNull(intrinsic);
+      Assert.True(program.SystemModuleManager.ArrowTypeDecls.ContainsKey(2));
+      if (canonical != null) { Assert.Same(canonical, intrinsic); }
+      canonical = intrinsic;
+    }
+    Assert.Null(ordinary.SystemModuleManager.BoundedDecl);
+    Assert.False(ordinary.SystemModuleManager.ArrowTypeDecls.ContainsKey(2));
+  }
+
   // A reused resolution view sets up each canonical builtin once (https://github.com/erniecohen/dafny/issues/323).
   // Registering "object" again replaced its non-null type, which earlier resolutions still hold.
   [Theory]
