@@ -167,6 +167,13 @@ public static class DafnyNewCli {
         return;
       }
 
+      if (dafnyOptions.Get(CommonOptionBag.RecursiveModules) &&
+          !dafnyOptions.Get(CommonOptionBag.MemberInvariants)) {
+        await dafnyOptions.OutputWriter.Status("Error: --recursive-modules requires --member-invariants");
+        context.ExitCode = (int)ExitValue.DAFNY_ERROR;
+        return;
+      }
+
       dafnyOptions.ApplyDefaultOptionsWithoutSettingsDefault();
       dafnyOptions.UsingNewCli = true;
 

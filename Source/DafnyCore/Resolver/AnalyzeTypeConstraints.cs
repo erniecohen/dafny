@@ -66,7 +66,8 @@ class AnalyzeTypeConstraints {
       return declarations;
     }
     var enclosingModule = declarations[0].EnclosingModuleDefinition;
-    Contract.Assert(declarations.TrueForAll(decl => decl.EnclosingModuleDefinition == enclosingModule));
+    // (or from the members of one recursive module group, which share a call graph)
+    Contract.Assert(declarations.TrueForAll(decl => ModuleDefinition.InSameRecursiveGroup(decl.EnclosingModuleDefinition, enclosingModule)));
 
     // From the module declaration, we get the components sorted according to how they depend on each other.
     var sortedComponents = enclosingModule.CallGraph.TopologicallySortedComponents();

@@ -383,6 +383,8 @@ true - All class instances are raw pointers and need to be manually deallocated"
 
   public static readonly Option<bool> LegacyEarlyYieldParameterCheck = new("--legacy-early-yield-parameter-check", () => false,
     "Use the legacy, unsound check of the types of iterator yield parameters, made before the resolver knows how each datatype is constructed, for migration and comparison only.") { IsHidden = true };
+  public static readonly Option<bool> LegacyUncheckedTypeVariance = new("--legacy-unchecked-type-variance", () => false,
+    "Use the legacy, unsound rule that ignores subset-type and newtype constraints when checking declared variance, for migration and comparison only.") { IsHidden = true };
   public static readonly Option<bool> LegacyUncheckedImportBinding = new("--legacy-unchecked-import-binding", () => false,
     "Use the legacy, unsound rule that lets a refining module bind an inherited abstract import to a module that does not refine the import's target, for migration and comparison only.") { IsHidden = true };
   public static readonly Option<bool> LegacyAllocatedInLambdas = new("--legacy-allocated-in-lambdas", () => false,
@@ -449,6 +451,11 @@ Value implementations must retain their type parameters in compatible parent pos
 
   public static readonly Option<bool> MemberInvariants = new("--member-invariants", () => false,
     "(experimental, incomplete) Allow 'invariant' and 'witness' members in types, and the raw type 'raw T' (issue 105). Requires --type-system-refresh. A program that declares a member invariant may not declare a codatatype.") {
+    IsHidden = true
+  };
+
+  public static readonly Option<bool> RecursiveModules = new("--recursive-modules", () => false,
+    "(experimental, incomplete) Allow modules to import each other. The modules of an import cycle form a recursive module group, which means what one module with all their declarations would mean. Only imports may form a cycle. Requires --member-invariants. A program that has a recursive module group may not declare a codatatype. At this stage a member of a group may not be abstract, refine or be refined, declare an abstract import, and a program that has a group is not compiled.") {
     IsHidden = true
   };
 
@@ -924,6 +931,11 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterGlobalOption(MemberInvariants,
       (reporter, origin, prefix, option, localValue, libraryValue) =>
         OptionCompatibility.OptionLibraryImpliesLocalError(reporter, origin, prefix, option, localValue, libraryValue ?? false));
+    // A library built with --recursive-modules may contain a recursive module group, so a program that uses
+    // it needs the option too.  Like --member-invariants, the manifest records it only when it is on.
+    OptionRegistry.RegisterGlobalOption(RecursiveModules,
+      (reporter, origin, prefix, option, localValue, libraryValue) =>
+        OptionCompatibility.OptionLibraryImpliesLocalError(reporter, origin, prefix, option, localValue, libraryValue ?? false));
     OptionRegistry.RegisterGlobalOption(ExtendedNewtypeBases,
       (reporter, origin, prefix, option, localValue, libraryValue) =>
         OptionCompatibility.OptionLibraryImpliesLocalError(reporter, origin, prefix, option, localValue, libraryValue ?? false));
@@ -960,6 +972,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(LegacyReplacementCycles, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacyGenericFunctionStores, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacyInheritedTerminationChecks, OptionScope.Cli);
+    OptionRegistry.RegisterOption(LegacyUncheckedTypeVariance, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacyUncheckedImportBinding, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacyStoredFunctionCallbacks, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacyInheritedNameCapture, OptionScope.Cli);

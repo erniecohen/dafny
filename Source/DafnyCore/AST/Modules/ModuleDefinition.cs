@@ -296,7 +296,22 @@ Generate module names in the older A_mB_mC style instead of the current A.B.C sc
   public static bool InSameSCC(ICallable a, ICallable b) {
     if (a is SpecialFunction || b is SpecialFunction) { return false; }
     var module = a.EnclosingModule;
-    return module == b.EnclosingModule && module.CallGraph.GetSCCRepresentative(a) == module.CallGraph.GetSCCRepresentative(b);
+    return InSameRecursiveGroup(module, b.EnclosingModule) && module.CallGraph.GetSCCRepresentative(a) == module.CallGraph.GetSCCRepresentative(b);
+  }
+
+  /// <summary>
+  /// The recursive module group of this module (--recursive-modules, issue 466), or null if the module
+  /// is in no cycle of imports.  The members of a group share one CallGraph, and every analysis that asks
+  /// whether two declarations are in the same module, in order to decide whether they can be mutually
+  /// recursive, asks InSameRecursiveGroup instead.
+  /// </summary>
+  public RecursiveModuleGroup? RecursiveGroup;
+
+  /// <summary>
+  /// True if "a" and "b" are the same module or members of the same recursive module group.
+  /// </summary>
+  public static bool InSameRecursiveGroup(ModuleDefinition? a, ModuleDefinition? b) {
+    return a == b || (a?.RecursiveGroup != null && a.RecursiveGroup == b?.RecursiveGroup);
   }
 
   /// <summary>
@@ -479,6 +494,26 @@ Generate module names in the older A_mB_mC style instead of the current A.B.C sc
   /// return value.
   /// </summary>
   public bool Resolve(ModuleSignature sig, ModuleResolver resolver, string? exportSetName = null) {
+    // An export view, an abstract signature and the system module are resolved alone, also by the resolver
+    // of a member of a recursive module group.
+    var group = resolver.Group;
+    var groupOfExportView = resolver.GroupOfExportView;
+    resolver.Group = null;
+    resolver.GroupOfExportView = group ?? groupOfExportView;
+    foreach (var _ in ResolveInPhases(sig, resolver, exportSetName)) {
+    }
+    resolver.Group = group;
+    resolver.GroupOfExportView = groupOfExportView;
+    return resolver.ModuleResolveResult;
+  }
+
+  /// <summary>
+  /// Resolve, phase by phase (see LiteralModuleDecl.ResolveInPhases).  The result is left in
+  /// resolver.ModuleResolveResult.
+  /// </summary>
+  public IEnumerable<string> ResolveInPhases(ModuleSignature sig, ModuleResolver resolver, string? exportSetName = null) {
+    resolver.ModuleResolveResult = false;
+    var group = resolver.Group;
     Contract.Requires(resolver.AllTypeConstraints.Count == 0);
     Contract.Ensures(resolver.AllTypeConstraints.Count == 0);
 
@@ -487,13 +522,15 @@ Generate module names in the older A_mB_mC style instead of the current A.B.C sc
     foreach (var d in TopLevelDecls) {
       if (d is AliasModuleDecl importDecl) {
         var importSig = importDecl.TargetQId.Root != null ? importDecl.TargetQId.Root.Signature : importDecl.Signature;
-        if (importSig is not { ModuleDef: { SuccessfullyResolved: true } }) {
-          return false;
+        if ((group ?? resolver.GroupOfExportView) is { } importingGroup && importSig?.ModuleDef is { } imported && importingGroup.Contains(imported)) {
+          // a member of the group, which is being resolved with this module
+        } else if (importSig is not { ModuleDef: { SuccessfullyResolved: true } }) {
+          yield break;
         }
       } else if (d is AbstractModuleDecl abstractImportDecl) {
         var importSig = abstractImportDecl.OriginalSignature;
         if (importSig is not { ModuleDef: { SuccessfullyResolved: true } }) {
-          return false;
+          yield break;
         }
       } else if (d is LiteralModuleDecl nestedModuleDecl) {
         if (!nestedModuleDecl.ModuleDef.SuccessfullyResolved) {
@@ -504,7 +541,7 @@ Generate module names in the older A_mB_mC style instead of the current A.B.C sc
               nestedModuleDecl.Name);
           }
 
-          return false;
+          yield break;
         }
       }
     }
@@ -513,15 +550,36 @@ Generate module names in the older A_mB_mC style instead of the current A.B.C sc
     resolver.moduleInfo = ModuleResolver.MergeSignature(sig, resolver.ProgramResolver.SystemModuleManager.systemNameInfo);
     Type.PushScope(resolver.moduleInfo.VisibilityScope);
     ModuleResolver.ResolveOpenedImports(resolver.moduleInfo, this, resolver.Reporter, resolver); // opened imports do not persist
-    resolver.CreateInheritedInvariantTypeDecls(this);
-    var datatypeDependencies = new Graph<IndDatatypeDecl>();
+    if (group == null) {
+      resolver.CreateInheritedInvariantTypeDecls(this);
+    } else {
+      // Imports are now available in every member. An inherited invariant can travel through several
+      // members, so create the derived types to a group-wide fixpoint before resolving any signature.
+      yield return "invariantImports";
+      do {
+        var before = TopLevelDecls.OfType<TopLevelDeclWithMembers>().Count(d => d.InvariantTypeDecl != null);
+        resolver.CreateInheritedInvariantTypeDecls(this);
+        if (TopLevelDecls.OfType<TopLevelDeclWithMembers>().Count(d => d.InvariantTypeDecl != null) != before) {
+          group.RoundChanged = true;
+        }
+        yield return "inheritedInvariantTypes*";
+      } while (group.RepeatRound);
+    }
+    var datatypeDependencies = group?.DatatypeDependencies ?? new Graph<IndDatatypeDecl>();
+    // Codatatypes are rejected in a program that has a group, so their graph is not shared.
     var codatatypeDependencies = new Graph<CoDatatypeDecl>();
     var allDeclarations = AllDeclarationsAndNonNullTypeDecls(TopLevelDecls).ToList();
+    if (group != null) {
+      group.MemberDeclarations[this] = allDeclarations;
+    }
     int prevErrorCount = resolver.reporter.Count(ErrorLevel.Error);
     // Close setup before timing the actual member signatures. Export-view Resolve calls
     // share the containing module's phase list, but have distinct constant phase names.
     PipelineProfile.ModulePhase(resolver.Options, exportSetName == null ? "resolveSetup" : "exportViewSetup");
-    resolver.ResolveTopLevelDecls_Signatures(this, sig, allDeclarations, datatypeDependencies, codatatypeDependencies);
+    yield return "setup";
+    foreach (var phase in resolver.ResolveTopLevelDecls_SignaturesInPhases(this, sig, allDeclarations, datatypeDependencies, codatatypeDependencies)) {
+      yield return phase;
+    }
     PipelineProfile.ModulePhase(resolver.Options, exportSetName == null ? "signature" : "exportSignature");
     Contract.Assert(resolver.AllTypeConstraints.Count == 0); // signature resolution does not add any type constraints
 
@@ -535,18 +593,45 @@ Generate module names in the older A_mB_mC style instead of the current A.B.C sc
       resolver.ResolveModuleAttributes(this, allDeclarations);
       PipelineProfile.ModulePhase(resolver.Options, exportSetName == null ? "moduleAttributes" : "exportModuleAttributes");
     }
+    yield return "moduleAttributes";
 
     if (resolver.reporter.Count(ErrorLevel.Error) == prevErrorCount) {
-      resolver.ResolveTopLevelDecls_Core(allDeclarations, datatypeDependencies, codatatypeDependencies,
-        exportSetName == null ? Name : $"{Name} export {exportSetName}", exportSetName != null);
+      foreach (var phase in resolver.ResolveTopLevelDecls_CoreInPhases(allDeclarations, datatypeDependencies, codatatypeDependencies,
+                 exportSetName == null ? Name : $"{Name} export {exportSetName}", exportSetName != null)) {
+        yield return phase;
+      }
       PipelineProfile.ModulePhase(resolver.Options, exportSetName == null ? "body" : "exportBody");
     }
 
+    yield return "body";
     Type.PopScope(resolver.moduleInfo.VisibilityScope);
     resolver.moduleInfo = oldModuleInfo;
 
 
     // Build the AccessibleMembers dictionary
+    if (group == null) {
+      BuildAccessibleMembers();
+    } else {
+      // The accessible members of a module include those of the modules it imports.  The members of a
+      // recursive module group import each other, so they repeat until a round adds nothing.
+      do {
+        if (BuildAccessibleMembers()) {
+          group.RoundChanged = true;
+        }
+        yield return "accessibleMembers*";
+      } while (group.RepeatRound);
+    }
+
+    PipelineProfile.ModulePhase(resolver.Options, exportSetName == null ? "accessibleMembers" : "exportAccessibleMembers");
+    resolver.ModuleResolveResult = true;
+  }
+
+  /// <summary>
+  /// Adds to AccessibleMembers what the declarations of the module make accessible.  Returns whether
+  /// that changed AccessibleMembers.
+  /// </summary>
+  private bool BuildAccessibleMembers() {
+    accessibleMembersChanged = false;
     foreach (var d in TopLevelDecls) {
       if (d is AliasModuleDecl || d is AbstractModuleDecl) {
         ModuleSignature importSig;
@@ -607,10 +692,10 @@ Generate module names in the older A_mB_mC style instead of the current A.B.C sc
         }
       }
     }
-
-    PipelineProfile.ModulePhase(resolver.Options, exportSetName == null ? "accessibleMembers" : "exportAccessibleMembers");
-    return true;
+    return accessibleMembersChanged;
   }
+
+  private bool accessibleMembersChanged;
 
   private static NameSegment TopLevelDeclToNameSegment(TopLevelDecl decl, IOrigin tok) {
     var typeArgs = new List<Type>();
@@ -648,6 +733,7 @@ Generate module names in the older A_mB_mC style instead of the current A.B.C sc
       newVal = !oldVal.IsRevealed && newVal.IsRevealed ? newVal : oldVal;
     }
 
+    accessibleMembersChanged = accessibleMembersChanged || newVal != oldVal;
     AccessibleMembers[accessibleDecl] = newVal;
   }
 
@@ -762,7 +848,23 @@ Generate module names in the older A_mB_mC style instead of the current A.B.C sc
     }
   }
 
-  public ModuleSignature RegisterTopLevelDecls(ModuleResolver resolver, bool useImports) {
+  /// <summary>
+  /// Set by RegisterTopLevelDecls when it is asked to leave out the reference types: what is left to do.
+  /// </summary>
+  private Action? registerReferenceTypes;
+
+  /// <summary>
+  /// Finishes a registration that left out the reference types.  Whether a trait is a reference type depends
+  /// on its parent traits.  A parent trait may be declared in another member of the recursive module group
+  /// of this module, so the members of a group register their names first, and then their reference types.
+  /// </summary>
+  public void RegisterReferenceTypes() {
+    var register = registerReferenceTypes;
+    registerReferenceTypes = null;
+    register?.Invoke();
+  }
+
+  public ModuleSignature RegisterTopLevelDecls(ModuleResolver resolver, bool useImports, bool deferReferenceTypes = false) {
     Contract.Requires(this != null);
     var sig = new ModuleSignature();
     sig.ModuleDef = this;
@@ -978,36 +1080,44 @@ Generate module names in the older A_mB_mC style instead of the current A.B.C sc
       }
     }
 
-    DetermineReferenceTypes(resolver, sig);
+    void RegisterReferenceTypes() {
+      DetermineReferenceTypes(resolver, sig);
 
-    // Issue 105: "C?" and "raw C" for a class or reference trait with member invariants, or the derived type G of a
-    // general trait. This waits for DetermineReferenceTypes, which decides which traits are reference types.
-    foreach (var cl in TopLevelDecls.OfType<ClassLikeDecl>()) {
-      if (cl.InvariantTypeDecl == null && InvariantTypeDecl.Applies(cl)) {
-        cl.InvariantTypeDecl = new InvariantTypeDecl(cl);
-        if (cl.NonNullTypeDecl != null) {
-          cl.RawNonNullTypeDecl = new RawNonNullTypeDecl(cl);
+      // Issue 105: "C?" and "raw C" for a class or reference trait with member invariants, or the derived type G of a
+      // general trait. This waits for DetermineReferenceTypes, which decides which traits are reference types.
+      foreach (var cl in TopLevelDecls.OfType<ClassLikeDecl>()) {
+        if (cl.InvariantTypeDecl == null && InvariantTypeDecl.Applies(cl)) {
+          cl.InvariantTypeDecl = new InvariantTypeDecl(cl);
+          if (cl.NonNullTypeDecl != null) {
+            cl.RawNonNullTypeDecl = new RawNonNullTypeDecl(cl);
+          }
+        }
+      }
+
+      // Now, for each reference type (class and some traits), register its possibly-null type.
+      // In the big loop above, each class and trait was registered under its own name. We're now going to change that for the reference types.
+      foreach (TopLevelDecl d in TopLevelDecls) {
+        if (d is ClassLikeDecl { NonNullTypeDecl: { } nntd } && !duplicateNames.Contains(d.Name)) {
+          var name = d.Name + "?";
+          if (toplevels.ContainsKey(name)) {
+            resolver.reporter.Error(MessageSource.Resolver, d,
+              "a module that already contains a top-level declaration '{0}' is not allowed to declare a reference type ({1}) '{2}'",
+              name, d.WhatKind, d.Name);
+          } else {
+            toplevels[name] = d;
+            toplevels[d.Name] = d;
+            // change the mapping of d.Name to d.NonNullTypeDecl
+            sig.TopLevels[d.Name] = nntd;
+            sig.TopLevels[name] = d;
+          }
         }
       }
     }
 
-    // Now, for each reference type (class and some traits), register its possibly-null type.
-    // In the big loop above, each class and trait was registered under its own name. We're now going to change that for the reference types.
-    foreach (TopLevelDecl d in TopLevelDecls) {
-      if (d is ClassLikeDecl { NonNullTypeDecl: { } nntd } && !duplicateNames.Contains(d.Name)) {
-        var name = d.Name + "?";
-        if (toplevels.ContainsKey(name)) {
-          resolver.reporter.Error(MessageSource.Resolver, d,
-            "a module that already contains a top-level declaration '{0}' is not allowed to declare a reference type ({1}) '{2}'",
-            name, d.WhatKind, d.Name);
-        } else {
-          toplevels[name] = d;
-          toplevels[d.Name] = d;
-          // change the mapping of d.Name to d.NonNullTypeDecl
-          sig.TopLevels[d.Name] = nntd;
-          sig.TopLevels[name] = d;
-        }
-      }
+    if (deferReferenceTypes) {
+      registerReferenceTypes = RegisterReferenceTypes;
+    } else {
+      RegisterReferenceTypes();
     }
 
     return sig;
@@ -1031,101 +1141,138 @@ Generate module names in the older A_mB_mC style instead of the current A.B.C sc
     // In the following dictionary, a TraitDecl not being present among the keys means it has not been visited in the InheritsFromObject traversal.
     // If a TraitDecl is a key and maps to "false", then it is currently being visited.
     // If a TraitDecl is a key and maps to "true", then its .IsReferenceTypeDecl has been computed and is ready to be used.
-    var openedImports = TopLevelDecls.OfType<ModuleDecl>().Where(d => d.Opened).ToList();
-    var traitsProgress = new Dictionary<TraitDecl, bool>();
-    foreach (var decl in TopLevelDecls.Where(d => d is TraitDecl)) {
-      // Resolve a "path" to a top-level declaration, if possible. On error, return null.
-      // The path is expected to consist of NameSegment or ExprDotName nodes.
-      TopLevelDecl? ResolveNamePath(Expression path) {
-        // A single NameSegment is a little different, because it may refer to built-in type (of interest here: "object").
-        if (path is NameSegment nameSegment) {
-          if (sig.TopLevels.TryGetValue(nameSegment.Name, out var topLevelDecl)) {
-            return topLevelDecl;
-          } else if (resolver.moduleInfo != null && resolver.moduleInfo.TopLevels.TryGetValue(nameSegment.Name, out topLevelDecl)) {
-            // For "object" and other reference-type declarations from other modules, we're picking up the NonNullTypeDecl; if so, return
-            // the original declaration.
-            return topLevelDecl is NonNullTypeDecl nntd ? nntd.ViewAsClass : topLevelDecl;
-          } else if (resolver.ProgramResolver.SystemModuleManager.systemNameInfo.TopLevels.TryGetValue(nameSegment.Name, out topLevelDecl)) {
-            // For "object" and other reference-type declarations from other modules, we're picking up the NonNullTypeDecl; if so, return
-            // the original declaration.
-            return topLevelDecl is NonNullTypeDecl nntd ? nntd.ViewAsClass : topLevelDecl;
-          }
-          // Look through opened imports (which haven't yet been added to the module's signature). There may be ambiguities among the declarations
-          // of these opened imports. Still, we'll just pick the first declaration that matches, if any. If this declaration turns out to be
-          // ambiguous, then an error will be reported later; in the meantime, all that would have happened is that the resolved name path here
-          // is referring to some top-level declaration that won't accurately answer the question of whether "path" is referring to a reference
-          // type or not.
-          foreach (var importDecl in openedImports) {
-            // only these ModuleDecl's can be .Opened
-            Contract.Assert(importDecl is AliasModuleDecl or AbstractModuleDecl or LiteralModuleDecl { CopyImport: not null });
-            if (importDecl.AccessibleSignature(false).TopLevels.TryGetValue(nameSegment.Name, out topLevelDecl)) {
-              // For "object" and other reference-type declarations from other modules, we're picking up the NonNullTypeDecl; if so, return
-              // the original declaration.
-              return topLevelDecl is NonNullTypeDecl nntd ? nntd.ViewAsClass : topLevelDecl;
-            }
-          }
-          // We didn't find "path"
-          return null;
-        }
+    //
+    // A parent trait may be declared in another member of the recursive module group of this module.  The traversal then goes on in
+    // that member, so the members of a group share the dictionary.  What the traversal finds for the traits of a group is checked
+    // against the resolved parent traits later (ModuleResolver.CheckReferenceTraitsOfGroup).
+    var traitsProgress = RecursiveGroup?.ReferenceTraitsProgress ?? new Dictionary<TraitDecl, bool>();
+    foreach (var decl in TopLevelDecls.OfType<TraitDecl>()) {
+      InheritsFromObject(decl, resolver, sig, traitsProgress);
+    }
+  }
 
-        // convert the ExprDotName to a list of strings
-        var names = new List<string>();
-        while (path is ExprDotName exprDotName) {
-          names.Add(exprDotName.SuffixName);
-          path = exprDotName.Lhs;
-        }
-        names.Add(((NameSegment)path).Name);
-        var s = sig;
-        var i = names.Count;
-        while (true) {
-          i--;
-          if (!s.TopLevels.TryGetValue(names[i], out var topLevelDecl)) {
-            return null;
-          } else if (i == 0) {
-            // For reference-type declarations from other modules, we're picking up the NonNullTypeDecl; if so, return
-            // the original declaration.
-            return topLevelDecl is NonNullTypeDecl nntd ? nntd.ViewAsClass : topLevelDecl;
-          } else if (topLevelDecl is ModuleDecl moduleDecl) {
-            var signature = moduleDecl.AccessibleSignature(false);
-            s = resolver.GetSignature(signature);
-          } else {
-            return null;
-          }
+  /// <summary>
+  /// The signature in which DetermineReferenceTypes looks up the names that "moduleDecl" gives access to, or null
+  /// if there is none.  An import of a member of a recursive module group by another member has no signature yet
+  /// when reference types are determined; for it, the answer is the signature that the target registered, which
+  /// has every declaration of the target, whatever its export sets say.  A name that the import does not give
+  /// access to is an error when the parent traits are resolved.
+  /// </summary>
+  private static ModuleSignature? SignatureForReferenceTypes(ModuleDecl moduleDecl, int depth = 0) {
+    if (moduleDecl is LiteralModuleDecl { ModuleDef.RecursiveGroup: not null, DefaultExport: null } member) {
+      return member.Signature;
+    }
+    if (moduleDecl.Signature != null) {
+      return moduleDecl.AccessibleSignature(false);
+    }
+    if (moduleDecl is not AliasModuleDecl import || import.TargetQId?.Root == null || depth > 100) {
+      return null;
+    }
+    var target = import.TargetQId;
+    var decl = target.Root;
+    for (var k = target.RootIndex + 1; decl != null && k < target.Path.Count; k++) {
+      var signature = SignatureForReferenceTypes(decl, depth + 1);
+      decl = signature?.TopLevels.GetValueOrDefault(target.Path[k].Value) as ModuleDecl;
+    }
+    return decl == null ? null : SignatureForReferenceTypes(decl, depth + 1);
+  }
+
+  /// <summary>
+  /// Resolve a "path" to a top-level declaration, if possible. On error, return null.
+  /// The path is expected to consist of NameSegment or ExprDotName nodes.
+  /// </summary>
+  private TopLevelDecl? ResolveNamePathForReferenceTypes(Expression path, ModuleResolver resolver, ModuleSignature sig) {
+    // A single NameSegment is a little different, because it may refer to built-in type (of interest here: "object").
+    if (path is NameSegment nameSegment) {
+      if (sig.TopLevels.TryGetValue(nameSegment.Name, out var topLevelDecl)) {
+        // In a recursive module group, the possibly-null type of a trait of this module may have been registered already.
+        return topLevelDecl is NonNullTypeDecl nntd ? nntd.ViewAsClass : topLevelDecl;
+      } else if (resolver.moduleInfo != null && resolver.moduleInfo.TopLevels.TryGetValue(nameSegment.Name, out topLevelDecl)) {
+        // For "object" and other reference-type declarations from other modules, we're picking up the NonNullTypeDecl; if so, return
+        // the original declaration.
+        return topLevelDecl is NonNullTypeDecl nntd ? nntd.ViewAsClass : topLevelDecl;
+      } else if (resolver.ProgramResolver.SystemModuleManager.systemNameInfo.TopLevels.TryGetValue(nameSegment.Name, out topLevelDecl)) {
+        // For "object" and other reference-type declarations from other modules, we're picking up the NonNullTypeDecl; if so, return
+        // the original declaration.
+        return topLevelDecl is NonNullTypeDecl nntd ? nntd.ViewAsClass : topLevelDecl;
+      }
+      // Look through opened imports (which haven't yet been added to the module's signature). There may be ambiguities among the declarations
+      // of these opened imports. Still, we'll just pick the first declaration that matches, if any. If this declaration turns out to be
+      // ambiguous, then an error will be reported later; in the meantime, all that would have happened is that the resolved name path here
+      // is referring to some top-level declaration that won't accurately answer the question of whether "path" is referring to a reference
+      // type or not.
+      foreach (var importDecl in TopLevelDecls.OfType<ModuleDecl>().Where(d => d.Opened)) {
+        Contract.Assert(importDecl is AliasModuleDecl or AbstractModuleDecl or LiteralModuleDecl { CopyImport: not null }); // only these ModuleDecl's can be .Opened
+        var importSignature = SignatureForReferenceTypes(importDecl);
+        if (importSignature != null && importSignature.TopLevels.TryGetValue(nameSegment.Name, out topLevelDecl)) {
+          // For "object" and other reference-type declarations from other modules, we're picking up the NonNullTypeDecl; if so, return
+          // the original declaration.
+          return topLevelDecl is NonNullTypeDecl nntd ? nntd.ViewAsClass : topLevelDecl;
         }
       }
-
-      bool InheritsFromObject(TraitDecl traitDecl) {
-        if (traitsProgress.TryGetValue(traitDecl, out var isDone)) {
-          if (isDone) {
-            return traitDecl.IsReferenceTypeDecl;
-          } else {
-            // there is a cycle among the parents, so we'll suppose the trait does inherit from "object"
-            return true;
-          }
-        }
-        traitsProgress[traitDecl] = false; // indicate that traitDecl is currently being visited
-
-        var inheritsFromObject = traitDecl.IsObjectTrait;
-        foreach (var parent in traitDecl.Traits) {
-          if (parent is UserDefinedType udt) {
-            if (ResolveNamePath(udt.NamePath) is TraitDecl parentTrait) {
-              if (parentTrait.EnclosingModuleDefinition == this) {
-                inheritsFromObject = InheritsFromObject(parentTrait) || inheritsFromObject;
-              } else {
-                inheritsFromObject = parentTrait.IsReferenceTypeDecl || inheritsFromObject;
-              }
-            }
-          }
-        }
-
-        traitDecl.SetUpAsReferenceType(resolver.Options.Get(CommonOptionBag.GeneralTraits) == CommonOptionBag.GeneralTraitsOptions.Legacy || inheritsFromObject);
-        traitsProgress[traitDecl] = true; // indicate that traitDecl.IsReferenceTypeDecl can now be called
-        return inheritsFromObject;
-      }
-
-      InheritsFromObject((TraitDecl)decl);
+      // We didn't find "path"
+      return null;
     }
 
+    // convert the ExprDotName to a list of strings
+    var names = new List<string>();
+    while (path is ExprDotName exprDotName) {
+      names.Add(exprDotName.SuffixName);
+      path = exprDotName.Lhs;
+    }
+    names.Add(((NameSegment)path).Name);
+    var s = sig;
+    var i = names.Count;
+    while (true) {
+      i--;
+      if (!s.TopLevels.TryGetValue(names[i], out var topLevelDecl)) {
+        return null;
+      } else if (i == 0) {
+        // For reference-type declarations from other modules, we're picking up the NonNullTypeDecl; if so, return
+        // the original declaration.
+        return topLevelDecl is NonNullTypeDecl nntd ? nntd.ViewAsClass : topLevelDecl;
+      } else if (topLevelDecl is ModuleDecl moduleDecl && SignatureForReferenceTypes(moduleDecl) is { } signature) {
+        s = resolver.GetSignature(signature);
+      } else {
+        return null;
+      }
+    }
+  }
+
+  private bool InheritsFromObject(TraitDecl traitDecl, ModuleResolver resolver, ModuleSignature sig, Dictionary<TraitDecl, bool> traitsProgress) {
+    Contract.Requires(traitDecl.EnclosingModuleDefinition == this);
+    if (traitsProgress.TryGetValue(traitDecl, out var isDone)) {
+      if (isDone) {
+        return traitDecl.IsReferenceTypeDecl;
+      } else {
+        // there is a cycle among the parents, so we'll suppose the trait does inherit from "object"
+        return true;
+      }
+    }
+    traitsProgress[traitDecl] = false; // indicate that traitDecl is currently being visited
+
+    var inheritsFromObject = traitDecl.IsObjectTrait;
+    foreach (var parent in traitDecl.Traits) {
+      if (parent is UserDefinedType udt) {
+        if (ResolveNamePathForReferenceTypes(udt.NamePath, resolver, sig) is TraitDecl parentTrait) {
+          var parentModule = parentTrait.EnclosingModuleDefinition;
+          if (parentModule == this) {
+            inheritsFromObject = InheritsFromObject(parentTrait, resolver, sig, traitsProgress) || inheritsFromObject;
+          } else if (RecursiveGroup != null && parentModule.RecursiveGroup == RecursiveGroup &&
+                     RecursiveGroup.Resolvers.TryGetValue(parentModule, out var parentResolver) &&
+                     parentModule.EnclosingLiteralModuleDecl?.Signature is { } parentSignature) {
+            // The parent trait is declared in another member of the group: its own parents are looked up in its module.
+            inheritsFromObject = parentModule.InheritsFromObject(parentTrait, parentResolver, parentSignature, traitsProgress) || inheritsFromObject;
+          } else {
+            inheritsFromObject = parentTrait.IsReferenceTypeDecl || inheritsFromObject;
+          }
+        }
+      }
+    }
+
+    traitDecl.SetUpAsReferenceType(resolver.Options.Get(CommonOptionBag.GeneralTraits) == CommonOptionBag.GeneralTraitsOptions.Legacy || inheritsFromObject);
+    traitsProgress[traitDecl] = true; // indicate that traitDecl.IsReferenceTypeDecl can now be called
+    return inheritsFromObject;
   }
 
   public LiteralModuleDecl? EnclosingLiteralModuleDecl { get; set; }

@@ -161,6 +161,21 @@ public class ResolutionPipelineTests {
   }
 
   [Fact]
+  public async Task RecursiveModulesRequireMemberInvariants() {
+    // Issue 466: the command line rejects --recursive-modules without --member-invariants before it parses
+    // anything; a client that sets the options itself gets this resolution error instead, and no group is made.
+    const string source = "module A { import B } module B { import A }";
+    var (_, reporter) = await Resolve(source, 0, true,
+      configureOptions: options => options.Set(CommonOptionBag.RecursiveModules, true));
+    Assert.Equal(["use of --recursive-modules requires --member-invariants"], Errors(reporter));
+    var (_, both) = await Resolve(source, 0, true, configureOptions: options => {
+      options.Set(CommonOptionBag.MemberInvariants, true);
+      options.Set(CommonOptionBag.RecursiveModules, true);
+    });
+    Assert.Empty(Errors(both));
+  }
+
+  [Fact]
   public async Task RejectedLegacyNewtypesDoNotTraverseUnresolvedImports() {
     const string source = """
       module Api { newtype N = x: int | 0 <= x }

@@ -1445,3 +1445,35 @@ True`.  The text of a library that uses the declaration does not parse without t
 
 The regression is `git-issues/github-issue-107.dfy` with its inputs; the release note is
 `docs/dev/news/107.feat`; the manual's section is "Copying imports".
+
+## Variance of constrained types ([issue 491](https://github.com/erniecohen/dafny/issues/491))
+
+A subset type or newtype may declare a covariant or contravariant type parameter
+only when its constraint respects that direction. Previously the resolver checked
+only its base type. A universal quantifier over a covariant parameter could then
+hold vacuously for an empty type, fail at a supertype, and still authorize an
+unchecked conversion between those instantiations. Passing the result to a
+formal parameter exposed the false constraint as an assumption.
+
+The resolver now applies the shared `TypeParameterPolarity` analysis from member
+invariants to each constraint, independently of the base-type check. It reports
+the conflicting occurrence, including through generic calls. Unavailable bodies
+are mixed; visible recursive callees use the existing least-fixpoint analysis.
+The check does not alter the resolved program, and adds no fact or axiom: its kind
+is **weakens only**. The hidden `--legacy-unchecked-type-variance` option bypasses
+this check for comparison and migration, leaving member-invariant variance and
+the existing base-type rules unchanged.
+
+For a fixed value, covariance of the base type and monotonicity of its constraint
+together imply covariance of the constrained type: membership in the smaller
+base and truth of its constraint imply membership in the larger base and truth
+of that instantiation's constraint. Contravariance reverses both implications.
+Non-variant parameters need neither implication. The analysis is conservative:
+a mixed occurrence rejects declared variance even where a more detailed semantic
+argument might establish it. Such a declaration can use a non-variant parameter.
+
+The regressions are `git-issues/git-issue-491.dfy`,
+`git-issues/git-issue-491-newtypes.dfy` and
+`git-issues/git-issue-491-positive.dfy`. The negative controls prove `false` under
+the legacy option; the positive controls retain reachable failing assertions.
+The release note is `docs/dev/news/491.fix`.
