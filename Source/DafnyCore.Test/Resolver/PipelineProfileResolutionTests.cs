@@ -81,6 +81,20 @@ public class PipelineProfileResolutionTests {
   }
 
   [Theory]
+  [InlineData(false, false)]
+  [InlineData(false, true)]
+  [InlineData(true, false)]
+  [InlineData(true, true)]
+  public void OnlyLegacyExplicitExperimentPublishesUnusedBounded(bool legacy, bool explicitExperiment) {
+    var options = new DafnyOptions(TextReader.Null, TextWriter.Null, TextWriter.Null);
+    options.ApplyDefaultOptionsWithoutSettingsDefault();
+    options.Set(CommonOptionBag.LegacyNoModularTermination, legacy);
+    options.Set(CommonOptionBag.ModularTermination, explicitExperiment);
+    var manager = new SystemModuleManager(options);
+    Assert.Equal(legacy && explicitExperiment, manager.BoundedDecl != null);
+  }
+
+  [Theory]
   [InlineData(0, false)]
   [InlineData(2, false)]
   [InlineData(0, true)]

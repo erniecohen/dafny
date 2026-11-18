@@ -1,1 +1,2 @@
 Create the bounded callable intrinsic and its arrow signatures only when used, preserving resolved output for programs that do not use bounded callables.
+The legacy opt-out retains the earlier explicit modular-termination experiment's builtin publication for byte comparisons.

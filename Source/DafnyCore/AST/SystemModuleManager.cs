@@ -276,6 +276,11 @@ public class SystemModuleManager {
     // create trait 'object'
     ObjectDecl = new TraitDecl(SourceOrigin.NoToken, new Name("object"), SystemModule, [], [], DontCompile(), false, []);
     SystemModule.SourceDecls.Add(ObjectDecl);
+    // The legacy comparison profile preserves the old opt-in experiment's
+    // builtin publication, even when the source does not mention bounded.
+    if (options.Get(CommonOptionBag.LegacyNoModularTermination) && options.Get(CommonOptionBag.ModularTermination)) {
+      CreateBoundedTypeDecl();
+    }
     // add one-dimensional arrays, since they may arise during type checking
     // Arrays of other dimensions may be added during parsing as the parser detects the need for these
     UserDefinedType tmp = ArrayType(1, Type.Int, true);
