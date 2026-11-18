@@ -7,10 +7,33 @@ using System.Linq;
 namespace Microsoft.Dafny;
 
 /// <summary>
+/// What "import [opened] X := Q[`E]" (--copy-imports) adds to the module declaration it stands for.
+/// The declaration itself is the literal module "module X refines Q {}".
+/// </summary>
+/// <param name="Opened">The import is "opened".</param>
+/// <param name="Exports">The export sets of the copy that the importing module sees; empty for the default export.</param>
+/// <param name="Inherited">The declaration was not written in the module that has it: a refining module made it
+/// for a copying import that it inherits.</param>
+public record CopyImportInfo(bool Opened, List<IOrigin> Exports, bool Inherited = false);
+
+/// <summary>
 /// Represents module X { ... }
 /// </summary>
 public class LiteralModuleDecl : ModuleDecl, ICanFormat, IHasSymbolChildren {
   public ModuleDefinition ModuleDef;
+
+  /// <summary>
+  /// Non-null if the declaration is a copying import, "import X := Q".  ModuleDef then refines Q and has no
+  /// declarations of its own.
+  /// </summary>
+  public CopyImportInfo? CopyImport;
+
+  public override bool Opened => CopyImport is { Opened: true };
+
+  /// <summary>
+  /// For a copying import with export sets, "import X := Q`E": what the importing module sees of the copy.
+  /// </summary>
+  [FilledInDuringResolution] public ModuleSignature? CopyImportView;
 
   [FilledInDuringResolution] public ModuleSignature? DefaultExport;  // the default export set of the module.
 
@@ -25,6 +48,9 @@ public class LiteralModuleDecl : ModuleDecl, ICanFormat, IHasSymbolChildren {
   public override bool SingleFileToken => ModuleDef.SingleFileToken;
 
   public override ModuleSignature AccessibleSignature() {
+    if (CopyImportView != null) {
+      return CopyImportView;
+    }
     if (DefaultExport == null) {
       if (emptySignature == null) {
         emptySignature = new ModuleSignature();
@@ -42,6 +68,8 @@ public class LiteralModuleDecl : ModuleDecl, ICanFormat, IHasSymbolChildren {
     var newModuleDefinition = cloner.CloneLiteralModuleDefinition ? cloner.CloneModuleDefinition(original.ModuleDef, enclosingModule) : original.ModuleDef;
     ModuleDef = newModuleDefinition;
     DefaultExport = original.DefaultExport;
+    CopyImport = original.CopyImport;
+    CopyImportView = original.CopyImportView;
     BodyStartTok = ModuleDef.BodyStartTok;
   }
 
@@ -106,6 +134,19 @@ public class LiteralModuleDecl : ModuleDecl, ICanFormat, IHasSymbolChildren {
   }
 
   public ModuleSignature Resolve(ModuleResolver resolver, CompilationData compilation) {
+    foreach (var _ in ResolveInPhases(resolver, compilation)) {
+    }
+    return Signature;
+  }
+
+  /// <summary>
+  /// Resolves the module, and returns after each phase with the name of the phase.  The members of a
+  /// recursive module group (--recursive-modules) are resolved together, phase by phase: each phase is
+  /// done for every member before the next phase starts.  The caller owns the visibility scopes of the
+  /// thread between phases: a phase may leave scopes pushed.  A phase name is the same for every member,
+  /// so that the members stay in step.
+  /// </summary>
+  public IEnumerable<string> ResolveInPhases(ModuleResolver resolver, CompilationData compilation) {
     // The declaration is a literal module, so it has members and such that we need
     // to resolve. First we do refinement transformation. Then we construct the signature
     // of the module. This is the public, externally visible signature. Then we add in
@@ -120,6 +161,9 @@ public class LiteralModuleDecl : ModuleDecl, ICanFormat, IHasSymbolChildren {
     if (module.Implements != null) {
       var md = module.Implements.Target.ResolveTarget(resolver.reporter);
       module.Implements.Target.SetTarget(md); // If module is not found, md is null and an error message has been emitted
+      if (CopyImport != null && md != null) {
+        CheckCopiedModule(resolver, module.Implements.Target);
+      }
     }
 
     var rewriters = RewriterCollection.GetRewriters(resolver.Reporter, resolver.ProgramResolver.Program);
@@ -127,22 +171,67 @@ public class LiteralModuleDecl : ModuleDecl, ICanFormat, IHasSymbolChildren {
       rewriter.PreResolve(module);
     }
 
+    if (CopyImport != null) {
+      // An abstract import of the copied module stands for an unknown module.  The copy's import of that
+      // name stands for another unknown module, so it gets a signature of its own.
+      resolver.GiveCopyItsOwnAbstractImports(module);
+    }
+    // The refinement transformer has declared a copy for each copying import that the module inherits.
+    // Such a copy is not a declaration of the program's module graph, so it is resolved here.
+    foreach (var inheritedCopy in module.TopLevelDecls.OfType<LiteralModuleDecl>()
+               .Where(d => d.CopyImport is { Inherited: true } && d.Signature == null).ToList()) {
+      resolver.ResolveInheritedCopy(compilation, inheritedCopy);
+    }
+
     PipelineProfile.ModulePhase(resolver.Options, "preResolve");
-    Signature = module.RegisterTopLevelDecls(resolver, true);
+    if (resolver.Group != null) {
+      // Whether a trait is a reference type depends on its parent traits, and a parent trait may be declared
+      // in another member of the group.  So every member registers its names before any member determines
+      // its reference types.
+      Signature = module.RegisterTopLevelDecls(resolver, true, deferReferenceTypes: true);
+      yield return "registerNames";
+      module.RegisterReferenceTypes();
+    } else {
+      Signature = module.RegisterTopLevelDecls(resolver, true);
+    }
     Signature.Refines = module.Implements?.Target.Sig;
+    yield return "register";
 
     var sig = Signature;
     // set up environment
     var preResolveErrorCount = resolver.reporter.ErrorCount;
 
-    resolver.ResolveModuleExport(this, sig);
+    resolver.ResolveModuleExportSignatures(this, sig);
+    if (resolver.Group != null) {
+      // The driver of the group resolves the imports among the members here, and propagates the visibility
+      // of exported imports for all members together.
+      yield return "exportSignatures";
+    } else {
+      resolver.PropagateVisibilityOfExportedImports(sig);
+    }
+    resolver.ResolveModuleExportScopes();
+    if (CopyImport != null && module.Implements?.Target.Def is { } copiedModule) {
+      if (CopyImport.Exports.Count > 0) {
+        CopyImportView = resolver.CopyImportViewOf(this, copiedModule.Name);
+      } else if (DefaultExport == null && !CopyImport.Inherited) {
+        // as for "import X = Q"
+        resolver.reporter.Error(MessageSource.Resolver, module.Implements.Target.RootToken(),
+          "no default export set declared in module: {0}", copiedModule.Name);
+      }
+    }
     PipelineProfile.ModulePhase(resolver.Options, "registrationAndExports");
-    var good = module.Resolve(sig, resolver);
+    yield return "exports";
+    foreach (var phase in module.ResolveInPhases(sig, resolver)) {
+      yield return phase;
+    }
+    var good = resolver.ModuleResolveResult;
+    yield return "resolved";
 
     if (good && resolver.reporter.ErrorCount == preResolveErrorCount) {
       // Check that the module export gives a self-contained view of the module.
       resolver.CheckModuleExportConsistency(compilation, module);
     }
+    yield return "exportConsistency";
 
     var tempVis = new VisibilityScope();
     tempVis.Augment(sig.VisibilityScope);
@@ -165,18 +254,21 @@ public class LiteralModuleDecl : ModuleDecl, ICanFormat, IHasSymbolChildren {
 
     PipelineProfile.ModulePhase(resolver.Options, "exportsAndIntermediate");
     if (!good || resolver.reporter.HasErrors) {
-      return sig;
+      yield break;
     }
+    yield return "intermediate";
 
     Type.PushScope(tempVis);
     var phases = PipelineProfile.RecordingModulePhases;
     resolver.ComputeIsRecursiveBit(compilation, module, rewriters);
     PipelineProfile.ModulePhase(resolver.Options, "isRecursive");
+    yield return "isRecursive";
     resolver.FillInDecreasesClauses(module);
     foreach (var iter in module.TopLevelDecls.OfType<IteratorDecl>()) {
       resolver.reporter.Info(MessageSource.Resolver, iter.Origin, Printer.IteratorClassToString(resolver.Reporter.Options, iter));
     }
     PipelineProfile.ModulePhase(resolver.Options, "decreases");
+    yield return "decreases";
 
     foreach (var rewriter in rewriters) {
       rewriter.PostDecreasesResolve(module);
@@ -188,6 +280,7 @@ public class LiteralModuleDecl : ModuleDecl, ICanFormat, IHasSymbolChildren {
     resolver.FillInAdditionalInformation(module);
     FuelAdjustment.CheckForFuelAdjustments(resolver.reporter, module);
     PipelineProfile.ModulePhase(resolver.Options, "additionalInformation");
+    yield return "additionalInformation";
 
     foreach (var rewriter in rewriters) {
       rewriter.PostResolve(module);
@@ -197,7 +290,56 @@ public class LiteralModuleDecl : ModuleDecl, ICanFormat, IHasSymbolChildren {
     }
 
     Type.PopScope(tempVis);
-    return sig;
+  }
+
+  /// <summary>
+  /// Says whether "copied" has an export set, other than its default one, with the name of a copy of it.
+  /// </summary>
+  public static bool HasExportSetNamedLikeCopy(ModuleDefinition copied, string copyName) {
+    return copied.TopLevelDecls.OfType<ModuleExportDecl>().Any(export => !export.IsDefault && export.Name == copyName);
+  }
+
+  /// <summary>
+  /// Checks that the module that this copying import names can be copied, and makes the copy abstract
+  /// if that module is abstract.
+  /// </summary>
+  private void CheckCopiedModule(ModuleResolver resolver, ModuleQualifiedId target) {
+    var copied = target.Def;
+    if (copied.ModuleKind == ModuleKindEnum.Abstract) {
+      ModuleDef.ModuleKind = ModuleKindEnum.Abstract;
+    }
+    // The default export set of a module has the module's name, so the one of the copy has the copy's name.
+    if (!CopyImport!.Inherited && HasExportSetNamedLikeCopy(copied, Name)) {
+      resolver.reporter.Error(MessageSource.Resolver, Origin,
+        $"the copying import '{Name}' cannot copy module '{target}', because that module has an export set named '{Name}', which is the name of the default export set of the copy");
+    }
+    if (resolver.Options.DisallowExterns) {
+      return;
+    }
+
+    // A declaration with an {:extern} attribute names one thing of the target program.  A copy of the
+    // declaration would be a second Dafny declaration of that one thing.
+    string? externDeclaration = null;
+    if (Attributes.Contains(copied.Attributes, "extern")) {
+      externDeclaration = "the module";
+    } else {
+      foreach (var declaration in copied.TopLevelDecls) {
+        if (declaration is not ModuleDecl && Attributes.Contains(declaration.Attributes, "extern")) {
+          externDeclaration = $"{declaration.WhatKind} '{declaration.Name}'";
+        } else if (declaration is TopLevelDeclWithMembers withMembers &&
+                   withMembers.Members.Find(member => Attributes.Contains(member.Attributes, "extern")) is { } externMember) {
+          externDeclaration = $"{externMember.WhatKind} '{externMember.Name}'";
+        }
+        if (externDeclaration != null) {
+          break;
+        }
+      }
+    }
+    if (externDeclaration != null) {
+      var where = CopyImport!.Inherited ? new NestedOrigin(ModuleDef.EnclosingModule.Origin, target.Origin, "inherited copying import") : target.Origin;
+      resolver.reporter.Error(MessageSource.Resolver, where,
+        $"a copying import cannot copy module '{target}', because {externDeclaration} has an {{:extern}} attribute");
+    }
   }
 
   public void BindModuleNames(ProgramResolver resolver, ModuleBindings parentBindings) {

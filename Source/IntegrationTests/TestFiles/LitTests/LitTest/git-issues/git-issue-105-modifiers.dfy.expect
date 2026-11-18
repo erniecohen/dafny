@@ -1,0 +1,11 @@
+git-issue-105-modifiers.dfy(7,2): Error: an invariant cannot be declared 'ghost'
+git-issue-105-modifiers.dfy(8,2): Error: an invariant cannot be declared 'static'
+git-issue-105-modifiers.dfy(9,2): Error: an invariant cannot be declared 'opaque'
+git-issue-105-modifiers.dfy(10,2): Error: a witness cannot be declared 'static'
+git-issue-105-modifiers.dfy(11,14): Error: an invariant cannot be declared {:opaque}
+git-issue-105-modifiers.dfy(15,0): Error: an invariant is not allowed at the module level; it is a member of a type
+git-issue-105-modifiers.dfy(16,0): Error: a witness is not allowed at the module level; it is a member of a type
+git-issue-105-modifiers.dfy(19,2): Error: an invariant cannot be declared 'ghost'
+git-issue-105-modifiers.dfy(19,8): Error: an invariant is not allowed at the module level; it is a member of a type
+git-issue-105-modifiers.dfy(20,2): Error: a witness is not allowed at the module level; it is a member of a type
+10 parse errors detected in git-issue-105-modifiers.dfy

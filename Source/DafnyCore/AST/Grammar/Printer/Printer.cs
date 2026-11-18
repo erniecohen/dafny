@@ -340,28 +340,29 @@ NoGhost - disable printing of functions, ghost methods, and proof
           PrintExtendsClause(dd);
           // The parsed refinement omits its base type, constraint and witness.
           // Keep the ellipsis so that reading a serialized library inherits them again.
+          // Issue 105: the clauses of the header as written, which the newtype's invariants may have taken over
           if (dd.BaseType == null && dd.IsRefining) {
             wr.WriteLine(" ...");
-          } else if (dd.Var == null) {
+          } else if (dd.WrittenVar == null) {
             wr.Write(" = ");
             PrintType(dd.BaseType);
             wr.WriteLine();
           } else {
             wr.Write(" = ");
-            wr.Write(dd.Var.DisplayName);
-            if (ShowType(dd.Var.Type)) {
+            wr.Write(dd.WrittenVar.DisplayName);
+            if (ShowType(dd.WrittenVar.Type)) {
               wr.Write(": ");
               PrintType(dd.BaseType);
             }
             wr.WriteLine();
             Indent(indent + IndentAmount);
             wr.Write("| ");
-            PrintExpression(dd.Constraint, true);
+            PrintExpression(dd.WrittenConstraint, true);
             wr.WriteLine();
           }
-          if (dd.WitnessKind != SubsetTypeDecl.WKind.CompiledZero) {
+          if (dd.WrittenWitnessKind != SubsetTypeDecl.WKind.CompiledZero) {
             Indent(indent + IndentAmount);
-            PrintWitnessClause(dd);
+            PrintWitnessClause(dd.WrittenWitnessKind, dd.WrittenWitness);
             wr.WriteLine();
           }
           if (dd.Members.Count != 0) {
@@ -440,7 +441,21 @@ NoGhost - disable printing of functions, ghost methods, and proof
         } else if (d is ModuleDecl md) {
           wr.WriteLine();
           Indent(indent);
-          if (d is LiteralModuleDecl modDecl) {
+          if (d is LiteralModuleDecl { CopyImport: { } copyImport } copyDecl) {
+            // a copying import, "import X := Q" (--copy-imports)
+            wr.Write("import");
+            if (copyImport.Opened) {
+              wr.Write(" opened");
+            }
+            wr.Write(" {0} := {1}", copyDecl.Name, copyDecl.ModuleDef.Implements.Target.ToString());
+            if (copyImport.Exports.Count == 1) {
+              wr.Write("`{0}", copyImport.Exports[0].val);
+            }
+            if (copyImport.Exports.Count > 1) {
+              wr.Write("`{{{0}}}", Util.Comma(copyImport.Exports, id => id.val));
+            }
+            wr.WriteLine();
+          } else if (d is LiteralModuleDecl modDecl) {
             if (printMode == PrintModes.Serialization && !modDecl.ModuleDef.ShouldCompile(compilation)) {
               // This mode is used to losslessly serialize the source program by the C# and Library backends.
               // Backends don't compile any code for modules not marked for compilation,
@@ -522,7 +537,9 @@ NoGhost - disable printing of functions, ghost methods, and proof
 
     private void PrintSubsetTypeDecl(SubsetTypeDecl dd, int indent) {
       Indent(indent);
-      PrintClassMethodHelper("type", dd.Attributes, dd.Name + TPCharacteristicsSuffix(dd.Characteristics), dd.TypeArgs);
+      // Issue 105: the type derived from a class or reference trait with member invariants is named "C?"
+      var name = dd is InvariantTypeDecl invariantTypeDecl && InvariantTypeDecl.IsReferenceType(invariantTypeDecl.Owner) ? dd.Name + "?" : dd.Name;
+      PrintClassMethodHelper("type", dd.Attributes, name + TPCharacteristicsSuffix(dd.Characteristics), dd.TypeArgs);
       wr.Write(" = ");
       wr.Write(dd.Var.DisplayName);
       if (ShowType(dd.Var.Type)) {
@@ -555,15 +572,19 @@ NoGhost - disable printing of functions, ghost methods, and proof
 
     private void PrintWitnessClause(RedirectingTypeDecl dd) {
       Contract.Requires(dd != null);
-      Contract.Requires(dd.WitnessKind != SubsetTypeDecl.WKind.CompiledZero);
+      PrintWitnessClause(dd.WitnessKind, dd.Witness);
+    }
 
-      switch (dd.WitnessKind) {
+    private void PrintWitnessClause(SubsetTypeDecl.WKind witnessKind, Expression witness) {
+      Contract.Requires(witnessKind != SubsetTypeDecl.WKind.CompiledZero);
+
+      switch (witnessKind) {
         case SubsetTypeDecl.WKind.Ghost:
           wr.Write("ghost ");
           goto case SubsetTypeDecl.WKind.Compiled;
         case SubsetTypeDecl.WKind.Compiled:
           wr.Write("witness ");
-          PrintExpression(dd.Witness, true);
+          PrintExpression(witness, true);
           break;
         case SubsetTypeDecl.WKind.OptOut:
           wr.Write("witness *");
@@ -726,6 +747,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
       PrintClassMethodHelper(c is TraitDecl ? "trait" : "class", c.Attributes, c.Name, c.TypeArgs);
       if (c.IsRefining) {
         wr.Write(" ...");
+        PrintExtendsClause(c, c.ParentTraitsFromRefinementBase);
       } else {
         PrintExtendsClause(c);
       }
@@ -739,6 +761,18 @@ NoGhost - disable printing of functions, ghost methods, and proof
         wr.WriteLine("}");
       }
 
+      if (options.DafnyPrintResolvedFile != null && c.InvariantTypeDecl != null) {
+        // Issue 105: the type "C?" that the name of a class or reference trait with member invariants denotes, or the type
+        // G that the name of a general trait denotes
+        if (!printingExportSet) {
+          Indent(indent); wr.WriteLine("/*-- type with member invariants");
+        }
+        PrintSubsetTypeDecl(c.InvariantTypeDecl, indent);
+        if (!printingExportSet) {
+          Indent(indent); wr.WriteLine("*/");
+        }
+      }
+
       if (options.DafnyPrintResolvedFile != null && c.NonNullTypeDecl != null) {
         if (!printingExportSet) {
           Indent(indent); wr.WriteLine("/*-- non-null type");
@@ -750,9 +784,9 @@ NoGhost - disable printing of functions, ghost methods, and proof
       }
     }
 
-    private void PrintExtendsClause(TopLevelDeclWithMembers c) {
+    private void PrintExtendsClause(TopLevelDeclWithMembers c, int skip = 0) {
       string sep = " extends ";
-      foreach (var trait in c.Traits) {
+      foreach (var trait in c.Traits.Skip(skip)) {
         wr.Write(sep);
         PrintType(trait);
         sep = ", ";
@@ -769,8 +803,13 @@ NoGhost - disable printing of functions, ghost methods, and proof
           // omit a member that Dafny generated, such as a reveal lemma: reading the library back generates it
           // again.  A member on which the user wrote {:auto_generated} is printed like any other, because
           // leaving it out would change what the library's names resolve to.
+        } else if (m is MemberInvariant or MemberWitness) {
+          if (state == 2) { wr.WriteLine(); }
+          PrintMemberInvariantOrWitness(m, indent);
+          state = 1;
         } else if (m is MethodOrConstructor methodOrConstructor) {
           if (state != 0) { wr.WriteLine(); }
+          PrintRawMemberNote(m, indent);
           PrintMethod(methodOrConstructor, indent, printFlags.InterfaceOnly);
           if (m is ExtremeLemma { PrefixLemma: not null } com) {
             Indent(indent); wr.WriteLine("/***");
@@ -780,10 +819,12 @@ NoGhost - disable printing of functions, ghost methods, and proof
           state = 2;
         } else if (m is Field) {
           if (state == 2) { wr.WriteLine(); }
+          PrintRawMemberNote(m, indent);
           PrintField((Field)m, indent);
           state = 1;
         } else if (m is Function) {
           if (state != 0) { wr.WriteLine(); }
+          PrintRawMemberNote(m, indent);
           PrintFunction((Function)m, indent, false);
           if (m is ExtremePredicate fixp && fixp.PrefixPredicate != null) {
             Indent(indent); wr.WriteLine("/*** (note, what is printed here does not show substitutions of calls to prefix predicates)");
@@ -914,6 +955,17 @@ NoGhost - disable printing of functions, ghost methods, and proof
         Indent(indent);
         wr.WriteLine("}");
       }
+
+      if (options.DafnyPrintResolvedFile != null && dt.InvariantTypeDecl != null) {
+        // Issue 105: the type that the name of a type with member invariants denotes
+        if (!printingExportSet) {
+          Indent(indent); wr.WriteLine("/*-- type with member invariants");
+        }
+        PrintSubsetTypeDecl(dt.InvariantTypeDecl, indent);
+        if (!printingExportSet) {
+          Indent(indent); wr.WriteLine("*/");
+        }
+      }
     }
 
     /// <summary>
@@ -1014,6 +1066,43 @@ NoGhost - disable printing of functions, ghost methods, and proof
       } else if (!field.IsUserMutable && field.IsMutable) {
         wr.Write("  // non-assignable");
       }
+      wr.WriteLine();
+    }
+
+    /// <summary>
+    /// In a printout of the resolved program, notes that "m" is a raw member (issue 105), whose receiver has the raw
+    /// type. An invariant is always raw.
+    /// </summary>
+    void PrintRawMemberNote(MemberDecl m, int indent) {
+      if (options.DafnyPrintResolvedFile != null && m.IsRawMember) {
+        Indent(indent);
+        wr.WriteLine("// raw member: 'this' has type 'raw {0}'", m.EnclosingClass.Name);
+      }
+    }
+
+    /// <summary>
+    /// Prints "invariant e" or "[ghost] witness e" (issue 105).
+    /// </summary>
+    void PrintMemberInvariantOrWitness(MemberDecl m, int indent) {
+      Indent(indent);
+      PrintAttributes(m.Attributes, true, indent);
+      Expression e;
+      if (m is MemberInvariant inv) {
+        wr.Write("invariant");
+        e = inv.Body;
+      } else {
+        var w = (MemberWitness)m;
+        wr.Write(w.IsGhost ? "ghost witness" : "witness");
+        e = w.Rhs;
+      }
+      if (afterResolver) {
+        // The reserved name numbers the member among its declaration's invariants or witnesses, the
+        // inherited ones of a refinement first; it cannot be written in source, so it is a comment.
+        wr.Write($" /* {m.Name} */");
+      }
+      PrintAttributes(m.Attributes, false, indent);
+      wr.Write(" ");
+      PrintExpression(e, false);
       wr.WriteLine();
     }
 

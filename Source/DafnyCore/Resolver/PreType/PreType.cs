@@ -413,11 +413,20 @@ namespace Microsoft.Dafny {
       return new DPreType(Decl, newArguments ?? Arguments, printablePreType);
     }
 
+    /// <summary>
+    /// The declaration whose members a value of this pre-type has. A type that is provided but not revealed is an
+    /// internal synonym, which stands for a class (through its non-null type), a datatype with member invariants
+    /// (through the type its name denotes, issue 105), or another declaration with members.
+    /// </summary>
     public TopLevelDecl DeclWithMembersBypassInternalSynonym() {
       if (Decl is InternalTypeSynonymDecl isyn) {
         var udt = UserDefinedType.FromTopLevelDecl(isyn.Origin, isyn);
         if (isyn.RhsWithArgumentIgnoringScope(udt.TypeArgs) is UserDefinedType { ResolvedClass: { } decl }) {
-          return decl is NonNullTypeDecl nntd ? nntd.Class : decl;
+          return decl switch {
+            NonNullTypeDecl nntd => nntd.Class,
+            InvariantTypeDecl invariantTypeDecl => invariantTypeDecl.Owner,
+            _ => decl
+          };
         }
       }
 
@@ -441,6 +450,8 @@ namespace Microsoft.Dafny {
         TopLevelDeclWithMembers cl;
         if (rhsType.ResolvedClass is NonNullTypeDecl nntd) {
           cl = (TopLevelDeclWithMembers)nntd.ViewAsClass;
+        } else if (rhsType.ResolvedClass is InvariantTypeDecl invariantTypeDecl) {
+          cl = invariantTypeDecl.Owner;
         } else {
           cl = (TopLevelDeclWithMembers)rhsType.ResolvedClass;
         }

@@ -67,9 +67,12 @@ namespace Microsoft.Dafny {
       }
     }
 
-    public void Augment(VisibilityScope other) {
+    /// <summary>
+    /// Adds the scopes of "other" to this scope.  Returns whether this scope changed.
+    /// </summary>
+    public bool Augment(VisibilityScope other) {
       if (other == null || ReferenceEquals(this, other)) {
-        return;
+        return false;
       }
       var tokens = other.Tokens();
       string[] ids;
@@ -77,9 +80,14 @@ namespace Microsoft.Dafny {
         ids = System.Linq.Enumerable.ToArray(other.scopeIds);
       }
       lock (syncRoot) {
+        var count = scopeTokens.Count;
         scopeTokens.UnionWith(tokens);
         scopeIds.UnionWith(ids);
+        if (scopeTokens.Count == count) {
+          return false;
+        }
         cached.Clear();
+        return true;
       }
     }
 

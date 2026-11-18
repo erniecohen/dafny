@@ -156,7 +156,12 @@ public class InferDecreasesClause {
       Expression e = new Cloner(false, true).CloneExpr(fe.E); // keep only fe.E, drop any fe.Field designation
       Contract.Assert(e.Type != null); // fe.E should have been resolved already, and the clone should still have that type
       var eType = e.Type.NormalizeToAncestorType();
-      if (eType.IsRefType) {
+      if (InvariantTypeDecl.IsRawReferenceType(e.Type)) {
+        // Issue 105: a raw reference is not an "object", and a frame carries no obligation, so the singleton is a set
+        // of the reference's own type
+        sets.Add(new SetDisplayExpr(e.Origin, true, [e]) { Type = new SetType(true, e.Type) });
+
+      } else if (eType.IsRefType) {
         // e represents a singleton set
         if (singletons == null) {
           singletons = [];

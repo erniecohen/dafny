@@ -1,0 +1,72 @@
+git-issue-105-false-proofs.dfy(19,33): Error: a postcondition could not be proved on this return path
+git-issue-105-false-proofs.dfy(19,27): Related location: this is the postcondition that could not be proved
+git-issue-105-false-proofs.dfy(20,19): Error: invariant might not hold
+git-issue-105-false-proofs.dfy(15,19): Related location: this is the invariant that might not hold
+git-issue-105-false-proofs.dfy(22,33): Error: a postcondition could not be proved on this return path
+git-issue-105-false-proofs.dfy(22,27): Related location: this is the postcondition that could not be proved
+git-issue-105-false-proofs.dfy(23,17): Error: invariant might not hold
+git-issue-105-false-proofs.dfy(15,19): Related location: this is the invariant that might not hold
+git-issue-105-false-proofs.dfy(25,35): Error: a postcondition could not be proved on this return path
+git-issue-105-false-proofs.dfy(25,29): Related location: this is the postcondition that could not be proved
+git-issue-105-false-proofs.dfy(26,19): Error: invariant might not hold
+git-issue-105-false-proofs.dfy(15,19): Related location: this is the invariant that might not hold
+git-issue-105-false-proofs.dfy(28,36): Error: a postcondition could not be proved on this return path
+git-issue-105-false-proofs.dfy(28,30): Related location: this is the postcondition that could not be proved
+git-issue-105-false-proofs.dfy(30,53): Error: invariant might not hold
+git-issue-105-false-proofs.dfy(15,19): Related location: this is the invariant that might not hold
+git-issue-105-false-proofs.dfy(37,34): Error: a postcondition could not be proved on this return path
+git-issue-105-false-proofs.dfy(37,28): Related location: this is the postcondition that could not be proved
+git-issue-105-false-proofs.dfy(38,20): Error: invariant might not hold
+git-issue-105-false-proofs.dfy(34,19): Related location: this is the invariant that might not hold
+git-issue-105-false-proofs.dfy(45,4): Error: a postcondition could not be proved on this return path
+git-issue-105-false-proofs.dfy(44,26): Related location: this is the postcondition that could not be proved
+git-issue-105-false-proofs.dfy(45,8): Error: invariant might not hold
+git-issue-105-false-proofs.dfy(41,23): Related location: this is the invariant that might not hold
+git-issue-105-false-proofs.dfy(54,34): Error: a postcondition could not be proved on this return path
+git-issue-105-false-proofs.dfy(54,28): Related location: this is the postcondition that could not be proved
+git-issue-105-false-proofs.dfy(55,20): Error: invariant might not hold
+git-issue-105-false-proofs.dfy(48,19): Related location: this is the invariant that might not hold
+git-issue-105-false-proofs.dfy(61,39): Error: a postcondition could not be proved on this return path
+git-issue-105-false-proofs.dfy(61,33): Related location: this is the postcondition that could not be proved
+git-issue-105-false-proofs.dfy(62,23): Error: invariant might not hold
+git-issue-105-false-proofs.dfy(58,19): Related location: this is the invariant that might not hold
+git-issue-105-false-proofs.dfy(71,59): Error: a postcondition could not be proved on this return path
+git-issue-105-false-proofs.dfy(71,53): Related location: this is the postcondition that could not be proved
+git-issue-105-false-proofs.dfy(72,11): Error: invariant might not hold
+git-issue-105-false-proofs.dfy(68,16): Related location: this is the invariant that might not hold
+git-issue-105-false-proofs.dfy(74,59): Error: a postcondition could not be proved on this return path
+git-issue-105-false-proofs.dfy(74,53): Related location: this is the postcondition that could not be proved
+git-issue-105-false-proofs.dfy(75,9): Error: invariant might not hold
+git-issue-105-false-proofs.dfy(68,16): Related location: this is the invariant that might not hold
+git-issue-105-false-proofs.dfy(84,55): Error: a postcondition could not be proved on this return path
+git-issue-105-false-proofs.dfy(84,49): Related location: this is the postcondition that could not be proved
+git-issue-105-false-proofs.dfy(85,11): Error: invariant might not hold
+git-issue-105-false-proofs.dfy(78,19): Related location: this is the invariant that might not hold
+git-issue-105-false-proofs.dfy(91,37): Error: invariant might not hold
+git-issue-105-false-proofs.dfy(92,14): Related location: this is the invariant that might not hold
+git-issue-105-false-proofs.dfy(96,10): Error: cannot find witness that shows type is inhabited (only tried 0); try giving a hint through a 'witness' or 'ghost witness' clause, or use 'witness *' to treat as a possibly empty type
+git-issue-105-false-proofs.dfy(97,4): Related location: this proposition could not be proved
+git-issue-105-false-proofs.dfy(97,19): Related location: this proposition could not be proved
+git-issue-105-false-proofs.dfy(99,43): Error: cannot establish the existence of LHS values that satisfy the such-that predicate. Note, no trigger was found for the such-that predicate, which may be the reason the proof failed. To give a trigger explicitly, use the {:trigger} attribute. For more information, see the section on quantifier instantiation rules in the reference manual.
+git-issue-105-false-proofs.dfy(103,42): Error: cannot establish the existence of LHS values that satisfy the such-that predicate. Note, no trigger was found for the such-that predicate, which may be the reason the proof failed. To give a trigger explicitly, use the {:trigger} attribute. For more information, see the section on quantifier instantiation rules in the reference manual.
+git-issue-105-false-proofs.dfy(104,43): Error: invariant might not hold
+git-issue-105-false-proofs.dfy(105,19): Related location: this is the invariant that might not hold
+git-issue-105-false-proofs.dfy(107,48): Error: cannot establish the existence of LHS values that satisfy the such-that predicate. Note, no trigger was found for the such-that predicate, which may be the reason the proof failed. To give a trigger explicitly, use the {:trigger} attribute. For more information, see the section on quantifier instantiation rules in the reference manual.
+git-issue-105-false-proofs.dfy(120,37): Error: a postcondition could not be proved on this return path
+git-issue-105-false-proofs.dfy(120,31): Related location: this is the postcondition that could not be proved
+git-issue-105-false-proofs.dfy(122,6): Error: invariant might not hold
+git-issue-105-false-proofs.dfy(115,16): Related location: this is the invariant that might not hold
+git-issue-105-false-proofs.dfy(124,41): Error: a postcondition could not be proved on this return path
+git-issue-105-false-proofs.dfy(124,35): Related location: this is the postcondition that could not be proved
+git-issue-105-false-proofs.dfy(126,4): Error: invariant might not hold
+git-issue-105-false-proofs.dfy(115,16): Related location: this is the invariant that might not hold
+git-issue-105-false-proofs.dfy(139,30): Error: a postcondition could not be proved on this return path
+git-issue-105-false-proofs.dfy(139,24): Related location: this is the postcondition that could not be proved
+git-issue-105-false-proofs.dfy(143,61): Error: a postcondition could not be proved on this return path
+git-issue-105-false-proofs.dfy(143,55): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 17 verified, 34 errors
+git-issue-105-new-by.dfy(8,8): Error: semicolon expected
+1 parse errors detected in git-issue-105-new-by.dfy
+
+Dafny program verifier finished with 2 verified, 0 errors

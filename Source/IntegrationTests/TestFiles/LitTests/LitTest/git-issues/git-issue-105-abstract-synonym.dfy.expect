@@ -1,0 +1,10 @@
+git-issue-105-abstract-synonym.dfy(25,9): Error: invariant might not hold
+git-issue-105-abstract-synonym.dfy(13,21): Related location: this is the invariant that might not hold
+git-issue-105-abstract-synonym.dfy(17,7): Related location: refining module
+git-issue-105-abstract-synonym.dfy(26,9): Error: invariant might not hold
+git-issue-105-abstract-synonym.dfy(21,16): Related location: this is the invariant that might not hold
+
+Dafny program verifier finished with 2 verified, 2 errors
+git-issue-105-abstract-synonym-raw.dfy(9,18): Error: 'raw' applies only to a type that can declare a member invariant (a datatype, class, trait, newtype or abstract type), not to type synonym 'T'
+git-issue-105-abstract-synonym-raw.dfy(11,7): Related location: refining module
+1 resolution/type errors detected in git-issue-105-abstract-synonym-raw.dfy

@@ -53,6 +53,26 @@ class AxiomGates(unittest.TestCase):
         self.actual.write_text('Std lemma\tOutOfResource\t\t\t900\t1\n')
         self.assertEqual(1, self.gate(kind='std'))
 
+    def test_duplicate_expected_or_actual_rows_fail_in_both_modes(self):
+        # A stale first row must not be silently hidden by a matching last row.
+        for mode in ('off', 'on'):
+            for path in (self.expected, self.actual):
+                original = path.read_text()
+                for duplicate in (original, 'a.dfy\t2\t0 verified, 0 errors\t14,21,26\n'):
+                    with self.subTest(mode=mode, path=path.name, duplicate=duplicate):
+                        path.write_text(duplicate + original)
+                        with self.assertRaisesRegex(ValueError, 'Duplicate verdict rows'):
+                            self.gate(mode)
+                        path.write_text(original)
+
+    def test_distinct_rows_still_compare_verdicts(self):
+        self.expected.write_text(self.expected.read_text() + 'b.dfy\t4\t0 verified, 1 error\t5\n')
+        self.actual.write_text(self.actual.read_text() + 'b.dfy\t4\t0 verified, 1 error\t5\t1.0\n')
+        self.assertEqual(0, self.gate('off'))
+        self.assertEqual(0, self.gate('on'))
+        self.actual.write_text(self.actual.read_text().replace('1 error', '2 errors'))
+        self.assertEqual(1, self.gate())
+
     def test_resource_union_keeps_removed_and_new_batches(self):
         result = axioms.pair({'old': ['Valid', 10], 'both': ['Valid', 20]},
                             {'new': ['Invalid', 40], 'both': ['Valid', 90]})

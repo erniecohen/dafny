@@ -1,0 +1,12 @@
+
+Dafny program verifier finished with 3 verified, 0 errors
+Interval.Interval(3, 1) false 2 [Interval.Interval(3, 1), Interval.Interval(1, 3)]
+Interval.Interval(0, 3) 3
+3 1
+Pair.Pair(2, 1) false true
+
+Dafny program verifier finished with 3 verified, 0 errors
+Interval.Interval(3, 1) false 2 [Interval.Interval(3, 1), Interval.Interval(1, 3)]
+Interval.Interval(0, 3) 3
+3 1
+Pair.Pair(2, 1) false true

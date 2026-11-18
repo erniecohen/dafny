@@ -617,7 +617,7 @@ results; cache pruning is not proof that those graphs have been released.
 
 These PRs preserve the existing default route and add no axioms or assumptions.
 Each product PR supplies the fork's release-note, appropriate unit/Lit regressions,
-manual/help changes for its options, `.github/review/base` bookkeeping, and the
+manual/help changes for its options, automatic product-version derivation, and the
 suite/Std option-off verdict and RU comparisons. No expected verdict is updated
 to make an optimization pass. The study/proposal PR is documentation and models;
 it does not alter product files. [Fork rules][agents], [release gates][review]

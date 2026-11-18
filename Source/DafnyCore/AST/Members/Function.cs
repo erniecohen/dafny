@@ -48,6 +48,8 @@ public class Function : MethodOrFunction, TypeParameter.ParentType, ICallable, I
        options.Get(CommonOptionBag.DefaultFunctionOpacity) != CommonOptionBag.DefaultFunctionOpacityOptions.Transparent
        && this is not ExtremePredicate
        && this is not PrefixPredicate
+       // A member invariant (issue 105) is never opaque: it gets no reveal lemma, which would be inherited by name.
+       && this is not MemberInvariant
        && Name != "reads" && Name != "requires"
        && !Attributes.Contains(this.Attributes, "transparent");
   }
