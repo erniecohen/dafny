@@ -526,6 +526,10 @@ Generate module names in the older A_mB_mC style instead of the current A.B.C sc
     Contract.Assert(resolver.AllTypeConstraints.Count == 0); // signature resolution does not add any type constraints
 
     if (resolver.reporter.Count(ErrorLevel.Error) == prevErrorCount) {
+      resolver.CheckRefinementDeclaredTypes(allDeclarations);
+    }
+
+    if (resolver.reporter.Count(ErrorLevel.Error) == prevErrorCount) {
       // Attributes may refer to members, so signatures must resolve first. Failed signatures can contain
       // cyclic types; do not enter another constraint-solving phase after they have already been rejected.
       resolver.ResolveModuleAttributes(this, allDeclarations);
@@ -1052,7 +1056,8 @@ Generate module names in the older A_mB_mC style instead of the current A.B.C sc
           // is referring to some top-level declaration that won't accurately answer the question of whether "path" is referring to a reference
           // type or not.
           foreach (var importDecl in openedImports) {
-            Contract.Assert(importDecl is AliasModuleDecl or AbstractModuleDecl); // only these ModuleDecl's can be .Opened
+            // only these ModuleDecl's can be .Opened
+            Contract.Assert(importDecl is AliasModuleDecl or AbstractModuleDecl or LiteralModuleDecl { CopyImport: not null });
             if (importDecl.AccessibleSignature(false).TopLevels.TryGetValue(nameSegment.Name, out topLevelDecl)) {
               // For "object" and other reference-type declarations from other modules, we're picking up the NonNullTypeDecl; if so, return
               // the original declaration.
@@ -1124,6 +1129,11 @@ Generate module names in the older A_mB_mC style instead of the current A.B.C sc
   }
 
   public LiteralModuleDecl? EnclosingLiteralModuleDecl { get; set; }
+
+  /// <summary>
+  /// The module is the one that a copying import "import X := Q" (--copy-imports) declares.
+  /// </summary>
+  public bool IsCopyImport => EnclosingLiteralModuleDecl is { CopyImport: not null };
 
   public string GetDescription(DafnyOptions options) {
     return $"module {Name}";

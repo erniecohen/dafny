@@ -914,6 +914,12 @@ git-issues/git-issue-105-opaque.dfy
 git-issues/git-issue-105-auto-reveal.dfy
 git-issues/git-issue-105-false-proofs.dfy
 
+# With --refinement-renaming a refining declaration renames type parameters, out-parameters, results and the local names of in-parameters; named arguments use the unchanged labels; a renaming that changes what an inherited name refers to is rejected; without the option the old errors remain; and a typed match pattern is inherited with a type of the refining module; a renaming from or to the name of a label that the inherited code reveals is rejected; and an abstract type with members that a synonym refines, and an iterator, take no renaming (https://github.com/erniecohen/dafny/issues/106, https://github.com/erniecohen/dafny/issues/107).
+git-issues/github-issue-106.dfy
+
+# With --copy-imports, `import X := Q` gives the importing module a copy of Q with types of its own; a refining module gets new copies; lemmas that identify two copies fail; the rejected declarations are errors; a copy takes the place of an inherited abstract import only if the copied module refines the import's target; copies of a module with an override, a constructor and recursion add no proofs, and a copy of a module whose class extends a trait of a nested copy repeats only the override check; a program with copies compiles and runs, also after printing; a library with copies loads only under the option; and without the option the syntax is the parse error it was (https://github.com/erniecohen/dafny/issues/107).
+git-issues/github-issue-107.dfy
+
 # Opt-in --inherited-trait-axioms: a bodiless ghost trait member marked {:axiom} is inherited without an implementation, an override is still checked, 'dafny audit' lists the axiom and its inheritors, and with the option off every such type is rejected as before (https://github.com/erniecohen/dafny/issues/89).
 git-issues/github-issue-89.dfy
 
@@ -925,3 +931,6 @@ git-issues/github-issue-88-modular-termination.dfy
 
 # A refining datatype, codatatype or newtype that adds a parent trait ('datatype D extends S ...') gets the override, termination, name-capture and cardinality checks in the refining module also at inherited text, across chains, abstract imports and libraries (https://github.com/erniecohen/dafny/issues/88).
 git-issues/github-issue-88-value-types.dfy
+
+# Trait axioms and added parents with refinement renaming and copying imports.
+git-issues/github-issue-88-89-interactions.dfy

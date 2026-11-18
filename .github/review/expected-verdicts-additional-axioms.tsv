@@ -1295,6 +1295,8 @@ git-issues/git-issue-Main2.dfy	0	0 verified, 0 errors
 git-issues/git-issue-Main3.dfy	0	0 verified, 0 errors	
 git-issues/git-issue1495.dfy	0	8 verified, 0 errors	
 git-issues/git-issue5822.dfy	4	1 verified, 1 error	7
+git-issues/github-issue-106.dfy	0	26 verified, 0 errors	
+git-issues/github-issue-107.dfy	0	28 verified, 0 errors	
 git-issues/github-issue-1267.dfy	0	1 verified, 0 errors	
 git-issues/github-issue-191.dfy	2	3 verified, 0 errors	14,19
 git-issues/github-issue-205.dfy	0	89 verified, 0 errors	
@@ -1352,6 +1354,7 @@ git-issues/github-issue-4483.dfy	0	2 verified, 0 errors
 git-issues/github-issue-4804.dfy	4	3 verified, 0 errors, 1 out of resource; 2 out of resource	19
 git-issues/github-issue-5029.dfy	0	3 verified, 0 errors	
 git-issues/github-issue-5814.dfy	0	3 verified, 0 errors	
+git-issues/github-issue-88-89-interactions.dfy	4	5 verified, 3 errors	32,51,58
 git-issues/github-issue-88-modular-termination.dfy	4	18 verified, 6 errors	45,77,93,124,175,209
 git-issues/github-issue-88-value-types.dfy	4	20 verified, 9 errors	68,76,85,106,120,139,184,200,227
 git-issues/github-issue-88.dfy	4	46 verified, 17 errors	51,83,113,121,122,139,140,184,190,199,234,245,292,332,352,373,410

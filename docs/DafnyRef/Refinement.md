@@ -205,9 +205,11 @@ operations:
 
 The type signature of a child method must be the same as that of the
 parent method it refines. This can be ensured by providing an explicit
-type signature equivalent to that of the parent (with renaming of
-parameters allowed) or by using an ellipsis (`...`) to indicate copying
-of the parent type signature. The body of a child method must satisfy
+type signature equivalent to that of the parent or by using an ellipsis
+(`...`) to indicate copying of the parent type signature. The explicit
+signature repeats the names of the parent's parameters and type parameters,
+unless the option `--refinement-renaming` is used
+(see [renaming in a refinement](#sec-refinement-renaming)). The body of a child method must satisfy
 any ensures clauses from its parent in addition to any it adds.
 
 A refined method is allowed only if it does not invalidate any parent
@@ -532,3 +534,92 @@ module B refines A {  // needs --synonym-refines-abstract-type
 
 The refinement syntax (`...`) in statements is deprecated.
 
+
+## 10.11. Renaming parameters and type parameters {#sec-refinement-renaming}
+
+With the option `--refinement-renaming`, a declaration in a refining module may rename what is
+internal to the declaration it refines:
+
+* the type parameters of a function, method, lemma, class, trait, datatype, newtype or abstract type,
+* the out-parameters of a method or lemma, and the result of a function,
+* the name by which a function, method, lemma or constructor refers to one of its own in-parameters.
+
+The renaming goes by position. Everything that the refining declaration inherits (its
+specification, default-valued parameters, body, and, for a type, the members that mention its type
+parameters) is renamed with it: the inherited text means what it meant in the parent, with each
+renamed name replaced by its new name.
+
+An in-parameter has two names. Its _label_ is what a caller writes in a named argument, and it is
+the name the parameter had where the declaration was first given; no refinement changes it. Its
+local name is what the declaration's own specification and body use. So callers, including
+inherited ones, are unaffected by a renaming.
+
+<!-- %check-verify %options --refinement-renaming -->
+```dafny
+abstract module A {
+  function Take<T>(s: seq<T>, n: nat): (r: seq<T>)
+    requires n <= |s|
+    ensures |r| == n
+  {
+    s[..n]
+  }
+  method Swap<T>(a: T, b: T) returns (c: T, d: T)
+    ensures c == b && d == a
+}
+
+module B refines A {
+  // the specification and the body are those of A.Take, in the new names
+  function Take<Elem>(items: seq<Elem>, count: nat): (prefix: seq<Elem>)
+
+  method Swap<V>(first: V, second: V) returns (x: V, y: V)
+  {
+    x, y := second, first;
+  }
+
+  method Test() {
+    var p := Take(s := [1, 2, 3], n := 2);  // labels: the names given in A
+    assert p == [1, 2];
+  }
+}
+```
+
+A renaming must not change what any name in the inherited text refers to. If the new name of a
+parameter is the name of a variable, constant or type that the inherited text uses, or is bound
+again inside the inherited text where the parameter is used, the refining module is rejected, and
+the error names the two declarations. A renaming is also rejected if the old or the new name of a
+parameter or type parameter is the name of a label that the inherited text names in a `reveal`
+statement. Giving two parameters the same name is an error, as in any declaration. The number of
+parameters and their modifiers must still agree with the parent, and a refining declaration still
+cannot give a parameter a default value.
+
+The type of a parameter, and the result type of a function, must be the type it is in the parent.
+With the option it need not be written the same way. A refining module that gives a type a second
+name can use that name in its signatures, and it can write an imported type with or without the
+name of its module:
+
+<!-- %check-verify %options --refinement-renaming -->
+```dafny
+abstract module Chains {
+  type T
+  function Next(t: T): T
+}
+
+module Lists refines Chains {
+  datatype Node = Nil | Cons(tail: Node)
+  type T = Node
+  function Next(n: Node): Node {
+    if n.Nil? then n else n.tail
+  }
+}
+```
+
+The two types are compared once the refining module's types are known, with type synonyms
+replaced by what they stand for. A subset type and a newtype are types of their own, so `nat` does
+not stand in for `int`. A type that the refining module knows only as an opaque type is the same as
+no other type. Whatever the refining declaration writes, the declaration that results has the
+types of the parent. The type of a `const` or a field and the bound of a type parameter must still
+be written as in the parent.
+
+The type parameters of an iterator cannot be renamed, nor can those of an abstract type with
+members that a type synonym refines (`--synonym-refines-abstract-type`). When one module is refined
+in several steps, each step may rename again; the labels remain those of the first declaration.

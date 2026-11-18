@@ -226,9 +226,24 @@ namespace Microsoft.Dafny {
         ct.Formals.ConvertAll(bv => CloneFormal(bv, false)), CloneAttributes(ct.Attributes));
     }
 
-    public TypeParameter CloneTypeParam(TypeParameter tp) {
+    /// <summary>
+    /// The name of the copy of a parameter, local variable or bound variable. A cloner that renames
+    /// binders (the refinement cloner, under --refinement-renaming) overrides this.
+    /// </summary>
+    public virtual Name CloneBinderName(NonglobalVariable variable) {
+      return new Name(this, variable.NameNode);
+    }
+
+    /// <summary>
+    /// The name of the copy of a type parameter. See CloneBinderName.
+    /// </summary>
+    public virtual Name CloneTypeParamName(TypeParameter tp) {
+      return tp.NameNode.Clone(this);
+    }
+
+    public virtual TypeParameter CloneTypeParam(TypeParameter tp) {
       var result = (TypeParameter)typeParameterClones.GetOrCreate(tp,
-        () => new TypeParameter(Origin(tp.Origin), tp.NameNode.Clone(this), tp.VarianceSyntax,
+        () => new TypeParameter(Origin(tp.Origin), CloneTypeParamName(tp), tp.VarianceSyntax,
           CloneTPChar(tp.Characteristics), tp.TypeBounds.ConvertAll(CloneType), tp.Attributes) {
           // A clone that drops bodies (the signature of an abstract import, or of an export set) keeps
           // what they stored (https://github.com/erniecohen/dafny/issues/481).

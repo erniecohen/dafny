@@ -441,7 +441,21 @@ NoGhost - disable printing of functions, ghost methods, and proof
         } else if (d is ModuleDecl md) {
           wr.WriteLine();
           Indent(indent);
-          if (d is LiteralModuleDecl modDecl) {
+          if (d is LiteralModuleDecl { CopyImport: { } copyImport } copyDecl) {
+            // a copying import, "import X := Q" (--copy-imports)
+            wr.Write("import");
+            if (copyImport.Opened) {
+              wr.Write(" opened");
+            }
+            wr.Write(" {0} := {1}", copyDecl.Name, copyDecl.ModuleDef.Implements.Target.ToString());
+            if (copyImport.Exports.Count == 1) {
+              wr.Write("`{0}", copyImport.Exports[0].val);
+            }
+            if (copyImport.Exports.Count > 1) {
+              wr.Write("`{{{0}}}", Util.Comma(copyImport.Exports, id => id.val));
+            }
+            wr.WriteLine();
+          } else if (d is LiteralModuleDecl modDecl) {
             if (printMode == PrintModes.Serialization && !modDecl.ModuleDef.ShouldCompile(compilation)) {
               // This mode is used to losslessly serialize the source program by the C# and Library backends.
               // Backends don't compile any code for modules not marked for compilation,

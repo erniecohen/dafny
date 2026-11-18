@@ -395,6 +395,19 @@ ModuleImport<ModuleDefinition parent, out ModuleDecl submodule>
       QualifiedModuleExport<out var namePath, out idExports>
           (. submodule = new AbstractModuleDecl(theOptions, new SourceOrigin(startToken, t, name.ReportingRange), new ModuleQualifiedId(namePath),
                                                name, null, parent, opened, idExports, Guid.NewGuid()); .)
+    | IF(lookAhead == _gets && theOptions.Get(CommonOptionBag.CopyImports))
+      ModuleName<out var name>
+      ":="
+      QualifiedModuleExport<out var namePath, out idExports>
+          (. // "import X := Q" is the nested module "module X refines Q {}", marked as a copying import
+             var copyOrigin = new SourceOrigin(startToken, t, name.ReportingRange);
+             var copyModule = new ModuleDefinition(copyOrigin, name, new List<IOrigin>(), ModuleKindEnum.Concrete,
+               new Implements(ImplementationKind.Refinement, new ModuleQualifiedId(namePath)), parent, null, []);
+             copyModule.BodyStartTok = t;
+             var copyDecl = new LiteralModuleDecl(theOptions, copyModule, parent, Guid.NewGuid());
+             copyDecl.SetOrigin(copyOrigin);
+             copyDecl.CopyImport = new CopyImportInfo(opened, idExports);
+             submodule = copyDecl; .)
     | IF(lookAhead == _singleeq)
       ModuleName<out var name>
       "="
