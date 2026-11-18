@@ -1,0 +1,4 @@
+git-issue-105-codatatypes.dfy(9,4): Error: a codatatype may not declare an invariant: its values are not built up from finitely many constructor applications, so an invariant cannot be checked when they are constructed
+git-issue-105-codatatypes.dfy(10,10): Error: a codatatype may not declare a witness: a witness is only needed by a type with an invariant
+git-issue-105-codatatypes.dfy(16,4): Error: a program that declares a member invariant may not declare a codatatype, but it declares codatatype 'Stream' in module 'Co'
+3 resolution/type errors detected in git-issue-105-codatatypes.dfy

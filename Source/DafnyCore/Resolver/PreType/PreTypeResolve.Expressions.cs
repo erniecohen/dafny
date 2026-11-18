@@ -482,7 +482,8 @@ namespace Microsoft.Dafny {
                   var declKind = CodeContextWrapper.Unwrap(resolutionContext.CodeContext) is RedirectingTypeDecl redir
                     ? redir.WhatKind
                     : ((MemberDecl)resolutionContext.CodeContext).WhatKind;
-                  ReportError(opExpr, "a {0} definition is not allowed to depend on the set of allocated references", declKind);
+                  var article = "aeiou".Contains(declKind[0]) ? "an" : "a"; // "an invariant" (issue 105)
+                  ReportError(opExpr, "{0} {1} definition is not allowed to depend on the set of allocated references", article, declKind);
                 }
                 break;
               case UnaryOpExpr.Opcode.Assigned:
@@ -587,7 +588,11 @@ namespace Microsoft.Dafny {
               foreach (var bv in e.BoundVars) {
                 int prevErrorCount = ErrorCount;
                 resolver.ResolveType(bv.Origin, bv.Type, resolutionContext, ResolveTypeOptionEnum.InferTypeProxies, null);
-                bv.PreType = Type2PreType(bv.Type);
+                // Issue 105: the variable of a newtype's header that a header conjunct shares keeps the pre-type that
+                // the newtype gave it (see sharedHeaderVariable)
+                if (bv.PreType == null || bv != sharedHeaderVariable) {
+                  bv.PreType = Type2PreType(bv.Type);
+                }
               }
               foreach (var rhs in e.RHSs) {
                 ResolveExpression(rhs, resolutionContext);

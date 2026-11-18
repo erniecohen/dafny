@@ -1,0 +1,23 @@
+git-issue-105-general-traits.dfy(22,4): Error: assertion might not hold
+git-issue-105-general-traits.dfy(36,10): Error: invariant might not hold
+git-issue-105-general-traits.dfy(16,16): Related location: this is the invariant that might not hold
+git-issue-105-general-traits.dfy(39,10): Error: invariant might not hold
+git-issue-105-general-traits.dfy(16,16): Related location: this is the invariant that might not hold
+git-issue-105-general-traits.dfy(77,9): Error: invariant might not hold
+git-issue-105-general-traits.dfy(65,16): Related location: this is the invariant that might not hold
+git-issue-105-general-traits.dfy(103,9): Error: invariant might not hold
+git-issue-105-general-traits.dfy(93,16): Related location: this is the invariant that might not hold
+git-issue-105-general-traits.dfy(103,9): Error: invariant might not hold
+git-issue-105-general-traits.dfy(96,16): Related location: this is the invariant that might not hold
+git-issue-105-general-traits.dfy(115,13): Error: invariant might not hold
+git-issue-105-general-traits.dfy(112,16): Related location: this is the invariant that might not hold
+git-issue-105-general-traits.dfy(126,19): Error: invariant might not hold
+git-issue-105-general-traits.dfy(125,16): Related location: this is the invariant that might not hold
+git-issue-105-general-traits.dfy(147,29): Error: invariant might not hold
+git-issue-105-general-traits.dfy(139,16): Related location: this is the invariant that might not hold
+git-issue-105-general-traits.dfy(153,9): Error: invariant might not hold
+git-issue-105-general-traits.dfy(139,16): Related location: this is the invariant that might not hold
+git-issue-105-general-traits.dfy(153,9): Error: invariant might not hold
+git-issue-105-general-traits.dfy(143,16): Related location: this is the invariant that might not hold
+
+Dafny program verifier finished with 14 verified, 11 errors

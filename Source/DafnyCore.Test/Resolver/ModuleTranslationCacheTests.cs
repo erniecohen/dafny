@@ -293,7 +293,67 @@ public class ModuleTranslationCacheTests {
     Assert.Throws<InvalidOperationException>(() => cache.Translate(program, module, new(program.Options), default));
   }
 
-  internal static async Task<Microsoft.Dafny.Program> Resolve(string source, string? unrelated = null, bool refresh = false, bool modularTermination = false, int threads = 1, bool cached = true) {
+  /// <summary>
+  /// Issue 105: a member invariant in an unrelated file, of any kind of type, does not change a module's translation,
+  /// so the module's entry is reused. (While the verification of some invariants was not yet supported, a program
+  /// that declared one was not translated at all, and the cache stepped aside for it; with newtypes, the last kind,
+  /// supported, that step is gone.)
+  /// </summary>
+  [Theory]
+  [InlineData("module Unrelated { datatype D = D(x: int) { invariant x > 0 } }")]
+  [InlineData("module Unrelated { datatype D<X> = D(x: X) { invariant true } }")]
+  [InlineData("module Unrelated { class C { const k: int invariant k > 0 constructor () { k := 1; } } }")]
+  [InlineData("module Unrelated { newtype N = int { invariant this > 0 } }")]
+  [InlineData("module Unrelated { newtype N = x: int | x < 10 { invariant this as int > 0 } }")]
+  [InlineData("module Unrelated { trait T extends object { const k: int invariant k > 0 } class C extends T { constructor () { k := 1; } } }")]
+  [InlineData("module Unrelated { type A { invariant true } }")]
+  public async Task AMemberInvariantInAnUnrelatedFileKeepsReuse(string with) {
+    const string without = "module Unrelated { datatype D = D(x: int) }";
+    var cache = new ModuleTranslationCache();
+    var before = await Resolve(Source, without, refresh: true, memberInvariants: true);
+    var first = cache.Translate(before, before.RawModules().Single(m => m.Name == "M"), new(before.Options), default);
+    Assert.NotEmpty(first.Implementations);
+    Assert.Equal(1, cache.EntryCount);
+    var again = await Resolve(Source, without, refresh: true, memberInvariants: true);
+    cache.Translate(again, again.RawModules().Single(m => m.Name == "M"), new(again.Options), default);
+    Assert.Equal(1, cache.Hits);
+    var after = await Resolve(Source, with, refresh: true, memberInvariants: true);
+    var second = cache.Translate(after, after.RawModules().Single(m => m.Name == "M"), new(after.Options), default,
+      out var reused);
+    Assert.True(reused);
+    Assert.Equal(2, cache.Hits);
+    Assert.Equal(ModuleTranslationCache.Emit(first, before.Options), ModuleTranslationCache.Emit(second, after.Options));
+    Assert.Equal(0, after.Reporter.ErrorCount);
+  }
+
+  /// <summary>
+  /// Issue 105: a module that declares a member invariant whose verification is supported is cached as any other
+  /// module is. The invariant is part of the module's source, so a changed invariant is a different entry.
+  /// </summary>
+  [Fact]
+  public async Task AModuleWithASupportedMemberInvariantIsReused() {
+    const string with = "module M { datatype D = D(x: int) { invariant x > 0 } lemma L(d: D) ensures d.x > 0 {} }";
+    const string changed = "module M { datatype D = D(x: int) { invariant x > 1 } lemma L(d: D) ensures d.x > 0 {} }";
+    var cache = new ModuleTranslationCache();
+    var before = await Resolve(with, refresh: true, memberInvariants: true);
+    var first = cache.Translate(before, before.RawModules().Single(m => m.Name == "M"), new(before.Options), default,
+      out var reused);
+    Assert.False(reused);
+    Assert.NotEmpty(first.Implementations);
+    var again = await Resolve(with, refresh: true, memberInvariants: true);
+    var second = cache.Translate(again, again.RawModules().Single(m => m.Name == "M"), new(again.Options), default,
+      out reused);
+    Assert.True(reused);
+    Assert.Equal(ModuleTranslationCache.Emit(first, before.Options), ModuleTranslationCache.Emit(second, again.Options));
+    var other = await Resolve(changed, refresh: true, memberInvariants: true);
+    var third = cache.Translate(other, other.RawModules().Single(m => m.Name == "M"), new(other.Options), default,
+      out reused);
+    Assert.False(reused);
+    Assert.Equal(1, cache.Hits);
+    Assert.NotEqual(ModuleTranslationCache.Emit(first, before.Options), ModuleTranslationCache.Emit(third, other.Options));
+  }
+
+  internal static async Task<Microsoft.Dafny.Program> Resolve(string source, string? unrelated = null, bool refresh = false, bool modularTermination = false, int threads = 1, bool cached = true, bool memberInvariants = false) {
     DafnyType.ResetScopes();
     var options = new DafnyOptions(TextReader.Null, TextWriter.Null, TextWriter.Null);
     options.ApplyDefaultOptionsWithoutSettingsDefault();
@@ -301,6 +361,7 @@ public class ModuleTranslationCacheTests {
     options.Set(CommonOptionBag.ResolutionThreads, threads);
     options.Set(CommonOptionBag.TranslationCache, cached);
     options.Set(CommonOptionBag.TypeSystemRefresh, refresh);
+    options.Set(CommonOptionBag.MemberInvariants, memberInvariants);
     var reporter = new BatchErrorReporter(options);
     var uri = new Uri("file:///translation-cache.dfy");
     var sources = ImmutableDictionary<Uri, string>.Empty.Add(uri, source);

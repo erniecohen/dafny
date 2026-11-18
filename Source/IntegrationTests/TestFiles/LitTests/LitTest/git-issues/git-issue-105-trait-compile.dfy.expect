@@ -1,0 +1,18 @@
+
+Dafny program verifier finished with 8 verified, 0 errors
+savings 10 true false
+plain 5 false true
+true true
+9 4 true
+true
+9 false false true
+4 true true false
+
+Dafny program verifier finished with 8 verified, 0 errors
+savings 10 true false
+plain 5 false true
+true true
+9 4 true
+true
+9 false false true
+4 true true false

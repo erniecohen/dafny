@@ -1,0 +1,186 @@
+git-issue-105-raw-exports.dfy(47,14): Error: 'raw' is not yet supported for datatype 'Interval', which is provided but not revealed here
+git-issue-105-raw-exports.dfy(57,22): Error: 'raw' is not yet supported for datatype 'Interval', which is provided but not revealed here
+git-issue-105-raw-exports.dfy(51,2): Related location: raised while checking export set ExportsRaw
+git-issue-105-raw-exports.dfy(51,2): Error: This export set is not consistent: ExportsRaw
+// git-issue-105-raw-exports.dfy
+
+
+module A {
+  function Make<X>(x: X): Interval<X>
+  {
+    Interval(0, 1, x)
+  }
+
+  export Provides
+    provides Interval, Interval.Width, Interval.Ok, Make
+    /*----- exported view:
+      datatype /*{:_provided}*/ Interval<X> = Interval(lo: int, hi: int, x: X) {
+        // raw member: 'this' has type 'raw Interval'
+        predicate Ok()
+          decreases this
+        {
+          lo <= hi
+        }
+
+        invariant /* invariant#0 */ Ok()
+
+        function Width(): int
+          decreases this
+        {
+          hi - lo
+        }
+      }
+      type Interval<X> = v: raw Interval<X>
+        | v.invariant#0()
+        witness *
+      function Width(): int
+        decreases this
+      {
+        hi - lo
+      }
+      // raw member: 'this' has type 'raw Interval'
+      predicate Ok()
+        decreases this
+      {
+        lo <= hi
+      }
+      function Make<X>(x: X): Interval<X>
+      {
+        Interval(0, 1, x)
+      }
+    -----*/
+
+
+  export Reveals
+    reveals Interval
+    /*----- exported view:
+      datatype /*{:_provided}*/ Interval<X> = Interval(lo: int, hi: int, x: X) {
+        // raw member: 'this' has type 'raw Interval'
+        predicate Ok()
+          decreases this
+        {
+          lo <= hi
+        }
+
+        invariant /* invariant#0 */ Ok()
+
+        function Width(): int
+          decreases this
+        {
+          hi - lo
+        }
+      }
+      type Interval<X> = v: raw Interval<X>
+        | v.invariant#0()
+        witness *
+    -----*/
+    provides Interval.Width, Interval.Ok, Make
+    /*----- exported view:
+      function Width(): int
+        decreases this
+      {
+        hi - lo
+      }
+      // raw member: 'this' has type 'raw Interval'
+      predicate Ok()
+        decreases this
+      {
+        lo <= hi
+      }
+      function Make<X>(x: X): Interval<X>
+      {
+        Interval(0, 1, x)
+      }
+    -----*/
+
+
+  datatype /*{:_provided}*/ Interval<X> = Interval(lo: int, hi: int, x: X) {
+    // raw member: 'this' has type 'raw Interval'
+    predicate Ok()
+      decreases this
+    {
+      lo <= hi
+    }
+
+    invariant /* invariant#0 */ Ok()
+
+    function Width(): int
+      decreases this
+    {
+      hi - lo
+    }
+  }
+  /*-- type with member invariants
+  type Interval<X> = v: raw Interval<X>
+    | v.invariant#0()
+    witness *
+  */
+}
+
+module ProvidedClient {
+  method M(i: A.Interval<bool>) returns (w: int, b: bool)
+  {
+    var r: Interval<bool> := A.Make(true);
+    w := i.Width() + r.Width();
+    b := i.Ok() && r.Ok();
+    var s: seq<Interval<bool>> := [i, r];
+  }
+
+  import A`Provides
+}
+
+module RevealedClient {
+  method M(i: A.Interval<int>, r: raw A.Interval<int>)
+      returns (w: int, b: bool)
+    decreases i, r
+  {
+    var k: raw Interval<int> := A.Interval(1, 2, 3);
+    w := i.Width() + k.Width();
+    b := r.Ok() && k.Ok();
+    var j: A.Interval<int> := k;
+    var u: raw Interval<int> := i.(lo := 0);
+  }
+
+  import A`Reveals
+}
+
+module ProvidedRaw {
+  method M(r: raw A.Interval<int>)
+  {
+  }
+
+  import A`Provides
+}
+
+module ExportsRaw {
+  function MakeRaw(): raw Interval
+  {
+    Interval(1, 0)
+  }
+
+  export
+    provides Interval, MakeRaw
+    /*----- exported view:
+      datatype /*{:_provided}*/ Interval = Interval(lo: int, hi: int) {
+        invariant /* invariant#0 */ lo <= hi
+      }
+      type Interval = v: raw Interval
+        | v.invariant#0()
+        witness *
+      function MakeRaw(): raw Interval
+      {
+        Interval(1, 0)
+      }
+    -----*/
+
+
+  datatype /*{:_provided}*/ Interval = Interval(lo: int, hi: int) {
+    invariant /* invariant#0 */ lo <= hi
+  }
+  /*-- type with member invariants
+  type Interval = v: raw Interval
+    | v.invariant#0()
+    witness *
+  */
+}
+3 resolution/type errors detected in git-issue-105-raw-exports.dfy

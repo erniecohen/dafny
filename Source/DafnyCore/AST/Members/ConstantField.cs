@@ -77,6 +77,11 @@ public class ConstantField : Field, ICallable, ICanAutoRevealDependencies, ICanV
     }
 
     var addedReveals = Rewriter.ExprToFunctionalDependencies(Rhs, EnclosingModule);
+    if (this is MemberWitness && EnclosingClass is TopLevelDeclWithMembers { InvariantTypeDecl: { } invariantTypeDecl }) {
+      // Issue 105: a witness member is the witness of the type with the invariants
+      addedReveals = addedReveals.Concat(Rewriter.InvariantFunctionalDependencies(invariantTypeDecl, Rhs.Origin, EnclosingModule))
+        .Distinct();
+    }
     Rhs = Rewriter.AddRevealStmtsToExpression(Rhs, addedReveals);
 
     if (addedReveals.Any()) {

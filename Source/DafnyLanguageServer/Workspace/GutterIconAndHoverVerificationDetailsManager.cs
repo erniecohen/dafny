@@ -87,8 +87,9 @@ Send notifications about the verification status of each line in the program.
 
               var verificationTreeRange = member.StartToken.GetLspRange(member.EndToken);
               var verificationTree = new TopLevelDeclMemberVerificationTree(
-                "constant",
-                member.Name,
+                // a witness of a type with member invariants (issue 105) has a reserved name that is not shown
+                member is MemberWitness ? "witness of" : "constant",
+                member is MemberWitness ? topLevelDecl.Name : member.Name,
                 member.GetCompileName(options),
                 member.Origin.Filepath,
                 member.Origin.Uri,
@@ -99,8 +100,9 @@ Send notifications about the verification status of each line in the program.
             } else if (member is MethodOrConstructor or Function) {
               var verificationTreeRange = member.StartToken.GetLspRange(member.EndToken);
               var verificationTree = new TopLevelDeclMemberVerificationTree(
-                (member is MethodOrConstructor ? "method" : "function"),
-                member.Name,
+                // a member invariant (issue 105) has a reserved name that is not shown
+                member is MethodOrConstructor ? "method" : member is MemberInvariant ? "invariant of" : "function",
+                member is MemberInvariant ? topLevelDecl.Name : member.Name,
                 member.GetCompileName(options),
                 member.Origin.Filepath,
                 member.Origin.Uri,

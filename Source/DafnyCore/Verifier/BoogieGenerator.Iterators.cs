@@ -36,7 +36,7 @@ namespace Microsoft.Dafny {
     /// changed is also in the scope with that module, when the copy comes from a refinement base outside the scope.
     /// </summary>
     bool IteratorBodyInVerificationScope(IteratorDecl iter) {
-      if (InVerificationScope(iter)) {
+      if (InVerificationScope(iter) || AddedInvariantsInVerificationScope(iter)) {
         return true;
       }
       var module = iter.EnclosingModuleDefinition;
@@ -66,7 +66,7 @@ namespace Microsoft.Dafny {
       // wellformedness check for method specification
       Bpl.Procedure proc = AddIteratorProc(iter, MethodTranslationKind.SpecWellformedness);
       sink.AddTopLevelDeclaration(proc);
-      if (InVerificationScope(iter)) {
+      if (InVerificationScope(iter) || AddedInvariantsInVerificationScope(iter)) {
         AddIteratorWellformednessCheck(iter, proc);
       }
       // the method itself

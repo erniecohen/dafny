@@ -1,0 +1,231 @@
+// git-issue-105-refinement.dfy
+
+
+abstract module M0 {
+  datatype Positive = Positive(n: int) {
+    invariant /* invariant#0 */ n > 0
+  }
+  /*-- type with member invariants
+  type Positive = v: raw Positive
+    | v.invariant#0()
+    witness *
+  */
+
+  type Hidden {
+    invariant /* invariant#0 */ true
+  }
+
+  class Counter {
+    const limit: int
+    invariant /* invariant#0 */ limit > 0
+
+    constructor ()
+    {
+      limit := 1;
+    }
+  }
+  /*-- type with member invariants
+  type Counter?(0) = v: raw Counter?
+    | v != null ==> v.invariant#0()
+  */
+  /*-- non-null type
+  type {:axiom} Counter(==) = c: Counter? | c != null /*special witness*/
+  */
+
+  trait Named {
+    const name: string
+    invariant /* invariant#0 */ |name| > 0
+  }
+  /*-- type with member invariants
+  type Named = v: raw Named
+    | v.invariant#0()
+    witness *
+  */
+}
+
+abstract module M1 refines M0 {
+  datatype Positive = Positive(n: int) {
+    invariant /* invariant#1 */ n < 100
+    invariant /* invariant#0 */ n > 0
+  }
+  /*-- type with member invariants
+  type Positive = v: raw Positive
+    | v.invariant#0() && v.invariant#1()
+    witness *
+  */
+
+  datatype Hidden = Hidden(b: bool) {
+    invariant /* invariant#1 */ b || !b
+    invariant /* invariant#2 */ true
+    invariant /* invariant#0 */ true
+  }
+  /*-- type with member invariants
+  type Hidden = v: raw Hidden
+    | v.invariant#0() && v.invariant#1() && v.invariant#2()
+    witness *
+  */
+
+  class Counter ... {
+    invariant /* invariant#1 */ limit < 10
+    const limit: int
+    invariant /* invariant#0 */ limit > 0
+
+    constructor ()
+    {
+      limit := 1;
+    }
+  }
+  /*-- type with member invariants
+  type Counter?(0) = v: raw Counter?
+    | v != null ==> v.invariant#0() && v.invariant#1()
+  */
+  /*-- non-null type
+  type {:axiom} Counter(==) = c: Counter? | c != null /*special witness*/
+  */
+
+  trait Named ... {
+    invariant /* invariant#1 */ |name| < 10
+    const name: string
+    invariant /* invariant#0 */ |name| > 0
+  }
+  /*-- type with member invariants
+  type Named = v: raw Named
+    | v.invariant#0() && v.invariant#1()
+    witness *
+  */
+}
+
+module M2 refines M1 {
+  function Get(p: Positive, h: Hidden): int
+    decreases p, h
+  {
+    if h.b then
+      p.n
+    else
+      0
+  }
+
+  datatype Positive = Positive(n: int) {
+    invariant /* invariant#2 */ n != 50
+    invariant /* invariant#3 */ n != 51
+    invariant /* invariant#1 */ n < 100
+    invariant /* invariant#0 */ n > 0
+  }
+  /*-- type with member invariants
+  type Positive = v: raw Positive
+    | v.invariant#0() && v.invariant#1() && v.invariant#2() && v.invariant#3()
+    witness *
+  */
+
+  datatype Hidden = Hidden(b: bool) {
+    invariant /* invariant#3 */ b == b
+    invariant /* invariant#1 */ b || !b
+    invariant /* invariant#2 */ true
+    invariant /* invariant#0 */ true
+  }
+  /*-- type with member invariants
+  type Hidden = v: raw Hidden
+    | v.invariant#0() && v.invariant#1() && v.invariant#2() && v.invariant#3()
+    witness *
+  */
+
+  class Counter ... {
+    invariant /* invariant#2 */ limit != 5
+    invariant /* invariant#1 */ limit < 10
+    const limit: int
+    invariant /* invariant#0 */ limit > 0
+
+    constructor ()
+    {
+      limit := 1;
+    }
+  }
+  /*-- type with member invariants
+  type Counter?(0) = v: raw Counter?
+    | v != null ==> v.invariant#0() && v.invariant#1() && v.invariant#2()
+  */
+  /*-- non-null type
+  type {:axiom} Counter(==) = c: Counter? | c != null /*special witness*/
+  */
+
+  class Thing extends Named {
+    invariant /* invariant#0 */ |name| != 5
+
+    constructor ()
+    {
+      name := "thing";
+    }
+  }
+  /*-- type with member invariants
+  type Thing?(0) = v: raw Thing?
+    | v != null ==> (v as raw Named).invariant#0() && (v as raw Named).invariant#1() && v.invariant#0()
+  */
+  /*-- non-null type
+  type {:axiom} Thing(==) = c: Thing? | c != null /*special witness*/
+  */
+
+  trait Named ... {
+    invariant /* invariant#1 */ |name| < 10
+    const name: string
+    invariant /* invariant#0 */ |name| > 0
+  }
+  /*-- type with member invariants
+  type Named = v: raw Named
+    | v.invariant#0() && v.invariant#1()
+    witness *
+  */
+}
+
+module M3 refines M1 {
+  datatype Positive = Positive(n: int) {
+    invariant /* invariant#1 */ n < 100
+    invariant /* invariant#0 */ n > 0
+  }
+  /*-- type with member invariants
+  type Positive = v: raw Positive
+    | v.invariant#0() && v.invariant#1()
+    witness *
+  */
+
+  datatype Hidden = Hidden(b: bool) {
+    invariant /* invariant#1 */ b || !b
+    invariant /* invariant#2 */ true
+    invariant /* invariant#0 */ true
+  }
+  /*-- type with member invariants
+  type Hidden = v: raw Hidden
+    | v.invariant#0() && v.invariant#1() && v.invariant#2()
+    witness *
+  */
+
+  class Counter ... {
+    invariant /* invariant#1 */ limit < 10
+    const limit: int
+    invariant /* invariant#0 */ limit > 0
+
+    constructor ()
+    {
+      limit := 1;
+    }
+  }
+  /*-- type with member invariants
+  type Counter?(0) = v: raw Counter?
+    | v != null ==> v.invariant#0() && v.invariant#1()
+  */
+  /*-- non-null type
+  type {:axiom} Counter(==) = c: Counter? | c != null /*special witness*/
+  */
+
+  trait Named ... {
+    invariant /* invariant#1 */ |name| < 10
+    const name: string
+    invariant /* invariant#0 */ |name| > 0
+  }
+  /*-- type with member invariants
+  type Named = v: raw Named
+    | v.invariant#0() && v.invariant#1()
+    witness *
+  */
+}
+
+Dafny program verifier did not attempt verification

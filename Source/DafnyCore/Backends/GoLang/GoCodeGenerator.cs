@@ -3829,7 +3829,7 @@ namespace Microsoft.Dafny.Compilers {
         }
       }
 
-      if (fromType.IsSubtypeOf(toType, true, true)) {
+      if (IsTargetSubtypeOf(fromType, toType)) {
         wr.Write("true");
       } else if (toType.IsTraitType) {
         wr.Write($"{HelperModulePrefix}InstanceOfTrait({localName}.(_dafny.TraitOffspring), {TypeName_Companion(toType.AsTraitType, wr, tok)}.TraitID_)");
@@ -3863,6 +3863,16 @@ namespace Microsoft.Dafny.Compilers {
       wr.Write(".Cmp(");
       EmitLiteralExpr(wr, new LiteralExpr(source.Origin, hi) { Type = Type.Int });
       wr.Write(") < 0 && ");
+    }
+
+    /// <summary>
+    /// Whether, in the target, a value of type "sub" is a value of type "super", ignoring type arguments and nullity.
+    /// The class of a type with member invariants (issue 105), which the compiled types erase to, is not a subtype of
+    /// "object" among Dafny's types, but in the target it is an ordinary class.
+    /// </summary>
+    private static bool IsTargetSubtypeOf(Type sub, Type super) {
+      return sub.IsSubtypeOf(super, true, true) ||
+             ((super.IsObjectQ || super.IsObject) && InvariantTypeDecl.IsRawReferenceType(sub));
     }
 
     private static bool EqualsUpToParameters(Type type1, Type type2) {
@@ -3958,10 +3968,10 @@ namespace Microsoft.Dafny.Compilers {
       } else if (to.IsTypeParameter || (from != null && EqualsUpToParameters(from, to))) {
         // do nothing
         return wr;
-      } else if (from != null && !from.IsTypeParameter && from.IsSubtypeOf(to, true, true)) {
+      } else if (from != null && !from.IsTypeParameter && IsTargetSubtypeOf(from, to)) {
         // upcast
         return wr;
-      } else if (from == null || from.IsTypeParameter || to.IsSubtypeOf(from, true, true)) {
+      } else if (from == null || from.IsTypeParameter || IsTargetSubtypeOf(to, from)) {
         // downcast (allowed?) or implicit cast from parameter
         if (to.IsObjectQ || to.IsObject) {
           // a cast to any can be omitted

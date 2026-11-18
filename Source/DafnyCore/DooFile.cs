@@ -72,6 +72,10 @@ public class DooFile {
           continue;
         }
         var optionValue = options.Get((dynamic)option);
+        if (option == CommonOptionBag.MemberInvariants && optionValue is false) {
+          // Recorded only when on, so that a library built without the option is unchanged (issue 105).
+          continue;
+        }
         if (option == CommonOptionBag.QuantifierSyntax) {
           switch (optionValue) {
             case QuantifierSyntaxOptions.Version4:

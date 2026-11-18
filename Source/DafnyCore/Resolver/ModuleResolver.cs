@@ -1239,6 +1239,32 @@ namespace Microsoft.Dafny {
         }
       }
 
+      // Issue 105: the invariants that each declaration with member invariants inherits
+      if (prevErrorCount == reporter.Count(ErrorLevel.Error)) {
+        foreach (var d in declarations.OfType<TopLevelDeclWithMembers>().Where(d => d.InvariantTypeDecl != null)) {
+          SetInheritedInvariants(d);
+        }
+        // The promise "(0)" or "(00)" of an abstract type with invariants is kept by a witness, which only a
+        // refinement that defines the type gives (see InvariantTypeDecl.PromisedAutoInit). Only an abstract module is
+        // refined before any concrete use; a client of any other module takes the promise as it is written.
+        foreach (var d in declarations.OfType<AbstractTypeDecl>().Where(d => d.InvariantTypeDecl != null &&
+                   d.Characteristics.IsNonempty && d.EnclosingModuleDefinition.ModuleKind != ModuleKindEnum.Abstract)) {
+          var promise = d.Characteristics.HasCompiledValue ? "(0)" : "(00)";
+          reporter.Error(MessageSource.Resolver, d.Origin,
+            $"abstract type '{d.Name}' has invariants, so it may be declared {promise} only in an abstract module, " +
+            $"where each refinement that defines it keeps that promise with a witness; module '{d.EnclosingModuleDefinition.Name}' is not abstract");
+        }
+        // A datatype with no invariant needs no witness. MemberInvariantChecks rejects the witness of one that
+        // extends no trait and refines nothing; here the others are known.
+        foreach (var d in declarations.OfType<IndDatatypeDecl>().Where(d => d.InvariantTypeDecl == null &&
+                   (d.Traits.Count != 0 || d.EnclosingModuleDefinition.Implements != null))) {
+          if (d.Members.OfType<MemberWitness>().FirstOrDefault() is { } witness) {
+            reporter.Error(MessageSource.Resolver, witness.NameNode.Origin,
+              $"'{d.Name}' neither declares nor inherits an invariant, so it needs no witness: its values are its constructors' values");
+          }
+        }
+      }
+
       // These inherited parents are analysis obligations rather than runtime
       // inheritance. Resolve them explicitly without adding them to Children,
       // the parent relation, or the ordinary type dependency graphs.
@@ -1371,6 +1397,7 @@ namespace Microsoft.Dafny {
       if (Options.Get(CommonOptionBag.TypeSystemRefresh)) {
         // Resolve all names and infer types.
         PreTypeResolver.ResolveDeclarations(declarations, this);
+        RawMemberInference rawMemberInference = null;
 
         if (reporter.Count(ErrorLevel.Error) == prevErrorCount) {
           // Look for any under-specified pre-types, and fill in all .ResolvedOp fields.
@@ -1379,15 +1406,20 @@ namespace Microsoft.Dafny {
         }
 
         if (reporter.Count(ErrorLevel.Error) == prevErrorCount) {
-          var preType2TypeVisitor = new PreTypeToTypeVisitor(SystemModuleManager);
+          // Issue 105: the raw members are inferred during type refinement
+          rawMemberInference = declarations.Exists(d => d is TopLevelDeclWithMembers { InvariantTypeDecl: not null })
+            ? new RawMemberInference()
+            : null;
+          var preType2TypeVisitor = new PreTypeToTypeVisitor(SystemModuleManager, rawMemberInference);
           preType2TypeVisitor.VisitConstantsAndRedirectingTypes(declarations);
           preType2TypeVisitor.VisitDeclarations(declarations);
         }
 
         if (reporter.Count(ErrorLevel.Error) == prevErrorCount) {
-          var typeAdjustor = new TypeRefinementVisitor(moduleDescription, SystemModuleManager);
+          var typeAdjustor = new TypeRefinementVisitor(moduleDescription, SystemModuleManager, rawMemberInference);
           typeAdjustor.VisitDeclarations(declarations);
           typeAdjustor.Solve(reporter, Options.Get(CommonOptionBag.NewTypeInferenceDebug));
+          rawMemberInference?.Finish();
         }
 
       } else {
@@ -1766,7 +1798,14 @@ namespace Microsoft.Dafny {
 
           if (d is TopLevelDeclWithMembers topLevelDeclWithMembers) {
             foreach (var parentTrait in topLevelDeclWithMembers.Traits) {
-              CheckVariance(parentTrait, topLevelDeclWithMembers, TypeParameter.TPVariance.Co, false);
+              // Issue 105: a declaration that inherits member invariants is, as a raw type, a subtype of the raw type
+              // of a parent trait that has them, whose type parameters keep their declared variance. The type that
+              // the declaration's name denotes has non-variant type parameters (see InvariantTypeDecl).
+              var parentType = topLevelDeclWithMembers.InvariantTypeDecl != null &&
+                               TopLevelDeclWithMembers.ParentTraitDecl(parentTrait).InvariantTypeDecl != null
+                ? TopLevelDeclWithMembers.RawParentType(parentTrait)
+                : parentTrait;
+              CheckVariance(parentType, topLevelDeclWithMembers, TypeParameter.TPVariance.Co, false);
             }
           }
         }
@@ -1801,6 +1840,20 @@ namespace Microsoft.Dafny {
 
       if (reporter.Count(ErrorLevel.Error) == prevErrorCount) {
         new CheckMapRangeSupportsEquality(reporter).VisitDeclarations(declarations);
+      }
+
+      if (reporter.Count(ErrorLevel.Error) == prevErrorCount && Options.Get(CommonOptionBag.MemberInvariants)) {
+        // Issue 105: an invariant depends on no mutable state.
+        MemberInvariantChecks.CheckReadsRestrictions(declarations, reporter);
+        if (reporter.Count(ErrorLevel.Error) == prevErrorCount) {
+          if (!Options.Get(CommonOptionBag.UncheckedInvariantExtension)) {
+            // Issue 105: an invariant does not refer to the set of values of its own type (plan section 3.3).
+            InvariantExtensionCondition.Check(declarations, reporter);
+          }
+          // Issue 105: the invariants are monotone (antitone) in each covariant (contravariant) type parameter (plan
+          // section 3.5).
+          TypeParameterPolarity.CheckInvariantVariance(declarations, moduleInfo.VisibilityScope, reporter);
+        }
       }
 
       if (reporter.Count(ErrorLevel.Error) == prevErrorCount) {
@@ -1868,7 +1921,13 @@ namespace Microsoft.Dafny {
               }
             }
           }
-          if (!hasConstructor) {
+          if (!hasConstructor && MemberInvariantRequiringConstructor(cl) is var (invariant, holder)) {
+            // Issue 105: an object of the class exists only if a constructor checked the invariant at "new;"
+            reporter.Error(MessageSource.Resolver, holder == cl ? invariant.NameNode.Origin : cl.Origin,
+              holder == cl
+                ? $"class '{cl.Name}' declares a member invariant, so it must declare a constructor"
+                : $"class '{cl.Name}' inherits a member invariant from '{holder.Name}', so it must declare a constructor");
+          } else if (!hasConstructor) {
             if (fieldWithoutKnownInitializer == null) {
               // time to check inherited members
               foreach (var member in cl.InheritedMembers) {
@@ -1938,6 +1997,18 @@ namespace Microsoft.Dafny {
           }
 
           new NativeTypeAnalysis(reporter).FigureOutNativeType(newtypeDecl, Options);
+
+          if (newtypeDecl.InvariantTypeDecl != null) {
+            // Issue 105: "raw N" is ghost (see InvariantTypeDecl.GhostRawNewtype), so a member whose receiver is raw is too
+            foreach (var member in newtypeDecl.Members) {
+              if (member is not MemberInvariant && !member.IsGhost && RawMemberInference.IsRawMember(member)) {
+                reporter.Error(MessageSource.Resolver, member.Origin,
+                  $"{member.WhatKind} '{member.Name}' must be ghost: an invariant of newtype '{newtypeDecl.Name}' uses it, so " +
+                  $"its receiver may be a value of 'raw {newtypeDecl.Name}', which is ghost, since a compiled value of " +
+                  $"'{newtypeDecl.Name}' satisfies its invariants");
+              }
+            }
+          }
 
         } else if (d is DatatypeDecl) {
           var dd = (DatatypeDecl)d;
@@ -2148,6 +2219,19 @@ namespace Microsoft.Dafny {
         CallGraphBuilder.VisitMethod(prefixLemma, reporter);
         new BoundsDiscoveryVisitor(this).VisitMethod(prefixLemma);
       }
+    }
+
+    /// <summary>
+    /// Issue 105: a member invariant that "cl" declares, or else one it inherits, with the declaration that declares
+    /// it; or null if "cl" has none.  A class that has or inherits an invariant must declare a constructor.
+    /// </summary>
+    private static (MemberInvariant Invariant, TopLevelDeclWithMembers Holder)? MemberInvariantRequiringConstructor(TopLevelDeclWithMembers cl) {
+      foreach (var holder in new[] { cl }.Concat<TopLevelDeclWithMembers>(cl.TraitAncestors().OrderBy(trait => trait.Name))) {
+        if (InvariantTypeDecl.Invariants(holder).FirstOrDefault() is { } invariant) {
+          return (invariant, holder);
+        }
+      }
+      return null;
     }
 
     private void CheckIsOkayWithoutRHS(ConstantField f, bool giveNonReferenceTypeTraitHint) {
@@ -2449,6 +2533,89 @@ namespace Microsoft.Dafny {
       currentClass = null;
     }
 
+    /// <summary>
+    /// Issue 105: a datatype, class or trait that declares no member invariant, but extends a trait that has some,
+    /// declared or inherited, has the inherited ones, and so a derived InvariantTypeDecl, as one that declares an
+    /// invariant does (see InvariantTypeDecl.Applies). Its derived declarations must exist before the signatures of
+    /// the module are resolved, since the name of the declaration, written as a type, denotes the derived one, but
+    /// whether it inherits invariants is known only from its resolved extends clauses. So resolve clones of the
+    /// extends clauses here, into a sink (ResolveParentTraitTypes resolves them again, reporting errors), and make
+    /// the derived declarations, to a fixpoint, since a trait in this module may inherit invariants from another.
+    /// </summary>
+    public void CreateInheritedInvariantTypeDecls(ModuleDefinition def) {
+      if (!Options.Get(CommonOptionBag.MemberInvariants)) {
+        return;
+      }
+      var candidates = def.TopLevelDecls.OfType<TopLevelDeclWithMembers>()
+        .Where(d => d.InvariantTypeDecl == null && d.Traits.Count != 0 && InvariantTypeDecl.MayHaveInvariants(d)).ToList();
+      if (candidates.Count == 0) {
+        return;
+      }
+      var parents = new Dictionary<TopLevelDeclWithMembers, List<TraitDecl>>();
+      var originalReporter = reporter;
+      reporter = new ErrorReporterSink(Options);
+      try {
+        foreach (var d in candidates) {
+          allTypeParameters.PushMarker();
+          ResolveTypeParameters(d.TypeArgs, false, d);
+          var traits = new List<TraitDecl>();
+          foreach (var parentType in d.Traits) {
+            var probe = new Cloner().CloneType(parentType);
+            ResolveType(d.Origin, probe, new NoContext(def), ResolveTypeOptionEnum.DontInfer, null);
+            if (probe is UserDefinedType udt && udt.AsParentTraitDecl() is { } trait) {
+              traits.Add(trait);
+            }
+          }
+          allTypeParameters.PopMarker();
+          parents.Add(d, traits);
+        }
+      } finally {
+        reporter = originalReporter;
+      }
+      bool changed;
+      do {
+        changed = false;
+        foreach (var (d, traits) in parents) {
+          if (d.InvariantTypeDecl == null && traits.Exists(trait => trait.InvariantTypeDecl != null)) {
+            d.InvariantTypeDecl = new InvariantTypeDecl(d);
+            if (d is ClassLikeDecl { NonNullTypeDecl: not null } cl) {
+              cl.RawNonNullTypeDecl = new RawNonNullTypeDecl(cl);
+            }
+            changed = true;
+          }
+        }
+      } while (changed);
+    }
+
+    /// <summary>
+    /// Issue 105: set the invariants that "decl", which has member invariants, inherits from the traits it extends:
+    /// in post-order over the extends clauses, the invariants that each trait declares, each trait once. Each is
+    /// applied to the value as the raw type of the trait, instantiated as the extends clauses instantiate it. Assumes
+    /// that the extends clauses of "decl" and of its ancestors are resolved.
+    /// </summary>
+    private void SetInheritedInvariants(TopLevelDeclWithMembers decl) {
+      var inherited = new List<(MemberInvariant, UserDefinedType)>();
+      var visited = new HashSet<TraitDecl>();
+      void Visit(TopLevelDeclWithMembers d, Dictionary<TypeParameter, Type> subst) {
+        foreach (var parentType in d.Traits) {
+          var trait = TopLevelDeclWithMembers.ParentTraitDecl(parentType);
+          if (trait.InvariantTypeDecl == null || !visited.Add(trait)) {
+            continue;
+          }
+          var typeArgs = parentType.TypeArgs.ConvertAll(t => t.Subst(subst));
+          Visit(trait, TypeParameter.SubstitutionMap(trait.TypeArgs, typeArgs));
+          // Only a revealed trait can be extended (one that is only provided is not a trait where it is imported), and
+          // an export set that reveals a trait must reveal the traits it extends
+          Contract.Assert(trait.InvariantTypeDecl.IsRevealedInScope(Type.GetScope()));
+          foreach (var invariant in InvariantTypeDecl.Invariants(trait)) {
+            inherited.Add((invariant, trait.InvariantTypeDecl.RawThisType(decl.Origin, typeArgs)));
+          }
+        }
+      }
+      Visit(decl, TypeParameter.SubstitutionMap(decl.TypeArgs, decl.TypeArgs.ConvertAll(tp => (Type)new UserDefinedType(tp))));
+      decl.InvariantTypeDecl!.SetInheritedInvariants(inherited);
+    }
+
     void InheritMembers(List<TopLevelDecl> declarations) {
       // Register the trait members in the classes that inherit them
       foreach (var topLevelDeclWithMembers in declarations.OfType<TopLevelDeclWithMembers>()) {
@@ -2509,7 +2676,7 @@ namespace Microsoft.Dafny {
       // populate .ParentTypeInformation and .ParentFormalTypeParametersToActuals for the immediate parent traits
       foreach (var tt in cl.Traits) {
         var udt = (UserDefinedType)tt;
-        var trait = (TraitDecl)((udt.ResolvedClass as NonNullTypeDecl)?.ViewAsClass ?? udt.ResolvedClass);
+        var trait = TopLevelDeclWithMembers.ParentTraitDecl(udt);
         cl.ParentTypeInformation.Record(trait, udt);
         Contract.Assert(trait.TypeArgs.Count == udt.TypeArgs.Count);
         for (var i = 0; i < trait.TypeArgs.Count; i++) {
@@ -2581,6 +2748,11 @@ namespace Microsoft.Dafny {
       sortedKeys.Sort();
       foreach (var inheritedMemberName in sortedKeys) {
         var inheritedMember = members[inheritedMemberName];
+        if (inheritedMember is MemberInvariant or MemberWitness) {
+          // Member invariants and witnesses (issue 105) are anonymous: they are not inherited by name, and they
+          // neither override nor are overridden.  A type's ancestors' invariants are found from its parent traits.
+          continue;
+        }
         if (!inheritedMembers.TryGetValue(inheritedMember.Name, out var prevMember)) {
           // all good; record "inheritedMember" as an inherited member
           inheritedMembers.Add(inheritedMember.Name, inheritedMember);
@@ -3726,6 +3898,9 @@ namespace Microsoft.Dafny {
 
       if (cl is ClassLikeDecl { NonNullTypeDecl: { } } cls) {
         return UserDefinedType.FromTopLevelDecl(tok, cls.NonNullTypeDecl, cls.TypeArgs);
+      } else if (cl.InvariantTypeDecl != null) {
+        // Issue 105: in a member that is not raw, "this" satisfies the member invariants
+        return UserDefinedType.FromTopLevelDecl(tok, cl.InvariantTypeDecl, cl.TypeArgs);
       } else {
         return UserDefinedType.FromTopLevelDecl(tok, cl, cl.TypeArgs);
       }
@@ -3737,7 +3912,16 @@ namespace Microsoft.Dafny {
       Contract.Requires(member != null);
       Contract.Ensures(Contract.Result<UserDefinedType>() != null);
 
-      return GetThisType(tok, (TopLevelDeclWithMembers)member.EnclosingClass);
+      var cl = (TopLevelDeclWithMembers)member.EnclosingClass;
+      // Issue 105: the by-method part of a function, and a prefix predicate or lemma, are applied to the receivers of
+      // the member they belong to (RawMemberInference.Member)
+      var owner = RawMemberInference.Member(member as IASTVisitorContext) ?? member;
+      if (owner.IsRawMember || (RawMemberInference.IsStoredField(member) && cl is ClassLikeDecl { InvariantTypeDecl: not null })) {
+        // Issue 105: the receiver of a raw member has the raw type, and so does that of a stored field of a class,
+        // which a raw reference has
+        return cl.InvariantTypeDecl!.RawThisType(tok, cl.TypeArgs.ConvertAll(tp => (Type)new UserDefinedType(tp)));
+      }
+      return GetThisType(tok, cl);
     }
 
     internal Expression VarDotFunction(IOrigin tok, string varName, string functionName) {

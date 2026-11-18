@@ -151,6 +151,16 @@ public class ResolutionPipelineTests {
   }
 
   [Fact]
+  public async Task MemberInvariantsRequireTypeSystemRefresh() {
+    // Issue 105: the command line rejects --member-invariants without --type-system-refresh before it parses
+    // anything; a client that sets the options itself gets this resolution error instead.
+    const string source = "datatype D = D(x: int) { invariant x > 0 }";
+    var (_, reporter) = await Resolve(source, 0, false,
+      configureOptions: options => options.Set(CommonOptionBag.MemberInvariants, true));
+    Assert.Equal(["use of --member-invariants requires --type-system-refresh"], Errors(reporter));
+  }
+
+  [Fact]
   public async Task RejectedLegacyNewtypesDoNotTraverseUnresolvedImports() {
     const string source = """
       module Api { newtype N = x: int | 0 <= x }

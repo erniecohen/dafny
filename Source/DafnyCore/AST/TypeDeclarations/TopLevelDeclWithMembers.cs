@@ -25,6 +25,12 @@ public abstract class TopLevelDeclWithMembers : TopLevelDecl, IHasSymbolChildren
   /// </summary>
   public List<TraitDecl> ParentTraitHeads = [];
 
+  /// <summary>
+  /// For a declaration with member invariants, the derived subset type that its name denotes when written as a
+  /// type (issue 105). The declaration itself denotes the raw type. Set when the module's names are registered.
+  /// </summary>
+  [FilledInDuringResolution] public InvariantTypeDecl? InvariantTypeDecl;
+
   internal bool HeadDerivesFrom(TopLevelDecl b) {
     return this == b || this.ParentTraitHeads.Exists(tr => tr.HeadDerivesFrom(b));
   }
@@ -113,7 +119,52 @@ public abstract class TopLevelDeclWithMembers : TopLevelDecl, IHasSymbolChildren
   }
 
   public override List<Type> ParentTypes(List<Type> typeArgs, bool includeTypeBounds) {
+    if (InvariantTypeDecl != null) {
+      // Issue 105: a declaration with member invariants, declared or inherited, denotes its raw type ("raw D", or
+      // "raw C?"), which is a subtype only of the raw types of the parent traits that have invariants: not of
+      // "object?", or of another parent trait. The type that its name denotes is (see InvariantTypeDecl.ParentTypes).
+      return RawParentTypesWithInvariants(typeArgs);
+    }
     return RawTraitsWithArgument(typeArgs);
+  }
+
+  /// <summary>
+  /// Issue 105: the raw types of the parent traits that have member invariants, declared or inherited, instantiated
+  /// with "typeArgs": "raw P?" for a reference trait P (or, for a "typeArgs" that is null, in terms of the type
+  /// parameters of this declaration), "raw G" for a general trait G.
+  /// </summary>
+  public List<Type> RawParentTypesWithInvariants(List<Type> typeArgs) {
+    var subst = TypeParameter.SubstitutionMap(TypeArgs, typeArgs);
+    var results = new List<Type>();
+    foreach (var traitType in Traits) {
+      var trait = ParentTraitDecl(traitType);
+      if (trait.InvariantTypeDecl != null) {
+        results.Add(RawParentType(traitType).Subst(subst));
+      }
+    }
+    return results;
+  }
+
+  /// <summary>
+  /// The trait that "parentType", a resolved type in an extends clause, names. Issue 105: for a general trait with
+  /// member invariants, the type that its name denotes is its derived InvariantTypeDecl.
+  /// </summary>
+  public static TraitDecl ParentTraitDecl(Type parentType) {
+    var udt = (UserDefinedType)parentType;  // in a successfully resolved program, we expect all .ParentTraits to be a UserDefinedType
+    return udt.ResolvedClass switch {
+      NonNullTypeDecl nonNullTypeDecl => (TraitDecl)nonNullTypeDecl.Class,
+      InvariantTypeDecl invariantTypeDecl => (TraitDecl)invariantTypeDecl.Owner,
+      var decl => (TraitDecl)decl
+    };
+  }
+
+  /// <summary>
+  /// Issue 105: the raw type of the trait that "parentType", a resolved type in an extends clause, names, with the
+  /// same type arguments: the trait declaration itself, "raw P?" for a reference trait, "raw G" for a general trait.
+  /// </summary>
+  public static UserDefinedType RawParentType(Type parentType) {
+    var udt = (UserDefinedType)parentType;
+    return UserDefinedType.FromTopLevelDecl(udt.Origin, ParentTraitDecl(parentType), udt.TypeArgs);
   }
 
   public static List<UserDefinedType> CommonTraits(TopLevelDeclWithMembers a, TopLevelDeclWithMembers b) {
@@ -148,13 +199,7 @@ public abstract class TopLevelDeclWithMembers : TopLevelDecl, IHasSymbolChildren
   /// </summary>
   private void AddTraitAncestors(ISet<TraitDecl> s) {
     foreach (var parent in Traits) {
-      var udt = (UserDefinedType)parent;  // in a successfully resolved program, we expect all .ParentTraits to be a UserDefinedType
-      TraitDecl tr;
-      if (udt.ResolvedClass is NonNullTypeDecl nntd) {
-        tr = (TraitDecl)nntd.Class;
-      } else {
-        tr = (TraitDecl)udt.ResolvedClass;
-      }
+      var tr = ParentTraitDecl(parent);
       s.Add(tr);
       tr.AddTraitAncestors(s);
     }
@@ -271,6 +316,11 @@ public abstract class TopLevelDeclWithMembers : TopLevelDecl, IHasSymbolChildren
             }
           case Function { ByMethodBody: not null } f:
             resolver.RegisterByMethod(f, this);
+            break;
+          case MemberInvariant:
+            // Issue 105: a member invariant is part of the definition of its type, as a datatype's constructors are,
+            // so it is revealed wherever the type is, and nowhere else
+            m.InheritVisibility(this);
             break;
         }
       } else if (m is Constructor { HasName: false } constructor) {
