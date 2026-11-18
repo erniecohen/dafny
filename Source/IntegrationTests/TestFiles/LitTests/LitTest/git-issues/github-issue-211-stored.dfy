@@ -2,9 +2,10 @@
 // VeriFast's examples/termination/funcptr.c and cons.c in their stored-value form: function pointers stored in a
 // struct, each with a level, here bounded values (https://github.com/erniecohen/dafny/issues/266) in const fields
 // of a class.  The level of a stored function is its bound; the wrapper that applies it, int_func_object_invoke or
-// list_object_contains, runs one level above.  VeriFast's levels are bags of functions; these are nat, which is
-// what a bounded value's order may be.  cons.c's intersects is not ported: its permission, append(d, d_other),
-// depends on its argument, and the bound of a bounded value is fixed when it is certified.
+// list_object_contains, runs one level above.  VeriFast's levels are bags of functions; these are nat.  The same
+// examples in VeriFast's bags are github-issue-211-order-types.dfy (funcptr.c, with an order type of bags) and
+// github-issue-211-stored-arguments.dfy (cons.c with intersects, whose permission append(d, d_other) depends on its
+// argument: an argument-dependent bound).
 // RUN: echo "funcptr.c and cons.c (contains), stored values" > "%t"
 // RUN: %exits-with 0 %baredafny verify --solver-path %review-z3 --use-basename-for-filename --show-snippets:false --type-system-refresh --general-traits=datatype --modular-termination "%s" >> "%t"
 // RUN: echo "controls (assert false in each positive context), and levels that do not go down" >> "%t"

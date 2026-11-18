@@ -817,6 +817,15 @@ git-issues/github-issue-211-integrate.dfy
 # The stored-value forms of funcptr.c and cons.c (contains) of the VeriFast examples: a function object holding a bounded value, certified one level below its creator, with controls (https://github.com/erniecohen/dafny/issues/211).
 git-issues/github-issue-211-stored.dfy
 
+# Order types, `type {:order O} L = x: T | C`: funcptr.c in VeriFast's bags of levels, an order type admitted as the order of a bounded value, with controls, two order types of one carrier that do not mix, and order attributes that are not closed orders of the base type (https://github.com/erniecohen/dafny/issues/211).
+git-issues/github-issue-211-order-types.dfy
+
+# Argument-dependent bounds, `bounded.certifyAt(b, f)` and `c.boundAt(x)`: cons.c's intersects, whose bound at another list grows with that list's, with controls, bounds that are not closed or that may apply their own, and orders that are not total arrows from the payload's parameters (https://github.com/erniecohen/dafny/issues/211).
+git-issues/github-issue-211-stored-arguments.dfy
+
+# The ECOOP 2015 Figs. 16-17 with stored continuations: containsCPS and intersectsCPS take a bounded continuation whose bound is its stock, in an order type of bags of bags of levels, with controls (https://github.com/erniecohen/dafny/issues/211).
+git-issues/github-issue-211-cps-stored.dfy
+
 # Hiding or revealing a static function or constant through an object, as in `reveal foo.Q`, resolves under --type-system-refresh instead of crashing, and verifies (https://github.com/erniecohen/dafny/issues/416).
 git-issues/github-issue-416.dfy
 ast/reveal/revealQualified.dfy
