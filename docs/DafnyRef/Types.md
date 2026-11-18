@@ -899,6 +899,31 @@ notation | variance | cardinality-preserving
 - _contra-variance_ (`A<-T>`) means that if `U` is a subtype of `V` then `A<V>` is a subtype of `A<U>`
 - _non-variance_ (`A<T>` or `A<!T>`)  means that if `U` is a different type than `V` then there is no subtyping relationship between `A<U>` and `A<V>`
 
+
+For a subset type or newtype, the constraint must also respect the declared
+variance. A covariant parameter requires a monotone constraint: if it holds for
+a value at a type argument, it still holds when that argument is replaced by a
+supertype. A contravariant parameter requires an antitone constraint, which
+preserves truth on replacement by a subtype. The base type must independently
+respect the declared variance.
+
+The resolver checks this conservatively by polarity. Quantifying universally
+over a type uses it negatively; existential quantification and a type test
+(`is`) use it positively. Negation, the antecedent of an implication, and the
+parameter position of an arrow reverse polarity. Equality, equivalence, and the
+condition of an `if` use both polarities. Type constructors compose these uses
+with their declared variance; an invariant parameter uses both. Generic calls
+use summaries of their visible bodies, computed together to a fixpoint; a call
+whose body is unavailable uses both polarities. A resolution error names an
+occurrence that conflicts with the parameter's variance. An invariant parameter
+(`T` or `!T`) imposes no monotonicity requirement on the constraint.
+
+For example, `type S<+T> = x: seq<T> | |x| > 0 witness *` is permitted: the
+constraint depends on the value of `x`. But a constraint that requires
+`forall y: T :: false` cannot declare `+T`: it can hold for an empty type and
+fail for a larger type. The hidden option `--legacy-unchecked-type-variance`
+restores the earlier, unsound acceptance for comparison and migration only.
+
 _Cardinality preserving_ 
 means that the cardinality of the type being defined never exceeds the cardinality of any of its type parameters.
 For example `type T<X> = X -> bool`

@@ -433,6 +433,35 @@ public class TypeParameterPolarity {
     }
   }
 
+  /// <summary>
+  /// A subset type or newtype keeps its declared variance only if its constraint has the matching polarity.
+  /// The base type is checked separately by ModuleResolver. This check adds no fact and changes no accepted program.
+  /// </summary>
+  public static void CheckConstraintVariance(IEnumerable<TopLevelDecl> declarations, VisibilityScope scope, ErrorReporter reporter) {
+    foreach (var decl in declarations) {
+      if (decl is not RedirectingTypeDecl { Constraint: { } constraint } || decl is InvariantTypeDecl) {
+        continue;
+      }
+      var variant = decl.TypeArgs.Where(tp => tp.Variance != TypeParameter.TPVariance.Non).ToList();
+      if (variant.Count == 0) {
+        continue;
+      }
+      var analysis = new TypeParameterPolarity(decl.EnclosingModuleDefinition, scope);
+      var uses = analysis.Analyze(variant, collector => collector.Formula(constraint, Polarity.Positive));
+      foreach (var typeParameter in variant) {
+        var covariant = typeParameter.Variance == TypeParameter.TPVariance.Co;
+        var occurrence = covariant ? uses.Negative(typeParameter) : uses.Positive(typeParameter);
+        if (occurrence == null) {
+          continue;
+        }
+        reporter.Error(MessageSource.Resolver, new NestedOrigin(typeParameter.Origin, occurrence.Origin, "the occurrence"),
+          $"type parameter '{typeParameter.Name}' of '{decl.Name}' is declared {(covariant ? "covariant" : "contravariant")}, " +
+          $"but the constraint of '{decl.Name}' is not {(covariant ? "monotone" : "antitone")} in it: " +
+          $"{occurrence.Description} uses '{typeParameter.Name}' {Describe(occurrence.Polarity)}");
+      }
+    }
+  }
+
   // ----- the check for types with member invariants -------------------------------------------------------------
 
   /// <summary>
