@@ -76,6 +76,25 @@ public class InvariantExtensionCondition {
     }
   }
 
+  /// <summary>
+  /// The extension condition restricts the declarations of a group, independently of its export views.
+  /// A provided type must not hide a dependency from this analysis. These scopes are used only here;
+  /// resolution and verification still use each importing module's view.
+  /// </summary>
+  public static void CheckGroup(RecursiveModuleGroup group, ErrorReporter reporter) {
+    var scope = new VisibilityScope();
+    scope.Augment(Type.GetScope());
+    foreach (var member in group.Members) {
+      scope.Augment(member.ModuleDef.VisibilityScope);
+    }
+    Type.PushScope(scope);
+    try {
+      Check(group.AllDeclarations(), reporter);
+    } finally {
+      Type.PopScope(scope);
+    }
+  }
+
   private void Run() {
     var none = new HashSet<TypeParameter>();
     foreach (var invariant in decl.Members.OfType<MemberInvariant>()) {

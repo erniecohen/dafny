@@ -471,7 +471,12 @@ Value implementations must retain their type parameters in compatible parent pos
   };
 
   public static readonly Option<bool> RecursiveModules = new("--recursive-modules", () => false,
-    "(experimental, incomplete) Allow modules to import each other. The modules of an import cycle form a recursive module group, which means what one module with all their declarations would mean. Only imports may form a cycle. Requires --member-invariants. A program that has a recursive module group may not declare a codatatype. At this stage a member of a group may not be abstract, refine or be refined, declare an abstract import, and a program that has a group is not compiled.") {
+    "(experimental, incomplete) Allow modules to import each other. The modules of an import cycle form a recursive module group, which means what one module with all their declarations would mean. Only imports may form a cycle. Requires --member-invariants. A program that has a recursive module group may not declare a codatatype. A group is all concrete or all abstract. Refinement and abstract imports must point to strictly lower groups. Replacement in a group and compilation of a program that has a group are not yet supported.") {
+    IsHidden = true
+  };
+
+  public static readonly Option<bool> LegacyRecursiveModuleInvariants = new("--legacy-recursive-module-invariants", () => false,
+    "Use the legacy, unsound per-module extension-analysis scope for invariants in recursive module groups, for migration and comparison only. The general member-invariant dependence analysis is unchanged.") {
     IsHidden = true
   };
 
@@ -1002,6 +1007,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(LegacyUncheckedImportBinding, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacyStoredFunctionCallbacks, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacyInheritedNameCapture, OptionScope.Cli);
+    OptionRegistry.RegisterOption(LegacyRecursiveModuleInvariants, OptionScope.Cli);
     OptionRegistry.RegisterOption(UncheckedInvariantExtension, OptionScope.Cli);
     OptionRegistry.RegisterOption(ModularTermination, OptionScope.Cli);
     OptionRegistry.RegisterOption(ModularTerminationTrust, OptionScope.Cli);

@@ -206,19 +206,15 @@ public static class RecursiveModuleGroups {
       }
     }
     if (groups.Count != 0) {
-      // A module outside a group that refines or replaces a member, and an abstract import of a member.
-      // The design allows them (the member is in a strictly lower component), but the refinement of a
-      // group is a later stage.
+      // A replaceable module is never in a group. Keep replacement of a group member unsupported;
+      // refinement and abstract imports of a member are allowed from a strictly higher component.
       var groupOf = groups.SelectMany(g => g.Members.Select(m => (ModuleDecl)m)).ToHashSet();
       foreach (var from in dependencies.GetVertices().Select(v => v.N).OrderBy(Position)) {
         foreach (var to in dependencies.FindVertex(from).Successors.Select(v => v.N).Where(groupOf.Contains).OrderBy(Position)) {
           var kind = kindOf(from, to);
-          if (kind is ModuleDependencyKind.Refinement or ModuleDependencyKind.Replacement) {
+          if (kind == ModuleDependencyKind.Replacement) {
             reporter.Error(MessageSource.Resolver, ((LiteralModuleDecl)from).ModuleDef.Implements.Target.RootToken(),
               $"module {DisplayName(from)} refines or replaces module {DisplayName(to)}, which is in a recursive module group; this is not yet supported");
-          } else if (kind == ModuleDependencyKind.AbstractImport && from.EnclosingModuleDefinition?.RecursiveGroup == null) {
-            reporter.Error(MessageSource.Resolver, from.Origin,
-              $"the abstract import {from.Name} names module {DisplayName(to)}, which is in a recursive module group; this is not yet supported");
           }
         }
       }
@@ -234,21 +230,9 @@ public static class RecursiveModuleGroups {
     var module = member.ModuleDef;
     var name = DisplayName(member);
     const string notYet = "this is not yet supported";
-    if (module.ModuleKind == ModuleKindEnum.Abstract) {
-      reporter.Error(MessageSource.Resolver, member.Origin,
-        $"abstract module {name} is in a recursive module group; {notYet}");
-    }
-    if (module.Implements != null) {
+    if (module.Implements is { Kind: ImplementationKind.Replacement }) {
       reporter.Error(MessageSource.Resolver, module.Implements.Target.RootToken(),
         $"module {name}, which is in a recursive module group, refines or replaces module {module.Implements.Target}; {notYet}");
-    }
-    foreach (var declaration in module.TopLevelDecls) {
-      switch (declaration) {
-        case AbstractModuleDecl:
-          reporter.Error(MessageSource.Resolver, declaration.Origin,
-            $"module {name}, which is in a recursive module group, declares the abstract import {declaration.Name}; {notYet}");
-          break;
-      }
     }
   }
 

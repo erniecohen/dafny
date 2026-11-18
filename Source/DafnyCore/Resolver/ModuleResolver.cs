@@ -2111,7 +2111,11 @@ namespace Microsoft.Dafny {
         if (reporter.Count(ErrorLevel.Error) == prevErrorCount) {
           if (!Options.Get(CommonOptionBag.UncheckedInvariantExtension)) {
             // Issue 105: an invariant does not refer to the set of values of its own type (plan section 3.3).
-            InvariantExtensionCondition.Check(declarations, reporter);
+            if (group == null || Options.Get(CommonOptionBag.LegacyRecursiveModuleInvariants)) {
+              InvariantExtensionCondition.Check(declarations, reporter);
+            } else if (group.Once("invariantExtensionCondition")) {
+              InvariantExtensionCondition.CheckGroup(group, reporter);
+            }
           }
           // Issue 105: the invariants are monotone (antitone) in each covariant (contravariant) type parameter (plan
           // section 3.5).

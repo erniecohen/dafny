@@ -1,0 +1,10 @@
+// Refinement keeps its inherited obligations and original sibling types; abstract groups are permitted.
+// RUN: %verify --member-invariants --recursive-modules "%S/Inputs/git-issue-466-stage5-positive.dfy" > "%t"
+// RUN: %exits-with 4 %verify --member-invariants --recursive-modules "%S/Inputs/git-issue-466-stage5-false.dfy" >> "%t"
+// RUN: %exits-with 4 %verify --member-invariants --recursive-modules "%S/Inputs/git-issue-466-stage5-termination.dfy" >> "%t"
+// RUN: %verify --member-invariants --recursive-modules --legacy-inherited-termination-checks "%S/Inputs/git-issue-466-stage5-termination.dfy" >> "%t"
+// RUN: %exits-with 4 %verify --member-invariants --recursive-modules "%S/Inputs/git-issue-466-stage5-invariants.dfy" >> "%t"
+// RUN: %exits-with 4 %verify --member-invariants --recursive-modules "%S/Inputs/git-issue-466-stage5-raw.dfy" >> "%t"
+// RUN: %exits-with 2 %resolve --member-invariants --recursive-modules "%S/Inputs/git-issue-466-stage5-nominal.dfy" >> "%t"
+// RUN: %exits-with 2 %resolve --member-invariants --recursive-modules "%S/Inputs/git-issue-466-stage5-mixed.dfy" >> "%t"
+// RUN: %diff "%s.expect" "%t"

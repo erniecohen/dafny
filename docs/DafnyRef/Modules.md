@@ -1117,15 +1117,34 @@ Member invariants are checked across the whole group. An invariant may call a
 function of another member, and a type may inherit invariants from a trait of
 another member. The extension condition still follows every dependency, so an
 invariant may not define its meaning by quantifying over its own set of values,
-including through a function of another member.
+including through a function of another member or a provided type synonym.
+This restriction uses all declarations of the group, independently of export
+views; those views still control what each member may use in a proof.
+
+A group may be entirely abstract. Its abstract types and imports are parameters
+of the group's definition. A concrete module cannot import an abstract module,
+so a group cannot mix abstract and concrete members. An abstract import in a
+member must name a module in a strictly lower group.
+
+A member may refine a module in a strictly lower group, and a module outside a
+group may refine one of its members. Inherited bodies participate in the new
+call graph: termination checks are inherited only when their recursive component
+is inherited unchanged. If an added body closes a cycle through a sibling,
+the inherited calls in that cycle are checked again. Invariants added by a
+refinement are checked at inherited construction and conversion sites, including
+inherited witnesses.
+
+Refinement of one member makes fresh types. References to its original siblings
+still name those siblings, whose references in turn still name the original
+member. Refinement does not redefine all members together. For example, if
+`A.T` contains `B.U`, and `B.U` contains `A.T`, then `R refines A` gives a fresh
+`R.T` whose `B.U` component still contains `A.T`, rather than `R.T`. Refinement
+of a whole group is not yet supported.
 
 The following are not yet supported. Each is an error, so nothing is accepted
 that a later stage would have to reject:
 
-* a member of a group that is abstract, that refines or replaces a module, or
-  that declares an abstract import;
-* a module outside a group that refines a member, or that names a member in an
-  abstract import;
+* a member that replaces another module, or replacement of a member;
 * imports of the members of one group that name their targets through each
   other (such as `import X = B.Y` in `A` beside `import Y = A.X` in `B`);
 * a group in a library: a module of a group must be among the files being
