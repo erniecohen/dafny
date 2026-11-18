@@ -1,0 +1,3 @@
+git-issue-105-newtype-trait-cast.dfy(27,2): Error: assertion might not hold
+
+Dafny program verifier finished with 2 verified, 1 error

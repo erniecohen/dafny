@@ -1,0 +1,4 @@
+git-issue-105-wellformedness.dfy(52,18): Error: possible division by zero
+git-issue-105-wellformedness.dfy(57,18): Error: possible division by zero
+
+Dafny program verifier finished with 12 verified, 2 errors

@@ -52,6 +52,9 @@ public class ProgramResolver {
       profile.FrontEnd("resolve.prefixNamed", profileStart!.Value);
       profileStart = profile.BeginThread();
     }
+    if (!MemberInvariantChecks.Check(Program, Reporter)) {
+      return Task.CompletedTask;
+    }
     ComputeModuleDependencyGraph(Program, out var moduleDeclarationPointers);
 
     if (Reporter.ErrorCount != startingErrorCount) {

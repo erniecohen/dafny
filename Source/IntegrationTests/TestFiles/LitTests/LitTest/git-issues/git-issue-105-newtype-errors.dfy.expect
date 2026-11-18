@@ -1,0 +1,9 @@
+git-issue-105-newtype-errors.dfy(15,47): Error: witness expression must have type 'IntWitness' (got 'int')
+git-issue-105-newtype-errors.dfy(28,14): Error: predicate 'IsEven' must be ghost: an invariant of newtype 'Even' uses it, so its receiver may be a value of 'raw Even', which is ghost, since a compiled value of 'Even' satisfies its invariants
+git-issue-105-newtype-errors.dfy(41,13): Error: a value of type 'raw Even' is allowed only in specification contexts, since 'raw Even' is ghost: a compiled value of newtype 'Even' satisfies its invariants
+git-issue-105-newtype-errors.dfy(43,10): Error: a value of type 'raw Even' is allowed only in specification contexts, since 'raw Even' is ghost: a compiled value of newtype 'Even' satisfies its invariants
+git-issue-105-newtype-errors.dfy(44,15): Error: a value of type 'raw Even' is allowed only in specification contexts, since 'raw Even' is ghost: a compiled value of newtype 'Even' satisfies its invariants
+git-issue-105-newtype-errors.dfy(45,10): Error: a value of type 'raw Even' is allowed only in specification contexts, since 'raw Even' is ghost: a compiled value of newtype 'Even' satisfies its invariants
+git-issue-105-newtype-errors.dfy(47,11): Error: an expression of type 'raw Even' is not run-time checkable to be a 'Even'
+git-issue-105-newtype-errors.dfy(48,11): Error: a value of type 'seq<raw Even>' is allowed only in specification contexts, since 'raw Even' is ghost: a compiled value of newtype 'Even' satisfies its invariants
+8 resolution/type errors detected in git-issue-105-newtype-errors.dfy

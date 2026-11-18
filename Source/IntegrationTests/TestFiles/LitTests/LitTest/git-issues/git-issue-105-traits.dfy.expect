@@ -1,0 +1,45 @@
+git-issue-105-traits.dfy(111,8): Warning: class 'C' has @AssumeCrossModuleTermination and no {:axiom} annotation: calls dispatched to it through traits of other modules are not checked for termination
+git-issue-105-traits.dfy(25,36): Error: invariant might not hold
+git-issue-105-traits.dfy(14,22): Related location: this is the invariant that might not hold
+git-issue-105-traits.dfy(30,4): Error: assertion might not hold
+git-issue-105-traits.dfy(55,22): Error: invariant might not hold
+git-issue-105-traits.dfy(14,22): Related location: this is the invariant that might not hold
+git-issue-105-traits.dfy(55,22): Error: invariant might not hold
+git-issue-105-traits.dfy(18,19): Related location: this is the invariant that might not hold
+git-issue-105-traits.dfy(58,22): Error: invariant might not hold
+git-issue-105-traits.dfy(14,22): Related location: this is the invariant that might not hold
+git-issue-105-traits.dfy(58,22): Error: invariant might not hold
+git-issue-105-traits.dfy(18,19): Related location: this is the invariant that might not hold
+git-issue-105-traits.dfy(64,22): Error: invariant might not hold
+git-issue-105-traits.dfy(14,22): Related location: this is the invariant that might not hold
+git-issue-105-traits.dfy(89,40): Error: invariant might not hold
+git-issue-105-traits.dfy(80,16): Related location: this is the invariant that might not hold
+git-issue-105-traits.dfy(89,40): Error: invariant might not hold
+git-issue-105-traits.dfy(83,16): Related location: this is the invariant that might not hold
+git-issue-105-traits.dfy(89,40): Error: invariant might not hold
+git-issue-105-traits.dfy(86,16): Related location: this is the invariant that might not hold
+git-issue-105-traits.dfy(122,20): Error: invariant might not hold
+git-issue-105-traits.dfy(105,16): Related location: this is the invariant that might not hold
+git-issue-105-traits.dfy(122,20): Error: invariant might not hold
+git-issue-105-traits.dfy(113,16): Related location: this is the invariant that might not hold
+git-issue-105-traits.dfy(151,9): Error: invariant might not hold
+git-issue-105-traits.dfy(135,22): Related location: this is the invariant that might not hold
+git-issue-105-traits.dfy(151,9): Error: invariant might not hold
+git-issue-105-traits.dfy(138,20): Related location: this is the invariant that might not hold
+git-issue-105-traits.dfy(151,9): Error: invariant might not hold
+git-issue-105-traits.dfy(142,19): Related location: this is the invariant that might not hold
+git-issue-105-traits.dfy(154,9): Error: invariant might not hold
+git-issue-105-traits.dfy(135,22): Related location: this is the invariant that might not hold
+git-issue-105-traits.dfy(154,9): Error: invariant might not hold
+git-issue-105-traits.dfy(138,20): Related location: this is the invariant that might not hold
+git-issue-105-traits.dfy(154,9): Error: invariant might not hold
+git-issue-105-traits.dfy(142,19): Related location: this is the invariant that might not hold
+git-issue-105-traits.dfy(157,9): Error: invariant might not hold
+git-issue-105-traits.dfy(135,22): Related location: this is the invariant that might not hold
+git-issue-105-traits.dfy(157,9): Error: invariant might not hold
+git-issue-105-traits.dfy(138,20): Related location: this is the invariant that might not hold
+git-issue-105-traits.dfy(194,21): Error: invariant might not hold
+git-issue-105-traits.dfy(172,16): Related location: this is the invariant that might not hold
+git-issue-105-traits.dfy(198,27): Error: value of expression (of type 'set<raw P?>') is not known to be an instance of type 'set<P?>'
+
+Dafny program verifier finished with 21 verified, 22 errors
