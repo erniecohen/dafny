@@ -711,6 +711,35 @@ Do not compare scalar callback b to caller tuple `(b,1)` assuming the latter is 
 
 The missing M4b rank contracts cannot be supplied by merely assuming Valid while proving Valid's own termination. This is a genuine separate dependency: the pin has no global/callback clauses in these sources, GenericAction.Invoke's existing virtual Decreases is not an M4a-safe rank provider, and supporting InputsOf/OutputsOf/IsSome contracts also need migration. The accepted review inventories 21 introduced abstract slots and 26 concrete classes. A fully certified Std line count requires that concrete overlay; it cannot honestly be inferred from the five fields. [GenericAction][generic] · [Accepted inventory][review].
 
+### 6.4 Chosen independent allowance protocol
+
+The owner selected immutable public ghost allowances and produced-rank ceilings
+for the checked overlay. `Std.CallPermissions.Ranked.allowance` is a `ghost const`
+of type `ORDINAL`. `ProducesRanked.producedAllowanceCeiling` is another immutable
+ghost constant. Constructors establish these values; no virtual metric is used
+to acquire an entry allowance. The existing `Decreases`, `DecreasesMetric` and
+`MaxProduced` functions remain local termination metrics.
+
+`ProducedFresh` and `OutputFresh` must prove a produced result's allowance
+**strictly below** the ceiling. An equal allowance is insufficient. The relation
+between the ceiling and a caller's allowance is a separate obligation whenever
+that caller invokes the result. Allocation and subsequent invocation do not
+change either constant. This supports finite producer-of-producers chains
+without requiring their future components to exist when the outer producer is
+constructed.
+
+Validity bodies first test the independently readable component-allowance
+inequalities, then invoke component predicates under those guards. In particular,
+checking a validity predicate's termination must not assume that same predicate.
+Any additional per-slot phase is part of the public bound, not a replacement for
+the local decreases measure.
+
+`github-issue-211-produced-allowances.dfy` tests the protocol in both resolvers:
+a fresh producer chain verifies; a reachable false assertion is its sole failure;
+equal and excessive result allowances fail the result postcondition; a mutable
+replacement or reassignment of the inherited constant is rejected. These controls
+test the rank protocol, not completion of the full Actions overlay.
+
 ## 7. Implementation plan at the pin
 
 All paths below are under Source/DafnyCore.
