@@ -601,7 +601,7 @@ optional sugar.
 | 9 | Dynamic depth as an argument of an abstract predicate family: `RealFunc(d)`, `IntSet(d)`, `{o.*}` (§4.3–4.4, Figs. 10–12, 15); the struct field `d` in `cons.c` | a trait field `ghost const depth` (or a `ghost var` under `Valid()`) that bounds may read (rule 8), and `Valid()` bounded below the members it guards. Example below | matched; runs today |
 | 10 | Ghost and data-dependent levels: free variables of a contract are universally quantified (pp. 668, 673); `call_perm((n, {integrateIter} ⊎ d))` (Fig. 13) | bounds are expressions over parameters, ghost parameters and readable fields, captured on entry | matched; runs today (`IntegrateIter`) |
 | 11 | Returned permissions (`Λ' <= Λ`, p. 676) and returned objects whose depth is bounded, `ensures result.RealFunc(d) ∧ d < {createSum} ⊎ d1 ⊎ d2` (Figs. 11–12) | `B` is fixed on entry, so returned permissions add nothing. Returned objects: `ensures` on the depth of `result` | matched for objects (runs today). For returned function values, **gap: stage 2(c)** |
-| 12 | Permissions stored in objects: continuations carry `call_perm` in their predicates and use it once (§4.4, Figs. 16–17) | a stored ghost bound value, reusable rather than consumed. Folding a single depth into the bound fails: `intersectsCPS` would count `other`'s depth twice. What works is VeriFast's own measure, the stock of permissions, held as a nested bag. Each continuation stores `stock: multiset<multiset<nat>>`, its own level added to its continuation's stock. `containsCPS` is bounded by `{depth} + k.stock`, `intersectsCPS` by `{depth + other.depth} + k.stock`, and `Invoke` by `stock`, all under the multiset order applied twice | matched. The Figs. 16–17 port verifies with a stand-in for that order (§7.3). The stock already counts the permissions held in stored predicates, so §7.1's simulation covers them once bounds are nested bags, and no consumable evidence is needed (§8, question 5). It needs stage 2(d), applied to its own output |
+| 12 | Permissions stored in objects: continuations carry `call_perm` in their predicates and use it once (§4.4, Figs. 16–17) | a stored ghost bound value, reusable rather than consumed. Folding a single depth into the bound fails: `intersectsCPS` would count `other`'s depth twice. What works is VeriFast's own measure, the stock of permissions, held as a nested bag. Each continuation stores `stock: multiset<multiset<nat>>`, its own level added to its continuation's stock. `containsCPS` is bounded by `{depth} + k.stock`, `intersectsCPS` by `{depth + other.depth} + k.stock`, and `Invoke` by `stock`, all under the multiset order applied twice | matched. The Figs. 16–17 port verifies with the stock as an order type, `Stock`, of the multiset order applied twice (§7.3, §7.4). The stock already counts the permissions held in stored predicates, so §7.1's simulation covers them once bounds are nested bags, and no consumable evidence is needed (§8, question 5). Stage 2(d), applied to its own output, provides it |
 | 13 | Function pointers with level specs: a `typedef` with `terminates` and `call_perm` in its contract, stored in a struct, ordered by `func_lt` (§5; `funcptr.c`, `cons.c`) | parameters: `decreases {:callback f} E` (M3, done). Stored or returned: `bounded<O, F>` (issue 266) | parameters matched; stored and returned: **gap, stage 2(c)**. Applying a stored value of unknown code is rejected today |
 | 14 | A call consumes a permission whose bag contains the callee, `f ∈ d` (§5, p. 687) | not needed: the callee's declared bound is what is compared | matched (ours asks less) |
 | 15 | No loops: loops become recursive methods (§1). VeriFast's implementation has loops with `decreases` (`simple_termination1.c`) | loops with `decreases` | matched |
@@ -660,11 +660,11 @@ named in §7.2.
 | Fig. 8, `sqrt` (§4.1); Fig. 9, `isOdd`/`isEven` (§4.2); Ackermann (§4.2) | verifies | verifies; control fails | — |
 | Figs. 10–13: `RealFunc`, `LinearFunc`, `Sum`, `integrate` and `main` (§4.3) | verifies | verifies with depth as `nat`; control fails | stage 2(d) for the faithful bag version and Fig. 14's inequalities |
 | Fig. 15, `IntSet` with `intersects` (§4.4) | verifies | verifies with submultisets; control fails | — |
-| Figs. 16–17, CPS `containsCPS` and `intersectsCPS` (§4.4) | verifies | verifies with the row 12 encoding, where the nested Huet–Oppen order is a `Wfo` built with `Of` and its well-foundedness is an axiom; control fails; a continuation that passes itself on, in place of its own continuation, is rejected. Continuations return a value in place of `Nothing`, which does not change the termination argument | stage 2(d), applied twice, to replace the axiom |
+| Figs. 16–17, CPS `containsCPS` and `intersectsCPS` (§4.4) | verifies | verifies with the row 12 encoding, where the nested Huet–Oppen order is a `Wfo` built with `Of` and its well-foundedness is an axiom; control fails; a continuation that passes itself on, in place of its own continuation, is rejected. Continuations return a value in place of `Nothing`, which does not change the termination argument. With stored continuations, `github-issue-211-cps-stored.dfy`: each continuation is a `bounded<Stock, bool -> bool>` whose bound is its stock, in the order type `Stock` of bags of bags; controls fail; a continuation that does not add its level, or counts one set's depth only, is rejected | — |
 | `simple_recursion.c`, `ackermann.c` | verifies | as Figs. 9 and Ackermann (§5 of the paper says they correspond) | — |
 | `simple_termination1.c`, `simple_termination2.c`: loops calling an imported module | verifies | verifies; control fails; the loop without its increment is rejected | — |
-| `funcptr.c`: a function pointer stored in a struct, with a level spec | verifies | the trait form is Figs. 10–13; the stored-value form needs storage | stages 2(c), 2(d) |
-| `cons.c`: two function pointers and a bag stored in a struct | verifies | the trait form is Fig. 15; the stored-value form needs storage | stages 2(c), 2(d) |
+| `funcptr.c`: a function pointer stored in a struct, with a level spec | verifies | the trait form is Figs. 10–13; stored, with `nat` levels, `github-issue-211-stored.dfy`, and in VeriFast's bags, with the order type `Level` (§7.4), `github-issue-211-order-types.dfy`; controls fail; a wrapper or `twice` at its callee's level is rejected | — |
+| `cons.c`: two function pointers and a bag stored in a struct | verifies | the trait form is Fig. 15; stored, `contains` with `nat` levels, `github-issue-211-stored.dfy`, and `contains` and `intersects` in bags, with an argument-dependent bound (§7.4), `github-issue-211-stored-arguments.dfy`; controls fail; bounds at arguments that do not go down are rejected | — |
 | `termination_errors.c`: an endless loop, self-recursion, mutual recursion | each rejected | each rejected | — |
 | `termination_errors2.c`: a function called through a pointer to itself | rejected | rejected (`naked function in recursive setting`); a stored value of unknown code applied under a bound is rejected as TOP | — |
 | `proto_impl_error.c`: a non-terminating body under a terminating prototype | rejected | rejected: the analogue, a `decreases *` override of a bounded trait method, fails resolution (`not allowed to override a terminating method with a possibly non-terminating method`) | — |
@@ -673,6 +673,47 @@ named in §7.2.
 
 Programs that cannot be expressed: only the cyclic-import pair, for a reason both
 systems share.
+
+### 7.4 Order types and argument-dependent bounds
+
+Two forms close the last rows of §7.3 that needed VeriFast's own measure in a
+stored value.
+
+**Order types.** `type {:termination_closed} {:order O} L = x: T | C` names the
+order of its values. O must be a `Wfo<T>` of exactly the base type T (R1), closed
+(R2), and not mutually recursive with `Wfo.gt` (R3); an order type has no type
+parameters and is not `{:axiom}`. An order type is admitted as the order of
+`bounded<L, F>`, and two bounds are compared through `SameOrder`: the order is part
+of the type and does not vary, so `bounded<L2, F>` is not a `bounded<L, F>` when
+L2 has the carrier of L and another order (the K9 hole), and a bound of type L
+needs no `by O` (writing one fails, since `by O` asks for exactly O's element
+type). `nat` and `ORDINAL` keep their built-in orders. An order type used across
+modules is `{:termination_closed}`, so that its order is part of every contract
+that names it. Later sugar: `T by Ord`
+(https://github.com/erniecohen/dafny/issues/245), or an order member once
+https://github.com/erniecohen/dafny/issues/105 lands, can stand for an order type.
+
+**Argument-dependent bounds.** The order of `bounded<O, F>` may be a total arrow
+`A1 * … * An -> R` from the parameters of F to an admitted order R that is not
+itself an arrow. `bounded.certifyAt(b, f)` certifies f at b, with
+`certify(a, f)` meaning `certifyAt(x => a, f)`, and `c.boundAt(args)` is c's bound
+at the arguments of an application. Formation checks f's body under `b(x)`, and
+an application `c(args)` is checked against `c.boundAt(args)`. b is ghost, total
+and closed (rule 8): a lambda, a call of a non-virtual function whose body is a
+lambda (a factory such as `Lvl(d)`), a function that reaches no dispatched call,
+or the argument-dependent bound of a bounded value. b must not apply, even
+transitively, an argument-dependent bound: `o => {1} + o.f.boundAt(o)` could be
+its own, and is rejected (the knot rule). The heap-allocation checker searches
+only R, the result of an arrow order. Specifications state an argument-dependent
+bound by equality with a factory, `o.intersects.bound == Lvl(o.depth)`: a
+quantified `forall x :: o.intersects.boundAt(x) == …` in a method specification
+gets an allocation antecedent and does not cover arguments allocated later.
+
+**Bounds of lambdas.** A value certified at b runs its body at `(b, ⊤)`, since
+missing components are TOP: it may call a member bounded `(b, 1)`, and only a
+caller above `(b, ⊤)` may apply it. So a continuation certified at its
+intersection's own stock may resume that intersection; one that counts a smaller
+stock may not.
 
 ## 8. Open questions
 
