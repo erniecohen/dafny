@@ -86,6 +86,7 @@ cli	legacy-no-unchecked-termination-warning	--legacy-no-unchecked-termination-wa
 cli	legacy-noncanonical-map-payloads	--legacy-noncanonical-map-payloads	System.CommandLine.Option`1[System.Boolean]	input	map encoding is lowered before task lookup; exact SMT and current assertion map
 cli	legacy-reading-functions-in-datatypes	--legacy-reading-functions-in-datatypes	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	legacy-skeleton-modifying-calls	--legacy-skeleton-modifying-calls	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
+cli	legacy-inferred-newtype-base-conversions	--legacy-inferred-newtype-base-conversions	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	legacy-replacement-cycles	--legacy-replacement-cycles	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	legacy-unchecked-import-binding	--legacy-unchecked-import-binding	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	legacy-stored-function-callbacks	--legacy-stored-function-callbacks	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map

@@ -369,6 +369,9 @@ true - All class instances are raw pointers and need to be manually deallocated"
   public static readonly Option<bool> LegacyFirstPhaseConstReads = new("--legacy-first-phase-const-reads", () => false,
     "Use the legacy, unsound rule that lets the first division of a constructor body (before 'new;') read a constant whose initializer depends on 'this', for migration and comparison only.") { IsHidden = true };
 
+  public static readonly Option<bool> LegacyInferredNewtypeBaseConversions = new("--legacy-inferred-newtype-base-conversions", () => false,
+    "Use the legacy, unsound check of a conversion to a newtype whose base type is inferred, which skips the constraints of that base type, for migration and comparison only.") { IsHidden = true };
+
   public static readonly Option<bool> LegacySkeletonModifyingCalls = new("--legacy-skeleton-modifying-calls", () => false,
     "Use the legacy, unsound rule that lets a statement a refinement skeleton adds call a method with a nonempty modifies clause, for migration and comparison only.") { IsHidden = true };
 
@@ -951,6 +954,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(LegacyFirstPhaseConstReads, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacyAllocatedInLambdas, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacyElidedOverrideChecks, OptionScope.Cli);
+    OptionRegistry.RegisterOption(LegacyInferredNewtypeBaseConversions, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacySkeletonModifyingCalls, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacyInheritedConstructorFields, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacyFunctionStoreLocations, OptionScope.Cli);
