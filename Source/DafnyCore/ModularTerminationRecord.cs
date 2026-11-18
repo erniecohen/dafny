@@ -280,7 +280,7 @@ public static class ModularTerminationProducer {
       return ModularTerminationCompletion.Failed(inventoryFailure);
     }
 
-    var programText = new DooFile(program.AfterParsingClone).ProgramText;
+    var programText = new DooFile(program.AfterParsingClone, canonicalWildcards: true).ProgramText;
     var (reparsedText, reparseError) = await RoundTrip(options, programText, StoredProgramUri);
     if (reparsedText == null) {
       return ModularTerminationCompletion.Failed($"its retained program does not parse: {reparseError}");
@@ -645,7 +645,7 @@ public static class ModularTerminationProducer {
       return (null, reporter.AllMessagesByLevel[ErrorLevel.Error].First().Message);
     }
     var tw = new StringWriter { NewLine = "\n" };
-    new Printer(tw, parseOptions, PrintModes.Serialization).PrintProgram(parsed.Program, false);
+    new Printer(tw, parseOptions, PrintModes.Serialization, new PrintFlags(CanonicalWildcards: true)).PrintProgram(parsed.Program, false);
     return (tw.ToString(), null);
   }
 }

@@ -29,11 +29,18 @@ namespace Microsoft.Dafny {
   /// <param name="InterfaceOnly">Print only what a client of a declaration may depend on: method, lemma,
   /// constructor and iterator bodies and by-method bodies are omitted.  Used for the termination contracts
   /// of --modular-termination libraries; nothing else sets it.</param>
-  public record PrintFlags(bool UseOriginalDafnyNames = false, bool InterfaceOnly = false);
+  /// <param name="CanonicalWildcards">Omit per-file generated wildcard-name comments in a retained
+  /// modular certificate, whose merged source must print identically after reparsing.</param>
+  public record PrintFlags(bool UseOriginalDafnyNames = false, bool InterfaceOnly = false, bool CanonicalWildcards = false);
 
   public partial class Printer {
     private DafnyOptions options;
     private const int AtAttributesOnSameLineIndent = -1;
+
+    // Per-file parser counters are diagnostic names, not source bindings. A recorded
+    // library merges files, so retaining those comments would make reparsing unstable.
+    private string VariableDisplayName(IVariable variable) =>
+      printFlags.CanonicalWildcards && LocalVariable.HasWildcardName(variable) ? "_" : variable.DisplayName;
     static Printer() {
       DafnyOptions.RegisterLegacyBinding(PrintMode, (options, value) => {
         options.PrintMode = value;
@@ -348,7 +355,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
             wr.WriteLine();
           } else {
             wr.Write(" = ");
-            wr.Write(dd.Var.DisplayName);
+            wr.Write(VariableDisplayName(dd.Var));
             if (ShowType(dd.Var.Type)) {
               wr.Write(": ");
               PrintType(dd.BaseType);
@@ -531,7 +538,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
       Indent(indent);
       PrintClassMethodHelper("type", dd.Attributes, dd.Name + TPCharacteristicsSuffix(dd.Characteristics), dd.TypeArgs);
       wr.Write(" = ");
-      wr.Write(dd.Var.DisplayName);
+      wr.Write(VariableDisplayName(dd.Var));
       if (ShowType(dd.Var.Type)) {
         wr.Write(": ");
         PrintType(dd.Rhs);
@@ -1209,7 +1216,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
         wr.Write("nameonly ");
       }
       if (f.HasName) {
-        wr.Write("{0}: ", f.DisplayName);
+        wr.Write("{0}: ", VariableDisplayName(f));
       }
       PrintType(f.Type);
       if (f.DefaultValue != null) {

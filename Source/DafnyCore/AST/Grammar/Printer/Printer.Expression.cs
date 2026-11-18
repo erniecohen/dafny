@@ -180,7 +180,7 @@ namespace Microsoft.Dafny {
       if (mc.Arguments.Count != 0) {
         string sep = "(";
         foreach (BoundVar bv in mc.Arguments) {
-          wr.Write("{0}{1}", sep, bv.DisplayName);
+          wr.Write("{0}{1}", sep, VariableDisplayName(bv));
           string typeName = bv.Type.TypeName(options, null, true);
           if (bv.Type is NonProxyType && !typeName.StartsWith("_")) {
             wr.Write(": {0}", typeName);
@@ -269,7 +269,7 @@ namespace Microsoft.Dafny {
       Contract.Requires(pat != null);
       var v = pat.Var;
       if (v != null) {
-        wr.Write(v.DisplayName);
+        wr.Write(VariableDisplayName(v));
         if (v.OptionalType is NonProxyType || options.DafnyPrintResolvedFile != null) {
           PrintType(": ", v.OptionalType);
         }
@@ -303,7 +303,7 @@ namespace Microsoft.Dafny {
             // its node identifier, otherwise the printed program becomes
             // syntactically incorrect.
             wr.Write("_");
-            if (!idPat.IsWildcardExact) {
+            if (!idPat.IsWildcardExact && !printFlags.CanonicalWildcards) {
               wr.Write($" /* {idPat.Id} */");
             }
           } else {
@@ -354,7 +354,7 @@ namespace Microsoft.Dafny {
         if (printFlags.UseOriginalDafnyNames) {
           wr.Write(bv.DafnyName);
         } else {
-          wr.Write(bv.DisplayName);
+          wr.Write(VariableDisplayName(bv));
         }
 
         PrintType(": ", bv.Type);
@@ -1392,7 +1392,7 @@ namespace Microsoft.Dafny {
 
         string sep = "";
         foreach (BoundVar bv in e.BoundVars) {
-          wr.Write("{0}{1}", sep, bv.DisplayName);
+          wr.Write("{0}{1}", sep, VariableDisplayName(bv));
           sep = ", ";
           PrintType(": ", bv.Type);
         }
@@ -1423,7 +1423,7 @@ namespace Microsoft.Dafny {
         wr.Write(e.Finite ? "map " : "imap ");
         string sep = "";
         foreach (BoundVar bv in e.BoundVars) {
-          wr.Write("{0}{1}", sep, bv.DisplayName);
+          wr.Write("{0}{1}", sep, VariableDisplayName(bv));
           sep = ", ";
           PrintType(": ", bv.Type);
         }
@@ -1460,7 +1460,7 @@ namespace Microsoft.Dafny {
           wr.Write("(");
         }
 
-        wr.Write(Util.Comma(e.BoundVars, bv => bv.DisplayName + (ShowType(bv.Type) ? ": " + bv.Type : "")));
+        wr.Write(Util.Comma(e.BoundVars, bv => VariableDisplayName(bv) + (ShowType(bv.Type) ? ": " + bv.Type : "")));
         if (!skipSignatureParens) {
           wr.Write(")");
         }

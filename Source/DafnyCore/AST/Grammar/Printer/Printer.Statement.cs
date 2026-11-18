@@ -399,7 +399,7 @@ namespace Microsoft.Dafny {
               if (local.Attributes != null) {
                 PrintAttributes(local.Attributes, AtAttributesOnSameLineIndent, () => { });
               }
-              wr.Write(" {0}", local.DisplayName);
+              wr.Write(" {0}", VariableDisplayName(local));
               PrintType(": ", local.SafeSyntacticType);
               sep = ",";
             }
@@ -772,7 +772,7 @@ namespace Microsoft.Dafny {
       PrintAttributes(s.Attributes, indent, () => {
         wr.Write("for");
       });
-      wr.Write($" {(printMode == PrintModes.Serialization ? s.LoopIndex.DisplayName : s.LoopIndex.Name)}");
+      wr.Write($" {(printMode == PrintModes.Serialization ? VariableDisplayName(s.LoopIndex) : s.LoopIndex.Name)}");
       PrintType(": ", s.LoopIndex.Type);
       wr.Write(" := ");
       PrintExpression(s.Start, false);
