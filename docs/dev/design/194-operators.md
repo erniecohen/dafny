@@ -1836,12 +1836,12 @@ are implemented. Do not document the final feature as available in M1.
 
 Each later product PR needs the appropriate `docs/dev/news/194.feat` fragment
 (or staged descriptive fragment following repository practice), regression and
-expectation files, `.github/review/base` and `.github/review/regressions` updates,
-and the gate evidence required by `AGENTS.md`/`REVIEW.md`. Do not update expected
+expectation files, `.github/review/regressions` updates, automatic product-version
+derivation, and the gate evidence required by `AGENTS.md`/`REVIEW.md`. Do not update expected
 verdicts speculatively. Follow the prescribed fail/artifact/reasoned-baseline
 procedure if a new test changes a gate inventory. Merge product PRs one at a time
-and reconcile the base according to current repository rules. This design PR
-does not claim the feature has shipped and needs no product-version change.
+and reconcile regression registrations according to current repository rules.
+This design PR does not claim the feature has shipped and needs no product-version change.
 
 ## 12. Smallest useful PR, size, tests, and subsequent stages
 

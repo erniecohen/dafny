@@ -499,7 +499,7 @@ Since 2026-11-14 the hash covers every product file, those the fork added as wel
 those v4.11.0 already has, and leaves out the paths that are not product (tests,
 `docs`, `.github`, `friction` and the documents at the top of the tree):
 
-    git diff --no-renames --abbrev=7 v4.11.0 <last product commit> -- . \
+    git diff --no-renames --abbrev=7 v4.11.0 HEAD -- . \
       ':(exclude)Source/IntegrationTests' ':(exclude,glob)Source/*.Test/**' \
       ':(exclude,glob)Source/*.Tests/**' ':(exclude)docs' ':(exclude).github' \
       ':(exclude)friction' ':(exclude)REVIEW.md' ':(exclude)ROADMAP.md' \
@@ -516,9 +516,9 @@ product commits make to files that v4.11.0 already has:
 
     git diff --diff-filter=M --abbrev=7 v4.11.0 b97a6fe | sha256sum
 
-`b97a6fe`, the fix for #26, is the last product commit.  `.github/review/base`
-names `ada0d09`, the same product tree on that pull request's branch before it
-was squash-merged; the two give the same hash.  Before the twelve fixes since,
+`b97a6fe`, the fix for #26, was the last product commit for that release.
+At that release, `.github/review/base` named `ada0d09`, the same product tree
+on that pull request's branch before it was squash-merged; the two give the same hash.  Before the twelve fixes since,
 the version was `256a1ab3`, as follows.
 
 `256a1ab3` is the first 8 hex digits of the sha256 of the change that the
@@ -543,22 +543,25 @@ avoids that.)
 after `b97a6fe` add or update tests, release notes, documents and CI.  They
 change no product file, so the version stays.  The rule on this branch:
 
-- a commit that changes or adds a product file is a new last product commit,
-  and gets a new version and a new tag;
+- a changed product tree gets a new version and a new tag, derived from HEAD;
 - any other commit keeps them.
 
 The product is everything outside `Source/IntegrationTests/`, the unit-test
 projects (`Source/*.Test/` and `Source/*.Tests/`, which no release ships; left out
 since 2026-11-16), `docs/`,
 `.github/`, `friction/`, this file, and the other documents at the top of the
-tree: `ROADMAP.md`, `AGENTS.md` and `CLAUDE.md`.  `.github/review/base` names the base
-and the last product commit, and CI's `.github/review/version.sh` computes the
-version from them and fails if a later commit changes a product file.  By hand,
-this prints nothing:
+tree: `ROADMAP.md`, `AGENTS.md` and `CLAUDE.md`.
+`.github/review/base` names the upstream tag in its first word.
+Its historical second word is optional and ignored; the existing two-word file
+is retained for compatibility with older tooling. No product change needs to
+restamp it. CI's `.github/review/version.sh` hashes the product diff from that
+tag to HEAD. When HEAD has the same product tree as the former stamped commit,
+the diff and version are byte-identical. Reverting to an earlier product tree
+restores its version; an existing release tag is never moved or reused.
 
-    git diff --name-only b97a6fe <commit> -- . ':!Source/IntegrationTests' \
-      ':(exclude,glob)Source/*.Test/**' ':(exclude,glob)Source/*.Tests/**' ':!docs' ':!.github' \
-      ':!friction' ':!REVIEW.md' ':!ROADMAP.md' ':!AGENTS.md' ':!CLAUDE.md'
+A depth-1 checkout is sufficient: the script fetches the upstream tag at depth 1
+with retries, and `git diff` needs the two endpoint trees, not their ancestry.
+It no longer fetches the historical product commit.
 
 A release binary built from the tag prints the version with `dafny --version`.
 It is built with `-p:SourceRevisionId=fcb2042d.review.d2070b81`.  The version
@@ -610,8 +613,10 @@ a tree that a push already verified, do not verify again; on a tag, only the bui
 binaries run.  The job `verdict` is the aggregate result: it succeeds when every job
 succeeded or was skipped for reuse, and a release requires it.  A pull request reuses only pull
 request runs, a manual run on a branch and a pull request from a fork never reuse, and a tree that
-differs only in `.github/review/base` is a different tree, because the stamp is the version that
-the build checks.  Markers are kept for 90 days; without one everything runs.
+differs only in `.github/review/base` is a different tree, because the upstream tag
+is a version input. The full-tree reuse key remains conservative even when only
+the ignored historical second word changes. Markers are kept for 90 days; without
+one everything runs.
 Fork pull requests skip these jobs. The obligation-proof matrix, resolution-only
 census and pipeline probe have separate hosted fallbacks for other events,
 including the obligation matrix's weekly schedule.

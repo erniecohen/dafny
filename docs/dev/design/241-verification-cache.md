@@ -435,7 +435,7 @@ the baseline solver. Unsupported cases recompute through the existing path.
 
 PR A includes this design, the translation table over the default history-free
 translator, faithful snapshot loading, CLI/help/reference documentation, a release
-note, focused tests, `.github/review/base` and its regression-list entry.
+note, focused tests, its regression-list entry (the version is derived from HEAD).
 It consumes the resolution worker's key/naming interface after coordination.
 PR B adds the complete per-task result table and its own product/review metadata.
 PR A targets the default prerequisite branch; PR B targets `review/4.11.0`.
