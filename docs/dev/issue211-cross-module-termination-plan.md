@@ -846,6 +846,16 @@ legacy rebuild, serial mutations and final option-off byte identity and
 resource-unit comparisons. No gate is satisfied by a source-only run or by a
 skipped-verification artifact.
 
+Release binaries generate the parser before evaluating the bootstrap publish, and
+use an explicit source-path map for portable assembly metadata. A self-contained
+bootstrap verifier produces all seven checked bundles, then republishes with
+`RequireCheckedStandardLibraries=true`. The final publish
+fails if any bundle is absent and checks that embedding did not change `DafnyCore`.
+The release-zip gate reads the actual managed resources in `DafnyPipeline.dll`, checks
+the complete catalog records, and runs an extracted client with both explicit trust
+lists. Its reachable-false companion must fail only at the assertion. The separate
+checked-Std workflow also requires every bundle when it republishes.
+
 ### 7.8 Certification and bounded callables by use
 
 Stage 4 no longer requires the migration flag to form or apply a bounded callable,
@@ -855,6 +865,17 @@ The checked catalog is selected by its explicit trust-list opt-ins; an ordinary
 program continues to select the legacy catalog. Certificate producers account for
 every unverified dependency, including an ordinary dependency with no termination
 annotations. Absence of annotations cannot certify its functional premises.
+
+Refinement must recheck inherited bodies that have global or callback bounds, or
+use bounded callable values, against the refined contracts. A new parent trait can
+introduce those bounds without changing the body; refining a callee can tighten a
+callback contract even when the inherited caller has no global bound. Inherited
+by-method implementations use their function's effective bound when being scheduled;
+the generated method does not itself carry the function's overridden slot. Inherited
+modular decreases obligations remain assertions in these copies. Other inherited
+assertions remain assumed. This only replaces unchecked assumptions with checks;
+it adds no axiom. The existing `--legacy-no-modular-termination` restores the old
+modular behavior independently of the local-recursion legacy switch.
 
 `github-issue-211-by-use.dfy` exercises production, admission, certified dependencies,
 the sole reachable false assertion, the legacy opt-out, a forged manifest option,
@@ -869,7 +890,7 @@ mutations, censuses and final byte/resource identity are recorded below.
 
 ### 7.9 Checked catalog, migration census and mutation evidence
 
-The final product passes the normal complete common producer (2,426 verified,
+The pre-review product at `11b210b51` passes the normal complete common producer (2,426 verified,
 zero errors), all six target producers, 27 direct client/audit controls, and 11
 embedded-catalog/backend controls. The latter preserve default legacy selection,
 reject either missing named trust opt-in, accept the opted-in client and reject its
@@ -936,7 +957,7 @@ obligation; the Reference Manual retains the experimental status.
 
 ### 7.10 Final option-off identity and resource comparison
 
-Against prerequisite `b831b6b8c`, the final product passes
+Against prerequisite `b831b6b8c`, the pre-review product at `11b210b51` passes
 `.github/review/termination-identity.py boogie` under both resolver configurations.
 The gate compares exit status, diagnostics and printed Boogie with its documented
 normalization of command-line headers, deprecation messages and stack frames.
@@ -967,5 +988,47 @@ on every build role; there are no program timeouts. This is an identity gate,
 not a claim that the suite is entirely verified. Each of the six Std passes has
 seven partition logs and 2,207 Correct results, with no errors or resource
 exhaustion. Both branch roles agree with the expected verdict inventory in each
-additional-axioms mode. These comparisons use the same final product as the
-catalog reproduction; only tests, CI gates and documentation follow it.
+additional-axioms mode. These comparisons cover the same pre-review product as
+the catalog reproduction. The independent-review repairs have separate scoped
+compatibility checks below.
+
+
+### 7.11 Independent-review repairs
+
+Issue 493's inherited-body repair passes all 25 focused 211/493/409 lit tests
+and 34 refinement cases across both resolvers. The exact false-contract exploit,
+trait and abstract-module refinements, exports and abstract imports are rejected.
+Valid function and by-method refinements verify; their reachable-false companions
+fail only at the assertion. Nine serial checking/scheduling mutations are detected
+under both resolvers (18 detections), including removal of the scheduling check
+that restores false acceptance of the original exploit. No axiom is added.
+
+The regenerated obligation inventory and its coverage check pass. Review
+bookkeeping passes 153 tests. The resolver path is unchanged, so this repair
+does not require another whole-suite run. Issue 461 is unchanged.
+
+With `--legacy-no-modular-termination`, the repository identity helper compares
+exit status, diagnostics and Boogie bytes against prerequisite `b831b6b8c`: all
+132 comparisons on 66 sources agree across both resolvers. The scope includes
+the new controls, affected refinement inputs and existing 211/409 drivers. The
+original exploit's expected verdict is nine verified and one decreases error in
+both additional-axioms modes. The focused resource gate preserves all three
+program verdicts and all 40 proof-result vectors, for a relative resource total
+of 1.000000 with zero changed vectors. Expected negative outcomes are preserved;
+this is an identity claim.
+
+The end-to-end `osx-arm64` release reproduction completes all seven producers
+(common: 2,426 verified, zero errors), 27 direct client/audit controls and the
+actual-zip client/sole-false pair. Final publication preserves `DafnyCore` bytes;
+the distribution path/metadata check and two-verification smoke test pass. Missing
+files fail both the explicit target and the final-publish path. A bootstrap zip
+without embedded bundles is rejected. Serial mutations of the required-file guard
+and exact catalog-set guard are detected, including rejection of an unexpected
+bundle. Expanded checked-bundle contents contain no private build paths.
+
+The supplementary, unchanged self-contained cache probe reports its intentional
+unaudited-native-profile bypass in this reproduction; this is not cache acceptance.
+Both public release archives match the workflow pins and the existing audited
+cache-profile hashes, checked without executing another solver. Audited-profile
+cache execution and the Linux release reproduction remain CI checks. The owner
+soundness review remains open and the PR remains draft.

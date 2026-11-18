@@ -26,6 +26,8 @@ jobs:
     if: ${{ github.event_name != 'pull_request' || !github.event.pull_request.draft }}
     runs-on: ubuntu-24.04
     timeout-minutes: 240
+    env:
+      DOTNET_PROCESSOR_COUNT: '3'
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-dotnet
@@ -42,7 +44,8 @@ jobs:
       - name: Build Dafny
         run: |
           sh Scripts/fetch-boogie-packages.sh
-          dotnet publish Source/Dafny/Dafny.csproj -c Release -o out/dafny -p:GeneratePackageOnBuild=false
+          dotnet msbuild Source/DafnyCore/DafnyCore.csproj -t:RunCoco -p:Configuration=Release
+          dotnet publish Source/Dafny/Dafny.csproj -c Release -o out/dafny -p:GeneratePackageOnBuild=false -p:PathMap="$PWD=/_/"
       - name: Install Z3 5.1.0
         id: z3
         run: echo "path=$(sh .github/review/setup-z3.sh 5.1.0 ci-z3)" >> "$GITHUB_OUTPUT"
@@ -62,7 +65,9 @@ jobs:
           exit $status
       - name: Embed the checked catalog and validate selection and backends
         run: |
-          dotnet publish Source/Dafny/Dafny.csproj -c Release -o out/dafny -p:GeneratePackageOnBuild=false
+          cp out/dafny/DafnyCore.dll checked-catalog-core.dll
+          dotnet publish Source/Dafny/Dafny.csproj -c Release -o out/dafny -p:GeneratePackageOnBuild=false -p:PathMap="$PWD=/_/" -p:RequireCheckedStandardLibraries=true
+          cmp checked-catalog-core.dll out/dafny/DafnyCore.dll
           status=0
           python3 .github/review/modular-termination-catalog.py out/dafny/Dafny '${{ steps.z3.outputs.path }}' \
             checked-catalog-results || status=$?
