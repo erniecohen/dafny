@@ -152,9 +152,9 @@ internal sealed class ResolutionSnapshots {
     // Only mutate this compilation's parsed alias, after the entire file was accepted. Its tokens,
     // visibility scopes, options and parent are already current; the target is the current prerequisite.
     var reporter = new BatchErrorReporter(candidate.Alias.Options);
-    // ResolveTarget on this one-component path binds only Decl. SetTarget would also populate
-    // Def/Sig, which the ordinary alias resolver deliberately leaves unset.
-    candidate.Alias.TargetQId.ResolveTarget(reporter);
+    // Restore the typed edge without invoking any target-resolution routine. SetTarget would
+    // additionally populate Def/Sig, which the ordinary alias resolver leaves unset.
+    candidate.Alias.TargetQId.RestoreAliasTarget(candidate.Target);
     candidate.Alias.Signature = candidate.Signature;
     return new(candidate.Alias, reporter, new(), new());
   }

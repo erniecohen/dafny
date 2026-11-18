@@ -82,6 +82,8 @@ public class ResolutionSnapshotTests : IDisposable {
       .Single(m => m.Name == "Client").ModuleDef.TopLevelDecls.OfType<AliasModuleDecl>().Single();
     var target = warm.Program.DefaultModule.ModuleDef.TopLevelDecls.OfType<LiteralModuleDecl>().Single(m => m.Name == "Base");
     Assert.Same(target, alias.TargetQId.Decl);
+    Assert.Null(alias.TargetQId.Def);
+    Assert.Null(alias.TargetQId.Sig);
     Assert.Same(target.Signature, alias.Signature);
     Assert.NotSame(cold.Program.DefaultModule.ModuleDef.TopLevelDecls.OfType<LiteralModuleDecl>().Single(m => m.Name == "Base"), target);
   }
@@ -328,6 +330,70 @@ public class ResolutionSnapshotTests : IDisposable {
     var decoded = Tomlyn.Toml.ToModel(Encoding.UTF8.GetString(bytes));
     Assert.Equal(identity, decoded["module_identity"]);
     Assert.Equal(bytes, ResolutionSnapshots.EncodeManifest(table));
+  }
+
+  [Theory]
+  [InlineData("attributes")]
+  [InlineData("exports")]
+  [InlineData("qualified-path")]
+  [InlineData("enclosing-root")]
+  [InlineData("signature-field")]
+  [InlineData("definition-field")]
+  [InlineData("target-kind")]
+  [InlineData("copy-import")]
+  [InlineData("copy-view")]
+  [InlineData("missing-signature")]
+  [InlineData("export-view")]
+  [InlineData("default-view")]
+  [InlineData("partial-target")]
+  [InlineData("diagnostic")]
+  [InlineData("alias-signature")]
+  [InlineData("alias-target")]
+  [InlineData("missing-prerequisite")]
+  [InlineData("ambiguous-prerequisite")]
+  [InlineData("missing-key")]
+  [InlineData("malformed-key")]
+  [InlineData("missing-selector")]
+  [InlineData("wrong-selector")]
+  [InlineData("removed-plugin")]
+  [InlineData("reordered-plugins")]
+  public async Task UnsupportedProfileStatesHaveNoCandidate(string state) {
+    var observation = await Resolve();
+    var output = observation.Outputs.Single(p => p.ResolvedDeclaration is AliasModuleDecl);
+    var alias = (AliasModuleDecl)output.ResolvedDeclaration;
+    var prerequisite = observation.Outputs.Single(p => ReferenceEquals(p.ResolvedDeclaration, alias.TargetQId.Root));
+    var target = (LiteralModuleDecl)prerequisite.ResolvedDeclaration;
+    var inputs = new[] { prerequisite }; var key = output.Key;
+    switch (state) {
+      case "attributes": alias.Attributes = new Attributes("unsupported", [], null); break;
+      case "exports": alias.Exports.Add(Token.NoToken); break;
+      case "qualified-path": alias.TargetQId.Path.Add(alias.TargetQId.Path[0]); break;
+      case "enclosing-root": alias.TargetQId.RootIndex = 1; break;
+      case "signature-field": alias.TargetQId.Sig = target.Signature; break;
+      case "definition-field": alias.TargetQId.SetTarget(target); alias.TargetQId.Sig = null; break;
+      case "target-kind": alias.TargetQId.Root = alias; break;
+      case "copy-import": target.CopyImport = new CopyImportInfo(false, []); break;
+      case "copy-view": target.CopyImportView = new ModuleSignature(); break;
+      case "missing-signature": target.Signature = null; break;
+      case "export-view": target.Signature.ExportSets.Add("E", null!); break;
+      case "default-view": target.DefaultExport = new ModuleSignature(); break;
+      case "partial-target": target.ModuleDef.SuccessfullyResolved = false; break;
+      case "diagnostic": prerequisite.ErrorReporter.Error(MessageSource.Resolver, Token.NoToken, "unsupported prerequisite"); break;
+      case "alias-signature": alias.Signature = new ModuleSignature(); break;
+      case "alias-target": alias.TargetQId.RestoreAliasTarget(alias); break;
+      case "missing-prerequisite": inputs = []; break;
+      case "ambiguous-prerequisite": inputs = [prerequisite, prerequisite]; break;
+      case "missing-key": inputs = [prerequisite with { Key = null }]; break;
+      case "malformed-key": key = "invalid"; break;
+      case "missing-selector": inputs = [prerequisite with { Signatures = new() }]; break;
+      case "wrong-selector": inputs = [prerequisite with { Signatures = new() { [target.ModuleDef] = new ModuleSignature() } }]; break;
+      case "removed-plugin": alias.Options.Plugins.RemoveAt(0); break;
+      case "reordered-plugins": (alias.Options.Plugins[0], alias.Options.Plugins[1]) = (alias.Options.Plugins[1], alias.Options.Plugins[0]); break;
+      default: throw new ArgumentException(state);
+    }
+    Assert.Null(ResolutionSnapshots.Prepare(alias, key, inputs,
+      ModuleNamePrefixes.For(observation.Outputs.Select(p => p.ResolvedDeclaration.FullName)),
+      new[] { new ModuleResolutionKey.Prerequisite("import", target.FullName, prerequisite.Key) }));
   }
 
   [Fact]
