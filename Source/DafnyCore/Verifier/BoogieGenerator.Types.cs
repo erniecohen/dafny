@@ -1743,6 +1743,16 @@ public partial class BoogieGenerator {
       // Issue 105: a base type that was inferred is a type proxy, which AsRedirectingType does not look through, so
       // the constraint of a newtype base would not be checked. Without member invariants, that is a separate issue.
       baseType = baseType.NormalizeExpandKeepConstraints();
+    } else {
+      // A newtype whose base type is inferred (newtype Y = x | P(x)) keeps the
+      // resolver's type proxy as its BaseType, and AsRedirectingType does not look
+      // through proxies. Without this step a conversion to Y checked only Y's own
+      // constraint and skipped those of the inferred base, which then held as a
+      // fact for every value of Y. Normalize strips proxies only, so an explicit
+      // base, including a type synonym, is handled exactly as before.
+      if (!options.Get(CommonOptionBag.LegacyInferredNewtypeBaseConversions)) {
+        baseType = baseType.Normalize();
+      }
     }
     if (baseType.AsRedirectingType != null) {
       CheckResultToBeInType_Aux(tok, boogieExpr, origExpr, baseType, builder, etran, errorMsgPrefix, establishedArrowBase);

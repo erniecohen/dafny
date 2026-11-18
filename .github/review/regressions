@@ -796,6 +796,9 @@ git-issues/github-issue-211-gate-coverage.dfy
 # A lambda expression may not mention allocated(...) in its body, precondition or reads clause outside an old within the lambda, under both resolvers; old(...) inside is allowed, the control does not prove false, and --legacy-allocated-in-lambdas restores the old rule (https://github.com/erniecohen/dafny/issues/457).
 git-issues/github-issue-457.dfy
 
+# A conversion to a newtype whose base type is inferred checks the constraints of that base, under both resolvers, for literals and conversions from int, real and bitvector values; correct conversions still verify, and --legacy-inferred-newtype-base-conversions restores the old, unsound check (https://github.com/erniecohen/dafny/issues/495).
+git-issues/github-issue-495.dfy
+
 # Bounded callables, milestone 2: bounded.certify, application below the bound, the bound and erase members, admitted named functions, stored values and the divergence kernels, under --modular-termination (https://github.com/erniecohen/dafny/issues/266).
 git-issues/github-issue-266-m2.dfy
 

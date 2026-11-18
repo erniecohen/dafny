@@ -825,6 +825,22 @@ sources, `modular-termination`, `orders` and its examples).  The hidden `--legac
 migration.  The regression is `git-issues/github-issue-479.dfy`; the release note is
 `docs/dev/news/479.fix`.
 
+## Conversions to a newtype with an inferred base ([issue 495](https://github.com/erniecohen/dafny/issues/495))
+
+A newtype declared without a base type, `newtype Y0 = six | Yes(six)`, gets its base by inference;
+when `Yes` takes a `NewSix`, the base of `Y0` is the newtype `NewSix`.  A conversion to `Y0` checked
+`Y0`'s own constraint but not `NewSix`'s, while every value of `Y0` is assumed to satisfy both: the
+newtype keeps the resolver's type proxy as its base, and the walk up the chain of base types in
+`CheckResultToBeInType_Aux` did not look through it.  So `3 as Y0` checked `Yes(3)` and never
+`6 <= 3`, and a method returning `3 as Y0` with `ensures y as int == 3` proved `false`.  The same
+gap covered literals of the newtype and conversions from `int`, `real` and bitvector values.  The
+walk now strips the proxy first, so the base's constraints are checked as they are for an explicit
+base, under both resolvers.  Its kind is **weakens only**: it adds proof obligations and no fact or
+axiom; a program in which no base type is inferred translates exactly as before.  The hidden
+`--legacy-inferred-newtype-base-conversions` option restores the old check for comparison and
+migration.  The regression is `git-issues/github-issue-495.dfy`; the release note is
+`docs/dev/news/495.fix`.
+
 ## `allocated` in lambda expressions ([issue 457](https://github.com/erniecohen/dafny/issues/457))
 
 A function, a constant or a redirecting type could not depend on the set of allocated references,
