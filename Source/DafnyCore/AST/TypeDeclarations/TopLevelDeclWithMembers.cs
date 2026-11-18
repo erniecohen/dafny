@@ -1,4 +1,5 @@
 #nullable enable
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics.Contracts;
@@ -226,6 +227,13 @@ public abstract class TopLevelDeclWithMembers : TopLevelDecl, IHasSymbolChildren
 
     if (Attributes.Contains(Attributes, "AssumeCrossModuleTermination")) {
       yield return new Assumption(this, Origin, AssumptionDescription.HasAssumeCrossModuleTerminationAttribute);
+    }
+
+    if (this is not TraitDecl) {
+      // A type that inherits a trait axiom relies on it (https://github.com/erniecohen/dafny/issues/89).
+      foreach (var axiom in InheritedMembers.Where(m => m.IsInheritedTraitAxiom).OrderBy(m => m.FullDafnyName, StringComparer.Ordinal)) {
+        yield return new Assumption(this, Origin, AssumptionDescription.InheritsTraitAxiom(axiom.FullDafnyName));
+      }
     }
   }
 

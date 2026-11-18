@@ -1064,6 +1064,84 @@ resolution outside its regression in the test suite, the standard library (its s
 `--legacy-stored-function-callbacks` option restores the old check for comparison and migration.
 The regression is `git-issues/github-issue-453.dfy`; the release note is `docs/dev/news/453.fix`.
 
+## Opt-in inherited trait axioms ([issue 89](https://github.com/erniecohen/dafny/issues/89))
+
+A bodiless trait lemma marked `{:axiom}` is already an assumption for every caller that holds a
+value of the trait type, yet each class that extends the trait had to repeat it, with another
+`{:axiom}`.  Under `--inherited-trait-axioms`, default off, a non-static, bodiless, ghost trait
+member with `{:axiom}` (a lemma, two-state lemma, ghost method, ghost function or predicate, or
+two-state function or predicate; not an extreme one) is a trait axiom, and
+`ModuleResolver.ProcessInheritedTraitMembers` no longer asks the classes, datatypes and newtypes
+that inherit it to implement it.  The parser records on each trait member whether its file was
+parsed under the option (`MemberDecl.DeclaredUnderInheritedTraitAxioms`), and the cloner and the
+refinement transformer keep that flag, so the status of a member is fixed where it is declared: a
+library built with the option keeps its trait axioms, one built without it has none, and the
+option must agree between a library and its client.  Under the option, `{:axiom}` on a bodiless
+compiled or extreme trait member is an error unless the member is `{:extern}`.  A refinement
+keeps an inherited axiom, may give it a body or strengthen it, and may not add `{:axiom}` to a
+bodiless trait member of the module it refines (`RefinementTransformer.KeepTraitAxiomStatus`).
+The verifier is unchanged: no axiom, no fact and no obligation is added or removed, since the
+trait member's specification was already assumed at every call and an inherited member has no
+override check to skip.  `dafny audit` reports each trait axiom, and each type that inherits one
+without overriding it.  Its kind is **accepts more, opt-in**: with the option on, programs that
+were rejected for a missing implementation are accepted, on the strength of an assumption the
+program states and the audit lists; with the option off, the member flag is never set and every
+verdict and resource count is as before.  The option does not depend on the resolver, and the
+regression runs under both.  The regression is `git-issues/github-issue-89.dfy`; the release note
+is `docs/dev/news/89.feat`.
+
+## Opt-in added parents in a refinement ([issue 88](https://github.com/erniecohen/dafny/issues/88))
+
+A refining module could give a type a parent trait only by refining an abstract type into a class;
+`trait T ... extends S { }` was a parse error.  Under `--refinement-extends`, default off, the
+grammar of a class and of a trait accepts an `extends` clause after `...`, and
+`RefinementTransformer.MergeClass` puts the parents of the refined declaration first and the added
+ones after them (`TopLevelDecl.ParentTraitsFromRefinementBase` records how many were inherited, so
+that the printer, and with it a `.doo` library, writes only the added ones after `...`).  The
+merged declaration is then an ordinary declaration of the refining module with those parents, and
+every existing rule for an `extends` clause applies to it: cycles, type arguments, one
+instantiation per generic parent, cross-module parents, members that a class must implement,
+members that may not be redeclared, and the cardinality admission of general traits.  One rule is
+new: a refinement may not make a trait a reference type (`ref_added_parent_makes_reference_type`),
+because a module that imports the base abstractly may have declared a datatype below the trait.
+
+What makes the feature sound is that the obligations an added parent creates are checked in the
+refining module although the text they are checked at is inherited, and those checks are the
+fixes of [issue 404](https://github.com/erniecohen/dafny/issues/404) (override checks of members
+that become overrides), [issue 411](https://github.com/erniecohen/dafny/issues/411) (definite
+assignment of the parent's fields in inherited constructors),
+[issue 409](https://github.com/erniecohen/dafny/issues/409) (termination of inherited calls that
+the new overrides put on a cycle), [issue 410](https://github.com/erniecohen/dafny/issues/410) (a
+member of the parent capturing a name in inherited text) and
+[issue 408](https://github.com/erniecohen/dafny/issues/408) (an abstract import bound to a module
+that adds a parent).  The change adds no check of its own for them and must not be used without
+them: with their `--legacy-*` opt-outs, the regression's `WouldBeBad` methods prove `false`.  The
+verifier is unchanged: an added parent yields the axioms that the same parent yields on a new
+declaration, and no axiom of the base is removed or weakened.  Its kind is **accepts more,
+opt-in**: with the option off the new grammar branch reports a parse error, no merged declaration
+changes, and every verdict and resource count is as before.  The option does not depend on the
+resolver, and the regression runs under both.  The regression is
+`git-issues/github-issue-88.dfy`; the release note is `docs/dev/news/88.feat`.
+
+Two neighbouring cases needed no change to the product, only regressions.  With
+`--modular-termination`, the added parent meets the existing rules where a new declaration would:
+the bound of an inherited member that becomes an override is compared with the parent's, an
+inherited call that the new overrides put on a cycle is checked, and an inherited member that
+becomes an implementation of a member of another module that has no bound must be a leaf
+(`git-issues/github-issue-88-modular-termination.dfy`, each case beside a one-module control with
+the same verdict).  One case is open, and it does not need this option:
+[issue 493](https://github.com/erniecohen/dafny/issues/493).  A member that has no bound of its
+own and gets one in a refining module, here from the added parent, keeps the calls of its
+inherited body unchecked against that bound, and a program proves `false` with it.  The base
+line has the same gap where a refinement turns an abstract type into a class that extends a
+trait.  Datatypes, codatatypes and newtypes keep the grammar they had,
+`datatype D extends S ...`, which needs no option, and the same default-on fixes cover the parents
+they add: override checks at inherited members, termination, name capture, the cardinality
+admission, and trait axioms under `--inherited-trait-axioms`
+(`git-issues/github-issue-88-value-types.dfy`).  The legacy resolver has no conversion from a
+datatype or a newtype to a trait, so the cases that upcast run under the new resolver only.  Not
+covered: member invariants, whose option is not in this line yet.
+
 ## Comparing crossed component types ([issue 47](https://github.com/erniecohen/dafny/issues/47))
 
 With `--type-system-refresh`, `==`, `!=`, `in`, `!in` and prefix equality required, in their final

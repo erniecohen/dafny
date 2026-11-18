@@ -1,0 +1,24 @@
+github-issue-88-89-interactions.dfy(32,4): Error: assertion might not hold
+github-issue-88-89-interactions.dfy(51,4): Error: assertion might not hold
+github-issue-88-89-interactions.dfy(58,4): Error: assertion might not hold
+
+Dafny program verifier finished with 5 verified, 3 errors
+github-issue-88-89-interactions.dfy(32,4): Error: assertion might not hold
+github-issue-88-89-interactions.dfy(51,4): Error: assertion might not hold
+github-issue-88-89-interactions.dfy(58,4): Error: assertion might not hold
+
+Dafny program verifier finished with 5 verified, 3 errors
+github-issue-88-89-interactions-rejected.dfy(10,28): Error: under --inherited-trait-axioms, a refinement is not allowed to add {:axiom} to function 'F' of trait 'T' unless it gives it a body: whether types that inherit the member must implement it is fixed where the member is first declared
+github-issue-88-89-interactions-rejected.dfy(11,19): Error: under --inherited-trait-axioms, a refinement is not allowed to add {:axiom} to lemma 'L' of trait 'T' unless it gives it a body: whether types that inherit the member must implement it is fixed where the member is first declared
+github-issue-88-89-interactions-rejected.dfy(16,21): Error: the type of parameter 'b' is different from the type of the same parameter in the corresponding function in the module it refines ('int' instead of 'B')
+github-issue-88-89-interactions-rejected.dfy(17,12): Error: the type of in-parameter 'b' is different from the type of the same in-parameter in the corresponding method in the module it refines ('int' instead of 'B')
+4 resolution/type errors detected in github-issue-88-89-interactions-rejected.dfy
+github-issue-88-89-interactions-rejected.dfy(10,28): Error: under --inherited-trait-axioms, a refinement is not allowed to add {:axiom} to function 'F' of trait 'T' unless it gives it a body: whether types that inherit the member must implement it is fixed where the member is first declared
+github-issue-88-89-interactions-rejected.dfy(11,19): Error: under --inherited-trait-axioms, a refinement is not allowed to add {:axiom} to lemma 'L' of trait 'T' unless it gives it a body: whether types that inherit the member must implement it is fixed where the member is first declared
+github-issue-88-89-interactions-rejected.dfy(16,21): Error: the type of parameter 'b' is different from the type of the same parameter in the corresponding function in the module it refines ('int' instead of 'B')
+github-issue-88-89-interactions-rejected.dfy(17,12): Error: the type of in-parameter 'b' is different from the type of the same in-parameter in the corresponding method in the module it refines ('int' instead of 'B')
+4 resolution/type errors detected in github-issue-88-89-interactions-rejected.dfy
+github-issue-88-89-function-type-rejected.dfy(9,21): Error: the type of parameter 'b' is different from the type of the same parameter in the corresponding function in the module it refines ('int' instead of 'B')
+1 resolution/type errors detected in github-issue-88-89-function-type-rejected.dfy
+github-issue-88-89-function-type-rejected.dfy(9,21): Error: the type of parameter 'b' is different from the type of the same parameter in the corresponding function in the module it refines ('int' instead of 'B')
+1 resolution/type errors detected in github-issue-88-89-function-type-rejected.dfy

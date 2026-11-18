@@ -26,7 +26,7 @@ Unless marked *opt-in*, a change is on by default. Soundness fixes are on by def
 
 **Resolver and language** (all *opt-in*)
 - `--conservative-match-inference` and fixes to the refreshed resolver (`--type-system-refresh`) for crossed comparisons, match literals, subtype variance diagnostics and match pattern types.
-- `--contextual-quantifier-domains`, `--contextual-lambda-domains`, `--invariant-constructor-inference`, `--synonym-refines-abstract-type`, `--refinement-renaming`, `--copy-imports`, `--ancestor-qualified-module-ids`, `--datatype-subset-conversions`, `--statement-expression-conclusions` and `--quantified-check-call-facts`.
+- `--contextual-quantifier-domains`, `--contextual-lambda-domains`, `--invariant-constructor-inference`, `--synonym-refines-abstract-type`, `--inherited-trait-axioms`, `--refinement-extends`, `--refinement-renaming`, `--copy-imports`, `--ancestor-qualified-module-ids`, `--datatype-subset-conversions`, `--statement-expression-conclusions` and `--quantified-check-call-facts`.
 - `--user-defined-operators` (milestone 1).
 
 **Proof automation** (*opt-in*)

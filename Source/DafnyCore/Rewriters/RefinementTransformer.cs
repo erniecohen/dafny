@@ -842,10 +842,45 @@ namespace Microsoft.Dafny {
       return target;
     }
 
+    /// <summary>
+    /// A refinement must not turn a non-reference trait into a reference trait: a module that imports the refined
+    /// module abstractly may declare a datatype or newtype that extends the trait, which is legal only while the
+    /// trait is not a reference type.  A trait is a reference type iff it has "object" as an ancestor, so only an
+    /// added parent can change that.  The error is reported once, at the trait that adds a reference-type parent,
+    /// and not again at the traits below it.
+    /// </summary>
+    private void CheckAddedParentsKeepReferenceness(TraitDecl nw, TraitDecl prev, int inheritedParentCount) {
+      if (prev.IsReferenceTypeDecl) {
+        return;
+      }
+      var culprit = nw.Traits.Skip(inheritedParentCount).FirstOrDefault(parent =>
+        parent.AsTraitType is { IsReferenceTypeDecl: true });
+      if (culprit == null) {
+        // No added parent is a reference type.  If the trait became one all the same, it did so through a parent
+        // it had already, and the error is reported at the trait that added the reference-type parent.
+        return;
+      }
+      Reporter.Error(MessageSource.RefinementTransformer, "ref_added_parent_makes_reference_type", culprit.Origin,
+        $"a refinement is not allowed to make trait '{nw.Name}' a reference type: added parent '{culprit}'" +
+        $" is a reference type, and '{nw.Name}' in module '{prev.EnclosingModuleDefinition.Name}' is not");
+    }
+
     TopLevelDeclWithMembers MergeClass(TopLevelDeclWithMembers nw, TopLevelDeclWithMembers prev) {
       CheckAgreement_TypeParameters(nw.Origin, prev.TypeArgs, nw.TypeArgs, nw.Name, nw.WhatKind, true);
 
-      prev.Traits.ForEach(item => nw.Traits.Add(refinementCloner.CloneType(item)));
+      if (nw is ClassLikeDecl { IsRefining: true }) {
+        // The parents of the refined declaration come first.  Under --refinement-extends the refining declaration
+        // may add parents ("trait T ... extends S"), and those follow; a parent named twice counts once, as in any
+        // extends clause.
+        var inheritedParentCount = prev.Traits.Count;
+        nw.Traits.InsertRange(0, prev.Traits.Select(refinementCloner.CloneType));
+        nw.ParentTraitsFromRefinementBase = inheritedParentCount;
+        if (nw is TraitDecl nwTrait && prev is TraitDecl prevTrait) {
+          postTasks.Enqueue(() => CheckAddedParentsKeepReferenceness(nwTrait, prevTrait, inheritedParentCount));
+        }
+      } else {
+        prev.Traits.ForEach(item => nw.Traits.Add(refinementCloner.CloneType(item)));
+      }
       nw.CardinalityParentObligations = nw.CardinalityParentObligations
         .AddRange(prev.CardinalityParentObligations.Select(refinementCloner.CloneType));
       nw.Attributes = refinementCloner.MergeAttributes(prev.Attributes, nw.Attributes);
@@ -981,6 +1016,7 @@ namespace Microsoft.Dafny {
               }
               var newF = CloneFunction(f, prevFunction, moreBody, replacementBody, prevFunction.Body == null, f.Attributes);
               newF.RefinementBase = member;
+              KeepTraitAxiomStatus(nw, f, prevFunction, newF);
               AttachPendingTypeAgreements(newF);
               nw.Members[index] = newF;
             }
@@ -1045,6 +1081,7 @@ namespace Microsoft.Dafny {
               }
               var newM = CloneMethod(prevMethod, m.Ens, decreases, replacementBody, prevMethod.Body == null, m.Attributes);
               newM.RefinementBase = prevMethod;
+              KeepTraitAxiomStatus(nw, m, prevMethod, newM);
               AttachPendingTypeAgreements(newM);
               nw.Members[index] = newM;
             }
@@ -1053,6 +1090,25 @@ namespace Microsoft.Dafny {
       }
 
       return nw;
+    }
+
+    /// <summary>
+    /// Whether a bodiless trait member is a trait axiom (--inherited-trait-axioms) is fixed where the member is
+    /// first declared.  The merged member keeps the status of the member it refines, and a refinement may not
+    /// add {:axiom} to a trait member that stays bodiless: it would change which types must implement the
+    /// member.  (A refinement cannot remove {:axiom}, since the merged member keeps the attributes of both.)
+    /// Only a member of a trait has the mark, and a library that has it requires the option of its clients,
+    /// so the mark of the refining member alone says that the rule applies.
+    /// </summary>
+    void KeepTraitAxiomStatus(TopLevelDeclWithMembers nw, MemberDecl refining, MemberDecl prev, MemberDecl merged) {
+      merged.DeclaredUnderInheritedTraitAxioms = prev.DeclaredUnderInheritedTraitAxioms;
+      if (refining.DeclaredUnderInheritedTraitAxioms && !prev.HasStaticKeyword &&
+          refining.HasAxiomAttribute && !prev.HasAxiomAttribute &&
+          merged is (Function { Body: null } or MethodOrConstructor { Body: null })) {
+        Reporter.Error(MessageSource.RefinementTransformer, "ref_no_added_trait_axiom", refining.Origin,
+          $"under --inherited-trait-axioms, a refinement is not allowed to add {{:axiom}} to {prev.WhatKindAndName} of trait '{nw.Name}' unless it gives it a body: " +
+          "whether types that inherit the member must implement it is fixed where the member is first declared");
+      }
     }
     void CheckAgreement_TypeParameters(IOrigin tok, List<TypeParameter> old, List<TypeParameter> nw, string name, string thing,
       bool mayRename = false) {
