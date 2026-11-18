@@ -170,6 +170,12 @@ class PreTypeToTypeVisitor : ASTVisitor<IASTVisitorContext> {
     }
   }
 
+  // Whether "type" is a type the program wrote, with no part left to inference
+  private static bool IsWritten(Type type) {
+    var t = type.Normalize();
+    return t is not TypeProxy && t.TypeArgs.All(IsWritten);
+  }
+
   protected override bool VisitOneExpression(Expression expr, IASTVisitorContext context) {
     if (expr is QuantifierExpr quantifierExpr && systemModuleManager.Options.Get(CommonOptionBag.ContextualQuantifierDomains)) {
       InferQuantifierDomains(quantifierExpr);
@@ -202,6 +208,12 @@ class PreTypeToTypeVisitor : ASTVisitor<IASTVisitorContext> {
         var typeArgs = functionCallExpr.TypeApplication_AtEnclosingClass;
         if (typeArgs[0].NormalizeExpand() is IntType) {
           typeArgs[0] = systemModuleManager.Nat();
+        }
+        if (functionCallExpr.Receiver is StaticReceiverExpr { UnresolvedType: UserDefinedType { TypeArgs.Count: 2 } written } &&
+            IsWritten(written.TypeArgs[0])) {
+          // A written order is kept as written: refinement from the bound argument would otherwise replace the order
+          // type that is the result of an argument-dependent order by its base type (issue 211)
+          typeArgs[0] = written.TypeArgs[0];
         }
         typeArgs[1] = PreType2TypeUtil.PreType2RefinableType(functionCallExpr.PreTypeApplication_AtEnclosingClass[1]);
         functionCallExpr.Receiver.Type = new UserDefinedType(functionCallExpr.Receiver.Origin, BoundedCallables.TypeName,

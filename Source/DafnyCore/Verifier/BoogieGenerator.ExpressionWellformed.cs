@@ -557,7 +557,7 @@ namespace Microsoft.Dafny {
             foreach (Expression arg in e.Args) {
               CheckWellformed(arg, wfOptions, locals, builder, etran);
             }
-            CheckCallbackApplication(applyExpr.Origin, codeContext, e.Function,
+            CheckCallbackApplication(applyExpr.Origin, codeContext, e.Function, e.Args,
               wfOptions.CallerTerminationTranslator ?? builder.Context.CallerTerminationTranslator ?? etran, builder);
 
             // check subranges of arguments
@@ -710,7 +710,7 @@ namespace Microsoft.Dafny {
                 builder.Add(TrAssumeCmd(e.Receiver.Origin, MkIsAllocBox(BoxIfNecessary(e.Receiver.Origin, etran.TrExpr(e.Receiver), e.Receiver.Type), et, etran.HeapExpr)));
               }
               if (ModularTermination.IsArrowMember(e.Function)) {
-                CheckCallbackApplication(callExpr.Origin, codeContext, e.Receiver,
+                CheckCallbackApplication(callExpr.Origin, codeContext, e.Receiver, e.Args,
                   wfOptions.CallerTerminationTranslator ?? builder.Context.CallerTerminationTranslator ?? etran, builder);
               }
               RegisterCallbackLambdas(e.Function, e.Receiver, e.Args, e.GetTypeArgumentSubstitutions(), etran);
@@ -1333,6 +1333,9 @@ namespace Microsoft.Dafny {
 
               var substMap = SetupBoundVarsAsLocals(e.BoundVars, out var typeAntecedents, nextBuilder, locals, comprehensionEtran,
                 alloc: lambdaInEveryHeap ? IsAllocType.NOALLOC : IsAllocType.ISALLOC);
+              if (lam != null) {
+                RenameLambdaBound(substMap);
+              }
               BplIfIf(e.Origin, true, typeAntecedents, nextBuilder, newBuilder => {
                 var s = new Substituter(null, substMap, new Dictionary<TypeParameter, Type>());
                 var body = Substitute(e.Term, null, substMap);

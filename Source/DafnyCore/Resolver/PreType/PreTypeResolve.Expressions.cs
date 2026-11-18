@@ -1942,6 +1942,12 @@ namespace Microsoft.Dafny {
 
       } else if (lhs != null) {
         // ----- 4. Look up name in the type of the Lhs
+        if (name == BoundedCallables.BoundAtName && Constraints.FindDefinedPreType(expr.Lhs.PreType, false) is { } boundedPreType &&
+            BoundedCallables.SelectByPreType(expr.Lhs, boundedPreType, BoundedCallables.BoundName) != null) {
+          // "c.boundAt", for a value "c" of a bounded type, is "c.bound" (issue 211): applied to arguments, the bound
+          // of a call with them
+          name = BoundedCallables.BoundName;
+        }
         if (name is "requires" or "reads" && Constraints.FindDefinedPreType(expr.Lhs.PreType, false) is { } lhsPreType &&
             BoundedCallables.SelectByPreType(expr.Lhs, lhsPreType, BoundedCallables.EraseName) is { } erased) {
           // "c.requires" and "c.reads", for a value "c" of a bounded type, are those of "c.erase" (issue 266)

@@ -455,6 +455,10 @@ public class ModularTerminationAnalysis {
   // The callees of each node, and, for a node that makes an open dispatch itself, a description of the first one.
   private readonly Dictionary<Declaration, HashSet<Declaration>> edges = new();
   private readonly Dictionary<Declaration, string> directDispatch = new();
+  // Issue 211: the nodes that apply the argument-dependent bound of a bounded value, or call code that does, in any
+  // module.  The argument-dependent bound given to "bounded.certify" may not be one of them (see AppliesArgumentBound).
+  private readonly HashSet<Declaration> appliesArgumentBound = [];
+  private readonly Dictionary<Declaration, HashSet<Declaration>> allEdges = new();
   private readonly List<MemberDecl> orderImplementations = [];
   private readonly HashSet<IVariable> logicalBinders = [];
 
@@ -542,6 +546,10 @@ public class ModularTerminationAnalysis {
         }
       }
       edges[node] = collector.Callees;
+      allEdges[node] = collector.AllCallees;
+      if (collector.AppliesArgumentBound) {
+        appliesArgumentBound.Add(node);
+      }
     }
     foreach (var module in program.Modules()) {
       foreach (var decl in module.TopLevelDecls) {
@@ -651,6 +659,12 @@ public class ModularTerminationAnalysis {
             }
             parentEdges.Add(member);
           }
+          if (member.OverriddenMember is { } overridden) {
+            if (!allEdges.TryGetValue(overridden, out var overriddenEdges)) {
+              allEdges[overridden] = overriddenEdges = [];
+            }
+            overriddenEdges.Add(member);
+          }
         }
       }
     }
@@ -669,6 +683,26 @@ public class ModularTerminationAnalysis {
           if (reaching.Add(caller)) {
             work.Push(caller);
           }
+        }
+      }
+    }
+    var allCallers = new Dictionary<Declaration, List<Declaration>>();
+    foreach (var (node, callees) in allEdges) {
+      foreach (var callee in callees) {
+        if (!allCallers.TryGetValue(callee, out var list)) {
+          allCallers[callee] = list = [];
+        }
+        list.Add(node);
+      }
+    }
+    foreach (var node in appliesArgumentBound) {
+      work.Push(node);
+    }
+    while (work.Count != 0) {
+      var node = work.Pop();
+      foreach (var caller in allCallers.GetValueOrDefault(node, [])) {
+        if (appliesArgumentBound.Add(caller)) {
+          work.Push(caller);
         }
       }
     }
@@ -790,6 +824,18 @@ public class ModularTerminationAnalysis {
 
   public bool ReachingDeclaration(Declaration declaration) => reaching.Contains(declaration);
 
+  /// <summary>
+  /// Whether evaluating "exprs" may apply the argument-dependent bound of a bounded value (issue 211).  Such a bound
+  /// is a function that a later bound applies, so if it could apply one in turn, a bound read from an object's
+  /// constant could apply itself, as in "o =&gt; {1} + o.f.bound(o)", and its definition would be a contradiction.  So
+  /// the bound given to "bounded.certify" computes from data alone, as VeriFast's levels do.
+  /// </summary>
+  public bool AppliesArgumentBound(IEnumerable<Expression> exprs) {
+    var collector = new EdgeCollector(this, null);
+    collector.Visit(exprs);
+    return collector.AppliesArgumentBound || collector.AllCallees.Any(appliesArgumentBound.Contains);
+  }
+
   public enum FunctionValueKind {
     /// <summary>A lambda expression: its body is part of the code that creates it, and is checked there.</summary>
     Lambda,
@@ -820,6 +866,8 @@ public class ModularTerminationAnalysis {
         return FunctionValueKind.Lambda;
       case var erased when BoundedCallables.ErasedCallable(erased) != null:
         return FunctionValueKind.Bounded;
+      case var bound when BoundedCallables.IsArgumentBound(bound):
+        return FunctionValueKind.KnownCode;
       case IdentifierExpr { Var: { } binder } when logicalBinders.Contains(binder):
         return FunctionValueKind.Binder;
       case IdentifierExpr { Var: Formal f } when enclosing != null && enclosing.Ins.IndexOf(f) is var i and >= 0 &&
@@ -889,6 +937,9 @@ public class ModularTerminationAnalysis {
   private class EdgeCollector : BottomUpVisitor {
     private readonly ModularTerminationAnalysis analysis;
     public readonly HashSet<Declaration> Callees = [];
+    // Every declaration the code depends on, in any module (issue 211)
+    public readonly HashSet<Declaration> AllCallees = [];
+    public bool AppliesArgumentBound;
     public bool Dispatches;
     public string? DispatchDescription;
 
@@ -912,6 +963,7 @@ public class ModularTerminationAnalysis {
     }
 
     private void AddDependency(Declaration node) {
+      AllCallees.Add(node);
       if (callerModule != null && ModularTermination.ModuleOf(node) != callerModule) {
         if (analysis.HasGeneralContract(node, callerModule)) {
           Dispatch($"General contract of {NodeName(node)} (publish {{:termination_closed}} for independent closed code)");
@@ -999,6 +1051,12 @@ public class ModularTerminationAnalysis {
         return;
       }
       if (value.Resolved is IdentifierExpr { Var: { } binder } && analysis.logicalBinders.Contains(binder)) {
+        return;
+      }
+      // The argument-dependent bound of a bounded value was checked to be closed when the value was formed, and to
+      // apply no such bound itself.
+      if (BoundedCallables.IsArgumentBound(value)) {
+        AppliesArgumentBound = true;
         return;
       }
       // The relation MultisetRel(r) of the orders library applies only r, which the visit of that call applies.
@@ -1639,11 +1697,22 @@ public class ModularTerminationRewriter : IRewriter {
       if (callee is not ICallable callable) {
         return;
       }
+      if (BoundedCallables.IsCertify(callee) && args.Count == 2 && BoundedCallables.ArgumentOrderResult(args[0].Type) != null) {
+        ReportArgumentDependentCertify(callee, args[0], args[1]);
+        return;
+      }
       for (var i = 0; i < args.Count && i < callable.Ins.Count; i++) {
         if (!ModularTermination.HasCallbackBound(callable, i)) {
           continue;
         }
         var kind = analysis.Classify(args[i], caller);
+        if (kind is ModularTerminationAnalysis.FunctionValueKind.Bounded &&
+            BoundedCallables.ArgumentOrderResult(BoundedCallables.ErasedCallable(args[i])!.Type.NormalizeExpand().TypeArgs[0]) != null) {
+          reporter.Error(MessageSource.Resolver, args[i].Origin,
+            $"modular termination: in {CallerName}, the function of a bounded value with an argument-dependent bound cannot be passed for " +
+            $"parameter '{callable.Ins[i].Name}' of '{QualifiedName(callee)}', whose 'decreases {{:callback}}' bound does not depend on the arguments; pass the bounded value itself");
+          continue;
+        }
         if (kind is ModularTerminationAnalysis.FunctionValueKind.Unknown && BoundedCallables.IsCertify(callee)) {
           if (ModularTermination.AdmittedMember(reporter.Options, args[i], out var problem) != null) {
             reporter.Info(MessageSource.Resolver, args[i].Origin,
@@ -1663,6 +1732,40 @@ public class ModularTerminationRewriter : IRewriter {
             "which has a 'decreases {:callback}' bound, must be a lambda expression, a parameter with such a bound, " +
             "a function that reaches no dispatched call, or the function of a bounded value");
         }
+      }
+    }
+
+    /// <summary>
+    /// "bounded.certify(b, f)" with an argument-dependent bound b (issue 211): f must be a lambda expression, whose
+    /// body the verifier checks under b at its arguments, and b must be closed (rule 8), since "X.bound(args)" is
+    /// evaluated in the bounds of later calls: a lambda expression, a call of a function whose body is one, or a
+    /// function, that reaches no dispatch or unknown application and applies no argument-dependent bound, or the
+    /// argument-dependent bound of another bounded value.
+    /// </summary>
+    private void ReportArgumentDependentCertify(MemberDecl callee, Expression b, Expression f) {
+      if (f.Resolved is not LambdaExpr) {
+        reporter.Error(MessageSource.Resolver, f.Origin,
+          $"modular termination: in {CallerName}, the function certified by '{QualifiedName(callee)}' at an argument-dependent bound must be a lambda expression");
+      }
+      // A call of a function whose body is a lambda expression is that lambda expression, with the call's arguments
+      // for the function's parameters: it is a name for a family of bounds, such as the levels of the objects of
+      // each depth, so that a specification can say which bound a value has.
+      var closedCode = b.Resolved is LambdaExpr || BoundedCallables.IsArgumentBound(b) ||
+                       b.Resolved is FunctionCallExpr { Function: { Body.Resolved: LambdaExpr } factory } && !factory.IsVirtual ||
+                       analysis.Classify(b, caller) == ModularTerminationAnalysis.FunctionValueKind.KnownCode;
+      if (!closedCode) {
+        reporter.Error(MessageSource.Resolver, b.Origin,
+          $"modular termination: in {CallerName}, the argument-dependent bound given to '{QualifiedName(callee)}' must be a lambda expression, " +
+          "a call of a function whose body is one, a function that reaches no dispatched call, or the argument-dependent bound of a bounded value");
+      } else if (analysis.ReachingChain([b], caller.EnclosingModule) is { } chain) {
+        reporter.Error(MessageSource.Resolver, b.Origin,
+          $"modular termination: in {CallerName}, the argument-dependent bound given to '{QualifiedName(callee)}' can reach dispatch to " +
+          $"implementations that other modules may provide (bound -> {chain}); a bound may only use code that cannot reach one, " +
+          "since its value must not depend on the termination that the bounds establish");
+      } else if (analysis.AppliesArgumentBound([b])) {
+        reporter.Error(MessageSource.Resolver, b.Origin,
+          $"modular termination: in {CallerName}, the argument-dependent bound given to '{QualifiedName(callee)}' may apply the " +
+          "argument-dependent bound of a bounded value, which could be itself; it must compute from data alone");
       }
     }
 

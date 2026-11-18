@@ -388,6 +388,17 @@ public partial class BoogieGenerator {
     modularTerminationLambdaStack.Add(bound);
   }
 
+  /// <summary>
+  /// The body of the lambda entered last is checked with its parameters renamed by "substMap"; an argument-dependent
+  /// bound (issue 211), which names them, is renamed with them.
+  /// </summary>
+  void RenameLambdaBound(Dictionary<IVariable, Expression> substMap) {
+    if (!ModularTerminationActive || CurrentLambdaBound is not { } bound) {
+      return;
+    }
+    modularTerminationLambdaStack[^1] = bound.ConvertAll(e => DecreasesByExpr.WithOrderOf(e, Substitute(e, null, substMap)));
+  }
+
   void ExitLambda() {
     if (!ModularTerminationActive) {
       return;
@@ -469,7 +480,16 @@ public partial class BoogieGenerator {
         }
       }
       modularTerminationLambdaBounds[lambda] = bound.ConvertAll(e => {
-        var actual = Substitute(e, receiver, directSubstMap, typeMap);
+        if (BoundedCallables.IsCertify(callee) && BoundedCallables.ArgumentOrderResult(e.Type.Subst(typeMap)) is { } result) {
+          // An argument-dependent bound b (issue 211): the body runs under b at the lambda's own arguments.  b is
+          // evaluated here, where the value is formed, and applied in the body's terms.
+          var b = Substitute(e, receiver, directSubstMap, typeMap);
+          var handle = new BoogieWrapper(etran.TrExpr(b), b.Type);
+          var apply = new ApplyExpr(lambda.Origin, handle, lambda.BoundVars.Select(bv => (Expression)Expression.CreateIdentExpr(bv)).ToList(),
+            Token.NoToken) { Type = result };
+          return DecreasesOrders.WithTypeOrder(apply, result);
+        }
+        var actual = DecreasesOrders.WithTypeOrder(Substitute(e, receiver, directSubstMap, typeMap), e.Type.Subst(typeMap));
         return DecreasesByExpr.WithOrderOf(actual, new BoogieWrapper(etran.TrExpr(actual), actual.Type));
       });
     }
@@ -500,7 +520,7 @@ public partial class BoogieGenerator {
       }
       // Both sides in the caller's terms: the callee's bound at the call's arguments, in the current state; the
       // caller's on entry.
-      var upper = calleeBound.ConvertAll(e => Substitute(e, receiverReplacement, substMap, typeMap));
+      var upper = calleeBound.ConvertAll(e => DecreasesOrders.WithTypeOrder(Substitute(e, receiverReplacement, substMap, typeMap), e.Type.Subst(typeMap)));
       var contextBound = upper;
       var comparedBound = lower;
       if (!UseConsistentDecreasesOrder) {
@@ -521,10 +541,10 @@ public partial class BoogieGenerator {
   /// bound in every later state, so a lambda may keep it and apply it later.  Code without a bound is above every
   /// bound.  Other applications are checked by the resolver.
   /// </summary>
-  void CheckCallbackApplication(IOrigin tok, ICodeContext codeContext, Expression value, ExpressionTranslator etranCurrent,
-                                BoogieStmtListBuilder builder) {
+  void CheckCallbackApplication(IOrigin tok, ICodeContext codeContext, Expression value, List<Expression> args,
+                                ExpressionTranslator etranCurrent, BoogieStmtListBuilder builder) {
     if (options.Get(CommonOptionBag.ModularTermination) && BoundedCallables.ErasedCallable(value.Resolved) is { } bounded) {
-      CheckBoundedApplication(tok, codeContext, bounded, etranCurrent, builder);
+      CheckBoundedApplication(tok, codeContext, bounded, args, etranCurrent, builder);
       return;
     }
     if (!ModularTerminationActive || codeContext is not ICallable caller ||
@@ -653,7 +673,7 @@ public partial class BoogieGenerator {
   /// </summary>
   static bool AllIntComponents(List<Expression> dafny0, List<Expression> dafny1) {
     for (var i = 0; i < dafny0.Count; i++) {
-      if (DecreasesByExpr.OrderOf(dafny0[i]) != null || DecreasesByExpr.OrderOf(dafny1[i]) != null) {
+      if (DecreasesOrders.ComponentOrder(dafny0[i]) != null || DecreasesOrders.ComponentOrder(dafny1[i]) != null) {
         return false;
       }
       // Not reals: a weak real step "0 <= y && x <= y" that is not strict ("x <= y - 1") may precede strict progress
@@ -680,10 +700,11 @@ public partial class BoogieGenerator {
       var ty0 = dafny0[i].Type.NormalizeToAncestorType();
       var ty1 = dafny1[i].Type.NormalizeToAncestorType();
       Bpl.Expr strict, weak;
-      var order0 = DecreasesByExpr.OrderOf(dafny0[i]);
-      var order1 = DecreasesByExpr.OrderOf(dafny1[i]);
+      var order0 = DecreasesOrders.ComponentOrder(dafny0[i]);
+      var order1 = DecreasesOrders.ComponentOrder(dafny1[i]);
       if (order0 != null || order1 != null) {
-        // A component "e by O" (--decreases-orders) is compared by O.gt(caller, callee), and only with a component with the same O.
+        // A component "e by O" (--decreases-orders), or one of an order type with order O, is compared by
+        // O.gt(caller, callee), and only with a component with the same O.
         if (order0 != null && order1 != null && DecreasesOrders.SameOrder(order0, order1) &&
             DecreasesOrders.WfoOf(order1.Type) != null && CompatibleDecreasesTypesForComparison(ty0, ty1)) {
           OrderedComponent(toks[i], order1, dafny0[i].Type, ee0[i], ee1[i], out strict, out weak);

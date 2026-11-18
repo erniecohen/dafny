@@ -16,6 +16,11 @@ namespace Microsoft.Dafny;
 /// A component "e by O" is allowed only in the decreases clause of a function, method or loop, and in the
 /// "decreases {:global}" and "decreases {:callback f}" bounds of --modular-termination of a function or method,
 /// and not with --legacy-decreases-order.
+///
+/// An order type (issue 211) is a subset type declared with an order, "type {:order O} L = x: T | C".  A
+/// component of type L, and the bound of a bounded callable "bounded&lt;L, F&gt;", is compared as "e by O".  The type
+/// names the order, so a bound stored in a value keeps it: O must meet R1 and R2 for T, and L has no type
+/// parameters, since O is not instantiated with them.  R3 holds for every callable that uses an order type.
 /// </summary>
 public static class DecreasesOrders {
   public const string WfoModule = "Std.Termination.Orders";
@@ -28,6 +33,40 @@ public static class DecreasesOrders {
   public const string StopsName = "stops";
   public const string MultisetOfName = "MultisetOf";
   public const string MultisetRelName = "MultisetRel";
+  public const string OrderAttributeName = "order";
+
+  /// <summary>
+  /// The order declared by "decl" with the attribute {:order O}, or null.
+  /// </summary>
+  public static Expression? DeclaredOrder(TopLevelDecl decl) {
+    return decl is SubsetTypeDecl && Attributes.Find(decl.Attributes, OrderAttributeName) is { Args: [var order] } ? order : null;
+  }
+
+  /// <summary>
+  /// If "type", keeping subset types, is an order type, its order; otherwise null.
+  /// </summary>
+  public static Expression? TypeOrder(Type? type) {
+    return type?.NormalizeExpandKeepConstraints() is UserDefinedType { ResolvedClass: SubsetTypeDecl decl } ? DeclaredOrder(decl) : null;
+  }
+
+  /// <summary>
+  /// The order by which the decreases component "e" is compared: that of "e by O", or else that of its order type;
+  /// null if it has the built-in order of its type.
+  /// </summary>
+  public static Expression? ComponentOrder(Expression e) {
+    return DecreasesByExpr.OrderOf(e) ?? TypeOrder(e.Type);
+  }
+
+  /// <summary>
+  /// "e", compared by the order of the order type "declared" if "e" has no order of its own.  An argument
+  /// substituted for a formal of an order type may have the base type instead (issue 211).
+  /// </summary>
+  public static Expression WithTypeOrder(Expression e, Type declared) {
+    if (ComponentOrder(e) != null || TypeOrder(declared) is not { } order) {
+      return e;
+    }
+    return new DecreasesByExpr(e.Origin, e, order) { ResolvedExpression = e, Type = e.Type };
+  }
 
   /// <summary>
   /// The functions of the orders library's multiset order, other than MultisetOf and MultisetRel, that a client
@@ -184,6 +223,9 @@ public static class DecreasesOrders {
   public static void Check(DafnyOptions options, ErrorReporter reporter, List<TopLevelDecl> declarations) {
     var legacy = options.Get(CommonOptionBag.LegacyDecreasesOrder);
     foreach (var decl in declarations) {
+      if (decl is SubsetTypeDecl subsetType && Attributes.Find(decl.Attributes, OrderAttributeName) is { } orderAttribute) {
+        CheckOrderType(options, reporter, subsetType, orderAttribute, legacy);
+      }
       if (decl is IteratorDecl iter) {
         CheckClause(options, reporter, iter, iter.Decreases, false, legacy, "the decreases clause of an iterator");
         CheckBody(options, reporter, iter, iter.Body, legacy);
@@ -203,6 +245,94 @@ public static class DecreasesOrders {
         }
       }
     }
+    if (!legacy && TypeSystemSupportsOrders(options)) {
+      CheckOrderTypeUses(reporter, declarations);
+    }
+  }
+
+  /// <summary>
+  /// The checks of an order type "type {:order O} L = x: T | C": one argument, R1 and R2 for T, no type parameters,
+  /// and no {:axiom}, which would skip the check that O is well-formed.
+  /// </summary>
+  static void CheckOrderType(DafnyOptions options, ErrorReporter reporter, SubsetTypeDecl decl, Attributes attribute, bool legacy) {
+    if (attribute.Args.Count != 1) {
+      reporter.Error(MessageSource.Resolver, attribute.Origin, "the attribute {:order O} of an order type takes exactly one argument, the order");
+      return;
+    }
+    var order = attribute.Args[0];
+    if (legacy) {
+      reporter.Error(MessageSource.Resolver, order.Origin, "an order type cannot be used with --legacy-decreases-order");
+      return;
+    }
+    if (decl.TypeArgs.Count != 0) {
+      reporter.Error(MessageSource.Resolver, decl.Origin, "an order type must not have type parameters");
+    }
+    if (Attributes.Contains(decl.Attributes, "axiom")) {
+      reporter.Error(MessageSource.Resolver, decl.Origin, "an order type must not be declared {:axiom}");
+    }
+    // R1
+    if (WfoTrait(order.Type) == null || WfoOf(order.Type) is not { } element) {
+      reporter.Error(MessageSource.Resolver, order.Origin,
+        $"the order O of an order type must have type {WfoModule}.{WfoName}<T> (got {order.Type})");
+      return;
+    }
+    if (!decl.Var.Type.NormalizeExpandKeepConstraints().Equals(element.NormalizeExpandKeepConstraints(), true)) {
+      reporter.Error(MessageSource.Resolver, order.Origin,
+        $"the order O of an order type must order exactly its base type (got {WfoName}<{element}> for base type {decl.Var.Type})");
+    }
+    // R2
+    var free = new HashSet<IVariable>();
+    bool usesHeap = false, usesOldHeap = false;
+    Type? usesThis = null;
+    var heapAt = new HashSet<Label>();
+    FreeVariablesUtil.ComputeFreeVariables(options, order, free, ref usesHeap, ref usesOldHeap, heapAt, ref usesThis, true);
+    if (free.Count != 0 || usesHeap || usesOldHeap || heapAt.Count != 0 || usesThis != null) {
+      var what = free.Count != 0 ? $"variable '{free.First().Name}'" : usesThis != null ? "'this'" : "the heap";
+      reporter.Error(MessageSource.Resolver, order.Origin, $"the order O of an order type must be closed, but it mentions {what}");
+    }
+  }
+
+  /// <summary>
+  /// R3 for the callables of "declarations" that use an order type: a component of that type is compared by its
+  /// order's gt, so the callable must not be mutually recursive with Wfo.gt, Wfo.aha or their overrides.
+  /// </summary>
+  static void CheckOrderTypeUses(ErrorReporter reporter, List<TopLevelDecl> declarations) {
+    foreach (var callable in ModuleDefinition.AllCallables(declarations)) {
+      if (callable is not Node node || FirstOrderTypeUse(node) is not { } use) {
+        continue;
+      }
+      var wfo = WfoTrait(use.Order.Type)!;
+      var graph = callable.EnclosingModule.CallGraph;
+      if (graph.FindVertex(callable) == null) {
+        continue;
+      }
+      var representative = graph.GetSCCRepresentative(callable);
+      foreach (var callee in ImpliedCallees(wfo)) {
+        if (graph.FindVertex(callee) != null && graph.GetSCCRepresentative(callee) == representative) {
+          reporter.Error(MessageSource.Resolver, use.Origin,
+            $"'{callable.NameRelativeToModule}' compares values of an order type, so it is treated as calling {WfoName}.{callee.Name}; " +
+            $"it must not be mutually recursive with {WfoName}.{callee.Name} or its overrides");
+          break;
+        }
+      }
+    }
+  }
+
+  static (Expression Order, IOrigin Origin)? FirstOrderTypeUse(INode root) {
+    var stack = new Stack<INode>();
+    stack.Push(root);
+    while (stack.Count != 0) {
+      var node = stack.Pop();
+      if (node is Expression e && TypeOrder(e.Type) is { } order && WfoTrait(order.Type) != null) {
+        return (order, e.Origin);
+      }
+      foreach (var child in node.Children) {
+        if (child != null) {
+          stack.Push(child);
+        }
+      }
+    }
+    return null;
   }
 
   static void CheckBody(DafnyOptions options, ErrorReporter reporter, ICallable callable, Statement? body, bool legacy) {

@@ -5748,6 +5748,11 @@ namespace Microsoft.Dafny {
         }
       } else if (lhs != null) {
         // ----- 4. Look up name in the type of the Lhs
+        if (name == BoundedCallables.BoundAtName &&
+            BoundedCallables.Select(expr.Lhs, PartiallyResolveTypeForMemberSelection(expr.Origin, expr.Lhs.Type), BoundedCallables.BoundName) != null) {
+          // "c.boundAt", for a value "c" of a bounded type, is "c.bound" (issue 211)
+          name = BoundedCallables.BoundName;
+        }
         if (name is "requires" or "reads" &&
             BoundedCallables.Select(expr.Lhs, PartiallyResolveTypeForMemberSelection(expr.Origin, expr.Lhs.Type), BoundedCallables.EraseName) is { } erased) {
           // "c.requires" and "c.reads", for a value "c" of a bounded type, are those of "c.erase" (issue 266)
