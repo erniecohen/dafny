@@ -1,0 +1,24 @@
+github-issue-199-conditions.dfy(26,20): Error: the results of lemma 'Reference' cannot be bound in an expression, because values of its out-parameter 'c' (of type 'C?') may contain references
+github-issue-199-conditions.dfy(30,16): Error: the results of lemma 'Boxed' cannot be bound in an expression, because values of its out-parameter 'b' (of type 'Box') may contain references
+github-issue-199-conditions.dfy(34,16): Error: the results of lemma 'Arrow' cannot be bound in an expression, because values of its out-parameter 'f' (of type 'int ~> int') may contain references
+github-issue-199-conditions.dfy(42,18): Error: the results of lemma 'Generic' cannot be bound in an expression, because values of its out-parameter 'y' (of type 'C') may contain references
+github-issue-199-conditions.dfy(50,18): Error: the results of lemma 'Generic' cannot be bound in an expression, because values of its out-parameter 'y' (of type 'T') may contain references (perhaps declare its type as 'T(!new)')
+github-issue-199-conditions.dfy(58,15): Error: the results of lemma 'Sets' cannot be bound in an expression, because values of its out-parameter 's' (of type 'set<C>') may contain references
+github-issue-199-conditions.dfy(93,20): Error: the results of lemma 'Allocated' cannot be bound in an expression, because its postcondition uses 'allocated'
+github-issue-199-conditions.dfy(99,14): Error: the results of lemma 'Old' cannot be bound in an expression, because its postcondition uses 'old'
+github-issue-199-conditions.dfy(103,16): Error: the results of lemma 'Fresh' cannot be bound in an expression, because its postcondition uses 'fresh'
+github-issue-199-conditions.dfy(109,20): Error: the results of lemma 'Unchanged' cannot be bound in an expression, because its postcondition uses 'unchanged'
+github-issue-199-conditions.dfy(115,27): Error: the results of lemma 'TwoStateFunction' cannot be bound in an expression, because its postcondition uses the twostate function 'Increase'
+github-issue-199-conditions.dfy(119,21): Error: the results of lemma 'AllObjects' cannot be bound in an expression, because its postcondition has a forall expression that depends on the set of allocated references (values of 'o', of type 'C', may contain references)
+github-issue-199-conditions.dfy(129,21): Error: the results of lemma 'AllOfAType' cannot be bound in an expression, because its postcondition has a forall expression that depends on the set of allocated references (values of 'y', of type 'T', may contain references)
+github-issue-199-conditions.dfy(137,26): Error: the results of lemma 'SetOfAllObjects' cannot be bound in an expression, because its postcondition has a set comprehension that depends on the set of allocated references (values of 'o', of type 'C', may contain references)
+github-issue-199-conditions.dfy(143,26): Error: the results of lemma 'InASecondClause' cannot be bound in an expression, because its postcondition uses 'old'
+github-issue-199-conditions.dfy(151,14): Error: the results of lemma 'Old' cannot be bound in an expression, because its postcondition uses 'old'
+github-issue-199-conditions.dfy(156,24): Error: the results of lemma 'Old' cannot be bound in an expression, because its postcondition uses 'old'
+github-issue-199-conditions.dfy(162,62): Error: the results of lemma 'OwnResults' cannot be bound in an expression, because its postcondition depends on the heap and on bound results of 'OwnResults' itself, so what it reads cannot be checked
+github-issue-199-conditions.dfy(164,58): Error: the results of lemma 'Second' cannot be bound in an expression, because its postcondition depends on the heap and on bound results of 'Second' itself, so what it reads cannot be checked
+github-issue-199-conditions.dfy(166,51): Error: the results of lemma 'First' cannot be bound in an expression, because its postcondition depends on the heap and on bound results of 'First' itself, so what it reads cannot be checked
+github-issue-199-conditions.dfy(173,21): Error: the results of lemma 'OwnResults' cannot be bound in an expression, because its postcondition depends on the heap and on bound results of 'OwnResults' itself, so what it reads cannot be checked
+github-issue-199-conditions.dfy(179,16): Error: the results of lemma 'First' cannot be bound in an expression, because its postcondition depends on the heap and on bound results of 'First' itself, so what it reads cannot be checked
+github-issue-199-conditions.dfy(185,17): Error: the results of lemma 'Second' cannot be bound in an expression, because its postcondition depends on the heap and on bound results of 'Second' itself, so what it reads cannot be checked
+23 resolution/type errors detected in github-issue-199-conditions.dfy
