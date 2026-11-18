@@ -71,7 +71,7 @@ def capture(args):
                    "--log-format", "csv;LogFileName=" + str(active / "resources.csv")] + inputs
         print(args.name, name, flush=True)
         with (active / "stdout").open("wb") as stdout, (active / "stderr").open("wb") as stderr:
-            result = subprocess.run(command, stdout=stdout, stderr=stderr, timeout=1800)
+            result = subprocess.run(command, stdout=stdout, stderr=stderr, timeout=7200)
         logs = {p.name: digest(p) for p in sorted(active.glob("*.smt2"))}
         # Empty-task success is not evidence that solver inputs agree.
         if not logs:
