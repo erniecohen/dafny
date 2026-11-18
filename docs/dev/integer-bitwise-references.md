@@ -73,8 +73,10 @@ be positive. Width zero and inactive shifts require no such premises. The
 foundation proves power agreement by induction first, then uses M1 positivity to
 discharge those premises. AND and population agreement use induction at raw
 signatures. Other agreements follow their exact defining dependencies. None of
-these proof targets uses the later consumer range contracts. The wrappers then
-prove range from agreement with M1, and transport M1's checked laws by equality.
+these proof targets uses the later consumer range contracts. The independent
+`IntegerBitwiseCompilerFoundation.dfy` input includes only M1 and those twelve
+proofs; it is checked separately with every included body before the consumer
+file is checked. The wrappers then prove range from agreement with M1, and transport M1's checked laws by equality.
 
 This is a trusted **definitional rule**, not a soundness repair and not an
 additional-axioms bridge. It therefore ships behind its own opt-in language option,
@@ -85,8 +87,8 @@ Both options off constructs no new builtin and preserves the existing path.
 
 `issue193-fixed-references.py` checks the actual emitted Boogie equalities against
 M1's bodies, failing on unsupported syntax. It independently checks the companion
-and included M1 bodies, and runs false and wrong-result controls with the defining
-facts active. `--full` additionally transports the existing M1 law calls and
+foundation together with included M1 bodies, then the consumer bodies, and runs
+false and wrong-result controls with the defining facts active. `--full` additionally transports the existing M1 law calls and
 symbolic width clients. Positive/bootstrap scopes have a 2,000,000-RU ceiling;
 negative controls have a 200,000-RU ceiling. Warnings, resource exhaustion,
 unexpected diagnostics or missing logged scopes fail the check.

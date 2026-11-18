@@ -12,11 +12,12 @@ import subprocess
 ROOT = Path(__file__).resolve().parents[2]
 MODEL = ROOT / 'Source/DafnyStandardLibraries/optional/IntegerBitwise.dfy'
 COMPANION = MODEL.with_name('IntegerBitwiseCompiler.dfy')
+FOUNDATION = MODEL.with_name('IntegerBitwiseCompilerFoundation.dfy')
 INPUTS = ROOT / 'Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/Inputs/issue193'
 FUNCTIONS = dict(Power='P', Normalize='norm', And='andNat', Not='notNat', Or='orNat', Xor='xorNat', AndNot='andNotNat', LeftShift='shlNat', RightShift='shrNat', LeftRotate='rolNat', RightRotate='rorNat', Population='popNat')
 FOUNDATIONS = dict(Power='n', Normalize='n,-1', And='n,5,-3', Not='n,-1',
-                   Or='n,5,-3', Xor='n,5,-3', AndNot='n,-1,3', LeftShift='n,-1,-1',
-                   RightShift='n,-1,n', LeftRotate='n,-1,-1', RightRotate='n,-1,n', Population='n,-1')
+                   Or='n,5,-3', Xor='n,5,-3', AndNot='n,-1,3', LeftShift='n,-1,0',
+                   RightShift='n,-1,0', LeftRotate='n,-1,-1', RightRotate='n,-1,n', Population='n,-1')
 
 
 def load(name, path):
@@ -56,7 +57,7 @@ def main():
         checks.append(name)
         return text
 
-    def verify(path, name, errors=(), extra=(), limit=200000):
+    def verify(path, name, errors=(), extra=(), limit=200000, failed_scopes=None):
         log = out / (name + '.csv')
         command = ['verify', str(path), *common, '--resource-limit', str(limit),
                    '--log-format', 'csv;LogFileName=' + str(log), *extra]
@@ -66,7 +67,7 @@ def main():
         with log.open(encoding='utf-8-sig') as stream:
             rows = list(csv.DictReader(stream))
         assert rows and all(r['TestResult.Outcome'] in ('Passed', 'Failed') for r in rows), (name, rows)
-        assert sum(r['TestResult.Outcome'] == 'Failed' for r in rows) == len(errors), (name, rows)
+        assert sum(r['TestResult.Outcome'] == 'Failed' for r in rows) == (len(errors) if failed_scopes is None else failed_scopes), (name, rows)
         return rows
 
     def source(name, lines):
@@ -74,29 +75,44 @@ def main():
         path.write_text('\n'.join(lines) + '\n')
         return path
 
+    def activate(name, parameters):
+        lines = ['  B.Power(n);', f'  B.{name}({parameters});']
+        if name == 'RightShift':
+            lines += ['  B.Power(0);']
+        elif name == 'LeftRotate':
+            lines += ['  if n > 0 { B.Power(n-(-1)%n); }']
+        elif name == 'RightRotate':
+            lines += ['  if n > 0 { B.Power(n%n); }']
+        function = FUNCTIONS[name]
+        unfold = 'unfold' + function[0].upper() + function[1:].replace('Nat', '')
+        lines += [f'  IntegerBitwiseModel.{unfold}({parameters});']
+        return lines
+
     header = ['include "' + os.path.relpath(COMPANION, out) + '"',
               'import B = Std.Arithmetic.IntegerBitwiseCompiler']
-    checked_source = re.sub(r'//[^\n]*', '', COMPANION.read_text())
+    checked_source = re.sub(r'//[^\n]*', '', FOUNDATION.read_text() + COMPANION.read_text())
     assert not re.search(r'\b(assume|expect)\b|\{:\s*(axiom|verify|extern)', checked_source)
     lemmas = set(re.findall(r'\blemma\s+(?:\{:[^}]*\}\s*)*(\w+)\s*\(', checked_source))
     assert set(FOUNDATIONS) <= lemmas
-    # Positive proofs check every body, including M1, without assuming consumer ranges.
-    verify(COMPANION, 'bootstrap', extra=['--verify-included-files'], limit=2000000)
+    # This input contains only M1 and raw-reference agreement proofs, with no
+    # consumer contracts in scope. Verify every body before checking consumers.
+    verify(FOUNDATION, 'foundation', extra=['--verify-included-files'], limit=2000000)
+    verify(COMPANION, 'bootstrap', limit=2000000)
     emission = source('emission', ['lemma Emit() ensures IntegerBitwiseModel.P(0) == 1',
                                   '{ IntegerBitwiseModel.unfoldP(0); }'])
     bpl = out / 'emission.bpl'
     verify(emission, 'emission', extra=['--bprint', str(bpl)])
     load('slices', INPUTS / 'unfold-slices.py').check(bpl, MODEL, args.z3.resolve(), out)
 
-    # Every fixed equation is active via its foundation call, followed by false
-    # and by a wrong result. The latter is a direct disagreement with the model.
+    # Each assertion site directly calls its fixed unfold lemma, after obtaining
+    # the required raw power positivity from the checked foundation.
     for axioms in (False, True):
         lines, errors = list(header), []
         for n in ((0, 1, 3, 8, 16, 32, 64) if args.full else (0, 3, 64)):
             for name, parameters in FOUNDATIONS.items():
                 for wrong in (False, True):
-                    lines += [f'lemma {{:induction false}} {name}_{n}_{wrong}() {{', f'  var n := {n};',
-                              f'  B.{name}({parameters});']
+                    lines += [f'lemma {{:induction false}} {name}_{n}_{wrong}() {{', f'  var n := {n};']
+                    lines += activate(name, parameters)
                     # Disagree with this particular checked reference function.
                     function = FUNCTIONS[name]
                     lines += [f'  assert B.{function}({parameters}) != IntegerBitwiseModel.{function}({parameters});' if wrong else '  assert false;']
@@ -131,15 +147,27 @@ def main():
     verify(INPUTS / 'definedness.dfy', 'definedness',
            [(line, 'a precondition for this call could not be proved') for line in range(1, 6)] +
            [(6, "value does not satisfy the subset constraints of 'nat'")])
-    cumulative, errors = list(header), []
+    cumulative, errors, reverse_errors = [], [], []
     for wrong in (False, True):
-        cumulative += [f'lemma LambdaCumulative_{wrong}() {{', '  var n := 3;',
-                       '  var f := (x:int) requires x > 0 => x;', '  assert f.requires(1);']
-        cumulative += [f'  B.{name}({parameters});' for name, parameters in FOUNDATIONS.items()]
-        cumulative += ['  assert IntegerBitwiseModel.P(3) != B.P(3);' if wrong else '  assert false;']
+        cumulative += [f'lemma LambdaCumulative_{wrong}(x:int) {{', '  var n := 3;',
+                       '  var f := (y:int) requires y > 0 => y;', '  assert f.requires(1);',
+                       '  assert f.requires(x) ==> x > 0;']
+        reverse_errors.append((len(cumulative), 'assertion might not hold'))
+        # Establish concrete power denominators by the actual raw equations.
+        # This scalar control has no dependency on the sequence proof companion.
+        cumulative += [f'  IntegerBitwiseModel.unfoldP({width});' for width in range(4)]
+        for name, parameters in FOUNDATIONS.items():
+            function = FUNCTIONS[name]
+            unfold = 'unfold' + function[0].upper() + function[1:].replace('Nat', '')
+            cumulative += [f'  IntegerBitwiseModel.{unfold}({parameters});']
+        cumulative += ['  assert IntegerBitwiseModel.P(3) != 8;' if wrong else '  assert false;']
         errors.append((len(cumulative), 'assertion might not hold'))
         cumulative += ['}']
-    verify(source('lambda-cumulative', cumulative), 'lambda-cumulative', errors, ['--additional-axioms:true'])
+    lambda_path = source('lambda-cumulative', cumulative)
+    verify(lambda_path, 'lambda-cumulative', errors, ['--additional-axioms:true'])
+    # This reverse domain observation is the actual missing fact from issue 97.
+    # OFF must lose it while still rejecting the final false/wrong assertions.
+    verify(lambda_path, 'lambda-cumulative-off', errors + reverse_errors, ['--additional-axioms:false'], failed_scopes=2)
 
     # Both options off / bridge option alone must not install a public signature.
     for axioms in (False, True):

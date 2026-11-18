@@ -10,7 +10,8 @@ M1 sources need no feature option and change no packaged `.doo`.
 
 For the M2 compiler-owned interface, include `IntegerBitwiseCompiler.dfy` and
 enable `--integer-bitwise`. It proves agreement between all twelve raw references
-and M1, then exposes checked range contracts and transports the existing laws.
+and M1 in the separate `IntegerBitwiseCompilerFoundation.dfy` verification
+input, then exposes checked range contracts and transports the existing laws.
 Its module is `Std.Arithmetic.IntegerBitwiseCompiler`. See
 [the interface, mapping and model argument](../../../docs/dev/integer-bitwise-references.md).
 The separate digit adapter continues to use the original ordinary model.
