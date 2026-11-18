@@ -13,7 +13,7 @@
 // RUN: %exits-with 0 %baredafny build --target:lib --solver-path %review-z3 --use-basename-for-filename --show-snippets:false --standard-libraries:false --refinement-extends "%S/Inputs/github-issue-88-library.dfy" --output "%t-lib.doo" >> "%t"
 // RUN: %exits-with 4 %baredafny verify --solver-path %review-z3 --use-basename-for-filename --show-snippets:false --standard-libraries:false --refinement-extends --library "%t-lib.doo" "%S/Inputs/github-issue-88-client.dfy" >> "%t"
 // RUN: %exits-with 4 %baredafny verify --solver-path %review-z3 --use-basename-for-filename --show-snippets:false --standard-libraries:false --refinement-extends --type-system-refresh=false --general-newtypes=false --library "%t-lib.doo" "%S/Inputs/github-issue-88-client.dfy" >> "%t"
-// RUN: %exits-with 2 %baredafny verify --solver-path %review-z3 --use-basename-for-filename --show-snippets:false --standard-libraries:false --refinement-extends --library "%t-lib.doo" "%S/Inputs/github-issue-88-client-rejected.dfy" >> "%t"
+// RUN: %exits-with 2 %baredafny verify --solver-path %review-z3 --use-basename-for-filename --show-snippets:false --standard-libraries:false --refinement-extends --legacy-no-modular-termination --library "%t-lib.doo" "%S/Inputs/github-issue-88-client-rejected.dfy" >> "%t"
 // RUN: %exits-with 1 %baredafny verify --solver-path %review-z3 --use-basename-for-filename --show-snippets:false --standard-libraries:false --library "%t-lib.doo" "%S/Inputs/github-issue-88-plain-client.dfy" >> "%t"
 // RUN: %exits-with 0 %baredafny verify --solver-path %review-z3 --use-basename-for-filename --show-snippets:false --standard-libraries:false --refinement-extends --library "%t-lib.doo" "%S/Inputs/github-issue-88-plain-client.dfy" >> "%t"
 // RUN: %resolve --refinement-extends --rprint "%t.print" "%S/Inputs/github-issue-88-print.dfy" >> "%t"
@@ -410,3 +410,8 @@ module Generic1 refines Generic0 {
     assert |s.Wrapped()| == 1; // error
   }
 }
+
+// The blanket foreign-parent restriction is a legacy rule. Under revision 3 a subtrait is allowed,
+// but a concrete foreign implementation must be a leaf (or establish a public bound).
+// RUN: python3 "%S/Inputs/github-issue-88-boundary.py" "%repositoryRoot/Binaries/net10.0/DafnyDriver.dll" "%repositoryRoot/Binaries/z3/bin/z3-5.1.0" "%t-lib.doo" "%t.boundary" > "%t.boundary.log"
+// RUN: %diff "%S/Inputs/github-issue-88-boundary.expect" "%t.boundary.log"
