@@ -93,3 +93,9 @@ check-examples:
 
 clean:
 	rm -rf build
+
+# On-only checked Std; never use --hidden-no-verify for these certificates.
+Z3 ?= z3
+CHECKED_CORES ?= 3
+build-checked-standard-libraries:
+	python3 modular-termination/overlay/build-checked.py --dafny '$(DAFNY)' --solver '$(Z3)' --cores $(CHECKED_CORES)

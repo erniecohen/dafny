@@ -53,7 +53,7 @@ github-issue-211-warning-trait.dfy(29,29): Warning: trait 'V' has {:termination 
 github-issue-211-warning-trait.dfy(21,20): Error: decreases clause might not decrease (the dispatched callee has no 'decreases {:global}' bound, which --modular-termination requires of a member of a {:termination false} trait)
 
 Dafny program verifier finished with 1 verified, 1 error
-bounded trait, --modular-termination, --warn-unchecked-termination=false: verifies
+bounded trait, default, --warn-unchecked-termination=false: verifies
 
 Dafny program verifier finished with 3 verified, 0 errors
 bounded trait, --modular-termination: warning, fails without --allow-warnings

@@ -419,8 +419,13 @@ true - All class instances are raw pointers and need to be manually deallocated"
   public static readonly Option<bool> LegacyStoredFunctionCallbacks = new("--legacy-stored-function-callbacks", () => false,
     "Use the legacy, unsound rule that, when a constructor stores a function in a field, looks for the type of the object only in the type of the function and its type arguments, not inside the declarations of datatypes, classes, newtypes and subset types, for migration and comparison only.") { IsHidden = true };
 
+  public static readonly Option<bool> LegacyNoModularTermination = new("--legacy-no-modular-termination", () => false,
+    "Use the legacy, unsound-by-premise rules of termination across modules: a type may extend a trait of another module only if the trait has {:termination false} or the type @AssumeCrossModuleTermination, 'decreases {:global} E' and 'decreases {:callback f} E' are ordinary decreases clauses, and none of the checks of global bounds, leaves and {:termination_closed} promises runs; for migration and comparison only.") { IsHidden = true };
+
   public static readonly Option<bool> ModularTermination = new("--modular-termination", () => false,
-    "Experimental; it does not yet establish termination in every program. Accept global and callback decreases bounds. Under this option, any trait may be extended from any module. A member with a global bound binds every implementation, and a dispatched call to it requires strict global-bound descent. A foreign implementation of a member without one must declare a bound of its own, or be a leaf, which reaches no dispatch or unknown application; a dispatched call to such a member is TOP. {:termination false} and @AssumeCrossModuleTermination keep their unchecked meaning for members without a bound. Imported operations are General at their declared bound, or TOP, unless they publish a checked {:termination_closed} promise; private bodies never strengthen an imported contract. Exact General calls require nonincrease as well as ordinary termination. Constants and type/iterator evaluation hooks also use public effects. Closed code and bound computations cannot reach open dispatch, unknown applications or imported General code. Callback formation, forwarding and application retain their checked bounds. Declares the type bounded<O, F> of bounded callables, formed by bounded.certify(a, f) and applied only below the bound a. Show call classifications with --show-hints. Libraries are admitted only as .doo files built under this option, whose recorded program, options and termination contracts are checked when loaded. See the Reference Manual for restrictions. Disabled by default.");
+    "Migration aid: run the modular termination checks as if unchecked legacy termination markers were absent. " +
+    "The checked design, bounded callables and certificate admission are available by use without this option. " +
+    "Experimental; the design has not been declared sound. See the Reference Manual.") { IsHidden = true };
 
   public static readonly Option<string> ModularTerminationTrust = new("--modular-termination-trust", () => "none",
     @"
@@ -429,6 +434,11 @@ none (default) - A library is recorded and admitted only when its program has no
 standard-library - Also record and admit the bodyless {:axiom} ghost lemmas and functions of the standard library that Dafny's built-in list names, when their statement and context match the list. Results then hold only if those premises are true; the verifier's summary and 'dafny audit' report them.".TrimStart()) {
     IsHidden = true
   };
+
+  public static readonly Option<string> ModularTerminationRuntimeTrust = new("--modular-termination-runtime-trust", () => "none",
+    "Which separately reviewed runtime contracts a modular certificate may assume: none (default), or standard-library. " +
+    "The latter assumes every listed runtime contract, including termination, and reports each by name. " +
+    "It does not select the ghost-premise trust list. See the Reference Manual.") { IsHidden = true };
 
   public static readonly Option<bool> InvariantConstructorInference = new("--invariant-constructor-inference", () => false,
     "With the refreshed type system, let a datatype constructor argument whose formal type uses a type parameter in a non-variant position, such as the tail of a list, fix that type argument, instead of widening it to the type of another argument. Every argument is still checked against the chosen type. Disabled by default.");
@@ -661,6 +671,7 @@ If verification fails, report a detailed counterexample for the first failing as
 
     DafnyOptions.RegisterLegacyUi(AdditionalAxioms, DafnyOptions.ParseBoolean, "Verification options", legacyName: "additionalAxioms");
     DafnyOptions.RegisterLegacyUi(AllowAxioms, DafnyOptions.ParseBoolean, "Verification options", legacyName: "allowAxioms", defaultValue: true);
+    DafnyOptions.RegisterLegacyUi(LegacyNoModularTermination, DafnyOptions.ParseBoolean, "Verification options", legacyName: "legacyNoModularTermination");
     DafnyOptions.RegisterLegacyBinding(ShowHints, (options, value) => {
       options.PrintTooltips = value;
     });
@@ -774,6 +785,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
 
     QuantifierSyntax = QuantifierSyntax.FromAmong("3", "4");
     ModularTerminationTrust = ModularTerminationTrust.FromAmong("none", "standard-library");
+    ModularTerminationRuntimeTrust = ModularTerminationRuntimeTrust.FromAmong("none", "standard-library");
     DafnyOptions.RegisterLegacyBinding(JsonDiagnostics, (options, value) => {
       if (value) {
         options.Printer = new DafnyJsonConsolePrinter(options);
@@ -887,6 +899,10 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterGlobalOption(WarnShadowing, OptionCompatibility.OptionLibraryImpliesLocalWarning);
     OptionRegistry.RegisterGlobalOption(UseStandardLibraries, OptionCompatibility.OptionLibraryImpliesLocalError);
     OptionRegistry.RegisterGlobalOption(Referrers, OptionCompatibility.CheckOptionMatches);
+    // The opt-out weakens the local checks. A legacy consumer may use an ordinary library
+    // from an older/default build; complete certificates are separately refused under the opt-out.
+    // The checked consumer still refuses a library explicitly built under the legacy opt-out.
+    OptionRegistry.RegisterGlobalOption(LegacyNoModularTermination, OptionCompatibility.OptionLibraryImpliesLocalError);
     OptionRegistry.RegisterOption(TranslateStandardLibrary, OptionScope.Cli);
     OptionRegistry.RegisterOption(WarnAsErrors, OptionScope.Cli);
     OptionRegistry.RegisterOption(ProgressOption, OptionScope.Cli);
@@ -995,6 +1011,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(UncheckedInvariantExtension, OptionScope.Cli);
     OptionRegistry.RegisterOption(ModularTermination, OptionScope.Cli);
     OptionRegistry.RegisterOption(ModularTerminationTrust, OptionScope.Cli);
+    OptionRegistry.RegisterOption(ModularTerminationRuntimeTrust, OptionScope.Cli);
     OptionRegistry.RegisterOption(WarnUncheckedTermination, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacyNoUncheckedTerminationWarning, OptionScope.Cli);
     OptionRegistry.RegisterOption(InvariantConstructorInference, OptionScope.Cli);

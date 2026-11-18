@@ -1,5 +1,5 @@
 // A bodyless static function of a trait is an assumption too.
-module Bad {
+module Bad { const {:termination_closed} CertificateRequested: bool := true
   trait T {
     static ghost function F(): int
       ensures false

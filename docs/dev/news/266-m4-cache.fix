@@ -1,0 +1,1 @@
+Bypass translation snapshots for modular-termination programs activated by their declarations, as well as by the migration option. Repeated verification reconstructs the current global analysis and proof coverage.

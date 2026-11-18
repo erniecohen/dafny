@@ -389,7 +389,7 @@ the two components have different representations.
 
 The hidden `--legacy-decreases-order` switch restores the previous, unsound
 comparison for migration and comparison only. It applies to ordinary and modular
-checks; `--modular-termination` itself remains opt-in. The repair is described in
+checks; the hidden `--modular-termination` remains a migration aid for unchecked legacy markers. The repair is described in
 https://github.com/erniecohen/dafny/issues/264.
 
 #### 7.1.3.1. Well-founded orders: `decreases e by O` (experimental) {#sec-decreases-by}
@@ -559,8 +559,7 @@ another module only if the trait is marked `{:termination false}` or the type
 `@AssumeCrossModuleTermination`; calls through such a trait are not checked for
 termination, and a program can recurse through them forever and still verify.
 
-The option `--modular-termination` (off by default) checks these calls.  A method or
-function may declare a _global bound_:
+Dafny checks these calls.  A method or function may declare a _global bound_:
 
 <!-- %no-check -->
 ```dafny
@@ -576,7 +575,7 @@ not concatenated.  A member has at most one `decreases {:global}` clause.  An ov
 that declares none inherits its parent's; one that declares its own must give a bound no
 greater than its parent's, as an override's ordinary decreases clause must.
 
-Under the option, any trait may be extended from any module, with no `{:termination false}`
+Any trait may be extended from any module, with no `{:termination false}`
 or `@AssumeCrossModuleTermination`. What an implementation may do depends on whether the member
 it implements declares a global bound:
 
@@ -615,7 +614,19 @@ smaller bound, and a padded tuple descends as any tuple does.
 
 The legacy forms keep their meaning: an undeclared member of a trait with `{:termination false}`, or
 implemented by a type with `@AssumeCrossModuleTermination`, is exempt from the leaf rule, as an
-unchecked premise that `--warn-unchecked-termination` reports. Declared bounds still bind it.
+unchecked premise that `--warn-unchecked-termination` reports. Declared bounds still bind it. A
+dispatched call from code with a bound to an undeclared member of a `{:termination false}` trait is
+accepted on the same premise, as it is in Dafny 4.11; the experimental `--modular-termination`
+rejects it, as it rejects any call to TOP.
+
+The checks run on every program that uses this design: one that declares a global or callback
+bound, promises `{:termination_closed}`, or has a type that extends a trait of another module
+with neither legacy form, or uses a `bounded` callable type. A program that does none of these is accepted or rejected as in Dafny
+4.11, with the same proof obligations. The hidden option `--legacy-no-modular-termination`, kept
+for migration and comparison, restores the rules of Dafny 4.11: a type may extend a trait of
+another module only with a legacy form, `decreases {:global} E` and `decreases {:callback g} E`
+are ordinary decreases clauses, and none of these checks runs. A library built under one setting
+of that option cannot be used under the other.
 
 A missing bound is above every other.  So a call from a member with a global bound to a member
 without one always fails, and so does a foreign implementation of a member without one that calls back
@@ -692,6 +703,14 @@ module Y {
 }
 ```
 
+Refinement checks inherited bodies against their global and callback bounds in the refined
+module, including bounds acquired through a new parent trait. The inherited calls must satisfy
+the refined contracts even when the refinement base had no bound. This includes forwarding
+bounded values from an unbounded caller to a refined callback contract. Unrelated assertions already
+checked by the refinement base remain assumed. `--legacy-no-modular-termination` restores the
+previous modular-termination behavior, including when the earlier experimental checks are
+explicitly selected with `--modular-termination`.
+
 Here `Y.F` inherits the bound `n` and calls `L.H(this, n)`, whose bound `n` is not larger;
 `L.H` makes the dispatched call at the smaller bound `n - 1`. Without the bound on `H`, or with
 `t.F(n)` in place of `t.F(n - 1)`, or with a larger bound such as `n + 1` on `H`, the program is
@@ -705,18 +724,18 @@ as the body of its prefix lemma, which has the same bounds, and a call `L#[k](..
 is checked as a call of `L`.
 
 A lemma with a global bound that can reach a dispatched call runs under that bound, and so does every
-instance of itself that its proof uses. So under the option its automatic induction hypothesis covers
+instance of itself that its proof uses. So its automatic induction hypothesis covers
 only the instances whose bound is at most the lemma's own bound (below it, if the lemma is itself an
 overridable member of an extensible trait). The same holds for the induction hypothesis of a prefix
 lemma, and for the case that Dafny generates for a prefix lemma at a limit ordinal. A proof that used
-one of these at a larger bound does not verify under the option.
+one of these at a larger bound does not verify.
 
 Some code belongs to no method or function: the constraint and the witness of a subset type or
 newtype, the default values of a datatype's or class's components (which a witness or an allocation
 may evaluate), and the initializer of a constant. Such code has no global bound, so it is TOP.
 It runs where a type test `x is T`, a conversion `x as T`, a subset check (when a value is assigned,
 passed or returned at type `T`), or the creation of a default value evaluates it, and where a
-constant is read. Under the option this counts as a call from the member in which it happens, under the
+constant is read. This counts as a call from the member in which it happens, under the
 same-bound rule: if that code can reach a dispatched call, a member with a global bound may not
 evaluate it, and a member without one reaches the dispatched call too, so that a member with a bound
 may not call it either. Dafny does not track which of these evaluations happen at run time, so it
@@ -745,9 +764,9 @@ General(TOP) unless its owner publishes `{:termination_closed}`. The attribute i
 constants, type declarations and iterators. On a type it covers its evaluation hooks, including
 field/component types and defaults, rather than its virtual members; on an iterator it covers
 its protocol and specifications. Public signature structure may establish that a hook is absent.
-Invalid attribute arguments or placement are rejected under the option.
+Invalid attribute arguments or placement are rejected.
 
-A call through a function value runs code that the call does not name. Under the option, an application
+A call through a function value runs code that the call does not name. An application
 `f(x)` (and a call of `f.requires` or `f.reads`, and the initializing function of `seq(n, f)` and
 `new T[n](f)`) counts as follows:
 
@@ -860,12 +879,14 @@ can reach one, and each call through a function value that is not a lambda expre
 **This version does not yet establish termination in every program.** A program that it accepts
 can still fail to terminate, and can prove `false`, through what it does not check:
 
-* A trait is open because of `{:termination false}`, or because of the extensions in the
-  program being verified. A library verified on its own therefore does not see a type
+* The legacy forms are premises. A library verified on its own does not see a type
   that a later program declares with `@AssumeCrossModuleTermination` to extend one of its
-  traits. Calls through such a trait, and to the code that reaches them, were verified without
-  the rules. `{:termination false}` and `@AssumeCrossModuleTermination` keep their meaning;
-  `dafny audit` reports them, and so does `dafny verify`, by default (`--warn-unchecked-termination`).
+  traits, or a later implementation of a `{:termination false}` trait. Calls through such a trait,
+  and to the code that reaches them, were verified without the rules. `{:termination false}` and
+  `@AssumeCrossModuleTermination` keep their meaning; `dafny audit` reports them, and so does
+  `dafny verify`, by default (`--warn-unchecked-termination`). A later extension without a legacy form
+  is checked in the program that declares it: its implementations of members without a bound are
+  leaves, and those of members with one respect the bound.
 
 It also rejects some programs that terminate:
 
@@ -890,13 +911,23 @@ It also rejects some programs that terminate:
   program that reaches Dafny through another front end, serialized, keeps them as ordinary decreases
   clauses with argument-less `{:global}` attributes or one-argument `{:callback g}` attributes.
 
-Under the option, a library is admitted only as a `.doo` file built with
-`dafny build --target:lib --modular-termination`. Such a build writes a termination record into the
-library: a hash of its program, of the build of Dafny that verified it (its Dafny and Boogie
+A library that Dafny does not verify with the program and that was not verified under these rules is
+refused when it uses them: a source or `.dll` file given with `--library`, or a `.doo` file written by
+a version of Dafny without them, that declares a global or callback bound or a `{:termination_closed}`
+promise, uses a bounded callable type, or extends a trait of another module without a legacy form. Its leaf and bound obligations
+were never checked. Verify such a library with the program, or rebuild it. A library that uses none of
+these is read as before.
+
+A library that uses the checked design is admitted only as a certified `.doo` file.
+`dafny build --target:lib` writes a termination record whenever its program uses the design. The record includes
+a hash of its program, of the build of Dafny that verified it (its Dafny and Boogie
 assemblies and the prelude file it read), and of the options that change what a proof means (each also
 listed by name), the version and a hash of the Z3 binary that verified it, and the termination contract
 of each module it defines. A contract is the module's interface: its declarations with the bodies of methods, lemmas,
 iterators and by-method implementations left out; function bodies stay, since a client may reveal them.
+Issuing a complete certificate requires complete certificates for every unverified dependency,
+even an ordinary library that declares no termination promises. Ordinary libraries remain usable
+as TOP code in clients, but their unchecked functional premises cannot be laundered into a complete certificate.
 The record also lists the contracts of the libraries the build was verified against, and ends with a
 hash of the whole record. The build writes a library only when its whole program was verified, every
 verification task conclusively, without `--no-verify`, `--boogie` arguments, `{:verify false}`, `{:only}`,
@@ -915,31 +946,31 @@ that Dafny generates for an iterator as axioms, and the build refuses a library 
 build reports the first of these it finds and writes nothing. `--allow-warnings` does not hide them; it is
 recorded with the other options.
 
-Under the option, a module cannot refine or replace a module of a library: it would inherit bodies
+In a program that uses the checked design, a module cannot refine or replace a module of a library: it would inherit bodies
 that are not part of the library's contracts, so a change to them would not be detected.
 
-Under the option, `--boogie` arguments are refused, both when a library is built and when one is loaded:
+For a modular certificate, `--boogie` arguments are refused, both when a library is built and when one is loaded:
 many of them (such as `/loopUnroll`, `/noVerify`, `/proc` and some `/proverOpt` settings) can make a
 program verify that is not proved. Only arguments on a reviewed list of ones that cannot weaken a proof
 are allowed, and that list is empty for now. The options are recorded with their values as given. Two libraries that both declare
 top-level members outside any module, in the default module, cannot be loaded together, since both
 provide the module `_default`.
 
-When a program loads such a library under the option, Dafny recomputes these hashes and the contracts
+When a program loads such a library, Dafny recomputes these hashes and the contracts
 from the library's program, and rejects the library, naming the mismatch, when any differs: its program,
 its contracts, its record (missing, incomplete, of an unknown format or not matching its own hash), the
 build of Dafny or its prelude, the Z3 binary that the current run uses (the library must be checked
 with the same one; every command that loads libraries, `dafny resolve`, `dafny audit`, `dafny doc`,
 `dafny extract` and `dafny format` included, takes `--solver-path` to name it), or an option whose value differs from the current one. A library verified against another must be loaded
 with it, and with one that provides the same contracts: a dependency whose method bodies changed is
-accepted, and one whose contracts changed is rejected. Under the option, Dafny also rejects a source
-file given with `--library`, a `.dll` library and the bundled standard library, which carry no record;
-`--standard-libraries:false` leaves the standard library out. In its place, the part of the standard
-library that verifies with no unchecked premise can be built as a recorded library from
-`Source/DafnyStandardLibraries/modular-termination` and loaded with `--library`; its `README.md` lists the
-modules it leaves out and why. Without the option, a library built with
-it is rejected, so that its record is never ignored; libraries built without the option are read as
-before.
+accepted, and one whose contracts changed is rejected. An unverified source or ordinary library
+that uses the design is rejected; ordinary libraries that use none of it remain usable as TOP code.
+They cannot serve as unverified dependencies of a complete certificate. The default standard-library
+catalog remains the ordinary legacy catalog. A certified core can be built from
+`Source/DafnyStandardLibraries/modular-termination` and loaded with `--library`; its `README.md`
+lists the included modules and trust boundaries. The separate checked catalog and its named
+trust-list opt-ins are described below. The hidden legacy opt-out rejects recorded libraries,
+so that their records are never silently ignored.
 
 The record certifies the program stored in the library, which is the program Dafny parsed from the
 library's sources, printed back. After verifying the sources, the build checks that the stored program
@@ -967,6 +998,21 @@ premises only when it selects the same list, and then reports them in its own su
 `Source/DafnyStandardLibraries/modular-termination/trusted` builds the standard-library core together with
 `Axioms`, `RealCompleteness`, `Ordinal` and `Strings`, and its record lists all 18 premises.
 
+Runtime contracts use a **separate** opt-in, `--modular-termination-runtime-trust:standard-library`.
+Its default, `none`, admits no runtime assumptions. A target bundle that requires them is unavailable
+to modular certificates without this opt-in; its error explains the option. Selecting it does not
+select the ghost-premise trust list, or conversely. The reviewable list is
+`Source/DafnyCore/ModularTerminationRuntimeContracts.tsv`: each entry names one callable and pins
+its statement and context. Unlisted or changed contracts are rejected. Library records keep runtime
+premises separate from ghost premises, and verification summaries and `dafny audit` name the runtime
+contracts being assumed, including termination.
+
+A result using that option is conditional on every named runtime contract: termination, functional
+behavior and frame/effect promises. For example, the verifier does not prove that a filesystem
+operation completes or a waiting lock is eventually acquired. The option assumes the corresponding
+runtime termination promises under their stated preconditions. It does not permit statement
+assumptions or omitted verification tasks in source bodies.
+
 A module of the library may refine another one that has opaque functions: the copies that the
 refinement makes of the reveal lemmas Dafny generates for them are generated too, and their
 `{:verify false}` is not refused. The library may also declare an `opaque const`: the reveal lemma
@@ -986,15 +1032,26 @@ that made it directly, so a helper without a bound, or with a larger one, could 
 dispatched call and hide a cycle; the rule for calls to known code rejects such a helper.
 
 Internally, the global clause is the attribute `{:global E}` on the decreases clause, and
-under the option that spelling is read the same way: `decreases {:global n} 7` declares
+that spelling is read the same way: `decreases {:global n} 7` declares
 the global bound `n` and the ordinary decreases clause `7`.
 
-Without the option, `decreases {:global} E` is an ordinary decreases clause with an
-unknown attribute, as before.
+Under `--legacy-no-modular-termination`, `decreases {:global} E` is an ordinary decreases clause
+with an unknown attribute, as in Dafny 4.11.
+
+The hidden `--modular-termination` is a migration aid: it applies the strict checks to legacy
+termination markers. It is unnecessary for bounded callables, well-founded order loading,
+certificate production or admission, and the named trust lists. The hidden
+`--legacy-no-modular-termination` disables this design and cannot admit a modular certificate.
+
+The legacy standard-library catalog remains the default when neither named trust list is selected.
+Selecting either named standard-library trust list requests the separate checked catalog with
+`--standard-libraries`. The checked common library requires the ghost-premise opt-in; target bundles
+also require the runtime-contract opt-in. Missing checked resources report the build instruction.
+Selecting one list never selects the other, and each runtime assumption remains named in the summary.
 
 #### 7.1.3.3. Bounded callables: `bounded<O, F>` (experimental) {#sec-bounded-callables}
 
-Under `--modular-termination`, the system module declares the type `bounded<O, F>` of a
+By default, the system module declares the type `bounded<O, F>` of a
 _bounded callable_: a function value of the arrow type `F` together with persistent evidence that
 every call of it terminates below a ghost bound in the order `O`
 (https://github.com/erniecohen/dafny/issues/266). A value is formed by `bounded.certify(a, f)`, its
@@ -1048,7 +1105,7 @@ Formation and application:
   that raw function out to code without a bound.
 
 `bounded` is a contextual name. A module that declares a type named `bounded`, or opens an import
-that declares one, uses that declaration instead. Without the option the name is not declared,
+that declares one, uses that declaration instead. Under the hidden legacy opt-out the name is not declared,
 and programs are compiled and verified exactly as before.
 
 ### 7.1.4. Framing ([grammar](#g-frame-expression)) {#sec-frame-expression}

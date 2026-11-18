@@ -215,15 +215,16 @@ namespace Microsoft.Dafny {
         var reporter = new ConsoleErrorReporter(options);
         if (options.CompilerName is null or "cs" or "java" or "go" or "py" or "js") {
           var targetName = options.CompilerName ?? "notarget";
-          var stdlibDooUri = DafnyMain.StandardLibrariesDooUriTarget[targetName];
+          var stdlibDooUri = DafnyMain.StandardLibraryUri(options, targetName);
           options.CliRootSourceUris.Add(stdlibDooUri);
           await foreach (var targetSpecificFile in DafnyFile.CreateAndValidate(OnDiskFileSystem.Instance, reporter, options, stdlibDooUri, Token.Cli, asLibrary)) {
             dafnyFiles.Add(targetSpecificFile);
           }
         }
 
-        options.CliRootSourceUris.Add(DafnyMain.StandardLibrariesDooUri);
-        await foreach (var targetAgnosticFile in DafnyFile.CreateAndValidate(OnDiskFileSystem.Instance, reporter, options, DafnyMain.StandardLibrariesDooUri, Token.Cli, asLibrary)) {
+        var commonStdlibUri = DafnyMain.StandardLibraryUri(options);
+        options.CliRootSourceUris.Add(commonStdlibUri);
+        await foreach (var targetAgnosticFile in DafnyFile.CreateAndValidate(OnDiskFileSystem.Instance, reporter, options, commonStdlibUri, Token.Cli, asLibrary)) {
           dafnyFiles.Add(targetAgnosticFile);
         }
       }
@@ -319,7 +320,7 @@ namespace Microsoft.Dafny {
           (verified, outcome, moduleStats) =
             await BoogieAsync(dafnyProgram.Reporter, options, baseName, boogiePrograms, programId);
 
-          if (options.Get(CommonOptionBag.ModularTermination) && options.Backend is LibraryBackend) {
+          if (ModularTermination.Active(options, dafnyProgram) && options.Backend is LibraryBackend) {
             dafnyProgram.ModularTerminationCompletion =
               await DafnyCore.ModularTerminationProducer.Complete(dafnyProgram, boogiePrograms, outcome, verified, dafnyFiles);
             if (options.UserConstrainedProcsToCheck &&
@@ -329,12 +330,18 @@ namespace Microsoft.Dafny {
                 DafnyCore.ModularTerminationRecords.RecordFailureMessage(failure));
             }
           }
-          if (options.Get(CommonOptionBag.ModularTermination)) {
+          if (ModularTermination.RulesEnabled(options)) {
             var completion = dafnyProgram.ModularTerminationCompletion;
             IReadOnlyList<DafnyCore.ModularTerminationPremise> own = completion is { Failure: null } ? completion.Premises : [];
             if (DafnyCore.ModularTerminationTrustList.Summary(own, completion?.TrustList,
                   dafnyProgram.Compilation.ModularTerminationPremises) is { } summary) {
               await options.OutputWriter.Status(summary);
+            }
+            IReadOnlyList<DafnyCore.ModularTerminationPremise> runtimeOwn =
+              completion is { Failure: null } ? completion.RuntimePremises : [];
+            if (DafnyCore.ModularTerminationRuntimeTrust.Summary(runtimeOwn,
+                  dafnyProgram.Compilation.ModularTerminationRuntimePremises) is { } runtimeSummary) {
+              await options.OutputWriter.Status(runtimeSummary);
             }
           }
 

@@ -1,0 +1,13 @@
+funcptr.c and cons.c (contains), stored values
+
+Dafny program verifier finished with 14 verified, 0 errors
+controls (assert false in each positive context), and levels that do not go down
+github-issue-211-stored-verify.dfy(14,4): Error: assertion might not hold
+github-issue-211-stored-verify.dfy(21,4): Error: assertion might not hold
+github-issue-211-stored-verify.dfy(28,4): Error: assertion might not hold
+github-issue-211-stored-verify.dfy(40,6): Error: decreases clause might not decrease (--modular-termination: the bound of the bounded value must be below the caller's 'decreases {:global}' bound)
+github-issue-211-stored-verify.dfy(48,81): Error: decreases clause might not decrease (modular termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
+github-issue-211-stored-verify.dfy(55,94): Error: decreases clause might not decrease (modular termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
+github-issue-211-stored-verify.dfy(60,19): Error: decreases clause might not decrease (modular termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
+
+Dafny program verifier finished with 18 verified, 7 errors

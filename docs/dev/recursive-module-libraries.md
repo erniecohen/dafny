@@ -29,9 +29,11 @@ with the original sibling imports, as in stage 5.
 This is the existing `.doo` trust model, not a signature or a proof certificate.
 In particular, it does not authenticate a party that can replace the program
 and recompute every digest, and it preserves the existing `--no-verify` library
-workflow. Ordinary modular-termination certification remains a separate policy:
-with `--modular-termination`, its complete-verification record and contracts are
-required in addition to the group inventory. The library's source is resolved
+workflow for programs outside the modular-termination design. Termination
+certification remains a separate policy: when those checks are active, either
+through `--modular-termination` or a use of the design under the default rules,
+the complete-verification record and contracts are required in addition to the
+group inventory. The library's source is resolved
 again, so invariant extension checks, raw-member inference, export views and the
 group call graph are recomputed rather than trusted from a serialized summary.
 

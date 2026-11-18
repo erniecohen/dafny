@@ -164,12 +164,6 @@ public class DafnyFile {
       return null;
     }
 
-    if (asLibrary && options.Get(CommonOptionBag.ModularTermination)) {
-      reporter.Error(MessageSource.Project, "modular_termination_admission", origin,
-        $"cannot use {options.GetPrintPath(filePath)} as a library under --modular-termination: a source library carries no checked termination record; build it into a .doo with 'dafny build --target:lib --modular-termination' and pass that instead");
-      return null;
-    }
-
     if (!options.Get(DoNotVerifyDependencies) && asLibrary && warnLibrary) {
       reporter.Warning(MessageSource.Project, "UnverifiedLibrary", origin,
         "The file '{0}' was passed to --library. Verification for that file might have used options incompatible with the current ones, or might have been skipped entirely. Use a .doo file to enable Dafny to check that compatible options were used",
@@ -254,6 +248,11 @@ public class DafnyFile {
       var resourceName = uri.LocalPath[1..];
       await using var stream = assembly.GetManifestResourceStream(resourceName);
       if (stream is null) {
+        if (resourceName.StartsWith("DafnyStandardLibraries-checked", StringComparison.Ordinal)) {
+          reporter.Error(MessageSource.Project, "modular_termination_admission", origin,
+            $"the checked standard-library bundle '{resourceName}' is unavailable; rebuild the checked standard libraries with 'make build-checked-standard-libraries'");
+          yield break;
+        }
         throw new Exception($"Cannot find embedded resource: {resourceName}");
       }
 
@@ -272,12 +271,12 @@ public class DafnyFile {
       } catch (ArgumentException e) {
         reporter.Error(MessageSource.Project, origin, e.Message);
         yield break;
-      } catch (Tomlyn.TomlException e) when (options.Get(CommonOptionBag.ModularTermination) ||
+      } catch (Tomlyn.TomlException e) when (ModularTermination.RulesEnabled(options) ||
                                              options.Get(CommonOptionBag.RecursiveModules)) {
         // Under --modular-termination a manifest that Dafny cannot read, such as one with an unknown key in
         // its record, is rejected like any other library modified after it was built, not left to crash.
         reporter.Error(MessageSource.Project, origin,
-          $"cannot load {options.GetPrintPath(filePath)} under {(options.Get(CommonOptionBag.ModularTermination) ? "--modular-termination" : "--recursive-modules")}: its manifest cannot be read: {System.Text.RegularExpressions.Regex.Replace(e.Message.Split('\n')[0].Trim(), @"^\(\d+,\d+\) : error : ", "").TrimEnd('.')}; the library was modified after it was built, or was built by another version of Dafny");
+          $"cannot load {options.GetPrintPath(filePath)} under {(ModularTermination.RulesEnabled(options) ? "--modular-termination" : "--recursive-modules")}: its manifest cannot be read: {System.Text.RegularExpressions.Regex.Replace(e.Message.Split('\n')[0].Trim(), @"^\(\d+,\d+\) : error : ", "").TrimEnd('.')}; the library was modified after it was built, or was built by another version of Dafny");
         yield break;
       }
     }
@@ -290,7 +289,8 @@ public class DafnyFile {
     // Under --modular-termination the orders library of --decreases-orders is verified with the program that loads
     // it, as its source is, instead of being admitted by a record (https://github.com/erniecohen/dafny/issues/245, M4).
     var verifiedHere = DecreasesOrders.VerifiesOrdersLibrary(options, uri);
-    if (options.Get(CommonOptionBag.ModularTermination) && !verifiedHere &&
+    if (ModularTermination.RulesEnabled(options) && !verifiedHere &&
+        (dooFile.Manifest.ModularTermination != null || dooFile.Manifest.DooFileVersion == ModularTerminationRecords.RecordedDooFileVersion) &&
         !await dooFile.AdmitModularTermination(reporter, uri, options, validDooOptions, origin)) {
       yield break;
     }
@@ -306,7 +306,7 @@ public class DafnyFile {
       ShouldNotCompile = asLibrary,
       ShouldNotVerify = !verifiedHere,
       RecursiveModuleRecord = dooFile.Manifest.RecursiveModules,
-      TerminationRecord = options.Get(CommonOptionBag.ModularTermination) && !verifiedHere ? dooFile.Manifest.ModularTermination : null,
+      TerminationRecord = ModularTermination.RulesEnabled(options) && !verifiedHere ? dooFile.Manifest.ModularTermination : null,
     };
   }
 

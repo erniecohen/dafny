@@ -1,0 +1,26 @@
+the pre-type resolver
+chain: exit 0, 0 errors
+false: exit 4, 1 errors
+  false.dfy(60,4): Error: assertion might not hold
+equal: exit 4, 1 errors
+  equal.dfy(43,4): Error: a postcondition could not be proved on this return path
+greater: exit 4, 1 errors
+  greater.dfy(43,4): Error: a postcondition could not be proved on this return path
+reassigned: exit 2, 1 errors
+  reassigned.dfy(60,10): Error: LHS of assignment must denote a mutable field
+mutable: exit 2, 1 errors
+  mutable.dfy(3,39): Error: const field 'allowance' is inherited from trait 'Ranked' and is not allowed to be re-declared
+Produced allowances: 6 checks, all passed
+the legacy resolver
+chain: exit 0, 0 errors
+false: exit 4, 1 errors
+  false.dfy(60,4): Error: assertion might not hold
+equal: exit 4, 1 errors
+  equal.dfy(43,4): Error: a postcondition could not be proved on this return path
+greater: exit 4, 1 errors
+  greater.dfy(43,4): Error: a postcondition could not be proved on this return path
+reassigned: exit 2, 1 errors
+  reassigned.dfy(60,10): Error: LHS of assignment must denote a mutable field
+mutable: exit 2, 1 errors
+  mutable.dfy(3,39): Error: const field 'allowance' is inherited from trait 'Ranked' and is not allowed to be re-declared
+Produced allowances: 6 checks, all passed

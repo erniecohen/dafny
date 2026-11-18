@@ -1,5 +1,5 @@
 // RUN: python3 "%S/Inputs/github-issue-211-m5b.py" "%repositoryRoot/Binaries/net10.0/DafnyDriver.dll" "%t.dir" "%repositoryRoot/Binaries/z3/bin/z3-5.1.0" "%repositoryRoot/Source/DafnyStandardLibraries/src/Std" > "%t"
-// RUN: %audit --modular-termination "%repositoryRoot/Source/DafnyStandardLibraries/modular-termination/trusted/dfyconfig.toml" >> "%t"
+// RUN: %audit "%repositoryRoot/Source/DafnyStandardLibraries/modular-termination/trusted/dfyconfig.toml" >> "%t"
 // RUN: %diff "%s.expect" "%t"
 
 // The standard-library trust list under --modular-termination, milestone M5b of

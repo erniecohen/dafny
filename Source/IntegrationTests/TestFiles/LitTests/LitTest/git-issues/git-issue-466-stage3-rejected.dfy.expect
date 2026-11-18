@@ -17,5 +17,5 @@ git-issue-466-stage3-lookup1.dfy(14,8): Error: trait 'U' was taken not to be a r
 git-issue-466-stage3-lookup2.dfy(5,29): Warning: trait 'T' has {:termination false} and no {:axiom} annotation: calls dispatched through it are not checked for termination
 git-issue-466-stage3-lookup2.dfy(10,8): Error: trait 'U' was taken to be a reference type, but its parent traits say otherwise; name the parent traits of the traits of a recursive module group so that they can be looked up before the imports are resolved
 1 resolution/type errors detected in git-issue-466-stage3-lookup2.dfy
-git-issue-466-stage3-above.dfy(21,21): Error: class 'X' is in a different module than trait 'Tr.T'. A class may only extend a trait in the same module, unless the parent trait is annotated with {:termination false} or the class with @AssumeCrossModuleTermination.
+git-issue-466-stage3-above.dfy(23,13): Error: modular termination: 'B' implements 'Tr.T.B' of another module, which has no 'decreases {:global}' bound, so it must be a leaf or declare a bound, but it is not a leaf ('X.X.B' -> dispatch of 'Tr.T.A'); declare a bound on 'Tr.T.B' or on this implementation, or make this implementation a leaf
 1 resolution/type errors detected in git-issue-466-stage3-above.dfy

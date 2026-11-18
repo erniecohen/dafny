@@ -1,5 +1,5 @@
 // Verifies only when Boogie unrolls the loop instead of using its invariant.
-module Bad {
+module Bad { const {:termination_closed} CertificateRequested: bool := true
   lemma Bad() ensures 1 == 2 {
     var i := 0;
     while i < 10

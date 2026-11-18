@@ -95,12 +95,36 @@ public static class ModularTerminationTrustList {
     new("Std.Strings.HexConversion.CharsConsistent", LemmaKind, "b6e08ac0a93292eb9cccc3b0de7b02effc370cac04f7f5480b5e610c2a1aa3f4", "e923bd6bfce672a1303b2c70285db99055865236562a926348e5db9b9806968d", CharsConsistentReason),
   ];
 
+  // The on-only checked-Std overlay has the same mathematical premises, with Closed
+  // annotations and a different interface context. Accept only these additional exact tuples;
+  // never ignore an annotation or context difference when matching a premise.
+  private static readonly ModularTerminationTrustEntry[] CheckedStandardLibraryEntries = [
+    new("Std.Axioms.FunctionExtensionality.Nullary", LemmaKind, "d847a8f43ab034e6351057339e883677f7a3d6473fbbeea1d9df72bc02563c3b", "020d52cdacaaefbe222a6fa070776483aaca35b9681b3d3a4ebe06f377726f4c", ExtensionalityReason),
+    new("Std.Axioms.FunctionExtensionality.OnBool", LemmaKind, "772bcd4f033814446e3ad02282ab8902356b1ba8477e259112292bf9bfe8dab9", "020d52cdacaaefbe222a6fa070776483aaca35b9681b3d3a4ebe06f377726f4c", ExtensionalityReason),
+    new("Std.Axioms.FunctionExtensionality.OnInt", LemmaKind, "93a569e38f30f6e3a6f15cddf676bc379dbb21647a6a127a58ceb79ba37adbfd", "020d52cdacaaefbe222a6fa070776483aaca35b9681b3d3a4ebe06f377726f4c", ExtensionalityReason),
+    new("Std.Axioms.FunctionExtensionality.OnIntInt", LemmaKind, "cc5d28bb3befc12237a9421e21db95ee1a5709f67b8899cba9f36f2cfc0d18ba", "020d52cdacaaefbe222a6fa070776483aaca35b9681b3d3a4ebe06f377726f4c", ExtensionalityReason),
+    new("Std.Axioms.FunctionExtensionality.OnOrdinal", LemmaKind, "4927c8b108ac8b93ee73d7ac5a9c39be319124f392a4e0a1fbd7f253e3da734e", "020d52cdacaaefbe222a6fa070776483aaca35b9681b3d3a4ebe06f377726f4c", ExtensionalityReason),
+    new("Std.Axioms.FunctionExtensionality.OnReal", LemmaKind, "64581d25e05bef3d70c3b14c221b08c070c92c79dd35576e3dcee6f34eda8629", "020d52cdacaaefbe222a6fa070776483aaca35b9681b3d3a4ebe06f377726f4c", ExtensionalityReason),
+    new("Std.Axioms.Ordinals.Infinite", LemmaKind, "ed40739e1f0b635110927154bbce3834999261d86cb179f939a221757d887a12", "020d52cdacaaefbe222a6fa070776483aaca35b9681b3d3a4ebe06f377726f4c", OrdinalAxiomReason),
+    new("Std.Axioms.Ordinals.Replacement", LemmaKind, "0de236dac69d9baf6781dda9d324675391d0af4370ab3786d68890e31618abfb", "020d52cdacaaefbe222a6fa070776483aaca35b9681b3d3a4ebe06f377726f4c", OrdinalAxiomReason),
+    new("Std.Axioms.Reals.Complete", LemmaKind, "9e1506689a1fd764e248bf557e7a7c92a55454283bfb64a636de52fa50cc94d8", "020d52cdacaaefbe222a6fa070776483aaca35b9681b3d3a4ebe06f377726f4c", CompletenessReason),
+    new("Std.Ordinal.PlusDefinition", LemmaKind, "dca9e5259a4aaf12f1e7a2d450df2ce1dc3297101f3fb93c2e912cd7ab8e4dcf", "b92e251bf1fff4544388acfa0d3ae0dcdc58436f8feeb258654ddd91c52b1bc9", OrdinalLemmaReason),
+    new("Std.Ordinal.PlusIncreasingOnLeft", LemmaKind, "7367b80f5aa8b2c832a60af418347e7b20ef620b1157061818c2667b6514d843", "b92e251bf1fff4544388acfa0d3ae0dcdc58436f8feeb258654ddd91c52b1bc9", OrdinalLemmaReason),
+    new("Std.Ordinal.PlusIsAssociative", LemmaKind, "da23662ad8de1518138b54dcb7689e9b0d470323db6d631e93d24112b6142fc4", "b92e251bf1fff4544388acfa0d3ae0dcdc58436f8feeb258654ddd91c52b1bc9", OrdinalLemmaReason),
+    new("Std.Ordinal.PlusStrictlyIncreasingOnRight", LemmaKind, "e14d807d62b3639a1eec112e8bc22602f3403bc57446deaaf4d399da10a08888", "b92e251bf1fff4544388acfa0d3ae0dcdc58436f8feeb258654ddd91c52b1bc9", OrdinalLemmaReason),
+    new("Std.Ordinal.Succ", LemmaKind, "da8fe745b3899c0e28a67962c280996847b137ccb2004443ed5f6223a759affe", "b92e251bf1fff4544388acfa0d3ae0dcdc58436f8feeb258654ddd91c52b1bc9", OrdinalLemmaReason),
+    new("Std.Ordinal.TimesDistributesOnLeft", LemmaKind, "0010381d5796df94ce11356cfac99c64b87a1948e7ffb4338c2735a36054f088", "b92e251bf1fff4544388acfa0d3ae0dcdc58436f8feeb258654ddd91c52b1bc9", OrdinalLemmaReason),
+    new("Std.Ordinal.TimesIncreasingOnLeft", LemmaKind, "5747fb7d25589a4148f9c14f7316d6b7a49de9e0f3836c48f6313d48dc5c83fe", "b92e251bf1fff4544388acfa0d3ae0dcdc58436f8feeb258654ddd91c52b1bc9", OrdinalLemmaReason),
+    new("Std.Ordinal.TimesStrictlyIncreasingOnRight", LemmaKind, "3d533b48e823a562efad33225b60c1239f34595fe91b73f29150f2c96989792e", "b92e251bf1fff4544388acfa0d3ae0dcdc58436f8feeb258654ddd91c52b1bc9", OrdinalLemmaReason),
+    new("Std.Strings.HexConversion.CharsConsistent", LemmaKind, "b6e08ac0a93292eb9cccc3b0de7b02effc370cac04f7f5480b5e610c2a1aa3f4", "98c4c49faec4a1b651e8726a036edad502a061abc4a69eadcb53918a0b495102", CharsConsistentReason),
+  ];
+
   /// <summary>
   /// The trust list that this run selects, or null for none.  It has an effect only under
   /// --modular-termination.
   /// </summary>
   public static string? Selected(DafnyOptions options) {
-    if (!options.Get(CommonOptionBag.ModularTermination)) {
+    if (!ModularTermination.RulesEnabled(options)) {
       return null;
     }
     var name = options.Get(CommonOptionBag.ModularTerminationTrust);
@@ -133,10 +157,14 @@ public static class ModularTerminationTrustList {
   }
 
   public static IReadOnlyList<ModularTerminationTrustEntry>? Entries(string? name) =>
-    name == StandardLibrary ? StandardLibraryEntries : null;
+    name == StandardLibrary ? StandardLibraryEntries.Concat(CheckedStandardLibraryEntries).ToList() : null;
 
   public static ModularTerminationTrustEntry? Find(string? name, string id) =>
     Entries(name)?.FirstOrDefault(e => e.Id == id);
+
+  public static ModularTerminationTrustEntry? Find(string? name, ModularTerminationPremise premise) =>
+    Entries(name)?.FirstOrDefault(e => e.Id == premise.Id && e.Kind == premise.Kind &&
+      e.StatementSha256 == premise.StatementSha256 && e.ContextSha256 == premise.ContextSha256);
 
   /// <summary>
   /// The digest of a whole list, its reasons included.
@@ -219,7 +247,7 @@ public static class ModularTerminationTrustList {
 
     /// <param name="ownUris">When given, only declarations in these files are considered.</param>
     public static Evaluation Compute(Program program, ModularTerminationContracts contracts,
-      IReadOnlyList<ModularTerminationContractRef> imports, ISet<Uri>? ownUris = null) {
+      IReadOnlyList<ModularTerminationContractRef> imports, ISet<Uri>? ownUris = null, bool runtime = false) {
       var name = Selected(program.Options);
       var digests = new Dictionary<string, string>(StringComparer.Ordinal);
       foreach (var import in imports) {
@@ -231,7 +259,8 @@ public static class ModularTerminationTrustList {
       var graph = new ContextGraph(program, digests.Keys.ToHashSet(StringComparer.Ordinal));
       var premises = new Dictionary<MemberDecl, ModularTerminationPremise>();
       foreach (var node in program.DefaultModule.Descendants()) {
-        if (node is not MemberDecl member || CandidateId(member) is not { } id || Find(name, id) == null) {
+        if (node is not MemberDecl member || (runtime ? ModularTerminationRuntimeTrust.CandidateId(member) : CandidateId(member)) is not { } id ||
+            (!runtime && Find(name, id) == null)) {
           continue;
         }
         if (ownUris != null && (member.Origin?.Uri == null || !ownUris.Contains(member.Origin.Uri))) {
@@ -239,7 +268,7 @@ public static class ModularTerminationTrustList {
         }
         var keys = graph.Closure(member.EnclosingClass.EnclosingModuleDefinition);
         var context = string.Concat(keys.Select(k => $"{k}\t{digests.GetValueOrDefault(k, "missing")}\n"));
-        premises[member] = new ModularTerminationPremise(id, KindOf(member)!, StatementSha256(member, program.Options),
+        premises[member] = new ModularTerminationPremise(id, runtime ? ModularTerminationRuntimeTrust.KindOf(member)! : KindOf(member)!, StatementSha256(member, program.Options),
           ModularTerminationRecords.Sha256(context));
       }
       return new Evaluation(premises);
@@ -250,6 +279,9 @@ public static class ModularTerminationTrustList {
     /// </summary>
     public static string? Mismatch(DafnyOptions options, ModularTerminationPremise premise) {
       var name = Selected(options);
+      if (Find(name, premise) != null) {
+        return null;
+      }
       if (Find(name, premise.Id) is not { } entry) {
         return $"'{premise.Id}' is not on the {name ?? None} trust list";
       }

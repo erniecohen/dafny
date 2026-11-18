@@ -1,0 +1,1 @@
+Release builds now produce and embed the complete checked standard-library catalog. Final publication requires every checked bundle, and the release archive is tested with explicitly opted-in clients and a reachable-false control.

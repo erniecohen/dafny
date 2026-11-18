@@ -181,6 +181,8 @@ jobs:
           test "$(ps -o nice= -p "$$" | tr -d ' ')" = 10
           echo 'Job worker and shell niceness: 10; subsequent actions inherit it.'
       - uses: actions/checkout@v4
+      - name: Check Python version
+        run: python3 -c 'import sys; assert sys.version_info >= (3, 11), "Python 3.11 or newer is required"'
       - name: CI event guards, regression partition, parity and comparison bookkeeping
         # Every unit-test module in .github/review, so that none goes unrun.
         run: python3 -m unittest discover -s .github/review -p 'test_*.py'
@@ -1245,10 +1247,12 @@ jobs:
     if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.draft) && (!inputs.platform_parity && (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && (github.ref_type == 'tag' || inputs.binaries))) }}
     name: Binaries (${{ matrix.rid }})
     needs: build
+    env:
+      DOTNET_PROCESSOR_COUNT: '3'
     # The osx-arm64 build runs on the owner's self-hosted Mac (label mac-studio);
     # this job only runs for tags and manual dispatches, never for pull requests.
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 60
+    timeout-minutes: 240
     strategy:
       matrix:
         include:
@@ -1282,39 +1286,66 @@ jobs:
           java-version: '17'
       - name: Boogie packages
         run: sh Scripts/fetch-boogie-packages.sh
-      - name: Publish, self-contained
+      - name: Check Python version
+        run: python3 -c 'import sys; assert sys.version_info >= (3, 11), "Python 3.11 or newer is required"'
+      - name: Install Z3 5.1.0 for catalog production and release checks
+        id: release-z3
+        run: echo "path=$(sh .github/review/setup-z3.sh 5.1.0 ci-z3)" >> "$GITHUB_OUTPUT"
+      - name: Bootstrap the self-contained verifier
         env:
           RUNTIME_IDENTIFIER: ${{ matrix.rid }}
         run: |
-          dotnet publish Source/Dafny/Dafny.csproj -c Release -r ${{ matrix.rid }} --self-contained \
-            -o out/dafny -p:GeneratePackageOnBuild=false -p:ContinuousIntegrationBuild=true -p:SourceRevisionId=${{ needs.build.outputs.revision }}
+          # Generate parser sources before publish evaluates its compile items, so later
+          # publication keeps the verifier's deterministic assembly identity.
+          dotnet msbuild Source/DafnyCore/DafnyCore.csproj -t:RunCoco -p:Configuration=Release
+          dotnet publish Source/Dafny/Dafny.csproj -m:1 -c Release -r ${{ matrix.rid }} --self-contained \
+            -o out/dafny -p:GeneratePackageOnBuild=false -p:PathMap="$PWD=/_/" -p:ContinuousIntegrationBuild=true -p:SourceRevisionId=${{ needs.build.outputs.revision }}
+      - name: Produce the complete checked catalog with the release verifier
+        run: |
+          status=0
+          python3 .github/review/modular-termination-checked-std.py out/dafny/Dafny '${{ steps.release-z3.outputs.path }}' \
+            checked-std-results --cores 3 || status=$?
+          cat checked-std-results/summary.md >> "$GITHUB_STEP_SUMMARY"
+          exit $status
+      - name: Publish with all checked bundles required
+        env:
+          RUNTIME_IDENTIFIER: ${{ matrix.rid }}
+        run: |
+          cp out/dafny/DafnyCore.dll release-catalog-core.dll
+          dotnet publish Source/Dafny/Dafny.csproj -m:1 -c Release -r ${{ matrix.rid }} --self-contained \
+            -o out/dafny -p:GeneratePackageOnBuild=false -p:PathMap="$PWD=/_/" -p:ContinuousIntegrationBuild=true -p:SourceRevisionId=${{ needs.build.outputs.revision }} \
+            -p:RequireCheckedStandardLibraries=true
+          cmp release-catalog-core.dll out/dafny/DafnyCore.dll
           rm -f out/dafny/*.pdb
           mv out/dafny/Dafny out/dafny/dafny
           for f in LICENSE.txt NOTICES.txt REVIEW.md; do if [ -f "$f" ]; then cp "$f" out/dafny/; fi; done
       - name: Check it runs and verifies
         run: |
-          case "${{ matrix.rid }}" in
-            osx-arm64) z=$Z3_OSX_ARM64; s=$Z3_OSX_ARM64_SHA256 ;;
-            linux-x64) z=$Z3_LINUX_X64; s=$Z3_LINUX_X64_SHA256 ;;
-          esac
-          curl -fsSLo z3.zip "$Z3_RELEASE/$z.zip"
-          echo "$s  z3.zip" | shasum -a 256 -c -  # shasum is on both macOS and Ubuntu runners
-          unzip -q z3.zip && chmod +x "$z/bin/z3"
+          solver='${{ steps.release-z3.outputs.path }}'
           v=$(out/dafny/dafny --version | head -1)
           echo "dafny --version: $v"
           test "$v" = "${{ needs.build.outputs.version }}"
-          out/dafny/dafny verify --solver-path "$z/bin/z3" \
+          out/dafny/dafny verify --solver-path "$solver" \
             Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/git-issue-6537.dfy
           # The persistent verification cache works on the self-contained layout, which has
           # no host/fxr (https://github.com/erniecohen/dafny/issues/387).
-          python3 .github/review/verification-cache-self-contained.py out/dafny/dafny "$z/bin/z3" \
+          python3 .github/review/verification-cache-self-contained.py out/dafny/dafny "$solver" \
             Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/github-issue-387.dfy "$RUNNER_TEMP/cache-387"
       - name: Zip
         run: |
           name=dafny-${{ needs.build.outputs.version }}-${{ matrix.rid }}.zip
           (cd out && zip -Xqr "../$name" dafny)
           python3 .github/review/check-distribution.py out/dafny --archive "$name"
+          dotnet build .github/review/CheckedCatalogResources/CheckedCatalogResources.csproj -c Release -o out/resource-reader -m:1
+          python3 .github/review/check-release-catalog.py "$name" \
+            --reader out/resource-reader/CheckedCatalogResources.dll --solver '${{ steps.release-z3.outputs.path }}'
           shasum -a 256 "$name"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: release-catalog-results-${{ matrix.rid }}
+          path: checked-std-results
+          retention-days: 14
       - uses: actions/upload-artifact@v4
         with:
           name: binaries-${{ matrix.rid }}

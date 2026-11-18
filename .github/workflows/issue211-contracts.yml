@@ -103,10 +103,13 @@ jobs:
           unzip -q solver.zip -d solver
           chmod +x products/*/dafny/Dafny solver/*/bin/z3
       - name: Compare exact outputs and resource units with the option off
+        # Dispatch replays the original milestone, whose candidate predates this opt-out.
+        env:
+          CANDIDATE_LEGACY: ${{ github.event_name == 'pull_request' && '--candidate-legacy-no-modular-termination' || '' }}
         run: |
           python3 .github/review/source-contracts-identity.py '${{ matrix.kind }}' \
             products/base/dafny/Dafny products/candidate/dafny/Dafny solver/*/bin/z3 \
-            'sources/${{ matrix.source }}' identity-results --shard '${{ matrix.shard }}'
+            'sources/${{ matrix.source }}' identity-results --shard '${{ matrix.shard }}' $CANDIDATE_LEGACY
       - uses: actions/upload-artifact@v4
         if: always()
         with:

@@ -284,9 +284,15 @@ public class CliCompilation {
     var requestDependencies = resolution.ResolvedProgram.ProofDependencyManager;
 
     DidVerification = true;
-    TrustedPremisesSummary = Options.Get(CommonOptionBag.ModularTermination)
+    TrustedPremisesSummary = ModularTermination.RulesEnabled(Options)
       ? DafnyCore.ModularTerminationTrustList.Summary([], null, resolution.ResolvedProgram.Compilation.ModularTerminationPremises)
       : null;
+
+    if (ModularTermination.RulesEnabled(Options) &&
+        DafnyCore.ModularTerminationRuntimeTrust.Summary([], resolution.ResolvedProgram.Compilation.ModularTerminationRuntimePremises)
+          is { } runtimeSummary) {
+      TrustedPremisesSummary = TrustedPremisesSummary == null ? runtimeSummary : TrustedPremisesSummary + "\n" + runtimeSummary;
+    }
 
     var canVerifies = FilterCanVerifies(resolution.CanVerifies, out var filterRange, filterPosition);
     VerifiedAssertions = filterRange.Filters;

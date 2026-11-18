@@ -1,0 +1,18 @@
+legacy: producer requires separate runtime opt-in
+legacy: producer records and names runtime contracts
+legacy: client requires separate runtime opt-in
+legacy: opted-in client verifies and names assumptions
+legacy: reachable false is the only failure
+legacy: unlisted runtime contract remains rejected
+legacy: changed runtime statement remains rejected
+legacy: changed runtime context remains rejected
+legacy: audit names the separate runtime assumptions
+refresh: producer requires separate runtime opt-in
+refresh: producer records and names runtime contracts
+refresh: client requires separate runtime opt-in
+refresh: opted-in client verifies and names assumptions
+refresh: reachable false is the only failure
+refresh: unlisted runtime contract remains rejected
+refresh: changed runtime statement remains rejected
+refresh: changed runtime context remains rejected
+refresh: audit names the separate runtime assumptions

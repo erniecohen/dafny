@@ -210,6 +210,30 @@ public class Auditor : IRewriter {
         $"of the {trustList} trust list, admitted under --modular-termination-trust:{trustList}");
       findingCount++;
     }
+    foreach (var (library, _, premise) in program.Compilation.ModularTerminationRuntimePremises) {
+      Reporter.Warning(MessageSource.Verifier, "", Token.Cli,
+        $"{library}: assumes runtime contract {premise.Id}, including termination, under {ModularTerminationRuntimeTrust.Option}");
+      findingCount++;
+    }
+    if (ModularTerminationRuntimeTrust.Selected(program.Options) != null && program.AfterParsingClone != null) {
+      var text = new DooFile(program.AfterParsingClone).ProgramText;
+      var (contracts, error) = ModularTerminationContracts.Compute(program.Options, text,
+        new Uri("transcript:///runtime-contract-audit.dfy")).GetAwaiter().GetResult();
+      if (contracts == null) {
+        Reporter.Error(MessageSource.Verifier, Token.Cli, $"Cannot audit runtime contracts: {error}");
+      } else {
+        var evaluation = ModularTerminationTrustList.Evaluation.Compute(program, contracts,
+          program.Compilation.ModularTerminationImports, program.Compilation.UrisToVerify, runtime: true);
+        foreach (var (_, premise) in evaluation.Premises.OrderBy(p => p.Value.Id, StringComparer.Ordinal)) {
+          var mismatch = ModularTerminationRuntimeTrust.Mismatch(premise);
+          Reporter.Warning(MessageSource.Verifier, "", Token.Cli,
+            $"Runtime contract {premise.Id} ({premise.Kind}): " +
+            (mismatch ?? $"ASSUMED under {ModularTerminationRuntimeTrust.Option}") +
+            $"; statement {premise.StatementSha256}; context {premise.ContextSha256}");
+          findingCount++;
+        }
+      }
+    }
     _ = Options.OutputWriter.Status($"Dafny auditor completed with {findingCount} findings");
   }
 }

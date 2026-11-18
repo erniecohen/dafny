@@ -1,6 +1,6 @@
 // A function that claims to be generated.  The serialization dropped it from the stored program, where
 // Bad's postcondition then named G.f, which is 2 (https://github.com/erniecohen/dafny/issues/325).
-module G {
+module G { const {:termination_closed} CertificateRequested: bool := true
   function f(): int { 2 }
 }
 

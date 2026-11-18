@@ -1,0 +1,61 @@
+build lib: exit 0
+build args: exit 0
+client of lib: exit 0
+client controls: exit 4
+  github-issue-266-m4-client-verify.dfy(16,4): Error: assertion might not hold
+  github-issue-266-m4-client-verify.dfy(25,4): Error: assertion might not hold
+  github-issue-266-m4-client-verify.dfy(38,6): Error: decreases clause might not decrease (--modular-termination: the bound of the bounded value must be below the caller's 'decreases {:global}' bound)
+  github-issue-266-m4-client-verify.dfy(45,99): Error: decreases clause might not decrease (modular termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
+  github-issue-266-m4-client-verify.dfy(69,11): Error: value of expression (of type 'bounded<Level, int -> int>') is not known to be an instance of type 'bounded<Level2, int -> int>'
+client of args: exit 0
+client controls of args: exit 4
+  github-issue-266-m4-client-args-verify.dfy(15,4): Error: assertion might not hold
+  github-issue-266-m4-client-args-verify.dfy(28,6): Error: decreases clause might not decrease (--modular-termination: the bound of the bounded value must be below the caller's 'decreases {:global}' bound)
+build dependent: exit 0
+client of both: exit 0
+build lib-body: exit 0
+private replacement: exit 0
+build lib-bound: exit 0
+bound change: exit 1
+  CLI: Error: cannot load dependent.doo under --modular-termination: it was verified against a different termination contract of module FuncImpl than the one lib-bound.doo provides (recorded <digest>, loaded <digest>); rebuild dependent.doo against the loaded library
+build lib-order: exit 0
+order change: exit 1
+  CLI: Error: cannot load dependent.doo under --modular-termination: it was verified against a different termination contract of module Levels than the one lib-order.doo provides (recorded <digest>, loaded <digest>); rebuild dependent.doo against the loaded library
+build slots: exit 0
+fresh slot realization: exit 0
+fresh slot false control: exit 4
+  github-issue-266-m4-slot-false.dfy(13,4): Error: assertion might not hold
+fresh slot bound: exit 4
+  github-issue-266-m4-slot-bound.dfy(4,13): Error: function's 'decreases {:global}' bound must be below or equal to that in the trait
+fresh slot formation: exit 4
+  github-issue-266-m4-slot-formation.dfy(5,63): Error: decreases clause might not decrease (--modular-termination: the bound of the bounded value must be below the bound under which the enclosing lambda runs)
+source realization binding: exit 0
+source realization false control: exit 4
+  github-issue-266-m4-realization-false.dfy(27,4): Error: assertion might not hold
+source realization formation: exit 4
+  github-issue-266-m4-realization-formation.dfy(8,61): Error: decreases clause might not decrease (--modular-termination: the bound of the bounded value must be below the bound under which the enclosing lambda runs)
+tampered lib order-contract: exit 1
+  CLI: Error: cannot load tampered-lib-order-contract.doo under --modular-termination: its stored termination contracts are not those of its program (module Levels); the library was modified after it was built
+tampered lib order-program: exit 1
+  CLI: Error: cannot load tampered-lib-order-program.doo under --modular-termination: its stored termination contracts are not those of its program (module Levels); the library was modified after it was built
+tampered lib bounded-program: exit 1
+  CLI: Error: cannot load tampered-lib-bounded-program.doo under --modular-termination: its stored termination contracts are not those of its program (module FuncApi); the library was modified after it was built
+tampered lib bound-program: exit 1
+  CLI: Error: cannot load tampered-lib-bound-program.doo under --modular-termination: its stored termination contracts are not those of its program (module FuncImpl); the library was modified after it was built
+tampered args arrow-contract: exit 1
+  CLI: Error: cannot load tampered-args-arrow-contract.doo under --modular-termination: its stored termination contracts are not those of its program (module ListApi); the library was modified after it was built
+tampered certify: exit 1
+  CLI: Error: cannot load tampered-lib-certify.doo under --modular-termination: its program does not match the program its record certifies; the library was modified after it was built
+refining client: exit 2
+  github-issue-266-m4-refine.dfy(2,7): Error: modular termination: module 'FuncApi2' refines module 'FuncApi' of a library; under --modular-termination a module cannot refine or replace a library module, since the bodies it would inherit are not part of the library's termination contracts
+refining source: exit 0
+build flat: exit 4
+  github-issue-266-m4-flat.dfy(86,2): Error: a postcondition could not be proved on this return path
+  github-issue-266-m4-flat.dfy(88,66): Error: decreases clause might not decrease (modular termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
+build no-verify: exit 3
+  CLI: Error: cannot build a library under --modular-termination: its program was not completely verified in this build (for example, --no-verify was used). A library built with --modular-termination records that its own program was completely verified; build it without --no-verify, --boogie arguments, {:verify false}, {:only}, decreases *, assumptions (anything 'dafny audit' reports, bodyless members, --allow-axioms) or {:extern}, and with every verification task succeeding
+build out-of-resource: exit 4
+  DafnyStandardLibraries-orders.dfy(436,2): Error: a postcondition could not be proved on this return path
+  DafnyStandardLibraries-orders.dfy(468,2): Error: a postcondition could not be proved on this return path
+  github-issue-211-multiset-orders.dfy(28,73): Error: a postcondition could not be proved on this return path
+M4 portable contracts: 33 checks, all passed

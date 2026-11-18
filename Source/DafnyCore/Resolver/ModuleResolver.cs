@@ -2772,14 +2772,12 @@ namespace Microsoft.Dafny {
           if (trait != null) {
             // disallowing inheritance in multi module case
             bool termination = true;
-            // A trait of another member of the recursive module group is like a trait of the same module: the members of
-            // a group are verified together, and a call that is dispatched to an override is checked against the "decreases"
-            // clauses as it is inside one module.
-            // Under --modular-termination every trait may be extended from any module (rule 1 of revision 3 of
-            // https://github.com/erniecohen/dafny/issues/211): a foreign implementation is checked instead.
+            // Members of a recursive module group are verified together, so their dispatched calls are
+            // checked against local decreases clauses. Outside the group, revision 3 checks foreign
+            // implementations instead; only --legacy-no-modular-termination restores the 4.11 rule.
             if (ModuleDefinition.InSameRecursiveGroup(cl.EnclosingModuleDefinition, trait.EnclosingModuleDefinition) ||
                 trait.IsObjectTrait ||
-                Options.Get(CommonOptionBag.ModularTermination) ||
+                ModularTermination.RulesEnabled(Options) ||
                 (Attributes.ContainsBool(trait.Attributes, "termination", ref termination) && !termination) ||
                 Attributes.Contains(cl.Attributes, "AssumeCrossModuleTermination")) {
               // all is good (or the user takes responsibility for the lack of termination checking)
@@ -3281,7 +3279,7 @@ namespace Microsoft.Dafny {
           reporter.Error(MessageSource.Resolver, member.Origin,
             $"{baseMember.WhatKindAndName} is inherited from {baseType.WhatKindAndName} and is not allowed to be re-declared");
         } else if ((baseMember as Function)?.Body != null || (baseMember as Constructor)?.Body != null ||
-                   (Options.Get(CommonOptionBag.ModularTermination) && baseMember is Function &&
+                   (ModularTermination.RulesEnabled(Options) && baseMember is Function &&
                     baseMember.TerminationContract is { IsDispatchSlot: false })) {
           // the overridden member is a fully defined function or method, so the class is not allowed to do anything with it other than silently inherit it
           reporter.Error(MessageSource.Resolver, member.Origin,

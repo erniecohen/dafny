@@ -1,0 +1,23 @@
+funcptr.c with bags of levels, as an order type
+
+Dafny program verifier finished with 74 verified, 0 errors
+controls (assert false in each positive context), bounds that do not go down, and orders that do not mix
+github-issue-211-order-types-verify.dfy(15,4): Error: assertion might not hold
+github-issue-211-order-types-verify.dfy(24,4): Error: assertion might not hold
+github-issue-211-order-types-verify.dfy(30,57): Error: assertion might not hold
+github-issue-211-order-types-verify.dfy(43,6): Error: decreases clause might not decrease (--modular-termination: the bound of the bounded value must be below the caller's 'decreases {:global}' bound)
+github-issue-211-order-types-verify.dfy(51,99): Error: decreases clause might not decrease (modular termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
+github-issue-211-order-types-verify.dfy(59,18): Error: decreases clause might not decrease (modular termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
+github-issue-211-order-types-verify.dfy(87,4): Error: decreases clause might not decrease (--modular-termination: the bound of the bounded value must be below the caller's 'decreases {:global}' bound)
+github-issue-211-order-types-verify.dfy(101,9): Error: value of expression (of type 'bounded<Level2, int -> int>') is not known to be an instance of type 'bounded<Level, int -> int>'
+
+Dafny program verifier finished with 81 verified, 8 errors
+order attributes that do not name an order of the base type, or are not closed
+github-issue-211-order-types-resolve.dfy(7,19): Error: the order O of an order type must order exactly its base type (got Wfo<multiset<nat>> for base type multiset<int>)
+github-issue-211-order-types-resolve.dfy(8,15): Error: the order O of an order type must have type Std.Termination.Orders.Wfo<T> (got int)
+github-issue-211-order-types-resolve.dfy(11,17): Error: the order O of an order type must be closed, but it mentions the heap
+github-issue-211-order-types-resolve.dfy(12,9): Error: the attribute {:order O} of an order type takes exactly one argument, the order
+github-issue-211-order-types-resolve.dfy(13,32): Error: an order type must not be declared {:axiom}
+github-issue-211-order-types-resolve.dfy(14,23): Error: an order type must not have type parameters
+github-issue-211-order-types-resolve.dfy(21,55): Error: the order of a bounded type must be nat, ORDINAL, an order type (a subset type declared with {:order O}), or a total arrow to one of these (got multiset<nat>)
+7 resolution/type errors detected in github-issue-211-order-types-resolve.dfy

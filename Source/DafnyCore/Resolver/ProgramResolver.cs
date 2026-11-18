@@ -120,6 +120,12 @@ public class ProgramResolver {
       profileStart = profile.BeginThread();
     }
 
+    // Initialize intrinsic arrow signatures before resolving the system module or forking builtin
+    // catalogs. Creating them in a module worker is too late for the resolved requires/reads calls.
+    if (SystemModuleManager.BoundedDecl != null && !SystemModuleManager.ArrowTypeDecls.ContainsKey(2)) {
+      SystemModuleManager.CreateArrowTypeDecl(2);
+      SystemModuleManager.BoundedArrowAdded = true;
+    }
     var systemKey = ModuleResolutionKey.Compute("_System", "", ModuleResolutionKey.DafnyVersion,
       ModuleResolutionKey.Options(Options), []);
     Program.SystemModuleManager = PrepareResolutionSystemModule(systemKey);

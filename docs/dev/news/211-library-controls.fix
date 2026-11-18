@@ -1,0 +1,1 @@
+Keep the legacy foreign-trait restriction test under its opt-out, and exercise default subtraits, leaf implementations, recursive rejection and a reachable false assertion across a library boundary.

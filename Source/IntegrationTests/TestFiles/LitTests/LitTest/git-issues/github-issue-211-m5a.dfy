@@ -1,5 +1,5 @@
-// RUN: %resolve --modular-termination "%repositoryRoot/Source/DafnyStandardLibraries/modular-termination/dfyconfig.toml" > "%t"
-// RUN: %audit --modular-termination "%repositoryRoot/Source/DafnyStandardLibraries/modular-termination/dfyconfig.toml" >> "%t"
+// RUN: %resolve "%repositoryRoot/Source/DafnyStandardLibraries/modular-termination/dfyconfig.toml" > "%t"
+// RUN: %audit "%repositoryRoot/Source/DafnyStandardLibraries/modular-termination/dfyconfig.toml" >> "%t"
 // RUN: %diff "%s.expect" "%t"
 
 // The certified standard-library core under --modular-termination, milestone M5a of

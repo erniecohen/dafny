@@ -1,6 +1,8 @@
 # Bounded callables that survive storage (#266)
 
-Design from the review at https://github.com/erniecohen/dafny/issues/266#issuecomment-6807660254, recorded verbatim. Opt-in under `--modular-termination`; no product change.
+Design from the review at https://github.com/erniecohen/dafny/issues/266#issuecomment-6807660254. The original option-gated milestone descriptions below are historical.
+
+Implementation status: stage 4 of the issue 211 plan makes bounded callables and complete certificate production/admission available by use. The hidden `--modular-termination` is only a strict migration check for legacy markers. Programs that use none of the design retain their previous translation; `--legacy-no-modular-termination` restores the earlier interface. Checked standard-library catalog selection requires a named trust-list opt-in, independently of the migration flag. Runtime contracts have their separate explicit, audited trust list described in M5b §13 and at the end of this document.
 
 ## Findings
 
@@ -291,7 +293,7 @@ raw box/unbox inverse that reconstructs erased evidence
 
 The runtime realization relation links a logical package to the closure that its payload actually compiles to. There is no public constructor for an arbitrary code identity. Compiler-generated members and substitutions cannot clone a proof-success token into a changed realization.
 
-Each asserted family needs a written model/derivation and a reachable false control. The feature's new semantic facts are gated by the explicitly requested `--modular-termination`; they must not appear in the option-off prelude. Do not require an unrelated `--additional-axioms` setting to make the core soundness rule exist.
+Each asserted family needs a written model/derivation and a reachable false control. Under stage 4, the feature's semantic facts are emitted only for a program that uses the checked design; they must not appear in an ordinary non-user's prelude. Do not require an unrelated `--additional-axioms` setting to make the core soundness rule exist.
 
 ### 4.2 Extension of accepted M4b §7.3
 
@@ -711,6 +713,35 @@ Do not compare scalar callback b to caller tuple `(b,1)` assuming the latter is 
 
 The missing M4b rank contracts cannot be supplied by merely assuming Valid while proving Valid's own termination. This is a genuine separate dependency: the pin has no global/callback clauses in these sources, GenericAction.Invoke's existing virtual Decreases is not an M4a-safe rank provider, and supporting InputsOf/OutputsOf/IsSome contracts also need migration. The accepted review inventories 21 introduced abstract slots and 26 concrete classes. A fully certified Std line count requires that concrete overlay; it cannot honestly be inferred from the five fields. [GenericAction][generic] · [Accepted inventory][review].
 
+### 6.4 Chosen independent allowance protocol
+
+The owner selected immutable public ghost allowances and produced-rank ceilings
+for the checked overlay. `Std.CallPermissions.Ranked.allowance` is a `ghost const`
+of type `ORDINAL`. `ProducesRanked.producedAllowanceCeiling` is another immutable
+ghost constant. Constructors establish these values; no virtual metric is used
+to acquire an entry allowance. The existing `Decreases`, `DecreasesMetric` and
+`MaxProduced` functions remain local termination metrics.
+
+`ProducedFresh` and `OutputFresh` must prove a produced result's allowance
+**strictly below** the ceiling. An equal allowance is insufficient. The relation
+between the ceiling and a caller's allowance is a separate obligation whenever
+that caller invokes the result. Allocation and subsequent invocation do not
+change either constant. This supports finite producer-of-producers chains
+without requiring their future components to exist when the outer producer is
+constructed.
+
+Validity bodies first test the independently readable component-allowance
+inequalities, then invoke component predicates under those guards. In particular,
+checking a validity predicate's termination must not assume that same predicate.
+Any additional per-slot phase is part of the public bound, not a replacement for
+the local decreases measure.
+
+`github-issue-211-produced-allowances.dfy` tests the protocol in both resolvers:
+a fresh producer chain verifies; a reachable false assertion is its sole failure;
+equal and excessive result allowances fail the result postcondition; a mutable
+replacement or reassignment of the inherited constant is rejected. These controls
+test the rank protocol, not completion of the full Actions overlay.
+
 ## 7. Implementation plan at the pin
 
 All paths below are under Source/DafnyCore.
@@ -814,3 +845,11 @@ The next integration task after this design is the separate M4b Actions rank ove
 4. **Feedback on the request:** the pinned sources and fixed equality/erasure decisions expose the real representation issue. Requiring reads/precondition checks and exact line counts is valuable. A complete Std certification count needs the independently chosen hierarchy-rank overlay; keeping that dependency explicit prevents a misleading five-field estimate.
 5. **Stopped because the requested design/review list is finished. First work not performed: implementing and executing the proposed rules/tests, including the separate M4b rank overlay required for a fully certified Std build.**
 
+
+
+The checked target-bundle trust boundary is the owner's separate runtime-contract opt-in,
+specified in [M5b §13](211-m5b-trusted-premises.md#13-separate-runtime-contract-opt-in-for-checked-target-bundles).
+It is empty by default and is independent of the ghost-premise list. Every admitted runtime
+callable, including its termination and effect promises, is pinned by name, statement and context
+in `Source/DafnyCore/ModularTerminationRuntimeContracts.tsv` and reported in summaries/audits.
+This is an explicit conditional premise, not a checked liveness proof of external operations.

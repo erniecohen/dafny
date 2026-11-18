@@ -2,7 +2,7 @@
 """Census of the calls that need the smaller-bound rule of --modular-termination
 (https://github.com/erniecohen/dafny/issues/211, milestones M1 to M4a).
 
-Resolves every program of a corpus with `--modular-termination --show-hints` and counts
+Resolves every program of a corpus with `--show-hints` and counts
 the classifier's hints ("modular termination: in 'C', ..."): calls dispatched into
 implementations that other modules may provide (smaller-bound rule, M1), calls to known code
 that can reach such a dispatch (same-bound rule, M2), and calls through function values.  The
@@ -62,7 +62,7 @@ def command(dafny):
 
 
 def resolve(dafny, target, extra, cwd=None):
-    cmd = command(dafny) + ["resolve", "--modular-termination", "--show-hints", "--show-snippets:false",
+    cmd = command(dafny) + ["resolve", "--show-hints", "--show-snippets:false",
                             "--allow-warnings", "--use-basename-for-filename"] + extra + [target]
     try:
         p = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, timeout=TIMEOUT)

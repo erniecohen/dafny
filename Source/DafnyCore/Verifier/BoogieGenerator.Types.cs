@@ -1947,6 +1947,15 @@ public partial class BoogieGenerator {
     }
     PathAsideBlock(decl.Origin, witnessCheckBuilder, builder);
 
+    // The order of an order type (issue 211) is closed, but it must be well-formed: a comparison by it assumes its
+    // can-call facts.
+    if (DecreasesOrders.DeclaredOrder(decl as TopLevelDecl) is { } order) {
+      var orderCheckBuilder = new BoogieStmtListBuilder(this, options, context);
+      orderCheckBuilder.Add(new Bpl.CommentCmd($"check well-formedness of the order of {decl.WhatKind}"));
+      CheckWellformed(order, new WFOptions(null, true), locals, orderCheckBuilder, etran);
+      PathAsideBlock(decl.Origin, orderCheckBuilder, builder);
+    }
+
     var s0 = builderInitializationArea.Collect(decl.Tok);
     var s1 = builder.Collect(decl.Tok);
     var implBody = new StmtList(new List<BigBlock>(s0.BigBlocks.Concat(s1.BigBlocks)), decl.Tok);

@@ -85,6 +85,7 @@ cli	legacy-recursive-module-invariants	--legacy-recursive-module-invariants	Syst
 cli	legacy-module-names	--legacy-module-names	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	lemma-bindings	--lemma-bindings	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	length-limit	--length-limit	System.CommandLine.Option`1[System.UInt32]	command-setup	setup or another command; executes before/outside proof transport
+cli	legacy-no-modular-termination	--legacy-no-modular-termination	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	legacy-no-unchecked-termination-warning	--legacy-no-unchecked-termination-warning	System.CommandLine.Option`1[System.Boolean]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
 cli	legacy-noncanonical-map-payloads	--legacy-noncanonical-map-payloads	System.CommandLine.Option`1[System.Boolean]	input	map encoding is lowered before task lookup; exact SMT and current assertion map
 cli	legacy-reading-functions-in-datatypes	--legacy-reading-functions-in-datatypes	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
@@ -111,6 +112,7 @@ cli	migrate-signature-and-completion-table	--migrate-signature-and-completion-ta
 cli	modify-time	--modify-time	System.CommandLine.Option`1[System.Boolean]	command-setup	setup or another command; executes before/outside proof transport
 cli	modular-termination	--modular-termination	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	modular-termination-trust	--modular-termination-trust	System.CommandLine.Option`1[System.String]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
+cli	modular-termination-runtime-trust	--modular-termination-runtime-trust	System.CommandLine.Option`1[System.String]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	mutations	--mutations	System.CommandLine.Option`1[System.UInt32]	command-setup	setup or another command; executes before/outside proof transport
 cli	no-timestamp-for-coverage-report	--no-timestamp-for-coverage-report	System.CommandLine.Option`1[System.Boolean]	command-setup	setup or another command; executes before/outside proof transport
 cli	no-verify	--no-verify	System.CommandLine.Option`1[System.Boolean]	selection	selects current task inventory; each selected task is independently prepared
