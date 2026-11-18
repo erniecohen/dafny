@@ -13,27 +13,27 @@ github-issue-211-tie.dfy(21,42): Error: decreases clause might not decrease (the
 github-issue-211-tie.dfy(28,46): Error: decreases clause might not decrease (the dispatched callee has no 'decreases {:global}' bound, which --modular-termination requires of a member of a {:termination false} trait)
 
 Dafny program verifier finished with 4 verified, 3 errors
-tie with constant bounds, option on, refresh false: rejected
+tie with constant bounds, default, refresh false: rejected
 github-issue-211-tie-bounds.dfy(21,42): Error: decreases clause might not decrease (modular termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
 
 Dafny program verifier finished with 6 verified, 1 error
-counter, option on, refresh false: verifies
+counter, default, refresh false: verifies
 
 Dafny program verifier finished with 12 verified, 0 errors
-counter vacuity control, option on, refresh false: each assert false fails
+counter vacuity control, default, refresh false: each assert false fails
 github-issue-211-counter-false.dfy(15,96): Error: assertion might not hold
 github-issue-211-counter-false.dfy(20,8): Error: assertion might not hold
 github-issue-211-counter-false.dfy(29,96): Error: assertion might not hold
 github-issue-211-counter-false.dfy(36,8): Error: assertion might not hold
 
 Dafny program verifier finished with 8 verified, 4 errors
-entry, option on, refresh false
+entry, default, refresh false
 github-issue-211-entry.dfy(25,32): Error: decreases clause might not decrease (modular termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
 github-issue-211-entry.dfy(31,32): Error: decreases clause might not decrease (modular termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
 github-issue-211-entry.dfy(40,8): Error: assertion might not hold
 
 Dafny program verifier finished with 5 verified, 3 errors
-rules, option on, refresh false
+rules, default, refresh false
 github-issue-211-rules.dfy(9,44): Error: possible division by zero
 github-issue-211-rules.dfy(19,11): Error: method's 'decreases {:global}' bound must be below or equal to that in the trait
 github-issue-211-rules.dfy(23,43): Error: decreases expression must be bounded below by 0
@@ -47,27 +47,27 @@ github-issue-211-tie.dfy(21,42): Error: decreases clause might not decrease (the
 github-issue-211-tie.dfy(28,46): Error: decreases clause might not decrease (the dispatched callee has no 'decreases {:global}' bound, which --modular-termination requires of a member of a {:termination false} trait)
 
 Dafny program verifier finished with 4 verified, 3 errors
-tie with constant bounds, option on, refresh true: rejected
+tie with constant bounds, default, refresh true: rejected
 github-issue-211-tie-bounds.dfy(21,42): Error: decreases clause might not decrease (modular termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
 
 Dafny program verifier finished with 6 verified, 1 error
-counter, option on, refresh true: verifies
+counter, default, refresh true: verifies
 
 Dafny program verifier finished with 12 verified, 0 errors
-counter vacuity control, option on, refresh true: each assert false fails
+counter vacuity control, default, refresh true: each assert false fails
 github-issue-211-counter-false.dfy(15,96): Error: assertion might not hold
 github-issue-211-counter-false.dfy(20,8): Error: assertion might not hold
 github-issue-211-counter-false.dfy(29,96): Error: assertion might not hold
 github-issue-211-counter-false.dfy(36,8): Error: assertion might not hold
 
 Dafny program verifier finished with 8 verified, 4 errors
-entry, option on, refresh true
+entry, default, refresh true
 github-issue-211-entry.dfy(25,32): Error: decreases clause might not decrease (modular termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
 github-issue-211-entry.dfy(31,32): Error: decreases clause might not decrease (modular termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
 github-issue-211-entry.dfy(40,8): Error: assertion might not hold
 
 Dafny program verifier finished with 5 verified, 3 errors
-rules, option on, refresh true
+rules, default, refresh true
 github-issue-211-rules.dfy(9,44): Error: possible division by zero
 github-issue-211-rules.dfy(19,11): Error: method's 'decreases {:global}' bound must be below or equal to that in the trait
 github-issue-211-rules.dfy(23,43): Error: decreases expression must be bounded below by 0
@@ -75,10 +75,10 @@ github-issue-211-rules.dfy(7,51): Related location: this decreases clause was no
 github-issue-211-rules.dfy(48,51): Error: decreases clause might not decrease (modular termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
 
 Dafny program verifier finished with 9 verified, 4 errors
-clauses, option on: at most one global clause
+clauses, default: at most one global clause
 github-issue-211-clauses.dfy(4,14): Error: method 'TwoClauses' has more than one 'decreases {:global}' clause
 1 resolution/type errors detected in github-issue-211-clauses.dfy
-hints, option on
+hints, default
 github-issue-211-hints.dfy(16,7): Info: modular termination: in 'Client.Calls', dispatch of 'Tr.T.F' to implementations that other modules may provide needs the smaller-bound rule; checked: the callee's global bound must be below the caller's
 github-issue-211-hints.dfy(17,9): Info: modular termination: in 'Client.Calls', dispatch of 'Tr.T.G' to implementations that other modules may provide needs the smaller-bound rule; the callee has no 'decreases {:global}' bound, so the call is rejected
 github-issue-211-hints.dfy(18,9): Info: modular termination: in 'Client.Calls', a call of 'Tr.T.H', which can reach dispatch to implementations that other modules may provide, runs under the caller's bound (same-bound rule); the callee has no 'decreases {:global}' bound, so the call is rejected
@@ -88,20 +88,20 @@ github-issue-211-hints.dfy(24,13): Info: modular termination: in 'Client.Collect
 github-issue-211-hints.dfy(26,10): Info: modular termination: in 'Client.Collections', an array allocation's calls of its initializing function needs the smaller-bound rule; holds: the caller has no 'decreases {:global}' bound, which is above every bound; the value's code is not known
 
 Dafny program verifier did not attempt verification
-refinement, option on
+refinement, default
 github-issue-211-refinement.dfy(16,42): Error: decreases clause might not decrease (modular termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
 
 Dafny program verifier finished with 3 verified, 1 error
-gap helpers, option on: each forwarding call rejected
+gap helpers, default: each forwarding call rejected
 github-issue-211-gap-helper.dfy(24,33): Error: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
 github-issue-211-gap-helper.dfy(52,34): Error: decreases clause might not decrease (modular termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
 github-issue-211-gap-helper.dfy(78,43): Error: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
 
 Dafny program verifier finished with 9 verified, 3 errors
-same bound, option on, refresh false: verifies
+same bound, default, refresh false: verifies
 
 Dafny program verifier finished with 15 verified, 0 errors
-same bound vacuity control, option on, refresh false: each assert false fails
+same bound vacuity control, default, refresh false: each assert false fails
 github-issue-211-same-bound-false.dfy(15,47): Error: assertion might not hold
 github-issue-211-same-bound-false.dfy(21,6): Error: assertion might not hold
 github-issue-211-same-bound-false.dfy(27,37): Error: assertion might not hold
@@ -113,7 +113,7 @@ github-issue-211-same-bound-false.dfy(72,105): Error: assertion might not hold
 github-issue-211-same-bound-false.dfy(82,53): Error: assertion might not hold
 
 Dafny program verifier finished with 7 verified, 9 errors
-same-bound rules, option on, refresh false
+same-bound rules, default, refresh false
 github-issue-211-same-bound-rules.dfy(31,33): Error: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
 github-issue-211-same-bound-rules.dfy(34,15): Error: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
 github-issue-211-same-bound-rules.dfy(39,34): Error: decreases clause might not decrease (modular termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
@@ -125,10 +125,10 @@ github-issue-211-same-bound-rules.dfy(108,41): Error: decreases clause might not
 github-issue-211-same-bound-rules.dfy(116,34): Error: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
 
 Dafny program verifier finished with 27 verified, 9 errors
-same bound, option on, refresh true: verifies
+same bound, default, refresh true: verifies
 
 Dafny program verifier finished with 15 verified, 0 errors
-same bound vacuity control, option on, refresh true: each assert false fails
+same bound vacuity control, default, refresh true: each assert false fails
 github-issue-211-same-bound-false.dfy(15,47): Error: assertion might not hold
 github-issue-211-same-bound-false.dfy(21,6): Error: assertion might not hold
 github-issue-211-same-bound-false.dfy(27,37): Error: assertion might not hold
@@ -140,7 +140,7 @@ github-issue-211-same-bound-false.dfy(72,105): Error: assertion might not hold
 github-issue-211-same-bound-false.dfy(82,53): Error: assertion might not hold
 
 Dafny program verifier finished with 7 verified, 9 errors
-same-bound rules, option on, refresh true
+same-bound rules, default, refresh true
 github-issue-211-same-bound-rules.dfy(31,33): Error: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
 github-issue-211-same-bound-rules.dfy(34,15): Error: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
 github-issue-211-same-bound-rules.dfy(39,34): Error: decreases clause might not decrease (modular termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
@@ -152,38 +152,38 @@ github-issue-211-same-bound-rules.dfy(108,41): Error: decreases clause might not
 github-issue-211-same-bound-rules.dfy(116,34): Error: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
 
 Dafny program verifier finished with 27 verified, 9 errors
-gap constraint, option on: the type test rejected
+gap constraint, default: the type test rejected
 github-issue-211-gap-constraint.dfy(23,58): Error: modular termination: in 'Y.Y.F', this may evaluate the constraint or witness of type 'S.Good', which can reach dispatch to implementations that other modules may provide and has no 'decreases {:global}' bound, so it cannot run under the caller's bound (same-bound rule)
 1 resolution/type errors detected in github-issue-211-gap-constraint.dfy
-constraint, option on, refresh false: verifies
+constraint, default, refresh false: verifies
 
 Dafny program verifier finished with 6 verified, 0 errors
-constraint vacuity control, option on, refresh false: each assert false fails
+constraint vacuity control, default, refresh false: each assert false fails
 github-issue-211-constraint-false.dfy(27,6): Error: assertion might not hold
 github-issue-211-constraint-false.dfy(31,56): Error: assertion might not hold
 github-issue-211-constraint-false.dfy(35,6): Error: assertion might not hold
 github-issue-211-constraint-false.dfy(40,6): Error: assertion might not hold
 
 Dafny program verifier finished with 4 verified, 4 errors
-constraint reach, option on, refresh false
+constraint reach, default, refresh false
 github-issue-211-constraint-reach.dfy(25,63): Error: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
 
 Dafny program verifier finished with 2 verified, 1 error
-constraint, option on, refresh true: verifies
+constraint, default, refresh true: verifies
 
 Dafny program verifier finished with 6 verified, 0 errors
-constraint vacuity control, option on, refresh true: each assert false fails
+constraint vacuity control, default, refresh true: each assert false fails
 github-issue-211-constraint-false.dfy(27,6): Error: assertion might not hold
 github-issue-211-constraint-false.dfy(31,56): Error: assertion might not hold
 github-issue-211-constraint-false.dfy(35,6): Error: assertion might not hold
 github-issue-211-constraint-false.dfy(40,6): Error: assertion might not hold
 
 Dafny program verifier finished with 4 verified, 4 errors
-constraint reach, option on, refresh true
+constraint reach, default, refresh true
 github-issue-211-constraint-reach.dfy(25,63): Error: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
 
 Dafny program verifier finished with 2 verified, 1 error
-constraint rules, option on, refresh true: each marked use rejected
+constraint rules, default, refresh true: each marked use rejected
 github-issue-211-constraint-rules.dfy(47,11): Error: modular termination: in 'Y.Res', this may evaluate the constraint or witness of type 'S.Good2', which can reach dispatch to implementations that other modules may provide and has no 'decreases {:global}' bound, so it cannot run under the caller's bound (same-bound rule)
 github-issue-211-constraint-rules.dfy(34,58): Error: modular termination: in 'Y.Y.F', this may evaluate the constraint or witness of type 'S.Good', which can reach dispatch to implementations that other modules may provide and has no 'decreases {:global}' bound, so it cannot run under the caller's bound (same-bound rule)
 github-issue-211-constraint-rules.dfy(37,10): Error: modular termination: in 'Y.Y.M', this may evaluate the constraint or witness of type 'S.N', which can reach dispatch to implementations that other modules may provide and has no 'decreases {:global}' bound, so it cannot run under the caller's bound (same-bound rule)
@@ -192,12 +192,12 @@ github-issue-211-constraint-rules.dfy(40,10): Error: modular termination: in 'Y.
 github-issue-211-constraint-rules.dfy(42,10): Error: modular termination: in 'Y.Y.M', this may evaluate the default values of the components of type 'S.Holder', which can reach dispatch to implementations that other modules may provide and has no 'decreases {:global}' bound, so it cannot run under the caller's bound (same-bound rule)
 github-issue-211-constraint-rules.dfy(42,24): Error: modular termination: in 'Y.Y.M', this may evaluate the constraint or witness of type 'S.Good2', which can reach dispatch to implementations that other modules may provide and has no 'decreases {:global}' bound, so it cannot run under the caller's bound (same-bound rule)
 7 resolution/type errors detected in github-issue-211-constraint-rules.dfy
-constraint hints, option on
+constraint hints, default
 github-issue-211-constraint.dfy(16,32): Info: newtype Byte resolves as target-complete {:nativeType "byte"} (detected range: 0 .. 256)
 github-issue-211-constraint.dfy(36,36): Info: modular termination: in 'Y.Probe', this may evaluate the constraint or witness of type 'S.Good', which can reach dispatch to implementations that other modules may provide and has no 'decreases {:global}' bound; holds: the caller has none, which is above every bound
 
 Dafny program verifier did not attempt verification
-same-bound hints, option on
+same-bound hints, default
 github-issue-211-same-bound.dfy(27,11): Info: tail recursive
 github-issue-211-same-bound.dfy(17,29): Info: modular termination: in 'L.H', dispatch of 'Tr.T.F' to implementations that other modules may provide needs the smaller-bound rule; checked: the callee's global bound must be below the caller's
 github-issue-211-same-bound.dfy(22,14): Info: modular termination: in 'L.HM', dispatch of 'Tr.T.M' to implementations that other modules may provide needs the smaller-bound rule; checked: the callee's global bound must be below the caller's
@@ -214,10 +214,10 @@ github-issue-211-same-bound.dfy(72,87): Info: modular termination: in 'C4.C.G', 
 github-issue-211-same-bound.dfy(82,33): Info: modular termination: in 'Y4.Y.F', a call of 'C4.C.G', which can reach dispatch to implementations that other modules may provide, runs under the caller's bound (same-bound rule); the callee has a 'decreases {:global}' bound, checked: it must not exceed the caller's
 
 Dafny program verifier did not attempt verification
-callback, option on, refresh false: verifies
+callback, default, refresh false: verifies
 
 Dafny program verifier finished with 10 verified, 0 errors
-callback vacuity control, option on, refresh false: each assert false fails
+callback vacuity control, default, refresh false: each assert false fails
 github-issue-211-callback-false.dfy(16,19): Error: assertion might not hold
 github-issue-211-callback-false.dfy(23,4): Error: assertion might not hold
 github-issue-211-callback-false.dfy(30,33): Error: assertion might not hold
@@ -229,7 +229,7 @@ github-issue-211-callback-false.dfy(65,95): Error: assertion might not hold
 github-issue-211-callback-false.dfy(67,53): Error: assertion might not hold
 
 Dafny program verifier finished with 2 verified, 9 errors
-callback rules, option on, refresh false
+callback rules, default, refresh false
 github-issue-211-callback-rules.dfy(22,4): Error: decreases clause might not decrease (modular termination: the 'decreases {:callback}' bound of 'g' must be below the caller's 'decreases {:global}' bound)
 github-issue-211-callback-rules.dfy(29,9): Error: decreases clause might not decrease (modular termination: the 'decreases {:callback}' bound of 'g' must not exceed that of the parameter it is passed for)
 github-issue-211-callback-rules.dfy(43,22): Error: decreases clause might not decrease (modular termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
@@ -238,10 +238,10 @@ github-issue-211-callback-rules.dfy(49,56): Error: decreases clause might not de
 github-issue-211-callback-rules.dfy(52,79): Error: decreases clause might not decrease (modular termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
 
 Dafny program verifier finished with 3 verified, 6 errors
-callback, option on, refresh true: verifies
+callback, default, refresh true: verifies
 
 Dafny program verifier finished with 10 verified, 0 errors
-callback vacuity control, option on, refresh true: each assert false fails
+callback vacuity control, default, refresh true: each assert false fails
 github-issue-211-callback-false.dfy(16,19): Error: assertion might not hold
 github-issue-211-callback-false.dfy(23,4): Error: assertion might not hold
 github-issue-211-callback-false.dfy(30,33): Error: assertion might not hold
@@ -253,7 +253,7 @@ github-issue-211-callback-false.dfy(65,95): Error: assertion might not hold
 github-issue-211-callback-false.dfy(67,53): Error: assertion might not hold
 
 Dafny program verifier finished with 2 verified, 9 errors
-callback rules, option on, refresh true
+callback rules, default, refresh true
 github-issue-211-callback-rules.dfy(22,4): Error: decreases clause might not decrease (modular termination: the 'decreases {:callback}' bound of 'g' must be below the caller's 'decreases {:global}' bound)
 github-issue-211-callback-rules.dfy(29,9): Error: decreases clause might not decrease (modular termination: the 'decreases {:callback}' bound of 'g' must not exceed that of the parameter it is passed for)
 github-issue-211-callback-rules.dfy(43,22): Error: decreases clause might not decrease (modular termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
@@ -262,7 +262,7 @@ github-issue-211-callback-rules.dfy(49,56): Error: decreases clause might not de
 github-issue-211-callback-rules.dfy(52,79): Error: decreases clause might not decrease (modular termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
 
 Dafny program verifier finished with 3 verified, 6 errors
-callback resolution rules, option on, refresh true: each marked use rejected
+callback resolution rules, default, refresh true: each marked use rejected
 github-issue-211-callback-resolve.dfy(7,71): Error: the first argument of a 'decreases {:callback f}' clause must be an in-parameter of the method or function, of an arrow type
 github-issue-211-callback-resolve.dfy(24,55): Error: an overriding member cannot declare a 'decreases {:callback}' clause: it has the callback bounds of the member it overrides
 github-issue-211-callback-resolve.dfy(45,87): Error: modular termination: in 'Y.Pre', a call of 'requires' of a function value needs the smaller-bound rule; rejected: the value's code is not known, so it has no bound, and the caller has one (pass the value for a parameter with a 'decreases {:callback}' bound)
@@ -272,7 +272,7 @@ github-issue-211-callback-resolve.dfy(34,6): Error: modular termination: in 'Y.Y
 github-issue-211-callback-resolve.dfy(36,7): Error: modular termination: in 'Y.Y.F', a sequence constructor's calls of its initializing function needs the smaller-bound rule; rejected: the value's code is not known, so it has no bound, and the caller has one (pass the value for a parameter with a 'decreases {:callback}' bound)
 github-issue-211-callback-resolve.dfy(39,14): Error: modular termination: in 'Y.Y.F', the value passed for parameter 'g' of 'L.Apply', which has a 'decreases {:callback}' bound, must be a lambda expression, a parameter with such a bound, a function that reaches no dispatched call, or the function of a bounded value
 8 resolution/type errors detected in github-issue-211-callback-resolve.dfy
-callback hints, option on
+callback hints, default
 github-issue-211-callback.dfy(51,13): Info: decreases n
 github-issue-211-callback.dfy(18,4): Info: modular termination: in 'L.Apply', a call through a function value needs the smaller-bound rule; checked: the parameter's 'decreases {:callback}' bound must be below the caller's
 github-issue-211-callback.dfy(24,9): Info: modular termination: in 'L.ApplyM', a call through a function value needs the smaller-bound rule; checked: the parameter's 'decreases {:callback}' bound must be below the caller's
@@ -297,16 +297,16 @@ Dafny program verifier finished with 4 verified, 0 errors
 rank gap, default: the bound rejected, as under the option
 github-issue-211-rank-gap.dfy(27,18): Error: modular termination: the 'decreases {:global}' bound of 'X.C.F' can reach dispatch to implementations that other modules may provide (bound -> General contract of 'Z.R' (publish {:termination_closed} for independent closed code)); a bound may only use code that cannot reach one, since its value must not depend on the termination that the bounds establish
 1 resolution/type errors detected in github-issue-211-rank-gap.dfy
-rank gap, option on, refresh false: the bound rejected
+rank gap, default, refresh false: the bound rejected
 github-issue-211-rank-gap.dfy(27,18): Error: modular termination: the 'decreases {:global}' bound of 'X.C.F' can reach dispatch to implementations that other modules may provide (bound -> General contract of 'Z.R' (publish {:termination_closed} for independent closed code)); a bound may only use code that cannot reach one, since its value must not depend on the termination that the bounds establish
 1 resolution/type errors detected in github-issue-211-rank-gap.dfy
-rank gap, option on, refresh true: the bound rejected
+rank gap, default, refresh true: the bound rejected
 github-issue-211-rank-gap.dfy(27,18): Error: modular termination: the 'decreases {:global}' bound of 'X.C.F' can reach dispatch to implementations that other modules may provide (bound -> General contract of 'Z.R' (publish {:termination_closed} for independent closed code)); a bound may only use code that cannot reach one, since its value must not depend on the termination that the bounds establish
 1 resolution/type errors detected in github-issue-211-rank-gap.dfy
-rank gap in the implementation's module, option on: the bound rejected
+rank gap in the implementation's module, default: the bound rejected
 github-issue-211-rank-gap-local.dfy(23,18): Error: modular termination: the 'decreases {:global}' bound of 'X.C.F' can reach dispatch to implementations that other modules may provide (bound -> 'X.R' -> dispatch of 'Tr.T.F'); a bound may only use code that cannot reach one, since its value must not depend on the termination that the bounds establish
 1 resolution/type errors detected in github-issue-211-rank-gap-local.dfy
-rank rules, option on, refresh false: each marked bound rejected
+rank rules, default, refresh false: each marked bound rejected
 github-issue-211-rank-rules.dfy(40,16): Error: modular termination: the 'decreases {:global}' bound of 'Routes.ByHelper' can reach dispatch to implementations that other modules may provide (bound -> 'Routes.Q' -> General contract of 'Tr.R' (publish {:termination_closed} for independent closed code)); a bound may only use code that cannot reach one, since its value must not depend on the termination that the bounds establish
 github-issue-211-rank-rules.dfy(46,16): Error: modular termination: the 'decreases {:global}' bound of 'Routes.ByConstant' can reach dispatch to implementations that other modules may provide (bound -> 'Routes.K.viaDispatch' -> dispatch of 'Tr.T.F'); a bound may only use code that cannot reach one, since its value must not depend on the termination that the bounds establish
 github-issue-211-rank-rules.dfy(52,16): Error: modular termination: the 'decreases {:global}' bound of 'Routes.ByTypeTest' can reach dispatch to implementations that other modules may provide (bound -> type 'Routes.Good' -> dispatch of 'Tr.T.F'); a bound may only use code that cannot reach one, since its value must not depend on the termination that the bounds establish
@@ -316,7 +316,7 @@ github-issue-211-rank-rules.dfy(71,16): Error: modular termination: the 'decreas
 github-issue-211-rank-rules.dfy(88,18): Error: modular termination: the 'decreases {:global}' bound of 'TraitBound.U.G' can reach dispatch to implementations that other modules may provide (bound -> 'TraitBound.Rank' -> dispatch of 'TraitBound.U.G'); a bound may only use code that cannot reach one, since its value must not depend on the termination that the bounds establish
 github-issue-211-rank-rules.dfy(88,18): Error: modular termination: the 'decreases {:global}' bound of 'TraitBound.U.G' can reach dispatch to implementations that other modules may provide (bound -> General contract of 'TraitBound.Rank' (publish {:termination_closed} for independent closed code)); a bound may only use code that cannot reach one, since its value must not depend on the termination that the bounds establish
 8 resolution/type errors detected in github-issue-211-rank-rules.dfy
-rank rules, option on, refresh true: each marked bound rejected
+rank rules, default, refresh true: each marked bound rejected
 github-issue-211-rank-rules.dfy(40,16): Error: modular termination: the 'decreases {:global}' bound of 'Routes.ByHelper' can reach dispatch to implementations that other modules may provide (bound -> 'Routes.Q' -> General contract of 'Tr.R' (publish {:termination_closed} for independent closed code)); a bound may only use code that cannot reach one, since its value must not depend on the termination that the bounds establish
 github-issue-211-rank-rules.dfy(46,16): Error: modular termination: the 'decreases {:global}' bound of 'Routes.ByConstant' can reach dispatch to implementations that other modules may provide (bound -> 'Routes.K.viaDispatch' -> dispatch of 'Tr.T.F'); a bound may only use code that cannot reach one, since its value must not depend on the termination that the bounds establish
 github-issue-211-rank-rules.dfy(52,16): Error: modular termination: the 'decreases {:global}' bound of 'Routes.ByTypeTest' can reach dispatch to implementations that other modules may provide (bound -> type 'Routes.Good' -> dispatch of 'Tr.T.F'); a bound may only use code that cannot reach one, since its value must not depend on the termination that the bounds establish
@@ -326,10 +326,10 @@ github-issue-211-rank-rules.dfy(71,16): Error: modular termination: the 'decreas
 github-issue-211-rank-rules.dfy(88,18): Error: modular termination: the 'decreases {:global}' bound of 'TraitBound.U.G' can reach dispatch to implementations that other modules may provide (bound -> 'TraitBound.Rank' -> dispatch of 'TraitBound.U.G'); a bound may only use code that cannot reach one, since its value must not depend on the termination that the bounds establish
 github-issue-211-rank-rules.dfy(88,18): Error: modular termination: the 'decreases {:global}' bound of 'TraitBound.U.G' can reach dispatch to implementations that other modules may provide (bound -> General contract of 'TraitBound.Rank' (publish {:termination_closed} for independent closed code)); a bound may only use code that cannot reach one, since its value must not depend on the termination that the bounds establish
 8 resolution/type errors detected in github-issue-211-rank-rules.dfy
-rank, option on, refresh false: verifies
+rank, default, refresh false: verifies
 
 Dafny program verifier finished with 14 verified, 0 errors
-rank vacuity control, option on, refresh false: each assert false fails
+rank vacuity control, default, refresh false: each assert false fails
 github-issue-211-rank-false.dfy(8,4): Error: assertion might not hold
 github-issue-211-rank-false.dfy(29,40): Error: assertion might not hold
 github-issue-211-rank-false.dfy(35,4): Error: assertion might not hold
@@ -342,10 +342,10 @@ github-issue-211-rank-false.dfy(80,4): Error: assertion might not hold
 github-issue-211-rank-false.dfy(92,6): Error: assertion might not hold
 
 Dafny program verifier finished with 4 verified, 10 errors
-rank, option on, refresh true: verifies
+rank, default, refresh true: verifies
 
 Dafny program verifier finished with 14 verified, 0 errors
-rank vacuity control, option on, refresh true: each assert false fails
+rank vacuity control, default, refresh true: each assert false fails
 github-issue-211-rank-false.dfy(8,4): Error: assertion might not hold
 github-issue-211-rank-false.dfy(29,40): Error: assertion might not hold
 github-issue-211-rank-false.dfy(35,4): Error: assertion might not hold
@@ -358,7 +358,7 @@ github-issue-211-rank-false.dfy(80,4): Error: assertion might not hold
 github-issue-211-rank-false.dfy(92,6): Error: assertion might not hold
 
 Dafny program verifier finished with 4 verified, 10 errors
-rank through specifications, option on: each call of the rank rejected by the same-bound rule
+rank through specifications, default: each call of the rank rejected by the same-bound rule
 github-issue-211-rank-spec.dfy(31,18): Error: decreases clause might not decrease (modular termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
 github-issue-211-rank-spec.dfy(46,17): Error: decreases clause might not decrease (modular termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
 github-issue-211-rank-spec.dfy(49,10): Error: decreases clause might not decrease (modular termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
@@ -370,7 +370,7 @@ github-issue-211-rank-spec.dfy(92,17): Error: decreases clause might not decreas
 github-issue-211-rank-spec.dfy(95,15): Error: decreases clause might not decrease (modular termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
 
 Dafny program verifier finished with 15 verified, 9 errors
-printed counter, option on: verifies
+printed counter, default: verifies
 
 Dafny program verifier finished with 12 verified, 0 errors
 printed callback clauses, legacy-off: attributes as written
@@ -378,10 +378,10 @@ printed callback clauses, legacy-off: attributes as written
     decreases {:global} {:callback g} n, 1, n, 0
     decreases {:global} {:callback g} n, 2, n, 0
     decreases {:global} {:callback g} n, 1, n, 0
-printed callback, option on: verifies
+printed callback, default: verifies
 
 Dafny program verifier finished with 10 verified, 0 errors
-printed tie with constant bounds, option on: rejected
+printed tie with constant bounds, default: rejected
 github-issue-211.dfy.tmp.tie-bounds.dfy(36,13): Error: decreases clause might not decrease (modular termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
 
 Dafny program verifier finished with 6 verified, 1 error
