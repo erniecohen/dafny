@@ -1,0 +1,38 @@
+git-issue-105-newtypes.dfy(29,23): Error: assertion might not hold
+git-issue-105-newtypes.dfy(32,11): Error: invariant might not hold
+git-issue-105-newtypes.dfy(13,20): Related location: this is the invariant that might not hold
+git-issue-105-newtypes.dfy(32,13): Error: invariant might not hold
+git-issue-105-newtypes.dfy(13,20): Related location: this is the invariant that might not hold
+git-issue-105-newtypes.dfy(38,13): Error: invariant might not hold
+git-issue-105-newtypes.dfy(13,20): Related location: this is the invariant that might not hold
+git-issue-105-newtypes.dfy(42,11): Error: invariant might not hold
+git-issue-105-newtypes.dfy(13,20): Related location: this is the invariant that might not hold
+git-issue-105-newtypes.dfy(42,13): Error: invariant might not hold
+git-issue-105-newtypes.dfy(13,20): Related location: this is the invariant that might not hold
+git-issue-105-newtypes.dfy(42,17): Error: invariant might not hold
+git-issue-105-newtypes.dfy(13,20): Related location: this is the invariant that might not hold
+git-issue-105-newtypes.dfy(54,11): Error: invariant might not hold
+git-issue-105-newtypes.dfy(13,20): Related location: this is the invariant that might not hold
+git-issue-105-newtypes.dfy(70,52): Error: invariant might not hold
+git-issue-105-newtypes.dfy(65,26): Related location: this is the invariant that might not hold
+git-issue-105-newtypes.dfy(71,49): Error: result of operation might violate newtype constraint for 'Small'
+git-issue-105-newtypes.dfy(73,24): Error: assertion might not hold
+git-issue-105-newtypes.dfy(83,32): Error: invariant might not hold
+git-issue-105-newtypes.dfy(78,20): Related location: this is the invariant that might not hold
+git-issue-105-newtypes.dfy(83,34): Error: invariant might not hold
+git-issue-105-newtypes.dfy(78,20): Related location: this is the invariant that might not hold
+git-issue-105-newtypes.dfy(90,67): Error: invariant might not hold
+git-issue-105-newtypes.dfy(78,20): Related location: this is the invariant that might not hold
+git-issue-105-newtypes.dfy(109,59): Error: result of operation might violate newtype constraint for 'Small'
+git-issue-105-newtypes.dfy(109,59): Error: invariant might not hold
+git-issue-105-newtypes.dfy(99,26): Related location: this is the invariant that might not hold
+git-issue-105-newtypes.dfy(115,12): Error: invariant might not hold
+git-issue-105-newtypes.dfy(112,46): Related location: this is the invariant that might not hold
+git-issue-105-newtypes.dfy(130,29): Error: invariant might not hold
+git-issue-105-newtypes.dfy(129,40): Related location: this is the invariant that might not hold
+git-issue-105-newtypes.dfy(150,11): Error: invariant might not hold
+git-issue-105-newtypes.dfy(146,44): Related location: this is the invariant that might not hold
+git-issue-105-newtypes.dfy(153,11): Error: invariant might not hold
+git-issue-105-newtypes.dfy(147,36): Related location: this is the invariant that might not hold
+
+Dafny program verifier finished with 34 verified, 20 errors

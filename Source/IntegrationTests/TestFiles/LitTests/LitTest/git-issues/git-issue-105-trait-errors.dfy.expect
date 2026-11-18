@@ -1,0 +1,10 @@
+git-issue-105-trait-errors.dfy(22,14): Error: the invariant of 'Savings' converts a raw value to 'Savings', by applying 'Half', which is not a raw member, to it
+git-issue-105-trait-errors.dfy(31,16): Error: the invariant of 'T' uses 'No', which is dynamically bound, so the bodies it stands for are not all known
+git-issue-105-trait-errors.dfy(45,28): Error: the invariant of 'L' uses 'F', which is dynamically bound, so the bodies it stands for are not all known
+git-issue-105-trait-errors.dfy(45,21): Error: the invariant of 'L' converts a raw value to 'T'
+git-issue-105-trait-errors.dfy(57,42): Error: 'P' is used by the invariant of 'L' and tests a raw value against 'T'
+git-issue-105-trait-errors.dfy(57,32): Error: 'P' is used by the invariant of 'L' and converts a raw value to 'raw T'
+git-issue-105-trait-errors.dfy(71,12): Error: an expression of type 'Shape' is not run-time checkable to be a 'Square'
+git-issue-105-trait-errors.dfy(88,11): Error: an expression of type 'raw P' is not run-time checkable to be a 'P'
+git-issue-105-trait-errors.dfy(97,4): Error: 'D' neither declares nor inherits an invariant, so it needs no witness: its values are its constructors' values
+9 resolution/type errors detected in git-issue-105-trait-errors.dfy

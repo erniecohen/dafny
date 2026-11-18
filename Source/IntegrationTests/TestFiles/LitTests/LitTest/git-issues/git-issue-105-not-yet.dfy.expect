@@ -1,0 +1,6 @@
+git-issue-105-not-yet.dfy(38,28): Error: 'raw' is not yet supported for newtype 'Tiny', whose constraint is given in its header and which has no member invariant
+git-issue-105-not-yet.dfy(43,4): Error: Function body type mismatch (expected bool, got int)
+2 resolution/type errors detected in git-issue-105-not-yet.dfy
+git-issue-105-not-yet.dfy.tmp.dfy(15,28): Error: 'raw' is not yet supported for newtype 'Tiny', whose constraint is given in its header and which has no member invariant
+git-issue-105-not-yet.dfy.tmp.dfy(50,4): Error: Function body type mismatch (expected bool, got int)
+2 resolution/type errors detected in git-issue-105-not-yet.dfy.tmp.dfy

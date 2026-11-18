@@ -1,0 +1,3 @@
+git-issue-105-exports.dfy(109,4): Error: assertion might not hold
+
+Dafny program verifier finished with 11 verified, 1 error

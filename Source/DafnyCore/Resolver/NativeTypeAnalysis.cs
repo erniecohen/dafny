@@ -86,28 +86,58 @@ class NativeTypeAnalysis {
 
     // Figure out the variable and constraint.  Usually, these would be just .Var and .Constraint, but
     // in the case .Var/.Constraint are null, these can be computed from the .BaseType recursively.
-    var ddVar = newtypeDecl.Var;
-    var ddConstraint = newtypeDecl.Constraint;
+    var (ddVar, ddConstraint, ddInheritsInvariants) = ConstraintOf(newtypeDecl);
     for (var ddWhereConstraintsAre = newtypeDecl; ddVar == null;) {
-      ddWhereConstraintsAre = ddWhereConstraintsAre.BaseType.AsNewtype;
+      var baseType = ddWhereConstraintsAre.BaseType;
+      ddWhereConstraintsAre = baseType.AsNewtype;
       if (ddWhereConstraintsAre == null) {
         break;
       }
-      ddVar = ddWhereConstraintsAre.Var;
-      ddConstraint = ddWhereConstraintsAre.Constraint;
+      (ddVar, ddConstraint, ddInheritsInvariants) = ConstraintOf(ddWhereConstraintsAre,
+        baseType.NormalizeExpandKeepConstraints() is UserDefinedType { ResolvedClass: InvariantTypeDecl });
     }
 
     var ancestorType = newtypeDecl.BaseType.NormalizeToAncestorType();
     if (ancestorType is BitvectorType bitvectorAncestorType) {
-      return FigureOutNativeTypeForBitvectorNewtype(newtypeDecl, bitvectorAncestorType, ddVar == null,
+      return FigureOutNativeTypeForBitvectorNewtype(newtypeDecl, bitvectorAncestorType, ddVar == null && !ddInheritsInvariants,
         nativeTypeChoices ?? ModuleResolver.NativeTypes, nativeTypeChoices != null);
     } else if (ancestorType is IntType) {
-      return FigureOutNativeTypeForIntegerNewtype(newtypeDecl, ddVar, ddConstraint,
+      return FigureOutNativeTypeForIntegerNewtype(newtypeDecl, ddVar, ddConstraint, ddInheritsInvariants,
         nativeTypeChoices ?? ModuleResolver.NativeTypes, nativeTypeChoices != null, out detectedRange);
     } else {
       // No native type available
       return [];
     }
+  }
+
+  /// <summary>
+  /// The variable and constraint of "newtypeDecl", and whether it also inherits invariants from traits, which give no
+  /// bounds. Issue 105: the values of a newtype N with member invariants that the compiled program holds are values of
+  /// N, which satisfy the invariants, since "raw N" is ghost. So the constraint is the conjunction of the constraint of
+  /// its header in the old syntax, which the declaration of N has given up to its InvariantTypeDecl, and the bodies of
+  /// the invariants N declares, with "this" as the variable, so that "this as B" is the variable converted to its own
+  /// type B. A newtype that is based on "raw N" has the values of "raw N" instead ("viaInvariants" is false), which are
+  /// bounded by nothing more than the base type of N.
+  /// </summary>
+  private static (BoundVar, Expression, bool) ConstraintOf(NewtypeDecl newtypeDecl, bool viaInvariants = true) {
+    if (newtypeDecl.InvariantTypeDecl is not { } invariantTypeDecl) {
+      return (newtypeDecl.Var, newtypeDecl.Constraint, false);
+    }
+    if (!viaInvariants) {
+      return (null, null, false);
+    }
+    // The header's constraint as the InvariantTypeDecl has it (see InvariantTypeDecl.HeaderConjunctOf)
+    var header = invariantTypeDecl.HeaderConjunct as LetExpr;
+    var variable = header?.LHSs[0].Var ?? new BoundVar(newtypeDecl.Origin, "this", newtypeDecl.BaseType);
+    var constraint = header?.Body;
+    var receiver = new IdentifierExpr(variable.Origin, variable);
+    var substituter = new Substituter(receiver, new Dictionary<IVariable, Expression>(), new Dictionary<TypeParameter, Type>());
+    foreach (var invariant in InvariantTypeDecl.Invariants(newtypeDecl)) {
+      var body = substituter.Substitute(invariant.Body);
+      constraint = constraint == null ? body : Expression.CreateAnd(constraint, body, false);
+    }
+    return constraint == null ? (null, null, invariantTypeDecl.InheritedInvariants.Count != 0)
+      : (variable, constraint, invariantTypeDecl.InheritedInvariants.Count != 0);
   }
 
   /// <summary>
@@ -194,7 +224,7 @@ class NativeTypeAnalysis {
   /// </summary>
   [CanBeNull]
   private List<(NativeType, bool coversEntireIntegerRange)> FigureOutNativeTypeForIntegerNewtype(NewtypeDecl dd,
-    [CanBeNull] BoundVar ddVar, [CanBeNull] Expression ddConstraint,
+    [CanBeNull] BoundVar ddVar, [CanBeNull] Expression ddConstraint, bool otherConstraints,
     List<NativeType> nativeTypesUnderConsideration, bool reportErrorIfTUCDoesNotFit,
     out string detectedRange) {
     Contract.Requires((ddVar == null) == (ddConstraint == null));
@@ -230,6 +260,7 @@ class NativeTypeAnalysis {
       }
     }
 
+    constraintConsistsSolelyOfRangeConstraints &= !otherConstraints;
     var emptyRange = lowBound != null && highBound != null && highBound <= lowBound;
     detectedRange = lowBound == null || highBound == null ? "" : emptyRange ? "empty" : $"{lowBound} .. {highBound}";
 

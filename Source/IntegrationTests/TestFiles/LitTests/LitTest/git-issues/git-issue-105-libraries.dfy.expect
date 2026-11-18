@@ -1,0 +1,25 @@
+
+Dafny program verifier did not attempt verification
+git-issue-105-libraries.dfy(24,4): Error: a program that declares a member invariant may not declare a codatatype, but it declares codatatype 'Stream' in module 'CoLib'
+1 resolution/type errors detected in git-issue-105-libraries.dfy
+git-issue-105-uses-codatatype.dfy(3,13): Error: a program that declares a member invariant may not declare a codatatype, but 'Pos' in module 'InvLib' declares an invariant
+1 resolution/type errors detected in git-issue-105-uses-codatatype.dfy
+
+Dafny program verifier did not attempt verification
+
+Dafny program verifier did not attempt verification
+
+Dafny program verifier did not attempt verification
+
+Dafny program verifier did not attempt verification
+
+Dafny program verifier did not attempt verification
+
+Dafny program verifier did not attempt verification
+git-issue-105-libraries.dfy(24,4): Error: a program that declares a member invariant may not declare a codatatype, but it declares codatatype 'Stream' in module 'CoLib'
+1 resolution/type errors detected in git-issue-105-libraries.dfy
+git-issue-105-uses-codatatype.dfy(3,13): Error: a program that declares a member invariant may not declare a codatatype, but 'Pos' in module 'InvLib' declares an invariant
+1 resolution/type errors detected in git-issue-105-uses-codatatype.dfy
+CLI: Error: cannot load git-issue-105-libraries.dfy.tmp-invariant.doo: --member-invariants is set locally to False, but the library was built with True
+
+Dafny program verifier did not attempt verification

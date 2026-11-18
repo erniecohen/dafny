@@ -74,7 +74,14 @@ namespace Microsoft.Dafny {
       Contract.Requires(context != null);
       if (context is ICallable caller && type is NonProxyType) {
         type.ForeachTypeComponent(ty => {
-          if ((ty as UserDefinedType)?.ResolvedClass is ICallable cl && caller.EnclosingModule == cl.EnclosingModule) {
+          var decl = (ty as UserDefinedType)?.ResolvedClass;
+          if (decl is InvariantTypeDecl invariantTypeDecl) {
+            // Issue 105: a use of the type that the name of a type with member invariants denotes is a use of that
+            // type. Whether the invariants refer to the set of values of their own type is the extension condition,
+            // which is checked separately.
+            decl = invariantTypeDecl.Owner;
+          }
+          if (decl is ICallable cl && caller.EnclosingModule == cl.EnclosingModule) {
             caller.EnclosingModule.CallGraph.AddEdge(caller, cl);
           }
         });

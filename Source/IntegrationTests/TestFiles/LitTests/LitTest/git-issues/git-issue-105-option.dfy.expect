@@ -1,0 +1,5 @@
+git-issue-105-option.dfy(10,2): Error: rbrace expected
+1 parse errors detected in git-issue-105-option.dfy
+git-issue-105-option.dfy(10,2): Error: rbrace expected
+1 parse errors detected in git-issue-105-option.dfy
+Error: --member-invariants requires --type-system-refresh

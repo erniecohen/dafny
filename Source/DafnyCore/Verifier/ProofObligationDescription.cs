@@ -1245,6 +1245,27 @@ public class IndicesInDomain : ProofObligationDescription {
   }
 }
 
+/// <summary>
+/// Issue 105: one invariant of a type with member invariants, checked where a value is converted to that type.
+/// </summary>
+public class InvariantCheck : ProofObligationDescription {
+  public override string SuccessDescription =>
+    $"invariant of '{targetType}' holds";
+
+  public override string FailureDescription =>
+    $"{prefix}invariant might not hold";
+
+  public override string ShortDescription => "invariant";
+
+  private readonly string targetType;
+  private readonly string prefix;
+
+  public InvariantCheck(string targetType, string prefix = "") {
+    this.targetType = targetType;
+    this.prefix = prefix;
+  }
+}
+
 public class WitnessCheck : ProofObligationDescription {
   public override string SuccessDescription =>
     "type is inhabited";

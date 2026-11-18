@@ -4237,9 +4237,11 @@ namespace Microsoft.Dafny {
             reporter.Error(MessageSource.Resolver, t.Origin, "expected type");
           } else if (r.Type is ResolverIdentifierExpr.ResolverTypeType) {
             var d = r.Decl;
-            if (d is AbstractTypeDecl) {
+            if (d is AbstractTypeDecl abstractTypeDecl) {
               // resolve like a type parameter, and it may have type parameters if it's an abstract type
-              t.ResolvedClass = d;  // Store the decl, so the compiler will generate the fully qualified name
+              // Store the decl, so the compiler will generate the fully qualified name. Issue 105: for an abstract
+              // type with member invariants, the name denotes the derived subset type, and "raw T" the declaration.
+              t.ResolvedClass = t.IsRawSyntax ? d : (TopLevelDecl)abstractTypeDecl.InvariantTypeDecl ?? d;
             } else if (d is RedirectingTypeDecl) {
               var dd = (RedirectingTypeDecl)d;
               var caller = CodeContextWrapper.Unwrap(resolutionContext.CodeContext) as ICallable;
@@ -4253,12 +4255,26 @@ namespace Microsoft.Dafny {
                   reporter.Error(MessageSource.Resolver, d.Origin, "recursive constraint dependency involving a {0}: {1} -> {1}", d.WhatKind, d.Name);
                 }
               }
-              t.ResolvedClass = d;
-            } else if (d is DatatypeDecl) {
-              t.ResolvedClass = d;
+              // Issue 105: for a class with member invariants, "raw C" denotes the raw non-null type. For a newtype with
+              // member invariants, the name denotes the derived subset type, and "raw N" the newtype itself.
+              t.ResolvedClass = t.IsRawSyntax && d is NonNullTypeDecl { Class.RawNonNullTypeDecl: { } rawNonNullTypeDecl }
+                ? rawNonNullTypeDecl
+                : !t.IsRawSyntax && d is NewtypeDecl { InvariantTypeDecl: { } newtypeInvariantTypeDecl } ? newtypeInvariantTypeDecl
+                : d;
+            } else if (d is DatatypeDecl datatypeDecl) {
+              // Issue 105: for a datatype with member invariants, the name denotes the derived subset type, and
+              // "raw D" denotes the datatype itself.
+              t.ResolvedClass = t.IsRawSyntax ? d : (TopLevelDecl)datatypeDecl.InvariantTypeDecl ?? d;
+            } else if (d is ClassLikeDecl { InvariantTypeDecl: { } classInvariantTypeDecl } && !t.IsRawSyntax) {
+              // Issue 105: for a class with member invariants, "C?" denotes the derived subset type, and "raw C?"
+              // denotes the class itself.
+              t.ResolvedClass = classInvariantTypeDecl;
             } else {
               // d is a type parameter, coinductive datatype, or class, and it may have type parameters
               t.ResolvedClass = d;
+            }
+            if (t.IsRawSyntax) {
+              CheckRawType(t, d);
             }
             if (option.Opt == ResolveTypeOptionEnum.DontInfer) {
               // don't add anything
@@ -4291,6 +4307,46 @@ namespace Microsoft.Dafny {
         Contract.Assert(false); throw new Cce.UnreachableException();  // unexpected type
       }
       return null;
+    }
+
+    /// <summary>
+    /// Issue 105: "raw T" (parsed only under --member-invariants) applies to a declaration that can declare a
+    /// member invariant: a datatype, class, trait, newtype or abstract type. So far, inductive datatypes, classes,
+    /// traits, abstract types and newtypes are supported, but not a newtype whose header in the old syntax gives a
+    /// constraint while it has no invariant: "raw N" would be the base type with no constraint, a type the program
+    /// does not otherwise have.
+    /// </summary>
+    private void CheckRawType(UserDefinedType t, TopLevelDecl d) {
+      var decl = d is NonNullTypeDecl nonNullTypeDecl ? nonNullTypeDecl.Class : d;
+      if (decl is NewtypeDecl { InvariantTypeDecl: null, Var: not null } oldSyntaxNewtype) {
+        reporter.Error(MessageSource.Resolver, t.Origin,
+          "'raw' is not yet supported for newtype '{0}', whose constraint is given in its header and which has no member invariant",
+          oldSyntaxNewtype.Name);
+        return;
+      }
+      if (decl is IndDatatypeDecl or ClassDecl or TraitDecl or AbstractTypeDecl or NewtypeDecl) {
+        // Where a declaration is provided but not revealed, its members, the invariants among them, are not. That is so
+        // in a scope that sees it as provided only, and in the view that an export set makes of it, which is checked for
+        // consistency on its own.
+        var providedOnly = decl is AbstractTypeDecl { ProvidedOnlyViewOf: { } original } ? original
+          : !decl.IsRevealedInScope(Type.GetScope()) ? decl : null;
+        if (providedOnly != null) {
+          reporter.Error(MessageSource.Resolver, t.Origin,
+            "'raw' is not yet supported for {0} '{1}', which is provided but not revealed here", providedOnly.WhatKind,
+            providedOnly.Name);
+        }
+        return;
+      }
+      if (decl is TypeParameter) {
+        reporter.Error(MessageSource.Resolver, t.Origin, "'raw' does not apply to type parameter '{0}'", decl.Name);
+      } else if (decl.EnclosingModuleDefinition == SystemModuleManager.SystemModule ||
+                 decl is not (ClassLikeDecl or NewtypeDecl or AbstractTypeDecl)) {
+        reporter.Error(MessageSource.Resolver, t.Origin,
+          "'raw' applies only to a type that can declare a member invariant (a datatype, class, trait, newtype or abstract type), not to {0} '{1}'",
+          decl.WhatKind, decl.Name);
+      } else {
+        reporter.Error(MessageSource.Resolver, t.Origin, "'raw' is not yet supported for {0} '{1}'", decl.WhatKind, decl.Name);
+      }
     }
 
     /// <summary>
