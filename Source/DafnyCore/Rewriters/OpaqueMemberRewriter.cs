@@ -20,6 +20,11 @@ public class OpaqueMemberRewriter : IRewriter {
   public static bool IsGeneratedRevealLemma(INode node) =>
     node is Method method && GeneratedRevealLemmas.TryGetValue(method, out _);
 
+  // A function reveal only changes fuel/visibility. A constant reveal also evaluates
+  // its defining expression in a postcondition, so it does not have this property.
+  public static bool IsGeneratedFunctionRevealLemma(INode node) =>
+    node is Method method && GeneratedRevealLemmas.TryGetValue(method, out var revealed) && revealed is Function;
+
   /// <summary>
   /// A copy of a generated reveal lemma, such as the one a refinement makes of each member of the
   /// module it refines, is generated too (https://github.com/erniecohen/dafny/issues/357).  A lemma

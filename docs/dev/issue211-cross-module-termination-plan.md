@@ -772,6 +772,14 @@ The remaining M4 decisions are:
   a bodyless virtual slot remains rejected by the M2 controls. No axiom or
   unproved slot certificate is added.
 
+The checked-Std migration also requires function reveals in Closed proofs. A generated
+function reveal changes fuel/visibility and has no user evaluation; it now carries a
+Closed contract by compiler provenance, retained through refinement copies. This does
+not recognize user-written `opaque_reveal` or `auto_generated` attributes, and does
+not cover a constant reveal, whose defining expression appears in a postcondition.
+The reveal control driver checks these distinctions and reachable `assert false`
+under both resolvers. No axiom or evaluation premise is added.
+
 ### 7.6 Triage after portable contracts
 
 The same 65 suspect tests were compared on the prerequisite build `b831b6b8c`

@@ -157,6 +157,9 @@ public static class ModularTermination {
   }
 
   public static bool HasClosedContract(Declaration declaration) {
+    if (OpaqueMemberRewriter.IsGeneratedFunctionRevealLemma(declaration)) {
+      return true;
+    }
     if (Attributes.Contains(declaration.Attributes, ClosedAttributeName)) {
       return true;
     }
