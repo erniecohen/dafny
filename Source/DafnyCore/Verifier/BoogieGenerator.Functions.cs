@@ -442,6 +442,14 @@ public partial class BoogieGenerator {
     foreach (AttributedExpression req in ConjunctsOf(f.Req)) {
       pre = BplAnd(pre, etran.TrExpr(Substitute(req.E, receiverReplacement, substMap)));
     }
+    if (f is MemberInvariant invariant) {
+      // Issue 105: an invariant is well formed where the invariants before it hold, as successive requires clauses
+      // are (see EarlierInvariants), so they are its precondition, and its #requires, with the #canCall that gives,
+      // holds only where they do
+      foreach (var earlier in InvariantTypeDecl.EarlierInvariants(invariant)) {
+        pre = BplAnd(pre, etran.TrExpr(Substitute(earlier, receiverReplacement, substMap)));
+      }
+    }
 
     var preReqAxiom = pre;
     if (f is TwoStateFunction) {

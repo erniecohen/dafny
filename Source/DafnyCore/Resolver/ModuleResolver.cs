@@ -1244,6 +1244,16 @@ namespace Microsoft.Dafny {
         foreach (var d in declarations.OfType<TopLevelDeclWithMembers>().Where(d => d.InvariantTypeDecl != null)) {
           SetInheritedInvariants(d);
         }
+        // The promise "(0)" or "(00)" of an abstract type with invariants is kept by a witness, which only a
+        // refinement that defines the type gives (see InvariantTypeDecl.PromisedAutoInit). Only an abstract module is
+        // refined before any concrete use; a client of any other module takes the promise as it is written.
+        foreach (var d in declarations.OfType<AbstractTypeDecl>().Where(d => d.InvariantTypeDecl != null &&
+                   d.Characteristics.IsNonempty && d.EnclosingModuleDefinition.ModuleKind != ModuleKindEnum.Abstract)) {
+          var promise = d.Characteristics.HasCompiledValue ? "(0)" : "(00)";
+          reporter.Error(MessageSource.Resolver, d.Origin,
+            $"abstract type '{d.Name}' has invariants, so it may be declared {promise} only in an abstract module, " +
+            $"where each refinement that defines it keeps that promise with a witness; module '{d.EnclosingModuleDefinition.Name}' is not abstract");
+        }
         // A datatype with no invariant needs no witness. MemberInvariantChecks rejects the witness of one that
         // extends no trait and refines nothing; here the others are known.
         foreach (var d in declarations.OfType<IndDatatypeDecl>().Where(d => d.InvariantTypeDecl == null &&

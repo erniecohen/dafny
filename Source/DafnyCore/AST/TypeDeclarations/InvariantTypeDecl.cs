@@ -101,7 +101,8 @@ public class InvariantTypeDecl : SubsetTypeDecl {
   /// <summary>
   /// The characteristics that the header of an abstract type with invariants states, "(0)" or "(00)", are promises
   /// about the type with its invariants, which every refinement keeps by supplying a witness (section 4.3 of the
-  /// plan). The refinement's characteristics are checked where it refines the abstract type.
+  /// plan). The refinement's characteristics are checked where it refines the abstract type. Only an abstract module
+  /// may make such a promise (ModuleResolver), since only it is refined before any concrete use.
   /// </summary>
   public static Type.AutoInitInfo PromisedAutoInit(AbstractTypeDecl owner) {
     return owner.Characteristics.HasCompiledValue ? Type.AutoInitInfo.CompilableValue
