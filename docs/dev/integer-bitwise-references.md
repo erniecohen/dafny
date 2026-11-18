@@ -29,9 +29,12 @@ objects. A user may shadow that spelling, but then receives ordinary source
 semantics; its declaration cannot replace the installed object. The compiler
 signatures are reconstructed from the installed compiler on `.doo` reload.
 `integer-bitwise` is a Global option with `OptionLibraryImpliesLocalError`:
-an enabled library requires an enabled client. The existing exact product-version
-check remains the reference ABI. Source and library contents do not authenticate
-new compiler declarations.
+an enabled library requires an enabled client. Its manifest also binds the reference
+ABI to the full Dafny product version, including the fork revision. A missing or
+different binding requires rebuilding the library: the numeric file version alone
+is shared by fork revisions and cannot identify the installed equations. Disabled
+libraries retain the existing manifest and compatibility path. Source and library
+contents do not authenticate new compiler declarations.
 
 The following mapping is exact. Width `n` is `nat`; all other inputs and every
 raw result are `int`. Arguments retain the M1 order.

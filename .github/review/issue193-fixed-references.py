@@ -8,6 +8,7 @@ import os
 from pathlib import Path
 import re
 import subprocess
+import zipfile
 
 ROOT = Path(__file__).resolve().parents[2]
 MODEL = ROOT / 'Source/DafnyStandardLibraries/optional/IntegerBitwise.dfy'
@@ -195,9 +196,30 @@ def main():
     invoke(['resolve', str(client), '--standard-libraries:false', '--library', str(library)],
            'library-disabled', 1, ['--integer-bitwise is set locally to False, but the library was built with True'])
 
+    # FileVersion alone does not identify fork reference equations. Missing or
+    # different product-version bindings must not import their proof contracts.
+    with zipfile.ZipFile(library) as archive:
+        manifest = archive.read('manifest.toml').decode()
+        binding = re.search(r'^integer_bitwise_reference_version = "([^"]+)"$', manifest, re.M)
+        assert binding, manifest
+        for name, replacement in [('missing', ''), ('mismatch', 'integer_bitwise_reference_version = "different-product-version"')]:
+            incompatible = out / (name + '.doo')
+            with zipfile.ZipFile(incompatible, 'w') as target:
+                for entry in archive.infolist():
+                    contents = archive.read(entry)
+                    if entry.filename == 'manifest.toml':
+                        contents = (manifest[:binding.start()] + replacement + manifest[binding.end():]).encode()
+                    target.writestr(entry, contents)
+            invoke(['resolve', str(client), '--integer-bitwise', '--standard-libraries:false',
+                    '--library', str(incompatible)],
+                   'library-abi-' + name, 1, ['integer-bitwise reference ABI does not match this Dafny product version; rebuild the library with this version'])
+
     # An off-built user library may spell the same names, but gets no privilege.
     spoof_library = out / 'spoof.doo'
     invoke(['build', str(spoof), '--target:lib', *common, '--integer-bitwise:false', '--output', str(spoof_library)], 'spoof-library-build')
+    with zipfile.ZipFile(spoof_library) as archive:
+        manifest = archive.read('manifest.toml').decode()
+        assert 'integer_bitwise_reference_version' not in manifest and 'integer-bitwise' not in manifest, manifest
     spoof_client = source('spoof-client', ['import T = Spoof',
         'lemma SpoofClient() { T.IntegerBitwiseModel.unfoldP(0); assert T.IntegerBitwiseModel.P(0)==7; }',
         'lemma FixedClient() { IntegerBitwiseModel.unfoldP(0); assert IntegerBitwiseModel.P(0)==1; }'])

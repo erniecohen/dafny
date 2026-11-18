@@ -1,1 +1,2 @@
 Add the opt-in --integer-bitwise ghost reference interface and explicit one-step unfolding lemmas, with a checked source companion proving agreement with the bounded-integer bitwise reference model. Integer-newtype operators and native bitvector bridges remain later milestones.
+Libraries using the interface require the same full Dafny product version, so imported proof contracts cannot silently bind to another revision's reference equations.

@@ -6,6 +6,7 @@ using System.CommandLine;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using DafnyCore.Options;
@@ -21,6 +22,11 @@ namespace DafnyCore;
 public class DooFile {
   public const string Extension = ".doo";
 
+  // FileVersion is shared by fork revisions. Contracts over compiler-owned references
+  // require the full product version, whose revision identifies their equations.
+  private static string IntegerBitwiseReferenceVersion => typeof(DooFile).Assembly
+    .GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion;
+
   private const string ProgramFileEntry = "program";
 
   private const string ManifestFileEntry = "manifest.toml";
@@ -30,6 +36,8 @@ public class DooFile {
     public string DooFileVersion { get; set; }
 
     public string DafnyVersion { get; set; }
+
+    public string? IntegerBitwiseReferenceVersion { get; set; }
 
     public string? SolverIdentifier { get; set; }
     public string? SolverVersion { get; set; }
@@ -56,6 +64,8 @@ public class DooFile {
     public ManifestData(DafnyOptions options) {
       DooFileVersion = CurrentDooFileVersion;
       DafnyVersion = options.VersionNumber;
+      IntegerBitwiseReferenceVersion = options.Get(CommonOptionBag.IntegerBitwise)
+        ? DooFile.IntegerBitwiseReferenceVersion : null;
 
       SolverIdentifier = options.SolverIdentifier;
       // options.SolverVersion may be null (if --no-verify is used for example)
@@ -75,7 +85,8 @@ public class DooFile {
         // Missing means the default in CheckAndGetLibraryOptions. Keep default-false feature and
         // legacy options byte-compatible with older manifests; presence is never proof of verification.
         if ((option == CommonOptionBag.LegacyNoModularTermination ||
-             option == CommonOptionBag.MemberInvariants || option == CommonOptionBag.RecursiveModules) && optionValue is false) {
+             option == CommonOptionBag.MemberInvariants || option == CommonOptionBag.RecursiveModules ||
+             option == CommonOptionBag.IntegerBitwise) && optionValue is false) {
           continue;
         }
         if (option == CommonOptionBag.QuantifierSyntax) {
@@ -213,7 +224,14 @@ public class DooFile {
       return null;
     }
 
-    return CheckAndGetLibraryOptions(reporter, file, options, origin, Manifest.Options);
+    var libraryOptions = CheckAndGetLibraryOptions(reporter, file, options, origin, Manifest.Options);
+    if (libraryOptions != null && libraryOptions.Get(CommonOptionBag.IntegerBitwise) &&
+        Manifest.IntegerBitwiseReferenceVersion != IntegerBitwiseReferenceVersion) {
+      reporter.Error(MessageSource.Project, origin,
+        $"cannot load {options.GetPrintPath(file.LocalPath)}: integer-bitwise reference ABI does not match this Dafny product version; rebuild the library with this version");
+      return null;
+    }
+    return libraryOptions;
   }
 
   public static DafnyOptions? CheckAndGetLibraryOptions(ErrorReporter reporter,
