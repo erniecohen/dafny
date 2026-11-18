@@ -48,7 +48,7 @@ public class ProgramParser {
     var compilation = new CompilationData(errorReporter, defaultModule.Includes, rootSourceUris, verifiedRoots,
       compiledRoots);
     compilation.UncheckedTerminationRoots =
-      files.Where(df => df.ShouldNotVerify && !df.CheckedUnderTerminationRules).Select(df => df.Uri).ToHashSet();
+      files.Where(df => df.ShouldNotVerify && df.TerminationRecord == null).Select(df => df.Uri).ToHashSet();
     var program = new Program(
       programName,
       new LiteralModuleDecl(options, defaultModule, null, Guid.NewGuid()),
@@ -73,7 +73,7 @@ public class ProgramParser {
       }
     }
 
-    if (options.Get(CommonOptionBag.ModularTermination) && !BindModularTerminationLibraries(files, compilation, errorReporter)) {
+    if (ModularTermination.RulesEnabled(options) && !BindModularTerminationLibraries(files, compilation, errorReporter)) {
       return new ProgramParseResult(program, versionedFiles);
     }
 
@@ -146,9 +146,8 @@ public class ProgramParser {
     var exports = new SortedDictionary<string, (string Contract, DafnyFile File)>(StringComparer.Ordinal);
     foreach (var file in files.Where(f => f.ShouldNotVerify)) {
       if (file.TerminationRecord == null) {
-        errorReporter.Error(MessageSource.Project, "modular_termination_admission", file.Origin ?? Token.Cli,
-          $"cannot use {options.GetPrintPath(file.Uri.LocalPath)} without verifying it under --modular-termination: only a .doo library built with --modular-termination is admitted unverified; {ModularTerminationRecords.RebuildInstruction}");
-        ok = false;
+        // Ordinary libraries carry no design promises and need no record. Post-resolution checks reject
+        // an unrecorded library if it actually uses the design, including through an included source.
         continue;
       }
       foreach (var export in file.TerminationRecord.Exports ?? []) {

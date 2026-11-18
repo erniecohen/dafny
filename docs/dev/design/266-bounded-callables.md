@@ -1,6 +1,8 @@
 # Bounded callables that survive storage (#266)
 
-Design from the review at https://github.com/erniecohen/dafny/issues/266#issuecomment-6807660254, recorded verbatim. Opt-in under `--modular-termination`; no product change.
+Design from the review at https://github.com/erniecohen/dafny/issues/266#issuecomment-6807660254. The original option-gated milestone descriptions below are historical.
+
+Implementation status: stage 4 of the issue 211 plan makes bounded callables and complete certificate production/admission available by use. The hidden `--modular-termination` is only a strict migration check for legacy markers. Programs that use none of the design retain their previous translation; `--legacy-no-modular-termination` restores the earlier interface. Checked standard-library catalog selection requires a named trust-list opt-in, independently of the migration flag. Runtime contracts have their separate explicit, audited trust list described in M5b §13 and at the end of this document.
 
 ## Findings
 
@@ -291,7 +293,7 @@ raw box/unbox inverse that reconstructs erased evidence
 
 The runtime realization relation links a logical package to the closure that its payload actually compiles to. There is no public constructor for an arbitrary code identity. Compiler-generated members and substitutions cannot clone a proof-success token into a changed realization.
 
-Each asserted family needs a written model/derivation and a reachable false control. The feature's new semantic facts are gated by the explicitly requested `--modular-termination`; they must not appear in the option-off prelude. Do not require an unrelated `--additional-axioms` setting to make the core soundness rule exist.
+Each asserted family needs a written model/derivation and a reachable false control. Under stage 4, the feature's semantic facts are emitted only for a program that uses the checked design; they must not appear in an ordinary non-user's prelude. Do not require an unrelated `--additional-axioms` setting to make the core soundness rule exist.
 
 ### 4.2 Extension of accepted M4b §7.3
 

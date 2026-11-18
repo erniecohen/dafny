@@ -6,13 +6,13 @@
 // bound b, and c.boundAt(x) is c's bound at x.  b is closed: a lambda, or a call of a function whose body is one,
 // that computes from data alone and does not apply an argument-dependent bound, which could be its own.
 // RUN: echo "intersects, with argument-dependent bounds in bags of levels" > "%t"
-// RUN: %exits-with 0 %baredafny verify --solver-path %review-z3 --use-basename-for-filename --show-snippets:false --standard-libraries:false --type-system-refresh --general-traits=datatype --decreases-orders --modular-termination "%s" "%S/Inputs/github-issue-211-multiset-orders.dfy" >> "%t"
+// RUN: %exits-with 0 %baredafny verify --solver-path %review-z3 --use-basename-for-filename --show-snippets:false --standard-libraries:false --type-system-refresh --general-traits=datatype --decreases-orders "%s" "%S/Inputs/github-issue-211-multiset-orders.dfy" >> "%t"
 // RUN: echo "controls (assert false in each positive context), and bounds at arguments that do not go down" >> "%t"
-// RUN: %exits-with 4 %baredafny verify --solver-path %review-z3 --use-basename-for-filename --show-snippets:false --standard-libraries:false --type-system-refresh --general-traits=datatype --decreases-orders --modular-termination "%s" "%S/Inputs/github-issue-211-stored-arguments-verify.dfy" "%S/Inputs/github-issue-211-multiset-orders.dfy" >> "%t"
+// RUN: %exits-with 4 %baredafny verify --solver-path %review-z3 --use-basename-for-filename --show-snippets:false --standard-libraries:false --type-system-refresh --general-traits=datatype --decreases-orders "%s" "%S/Inputs/github-issue-211-stored-arguments-verify.dfy" "%S/Inputs/github-issue-211-multiset-orders.dfy" >> "%t"
 // RUN: echo "argument-dependent bounds that are not closed, or that may apply their own" >> "%t"
-// RUN: %exits-with 2 %baredafny verify --solver-path %review-z3 --use-basename-for-filename --show-snippets:false --standard-libraries:false --type-system-refresh --general-traits=datatype --decreases-orders --modular-termination "%s" "%S/Inputs/github-issue-211-stored-arguments-resolve.dfy" "%S/Inputs/github-issue-211-multiset-orders.dfy" >> "%t"
+// RUN: %exits-with 2 %baredafny verify --solver-path %review-z3 --use-basename-for-filename --show-snippets:false --standard-libraries:false --type-system-refresh --general-traits=datatype --decreases-orders "%s" "%S/Inputs/github-issue-211-stored-arguments-resolve.dfy" "%S/Inputs/github-issue-211-multiset-orders.dfy" >> "%t"
 // RUN: echo "argument-dependent orders that are not total arrows from the payload's parameters to an order" >> "%t"
-// RUN: %exits-with 2 %baredafny verify --solver-path %review-z3 --use-basename-for-filename --show-snippets:false --standard-libraries:false --type-system-refresh --general-traits=datatype --decreases-orders --modular-termination "%s" "%S/Inputs/github-issue-211-stored-arguments-orders.dfy" "%S/Inputs/github-issue-211-multiset-orders.dfy" >> "%t"
+// RUN: %exits-with 2 %baredafny verify --solver-path %review-z3 --use-basename-for-filename --show-snippets:false --standard-libraries:false --type-system-refresh --general-traits=datatype --decreases-orders "%s" "%S/Inputs/github-issue-211-stored-arguments-orders.dfy" "%S/Inputs/github-issue-211-multiset-orders.dfy" >> "%t"
 // RUN: %diff "%s.expect" "%t"
 
 module Levels {

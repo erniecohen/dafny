@@ -1,13 +1,16 @@
-# The certified standard-library core under `--modular-termination`
+# The certified standard-library core
 
-Under the opt-in option `--modular-termination`
-([issue 211](https://github.com/erniecohen/dafny/issues/211)), Dafny admits a library only as a
-`.doo` file whose termination record shows that its own program was completely verified, with no
-unchecked premise.  The bundled standard library carries no record, so it is rejected under the
-option.  This directory is milestone M5a of the design
+A library that uses the checked design of termination across modules
+([issue 211](https://github.com/erniecohen/dafny/issues/211)) needs a complete `.doo`
+certificate. This core requests certification with the literal Closed declaration in
+`CheckedCore.dfy`; it needs no migration flag. The record shows that its whole program
+was verified without unchecked premises. Ordinary libraries remain usable as TOP code
+in clients, but cannot supply unchecked dependencies of a complete certificate.
+
+This directory is milestone M5a of
 [`docs/dev/design/211-m4b-library-openness.md`](../../../docs/dev/design/211-m4b-library-openness.md)
-(section 13, "Std migration"): the part of `src/Std` that can be certified as it is, without
-changing a line of it.
+(section 13, "Std migration"): the part of `src/Std` that can be certified without
+changing its source. The expanded and checked overlays below have separate trust boundaries.
 
 ## Building it
 
@@ -28,7 +31,7 @@ Load the library with `--library` and leave the bundled standard library out
 change what a proof means, which the record lists; for this core they are those of
 `src/Std/dfyconfig.toml`:
 
-    dafny verify --modular-termination --library:DafnyStandardLibraries-modular-termination.doo \
+    dafny verify --library:DafnyStandardLibraries-modular-termination.doo \
       --type-system-refresh --general-traits=datatype --general-newtypes \
       --reads-clauses-on-methods --enforce-determinism program.dfy
 
@@ -122,7 +125,7 @@ This verifies both the original and retained source before issuing each common o
 six-target certificate. Never use `--hidden-no-verify` for a checked artifact.
 Generated checked binaries are ignored: each is bound to the exact verifier and
 solver that produced it. Rebuild the pipeline after generation to embed them.
-`--standard-libraries` with modular checking selects this distinct catalog; if the
+`--standard-libraries` with either named standard-library trust list selects this distinct catalog; if the
 catalog has not been built, the error gives the build instruction. An existing
 common certificate from a different overlay recipe cannot be reused by the target
 builder. The retained source records the recipe digest.

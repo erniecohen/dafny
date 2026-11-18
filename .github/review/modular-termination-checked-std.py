@@ -45,7 +45,7 @@ try:
     run('produce', [sys.executable, str(std / 'modular-termination/overlay/build-checked.py'),
         '--dafny', shlex.join(command), '--solver', solver, '--cores', str(args.cores)])
     common = std / 'binaries/DafnyStandardLibraries-checked.doo'
-    options = ['--modular-termination', '--standard-libraries:false', '--solver-path', solver,
+    options = ['--standard-libraries:false', '--solver-path', solver,
         '--type-system-refresh', '--general-traits=datatype', '--general-newtypes',
         '--reads-clauses-on-methods', '--enforce-determinism', '--track-print-effects',
         '--cores', str(args.cores), '--resource-limit', '16000000', '--use-basename-for-filename']

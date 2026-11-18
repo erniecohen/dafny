@@ -37,7 +37,7 @@
 // RUN: echo "the same library used under legacy-off: rejected" >> "%t"
 // RUN: %exits-with 1 %baredafny verify --use-basename-for-filename --show-snippets:false --standard-libraries:false --solver-path %review-z3 --cores 1 --legacy-no-modular-termination --library "%t.lib.doo" "%S/Inputs/github-issue-211-xmod-lib-client.dfy" > "%t.mismatch"
 // RUN: %OutputCheck --file-to-check "%t.mismatch" "%s"
-// CHECK: --legacy-no-modular-termination is set locally to True, but the library was built with False
+// CHECK: checked only under that option
 // RUN: echo "libraries not verified under the rules (https://github.com/erniecohen/dafny/issues/211, section 6)" >> "%t"
 // RUN: echo "a source library that uses the design: rejected" >> "%t"
 // RUN: %exits-with 2 %baredafny verify --use-basename-for-filename --show-snippets:false --standard-libraries:false --solver-path %review-z3 --cores 1 --allow-warnings --library "%S/Inputs/github-issue-211-xmod-lib.dfy" "%S/Inputs/github-issue-211-xmod-lib-client.dfy" >> "%t"

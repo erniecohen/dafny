@@ -23,15 +23,19 @@ legacy: implementation of a member with no bound that is a leaf: exit 4
 legacy: module refines the library module: exit 2
   github-issue-211-gate-a-refine.dfy(3,7): Error: modular termination: module 'Ext' refines module 'Lib' of a library; under --modular-termination a module cannot refine or replace a library module, since the bodies it would inherit are not part of the library's termination contracts
 legacy: legacy premise, reported by the default warning: exit 2
-  github-issue-211-gate-a-assume.dfy(7,38): Warning: class 'C' has @AssumeCrossModuleTermination and no {:axiom} annotation: code verified without it, such as the module of a trait it extends, did not check the calls dispatched to it for termination
+  github-issue-211-gate-a-assume.dfy(7,38): Warning: class 'C' has @AssumeCrossModuleTermination and no {:axiom} annotation: calls dispatched to it through traits of other modules are not checked for termination
   Dafny program verifier finished with 3 verified, 0 errors
-legacy: source library: exit 1
-  CLI: Error: cannot use github-issue-211-gate-a-lib.dfy as a library under --modular-termination: a source library carries no checked termination record; build it into a .doo with 'dafny build --target:lib --modular-termination' and pass that instead
+legacy: source library: exit 2
+  github-issue-211-gate-a-lib.dfy(20,11): Error: cannot use github-issue-211-gate-a-lib.dfy as a library: it uses a 'decreases {:global}' or 'decreases {:callback}' bound here, but it was not verified under the rules of termination across modules; verify it with this program, or build it into a .doo with this version of Dafny
 legacy: build library without the option: exit 0
   Dafny program verifier finished with 3 verified, 0 errors
-legacy: library built without the option: exit 1
-  CLI: Error: cannot load plain-legacy.doo under --modular-termination: it has no modular termination record, because it was built without --modular-termination; rebuild it with 'dafny build --target:lib --modular-termination'
-legacy: library with a record, option off: exit 1
+legacy: library built without the option: exit 4
+  github-issue-211-gate-a-ok.dfy(14,4): Error: assertion might not hold
+  Dafny program verifier finished with 2 verified, 1 error
+legacy: library with a record, option off: exit 4
+  github-issue-211-gate-a-ok.dfy(14,4): Error: assertion might not hold
+  Dafny program verifier finished with 2 verified, 1 error
+legacy: recorded library, legacy opt-out: exit 1
   CLI: Error: cannot load lib-legacy.doo: it was built with --modular-termination and is checked only under that option; use --modular-termination, or rebuild the library without it
 legacy: without the option, by default: exit 4
   github-issue-211-gate-a-raise.dfy(9,11): Error: decreases clause might not decrease (modular termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
@@ -77,15 +81,19 @@ refresh: implementation of a member with no bound that is a leaf: exit 4
 refresh: module refines the library module: exit 2
   github-issue-211-gate-a-refine.dfy(3,7): Error: modular termination: module 'Ext' refines module 'Lib' of a library; under --modular-termination a module cannot refine or replace a library module, since the bodies it would inherit are not part of the library's termination contracts
 refresh: legacy premise, reported by the default warning: exit 2
-  github-issue-211-gate-a-assume.dfy(7,38): Warning: class 'C' has @AssumeCrossModuleTermination and no {:axiom} annotation: code verified without it, such as the module of a trait it extends, did not check the calls dispatched to it for termination
+  github-issue-211-gate-a-assume.dfy(7,38): Warning: class 'C' has @AssumeCrossModuleTermination and no {:axiom} annotation: calls dispatched to it through traits of other modules are not checked for termination
   Dafny program verifier finished with 3 verified, 0 errors
-refresh: source library: exit 1
-  CLI: Error: cannot use github-issue-211-gate-a-lib.dfy as a library under --modular-termination: a source library carries no checked termination record; build it into a .doo with 'dafny build --target:lib --modular-termination' and pass that instead
+refresh: source library: exit 2
+  github-issue-211-gate-a-lib.dfy(20,11): Error: cannot use github-issue-211-gate-a-lib.dfy as a library: it uses a 'decreases {:global}' or 'decreases {:callback}' bound here, but it was not verified under the rules of termination across modules; verify it with this program, or build it into a .doo with this version of Dafny
 refresh: build library without the option: exit 0
   Dafny program verifier finished with 3 verified, 0 errors
-refresh: library built without the option: exit 1
-  CLI: Error: cannot load plain-refresh.doo under --modular-termination: it has no modular termination record, because it was built without --modular-termination; rebuild it with 'dafny build --target:lib --modular-termination'
-refresh: library with a record, option off: exit 1
+refresh: library built without the option: exit 4
+  github-issue-211-gate-a-ok.dfy(14,4): Error: assertion might not hold
+  Dafny program verifier finished with 2 verified, 1 error
+refresh: library with a record, option off: exit 4
+  github-issue-211-gate-a-ok.dfy(14,4): Error: assertion might not hold
+  Dafny program verifier finished with 2 verified, 1 error
+refresh: recorded library, legacy opt-out: exit 1
   CLI: Error: cannot load lib-refresh.doo: it was built with --modular-termination and is checked only under that option; use --modular-termination, or rebuild the library without it
 refresh: without the option, by default: exit 4
   github-issue-211-gate-a-raise.dfy(9,11): Error: decreases clause might not decrease (modular termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
@@ -106,4 +114,4 @@ refresh: least lemma of the library, as one program: exit 4
   github-issue-211-gate-a-prefix.dfy(23,14): Error: decreases clause might not decrease (modular termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
   github-issue-211-gate-a-prefix.dfy(34,6): Error: assertion might not hold
   Dafny program verifier finished with 11 verified, 3 errors
-library gate: 40 checks, all passed
+library gate: 42 checks, all passed

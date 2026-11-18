@@ -42,6 +42,17 @@ public class DooFileTest {
   }
 
   [Fact]
+  public void OrdinaryManifestDoesNotInventVerificationEvidence() {
+    var options = DafnyOptions.Default;
+    options.ApplyDefaultOptionsWithoutSettingsDefault();
+    Assert.DoesNotContain(CommonOptionBag.LegacyNoModularTermination.Name,
+      new DooFile.ManifestData(options).Options.Keys);
+    options.Set(CommonOptionBag.LegacyNoModularTermination, true);
+    Assert.Equal(true, new DooFile.ManifestData(options).Options[
+      CommonOptionBag.LegacyNoModularTermination.Name]);
+  }
+
+  [Fact]
   public void UnknownManifestEntries() {
     var filePath = Path.Combine(Directory.GetCurrentDirectory(), "TestFiles/DooFileTest/badManifest.toml");
     var source = File.ReadAllText(filePath);

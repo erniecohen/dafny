@@ -1,5 +1,5 @@
 // A loop without a body is assumed to keep its invariant and to terminate.
-module Bad {
+module Bad { const {:termination_closed} CertificateRequested: bool := true
   method Bad()
     ensures false
   {

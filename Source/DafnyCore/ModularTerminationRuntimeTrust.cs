@@ -29,7 +29,7 @@ public static class ModularTerminationRuntimeTrust {
   }
 
   public static string? Selected(DafnyOptions options) =>
-    options.Get(CommonOptionBag.ModularTermination) &&
+    ModularTermination.RulesEnabled(options) &&
     options.Get(CommonOptionBag.ModularTerminationRuntimeTrust) == StandardLibrary ? StandardLibrary : null;
 
   public static string? KindOf(MemberDecl member) => member switch {

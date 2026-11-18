@@ -133,7 +133,7 @@ public partial class BoogieGenerator {
   void CheckBoundedArguments(IOrigin tok, MemberDecl callee, List<Expression> args, Expression receiverReplacement,
                              Dictionary<IVariable, Expression> substMap, Dictionary<TypeParameter, Type> typeMap,
                              ExpressionTranslator etranCurrent, BoogieStmtListBuilder builder) {
-    if (!options.Get(CommonOptionBag.ModularTermination) || callee is not ICallable callable) {
+    if (!ModularTerminationActive || callee is not ICallable callable) {
       return;
     }
     for (var i = 0; i < args.Count && i < callable.Ins.Count; i++) {

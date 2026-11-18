@@ -389,7 +389,7 @@ the two components have different representations.
 
 The hidden `--legacy-decreases-order` switch restores the previous, unsound
 comparison for migration and comparison only. It applies to ordinary and modular
-checks; `--modular-termination` itself remains opt-in. The repair is described in
+checks; the hidden `--modular-termination` remains a migration aid for unchecked legacy markers. The repair is described in
 https://github.com/erniecohen/dafny/issues/264.
 
 #### 7.1.3.1. Well-founded orders: `decreases e by O` (experimental) {#sec-decreases-by}
@@ -621,7 +621,7 @@ rejects it, as it rejects any call to TOP.
 
 The checks run on every program that uses this design: one that declares a global or callback
 bound, promises `{:termination_closed}`, or has a type that extends a trait of another module
-with neither legacy form. A program that does none of these is accepted or rejected as in Dafny
+with neither legacy form, or uses a `bounded` callable type. A program that does none of these is accepted or rejected as in Dafny
 4.11, with the same proof obligations. The hidden option `--legacy-no-modular-termination`, kept
 for migration and comparison, restores the rules of Dafny 4.11: a type may extend a trait of
 another module only with a legacy form, `decreases {:global} E` and `decreases {:callback g} E`
@@ -906,17 +906,20 @@ It also rejects some programs that terminate:
 A library that Dafny does not verify with the program and that was not verified under these rules is
 refused when it uses them: a source or `.dll` file given with `--library`, or a `.doo` file written by
 a version of Dafny without them, that declares a global or callback bound or a `{:termination_closed}`
-promise, or extends a trait of another module without a legacy form. Its leaf and bound obligations
+promise, uses a bounded callable type, or extends a trait of another module without a legacy form. Its leaf and bound obligations
 were never checked. Verify such a library with the program, or rebuild it. A library that uses none of
 these is read as before.
 
-Under the experimental `--modular-termination`, a library is admitted only as a `.doo` file built with
-`dafny build --target:lib --modular-termination`. Such a build writes a termination record into the
-library: a hash of its program, of the build of Dafny that verified it (its Dafny and Boogie
+A library that uses the checked design is admitted only as a certified `.doo` file.
+`dafny build --target:lib` writes a termination record whenever its program uses the design. The record includes
+a hash of its program, of the build of Dafny that verified it (its Dafny and Boogie
 assemblies and the prelude file it read), and of the options that change what a proof means (each also
 listed by name), the version and a hash of the Z3 binary that verified it, and the termination contract
 of each module it defines. A contract is the module's interface: its declarations with the bodies of methods, lemmas,
 iterators and by-method implementations left out; function bodies stay, since a client may reveal them.
+Issuing a complete certificate requires complete certificates for every unverified dependency,
+even an ordinary library that declares no termination promises. Ordinary libraries remain usable
+as TOP code in clients, but their unchecked functional premises cannot be laundered into a complete certificate.
 The record also lists the contracts of the libraries the build was verified against, and ends with a
 hash of the whole record. The build writes a library only when its whole program was verified, every
 verification task conclusively, without `--no-verify`, `--boogie` arguments, `{:verify false}`, `{:only}`,
@@ -935,17 +938,17 @@ that Dafny generates for an iterator as axioms, and the build refuses a library 
 build reports the first of these it finds and writes nothing. `--allow-warnings` does not hide them; it is
 recorded with the other options.
 
-Under `--modular-termination`, a module cannot refine or replace a module of a library: it would inherit bodies
+In a program that uses the checked design, a module cannot refine or replace a module of a library: it would inherit bodies
 that are not part of the library's contracts, so a change to them would not be detected.
 
-Under `--modular-termination`, `--boogie` arguments are refused, both when a library is built and when one is loaded:
+For a modular certificate, `--boogie` arguments are refused, both when a library is built and when one is loaded:
 many of them (such as `/loopUnroll`, `/noVerify`, `/proc` and some `/proverOpt` settings) can make a
 program verify that is not proved. Only arguments on a reviewed list of ones that cannot weaken a proof
 are allowed, and that list is empty for now. The options are recorded with their values as given. Two libraries that both declare
 top-level members outside any module, in the default module, cannot be loaded together, since both
 provide the module `_default`.
 
-When a program loads such a library under the option, Dafny recomputes these hashes and the contracts
+When a program loads such a library, Dafny recomputes these hashes and the contracts
 from the library's program, and rejects the library, naming the mismatch, when any differs: its program,
 its contracts, its record (missing, incomplete, of an unknown format or not matching its own hash), the
 build of Dafny or its prelude, the Z3 binary that the current run uses (the library must be checked
@@ -1027,9 +1030,20 @@ the global bound `n` and the ordinary decreases clause `7`.
 Under `--legacy-no-modular-termination`, `decreases {:global} E` is an ordinary decreases clause
 with an unknown attribute, as in Dafny 4.11.
 
+The hidden `--modular-termination` is a migration aid: it applies the strict checks to legacy
+termination markers. It is unnecessary for bounded callables, well-founded order loading,
+certificate production or admission, and the named trust lists. The hidden
+`--legacy-no-modular-termination` disables this design and cannot admit a modular certificate.
+
+The legacy standard-library catalog remains the default when neither named trust list is selected.
+Selecting either named standard-library trust list requests the separate checked catalog with
+`--standard-libraries`. The checked common library requires the ghost-premise opt-in; target bundles
+also require the runtime-contract opt-in. Missing checked resources report the build instruction.
+Selecting one list never selects the other, and each runtime assumption remains named in the summary.
+
 #### 7.1.3.3. Bounded callables: `bounded<O, F>` (experimental) {#sec-bounded-callables}
 
-Under `--modular-termination`, the system module declares the type `bounded<O, F>` of a
+By default, the system module declares the type `bounded<O, F>` of a
 _bounded callable_: a function value of the arrow type `F` together with persistent evidence that
 every call of it terminates below a ghost bound in the order `O`
 (https://github.com/erniecohen/dafny/issues/266). A value is formed by `bounded.certify(a, f)`, its

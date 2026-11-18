@@ -62,14 +62,14 @@ def run(name, args, expected_exit, diagnostic=None, resource=limit):
 
 def build(name, srcs, *extra, expected_exit=0, diagnostic=None, resource=limit):
     target = doo(name)
-    run('build ' + name, ['build', '-t:lib', '--modular-termination'] + srcs + ['--output=' + target] + list(extra),
+    run('build ' + name, ['build', '-t:lib'] + srcs + ['--output=' + target] + list(extra),
         expected_exit, diagnostic, resource)
     if (expected_exit == 0) != Path(target).exists():
         failures.append('build %s: library file %s' % (name, 'missing' if expected_exit == 0 else 'written'))
 
 
 def verify(name, libraries, client, expected_exit, diagnostic=None):
-    args = ['verify', '--modular-termination']
+    args = ['verify']
     for library in libraries:
         args += ['--library', library]
     run(name, args + [client], expected_exit, diagnostic)
@@ -238,7 +238,7 @@ verify('tampered certify', [tamper('lib', 'certify', 'program', 'certify(Empty,'
 verify('refining client', [doo('lib')], source('refine'), 2, "module 'FuncApi2' refines module 'FuncApi' of a library")
 # The same refinement of the source module verifies: the resolver keeps the bounded applications of the refined module
 # unresolved syntax, which refinement clones (it used to rewrite them in place, and the clone did not resolve).
-run('refining source', ['verify', '--modular-termination', source('lib'), source('refine'), orders], 0)
+run('refining source', ['verify', source('lib'), source('refine'), orders], 0)
 
 # Producer: a formation that does not verify, verification that is skipped, or that runs out of resources, gets no
 # record and no library.

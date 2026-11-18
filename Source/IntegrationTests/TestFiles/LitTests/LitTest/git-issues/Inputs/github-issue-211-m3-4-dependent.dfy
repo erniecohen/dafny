@@ -1,5 +1,5 @@
 // A library verified against the contracts of module Lib.
-module Dependent {
+module Dependent { const {:termination_closed} CertificateRequested: bool := true
   import Lib
 
   method Triple(n: nat) returns (r: nat)

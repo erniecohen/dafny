@@ -65,8 +65,8 @@ public class LibraryBackend : ExecutableBackend {
     }
 
     var dooFile = new DooFile(dafnyProgram.AfterParsingClone,
-      canonicalWildcards: Options.Get(CommonOptionBag.ModularTermination));
-    if (Options.Get(CommonOptionBag.ModularTermination)) {
+      canonicalWildcards: ModularTermination.Active(Options, dafnyProgram));
+    if (ModularTermination.Active(Options, dafnyProgram)) {
       var completion = dafnyProgram.ModularTerminationCompletion;
       string failure = completion == null
         ? "its program was not completely verified in this build (for example, --no-verify was used)"

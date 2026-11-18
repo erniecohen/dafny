@@ -260,6 +260,13 @@ public static class ModularTerminationProducer {
     if (program.Compilation.Includes.Count != 0 && !options.VerifyAllModules) {
       return ModularTerminationCompletion.Failed("it includes files that this build did not verify (use --verify-included-files, or pass them as inputs)");
     }
+    // Ordinary libraries may be consumed as TOP code, but a portable complete certificate must
+    // account for every unverified dependency. Its functional assumptions and future replacement
+    // cannot be vouched for by the absence of termination annotations.
+    if (inputs.FirstOrDefault(f => f.ShouldNotVerify && f.TerminationRecord == null) is { } unrecorded) {
+      return ModularTerminationCompletion.Failed(
+        $"it depends on unrecorded library {options.GetPrintPath(unrecorded.Uri.LocalPath)}; verify the dependency with this program, or supply its complete modular certificate");
+    }
     if (program.AfterParsingClone == null) {
       return ModularTerminationCompletion.Failed("its parsed program was not retained");
     }
@@ -810,7 +817,6 @@ public static class ModularTerminationRecords {
   /// all of them exactly.
   /// </summary>
   public static IEnumerable<Option> SemanticOptionList => [
-    CommonOptionBag.ModularTermination,
     CommonOptionBag.DecreasesOrders,
     CommonOptionBag.LegacyDecreasesOrder,
     CommonOptionBag.LegacyReadingFunctionsInDatatypes,

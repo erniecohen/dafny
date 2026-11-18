@@ -6,11 +6,11 @@
 // + the stored function's.  The order is part of the type and is non-variant: two order types with the same carrier
 // and different orders do not mix.
 // RUN: echo "funcptr.c with bags of levels, as an order type" > "%t"
-// RUN: %exits-with 0 %baredafny verify --solver-path %review-z3 --use-basename-for-filename --show-snippets:false --standard-libraries:false --type-system-refresh --general-traits=datatype --decreases-orders --modular-termination "%s" "%S/Inputs/github-issue-211-multiset-orders.dfy" >> "%t"
+// RUN: %exits-with 0 %baredafny verify --solver-path %review-z3 --use-basename-for-filename --show-snippets:false --standard-libraries:false --type-system-refresh --general-traits=datatype --decreases-orders "%s" "%S/Inputs/github-issue-211-multiset-orders.dfy" >> "%t"
 // RUN: echo "controls (assert false in each positive context), bounds that do not go down, and orders that do not mix" >> "%t"
-// RUN: %exits-with 4 %baredafny verify --solver-path %review-z3 --use-basename-for-filename --show-snippets:false --standard-libraries:false --type-system-refresh --general-traits=datatype --decreases-orders --modular-termination "%s" "%S/Inputs/github-issue-211-order-types-verify.dfy" "%S/Inputs/github-issue-211-multiset-orders.dfy" >> "%t"
+// RUN: %exits-with 4 %baredafny verify --solver-path %review-z3 --use-basename-for-filename --show-snippets:false --standard-libraries:false --type-system-refresh --general-traits=datatype --decreases-orders "%s" "%S/Inputs/github-issue-211-order-types-verify.dfy" "%S/Inputs/github-issue-211-multiset-orders.dfy" >> "%t"
 // RUN: echo "order attributes that do not name an order of the base type, or are not closed" >> "%t"
-// RUN: %exits-with 2 %baredafny verify --solver-path %review-z3 --use-basename-for-filename --show-snippets:false --standard-libraries:false --type-system-refresh --general-traits=datatype --decreases-orders --modular-termination "%S/Inputs/github-issue-211-order-types-resolve.dfy" "%S/Inputs/github-issue-211-multiset-orders.dfy" >> "%t"
+// RUN: %exits-with 2 %baredafny verify --solver-path %review-z3 --use-basename-for-filename --show-snippets:false --standard-libraries:false --type-system-refresh --general-traits=datatype --decreases-orders "%S/Inputs/github-issue-211-order-types-resolve.dfy" "%S/Inputs/github-issue-211-multiset-orders.dfy" >> "%t"
 // RUN: %diff "%s.expect" "%t"
 
 // The levels of funcptr.c, as bags of the levels of its functions, in an order type whose order is the multiset

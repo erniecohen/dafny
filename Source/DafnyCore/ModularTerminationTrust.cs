@@ -124,7 +124,7 @@ public static class ModularTerminationTrustList {
   /// --modular-termination.
   /// </summary>
   public static string? Selected(DafnyOptions options) {
-    if (!options.Get(CommonOptionBag.ModularTermination)) {
+    if (!ModularTermination.RulesEnabled(options)) {
       return null;
     }
     var name = options.Get(CommonOptionBag.ModularTerminationTrust);

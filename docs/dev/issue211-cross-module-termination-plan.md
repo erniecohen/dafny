@@ -379,9 +379,9 @@ To extend a trait from another module, checked:
 | Rule 4: undeclared dispatch is TOP for bounded callers | `ModularTermination.cs`, `BoogieGenerator.Decreases.cs` | done in effect. Today's option already rejects bounded dispatch to an unbounded member (attack 1). New: it no longer rejects dispatch from TOP callers (the first row of the table in §1). |
 | Rule 2: home implementations bound | `BoogieGenerator.Decreases.cs`, `.Methods.cs`, `TrCall.cs` | done (attack 2 is rejected today) |
 | Explicit leaf (rule 5) | none | dropped: the owner's bar admits no leaf attribute |
-| Running the checks by use (§2.5) | the gates on `CommonOptionBag.ModularTermination` in `ModuleResolver.cs`, `RewriterCollection.cs` and the translator | done: `ModularTermination.RulesEnabled` and `ModularTermination.Active` replace the option test; the hidden `--legacy-no-modular-termination` restores 4.11. Library records, bounded callables and the strict legacy slot still need the option. |
+| Running the checks by use (§2.5) | the gates on `CommonOptionBag.ModularTermination` in `ModuleResolver.cs`, `RewriterCollection.cs` and the translator | done: `ModularTermination.RulesEnabled` and `ModularTermination.Active` replace the option test; the hidden `--legacy-no-modular-termination` restores 4.11. Library records and bounded callables now activate by use. Only the strict interpretation of legacy markers needs the hidden migration option. |
 | Bound comparisons, orders, M4a | `BoogieGenerator.*`, `Resolver/DecreasesOrders.cs` | done (issues 211, 245, 264) |
-| Bounded callables | `AST/SystemModuleManager.cs`, `AST/Types/ArrowType.cs`, translator | M1 done (issue 266). Storage and return are still open. |
+| Bounded callables | `AST/SystemModuleManager.cs`, `AST/Types/ArrowType.cs`, translator | M1–M4 done (issue 266), including storage, results and portable callable contracts. The M5 checked overlay has its own release gates below. |
 | Library records | `ModularTerminationRecord.cs`, `ModularTerminationTrust.cs`, `DooFile.cs`, `DafnyFile.cs`, `Backends/Library/LibraryBackend.cs` | done (M3-4, M5a, M5b). New: record each member's bound or leaf declaration and each function's effect, written whenever the library uses the design. Legacy libraries' `.doo` bytes are unchanged. |
 | Warning on legacy forms | `ModuleResolver.WarnUncheckedTermination` | done, default-on (PR 386) |
 
@@ -845,3 +845,23 @@ belong to the separate catalog gate. Rebuilding and comparing the legacy binary,
 final option-off byte identity, resource-unit comparison, and serial whole-suite
 mutation evidence are still release obligations. No gate is satisfied by a
 source-only run or by a skipped-verification artifact.
+
+### 7.8 Certification and bounded callables by use
+
+Stage 4 no longer requires the migration flag to form or apply a bounded callable,
+issue or admit a complete certificate, or select either named trust list. The flag
+is hidden and retains the strict interpretation of legacy termination markers.
+The checked catalog is selected by its explicit trust-list opt-ins; an ordinary
+program continues to select the legacy catalog. Certificate producers account for
+every unverified dependency, including an ordinary dependency with no termination
+annotations. Absence of annotations cannot certify its functional premises.
+
+`github-issue-211-by-use.dfy` exercises production, admission, certified dependencies,
+the sole reachable false assertion, the legacy opt-out, a forged manifest option,
+ordinary library compatibility, bounded application, and rejection of an unrecorded
+axiomatic dependency in both resolvers. Existing artifact and substitution controls
+now exercise by-use activation. Tests of the strict legacy interpretation retain
+the migration flag explicitly. The focused matrix has 45 passing tests, including
+the updated library-admission controls. The obligation inventory and coverage test,
+`.doo` unit controls, and review-bookkeeping tests pass. Final catalog reproduction,
+whole-suite mutations, censuses, and byte/resource identity remain release gates.

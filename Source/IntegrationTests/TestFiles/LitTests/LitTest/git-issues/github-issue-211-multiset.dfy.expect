@@ -3,7 +3,7 @@ the orders library, verified from its sources
 Dafny program verifier finished with 47 verified, 0 errors
 positive: one element for many smaller ones, the empty bag, pairs, bags of bags, a mixed tuple, absorption, the lemmas of VeriFast
 
-Dafny program verifier finished with 29 verified, 0 errors
+Dafny program verifier finished with 76 verified, 0 errors
 controls (assert false in each positive context) and bags that do not go down
 github-issue-211-multiset-verify.dfy(16,6): Error: assertion might not hold
 github-issue-211-multiset-verify.dfy(33,6): Error: assertion might not hold
@@ -23,7 +23,7 @@ github-issue-211-multiset-verify.dfy(184,9): Error: decreases clause might not d
 github-issue-211-multiset-verify.dfy(192,32): Error: decreases clause might not decrease
 github-issue-211-multiset-verify.dfy(201,11): Error: decreases clause might not decrease
 
-Dafny program verifier finished with 11 verified, 17 errors
+Dafny program verifier finished with 58 verified, 17 errors
 --modular-termination: global bounds by multiset orders, the orders library verified with the client
 
 Dafny program verifier finished with 66 verified, 0 errors

@@ -8,7 +8,7 @@
 // RUN: echo "Figs. 10-14 with bags of method levels, by default" > "%t"
 // RUN: %exits-with 0 %baredafny verify --solver-path %review-z3 --use-basename-for-filename --show-snippets:false --standard-libraries --type-system-refresh --general-traits=datatype --decreases-orders "%s" "%S/Inputs/github-issue-211-multiset-orders.dfy" >> "%t"
 // RUN: echo "--modular-termination: the orders library verified with the client" >> "%t"
-// RUN: %exits-with 0 %baredafny verify --solver-path %review-z3 --use-basename-for-filename --show-snippets:false --standard-libraries:false --type-system-refresh --general-traits=datatype --decreases-orders --modular-termination "%s" "%S/Inputs/github-issue-211-multiset-orders.dfy" >> "%t"
+// RUN: %exits-with 0 %baredafny verify --solver-path %review-z3 --use-basename-for-filename --show-snippets:false --standard-libraries:false --type-system-refresh --general-traits=datatype --decreases-orders "%s" "%S/Inputs/github-issue-211-multiset-orders.dfy" >> "%t"
 // RUN: echo "controls (assert false in each positive context), and bounds that do not go down" >> "%t"
 // RUN: %exits-with 4 %baredafny verify --solver-path %review-z3 --use-basename-for-filename --show-snippets:false --standard-libraries --type-system-refresh --general-traits=datatype --decreases-orders "%s" "%S/Inputs/github-issue-211-integrate-verify.dfy" "%S/Inputs/github-issue-211-multiset-orders.dfy" >> "%t"
 // RUN: %diff "%s.expect" "%t"

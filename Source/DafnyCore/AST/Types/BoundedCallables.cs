@@ -6,8 +6,8 @@ namespace Microsoft.Dafny;
 
 /// <summary>
 /// The type "bounded&lt;O, F&gt;" of a bounded callable (issue 266, milestone 1): a function value F that carries
-/// persistent evidence that every call of it terminates below a ghost bound of the order O.  The type exists only
-/// under --modular-termination, as an abstract type of the system module:
+/// persistent evidence that every call of it terminates below a ghost bound of the order O.  The type exists while the rules of termination across modules are enabled
+/// (by default, with a hidden legacy opt-out), as an abstract type of the system module:
 ///   - O is the order: nat or ORDINAL, each with its built-in order, or an order type "type {:order O} L = ..." (issue
 ///     211), whose values are compared by O.  O may also be a total arrow "A1, ..., An -> R", with R one of those and
 ///     A1, ..., An the parameter types of F: the bound then depends on the arguments of each call (an

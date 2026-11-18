@@ -72,6 +72,11 @@ public class DooFile {
           continue;
         }
         var optionValue = options.Get((dynamic)option);
+        // Missing means the default in CheckAndGetLibraryOptions. Keep ordinary library manifests
+        // byte-compatible with versions predating this opt-out; presence is never proof of verification.
+        if (option == CommonOptionBag.LegacyNoModularTermination && optionValue is false) {
+          continue;
+        }
         if (option == CommonOptionBag.QuantifierSyntax) {
           switch (optionValue) {
             case QuantifierSyntaxOptions.Version4:
@@ -194,7 +199,7 @@ public class DooFile {
       return null;
     }
 
-    if (!options.Get(CommonOptionBag.ModularTermination) &&
+    if (!ModularTermination.RulesEnabled(options) &&
         (Manifest.ModularTermination != null || Manifest.DooFileVersion == ModularTerminationRecords.RecordedDooFileVersion)) {
       reporter.Error(MessageSource.Project, origin,
         $"cannot load {options.GetPrintPath(file.LocalPath)}: it was built with --modular-termination and is checked only under that option; use --modular-termination, or rebuild the library without it");

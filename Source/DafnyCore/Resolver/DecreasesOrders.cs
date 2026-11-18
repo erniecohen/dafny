@@ -100,8 +100,7 @@ public static class DecreasesOrders {
   /// not load the bundled standard library, on its own (it imports nothing).
   /// </summary>
   public static bool LoadsOrdersLibrary(DafnyOptions options) {
-    return options.Get(CommonOptionBag.DecreasesOrders) && TypeSystemSupportsOrders(options) &&
-           (options.Get(CommonOptionBag.UseStandardLibraries) || options.Get(CommonOptionBag.ModularTermination));
+    return options.Get(CommonOptionBag.DecreasesOrders) && TypeSystemSupportsOrders(options);
   }
 
   /// <summary>
@@ -109,7 +108,7 @@ public static class DecreasesOrders {
   /// so it is verified with the program that loads it, under that program's options, instead of being admitted.
   /// </summary>
   public static bool VerifiesOrdersLibrary(DafnyOptions options, System.Uri uri) {
-    return options.Get(CommonOptionBag.ModularTermination) &&
+    return ModularTermination.RulesEnabled(options) &&
            (uri == DafnyMain.StandardLibrariesOrdersDooUri || uri == DafnyMain.StandardLibrariesOrdersInternalUri);
   }
 

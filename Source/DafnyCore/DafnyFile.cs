@@ -34,12 +34,6 @@ public class DafnyFile {
   /// </summary>
   public ModularTerminationManifest? TerminationRecord { get; private set; }
 
-  /// <summary>
-  /// Whether this library was verified under the rules of termination across modules: a .doo whose manifest records
-  /// --legacy-no-modular-termination, which a version of Dafny without the rules does not write.
-  /// </summary>
-  public bool CheckedUnderTerminationRules { get; private set; }
-
   private static readonly Dictionary<Uri, Uri> ExternallyVisibleEmbeddedFiles = new();
 
   static DafnyFile() {
@@ -168,12 +162,6 @@ public class DafnyFile {
       return null;
     }
 
-    if (asLibrary && options.Get(CommonOptionBag.ModularTermination)) {
-      reporter.Error(MessageSource.Project, "modular_termination_admission", origin,
-        $"cannot use {options.GetPrintPath(filePath)} as a library under --modular-termination: a source library carries no checked termination record; build it into a .doo with 'dafny build --target:lib --modular-termination' and pass that instead");
-      return null;
-    }
-
     if (!options.Get(DoNotVerifyDependencies) && asLibrary && warnLibrary) {
       reporter.Warning(MessageSource.Project, "UnverifiedLibrary", origin,
         "The file '{0}' was passed to --library. Verification for that file might have used options incompatible with the current ones, or might have been skipped entirely. Use a .doo file to enable Dafny to check that compatible options were used",
@@ -281,7 +269,7 @@ public class DafnyFile {
       } catch (ArgumentException e) {
         reporter.Error(MessageSource.Project, origin, e.Message);
         yield break;
-      } catch (Tomlyn.TomlException e) when (options.Get(CommonOptionBag.ModularTermination)) {
+      } catch (Tomlyn.TomlException e) when (ModularTermination.RulesEnabled(options)) {
         // Under --modular-termination a manifest that Dafny cannot read, such as one with an unknown key in
         // its record, is rejected like any other library modified after it was built, not left to crash.
         reporter.Error(MessageSource.Project, origin,
@@ -298,7 +286,8 @@ public class DafnyFile {
     // Under --modular-termination the orders library of --decreases-orders is verified with the program that loads
     // it, as its source is, instead of being admitted by a record (https://github.com/erniecohen/dafny/issues/245, M4).
     var verifiedHere = DecreasesOrders.VerifiesOrdersLibrary(options, uri);
-    if (options.Get(CommonOptionBag.ModularTermination) && !verifiedHere &&
+    if (ModularTermination.RulesEnabled(options) && !verifiedHere &&
+        (dooFile.Manifest.ModularTermination != null || dooFile.Manifest.DooFileVersion == ModularTerminationRecords.RecordedDooFileVersion) &&
         !await dooFile.AdmitModularTermination(reporter, uri, options, validDooOptions, origin)) {
       yield break;
     }
@@ -313,8 +302,7 @@ public class DafnyFile {
       () => new FileSnapshot(new StringReader(dooFile.ProgramText), null), uri, origin, validDooOptions) {
       ShouldNotCompile = asLibrary,
       ShouldNotVerify = !verifiedHere,
-      TerminationRecord = options.Get(CommonOptionBag.ModularTermination) && !verifiedHere ? dooFile.Manifest.ModularTermination : null,
-      CheckedUnderTerminationRules = dooFile.Manifest.Options.ContainsKey(CommonOptionBag.LegacyNoModularTermination.Name),
+      TerminationRecord = ModularTermination.RulesEnabled(options) && !verifiedHere ? dooFile.Manifest.ModularTermination : null,
     };
   }
 

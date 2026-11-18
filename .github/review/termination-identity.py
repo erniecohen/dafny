@@ -10,7 +10,7 @@ Claim: the default rules change nothing for a program that does not use the desi
       printed Boogie file.  Both builds read the same files, so paths agree.  It checks:
         (a) branch with /legacyNoModularTermination:1 == base, for every program;
         (b) branch by default == base, unless the program uses the design.  A program uses the design when
-            its text mentions {:global}, {:callback} or termination_closed, or when its legacy-off run
+            its text mentions {:global}, {:callback}, termination_closed or bounded<, or when its legacy-off run
             reports an unmarked extension of a trait of another module.  The oracle is independent of the
             code under test.
       Exit 0 when both hold.
@@ -33,7 +33,7 @@ CONFIGS = {
     'legacy-types': [],
     'refreshed-types': ['/typeSystemRefresh:1', '/generalTraits:datatype', '/generalNewtypes:1'],
 }
-DESIGN = re.compile(r'\{:global\}|\{:callback\}|termination_closed')
+DESIGN = re.compile(r'\{:global\}|\{:callback\}|termination_closed|\bbounded\s*<')
 CROSS = 'is in a different module than trait'
 
 

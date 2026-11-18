@@ -543,7 +543,7 @@ public partial class BoogieGenerator {
   /// </summary>
   void CheckCallbackApplication(IOrigin tok, ICodeContext codeContext, Expression value, List<Expression> args,
                                 ExpressionTranslator etranCurrent, BoogieStmtListBuilder builder) {
-    if (options.Get(CommonOptionBag.ModularTermination) && BoundedCallables.ErasedCallable(value.Resolved) is { } bounded) {
+    if (ModularTerminationActive && BoundedCallables.ErasedCallable(value.Resolved) is { } bounded) {
       CheckBoundedApplication(tok, codeContext, bounded, args, etranCurrent, builder);
       return;
     }

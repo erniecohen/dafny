@@ -65,13 +65,13 @@ for resolver, flags in resolvers.items():
     def client(name, client_source, expected_exit, diagnostic=None, verified=None, lib=library, enabled=True,
                warnings=False, legacy=False):
         run('%s: %s' % (resolver, name),
-            ['verify'] + (['--modular-termination'] if enabled else [])
+            ['verify'] + []
             + (['--legacy-no-modular-termination'] if legacy else []) + flags
             + ['--library', lib, source(client_source)],
             expected_exit, diagnostic, verified, warnings)
 
     # The library is verified alone, and gets a termination record.
-    run(resolver + ': build library', ['build', '-t:lib', '--modular-termination'] + flags
+    run(resolver + ': build library', ['build', '-t:lib'] + flags
         + [source('lib'), '--output=' + library], 0, verified='3 verified, 0 errors')
 
     # An extension within the rules is accepted; its only error is its control.
@@ -98,11 +98,12 @@ for resolver, flags in resolvers.items():
 
     # A library that carries no checked record is not admitted under the option, and a library with a record
     # is not admitted without it.
-    client('source library', 'ok', 1, 'a source library carries no checked termination record', lib=source('lib'))
+    client('source library', 'ok', 2, 'not verified under the rules of termination across modules', lib=source('lib'))
     run(resolver + ': build library without the option', ['build', '-t:lib'] + flags
         + [source('lib'), '--output=' + plain], 0, verified='3 verified, 0 errors')
-    client('library built without the option', 'ok', 1, 'it has no modular termination record', lib=plain)
-    client('library with a record, option off', 'ok', 1, 'checked only under that option', enabled=False)
+    client('library built without the option', 'ok', 4, 'assertion might not hold', lib=plain)
+    client('library with a record, option off', 'ok', 4, 'assertion might not hold', enabled=False)
+    client('recorded library, legacy opt-out', 'ok', 1, 'checked only under that option', enabled=False, legacy=True)
 
     # Without the option, and with a library built without it, the rules still hold by default: the client
     # that implements the slot above its bound is rejected.
@@ -121,12 +122,12 @@ for resolver, flags in resolvers.items():
     # against it (https://github.com/erniecohen/dafny/issues/461: the generated prefix lemma's {:axiom} is not
     # an assumption of the library).  The same pair verified as one program gives the same errors.
     extreme = str(output / ('extreme-%s.doo' % resolver))
-    run(resolver + ': build library with a least predicate', ['build', '-t:lib', '--modular-termination'] + flags
+    run(resolver + ': build library with a least predicate', ['build', '-t:lib'] + flags
         + [source('lib-extreme'), '--output=' + extreme], 0, verified='4 verified, 0 errors')
     client('least lemma of the library called from implementations of its slot', 'prefix', 4,
            'prefix.dfy(34,6): Error: assertion might not hold', '7 verified, 3 errors', lib=extreme)
     run(resolver + ': least lemma of the library, as one program',
-        ['verify', '--modular-termination'] + flags + [source('lib-extreme'), source('prefix')], 4,
+        ['verify'] + flags + [source('lib-extreme'), source('prefix')], 4,
         'prefix.dfy(34,6): Error: assertion might not hold', '11 verified, 3 errors')
 
 print('library gate: %d checks, %s' % (counter[0], 'all passed' if not failures else 'FAILED'))

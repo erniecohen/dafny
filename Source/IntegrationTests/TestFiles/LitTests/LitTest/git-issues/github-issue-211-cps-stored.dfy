@@ -5,9 +5,9 @@
 // naturals, in the order type Stock of the multiset order applied twice.  The continuation that intersects the
 // rest of a set holds the level {2} + its depth + the other's above its own continuation's stock.
 // RUN: echo "Figs. 16-17 with stored continuations, in bags of bags of levels" > "%t"
-// RUN: %exits-with 0 %baredafny verify --solver-path %review-z3 --use-basename-for-filename --show-snippets:false --standard-libraries:false --type-system-refresh --general-traits=datatype --decreases-orders --modular-termination "%s" "%S/Inputs/github-issue-211-multiset-orders.dfy" >> "%t"
+// RUN: %exits-with 0 %baredafny verify --solver-path %review-z3 --use-basename-for-filename --show-snippets:false --standard-libraries:false --type-system-refresh --general-traits=datatype --decreases-orders "%s" "%S/Inputs/github-issue-211-multiset-orders.dfy" >> "%t"
 // RUN: echo "controls (assert false in each positive context), and continuations whose stock does not go down" >> "%t"
-// RUN: %exits-with 4 %baredafny verify --solver-path %review-z3 --use-basename-for-filename --show-snippets:false --standard-libraries:false --type-system-refresh --general-traits=datatype --decreases-orders --modular-termination "%s" "%S/Inputs/github-issue-211-cps-stored-verify.dfy" "%S/Inputs/github-issue-211-multiset-orders.dfy" >> "%t"
+// RUN: %exits-with 4 %baredafny verify --solver-path %review-z3 --use-basename-for-filename --show-snippets:false --standard-libraries:false --type-system-refresh --general-traits=datatype --decreases-orders "%s" "%S/Inputs/github-issue-211-cps-stored-verify.dfy" "%S/Inputs/github-issue-211-multiset-orders.dfy" >> "%t"
 // RUN: %diff "%s.expect" "%t"
 
 // The stock of a continuation: a bag of levels, each a bag of naturals, ordered by the multiset order applied twice

@@ -25,7 +25,8 @@ namespace Microsoft.Dafny {
       new("dllresource://DafnyPipeline/DafnyStandardLibraries-checked.doo"));
 
     public static Uri StandardLibraryUri(DafnyOptions options, string target = null) {
-      var checkedLibrary = options.Get(CommonOptionBag.ModularTermination);
+      var checkedLibrary = DafnyCore.ModularTerminationTrustList.Selected(options) != null ||
+                           DafnyCore.ModularTerminationRuntimeTrust.Selected(options) != null;
       return target == null
         ? (checkedLibrary ? CheckedStandardLibrariesDooUri : StandardLibrariesDooUri)
         : (checkedLibrary ? CheckedStandardLibrariesDooUriTarget : StandardLibrariesDooUriTarget)[target];

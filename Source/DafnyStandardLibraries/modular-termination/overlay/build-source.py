@@ -35,7 +35,6 @@ configuration = configuration.replace('resource-limit = 1000000', 'resource-limi
 project.write_text(configuration.replace(legacy_warning_policy,
     '# This source has checked termination contracts and records its named ghost premises.\n'
     'warn-unchecked-termination = true\n'
-    'modular-termination = true\n'
     'modular-termination-trust = "standard-library"\n'))
 target_project = destination / 'TargetSpecific/dfyconfig.toml'
 target_configuration = target_project.read_text()
@@ -46,7 +45,7 @@ library_end = target_configuration.index(']', library_start) + 1
 target_configuration = (target_configuration[:library_start] + 'library = []' +
                         target_configuration[library_end:])
 target_configuration = target_configuration.replace('resource-limit = 1000000', 'resource-limit = 16000000')
-target_configuration += ('\nmodular-termination = true\n'
+target_configuration += ('\n'
                          'modular-termination-trust = "standard-library"\n'
                          'modular-termination-runtime-trust = "standard-library"\n')
 target_project.write_text(target_configuration)

@@ -7,9 +7,9 @@
 // github-issue-211-stored-arguments.dfy (cons.c with intersects, whose permission append(d, d_other) depends on its
 // argument: an argument-dependent bound).
 // RUN: echo "funcptr.c and cons.c (contains), stored values" > "%t"
-// RUN: %exits-with 0 %baredafny verify --solver-path %review-z3 --use-basename-for-filename --show-snippets:false --type-system-refresh --general-traits=datatype --modular-termination "%s" >> "%t"
+// RUN: %exits-with 0 %baredafny verify --solver-path %review-z3 --use-basename-for-filename --show-snippets:false --type-system-refresh --general-traits=datatype "%s" >> "%t"
 // RUN: echo "controls (assert false in each positive context), and levels that do not go down" >> "%t"
-// RUN: %exits-with 4 %baredafny verify --solver-path %review-z3 --use-basename-for-filename --show-snippets:false --type-system-refresh --general-traits=datatype --modular-termination "%s" "%S/Inputs/github-issue-211-stored-verify.dfy" >> "%t"
+// RUN: %exits-with 4 %baredafny verify --solver-path %review-z3 --use-basename-for-filename --show-snippets:false --type-system-refresh --general-traits=datatype "%s" "%S/Inputs/github-issue-211-stored-verify.dfy" >> "%t"
 // RUN: %diff "%s.expect" "%t"
 
 // funcptr.c

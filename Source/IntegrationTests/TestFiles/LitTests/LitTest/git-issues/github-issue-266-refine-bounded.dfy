@@ -4,9 +4,9 @@
 // assertion failed.  It now keeps the rewritten value apart from the syntax.  The legacy resolver, which resolves the
 // rewritten syntax, is checked too.
 // RUN: echo "the pre-type resolver" > "%t"
-// RUN: %exits-with 4 %baredafny verify --solver-path %review-z3 --use-basename-for-filename --show-snippets:false --standard-libraries:false --type-system-refresh --modular-termination "%s" >> "%t"
+// RUN: %exits-with 4 %baredafny verify --solver-path %review-z3 --use-basename-for-filename --show-snippets:false --standard-libraries:false --type-system-refresh "%s" >> "%t"
 // RUN: echo "the legacy resolver" >> "%t"
-// RUN: %exits-with 4 %baredafny verify --solver-path %review-z3 --use-basename-for-filename --show-snippets:false --standard-libraries:false --type-system-refresh=false --modular-termination "%s" >> "%t"
+// RUN: %exits-with 4 %baredafny verify --solver-path %review-z3 --use-basename-for-filename --show-snippets:false --standard-libraries:false --type-system-refresh=false "%s" >> "%t"
 // RUN: %diff "%s.expect" "%t"
 
 module A {

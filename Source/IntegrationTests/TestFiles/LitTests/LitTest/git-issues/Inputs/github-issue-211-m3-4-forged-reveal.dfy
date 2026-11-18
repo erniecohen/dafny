@@ -1,6 +1,6 @@
 // A lemma that claims to be Dafny's generated reveal lemma.  The serialization dropped it from the stored
 // program, where the call in Bad then resolved to G.L (https://github.com/erniecohen/dafny/issues/325).
-module G {
+module G { const {:termination_closed} CertificateRequested: bool := true
   lemma L() ensures true {}
 }
 

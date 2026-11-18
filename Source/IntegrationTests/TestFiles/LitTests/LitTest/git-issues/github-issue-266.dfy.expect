@@ -78,7 +78,7 @@ github-issue-266-chars.dfy(18,72): Error: type parameter (T) passed to function 
 github-issue-266-chars.dfy(19,48): Error: set argument type must support equality (got bounded<nat, int -> int>)
 github-issue-266-chars.dfy(19,53): Error: set argument type must support equality (got bounded<nat, int -> int>)
 13 resolution/type errors detected in github-issue-266-chars.dfy
-without --modular-termination, both resolvers
+legacy opt-out, both resolvers
 github-issue-266-off.dfy(2,12): Error: Type or type parameter is not declared in this scope: bounded (did you forget to qualify a name or declare a module import 'opened'?) (note that names in outer modules are not visible in contained modules)
 1 resolution/type errors detected in github-issue-266-off.dfy
 github-issue-266-off.dfy(2,12): Error: Type or type parameter is not declared in this scope: bounded (did you forget to qualify a name or declare a module import 'opened'?) (note that names in outer modules are not visible in contained modules)

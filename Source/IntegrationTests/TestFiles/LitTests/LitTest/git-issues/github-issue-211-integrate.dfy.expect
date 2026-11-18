@@ -1,6 +1,6 @@
 Figs. 10-14 with bags of method levels, by default
 
-Dafny program verifier finished with 36 verified, 0 errors
+Dafny program verifier finished with 83 verified, 0 errors
 --modular-termination: the orders library verified with the client
 
 Dafny program verifier finished with 83 verified, 0 errors
@@ -16,4 +16,4 @@ github-issue-211-integrate-verify.dfy(103,17): Error: cannot prove termination; 
 github-issue-211-integrate-verify.dfy(103,17): Error: decreases expression at index 0 must be bounded below by 0
 github-issue-211-integrate-verify.dfy(96,31): Related location: this decreases clause was not satisfied
 
-Dafny program verifier finished with 45 verified, 9 errors
+Dafny program verifier finished with 92 verified, 9 errors

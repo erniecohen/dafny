@@ -18,7 +18,7 @@ failures = []
 def check(name, text, expected, diagnostic=None):
     source = out / (name + '.dfy')
     source.write_text(text)
-    args = ['dotnet', driver, 'verify', '--modular-termination', '--standard-libraries:false',
+    args = ['dotnet', driver, 'verify', '--standard-libraries:false',
             '--type-system-refresh=' + str(refresh).lower(), '--general-traits=datatype', '--solver-path', solver,
             '--cores', '1', '--resource-limit', '16000000', '--verification-time-limit', '0',
             '--use-basename-for-filename', '--show-snippets:false', str(protocol), str(source)]

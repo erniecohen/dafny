@@ -5,19 +5,19 @@
 // values.  A parameter with a callback bound can be certified and kept, and a lambda can apply it: its bound on
 // entry must be below the lambda's, evaluated where the lambda is formed.
 // RUN: echo "positive, both resolvers" > "%t"
-// RUN: %exits-with 0 %baredafny verify --solver-path %review-z3 --use-basename-for-filename --show-snippets:false --warn-unchecked-termination=false --modular-termination "%s" >> "%t"
-// RUN: %exits-with 0 %baredafny verify --solver-path %review-z3 --use-basename-for-filename --show-snippets:false --warn-unchecked-termination=false --modular-termination --type-system-refresh --general-traits=datatype "%s" >> "%t"
+// RUN: %exits-with 0 %baredafny verify --solver-path %review-z3 --use-basename-for-filename --show-snippets:false --warn-unchecked-termination=false "%s" >> "%t"
+// RUN: %exits-with 0 %baredafny verify --solver-path %review-z3 --use-basename-for-filename --show-snippets:false --warn-unchecked-termination=false --type-system-refresh --general-traits=datatype "%s" >> "%t"
 // RUN: echo "false controls: one reachable assert false per family, both resolvers" >> "%t"
-// RUN: %exits-with 4 %baredafny verify --solver-path %review-z3 --use-basename-for-filename --show-snippets:false --warn-unchecked-termination=false --modular-termination "%S/Inputs/github-issue-266-m3-false.dfy" >> "%t"
-// RUN: %exits-with 4 %baredafny verify --solver-path %review-z3 --use-basename-for-filename --show-snippets:false --warn-unchecked-termination=false --modular-termination --type-system-refresh --general-traits=datatype "%S/Inputs/github-issue-266-m3-false.dfy" >> "%t"
+// RUN: %exits-with 4 %baredafny verify --solver-path %review-z3 --use-basename-for-filename --show-snippets:false --warn-unchecked-termination=false "%S/Inputs/github-issue-266-m3-false.dfy" >> "%t"
+// RUN: %exits-with 4 %baredafny verify --solver-path %review-z3 --use-basename-for-filename --show-snippets:false --warn-unchecked-termination=false --type-system-refresh --general-traits=datatype "%S/Inputs/github-issue-266-m3-false.dfy" >> "%t"
 // RUN: echo "divergence kernels and rule violations, both resolvers" >> "%t"
-// RUN: %exits-with 4 %baredafny verify --solver-path %review-z3 --use-basename-for-filename --show-snippets:false --warn-unchecked-termination=false --modular-termination "%S/Inputs/github-issue-266-m3-kernels.dfy" >> "%t"
-// RUN: %exits-with 4 %baredafny verify --solver-path %review-z3 --use-basename-for-filename --show-snippets:false --warn-unchecked-termination=false --modular-termination --type-system-refresh --general-traits=datatype "%S/Inputs/github-issue-266-m3-kernels.dfy" >> "%t"
+// RUN: %exits-with 4 %baredafny verify --solver-path %review-z3 --use-basename-for-filename --show-snippets:false --warn-unchecked-termination=false "%S/Inputs/github-issue-266-m3-kernels.dfy" >> "%t"
+// RUN: %exits-with 4 %baredafny verify --solver-path %review-z3 --use-basename-for-filename --show-snippets:false --warn-unchecked-termination=false --type-system-refresh --general-traits=datatype "%S/Inputs/github-issue-266-m3-kernels.dfy" >> "%t"
 // RUN: echo "knots through the parameter and result types of a bounded function, both resolvers" >> "%t"
-// RUN: %exits-with 2 %baredafny resolve --solver-path %review-z3 --use-basename-for-filename --show-snippets:false --warn-unchecked-termination=false --modular-termination "%S/Inputs/github-issue-266-m3-wrapper.dfy" >> "%t"
-// RUN: %exits-with 2 %baredafny resolve --solver-path %review-z3 --use-basename-for-filename --show-snippets:false --warn-unchecked-termination=false --modular-termination --type-system-refresh --general-traits=datatype "%S/Inputs/github-issue-266-m3-wrapper.dfy" >> "%t"
+// RUN: %exits-with 2 %baredafny resolve --solver-path %review-z3 --use-basename-for-filename --show-snippets:false --warn-unchecked-termination=false "%S/Inputs/github-issue-266-m3-wrapper.dfy" >> "%t"
+// RUN: %exits-with 2 %baredafny resolve --solver-path %review-z3 --use-basename-for-filename --show-snippets:false --warn-unchecked-termination=false --type-system-refresh --general-traits=datatype "%S/Inputs/github-issue-266-m3-wrapper.dfy" >> "%t"
 // RUN: echo "stored bounded values, compiled" >> "%t"
-// RUN: %exits-with 0 %baredafny run --solver-path %review-z3 --use-basename-for-filename --show-snippets:false --warn-unchecked-termination=false --modular-termination --target cs "%S/Inputs/github-issue-266-m3-run.dfy" >> "%t"
+// RUN: %exits-with 0 %baredafny run --solver-path %review-z3 --use-basename-for-filename --show-snippets:false --warn-unchecked-termination=false --target cs "%S/Inputs/github-issue-266-m3-run.dfy" >> "%t"
 // RUN: %diff "%s.expect" "%t"
 
 // The positive storage control of the design (section 3.8): a bound-zero function copied through generic identity,

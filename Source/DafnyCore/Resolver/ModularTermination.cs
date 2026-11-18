@@ -99,7 +99,26 @@ public static class ModularTermination {
     if (Attributes.Contains(declaration.Attributes, ClosedAttributeName)) {
       return "a {:" + ClosedAttributeName + "} promise";
     }
-    return DeclaresBound(declaration) ? "a 'decreases {:global}' or 'decreases {:callback}' bound" : null;
+    if (DeclaresBound(declaration)) {
+      return "a 'decreases {:global}' or 'decreases {:callback}' bound";
+    }
+    // Inspect resolved types as well as attributes: a bounded field, formal or expression is a
+    // design use even when its owner declares no bound. Follow aliases and inferred expression types.
+    var pending = new Stack<INode>([declaration]);
+    var seen = new HashSet<INode>();
+    while (pending.TryPop(out var node)) {
+      if (!seen.Add(node)) {
+        continue;
+      }
+      if (node is Type type && BoundedCallables.Payload(type) != null ||
+          node is Expression expression && expression.Type != null && BoundedCallables.Payload(expression.Type) != null) {
+        return "a bounded callable type";
+      }
+      foreach (var child in node.Children) {
+        pending.Push(child);
+      }
+    }
+    return null;
   }
 
   private static bool DeclaresBound(Declaration declaration) {
@@ -1283,14 +1302,13 @@ public class ModularTerminationRewriter : IRewriter {
   }
 
   internal override void PostResolve(Program program) {
-    if (Reporter.Options.Get(CommonOptionBag.ModularTermination)) {
-      CheckLibraryRefinements(program);
-    } else if (ModularTermination.RulesEnabled(Reporter.Options)) {
+    if (ModularTermination.RulesEnabled(Reporter.Options)) {
       CheckUncheckedLibraries(program);
     }
     if (!ModularTermination.Active(Reporter.Options, program)) {
       return;
     }
+    CheckLibraryRefinements(program);
     var analysis = new ModularTerminationAnalysis(program);
     var checkedClauses = new HashSet<(Attributes, ModuleDefinition)>();
     foreach (var module in program.Modules()) {

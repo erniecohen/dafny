@@ -46,6 +46,7 @@ def run(name, args, expected_exit, diagnostic=None, common_args=common, dafny=No
     (output / ('%02d-%s.txt' % (counter[0], name))).write_text(json.dumps(cmd) + '\n' + text)
     lines = [line.strip() for line in text.splitlines() if 'Error' in line]
     shown = [re.sub(r'\b[0-9a-f]{12,64}\b', '<digest>', line.replace(str(output) + '/', '')) for line in lines]
+    shown = [re.sub(r'than this run uses \(Z3 [0-9.]+, sha256', 'than this run uses (Z3 <version>, sha256', line) for line in shown]
     print('%s: exit %d' % (name, process.returncode))
     for line in shown:
         print('  ' + line)
@@ -60,7 +61,7 @@ def run(name, args, expected_exit, diagnostic=None, common_args=common, dafny=No
 
 def build(name, src, *extra, expected_exit=0, diagnostic=None, writes=None, dafny=None):
     target = doo(name)
-    run('build ' + name, ['build', '-t:lib', '--modular-termination', src, '--output=' + target] + list(extra),
+    run('build ' + name, ['build', '-t:lib', src, '--output=' + target] + list(extra),
         expected_exit, diagnostic, dafny=dafny)
     writes = expected_exit == 0 if writes is None else writes
     if writes != Path(target).exists():
@@ -68,7 +69,7 @@ def build(name, src, *extra, expected_exit=0, diagnostic=None, writes=None, dafn
 
 
 def verify(name, libraries, client, expected_exit, diagnostic=None, extra=(), enabled=True, common_args=common):
-    args = ['verify'] + (['--modular-termination'] if enabled else [])
+    args = ['verify'] + ([] if enabled else ['--legacy-no-modular-termination'])
     for library in libraries:
         args += ['--library', library]
     run(name, args + [source(client)] + list(extra), expected_exit, diagnostic, common_args=common_args)
@@ -176,7 +177,7 @@ if 'termination-contracts.json' not in record or 'r := r + 1' in record['termina
     failures.append('lib: contracts entry missing or carries method bodies')
 
 # Off-mode producer: unchanged library format.
-run('build off', ['build', '-t:lib', source('lib'), '--output=' + doo('off')], 0)
+run('build off', ['build', '-t:lib', '--legacy-no-modular-termination', source('lib'), '--output=' + doo('off')], 0)
 off = entries(doo('off'))
 if sorted(off) != ['manifest.toml', 'program'] or 'modular_termination' in off['manifest.toml'] \
         or 'doo_file_version = "1.0"' not in off['manifest.toml']:
@@ -186,7 +187,7 @@ if off['program'] != record['program']:
 
 # On/off matrix.
 verify('on client, on library', [doo('lib')], 'client-lib', 0)
-verify('on client, off library', [doo('off')], 'client-lib', 1, 'was built without --modular-termination')
+verify('on client, off library', [doo('off')], 'client-lib', 1, 'legacy-no-modular-termination')
 verify('off client, on library', [doo('lib')], 'client-lib', 1, 'checked only under that option', enabled=False)
 verify('off client, off library', [doo('off')], 'client-lib', 0, enabled=False)
 verify('false client', [doo('lib')], 'client-false', 4, 'assertion might not hold')
@@ -233,9 +234,9 @@ verify('changed prelude', [doo('changed-prelude')], 'client-bad', 1,
        'it was verified by a different build of Dafny or of its prelude')
 
 # Unsupported library sources.
-verify('source library', [source('lib')], 'client-lib', 1, 'a source library carries no checked termination record')
-run('standard library', ['verify', '--modular-termination', '--library', doo('lib'), source('client-lib'),
-                         '--standard-libraries'], 1, 'standard library',
+verify('source library', [source('lib')], 'client-lib', 2, 'not verified under the rules of termination across modules')
+run('standard library', ['verify', '--library', doo('lib'), source('client-lib'),
+                         '--standard-libraries'], 0, None,
     common_args=[a for a in common if a != '--standard-libraries:false'])
 
 # Dependencies: a library records the contracts it was verified against.

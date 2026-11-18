@@ -11,13 +11,13 @@ if output.exists():
     shutil.rmtree(output)
 output.mkdir(parents=True)
 root = next(p for p in Path(__file__).resolve().parents if (p / 'Source/DafnyStandardLibraries').is_dir())
-source = (root / 'Source/DafnyStandardLibraries/src/Std/TargetSpecific/FileIO3InternalExterns-notarget-java-cs-js-go-py.dfy').read_text()
+source = (root / 'Source/DafnyStandardLibraries/src/Std/TargetSpecific/FileIO3InternalExterns-notarget-java-cs-js-go-py.dfy').read_text() + '\nmodule CertificateRequest { const {:termination_closed} Enabled: bool := true }\n'
 option = '--modular-termination-runtime-trust:standard-library'
 contract = 'Std.FileIOInternalExterns.INTERNAL_ReadBytesFromFile'
 
 
 def run(name, command, files, refresh, trusted=False):
-    args = ['dotnet', str(assembly), command, '--modular-termination',
+    args = ['dotnet', str(assembly), command,
             '--standard-libraries:false', '--solver-path', solver,
             '--type-system-refresh:' + str(refresh).lower(), '--use-basename-for-filename']
     if command != 'audit':

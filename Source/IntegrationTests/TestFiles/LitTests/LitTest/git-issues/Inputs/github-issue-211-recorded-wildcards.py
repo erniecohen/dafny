@@ -16,7 +16,7 @@ second.write_text('module B { datatype T = Zero function {:termination_closed} G
 for refresh in [False, True]:
     name = 'refresh' if refresh else 'legacy'
     library = out / (name + '.doo')
-    base = ['dotnet', binary, '--modular-termination', '--standard-libraries:false',
+    base = ['dotnet', binary, '--standard-libraries:false',
         '--solver-path', solver, '--type-system-refresh:' + str(refresh).lower(),
         '--cores', '1', '--resource-limit', '1000000', '--use-basename-for-filename']
     def run(case, command, args):
