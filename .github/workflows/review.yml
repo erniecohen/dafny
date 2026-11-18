@@ -181,9 +181,8 @@ jobs:
           test "$(ps -o nice= -p "$$" | tr -d ' ')" = 10
           echo 'Job worker and shell niceness: 10; subsequent actions inherit it.'
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
+      - name: Check Python version
+        run: python3 -c 'import sys; assert sys.version_info >= (3, 11), "Python 3.11 or newer is required"'
       - name: CI event guards, regression partition, parity and comparison bookkeeping
         # Every unit-test module in .github/review, so that none goes unrun.
         run: python3 -m unittest discover -s .github/review -p 'test_*.py'
@@ -1287,9 +1286,8 @@ jobs:
           java-version: '17'
       - name: Boogie packages
         run: sh Scripts/fetch-boogie-packages.sh
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
+      - name: Check Python version
+        run: python3 -c 'import sys; assert sys.version_info >= (3, 11), "Python 3.11 or newer is required"'
       - name: Install Z3 5.1.0 for catalog production and release checks
         id: release-z3
         run: echo "path=$(sh .github/review/setup-z3.sh 5.1.0 ci-z3)" >> "$GITHUB_OUTPUT"
