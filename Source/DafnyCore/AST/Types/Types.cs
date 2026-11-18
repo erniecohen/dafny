@@ -347,17 +347,9 @@ public abstract class Type : NodeWithOrigin {
       if (rtd != null) {
         var udt = (UserDefinedType)type;
 
-        if (!rtd.AsTopLevelDecl.IsVisibleInScope(scope)) {
-          // This can only mean "rtd" is a class/trait that is only provided, not revealed. For a provided class/trait,
-          // it is the non-null type declaration that is visible, not the class/trait declaration itself.
-          if (rtd is ClassLikeDecl cl) {
-            Contract.Assert(cl.NonNullTypeDecl != null);
-            Contract.Assert(cl.NonNullTypeDecl.IsVisibleInScope(scope));
-          } else {
-            Contract.Assert(rtd is AbstractTypeDecl);
-          }
-        }
-
+        // Export checking and inferred types in imported specifications can refer to declarations
+        // that are not visible in this scope. Only revelation controls whether their definitions
+        // may be expanded; an invisible type must retain its opaque self-synonym.
         if (rtd.IsRevealedInScope(scope)) {
           if (expandMode != ExpandMode.DontExpandJustAdjustForScopes && rtd is TypeSynonymDecl { IsCyclic: false } typeSynonymDecl) {
             if (typeSynonymDecl is not SubsetTypeDecl || expandMode == ExpandMode.ExpandSynonymsAndSubsetTypes) {
@@ -375,16 +367,6 @@ public abstract class Type : NodeWithOrigin {
       var isyn = type.AsInternalTypeSynonym;
       if (isyn != null) {
         var udt = (UserDefinedType)type;
-
-        if (!isyn.IsVisibleInScope(scope)) {
-          // This can only mean "isyn" refers to a class/trait that is only provided, not revealed. For a provided class/trait,
-          // it is the non-null type declaration that is visible, not the class/trait declaration itself.
-          var rhs = isyn.RhsWithArgumentIgnoringScope(udt.TypeArgs);
-          Contract.Assert(rhs is UserDefinedType);
-          var cl = ((UserDefinedType)rhs).ResolvedClass as ClassLikeDecl;
-          Contract.Assert(cl != null && cl.NonNullTypeDecl != null, rhs.ToString());
-          Contract.Assert(cl.NonNullTypeDecl.IsVisibleInScope(scope));
-        }
 
         if (isyn.IsRevealedInScope(scope)) {
           type = isyn.RhsWithArgument(udt.TypeArgs);
@@ -595,7 +577,9 @@ public abstract class Type : NodeWithOrigin {
       var td = (NewtypeDecl)cl;
       switch (td.WitnessKind) {
         case SubsetTypeDecl.WKind.CompiledZero:
-          return td.InheritsBaseDefault
+          // Issue 105: "raw N", where the header of N has moved into its InvariantTypeDecl, is the base type with no
+          // constraint, and as inhabited as the base type
+          return td.InheritsBaseDefault || td.MovedHeaderClauses != null
             ? td.ConcreteBaseType(udt.TypeArgs).GetAutoInit(coDatatypesBeingVisited, Step(td.ConcreteBaseType))
             : AutoInitInfo.CompilableValue;
         case SubsetTypeDecl.WKind.Compiled:
@@ -609,6 +593,10 @@ public abstract class Type : NodeWithOrigin {
           Contract.Assert(false); // unexpected case
           throw new Cce.UnreachableException();
       }
+    } else if (cl is InvariantTypeDecl { Owner: AbstractTypeDecl abstractOwner }) {
+      // Issue 105: an abstract type with member invariants has what its characteristics promise, which every
+      // refinement keeps with a witness
+      return InvariantTypeDecl.PromisedAutoInit(abstractOwner);
     } else if (cl is SubsetTypeDecl) {
       var td = (SubsetTypeDecl)cl;
       switch (td.WitnessKind) {
@@ -1877,6 +1865,20 @@ public abstract class Type : NodeWithOrigin {
   }
 
   /// <summary>
+  /// The declaration of the possibly-null type whose non-null type "decl" is, or "decl" itself if it is not a non-null
+  /// type. For a class C with member invariants (issue 105), the possibly-null type of "C" is the derived type "C?",
+  /// and that of "raw C" is "raw C?", the class declaration itself.
+  /// </summary>
+  private static TopLevelDecl NullableHead(TopLevelDecl decl) {
+    return decl switch {
+      RawNonNullTypeDecl raw => raw.Class,
+      NonNullTypeDecl { Class.InvariantTypeDecl: { } invariants } => invariants,
+      NonNullTypeDecl nonNull => nonNull.Class,
+      _ => decl
+    };
+  }
+
+  /// <summary>
   /// Return whether or not "this" is a subtype of "super".
   /// If "ignoreTypeArguments" is "true", then proceed as if the type arguments were equal.
   /// If "ignoreNullity" is "true", then the difference between a non-null reference type C
@@ -1890,9 +1892,7 @@ public abstract class Type : NodeWithOrigin {
     bool equivalentHeads = SameHead(sub, super);
     if (!equivalentHeads && ignoreNullity) {
       if (super is UserDefinedType a && sub is UserDefinedType b) {
-        var clA = (a.ResolvedClass as NonNullTypeDecl)?.Class ?? a.ResolvedClass;
-        var clB = (b.ResolvedClass as NonNullTypeDecl)?.Class ?? b.ResolvedClass;
-        equivalentHeads = clA == clB;
+        equivalentHeads = NullableHead(a.ResolvedClass) == NullableHead(b.ResolvedClass);
       }
     }
     if (equivalentHeads) {
@@ -1902,7 +1902,7 @@ public abstract class Type : NodeWithOrigin {
     // There is a special case, namely when super is the non-null "object". Since "sub.ParentTypes()" only gives
     // back the explicitly declared parent traits, the general case below may miss it.
     if (super.IsObject) {
-      return sub.IsNonNullRefType;
+      return sub.IsNonNullRefType && !InvariantTypeDecl.IsRawReferenceType(sub);
     }
 
     return sub.ParentTypes(true).Any(parentType => parentType.IsSubtypeOf(super, ignoreTypeArguments, ignoreNullity));

@@ -21,8 +21,8 @@ A marker is evidence only when all of these hold, and any doubt means no reuse:
     request depend on its base.  A push or a tag run reuses either.
 The run that reuses is never a pull request from a fork, and a manual run reuses only
 on a tag, which is how a release is built.  Trees that differ only in
-`.github/review/base` are not identical: the stamp sets `dafny --version`, and the
-version checks would then not run.
+`.github/review/base` are not identical: the upstream tag is a version input.
+The full-tree key remains conservative for the ignored historical second word.
 """
 import argparse
 import json

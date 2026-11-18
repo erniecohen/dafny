@@ -97,6 +97,30 @@ public record AssumptionDescription(
       IsExplicit: false);
   }
 
+  /// <summary>
+  /// A trait axiom (--inherited-trait-axioms): what the {:axiom} of a bodiless ghost trait member trusts.
+  /// </summary>
+  public static AssumptionDescription TraitAxiom(bool isFunction, string traitName) {
+    return new(
+      Issue: isFunction
+        ? $"Trait axiom: every type that extends [{traitName}] is assumed to have a function with this signature and specification, without defining it."
+        : $"Trait axiom: its specification is assumed for every type that extends [{traitName}], without proof.",
+      Mitigation: "Provide a body, or remove [{:axiom}] so that each type that extends the trait implements it.",
+      MitigationIetf: "SHOULD provide a body, or remove [{:axiom}] so that each type that extends the trait implements it.",
+      IsExplicit: true);
+  }
+
+  /// <summary>
+  /// A class, datatype or newtype inherits a trait axiom without overriding it.
+  /// </summary>
+  public static AssumptionDescription InheritsTraitAxiom(string axiomName) {
+    return new(
+      Issue: $"Type inherits trait axiom [{axiomName}] without implementing it.",
+      Mitigation: "Override it with an implementation, or check that the axiom holds for this type.",
+      MitigationIetf: "SHOULD override it with an implementation, or justify that the axiom holds for this type.",
+      IsExplicit: true);
+  }
+
   public static readonly AssumptionDescription AssertOnly = new(
     Issue: "Assertion has explicit temporary [{:only}] attribute.",
     Mitigation: "Remove the [{:only}] attribute.",

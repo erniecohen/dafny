@@ -382,6 +382,7 @@ namespace Microsoft.Dafny {
             } else if (e.Member is DatatypeDiscriminator discriminator) {
               CheckNotGhostVariant(e, "discriminator", ((DatatypeDecl)discriminator.EnclosingClass).Ctors, builder, etran);
             }
+            CheckReceiverInvariants(e.Obj.Origin, e.Member, e.Obj, builder, etran);
             if (!e.Member.IsStatic) {
               if (e.Member is TwoStateFunction) {
                 Bpl.Expr wh = AllocationObligation(selectExpr.Origin, etran.TrExpr(e.Obj), e.Obj.Type, etran.OldAt(e.AtLabel));
@@ -703,6 +704,7 @@ namespace Microsoft.Dafny {
               if (!e.Function.IsStatic && !(e.Receiver is ThisExpr) && !e.Receiver.Type.IsArrowType) {
                 CheckNonNull(callExpr.Origin, e.Receiver, builder, etran, wfOptions.AssertKv);
               }
+              CheckReceiverInvariants(e.Receiver.Origin, e.Function, e.Receiver, builder, etran);
               if (!e.Function.IsStatic && !etran.UsesOldHeap) {
                 // the argument can't be assumed to be allocated for the old heap
                 Type et = UserDefinedType.FromTopLevelDecl(e.Origin, e.Function.EnclosingClass).Subst(e.GetTypeArgumentSubstitutions());

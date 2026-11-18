@@ -77,6 +77,20 @@ public class ModuleBindings {
     return res;
   }
 
+  /// <summary>
+  /// Find the root of the module that the copying import "context" ("import X := Q") copies. The module is
+  /// named as the target of "import X = Q" is, so the lookup is that of ResolveQualifiedModuleIdRootImport.
+  /// </summary>
+  public bool ResolveQualifiedModuleIdRootCopy(LiteralModuleDecl context, ModuleQualifiedId qid,
+    out ModuleDecl result) {
+    Contract.Assert(qid != null);
+    IOrigin root = qid.Path[0].StartToken;
+    result = null;
+    bool res = TryLookupFilter(root.val, out result,
+      m => context != m && ((context.EnclosingModuleDefinition == m.EnclosingModuleDefinition && context.CopyImport.Exports.Count == 0) || m is LiteralModuleDecl));
+    return res;
+  }
+
   public bool ResolveQualifiedModuleIdRootRefines(ModuleDefinition context, ModuleQualifiedId qid,
     out ModuleDecl result) {
     Contract.Assert(qid != null);

@@ -135,6 +135,15 @@ public partial class BoogieGenerator {
         }
       });
 
+      if (f is MemberInvariant invariant) {
+        // Issue 105: an invariant is well formed where the invariants before it in the constraint of its type hold:
+        // those the type inherits, then its own earlier ones, as successive requires clauses are
+        builder.Add(new CommentCmd("Assume the invariants before this one"));
+        foreach (var earlier in InvariantTypeDecl.EarlierInvariants(invariant)) {
+          builder.Add(TrAssumeCmd(earlier.Origin, BplAnd(etran.CanCallAssumptionForVerification(earlier), etran.TrExpr(earlier))));
+        }
+      }
+
       // Check well-formedness of the reads clause.  Note that this is done after assuming
       // the preconditions.  In other words, the well-formedness of the reads clause is
       // allowed to assume the precondition (yet, the requires clause is checked to

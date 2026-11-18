@@ -499,7 +499,7 @@ Since 2026-11-14 the hash covers every product file, those the fork added as wel
 those v4.11.0 already has, and leaves out the paths that are not product (tests,
 `docs`, `.github`, `friction` and the documents at the top of the tree):
 
-    git diff --no-renames --abbrev=7 v4.11.0 <last product commit> -- . \
+    git diff --no-renames --abbrev=7 v4.11.0 HEAD -- . \
       ':(exclude)Source/IntegrationTests' ':(exclude,glob)Source/*.Test/**' \
       ':(exclude,glob)Source/*.Tests/**' ':(exclude)docs' ':(exclude).github' \
       ':(exclude)friction' ':(exclude)REVIEW.md' ':(exclude)ROADMAP.md' \
@@ -516,9 +516,9 @@ product commits make to files that v4.11.0 already has:
 
     git diff --diff-filter=M --abbrev=7 v4.11.0 b97a6fe | sha256sum
 
-`b97a6fe`, the fix for #26, is the last product commit.  `.github/review/base`
-names `ada0d09`, the same product tree on that pull request's branch before it
-was squash-merged; the two give the same hash.  Before the twelve fixes since,
+`b97a6fe`, the fix for #26, was the last product commit for that release.
+At that release, `.github/review/base` named `ada0d09`, the same product tree
+on that pull request's branch before it was squash-merged; the two give the same hash.  Before the twelve fixes since,
 the version was `256a1ab3`, as follows.
 
 `256a1ab3` is the first 8 hex digits of the sha256 of the change that the
@@ -543,22 +543,25 @@ avoids that.)
 after `b97a6fe` add or update tests, release notes, documents and CI.  They
 change no product file, so the version stays.  The rule on this branch:
 
-- a commit that changes or adds a product file is a new last product commit,
-  and gets a new version and a new tag;
+- a changed product tree gets a new version and a new tag, derived from HEAD;
 - any other commit keeps them.
 
 The product is everything outside `Source/IntegrationTests/`, the unit-test
 projects (`Source/*.Test/` and `Source/*.Tests/`, which no release ships; left out
 since 2026-11-16), `docs/`,
 `.github/`, `friction/`, this file, and the other documents at the top of the
-tree: `ROADMAP.md`, `AGENTS.md` and `CLAUDE.md`.  `.github/review/base` names the base
-and the last product commit, and CI's `.github/review/version.sh` computes the
-version from them and fails if a later commit changes a product file.  By hand,
-this prints nothing:
+tree: `ROADMAP.md`, `AGENTS.md` and `CLAUDE.md`.
+`.github/review/base` names the upstream tag in its first word.
+Its historical second word is optional and ignored; the existing two-word file
+is retained for compatibility with older tooling. No product change needs to
+restamp it. CI's `.github/review/version.sh` hashes the product diff from that
+tag to HEAD. When HEAD has the same product tree as the former stamped commit,
+the diff and version are byte-identical. Reverting to an earlier product tree
+restores its version; an existing release tag is never moved or reused.
 
-    git diff --name-only b97a6fe <commit> -- . ':!Source/IntegrationTests' \
-      ':(exclude,glob)Source/*.Test/**' ':(exclude,glob)Source/*.Tests/**' ':!docs' ':!.github' \
-      ':!friction' ':!REVIEW.md' ':!ROADMAP.md' ':!AGENTS.md' ':!CLAUDE.md'
+A depth-1 checkout is sufficient: the script fetches the upstream tag at depth 1
+with retries, and `git diff` needs the two endpoint trees, not their ancestry.
+It no longer fetches the historical product commit.
 
 A release binary built from the tag prints the version with `dafny --version`.
 It is built with `-p:SourceRevisionId=fcb2042d.review.d2070b81`.  The version
@@ -610,8 +613,10 @@ a tree that a push already verified, do not verify again; on a tag, only the bui
 binaries run.  The job `verdict` is the aggregate result: it succeeds when every job
 succeeded or was skipped for reuse, and a release requires it.  A pull request reuses only pull
 request runs, a manual run on a branch and a pull request from a fork never reuse, and a tree that
-differs only in `.github/review/base` is a different tree, because the stamp is the version that
-the build checks.  Markers are kept for 90 days; without one everything runs.
+differs only in `.github/review/base` is a different tree, because the upstream tag
+is a version input. The full-tree reuse key remains conservative even when only
+the ignored historical second word changes. Markers are kept for 90 days; without
+one everything runs.
 Fork pull requests skip these jobs. The obligation-proof matrix, resolution-only
 census and pipeline probe have separate hosted fallbacks for other events,
 including the obligation matrix's weekly schedule.
@@ -824,6 +829,22 @@ they now run under the legacy option.  It changes no resolution in the standard 
 sources, `modular-termination`, `orders` and its examples).  The hidden `--legacy-reading-functions-in-datatypes` option restores the old check for comparison and
 migration.  The regression is `git-issues/github-issue-479.dfy`; the release note is
 `docs/dev/news/479.fix`.
+
+## Conversions to a newtype with an inferred base ([issue 495](https://github.com/erniecohen/dafny/issues/495))
+
+A newtype declared without a base type, `newtype Y0 = six | Yes(six)`, gets its base by inference;
+when `Yes` takes a `NewSix`, the base of `Y0` is the newtype `NewSix`.  A conversion to `Y0` checked
+`Y0`'s own constraint but not `NewSix`'s, while every value of `Y0` is assumed to satisfy both: the
+newtype keeps the resolver's type proxy as its base, and the walk up the chain of base types in
+`CheckResultToBeInType_Aux` did not look through it.  So `3 as Y0` checked `Yes(3)` and never
+`6 <= 3`, and a method returning `3 as Y0` with `ensures y as int == 3` proved `false`.  The same
+gap covered literals of the newtype and conversions from `int`, `real` and bitvector values.  The
+walk now strips the proxy first, so the base's constraints are checked as they are for an explicit
+base, under both resolvers.  Its kind is **weakens only**: it adds proof obligations and no fact or
+axiom; a program in which no base type is inferred translates exactly as before.  The hidden
+`--legacy-inferred-newtype-base-conversions` option restores the old check for comparison and
+migration.  The regression is `git-issues/github-issue-495.dfy`; the release note is
+`docs/dev/news/495.fix`.
 
 ## `allocated` in lambda expressions ([issue 457](https://github.com/erniecohen/dafny/issues/457))
 
@@ -1043,6 +1064,84 @@ resolution outside its regression in the test suite, the standard library (its s
 `--legacy-stored-function-callbacks` option restores the old check for comparison and migration.
 The regression is `git-issues/github-issue-453.dfy`; the release note is `docs/dev/news/453.fix`.
 
+## Opt-in inherited trait axioms ([issue 89](https://github.com/erniecohen/dafny/issues/89))
+
+A bodiless trait lemma marked `{:axiom}` is already an assumption for every caller that holds a
+value of the trait type, yet each class that extends the trait had to repeat it, with another
+`{:axiom}`.  Under `--inherited-trait-axioms`, default off, a non-static, bodiless, ghost trait
+member with `{:axiom}` (a lemma, two-state lemma, ghost method, ghost function or predicate, or
+two-state function or predicate; not an extreme one) is a trait axiom, and
+`ModuleResolver.ProcessInheritedTraitMembers` no longer asks the classes, datatypes and newtypes
+that inherit it to implement it.  The parser records on each trait member whether its file was
+parsed under the option (`MemberDecl.DeclaredUnderInheritedTraitAxioms`), and the cloner and the
+refinement transformer keep that flag, so the status of a member is fixed where it is declared: a
+library built with the option keeps its trait axioms, one built without it has none, and the
+option must agree between a library and its client.  Under the option, `{:axiom}` on a bodiless
+compiled or extreme trait member is an error unless the member is `{:extern}`.  A refinement
+keeps an inherited axiom, may give it a body or strengthen it, and may not add `{:axiom}` to a
+bodiless trait member of the module it refines (`RefinementTransformer.KeepTraitAxiomStatus`).
+The verifier is unchanged: no axiom, no fact and no obligation is added or removed, since the
+trait member's specification was already assumed at every call and an inherited member has no
+override check to skip.  `dafny audit` reports each trait axiom, and each type that inherits one
+without overriding it.  Its kind is **accepts more, opt-in**: with the option on, programs that
+were rejected for a missing implementation are accepted, on the strength of an assumption the
+program states and the audit lists; with the option off, the member flag is never set and every
+verdict and resource count is as before.  The option does not depend on the resolver, and the
+regression runs under both.  The regression is `git-issues/github-issue-89.dfy`; the release note
+is `docs/dev/news/89.feat`.
+
+## Opt-in added parents in a refinement ([issue 88](https://github.com/erniecohen/dafny/issues/88))
+
+A refining module could give a type a parent trait only by refining an abstract type into a class;
+`trait T ... extends S { }` was a parse error.  Under `--refinement-extends`, default off, the
+grammar of a class and of a trait accepts an `extends` clause after `...`, and
+`RefinementTransformer.MergeClass` puts the parents of the refined declaration first and the added
+ones after them (`TopLevelDecl.ParentTraitsFromRefinementBase` records how many were inherited, so
+that the printer, and with it a `.doo` library, writes only the added ones after `...`).  The
+merged declaration is then an ordinary declaration of the refining module with those parents, and
+every existing rule for an `extends` clause applies to it: cycles, type arguments, one
+instantiation per generic parent, cross-module parents, members that a class must implement,
+members that may not be redeclared, and the cardinality admission of general traits.  One rule is
+new: a refinement may not make a trait a reference type (`ref_added_parent_makes_reference_type`),
+because a module that imports the base abstractly may have declared a datatype below the trait.
+
+What makes the feature sound is that the obligations an added parent creates are checked in the
+refining module although the text they are checked at is inherited, and those checks are the
+fixes of [issue 404](https://github.com/erniecohen/dafny/issues/404) (override checks of members
+that become overrides), [issue 411](https://github.com/erniecohen/dafny/issues/411) (definite
+assignment of the parent's fields in inherited constructors),
+[issue 409](https://github.com/erniecohen/dafny/issues/409) (termination of inherited calls that
+the new overrides put on a cycle), [issue 410](https://github.com/erniecohen/dafny/issues/410) (a
+member of the parent capturing a name in inherited text) and
+[issue 408](https://github.com/erniecohen/dafny/issues/408) (an abstract import bound to a module
+that adds a parent).  The change adds no check of its own for them and must not be used without
+them: with their `--legacy-*` opt-outs, the regression's `WouldBeBad` methods prove `false`.  The
+verifier is unchanged: an added parent yields the axioms that the same parent yields on a new
+declaration, and no axiom of the base is removed or weakened.  Its kind is **accepts more,
+opt-in**: with the option off the new grammar branch reports a parse error, no merged declaration
+changes, and every verdict and resource count is as before.  The option does not depend on the
+resolver, and the regression runs under both.  The regression is
+`git-issues/github-issue-88.dfy`; the release note is `docs/dev/news/88.feat`.
+
+Two neighbouring cases needed no change to the product, only regressions.  With
+`--modular-termination`, the added parent meets the existing rules where a new declaration would:
+the bound of an inherited member that becomes an override is compared with the parent's, an
+inherited call that the new overrides put on a cycle is checked, and an inherited member that
+becomes an implementation of a member of another module that has no bound must be a leaf
+(`git-issues/github-issue-88-modular-termination.dfy`, each case beside a one-module control with
+the same verdict).  One case is open, and it does not need this option:
+[issue 493](https://github.com/erniecohen/dafny/issues/493).  A member that has no bound of its
+own and gets one in a refining module, here from the added parent, keeps the calls of its
+inherited body unchecked against that bound, and a program proves `false` with it.  The base
+line has the same gap where a refinement turns an abstract type into a class that extends a
+trait.  Datatypes, codatatypes and newtypes keep the grammar they had,
+`datatype D extends S ...`, which needs no option, and the same default-on fixes cover the parents
+they add: override checks at inherited members, termination, name capture, the cardinality
+admission, and trait axioms under `--inherited-trait-axioms`
+(`git-issues/github-issue-88-value-types.dfy`).  The legacy resolver has no conversion from a
+datatype or a newtype to a trait, so the cases that upcast run under the new resolver only.  Not
+covered: member invariants, whose option is not in this line yet.
+
 ## Comparing crossed component types ([issue 47](https://github.com/erniecohen/dafny/issues/47))
 
 With `--type-system-refresh`, `==`, `!=`, `in`, `!in` and prefix equality required, in their final
@@ -1203,3 +1302,178 @@ rejects one program of the suite, `exports/OpenImportRefined.dfy`, whose `Refine
 declarations, not their expansions.  The hidden `--legacy-inherited-name-capture` option restores
 the old rule for comparison and migration.  The regression is `git-issues/github-issue-410.dfy`;
 the release note is `docs/dev/news/410.fix`.
+
+## Renaming in a refinement ([issue 106](https://github.com/erniecohen/dafny/issues/106), [issue 107](https://github.com/erniecohen/dafny/issues/107))
+
+`--refinement-renaming` is an opt-in feature: stages 1 to 3 of the refinement design draft
+([pull request 401](https://github.com/erniecohen/dafny/pull/401), sections 2.3 to 2.5).  A
+declaration of a refining module `R` may rename the type parameters, the out-parameters, the
+result and the local names of the in-parameters of the declaration of `B` that it refines, by
+position.  With the option off, the name-agreement errors are those of 4.11.0, and nothing else in
+this change is reached.
+
+*Labels.*  A `Formal` has a `Label`, the name a named argument uses.  It is the parameter's name
+in the first declaration of the chain, and both resolvers bind named arguments by it, so no call,
+inherited or not, is affected by a renaming.  The label is derived where a formal is copied under
+a different name, and so follows every later copy.
+
+*The renaming.*  The refinement cloner copies `B`'s declaration under a map from `B`'s binders to
+their new names.  It renames by what `B` resolved each name to, not by spelling: a name segment
+or type name that `B` resolved to a renamed binder gets the new name, and no other occurrence is
+touched.  The copy is then resolved in `R` like any inherited code.
+
+*Why it is sound.*  The copy must mean what `B`'s text meant.  The check of
+[issue 410](https://github.com/erniecohen/dafny/issues/410) already requires every inherited
+occurrence to denote the counterpart of what it denoted in `B`; three clauses extend it to
+renamed binders.
+(1) The counterpart of a renamed binder of `B` is exactly its renamed copy in `R`, and a renamed
+copy is the counterpart of nothing else.  This rejects a new name that an inner binder of the
+inherited code captures, and a new name that captures an inherited use of another variable,
+constant or type.  (Without a renaming, 410 accepts any parameter of the same name, which is not
+enough here.)
+(2) A renamed occurrence that `R`'s resolver does not resolve itself (because a desugaring
+resolves a copy instead) is an error, where 410 skips an unresolved occurrence.
+(3) An inherited occurrence that `B` left unresolved and that spells an old or a new name of a
+renaming in force is an error, since the map cannot tell what it refers to.
+Since the argument rests on the 410 check, the option is rejected together with
+`--legacy-inherited-name-capture`.  Its kind is **weakens only** for the verifier: it adds no fact
+or axiom; under the option, a renamed declaration is verified as the alpha-variant that the
+cloner wrote.
+
+*Signature agreement.*  Counts, modifiers and type characteristics are compared as before.  The
+types of the parameters and the result type are first compared as text, after `B`'s side is put in
+`R`'s names, as without the option.  Under the option, a type that is spelled differently is not
+an error yet: the refinement transformer hands the spelling to the merged declaration
+(`MethodOrFunction.RefinementDeclaredTypes`).  The resolver resolves it in the scope of the
+merged signature, and once all signatures of `R` are resolved it compares the spelling with the
+type the merged declaration has, by `Type.Equals` with constraints kept: type synonyms are
+expanded, a subset type or newtype equals only itself, and so does a type that `R` sees as
+opaque.  A mismatch is the error of the textual comparison, reported before any body is resolved.
+The comparison is not part of the soundness argument.  The merged declaration takes every
+parameter and result type from `B`, also where `R` names a result that `B` leaves unnamed, so
+`R`'s spelling occurs nowhere in the resolved program and the comparison decides only which
+spellings are accepted.  Type-parameter bounds and the types of constants and fields are still
+compared as text: a refining `const` keeps its own declaration, so for it the comparison would
+decide which type the program has.
+
+*Not renamable.*  An iterator's signature can only be repeated with `...`.  The type parameters of
+an abstract type with members that a type synonym refines (`--synonym-refines-abstract-type`) keep
+their names.  A label has no syntax of its own: a refining declaration cannot rename it, and the
+printer prints local names.
+
+*Three copies made once.*  A field and an array allocation each cloned their explicit type twice,
+for a syntactic and a working slot that the parser fills with one object; the resolver resolves
+one, so the other copy could not be checked by clause (2).  The copy constructors now keep them
+one object, as the parser does.  A `match` pattern's type annotation was not cloned at all: the
+copy shared the type object that `B` had resolved, so a pattern inherited by `R` kept a type of
+`B`, and the resolver crashed or reported a mismatch whenever that type is a type parameter or a
+type that `R` refines.  It is now cloned and resolved in `R`.  This last change is not behind the
+option; it turns a crash or a spurious error into an accepted program.
+
+The regression is `git-issues/github-issue-106.dfy` with its inputs; the release note is
+`docs/dev/news/106.feat`; the manual's section is "Renaming parameters and type parameters".
+
+## Copying imports ([issue 107](https://github.com/erniecohen/dafny/issues/107))
+
+`--copy-imports` is an opt-in feature: stage 4 of the refinement design draft
+([pull request 401](https://github.com/erniecohen/dafny/pull/401), sections 3.2, 3.3 and 3.5).  It adds one
+declaration, `import [opened] X := Q` with an optional export suffix, which gives the importing
+module `M` a copy of `Q` named `X`.  With the option off, the parser does not accept the
+declaration, and nothing else in this change is reached.
+
+*What a copy is.*  The parser builds a nested module `X` of `M` that refines `Q` and has no
+declarations of its own, marked as a copying import.  Everything after that is the existing
+machinery of refinement: the refinement transformer clones `Q`'s declarations into `X`, and the
+resolver, the translator and the compilers see an ordinary module.  So the types of `X` are new
+types, and its functions get the bodies of `Q`, by the rules that already hold for
+`module X refines Q { }`.  No axiom is added, and a program without the declaration gets the
+same solver input.
+
+*What differs from a written-out refinement.*
+(1) The default export set of `Q` is the default export set of the copy and takes the copy's
+name, also where another export set extends it.  (A written-out refinement keeps it as a
+non-default set called `Q`.)  `Q` may therefore not have another export set with the copy's name.
+(2) The name `X` gives the default export set, or the sets named after the backquote; the
+signature it gives is kept on the declaration and is used for `X.a`, for an alias `import A = M.X`
+and for an export of `M` that provides `X`.
+(3) A copy of an abstract module is abstract, and a compiled module may not have one.
+(4) An `{:extern}` declaration of `Q`, or `Q` being `replaceable`, is an error: the first would
+give two Dafny declarations for one thing of the target program, and the second is already an
+error for a written-out refinement.
+
+*Copies in a refining module.*  When `M'` refines `M`, the transformer does not clone `M`'s copy
+`X` (which would give `M'` the types of `M.X`) but declares a new copying import of the same
+module, with the same export suffix.  That module is not a declaration of the program's module
+graph, so `M'` resolves it itself, before its own declarations, and hands its signature to the
+program with its own.  A redeclaration of `X` in `M'` is an error.  The same holds for each
+further refinement.
+
+*What is deliberately unknown.*  An abstract import `import A : B` inside `Q` stands for an
+unknown refinement of `B`.  Each copy gets a signature of its own for it, so nothing relates
+`X.A` to `Q.A` or to `Z.A`.  Through `import I : M`, the copy `I.X` is likewise an abstract
+signature: `I` may be any refinement of `M`, each of which has copies of its own, so the types of
+`I.X` are known neither to be those of `M.X` nor to differ from them.  The controls of the
+regression test fail in both directions.
+
+*Binding an abstract import.*  A copying import in a refining module may take the place of an
+abstract import `import A : B` that the module inherits, as a nested module may.  The rule of
+https://github.com/erniecohen/dafny/issues/408 applies to it unchanged: the copy refines the
+module it copies, so `import A := R` is accepted when `R` is `B` or refines it, and is otherwise
+the error `a module (A) can only be replaced by a refinement of the original module`.  The
+regression test has both cases.
+
+*Proof cost.*  The verifier does not verify the members that a refining module inherits
+unchanged, so a copy adds no proof, with one exception.  The checks that a refining module makes
+again for an inherited member are those of https://github.com/erniecohen/dafny/issues/404 (an
+override whose overridden member is not the one the refined module checked),
+https://github.com/erniecohen/dafny/issues/411 (a constructor of a class to which the module
+added a field) and https://github.com/erniecohen/dafny/issues/409 (the termination of a group of
+recursive members that the module changed).  A copy has no declaration of its own, so the last
+two do not apply to it, and the first applies in one case: `Q` has a copying import `Y`, and a
+class of `Q` extends a trait of `Y`.  In a copy `X` of `Q` the trait belongs to the new copy
+`X.Y`, which is not the module that `Q` checked the class against, so the check of each override
+is made again, once for each copy of `Q`.  The same check is made for a written-out
+`module X refines Q { }`.  It is redundant, because `X.Y` and `Q.Y` copy the same module, and it
+is kept because the rule that makes it is the simple one.  The regression test has six copies of
+a module with a lemma, six copies of a module with an override, a constructor and a recursive
+function, which add no proof, and four copies of a module of the excepted kind, which add one
+proof each.
+
+*Libraries.*  The option is recorded in a library, and a library built with it is loaded only
+under it, with the error `--copy-imports is set locally to False, but the library was built with
+True`.  The text of a library that uses the declaration does not parse without the option.
+
+The regression is `git-issues/github-issue-107.dfy` with its inputs; the release note is
+`docs/dev/news/107.feat`; the manual's section is "Copying imports".
+
+## Variance of constrained types ([issue 491](https://github.com/erniecohen/dafny/issues/491))
+
+A subset type or newtype may declare a covariant or contravariant type parameter
+only when its constraint respects that direction. Previously the resolver checked
+only its base type. A universal quantifier over a covariant parameter could then
+hold vacuously for an empty type, fail at a supertype, and still authorize an
+unchecked conversion between those instantiations. Passing the result to a
+formal parameter exposed the false constraint as an assumption.
+
+The resolver now applies the shared `TypeParameterPolarity` analysis from member
+invariants to each constraint, independently of the base-type check. It reports
+the conflicting occurrence, including through generic calls. Unavailable bodies
+are mixed; visible recursive callees use the existing least-fixpoint analysis.
+The check does not alter the resolved program, and adds no fact or axiom: its kind
+is **weakens only**. The hidden `--legacy-unchecked-type-variance` option bypasses
+this check for comparison and migration, leaving member-invariant variance and
+the existing base-type rules unchanged.
+
+For a fixed value, covariance of the base type and monotonicity of its constraint
+together imply covariance of the constrained type: membership in the smaller
+base and truth of its constraint imply membership in the larger base and truth
+of that instantiation's constraint. Contravariance reverses both implications.
+Non-variant parameters need neither implication. The analysis is conservative:
+a mixed occurrence rejects declared variance even where a more detailed semantic
+argument might establish it. Such a declaration can use a non-variant parameter.
+
+The regressions are `git-issues/git-issue-491.dfy`,
+`git-issues/git-issue-491-newtypes.dfy` and
+`git-issues/git-issue-491-positive.dfy`. The negative controls prove `false` under
+the legacy option; the positive controls retain reachable failing assertions.
+The release note is `docs/dev/news/491.fix`.

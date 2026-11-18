@@ -123,7 +123,7 @@ public partial class BoogieGenerator {
     bool isRecursiveCall = false;
     // consult the call graph to figure out if this is a recursive call
     var module = method.EnclosingClass.EnclosingModuleDefinition;
-    if (codeContext != null && module == currentModule) {
+    if (codeContext != null && ModuleDefinition.InSameRecursiveGroup(module, currentModule)) {
       // Note, prefix lemmas are not recorded in the call graph, but their corresponding greatest lemmas are.
       // Similarly, an iterator is not recorded in the call graph, but its MoveNext method is.
       ICallable cllr =
@@ -165,6 +165,7 @@ public partial class BoogieGenerator {
         if (!(dafnyReceiver is ThisExpr)) {
           CheckNonNull(dafnyReceiver.Origin, dafnyReceiver, builder, etran, null);
         }
+        CheckReceiverInvariants(dafnyReceiver.Origin, method, dafnyReceiver, builder, etran);
       }
       var obj = etran.TrExpr(receiver);
       if (bReceiver == null) {
@@ -373,6 +374,12 @@ public partial class BoogieGenerator {
     }
 
     AddReferencedMember(callee);
+    if (isCoCall && callee is PrefixLemma prefixCallee && currentModule.RecursiveGroup != null &&
+        currentModule.RecursiveGroup == prefixCallee.EnclosingClass.EnclosingModuleDefinition.RecursiveGroup) {
+      // The CoCall procedure of a prefix lemma is declared with its least or greatest lemma.  When that
+      // lemma is in another module of the recursive module group, it is the member to reference.
+      AddReferencedMember(prefixCallee.ExtremeLemma);
+    }
     var calleeName = MethodName(callee, isCoCall ? MethodTranslationKind.CoCall : MethodTranslationKind.Call);
     var call = Call(builder.Context, tok, calleeName, ins, outs);
     proofDependencies?.AddProofDependencyId(call, tok, new CallDependency(cs));

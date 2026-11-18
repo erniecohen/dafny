@@ -1,0 +1,1 @@
+Derive the fork product version from HEAD instead of requiring a product-commit restamp. Existing two-word version base files remain supported; the historical second word is ignored.

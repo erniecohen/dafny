@@ -1,0 +1,11 @@
+git-issue-466-option.dfy(15,7): Error: module definition contains a cycle (note: parent modules implicitly depend on submodules): module A -> import B -> module B -> import A -> module A
+1 resolution/type errors detected in git-issue-466-option.dfy
+git-issue-466-option.dfy(15,7): Error: module definition contains a cycle (note: parent modules implicitly depend on submodules): module A -> import B -> module B -> import A -> module A
+1 resolution/type errors detected in git-issue-466-option.dfy
+git-issue-466-option.dfy(15,7): Error: module definition contains a cycle (note: parent modules implicitly depend on submodules): module A -> import B -> module B -> import A -> module A
+1 resolution/type errors detected in git-issue-466-option.dfy
+Error: --recursive-modules requires --member-invariants
+Error: --recursive-modules requires --member-invariants
+Error: --member-invariants requires --type-system-refresh
+
+Dafny program verifier did not attempt verification

@@ -1,0 +1,1 @@
+Fix Debug assertion failures when the refreshed resolver normalizes invisible types in export views and imported specifications.

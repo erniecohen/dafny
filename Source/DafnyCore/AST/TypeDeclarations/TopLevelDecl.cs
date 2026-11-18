@@ -31,6 +31,12 @@ public abstract class TopLevelDecl : Declaration, TypeParameter.ParentType {
   // inheritance list. These are analysis obligations, never logical AST children.
   [FilledInDuringResolution, JsonIgnore]
   internal ImmutableArray<Type> CardinalityParentObligations = ImmutableArray<Type>.Empty;
+
+  // For a class or trait that refines one (notation `...`): how many of its parent traits, counted from
+  // the front of the list, were taken from the declaration it refines.  The rest were written on the refining
+  // declaration itself (--refinement-extends), and those are the ones to print after `...`.
+  [FilledInDuringResolution, JsonIgnore]
+  internal int ParentTraitsFromRefinementBase;
   [ContractInvariantMethod]
   void ObjectInvariant() {
     Contract.Invariant(Cce.NonNullElements(TypeArgs));

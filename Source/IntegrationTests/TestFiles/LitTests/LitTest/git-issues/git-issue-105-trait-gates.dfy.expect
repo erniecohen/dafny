@@ -1,0 +1,6 @@
+git-issue-105-trait-gates.dfy(27,16): Error: result of operation might violate newtype constraint for 'Small'
+git-issue-105-trait-gates.dfy(42,29): Error: invariant might not hold
+git-issue-105-trait-gates.dfy(34,16): Related location: this is the invariant that might not hold
+git-issue-105-trait-gates.dfy(37,7): Related location: refining module
+
+Dafny program verifier finished with 3 verified, 2 errors

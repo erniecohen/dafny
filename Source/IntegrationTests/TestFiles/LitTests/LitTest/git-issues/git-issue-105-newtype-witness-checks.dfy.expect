@@ -1,0 +1,23 @@
+git-issue-105-newtype-witness-checks.dfy(12,10): Error: cannot find witness that shows type is inhabited (only tried 0); try giving a hint through a 'witness' or 'ghost witness' clause, or use 'witness *' to treat as a possibly empty type
+git-issue-105-newtype-witness-checks.dfy(12,27): Related location: this proposition could not be proved
+git-issue-105-newtype-witness-checks.dfy(14,10): Error: cannot find witness that shows type is inhabited (only tried 0); try giving a hint through a 'witness' or 'ghost witness' clause, or use 'witness *' to treat as a possibly empty type
+git-issue-105-newtype-witness-checks.dfy(14,32): Related location: this proposition could not be proved
+git-issue-105-newtype-witness-checks.dfy(14,58): Related location: this proposition could not be proved
+git-issue-105-newtype-witness-checks.dfy(19,39): Error: result of operation might violate newtype constraint for 'Pos'
+git-issue-105-newtype-witness-checks.dfy(21,47): Error: result of operation might violate newtype constraint for 'Ghost'
+git-issue-105-newtype-witness-checks.dfy(23,39): Error: invariant might not hold
+git-issue-105-newtype-witness-checks.dfy(23,65): Related location: this is the invariant that might not hold
+git-issue-105-newtype-witness-checks.dfy(29,28): Error: possible division by zero
+git-issue-105-newtype-witness-checks.dfy(32,31): Error: possible division by zero
+git-issue-105-newtype-witness-checks.dfy(40,10): Error: trying witness 0: result of operation might violate newtype constraint for 'Pos'
+git-issue-105-newtype-witness-checks.dfy(45,45): Error: assertion might not hold
+git-issue-105-newtype-witness-checks.dfy(52,40): Error: result of operation might violate newtype constraint for 'NewSix'
+git-issue-105-newtype-witness-checks.dfy(54,45): Error: result of operation might violate newtype constraint for 'NewSix'
+git-issue-105-newtype-witness-checks.dfy(62,10): Error: trying witness 0: result of operation might violate subset type constraint for 'Empty'
+git-issue-105-newtype-witness-checks.dfy(63,43): Error: result of operation might violate subset type constraint for 'Empty'
+git-issue-105-newtype-witness-checks.dfy(64,61): Error: result of operation might violate subset type constraint for 'Empty'
+git-issue-105-newtype-witness-checks.dfy(70,59): Error: possible division by zero
+git-issue-105-newtype-witness-checks.dfy(78,10): Error: trying witness 0: invariant might not hold
+git-issue-105-newtype-witness-checks.dfy(77,48): Related location: this is the invariant that might not hold
+
+Dafny program verifier finished with 23 verified, 16 errors

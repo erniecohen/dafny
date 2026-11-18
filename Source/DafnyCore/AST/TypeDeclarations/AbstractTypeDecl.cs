@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
+using Newtonsoft.Json;
 
 namespace Microsoft.Dafny;
 
@@ -24,6 +25,14 @@ public class AbstractTypeDecl : TopLevelDeclWithMembers, RevealableTypeDecl, ICa
   }
 
   public override bool IsRefining { get; }
+
+  /// <summary>
+  /// Issue 105: on the abstract type that a visibility view makes of a declaration that is provided but not revealed,
+  /// that declaration. The view has lost the declaration's members, its member invariants among them, so "raw" does not
+  /// apply to it (see CheckRawType).
+  /// </summary>
+  [FilledInDuringResolution, JsonIgnore]
+  internal TopLevelDecl ProvidedOnlyViewOf;
 
   public TopLevelDecl AsTopLevelDecl => this;
   public TypeDeclSynonymInfo SynonymInfo { get; set; }

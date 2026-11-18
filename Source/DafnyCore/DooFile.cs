@@ -72,9 +72,10 @@ public class DooFile {
           continue;
         }
         var optionValue = options.Get((dynamic)option);
-        // Missing means the default in CheckAndGetLibraryOptions. Keep ordinary library manifests
-        // byte-compatible with versions predating this opt-out; presence is never proof of verification.
-        if (option == CommonOptionBag.LegacyNoModularTermination && optionValue is false) {
+        // Missing means the default in CheckAndGetLibraryOptions. Keep default-false feature and
+        // legacy options byte-compatible with older manifests; presence is never proof of verification.
+        if ((option == CommonOptionBag.LegacyNoModularTermination ||
+             option == CommonOptionBag.MemberInvariants || option == CommonOptionBag.RecursiveModules) && optionValue is false) {
           continue;
         }
         if (option == CommonOptionBag.QuantifierSyntax) {

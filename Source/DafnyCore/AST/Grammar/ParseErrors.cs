@@ -140,11 +140,15 @@ public class ParseErrors {
     p_internal_exception,
     p_file_has_no_code,
     p_general_traits_datatype,
+    p_refinement_extends,
     p_general_traits_full,
     p_decreases_without_to,
     p_binding_in_decreases_to,
     p_ghost_in_decreases_to,
     p_needs_referrers,
+    p_top_level_member_invariant,
+    p_control_character,
+    p_opaque_member_invariant,
     p_decreases_order_needs_option
   }
 
@@ -162,6 +166,12 @@ Such repetition would be superfluous even if allowed.
     @"
 Only modules may be declared abstract.
 ".TrimStart(), Remove(true));
+
+    Add(ErrorId.p_refinement_extends,
+      @"
+A class or trait declaration that refines another (`...`) may add parent traits to it,
+as in `trait T ... extends S { }`, only with the option --refinement-extends.
+".TrimStart());
 
     Add(ErrorId.p_general_traits_datatype,
       @"
@@ -1234,6 +1244,21 @@ Please rename your use of opaque as an identifier to some other name.
     Add(ErrorId.p_needs_referrers,
       @"
 Array memory locations are supported only with --referrers here".TrimStart());
+
+    Add(ErrorId.p_top_level_member_invariant,
+      @"
+Under --member-invariants, an `invariant` or `witness` declaration is a member of a type
+(a class, trait, datatype, newtype or abstract type), so it cannot be declared at the module level.".TrimStart());
+
+    Add(ErrorId.p_control_character,
+      @"
+The control character U+0001 is not allowed in a Dafny program.  The parser uses it internally to
+represent `invariant`, `witness` and `raw` under --member-invariants.".TrimStart());
+
+    Add(ErrorId.p_opaque_member_invariant,
+      @"
+Under --member-invariants, an invariant is part of the meaning of its type, so it cannot be opaque:
+neither the `opaque` modifier nor the `{:opaque}` attribute is allowed on it.".TrimStart());
   }
 
   public static void RunStaticConstructor() {

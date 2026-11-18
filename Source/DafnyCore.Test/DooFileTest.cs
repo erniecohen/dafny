@@ -24,6 +24,47 @@ public class DooFileTest {
     Assert.Equal(loadedDooFile.Manifest.SolverVersion, options.SolverVersion.ToString());
   }
 
+  /// <summary>
+  /// A library built without --member-invariants (issue 105) records nothing about the option, so its
+  /// manifest is the same as before the option existed; one built with it records it.
+  /// </summary>
+  [Fact]
+  public void MemberInvariantsRecordedOnlyWhenOn() {
+    var options = DafnyOptions.CreateUsingOldParser(TextWriter.Null);
+    options.ApplyDefaultOptionsWithoutSettingsDefault();
+    var name = CommonOptionBag.MemberInvariants.Name;
+
+    var without = new DooFile.ManifestData(options);
+    Assert.False(without.Options.ContainsKey(name));
+    var writer = new StringWriter();
+    without.Write(writer);
+    Assert.DoesNotContain(name, writer.ToString());
+
+    options.Set(CommonOptionBag.MemberInvariants, true);
+    var with = new DooFile.ManifestData(options);
+    Assert.Equal(true, with.Options[name]);
+  }
+
+  /// <summary>
+  /// The same for --recursive-modules (recursion across module boundaries).
+  /// </summary>
+  [Fact]
+  public void RecursiveModulesRecordedOnlyWhenOn() {
+    var options = DafnyOptions.CreateUsingOldParser(TextWriter.Null);
+    options.ApplyDefaultOptionsWithoutSettingsDefault();
+    var name = CommonOptionBag.RecursiveModules.Name;
+
+    var without = new DooFile.ManifestData(options);
+    Assert.False(without.Options.ContainsKey(name));
+    var writer = new StringWriter();
+    without.Write(writer);
+    Assert.DoesNotContain(name, writer.ToString());
+
+    options.Set(CommonOptionBag.RecursiveModules, true);
+    var with = new DooFile.ManifestData(options);
+    Assert.Equal(true, with.Options[name]);
+  }
+
   [Fact]
   public async Task RecordedWildcardSerializationSurvivesMergedInputs() {
     var options = new DafnyOptions(TextReader.Null, TextWriter.Null, TextWriter.Null);

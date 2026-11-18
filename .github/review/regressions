@@ -796,6 +796,9 @@ git-issues/github-issue-211-gate-coverage.dfy
 # A lambda expression may not mention allocated(...) in its body, precondition or reads clause outside an old within the lambda, under both resolvers; old(...) inside is allowed, the control does not prove false, and --legacy-allocated-in-lambdas restores the old rule (https://github.com/erniecohen/dafny/issues/457).
 git-issues/github-issue-457.dfy
 
+# A conversion to a newtype whose base type is inferred checks the constraints of that base, under both resolvers, for literals and conversions from int, real and bitvector values; correct conversions still verify, and --legacy-inferred-newtype-base-conversions restores the old, unsound check (https://github.com/erniecohen/dafny/issues/495).
+git-issues/github-issue-495.dfy
+
 # Bounded callables, milestone 2: bounded.certify, application below the bound, the bound and erase members, admitted named functions, stored values and the divergence kernels, under --modular-termination (https://github.com/erniecohen/dafny/issues/266).
 git-issues/github-issue-266-m2.dfy
 
@@ -830,6 +833,12 @@ git-issues/github-issue-211-stored-arguments.dfy
 # The ECOOP 2015 Figs. 16-17 with stored continuations: containsCPS and intersectsCPS take a bounded continuation whose bound is its stock, in an order type of bags of bags of levels, with controls (https://github.com/erniecohen/dafny/issues/211).
 git-issues/github-issue-211-cps-stored.dfy
 
+# Function domains: under --additional-axioms lambdas carry their parameter types as domain tags,
+# {:functionDomain} declarations give Restrict and ExactDom, and --function-extensionality-axiom makes
+# total functions of one argument with the same exact domain equal when they agree on it
+# (https://github.com/erniecohen/dafny/issues/374).
+git-issues/github-issue-374.dfy
+
 # Hiding or revealing a static function or constant through an object, as in `reveal foo.Q`, resolves under --type-system-refresh instead of crashing, and verifies (https://github.com/erniecohen/dafny/issues/416).
 git-issues/github-issue-416.dfy
 ast/reveal/revealQualified.dfy
@@ -856,3 +865,155 @@ git-issues/github-issue-211-by-use.dfy
 # Inherited bodies acquire or retain modular bounds in the refined context; recheck their calls (https://github.com/erniecohen/dafny/issues/493).
 git-issues/github-issue-493.dfy
 git-issues/github-issue-493-refinement.dfy
+
+# Member invariants under the hidden --member-invariants, first stage: syntax, printing and
+# resolution, the reads restriction, the codatatype rule for programs and libraries, refinement,
+# opacity, and unchanged behaviour without the option (https://github.com/erniecohen/dafny/issues/105).
+git-issues/git-issue-105-option.dfy
+git-issues/git-issue-105-syntax.dfy
+git-issues/git-issue-105-raw-identifier.dfy
+git-issues/git-issue-105-control.dfy
+git-issues/git-issue-105-modifiers.dfy
+git-issues/git-issue-105-reads.dfy
+git-issues/git-issue-105-two-state.dfy
+git-issues/git-issue-105-codatatypes.dfy
+git-issues/git-issue-105-libraries.dfy
+git-issues/git-issue-105-refinement.dfy
+git-issues/git-issue-105-opacity.dfy
+git-issues/git-issue-105-not-yet.dfy
+git-issues/git-issue-105-verify.dfy
+# Second stage: raw types (raw T, inferred raw members, the derived subset type), with exports,
+# extends, refinement, libraries and compilation (https://github.com/erniecohen/dafny/issues/105).
+git-issues/git-issue-105-raw-types.dfy
+git-issues/git-issue-105-raw-errors.dfy
+git-issues/git-issue-105-raw-exports.dfy
+git-issues/git-issue-105-raw-refinement.dfy
+git-issues/git-issue-105-raw-extends.dfy
+git-issues/git-issue-105-raw-library.dfy
+git-issues/git-issue-105-raw-compile.dfy
+# Third stage: verification of non-generic datatypes without parents (conversion obligations, witnesses,
+# the extension condition) (https://github.com/erniecohen/dafny/issues/105).
+git-issues/git-issue-105-datatypes.dfy
+git-issues/git-issue-105-vacuity.dfy
+git-issues/git-issue-105-extension.dfy
+git-issues/git-issue-105-compile.dfy
+# Fourth stage: emptiness, the raw-typing audit and generic datatypes (variance, witnesses, the
+# extension condition over type parameters) (https://github.com/erniecohen/dafny/issues/105).
+git-issues/git-issue-105-generics.dfy
+git-issues/git-issue-105-variance.dfy
+git-issues/git-issue-105-emptiness.dfy
+git-issues/git-issue-105-emptiness-errors.dfy
+# Fifth stage: verification of classes (the check at 'new;', raw references and where they may go,
+# the constructor and witness rules) and the visibility of member invariants across export sets
+# (https://github.com/erniecohen/dafny/issues/105).
+git-issues/git-issue-105-classes.dfy
+git-issues/git-issue-105-class-errors.dfy
+git-issues/git-issue-105-class-witness.dfy
+git-issues/git-issue-105-class-compile.dfy
+git-issues/git-issue-105-exports.dfy
+git-issues/git-issue-105-class-exports.dfy
+# Sixth stage: verification of traits, reference and general (inherited invariants, raw parent types,
+# type tests, joins and receivers), the order of well-formedness assumptions, and what stays behind
+# the gate (https://github.com/erniecohen/dafny/issues/105).
+git-issues/git-issue-105-traits.dfy
+git-issues/git-issue-105-general-traits.dfy
+git-issues/git-issue-105-trait-errors.dfy
+git-issues/git-issue-105-trait-witness.dfy
+git-issues/git-issue-105-wellformedness.dfy
+git-issues/git-issue-105-trait-compile.dfy
+git-issues/git-issue-105-trait-gates.dfy
+# Variance by polarity, and statements inside expressions, which are outside the cone of the extension
+# condition (https://github.com/erniecohen/dafny/issues/105).
+git-issues/git-issue-105-statements.dfy
+# Member invariants in refining modules, and of abstract types
+# (https://github.com/erniecohen/dafny/issues/105).
+git-issues/git-issue-105-refinement-verify.dfy
+git-issues/git-issue-105-abstract-types.dfy
+git-issues/git-issue-105-abstract-errors.dfy
+git-issues/git-issue-105-abstract-synonym.dfy
+# A conversion from a newtype to a trait that it extends and that is not a reference type failed an
+# internal assertion of the verifier; the value is now boxed, as a datatype's is. Found with member
+# invariants, but the test runs without the option (https://github.com/erniecohen/dafny/issues/105).
+git-issues/git-issue-105-newtype-trait-cast.dfy
+# Eighth stage: newtypes (a newtype N with member invariants is a subset of "raw N"; the header
+# constraint moves into N, the witness rules, raw N is ghost, operations checked per invariant, native
+# types, compilation, and the instantiated and inferred base types of the newtype check); the gate is
+# gone, so trait-gates, raw-errors, verify and not-yet changed (https://github.com/erniecohen/dafny/issues/105).
+git-issues/git-issue-105-newtypes.dfy
+git-issues/git-issue-105-newtype-witness-errors.dfy
+git-issues/git-issue-105-newtype-errors.dfy
+git-issues/git-issue-105-newtype-witness-checks.dfy
+git-issues/git-issue-105-newtype-generics.dfy
+git-issues/git-issue-105-newtype-native.dfy
+git-issues/git-issue-105-newtype-compile.dfy
+git-issues/git-issue-105-opaque.dfy
+git-issues/git-issue-105-auto-reveal.dfy
+git-issues/git-issue-105-false-proofs.dfy
+
+# With --refinement-renaming a refining declaration renames type parameters, out-parameters, results and the local names of in-parameters; named arguments use the unchanged labels; a renaming that changes what an inherited name refers to is rejected; without the option the old errors remain; and a typed match pattern is inherited with a type of the refining module; a renaming from or to the name of a label that the inherited code reveals is rejected; and an abstract type with members that a synonym refines, and an iterator, take no renaming (https://github.com/erniecohen/dafny/issues/106, https://github.com/erniecohen/dafny/issues/107).
+git-issues/github-issue-106.dfy
+
+# With --copy-imports, `import X := Q` gives the importing module a copy of Q with types of its own; a refining module gets new copies; lemmas that identify two copies fail; the rejected declarations are errors; a copy takes the place of an inherited abstract import only if the copied module refines the import's target; copies of a module with an override, a constructor and recursion add no proofs, and a copy of a module whose class extends a trait of a nested copy repeats only the override check; a program with copies compiles and runs, also after printing; a library with copies loads only under the option; and without the option the syntax is the parse error it was (https://github.com/erniecohen/dafny/issues/107).
+git-issues/github-issue-107.dfy
+
+# Opt-in --inherited-trait-axioms: a bodiless ghost trait member marked {:axiom} is inherited without an implementation, an override is still checked, 'dafny audit' lists the axiom and its inheritors, and with the option off every such type is rejected as before (https://github.com/erniecohen/dafny/issues/89).
+git-issues/github-issue-89.dfy
+
+# Opt-in --refinement-extends: a class or trait in a refining module may add parent traits ('trait T ... extends S'); the override checks, the definite assignment of the parent's fields and the termination checks that the added parent calls for are made in the refining module also at inherited text, a refinement cannot make a trait a reference type, and with the option off the syntax is a parse error as before (https://github.com/erniecohen/dafny/issues/88).
+git-issues/github-issue-88.dfy
+
+# With --refinement-extends and --modular-termination, a parent added in a refinement meets the rules a new declaration meets: the bound of an inherited member that becomes an override, an inherited call put on a cycle, and the leaf rule for an inherited member that becomes an implementation of a member of another module without a bound; each case has a one-module control with the same verdict (https://github.com/erniecohen/dafny/issues/88).
+git-issues/github-issue-88-modular-termination.dfy
+
+# A refining datatype, codatatype or newtype that adds a parent trait ('datatype D extends S ...') gets the override, termination, name-capture and cardinality checks in the refining module also at inherited text, across chains, abstract imports and libraries (https://github.com/erniecohen/dafny/issues/88).
+git-issues/github-issue-88-value-types.dfy
+
+# Trait axioms and added parents with refinement renaming and copying imports.
+git-issues/github-issue-88-89-interactions.dfy
+
+# Recursion across module boundaries, first stage: the option, the groups, the edges that may not be on
+# a cycle, the codatatype rule, libraries, and an accepted control
+# (https://github.com/erniecohen/dafny/issues/466).
+git-issues/git-issue-466-option.dfy
+git-issues/git-issue-466-groups.dfy
+git-issues/git-issue-466-edges.dfy
+git-issues/git-issue-466-codatatype.dfy
+git-issues/git-issue-466-libraries.dfy
+git-issues/git-issue-466-accepted.dfy
+
+# Recursion across module boundaries, second stage: a recursive module group is resolved and verified
+# as one module would be.  Accepted programs with false controls, the termination gate (every cycle of
+# calls across members is broken by an error), the programs the resolver rejects, what is not yet
+# supported, the tools, and the default opacity of functions (https://github.com/erniecohen/dafny/issues/466).
+git-issues/git-issue-466-stage2-accepted.dfy
+git-issues/git-issue-466-stage2-termination.dfy
+git-issues/git-issue-466-stage2-rejected.dfy
+git-issues/git-issue-466-stage2-rejected-names.dfy
+git-issues/git-issue-466-stage2-unsupported.dfy
+git-issues/git-issue-466-stage2-tools.dfy
+git-issues/git-issue-466-stage2-opacity.dfy
+
+# Recursion across module boundaries, third stage: a type of one member of a recursive module group may
+# extend a trait of another member.  The termination gate (every cycle of calls through overrides in
+# several members is broken by an error, with and without --modular-termination), accepted programs with
+# false controls, the programs the resolver rejects, and a trait of a group extended from outside the
+# group (https://github.com/erniecohen/dafny/issues/466).
+git-issues/git-issue-466-stage3-termination.dfy
+git-issues/git-issue-466-stage3-accepted.dfy
+git-issues/git-issue-466-stage3-rejected.dfy
+git-issues/git-issue-466-stage3-outside.dfy
+git-issues/git-issue-466-invariants.dfy
+git-issues/git-issue-466-invariants-rejected.dfy
+
+# Recursive groups use opened copies and renamed refinements of lower modules; false results fail,
+# and copying a group member is rejected like written refinement (issue 466).
+git-issues/git-issue-466-refinement-imports.dfy
+
+git-issues/git-issue-491.dfy
+git-issues/git-issue-491-newtypes.dfy
+git-issues/git-issue-491-positive.dfy
+
+# A member-form newtype witness satisfies the base constraint and invariants; invalid witnesses and the implicit zero remain checked (https://github.com/erniecohen/dafny/issues/501).
+git-issues/git-issue-501.dfy
+
+git-issues/github-issue-492.dfy

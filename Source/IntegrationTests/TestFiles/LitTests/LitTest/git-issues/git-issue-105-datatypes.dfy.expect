@@ -1,0 +1,16 @@
+git-issue-105-datatypes.dfy(28,27): Error: assertion might not hold
+git-issue-105-datatypes.dfy(31,50): Error: invariant might not hold
+git-issue-105-datatypes.dfy(11,17): Related location: this is the invariant that might not hold
+git-issue-105-datatypes.dfy(72,55): Error: assertion might not hold
+git-issue-105-datatypes.dfy(79,13): Error: invariant might not hold
+git-issue-105-datatypes.dfy(78,16): Related location: this is the invariant that might not hold
+git-issue-105-datatypes.dfy(80,29): Error: invariant might not hold
+git-issue-105-datatypes.dfy(78,16): Related location: this is the invariant that might not hold
+git-issue-105-datatypes.dfy(80,29): Error: invariant might not hold
+git-issue-105-datatypes.dfy(82,20): Related location: this is the invariant that might not hold
+git-issue-105-datatypes.dfy(81,28): Error: value does not satisfy the subset constraints of 'nat'
+git-issue-105-datatypes.dfy(92,12): Error: variable 'e', which is subject to definite-assignment rules, might be uninitialized here
+git-issue-105-datatypes.dfy(113,61): Error: a postcondition could not be proved on this return path
+git-issue-105-datatypes.dfy(113,49): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 14 verified, 9 errors
