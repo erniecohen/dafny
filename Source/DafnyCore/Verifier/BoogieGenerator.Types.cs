@@ -5,6 +5,7 @@ using System.Numerics;
 using System.Diagnostics.Contracts;
 using System.IO;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using Bpl = Microsoft.Boogie;
 using BplParser = Microsoft.Boogie.Parser;
@@ -123,6 +124,9 @@ public partial class BoogieGenerator {
       SelectorSemantics(Apply(arity), Predef.BoxType, "h", apply_ty, Requires(arity), requires_ty);
       SelectorSemantics(Requires(arity), Bpl.Type.Bool, "r", requires_ty, null, null);
       SelectorSemantics(Reads(arity), objset_ty, "rd", reads_ty, null, null);
+      if (FunctionDomainTags) {
+        AddTaggedHandleAxioms(ad, apply_ty, requires_ty, reads_ty, objset_ty);
+      }
 
       // function {:inline true}
       //   FuncN._requires#canCall(G...G G: Ty, H:Heap, f:Handle, x ... x :Box): bool
@@ -1095,6 +1099,10 @@ public partial class BoogieGenerator {
         var dd = (NewtypeDecl)d;
         AddTypeDecl(dd);
         AddClassMembers(dd, true, true);
+        if (dd.InvariantTypeDecl != null) {
+          // Issue 105: the type that the newtype's name denotes, "raw N" restricted by the invariants
+          AddTypeDecl(dd.InvariantTypeDecl);
+        }
       } else if (d is DefaultClassDecl defaultClassDecl) {
         AddClassMembers(defaultClassDecl, options.OptimizeResolution < 1, true);
       } else if (d is ClassLikeDecl) {
@@ -1103,6 +1111,7 @@ public partial class BoogieGenerator {
         if (cl.NonNullTypeDecl != null) {
           AddTypeDecl(cl.NonNullTypeDecl);
         }
+        AddClassInvariantTypeDecls(cl);
         if (d is IteratorDecl) {
           AddIteratorSpecAndBody((IteratorDecl)d);
         }
@@ -1110,6 +1119,10 @@ public partial class BoogieGenerator {
         var dd = (DatatypeDecl)d;
         AddDatatype(dd);
         AddClassMembers(dd, true, true);
+        if (dd.InvariantTypeDecl != null) {
+          // Issue 105: the type that the datatype's name denotes, the raw type restricted by the invariants
+          AddTypeDecl(dd.InvariantTypeDecl);
+        }
       } else if (d is SubsetTypeDecl) {
         AddTypeDecl((SubsetTypeDecl)d);
       } else if (d is TypeSynonymDecl) {
@@ -1141,7 +1154,15 @@ public partial class BoogieGenerator {
     FuelContext oldFuelContext = this.fuelContext;
     this.fuelContext = FuelSetting.NewFuelContext(dd);
 
-    AddWellformednessCheck(dd);
+    // Issue 105: where the header has moved into the InvariantTypeDecl (see NewtypeDecl.TakeHeaderClauses), "raw N"
+    // is the base type with no constraint, as inhabited as the base type, and ghost, so it has nothing to check. The
+    // header's constraint and witness are checked as those of the InvariantTypeDecl (see AddTypeDecl(SubsetTypeDecl)).
+    // A member witness is likewise checked as a const of the invariant type, including membership in the base
+    // type. In that case raw N needs no separate default-zero check, even when there were no header clauses.
+    if (dd.MovedHeaderClauses == null &&
+        !(dd.InvariantTypeDecl != null && dd.Members.Exists(member => member is MemberWitness))) {
+      AddWellformednessCheck(dd);
+    }
 
     // Add $Is and $IsAlloc axioms for the newtype
     currentModule = dd.EnclosingModuleDefinition;
@@ -1152,6 +1173,19 @@ public partial class BoogieGenerator {
     this.fuelContext = oldFuelContext;
   }
 
+  /// <summary>
+  /// Issue 105: for a class with member invariants, the types "C?", the raw class restricted by the invariants, and
+  /// "raw C", the non-null raw class.
+  /// </summary>
+  void AddClassInvariantTypeDecls(ClassLikeDecl cl) {
+    if (cl.InvariantTypeDecl != null) {
+      AddTypeDecl(cl.InvariantTypeDecl);
+    }
+    if (cl.RawNonNullTypeDecl != null) {
+      AddTypeDecl(cl.RawNonNullTypeDecl);
+    }
+  }
+
   void AddTypeDecl(SubsetTypeDecl dd) {
     Contract.Requires(dd != null);
     Contract.Ensures(fuelContext == Contract.OldValue(fuelContext));
@@ -1159,7 +1193,12 @@ public partial class BoogieGenerator {
     FuelContext oldFuelContext = this.fuelContext;
     this.fuelContext = FuelSetting.NewFuelContext(dd);
 
-    if (!Attributes.Contains(dd.Attributes, "axiom")) {
+    // Issue 105: the well-formedness of the type of a declaration with member invariants is that of its invariants,
+    // which are checked as predicates, and of its witness, which is checked as a const of the type. A newtype whose
+    // header has moved into the type (see NewtypeDecl.TakeHeaderClauses) is checked here instead, for the header's
+    // constraint and witness, the default witness included, against every conjunct.
+    if (!Attributes.Contains(dd.Attributes, "axiom") &&
+        dd is not InvariantTypeDecl || dd is InvariantTypeDecl { Owner: NewtypeDecl { MovedHeaderClauses: not null } }) {
       AddWellformednessCheck(dd);
     }
     currentModule = dd.EnclosingModuleDefinition;
@@ -1236,7 +1275,8 @@ public partial class BoogieGenerator {
       var etran = new ExpressionTranslator(this, Predef, NewOneHeapExpr(dd.Origin), null);
       Bpl.Expr parentConstraint;
       Expression condition;
-      if (baseType.IsNumericBased() || baseType.IsBitVectorType || baseType.IsBoolType || baseType.IsCharType) {
+      if (baseType.IsNumericBased() || baseType.IsBitVectorType || baseType.IsBoolType ||
+          (baseType.IsCharType && options.Get(CommonOptionBag.LegacyUnguardedChar))) {
         // optimize this to only use the numeric/bitvector constraint, not the whole $Is thing on the base type
         parentConstraint = Bpl.Expr.True;
         var udt = UserDefinedType.FromTopLevelDecl(dd.Origin, dd);
@@ -1276,6 +1316,44 @@ public partial class BoogieGenerator {
 
 
   /// <summary>
+  /// Ancestors already computed by ConvertExpression during this translation, keyed by the type object and the
+  /// visibility scope it was normalized in. Well-formedness re-translates the operand of every conversion, so
+  /// a nested cast "((b as L0) as L1) ... as LN" over a chain of newtypes asks for the ancestors of the same
+  /// O(N) type objects O(N^2) times, and each uncached walk follows up to N layers (issue 378).
+  /// </summary>
+  private readonly Dictionary<(Type Type, VisibilityScope Scope), Type> ancestorTypeCache =
+    new(new AncestorTypeCacheKeyComparer());
+
+  private sealed class AncestorTypeCacheKeyComparer : IEqualityComparer<(Type Type, VisibilityScope Scope)> {
+    public bool Equals((Type Type, VisibilityScope Scope) x, (Type Type, VisibilityScope Scope) y) {
+      return ReferenceEquals(x.Type, y.Type) && ReferenceEquals(x.Scope, y.Scope);
+    }
+
+    public int GetHashCode((Type Type, VisibilityScope Scope) key) {
+      return HashCode.Combine(RuntimeHelpers.GetHashCode(key.Type), RuntimeHelpers.GetHashCode(key.Scope));
+    }
+  }
+
+  /// <summary>
+  /// Same result as type.NormalizeToAncestorType(). Translation runs after resolution, so a type object and
+  /// the declarations it reaches no longer change, and the walk depends only on them and on the current
+  /// visibility scope. Only Resolved results are cached; Undetermined and Cyclic ones are recomputed each time,
+  /// so a cycle still throws, and a type that still mentions an unresolved proxy is never cached.
+  /// </summary>
+  private Type CachedAncestorType(Type type) {
+    var key = (type, Type.GetScope());
+    if (ancestorTypeCache.TryGetValue(key, out var cached)) {
+      return cached;
+    }
+    var ancestry = type.NormalizeToAncestorTypeChecked();
+    if (ancestry.Kind == Type.AncestorTypeKind.Resolved) {
+      ancestorTypeCache[key] = ancestry.AncestorType;
+      return ancestry.AncestorType;
+    }
+    return type.NormalizeToAncestorType();
+  }
+
+  /// <summary>
   /// Returns the translation of converting "r", whose Dafny type was "fromType", to a value of type "toType".
   /// The translation assumes that "r" is known to be a value of type "toType".
   /// </summary>
@@ -1284,10 +1362,14 @@ public partial class BoogieGenerator {
     Contract.Requires(r != null);
     Contract.Requires(fromType != null);
     Contract.Requires(toType != null);
-    toType = toType.NormalizeToAncestorType();
-    fromType = fromType.NormalizeToAncestorType();
+    toType = CachedAncestorType(toType);
+    fromType = CachedAncestorType(fromType);
     if (fromType.IsTypeParameter) {
       return UnboxUnlessInherentlyBoxed(r, toType);
+    } else if (toType.IsTraitType && !toType.IsRefType && !fromType.IsTraitType && !fromType.IsRefType) {
+      // cast to a non-reference trait, from a datatype or from a newtype that extends it (which the ancestor of
+      // "fromType", its base type, no longer shows)
+      return BoxIfNecessary(r.tok, r, fromType);
     } else if (fromType.IsNumericBased(Type.NumericPersuasion.Int)) {
       if (toType.IsNumericBased(Type.NumericPersuasion.Int)) {
         // do nothing
@@ -1441,7 +1523,7 @@ public partial class BoogieGenerator {
   /// <summary>
   /// Emit checks that "expr" (which may or may not be a value of type "expr.Type"!) is a value of type "toType".
   /// </summary>
-  void CheckResultToBeInType(IOrigin tok, Expression expr, Type toType, Variables locals, BoogieStmtListBuilder builder, ExpressionTranslator etran, string errorMsgPrefix = "") {
+  void CheckResultToBeInType(IOrigin tok, Expression expr, Type toType, Variables locals, BoogieStmtListBuilder builder, ExpressionTranslator etran, string errorMsgPrefix = "", Type establishedArrowBase = null) {
     Contract.Requires(tok != null);
     Contract.Requires(expr != null);
     Contract.Requires(toType != null);
@@ -1487,7 +1569,9 @@ public partial class BoogieGenerator {
       builder.Add(Assert(tok, e, new IsInteger(expr, errorMsgPrefix), builder.Context));
     }
 
-    if (fromType.IsBigOrdinalType && !toType.IsBigOrdinalType) {
+    if (options.Get(CommonOptionBag.ExtendedNewtypeBases)
+          ? fromTypeFamily.IsBigOrdinalType && !toTypeFamily.IsBigOrdinalType
+          : fromType.IsBigOrdinalType && !toType.IsBigOrdinalType) {
       PutSourceIntoLocal();
       Bpl.Expr boundsCheck = FunctionCall(tok, "ORD#IsNat", Bpl.Type.Bool, o);
       builder.Add(Assert(tok, boundsCheck, new ConversionIsNatural(errorMsgPrefix, expr), builder.Context));
@@ -1530,7 +1614,7 @@ public partial class BoogieGenerator {
           new BinaryExpr(expr.Origin, BinaryExpr.Opcode.Le, new LiteralExpr(expr.Origin, 0), intExpr),
           new BinaryExpr(expr.Origin, BinaryExpr.Opcode.Lt, intExpr, dafnyBound)
         );
-      } else if (fromType.IsBigOrdinalType) {
+      } else if (fromType.IsBigOrdinalType || options.Get(CommonOptionBag.ExtendedNewtypeBases) && fromTypeFamily.IsBigOrdinalType) {
         var bound = Bpl.Expr.Literal(toBound);
         var oi = FunctionCall(tok, "ORD#Offset", Bpl.Type.Int, o);
         boundsCheck = Bpl.Expr.Lt(oi, bound);
@@ -1570,7 +1654,7 @@ public partial class BoogieGenerator {
           var dafnyBoundsCheck = Utils.MakeCharBoundsCheck(options, intExpr);
           builder.Add(Assert(tok, boundsCheck, new ConversionFit("bit-vector value", toType, dafnyBoundsCheck, errorMsgPrefix), builder.Context));
         }
-      } else if (fromType.IsBigOrdinalType) {
+      } else if (fromType.IsBigOrdinalType || options.Get(CommonOptionBag.ExtendedNewtypeBases) && fromTypeFamily.IsBigOrdinalType) {
         PutSourceIntoLocal();
         var oi = FunctionCall(tok, "ORD#Offset", Bpl.Type.Int, o);
         var boundsCheck = FunctionCall(tok, BuiltinFunction.IsChar, null, oi);
@@ -1579,7 +1663,7 @@ public partial class BoogieGenerator {
         builder.Add(Assert(tok, boundsCheck, new ConversionFit("ORDINAL value", toType, dafnyBoundsCheck, errorMsgPrefix), builder.Context));
       }
 
-    } else if (toType.IsBigOrdinalType) {
+    } else if (toType.IsBigOrdinalType || options.Get(CommonOptionBag.ExtendedNewtypeBases) && toTypeFamily.IsBigOrdinalType) {
       if (fromType.IsNumericBased(Type.NumericPersuasion.Int)) {
         PutSourceIntoLocal();
         Bpl.Expr boundsCheck = Bpl.Expr.Le(Bpl.Expr.Literal(0), o);
@@ -1608,17 +1692,20 @@ public partial class BoogieGenerator {
         be = ConvertExpression(expr.Origin, o, fromType, toType);
       } else if (fromTypeFamily.IsCharType) {
         be = ConvertExpression(expr.Origin, o, Dafny.Type.Int, toType);
-      } else if (fromType.IsBigOrdinalType) {
+      } else if (options.Get(CommonOptionBag.ExtendedNewtypeBases) && fromTypeFamily.IsBigOrdinalType) {
+        // Preserve the entire ordinal for same-carrier casts, including limits.
+        be = ConvertExpression(expr.Origin, o, fromTypeFamily, toTypeFamily);
+      } else if (fromType.IsBigOrdinalType || options.Get(CommonOptionBag.ExtendedNewtypeBases) && fromTypeFamily.IsBigOrdinalType) {
         be = FunctionCall(expr.Origin, "ORD#Offset", Bpl.Type.Int, o);
         be = ConvertExpression(expr.Origin, be, Dafny.Type.Int, toType);
       } else {
         be = ConvertExpression(expr.Origin, o, fromType, toTypeFamily);
       }
-      CheckResultToBeInType_Aux(tok, new BoogieWrapper(be, toTypeFamily), expr, toType.NormalizeExpandKeepConstraints(), builder, etran, errorMsgPrefix);
+      CheckResultToBeInType_Aux(tok, new BoogieWrapper(be, toTypeFamily), expr, toType.NormalizeExpandKeepConstraints(), builder, etran, errorMsgPrefix, establishedArrowBase);
     }
   }
 
-  void CheckResultToBeInType_Aux(IOrigin tok, Expression boogieExpr, Expression origExpr, Type toType, BoogieStmtListBuilder builder, ExpressionTranslator etran, string errorMsgPrefix) {
+  void CheckResultToBeInType_Aux(IOrigin tok, Expression boogieExpr, Expression origExpr, Type toType, BoogieStmtListBuilder builder, ExpressionTranslator etran, string errorMsgPrefix, Type establishedArrowBase = null) {
     Contract.Requires(tok != null);
     Contract.Requires(boogieExpr != null);
     Contract.Requires(origExpr != null);
@@ -1626,6 +1713,14 @@ public partial class BoogieGenerator {
     Contract.Requires(builder != null);
     Contract.Requires(etran != null);
     Contract.Requires(errorMsgPrefix != null);
+    if (options.Get(CommonOptionBag.ExtendedNewtypeBases) && establishedArrowBase != null &&
+        toType is UserDefinedType { ResolvedClass: SubsetTypeDecl } &&
+        toType.Equals(establishedArrowBase, true)) {
+      // An already checked operand establishes this exact subset/family and
+      // signature. Every enclosing destination newtype and differing subset
+      // still checks its own predicate below. No membership fact is assumed.
+      return;
+    }
     // First, check constraints of base types
     var udt = (UserDefinedType)toType;
     var rdt = (RedirectingTypeDecl)udt.ResolvedClass;
@@ -1635,8 +1730,11 @@ public partial class BoogieGenerator {
       baseType = ((SubsetTypeDecl)rdt).RhsWithArgument(udt.TypeArgs);
       kind = "subset type";
     } else if (rdt is NewtypeDecl) {
-      baseType = options.Get(CommonOptionBag.ConsistentObligationChecks)
-        ? ((NewtypeDecl)rdt).BaseType.Subst(TypeParameter.SubstitutionMap(rdt.TypeArgs, udt.TypeArgs))
+      // Issue 105: with member invariants, the base type is instantiated, since the check of an invariant of a
+      // generic type in it uses its type arguments
+      baseType = options.Get(CommonOptionBag.ConsistentObligationChecks) || options.Get(CommonOptionBag.ExtendedNewtypeBases) ||
+                 options.Get(CommonOptionBag.MemberInvariants)
+        ? ((NewtypeDecl)rdt).ConcreteBaseType(udt.TypeArgs)
         : ((NewtypeDecl)rdt).BaseType;
       kind = "newtype";
     } else {
@@ -1644,15 +1742,62 @@ public partial class BoogieGenerator {
       kind = "type synonym";
     }
 
+    if (rdt is NewtypeDecl { InvariantTypeDecl: not null }) {
+      // Issue 105: a base type that was inferred is a type proxy, which AsRedirectingType does not look through, so
+      // the constraint of a newtype base would not be checked. Without member invariants, that is a separate issue.
+      baseType = baseType.NormalizeExpandKeepConstraints();
+    } else {
+      // A newtype whose base type is inferred (newtype Y = x | P(x)) keeps the
+      // resolver's type proxy as its BaseType, and AsRedirectingType does not look
+      // through proxies. Without this step a conversion to Y checked only Y's own
+      // constraint and skipped those of the inferred base, which then held as a
+      // fact for every value of Y. Normalize strips proxies only, so an explicit
+      // base, including a type synonym, is handled exactly as before.
+      if (!options.Get(CommonOptionBag.LegacyInferredNewtypeBaseConversions)) {
+        baseType = baseType.Normalize();
+      }
+    }
     if (baseType.AsRedirectingType != null) {
-      CheckResultToBeInType_Aux(tok, boogieExpr, origExpr, baseType, builder, etran, errorMsgPrefix);
+      CheckResultToBeInType_Aux(tok, boogieExpr, origExpr, baseType, builder, etran, errorMsgPrefix, establishedArrowBase);
+    }
+    if (rdt is InvariantTypeDecl invariantTypeDecl && !InvariantTypeDecl.IsReferenceType(invariantTypeDecl.Owner) &&
+        RevealedInScope((RevealableTypeDecl)invariantTypeDecl)) {
+      // Issue 105: the result of an operation of a newtype with member invariants, each invariant a separate obligation,
+      // as at a conversion to the type. The value is one of "raw N<A>", which has the representation of the base type,
+      // so that each invariant, applied to it, has the type arguments A.
+      var typeMap = TypeParameter.SubstitutionMap(rdt.TypeArgs, udt.TypeArgs);
+      var rawValue = new BoogieWrapper(etran.TrExpr(boogieExpr), rdt.Var.Type.Subst(typeMap));
+      var invariantConstraint = Substitute(rdt.Constraint, null, new() { { rdt.Var, rawValue } }, typeMap);
+      CheckInvariantConjuncts(tok, invariantTypeDecl, invariantConstraint, toType, builder, etran, b => b, false, Bpl.Expr.True,
+        errorMsgPrefix);
+      return;
     }
     // Check any constraint defined in 'dd'
     if (rdt.Var != null) {
       // The opt-in path shares assertion-level splitting under the original guard.
       var typeMap = TypeParameter.SubstitutionMap(rdt.TypeArgs, udt.TypeArgs);
+      Expression constraintValue = boogieExpr;
+      if (options.Get(CommonOptionBag.ExtendedNewtypeBases) && boogieExpr is BoogieWrapper wrapper) {
+        var formalType = rdt.Var.Type.Subst(typeMap);
+        var valueView = NewtypeOperationView.Get(wrapper.Type, preserveSubsetTypes: true);
+        var sourceView = NewtypeOperationView.Get(origExpr.Type, preserveSubsetTypes: true);
+        var formalView = NewtypeOperationView.Get(formalType, preserveSubsetTypes: true);
+        if (valueView.Status == NewtypeOperationView.ViewStatus.Resolved &&
+            sourceView.Status == NewtypeOperationView.ViewStatus.Resolved &&
+            formalView.Status == NewtypeOperationView.ViewStatus.Resolved &&
+            valueView.BaseType.AsArrowType is { } valueArrow &&
+            sourceView.BaseType.AsArrowType is { } sourceArrow &&
+            formalView.BaseType.AsArrowType is { } formalArrow &&
+            valueArrow.Equals(formalArrow, true) && sourceArrow.Equals(formalArrow, true)) {
+          // Base constraints were checked above. Substitute at the predicate's
+          // exact instantiated binder type, so arrow reads/requires/application
+          // use the same heap convention as the declaration's predicate.
+          // The existing handle is unchanged; no membership fact is assumed.
+          constraintValue = new BoogieWrapper(wrapper.Expr, formalType);
+        }
+      }
       var dafnyConstraint = Substitute(rdt.Constraint, null, new() { { rdt.Var, origExpr } }, typeMap);
-      var boogieConstraint = Substitute(rdt.Constraint, null, new() { { rdt.Var, boogieExpr } }, typeMap);
+      var boogieConstraint = Substitute(rdt.Constraint, null, new() { { rdt.Var, constraintValue } }, typeMap);
 
       var canCall = etran.CanCallAssumption(boogieConstraint);
       var description = new ConversionSatisfiesConstraints(errorMsgPrefix, kind, rdt.Name, dafnyConstraint);
@@ -1673,8 +1818,13 @@ public partial class BoogieGenerator {
     Contract.Ensures(currentModule == null && codeContext == null && IsAllocContext == null);
 
     proofDependencies.SetCurrentDefinition(MethodVerboseName(decl.FullDafnyName, MethodTranslationKind.SpecWellformedness), null);
+    // Issue 105: the InvariantTypeDecl of a newtype whose header has moved into it is checked in place of the newtype
+    // (see AddTypeDecl(NewtypeDecl)), under the newtype's attributes and as part of its verification, and a witness
+    // member is checked as a const of the type.
+    var invariantTypeDecl = decl as InvariantTypeDecl;
+    var attributes = invariantTypeDecl != null ? invariantTypeDecl.Owner.Attributes : decl.Attributes;
 
-    if (!InVerificationScope(decl)) {
+    if (!InVerificationScope(decl) && !AddedInvariantsInVerificationScope((Declaration)decl)) {
       // Checked in other file
       return;
     }
@@ -1707,7 +1857,7 @@ public partial class BoogieGenerator {
     var name = MethodName(decl, MethodTranslationKind.SpecWellformedness);
     var proc = new Bpl.Procedure(decl.Tok, name, [],
       inParams, [],
-      false, req, mod, [], etran.TrAttributes(decl.Attributes, null));
+      false, req, mod, [], etran.TrAttributes(attributes, null));
     AddVerboseNameAttribute(proc, decl.FullDafnyName, MethodTranslationKind.SpecWellformedness);
     sink.AddTopLevelDeclaration(proc);
 
@@ -1748,7 +1898,9 @@ public partial class BoogieGenerator {
     var witnessCheckBuilder = new BoogieStmtListBuilder(this, options, context);
     witnessCheckBuilder.Add(new Bpl.CommentCmd($"check well-formedness of {decl.WhatKind} witness, and that it satisfies the constraint"));
     string witnessString = null;
-    if (decl.Witness != null) {
+    if (invariantTypeDecl != null && invariantTypeDecl.Owner.Members.Exists(member => member is MemberWitness)) {
+      witnessCheckBuilder.Add(new Bpl.CommentCmd("the witness member is checked as a const of the type"));
+    } else if (decl.Witness != null) {
       // check well-formedness of the witness expression (including termination, and reads checks)
       var ghostCodeContext = codeContext;
       codeContext = decl.WitnessKind == SubsetTypeDecl.WKind.Compiled ? new CallableWrapper(decl, false) : ghostCodeContext;
@@ -1771,6 +1923,11 @@ public partial class BoogieGenerator {
           }
         });
       codeContext = ghostCodeContext;
+    } else if (decl is NewtypeDecl { InheritsBaseDefault: true } && decl.Constraint == null) {
+      // Only an unconstrained declaration can inherit an established base default.
+      // No source witness or existence assumption is fabricated for an empty base.
+      witnessCheckBuilder.Add(Assert(decl.Tok, Bpl.Expr.Literal(baseType.HasCompilableValue),
+        new WitnessCheck("the base type has no known compiled default; provide a witness or witness *"), builder.Context));
     } else if (decl.WitnessKind == SubsetTypeDecl.WKind.CompiledZero) {
       var witness = Zero(decl.Tok, baseType);
       if (witness == null) {
@@ -1790,15 +1947,25 @@ public partial class BoogieGenerator {
     }
     PathAsideBlock(decl.Origin, witnessCheckBuilder, builder);
 
+    // The order of an order type (issue 211) is closed, but it must be well-formed: a comparison by it assumes its
+    // can-call facts.
+    if (DecreasesOrders.DeclaredOrder(decl as TopLevelDecl) is { } order) {
+      var orderCheckBuilder = new BoogieStmtListBuilder(this, options, context);
+      orderCheckBuilder.Add(new Bpl.CommentCmd($"check well-formedness of the order of {decl.WhatKind}"));
+      CheckWellformed(order, new WFOptions(null, true), locals, orderCheckBuilder, etran);
+      PathAsideBlock(decl.Origin, orderCheckBuilder, builder);
+    }
+
     var s0 = builderInitializationArea.Collect(decl.Tok);
     var s1 = builder.Collect(decl.Tok);
     var implBody = new StmtList(new List<BigBlock>(s0.BigBlocks.Concat(s1.BigBlocks)), decl.Tok);
 
-    if (EmitImplementation(decl.Attributes)) {
+    if (EmitImplementation(attributes)) {
       // emit the impl only when there are proof obligations.
-      QKeyValue kv = etran.TrAttributes(decl.Attributes, null);
+      QKeyValue kv = etran.TrAttributes(attributes, null);
 
-      AddImplementationWithAttributes(GetToken(decl), proc, implInParams, [], locals, implBody, kv);
+      // A task is verified as part of a declaration of the program, which an InvariantTypeDecl is not
+      AddImplementationWithAttributes(GetToken(invariantTypeDecl?.Owner as ICanVerify ?? decl), proc, implInParams, [], locals, implBody, kv);
     }
 
     // TODO: Should a checksum be inserted here?

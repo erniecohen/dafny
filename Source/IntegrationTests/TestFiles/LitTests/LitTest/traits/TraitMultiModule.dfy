@@ -1,4 +1,4 @@
-// RUN: %testDafnyForEachResolver --expect-exit-code=2 "%s"
+// RUN: %testDafnyForEachResolver --expect-exit-code=2 "%s" -- --legacy-no-modular-termination
 
 
 module M1

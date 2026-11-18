@@ -71,9 +71,11 @@ namespace Microsoft.Dafny {
               ReportError(dd, $"base type of {dd.WhatKindAndName} is not fully determined; add an explicit type for bound variable '{dd.Var.Name}'");
             }
             CheckExpression(dd.Constraint, context);
-            if (dd.Witness != null) {
-              CheckExpression(dd.Witness, context);
-            }
+          }
+          // A newtype without a constraint variable can still have a witness, which the pre-type resolver
+          // resolves, so it is checked here too, as for a subset type.
+          if (dd.Witness != null) {
+            CheckExpression(dd.Witness, context);
           }
           CheckMembers(dd);
 
@@ -245,6 +247,9 @@ namespace Microsoft.Dafny {
         s.LocalVars.ForEach(local => CheckPreTypeIsDetermined(local.Origin, local.PreType, "local variable"));
         s.LocalVars.ForEach(local => CheckTypeArgsContainNoOrdinal(local.Origin, local.PreType));
 
+      } else if (stmt is NestedMatchStmt nestedMatchStmt) {
+        CheckCasePatterns(nestedMatchStmt);
+
       } else if (stmt is ForallStmt) {
         var s = (ForallStmt)stmt;
         s.BoundVars.ForEach(bv => CheckPreTypeIsDetermined(bv.Origin, bv.PreType, "bound variable"));
@@ -313,6 +318,10 @@ namespace Microsoft.Dafny {
 
       var familyDeclName = PreTypeResolver.AncestorName(expr.PreType);
 
+      if (expr is NestedMatchExpr nestedMatchExpr) {
+        CheckCasePatterns(nestedMatchExpr);
+      }
+
       if (expr is StaticReceiverExpr stexpr) {
         CheckPreTypeIsDetermined(stexpr.Origin, stexpr.PreType, "static receiver");
       } else if (expr is LiteralExpr) {
@@ -372,7 +381,7 @@ namespace Microsoft.Dafny {
           if (!IsDetermined(p)) {
             var hint = e.Name.StartsWith(HideRevealStmt.RevealLemmaPrefix) ? ". If you are making an opaque function, make sure that the function can be called." : "";
             cus.ReportError(e.Origin, $"type parameter '{tp.Name}' (inferred to be '{p}') in the function call to '{e.Name}' could not be determined{hint}");
-          } else {
+          } else if (!(i == 0 && BoundedCallables.IsCertify(e.Function))) { // the order of bounded.certify may be ORDINAL
             CheckContainsNoOrdinal(e.Origin, p, $"type parameter '{tp.Name}' (passed in as '{p}') to function call '{e.Name}' is not allowed to use ORDINAL");
           }
           i++;
@@ -561,6 +570,20 @@ namespace Microsoft.Dafny {
              (right is DPreType dpRight && PreTypeResolver.AncestorPreType(dpRight)?.Decl is IndDatatypeDecl);
     }
 
+    /// <summary>
+    /// The variables that the case patterns of a match bind are not expressions, so they are not visited otherwise.
+    /// A type that the user gives for such a variable may leave type arguments to inference, as in "case C(x: T) =>".
+    /// </summary>
+    void CheckCasePatterns(INestedMatch nestedMatch) {
+      foreach (var caze in nestedMatch.Cases) {
+        foreach (var idPattern in caze.Pat.DescendantsAndSelf.OfType<IdPattern>()) {
+          if (idPattern.BoundVar is { } bv) {
+            CheckPreTypeIsDetermined(bv.Origin, bv.PreType, "bound variable");
+          }
+        }
+      }
+    }
+
     void CheckVariable(IVariable v, string whatIsBeingChecked) {
       if (!IsDetermined(v.PreType)) {
         cus.ReportError(v.Origin, $"type of {whatIsBeingChecked} '{v.Name}' could not be determined{UndeterminedPreTypeToString(v.PreType)}; please specify the type explicitly");
@@ -622,7 +645,9 @@ namespace Microsoft.Dafny {
       Contract.Requires(tok != null);
       Contract.Requires(preType != null);
       if (preType.Normalize() is DPreType dp) {
-        dp.Arguments.ForEach(tt => CheckContainsNoOrdinal(tok, tt, "an ORDINAL type is not allowed to be used as a type argument"));
+        foreach (var tt in BoundedCallables.OrdinalCheckedArguments(dp)) {
+          CheckContainsNoOrdinal(tok, tt, "an ORDINAL type is not allowed to be used as a type argument");
+        }
       }
     }
 
@@ -634,7 +659,9 @@ namespace Microsoft.Dafny {
         if (PreTypeResolver.AncestorName(dp) == PreType.TypeNameORDINAL) {
           cus.ReportError(tok, errMsg);
         }
-        dp.Arguments.ForEach(tt => CheckContainsNoOrdinal(tok, tt, errMsg));
+        foreach (var tt in BoundedCallables.OrdinalCheckedArguments(dp)) {
+          CheckContainsNoOrdinal(tok, tt, errMsg);
+        }
       }
     }
   }

@@ -1,0 +1,6 @@
+
+Dafny program verifier did not attempt verification
+github-issue-390-subset.dfy(13,40): Error: value does not satisfy the subset constraints of 'S'
+github-issue-390-subset.dfy(29,34): Error: value does not satisfy the subset constraints of 'T'
+
+Dafny program verifier finished with 3 verified, 2 errors

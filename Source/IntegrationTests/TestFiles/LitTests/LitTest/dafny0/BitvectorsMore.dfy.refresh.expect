@@ -186,7 +186,7 @@ module _System {
     function RotateRight(w: nat): bv8
   }
 }
-// bitvector types in use: bv7 bv137 bv0 bv10 bv60 bv67 bv32 bv2 bv5 bv8 bv6 bv3
+// bitvector types in use: bv0 bv2 bv3 bv4 bv5 bv6 bv7 bv8 bv10 bv32 bv60 bv67 bv137
 */
 
 /* CALL GRAPH for module _module:

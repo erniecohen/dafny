@@ -389,10 +389,167 @@ the two components have different representations.
 
 The hidden `--legacy-decreases-order` switch restores the previous, unsound
 comparison for migration and comparison only. It applies to ordinary and modular
-checks; `--modular-termination` itself remains opt-in. The repair is described in
+checks; the hidden `--modular-termination` remains a migration aid for unchecked legacy markers. The repair is described in
 https://github.com/erniecohen/dafny/issues/264.
 
-#### 7.1.3.1. Global bounds: `decreases {:global}` (experimental) {#sec-global-decreases}
+#### 7.1.3.1. Well-founded orders: `decreases e by O` (experimental) {#sec-decreases-by}
+
+With the option `--decreases-orders` (off by default), a component of the
+`decreases` clause of a function, method or loop may name the well-founded order
+that compares it: `decreases e by O`. The option needs `--type-system-refresh`
+and `--general-traits=datatype` (or `full`), and loads the standard library's
+module `Std.Termination.Orders`. `O` must have exactly its trait type
+`Std.Termination.Orders.Wfo<T>`, and `e` must have exactly the type `T`. A value
+of `Wfo<T>` has a relation `gt(x, y)` (`x` is greater than `y`) and a member
+`aha` whose postcondition proves `gt` well-founded: every infinite sequence `c`
+of values of `T` has an `n` with `!gt(c(n), c(n + 1))`. For the component, the
+strict relation is `O.gt(old, new)`, where `old` is the value of `e` for the
+caller (or at the start of the loop iteration) and `new` is its value for the
+callee (or at the end of the iteration), and the weak relation is equality. The
+component then takes part in the tuple comparison above like any other.
+
+`O` must be closed: it may not mention local variables, parameters, `this` or
+the heap, so that caller and callee see the same order. A call between two
+callables compares a component by an order only if both clauses give that
+component the same order. A callable with a component `e by O` is treated as
+calling `Wfo.gt` and `Wfo.aha`, as a function is treated as calling what its
+`requires` clauses call. Those implied calls have no arguments that could
+decrease, so the callable must not be mutually recursive with `gt`, `aha` or
+any override of them. A component with an order is not allowed in the
+`decreases` clause of an iterator, or with `--legacy-decreases-order`.
+
+To build an order, prove the relation well-founded and pass it to
+`Std.Termination.Orders.Of`, whose postcondition says that the order's `gt` is
+the relation:
+
+<!-- %check-verify %options --standard-libraries --type-system-refresh --general-traits=datatype --decreases-orders -->
+```dafny
+import opened Std.Termination.Orders
+
+ghost predicate Up(x: nat, y: nat) { x < y <= 100 }
+
+lemma UpWellFounded() ensures wellFounded<nat>(Up) {
+  forall c: Chain<nat> ensures stops<nat>(Up, c) {
+    if forall n: nat :: Up(c(n), c(n + 1)) {
+      Climbs(c, 101);
+      assert Up(c(101), c(102));
+    }
+  }
+}
+
+lemma Climbs(c: Chain<nat>, n: nat)
+  requires forall k: nat :: Up(c(k), c(k + 1))
+  ensures c(n) >= n
+{
+  if n > 0 { Climbs(c, n - 1); }
+}
+
+ghost function UpOrder(): Wfo<nat> { UpWellFounded(); Of(Up) }
+
+function CountUp(i: nat): nat
+  requires i <= 100
+  decreases i by UpOrder()
+{
+  if i == 100 then 0 else 1 + CountUp(i + 1)
+}
+```
+
+A datatype of another module may also implement `Wfo<T>` itself, giving `gt`
+and proving `aha`. Like any type that extends a trait of another module, it
+must then be marked `{:AssumeCrossModuleTermination}`, which `dafny audit`
+reports as an assumption.
+
+Under `--modular-termination`, a component `e by O` may also appear in a
+`decreases {:global}` or `decreases {:callback g}` bound ([global
+bounds](#sec-global-decreases)). Such a bound compares components by `O` as an
+ordinary clause does. That option does not load the bundled standard library,
+but it does load the orders library, and that library is verified together with
+the program that uses it rather than trusted. The bound must not reach open
+dispatch, and that includes the code of `O`:
+
+* An order used in the bounds of another module must be built by a function
+  marked `{:termination_closed}`, such as
+  `ghost function {:termination_closed} UpOrder(): Wfo<nat>`. The library's `Of`,
+  `WfoOf`, `wellFounded` and `stops` count as applications of the relations and
+  chains that they are given.
+* The well-foundedness proof must bind each chain with a quantifier, as in
+  `forall c: Chain<nat> ensures ...` or
+  `ensures forall c: Chain<nat> :: ...`, not take it as a lemma parameter. This
+  is the _binder rule_ described with global bounds. The example above passes
+  `c` to `Climbs` as a parameter, so under `--modular-termination` its `Climbs`
+  would instead state `ensures forall c: Chain<nat> :: (forall k: nat ::
+  Up(c(k), c(k + 1))) ==> c(n) >= n`.
+* The `aha` of a user implementation of `Wfo` applies its chain parameter, so
+  that code is not known. A bound with an order then reaches it, and the bound
+  is rejected. Build orders with `Of` instead.
+
+**The multiset order.** `Std.Termination.Orders.MultisetOf(r)` is the multiset
+order over a relation `r` proved `wellFounded`, in the form of Huet and Oppen
+that VeriFast uses for its bags of call permission levels.
+`MultisetGe(r, M, N)` (`M` is at least `N`) holds when each element of `N - M`
+is below some element of `M - N`, where `-` is multiset difference, and
+`MultisetGt(r, M, N)` (`M` is above `N`) when also `M != N`. So one element may
+be exchanged for any finite number of smaller ones. The library proves this
+order well-founded; nothing about it is assumed. `MultisetRel(r)` is the order
+as a relation, so multiset orders nest (`MultisetOf(MultisetRel(r))` orders
+multisets of multisets). Lemmas prove the usual steps: `MultisetReplaceOne`
+(an element of a multiset replaced by finitely many below it),
+`MultisetReplaceLower`, `MultisetReplaceByLower`, `MultisetAddOne`,
+`MultisetDrop`, `MultisetSub`, `MultisetGeAdd`, `MultisetGeUnion` and
+`MultisetGeCons`. When `r` is also transitive, `MultisetGeTransitive`,
+`MultisetGtGe`, `MultisetGeGt` and `MultisetTransitive` show that the order is
+transitive and that `>=` followed by `>`, in either order, gives `>`. Those
+lemmas that need `r` to be irreflexive or transitive require
+`wellFounded(r)` or `Transitive(r)`:
+
+<!-- %check-verify %options --standard-libraries --type-system-refresh --general-traits=datatype --decreases-orders -->
+```dafny
+import opened Std.Termination.Orders
+
+ghost predicate Gt(x: nat, y: nat) { x > y }
+
+lemma GtWellFounded() ensures wellFounded<nat>(Gt) {
+  forall c: Chain<nat> ensures stops<nat>(Gt, c) {
+    if forall n: nat :: Gt(c(n), c(n + 1)) {
+      Descends(c(0) + 1);
+    }
+  }
+}
+
+lemma Descends(n: nat)
+  ensures forall c: Chain<nat> :: (forall k: nat :: Gt(c(k), c(k + 1))) ==> c(n) + n <= c(0)
+{
+  if n > 0 {
+    Descends(n - 1);
+    forall c: Chain<nat> | forall k: nat :: Gt(c(k), c(k + 1)) ensures c(n) + n <= c(0) {
+      assert Gt(c(n - 1), c(n));
+    }
+  }
+}
+
+ghost function Bags(): Wfo<multiset<nat>> { GtWellFounded(); MultisetOf(Gt) }
+
+// One permission at level L is exchanged for two at level L - 1
+function Spend(bag: multiset<nat>, L: nat): nat
+  requires L in bag
+  decreases bag by Bags()
+{
+  if L == 0 then 0 else
+    var next := bag - multiset{L} + multiset{L - 1, L - 1};
+    GtWellFounded();
+    MultisetReplaceOne<nat>(Gt, bag, L, multiset{L - 1, L - 1});
+    1 + Spend(next, L - 1)
+}
+```
+
+Under `--modular-termination`, `MultisetOf`, `MultisetRel`, `MultisetGe`,
+`MultisetGt` and `Transitive`, and calls of the lemmas, count as applications of
+the relation they are given, as `Of` does. The relation must itself be known code,
+such as a function marked `{:termination_closed}` when another module uses it.
+
+The design is described in https://github.com/erniecohen/dafny/issues/245.
+
+#### 7.1.3.2. Global bounds: `decreases {:global}` (experimental) {#sec-global-decreases}
 
 The module and call-graph components that Dafny prepends to a decreases tuple order only
 the calls that some module can see.  A call to a bodyless member of a trait is dispatched
@@ -402,8 +559,7 @@ another module only if the trait is marked `{:termination false}` or the type
 `@AssumeCrossModuleTermination`; calls through such a trait are not checked for
 termination, and a program can recurse through them forever and still verify.
 
-The option `--modular-termination` (off by default) checks these calls.  A method or
-function may declare a _global bound_:
+Dafny checks these calls.  A method or function may declare a _global bound_:
 
 <!-- %no-check -->
 ```dafny
@@ -419,26 +575,69 @@ not concatenated.  A member has at most one `decreases {:global}` clause.  An ov
 that declares none inherits its parent's; one that declares its own must give a bound no
 greater than its parent's, as an override's ordinary decreases clause must.
 
-Under the option, a trait is _extensible_ exactly when its defining declaration has
-`{:termination false}`; this declares checked extensibility. Otherwise it is sealed against
-foreign extension. Every non-`object` ancestor of a foreign implementation must also be
-extensible. A same-module descendant may remain sealed, but an extensible descendant cannot
-expose a sealed ancestor. `@AssumeCrossModuleTermination` cannot override sealing. Aliases,
-export views and refinement preserve the declaration's policy.
+Any trait may be extended from any module, with no `{:termination false}`
+or `@AssumeCrossModuleTermination`. What an implementation may do depends on whether the member
+it implements declares a global bound:
 
-A call to an overridable instance slot of an extensible trait must go to a smaller global
-bound. Bodyful methods can be overridden and remain open; a fully defined function has a fixed
-target even when its body is hidden by `provides`. The callee's global bound, at the call's
-arguments, must be below the caller's, evaluated on entry to the caller.  A missing bound
-is above every other.  So a call from a member without a global bound to one with a
-global bound always passes, and a call to a member without one always fails.  This rejects
+* A member with a declared or inherited global bound binds every implementation, in the trait's
+  module (its _home_) and in any other (a _foreign_ implementation). A dispatched call to it must
+  go to a smaller bound.
+* A foreign implementation of a member with no bound must either be a _leaf_ or have a global bound
+  of its own, declared on it or inherited from a subtrait. A leaf makes no dispatched call through a
+  trait and applies no function value whose code is not known, itself or through the code it calls,
+  including its specifications and implicit evaluations; an imported helper it calls must promise
+  `{:termination_closed}`. An implementation with a bound is checked like any other code with a bound.
+  A home implementation keeps the ordinary check of its module. A member with a global bound may not
+  dispatch to a member without one, which is TOP; a member without a bound may.
+* A member that every implementation should be able to call, as a leaf could, is given a low bound,
+  such as `decreases {:global} 0`. A dispatched call to it then needs a caller whose bound is above it.
+
+These rules apply to every call, including a call of a least or greatest predicate, of its prefix
+predicate, and a co-call: the clusters that exempt those from the ordinary decreases check do not see
+calls across modules. An extreme predicate cannot declare a decreases clause, so it has no bound: a
+member with a global bound may call one only if it reaches no dispatched call, and may not dispatch to
+an extreme predicate slot. A least or greatest lemma's body, which
+is checked as its prefix lemma's, runs under the lemma's global bound.
+
+A foreign subtrait may redeclare a member with no bound and give it one. Calls through the subtrait
+then see that bound, and its implementations inherit it, so they are checked under it.
+
+The order of global bounds has no bottom. An `int` bound needs only the caller's bound to be at least
+0, so `-1` is below `0`; and a shorter tuple is padded with TOP, so `0, 5` is below `0`. So a bound such
+as `0` is not the least, and a foreign implementation with a bound may sit below every bound in the
+trait's module. That is sound because what the rules protect is TOP, not the bottom: code with a bound
+can never reach a dispatched call to a member without one, whether directly, through a known call, a
+function value or an extreme predicate, so no cycle through such a dispatch can close. A cycle through
+code with bounds needs a dispatched call that goes down, and each step down passes Dafny's ordinary
+decreases check, which admits no infinite descent: a caller at `-1` can make no call that needs a
+smaller bound, and a padded tuple descends as any tuple does.
+
+The legacy forms keep their meaning: an undeclared member of a trait with `{:termination false}`, or
+implemented by a type with `@AssumeCrossModuleTermination`, is exempt from the leaf rule, as an
+unchecked premise that `--warn-unchecked-termination` reports. Declared bounds still bind it. A
+dispatched call from code with a bound to an undeclared member of a `{:termination false}` trait is
+accepted on the same premise, as it is in Dafny 4.11; the experimental `--modular-termination`
+rejects it, as it rejects any call to TOP.
+
+The checks run on every program that uses this design: one that declares a global or callback
+bound, promises `{:termination_closed}`, or has a type that extends a trait of another module
+with neither legacy form, or uses a `bounded` callable type. A program that does none of these is accepted or rejected as in Dafny
+4.11, with the same proof obligations. The hidden option `--legacy-no-modular-termination`, kept
+for migration and comparison, restores the rules of Dafny 4.11: a type may extend a trait of
+another module only with a legacy form, `decreases {:global} E` and `decreases {:callback g} E`
+are ordinary decreases clauses, and none of these checks runs. A library built under one setting
+of that option cannot be used under the other.
+
+A missing bound is above every other.  So a call from a member with a global bound to a member
+without one always fails, and so does a foreign implementation of a member without one that calls back
+through a trait without a bound of its own. This rejects
 the program below, in which no module's call graph has a cycle, but `Tie(x, y)` never
 terminates: whatever bounds `A` and `B` declare, one of the two dispatched calls goes up.
 
 <!-- %no-check -->
 ```dafny
 module Tr {
-  trait {:termination false} T {
+  trait T {
     function A(other: T): int
     function B(other: T): int
   }
@@ -463,6 +662,7 @@ module L {
 }
 ```
 
+Here `Y.A` and `X.B` are foreign implementations of members without a bound that are not leaves.
 With a parameter `n: nat` and `decreases {:global} n` on both members, and
 `other.A(this, n - 1)` and `other.B(this, n - 1)` under `n != 0`, the program verifies.
 
@@ -479,10 +679,14 @@ an unknown function-value application or an imported General operation. Dafny ch
 promise in its defining module. Locally inferred closed helpers remain available there;
 imported helpers need their own public promise. Exact calls to Closed code need no outer
 bound comparison, but still obey the ordinary termination discipline. Closed cannot be combined
-with callback bounds or promised by an overridable slot of an extensible trait. A permitted
-sealed override or refinement must preserve the promise.
+with callback bounds or promised by an overridable slot of a trait; such a slot may have a low
+global bound instead. An override or refinement must preserve the promise.
 
-Within a module, Dafny can infer whether exact code reaches open dispatch. A local closed
+Within a module, Dafny can infer whether exact code reaches open dispatch. A function, method or
+lemma without a body is taken to reach it, unless it promises `{:termination_closed}`: a refining
+module may give it a body, and the code it inherits, whose calls were checked in the base, is not
+checked again. To call such a member from a member with a bound, give it a bound of its own, which its
+body in a refinement must then keep, or the promise. A local closed
 callee needs no outer comparison; a local forwarding helper needs a global bound of its own:
 
 <!-- %no-check -->
@@ -499,6 +703,14 @@ module Y {
 }
 ```
 
+Refinement checks inherited bodies against their global and callback bounds in the refined
+module, including bounds acquired through a new parent trait. The inherited calls must satisfy
+the refined contracts even when the refinement base had no bound. This includes forwarding
+bounded values from an unbounded caller to a refined callback contract. Unrelated assertions already
+checked by the refinement base remain assumed. `--legacy-no-modular-termination` restores the
+previous modular-termination behavior, including when the earlier experimental checks are
+explicitly selected with `--modular-termination`.
+
 Here `Y.F` inherits the bound `n` and calls `L.H(this, n)`, whose bound `n` is not larger;
 `L.H` makes the dispatched call at the smaller bound `n - 1`. Without the bound on `H`, or with
 `t.F(n)` in place of `t.F(n - 1)`, or with a larger bound such as `n + 1` on `H`, the program is
@@ -507,12 +719,23 @@ before. Bounds of different lengths are compared as decreases tuples are, with m
 above every value: a bound `n, 7` is at most `n`, but `n` is not at most `n, 0`. The method of a
 function's `by method` body has the function's bound.
 
+A least or greatest lemma may declare a global bound and callback bounds. Its body is verified
+as the body of its prefix lemma, which has the same bounds, and a call `L#[k](...)` of the prefix lemma
+is checked as a call of `L`.
+
+A lemma with a global bound that can reach a dispatched call runs under that bound, and so does every
+instance of itself that its proof uses. So its automatic induction hypothesis covers
+only the instances whose bound is at most the lemma's own bound (below it, if the lemma is itself an
+overridable member of an extensible trait). The same holds for the induction hypothesis of a prefix
+lemma, and for the case that Dafny generates for a prefix lemma at a limit ordinal. A proof that used
+one of these at a larger bound does not verify.
+
 Some code belongs to no method or function: the constraint and the witness of a subset type or
 newtype, the default values of a datatype's or class's components (which a witness or an allocation
 may evaluate), and the initializer of a constant. Such code has no global bound, so it is TOP.
 It runs where a type test `x is T`, a conversion `x as T`, a subset check (when a value is assigned,
 passed or returned at type `T`), or the creation of a default value evaluates it, and where a
-constant is read. Under the option this counts as a call from the member in which it happens, under the
+constant is read. This counts as a call from the member in which it happens, under the
 same-bound rule: if that code can reach a dispatched call, a member with a global bound may not
 evaluate it, and a member without one reaches the dispatched call too, so that a member with a bound
 may not call it either. Dafny does not track which of these evaluations happen at run time, so it
@@ -541,9 +764,9 @@ General(TOP) unless its owner publishes `{:termination_closed}`. The attribute i
 constants, type declarations and iterators. On a type it covers its evaluation hooks, including
 field/component types and defaults, rather than its virtual members; on an iterator it covers
 its protocol and specifications. Public signature structure may establish that a hook is absent.
-Invalid attribute arguments or placement are rejected under the option.
+Invalid attribute arguments or placement are rejected.
 
-A call through a function value runs code that the call does not name. Under the option, an application
+A call through a function value runs code that the call does not name. An application
 `f(x)` (and a call of `f.requires` or `f.reads`, and the initializing function of `seq(n, f)` and
 `new T[n](f)`) counts as follows:
 
@@ -551,9 +774,11 @@ A call through a function value runs code that the call does not name. Under the
   it and is checked there, under the same rules.
 * If the value is a function named as a value that is locally closed, or publishes
   `{:termination_closed}` across an import, nothing needs to be checked.
-* If the value is an in-parameter with a _callback bound_ (below), outside a lambda, the application is a
-  call to code whose bound is that callback bound: the callback bound must be below the caller's global
-  bound, both evaluated on entry (the smaller-bound rule).
+* If the value is an in-parameter with a _callback bound_ (below), the application is a call to code
+  whose bound is that callback bound: the callback bound, evaluated on entry, must be below the caller's
+  global bound on entry, or, inside a lambda expression, below the bound under which the lambda runs,
+  evaluated where the lambda is formed (the smaller-bound rule). The actual runs under its callback bound
+  in every later state, so a lambda can keep the parameter and apply it later.
 * Any other value runs code that is not known, which has no bound (TOP), like a dispatched call to a
   member without a bound. A member with a global bound may not apply it; a member without one may, and
   then it can reach a dispatched call, so that a member with a bound may not call it in turn.
@@ -575,7 +800,7 @@ The callback bound is an obligation where the value is passed, never an assumpti
 pass for `g` a lambda expression, whose body (with its `requires` and `reads` clauses) is then checked under
 the callback bound at the call's arguments, as if that were the bound of the member it belongs to, also
 when the caller has no bound; an in-parameter of the caller that has a callback bound of its own, which must
-be at most the callee's, at the call's arguments (outside a lambda); or a function named as a value that
+be at most the callee's, at the call's arguments (both evaluated as above); or a function named as a value that
 reaches no dispatched call. Any other value is rejected. So in
 
 <!-- %no-check -->
@@ -606,14 +831,20 @@ Inside a lambda expression, the bound of the member it belongs to is the value o
 also where the lambda's body is checked in a heap of its own.
 
 The intended composition argument combines outer-bound descent with the ordinary termination
-discipline. The option remains experimental: the separate comparison repair and checked-library
-admission work must complete before it establishes termination of every accepted composition.
+discipline. The option remains experimental: the separate comparison repair and the remaining
+library-openness work must complete before it establishes termination of every accepted composition.
 
 A global bound, and a callback bound, may only use code that cannot reach a dispatched call: the
 functions and methods it calls, the constants it reads, the types it mentions (their constraints,
 witnesses and component defaults) and the function values it applies must reach none, directly or
 through the code they call in turn, and a function value whose code is not known counts as reaching
-one. Across imports, the supporting operations must publish `{:termination_closed}`; a hidden
+one. The exception is the _binder rule_ (https://github.com/erniecohen/dafny/issues/245). An application `c(x)` calls nothing
+when `c` is a variable of a total arrow type `A -> B` (not `A --> B` or `A ~> B`) that is bound by a
+`forall` or `exists` expression, or by a `forall` statement in ghost code. Such a variable ranges over
+every function of its type, and all of those exist before the code that mentions them, so the
+application is a formula over them, not a call through a value that the program computed. The rule does
+not cover parameters, locals, fields, results or lambda expressions bound to a variable, and it does not
+let such a variable be passed for a parameter with a callback bound. Across imports, the supporting operations must publish `{:termination_closed}`; a hidden
 leaf body is insufficient. The value of a bound is the measure that these rules decrease, so it must not be computed by the
 code whose termination they establish.  Before this rule, the program below verified, `assert false`
 included, and when run it overflowed the stack:
@@ -648,12 +879,14 @@ can reach one, and each call through a function value that is not a lambda expre
 **This version does not yet establish termination in every program.** A program that it accepts
 can still fail to terminate, and can prove `false`, through what it does not check:
 
-* A trait is open because of `{:termination false}`, or because of the extensions in the
-  program being verified. A library verified on its own therefore does not see a type
+* The legacy forms are premises. A library verified on its own does not see a type
   that a later program declares with `@AssumeCrossModuleTermination` to extend one of its
-  traits. Calls through such a trait, and to the code that reaches them, were verified without
-  the rules. `{:termination false}` and `@AssumeCrossModuleTermination` keep their meaning;
-  `dafny audit` reports them, and so does `dafny verify` under `--warn-unchecked-termination`.
+  traits, or a later implementation of a `{:termination false}` trait. Calls through such a trait,
+  and to the code that reaches them, were verified without the rules. `{:termination false}` and
+  `@AssumeCrossModuleTermination` keep their meaning; `dafny audit` reports them, and so does
+  `dafny verify`, by default (`--warn-unchecked-termination`). A later extension without a legacy form
+  is checked in the program that declares it: its implementations of members without a bound are
+  leaves, and those of members with one respect the bound.
 
 It also rejects some programs that terminate:
 
@@ -671,9 +904,120 @@ It also rejects some programs that terminate:
   heap, in a datatype value or in a collection, or returned by a function, has no bound.
 * An iterator has no global bound, so a call of an iterator that reaches a dispatched call is
   rejected from a member with a bound.
+* A least or greatest predicate has no global bound, so one that reaches a dispatched call, or one
+  imported from a module that does not promise `{:termination_closed}` for it, cannot be used by a
+  member with a bound.
 * The C# parser is what turns `decreases {:global} E` and `decreases {:callback g} E` into bounds. A
   program that reaches Dafny through another front end, serialized, keeps them as ordinary decreases
   clauses with argument-less `{:global}` attributes or one-argument `{:callback g}` attributes.
+
+A library that Dafny does not verify with the program and that was not verified under these rules is
+refused when it uses them: a source or `.dll` file given with `--library`, or a `.doo` file written by
+a version of Dafny without them, that declares a global or callback bound or a `{:termination_closed}`
+promise, uses a bounded callable type, or extends a trait of another module without a legacy form. Its leaf and bound obligations
+were never checked. Verify such a library with the program, or rebuild it. A library that uses none of
+these is read as before.
+
+A library that uses the checked design is admitted only as a certified `.doo` file.
+`dafny build --target:lib` writes a termination record whenever its program uses the design. The record includes
+a hash of its program, of the build of Dafny that verified it (its Dafny and Boogie
+assemblies and the prelude file it read), and of the options that change what a proof means (each also
+listed by name), the version and a hash of the Z3 binary that verified it, and the termination contract
+of each module it defines. A contract is the module's interface: its declarations with the bodies of methods, lemmas,
+iterators and by-method implementations left out; function bodies stay, since a client may reveal them.
+Issuing a complete certificate requires complete certificates for every unverified dependency,
+even an ordinary library that declares no termination promises. Ordinary libraries remain usable
+as TOP code in clients, but their unchecked functional premises cannot be laundered into a complete certificate.
+The record also lists the contracts of the libraries the build was verified against, and ends with a
+hash of the whole record. The build writes a library only when its whole program was verified, every
+verification task conclusively, without `--no-verify`, `--boogie` arguments, `{:verify false}`, `{:only}`,
+`decreases *` or included files that were not verified, and without unchecked premises. These are
+every assumption that `dafny audit` reports in the library's own files (such as `assume` statements,
+`{:axiom}`, `{:extern}` members with contracts, `@AssumeCrossModuleTermination`, `forall` statements
+and loops without a body, and bodyless members with a postcondition), together with `assume` anywhere in
+the program, members without a body other than instance members of traits and members of abstract
+modules, `{:extern}` members, and `--allow-axioms`. Only one assumption that `dafny audit` reports is
+accepted: `{:termination false}` on a trait, which under the option is checked against the global
+bounds. The reveal lemma that Dafny generates for an opaque function states the function's definition
+and is not an assumption; it is recognised as the lemma Dafny generated, not by its attributes. The
+attributes `{:auto_generated}` and `{:opaque_reveal}`, which mark declarations that Dafny generates, may
+not be written in a library's sources. Iterators are not yet supported: `dafny audit` reports the members
+that Dafny generates for an iterator as axioms, and the build refuses a library that declares one. The
+build reports the first of these it finds and writes nothing. `--allow-warnings` does not hide them; it is
+recorded with the other options.
+
+In a program that uses the checked design, a module cannot refine or replace a module of a library: it would inherit bodies
+that are not part of the library's contracts, so a change to them would not be detected.
+
+For a modular certificate, `--boogie` arguments are refused, both when a library is built and when one is loaded:
+many of them (such as `/loopUnroll`, `/noVerify`, `/proc` and some `/proverOpt` settings) can make a
+program verify that is not proved. Only arguments on a reviewed list of ones that cannot weaken a proof
+are allowed, and that list is empty for now. The options are recorded with their values as given. Two libraries that both declare
+top-level members outside any module, in the default module, cannot be loaded together, since both
+provide the module `_default`.
+
+When a program loads such a library, Dafny recomputes these hashes and the contracts
+from the library's program, and rejects the library, naming the mismatch, when any differs: its program,
+its contracts, its record (missing, incomplete, of an unknown format or not matching its own hash), the
+build of Dafny or its prelude, the Z3 binary that the current run uses (the library must be checked
+with the same one; every command that loads libraries, `dafny resolve`, `dafny audit`, `dafny doc`,
+`dafny extract` and `dafny format` included, takes `--solver-path` to name it), or an option whose value differs from the current one. A library verified against another must be loaded
+with it, and with one that provides the same contracts: a dependency whose method bodies changed is
+accepted, and one whose contracts changed is rejected. An unverified source or ordinary library
+that uses the design is rejected; ordinary libraries that use none of it remain usable as TOP code.
+They cannot serve as unverified dependencies of a complete certificate. The default standard-library
+catalog remains the ordinary legacy catalog. A certified core can be built from
+`Source/DafnyStandardLibraries/modular-termination` and loaded with `--library`; its `README.md`
+lists the included modules and trust boundaries. The separate checked catalog and its named
+trust-list opt-ins are described below. The hidden legacy opt-out rejects recorded libraries,
+so that their records are never silently ignored.
+
+The record certifies the program stored in the library, which is the program Dafny parsed from the
+library's sources, printed back. After verifying the sources, the build checks that the stored program
+parses and prints back to the same text, then parses, resolves and verifies the stored program again,
+with the same libraries and options, and takes its assumption check, its inventory of verified
+implementations, its contracts and its imports from that program. The library is written only when
+that second verification is also complete and conclusive, so a difference between the printed and the
+verified program cannot reach a record. The second verification roughly doubles the verification cost
+of a library build.
+
+The record shows that the library was built by this build of Dafny, from this program, under these
+options; it is checked, not signed, so a library whose record was rewritten as a whole, with every hash
+recomputed, is trusted like any other input of the build.
+
+A library may also record named trusted premises, with the option
+`--modular-termination-trust:standard-library` (the default is `none`, under which nothing changes).
+Dafny compiles in one trust list, `standard-library`: 18 `{:axiom}` lemmas of the
+standard library's `Axioms`, `Ordinal` and `Strings` modules, each with a reviewed reason and with
+digests of its statement and of its context (the contracts of the modules it can see). Under the option,
+a build accepts an `{:axiom}` declaration only when it is an entry of the list and both digests match,
+records each such premise in the library, and says in its verification summary how many trusted premises
+its results assume; every other assumption is refused as before. A client admits a library that records
+premises only when it selects the same list, and then reports them in its own summary and in
+`dafny audit`. Every entry is a lemma, so its conclusion enters a proof only where it is called. The project
+`Source/DafnyStandardLibraries/modular-termination/trusted` builds the standard-library core together with
+`Axioms`, `RealCompleteness`, `Ordinal` and `Strings`, and its record lists all 18 premises.
+
+Runtime contracts use a **separate** opt-in, `--modular-termination-runtime-trust:standard-library`.
+Its default, `none`, admits no runtime assumptions. A target bundle that requires them is unavailable
+to modular certificates without this opt-in; its error explains the option. Selecting it does not
+select the ghost-premise trust list, or conversely. The reviewable list is
+`Source/DafnyCore/ModularTerminationRuntimeContracts.tsv`: each entry names one callable and pins
+its statement and context. Unlisted or changed contracts are rejected. Library records keep runtime
+premises separate from ghost premises, and verification summaries and `dafny audit` name the runtime
+contracts being assumed, including termination.
+
+A result using that option is conditional on every named runtime contract: termination, functional
+behavior and frame/effect promises. For example, the verifier does not prove that a filesystem
+operation completes or a waiting lock is eventually acquired. The option assumes the corresponding
+runtime termination promises under their stated preconditions. It does not permit statement
+assumptions or omitted verification tasks in source bodies.
+
+A module of the library may refine another one that has opaque functions: the copies that the
+refinement makes of the reveal lemmas Dafny generates for them are generated too, and their
+`{:verify false}` is not refused. The library may also declare an `opaque const`: the reveal lemma
+Dafny generates for it states the constant's definition and has no body, and it is not counted as a
+premise, nor are the copies a refinement makes of it.
 
 Before milestone M4a, a bound could call code that reaches a dispatched call, and a program could
 prove `false` through it, as in the example above; the rule for bounds closes that.
@@ -688,11 +1032,81 @@ that made it directly, so a helper without a bound, or with a larger one, could 
 dispatched call and hide a cycle; the rule for calls to known code rejects such a helper.
 
 Internally, the global clause is the attribute `{:global E}` on the decreases clause, and
-under the option that spelling is read the same way: `decreases {:global n} 7` declares
+that spelling is read the same way: `decreases {:global n} 7` declares
 the global bound `n` and the ordinary decreases clause `7`.
 
-Without the option, `decreases {:global} E` is an ordinary decreases clause with an
-unknown attribute, as before.
+Under `--legacy-no-modular-termination`, `decreases {:global} E` is an ordinary decreases clause
+with an unknown attribute, as in Dafny 4.11.
+
+The hidden `--modular-termination` is a migration aid: it applies the strict checks to legacy
+termination markers. It is unnecessary for bounded callables, well-founded order loading,
+certificate production or admission, and the named trust lists. The hidden
+`--legacy-no-modular-termination` disables this design and cannot admit a modular certificate.
+
+The legacy standard-library catalog remains the default when neither named trust list is selected.
+Selecting either named standard-library trust list requests the separate checked catalog with
+`--standard-libraries`. The checked common library requires the ghost-premise opt-in; target bundles
+also require the runtime-contract opt-in. Missing checked resources report the build instruction.
+Selecting one list never selects the other, and each runtime assumption remains named in the summary.
+
+#### 7.1.3.3. Bounded callables: `bounded<O, F>` (experimental) {#sec-bounded-callables}
+
+By default, the system module declares the type `bounded<O, F>` of a
+_bounded callable_: a function value of the arrow type `F` together with persistent evidence that
+every call of it terminates below a ghost bound in the order `O`
+(https://github.com/erniecohen/dafny/issues/266). A value is formed by `bounded.certify(a, f)`, its
+bound `c.bound` (ghost) and function `c.erase` are projected, and applying it, `c(x)` or
+`c.erase(x)`, spends the evidence. A value can be passed, returned and stored in locals, fields, collections and
+generic containers, also when its function reads the heap, since each application checks the bound of
+the value it applies.
+
+- The order `O` is `nat` or `ORDINAL`, or a type synonym for one of them, with its built-in order.
+  `O` is non-variant: `bounded<nat, F>` and `bounded<ORDINAL, F>` are unrelated.
+- The payload `F` is an arrow type: `A ~> B`, `A --> B` or `A -> B`. A bounded type has exactly the
+  subtyping of its payload, so `bounded<nat, int -> nat>` is a subtype of
+  `bounded<nat, int -> int>`, which is a subtype of `bounded<nat, int --> int>`. A conversion the
+  other way is a subset-type check that cannot be proved.
+- A bounded type has no compiled equality, no default value and is not known to be nonempty. It
+  cannot be the element type of a compiled set or the argument of a `(0)` or `(00)` type
+  parameter. Definite assignment applies to its variables and fields. Ghost equality is allowed.
+- The compilers erase `bounded<O, F>` to `F`, with no wrapper and no run-time cost.
+- A function value that reads the heap cannot be stored in a field, nor passed for a type parameter
+  whose values may be stored, but a bounded value can, also one of type `bounded<O, A ~> B>`. Its formation checked its function in every later state, so a
+  cycle through the heap would apply it under its own bound or a larger one, which the rule for
+  applications below rejects. Only the top-level arrow of `F` is exempt: the order type `O`, and the
+  parameter and result types of `F`, are checked as before, so `bounded<nat, () -> (() ~> bool)>`
+  cannot be stored, since its function could hand out a raw heap-reading function to code without
+  a bound.
+
+Formation and application:
+
+- `bounded.certify(a, f)`, with `a` of type `O` and `f` of type `F`, has type `bounded<O, F>`, and
+  `bounded.certify(a, f).bound == a` and `bounded.certify(a, f).erase == f`. It checks that `f` runs
+  under `a`. A lambda expression's body is checked as code with the global bound `a`, evaluated where
+  the value is formed, in every state that can follow, as for any lambda that reads the heap. The function
+  of a bounded value, `c.erase`, needs `c.bound <= a`. An in-parameter `g` with a callback bound
+  needs that bound, evaluated on entry, to be at most `a`, so a member can keep a callback it is
+  given. A named function `g` (or `o.g`), which runs
+  its own code, needs a `decreases {:global}` bound that does not exceed `a`, unless it can reach no
+  dispatched call; its bound must not depend on its parameters or the heap, it may not be a trait
+  member whose implementation dispatch chooses, and it may not have a parameter with a
+  `decreases {:callback}` bound. Any other function value is rejected: certify a lambda that calls it.
+- An application `c(x)`, `c.erase(x)`, `c.requires(x)` or `c.reads(x)` needs `c.bound` strictly
+  below the bound of the code that applies it: the bound of the lambda expression around it, or
+  else the caller's `decreases {:global}` bound. Code without a bound is above every bound.
+- Passing `c.erase` for a parameter with a `decreases {:callback}` bound `E` needs `c.bound <= E`.
+  Otherwise `c.erase` is a function value whose code is not known, which code with a bound cannot
+  apply.
+- A constructor may store into a field of the object a bounded value whose function calls the
+  object's members. A call cycle through the field would apply the value under its own bound, which
+  the rule above rejects. Only the top-level arrow of the function type is exempt: a parameter or
+  result type that holds a function on the object, as in `bounded<nat, () -> (C -> int)>`, is
+  rejected as it would be anywhere else in the field's type, since the bounded function could hand
+  that raw function out to code without a bound.
+
+`bounded` is a contextual name. A module that declares a type named `bounded`, or opens an import
+that declares one, uses that declaration instead. Under the hidden legacy opt-out the name is not declared,
+and programs are compiled and verified exactly as before.
 
 ### 7.1.4. Framing ([grammar](#g-frame-expression)) {#sec-frame-expression}
 

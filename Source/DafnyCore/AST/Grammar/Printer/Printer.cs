@@ -26,11 +26,21 @@ namespace Microsoft.Dafny {
     NoGhostOrIncludes
   }
 
-  public record PrintFlags(bool UseOriginalDafnyNames = false);
+  /// <param name="InterfaceOnly">Print only what a client of a declaration may depend on: method, lemma,
+  /// constructor and iterator bodies and by-method bodies are omitted.  Used for the termination contracts
+  /// of --modular-termination libraries; nothing else sets it.</param>
+  /// <param name="CanonicalWildcards">Omit per-file generated wildcard-name comments in a retained
+  /// modular certificate, whose merged source must print identically after reparsing.</param>
+  public record PrintFlags(bool UseOriginalDafnyNames = false, bool InterfaceOnly = false, bool CanonicalWildcards = false);
 
   public partial class Printer {
     private DafnyOptions options;
     private const int AtAttributesOnSameLineIndent = -1;
+
+    // Per-file parser counters are diagnostic names, not source bindings. A recorded
+    // library merges files, so retaining those comments would make reparsing unstable.
+    private string VariableDisplayName(IVariable variable) =>
+      printFlags.CanonicalWildcards && LocalVariable.HasWildcardName(variable) ? "_" : variable.DisplayName;
     static Printer() {
       DafnyOptions.RegisterLegacyBinding(PrintMode, (options, value) => {
         options.PrintMode = value;
@@ -203,6 +213,29 @@ NoGhost - disable printing of functions, ghost methods, and proof
       return sb.ToString(0, len);
     }
 
+    /// <summary>
+    /// Serialization: the names of the types and modules that the program declares, in any module.
+    /// A parenthesized name with one of these names keeps its parentheses as the receiver of a member
+    /// selection, since without them the name could denote the type or module rather than a value
+    /// (https://github.com/erniecohen/dafny/issues/307).
+    /// </summary>
+    private readonly HashSet<string> typeAndModuleNames = [];
+
+    private void CollectTypeAndModuleNames(ModuleDefinition module) {
+      foreach (var decl in module.TopLevelDecls) {
+        typeAndModuleNames.Add(decl.Name);
+        if (decl is LiteralModuleDecl literal) {
+          CollectTypeAndModuleNames(literal.ModuleDef);
+        }
+      }
+      foreach (var prefixNamed in module.PrefixNamedModules) {
+        foreach (var part in prefixNamed.Parts) {
+          typeAndModuleNames.Add(part.val);
+        }
+        CollectTypeAndModuleNames(prefixNamed.Module.ModuleDef);
+      }
+    }
+
     public void PrintProgramLargeStack(Program prog, bool afterResolver) {
 #pragma warning disable VSTHRD002
       DafnyMain.LargeStackFactory.StartNew(() => PrintProgram(prog, afterResolver)).Wait();
@@ -212,6 +245,9 @@ NoGhost - disable printing of functions, ghost methods, and proof
     public void PrintProgram(Program prog, bool afterResolver) {
       Contract.Requires(prog != null);
       this.afterResolver = afterResolver;
+      if (printMode == PrintModes.Serialization) {
+        CollectTypeAndModuleNames(prog.DefaultModuleDef);
+      }
       if (options.ShowEnv != Bpl.ExecutionEngineOptions.ShowEnvironment.Never) {
         wr.WriteLine("// " + options.Version);
         wr.WriteLine("// " + options.Environment);
@@ -309,25 +345,31 @@ NoGhost - disable printing of functions, ghost methods, and proof
           Indent(indent);
           PrintClassMethodHelper("newtype", dd.Attributes, dd.Name, dd.TypeArgs);
           PrintExtendsClause(dd);
-          wr.Write(" = ");
-          if (dd.Var == null) {
+          // The parsed refinement omits its base type, constraint and witness.
+          // Keep the ellipsis so that reading a serialized library inherits them again.
+          // Issue 105: the clauses of the header as written, which the newtype's invariants may have taken over
+          if (dd.BaseType == null && dd.IsRefining) {
+            wr.WriteLine(" ...");
+          } else if (dd.WrittenVar == null) {
+            wr.Write(" = ");
             PrintType(dd.BaseType);
             wr.WriteLine();
           } else {
-            wr.Write(dd.Var.DisplayName);
-            if (ShowType(dd.Var.Type)) {
+            wr.Write(" = ");
+            wr.Write(VariableDisplayName(dd.WrittenVar));
+            if (ShowType(dd.WrittenVar.Type)) {
               wr.Write(": ");
               PrintType(dd.BaseType);
             }
             wr.WriteLine();
             Indent(indent + IndentAmount);
             wr.Write("| ");
-            PrintExpression(dd.Constraint, true);
+            PrintExpression(dd.WrittenConstraint, true);
             wr.WriteLine();
           }
-          if (dd.WitnessKind != SubsetTypeDecl.WKind.CompiledZero) {
+          if (dd.WrittenWitnessKind != SubsetTypeDecl.WKind.CompiledZero) {
             Indent(indent + IndentAmount);
-            PrintWitnessClause(dd);
+            PrintWitnessClause(dd.WrittenWitnessKind, dd.WrittenWitness);
             wr.WriteLine();
           }
           if (dd.Members.Count != 0) {
@@ -358,7 +400,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
           if (i++ != 0) { wr.WriteLine(); }
           PrintIteratorSignature(iter, indent);
 
-          if (iter.Body != null) {
+          if (iter.Body != null && !printFlags.InterfaceOnly) {
             Indent(indent);
             PrintStatement(iter.Body, indent);
             wr.WriteLine();
@@ -406,11 +448,32 @@ NoGhost - disable printing of functions, ghost methods, and proof
         } else if (d is ModuleDecl md) {
           wr.WriteLine();
           Indent(indent);
-          if (d is LiteralModuleDecl modDecl) {
+          if (d is LiteralModuleDecl { CopyImport: { } copyImport } copyDecl) {
+            // a copying import, "import X := Q" (--copy-imports)
+            wr.Write("import");
+            if (copyImport.Opened) {
+              wr.Write(" opened");
+            }
+            wr.Write(" {0} := {1}", copyDecl.Name, copyDecl.ModuleDef.Implements.Target.ToString());
+            if (copyImport.Exports.Count == 1) {
+              wr.Write("`{0}", copyImport.Exports[0].val);
+            }
+            if (copyImport.Exports.Count > 1) {
+              wr.Write("`{{{0}}}", Util.Comma(copyImport.Exports, id => id.val));
+            }
+            wr.WriteLine();
+          } else if (d is LiteralModuleDecl modDecl) {
             if (printMode == PrintModes.Serialization && !modDecl.ModuleDef.ShouldCompile(compilation)) {
               // This mode is used to losslessly serialize the source program by the C# and Library backends.
               // Backends don't compile any code for modules not marked for compilation,
               // so it's consistent to skip those modules here too. 
+              continue;
+            }
+            if (printMode == PrintModes.Serialization && DecreasesOrders.VerifiesOrdersLibrary(options, modDecl.Origin.Uri)) {
+              // Under --modular-termination the orders library is loaded by every program that uses it and verified
+              // with that program, so a library does not store a copy of it, which would be a second module of
+              // the same name, and whose orders would not be the orders library's
+              // (https://github.com/erniecohen/dafny/issues/266, M4).
               continue;
             }
 
@@ -418,7 +481,15 @@ NoGhost - disable printing of functions, ghost methods, and proof
             if (modDecl.Signature != null) {
               scope = modDecl.Signature.VisibilityScope;
             }
-            PrintModuleDefinition(compilation, modDecl.ModuleDef, scope, indent, prefixIds);
+            var savedOptions = options;
+            if (printMode == PrintModes.Serialization) {
+              options = modDecl.Options;
+            }
+            try {
+              PrintModuleDefinition(compilation, modDecl.ModuleDef, scope, indent, prefixIds);
+            } finally {
+              options = savedOptions;
+            }
           } else if (d is AliasModuleDecl) {
             var dd = (AliasModuleDecl)d;
 
@@ -480,9 +551,11 @@ NoGhost - disable printing of functions, ghost methods, and proof
 
     private void PrintSubsetTypeDecl(SubsetTypeDecl dd, int indent) {
       Indent(indent);
-      PrintClassMethodHelper("type", dd.Attributes, dd.Name + TPCharacteristicsSuffix(dd.Characteristics), dd.TypeArgs);
+      // Issue 105: the type derived from a class or reference trait with member invariants is named "C?"
+      var name = dd is InvariantTypeDecl invariantTypeDecl && InvariantTypeDecl.IsReferenceType(invariantTypeDecl.Owner) ? dd.Name + "?" : dd.Name;
+      PrintClassMethodHelper("type", dd.Attributes, name + TPCharacteristicsSuffix(dd.Characteristics), dd.TypeArgs);
       wr.Write(" = ");
-      wr.Write(dd.Var.DisplayName);
+      wr.Write(VariableDisplayName(dd.Var));
       if (ShowType(dd.Var.Type)) {
         wr.Write(": ");
         PrintType(dd.Rhs);
@@ -513,15 +586,19 @@ NoGhost - disable printing of functions, ghost methods, and proof
 
     private void PrintWitnessClause(RedirectingTypeDecl dd) {
       Contract.Requires(dd != null);
-      Contract.Requires(dd.WitnessKind != SubsetTypeDecl.WKind.CompiledZero);
+      PrintWitnessClause(dd.WitnessKind, dd.Witness);
+    }
 
-      switch (dd.WitnessKind) {
+    private void PrintWitnessClause(SubsetTypeDecl.WKind witnessKind, Expression witness) {
+      Contract.Requires(witnessKind != SubsetTypeDecl.WKind.CompiledZero);
+
+      switch (witnessKind) {
         case SubsetTypeDecl.WKind.Ghost:
           wr.Write("ghost ");
           goto case SubsetTypeDecl.WKind.Compiled;
         case SubsetTypeDecl.WKind.Compiled:
           wr.Write("witness ");
-          PrintExpression(dd.Witness, true);
+          PrintExpression(witness, true);
           break;
         case SubsetTypeDecl.WKind.OptOut:
           wr.Write("witness *");
@@ -684,6 +761,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
       PrintClassMethodHelper(c is TraitDecl ? "trait" : "class", c.Attributes, c.Name, c.TypeArgs);
       if (c.IsRefining) {
         wr.Write(" ...");
+        PrintExtendsClause(c, c.ParentTraitsFromRefinementBase);
       } else {
         PrintExtendsClause(c);
       }
@@ -697,6 +775,18 @@ NoGhost - disable printing of functions, ghost methods, and proof
         wr.WriteLine("}");
       }
 
+      if (options.DafnyPrintResolvedFile != null && c.InvariantTypeDecl != null) {
+        // Issue 105: the type "C?" that the name of a class or reference trait with member invariants denotes, or the type
+        // G that the name of a general trait denotes
+        if (!printingExportSet) {
+          Indent(indent); wr.WriteLine("/*-- type with member invariants");
+        }
+        PrintSubsetTypeDecl(c.InvariantTypeDecl, indent);
+        if (!printingExportSet) {
+          Indent(indent); wr.WriteLine("*/");
+        }
+      }
+
       if (options.DafnyPrintResolvedFile != null && c.NonNullTypeDecl != null) {
         if (!printingExportSet) {
           Indent(indent); wr.WriteLine("/*-- non-null type");
@@ -708,9 +798,9 @@ NoGhost - disable printing of functions, ghost methods, and proof
       }
     }
 
-    private void PrintExtendsClause(TopLevelDeclWithMembers c) {
+    private void PrintExtendsClause(TopLevelDeclWithMembers c, int skip = 0) {
       string sep = " extends ";
-      foreach (var trait in c.Traits) {
+      foreach (var trait in c.Traits.Skip(skip)) {
         wr.Write(sep);
         PrintType(trait);
         sep = ", ";
@@ -723,23 +813,32 @@ NoGhost - disable printing of functions, ghost methods, and proof
       int state = 0;  // 0 - no members yet; 1 - previous member was a field; 2 - previous member was non-field
       foreach (MemberDecl m in members) {
         if (PrintModeSkipGeneral(project, m.Origin)) { continue; }
-        if (printMode == PrintModes.Serialization && Attributes.Contains(m.Attributes, "auto_generated")) {
-          // omit this declaration
+        if (printMode == PrintModes.Serialization && m.IsGeneratedByDafnyUnder(options)) {
+          // omit a member that Dafny generated, such as a reveal lemma: reading the library back generates it
+          // again.  A member on which the user wrote {:auto_generated} is printed like any other, because
+          // leaving it out would change what the library's names resolve to.
+        } else if (m is MemberInvariant or MemberWitness) {
+          if (state == 2) { wr.WriteLine(); }
+          PrintMemberInvariantOrWitness(m, indent);
+          state = 1;
         } else if (m is MethodOrConstructor methodOrConstructor) {
           if (state != 0) { wr.WriteLine(); }
-          PrintMethod(methodOrConstructor, indent, false);
+          PrintRawMemberNote(m, indent);
+          PrintMethod(methodOrConstructor, indent, printFlags.InterfaceOnly);
           if (m is ExtremeLemma { PrefixLemma: not null } com) {
             Indent(indent); wr.WriteLine("/***");
-            PrintMethod(com.PrefixLemma, indent, false);
+            PrintMethod(com.PrefixLemma, indent, printFlags.InterfaceOnly);
             Indent(indent); wr.WriteLine("***/");
           }
           state = 2;
         } else if (m is Field) {
           if (state == 2) { wr.WriteLine(); }
+          PrintRawMemberNote(m, indent);
           PrintField((Field)m, indent);
           state = 1;
         } else if (m is Function) {
           if (state != 0) { wr.WriteLine(); }
+          PrintRawMemberNote(m, indent);
           PrintFunction((Function)m, indent, false);
           if (m is ExtremePredicate fixp && fixp.PrefixPredicate != null) {
             Indent(indent); wr.WriteLine("/*** (note, what is printed here does not show substitutions of calls to prefix predicates)");
@@ -848,7 +947,11 @@ NoGhost - disable printing of functions, ghost methods, and proof
       Indent(indent);
       PrintClassMethodHelper(dt is IndDatatypeDecl ? "datatype" : "codatatype", dt.Attributes, dt.Name, dt.TypeArgs);
       PrintExtendsClause(dt);
-      wr.Write(" =");
+      // A refining datatype declares no constructors. It inherits them when refinement merges it with the datatype
+      // it refines, so before then it has none. Print it as it was written, with "..." in place of "=" and the
+      // constructors, in every print mode: "=" with no constructors after it does not parse
+      // (https://github.com/erniecohen/dafny/issues/415).
+      wr.Write(dt.IsRefining && dt.Ctors.Count == 0 ? " ..." : " =");
       string sep = "";
       foreach (DatatypeCtor ctor in dt.Ctors) {
         wr.Write(sep);
@@ -865,6 +968,17 @@ NoGhost - disable printing of functions, ghost methods, and proof
         PrintMembers(dt.Members, indent + IndentAmount, dafnyProject);
         Indent(indent);
         wr.WriteLine("}");
+      }
+
+      if (options.DafnyPrintResolvedFile != null && dt.InvariantTypeDecl != null) {
+        // Issue 105: the type that the name of a type with member invariants denotes
+        if (!printingExportSet) {
+          Indent(indent); wr.WriteLine("/*-- type with member invariants");
+        }
+        PrintSubsetTypeDecl(dt.InvariantTypeDecl, indent);
+        if (!printingExportSet) {
+          Indent(indent); wr.WriteLine("*/");
+        }
       }
     }
 
@@ -918,10 +1032,14 @@ NoGhost - disable printing of functions, ghost methods, and proof
     public void PrintAttributeArgs(List<Expression> args, bool isFollowedBySemicolon) {
       Contract.Requires(args != null);
       string prefix = " ";
-      foreach (var arg in args) {
+      for (var i = 0; i < args.Count; i++) {
+        var arg = args[i];
         Contract.Assert(arg != null);
         wr.Write(prefix);
         prefix = ", ";
+        if (i + 1 < args.Count) {
+          MarkBeforeComma(arg, args[i + 1]);
+        }
         PrintExpression(arg, isFollowedBySemicolon);
       }
     }
@@ -936,6 +1054,11 @@ NoGhost - disable printing of functions, ghost methods, and proof
         }
         if (field.IsGhost) {
           wr.Write("ghost ");
+        }
+        // As for functions (Function.GetFunctionDeclarationKeywords), an opaque constant keeps its
+        // modifier, so that a printed program, and the source a .doo file carries, stays opaque.
+        if (field is ConstantField { IsOpaque: true }) {
+          wr.Write("opaque ");
         }
         if (!field.IsMutable) {
           wr.Write("const");
@@ -957,6 +1080,43 @@ NoGhost - disable printing of functions, ghost methods, and proof
       } else if (!field.IsUserMutable && field.IsMutable) {
         wr.Write("  // non-assignable");
       }
+      wr.WriteLine();
+    }
+
+    /// <summary>
+    /// In a printout of the resolved program, notes that "m" is a raw member (issue 105), whose receiver has the raw
+    /// type. An invariant is always raw.
+    /// </summary>
+    void PrintRawMemberNote(MemberDecl m, int indent) {
+      if (options.DafnyPrintResolvedFile != null && m.IsRawMember) {
+        Indent(indent);
+        wr.WriteLine("// raw member: 'this' has type 'raw {0}'", m.EnclosingClass.Name);
+      }
+    }
+
+    /// <summary>
+    /// Prints "invariant e" or "[ghost] witness e" (issue 105).
+    /// </summary>
+    void PrintMemberInvariantOrWitness(MemberDecl m, int indent) {
+      Indent(indent);
+      PrintAttributes(m.Attributes, true, indent);
+      Expression e;
+      if (m is MemberInvariant inv) {
+        wr.Write("invariant");
+        e = inv.Body;
+      } else {
+        var w = (MemberWitness)m;
+        wr.Write(w.IsGhost ? "ghost witness" : "witness");
+        e = w.Rhs;
+      }
+      if (afterResolver) {
+        // The reserved name numbers the member among its declaration's invariants or witnesses, the
+        // inherited ones of a refinement first; it cannot be written in source, so it is a comment.
+        wr.Write($" /* {m.Name} */");
+      }
+      PrintAttributes(m.Attributes, false, indent);
+      wr.Write(" ");
+      PrintExpression(e, false);
       wr.WriteLine();
     }
 
@@ -997,7 +1157,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
         PrintExtendedExpr(f.Body, ind, true, false);
         Indent(indent);
         wr.Write("}");
-        if (f.ByMethodBody != null) {
+        if (f.ByMethodBody != null && !printFlags.InterfaceOnly) {
           wr.Write(" by method ");
           if (options.DafnyPrintResolvedFile != null && f.ByMethodDecl != null) {
             Contract.Assert(f.ByMethodDecl.Ens.Count == 1);
@@ -1145,7 +1305,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
         wr.Write("nameonly ");
       }
       if (f.HasName) {
-        wr.Write("{0}: ", f.DisplayName);
+        wr.Write("{0}: ", VariableDisplayName(f));
       }
       PrintType(f.Type);
       if (f.DefaultValue != null) {
@@ -1205,11 +1365,11 @@ NoGhost - disable printing of functions, ghost methods, and proof
 
     /// <summary>
     /// Whether the printer writes callback clauses (--modular-termination, milestone M3b) as
-    /// "decreases {:callback g} E".  Only under the option, which is the only case in which the parser reads
-    /// that form back; otherwise a {:callback} attribute is printed as any other attribute, as before.
+    /// "decreases {:callback g} E".  Only while the rules are enabled, which is the only case in which the parser
+    /// reads that form back; otherwise a {:callback} attribute is printed as any other attribute, as before.
     /// </summary>
     private bool PrintsCallbackClauses(Attributes attrs) {
-      return options.Get(CommonOptionBag.ModularTermination) && ModularTermination.CallbackClauses(attrs).Any();
+      return ModularTermination.RulesEnabled(options) && ModularTermination.CallbackClauses(attrs).Any();
     }
 
     private void PrintOrdinaryDecreasesAttributes(Attributes a) {
@@ -1218,7 +1378,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
       }
       PrintOrdinaryDecreasesAttributes(a.Prev);
       if (!ModularTermination.IsGlobalClause(a) &&
-          !(options.Get(CommonOptionBag.ModularTermination) && ModularTermination.IsCallbackClause(a)) &&
+          !(ModularTermination.RulesEnabled(options) && ModularTermination.IsCallbackClause(a)) &&
           a is not UserSuppliedAtAttribute) {
         wr.Write(" ");
         PrintOneAttribute(a);
@@ -1239,15 +1399,23 @@ NoGhost - disable printing of functions, ghost methods, and proof
       }
     }
 
-    internal void PrintSpec(string kind, List<AttributedExpression> ee, int indent) {
+    /// <summary>
+    /// Only loop invariants and the postconditions of a forall statement admit an unparenthesized lambda
+    /// expression; the other specification clauses do not, so "admitsLambda" is false by default for them.
+    /// </summary>
+    internal void PrintSpec(string kind, List<AttributedExpression> ee, int indent, bool? admitsLambda = null) {
       Contract.Requires(kind != null);
       Contract.Requires(ee != null);
       if (printMode == PrintModes.NoGhostOrIncludes) { return; }
+      admitsLambda ??= kind == "invariant";
       foreach (AttributedExpression e in ee) {
         Contract.Assert(e != null);
         wr.WriteLine();
         Indent(indent);
         wr.Write("{0}", kind);
+        if (admitsLambda == false) {
+          MarkLambdaFreeContext(e.E);
+        }
         PrintAttributedExpression(e);
       }
     }
@@ -1281,7 +1449,11 @@ NoGhost - disable printing of functions, ghost methods, and proof
         ty = TypeRefinementWrapper.NormalizeSansRefinementWrappers(ty);
       }
       string s = ty.TypeName(options, null, true);
-      if (ty is TypeRefinementWrapper or not TypeProxy && !s.StartsWith("_")) {
+      // A name that starts with "_" is usually that of a type parameter the resolver generated, which
+      // the printed program does not declare.  Serialization prints the parsed program, before the
+      // resolver adds such type parameters, so there the name is one the program wrote, as in
+      // "forall g: _T0 :: ..." (https://github.com/erniecohen/dafny/issues/304).
+      if (ty is TypeRefinementWrapper or not TypeProxy && (!s.StartsWith("_") || printMode == PrintModes.Serialization)) {
         wr.Write("{0}{1}", prefix, s);
       }
     }
@@ -1306,6 +1478,10 @@ NoGhost - disable printing of functions, ghost methods, and proof
       if (characteristics.ContainsNoReferenceTypes) {
         var prefix = s == null ? "" : s + ",";
         s = prefix + "!new";
+      }
+      if (characteristics.ContainsNoReadingFunctions) {
+        var prefix = s == null ? "" : s + ",";
+        s = prefix + "!reads";
       }
       if (s == null) {
         return "";

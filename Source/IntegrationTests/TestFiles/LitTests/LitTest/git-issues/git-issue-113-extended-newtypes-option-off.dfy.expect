@@ -1,0 +1,5 @@
+git-issue-113-extended-newtypes-option-off.dfy(4,8): Error: a newtype ('Ord') must be based on some non-reference, non-trait, non-arrow, non-ORDINAL, non-datatype type (got ORDINAL)
+git-issue-113-extended-newtypes-option-off.dfy(5,8): Error: a newtype ('F') must be based on some non-reference, non-trait, non-arrow, non-ORDINAL, non-datatype type (got int -> int)
+git-issue-113-extended-newtypes-option-off.dfy(7,8): Error: a newtype ('CellView') must be based on some non-reference, non-trait, non-arrow, non-ORDINAL, non-datatype type (got Cell)
+git-issue-113-extended-newtypes-option-off.dfy(9,8): Error: a newtype ('StreamView') must be based on some non-reference, non-trait, non-arrow, non-ORDINAL, non-datatype type (got Stream)
+4 resolution/type errors detected in git-issue-113-extended-newtypes-option-off.dfy

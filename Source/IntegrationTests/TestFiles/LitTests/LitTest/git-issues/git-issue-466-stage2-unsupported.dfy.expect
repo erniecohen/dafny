@@ -1,0 +1,6 @@
+git-issue-466-stage2-unsupported.dfy(10,27): Error: module Replacing1, which is in a recursive module group, refines or replaces module Service; this is not yet supported
+1 resolution/type errors detected in git-issue-466-stage2-unsupported.dfy
+git-issue-466-inherited-invariant.dfy(5,29): Warning: trait 'Shape' has {:termination false} and no {:axiom} annotation: calls dispatched through it are not checked for termination
+git-issue-466-inherited-invariant.dfy(9,29): Warning: trait 'Cell' has {:termination false} and no {:axiom} annotation: calls dispatched through it are not checked for termination
+
+Dafny program verifier did not attempt verification

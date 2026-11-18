@@ -155,11 +155,11 @@ namespace Microsoft.Dafny {
 
       AddClassMember_Function(f);
 
-      if (InVerificationScope(f)) {
+      if (FunctionWellformednessInVerificationScope(f)) {
         new FunctionWellformednessChecker(this).Check(f);
-        if (f.OverriddenFunction != null) { //it means that f is overriding its associated parent function
-          AddFunctionOverrideCheckImpl(f);
-        }
+      }
+      if (f.OverriddenFunction != null && OverrideCheckInVerificationScope(f)) { //it means that f is overriding its associated parent function
+        AddFunctionOverrideCheckImpl(f);
       }
       if (f is ExtremePredicate cop) {
         AddClassMember_Function(cop.PrefixPredicate);
@@ -190,11 +190,11 @@ namespace Microsoft.Dafny {
         if (!isByMethod) {
           var proc = AddMethod(m, MethodTranslationKind.SpecWellformedness);
           sink.AddTopLevelDeclaration(proc);
-          if (InVerificationScope(m)) {
+          if (InVerificationScope(m) || AddedInvariantsInVerificationScope(m)) {
             AddMethodImpl(m, proc, true);
           }
         }
-        if (m.OverriddenMethod != null && InVerificationScope(m)) //method has overridden a parent method
+        if (m.OverriddenMethod != null && OverrideCheckInVerificationScope(m)) //method has overridden a parent method
         {
           var procOverrideChk = AddMethod(m, MethodTranslationKind.OverrideCheck);
           sink.AddTopLevelDeclaration(procOverrideChk);
@@ -218,7 +218,7 @@ namespace Microsoft.Dafny {
         }
 
       }
-      if (!m.HasVerifyFalseAttribute && m.Body != null && InVerificationScope(m)) {
+      if (!m.HasVerifyFalseAttribute && m.Body != null && BodyInVerificationScope(m)) {
         // ...and its implementation
         assertionCount = 0;
         var proc = AddMethod(m, MethodTranslationKind.Implementation);
@@ -521,6 +521,9 @@ namespace Microsoft.Dafny {
       }
       // add consequence axiom
       AddFunctionConsequenceAxiom(boogieFunction, f, f.Ens);
+      if (FunctionDomainTags) {
+        AddFunctionDomainAxioms(f);
+      }
       // add definition axioms, suitably specialized for literals
       if (f.Body != null && RevealedInScope(f)) {
         AddFunctionAxiom(boogieFunction, f, f.Body.Resolved);
@@ -594,7 +597,7 @@ namespace Microsoft.Dafny {
       if (EmitImplementation(m.Attributes)) {
         // emit impl only when there are proof obligations.
         QKeyValue kv = etran.TrAttributes(m.Attributes, null);
-        var impl = AddImplementationWithAttributes(GetToken(m), proc,
+        var impl = AddImplementationWithAttributes(wellformednessProc ? GetToken(m) : BodyToken(m), proc,
            inParams, outParams, localVariables, stmts, kv);
 
         if (InsertChecksums) {
@@ -672,7 +675,7 @@ namespace Microsoft.Dafny {
       foreach (Expression p in m.Decreases.Expressions) {
         CheckWellformed(p, wfOptions, localVariables, builder, etran);
       }
-      if (options.Get(CommonOptionBag.ModularTermination)) {
+      if (ModularTerminationActive) {
         foreach (var p in ModularTermination.DeclaredGlobalBound(m) ?? []) {
           CheckWellformed(p, wfOptions, localVariables, builder, etran);
         }
@@ -826,6 +829,14 @@ namespace Microsoft.Dafny {
             DecreasesCheck(decrToks, null, decrCalleeDafny, decrCallerDafny, decrCallee, decrCaller, null, null, false, true));
         };
 
+        // Under --modular-termination, the induction hypothesis is a recursive call like any other: it covers
+        // only the instances that the global bound allows (https://github.com/erniecohen/dafny/issues/460).
+        if (RecursiveInstanceWithinGlobalBound(m, receiverSubst, substMap) is { } withinGlobalBound) {
+          var decreasesCheck = decrCheck;
+          decrCheck = (decrSubstMap, exprTran) =>
+            BplAnd(decreasesCheck(decrSubstMap, exprTran), withinGlobalBound(decrSubstMap, exprTran));
+        }
+
         var triggers = m.Attributes.AsEnumerable()
           .Where(attr => attr.Name is "inductionTrigger" or "_inductionTrigger")
           .Select(attr => attr.Args)
@@ -845,8 +856,10 @@ namespace Microsoft.Dafny {
       // translate the body of the method
       Contract.Assert(m.Body != null);  // follows from method precondition and the if guard
 
-      // $_reverifyPost := false;
-      builder.Add(Boogie.Cmd.SimpleAssign(m.Origin, new Boogie.IdentifierExpr(m.Origin, "$_reverifyPost", Boogie.Type.Bool), Boogie.Expr.False));
+      // $_reverifyPost := false;  Issue 105: true in a member that became raw (BecameRaw), whose inherited
+      // postconditions the refinement base proved for a "this" that satisfied the invariants
+      builder.Add(Boogie.Cmd.SimpleAssign(m.Origin, new Boogie.IdentifierExpr(m.Origin, "$_reverifyPost", Boogie.Type.Bool),
+        BecameRaw(m) ? Boogie.Expr.True : Boogie.Expr.False));
       // register output parameters with definite-assignment trackers
 
       var beforeOutTrackers = DefiniteAssignmentTrackers;
@@ -881,6 +894,7 @@ namespace Microsoft.Dafny {
       proofDependencies.SetCurrentDefinition(proc.VerboseName, m);
       currentModule = m.EnclosingClass.EnclosingModuleDefinition;
       codeContext = m;
+      reverifyInheritedOverrideCheck = MustReverifyInheritedOverrideCheck(m, options);
       IsAllocContext = new IsAllocContext(options, m.IsGhost);
 
       List<Variable> inParams = Boogie.Formal.StripWhereClauses(proc.InParams);
@@ -942,7 +956,7 @@ namespace Microsoft.Dafny {
         // emit the impl only when there are proof obligations.
         QKeyValue kv = etran.TrAttributes(m.Attributes, null);
 
-        Boogie.Implementation impl = AddImplementationWithAttributes(GetToken(m), proc, inParams, outParams, localVariables, stmts, kv);
+        Boogie.Implementation impl = AddImplementationWithAttributes(OverrideCheckToken(m), proc, inParams, outParams, localVariables, stmts, kv);
 
         if (InsertChecksums) {
           InsertChecksum(m, impl);
@@ -951,6 +965,178 @@ namespace Microsoft.Dafny {
 
       IsAllocContext = null;
       Reset();
+    }
+
+    /// <summary>
+    /// Whether the refining module that copied "overriding" from its refinement base must make the override check of
+    /// "overriding" itself (https://github.com/erniecohen/dafny/issues/404).
+    ///
+    /// An override check asserts at the origin of the overriding member.  When a refining module copies that member,
+    /// the origin is inherited, and asserts at inherited origins become assumes, because the base module made them.
+    /// For an override check that is sound only if the base module checked the same pair against the same contracts:
+    /// the overridden member is an unchanged copy of the member that the base counterpart of "overriding" overrides,
+    /// or that very member when it lies outside the refining module.  Otherwise the refining module changed the
+    /// overridden member, or added the extension, and must make the check.  An overriding member that the refining
+    /// module redeclares has an origin of its own, so its check is made anyway, and this returns false for it.
+    /// </summary>
+    public static bool MustReverifyInheritedOverrideCheck(MemberDecl overriding, DafnyOptions options) {
+      var overridden = OverriddenBy(overriding);
+      if (overridden == null || options.Get(CommonOptionBag.LegacyElidedOverrideChecks)) {
+        return false;
+      }
+      var module = overriding.EnclosingClass.EnclosingModuleDefinition;
+      if (!overriding.Origin.IsInherited(module)) {
+        return false;
+      }
+      var baseOverriding = RefinementBaseCounterpart(overriding);
+      var baseOverridden = overridden.EnclosingClass.EnclosingModuleDefinition != module ? overridden
+        : overridden.Origin.IsInherited(module) ? RefinementBaseCounterpart(overridden)
+        : null; // redeclared or new in the refining module
+      return baseOverriding == null || baseOverridden == null || OverriddenBy(baseOverriding) != baseOverridden;
+    }
+
+    /// <summary>
+    /// Whether the refining module that copied "copy" from its refinement base must verify some check of it itself.
+    /// The pipeline schedules such a copy, and only the tasks marked CanVerifyOrigin.IsReverifiedInheritedCheck.
+    /// </summary>
+    public static bool MustVerifyCopy(Declaration copy, DafnyOptions options) {
+      return copy is MemberDecl member &&
+             (MustReverifyInheritedOverrideCheck(member, options) || MustCheckInheritedConstructorFields(member, options)) ||
+             MustCheckInheritedTermination(copy, options) || MustCheckAddedInvariants(copy, options);
+    }
+
+    /// <summary>
+    /// Whether the refining module that copied constructor "member" from its refinement base must verify the copy's
+    /// body itself (https://github.com/erniecohen/dafny/issues/411).
+    ///
+    /// A constructor must assign every field that is subject to definite-assignment rules, which the body checks at
+    /// "new;" or at its end.  Those asserts are not at inherited origins, so they stay asserts in the copy, but the
+    /// copy was never verified: the base module verified the constructor for the fields its class had.  A refining
+    /// module that adds such a field to the class, directly or through a parent it adds, while keeping the inherited
+    /// constructor, must make the check, which the inherited body, unaware of the field, fails.  Every other assert of
+    /// the copied body is still at an inherited origin, and so still assumed, and an inherited postcondition is
+    /// checked only under $_reverifyPost, which the body sets to false.  The hidden
+    /// --legacy-inherited-constructor-fields restores the old, unsound rule.
+    /// </summary>
+    public static bool MustCheckInheritedConstructorFields(MemberDecl member, DafnyOptions options) {
+      if (member is not Constructor { Body: not null } constructor ||
+          constructor.EnclosingClass is not TopLevelDeclWithMembers cl ||
+          options.Get(CommonOptionBag.LegacyInheritedConstructorFields)) {
+        return false;
+      }
+      if (!constructor.Origin.IsInherited(cl.EnclosingModuleDefinition)) {
+        return false;
+      }
+      var baseClass = RefinementBaseCounterpart(constructor)?.EnclosingClass as TopLevelDeclWithMembers;
+      var baseFields = baseClass == null ? [] : InstanceFieldsOfConstructedObject(baseClass).Select(f => f.Name).ToHashSet();
+      return InstanceFieldsOfConstructedObject(cl).Any(f => !baseFields.Contains(f.Name) &&
+        NeedsDefiniteAssignmentTracker(options, f.IsGhost || constructor.IsGhost,
+          f.Type.Subst(cl.ParentFormalTypeParametersToActuals), true));
+    }
+
+    /// <summary>
+    /// The fields whose definite assignment a constructor of "cl" checks (see the translation of DividedBlockStmt).
+    /// </summary>
+    private static IEnumerable<Field> InstanceFieldsOfConstructedObject(TopLevelDeclWithMembers cl) {
+      return cl.InheritedMembers.Concat(cl.Members).OfType<Field>()
+        .Where(f => !f.IsStatic && !f.IsInstanceIndependentConstant);
+    }
+
+    /// <summary>
+    /// The body of a method is in the verification scope with the method.  The body of a copy that its module must
+    /// verify itself, a constructor or a member of a changed SCC, is also in the scope with that module, when the copy
+    /// comes from a refinement base outside the scope, such as a library, as is any check of a copy that its module
+    /// must check for the invariants it adds (issue 105).
+    /// </summary>
+    bool BodyInVerificationScope(MethodOrConstructor member) {
+      if (InVerificationScope(member) || AddedInvariantsInVerificationScope(member)) {
+        return true;
+      }
+      var module = member.EnclosingClass.EnclosingModuleDefinition;
+      return MustVerifyCopiedBody(member) && !module.IsFacade &&
+             module.ShouldVerify(program.Compilation) && member.IsVisibleInScope(verificationScope);
+    }
+
+    /// <summary>
+    /// The scope token of the body of "member".  It marks the body of a copy that the current module verifies itself,
+    /// so that the pipeline verifies it.
+    /// </summary>
+    private CanVerifyOrigin BodyToken(MethodOrConstructor member) {
+      var token = GetToken(member);
+      return MustVerifyCopiedBody(member)
+        ? new CanVerifyOrigin(token.CanVerify) { IsReverifiedInheritedCheck = true }
+        : token;
+    }
+
+    private bool MustVerifyCopiedBody(MemberDecl member) {
+      return MustCheckInheritedConstructorFields(member, options) || MustCheckInheritedTermination(member, options);
+    }
+
+    /// <summary>
+    /// The well-formedness check of a function, which checks the termination of the calls in its body, is in the
+    /// verification scope with the function.  The check of a copy whose SCC its module changed is also in the scope
+    /// with that module, when the copy comes from a refinement base outside the scope, such as a library.
+    /// </summary>
+    internal bool FunctionWellformednessInVerificationScope(Function f) {
+      if (InVerificationScope(f) || AddedInvariantsInVerificationScope(f)) {
+        return true;
+      }
+      var module = f.EnclosingClass.EnclosingModuleDefinition;
+      return MustCheckInheritedTermination(f, options) && !module.IsFacade &&
+             module.ShouldVerify(program.Compilation) && f.IsVisibleInScope(verificationScope);
+    }
+
+    /// <summary>
+    /// The scope token of the well-formedness check of "f".  It marks the check of a copy whose SCC the current module
+    /// changed, so that the pipeline verifies it.
+    /// </summary>
+    internal CanVerifyOrigin FunctionWellformednessToken(Function f) {
+      var token = GetToken(f);
+      return MustCheckInheritedTermination(f, options)
+        ? new CanVerifyOrigin(token.CanVerify) { IsReverifiedInheritedCheck = true }
+        : token;
+    }
+
+    /// <summary>
+    /// The override check of a member is in the verification scope with the member.  The check of a copy that its
+    /// module must make itself is also in the scope with that module, when the copy comes from a refinement base
+    /// outside the scope, such as a library.
+    /// </summary>
+    bool OverrideCheckInVerificationScope(MemberDecl member) {
+      if (InVerificationScope(member) || AddedInvariantsInVerificationScope(member)) {
+        return true;
+      }
+      var module = member.EnclosingClass.EnclosingModuleDefinition;
+      return MustReverifyInheritedOverrideCheck(member, options) && !module.IsFacade &&
+             module.ShouldVerify(program.Compilation) && member.IsVisibleInScope(verificationScope);
+    }
+
+    /// <summary>
+    /// The scope token of the override check of "member".  It marks a check that the current module makes again for
+    /// a copy, so that the pipeline verifies that check and nothing else of the copy.
+    /// </summary>
+    private CanVerifyOrigin OverrideCheckToken(ICanVerify member) {
+      var token = GetToken(member);
+      return reverifyInheritedOverrideCheck ? new CanVerifyOrigin(token.CanVerify) { IsReverifiedInheritedCheck = true } : token;
+    }
+
+    /// <summary>
+    /// The member of the refinement base that a refining module copied as "member".  A member of a declaration that
+    /// the refining module merges records it as RefinementBase; a declaration copied whole records only its own base.
+    /// </summary>
+    private static MemberDecl RefinementBaseCounterpart(MemberDecl member) {
+      return member.RefinementBase ??
+             (member.EnclosingClass is TopLevelDeclWithMembers { CardinalityRefinementBase: TopLevelDeclWithMembers baseDeclaration }
+               ? baseDeclaration.Members.Find(baseMember => baseMember.Name == member.Name)
+               : null);
+    }
+
+    private static MemberDecl OverriddenBy(MemberDecl member) {
+      return member switch {
+        MethodOrConstructor method => method.OverriddenMethod,
+        Function function => function.OverriddenFunction,
+        _ => null
+      };
     }
 
     private void HavocMethodFrameLocations(MethodOrConstructor m, BoogieStmtListBuilder builder, ExpressionTranslator etran, Variables localVariables) {
@@ -982,6 +1168,7 @@ namespace Microsoft.Dafny {
       //AddFunction(f);
       currentModule = f.EnclosingClass.EnclosingModuleDefinition;
       codeContext = f;
+      reverifyInheritedOverrideCheck = MustReverifyInheritedOverrideCheck(f, options);
 
       Boogie.Expr prevHeap = null;
       Boogie.Expr currHeap = null;
@@ -1115,7 +1302,7 @@ namespace Microsoft.Dafny {
         // emit the impl only when there are proof obligations.
         QKeyValue kv = etran.TrAttributes(f.Attributes, null);
 
-        AddImplementationWithAttributes(GetToken(f), proc,
+        AddImplementationWithAttributes(OverrideCheckToken(f), proc,
             Util.Concat(implImplicitParams, implInParams),
             implOutParams, localVariables, stmts, kv);
       }
@@ -1599,7 +1786,7 @@ namespace Microsoft.Dafny {
       AddOverrideTerminationChk(original, overryd, overryd.Decreases.Expressions, original.Decreases.Expressions,
         builder, etran, substMap, typeMap);
       // Under --modular-termination, an override's global bound may be no greater than its parent's.
-      if (options.Get(CommonOptionBag.ModularTermination) &&
+      if (ModularTerminationActive &&
           ModularTermination.DeclaredGlobalBound(original) is { } originalBound && GlobalBound(overryd) is { } overriddenBound) {
         AddOverrideTerminationChk(original, overryd, overriddenBound, originalBound, builder, etran, substMap, typeMap, true);
       }
@@ -1945,7 +2132,11 @@ namespace Microsoft.Dafny {
           var (errorMessage, successMessage) = CustomErrorMessage(p.Attributes);
           AddEnsures(ens, FreeEnsures(p.E.Origin, etran.CanCallAssumptionForVerification(p.E), comment, true));
           comment = null;
-          foreach (var split in TrSplitExprForMethodSpec(new BodyTranslationContext(m.ContainsHide), p.E, etran, kind)) {
+          // At the exit of the implementation, Boogie assumes the free ensures above before it checks these.
+          var postSplits = kind == MethodTranslationKind.Implementation
+            ? WithSplitChecksFollowingCanCalls(() => TrSplitExprForMethodSpec(new BodyTranslationContext(m.ContainsHide), p.E, etran, kind))
+            : TrSplitExprForMethodSpec(new BodyTranslationContext(m.ContainsHide), p.E, etran, kind);
+          foreach (var split in postSplits) {
             var post = split.E;
             if (kind == MethodTranslationKind.Implementation && split.Tok.IsInherited(currentModule)) {
               // this postcondition was inherited into this module, so make it into the form "$_reverifyPost ==> s.E"

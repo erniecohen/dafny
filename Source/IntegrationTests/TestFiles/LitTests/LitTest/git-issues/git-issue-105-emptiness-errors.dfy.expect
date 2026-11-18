@@ -1,0 +1,14 @@
+git-issue-105-emptiness-errors.dfy(43,33): Error: type parameter (T) passed to method Zero must support auto-initialization (got NoWitness<int>)
+git-issue-105-emptiness-errors.dfy(44,28): Error: type parameter (T) passed to method Nonempty must be nonempty (got NoWitness<int>)
+git-issue-105-emptiness-errors.dfy(45,24): Error: type parameter (T) passed to method Zero must support auto-initialization (got Plain)
+git-issue-105-emptiness-errors.dfy(46,19): Error: type parameter (T) passed to method Nonempty must be nonempty (got Plain)
+git-issue-105-emptiness-errors.dfy(47,31): Error: type parameter (T) passed to method Zero must support auto-initialization (got Ghostly<int>)
+git-issue-105-emptiness-errors.dfy(49,28): Error: type parameter (T) passed to method Zero must support auto-initialization (got Wrap<int>)
+git-issue-105-emptiness-errors.dfy(50,23): Error: type parameter (T) passed to method Nonempty must be nonempty (got Wrap<int>)
+git-issue-105-emptiness-errors.dfy(51,29): Error: type parameter (T) passed to method Zero must support auto-initialization (got WrapG<int>)
+git-issue-105-emptiness-errors.dfy(61,8): Error: class 'Cell' with fields without known initializers, like 'p' of type 'Plain', must declare a constructor
+git-issue-105-emptiness-errors.dfy(64,8): Error: class 'CellG' with fields without known initializers, like 'g' of type 'Ghostly<int>', must declare a constructor
+git-issue-105-emptiness-errors.dfy(90,23): Error: type parameter (T) passed to method Nonempty must be nonempty (got raw Above)
+git-issue-105-emptiness-errors.dfy(113,42): Error: type parameter (T) passed to method Zero must support auto-initialization (got HeaderWitnesses.Ghostly)
+git-issue-105-emptiness-errors.dfy(114,33): Error: type parameter (T) passed to method Nonempty must be nonempty (got HeaderWitnesses.Opt)
+13 resolution/type errors detected in git-issue-105-emptiness-errors.dfy

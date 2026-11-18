@@ -1,18 +1,18 @@
-// RUN: ! %baredafny resolve --use-basename-for-filename --show-snippets:false --resolution-threads 1 %s > "%t.n1"
-// RUN: ! %baredafny resolve --use-basename-for-filename --show-snippets:false --resolution-threads 2 %s > "%t.n2"
-// RUN: ! %baredafny resolve --use-basename-for-filename --show-snippets:false --resolution-threads 8 %s > "%t.n8"
+// RUN: ! %baredafny resolve --use-basename-for-filename --show-snippets:false --type-system-refresh --resolution-threads 1 %s > "%t.n1"
+// RUN: ! %baredafny resolve --use-basename-for-filename --show-snippets:false --type-system-refresh --resolution-threads 2 %s > "%t.n2"
+// RUN: ! %baredafny resolve --use-basename-for-filename --show-snippets:false --type-system-refresh --resolution-threads 8 %s > "%t.n8"
 // RUN: %diff "%s.expect" "%t.n1"
 // RUN: %diff "%t.n1" "%t.n2"
 // RUN: %diff "%t.n1" "%t.n8"
-// RUN: %baredafny verify --verify-included-files --cores 1 --resolution-threads 1 --bprint "%t.n1.bpl" "%s.valid.dfy" > "%t.v1"
+// RUN: %baredafny verify --verify-included-files --cores 1 --type-system-refresh --resolution-threads 1 --bprint "%t.n1.bpl" "%s.valid.dfy" > "%t.v1"
 // Compare the actual per-module Boogie files, including generated identifiers.
-// RUN: %baredafny verify --verify-included-files --cores 1 --resolution-threads 2 --bprint "%t.n2.bpl" "%s.valid.dfy" > "%t.v2"
+// RUN: %baredafny verify --verify-included-files --cores 1 --type-system-refresh --resolution-threads 2 --bprint "%t.n2.bpl" "%s.valid.dfy" > "%t.v2"
 // RUN: %diff "%t.n1_M.bpl" "%t.n2_M.bpl"
-// RUN: %baredafny verify --verify-included-files --cores 1 --resolution-threads 8 --bprint "%t.n8.bpl" "%s.valid.dfy" > "%t.v8"
+// RUN: %baredafny verify --verify-included-files --cores 1 --type-system-refresh --resolution-threads 8 --bprint "%t.n8.bpl" "%s.valid.dfy" > "%t.v8"
 // RUN: %diff "%t.n1_M.bpl" "%t.n8_M.bpl"
 // RUN: %diff "%t.v1" "%t.v2"
 // RUN: %diff "%t.v1" "%t.v8"
-// RUN: %baredafny verify --verify-included-files --cores 1 --resolution-threads 8 --bprint "%t.unrelated.bpl" "%s.unrelated.dfy" > "%t.unrelated"
+// RUN: %baredafny verify --verify-included-files --cores 1 --type-system-refresh --resolution-threads 8 --bprint "%t.unrelated.bpl" "%s.unrelated.dfy" > "%t.unrelated"
 // RUN: %diff "%t.n1_M.bpl" "%t.unrelated_M.bpl"
 
 // https://github.com/erniecohen/dafny/issues/241
@@ -35,25 +35,25 @@ module ErrorA { function F(): int { false } }
 module ErrorB { function F(): bool { 0 } }
 module ErrorC { import A = W1 function F(): int { A.F(true) } }
 
-// RUN: ! %baredafny resolve --use-basename-for-filename --show-snippets:false --resolution-threads 4 %s > "%t.n4"
+// RUN: ! %baredafny resolve --use-basename-for-filename --show-snippets:false --type-system-refresh --resolution-threads 4 %s > "%t.n4"
 // RUN: %diff "%t.n1" "%t.n4"
-// RUN: %baredafny verify --verify-included-files --cores 1 --resolution-threads 4 --bprint "%t.n4.bpl" "%s.valid.dfy" > "%t.v4"
+// RUN: %baredafny verify --verify-included-files --cores 1 --type-system-refresh --resolution-threads 4 --bprint "%t.n4.bpl" "%s.valid.dfy" > "%t.v4"
 // RUN: %diff "%t.n1_M.bpl" "%t.n4_M.bpl"
 // RUN: %diff "%t.v1" "%t.v4"
-// RUN: %baredafny verify --verify-included-files --cores 1 --resolution-threads 4 --bprint "%t.shifted.bpl" "%s.shifted.dfy" > "%t.shifted"
+// RUN: %baredafny verify --verify-included-files --cores 1 --type-system-refresh --resolution-threads 4 --bprint "%t.shifted.bpl" "%s.shifted.dfy" > "%t.shifted"
 // RUN: %diff "%t.n1_M.bpl" "%t.shifted_M.bpl"
 
-// Rejected legacy/newtype configuration: report the same 19 errors as the
-// shipped serial path, without traversing unresolved translation inputs.
+// The default path still reports ordinary legacy/newtype errors. Explicit
+// workers reject the incompatible options before parsing or resolution.
 // RUN: %exits-with 2 %baredafny verify --use-basename-for-filename --show-snippets:false --type-system-refresh:false --additional-axioms:false --consistent-obligation-checks:false --filter-symbol Std.Base64.EncodeBVIsBase64. --cores 1 --verification-time-limit 0 "%repositoryRoot/Source/DafnyStandardLibraries/src/Std/dfyconfig.toml" > "%t.rejected.off"
 // RUN: %exits-with 2 %baredafny verify --use-basename-for-filename --show-snippets:false --type-system-refresh:false --additional-axioms:false --consistent-obligation-checks:false --filter-symbol Std.Base64.EncodeBVIsBase64. --cores 1 --verification-time-limit 0 --resolution-threads 1 "%repositoryRoot/Source/DafnyStandardLibraries/src/Std/dfyconfig.toml" > "%t.rejected.1"
 // RUN: %exits-with 2 %baredafny verify --use-basename-for-filename --show-snippets:false --type-system-refresh:false --additional-axioms:false --consistent-obligation-checks:false --filter-symbol Std.Base64.EncodeBVIsBase64. --cores 1 --verification-time-limit 0 --resolution-threads 2 "%repositoryRoot/Source/DafnyStandardLibraries/src/Std/dfyconfig.toml" > "%t.rejected.2"
 // RUN: %exits-with 2 %baredafny verify --use-basename-for-filename --show-snippets:false --type-system-refresh:false --additional-axioms:false --consistent-obligation-checks:false --filter-symbol Std.Base64.EncodeBVIsBase64. --cores 1 --verification-time-limit 0 --resolution-threads 4 "%repositoryRoot/Source/DafnyStandardLibraries/src/Std/dfyconfig.toml" > "%t.rejected.4"
 // RUN: %exits-with 2 %baredafny verify --use-basename-for-filename --show-snippets:false --type-system-refresh:false --additional-axioms:false --consistent-obligation-checks:false --filter-symbol Std.Base64.EncodeBVIsBase64. --cores 1 --verification-time-limit 0 --resolution-threads 8 "%repositoryRoot/Source/DafnyStandardLibraries/src/Std/dfyconfig.toml" > "%t.rejected.8"
-// RUN: %diff "%t.rejected.off" "%t.rejected.1"
-// RUN: %diff "%t.rejected.off" "%t.rejected.2"
-// RUN: %diff "%t.rejected.off" "%t.rejected.4"
-// RUN: %diff "%t.rejected.off" "%t.rejected.8"
+// RUN: %diff "%S/github-issue-241-resolution-options.dfy.expect" "%t.rejected.1"
+// RUN: %diff "%S/github-issue-241-resolution-options.dfy.expect" "%t.rejected.2"
+// RUN: %diff "%S/github-issue-241-resolution-options.dfy.expect" "%t.rejected.4"
+// RUN: %diff "%S/github-issue-241-resolution-options.dfy.expect" "%t.rejected.8"
 
 // Canonical builtin identities survive operator-export cloning; hidden user
 // members and opaque rank views remain rejected. Compare full diagnostics.

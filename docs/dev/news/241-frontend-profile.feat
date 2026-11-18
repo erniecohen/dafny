@@ -1,0 +1,5 @@
+`--pipeline-profile` now also records front-end events, each with the running thread's CPU time and allocated bytes: every file parsed or `.doo` file read, the module dependency graph, each module's resolution and its phases, each global resolution pass, and each module's translation to Boogie; and `dafny resolve` accepts it. Hidden options add the live heap after forced collections, the runtime's GC events, and hold points for heap dumps. Dafny's other output is unchanged (https://github.com/erniecohen/dafny/issues/241).
+
+Signature and body phases measure member-signature and body resolution separately from registration/export and export-view checks. The measurement driver compares output digests and exit codes with the matching OFF configuration in every round and rejects missing observations.
+
+Front-end module events and phases cover the worker/cache-output path at every resolution-thread setting. They preserve canonical graph ids independently of completion order, report cache hits without replaying phases, and clear phase state after completion, cancellation or failure.

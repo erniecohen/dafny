@@ -1,0 +1,1 @@
+With the default `--resolution-threads 0`, resolution leaves the calling thread's type visibility scopes as it found them, so a Debug build no longer fails an assertion in `Type.DisableScopes` on every program.

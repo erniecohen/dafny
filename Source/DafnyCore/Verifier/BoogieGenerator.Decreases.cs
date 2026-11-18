@@ -37,6 +37,13 @@ public partial class BoogieGenerator {
     if (t.IsTypeParameter || t.IsAbstractType || t.IsInternalTypeSynonym) {
       return t.Equals(u); // equality-only order within this opaque family
     }
+    if (UseTraitRankDecreases && IsStructurallyRanked(t) && IsStructurallyRanked(u) &&
+        (IsValueTraitType(t) || IsValueTraitType(u))) {
+      // --trait-rank-decreases: a value of a trait that is not a reference type joins the
+      // structural-rank order of inductive datatypes and sequences, through BoxRank.  See
+      // docs/dev/design/317-datatype-trait-decreases.md.
+      return true;
+    }
     if (!CompatibleDecreasesTypes(t, u)) {
       return false;
     }
@@ -45,6 +52,23 @@ public partial class BoogieGenerator {
     return (t is not BitvectorType a || u is not BitvectorType b || a.Width == b.Width) &&
       (t is not SetType c || u is not SetType d || c.Finite == d.Finite) &&
       (!t.IsCoDatatype && !u.IsCoDatatype || t.IsCoDatatype && u.IsCoDatatype);
+  }
+
+  bool UseTraitRankDecreases => UseConsistentDecreasesOrder && options.Get(CommonOptionBag.TraitRankDecreases);
+
+  /// <summary>
+  /// A trait that is not a reference type, whose values are boxed, so BoxRank gives their structural rank.
+  /// </summary>
+  static bool IsValueTraitType(Type t) {
+    return t.IsTraitType && !t.IsRefType;
+  }
+
+  /// <summary>
+  /// Under --trait-rank-decreases, the types whose decreases order is the structural rank: sequences,
+  /// inductive datatypes and traits that are not reference types.  "t" is normalized to its ancestor type.
+  /// </summary>
+  static bool IsStructurallyRanked(Type t) {
+    return t is SeqType || t.IsIndDatatype || IsValueTraitType(t);
   }
 
   /// <summary>
@@ -60,7 +84,7 @@ public partial class BoogieGenerator {
                             Dictionary<IVariable, Expression> directSubstMap,
                             Dictionary<TypeParameter, Type> typeMap,
                             ExpressionTranslator etranCurrent, bool oldCaller, BoogieStmtListBuilder builder, bool inferredDecreases, string hint,
-                            ExpressionTranslator etranCallee = null, bool nonincrease = false) {
+                            ExpressionTranslator etranCallee = null, bool nonincrease = false, bool modularCheck = false) {
     Contract.Requires(tok != null);
     Contract.Requires(Cce.NonNullElements(contextDecreases));
     Contract.Requires(Cce.NonNullElements(calleeDecreases));
@@ -68,6 +92,12 @@ public partial class BoogieGenerator {
     Contract.Requires(etranCurrent != null);
     Contract.Requires(builder != null);
     etranCallee ??= etranCurrent;
+
+    // A refinement can change a global/callback bound or a callee's dispatch effect. The base
+    // did not necessarily establish this modular obligation, even if it checked the same body.
+    if (modularCheck && !options.Get(CommonOptionBag.LegacyNoModularTermination) && tok.IsInherited(currentModule)) {
+      tok = new ForceCheckOrigin(tok);
+    }
 
     // The interpretation of the given decreases-clause expression tuples is as a lexicographic tuple, extended into
     // an infinite tuple by appending TOP elements.  The TOP element is strictly larger than any other value given
@@ -105,7 +135,11 @@ public partial class BoogieGenerator {
         break;
       }
       oldExpressions.Add(e1);
-      newExpressions.Add(e0direct);
+      // The comparison takes its types from these expressions, and "callee" below translates e0.  A trait-typed
+      // formal can be given an argument of a subtype, which e0direct has and whose representation differs (a
+      // datatype value, not a box), so under --trait-rank-decreases the comparison uses e0.  Otherwise the two
+      // types are of one family; the diagnostic below uses e0direct either way.
+      newExpressions.Add(UseTraitRankDecreases ? e0 : e0direct);
       toks.Add(new NestedOrigin(tok, e1.Origin, "this decreases clause was not satisfied"));
       canCalls = BplAnd(canCalls, etranCurrent.CanCallAssumptionForVerification(e1));
       canCalls = BplAnd(canCalls, etranCallee.CanCallAssumptionForVerification(e0direct));
@@ -145,6 +179,9 @@ public partial class BoogieGenerator {
     if (callable is Method { FunctionFromWhichThisIsByMethodDecl: { } function }) {
       return GlobalBound(function);
     }
+    if (ExtremeOfPrefix(callable) is { } extreme) {
+      return GlobalBound(extreme)?.ConvertAll(PrefixSubstituter(extreme, callable).Substitute);
+    }
     var declared = ModularTermination.DeclaredGlobalBound(callable);
     if (declared != null) {
       return declared;
@@ -164,25 +201,56 @@ public partial class BoogieGenerator {
   }
 
   /// <summary>
+  /// The extreme predicate or lemma whose prefix predicate or lemma "callable" is, or null.  Under
+  /// --modular-termination a prefix member has the bounds of its extreme member: it is that member's body, run to
+  /// a depth _k, and a call of one is a call of the other.
+  /// </summary>
+  static ICallable ExtremeOfPrefix(ICallable callable) {
+    return callable switch {
+      PrefixPredicate p => p.ExtremePred,
+      PrefixLemma l => l.ExtremeLemma,
+      _ => null
+    };
+  }
+
+  /// <summary>
+  /// Rewrites an expression over the formals and type parameters of "extreme" to one over those of its prefix
+  /// member "prefix", whose first formal is the extra _k.
+  /// </summary>
+  static Substituter PrefixSubstituter(ICallable extreme, ICallable prefix) {
+    var substMap = new Dictionary<IVariable, Expression>();
+    for (var i = 0; i < extreme.Ins.Count; i++) {
+      substMap.Add(extreme.Ins[i], Expression.CreateIdentExpr(prefix.Ins[i + 1]));
+    }
+    var typeMap = new Dictionary<TypeParameter, Type>();
+    for (var i = 0; i < extreme.TypeArgs.Count; i++) {
+      typeMap.Add(extreme.TypeArgs[i], new UserDefinedType(prefix.TypeArgs[i]));
+    }
+    return new Substituter(null, substMap, typeMap);
+  }
+
+  /// <summary>
   /// Under --modular-termination, emit to "builder" the check of the global bounds for a call from "codeContext"
   /// to "callee".  The caller's bound is captured on entry, and a missing bound is TOP, above every other.
   /// * A call dispatched to implementations that other modules may provide uses the smaller-bound rule: the
   ///   callee's bound must be below the caller's.
   /// * A call to a known callee that reaches such a dispatch (see <see cref="ModularTerminationAnalysis"/>) uses
   ///   the same-bound rule: the callee runs under the caller's bound, so its own bound must not exceed it.
-  /// A call from a caller without a bound needs no check, except that a dispatched callee must have one; a call
+  /// A call from a caller without a bound needs no check, except that a dispatched callee of a legacy
+  /// {:termination false} trait must have one; a call
   /// from a caller with a bound fails when the callee has none.  Other calls get no check here: the existing termination checks order them.
   /// </summary>
   void CheckModularTermination(IOrigin tok, ICodeContext codeContext, MemberDecl callee, Expression receiverReplacement,
                                Dictionary<IVariable, Expression> substMap, Dictionary<IVariable, Expression> directSubstMap,
                                Dictionary<TypeParameter, Type> typeMap, ExpressionTranslator etranCurrent,
                                BoogieStmtListBuilder builder, ExpressionTranslator etranCallee) {
-    if (!options.Get(CommonOptionBag.ModularTermination) || codeContext is not ICallable caller) {
+    if (!ModularTerminationActive || codeContext is not ICallable caller) {
       return;
     }
     var analysis = ModularTerminationAnalysis.Of(program);
     var dispatched = ModularTermination.IsOpenDispatch(callee, analysis.OpenTraits);
-    if (!dispatched && !analysis.ReachesOpenDispatch(callee, caller.EnclosingModule)) {
+    if (!dispatched && (DecreasesOrders.CallAppliesOnlyItsArguments(callee) ||
+                        !analysis.ReachesOpenDispatch(callee, caller.EnclosingModule))) {
       return;
     }
     var calleeBound = GlobalBound((ICallable)callee);
@@ -190,18 +258,28 @@ public partial class BoogieGenerator {
     // a value fixed where the lambda is created.
     var lambdaBound = CurrentLambdaBound;
     var callerBound = lambdaBound ?? GlobalBound(caller);
-    if (callerBound == null && (calleeBound != null || !dispatched)) {
+    // A caller without a bound is TOP: it may make any call, including one dispatched to a member without a bound
+    // (rule 4 of revision 3), whose foreign implementations are leaves.  A member without a bound of a legacy
+    // {:termination false} trait is TOP as well, and its foreign implementations are an unchecked premise (section 2.4
+    // of the plan), as in 4.11.  Only --modular-termination, which checks a program as if the legacy forms were absent,
+    // keeps its earlier rule: a dispatched call to it always fails.
+    var legacySlot = options.Get(CommonOptionBag.ModularTermination) &&
+                     dispatched && calleeBound == null && callee.EnclosingClass is TraitDecl calleeTrait &&
+                     ModularTermination.IsExtensible(calleeTrait);
+    if (callerBound == null && !legacySlot) {
       return;
     }
     string hint;
     if (dispatched) {
-      hint = calleeBound == null
-        ? "the dispatched callee has no 'decreases {:global}' bound, which --modular-termination requires"
-        : "--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's";
+      hint = legacySlot
+        ? "the dispatched callee has no 'decreases {:global}' bound, which --modular-termination requires of a member of a {:termination false} trait"
+        : calleeBound == null
+        ? "the dispatched callee has no 'decreases {:global}' bound, so it is TOP, above the caller's bound; declare a bound on it"
+        : "modular termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's";
     } else {
       hint = calleeBound == null
-        ? "the callee can reach a call dispatched to implementations that other modules may provide, so under --modular-termination it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it"
-        : "--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's";
+        ? "the callee can reach a call dispatched to implementations that other modules may provide, so it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it"
+        : "modular termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's";
     }
     var oldCaller = lambdaBound == null && codeContext is MethodOrConstructor and not TwoStateLemma;
     var contextBound = callerBound ?? [];
@@ -211,7 +289,48 @@ public partial class BoogieGenerator {
       AtMost(tok, callerBound, calleeBound, out contextBound, out comparedBound);
     }
     CheckCallTermination(tok, contextBound, comparedBound, null, receiverReplacement, substMap, directSubstMap, typeMap,
-      etranCurrent, oldCaller, builder, false, hint, etranCallee, nonincrease);
+      etranCurrent, oldCaller, builder, false, hint, etranCallee, nonincrease, modularCheck: true);
+  }
+
+  /// <summary>
+  /// A lemma's automatic induction hypothesis, and the generated limit-ordinal case of a prefix lemma, are
+  /// recursive calls of "m" that are not translated as calls, so CheckModularTermination does not see them.
+  /// Under --modular-termination, if a recursive call of "m" written in its body would get a global-bound check,
+  /// return a generator of the condition that such a call must meet, for the instance of "m" given by
+  /// "receiverReplacement" and "substMap": the instance's bound does not exceed m's own (or is below it, if a
+  /// call of "m" is dispatched).  The caller limits the hypothesis to the instances that meet the condition.
+  /// Return null if there is nothing to limit (https://github.com/erniecohen/dafny/issues/460).
+  /// </summary>
+  ExpressionConverter RecursiveInstanceWithinGlobalBound(MethodOrConstructor m, Expression receiverReplacement,
+                                                        Dictionary<IVariable, Expression> substMap) {
+    if (!ModularTerminationActive || GlobalBound(m) is not { } bound) {
+      // A lemma without a bound runs under TOP, and so may any call it makes.
+      return null;
+    }
+    var analysis = ModularTerminationAnalysis.Of(program);
+    var dispatched = ModularTermination.IsOpenDispatch(m, analysis.OpenTraits);
+    if (!dispatched && !analysis.ReachesOpenDispatch(m, ((ICallable)m).EnclosingModule)) {
+      return null;
+    }
+    return delegate (Dictionary<IVariable, Expression> renaming, ExpressionTranslator exprTran) {
+      var toks = new List<IOrigin>();
+      var instance = new List<Bpl.Expr>();
+      var own = new List<Bpl.Expr>();
+      var instanceDafny = new List<Expression>();
+      Bpl.Expr canCalls = Bpl.Expr.True;
+      foreach (var e in bound) {
+        toks.Add(e.Origin);
+        canCalls = BplAnd(canCalls, exprTran.CanCallAssumptionForVerification(e));
+        own.Add(exprTran.TrExpr(e));
+        var atInstance = Substitute(Substitute(e, receiverReplacement, substMap), null, renaming);
+        instanceDafny.Add(atInstance);
+        canCalls = BplAnd(canCalls, exprTran.CanCallAssumptionForVerification(atInstance));
+        instance.Add(exprTran.TrExpr(atInstance));
+      }
+      // Like the range of the induction hypothesis: canCallAssumptions ==> condition.
+      return BplImp(canCalls,
+        DecreasesCheck(toks, null, instanceDafny, bound, instance, own, null, null, !dispatched, false));
+    };
   }
 
   /// <summary>
@@ -235,6 +354,9 @@ public partial class BoogieGenerator {
   // call evaluates its arguments, and the bounds under which the lambda bodies being checked run.
   private readonly Dictionary<LambdaExpr, List<Expression>> modularTerminationLambdaBounds = new(ReferenceEqualityComparer.Instance);
   private readonly List<List<Expression>> modularTerminationLambdaStack = [];
+  // Issue 266, M3: inside a lambda, the callback bounds of the enclosing callable's parameters, evaluated on entry by
+  // the translator of the code around the outermost lambda.
+  private readonly Dictionary<IVariable, List<Expression>> modularTerminationCallbackSnapshots = new();
 
   /// <summary>
   /// The bound under which the code being checked runs, if it is inside a lambda passed for a parameter with a
@@ -250,25 +372,62 @@ public partial class BoogieGenerator {
   /// the translator of the code around the lambda, on entry: the lambda's body is checked in a heap of its own.
   /// </summary>
   void EnterLambda(LambdaExpr lambda, ICodeContext codeContext, ExpressionTranslator etran) {
-    if (!options.Get(CommonOptionBag.ModularTermination)) {
+    if (!ModularTerminationActive) {
       return;
     }
     var bound = modularTerminationLambdaBounds.GetValueOrDefault(lambda) ?? CurrentLambdaBound;
-    if (bound == null && !InsideLambda && codeContext is ICallable caller && GlobalBound(caller) is { } callerBound) {
+    if (!InsideLambda && codeContext is ICallable caller) {
       var oldCaller = codeContext is MethodOrConstructor and not TwoStateLemma;
-      bound = callerBound.ConvertAll(e => {
+      List<Expression> OnEntry(List<Expression> exprs) => exprs.ConvertAll(e => {
         var onEntry = oldCaller ? new OldExpr(e.Origin, e) { Type = e.Type } : e;
-        return (Expression)new BoogieWrapper(etran.TrExpr(onEntry), e.Type);
+        return DecreasesByExpr.WithOrderOf(e, new BoogieWrapper(etran.TrExpr(onEntry), e.Type));
       });
+      if (bound == null && GlobalBound(caller) is { } callerBound) {
+        bound = OnEntry(callerBound);
+      }
+      for (var k = 0; k < caller.Ins.Count; k++) {
+        if (CallbackBound(caller, k) is { } callbackBound) {
+          modularTerminationCallbackSnapshots[caller.Ins[k]] = OnEntry(callbackBound);
+        }
+      }
     }
     modularTerminationLambdaStack.Add(bound);
   }
 
+  /// <summary>
+  /// The body of the lambda entered last is checked with its parameters renamed by "substMap"; an argument-dependent
+  /// bound (issue 211), which names them, is renamed with them.
+  /// </summary>
+  void RenameLambdaBound(Dictionary<IVariable, Expression> substMap) {
+    if (!ModularTerminationActive || CurrentLambdaBound is not { } bound) {
+      return;
+    }
+    modularTerminationLambdaStack[^1] = bound.ConvertAll(e => DecreasesByExpr.WithOrderOf(e, Substitute(e, null, substMap)));
+  }
+
   void ExitLambda() {
-    if (!options.Get(CommonOptionBag.ModularTermination)) {
+    if (!ModularTerminationActive) {
       return;
     }
     modularTerminationLambdaStack.RemoveAt(modularTerminationLambdaStack.Count - 1);
+    if (!InsideLambda) {
+      modularTerminationCallbackSnapshots.Clear();
+    }
+  }
+
+  /// <summary>
+  /// The callback bound of the in-parameter "formal" (at "index" of "caller"), evaluated on entry to "caller": as
+  /// snapshotted for the lambda being checked, if any, or else under "old" in a method.
+  /// </summary>
+  List<Expression> CallbackBoundOnEntry(ICallable caller, ICodeContext codeContext, Formal formal, int index) {
+    if (InsideLambda) {
+      return modularTerminationCallbackSnapshots.GetValueOrDefault(formal);
+    }
+    if (CallbackBound(caller, index) is not { } callbackBound) {
+      return null;
+    }
+    var oldCaller = codeContext is MethodOrConstructor and not TwoStateLemma;
+    return oldCaller ? callbackBound.ConvertAll(e => (Expression)new OldExpr(e.Origin, e) { Type = e.Type }) : callbackBound;
   }
 
   /// <summary>
@@ -279,6 +438,9 @@ public partial class BoogieGenerator {
   List<Expression> CallbackBound(ICallable callable, int index) {
     if (callable is Method { FunctionFromWhichThisIsByMethodDecl: { } function }) {
       return CallbackBound(function, index);
+    }
+    if (ExtremeOfPrefix(callable) is { } extreme) {
+      return index == 0 ? null : CallbackBound(extreme, index - 1)?.ConvertAll(PrefixSubstituter(extreme, callable).Substitute);
     }
     if (index >= callable.Ins.Count) {
       return null;
@@ -309,7 +471,7 @@ public partial class BoogieGenerator {
   /// </summary>
   void RegisterCallbackLambdas(MemberDecl callee, Expression receiver, List<Expression> args,
                                Dictionary<TypeParameter, Type> typeMap, ExpressionTranslator etran) {
-    if (!options.Get(CommonOptionBag.ModularTermination) || callee is not ICallable callable) {
+    if (!ModularTerminationActive || callee is not ICallable callable) {
       return;
     }
     Dictionary<IVariable, Expression> directSubstMap = null;
@@ -324,24 +486,34 @@ public partial class BoogieGenerator {
         }
       }
       modularTerminationLambdaBounds[lambda] = bound.ConvertAll(e => {
-        var actual = Substitute(e, receiver, directSubstMap, typeMap);
-        return (Expression)new BoogieWrapper(etran.TrExpr(actual), actual.Type);
+        if (BoundedCallables.IsCertify(callee) && BoundedCallables.ArgumentOrderResult(e.Type.Subst(typeMap)) is { } result) {
+          // An argument-dependent bound b (issue 211): the body runs under b at the lambda's own arguments.  b is
+          // evaluated here, where the value is formed, and applied in the body's terms.
+          var b = Substitute(e, receiver, directSubstMap, typeMap);
+          var handle = new BoogieWrapper(etran.TrExpr(b), b.Type);
+          var apply = new ApplyExpr(lambda.Origin, handle, lambda.BoundVars.Select(bv => (Expression)Expression.CreateIdentExpr(bv)).ToList(),
+            Token.NoToken) { Type = result };
+          return DecreasesOrders.WithTypeOrder(apply, result);
+        }
+        var actual = DecreasesOrders.WithTypeOrder(Substitute(e, receiver, directSubstMap, typeMap), e.Type.Subst(typeMap));
+        return DecreasesByExpr.WithOrderOf(actual, new BoogieWrapper(etran.TrExpr(actual), actual.Type));
       });
     }
   }
 
   /// <summary>
   /// Under --modular-termination, at a call of "callee": an in-parameter of the caller with a callback bound, passed
-  /// for a parameter of the callee with one, must not go to a larger bound (outside a lambda; the resolver rejects
-  /// the other arguments that are neither lambdas nor known code): the caller's callback bound, evaluated on entry,
+  /// for a parameter of the callee with one, must not go to a larger bound (the resolver rejects the other
+  /// arguments that are neither lambdas nor known code): the caller's callback bound, evaluated on entry,
   /// must be at most the callee's, at the call's arguments.
   /// </summary>
   void CheckCallbackArguments(IOrigin tok, ICodeContext codeContext, MemberDecl callee, List<Expression> args,
                               Expression receiverReplacement, Dictionary<IVariable, Expression> substMap,
                               Dictionary<TypeParameter, Type> typeMap, ExpressionTranslator etranCurrent,
                               BoogieStmtListBuilder builder) {
-    if (!options.Get(CommonOptionBag.ModularTermination) || codeContext is not ICallable caller ||
-        callee is not ICallable callable || InsideLambda) {
+    CheckBoundedArguments(tok, callee, args, receiverReplacement, substMap, typeMap, etranCurrent, builder);
+    if (!ModularTerminationActive || codeContext is not ICallable caller ||
+        callee is not ICallable callable) {
       return;
     }
     for (var i = 0; i < args.Count && i < callable.Ins.Count; i++) {
@@ -349,14 +521,12 @@ public partial class BoogieGenerator {
         continue;
       }
       var k = caller.Ins.IndexOf(formal);
-      if (k < 0 || CallbackBound(caller, k) is not { } callerBound) {
+      if (k < 0 || CallbackBoundOnEntry(caller, codeContext, formal, k) is not { } lower) {
         continue;
       }
       // Both sides in the caller's terms: the callee's bound at the call's arguments, in the current state; the
       // caller's on entry.
-      var upper = calleeBound.ConvertAll(e => Substitute(e, receiverReplacement, substMap, typeMap));
-      var oldCaller = codeContext is MethodOrConstructor and not TwoStateLemma;
-      var lower = oldCaller ? callerBound.ConvertAll(e => (Expression)new OldExpr(e.Origin, e) { Type = e.Type }) : callerBound;
+      var upper = calleeBound.ConvertAll(e => DecreasesOrders.WithTypeOrder(Substitute(e, receiverReplacement, substMap, typeMap), e.Type.Subst(typeMap)));
       var contextBound = upper;
       var comparedBound = lower;
       if (!UseConsistentDecreasesOrder) {
@@ -364,32 +534,41 @@ public partial class BoogieGenerator {
       }
       CheckCallTermination(tok, contextBound, comparedBound, null, null, new Dictionary<IVariable, Expression>(),
         new Dictionary<IVariable, Expression>(), new Dictionary<TypeParameter, Type>(), etranCurrent, false, builder, false,
-        $"--modular-termination: the 'decreases {{:callback}}' bound of '{formal.Name}' must not exceed that of the parameter it is passed for",
-        nonincrease: true);
+        $"modular termination: the 'decreases {{:callback}}' bound of '{formal.Name}' must not exceed that of the parameter it is passed for",
+        nonincrease: true, modularCheck: true);
     }
   }
 
   /// <summary>
   /// Under --modular-termination, at an application of "value" (or a call of its "requires" or "reads"): if it is
-  /// an in-parameter of the caller with a callback bound, and the application is not inside a lambda, the callback
-  /// bound must be below the caller's global bound, both evaluated on entry (smaller-bound rule).  A caller without
-  /// a bound is above every bound.  Other applications are checked by the resolver.
+  /// an in-parameter of the caller with a callback bound, its callback bound, evaluated on entry, must be below the
+  /// bound under which the application runs: the caller's global bound on entry, or inside a lambda the lambda's,
+  /// evaluated where the lambda is formed (smaller-bound rule; issue 266, M3).  The parameter's actual runs under its
+  /// bound in every later state, so a lambda may keep it and apply it later.  Code without a bound is above every
+  /// bound.  Other applications are checked by the resolver.
   /// </summary>
-  void CheckCallbackApplication(IOrigin tok, ICodeContext codeContext, Expression value, ExpressionTranslator etranCurrent,
-                                BoogieStmtListBuilder builder) {
-    if (!options.Get(CommonOptionBag.ModularTermination) || codeContext is not ICallable caller || InsideLambda ||
+  void CheckCallbackApplication(IOrigin tok, ICodeContext codeContext, Expression value, List<Expression> args,
+                                ExpressionTranslator etranCurrent, BoogieStmtListBuilder builder) {
+    if (ModularTerminationActive && BoundedCallables.ErasedCallable(value.Resolved) is { } bounded) {
+      CheckBoundedApplication(tok, codeContext, bounded, args, etranCurrent, builder);
+      return;
+    }
+    if (!ModularTerminationActive || codeContext is not ICallable caller ||
         value.Resolved is not IdentifierExpr { Var: Formal formal }) {
       return;
     }
     var k = caller.Ins.IndexOf(formal);
-    if (k < 0 || CallbackBound(caller, k) is not { } callbackBound || GlobalBound(caller) is not { } callerBound) {
+    var callerBound = InsideLambda ? CurrentLambdaBound : GlobalBound(caller);
+    if (k < 0 || callerBound == null || CallbackBoundOnEntry(caller, codeContext, formal, k) is not { } compared) {
       return;
     }
-    var oldCaller = codeContext is MethodOrConstructor and not TwoStateLemma;
-    var compared = oldCaller ? callbackBound.ConvertAll(e => (Expression)new OldExpr(e.Origin, e) { Type = e.Type }) : callbackBound;
+    var oldCaller = !InsideLambda && codeContext is MethodOrConstructor and not TwoStateLemma;
     CheckCallTermination(tok, callerBound, compared, null, null, new Dictionary<IVariable, Expression>(),
       new Dictionary<IVariable, Expression>(), new Dictionary<TypeParameter, Type>(), etranCurrent, oldCaller, builder, false,
-      $"--modular-termination: the 'decreases {{:callback}}' bound of '{formal.Name}' must be below the caller's 'decreases {{:global}}' bound");
+      InsideLambda
+        ? $"modular termination: the 'decreases {{:callback}}' bound of '{formal.Name}' must be below the bound under which the enclosing lambda runs"
+        : $"modular termination: the 'decreases {{:callback}}' bound of '{formal.Name}' must be below the caller's 'decreases {{:global}}' bound",
+      modularCheck: true);
   }
 
   /// <summary>
@@ -412,9 +591,14 @@ public partial class BoogieGenerator {
     Contract.Requires(builder == null || suffixMsg != null);
     Contract.Ensures(Contract.Result<Bpl.Expr>() != null);
 
-    if (UseConsistentDecreasesOrder) {
+    if (UseConsistentDecreasesOrder &&
+        !(builder != null && !allowNoChange && !includeLowerBound && tailComparison != true && AllIntComponents(dafny0, dafny1))) {
       return ConsistentDecreasesCheck(toks, dafny0, dafny1, ee0, ee1, tailComparison ?? allowNoChange);
     }
+    // Under the corrected order, the legacy check below is used only for a strict check at a call or at the end of a
+    // loop iteration, whose terminal value is false and whose components are all int-based.  There it is the same formula
+    // as the corrected lift (docs/dev/decreases-order.md, "Integer tuples"), split into the bounded-below assertions and
+    // a lexicographic comparison without lower bounds, the shape that solvers handled before the corrected order.
 
     int N = dafny0.Count;
 
@@ -491,6 +675,25 @@ public partial class BoogieGenerator {
   }
 
   /// <summary>
+  /// Whether every component pair is int-based, without a "by O" order.  For such components the legacy strict check
+  /// is the same formula as the corrected lift with terminal value false.
+  /// </summary>
+  static bool AllIntComponents(List<Expression> dafny0, List<Expression> dafny1) {
+    for (var i = 0; i < dafny0.Count; i++) {
+      if (DecreasesOrders.ComponentOrder(dafny0[i]) != null || DecreasesOrders.ComponentOrder(dafny1[i]) != null) {
+        return false;
+      }
+      // Not reals: a weak real step "0 <= y && x <= y" that is not strict ("x <= y - 1") may precede strict progress
+      // in a later component under the corrected order, where the legacy comparison needs equality.
+      if (!dafny0[i].Type.NormalizeToAncestorType().IsNumericBased(Type.NumericPersuasion.Int) ||
+          !dafny1[i].Type.NormalizeToAncestorType().IsNumericBased(Type.NumericPersuasion.Int)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  /// <summary>
   /// Lift compatible component pairs (s,w) from right to left. The terminal value
   /// is false for strict comparison, true for nonincrease, or the result of the
   /// first TOP/incompatible comparison after a shared prefix. Lower bounds belong
@@ -504,7 +707,18 @@ public partial class BoogieGenerator {
       var ty0 = dafny0[i].Type.NormalizeToAncestorType();
       var ty1 = dafny1[i].Type.NormalizeToAncestorType();
       Bpl.Expr strict, weak;
-      if (!CompatibleDecreasesTypesForComparison(ty0, ty1)) {
+      var order0 = DecreasesOrders.ComponentOrder(dafny0[i]);
+      var order1 = DecreasesOrders.ComponentOrder(dafny1[i]);
+      if (order0 != null || order1 != null) {
+        // A component "e by O" (--decreases-orders), or one of an order type with order O, is compared by
+        // O.gt(caller, callee), and only with a component with the same O.
+        if (order0 != null && order1 != null && DecreasesOrders.SameOrder(order0, order1) &&
+            DecreasesOrders.WfoOf(order1.Type) != null && CompatibleDecreasesTypesForComparison(ty0, ty1)) {
+          OrderedComponent(toks[i], order1, dafny0[i].Type, ee0[i], ee1[i], out strict, out weak);
+        } else {
+          strict = weak = Bpl.Expr.False;
+        }
+      } else if (!CompatibleDecreasesTypesForComparison(ty0, ty1)) {
         strict = weak = Bpl.Expr.False;
       } else if (ty0.IsNumericBased(Type.NumericPersuasion.Int) || ty0.IsNumericBased(Type.NumericPersuasion.Real)) {
         var real = ty0.IsNumericBased(Type.NumericPersuasion.Real);
@@ -531,6 +745,33 @@ public partial class BoogieGenerator {
       result = BplOr(strict, BplAnd(weak, result));
     }
     return result;
+  }
+
+  /// <summary>
+  /// The strict and weak relations of a component "e by O", with new value e0 (callee) and old value e1 (caller):
+  /// strict is O.gt(e1, e0), and weak is e0 == e1.  Weak must be equality, since O.gt need not be transitive and the
+  /// lift in ConsistentDecreasesCheck needs the absorption laws (docs/dev/decreases-order.md).  O is closed, so it
+  /// is translated the same in any state.
+  /// </summary>
+  void OrderedComponent(IOrigin tok, Expression order, Type type, Bpl.Expr e0, Bpl.Expr e1,
+                        out Bpl.Expr strict, out Bpl.Expr weak) {
+    var etran = new ExpressionTranslator(this, Predef, tok, null);
+    var callee = new BoogieWrapper(e0, type);
+    var caller = new BoogieWrapper(e1, type);
+    var gt = DecreasesOrders.Member(DecreasesOrders.WfoTrait(order.Type)!, DecreasesOrders.GtName);
+    var call = new FunctionCallExpr(tok, gt.NameNode, order, tok, Token.NoToken, [caller, callee]) {
+      Function = gt,
+      Type = Type.Bool,
+      TypeApplication_AtEnclosingClass = [DecreasesOrders.WfoOf(order.Type)!],
+      TypeApplication_JustFunction = []
+    };
+    // O is closed and well-formed (its well-formedness is checked with the decreases clause), so its can-call
+    // facts hold in every state.  O.gt has no precondition and reads nothing.  The can-call facts let the
+    // verifier unfold the functions that O and O.gt call.
+    strict = BplImp(etran.CanCallAssumption(call), etran.TrExpr(call));
+    weak = etran.TrExpr(Expression.CreateEq(callee, caller, type));
+    strict.tok = tok;
+    weak.tok = tok;
   }
 
   static bool CompatibleDecreasesTypes(Type t, Type u) {
@@ -579,6 +820,8 @@ public partial class BoogieGenerator {
       return BuiltinFunction.SeqRank;
     } else if (ty.IsIndDatatype) {
       return BuiltinFunction.DtRank;
+    } else if (UseTraitRankDecreases && IsValueTraitType(ty)) {
+      return BuiltinFunction.BoxRank;
     } else {
       return null;
     }
@@ -603,6 +846,13 @@ public partial class BoogieGenerator {
       eq = Bpl.Expr.False;
       Bpl.Expr b0 = FunctionCall(tok, rk0.Value, null, e0);
       Bpl.Expr b1 = FunctionCall(tok, rk1.Value, null, e1);
+      less = Bpl.Expr.Lt(b0, b1);
+      atmost = Bpl.Expr.Le(b0, b1);
+    } else if (rk0 == BuiltinFunction.BoxRank && rk1 == BuiltinFunction.BoxRank) {
+      // --trait-rank-decreases: two values of traits that are not reference types
+      Bpl.Expr b0 = FunctionCall(tok, BuiltinFunction.BoxRank, null, e0);
+      Bpl.Expr b1 = FunctionCall(tok, BuiltinFunction.BoxRank, null, e1);
+      eq = Bpl.Expr.Eq(b0, b1);
       less = Bpl.Expr.Lt(b0, b1);
       atmost = Bpl.Expr.Le(b0, b1);
     } else if (ty0 is BoolType) {
@@ -702,7 +952,9 @@ public partial class BoogieGenerator {
       less = FunctionCall(tok, "ORD#Less", Bpl.Type.Bool, e0, e1);
       atmost = BplOr(eq, less);
 
-    } else if (ty0.IsTypeParameter || ty0.IsAbstractType) {
+    } else if (ty0.IsTypeParameter || ty0.IsAbstractType || IsValueTraitType(ty0)) {
+      // A trait that is not a reference type has no decreases order unless --trait-rank-decreases
+      // compares its values by BoxRank (above): such values only stay equal.
       eq = Bpl.Expr.Eq(e0, e1);
       less = Bpl.Expr.False;
       atmost = BplOr(less, eq);

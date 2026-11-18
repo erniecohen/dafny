@@ -29,6 +29,11 @@ public class DafnyFile {
   public Uri Uri { get; private set; }
   public IOrigin? Origin { get; }
 
+  /// <summary>
+  /// The admitted record of a .doo library loaded under --modular-termination, or null.
+  /// </summary>
+  public ModularTerminationManifest? TerminationRecord { get; private set; }
+
   private static readonly Dictionary<Uri, Uri> ExternallyVisibleEmbeddedFiles = new();
 
   static DafnyFile() {
@@ -169,6 +174,18 @@ public class DafnyFile {
     };
   }
 
+  /// <summary>
+  /// A source file held in memory, to be verified: the stored program of a library that
+  /// --modular-termination verifies a second time before it records it.
+  /// </summary>
+  public static DafnyFile FromText(DafnyOptions options, Uri uri, string text) {
+    return new DafnyFile(DafnyFileExtension, uri.ToString(), Path.GetFileName(uri.LocalPath),
+      () => new FileSnapshot(new StringReader(text), null), uri, Token.Cli, options) {
+      ShouldNotCompile = false,
+      ShouldNotVerify = false,
+    };
+  }
+
   public static DafnyFile HandleStandardInput(DafnyOptions options, IOrigin origin) {
     return new DafnyFile(DafnyFileExtension, "<stdin>", "<stdin>",
       () => new FileSnapshot(options.Input, null), StdInUri, origin, options) {
@@ -229,6 +246,11 @@ public class DafnyFile {
       var resourceName = uri.LocalPath[1..];
       await using var stream = assembly.GetManifestResourceStream(resourceName);
       if (stream is null) {
+        if (resourceName.StartsWith("DafnyStandardLibraries-checked", StringComparison.Ordinal)) {
+          reporter.Error(MessageSource.Project, "modular_termination_admission", origin,
+            $"the checked standard-library bundle '{resourceName}' is unavailable; rebuild the checked standard libraries with 'make build-checked-standard-libraries'");
+          yield break;
+        }
         throw new Exception($"Cannot find embedded resource: {resourceName}");
       }
 
@@ -247,11 +269,26 @@ public class DafnyFile {
       } catch (ArgumentException e) {
         reporter.Error(MessageSource.Project, origin, e.Message);
         yield break;
+      } catch (Tomlyn.TomlException e) when (ModularTermination.RulesEnabled(options)) {
+        // Under --modular-termination a manifest that Dafny cannot read, such as one with an unknown key in
+        // its record, is rejected like any other library modified after it was built, not left to crash.
+        reporter.Error(MessageSource.Project, origin,
+          $"cannot load {options.GetPrintPath(filePath)} under --modular-termination: its manifest cannot be read: {System.Text.RegularExpressions.Regex.Replace(e.Message.Split('\n')[0].Trim(), @"^\(\d+,\d+\) : error : ", "").TrimEnd('.')}; the library was modified after it was built, or was built by another version of Dafny");
+        yield break;
       }
     }
 
     var validDooOptions = dooFile.Validate(reporter, uri, options, origin);
     if (validDooOptions == null) {
+      yield break;
+    }
+
+    // Under --modular-termination the orders library of --decreases-orders is verified with the program that loads
+    // it, as its source is, instead of being admitted by a record (https://github.com/erniecohen/dafny/issues/245, M4).
+    var verifiedHere = DecreasesOrders.VerifiesOrdersLibrary(options, uri);
+    if (ModularTermination.RulesEnabled(options) && !verifiedHere &&
+        (dooFile.Manifest.ModularTermination != null || dooFile.Manifest.DooFileVersion == ModularTerminationRecords.RecordedDooFileVersion) &&
+        !await dooFile.AdmitModularTermination(reporter, uri, options, validDooOptions, origin)) {
       yield break;
     }
 
@@ -264,7 +301,8 @@ public class DafnyFile {
     yield return new DafnyFile(DooFile.Extension, Canonicalize(uri.LocalPath).LocalPath, Path.GetFileName(uri.LocalPath),
       () => new FileSnapshot(new StringReader(dooFile.ProgramText), null), uri, origin, validDooOptions) {
       ShouldNotCompile = asLibrary,
-      ShouldNotVerify = true,
+      ShouldNotVerify = !verifiedHere,
+      TerminationRecord = ModularTermination.RulesEnabled(options) && !verifiedHere ? dooFile.Manifest.ModularTermination : null,
     };
   }
 

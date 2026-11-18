@@ -431,7 +431,14 @@ namespace Microsoft.Dafny.Compilers {
       Contract.Requires(wr != null);
 
       var type = UserDefinedType.FromTopLevelDecl(enclosingTypeDecl.Origin, enclosingTypeDecl);
-      var initializer = DefaultValue(type, wr, enclosingTypeDecl.Origin, true);
+      // A descriptor may be needed for a value that was explicitly introduced
+      // even when its nominal type has no compiled default. Its storage slot must
+      // not evaluate a ghost/opt-out witness or require unavailable defaults.
+      var unavailableNewtypeDefault = enclosingTypeDecl is NewtypeDecl &&
+        Options.Get(CommonOptionBag.ExtendedNewtypeBases) && type.GetAutoInit() != Type.AutoInitInfo.CompilableValue;
+      var initializer = unavailableNewtypeDefault
+        ? PlaceboValue(type, wr, enclosingTypeDecl.Origin, true)
+        : DefaultValue(type, wr, enclosingTypeDecl.Origin, true);
 
       var targetTypeName = TypeName(type, wr, enclosingTypeDecl.Origin);
       var typeDescriptorExpr = $"new {DafnyTypeDescriptor}<{targetTypeName}>({initializer})";
@@ -444,6 +451,8 @@ namespace Microsoft.Dafny.Compilers {
       List<TypeParameter> typeDescriptorParams;
       if (enclosingTypeDecl is DatatypeDecl dtDecl) {
         typeDescriptorParams = UsedTypeParameters(dtDecl, true);
+      } else if (enclosingTypeDecl is NewtypeDecl && Options.Get(CommonOptionBag.ExtendedNewtypeBases)) {
+        typeDescriptorParams = enclosingTypeDecl.TypeArgs.Where(NeedsTypeDescriptor).ToList();
       } else {
         typeDescriptorParams = enclosingTypeDecl.TypeArgs;
       }
@@ -626,8 +635,13 @@ namespace Microsoft.Dafny.Compilers {
       }
       var interfaceTree = wr.NewBlock();
 
+      var erasedInterface = "";
+      if (dt.IsRecordType && HasErasedEquality(dt)) {
+        erasedInterface = ", " + DeclareErasedEqualityInterface(dt.Ctors[0], wr);
+      }
+
       // from here on, write everything into the new block created here:
-      var btw = wr.NewNamedBlock("public{0} class {1} : {2}", dt.IsRecordType ? "" : " abstract", DtT_protected, DtTypeName(dt));
+      var btw = wr.NewNamedBlock("public{0} class {1} : {2}{3}", dt.IsRecordType ? "" : " abstract", DtT_protected, DtTypeName(dt), erasedInterface);
       wr = btw;
 
       // constructor
@@ -859,6 +873,11 @@ namespace Microsoft.Dafny.Compilers {
       string PrintConvertedExpr(string name, Type fromType) {
         // Subset types are erased; their underlying type determines the converter.
         fromType = fromType.NormalizeExpand();
+        if (Options.Get(CommonOptionBag.ExtendedNewtypeBases)) {
+          // Unwrap before pairing carrier arguments; a nominal Flip<X,Y>
+          // may compile as Pair<Y,X> and its clone converters use that order.
+          fromType = DatatypeWrapperEraser.SimplifyTypeAndTrimNewtypes(Options, fromType);
+        }
         var constructorIndex = nonGhostTypeArgs.IndexOf(fromType.AsTypeParameter);
         if (constructorIndex != -1) {
           return $"converter{constructorIndex}({name})";
@@ -1073,11 +1092,52 @@ namespace Microsoft.Dafny.Compilers {
 
       int constructorIndex = 0; // used to give each constructor a different name
       foreach (var ctor in dt.Ctors.Where(ctor => !ctor.IsGhost)) {
+        var erasedInterface = HasErasedEquality(dt) ? ", " + DeclareErasedEqualityInterface(ctor, wrx) : "";
         var wr = wrx.NewNamedBlock(
-          $"public class {DtCtorDeclarationName(ctor)}{TypeParameters(nonGhostTypeArgs)} : {protectedTypeName(dt)}{typeParams}");
+          $"public class {DtCtorDeclarationName(ctor)}{TypeParameters(nonGhostTypeArgs)} : {protectedTypeName(dt)}{typeParams}{erasedInterface}");
         DatatypeFieldsAndConstructor(ctor, constructorIndex, wr);
         constructorIndex++;
       }
+    }
+
+    /// <summary>
+    /// Whether the classes of the constructors of "dt" implement an erased-equality interface, so that their
+    /// Equals methods do not depend on the type arguments a value was built with.  Two values of a datatype built at
+    /// different type arguments, such as Pair<Number, Integer>.Pair(i, j) and Pair<Integer, Number>.Pair(i, j) for
+    /// a datatype Pair<+A, +B>, are equal in Dafny when they have the same constructor and equal arguments, but they
+    /// are instances of different C# classes, so a cast of one to the class of the other fails.
+    /// </summary>
+    bool HasErasedEquality(DatatypeDecl dt) {
+      return !Options.Get(CommonOptionBag.LegacyCsDatatypeEquality) && SelectNonGhost(dt, dt.TypeArgs).Count != 0;
+    }
+
+    /// <summary>
+    /// The name of the non-generic interface through which the Equals method of a constructor class reads the
+    /// non-ghost arguments of a value of that constructor built at other type arguments.
+    /// </summary>
+    string ErasedEqualityInterfaceName(DatatypeCtor ctor) {
+      return $"_I{ctor.EnclosingDatatype.GetCompileName(Options)}_{ctor.GetCompileName(Options)}_Erased";
+    }
+
+    /// <summary>
+    /// Writes to "wr" the declaration of the erased-equality interface of "ctor":
+    ///   public interface _IDt_Ctor_Erased {
+    ///     object _field0 { get; }
+    ///     ...
+    ///   }
+    /// and returns its name.
+    /// </summary>
+    string DeclareErasedEqualityInterface(DatatypeCtor ctor, ConcreteSyntaxTree wr) {
+      var name = ErasedEqualityInterfaceName(ctor);
+      var w = wr.NewBlock($"public interface {name}");
+      var i = 0;
+      foreach (var arg in ctor.Formals) {
+        if (!arg.IsGhost) {
+          w.WriteLine($"object {FieldName(arg, i)} {{ get; }}");
+          i++;
+        }
+      }
+      return name;
     }
 
     void DatatypeFieldsAndConstructor(DatatypeCtor ctor, int constructorIndex, ConcreteSyntaxTree wr) {
@@ -1149,7 +1209,7 @@ namespace Microsoft.Dafny.Compilers {
       CompileDatatypeDowncastClone(dt, wr, nonGhostTypeArgs, ctor: ctor);
 
       // Equals method
-      {
+      if (!HasErasedEquality(dt)) {
         var w = wr.NewBlock("public override bool Equals(object other)");
         w.WriteLine($"var oth = other as {DtCtorName(ctor)}{TypeParameters(nonGhostTypeArgs)};");
         w.Write("return oth != null");
@@ -1157,7 +1217,10 @@ namespace Microsoft.Dafny.Compilers {
         foreach (var arg in ctor.Formals) {
           if (!arg.IsGhost) {
             var nm = FieldName(arg, i);
-            w.Write(IsDirectlyComparable(DatatypeWrapperEraser.SimplifyType(Options, arg.Type))
+            var equalityType = Options.Get(CommonOptionBag.ExtendedNewtypeBases)
+              ? DatatypeWrapperEraser.SimplifyTypeAndTrimNewtypes(Options, arg.Type)
+              : DatatypeWrapperEraser.SimplifyType(Options, arg.Type);
+            w.Write(IsDirectlyComparable(equalityType)
               ? $" && this.{nm} == oth.{nm}"
               : $" && object.Equals(this.{nm}, oth.{nm})");
 
@@ -1166,6 +1229,52 @@ namespace Microsoft.Dafny.Compilers {
         }
 
         w.WriteLine(";");
+      } else {
+        // The value "other" may have been built at type arguments other than those of "this", which
+        // Dafny's equality ignores.  A value built at the same type arguments is compared as before; any
+        // other value of the same constructor is compared through the erased-equality interface.
+        //   public override bool Equals(object other) {
+        //     var oth = other as Dt_Ctor<T>;
+        //     if (oth != null) {
+        //       return true && equals(_field0, oth._field0) && ... ;
+        //     }
+        //     var erased = other as _IDt_Ctor_Erased;
+        //     return erased != null && object.Equals(_field0, erased._field0) && ... ;
+        //   }
+        //   object _IDt_Ctor_Erased._field0 => this._field0;
+        //   ...
+        var erasedInterface = ErasedEqualityInterfaceName(ctor);
+        var w = wr.NewBlock("public override bool Equals(object other)");
+        w.WriteLine($"var oth = other as {DtCtorName(ctor)}{TypeParameters(nonGhostTypeArgs)};");
+        var wSame = w.NewBlock("if (oth != null)");
+        wSame.Write("return true");
+        w.WriteLine($"var erased = other as {erasedInterface};");
+        w.Write("return erased != null");
+        i = 0;
+        foreach (var arg in ctor.Formals) {
+          if (!arg.IsGhost) {
+            var nm = FieldName(arg, i);
+            var equalityType = Options.Get(CommonOptionBag.ExtendedNewtypeBases)
+              ? DatatypeWrapperEraser.SimplifyTypeAndTrimNewtypes(Options, arg.Type)
+              : DatatypeWrapperEraser.SimplifyType(Options, arg.Type);
+            wSame.Write(IsDirectlyComparable(equalityType)
+              ? $" && this.{nm} == oth.{nm}"
+              : $" && object.Equals(this.{nm}, oth.{nm})");
+            w.Write($" && object.Equals(this.{nm}, erased.{nm})");
+            i++;
+          }
+        }
+        wSame.WriteLine(";");
+        w.WriteLine(";");
+
+        i = 0;
+        foreach (var arg in ctor.Formals) {
+          if (!arg.IsGhost) {
+            var nm = FieldName(arg, i);
+            wr.WriteLine($"object {erasedInterface}.{nm} => this.{nm};");
+            i++;
+          }
+        }
       }
 
       // GetHashCode method (Uses the djb2 algorithm)
@@ -1299,16 +1408,25 @@ namespace Microsoft.Dafny.Compilers {
         wEnum.WriteLine($"for (var j = lo; j < hi; j++) {{ yield return ({GetNativeTypeName(nt.NativeType)})j; }}");
       }
       if (nt.WitnessKind == SubsetTypeDecl.WKind.Compiled) {
-        var wStmts = w.Fork();
-        var witness = Expr(nt.Witness, false, wStmts).ToString();
-        string typeName;
-        if (nt.NativeType == null) {
-          typeName = TypeName(nt.BaseType, cw.StaticMemberWriter, nt.Origin);
+        if (Options.Get(CommonOptionBag.ExtendedNewtypeBases) && nt.TypeArgs.Count != 0) {
+          var typeName = nt.NativeType == null ? TypeName(nt.BaseType, w, nt.Origin) : GetNativeTypeName(nt.NativeType);
+          var parameters = nt.TypeArgs.Where(NeedsTypeDescriptor).Comma(tp => $"{DafnyTypeDescriptor}<{tp.GetCompileName(Options)}> {FormatTypeDescriptorVariable(tp.GetCompileName(Options))}");
+          var wWitness = w.NewBlock($"public static {typeName} Witness({parameters})");
+          var wStmts = wWitness.Fork();
+          var witness = Expr(nt.Witness, false, wStmts).ToString();
+          wWitness.WriteLine($"return {(nt.NativeType == null ? witness : $"({typeName})({witness})")};");
         } else {
-          typeName = GetNativeTypeName(nt.NativeType);
-          witness = $"({typeName})({witness})";
+          var wStmts = w.Fork();
+          var witness = Expr(nt.Witness, false, wStmts).ToString();
+          string typeName;
+          if (nt.NativeType == null) {
+            typeName = TypeName(nt.BaseType, cw.StaticMemberWriter, nt.Origin);
+          } else {
+            typeName = GetNativeTypeName(nt.NativeType);
+            witness = $"({typeName})({witness})";
+          }
+          DeclareField("Witness", true, true, true, typeName, witness, cw);
         }
-        DeclareField("Witness", true, true, true, typeName, witness, cw);
       }
       EmitTypeDescriptorMethod(nt, w);
       GenerateIsMethod(nt, cw.StaticMemberWriter);
@@ -1763,7 +1881,9 @@ namespace Microsoft.Dafny.Compilers {
       } else if (cl is NewtypeDecl) {
         var td = (NewtypeDecl)cl;
         if (td.Witness != null) {
-          return TypeName_UDT(FullTypeName(udt), udt, wr, udt.Origin) + ".Witness";
+          var witness = TypeName_UDT(FullTypeName(udt), udt, wr, udt.Origin) + ".Witness";
+          return Options.Get(CommonOptionBag.ExtendedNewtypeBases) && td.TypeArgs.Count != 0
+            ? $"{witness}({TypeArgumentInstantiation.ListFromClass(td, udt.TypeArgs).Where(ta => NeedsTypeDescriptor(ta.Formal)).Comma(ta => TypeDescriptor(ta.Actual, wr, tok))})" : witness;
         } else if (td.NativeType != null) {
           return "0";
         } else {
@@ -1905,6 +2025,9 @@ namespace Microsoft.Dafny.Compilers {
         List<Type> relevantTypeArgs;
         if (cl is DatatypeDecl dt) {
           relevantTypeArgs = UsedTypeParameters(dt, udt.TypeArgs, true).ConvertAll(ta => ta.Actual);
+        } else if (cl is NewtypeDecl && Options.Get(CommonOptionBag.ExtendedNewtypeBases)) {
+          relevantTypeArgs = TypeArgumentInstantiation.ListFromClass(cl, udt.TypeArgs)
+            .Where(ta => NeedsTypeDescriptor(ta.Formal)).Select(ta => ta.Actual).ToList();
         } else {
           relevantTypeArgs = type.TypeArgs;
         }
@@ -3091,7 +3214,9 @@ namespace Microsoft.Dafny.Compilers {
 
       switch (op) {
         case BinaryExpr.ResolvedOpcode.EqCommon: {
-            var eqType = DatatypeWrapperEraser.SimplifyType(Options, e0Type);
+            var eqType = Options.Get(CommonOptionBag.ExtendedNewtypeBases)
+              ? DatatypeWrapperEraser.SimplifyTypeAndTrimNewtypes(Options, e0Type)
+              : DatatypeWrapperEraser.SimplifyType(Options, e0Type);
             if (eqType.IsRefType) {
               // Dafny's type rules are slightly different C#, so we may need a cast here.
               // For example, Dafny allows x==y if x:array<T> and y:array<int> and T is some
@@ -3105,7 +3230,9 @@ namespace Microsoft.Dafny.Compilers {
             break;
           }
         case BinaryExpr.ResolvedOpcode.NeqCommon: {
-            var eqType = DatatypeWrapperEraser.SimplifyType(Options, e0Type);
+            var eqType = Options.Get(CommonOptionBag.ExtendedNewtypeBases)
+              ? DatatypeWrapperEraser.SimplifyTypeAndTrimNewtypes(Options, e0Type)
+              : DatatypeWrapperEraser.SimplifyType(Options, e0Type);
             if (eqType.IsRefType) {
               // Dafny's type rules are slightly different C#, so we may need a cast here.
               // For example, Dafny allows x==y if x:array<T> and y:array<int> and T is some

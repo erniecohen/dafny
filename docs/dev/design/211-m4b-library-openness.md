@@ -720,7 +720,7 @@ Add the reviewed on-only Std source overlay under proposed `Source/DafnyStandard
 
 In `Source/DafnyCore/Auditor/Assumption.cs`, `AuditReport.cs`, `TraitDecl.Assumptions` and `TopLevelDeclWithMembers.Assumptions`, distinguish checked extensibility from the old unchecked termination assumptions. An on-mode audit of source alone reports the declared rule, not a proof that has not run. Aggregate admitted-library assumption inventories even when included/preverified members are otherwise omitted by the report. Do not hide unrelated assumptions. Off-mode audit output remains unchanged.
 
-Update `docs/DafnyRef/Specifications.md` section 7.1.3.1, attribute/trait/export/refinement documentation where relevant, `.doo` documentation and `CommonOptionBag.ModularTermination` help. The manual must state all of the following normative changes:
+Update `docs/DafnyRef/Specifications.md` section 7.1.3.2, attribute/trait/export/refinement documentation where relevant, `.doo` documentation and `CommonOptionBag.ModularTermination` help. The manual must state all of the following normative changes:
 
 * Openness belongs to the trait declaration; a child cannot open a sealed foreign ancestor.
 * General imported calls always use their declared bounds; Closed is an explicit verified promise.

@@ -43,14 +43,18 @@ The "type system refresh" is a reimplementation of Dafny's name resolution, type
     kind: each actual argument is checked against the formal with the chosen type
     argument ([issue 101](https://github.com/erniecohen/dafny/issues/101)).
 
-    The fork's opt-in `--conservative-match-inference` changes when the refreshed
-    resolver makes default type decisions while resolving a `match` whose source
-    type is not yet known: it first propagates the known constraints without
-    decisions, and makes decisions only if the source type is still unknown. It
+    The fork's `--conservative-match-inference`, on by default, changes when the
+    refreshed resolver makes default type decisions while resolving a `match`
+    whose source type is not yet known: it first propagates the known constraints
+    without decisions, and makes decisions only if the source type is still
+    unknown. A parameterless pattern identifier whose type, after propagation, has
+    a subtype that is not a datatype (or advice that excludes datatypes) is a bound
+    variable without any decision, since a datatype has no subtypes but itself. It
     adds and removes no constraint. It fixes an earlier literal being given the
     type `int` before the enclosing context fixes it
     ([issue 48](https://github.com/erniecohen/dafny/issues/48)), but not when the
-    match source itself needs a default decision.
+    type at a pattern stays unknown after propagation.
+    `--conservative-match-inference:false` restores the earlier inference.
 
     (This design may soon change in one place, namely when a lambda expressions is known to be used in a limited number of places. This happens in array initializers and sequence comprehensions, where it would be friendly to try to infer the bound variable to be of type `nat` rather than `int`.)
 

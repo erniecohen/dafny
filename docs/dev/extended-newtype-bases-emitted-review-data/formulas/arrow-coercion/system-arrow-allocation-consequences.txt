@@ -1,0 +1,22 @@
+lines 2307-2318
+axiom (forall f: HandleType, t0: Ty, t1: Ty, h: Heap :: 
+  { $IsAlloc(f, Tclass._System.___hFunc1(t0, t1), h) } 
+  $IsGoodHeap(h)
+     ==> 
+    $IsAlloc(f, Tclass._System.___hFunc1(t0, t1), h)
+     ==> (forall bx0: Box :: 
+      { Apply1(t0, t1, h, f, bx0) } { Reads1(t0, t1, h, f, bx0) } 
+      $IsBox(bx0, t0) && $IsAllocBox(bx0, t0, h) && Requires1(t0, t1, h, f, bx0)
+         ==> (forall r: ref :: 
+          { Set#IsMember(Reads1(t0, t1, h, f, bx0), $Box(r)) } 
+          r != null && Set#IsMember(Reads1(t0, t1, h, f, bx0), $Box(r))
+             ==> $Unbox(read(h, r, alloc)): bool)));
+
+lines 2320-2326
+axiom (forall f: HandleType, t0: Ty, t1: Ty, h: Heap :: 
+  { $IsAlloc(f, Tclass._System.___hFunc1(t0, t1), h) } 
+  $IsGoodHeap(h) && $IsAlloc(f, Tclass._System.___hFunc1(t0, t1), h)
+     ==> (forall bx0: Box :: 
+      { Apply1(t0, t1, h, f, bx0) } 
+      $IsAllocBox(bx0, t0, h) && Requires1(t0, t1, h, f, bx0)
+         ==> $IsAllocBox(Apply1(t0, t1, h, f, bx0), t1, h)));

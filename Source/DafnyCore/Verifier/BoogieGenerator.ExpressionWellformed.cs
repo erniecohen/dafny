@@ -382,6 +382,7 @@ namespace Microsoft.Dafny {
             } else if (e.Member is DatatypeDiscriminator discriminator) {
               CheckNotGhostVariant(e, "discriminator", ((DatatypeDecl)discriminator.EnclosingClass).Ctors, builder, etran);
             }
+            CheckReceiverInvariants(e.Obj.Origin, e.Member, e.Obj, builder, etran);
             if (!e.Member.IsStatic) {
               if (e.Member is TwoStateFunction) {
                 Bpl.Expr wh = AllocationObligation(selectExpr.Origin, etran.TrExpr(e.Obj), e.Obj.Type, etran.OldAt(e.AtLabel));
@@ -557,7 +558,7 @@ namespace Microsoft.Dafny {
             foreach (Expression arg in e.Args) {
               CheckWellformed(arg, wfOptions, locals, builder, etran);
             }
-            CheckCallbackApplication(applyExpr.Origin, codeContext, e.Function,
+            CheckCallbackApplication(applyExpr.Origin, codeContext, e.Function, e.Args,
               wfOptions.CallerTerminationTranslator ?? builder.Context.CallerTerminationTranslator ?? etran, builder);
 
             // check subranges of arguments
@@ -703,6 +704,7 @@ namespace Microsoft.Dafny {
               if (!e.Function.IsStatic && !(e.Receiver is ThisExpr) && !e.Receiver.Type.IsArrowType) {
                 CheckNonNull(callExpr.Origin, e.Receiver, builder, etran, wfOptions.AssertKv);
               }
+              CheckReceiverInvariants(e.Receiver.Origin, e.Function, e.Receiver, builder, etran);
               if (!e.Function.IsStatic && !etran.UsesOldHeap) {
                 // the argument can't be assumed to be allocated for the old heap
                 Type et = UserDefinedType.FromTopLevelDecl(e.Origin, e.Function.EnclosingClass).Subst(e.GetTypeArgumentSubstitutions());
@@ -710,7 +712,7 @@ namespace Microsoft.Dafny {
                 builder.Add(TrAssumeCmd(e.Receiver.Origin, MkIsAllocBox(BoxIfNecessary(e.Receiver.Origin, etran.TrExpr(e.Receiver), e.Receiver.Type), et, etran.HeapExpr)));
               }
               if (ModularTermination.IsArrowMember(e.Function)) {
-                CheckCallbackApplication(callExpr.Origin, codeContext, e.Receiver,
+                CheckCallbackApplication(callExpr.Origin, codeContext, e.Receiver, e.Args,
                   wfOptions.CallerTerminationTranslator ?? builder.Context.CallerTerminationTranslator ?? etran, builder);
               }
               RegisterCallbackLambdas(e.Function, e.Receiver, e.Args, e.GetTypeArgumentSubstitutions(), etran);
@@ -893,15 +895,20 @@ namespace Microsoft.Dafny {
                 }
               }
               Expression allowance = null;
-              if (codeContext != null && e.CoCall != FunctionCallExpr.CoCallResolution.Yes && !(e.Function is ExtremePredicate)) {
+              // Under --modular-termination, every call gets the check of the global bounds, including a co-call and a
+              // call of an extreme or prefix predicate: those need no decrease within their cluster, but the bounds
+              // order calls across modules, which no cluster sees.
+              if (codeContext != null) {
                 CheckCallbackArguments(callExpr.Origin, codeContext, e.Function, e.Args, e.Receiver, substMap, e.GetTypeArgumentSubstitutions(),
                   wfOptions.CallerTerminationTranslator ?? builder.Context.CallerTerminationTranslator ?? etran, builder);
+              }
+              if (codeContext != null && e.CoCall != FunctionCallExpr.CoCallResolution.Yes && !(e.Function is ExtremePredicate)) {
                 // check that the decreases measure goes down
                 var calleeSCCLookup = e.IsByMethodCall ? (ICallable)e.Function.ByMethodDecl : e.Function;
                 Contract.Assert(calleeSCCLookup != null);
                 if (ModuleDefinition.InSameSCC(calleeSCCLookup, codeContext)) {
                   if (wfOptions.DoOnlyCoarseGrainedTerminationChecks) {
-                    builder.Add(Assert(GetToken(expr), Bpl.Expr.False, new IsNonRecursive(), builder.Context));
+                    builder.Add(Assert(InheritedTerminationOrigin(GetToken(expr), calleeSCCLookup), Bpl.Expr.False, new IsNonRecursive(), builder.Context));
                   } else {
                     if (e.Function == wfOptions.SelfCallsAllowance) {
                       allowance = Expression.CreateBoolLiteral(e.Origin, true);
@@ -921,6 +928,9 @@ namespace Microsoft.Dafny {
                         break;
                       case FunctionCallExpr.CoCallResolution.NoBecauseFunctionHasPostcondition:
                         hint = "note that only functions without any ensures clause can be called co-recursively";
+                        break;
+                      case FunctionCallExpr.CoCallResolution.NoBecauseFunctionHasConstrainedReturnType:
+                        hint = "note that functions with a constrained codatatype newtype result cannot be called co-recursively";
                         break;
                       case FunctionCallExpr.CoCallResolution.NoBecauseIsNotGuarded:
                         hint = "note that the call is not sufficiently guarded to be used co-recursively";
@@ -951,15 +961,15 @@ namespace Microsoft.Dafny {
                     // function: the heap at its label, if the call has one.
                     var calleeEtran = e.Function is TwoStateFunction && e.AtLabel != null ? etran.WithOld(etran.OldAt(e.AtLabel)) : null;
                     var callerEtran = wfOptions.CallerTerminationTranslator ?? builder.Context.CallerTerminationTranslator ?? etran;
-                    CheckCallTermination(callExpr.Origin, contextDecreases, calleeDecreases, allowance, e.Receiver, substMap, directSubstMap, e.GetTypeArgumentSubstitutions(),
+                    CheckCallTermination(InheritedTerminationOrigin(callExpr.Origin, calleeSCCLookup), contextDecreases, calleeDecreases, allowance, e.Receiver, substMap, directSubstMap, e.GetTypeArgumentSubstitutions(),
                       callerEtran, false, builder, codeContext.InferredDecreases, hint, calleeEtran ?? etran);
                   }
                 }
-                if (e.Function != wfOptions.SelfCallsAllowance) {
-                  CheckModularTermination(callExpr.Origin, codeContext, e.Function, e.Receiver, substMap, directSubstMap,
-                    e.GetTypeArgumentSubstitutions(), wfOptions.CallerTerminationTranslator ?? builder.Context.CallerTerminationTranslator ?? etran,
-                    builder, etran);
-                }
+              }
+              if (codeContext != null && e.Function != wfOptions.SelfCallsAllowance) {
+                CheckModularTermination(callExpr.Origin, codeContext, e.Function, e.Receiver, substMap, directSubstMap,
+                  e.GetTypeArgumentSubstitutions(), wfOptions.CallerTerminationTranslator ?? builder.Context.CallerTerminationTranslator ?? etran,
+                  builder, etran);
               }
               // all is okay, so allow this function application access to the function's axiom, except if it was okay because of the self-call allowance.
               Bpl.IdentifierExpr canCallFuncID = new Bpl.IdentifierExpr(callExpr.Origin, e.Function.FullSanitizedName + "#canCall", Bpl.Type.Bool);
@@ -1060,12 +1070,64 @@ namespace Microsoft.Dafny {
               // Keep provided types opaque and use their nominal target Ty.
               var membershipTarget = ee.ToType.NormalizeExpandKeepConstraints();
               if ((membershipTarget.IsDatatype || membershipTarget.IsInternalTypeSynonym) &&
-                  !membershipTarget.IsRefType && !ee.E.Type.IsTraitType && !membershipTarget.IsArrowType) {
+                  !membershipTarget.IsRefType && !ee.E.Type.IsTraitType && !membershipTarget.IsArrowType &&
+                  !(options.Get(CommonOptionBag.ExtendedNewtypeBases) && IsSuspendedCoDatatypeIdentityConversion(ee))) {
                 CheckSubrange(unaryExpr.Origin, etran.TrExpr(ee.E), ee.E.Type, ee.ToType,
                   ee.E, builder, ee.messagePrefix, etran: etran);
                 if (options.Get(CommonOptionBag.ConsistentObligationChecks)) { break; }
               }
-              CheckResultToBeInType(unaryExpr.Origin, ee.E, ee.ToType, locals, builder, etran, ee.messagePrefix);
+              if (options.Get(CommonOptionBag.ExtendedNewtypeBases)) {
+                CheckNewtypeDatatypeBaseMembership(unaryExpr.Origin, ee, builder, etran);
+              }
+              if (options.Get(CommonOptionBag.ExtendedNewtypeBases) && ee.IsBaseOperation &&
+                  ee.Type.Equals(ee.ToType, true)) {
+                var operationSource = NewtypeOperationView.Get(ee.E.Type, preserveSubsetTypes: true);
+                var operationTarget = NewtypeOperationView.Get(ee.ToType, preserveSubsetTypes: true);
+                if (operationSource.Status == NewtypeOperationView.ViewStatus.Resolved &&
+                    operationTarget.Status == NewtypeOperationView.ViewStatus.Resolved &&
+                    operationSource.Path.Any(d => d is NewtypeDecl) &&
+                    !operationTarget.Path.Any(d => d is NewtypeDecl) &&
+                    operationSource.BaseType.AsArrowType != null &&
+                    operationSource.BaseType.Equals(operationTarget.BaseType, true)) {
+                  // The operand was checked above. This resolver-owned projection
+                  // exposes its declared instantiated carrier, including its exact
+                  // arrow family; it does not strengthen a user-written signature
+                  // or introduce a destination predicate. Rechecking that carrier
+                  // as a new arbitrary function is not an introduction obligation.
+                  break;
+                }
+              }
+              Type establishedArrowBase = null;
+              if (options.Get(CommonOptionBag.ExtendedNewtypeBases)) {
+                // The operand was checked above. Its exact visible carrier is an
+                // established premise, not a new destination introduction fact.
+                var checkedSource = NewtypeOperationView.Get(ee.E.Type, preserveSubsetTypes: true);
+                var checkedTarget = NewtypeOperationView.Get(ee.ToType, preserveSubsetTypes: true);
+                if (checkedSource.Status == NewtypeOperationView.ViewStatus.Resolved &&
+                    checkedTarget.Status == NewtypeOperationView.ViewStatus.Resolved &&
+                    checkedTarget.Path.Any(d => d is NewtypeDecl) &&
+                    checkedSource.BaseType.AsArrowType != null &&
+                    checkedSource.BaseType.Equals(checkedTarget.BaseType, true)) {
+                  establishedArrowBase = checkedSource.BaseType;
+                }
+              }
+              CheckResultToBeInType(unaryExpr.Origin, ee.E, ee.ToType, locals, builder, etran,
+                ee.messagePrefix, establishedArrowBase);
+              if (options.Get(CommonOptionBag.ExtendedNewtypeBases) && ee.Type.Equals(ee.ToType, true)) {
+                var sourceView = NewtypeOperationView.Get(ee.E.Type, preserveSubsetTypes: true);
+                var destinationView = NewtypeOperationView.Get(ee.ToType, preserveSubsetTypes: true);
+                if (sourceView.Status == NewtypeOperationView.ViewStatus.Resolved &&
+                    destinationView.Status == NewtypeOperationView.ViewStatus.Resolved &&
+                    sourceView.BaseType.AsArrowType != null && destinationView.BaseType.AsArrowType != null &&
+                    sourceView.BaseType.Equals(destinationView.BaseType, true) &&
+                    (ee.IsBaseOperation || sourceView.Path.Any(d => d is NewtypeDecl) ||
+                     destinationView.Path.Any(d => d is NewtypeDecl))) {
+                  // An identity conversion retains this exact instantiated arrow
+                  // family and HandleType value. The complete destination check
+                  // above already checks that value at this same result type.
+                  break;
+                }
+              }
               // The conversion above has established the target's constraints
               // for this exact converted value. Do not check the same target
               // again merely because the expression now has that target type.
@@ -1096,7 +1158,9 @@ namespace Microsoft.Dafny {
               case BinaryExpr.ResolvedOpcode.Sub:
               case BinaryExpr.ResolvedOpcode.Mul:
                 CheckWellformed(e.E1, wfOptions, locals, builder, etran);
-                if (e.ResolvedOp == BinaryExpr.ResolvedOpcode.Sub && e.E0.Type.IsBigOrdinalType) {
+                if (e.ResolvedOp == BinaryExpr.ResolvedOpcode.Sub &&
+                    (e.E0.Type.IsBigOrdinalType || options.Get(CommonOptionBag.ExtendedNewtypeBases) &&
+                     NewtypeOperationView.IsOrdinal(e.E0.Type))) {
                   var rhsIsNat = FunctionCall(binaryExpr.Origin, "ORD#IsNat", Bpl.Type.Bool, etran.TrExpr(e.E1));
                   builder.Add(Assert(GetToken(expr), rhsIsNat,
                     new OrdinalSubtractionIsNatural(e.E1), builder.Context));
@@ -1181,7 +1245,8 @@ namespace Microsoft.Dafny {
                     Contract.Assert(!e.E1.Type.SupportsEquality); // otherwise, CanCompareWith would have returned "true" above
                     Contract.Assert(e.E0.Type.PartiallySupportsEquality); // otherwise, the code wouldn't have got passed the resolver
                     Contract.Assert(e.E1.Type.PartiallySupportsEquality); // otherwise, the code wouldn't have got passed the resolver
-                    var dt = e.E0.Type.AsIndDatatype;
+                    var dt = options.Get(CommonOptionBag.ExtendedNewtypeBases)
+                      ? NewtypeOperationView.Get(e.E0.Type).BaseType.AsIndDatatype : e.E0.Type.AsIndDatatype;
                     Contract.Assert(dt != null); // only inductive datatypes support equality partially
 
                     // to compare the datatype values for equality, there must not be any possibility that either of the datatype
@@ -1270,6 +1335,9 @@ namespace Microsoft.Dafny {
 
               var substMap = SetupBoundVarsAsLocals(e.BoundVars, out var typeAntecedents, nextBuilder, locals, comprehensionEtran,
                 alloc: lambdaInEveryHeap ? IsAllocType.NOALLOC : IsAllocType.ISALLOC);
+              if (lam != null) {
+                RenameLambdaBound(substMap);
+              }
               BplIfIf(e.Origin, true, typeAntecedents, nextBuilder, newBuilder => {
                 var s = new Substituter(null, substMap, new Dictionary<TypeParameter, Type>());
                 var body = Substitute(e.Term, null, substMap);
@@ -1400,6 +1468,14 @@ namespace Microsoft.Dafny {
           CheckWellformedStmtExpr(stmtExpr, wfOptions, locals, builder, etran, addResultCommands);
           addResultCommands = null;
           break;
+        case LemmaResultExpr lemmaResultExpr:
+          // The call that justifies the result is a statement in front of it (see CheckWellformedStmtExpr). The
+          // result itself has nothing to check but its arguments.
+          CheckWellformed(lemmaResultExpr.Receiver, wfOptions, locals, builder, etran);
+          foreach (var argument in lemmaResultExpr.Args) {
+            CheckWellformed(argument, wfOptions, locals, builder, etran);
+          }
+          break;
         case ITEExpr iteExpr: {
             ITEExpr e = iteExpr;
             CheckWellformed(e.Test, wfOptions, locals, builder, etran);
@@ -1429,7 +1505,9 @@ namespace Microsoft.Dafny {
             // check that source expression is created from one of the legal source constructors, then proceed according to the .ResolvedExpression
             var correctConstructor = BplOr(e.LegalSourceConstructors.ConvertAll(
               ctor => FunctionCall(e.Origin, ctor.QueryField.FullSanitizedName, Bpl.Type.Bool, etran.TrExpr(e.Root))));
-            if (e.LegalSourceConstructors.Count == e.Type.AsDatatype.Ctors.Count) {
+            var updateDatatype = options.Get(CommonOptionBag.ExtendedNewtypeBases)
+              ? NewtypeOperationView.Get(e.Type).BaseType.AsDatatype : e.Type.AsDatatype;
+            if (e.LegalSourceConstructors.Count == updateDatatype.Ctors.Count) {
               // Every constructor has this destructor; no need to check anything
             } else {
               builder.Add(Assert(GetToken(expr), correctConstructor,
@@ -1440,6 +1518,13 @@ namespace Microsoft.Dafny {
               e.LegalSourceConstructors, builder, etran);
 
             CheckWellformedWithResult(e.ResolvedExpression, wfOptions, locals, builder, etran, addResultCommands);
+            addResultCommands = null;
+            break;
+          }
+        case DecreasesByExpr decreasesBy: {
+            // The order is closed (DecreasesOrders, R2), but it must still be well-formed.
+            CheckWellformed(decreasesBy.Order, wfOptions, locals, builder, etran);
+            CheckWellformedWithResult(decreasesBy.ResolvedExpression, wfOptions, locals, builder, etran, addResultCommands);
             addResultCommands = null;
             break;
           }
@@ -1532,6 +1617,51 @@ namespace Microsoft.Dafny {
     }
 
 
+    /// <summary>
+    /// With --extended-newtype-bases, a conversion into a newtype chain whose
+    /// fully instantiated base is a datatype, tuple, codatatype or arrow must
+    /// establish that the original value inhabits that instantiated base: for
+    /// example B<nat> rather than the source's B<int>, or the arrow family
+    /// int ~> nat rather than the source's int ~> int. The chain's own
+    /// constraints, including the partial and total arrow subset constraints,
+    /// are checked separately by CheckResultToBeInType, which stops at the base.
+    /// This is a proof obligation only; no fact is assumed.
+    /// </summary>
+    void CheckNewtypeDatatypeBaseMembership(IOrigin tok, ConversionExpr ee, BoogieStmtListBuilder builder, ExpressionTranslator etran) {
+      var target = NewtypeOperationView.Get(ee.ToType);
+      if (target.Status != NewtypeOperationView.ViewStatus.Resolved || !target.Path.Any(d => d is NewtypeDecl)) {
+        return;
+      }
+      var baseType = target.BaseType.NormalizeExpandKeepConstraints();
+      if (baseType.IsRefType || !(baseType.IsDatatype || baseType.IsArrowType)) {
+        return;
+      }
+      var source = NewtypeOperationView.Get(ee.E.Type);
+      if (source.Status == NewtypeOperationView.ViewStatus.Resolved && source.BaseType != null &&
+          source.BaseType.Equals(target.BaseType, true)) {
+        // The operand already inhabits this exact instantiated base.
+        return;
+      }
+      CheckSubrange(tok, etran.TrExpr(ee.E), ee.E.Type, target.BaseType, ee.E, builder, ee.messagePrefix, etran: etran);
+    }
+
+    private bool IsSuspendedCoDatatypeIdentityConversion(ConversionExpr conversion) {
+      var enabled = options.Get(CommonOptionBag.ExtendedNewtypeBases);
+      if (!conversion.Type.Equals(conversion.ToType, true) ||
+          !NewtypeOperationView.IsCoDatatypeIdentityConversion(conversion, enabled)) {
+        return false;
+      }
+      // Preserve the existing constructor guard through representation-identity
+      // casts of this suspended call. Do not establish full value membership here.
+      // Observation and binding boundaries retain their independent checks.
+      var operand = conversion.E.Resolved;
+      while (operand is ConversionExpr inner && inner.Type.Equals(inner.ToType, true) &&
+             NewtypeOperationView.IsCoDatatypeIdentityConversion(inner, enabled)) {
+        operand = inner.E.Resolved;
+      }
+      return operand is FunctionCallExpr call && IsCoRecursiveFunctionCall(call);
+    }
+
     private static bool ContainsCoRecursiveFunctionCall(Expression expression) {
       expression = expression.Resolved;
       return expression is FunctionCallExpr call && IsCoRecursiveFunctionCall(call) ||
@@ -1591,6 +1721,8 @@ namespace Microsoft.Dafny {
       // expressions. However, here, we're also having to translate e.S, which is a
       // Statement. Since statement translation (in particular, translation of CallStmt's)
       // work directly on the global variable $Heap, we temporarily change its value here.
+      // The call statement of a lemma binding declares local variables, which go out of scope after that binding.
+      var previousTrackers = DefiniteAssignmentTrackers;
       statementExpressionDepth++;
       try {
         if (etran.UsesOldHeap) {
@@ -1608,6 +1740,13 @@ namespace Microsoft.Dafny {
       }
       finally {
         statementExpressionDepth--;
+      }
+
+      if (stmtExpr.LemmaBindingCall is { } lemmaBindingCall) {
+        // The expression of such a statement expression is a result of the call (see LetExpr.LemmaBinding), so
+        // this call is the only statement here.
+        AssumeLemmaBinding(lemmaBindingCall, wfOptions, locals, builder, etran);
+        DefiniteAssignmentTrackers = previousTrackers;
       }
 
       CheckWellformedWithResult(expression, wfOptions, locals, builder, etran, addResultCommands);
@@ -1667,6 +1806,10 @@ namespace Microsoft.Dafny {
       Variables locals, BoogieStmtListBuilder builder, ExpressionTranslator etran) {
       Contract.Requires(expr.Function is SpecialFunction);
 
+      if (BoundedCallables.IsCertify(expr.Function)) {
+        CheckWellformedBoundedCertify(expr, options, locals, builder, etran);
+        return;
+      }
       CheckWellformed(expr.Receiver, options, locals, builder, etran);
       foreach (var arg in expr.Args.Where(arg => arg is not DefaultValueExpression)) {
         CheckWellformed(arg, options, locals, builder, etran);

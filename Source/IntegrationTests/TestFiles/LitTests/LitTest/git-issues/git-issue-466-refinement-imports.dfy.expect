@@ -1,0 +1,11 @@
+git-issue-466-refinement-imports.dfy(9,29): Warning: trait 'Cell' has {:termination false} and no {:axiom} annotation: calls dispatched through it are not checked for termination
+
+Dafny program verifier finished with 3 verified, 0 errors
+git-issue-466-refinement-imports-false.dfy(14,2): Error: a postcondition could not be proved on this return path
+git-issue-466-refinement-imports-false.dfy(13,20): Related location: this is the postcondition that could not be proved
+git-issue-466-refinement-imports-false.dfy(21,2): Error: a postcondition could not be proved on this return path
+git-issue-466-refinement-imports-false.dfy(20,25): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 0 verified, 2 errors
+
+Dafny program verifier did not attempt verification

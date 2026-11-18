@@ -1,0 +1,30 @@
+
+Dafny program verifier did not attempt verification
+
+Dafny program verifier did not attempt verification
+
+Dafny program verifier did not attempt verification
+
+Dafny program verifier did not attempt verification
+
+Dafny program verifier did not attempt verification
+
+Dafny program verifier did not attempt verification
+
+Dafny program verifier did not attempt verification
+
+Dafny program verifier did not attempt verification
+
+Dafny program verifier did not attempt verification
+
+Dafny program verifier finished with 1 verified, 0 errors
+git-issue-280-client.dfy(13,15): Error: result of operation might violate newtype constraint for 'Positive'
+
+Dafny program verifier finished with 0 verified, 1 error
+
+Dafny program verifier did not attempt verification
+
+Dafny program verifier finished with 1 verified, 0 errors
+git-issue-280-client.dfy(13,15): Error: result of operation might violate newtype constraint for 'Positive'
+
+Dafny program verifier finished with 0 verified, 1 error

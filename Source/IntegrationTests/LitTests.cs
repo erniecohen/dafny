@@ -270,6 +270,15 @@ namespace IntegrationTests {
         substitutions["%z3"] = Path.Join(dafnyReleaseDir, "z3", "bin", $"z3-{DafnyOptions.DefaultZ3Version}");
       }
 
+      // Preserve repository-relative paths in command reproductions without
+      // changing the test process's shared current directory.
+      commands["%baredafnyAtRepositoryRoot"] = (args, config) =>
+        dafnyReleaseDir == null
+          ? new ShellLitCommand("dotnet", new[] { DafnyDriverAssembly.Location }.Concat(args),
+            config.PassthroughEnvironmentVariables, RepositoryRoot)
+          : new ShellLitCommand(Path.Join(dafnyReleaseDir, "dafny"), args,
+            config.PassthroughEnvironmentVariables, RepositoryRoot);
+
       Config = new LitTestConfiguration(substitutions, commands, features, DafnyCliTests.ReferencedEnvironmentVariables);
     }
 

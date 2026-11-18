@@ -1,0 +1,17 @@
+git-issue-466-groups.dfy(9,7): Info: recursive module group: Two1, Two2
+git-issue-466-groups.dfy(13,7): Info: recursive module group: Two1, Two2
+git-issue-466-groups.dfy(19,7): Info: recursive module group: Three1, Three2, Three3
+git-issue-466-groups.dfy(23,7): Info: recursive module group: Three1, Three2, Three3
+git-issue-466-groups.dfy(27,7): Info: recursive module group: Three1, Three2, Three3
+git-issue-466-groups.dfy(34,9): Info: recursive module group: Outer.Left, Outer.Right
+git-issue-466-groups.dfy(39,9): Info: recursive module group: Outer.Left, Outer.Right
+git-issue-466-groups.dfy(46,7): Info: recursive module group: Exp1, Exp2, Exp3
+git-issue-466-groups.dfy(52,7): Info: recursive module group: Exp1, Exp2, Exp3
+git-issue-466-groups.dfy(58,7): Info: recursive module group: Exp1, Exp2, Exp3
+git-issue-466-groups.dfy(69,7): Info: recursive module group: Mid1, Mid2
+git-issue-466-groups.dfy(74,7): Info: recursive module group: Mid1, Mid2
+git-issue-466-groups.dfy(21,11): Info: decreases n
+git-issue-466-groups.dfy(25,11): Info: decreases n
+git-issue-466-groups.dfy(29,11): Info: decreases n
+
+Dafny program verifier did not attempt verification

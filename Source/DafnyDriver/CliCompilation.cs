@@ -32,6 +32,11 @@ public class CliCompilation {
   private int errorCount;
   private int warningCount;
   public bool DidVerification { get; private set; }
+  /// <summary>
+  /// Under --modular-termination, the summary line that names the trusted premises of the admitted
+  /// libraries, or null when there are none.
+  /// </summary>
+  public string? TrustedPremisesSummary { get; private set; }
   private bool batchInputsCaptured;
 
   // The module whose verification the current asynchronous flow started, when
@@ -208,6 +213,7 @@ public class CliCompilation {
 
       if (ev is BoogieUpdate { BoogieStatus: Completed completed } boogieUpdate) {
         var canVerifyResult = canVerifyResults[boogieUpdate.CanVerify];
+        canVerifyResult.ProofDependencies = boogieUpdate.ProofDependencyManager;
         canVerifyResult.CompletedParts.Enqueue((boogieUpdate.VerificationTask, completed));
         var completedPartsCount = Interlocked.Increment(ref canVerifyResult.CompletedCount);
 
@@ -278,6 +284,15 @@ public class CliCompilation {
     var requestDependencies = resolution.ResolvedProgram.ProofDependencyManager;
 
     DidVerification = true;
+    TrustedPremisesSummary = ModularTermination.RulesEnabled(Options)
+      ? DafnyCore.ModularTerminationTrustList.Summary([], null, resolution.ResolvedProgram.Compilation.ModularTerminationPremises)
+      : null;
+
+    if (ModularTermination.RulesEnabled(Options) &&
+        DafnyCore.ModularTerminationRuntimeTrust.Summary([], resolution.ResolvedProgram.Compilation.ModularTerminationRuntimePremises)
+          is { } runtimeSummary) {
+      TrustedPremisesSummary = TrustedPremisesSummary == null ? runtimeSummary : TrustedPremisesSummary + "\n" + runtimeSummary;
+    }
 
     var canVerifies = FilterCanVerifies(resolution.CanVerifies, out var filterRange, filterPosition);
     VerifiedAssertions = filterRange.Filters;
@@ -355,7 +370,7 @@ public class CliCompilation {
 
         yield return new CanVerifyResult(canVerify,
           results.CompletedParts.Select(c => new VerificationTaskResult(c.Task, c.Result.Result)).ToList()) {
-          ProofDependencies = repeatVerification ? requestDependencies : null
+          ProofDependencies = results.ProofDependencies
         };
 
         canVerifyResults.TryRemove(canVerify, out _); // Free memory
@@ -374,6 +389,7 @@ public class CliCompilation {
         ["completed"] = moduleCompleted,
         ["released"] = profile.Now
       });
+      profile?.HeapPoint("module", new Dictionary<string, object?> { ["module"] = moduleName });
     }
   }
 
@@ -403,6 +419,7 @@ public class CliCompilation {
       ? memoryMiB * 1024L * 1024L
       : GC.GetGCMemoryInfo().TotalAvailableMemoryBytes / 2;
     var cancellationToken = Compilation.CancellationToken;
+    var windowProfile = PipelineProfile.For(Options);
     var admitted = 0;
     var head = 0;
     var done = 0;
@@ -515,13 +532,18 @@ public class CliCompilation {
 
           yield return new CanVerifyResult(canVerify,
             results.CompletedParts.Select(c => new VerificationTaskResult(c.Task, c.Result.Result)).ToList()) {
-            ProofDependencies = repeatVerification ? requestDependencies : null
+            ProofDependencies = results.ProofDependencies
           };
 
           canVerifyResults.TryRemove(canVerify, out _); // Free memory
           Compilation.ClearCanVerifyCache(canVerify, repeatVerification);
         }
         Compilation.ClearModuleCache(slot.Module);
+        // The live heap once this module is reported and released, with later modules in flight.
+        windowProfile?.HeapPoint("module", new Dictionary<string, object?> {
+          ["module"] = PipelineProfile.ModuleName(slot.Module),
+          ["window"] = window
+        });
       }
     }
     finally {

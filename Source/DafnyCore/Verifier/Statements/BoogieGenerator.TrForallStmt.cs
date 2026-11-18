@@ -40,7 +40,19 @@ public partial class BoogieGenerator {
       } else {
         var s0 = (CallStmt)forallStmt.S0;
         if (Attributes.Contains(forallStmt.Attributes, "_trustWellformed")) {
-          TrForallStmtCall(forallStmt.Origin, forallStmt.BoundVars, forallStmt.Bounds, forallStmt.Range, null,
+          // This is the generated limit-ordinal case of a prefix lemma: recursive calls of the prefix lemma for
+          // every smaller ordinal and all values of the other parameters.  Nothing checks these calls, so
+          // under --modular-termination they are limited here to the instances that the lemma's global bound
+          // allows (https://github.com/erniecohen/dafny/issues/460).
+          ExpressionConverter withinGlobalBound = null;
+          if (s0.Method == codeContext) {
+            var instance = new Dictionary<IVariable, Expression>();
+            for (var i = 0; i < s0.Method.Ins.Count; i++) {
+              instance.Add(s0.Method.Ins[i], s0.Args[i]);
+            }
+            withinGlobalBound = RecursiveInstanceWithinGlobalBound(s0.Method, null, instance);
+          }
+          TrForallStmtCall(forallStmt.Origin, forallStmt.BoundVars, forallStmt.Bounds, forallStmt.Range, withinGlobalBound,
             forallStmt.EffectiveEnsuresClauses, null, s0, null, builder, locals, etran);
         } else {
           var definedness = new BoogieStmtListBuilder(this, options, builder.Context);
@@ -466,7 +478,13 @@ public partial class BoogieGenerator {
     GetObjFieldDetails(lhs, prevEtran, out var obj, out var field);
     var xHeapOF = ReadHeap(tok, etran.HeapExpr, obj, field);
 
-    g = BoxIfNotNormallyBoxed(rhs.Origin, g, rhs.Type);
+    // The heap stores a value whose Boogie type is Box, an ORDINAL among them, as
+    // it is (see "UpdateHeap" and the field reads in the expression translator).
+    // "ApplyBox" alone looks only at the Boogie expression, and boxed an ORDINAL
+    // right-hand side such as "o + 1" (https://github.com/erniecohen/dafny/issues/363).
+    if (!ModeledAsBoxType(rhs.Type) && !IsBoxTypedWithoutBeingBoxed(rhs.Type)) {
+      g = ApplyBox(rhs.Origin, g);
+    }
 
     Bpl.Trigger tr = null;
     var argsEtran = etran.WithNoLits();

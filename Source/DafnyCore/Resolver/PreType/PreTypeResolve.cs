@@ -57,6 +57,13 @@ namespace Microsoft.Dafny {
     TopLevelDeclWithMembers currentClass;
     MethodOrConstructor currentMethod;
 
+    /// <summary>
+    /// Issue 105: while the constraint of an InvariantTypeDecl is resolved, the variable of its newtype's header whose
+    /// type is inferred, which the header conjunct shares with the newtype (see InvariantTypeDecl.HeaderConjunctOf), so
+    /// that it keeps the pre-type that the newtype gave it. Otherwise null.
+    /// </summary>
+    BoundVar sharedHeaderVariable;
+
     private readonly Dictionary<string, TopLevelDecl> preTypeBuiltins = new();
     public readonly PreTypeConstraints Constraints;
 
@@ -291,6 +298,72 @@ namespace Microsoft.Dafny {
       return preType;
     }
 
+    internal DPreType OperationPreType(PreType nominal) {
+      var current = nominal.NormalizeWrtScope() as DPreType;
+      if (!resolver.Options.Get(CommonOptionBag.ExtendedNewtypeBases)) {
+        return nominal.Normalize() as DPreType;
+      }
+      var path = new HashSet<NewtypeDecl>();
+      while (current?.Decl is NewtypeDecl declaration) {
+        if (!declaration.IsRevealedInScope(Type.GetScope()) || declaration.BasePreType == null) {
+          return null;
+        }
+        if (!path.Add(declaration) && HasOperationViewCycle(declaration)) {
+          return null;
+        }
+        var substitution = PreType.PreTypeSubstMap(declaration.TypeArgs, current.Arguments);
+        current = declaration.BasePreType.Substitute(substitution).NormalizeWrtScope() as DPreType;
+      }
+      return current;
+    }
+
+    internal static bool HasOperationViewCycle(NewtypeDecl root) {
+      // Inspect declaration dependencies without unfolding instantiated bases. Repeated
+      // finite Id<Id<int>> instantiations are legal; Id's raw base is a parameter.
+      var pending = new Stack<PreType>();
+      var seen = new HashSet<NewtypeDecl>();
+      pending.Push(root.BasePreType);
+      while (pending.Count != 0) {
+        if (pending.Pop()?.Normalize() is not DPreType type) {
+          continue;
+        }
+        foreach (var argument in type.Arguments) {
+          pending.Push(argument);
+        }
+        if (type.Decl is NewtypeDecl declaration) {
+          if (declaration == root) {
+            return true;
+          }
+          if (seen.Add(declaration)) {
+            pending.Push(declaration.BasePreType);
+          }
+        }
+      }
+      return false;
+    }
+
+    private DPreType PatternOperationPreType(PreType source) {
+      var view = OperationPreType(source);
+      if (view == null && resolver.Options.Get(CommonOptionBag.ExtendedNewtypeBases)) {
+        var definedSource = Constraints.FindDefinedPreType(source, false);
+        if (definedSource != null) {
+          view = OperationPreType(definedSource);
+        }
+      }
+      return view;
+    }
+
+    private Expression BaseOperationExpression(Expression expression, DPreType view) {
+      if (!resolver.Options.Get(CommonOptionBag.ExtendedNewtypeBases) ||
+          view == null || PreType.Same(expression.PreType, view)) {
+        return expression;
+      }
+      return new ConversionExpr(expression.Origin, expression, new InferredTypeProxy()) {
+        PreType = view,
+        IsBaseOperation = true
+      };
+    }
+
     [CanBeNull]
     public static string AncestorName(PreType preType) {
       return preType.Normalize() is not DPreType dp ? null : AncestorPreType(dp)?.Decl.Name;
@@ -448,6 +521,8 @@ namespace Microsoft.Dafny {
       public readonly ISet<Declaration> StillNeedsPreTypeSignature;
       public readonly Stack<Declaration> InFirstPhase = new Stack<Declaration>();
       public readonly Dictionary<string, TopLevelDecl> PreTypeBuiltins;
+      /// <summary>If non-null, the state is that of this recursive module group, not of one module.</summary>
+      public RecursiveModuleGroup Group;
 
       public PreTypeInferenceModuleState(List<Declaration> declarations, Dictionary<string, TopLevelDecl> preTypeBuiltins) {
         StillNeedsPreTypeSignature = new HashSet<Declaration>(declarations);
@@ -583,7 +658,7 @@ namespace Microsoft.Dafny {
         return true;
       }
       if (!allowConversion) {
-        return false;
+        return IsComponentwiseComparable(aa, bb);
       }
       if (IsConversionCompatible(aa, bb) || IsConversionCompatible(bb, aa)) {
         return true;
@@ -591,9 +666,39 @@ namespace Microsoft.Dafny {
       return false;
     }
 
+    /// <summary>
+    /// Returns whether "a" and "b" have the same head and comparable type arguments: the same argument at every
+    /// non-variant type parameter, and comparable arguments (CheckComparableTypes without conversion) at every co- or
+    /// contravariant one.  The arguments need not be related in the same direction: (Number, Integer) and
+    /// (Integer, Number) are comparable, since both are subtypes of (Number, Number).
+    ///
+    /// During inference, ApproximateComparableConstraints already constrains types with the same head this way; this
+    /// makes the final confirmation agree with it.  Two pre-types comparable in this sense have a common supertype
+    /// and a common subtype, by induction: take a common supertype at each covariant argument, a common subtype at
+    /// each contravariant argument, and the shared argument at each non-variant one.
+    /// </summary>
+    bool IsComponentwiseComparable(DPreType a, DPreType b) {
+      if (a.Decl != b.Decl || a.Arguments.Count != b.Arguments.Count || a.Decl.TypeArgs.Count != a.Arguments.Count) {
+        return false;
+      }
+      for (var i = 0; i < a.Arguments.Count; i++) {
+        var argA = a.Arguments[i];
+        var argB = b.Arguments[i];
+        if (a.Decl.TypeArgs[i].Variance == TypeParameter.TPVariance.Non) {
+          if (!PreType.Same(argA, argB)) {
+            return false;
+          }
+        } else if (!CheckComparableTypes(argA, argB, false)) {
+          return false;
+        }
+      }
+      return true;
+    }
+
     bool IsConversionCompatible(DPreType fromType, DPreType toType) {
-      var fromAncestor = AncestorPreType(fromType);
-      var toAncestor = AncestorPreType(toType);
+      var extendedNewtypeBases = resolver.Options.Get(CommonOptionBag.ExtendedNewtypeBases);
+      var fromAncestor = extendedNewtypeBases ? OperationPreType(fromType) : AncestorPreType(fromType);
+      var toAncestor = extendedNewtypeBases ? OperationPreType(toType) : AncestorPreType(toType);
       if (fromAncestor == null || toAncestor == null) {
         return false;
       }
@@ -603,7 +708,7 @@ namespace Microsoft.Dafny {
       }
       var fromFamily = fromAncestor.Decl.Name;
       var toFamily = toAncestor.Decl.Name;
-      var toName = toType.Decl.Name;
+      var toName = resolver.Options.Get(CommonOptionBag.ExtendedNewtypeBases) ? toFamily : toType.Decl.Name;
 
       if (IsBitvectorName(fromFamily) && (toFamily == PreType.TypeNameInt || IsBitvectorName(toFamily))) {
         return true;
@@ -713,6 +818,20 @@ namespace Microsoft.Dafny {
     /// For every declaration in "declarations", resolve names and determine pre-types.
     /// </summary>
     public static void ResolveDeclarations(List<TopLevelDecl> declarations, ModuleResolver resolver, bool firstPhaseOnly = false) {
+      var group = resolver.Group;
+      resolver.Group = null;
+      foreach (var _ in ResolveDeclarationsInPhases(declarations, resolver, firstPhaseOnly)) {
+      }
+      resolver.Group = group;
+    }
+
+    /// <summary>
+    /// ResolveDeclarations, phase by phase (see LiteralModuleDecl.ResolveInPhases).  In a recursive module
+    /// group, the first phase of every member is done before the second phase of any, and the lazy order of
+    /// the first phase runs over the declarations of all members: what one member needs of another is
+    /// resolved by the resolver of the other.
+    /// </summary>
+    public static IEnumerable<string> ResolveDeclarationsInPhases(List<TopLevelDecl> declarations, ModuleResolver resolver, bool firstPhaseOnly = false) {
       // Each (top-level or member) declaration is done in two phases.
       //
       // The goal of the first phase is to fill in the pre-types in the declaration's signature (and, if the declaration is a
@@ -734,17 +853,29 @@ namespace Microsoft.Dafny {
       // for each declaration, in the order given.
 
       var allDeclarations = AllTopLevelOrMemberDeclarations(declarations).ToList();
-      var preTypeInferenceModuleState = new PreTypeInferenceModuleState(allDeclarations, resolver.SystemModuleManager.PreTypeBuiltins);
+      PreTypeInferenceModuleState preTypeInferenceModuleState;
+      var group = resolver.Group;
+      if (group == null) {
+        preTypeInferenceModuleState = new PreTypeInferenceModuleState(allDeclarations, resolver.SystemModuleManager.PreTypeBuiltins);
+      } else {
+        if (!group.Shared.TryGetValue("preTypeInference", out var shared)) {
+          shared = new PreTypeInferenceModuleState(AllTopLevelOrMemberDeclarations(group.AllDeclarations()).ToList(),
+            resolver.SystemModuleManager.PreTypeBuiltins) { Group = group };
+          group.Shared["preTypeInference"] = shared;
+        }
+        preTypeInferenceModuleState = (PreTypeInferenceModuleState)shared;
+      }
       foreach (var d in allDeclarations) {
         Contract.Assert(resolver.VisibleInScope(d));
         ResolvePreTypeSignature(d, preTypeInferenceModuleState, resolver);
       }
+      yield return "preTypeSignatures";
 
       if (resolver.Options.Get(CommonOptionBag.UserDefinedOperators)) {
         var operatorErrorCount = resolver.Reporter.ErrorCount;
         OperatorResolution.Validate(declarations, resolver);
         if (resolver.Reporter.ErrorCount != operatorErrorCount) {
-          return;
+          yield break;
         }
       }
       if (!firstPhaseOnly) {
@@ -766,6 +897,17 @@ namespace Microsoft.Dafny {
     /// and parent types are inherited.
     /// </summary>
     private static void ResolvePreTypeSignature(Declaration d, PreTypeInferenceModuleState preTypeInferenceModuleState, ModuleResolver resolver) {
+      if (preTypeInferenceModuleState.Group is { } group && preTypeInferenceModuleState.StillNeedsPreTypeSignature.Contains(d)) {
+        // The declaration is resolved by the resolver of its module, with the names and the visibility of that module.
+        var module = d is TopLevelDecl topLevel ? topLevel.EnclosingModuleDefinition : ((MemberDecl)d).EnclosingClass.EnclosingModuleDefinition;
+        var owner = group.Resolvers[module];
+        if (owner != resolver) {
+          Type.PushScope(owner.moduleInfo.VisibilityScope);
+          ResolvePreTypeSignature(d, preTypeInferenceModuleState, owner);
+          Type.PopScope(owner.moduleInfo.VisibilityScope);
+          return;
+        }
+      }
       var preTypeResolver = new PreTypeResolver(resolver, preTypeInferenceModuleState);
       var previousErrorCount = preTypeResolver.ErrorCount;
 
@@ -896,20 +1038,31 @@ namespace Microsoft.Dafny {
         std.Var.PreType = Type2PreType(std.Var.Type);
         ResolveConstraintAndWitness(std, true);
       } else if (declaration is NewtypeDecl nd) {
+        nd.UseBaseReferenceCharacteristics = resolver.Options.Get(CommonOptionBag.ExtendedNewtypeBases);
+        nd.InheritsBaseDefault = nd.UseBaseReferenceCharacteristics && nd.Var == null &&
+          nd.WitnessKind == SubsetTypeDecl.WKind.CompiledZero;
+        var variable = nd.Var ?? HeaderToInfer(nd)?.Var;
         nd.BasePreType = CreateTemporaryPreTypeProxy();
-        if (nd.Var != null) {
-          nd.Var.PreType = nd.BasePreType;
+        if (variable != null) {
+          variable.PreType = nd.BasePreType;
         }
         nd.BasePreType = Type2PreType(nd.BaseType);
-        if (nd.Var != null) {
-          Contract.Assert(object.ReferenceEquals(nd.BaseType, nd.Var.Type));
-          nd.Var.PreType = nd.BasePreType;
+        if (variable != null) {
+          Contract.Assert(object.ReferenceEquals(nd.BaseType, variable.Type));
+          variable.PreType = nd.BasePreType;
         }
         var onProxyAction = () => {
           resolver.ReportError(ResolutionErrors.ErrorId.r_newtype_base_undetermined, nd.Origin,
-            $"base type of {nd.WhatKindAndName} is not fully determined; add an explicit type for bound variable '{nd.Var.Name}'");
+            $"base type of {nd.WhatKindAndName} is not fully determined; add an explicit type for bound variable '{nd.WrittenVar.Name}'");
         };
-        if (resolver.Options.Get(CommonOptionBag.GeneralNewtypes)) {
+        if (resolver.Options.Get(CommonOptionBag.ExtendedNewtypeBases) &&
+            (AncestorName(nd.BasePreType) == PreType.TypeNameORDINAL ||
+             OperationPreType(nd.BasePreType)?.Decl is DatatypeDecl or ArrowTypeDecl ||
+             OperationPreType(nd.BasePreType) is { Decl: var arrowBase } &&
+             (ArrowType.IsPartialArrowTypeName(arrowBase.Name) || ArrowType.IsTotalArrowTypeName(arrowBase.Name)))) {
+          // Capability admission is deliberately separate from the existing mode.
+          // References and traits remain excluded by the existing general-base confirmation.
+        } else if (resolver.Options.Get(CommonOptionBag.GeneralNewtypes)) {
           AddConfirmation(PreTypeConstraints.CommonConfirmationBag.IsNewtypeBaseTypeGeneral, nd.BasePreType, nd.Origin,
             $"a newtype ('{nd.Name}') must be based on some non-reference, non-trait, non-arrow, non-ORDINAL, non-datatype type (got {{0}})",
             onProxyAction);
@@ -1066,21 +1219,37 @@ namespace Microsoft.Dafny {
       }
     }
 
+    /// <summary>
+    /// Issue 105: the clauses of the header of "nd" that its InvariantTypeDecl has taken over (see
+    /// NewtypeDecl.TakeHeaderClauses), where the bound variable has no written type, or null. The constraint then
+    /// infers the base type of the newtype, as without invariants, so it is resolved with the newtype, in its first
+    /// pass, and the InvariantTypeDecl shares it and the variable (see InvariantTypeDecl.HeaderConjunctOf).
+    /// </summary>
+    static NewtypeDecl.HeaderClauses HeaderToInfer(NewtypeDecl nd) {
+      return nd.MovedHeaderClauses is { Var.Type: TypeProxy } header ? header : null;
+    }
+
     void ResolveConstraintAndWitness(RedirectingTypeDecl dd, bool initialResolutionPass) {
       Contract.Requires(dd != null);
       Contract.Requires(dd.Constraint != null);
 
-      if (dd.Var == null) {
+      var (variable, constraint) = dd is NewtypeDecl nd && HeaderToInfer(nd) is { } header
+        ? (header.Var, header.Constraint)
+        : (dd.Var, dd.Constraint);
+      if (variable == null) {
         if (initialResolutionPass) {
           Constraints.SolveAllTypeConstraints($"{dd.WhatKind} '{dd.Name}' constraint");
         }
       } else {
-        if (initialResolutionPass == dd.Var.Type is TypeProxy) {
+        if (initialResolutionPass == variable.Type is TypeProxy) {
           scope.PushMarker();
           scope.AllowInstance = false;
-          ScopePushExpectSuccess(dd.Var, dd.WhatKind + " variable", false);
-          ResolveExpression(dd.Constraint, new ResolutionContext(new CodeContextWrapper(dd, true), false));
-          ConstrainTypeExprBool(dd.Constraint, dd.WhatKind + " constraint must be of type bool (instead got {0})");
+          ScopePushExpectSuccess(variable, dd.WhatKind + " variable", false);
+          sharedHeaderVariable = dd is InvariantTypeDecl { HeaderConjunct: LetExpr { LHSs: [{ Var: { Type: TypeProxy } shared }] } }
+            ? shared : null;
+          ResolveExpression(constraint, new ResolutionContext(new CodeContextWrapper(dd, true), false));
+          sharedHeaderVariable = null;
+          ConstrainTypeExprBool(constraint, dd.WhatKind + " constraint must be of type bool (instead got {0})");
           scope.PopMarker();
           Constraints.SolveAllTypeConstraints($"{dd.WhatKind} '{dd.Name}' constraint");
         } else {

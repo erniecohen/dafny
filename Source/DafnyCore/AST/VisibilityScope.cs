@@ -39,11 +39,21 @@ namespace Microsoft.Dafny {
       if (other == null) {
         return true;
       }
-      var otherTokens = other.Tokens();
+      // A cache hit must not copy the other scope's tokens: this check runs for nearly every
+      // declaration the translator meets. Scopes only grow, and growing this scope clears its
+      // cache, so a cached overlap stays true and a cached non-overlap is still exact while the
+      // other scope's token count is unchanged.
+      int otherCount;
+      lock (other.syncRoot) {
+        otherCount = other.scopeTokens.Count;
+      }
       lock (syncRoot) {
-        if (cached.TryGetValue(other, out var result) && result.Item1 == otherTokens.Length) {
+        if (cached.TryGetValue(other, out var result) && (result.Item2 || result.Item1 == otherCount)) {
           return result.Item2;
         }
+      }
+      var otherTokens = other.Tokens();
+      lock (syncRoot) {
         var overlaps = scopeTokens.Overlaps(otherTokens);
         cached[other] = new Tuple<int, bool>(otherTokens.Length, overlaps);
         return overlaps;
@@ -57,9 +67,12 @@ namespace Microsoft.Dafny {
       }
     }
 
-    public void Augment(VisibilityScope other) {
+    /// <summary>
+    /// Adds the scopes of "other" to this scope.  Returns whether this scope changed.
+    /// </summary>
+    public bool Augment(VisibilityScope other) {
       if (other == null || ReferenceEquals(this, other)) {
-        return;
+        return false;
       }
       var tokens = other.Tokens();
       string[] ids;
@@ -67,9 +80,14 @@ namespace Microsoft.Dafny {
         ids = System.Linq.Enumerable.ToArray(other.scopeIds);
       }
       lock (syncRoot) {
+        var count = scopeTokens.Count;
         scopeTokens.UnionWith(tokens);
         scopeIds.UnionWith(ids);
+        if (scopeTokens.Count == count) {
+          return false;
+        }
         cached.Clear();
+        return true;
       }
     }
 

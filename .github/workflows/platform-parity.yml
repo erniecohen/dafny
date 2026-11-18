@@ -11,6 +11,9 @@ permissions:
 env:
   DOTNET_PROCESSOR_COUNT: '4'
   DOTNET_NOLOGO: 'true'
+  # Self-hosted runners: no build process outlives the job (MSBuild nodes, Gradle daemons).
+  MSBUILDDISABLENODEREUSE: '1'
+  GRADLE_OPTS: -Dorg.gradle.daemon=false
   DOTNET_CLI_TELEMETRY_OPTOUT: 'true'
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 'true'
   COPYFILE_DISABLE: '1'
@@ -40,7 +43,12 @@ jobs:
       - uses: actions/checkout@v4
       - name: Version
         id: version
-        run: sh .github/review/version.sh | tee -a "$GITHUB_OUTPUT"
+        # Not a pipe into tee: without pipefail a failing version.sh left the version empty.
+        run: |
+          # version.sh fetches the upstream tag; HEAD supplies the product tree.
+          out=$(sh .github/review/version.sh)
+          echo "$out" | tee -a "$GITHUB_OUTPUT"
+          echo "$out" | grep -q '^version=.'
       - uses: ./.github/actions/setup-dotnet
       - uses: actions/setup-java@v4
         with:

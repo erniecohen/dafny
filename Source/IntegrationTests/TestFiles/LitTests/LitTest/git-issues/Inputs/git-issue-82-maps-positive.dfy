@@ -73,7 +73,9 @@ ghost function NestedRangeMap82(n: int): map<int, int> {
 }
 
 ghost function NestedKeyMap82(n: int): map<int, int> {
-  map i: int | 0 <= i < 2 :: NestedInnerValue82(n + i) := i
+  // Reindex by the shifted source value, exposing it directly to the nested
+  // key's witness trigger. The two entries are still n -> 0 and n+1 -> 1.
+  map value: int | n <= value < n + 2 :: NestedInnerValue82(value) := value - n
 }
 
 lemma NestedRangeWitness82(n: int, i: int)
@@ -95,16 +97,16 @@ lemma NestedRangeMapContract82(n: int)
 }
 
 // Use the same named inner computation as the actual key predicate.
-lemma NestedKeyWitness82(n: int, i: int)
+lemma {:isolate_assertions} NestedKeyWitness82(n: int, i: int)
   requires 0 <= i < 2
   ensures NestedInnerValue82(n + i) in NestedKeyMap82(n).Keys
   ensures NestedKeyMap82(n)[NestedInnerValue82(n + i)] == i
 {
   NestedInnerIdentity82();
   assert NestedInnerValue82(n + i) == n + i;
-  // This tuple supplies the native source witness to the domain trigger.
-  var witnessTuple := (i, false);
-  assert witnessTuple.0 == i;
+  // The source witness for the reindexed comprehension is n+i.
+  var witnessTuple := (n + i, false);
+  assert witnessTuple.0 == n + i;
 }
 
 lemma NestedInnerIdentity82()

@@ -20,11 +20,32 @@ namespace Microsoft.Dafny {
     public static readonly Dictionary<string, Uri> StandardLibrariesDooUriTarget = new();
     public static readonly Uri StandardLibrariesDooUri = DafnyFile.ExposeInternalUri("DafnyStandardLibraries.dfy",
       new("dllresource://DafnyPipeline/DafnyStandardLibraries.doo"));
+    public static readonly Dictionary<string, Uri> CheckedStandardLibrariesDooUriTarget = new();
+    public static readonly Uri CheckedStandardLibrariesDooUri = DafnyFile.ExposeInternalUri("DafnyStandardLibraries-checked.dfy",
+      new("dllresource://DafnyPipeline/DafnyStandardLibraries-checked.doo"));
+
+    public static Uri StandardLibraryUri(DafnyOptions options, string target = null) {
+      var checkedLibrary = DafnyCore.ModularTerminationTrustList.Selected(options) != null ||
+                           DafnyCore.ModularTerminationRuntimeTrust.Selected(options) != null;
+      return target == null
+        ? (checkedLibrary ? CheckedStandardLibrariesDooUri : StandardLibrariesDooUri)
+        : (checkedLibrary ? CheckedStandardLibrariesDooUriTarget : StandardLibrariesDooUriTarget)[target];
+    }
+
+    /// <summary>
+    /// The well-founded orders of --decreases-orders (https://github.com/erniecohen/dafny/issues/245), loaded with the
+    /// standard library under that option.  It needs --general-traits=datatype, so it is not part of the standard library itself.
+    /// </summary>
+    public static readonly Uri StandardLibrariesOrdersInternalUri = new("dllresource://DafnyPipeline/DafnyStandardLibraries-orders.doo");
+    public static readonly Uri StandardLibrariesOrdersDooUri = DafnyFile.ExposeInternalUri("DafnyStandardLibraries-orders.dfy",
+      StandardLibrariesOrdersInternalUri);
 
     static DafnyMain() {
       foreach (var target in new[] { "cs", "java", "go", "py", "js", "notarget" }) {
         StandardLibrariesDooUriTarget[target] = DafnyFile.ExposeInternalUri($"DafnyStandardLibraries-{target}.dfy",
           new($"dllresource://DafnyPipeline/DafnyStandardLibraries-{target}.doo"));
+        CheckedStandardLibrariesDooUriTarget[target] = DafnyFile.ExposeInternalUri($"DafnyStandardLibraries-checked-{target}.dfy",
+          new($"dllresource://DafnyPipeline/DafnyStandardLibraries-checked-{target}.doo"));
       }
     }
 

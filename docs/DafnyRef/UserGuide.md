@@ -259,22 +259,6 @@ and specification from
 implementation.
 
 The options relevant to this command are
-- `--resolution-threads N` opts into dependency-ready resolution with up to `N`
-  workers (`N >= 1`). Without this option, the existing resolver path is used.
-  Diagnostics are emitted in the usual module order. Generated identifiers are
-  qualified by module, including identifiers used during verification translation.
-  Boogie state labels use stable module identities; counterexamples in the current
-  invocation retain their current source coordinates. Reading raw saved models
-  separately requires that invocation's state-to-source map.
-  Resolution keys cover the module's source, fully qualified identity, options,
-  Dafny version, and prerequisites from the semantic resolution graph (including
-  refinement bases, nesting, imports and export views).
-  Whole-program rewriters, replaceable-module instantiation, duplicate module-name
-  checks and cardinality validation still run on every invocation. External plugins
-  currently limit this mode to one worker because their callbacks have no
-  concurrent-resolution contract. This mode bypasses the language server's legacy
-  resolution-result cache; edits resolve module bodies again until a compatible
-  content-keyed cache is implemented.
 - those relevant to the command-line itself
    - `--allow-warnings` --- return a success [exit code](#sec-exit-codes), even when there are warnings 
 
@@ -318,6 +302,75 @@ programs together in a single run of `dafny`.
 
 Various options control the verification process, in addition to all those described for [`dafny resolve`](#sec-dafny-resolve).
 
+- `--verification-cache DIR` opts into a persistent cache for individual prepared
+  verification tasks. It requires `--type-system-refresh`; selecting the legacy
+  type system is an option error (exit 2). It uses a fresh solver history and deterministic numeric
+  declaration hashes for each task. The enabled session supersedes a legacy
+  `/deterministicLiteralHashes:0` override; disabling the cache preserves that setting. Unchanged complete solver inputs, execution options, ordered type
+  inputs, and solver/runtime dependency bytes can reuse a completed result.
+  The resource limit is not part of the key. Each result keeps the resource use
+  `u` the solver reported and the limit `L` it was produced under, and a run with
+  limit `L'` reuses it only where a fresh run would give the same verdict and
+  resource count: a valid
+  result when there is no limit or `L' >= u`; errors when `L' >= u` (or, if the
+  solver stopped at its limit while searching for them, only when `L' = L`); and
+  resource exhaustion at `L` only when `L' = L`. Errors and resource exhaustion
+  require a positive resource limit; under an elapsed-time limit only valid
+  results are reused, and the time limit is part of the key. Replayed JSON
+  timing fields carry `timingReplayed: true`; CSV adds `TimingReplayed`. Durations
+  describe the current invocation, not a new solver measurement. Unsupported
+  execution profiles run normally. The initial native profile supports macOS
+  and Linux; custom loading environments and solver launcher scripts bypass.
+  Both a framework-dependent build, whose .NET host is identified by the
+  installation's `host/fxr`, and a self-contained build, whose bundled
+  `libhostfxr` and `libhostpolicy` identify its host, are supported. Each request of
+  `--filter-position-batch` reads and writes the cache as a separate
+  `--filter-position` run would.
+  Paths under Dafny's own installation, the .NET runtime and the solver's
+  directory enter the key as placeholders, so the same build in another directory
+  or on another machine reuses the cache; the bytes of every image are still
+  hashed into the key. Each image's digest is remembered in `DIR` under its
+  absolute path, size, modification and status-change times, device and inode,
+  and is recomputed when any of these differ or the entry is unreadable. This is
+  weaker than hashing the bytes on every run: a rewrite that kept all of these
+  would be missed. An ordinary process cannot set the status-change time, and the
+  images are read-only system files and build outputs, so the cache relies on it.
+  Only trusted local writers may share a cache. Remove `DIR/v1` to evict it;
+  there is no automatic disk eviction. This option is off by default and can
+  also be set in `dfyconfig.toml`.
+- `--resolution-threads N` uses N workers for dependency-ready module resolution.
+  It requires `--type-system-refresh`; an incompatible configuration is rejected
+  before parsing with exit code 2. The effective CLI or project-file options apply.
+  Scheduling is opt-in and N must be positive when specified. Sequential and
+  parallel resolution use the same module-scoped names, dependency heights and
+  builtin inventories; changing N does not select a different translation scheme.
+
+- `--translation-cache` requires `--type-system-refresh`; a legacy-type-system
+  request is rejected during option validation with exit code 2. It reuses module
+  translations within one process, for
+  example across batch verification requests. It uses the same names and
+  translation scheme as the default translator and does not select a resolution
+  worker count. It stores no files or verification results. The table is bounded
+  to 256 entries and 512 MiB of retained text; graph memory is additional.
+  Modular termination, counterexample extraction and unsupported graph metadata
+  recompute through the default materialization path.
+
+- `--boogie /cacheBackground` is an opt-in Boogie option
+  ([#241](https://github.com/erniecohen/dafny/issues/241)). When a split has the
+  same pruned declarations, in the same order, and the same random seed, type
+  encoding types and SMT options as the context its prover holds, the prover
+  restarts that context instead of setting it up again: it resends the commands
+  that set it up, without translating, erasing and printing the declarations
+  again. Each solver gets the same commands, in the same order, as without the
+  option, so verdicts and resource counts do not change. The separate opt-in
+  `--boogie /scheduleByImplementation` lets an implementation's splits run one
+  after the other on one prover, so that more contexts are restarted; it changes
+  which solver process verifies which split, and after which others, so resource
+  counts can differ from a run without it. Pass both with
+  `--boogie "/cacheBackground /scheduleByImplementation"`. A program that uses
+  `--standard-libraries` cannot pass them yet, because the library refuses
+  `--boogie` options other than its own.
+
 - What is verified
    - `--verify-included-files` (when enabled, all included files are verified, except library files, otherwise just those files on the command-line)
    - `--relax-definite-assignment`
@@ -337,7 +390,9 @@ Dafny parses and resolves the whole program once, then verifies these requests i
 order. Each filter uses the syntax of `--filter-position` and is also restricted
 by `--filter-symbol`, if supplied. `--filter-position-batch` cannot be combined
 with `--filter-position`. Duplicate or overlapping filters run their selected
-proofs again; they do not reuse a previous verification result. Each request has
+proofs again; they do not reuse a previous verification result, unless
+`--verification-cache` is given, under which each request reads and writes the
+persistent cache as a separate `--filter-position` run would. Each request has
 a separate summary, and `--log-format` collects all requests into one log, including repeated rows for repeated proofs. The exit code is
 unsuccessful if any request fails, even if later requests succeed. Parsing or
 resolution errors prevent every request from running.
@@ -349,7 +404,8 @@ warnings are isolated per request, and combined coverage includes every request.
 Cancellation or a solver exception aborts the batch before a later request starts.
 Files edited after they have been read
 are not reloaded between requests. To use changed inputs or options, start a new
-invocation; every invocation parses and resolves again. No cache is persisted.
+invocation; every invocation parses and resolves again. Apart from
+`--verification-cache`, no cache is persisted.
 As with a single position filter, a successful batch verifies only its selected
 proofs and does not establish that the whole project is verified.
 
@@ -533,6 +589,10 @@ The `dafny audit` command currently reports the following:
 This is typically used to mark that a lemma with no body (and is therefore assumed to always be true) is intended as an axiom.
 The key purpose of the `audit` command is to ensure that all assumptions are intentional and acknowledged.
 To improve assurance, however, try to provide a proof.
+
+* Under `--inherited-trait-axioms`, any [trait axiom](#sec-trait-axioms), and any class, datatype or newtype that inherits one without overriding it.
+The axiom is assumed of every such type, and nothing checks that it holds there.
+Overriding it with a proof, or giving the trait member a body, will improve assurance.
 
 * Any declaration marked with the `{:verify false}` attribute, which tells the verifier to skip verifying this declaration.
 Removing the attribute and providing a proof will improve assurance.
@@ -1897,6 +1957,20 @@ module ConcreteFoo replaces Foo {
 
 When replacing a replaceable module, the same rules apply as when refining an abstract module. However, unlike an abstract module, a placeholder module can be used as if it is a concrete module. When executing code, using for example `dafny run` or `dafny translate`, any program that contains a placeholder module must also contain a replacement of this placeholder. When using `dafny verify`, placeholder modules do not have to be replaced.
 
+In a program that contains a replacement, every use of the replaceable module is a use of its replacement. So a replacement may not use the module it replaces, other than by replacing it: it may not import that module, and it may not depend on a module that depends on that module. A module depends on the modules it imports, on the modules nested in it, on the module it refines, and on whatever those depend on; a use of a replaceable module also counts as a use of its replacement. Otherwise the replacement and a client of the replaceable module would depend on each other, which Dafny does not allow of any two modules. In the following program, `FooImpl` imports `Bar`, which imports `Foo`, so Dafny reports an error at `replaces Foo`:
+
+<!-- %no-check -->
+```dafny
+replaceable module Foo { function G(n: nat): nat }
+module Bar { import Foo  function F(n: nat): nat { Foo.G(n) } }
+module FooImpl replaces Foo {
+  import Bar // error: FooImpl -> Bar -> Foo
+  function G(n: nat): nat { Bar.F(n) + 1 }
+}
+```
+
+A replacement may import any module that does not depend on the module it replaces, and it may use what the replaceable module itself imports.
+
 Replaceable modules are particularly useful for defining behavior that depends on which target language Dafny is translated to.
 
 ### 13.8.4. C\#
@@ -2133,7 +2207,7 @@ in the neighborhood of the error; the error location (file, line, column) is alw
 
 * `--solver-log <file>` - [verification only] the file in which to place the SMT text sent to the solver
 
-* `--pipeline-profile <file>` - [verification only] (experimental) write timing
+* `--pipeline-profile <file>` - [verification and resolution] (experimental) write timing
   events of the verification pipeline to `<file>`, one JSON object per line: a
   manifest of the run (version, arguments, runtime, GC mode, core count); spans for
   finding the root files, parsing, cloning the parsed program and resolution; per
@@ -2147,6 +2221,32 @@ in the neighborhood of the error; the error location (file, line, column) is alw
   monotonic clock. The option only adds the file: Dafny's other output, and what it
   sends to the solver, are the same with and without it. The driver
   `.github/review/pipeline-profile.py` in Dafny's repository summarizes a profile.
+  `dafny resolve` accepts the option too. Both commands also write front-end
+  events, each with the wall time, the CPU time and the allocated bytes of the
+  thread that ran it, and the process's GC pause time: one per file parsed (or
+  `.doo` file read); the module dependency graph (imports, refinement, exports and
+  nesting); one per module declaration resolved, with the time of each phase of its
+  resolution (registration/export, setup, member signatures, module attributes,
+  bodies, and accessible members are separate; export-view resolution uses the
+  distinct `exportViewSetup`, `exportSignature`, `exportModuleAttributes`,
+  `exportBody` and `exportAccessibleMembers` phases); one per global resolution
+  pass; and one per module translated to Boogie. Three hidden options extend it for
+  measurements: `--pipeline-profile-heap`
+  forces a full compacting garbage collection after parsing, after resolution and
+  when each module's results are reported, and records the live heap (this changes
+  timing); `--pipeline-profile-gc-events` records each collection and each pause
+  from the runtime's GC events; and `--pipeline-profile-hold <directory>` waits at
+  each of those heap points for a driver to take a heap dump. The driver
+  `.github/review/frontend-profile.py` runs and analyzes these measurements.
+  Module resolution events are measured on the worker performing the resolution
+  or cache lookup, at both zero and positive `--resolution-threads`. Their `id`
+  refers to canonical graph order; the events themselves arrive in worker
+  completion order. `cached: true` reports reuse without replaying the original
+  phases. `status` distinguishes completed lookup/resolution (including diagnostic
+  errors), cancellation and failure; interrupted lookups have `cached: null`.
+  Thread-local phases are cleared after every attempt. Simultaneous workers'
+  wall intervals overlap, so the driver's serial global-work subtraction and
+  ideal parallel bound are omitted for profiles with positive resolution threads.
 
 * `--log-format <configuration>` - [verification only] (was `-verificationLogger:<configuration string>`)
   log verification
@@ -2330,17 +2430,18 @@ or the Dafny 4 syntax (`ghost function` and `function`)
   section.
 
 * `--conservative-match-inference` - with the refreshed type system
-  (`--type-system-refresh`), infer the type of the source of a `match` by
-  propagating the constraints already known before making any default type
+  (`--type-system-refresh`), infer the type of the source of a `match`, and
+  decide whether an identifier in a pattern is a constructor or a bound variable,
+  by propagating the constraints already known before making any default type
   decision. Without it, resolving a `match` whose source type is not yet known can
   give an earlier integer literal its default type `int` before the enclosing
   context, such as a function's declared result type, is seen; for example,
   `if x == 0 then Some(0) else var d := foo(x); match d ...` in a function whose
-  result type is `Option<int32>` is then rejected. Disabled by default, and it has
-  no effect on the legacy resolver. Use `conservative-match-inference = true` in a
-  project file's `[options]` section; `--conservative-match-inference:false`
-  overrides that setting. See the [match expression](#sec-match-expression) for
-  what it does not fix.
+  result type is `Option<int32>` is then rejected. Enabled by default;
+  `--conservative-match-inference:false` restores the earlier inference, and
+  `conservative-match-inference = false` does the same in a project file's
+  `[options]` section. It has no effect on the legacy resolver. See the
+  [match expression](#sec-match-expression) for what it does not fix.
 
 * `--ancestor-qualified-module-ids` - let a `refines` clause or `import` whose
   qualified module name starts with modules that enclose it, as in
@@ -2362,8 +2463,70 @@ or the Dafny 4 syntax (`ghost function` and `function`)
   `synonym-refines-abstract-type = true` in a project file's `[options]` section. See
   [type refinement](#sec-module-refinement).
 
+* `--inherited-trait-axioms` - let a class, datatype or newtype inherit a bodiless ghost
+  member of a trait that is marked `{:axiom}` (a lemma, a ghost method, a ghost function or
+  predicate, or a two-state lemma, function or predicate, none of them extreme) without
+  implementing it. The member's specification is then a declared axiom about every type
+  that extends the trait; an override is still checked, and `dafny audit` lists the axiom
+  and each type that inherits it. Under the option, `{:axiom}` on a bodiless compiled or
+  extreme trait member is an error. Without it, every bodiless trait member must be
+  implemented. Disabled by default. Use `inherited-trait-axioms = true` in a project file's
+  `[options]` section. See [trait axioms](#sec-trait-axioms).
+
+* `--refinement-extends` - let a class or trait declaration in a refining module add parent
+  traits to the declaration it refines, as in `trait T ... extends S { }`. The parents of the
+  refined declaration are kept, and the added ones follow them. Every check that an added
+  parent calls for (members to implement, override checks, fields to assign, termination) is
+  made in the refining module, also for members it inherits. A refinement cannot make a
+  trait a reference type. Without the option, an `extends` clause after `...` is a parse
+  error. Disabled by default. Use `refinement-extends = true` in a project file's
+  `[options]` section. See [refinement of classes and traits](#sec-module-refinement).
+
+* `--refinement-renaming` - in a refining module, let the redeclaration of a function,
+  method, lemma or constructor rename its type parameters, its out-parameters, its result and
+  the local names of its in-parameters, and let the redeclaration of a class, trait, datatype,
+  newtype or abstract type rename its type parameters. A named argument still uses the name
+  the parameter was first declared with. The inherited specification and body are renamed
+  with the declaration, and a renaming that would change what a name in inherited code refers
+  to is an error. The type of a parameter or result may be written differently from the
+  refined declaration if it is the same type, with type synonyms expanded. Disabled by
+  default. Use `refinement-renaming = true` in a project file's
+  `[options]` section. See [renaming in a refinement](#sec-refinement-renaming).
+
+* `--copy-imports` - accept the copying import `import X := Q`, which gives the importing
+  module a copy of the module `Q`, named `X`. The types of the copy are different from those
+  of `Q` and of every other copy of `Q`; its functions and constants have the definitions of
+  `Q`. A module that refines the importing module gets copies of its own. Without the option,
+  the syntax is a parse error. A library built with the option can be used only with the
+  option. Disabled by default. Use `copy-imports = true` in a project file's `[options]`
+  section. See [copying imports](#sec-copying-imports).
+
+* `--decreases-orders` - (experimental) accept a decreases component `e by O`, where `O`
+  is a closed ghost expression of the standard library's trait type
+  `Std.Termination.Orders.Wfo<T>` and `e` has type `T`. A call or loop iteration must make
+  `O.gt(old e, e)` true, or leave `e` unchanged. Requires `--type-system-refresh` and
+  `--general-traits=datatype` (or `full`). With `--modular-termination`, such components are
+  also allowed in `{:global}` and `{:callback}` bounds, and the orders library is loaded and
+  verified with the program. Disabled by default. Use `decreases-orders = true` in a project file's
+  `[options]` section. See [well-founded orders](#sec-decreases-by).
+
+* `--lemma-bindings` - (experimental) accept an expression `var y1, ..., yk := L(args); e`,
+  where `L` is a lemma with `k` out-parameters. The call is checked as a lemma call
+  statement is, and in `e` the variables, which are ghost, denote results that satisfy
+  `L`'s postcondition. The results are a fixed function of the lemma, its arguments and, if
+  the postcondition reads the heap, the heap. `L` must be an ordinary lemma whose
+  out-parameter types contain no references and whose postcondition is an expression that
+  a function body could contain. Requires `--type-system-refresh`. A program that uses a
+  library that binds the results of a lemma must set the option, too. Disabled by default. Use
+  `lemma-bindings = true` in a project file's `[options]` section. See
+  [binding the results of a lemma](#sec-lemma-binding).
+
 * `--modular-termination` - (experimental; it does not yet establish termination in every
-  program) accept `decreases {:global}` clauses, and reject a call dispatched to a
+  program) run the checks of [global bounds](#sec-global-decreases) on every program, not only
+  on one that uses them, and add those that are not yet on by default: a dispatched call from
+  code with a bound to an undeclared member of a `{:termination false}` trait is rejected, and
+  libraries must carry a termination record. By default Dafny accepts `decreases {:global}`
+  clauses, and, in a program that uses them, rejects a call dispatched to a
   bodyless member of a trait whose implementations may lie in other modules unless it
   goes to a smaller `decreases {:global}` bound, and a call to known code that can reach
   such a dispatched call unless it goes to a bound that is not larger. A helper that
@@ -2375,9 +2538,11 @@ or the Dafny 4 syntax (`ghost function` and `function`)
   has no bound either; `decreases {:callback g} E` gives an in-parameter `g` the bound `E`,
   which an application of `g` must be below and the value passed for `g` must run under. A
   global or callback bound may only use code that cannot reach such a dispatched call. With `--show-hints`, it
-  reports every call that needs one of the rules. Disabled by default. Use
+  reports every call that needs one of the rules. The hidden `--legacy-no-modular-termination`
+  restores the rules of Dafny 4.11, for migration and comparison. `--modular-termination` is disabled by default. Use
   `modular-termination = true` in a project file's `[options]` section. See
-  [global bounds](#sec-global-decreases) for the rules and their limits.
+  [global bounds](#sec-global-decreases) for the rules and their limits. The option also declares the type
+  `bounded<O, F>` of [bounded callables](#sec-bounded-callables).
 
 Legacy options:
 
@@ -2485,8 +2650,9 @@ warnings as errors.
   annotate, and a declaration that a refining module inherits is reported once, where it is
   written. Under
   `--modular-termination` the warning stays, since that option checks these calls only in the
-  code verified with it. Disabled by default. Use `warn-unchecked-termination = true` in a
-  project file's `[options]` section.
+  code verified with it. Enabled by default; `--warn-unchecked-termination=false`, or
+  `warn-unchecked-termination = false` in a project file's `[options]` section, turns it off, and so
+  does the hidden `--legacy-no-unchecked-termination-warning`, kept for migration and comparison.
 
 Legacy options
 
@@ -2592,7 +2758,23 @@ and what information it produces about the verification process.
   For a source lambda with a declared precondition, it also exposes the necessary
   direction of that precondition under the lambda's type, allocation and heap
   requirements. This applies to stored and returned lambda values.
+  An application of a function stored in a field of type `A -> T` of an inductive
+  datatype value, or of type `A --> T` where its precondition holds, is also
+  strictly below that value in the termination order.
+  A lambda's value is tagged with its parameter types, and two ghost functions
+  marked `{:functionDomain "restrict"}` and `{:functionDomain "exactDom"}`, of
+  signatures `Restrict<A, B>(f: A -> B): A -> B` and `ExactDom<A, B>(f: A -> B):
+  bool`, give the restriction of a function to `A` and whether `A` is exactly its
+  domain; every total arrow on `int`, `real`, `bool` or `ORDINAL` has an exact
+  domain. Function extensionality for functions with exact domains can then be
+  stated as a lemma without a body.
   See [the soundness, trigger and solver-limit note](../dev/additional-axioms.md).
+
+* `--function-extensionality-axiom` - give function values domain tags, as
+  `--additional-axioms` does, and make two total functions of one argument with
+  the same exact domain equal when they agree on it, at each equality between
+  them. Disabled by default. It can change proof costs. See
+  [the soundness note](../dev/additional-axioms.md).
 
 * `--heap-free-lambda-facts` - check a lambda without a reads clause, whose
   body observes neither the heap nor allocation, in every heap and without
@@ -2603,6 +2785,31 @@ and what information it produces about the verification process.
   file's `[options]` section. It has its own option, not `--additional-axioms`,
   because it can change proof costs. See
   [the soundness note](../dev/additional-axioms.md).
+
+* `--inlined-body-call-permissions` - when a call to a function with a body
+  is checked by inlining the body conjunct by conjunct (for example a
+  precondition `t.P(n)` where `P` is `a.P(n) && b.P(n)`), give each conjunct
+  the call permissions of the body at its own fuel layer, so that a later
+  conjunct no longer depends on unrelated terms unfolding an earlier one. It
+  adds no fact beyond the function's definition axiom. Disabled by default;
+  `inlined-body-call-permissions = true` in a project file's `[options]`
+  section. It has its own option, not `--additional-axioms`, because it
+  changes proof costs. See
+  [the soundness note](../dev/additional-axioms.md#call-permissions-of-the-checked-conjuncts-of-an-inlined-body-198).
+
+* `--detect-witness-matching-loops` - in the matching-loop detection of
+  automatically selected triggers, treat a variable bound by a nested
+  existential as a new term, since each instance of the enclosing quantifier
+  yields a fresh witness for it. For example,
+  `forall q | q in s :: exists p :: p in s && q < p` is reported as a matching
+  loop: the witness `p` of the instance at `q` matches the trigger `q in s`
+  again. Without the option, `p in s` counts as a harmless renaming of the
+  trigger. A variable counts when its quantifier is an existential in positive
+  position, or a universal in negative position, in the enclosing quantifier's
+  body, or where the position is mixed. A trigger that does not loop is
+  preferred where one exists. Disabled by default;
+  `detect-witness-matching-loops = true` in a project file's `[options]`
+  section.
 
 * `--statement-expression-conclusions` - in the condition of an `assert`
   statement, use the conclusion of a statement expression `S; E` (the
@@ -2621,6 +2828,35 @@ and what information it produces about the verification process.
   `statement-expression-conclusions = true` in a project file's `[options]`
   section. It can change proof costs.
 
+* `--quantified-check-call-facts` - when a method postcondition or the
+  condition of an `assert` statement is a universal quantifier, check its body
+  under the call facts (`f#canCall`) of the functions the body calls, which
+  the verifier assumes, as a separate quantifier, just before the check. A
+  function's definition axiom is guarded by its call fact, so without the
+  option the definition can be lost where the solver simplifies the checked
+  body until no trigger term of that separate quantifier remains: for
+  example, `ensures forall i | 0 <= i < |l| :: abs(l[i] - l[i]) <= d` fails,
+  since `l[i] - l[i]` becomes `0.0` and `abs(0.0)` stays uninterpreted. The
+  quantifier assumed after the check is the original one, so the option adds
+  no assumption. Loop invariants, function postconditions, quantifiers proved
+  by induction and quantifiers that Dafny splits by trigger are not affected.
+  Disabled by default; `quantified-check-call-facts = true` in a project
+  file's `[options]` section. It can change proof costs.
+
+* `--trait-rank-decreases` - in `decreases` clauses, order the values of a
+  trait that is not a reference type (one that does not extend `object`) by
+  structural rank, together with inductive datatypes and sequences. A
+  datatype that extends such a trait can then call a trait member on one of
+  its trait-typed fields: `decreases this` of the datatype is compared with
+  `decreases this` of the trait member, and two values of the trait can be
+  compared with each other. That a trait-typed field of an inductive datatype
+  value is below that value is an axiom of `--additional-axioms`, so most
+  programs need both options. Trait members without a `decreases` clause
+  still get no inferred `decreases this`; write it. No effect with
+  `--legacy-decreases-order`. Disabled by default;
+  `trait-rank-decreases = true` in a project file's `[options]` section. See
+  [the design note](../dev/design/317-datatype-trait-decreases.md).
+
 * `--manual-lemma-induction` - disables automatic inducntion for lemmas
 
 * `--isolate-assertions` - verify assertions individually
@@ -2629,6 +2865,17 @@ and what information it produces about the verification process.
   assignment-compatible and the destination constraints must verify. Disabled by
   default; use `datatype-subset-conversions = true` in a project file's `[options]`.
 * `--consistent-obligation-checks` - prepare and check matching implicit obligations once using the existing local assertion machinery and fuel rules (experimental, disabled by default; also a project-file option).
+
+Native-result map read-over-write axioms require canonical stored payloads in
+the arguments type encoding. The hidden `--legacy-noncanonical-map-payloads`
+switch restores the previous inconsistent axiom for comparison and migration
+only, and is not suitable for trusted verification.
+
+The character representation axioms use character membership as a guard in both
+`--unicode-char` modes. The hidden `--legacy-unguarded-char` switch restores the
+previous unguarded axioms and character refinement translation for comparison
+and migration only. Those axioms are inconsistent under the arguments type
+encoding; the switch is not suitable for trusted verification.
 
 * `--extract-counterexample` - if verification fails, report a potential
   counterexample as a set of assumptions that can be inserted into the code.

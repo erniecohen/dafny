@@ -627,6 +627,91 @@ moves.
 cast with the option off (1 error) and on (verifies, in both resolvers), and the
 same program with `assert false` after the proof, which must still fail.
 
+## Call permissions of the checked conjuncts of an inlined body (#198)
+
+https://github.com/erniecohen/dafny/issues/198. With
+`datatype T = Var(i: nat) | Bin(op: Op, a: T, b: T)`, a member predicate
+`scoped(n)` that is `a.scoped(n) && b.scoped(n)` on `Bin`, and
+`function size(t: T, s: seq<int>): int requires t.scoped(|s|)`, the calls
+`size(Bin(P,Var(0),Var(1)),[x,y])` and `size(Bin(op,Var(0),Var(1)),[x,y])`
+are both well formed, but exactly one of them failed its precondition, and which one
+moved with the surrounding declarations.
+
+A checked precondition `F(args)` of a function with a body is split by inlining
+that body (`TrSplitFunctionCallExpr`, `BoogieGenerator.SplitExpr.cs`). Each checked
+conjunct `c` of the body becomes its own assertion
+
+```boogie
+F#canCall(args) ==> F($LS($LZ), args) || c    // c translated at layer $LS($LS($LZ))
+```
+
+and the splits carry `{:subsumption 0}`, so an earlier one is not assumed while a
+later one is checked. In the second conjunct `b.scoped(n)`, the call unfolds only
+under `scoped#canCall(b, n)`. The only source of that is the definition axiom
+instance at `args`, whose body is translated at the caller's layer `$LZ`:
+
+```boogie
+// existing definition axiom of F, unchanged
+forall ly, args :: F#canCall(args) ==>
+  CanCallAssumption(BODY, ly) && F($LS(ly), args) == BODY(ly)
+```
+
+and `CanCallAssumption` of `a.scoped(n) && b.scoped(n)` is
+`scoped#canCall(a, n) && (scoped(ly, a, n) ==> scoped#canCall(b, n))`. At
+`ly := $LZ`, `scoped($LZ, a, n)` cannot be unfolded, and the split that proves
+`a.scoped(n)` is not available. So the second conjunct was proved only when an
+unrelated term in the same verification condition happened to unfold the first;
+reversing the conjuncts moves the failure to the new second one.
+
+This member has its own default-off option, `--inlined-body-call-permissions` (also
+`inlined-body-call-permissions = true` in a project file's `[options]`), not the shared
+`--additional-axioms`, because of its measured cost (below). With it, each checked
+conjunct gets the body's call permissions at the layer of the conjuncts as an antecedent:
+
+```boogie
+F#canCall(args) ==> F($LS($LZ), args) || (CanCallAssumption(BODY, $LS($LZ)) ==> c)
+```
+
+where `c` is translated at `$LS($LS($LZ))`, as before.  `CanCallAssumption(BODY, $LS($LZ))`
+contains `scoped($LS($LZ), a, n) ==> scoped#canCall(b, n)`, whose guard unfolds. The body
+is the same type-specialized, prefix-substituted body the definition axiom uses. When its
+call permissions are `true` nothing is added. The option is tested before anything is
+built, so with it off the Boogie program is unchanged. Its kind is **neither**: it adds
+no axiom and no assumption, and weakens a checked assertion only by an antecedent that the
+existing axioms already imply.
+
+**Derivation.** The antecedent is the first conjunct of the existing definition axiom of
+`F` instantiated at the same `args` and at `ly := $LS($LZ)`, and each assertion is already
+guarded by `F#canCall(args)`. So the assertion with the antecedent follows from the
+assertion without it and the existing axiom: no new fact is assumed, and no model is
+removed. The antecedent can only make an assertion easier to prove when it is a
+consequence of what is already known.
+
+**Cost.** The antecedent is added to every checked conjunct of every inlined body whose
+call permissions are not trivially `true`, so the verification conditions of such
+callers change, not only those that failed. Measured in CI (Z3 5.1.0 for the suite and both Z3
+versions for the standard library, resource units) by putting the change behind the shared
+option, so that the paired runs with `--additional-axioms` compared the family with and without
+it: with the option off, every count of the suite and of both library gates was identical. With
+it on, the suite's matched valid batches went from 1,060,715,235 to 1,041,521,618 (-1.8%; 772 of
+8,121 batches moved, by -85% to +71% per program), and `dafny1/SchorrWaite-stages.dfy`
+`M2.SchorrWaite (correctness)` went from verified to out of resource. The standard library went
+up 3.5% (Z3 4.12.1, no verdict moved) and 3.1% (Z3 5.1.0), where `Std.Base64.EncodeDecodeValid`,
+`Std.Collections.Seq.MergeSortedWith (well-formedness)` and `Std.Collections.Seq.SortedUnique`
+went from verified to out of resource. Four regressed verdicts and no improved one is a
+performance effect that would change what the shared option proves, so the member has its own
+option, and the gates' expected verdicts are unchanged. A cheaper variant, giving each conjunct
+only the permissions of the conjuncts before it, is not explored.
+
+**Controls.** `git-issues/github-issue-198.dfy` runs, with the option on and in both
+resolvers (and once also with `--additional-axioms`), the issue's two forms and their three-child, reversed-conjunct, method and
+lemma variants (`Inputs/github-issue-198-forms.dfy`), the same declarations in reverse
+order (`Inputs/github-issue-198-reversed.dfy`), and two controls that must still fail
+(`Inputs/github-issue-198-controls.dfy`): a term with a leaf `Var(2)` against a
+two-element sequence, which must fail its precondition, and a lemma that calls `size`
+and then asserts `false`. With the option off, four or five of the fifteen positive
+declarations fail, depending on the other options.
+
 ## Standing CI for the shared option (#50)
 
 The review workflow runs the existing suite plan with the shared option both
@@ -969,3 +1054,250 @@ range and inhabited `assert false` controls must still fail. Acceptance also
 requires exact-source CI and complete OFF suite/library verdict and controlled
 resource equality. A diagnostic wrapper that records expected failures and
 exits zero is not that acceptance gate.
+
+## Rank of arrow-typed datatype fields (#326)
+
+https://github.com/erniecohen/dafny/issues/326. For a field `f` of an inductive
+datatype constructor `C` whose type is the total arrow `A0, ..., An-1 -> U`, the
+option adds, in `BoogieGenerator.DataTypes.cs` beside the existing field rank axioms:
+
+```boogie
+forall params, t0..tn: Ty, h: Heap, bx0..bxn-1: Box
+  { ApplyN(t0..tn, h, params_f, bx0..bxn-1), #C(params) }
+  $IsGoodHeap(h) && $Is(params_f, Tclass._System.___hTotalFuncN(t0..tn))
+    && $IsBox(bx0, t0) && ... && $IsBox(bxn-1, tn-1)
+  ==> RANK(ApplyN(t0..tn, h, params_f, bx0..bxn-1)) < DtRank(#C(params))
+```
+
+`RANK` is `DtRank` of the unboxed value for a datatype result, `BoxRank` for a
+type-parameter result and `Seq#Rank` for a sequence result. For a `map` or `imap`
+result it is the value form of the existing map field axiom: under the domain test
+on the applied map, `DtRank` of the unboxed value, triggered on that domain test and
+the constructor term. For the partial arrow `-->` (`___hPartialFuncN`) the
+antecedent also has `RequiresN` of the same arguments. Set, multiset and map-key
+results have no axiom: their elements need equality, which no datatype with an
+arrow-typed field supports, so such a result never contains the constructor's
+own type. `~>` fields and codatatype fields get nothing. The option is tested
+before anything is built, so with it off the Boogie program is unchanged. Its kind
+is **asserts**.
+
+### Model
+
+Take the set-theoretic model of inductive datatypes in which a value of a
+datatype whose constructors take functions is a well-founded tree, possibly
+infinitely branching: a constructor applied to a total function `A -> T` has the
+values of the function among its immediate subterms, and the rank is the ordinal
+height of the tree. Total arrow handles that satisfy
+`$Is(_, ___hTotalFuncN(..))` read no heap and have the trivial precondition, so in
+a good heap `ApplyN` is the mathematical function's value at the boxed arguments;
+its rank is below the rank of the constructor term that stores the function. A
+partial arrow handle reads no heap either; where `RequiresN` holds the application
+is a value of the stored function's graph and the same argument applies. Outside
+the precondition nothing is stated. A `~>` function may read the heap, and a value
+built from a heap-reading function can, through a field it reads, contain itself;
+no fact is given for such fields. A codatatype has no rank.
+
+Dafny's `DtRank` is integer-valued, and a constructor such as
+`Lim(f: nat -> Ord)` has an unbounded set of subterm ranks, so the integer
+interpretation needs ordinal ranks. The existing axioms already need them, by
+default: `Lim(m: imap<nat, Ord>)` with `m := imap k :: Up(k)` gives the same
+infinitely branching tree and verifies today. Source programs cannot state
+integer facts about `DtRank`; the only uses are the strict comparisons of
+`decreases` and `<` on datatype values, and those are consistent with ordinal
+ranks. The new axiom adds no new shape of model to the existing one.
+
+### Circular constructions
+
+A cycle would need a value `v == C(..f..)` with `f(x) == v` or `f(x)` containing
+`v`. Each route to one is rejected before the new fact applies:
+
+- a function name in its own body (`Node(F)` inside `F`) is a naked function in a
+  recursive setting, a resolution error, as are the same through a `const`, a
+  class `const` initializer, a datatype member, a trait member and
+  `--general-traits`;
+- eta expansion `Node((n: nat) => F())` and dispatch through a trait both fail the
+  termination check;
+- a lambda that reads the heap does not satisfy `->`'s subset constraint, and a
+  `~>` value coerced to `->` fails the same check; a `~>` field gets no fact, and a
+  `~>` value with an empty reads clause still cannot read the object that holds
+  the value under construction;
+- subset types over arrows add their constraint to `->`'s, and newtypes over
+  arrows are rejected;
+- iterators: the yielded value and the iterator's state are heap state, so the
+  lambda that would read them is not `->`;
+- curried fields `A -> (B -> T)` give nothing for the inner arrow, which is a
+  result of arrow type, not a datatype;
+- codatatypes: no fact at all, and a datatype holding a codatatype through an
+  arrow gets only the fact for the codatatype value, which no rank axiom relates
+  to its own fields.
+
+When a termination check fails, the function's definition axiom is still
+emitted, and with it the existing rank axioms can prove `false` in other
+declarations of the same program: `function F(): T { Node([F()]) }` does so with a
+`seq` field, by default. With the option on, `Node((n: nat) => F())` behaves the
+same. The program does not verify, because the termination error is reported.
+
+A trait marked `{:termination false}` and extended in another module is not
+checked for termination (https://github.com/erniecohen/dafny/issues/211). The
+existing direct-field axiom then proves `false` by default, and the new axiom does
+so with the option on. Both move when that issue is fixed.
+
+### Controls
+
+`git-issues/github-issue-326.dfy` runs, with the option off and on and under both
+resolvers, the issue's program, a positive file (Brouwer ordinals with an
+induction lemma, multi-argument and zero-argument arrows, partial arrows,
+generic and mutually recursive datatypes, `seq`, `map` and `imap` results, a
+subset type over an arrow and a `~>` variable holding a `->` field) and a vacuity
+control with an `ensures false` lemma for each of those forms. With the option on
+it runs one file per circular route above, each with a false-derivation attempt
+that must not verify, and the seq-field baseline and the
+`{:termination false}` interaction. The positive file has 19 verified
+declarations with the option on and 16 errors with it off; every vacuity control
+fails in both settings.
+
+## Rank of trait-typed datatype fields (#317)
+
+https://github.com/erniecohen/dafny/issues/317. For a field of an inductive
+datatype constructor whose type is a trait that is not a reference type, the
+option adds, in `BoogieGenerator.DataTypes.cs`, the axiom that a type-parameter
+field already has: `BoxRank(field) < DtRank(#C(params))`, triggered on the
+constructor term. The field's value is boxed, as a type-parameter field's is. Its
+kind is **asserts**. It holds in the model above with `BoxRank($Box(v))`
+interpreted as `DtRank(v)` for a datatype value, `Seq#Rank(v)` for a sequence
+and `0` for any other value: a datatype or sequence value in the field is a
+child of the constructor value, and any other value is a leaf. The fact is used
+by `--trait-rank-decreases`, which makes such trait values comparable in
+`decreases` clauses; without that option it relates the field to the
+constructor only through a downcast (`x.next as L < x`). The argument, including
+cycles through two datatypes that extend one trait and implementations of the
+trait by classes and codatatypes, is in
+[`docs/dev/design/317-datatype-trait-decreases.md`](design/317-datatype-trait-decreases.md).
+The regression is `git-issues/github-issue-317.dfy`, whose `downcast` fixture
+runs this axiom alone with an `ensures false` vacuity control.
+
+## Function domains and extensionality (#374)
+
+https://github.com/erniecohen/dafny/issues/374. A function value in the verifier
+is a handle, and its application, precondition and reads parts are defined at every
+box, not only at values of its parameter types. A lambda's application unboxes any
+box to its representation type, so two lambdas over a datatype `D` that agree on
+every `D` value still differ at a box of another datatype. Extensionality over `D`
+contradicts that and proves `false`, even if it requires the two values to have
+the same parameter type, because the existing selector axioms hold at every box.
+
+### Encoding
+
+With `--additional-axioms` (or `--function-extensionality-axiom`), in
+`BoogieGenerator.FunctionDomains.cs`:
+
+- A lambda's handle is `TagHandleN(d_1, ..., d_N, h, r, rd)`, where `d_i` is the
+  `Ty` of its i-th parameter. Its selector axioms hold only where every
+  argument `bx_i` satisfies `$IsBox(bx_i, d_i)`, and `$FunDomN(TagHandleN(...),
+  bx...) <==> $IsBox(bx_1, d_1) && ...`. A handle built by `HandleN` keeps the
+  original axioms. With the option off the translator does not emit `TagHandleN`,
+  so the Boogie program is unchanged.
+- A lambda whose parameters all have type `int`, `real`, `bool` or `ORDINAL`
+  (not a subset type or a newtype of one) is built by `BasicHandleN`, with the
+  same tags and domain, and with the original, unguarded selector axioms. Its maps
+  read each box only through an unboxing to that type, and every box unboxes to a
+  value of the type, so its value at any box is its value at a box in its domain.
+  Guarding these selectors costs proofs about integer lambdas: each application
+  must show `$IsBox` of its argument, and that search can exhaust a proof's
+  resource limit.
+- A named function's `F#Handle` keeps its unguarded Apply, Requires and reverse
+  axioms (its Reads axiom was already guarded), and its domain is its formals'
+  types. `F` itself is constrained only by axioms guarded by `F#canCall` or by its
+  formals' types, so its values outside its domain are free. Guarding these
+  axioms forces each application to prove a subset-type constraint on its
+  arguments. The `.requires` and `.reads` members of an arrow type are the
+  exception, and their handles keep guarded selectors: their "function" is the
+  Requires or Reads selector itself, which is constrained at every box. With
+  unguarded selectors, `f.requires == F` for a total `f` makes `F#requires` true
+  outside `F`'s domain, and so `F`'s postcondition hold there.
+- `$ExactDom1(a, f) <==> (forall bx :: $FunDom1(f, bx) <==> $IsBox(bx, a))`: the
+  domain is compared as a set of boxes, never as a `Ty` term. Distinct `Ty` terms
+  can have the same boxes: `type MyInt = x: int | true` has a tag different from
+  `TInt`, but a lambda over `MyInt` is an `int -> int`.
+- For `T` among `int`, `real`, `bool` and `ORDINAL`, `$Is(f, T -> B) ==>
+  $ExactDom1(T, f)`. In the verifier's model every box of the representation
+  type is a value of `T`, and no Dafny type has a box set that strictly contains
+  `T`'s.
+- Two declarations marked `{:functionDomain "restrict"}` and
+  `{:functionDomain "exactDom"}` get these axioms, and are checked to be static,
+  body-less ghost functions of the default class with signatures
+  `Restrict<A, B>(f: A -> B): A -> B` and `ExactDom<A, B>(f: A -> B): bool`:
+  - `$FunDom1(Restrict(A, B, f), bx) <==> $IsBox(bx, A)`, and `Restrict(A, B, f)`
+    agrees with `f` on `A` in application (its precondition and reads on `A` are
+    already true and empty, by its result type `A -> B`, so no axiom states them);
+  - `$ExactDom1(A, f) ==> Restrict(A, B, f) == f`;
+  - `ExactDom(A, B, f) <==> $ExactDom1(A, f)`.
+  With the option off they are opaque functions, so a program that does not
+  declare them is unaffected either way.
+- With `--additional-axioms` alone, extensionality is a lemma the program states
+  and calls (`FunExt` in `git-issues/Inputs/github-issue-374-decls.dfy`): there is
+  no extensionality axiom.
+- With `--function-extensionality-axiom`, which also turns the tags on, `==` and
+  `!=` between total arrows of one argument translate to `$FunEq1(a, b, f, g)`
+  instead of Boogie's `==`, with `$FunEq1(a, b, f, g) <==> f == g` and, triggered
+  on `$FunEq1`,
+  `$Is(f, a -> b) && $Is(g, a -> b) && $ExactDom1(a, f) && $ExactDom1(a, g) &&
+  (forall bx :: $IsBox(bx, a) ==> Apply1(a, b, $OneHeap, f, bx) == Apply1(a, b,
+  $OneHeap, g, bx)) ==> $FunEq1(a, b, f, g)`, as `Set#Equal` is used for sets.
+  Its trigger is an equality between the functions themselves; an equality of
+  sequences, sets or maps of functions needs the functions' equality first.
+
+### Model
+
+A function value of one argument is a pair of a box set `D` (its domain) and the
+three maps on `D`. Outside `D`, its parts are given by a fixed extension of the
+pair: at a box `b` whose unboxing to the representation type of `D`'s type,
+boxed again, lies in `D`, its parts are its parts at that box; at any other box,
+application is a fixed box, the precondition is false and the reads set is empty.
+If `D` is the boxes of `int`, `real`, `bool` or `ORDINAL`, the first case covers
+every box. `TagHandle1(d, h, r,
+rd)` and `BasicHandle1(d, h, r, rd)` are `(boxes of d, the three maps restricted to
+it)`; `HandleN` values keep their meaning as in the original model. The guarded
+selector axioms hold by construction, and so do `BasicHandle1`'s unguarded ones,
+because a lambda over a basic type is already that extension. A named function
+`F` is interpreted outside its domain by the extension of the value `F#Handle`
+denotes, which no axiom about `F` contradicts, since they all hold only inside its
+domain; the unguarded `F#Handle` axioms then hold. `$Is(f, A -> B)` holds when application is total on `A` and maps
+`A` into `B`, as before; it says nothing about boxes outside `A`. `Restrict(A, B,
+f)` is `(boxes of A, f's maps restricted to it)`. If `D` is exactly the boxes of
+`A`, restricting changes nothing, which is the `$ExactDom1` axiom. Two values with
+the same domain whose applications agree on it are the same pair, because the
+precondition of a total arrow is true on `A` and its reads set is empty. That is
+the extensionality axiom, at `$OneHeap`, which is where total arrows are applied.
+
+Application does not depend on the type arguments of `Apply1`, and a total
+arrow's values do not depend on the heap. Two existing limits apply, and they
+bound the argument:
+
+- It is relative to the handles the translator emits, as the existing handle
+  axioms are: a handle built from an arbitrary map can contradict the frame axiom
+  with the option off.
+- A lambda of an arrow type with empty reads, whose body uses `allocated`, can
+  depend on the heap, which the model above excludes.
+
+### Controls
+
+`git-issues/github-issue-374.dfy` runs the positive program with the option off
+(every `FunExt` precondition fails), with `--additional-axioms` and with
+`--function-extensionality-axiom`; the negatives in
+`Inputs/github-issue-374-negative.dfy` (the counterexample's full values, a
+lambda over `int` viewed as `nat -> int`, a type-parameter domain, and `assert
+false` after each live fact, including restrictions of datatype lambdas that differ
+at a box of another datatype, equal named functions over a datatype and over
+`nat`, a lambda equal to a named function, and equal lambdas over `int`) under both; and `Inputs/github-issue-374-axiom.dfy`,
+whose equalities fail under `--additional-axioms` alone and hold with the axiom.
+Every axiom above has a positive control, a lemma in these files that fails when
+that axiom alone is removed: `Inputs/github-issue-374-positive.dfy` covers the
+precondition and reads selectors of `TagHandle1` and `BasicHandle1` and the exact
+domains of `bool` and `real`, and `Inputs/github-issue-374-axiom.dfy` that of
+`ORDINAL`, which cannot instantiate a type parameter. The `{:functionDomain}` check
+has a negative control, `Inputs/github-issue-374-malformed.dfy`, whose declarations
+are each rejected under both options.
+`git-issues/github-issue-34.dfy` (`Std.Axioms.FunctionExtensionality`) is
+unchanged under both options. Under the axiom, its control that an uncalled
+lemma cannot prove `f == g` becomes provable, as intended.

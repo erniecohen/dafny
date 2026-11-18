@@ -401,6 +401,16 @@ namespace Microsoft.Dafny {
             return TrLambdaExpr(lambdaExpr);
           case StmtExpr stmtExpr:
             return TrExpr(stmtExpr.E);
+          case LemmaResultExpr lemmaResultExpr: {
+              // L#bind#y(G), see LemmaBindingInfo
+              var info = BoogieGenerator.GetLemmaBindingInfo(lemmaResultExpr.Lemma);
+              var tok = GetToken(lemmaResultExpr);
+              var formal = lemmaResultExpr.Out;
+              var args = BoogieGenerator.LemmaBindingArguments(info, tok, lemmaResultExpr.TypeArgumentSubstitutionsWithParents(),
+                lemmaResultExpr.Receiver, lemmaResultExpr.Args, this);
+              var result = FunctionCall(tok, info.ResultFunctionName(lemmaResultExpr.OutIndex), BoogieGenerator.TrType(formal.Type), args);
+              return BoogieGenerator.CondApplyUnbox(tok, result, formal.Type, lemmaResultExpr.Type);
+            }
           case ITEExpr iteExpr:
             return TranslateIfThenElseExpr(iteExpr);
           case MatchExpr matchExpr:
@@ -934,7 +944,8 @@ namespace Microsoft.Dafny {
       private Expr TranslateTernaryExpr(TernaryExpr ternaryExpr) {
         var e = ternaryExpr;
         var e0 = TrExpr(e.E0);
-        if (!e.E0.Type.IsBigOrdinalType) {
+        if (!(e.E0.Type.IsBigOrdinalType || options.Get(CommonOptionBag.ExtendedNewtypeBases) &&
+              NewtypeOperationView.IsOrdinal(e.E0.Type))) {
           e0 = FunctionCall(e0.tok, "ORD#FromNat", Predef.BigOrdinalType, e0);
         }
         var e1 = TrExpr(e.E1);
@@ -942,8 +953,8 @@ namespace Microsoft.Dafny {
         switch (e.Op) {
           case TernaryExpr.Opcode.PrefixEqOp:
           case TernaryExpr.Opcode.PrefixNeqOp:
-            var e1type = e.E1.Type.NormalizeExpand();
-            var e2type = e.E2.Type.NormalizeExpand();
+            var e1type = NewtypeOperationView.CoDatatypeType(e.E1.Type, options.Get(CommonOptionBag.ExtendedNewtypeBases));
+            var e2type = NewtypeOperationView.CoDatatypeType(e.E2.Type, options.Get(CommonOptionBag.ExtendedNewtypeBases));
             var cot = e1type.AsCoDatatype;
             Contract.Assert(cot != null);  // the argument types of prefix equality (and prefix disequality) are codatatypes
             var r = BoogieGenerator.CoEqualCall(cot, e1type.TypeArgs, e2type.TypeArgs, e0, this.layerInterCluster.LayerN((int)FuelSetting.FuelAmount.HIGH), e1, e2);
@@ -1183,7 +1194,8 @@ namespace Microsoft.Dafny {
           var n = Microsoft.BaseTypes.BigNum.FromBigInt((BigInteger)e.Value);
           if (e.Type.NormalizeToAncestorType() is BitvectorType bitvectorType) {
             return MaybeLit(BoogieGenerator.BplBvLiteralExpr(GetToken(e), n, bitvectorType));
-          } else if (e.Type.IsBigOrdinalType) {
+          } else if (e.Type.IsBigOrdinalType || options.Get(CommonOptionBag.ExtendedNewtypeBases) &&
+                   NewtypeOperationView.IsOrdinal(e.Type)) {
             var fromNat = FunctionCall(GetToken(literalExpr), "ORD#FromNat", Predef.BigOrdinalType, Boogie.Expr.Literal(n));
             return MaybeLit(fromNat, Predef.BigOrdinalType);
           } else {
@@ -1479,7 +1491,10 @@ namespace Microsoft.Dafny {
       public Expr TrExprSpecialFunctionCall(FunctionCallExpr expr) {
         Contract.Requires(expr.Function is SpecialFunction);
         string name = expr.Function.Name;
-        if (name == "RotateLeft") {
+        if (BoundedCallables.IsCertify(expr.Function)) {
+          return BoogieGenerator.TrBoundedCertify(GetToken(expr),
+            TrExpr(expr.Args[0]), expr.Args[0].Type, TrExpr(expr.Args[1]), expr.Args[1].Type);
+        } else if (name == "RotateLeft") {
           var w = expr.Type.AsBitVectorType.Width;
           Expression arg = expr.Args[0];
           return TrToFunctionCall(GetToken(expr), "LeftRotate_bv" + w, BoogieGenerator.BplBvType(w), TrExpr(expr.Receiver), BoogieGenerator.ConvertExpression(GetToken(expr), TrExpr(arg), arg.Type, expr.Type), false);
@@ -1570,10 +1585,23 @@ namespace Microsoft.Dafny {
         var reads = e.Reads.Expressions.ConvertAll(environment.Substituter.SubstFrameExpr);
         var footprint = et.BuildBoxedReadsFootprint(GetToken(e), reads);
         return new Boogie.LambdaExpr(GetToken(e), [], environment.LayerBinders, null,
-          FunctionCall(GetToken(e), BoogieGenerator.Handle(e.BoundVars.Count), Predef.BoxType,
-            new Boogie.LambdaExpr(GetToken(e), [], environment.Binders, null, body),
-            new Boogie.LambdaExpr(GetToken(e), [], environment.Binders, null, requires),
-            new Boogie.LambdaExpr(GetToken(e), [], environment.Binders, null, footprint.SetValue)));
+          BoogieGenerator.FunctionDomainTags
+            // With domain tags (issue 374), the handle records its parameters' declared types.
+            // A lambda over int, real, bool and ORDINAL only uses BasicHandleN, whose selectors
+            // are unguarded.
+            ? FunctionCall(GetToken(e),
+              e.BoundVars.All(bv => BoogieGenerator.IsBasicDomainType(bv.Type))
+                ? BoogieGenerator.BasicHandle(e.BoundVars.Count)
+                : BoogieGenerator.TagHandle(e.BoundVars.Count), Predef.HandleType,
+              e.BoundVars.Select(bv => BoogieGenerator.TypeToTy(bv.Type)).Concat(new List<Expr> {
+                new Boogie.LambdaExpr(GetToken(e), [], environment.Binders, null, body),
+                new Boogie.LambdaExpr(GetToken(e), [], environment.Binders, null, requires),
+                new Boogie.LambdaExpr(GetToken(e), [], environment.Binders, null, footprint.SetValue)
+              }).ToList())
+            : FunctionCall(GetToken(e), BoogieGenerator.Handle(e.BoundVars.Count), Predef.BoxType,
+              new Boogie.LambdaExpr(GetToken(e), [], environment.Binders, null, body),
+              new Boogie.LambdaExpr(GetToken(e), [], environment.Binders, null, requires),
+              new Boogie.LambdaExpr(GetToken(e), [], environment.Binders, null, footprint.SetValue)));
       }
 
       private Expr TrLambdaExpr(LambdaExpr e) {
@@ -2035,6 +2063,33 @@ namespace Microsoft.Dafny {
         return typeAntecedent;
       }
 
+      /// <summary>
+      /// Whether translating "expr" needs a heap: whether it reads a mutable location, calls a function that
+      /// reads the heap, applies an arrow with read effects, or refers to a previous or allocation state.
+      /// The bodies of lambdas, which are translated in their own heap, are not considered.
+      /// </summary>
+      private static bool NeedsHeap(Expression expr) {
+        switch (expr) {
+          case null or LambdaExpr:
+            return false;
+          case OldExpr or UnchangedExpr or MultiSelectExpr:
+            return true;
+          case UnaryOpExpr { Op: UnaryOpExpr.Opcode.Fresh or UnaryOpExpr.Opcode.Allocated }:
+            return true;
+          case FunctionCallExpr call when call.Function == null || call.Function.ReadsHeap || call.Function is TwoStateFunction:
+            return true;
+          case MemberSelectExpr { Member: Field { IsMutable: true } or TwoStateFunction }:
+            return true;
+          case ApplyExpr apply when !apply.Function.Type.IsArrowTypeWithoutReadEffects:
+            return true;
+          case SeqSelectExpr select when select.Seq.Type.IsArrayType:
+            return true;
+          case SeqConstructionExpr construction when !construction.Initializer.Type.IsArrowTypeWithoutReadEffects:
+            return true;
+        }
+        return expr.SubExpressions.Any(NeedsHeap);
+      }
+
       public List<Boogie.Expr> FunctionInvocationArguments(FunctionCallExpr e, Boogie.Expr layerArgument, Boogie.Expr revealArgument) {
         bool dummy;
         return FunctionInvocationArguments(e, layerArgument, revealArgument, false, out dummy);
@@ -2397,7 +2452,11 @@ namespace Microsoft.Dafny {
                 ctor => FunctionCall(e.Origin, ctor.QueryField.FullSanitizedName, Boogie.Type.Bool, TrExpr(e.Obj))));
               r = BplAnd(r, correctConstructor);
             }
-          } else if (e.Member is ConstantField { Rhs: { } rhs } && BoogieGenerator.RevealedInScope(e.Member)) {
+          } else if (e.Member is ConstantField { Rhs: { } rhs } && BoogieGenerator.RevealedInScope(e.Member) &&
+                     !(_the_heap_expr == null && NeedsHeap(rhs))) {
+            // A translator without a heap (the axioms of a function that reads nothing) cannot state the
+            // facts of a right-hand side that reads the heap, so it does not inline one.  Such a right-hand
+            // side fails its own reads check, except in ghost uses of an arrow's requires or reads.
             // The type arguments are substituted too: the right-hand side is stated in terms of the enclosing
             // type's type parameters, which are not in scope here.
             r = CanCallAssumption(Substitute(rhs, e.Obj, new Dictionary<IVariable, Expression>(), e.TypeArgumentSubstitutionsWithParents()),
@@ -2436,13 +2495,20 @@ namespace Microsoft.Dafny {
             }
           };
 
+          // A translator without a heap (the axioms of a function that reads nothing) reaches an application
+          // here through the right-hand side of a constant it reads.  A total arrow's precondition does not
+          // depend on the heap, so it is stated in $OneHeap, as its application is (HeapExprForArrow).  The
+          // right-hand side is not inlined if it applies any other arrow (NeedsHeap), so the fallback to true
+          // below, which only weakens the assumption, is a safeguard.
+          var heap = HeapExpr ?? (e.Function.Type.IsArrowTypeWithoutReadEffects ? BoogieGenerator.NewOneHeapExpr(e.Origin) : null);
           var args = Concat(
             Map(e.Function.Type.AsArrowType.TypeArgs, BoogieGenerator.TypeToTy),
-            Cons(HeapExpr,
+            Cons(heap,
               Cons(TrExpr(e.Function),
                 e.Args.ConvertAll(arg => TrArg(arg)))));
 
-          var requiresk = options.Get(CommonOptionBag.ConsistentObligationChecks)
+          var requiresk = heap == null ? Boogie.Expr.True
+            : options.Get(CommonOptionBag.ConsistentObligationChecks)
             ? BoogieGenerator.HigherOrderRequirement(e.Origin, e.Args.Count, args)
             : FunctionCall(e.Origin, Requires(e.Args.Count), Boogie.Type.Bool, args);
           var facts = BplAnd(
@@ -2573,7 +2639,14 @@ namespace Microsoft.Dafny {
 
         } else if (expr is StmtExpr) {
           var e = (StmtExpr)expr;
+          if (e.LemmaBindingCall is { } lemmaBindingCall) {
+            // The fact that says something of the results of the lemma comes from the call statement, where it is
+            // justified, and not from the result expressions.
+            return BplAnd(BoogieGenerator.LemmaBindingCanCall(lemmaBindingCall, this) ?? Boogie.Expr.True, CanCallAssumption(e.E, cco));
+          }
           return CanCallAssumption(e.E, cco);
+        } else if (expr is LemmaResultExpr lemmaResultExpr) {
+          return CanCallAssumption(lemmaResultExpr.SubExpressions, cco);
         } else if (expr is ITEExpr) {
           ITEExpr e = (ITEExpr)expr;
           Boogie.Expr total = CanCallAssumption(e.Test, cco);
@@ -2581,6 +2654,8 @@ namespace Microsoft.Dafny {
           total = BplAnd(total, BplImp(test, CanCallAssumption(e.Thn, cco)));
           total = BplAnd(total, BplImp(Boogie.Expr.Not(test), CanCallAssumption(e.Els, cco)));
           return total;
+        } else if (expr is DecreasesByExpr decreasesBy) {
+          return BplAnd(CanCallAssumption(decreasesBy.Order, cco), CanCallAssumption(decreasesBy.ResolvedExpression, cco));
         } else if (expr is ConcreteSyntaxExpression) {
           var e = (ConcreteSyntaxExpression)expr;
           return CanCallAssumption(e.ResolvedExpression, cco);

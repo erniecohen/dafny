@@ -1,0 +1,16 @@
+github-issue-199-forms.dfy(31,12): Error: expression is not allowed to invoke a method (M)
+github-issue-199-forms.dfy(35,19): Error: the results of a twostate lemma cannot be bound in an expression (TwoState)
+github-issue-199-forms.dfy(41,16): Error: the results of a least lemma cannot be bound in an expression (Least)
+github-issue-199-forms.dfy(45,19): Error: the results of a greatest lemma cannot be bound in an expression (Greatest)
+github-issue-199-forms.dfy(51,20): Error: the results of a prefix lemma cannot be bound in an expression (Least#)
+github-issue-199-forms.dfy(57,6): Error: the results of a lemma must be bound to variables, not to general patterns
+github-issue-199-forms.dfy(61,14): Error: expression is not allowed to invoke a lemma (Find)
+github-issue-199-forms.dfy(61,23): Error: expression is not allowed to invoke a lemma (Find)
+github-issue-199-forms.dfy(65,14): Error: wrong number of method result arguments (got 1, expected 2)
+github-issue-199-forms.dfy(69,18): Error: wrong number of method result arguments (got 2, expected 1)
+github-issue-199-forms.dfy(73,15): Error: wrong number of method result arguments (got 1, expected 0)
+github-issue-199-forms.dfy(79,11): Error: expression is not allowed to invoke a lemma (Fallible)
+github-issue-199-forms.dfy(79,2): Error: type of the receiver is not fully determined at this program point
+github-issue-199-forms.dfy(79,2): Error: type of the receiver is not fully determined at this program point
+github-issue-199-forms.dfy(79,2): Error: type of the receiver is not fully determined at this program point
+15 resolution/type errors detected in github-issue-199-forms.dfy

@@ -7,17 +7,20 @@ Dafny's `real` is axiomatized as an ordered field, with `.Floor` and the embeddi
 of the integers, but without completeness, so facts such as the existence of a
 square root of 2, or the intermediate value theorem for polynomials of arbitrary
 degree, cannot be proved from it alone.  Completeness cannot be derived from the
-ordered-field laws, so this module assumes it, in exactly one lemma:
+ordered-field laws, so it is assumed, in exactly one lemma,
+`Std.Axioms.Reals.Complete` (see [Std.Axioms](Axioms.md)), and this module is
+verified from it:
 
 - `upper(s, b)` holds when `b` is an upper bound of the set `s: iset<real>`.
-- `Complete(s, w, b)` is the trusted fact, an `{:axiom}` lemma with no
-  preconditions.  When `w in s` and `upper(s, b)`, the real `u` it returns is an
-  upper bound of `s` that is at most every upper bound of `s`.  For any other
-  arguments it says nothing about `u`.  The fact is true of the real numbers ℝ,
-  which are Dafny's model of `real`.  `dafny audit` reports `Complete` as this
-  module's one assumption.
+- `Complete(s, w, b)` has no preconditions.  When `w in s` and `upper(s, b)`,
+  the real `u` it returns is an upper bound of `s` that is at most every upper
+  bound of `s`.  For any other arguments it says nothing about `u`.  It is a
+  verified call of `Std.Axioms.Reals.Complete`, which states the same fact; the
+  fact is true of the real numbers ℝ, which are Dafny's model of `real`.
+  `dafny audit` reports `Std.Axioms.Reals.Complete`, not this lemma, as the
+  assumption.
 
-The rest of the module is verified from `Complete`:
+The rest of the module is verified from `Complete` too:
 
 - `Eligible(s)`: `s` is nonempty and bounded above;
 - `IsLub(s, u)`: `u` is the least upper bound of `s`;
@@ -26,8 +29,9 @@ The rest of the module is verified from `Complete`:
 - `Sup(s)`: the least upper bound of `s` when `s` is eligible, and `0.0` otherwise.
 
 A lemma without a body is a procedure, not a global axiom: its conclusions are
-available only at an explicit call, so a program that does not call `Complete`
-(directly, or through `ExistsLub` or `Sup`) is unaffected by it.
+available only at an explicit call, so a program that does not call
+`Std.Axioms.Reals.Complete` (directly, or through `Complete`, `ExistsLub` or
+`Sup`) is unaffected by it.
 
 For example, the supremum of the open interval from 0 to 1 is 1:
 <!-- %check-verify -->

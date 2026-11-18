@@ -1,0 +1,94 @@
+name: issue193-round2-probe
+
+on:
+  push:
+    branches: ['scratch/193-round2-probe']
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  evidence:
+    name: Round 2 (${{ matrix.solver }}, refresh ${{ matrix.refresh }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        solver: ['4.12.1', '5.1.0']
+        refresh: [false, true]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-dotnet
+      - uses: actions/download-artifact@v4
+        with:
+          name: dafny
+          run-id: 43088663501
+          github-token: ${{ github.token }}
+          path: compiler-archive
+      - name: Check unchanged pinned compiler sources
+        shell: bash
+        run: |
+          mkdir -p compiler
+          tar -C compiler -xzf compiler-archive/dafny.tar.gz
+          git fetch --no-tags --depth=1 origin 428e348b0b125cb67505f03a0026b3f497f98e48
+          git diff --exit-code 428e348b0b125cb67505f03a0026b3f497f98e48 HEAD -- Source Scripts global.json nuget.config dotnet-tools.json
+          dotnet compiler/dafny/Dafny.dll --version
+      - name: Get checksum-pinned solver
+        shell: bash
+        run: |
+          if [ '${{ matrix.solver }}' = '5.1.0' ]; then
+            curl -fsSLo z3.zip https://github.com/Z3Prover/z3/releases/download/z3-5.1.0/z3-5.1.0-x64-glibc-2.39.zip
+            echo 'f47be8d27d3230e823bf1eeede2fe0abaca55bb78d0b59974370e6689a92284a  z3.zip' | sha256sum -c -
+            unzip -q z3.zip -d solver
+            echo "Z3=$PWD/solver/z3-5.1.0-x64-glibc-2.39/bin/z3" >> "$GITHUB_ENV"
+          else
+            curl -fsSLo z3.zip https://github.com/dafny-lang/solver-builds/releases/download/snapshot-2026-04-03/z3-4.12.1-x64-ubuntu-24.04-bin.zip
+            echo 'e07d4193d8e1851114fe4d507332a43576639f4aeaa33c7df15c36426d3cbf3b  z3.zip' | sha256sum -c -
+            unzip -q z3.zip -d solver
+            echo "Z3=$PWD/solver/z3-4.12.1" >> "$GITHUB_ENV"
+          fi
+      - name: Run design evidence with expected failures recorded
+        shell: bash
+        run: |
+          chmod +x "$Z3"
+          evidence=docs/dev/design/193-evidence
+          python3 "$evidence/round2/generate.py" cases
+          extra=()
+          if [ '${{ matrix.refresh }}' = 'true' ]; then extra+=(--refresh); fi
+          python3 "$evidence/round2/run.py" --dafny "$PWD/compiler/dafny/Dafny.dll" \
+            --dotnet "$(command -v dotnet)" --z3 "$Z3" --sources cases --output results \
+            --source-commit 428e348b0b125cb67505f03a0026b3f497f98e48 --resource-limit 200000 --wall-timeout 600 "${extra[@]}"
+          python3 "$evidence/round2/ground_witness.py" \
+            --controls cases/controls64.dfy --lambda-controls cases/lambda-controls64.dfy \
+            --z3 "$Z3" --out ground-results
+          python3 "$evidence/round2/profile_queries.py" \
+            --dafny "$PWD/compiler/dafny/Dafny.dll" --dotnet "$(command -v dotnet)" \
+            --z3 "$Z3" --controls cases/controls64.dfy --out profile-results
+          echo 'BEGIN_GROUND_RECEIPT'
+          cat ground-results/ground-results.json
+          echo 'END_GROUND_RECEIPT'
+          if [ -f "$evidence/models/run_all.py" ]; then
+            python3 "$evidence/models/run_all.py" > model-output.txt
+            cat model-output.txt
+          fi
+          echo 'BEGIN_ROUND2_CSV'
+          cat results/summary.csv
+          echo 'END_ROUND2_CSV'
+          echo 'BEGIN_ROUND2_RECEIPT'
+          cat results/receipt.json
+          echo 'END_ROUND2_RECEIPT'
+          echo 'Diagnostic only: inspect exact outcomes; green status does not approve an axiom.' >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: issue193-round2-${{ matrix.solver }}-refresh-${{ matrix.refresh }}
+          path: |
+            cases
+            results
+            model-output.txt
+            docs/dev/design/193-evidence/models/results.json
+            ground-results
+            profile-results
+          retention-days: 90

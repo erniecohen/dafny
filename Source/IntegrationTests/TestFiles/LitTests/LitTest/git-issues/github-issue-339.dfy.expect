@@ -1,0 +1,27 @@
+github-issue-339.dfy(22,13): Error: in the first division of the constructor body (before 'new;'), the constant 's' cannot be read, because its initializer depends on 'this'
+github-issue-339.dfy(34,9): Error: in the first division of the constructor body (before 'new;'), the constant 's' cannot be read, because its initializer depends on 'this'
+github-issue-339.dfy(43,13): Error: in the first division of the constructor body (before 'new;'), the constant 'f' cannot be read, because its initializer depends on 'this'
+github-issue-339.dfy(53,18): Error: in the first division of the constructor body (before 'new;'), the constant 's' cannot be read, because its initializer depends on 'this'
+github-issue-339.dfy(63,9): Error: in the first division of the constructor body (before 'new;'), the constant 'u' cannot be read, because its initializer depends on 'this'
+github-issue-339.dfy(73,13): Error: in the first division of the constructor body (before 'new;'), the constant 'v' cannot be read, because its initializer depends on 'this'
+github-issue-339.dfy(82,9): Error: in the first division of the constructor body (before 'new;'), the constant 'me' cannot be read, because its initializer depends on 'this'
+github-issue-339.dfy(93,13): Error: in the first division of the constructor body (before 'new;'), the constant 's' cannot be read, because its initializer depends on 'this'
+8 resolution/type errors detected in github-issue-339.dfy
+github-issue-339.dfy(22,13): Error: in the first division of the constructor body (before 'new;'), the constant 's' cannot be read, because its initializer depends on 'this'
+github-issue-339.dfy(34,9): Error: in the first division of the constructor body (before 'new;'), the constant 's' cannot be read, because its initializer depends on 'this'
+github-issue-339.dfy(43,13): Error: in the first division of the constructor body (before 'new;'), the constant 'f' cannot be read, because its initializer depends on 'this'
+github-issue-339.dfy(53,18): Error: in the first division of the constructor body (before 'new;'), the constant 's' cannot be read, because its initializer depends on 'this'
+github-issue-339.dfy(63,9): Error: in the first division of the constructor body (before 'new;'), the constant 'u' cannot be read, because its initializer depends on 'this'
+github-issue-339.dfy(73,13): Error: in the first division of the constructor body (before 'new;'), the constant 'v' cannot be read, because its initializer depends on 'this'
+github-issue-339.dfy(82,9): Error: in the first division of the constructor body (before 'new;'), the constant 'me' cannot be read, because its initializer depends on 'this'
+github-issue-339.dfy(93,13): Error: in the first division of the constructor body (before 'new;'), the constant 's' cannot be read, because its initializer depends on 'this'
+8 resolution/type errors detected in github-issue-339.dfy
+github-issue-339-legacy.dfy(17,2): Error: assertion might not hold
+
+Dafny program verifier finished with 1 verified, 1 error
+github-issue-339-positive.dfy(50,2): Error: assertion might not hold
+
+Dafny program verifier finished with 3 verified, 1 error
+github-issue-339-positive.dfy(50,2): Error: assertion might not hold
+
+Dafny program verifier finished with 3 verified, 1 error

@@ -46,10 +46,18 @@ new axioms or a mechanized proof of the translator.
   and `<=` there. Equality of ranks always admits the suffix, including across
   representations. Strict rank descent is well-founded and the numeric laws
   prove absorption, even through alternating sequence/datatype representations.
+* **Traits that are not reference types** (only with `--trait-rank-decreases`):
+  their values join the sequence and inductive-datatype family through
+  `BoxRank`, with `<` and `<=` on ranks. In the model, `BoxRank` of a boxed
+  datatype value or sequence is its rank and of any other value `0`, so the
+  family's laws are unchanged
+  ([`design/317-datatype-trait-decreases.md`](design/317-datatype-trait-decreases.md)).
+  Without the option they are an equality-only family (below).
 * **ORDINAL:** ordinary ordinal `<` and its reflexive closure. Ordinal order is
   transitive and well-founded, so both absorption laws hold, including at limits.
-* **Equality-only families:** infinite sets/maps, arrows, abstract values and
-  coinductive datatypes have `s = false` and equivalence as `w` (domain
+* **Equality-only families:** infinite sets/maps, arrows, abstract values,
+  values of traits that are not reference types (without
+  `--trait-rank-decreases`) and coinductive datatypes have `s = false` and equivalence as `w` (domain
   equivalence for infinite maps). The laws hold
   trivially. Coinductive values are not assigned an inductive descent order.
 * **TOP:** every proper value is strictly and weakly below TOP; TOP is weakly
@@ -92,6 +100,42 @@ additional hypotheses follow by well-founded induction on the component/tuple
 rankings just described. A negative old numeric component cannot itself justify
 further numeric descent. Thus the repair changes assumptions as well as checks;
 its soundness claim relies on these order arguments, not just on removing facts.
+
+### Integer tuples
+
+A strict check at a call or at the end of a loop iteration, whose terminal value
+is false and whose compared components are all int-based (without `by O`), is
+emitted in the legacy shape (https://github.com/erniecohen/dafny/issues/414):
+an assertion `B_k = 0 <= y_k || x_k == y_k || x_0 < y_0 || ... || x_(k-1) < y_(k-1)`
+for each component, then the lexicographic `x_0 < y_0 || (x_0 == y_0 && (x_1 < y_1 || ...))`
+without lower bounds. Their conjunction is the corrected `L_0`:
+
+* From legacy to corrected: the lexicographic part gives a `k` with `x_i == y_i`
+  for `i < k` and `x_k < y_k`. In `B_k` the other disjuncts are false, so
+  `0 <= y_k`. That is `s_k` after equal, hence weak, steps.
+* From corrected to legacy: take the least `k` with `w_i` for `i < k` and `s_k`.
+  If some `i < k` had `x_i != y_i`, then `w_i` gives `0 <= y_i` and `x_i <= y_i`,
+  so `x_i < y_i` and `s_i`, contradicting the choice of `k`. So `x_i == y_i` for
+  `i < k`, which with `x_k < y_k` is the lexicographic part. `B_j` holds by
+  equality for `j < k`, by `0 <= y_k` for `j = k`, and by `x_k < y_k` for `j > k`.
+
+The second step uses that a weak integer step that is not an equality is
+strict. That fails for reals, where `x <= y` need not give `x <= y - 1`: the
+corrected order accepts a fractional decrease followed by strict progress in a
+later component, and the legacy comparison does not. So real components keep
+the corrected helper. A callee tuple cut short by an incompatible pair, or by
+having fewer components than the caller, has terminal value false in both
+shapes. Nonincrease, a TOP comparison that wins, induction hypotheses, the loop
+summary, `decreases to`, overrides and every other component type keep the
+corrected helper too.
+
+Since the two shapes are the same formula, this changes no program's
+correctness, only what the solver is asked. Either shape can be much harder for
+the solver in a given proof context: the issue measured a single
+`decreases b - a` at 33 times the legacy cost, while in the test suite the split
+shape runs out of resources in two proofs that the single assertion finished.
+The diagnostic changes too: a negative integer measure is again reported as not
+bounded below, as it was before the corrected order.
 
 For transitivity and absorption, choose the earlier decisive strict coordinate
 of the two comparisons. Every preceding coordinate composes weakly, and the

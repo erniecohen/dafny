@@ -333,14 +333,14 @@ public partial class Parser {
   }
 
   /// <summary>
-  /// Under --modular-termination, returns the {:global} attribute, without arguments, that the
+  /// Unless --legacy-no-modular-termination is given, returns the {:global} attribute, without arguments, that the
   /// current decreases clause added in front of "before", so that the clause's expressions become
   /// its arguments: the clause's global bound.  The same for a {:callback f} attribute with its one
-  /// argument, whose expressions become the callback bound of f.  Returns null otherwise, and always when the option
-  /// is off, so that the clause is then parsed as it always was.
+  /// argument, whose expressions become the callback bound of f.  Returns null otherwise, and always under
+  /// --legacy-no-modular-termination, so that the clause is then parsed as it was in 4.11.
   /// </summary>
   Attributes GlobalDecreasesAttribute(Attributes current, Attributes before) {
-    if (!theOptions.Get(CommonOptionBag.ModularTermination)) {
+    if (!ModularTermination.RulesEnabled(theOptions)) {
       return null;
     }
     for (var a = current; a != null && a != before; a = a.Prev) {
@@ -640,10 +640,15 @@ public partial class Parser {
         return pt.kind != _openAngleBracket || IsTypeList(ref pt);
       case _ident:
       case _least:
-      case _greatest:
-        while (true) {
-          // invariant: next token is an identifier (_ident, _least, or _greatest)
+      case _greatest: {
+        var isRaw = pt.kind == _ident && pt.val == "raw" && theOptions.Get(CommonOptionBag.MemberInvariants);
+        pt = scanner.Peek();
+        if (isRaw && pt.kind == _ident) {
+          // "raw T" (issue 105, as in RetagRawType): the named type T follows
           pt = scanner.Peek();
+        }
+        while (true) {
+          // invariant: pt is the token after an identifier (_ident, _least, or _greatest)
           if (pt.kind == _openAngleBracket && !IsTypeList(ref pt)) {
             return false;
           }
@@ -655,7 +660,9 @@ public partial class Parser {
           if (!IsIdentifier(pt.kind)) {
             return false;
           }
+          pt = scanner.Peek();
         }
+      }
       case _openparen:
         pt = scanner.Peek();
         if (pt.kind == _closeparen) {
@@ -669,6 +676,52 @@ public partial class Parser {
     }
   }
 
+
+  /// <summary>
+  /// Under --member-invariants (issue 105), 'invariant' and 'witness' in a member position are
+  /// member declarations.  The scanner produces them as the keywords they are elsewhere; the parser
+  /// retags the lookahead token before it tests for a member.  Without the option nothing is
+  /// retagged, so the parse, and every diagnostic, is what it was before the option existed.
+  /// </summary>
+  void RetagMemberKeyword() {
+    if (!theOptions.Get(CommonOptionBag.MemberInvariants)) {
+      return;
+    }
+    if (la.kind == _invariant) {
+      la.kind = _memberInvariant;
+    } else if (la.kind == _witness) {
+      la.kind = _memberWitness;
+    }
+  }
+
+  /// <summary>
+  /// Under --member-invariants (issue 105), 'raw' followed by a type name, where a type is expected,
+  /// is the raw-type operator.  'raw' stays an identifier everywhere else.
+  /// </summary>
+  void RetagRawType() {
+    if (!theOptions.Get(CommonOptionBag.MemberInvariants) || la.kind != _ident || la.val != "raw") {
+      return;
+    }
+    scanner.ResetPeek();
+    var next = scanner.Peek();
+    if (next.kind == _ident) {
+      la.kind = _rawType;
+    }
+  }
+
+  /// <summary>
+  /// Whether "tok", a memberInvariant, memberWitness or rawType token (issue 105), is one that the parser retagged.
+  /// The scanner produces these tokens too, for the control character U+0001 followed by the word (see their
+  /// definitions in Dafny.atg).  That character is not legal in a Dafny program, with or without
+  /// --member-invariants, so such a token is reported as an error.  A retagged token keeps its text.
+  /// </summary>
+  bool CheckRetaggedToken(Token tok) {
+    if (tok.val.Length != 0 && tok.val[0] == '\u0001') {
+      SemErr(ErrorId.p_control_character, tok, "the control character U+0001 is not allowed in a Dafny program");
+      return false;
+    }
+    return true;
+  }
 
   void ConvertKeywordTokenToIdent() {
     var oldKind = la.kind;

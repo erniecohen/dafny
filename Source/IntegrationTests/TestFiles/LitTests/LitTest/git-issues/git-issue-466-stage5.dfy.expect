@@ -1,0 +1,35 @@
+
+Dafny program verifier finished with 18 verified, 0 errors
+git-issue-466-stage5-false.dfy(7,4): Error: assertion might not hold
+git-issue-466-stage5-false.dfy(16,4): Error: assertion might not hold
+git-issue-466-stage5-false.dfy(21,4): Error: assertion might not hold
+
+Dafny program verifier finished with 0 verified, 3 errors
+git-issue-466-stage5-termination.dfy(5,44): Error: decreases clause might not decrease
+git-issue-466-stage5-termination.dfy(7,7): Related location: refining module
+
+Dafny program verifier finished with 3 verified, 1 error
+
+Dafny program verifier finished with 3 verified, 0 errors
+git-issue-466-stage5-invariants.dfy(4,13): Error: invariant might not hold
+git-issue-466-stage5-invariants.dfy(10,31): Related location: this is the invariant that might not hold
+git-issue-466-stage5-invariants.dfy(8,7): Related location: refining module
+git-issue-466-stage5-invariants.dfy(6,23): Error: invariant might not hold
+git-issue-466-stage5-invariants.dfy(10,31): Related location: this is the invariant that might not hold
+git-issue-466-stage5-invariants.dfy(8,7): Related location: refining module
+git-issue-466-stage5-invariants.dfy(27,13): Error: invariant might not hold
+git-issue-466-stage5-invariants.dfy(37,16): Related location: this is the invariant that might not hold
+git-issue-466-stage5-invariants.dfy(35,16): Related location: refining module
+git-issue-466-stage5-invariants.dfy(29,23): Error: invariant might not hold
+git-issue-466-stage5-invariants.dfy(37,16): Related location: this is the invariant that might not hold
+git-issue-466-stage5-invariants.dfy(35,16): Related location: refining module
+
+Dafny program verifier finished with 8 verified, 4 errors
+git-issue-466-stage5-raw.dfy(6,28): Error: value does not satisfy the subset constraints of 'nat'
+git-issue-466-stage5-raw.dfy(9,7): Related location: refining module
+
+Dafny program verifier finished with 5 verified, 1 error
+git-issue-466-stage5-nominal.dfy(18,43): Error: incorrect argument type for datatype constructor parameter 't' (expected T, found T)
+1 resolution/type errors detected in git-issue-466-stage5-nominal.dfy
+git-issue-466-stage5-mixed.dfy(7,9): Error: a compiled module (Concrete) is not allowed to import an abstract module (Abstract)
+1 resolution/type errors detected in git-issue-466-stage5-mixed.dfy

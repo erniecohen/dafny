@@ -116,6 +116,7 @@ twostate function Previous(c: ReadCell, n: int): int
   0
 }
 
+// Check footprint formation, mutation and snapshot preservation separately.
 method ChangedHeap(c: ReadCell, o: object?)
   modifies c
 {
@@ -130,6 +131,7 @@ method ChangedHeap(c: ReadCell, o: object?)
   ghost var allNamed := ReadAll.reads(c);
   ghost var allLambda := (x: int) reads c, c.ReadInput.reads => x;
   ghost var allLambdaReads := allLambda.reads(0);
+  assert {:split_here} true;
   label Before:
   c.objects := {o};
   c.value := c.value + 2;
@@ -143,6 +145,7 @@ method ChangedHeap(c: ReadCell, o: object?)
   assert forall n: int, q: object? :: q in c.ReadInput.reads(n) ==> allocated(q);
   assert ReadAll.reads(c) == {c, o};
   assert allLambda.reads(0) == {c, o};
+  assert {:split_here} true;
   assert allNamed == {c} + old(c.objects);
   assert allLambdaReads == {c} + old(c.objects);
   assert named == {c} + old(c.objects);

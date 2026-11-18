@@ -81,6 +81,14 @@
       <LogicalName>DafnyStandardLibraries.doo</LogicalName>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </EmbeddedResource>
+    <EmbeddedResource Include="..\DafnyStandardLibraries\binaries\DafnyStandardLibraries-checked*.doo">
+      <LogicalName>%(Filename)%(Extension)</LogicalName>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\DafnyStandardLibraries\binaries\DafnyStandardLibraries-orders.doo">
+      <LogicalName>DafnyStandardLibraries-orders.doo</LogicalName>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </EmbeddedResource>
     <EmbeddedResource Include="..\DafnyRuntime\DafnyRuntimeJava\src\main\java\**\*.java">
       <LinkBase>DafnyRuntimeJava</LinkBase>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
@@ -127,5 +135,21 @@
     </EmbeddedResource>
     <EmbeddedResource Remove="..\DafnyRuntime\DafnyRuntimeRust\target\**"/>
   </ItemGroup>
+
+  <!-- Bootstrap builds may omit the checked catalog. Final release publication must require it. -->
+  <Target Name="ValidateCheckedStandardLibraries" BeforeTargets="PrepareResources"
+          Condition="'$(RequireCheckedStandardLibraries)' == 'true'">
+    <ItemGroup>
+      <RequiredCheckedStandardLibrary Include="$(MSBuildThisFileDirectory)..\DafnyStandardLibraries\binaries\DafnyStandardLibraries-checked.doo" />
+      <RequiredCheckedStandardLibrary Include="$(MSBuildThisFileDirectory)..\DafnyStandardLibraries\binaries\DafnyStandardLibraries-checked-notarget.doo" />
+      <RequiredCheckedStandardLibrary Include="$(MSBuildThisFileDirectory)..\DafnyStandardLibraries\binaries\DafnyStandardLibraries-checked-cs.doo" />
+      <RequiredCheckedStandardLibrary Include="$(MSBuildThisFileDirectory)..\DafnyStandardLibraries\binaries\DafnyStandardLibraries-checked-java.doo" />
+      <RequiredCheckedStandardLibrary Include="$(MSBuildThisFileDirectory)..\DafnyStandardLibraries\binaries\DafnyStandardLibraries-checked-js.doo" />
+      <RequiredCheckedStandardLibrary Include="$(MSBuildThisFileDirectory)..\DafnyStandardLibraries\binaries\DafnyStandardLibraries-checked-go.doo" />
+      <RequiredCheckedStandardLibrary Include="$(MSBuildThisFileDirectory)..\DafnyStandardLibraries\binaries\DafnyStandardLibraries-checked-py.doo" />
+    </ItemGroup>
+    <Error Condition="!Exists('%(RequiredCheckedStandardLibrary.Identity)')"
+           Text="Missing checked standard library: %(RequiredCheckedStandardLibrary.Identity). Produce the checked catalog before the final release publish." />
+  </Target>
 
 </Project>

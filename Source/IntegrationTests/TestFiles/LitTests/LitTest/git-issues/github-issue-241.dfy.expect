@@ -1,6 +1,6 @@
 first event: manifest
 last event: summary
-kinds: manifest, module, span, summary, symbol, task
+kinds: fe, manifest, module, moduleGraph, span, summary, symbol, task
 roots: 1
 parse: 1
 parse.clone: 1

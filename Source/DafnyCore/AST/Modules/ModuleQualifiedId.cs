@@ -113,7 +113,7 @@ public class ModuleQualifiedId : NodeWithoutOrigin, IHasReferences {
     for (int k = RootIndex + 1; k < Path.Count; k++) {
       ModuleSignature p;
       if (decl is LiteralModuleDecl literalModuleDecl) {
-        p = literalModuleDecl.DefaultExport;
+        p = literalModuleDecl.CopyImportView ?? literalModuleDecl.DefaultExport;
         if (p == null) {
           reporter.Error(MessageSource.Resolver, Path[k],
             ProgramResolver.ModuleNotFoundErrorMessage(k, Path, $" because {decl.Name} does not have a default export"));

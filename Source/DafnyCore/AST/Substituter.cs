@@ -186,6 +186,18 @@ namespace Microsoft.Dafny {
           }
         }
 
+      } else if (expr is LemmaResultExpr lemmaResultExpr) {
+        var receiver = Substitute(lemmaResultExpr.Receiver);
+        var newArgs = SubstituteExprList(lemmaResultExpr.Args);
+        var newTypeApplicationAtEnclosingClass = SubstituteTypeList(lemmaResultExpr.TypeApplicationAtEnclosingClass);
+        var newTypeApplicationJustMember = SubstituteTypeList(lemmaResultExpr.TypeApplicationJustMember);
+        if (receiver != lemmaResultExpr.Receiver || newArgs != lemmaResultExpr.Args ||
+            newTypeApplicationAtEnclosingClass != lemmaResultExpr.TypeApplicationAtEnclosingClass ||
+            newTypeApplicationJustMember != lemmaResultExpr.TypeApplicationJustMember) {
+          newExpr = new LemmaResultExpr(expr.Origin, lemmaResultExpr.Lemma, receiver, newArgs, lemmaResultExpr.OutIndex,
+            newTypeApplicationAtEnclosingClass, newTypeApplicationJustMember);
+        }
+
       } else if (expr is ApplyExpr) {
         ApplyExpr e = (ApplyExpr)expr;
         Expression fn = Substitute(e.Function);
@@ -400,6 +412,16 @@ namespace Microsoft.Dafny {
         if (test != e.Test || thn != e.Thn || els != e.Els) {
           newExpr = new ITEExpr(expr.Origin, e.IsBindingGuard, test, thn, els);
         }
+      } else if (expr is DecreasesByExpr decreasesByExpr) {
+        // Keep the wrapper, so the termination check still sees the order.  The order is closed,
+        // so it needs no substitution.
+        Contract.Assert(decreasesByExpr.ResolvedExpression != null);
+        var resolvedExpression = Substitute(decreasesByExpr.ResolvedExpression);
+        return new DecreasesByExpr(expr.Origin, resolvedExpression, decreasesByExpr.Order) {
+          ResolvedExpression = resolvedExpression,
+          Type = resolvedExpression.Type
+        };
+
       } else if (expr is ConcreteSyntaxExpression concreteSyntaxExpression) {
         Contract.Assert(concreteSyntaxExpression.ResolvedExpression != null);
         var resolvedExpression = Substitute(concreteSyntaxExpression.ResolvedExpression);
@@ -488,7 +510,10 @@ namespace Microsoft.Dafny {
 
         // Put things together
         if (anythingChanged || body != letExpr.Body) {
-          return new LetExpr(letExpr.Origin, newCasePatterns, rhss, body, letExpr.Exact);
+          return new LetExpr(letExpr.Origin, newCasePatterns, rhss, body, letExpr.Exact) {
+            // the call that was written does not have the new receiver and arguments
+            LemmaBinding = letExpr.LemmaBinding == null ? null : letExpr.LemmaBinding with { Rhs = null }
+          };
         }
 
         return null;

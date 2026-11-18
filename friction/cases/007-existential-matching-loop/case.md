@@ -1,6 +1,9 @@
 # 007: An existential under a universal in a subset-type invariant is a silent matching loop
 
-- **Status:** filed ([#202](https://github.com/erniecohen/dafny/issues/202))
+- **Status:** filed ([#202](https://github.com/erniecohen/dafny/issues/202)); the warning is added behind the opt-in
+  option `--detect-witness-matching-loops`
+  (https://github.com/erniecohen/dafny/pull/381), not yet in a release. The
+  default behaviour is unchanged, so the check below still reproduces.
 - **Seen on:** Dafny 4.11.0+fcb2042d.review.bcc0c421 (this fork's release), Z3 5.1.0
 - **Options:** `--type-system-refresh --general-traits=full --general-newtypes`,
   resource limit 5,000,000 per declaration (`dfyconfig.toml`)
@@ -57,6 +60,19 @@ to 2.1M).
 Extend matching-loop detection to existentials under universals: the Skolem
 term of the inner existential re-matches the outer trigger. Warn, as for
 ordinary loops.
+
+## Opt-in fix
+
+https://github.com/erniecohen/dafny/pull/381 adds the default-off option
+`--detect-witness-matching-loops`. Matching-loop detection ignored `p in below`
+as a renaming of the trigger `q in below`, one variable for another, although
+`p` is a fresh Skolem witness at each instance. With the option it counts as a
+loop: the invariant's quantifier gets the matching-loop warning, and where
+another trigger is available it is preferred. Here the only trigger is
+`q in below`, so the option warns but cannot avoid the loop; the workaround
+above remains the way to contain it. The case keeps the status `filed`, and its
+check records the default behaviour, until a release makes the fix the default
+or a status for opt-in fixes is defined.
 
 ## Source
 

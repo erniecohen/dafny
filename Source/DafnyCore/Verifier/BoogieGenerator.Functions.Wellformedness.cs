@@ -19,7 +19,7 @@ public partial class BoogieGenerator {
 
     public void Check(Function f) {
 
-      Contract.Assert(generator.InVerificationScope(f));
+      Contract.Assert(generator.FunctionWellformednessInVerificationScope(f));
 
       generator.proofDependencies.SetCurrentDefinition(MethodVerboseName(f.FullDafnyName,
         MethodTranslationKind.SpecWellformedness), f);
@@ -135,6 +135,15 @@ public partial class BoogieGenerator {
         }
       });
 
+      if (f is MemberInvariant invariant) {
+        // Issue 105: an invariant is well formed where the invariants before it in the constraint of its type hold:
+        // those the type inherits, then its own earlier ones, as successive requires clauses are
+        builder.Add(new CommentCmd("Assume the invariants before this one"));
+        foreach (var earlier in InvariantTypeDecl.EarlierInvariants(invariant)) {
+          builder.Add(TrAssumeCmd(earlier.Origin, BplAnd(etran.CanCallAssumptionForVerification(earlier), etran.TrExpr(earlier))));
+        }
+      }
+
       // Check well-formedness of the reads clause.  Note that this is done after assuming
       // the preconditions.  In other words, the well-formedness of the reads clause is
       // allowed to assume the precondition (yet, the requires clause is checked to
@@ -150,7 +159,7 @@ public partial class BoogieGenerator {
       foreach (Expression p in f.Decreases.Expressions) {
         generator.CheckWellformed(p, new WFOptions(null, false), locals, builder, etran);
       }
-      if (generator.options.Get(CommonOptionBag.ModularTermination)) {
+      if (generator.ModularTerminationActive) {
         foreach (var p in ModularTermination.DeclaredGlobalBound(f) ?? []) {
           generator.CheckWellformed(p, new WFOptions(null, false), locals, builder, etran);
         }
@@ -170,7 +179,7 @@ public partial class BoogieGenerator {
         // emit the impl only when there are proof obligations.
         QKeyValue kv = etran.TrAttributes(f.Attributes, null);
         var parameters = Concat(Concat(Bpl.Formal.StripWhereClauses(typeInParams), heapParameters), implementationParameters);
-        var impl = generator.AddImplementationWithAttributes(generator.GetToken(f), proc,
+        var impl = generator.AddImplementationWithAttributes(generator.FunctionWellformednessToken(f), proc,
           parameters,
           Bpl.Formal.StripWhereClauses(outParams),
           locals, implBody, kv);

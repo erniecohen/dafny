@@ -1,0 +1,1 @@
+Recognize compiler-generated function reveals as closed termination operations: they change verifier visibility without evaluating the function. User-written attributes cannot forge this provenance, and revealing a constant still checks the evaluation of its definition.

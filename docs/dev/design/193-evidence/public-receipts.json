@@ -1,0 +1,50 @@
+[
+  {
+    "solver": "5.1.0",
+    "refresh": false,
+    "source_commit": "62bae981952337d312cbb3d43c39f9813cca6084",
+    "dafny_version": "4.11.0+fcb2042d.review.2d6fd450",
+    "solver_version": "Z3 version 5.1.0 - 64 bit",
+    "dafny_sha256": "94c07b608c403f08a73fd4fa210ac79bcf2c8426df4ec436b274a3c7496958c4",
+    "solver_sha256": "b4e0b3483ce37817230b20d6cad48390eb6a3aefde1d93342ad6dc763f24bc23",
+    "resource_limit": 200000,
+    "additional_axioms": true,
+    "scope": "Design-only API projection. Candidate bridge contracts are trusted, not proved implementations. Assume-false baseline is vacuous. Native mode asks the unmodified verifier to establish the same client postconditions with no body hints. Candidate clients use no assume but depend on explicit axiom contracts. Vacuity controls must fail."
+  },
+  {
+    "solver": "5.1.0",
+    "refresh": true,
+    "source_commit": "62bae981952337d312cbb3d43c39f9813cca6084",
+    "dafny_version": "4.11.0+fcb2042d.review.2d6fd450",
+    "solver_version": "Z3 version 5.1.0 - 64 bit",
+    "dafny_sha256": "94c07b608c403f08a73fd4fa210ac79bcf2c8426df4ec436b274a3c7496958c4",
+    "solver_sha256": "b4e0b3483ce37817230b20d6cad48390eb6a3aefde1d93342ad6dc763f24bc23",
+    "resource_limit": 200000,
+    "additional_axioms": true,
+    "scope": "Design-only API projection. Candidate bridge contracts are trusted, not proved implementations. Assume-false baseline is vacuous. Native mode asks the unmodified verifier to establish the same client postconditions with no body hints. Candidate clients use no assume but depend on explicit axiom contracts. Vacuity controls must fail."
+  },
+  {
+    "solver": "4.12.1",
+    "refresh": false,
+    "source_commit": "62bae981952337d312cbb3d43c39f9813cca6084",
+    "dafny_version": "4.11.0+fcb2042d.review.2d6fd450",
+    "solver_version": "Z3 version 4.12.1 - 64 bit",
+    "dafny_sha256": "94c07b608c403f08a73fd4fa210ac79bcf2c8426df4ec436b274a3c7496958c4",
+    "solver_sha256": "3b8b24b2130bfcc88a3b3bca9617c9a8721e90573ead7af9dbb371a2bf62aa43",
+    "resource_limit": 200000,
+    "additional_axioms": true,
+    "scope": "Design-only API projection. Candidate bridge contracts are trusted, not proved implementations. Assume-false baseline is vacuous. Native mode asks the unmodified verifier to establish the same client postconditions with no body hints. Candidate clients use no assume but depend on explicit axiom contracts. Vacuity controls must fail."
+  },
+  {
+    "solver": "4.12.1",
+    "refresh": true,
+    "source_commit": "62bae981952337d312cbb3d43c39f9813cca6084",
+    "dafny_version": "4.11.0+fcb2042d.review.2d6fd450",
+    "solver_version": "Z3 version 4.12.1 - 64 bit",
+    "dafny_sha256": "94c07b608c403f08a73fd4fa210ac79bcf2c8426df4ec436b274a3c7496958c4",
+    "solver_sha256": "3b8b24b2130bfcc88a3b3bca9617c9a8721e90573ead7af9dbb371a2bf62aa43",
+    "resource_limit": 200000,
+    "additional_axioms": true,
+    "scope": "Design-only API projection. Candidate bridge contracts are trusted, not proved implementations. Assume-false baseline is vacuous. Native mode asks the unmodified verifier to establish the same client postconditions with no body hints. Candidate clients use no assume but depend on explicit axiom contracts. Vacuity controls must fail."
+  }
+]

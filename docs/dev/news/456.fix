@@ -1,0 +1,1 @@
+Under `--modular-termination`, check calls in the body of a least or greatest lemma, calls of least and greatest predicates, and co-recursive calls against the caller's `decreases {:global}` bound; each escaped it and proved false.

@@ -30,6 +30,66 @@ public class ResolutionPipelineTests {
     }
     """;
 
+  [Theory]
+  [InlineData(false)]
+  [InlineData(true)]
+  public async Task DefaultResolutionUsesCallerAndMatchesScheduledOwnership(bool refresh) {
+    var caller = 0;
+    var observed = new List<int>();
+    var (direct, directReporter) = await Resolve(Source, 0, refresh,
+      starting: _ => observed.Add(Environment.CurrentManagedThreadId),
+      configure: _ => caller = Environment.CurrentManagedThreadId);
+    Assert.Empty(Errors(directReporter));
+    Assert.NotEmpty(observed);
+    Assert.All(observed, thread => Assert.Equal(caller, thread));
+    var (scheduled, scheduledReporter) = await Resolve(Source, 1, refresh);
+    Assert.Empty(Errors(scheduledReporter));
+    Assert.Equal(Keys(direct), Keys(scheduled));
+    Assert.Equal(Translate(direct, true), Translate(scheduled, true));
+  }
+
+  // Resolve enables the calling thread's type visibility scopes and disables them once modules are
+  // resolved. With zero resolution threads, modules are resolved on the calling thread, by a worker
+  // that resets that thread's scope state; the caller's state must survive it. In a Debug build the
+  // first test failed the assertion in Type.DisableScopes; in any build the second showed the difference.
+  [Theory]
+  [InlineData(0, false)]
+  [InlineData(0, true)]
+  [InlineData(1, false)]
+  [InlineData(2, true)]
+  public async Task ResolutionEndsWithCallerScopesDisabled(int threads, bool refresh) {
+    VisibilityScope? scope = null;
+    var probed = false;
+    var (_, reporter) = await Resolve(Source, threads, refresh, resolved: () => (scope, probed) = (ScopeAfterPush(), true));
+    Assert.Empty(Errors(reporter));
+    Assert.True(probed);
+    Assert.Null(scope);
+  }
+
+  [Theory]
+  [InlineData(false)]
+  [InlineData(true)]
+  public async Task ModuleErrorLeavesCallerScopesAsScheduledResolutionDoes(bool refresh) {
+    const string source = "module M { function F(): int { true } }";
+    var enabled = new Dictionary<int, bool>();
+    foreach (var threads in new[] { 0, 1 }) {
+      var (_, reporter) = await Resolve(source, threads, refresh,
+        resolved: () => enabled[threads] = ScopeAfterPush() != null);
+      Assert.NotEmpty(Errors(reporter));
+    }
+    Assert.Equal(enabled[1], enabled[0]);
+  }
+
+  private static VisibilityScope? ScopeAfterPush() {
+    var scope = new VisibilityScope();
+    DafnyType.PushScope(scope);
+    try {
+      return DafnyType.GetScope();
+    } finally {
+      DafnyType.PopScope(scope);
+    }
+  }
+
   [Fact]
   public async Task OperatorExportViewsKeepCanonicalBuiltinIdentities() {
     const string source = """
@@ -88,6 +148,31 @@ public class ResolutionPipelineTests {
       Assert.Contains(errors, e => e.Contains("operator selection cannot be transported into this export view"));
       if (expected == null) { expected = errors; } else { Assert.Equal(expected, errors); }
     }
+  }
+
+  [Fact]
+  public async Task MemberInvariantsRequireTypeSystemRefresh() {
+    // Issue 105: the command line rejects --member-invariants without --type-system-refresh before it parses
+    // anything; a client that sets the options itself gets this resolution error instead.
+    const string source = "datatype D = D(x: int) { invariant x > 0 }";
+    var (_, reporter) = await Resolve(source, 0, false,
+      configureOptions: options => options.Set(CommonOptionBag.MemberInvariants, true));
+    Assert.Equal(["use of --member-invariants requires --type-system-refresh"], Errors(reporter));
+  }
+
+  [Fact]
+  public async Task RecursiveModulesRequireMemberInvariants() {
+    // Issue 466: the command line rejects --recursive-modules without --member-invariants before it parses
+    // anything; a client that sets the options itself gets this resolution error instead, and no group is made.
+    const string source = "module A { import B } module B { import A }";
+    var (_, reporter) = await Resolve(source, 0, true,
+      configureOptions: options => options.Set(CommonOptionBag.RecursiveModules, true));
+    Assert.Equal(["use of --recursive-modules requires --member-invariants"], Errors(reporter));
+    var (_, both) = await Resolve(source, 0, true, configureOptions: options => {
+      options.Set(CommonOptionBag.MemberInvariants, true);
+      options.Set(CommonOptionBag.RecursiveModules, true);
+    });
+    Assert.Empty(Errors(both));
   }
 
   [Fact]
@@ -423,7 +508,7 @@ public class ResolutionPipelineTests {
 
   private static async Task<(Program, BatchErrorReporter)> Resolve(string source, int threads, bool refresh,
     Action<ModuleDecl>? starting = null, Uri? uri = null, Action<Program>? configure = null,
-    bool warnUncheckedTermination = false, Action<DafnyOptions>? configureOptions = null) {
+    bool warnUncheckedTermination = false, Action<DafnyOptions>? configureOptions = null, System.Action? resolved = null) {
     DafnyType.ResetScopes();
     var options = new DafnyOptions(TextReader.Null, TextWriter.Null, TextWriter.Null);
     options.ApplyDefaultOptionsWithoutSettingsDefault();
@@ -437,6 +522,8 @@ public class ResolutionPipelineTests {
     Assert.Empty(Errors(reporter));
     configure?.Invoke(parsed.Program);
     await new ProgramResolver(parsed.Program) { ResolutionWorkerStarting = starting }.Resolve(CancellationToken.None);
+    // Resolve completes synchronously, so this runs on the thread that resolved.
+    resolved?.Invoke();
     return (parsed.Program, reporter);
   }
 }

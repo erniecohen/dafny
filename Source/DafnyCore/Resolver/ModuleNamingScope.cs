@@ -1,13 +1,12 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace Microsoft.Dafny;
 
 /// <summary>
 /// Synchronous worker/translator state. Imported declarations never lend their mutable
-/// name generators or cached variable/label names to another module under the opt-in path.
+/// name generators or cached variable/label names to another module.
 /// </summary>
 internal sealed class ModuleNamingScope : IDisposable {
   [ThreadStatic] private static ModuleNamingScope? current;
@@ -20,9 +19,14 @@ internal sealed class ModuleNamingScope : IDisposable {
   private readonly Dictionary<string, int> counters = new(StringComparer.Ordinal);
   public string Prefix { get; }
 
-  public ModuleNamingScope(string moduleName) {
+  /// <summary>
+  /// <paramref name="prefixes"/> is the table of the program whose modules this scope's names
+  /// can meet (see <see cref="ModuleNamePrefixes"/>). Reserved names (the default module and the
+  /// built-in <c>_System</c> scopes) need no table.
+  /// </summary>
+  public ModuleNamingScope(string moduleName, ModuleNamePrefixes? prefixes = null) {
     previous = current;
-    Prefix = "M" + Convert.ToHexStringLower(Encoding.UTF8.GetBytes(moduleName)) + "_";
+    Prefix = (prefixes ?? ModuleNamePrefixes.Empty).Prefix(moduleName);
     current = this;
   }
 

@@ -42,7 +42,39 @@ public abstract class MemberDecl : Declaration, ISymbol {
   [FilledInDuringResolution] public TopLevelDecl EnclosingClass = null!;
   [FilledInDuringResolution] public MemberDecl? RefinementBase;  // filled in during the pre-resolution refinement transformation; null if the member is new here
   [FilledInDuringResolution] public MemberDecl? OverriddenMember;  // non-null if the member overrides a member in a parent trait
+
+  /// <summary>
+  /// Issue 105: whether this is a raw member of a type with member invariants, so that its receiver has the raw
+  /// type (see RawMemberInference).
+  /// </summary>
+  [FilledInDuringResolution] public bool IsRawMember;
   public virtual bool IsOverrideThatAddsBody => OverriddenMember != null;
+
+  /// <summary>
+  /// The member was declared in a trait under --inherited-trait-axioms.  The parser sets this, on the
+  /// members of a trait only, from the options of the file that declares the member, and cloning and
+  /// refinement keep it, so a member's status as a trait axiom is fixed where it is declared: a library
+  /// built without the option keeps its bodiless {:axiom} trait members as members to implement, also
+  /// for a client that uses the option (https://github.com/erniecohen/dafny/issues/89).
+  /// </summary>
+  public bool DeclaredUnderInheritedTraitAxioms;
+
+  /// <summary>
+  /// A bodiless member that a trait declares with {:axiom} under --inherited-trait-axioms, whether or
+  /// not it is of a kind that can be a trait axiom.
+  /// </summary>
+  public bool IsBodilessAxiomOfTrait =>
+    DeclaredUnderInheritedTraitAxioms && !IsStatic && HasAxiomAttribute &&
+    this is (Function { Body: null } or MethodOrConstructor { Body: null });
+
+  /// <summary>
+  /// A trait axiom: a class, datatype or newtype that inherits it need not implement it, and its
+  /// specification is a declared axiom of the trait.  It is a bodiless ghost trait member with {:axiom},
+  /// not extreme, declared under --inherited-trait-axioms.
+  /// </summary>
+  public bool IsInheritedTraitAxiom =>
+    IsBodilessAxiomOfTrait && IsGhost &&
+    this is not (ExtremePredicate or ExtremeLemma or PrefixPredicate or PrefixLemma);
 
   /// <summary>
   /// Returns "true" if "this" is a (possibly transitive) override of "possiblyOverriddenMember".
@@ -118,6 +150,9 @@ public abstract class MemberDecl : Declaration, ISymbol {
     }
     if (Attributes.Find(this.Attributes, "only") != null) {
       yield return new Assumption(decl, Origin, AssumptionDescription.MemberOnly);
+    }
+    if (IsInheritedTraitAxiom) {
+      yield return new Assumption(this, Origin, AssumptionDescription.TraitAxiom(this is Function, EnclosingClass.Name));
     }
   }
 

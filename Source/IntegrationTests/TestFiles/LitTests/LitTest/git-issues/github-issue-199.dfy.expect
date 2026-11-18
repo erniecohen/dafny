@@ -1,0 +1,24 @@
+github-issue-199.dfy(32,0): Error: a postcondition could not be proved on this return path
+github-issue-199.dfy(31,19): Related location: this is the postcondition that could not be proved
+github-issue-199.dfy(53,0): Error: a postcondition could not be proved on this return path
+github-issue-199.dfy(52,22): Related location: this is the postcondition that could not be proved
+github-issue-199.dfy(92,0): Error: a postcondition could not be proved on this return path
+github-issue-199.dfy(91,20): Related location: this is the postcondition that could not be proved
+github-issue-199.dfy(119,5): Error: possible division by zero
+github-issue-199.dfy(124,0): Error: a postcondition could not be proved on this return path
+github-issue-199.dfy(123,15): Related location: this is the postcondition that could not be proved
+github-issue-199.dfy(142,4): Error: assertion might not hold
+github-issue-199.dfy(144,4): Error: assertion might not hold
+github-issue-199.dfy(171,0): Error: a postcondition could not be proved on this return path
+github-issue-199.dfy(170,10): Related location: this is the postcondition that could not be proved
+github-issue-199.dfy(200,37): Error: decreases clause might not decrease
+github-issue-199.dfy(349,0): Error: a postcondition could not be proved on this return path
+github-issue-199.dfy(348,35): Related location: this is the postcondition that could not be proved
+github-issue-199.dfy(381,2): Error: assertion might not hold
+github-issue-199.dfy(413,19): Error: a precondition for this call could not be proved
+github-issue-199.dfy(400,13): Related location: this is the precondition that could not be proved
+github-issue-199.dfy(417,18): Error: possible division by zero
+github-issue-199.dfy(461,4): Error: assertion might not hold
+github-issue-199.dfy(518,2): Error: assertion might not hold
+
+Dafny program verifier finished with 83 verified, 15 errors

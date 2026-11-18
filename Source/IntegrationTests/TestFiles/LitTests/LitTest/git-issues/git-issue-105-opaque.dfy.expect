@@ -1,0 +1,15 @@
+git-issue-105-opaque.dfy(18,9): Error: invariant might not hold
+git-issue-105-opaque.dfy(13,18): Related location: this is the invariant that might not hold
+git-issue-105-opaque.dfy(26,9): Error: invariant might not hold
+git-issue-105-opaque.dfy(13,18): Related location: this is the invariant that might not hold
+git-issue-105-opaque.dfy(35,4): Error: assertion might not hold
+git-issue-105-opaque.dfy(54,9): Error: invariant might not hold
+git-issue-105-opaque.dfy(47,19): Related location: this is the invariant that might not hold
+git-issue-105-opaque.dfy(57,4): Error: assertion might not hold
+git-issue-105-opaque.dfy(73,46): Error: invariant might not hold
+git-issue-105-opaque.dfy(71,17): Related location: this is the invariant that might not hold
+git-issue-105-opaque.dfy(89,9): Error: invariant might not hold
+git-issue-105-opaque.dfy(85,18): Related location: this is the invariant that might not hold
+git-issue-105-opaque.dfy(96,4): Error: assertion might not hold
+
+Dafny program verifier finished with 19 verified, 8 errors

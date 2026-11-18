@@ -79,6 +79,16 @@ public class ExpressionTester {
     // "subexpressionsAreInsideBranchesOnlyExcept" is its condition.
     Expression subexpressionsAreInsideBranchesOnlyExcept = null;
 
+    if (options.Get(CommonOptionBag.MemberInvariants) && expr is not ThisExpr && expr.Type != null &&
+        InvariantTypeDecl.GhostRawNewtype(expr.Type) is { } newtypeDecl) {
+      // Issue 105: a compiled value of a newtype with member invariants satisfies them (see GhostRawNewtype). A "this"
+      // of type "raw N" is in a raw member, which the resolver requires to be ghost.
+      ReportError(ErrorId.none, expr,
+        $"a value of type '{expr.Type}' is allowed only in specification contexts, since 'raw {newtypeDecl.Name}' is ghost: " +
+        $"a compiled value of newtype '{newtypeDecl.Name}' satisfies its invariants");
+      return false;
+    }
+
     if (expr is IdentifierExpr expression) {
       if (expression.Var is { IsGhost: true }) {
         ReportError(ErrorId.r_ghost_var_only_in_specifications, expression,
@@ -208,6 +218,12 @@ public class ExpressionTester {
     } else if (expr is StmtExpr stmtExpr) {
       // ignore the statement
       return CheckIsCompilable(stmtExpr.E, codeContext, insideBranchesOnly);
+
+    } else if (expr is LemmaResultExpr) {
+      // The variables bound to a lemma's results are ghost, so the right-hand sides of that binding are not checked
+      // for compilability and this case is not expected to be reached.
+      ReportError(ErrorId.none, expr, "the results of a lemma are allowed only in specification and ghost contexts");
+      return false;
 
     } else if (expr is BinaryExpr binaryExpr) {
       if (reporter != null) {
@@ -420,6 +436,25 @@ public class ExpressionTester {
       return false;
     }
 
+    // Issue 105: at run time, every object of a class with member invariants satisfies them, those it inherits
+    // included: they read only constants, and they are checked before the constructor's 'this' can be used. So, for
+    // a reference that is not raw, a test against "C" or "C?", or against a reference trait "P" or "P?", tests its
+    // dynamic type alone, as a test against "raw C" or "raw C?" does. This holds even where the static type does
+    // not tell the verifier that the object satisfies the invariants of C (a "P" reached from a "raw P" that was a
+    // "raw C"). For a raw reference, the test is ghost. A general trait is not covered, since a datatype that
+    // extends it has raw values at run time: a test against it is ghost, as a test against a datatype with
+    // invariants is (part 1).
+    if (toType.NormalizeExpandKeepConstraints() is UserDefinedType { ResolvedClass: var toDecl } udtToClass &&
+        toDecl switch {
+          NonNullTypeDecl { Class.InvariantTypeDecl: { } invariants } and not RawNonNullTypeDecl =>
+            invariants.RawThisType(udtToClass.Origin, udtToClass.TypeArgs),
+          InvariantTypeDecl invariants when InvariantTypeDecl.IsReferenceType(invariants.Owner) =>
+            invariants.RawType(udtToClass.Origin, udtToClass.TypeArgs),
+          _ => null
+        } is { } rawToType) {
+      return !InvariantTypeDecl.IsRawReferenceType(fromType) && IsTypeTestCompilable(fromType, rawToType);
+    }
+
     // part 1
     if (toType.NormalizeExpandKeepConstraints() is UserDefinedType { ResolvedClass: RedirectingTypeDecl { ConstraintIsCompilable: false } }) {
       // the constraint can't be evaluated at run time, so the type test cannot be compiled
@@ -439,7 +474,26 @@ public class ExpressionTester {
 
       var A = fromType.NormalizeExpand(); // important to NOT keep constraints here, since they won't be evident at run time
       Type A_U;
-      if (A is UserDefinedType udtA) {
+      var operationB = NewtypeOperationView.Get(B_T);
+      var usesExtendedNewtype = operationB.Path.OfType<NewtypeDecl>().Any(n => n.UseBaseReferenceCharacteristics) ||
+        A is UserDefinedType { ResolvedClass: NewtypeDecl { UseBaseReferenceCharacteristics: true } };
+      var operationA = usesExtendedNewtype ? NewtypeOperationView.Get(A) : default;
+      if (usesExtendedNewtype && (operationA.Status != NewtypeOperationView.ViewStatus.Resolved ||
+                                 operationB.Status != NewtypeOperationView.ViewStatus.Resolved)) {
+        return false;
+      }
+      if (usesExtendedNewtype && operationB.Path.OfType<RedirectingTypeDecl>()
+            .Any(declaration => declaration.Var != null && !declaration.ConstraintIsCompilable)) {
+        // A bare outer newtype does not make an inner ghost constraint executable.
+        // Inspect only the resolved, scope-sensitive destination path.
+        return false;
+      }
+      if (usesExtendedNewtype && Type.SameHead(operationA.BaseType, operationB.BaseType)) {
+        // Datatype, tuple, and arrow carriers are representation ancestry, not
+        // trait parents. Keep B's symbolic arguments to perform the same
+        // injectivity check below after scoped, instantiated base traversal.
+        A_U = operationB.BaseType;
+      } else if (A is UserDefinedType udtA) {
         A_U = B_T.AsParentType(udtA.ResolvedClass);
       } else {
         // Evidently, A is not a newtype, subset type, (co)datatype, abstract type, reference type, or trait type (except possibly "object?"). Hence:
@@ -627,6 +681,8 @@ public class ExpressionTester {
     } else if (expr is StmtExpr) {
       var e = (StmtExpr)expr;
       return UsesSpecFeatures(e.E);
+    } else if (expr is LemmaResultExpr) {
+      return true;
     } else if (expr is ITEExpr) {
       ITEExpr e = (ITEExpr)expr;
       return UsesSpecFeatures(e.Test) || UsesSpecFeatures(e.Thn) || UsesSpecFeatures(e.Els);

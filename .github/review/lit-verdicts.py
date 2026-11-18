@@ -37,6 +37,18 @@ purpose, replace it with `expected-verdicts.tsv` from the run's `verdicts`
 artifact (verdicts-off or verdicts-on), in a commit that says, for each program
 whose verdict changed, why. `run` accepts --additional-axioms true and
 --measurements <directory>; omitting them preserves the original invocation.
+
+`run --verification-cache DIR` adds `--verification-cache DIR` to the programs that
+select the refreshed type system themselves (the option requires it), and runs them
+with only the environment variables in CACHE_ENVIRONMENT, since the cache keys the
+solver's environment, and with PATH reduced to the directory of `dotnet` and the system
+directories, so that a runner's own tool directories do not reach the key; every other
+program runs as before.  `--cached-only true` runs only those programs.
+`same <measurements> <measurements'> <verdicts> <verdicts'>` checks that the programs of
+the second run have the verdicts and the per-proof outcomes and resource counts of the
+first, and prints both runs' times.  `cache-stats <measurements> <verdicts>` prints the
+cached programs' time, cache hits and solver starts of one run
+(https://github.com/erniecohen/dafny/issues/261).
 """
 import concurrent.futures
 import json
@@ -44,6 +56,7 @@ import os
 from pathlib import Path
 import re
 import shlex
+import shutil
 import subprocess
 import sys
 import time
@@ -52,6 +65,15 @@ DIRS = ['dafny0', 'dafny1', 'dafny2', 'dafny3', 'dafny4', 'git-issues']
 FIXED = ['--resource-limit', '16000000', '--verification-time-limit', '0',
          '--boogie', '/normalizeDeclarationOrder:0', '--cores', '1', '--allow-warnings']
 TIMEOUT = 900  # seconds, per program; a program that takes longer is reported as TIMEOUT
+CACHE_ENVIRONMENT = ('HOME', 'TMPDIR', 'DOTNET_ROOT', 'DOTNET_CLI_TELEMETRY_OPTOUT')
+SYSTEM_PATH = ['/usr/bin', '/bin', '/usr/sbin', '/sbin']
+
+
+def cache_environment():
+    env = {k: os.environ[k] for k in CACHE_ENVIRONMENT if k in os.environ}
+    dotnet = shutil.which('dotnet')
+    env['PATH'] = os.pathsep.join(([str(Path(dotnet).parent)] if dotnet else []) + SYSTEM_PATH)
+    return env
 DROP = re.compile(r'--(target|output|compile-verbose|build|no-verify|spill-translation|unicode-char)(=|$)')
 
 
@@ -109,9 +131,29 @@ def plan(litdir, out):
     print(len(rows), 'programs planned')
 
 
+def refreshed(own):
+    """Whether a program's own options select the refreshed type system."""
+    value = False
+    for i, t in enumerate(own):
+        m = re.match(r'--type-system-refresh(?:[:=](true|false))?$', t)
+        if m:
+            if m.group(1):
+                value = m.group(1) == 'true'
+            elif i + 1 < len(own) and own[i + 1] in ('true', 'false'):
+                value = own[i + 1] == 'true'
+            else:
+                value = True
+    return value
+
+
+def cached(opts, cache):
+    own = shlex.split(opts)
+    return bool(cache) and refreshed(own) and not any(t.startswith('--verification-cache') for t in own)
+
+
 def verify(args):
-    litdir, dafny, z3, path, opts, additional_axioms, measurements = args[:7]
-    resolution_threads = args[7] if len(args) > 7 else 0
+    litdir, dafny, z3, path, opts, additional_axioms, measurements, *rest = args
+    cache = rest[0] if rest else None
     own = shlex.split(opts)
     names = {t.split('=')[0].split(':')[0] for t in own if t.startswith('--')}
     # A precompiled library (--standard-libraries, a .doo) records the --boogie
@@ -128,12 +170,16 @@ def verify(args):
             fixed += FIXED[i:i + 2] if takes else [name]
         i += 2 if takes else 1
     extra = ['--additional-axioms'] if additional_axioms else []
-    if resolution_threads:
-        extra += ['--resolution-threads', str(resolution_threads)]
     dest = Path(measurements).resolve() / path if measurements else None
     if dest:
         dest.mkdir(parents=True, exist_ok=True)
         extra += ['--log-format', 'json;LogFileName=' + str(dest / 'results.json')]
+    env = None
+    if cached(opts, cache):
+        extra += ['--verification-cache', str(Path(cache).resolve())]
+        if dest:
+            extra += ['--pipeline-profile', str(dest / 'profile.jsonl')]
+        env = cache_environment()
     # Put observations before the original options: a missing argument in an old
     # RUN line must retain its diagnostic rather than consume an added option.
     cmd = [dafny, 'verify', path, '--solver-path', z3] + fixed + extra + own
@@ -141,7 +187,7 @@ def verify(args):
         (dest / 'command.json').write_text(json.dumps(cmd))
     start = time.monotonic()
     try:
-        p = subprocess.run(cmd, cwd=litdir, capture_output=True, text=True, timeout=TIMEOUT)
+        p = subprocess.run(cmd, cwd=litdir, capture_output=True, text=True, timeout=TIMEOUT, env=env)
         out, rc = p.stdout + p.stderr, str(p.returncode)
     except subprocess.TimeoutExpired:
         if dest:
@@ -156,13 +202,18 @@ def verify(args):
     return (path, rc, fin + ('; %d out of resource' % oor if oor else ''), ','.join(errs), secs)
 
 
-def run(planf, litdir, dafny, z3, out, shard='0/1', jobs=4, additional_axioms=False, measurements=None, resolution_threads=0):
+def run(planf, litdir, dafny, z3, out, shard='0/1', jobs=4, additional_axioms=False, measurements=None,
+        cache=None, cached_only=False):
     i, n = (int(x) for x in shard.split('/'))
     with open(planf) as f:
         rows = [l.rstrip('\n').split('\t') for l in f if l.strip()]
     rows = [r if len(r) == 2 else r + [''] for r in rows]
     mine = [r for k, r in enumerate(rows) if k % n == i]
-    work = [(litdir, dafny, z3, p, o, additional_axioms, measurements, resolution_threads) for p, o in mine]
+    if cached_only:
+        mine = [r for r in mine if cached(r[1], cache)]
+    elif cache:
+        print('%d programs with --verification-cache' % sum(1 for r in mine if cached(r[1], cache)), flush=True)
+    work = [(litdir, dafny, z3, p, o, additional_axioms, measurements, cache) for p, o in mine]
     print('shard %d/%d: %d of %d programs, %d at a time' % (i, n, len(mine), len(rows), jobs), flush=True)
     with concurrent.futures.ThreadPoolExecutor(jobs) as ex, open(out, 'w') as f:
         for r in ex.map(verify, work):
@@ -222,6 +273,64 @@ def expected(files):
         print('\t'.join(rows[k][:4]))
 
 
+def without_timing(value):
+    if isinstance(value, dict):
+        return {k: without_timing(v) for k, v in value.items() if k not in ('runTime', 'timingReplayed')}
+    if isinstance(value, list):
+        return [without_timing(v) for v in value]
+    return value
+
+
+def same(first_measurements, second_measurements, first, second):
+    """The second run's programs, against the same programs of the first run."""
+    a, b = load(first), load(second)
+    differ, secs, hits, starts, ru = [], [0.0, 0.0], 0, 0, 0
+    for k in sorted(b):
+        logs = [Path(m) / k / 'results.json' for m in (first_measurements, second_measurements)]
+        results = [without_timing(json.loads(l.read_text())) if l.exists() else None for l in logs]
+        if k not in a or a[k][1:4] != b[k][1:4] or results[0] != results[1]:
+            differ.append(k)
+        secs[0] += float(a[k][4] or 0) if k in a else 0
+        secs[1] += float(b[k][4] or 0)
+        profile = Path(second_measurements) / k / 'profile.jsonl'
+        if profile.exists():
+            for line in profile.read_text().splitlines():
+                event = json.loads(line) if line.strip() else {}
+                if event.get('ev') == 'result-cache':
+                    hits += event.get('hits', 0)
+                    starts += event.get('solverStarts', 0)
+        if results[1]:
+            ru += sum(r.get('resourceCount', 0) for r in results[1].get('verificationResults', []))
+    for k in differ:
+        print('differs:', k)
+    print('%d programs, %d differ in verdict, outcomes or resource counts; %d resource units; '
+          'verifier time %.1f s then %.1f s; second run: %d cache hits, %d solver starts'
+          % (len(b), len(differ), ru, secs[0], secs[1], hits, starts))
+    return len(differ)
+
+
+def cache_stats(measurements, verdicts):
+    """One run's programs that used the cache: their time and the cache's counters."""
+    rows = load(verdicts)
+    n, secs, counts = 0, 0.0, {'tasks': 0, 'hits': 0, 'solverStarts': 0, 'imagesHashed': 0}
+    for k, row in rows.items():
+        profile = Path(measurements) / k / 'profile.jsonl'
+        if not profile.exists():
+            continue
+        n += 1
+        secs += float(row[4] or 0)
+        for line in profile.read_text().splitlines():
+            event = json.loads(line) if line.strip() else {}
+            if event.get('ev') == 'result-task':
+                counts['tasks'] += 1
+            if event.get('ev') == 'result-cache':
+                for c in ('hits', 'solverStarts', 'imagesHashed'):
+                    counts[c] += event.get(c, 0)
+    print('%d cached programs, verifier time %.1f s; %d tasks, %d cache hits, %d solver starts, '
+          '%d execution images hashed' % (n, secs, counts['tasks'], counts['hits'], counts['solverStarts'],
+                                          counts['imagesHashed']))
+
+
 def compare(expected, actual):
     a, b = load(expected), load(actual)
     n = 0
@@ -246,7 +355,12 @@ if __name__ == '__main__':
         opts = dict(zip(args[5::2], args[6::2]))
         run(*args[:5], shard=opts.get('--shard', '0/1'), jobs=int(opts.get('--jobs', '4')),
             additional_axioms=opts.get('--additional-axioms', 'false') == 'true',
-            measurements=opts.get('--measurements'), resolution_threads=int(opts.get('--resolution-threads', '0')))
+            measurements=opts.get('--measurements'), cache=opts.get('--verification-cache'),
+            cached_only=opts.get('--cached-only', 'false') == 'true')
+    elif cmd == 'same':
+        sys.exit(1 if same(*args) else 0)
+    elif cmd == 'cache-stats':
+        cache_stats(*args)
     elif cmd == 'summary':
         summary(args)
     elif cmd == 'expected':

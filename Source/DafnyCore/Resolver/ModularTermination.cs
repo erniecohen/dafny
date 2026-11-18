@@ -17,12 +17,168 @@ public sealed record TerminationSourceContract(string SlotId, bool IsDispatchSlo
 public static class ModularTermination {
   public const string ClosedAttributeName = "termination_closed";
 
+  /// <summary>
+  /// Whether the rules of termination across modules (https://github.com/erniecohen/dafny/issues/211) are in force:
+  /// by default, unless the hidden --legacy-no-modular-termination restores the 4.11 rules, and always under
+  /// --modular-termination.  When they are, every trait may be extended from any module, and the parser reads
+  /// "decreases {:global} E" and "decreases {:callback f} E" as bounds.  The checks themselves run only in a program
+  /// that uses the design (<see cref="Active"/>).
+  /// </summary>
+  public static bool RulesEnabled(DafnyOptions options) {
+    return options.Get(CommonOptionBag.ModularTermination) || !options.Get(CommonOptionBag.LegacyNoModularTermination);
+  }
+
+  private static readonly ConditionalWeakTable<Program, StrongBox<bool>> UsesDesignCache = new();
+
+  /// <summary>
+  /// Whether the checks of modular termination run on "program": always under --modular-termination; otherwise, while
+  /// the rules are enabled, when the program uses the design (<see cref="UsesDesign"/>).  A program that does not is
+  /// one that 4.11 accepts or rejects as before, and is translated exactly as before.  Ask only once "program" is
+  /// resolved.
+  /// </summary>
+  public static bool Active(DafnyOptions options, Program program) {
+    if (options.Get(CommonOptionBag.ModularTermination)) {
+      return true;
+    }
+    return RulesEnabled(options) && UsesDesignCache.GetValue(program, p => new StrongBox<bool>(UsesDesign(p))).Value;
+  }
+
+  /// <summary>
+  /// Whether some declaration of the resolved "program", its libraries included, uses the design of issue 211: a global
+  /// or callback bound, a {:termination_closed} promise, or a type that extends a trait of another module without
+  /// either legacy form.  Without one of these, no caller has a bound, no code promises to be closed, and every
+  /// implementation of a trait member lies in the trait's module or is covered by a legacy premise, so no check of
+  /// the design can fail and none adds a proof obligation.
+  /// </summary>
+  public static bool UsesDesign(Program program) {
+    return FirstDesignUse(program, null) != null;
+  }
+
+  /// <summary>
+  /// The first declaration, among those whose file satisfies "inFile" (every file when it is null), that uses the
+  /// design: a declared global or callback bound, a {:termination_closed} promise, or an unmarked extension of a trait
+  /// of another module; with a description of the use.  Null when there is none.  Each member is located by its own
+  /// file, since the default class of a module has no location of its own.
+  /// </summary>
+  public static (Declaration Declaration, string Use)? FirstDesignUse(Program program, Func<Uri, bool> inFile) {
+    bool Located(Declaration declaration) {
+      if (declaration.Origin?.Uri is not { } uri) {
+        return inFile == null;
+      }
+      // The orders library promises {:termination_closed} for its relations; that a program loads it is no use of
+      // the design.
+      if (uri == DafnyMain.StandardLibrariesOrdersDooUri || uri == DafnyMain.StandardLibrariesOrdersInternalUri) {
+        return false;
+      }
+      return inFile == null || inFile(uri);
+    }
+    foreach (var module in program.Modules()) {
+      foreach (var decl in module.TopLevelDecls) {
+        if (Located(decl)) {
+          if (DesignUse(decl) is { } use) {
+            return (decl, use);
+          }
+          if (decl is TopLevelDeclWithMembers extending && ExtendsForeignTraitUnmarked(extending)) {
+            return (decl, "an extension of a trait of another module without a legacy form");
+          }
+        }
+        if (decl is not TopLevelDeclWithMembers type) {
+          continue;
+        }
+        foreach (var member in type.Members) {
+          if (Located(member) && DesignUse(member) is { } memberUse) {
+            return (member, memberUse);
+          }
+        }
+      }
+    }
+    return null;
+  }
+
+  private static string DesignUse(Declaration declaration) {
+    if (Attributes.Contains(declaration.Attributes, ClosedAttributeName)) {
+      return "a {:" + ClosedAttributeName + "} promise";
+    }
+    if (DeclaresBound(declaration)) {
+      return "a 'decreases {:global}' or 'decreases {:callback}' bound";
+    }
+    // Inspect resolved types as well as attributes: a bounded field, formal or expression is a
+    // design use even when its owner declares no bound. Follow aliases and inferred expression types.
+    var pending = new Stack<INode>([declaration]);
+    var seen = new HashSet<INode>();
+    while (pending.TryPop(out var node)) {
+      if (!seen.Add(node)) {
+        continue;
+      }
+      if (node is Type type && BoundedCallables.Payload(type) != null ||
+          node is Expression expression && expression.Type != null && BoundedCallables.Payload(expression.Type) != null) {
+        return "a bounded callable type";
+      }
+      foreach (var child in node.Children) {
+        pending.Push(child);
+      }
+    }
+    return null;
+  }
+
+  private static bool DeclaresBound(Declaration declaration) {
+    // Only methods, functions and iterators have a decreases clause (ConstantField is an ICallable whose Decreases throws).
+    var decreases = declaration switch {
+      MethodOrFunction m => m.Decreases,
+      IteratorDecl iter => iter.Decreases,
+      _ => null
+    };
+    for (var a = decreases?.Attributes; a != null; a = a.Prev) {
+      if (IsModularTerminationClause(a)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /// <summary>
+  /// Whether "type" extends a trait of another module, other than object, with neither {:termination false} on the trait
+  /// nor @AssumeCrossModuleTermination on "type": an extension that 4.11 rejects.
+  /// </summary>
+  public static bool ExtendsForeignTraitUnmarked(TopLevelDeclWithMembers type) {
+    if (Attributes.Contains(type.Attributes, "AssumeCrossModuleTermination")) {
+      return false;
+    }
+    return type.ParentTraitHeads.Any(trait => !trait.IsObjectTrait && trait.EnclosingModuleDefinition != type.EnclosingModuleDefinition &&
+                                              !IsExtensible(trait));
+  }
+
+  /// <summary>
+  /// Whether "trait" carries the legacy form {:termination false}.  Under --modular-termination every trait may be
+  /// extended from any module; the legacy form only exempts the foreign implementations of its members that have no
+  /// declared bound from the leaf rule, as an unchecked premise.
+  /// </summary>
   public static bool IsExtensible(TraitDecl trait) {
     bool termination = true;
     return !trait.IsObjectTrait && Attributes.ContainsBool(trait.Attributes, "termination", ref termination) && !termination;
   }
 
+  /// <summary>
+  /// Whether "member" is an overridable instance slot of a trait: a call of it is dispatched.
+  /// </summary>
+  public static bool IsDispatchSlot(MemberDecl member) {
+    if (member.IsStatic) {
+      return false;
+    }
+    if (member.TerminationContract is { } contract) {
+      return contract.IsDispatchSlot && contract.IsExtensibleOwner;
+    }
+    return member.EnclosingClass is TraitDecl { IsObjectTrait: false } && member switch {
+      Function f => f.Body == null,
+      Method => true,
+      _ => false
+    };
+  }
+
   public static bool HasClosedContract(Declaration declaration) {
+    if (OpaqueMemberRewriter.IsGeneratedFunctionRevealLemma(declaration)) {
+      return true;
+    }
     if (Attributes.Contains(declaration.Attributes, ClosedAttributeName)) {
       return true;
     }
@@ -37,6 +193,16 @@ public static class ModularTermination {
   public static ModuleDefinition ModuleOf(Declaration declaration) {
     return declaration is MemberDecl member ? member.EnclosingClass.EnclosingModuleDefinition :
       ((TopLevelDecl)declaration).EnclosingModuleDefinition;
+  }
+
+  /// <summary>
+  /// Whether code of "module" sees "declaration" from outside: by its contract, not by its body.  The members of
+  /// a recursive module group (--recursive-modules) are verified as one module would be, and a call from one
+  /// member to another is checked against the "decreases" clauses, so a declaration of another member of the
+  /// group of "module" is not seen from outside.
+  /// </summary>
+  public static bool IsOutside(Declaration declaration, ModuleDefinition module) {
+    return !ModuleDefinition.InSameRecursiveGroup(ModuleOf(declaration), module);
   }
 
   public const string GlobalAttributeName = "global";
@@ -122,6 +288,57 @@ public static class ModularTermination {
   }
 
   /// <summary>
+  /// Whether "type" is a total arrow type "A -> B", rather than a partial "A --> B" or general "A ~> B" one.
+  /// </summary>
+  public static bool IsTotalArrow(Type type) {
+    return type.NormalizeExpandKeepConstraints() is UserDefinedType { ResolvedClass: SubsetTypeDecl { Name: var name } } &&
+           ArrowType.IsTotalArrowTypeName(name);
+  }
+
+  /// <summary>
+  /// Issue 266: the function that "value" names, if it is one that "bounded.certify" may take as an exact
+  /// implementation (design section 3.2).  Its own code runs, so it must not be an abstract trait member, whose
+  /// implementation dispatch chooses; it must not have parameters with callback bounds, whose first-class protocol
+  /// is not represented; and its global bound, declared or inherited, must depend on neither its parameters nor the
+  /// heap, so that the bound of every later application is the one that the verifier checks, at "bounded.certify",
+  /// to be at most the allowance.  If "value" names a function that cannot be admitted, "problem" says why.
+  /// </summary>
+  public static Function? AdmittedMember(DafnyOptions options, Expression value, out string? problem) {
+    problem = null;
+    if (value.Resolved is not MemberSelectExpr { Member: Function g } || IsArrowMember(g)) {
+      return null;
+    }
+    if (g.EnclosingClass is TraitDecl && g.Body == null && !g.IsStatic) {
+      problem = "it is a trait member, whose implementation dispatch chooses (certify a lambda that calls it)";
+      return null;
+    }
+    if (HasCallbackBounds(g)) {
+      problem = "it has a parameter with a 'decreases {:callback}' bound";
+      return null;
+    }
+    List<Expression>? bound = null;
+    for (ICallable? c = g; c != null && bound == null; c = (c as MemberDecl)?.OverriddenMember as ICallable) {
+      bound = DeclaredGlobalBound(c);
+    }
+    if (bound == null) {
+      problem = "it has no 'decreases {:global}' bound";
+      return null;
+    }
+    foreach (var e in bound) {
+      var usesHeap = false;
+      var usesOldHeap = false;
+      Type? usesThis = null;
+      var fvs = new HashSet<IVariable>();
+      FreeVariablesUtil.ComputeFreeVariables(options, e, fvs, ref usesHeap, ref usesOldHeap, new HashSet<Label>(), ref usesThis, false);
+      if (fvs.Count != 0 || usesHeap || usesOldHeap) {
+        problem = "its 'decreases {:global}' bound depends on its parameters or on the heap (certify a lambda with a narrower precondition)";
+        return null;
+      }
+    }
+    return g;
+  }
+
+  /// <summary>
   /// The global decreases clauses among the given attributes, last-written first.
   /// </summary>
   public static IEnumerable<Attributes> GlobalClauses(Attributes? attrs) {
@@ -164,20 +381,65 @@ public static class ModularTermination {
 
   /// <summary>
   /// Whether a call to "callee" is dispatched to an implementation that may lie in a module that no
-  /// call graph sees: "callee" is an overridable instance slot of a declared-extensible trait.
+  /// call graph sees: "callee" is an overridable instance slot of a trait (every trait may be extended from any
+  /// module, rule 1 of revision 3).  Such a call uses the callee's global bound, or TOP if it has none (rule 4).
   /// </summary>
   public static bool IsOpenDispatch(MemberDecl callee, HashSet<TraitDecl> openTraits) {
-    if (callee.IsStatic) {
+    return IsDispatchSlot(callee);
+  }
+
+  /// <summary>
+  /// The member, among "member"'s ancestors, whose foreign implementations must be leaves (rule 3), if "member" is
+  /// such a foreign implementation: an ancestor with no global bound, in a trait without the
+  /// legacy form {:termination false}, declared in another module than "member".  A type with the legacy form
+  /// @AssumeCrossModuleTermination is exempt, as an unchecked premise (section 2.4 of the plan).
+  /// Another member of the recursive module group of "member" counts as the same module: the calls dispatched
+  /// to an implementation in the group are checked against the "decreases" clauses, as they are inside one module.
+  /// </summary>
+  public static MemberDecl? UndeclaredForeignAncestor(MemberDecl member) {
+    if (Attributes.Contains(member.EnclosingClass.Attributes, "AssumeCrossModuleTermination")) {
+      return null;
+    }
+    for (var a = member.OverriddenMember; a != null; a = a.OverriddenMember) {
+      if (a.EnclosingClass is TraitDecl trait && !IsExtensible(trait) && a is ICallable callable && !HasGlobalBound(callable) &&
+          IsOutside(a, ModuleOf(member)) && !CoveredByLegacyPremise(member.EnclosingClass, trait)) {
+        return a;
+      }
+    }
+    return null;
+  }
+
+  /// <summary>
+  /// Whether some path of extension from "type" to its ancestor "target" crosses modules at an edge that carries a
+  /// legacy form: @AssumeCrossModuleTermination on the child, or {:termination false} on the parent.  Dafny 4.11
+  /// checks only these crossing edges, so a type that extends, within its own module, a trait that extends a trait
+  /// of another module under a legacy form (as Std.Actions.FunctionAction extends Action, which extends
+  /// Frames.Validatable with @AssumeCrossModuleTermination) implements the foreign members under that premise.
+  /// </summary>
+  public static bool CoveredByLegacyPremise(TopLevelDecl type, TraitDecl target) {
+    if (type is not TopLevelDeclWithMembers child) {
       return false;
     }
-    if (callee.TerminationContract is { } contract) {
-      return contract.IsDispatchSlot && contract.IsExtensibleOwner;
+    foreach (var parent in child.ParentTraitHeads) {
+      if (parent != target && !ExtendsTransitively(parent, target, new HashSet<TraitDecl>())) {
+        continue;
+      }
+      if (parent.EnclosingModuleDefinition != child.EnclosingModuleDefinition &&
+          (Attributes.Contains(child.Attributes, "AssumeCrossModuleTermination") || IsExtensible(parent))) {
+        return true;
+      }
+      if (parent != target && CoveredByLegacyPremise(parent, target)) {
+        return true;
+      }
     }
-    return callee.EnclosingClass is TraitDecl trait && IsExtensible(trait) && callee switch {
-      Function f => f.Body == null,
-      Method => true,
-      _ => false
-    };
+    return false;
+  }
+
+  private static bool ExtendsTransitively(TraitDecl trait, TraitDecl target, HashSet<TraitDecl> seen) {
+    if (!seen.Add(trait)) {
+      return false;
+    }
+    return trait.ParentTraitHeads.Any(parent => parent == target || ExtendsTransitively(parent, target, seen));
   }
 
   /// <summary>
@@ -219,18 +481,39 @@ public class ModularTerminationAnalysis {
 
   public readonly HashSet<TraitDecl> OpenTraits;
   private readonly HashSet<Declaration> reaching = [];
+  // The nodes that are not leaves (rule 3 of revision 3): those that reach open dispatch, an unknown application or
+  // an imported General contract, themselves or through the code they call.
+  private readonly HashSet<Declaration> nonLeaf = [];
   private readonly Dictionary<ModuleDefinition, VisibilityScope> interfaceScopes = new();
   private readonly ModuleDefinition systemModule;
   // The callees of each node, and, for a node that makes an open dispatch itself, a description of the first one.
   private readonly Dictionary<Declaration, HashSet<Declaration>> edges = new();
   private readonly Dictionary<Declaration, string> directDispatch = new();
+  // Issue 211: the nodes that apply the argument-dependent bound of a bounded value, or call code that does, in any
+  // module.  The argument-dependent bound given to "bounded.certify" may not be one of them (see AppliesArgumentBound).
+  private readonly HashSet<Declaration> appliesArgumentBound = [];
+  private readonly Dictionary<Declaration, HashSet<Declaration>> allEdges = new();
+  private readonly List<MemberDecl> orderImplementations = [];
+  private readonly HashSet<IVariable> logicalBinders = [];
 
   /// <summary>
   /// The analysis of the program, computed once, the first time it is asked for.  Use it only once the
   /// program is fully resolved.
   /// </summary>
   public static ModularTerminationAnalysis Of(Program program) {
-    return Cache.GetValue(program, p => new ModularTerminationAnalysis(p));
+    return Cache.GetValue(program, p => {
+      // The analysis is computed the first time some module's translation asks for it, while that module's
+      // visibility scope is current, but it visits every module of the program.  Normalizing a type from a module
+      // that scope cannot see (for instance one an export set only provides) fails a visibility assertion, so the
+      // analysis runs with no scope, which sees every declaration as it is.
+      var saved = Type.SaveScopes();
+      Type.ResetScopes();
+      try {
+        return new ModularTerminationAnalysis(p);
+      } finally {
+        Type.RestoreScopes(saved);
+      }
+    });
   }
 
   public ModularTerminationAnalysis(Program program) {
@@ -245,6 +528,41 @@ public class ModularTerminationAnalysis {
       }
       interfaceScopes[module] = scope;
     }
+    // The implementations of Wfo.gt and Wfo.aha that a component "e by O" may run, other than those of the orders
+    // library's WfoOf: the only code those run is the relation that WfoOf holds, which was applied where the WfoOf
+    // was made (see EdgeCollector), in code that O, a closed term, reaches.
+    foreach (var cl in program.Modules().SelectMany(m => m.TopLevelDecls).OfType<TopLevelDeclWithMembers>()) {
+      if (DecreasesOrders.IsLibraryWfoOf(cl)) {
+        continue;
+      }
+      foreach (var member in cl.Members) {
+        for (var parent = member.OverriddenMember; parent != null; parent = parent.OverriddenMember) {
+          if (parent.EnclosingClass is TraitDecl trait && DecreasesOrders.IsStandardLibraryWfo(trait) &&
+              parent.Name is DecreasesOrders.GtName or DecreasesOrders.AhaName) {
+            orderImplementations.Add(member);
+            break;
+          }
+        }
+      }
+    }
+    // The binder rule (https://github.com/erniecohen/dafny/issues/245, M4): a variable of a total arrow type bound
+    // by a forall or exists expression, or by a ghost forall statement, ranges over every function of its type, all of
+    // which exist before the code being analyzed.  Applying it is a formula over those functions, not a call, so it
+    // is not a function value whose code is not known.  A quantifier over an arrow type has no bounds, so the resolver
+    // admits such an expression only in a ghost context.
+    program.Visit((INode node) => {
+      var binders = node switch {
+        QuantifierExpr quantifier => quantifier.BoundVars,
+        ForallStmt { IsGhost: true } forall => forall.BoundVars,
+        _ => null
+      };
+      foreach (var binder in binders ?? []) {
+        if (ModularTermination.IsTotalArrow(binder.Type)) {
+          logicalBinders.Add(binder);
+        }
+      }
+      return true;
+    });
     var callers = new Dictionary<Declaration, List<Declaration>>();
     var work = new Stack<Declaration>();
     void AddNode(Declaration node, System.Action<EdgeCollector> visit) {
@@ -262,6 +580,10 @@ public class ModularTerminationAnalysis {
         }
       }
       edges[node] = collector.Callees;
+      allEdges[node] = collector.AllCallees;
+      if (collector.AppliesArgumentBound) {
+        appliesArgumentBound.Add(node);
+      }
     }
     foreach (var module in program.Modules()) {
       foreach (var decl in module.TopLevelDecls) {
@@ -342,6 +664,13 @@ public class ModularTerminationAnalysis {
                 }
                 // A default value is evaluated as part of the call that omits the argument.
                 c.Visit(((ICallable)member).Ins.Where(f => f.DefaultValue != null).Select(f => f.DefaultValue));
+                // A member without a body may be given one by a refining module, and code inherited from this module,
+                // whose calls were checked here, is not checked again there.  So, unless it promises
+                // {:termination_closed}, which a refinement must keep, it is taken to reach a dispatch.
+                if (member is Function { Body: null } or MethodOrConstructor { Body: null } &&
+                    !ModularTermination.IsDispatchSlot(member) && !ModularTermination.HasClosedContract(member)) {
+                  c.BodyToCome();
+                }
               });
               break;
             case ConstantField { Rhs: { } rhs } constant:
@@ -364,6 +693,12 @@ public class ModularTerminationAnalysis {
             }
             parentEdges.Add(member);
           }
+          if (member.OverriddenMember is { } overridden) {
+            if (!allEdges.TryGetValue(overridden, out var overriddenEdges)) {
+              allEdges[overridden] = overriddenEdges = [];
+            }
+            overriddenEdges.Add(member);
+          }
         }
       }
     }
@@ -385,6 +720,82 @@ public class ModularTerminationAnalysis {
         }
       }
     }
+    var allCallers = new Dictionary<Declaration, List<Declaration>>();
+    foreach (var (node, callees) in allEdges) {
+      foreach (var callee in callees) {
+        if (!allCallers.TryGetValue(callee, out var list)) {
+          allCallers[callee] = list = [];
+        }
+        list.Add(node);
+      }
+    }
+    foreach (var node in appliesArgumentBound) {
+      work.Push(node);
+    }
+    while (work.Count != 0) {
+      var node = work.Pop();
+      foreach (var caller in allCallers.GetValueOrDefault(node, [])) {
+        if (appliesArgumentBound.Add(caller)) {
+          work.Push(caller);
+        }
+      }
+    }
+    // A node that reaches open dispatch is not a leaf; nor is one that calls a node that is not a leaf.
+    foreach (var node in reaching) {
+      nonLeaf.Add(node);
+    }
+    foreach (var node in nonLeaf) {
+      work.Push(node);
+    }
+    while (work.Count != 0) {
+      var node = work.Pop();
+      if (callers.TryGetValue(node, out var list)) {
+        foreach (var caller in list) {
+          if (nonLeaf.Add(caller)) {
+            work.Push(caller);
+          }
+        }
+      }
+    }
+  }
+
+  /// <summary>
+  /// Whether "declaration" is not a leaf (rule 3 of revision 3): it, or the code it calls, makes a dispatched call
+  /// through a trait, applies a function value whose code is not known, or depends on code of another module that
+  /// does not promise to be a leaf.
+  /// </summary>
+  public bool IsNonLeaf(Declaration declaration) => nonLeaf.Contains(NodeOf(declaration));
+
+  /// <summary>
+  /// If "declaration" is not a leaf, the shortest chain of code by which it is not, for instance
+  /// "'Y.Y.A' -> 'Tr.G' -> dispatch of 'Tr.T.A'"; else null.
+  /// </summary>
+  public string? NonLeafChain(Declaration declaration) {
+    var start = NodeOf(declaration);
+    if (!nonLeaf.Contains(start)) {
+      return null;
+    }
+    var parent = new Dictionary<Declaration, Declaration?> { [start] = null };
+    var queue = new Queue<Declaration>();
+    queue.Enqueue(start);
+    while (queue.Count != 0) {
+      var node = queue.Dequeue();
+      var direct = directDispatch.GetValueOrDefault(node);
+      if (direct != null) {
+        var chain = new List<string> { direct };
+        for (Declaration? n = node; n != null; n = parent[n]) {
+          chain.Add(NodeName(n));
+        }
+        chain.Reverse();
+        return string.Join(" -> ", chain);
+      }
+      foreach (var next in edges.GetValueOrDefault(node, []).Where(nonLeaf.Contains).OrderBy(NodeName, StringComparer.Ordinal)) {
+        if (parent.TryAdd(next, node)) {
+          queue.Enqueue(next);
+        }
+      }
+    }
+    return NodeName(start);
   }
 
   private bool IsOpen(MemberDecl member) {
@@ -392,12 +803,21 @@ public class ModularTerminationAnalysis {
   }
 
   /// <summary>
-  /// The source owner of an evaluation: the iterator for its constructor/Valid/MoveNext protocol,
-  /// otherwise the member itself.
+  /// The source owner of an evaluation: the iterator for its constructor/Valid/MoveNext protocol, the extreme
+  /// predicate or lemma for its prefix predicate or lemma, otherwise the member itself.
   /// </summary>
+  private static Declaration NodeOf(Declaration declaration) {
+    return declaration is MemberDecl member ? NodeOf(member) : declaration;
+  }
+
   private static Declaration NodeOf(MemberDecl member) {
-    return member.EnclosingClass is IteratorDecl iter &&
-           (member == iter.Member_Init || member == iter.Member_Valid || member == iter.Member_MoveNext) ? iter : member;
+    return member switch {
+      // A prefix predicate or lemma is its extreme member's body, run to a depth _k.
+      PrefixPredicate prefix => prefix.ExtremePred,
+      PrefixLemma prefix => prefix.ExtremeLemma,
+      _ => member.EnclosingClass is IteratorDecl iter &&
+           (member == iter.Member_Init || member == iter.Member_Valid || member == iter.Member_MoveNext) ? iter : member
+    };
   }
 
   /// <summary>
@@ -405,11 +825,19 @@ public class ModularTerminationAnalysis {
   /// </summary>
   public bool ReachesOpenDispatch(MemberDecl callee, ModuleDefinition? callerModule = null) {
     var node = NodeOf(callee);
-    return callerModule != null && ModularTermination.ModuleOf(node) != callerModule
+    return callerModule != null && ModularTermination.IsOutside(node, callerModule)
       ? HasGeneralContract(node, callerModule) : reaching.Contains(node);
   }
 
   private bool HasGeneralContract(Declaration node, ModuleDefinition callerModule) {
+    return !ModularTermination.HasClosedContract(node) && HasEvaluationHooks(node, callerModule);
+  }
+
+  /// <summary>
+  /// Whether depending on "node", from "callerModule", may run code of "node"'s module: then, across modules, only a
+  /// public promise says what that code may reach.
+  /// </summary>
+  private bool HasEvaluationHooks(Declaration node, ModuleDefinition callerModule) {
     // Built-in types and operations have no provider-defined evaluation hooks. Arrow
     // requires/reads are checked as applications of their receiver, not imported helpers.
     if (ModularTermination.ModuleOf(node) == systemModule) {
@@ -419,17 +847,28 @@ public class ModularTerminationAnalysis {
                      !node.IsRevealedInScope(scope);
     var structuralHook = node is TopLevelDeclWithMembers type &&
                          (type.Members.OfType<Field>().Any() || type.Traits.Count != 0);
-    return !ModularTermination.HasClosedContract(node) &&
-      (node is MemberDecl || node is AbstractTypeDecl || hiddenType || structuralHook ||
-       node.TerminationContract is { HasEvaluation: true });
+    return node is MemberDecl || node is AbstractTypeDecl || hiddenType || structuralHook ||
+           node.TerminationContract is { HasEvaluation: true };
   }
 
   private bool NeedsGeneral(Declaration node, ModuleDefinition? callerModule) {
-    return callerModule != null && ModularTermination.ModuleOf(node) != callerModule
+    return callerModule != null && ModularTermination.IsOutside(node, callerModule)
       ? HasGeneralContract(node, callerModule) : reaching.Contains(node);
   }
 
   public bool ReachingDeclaration(Declaration declaration) => reaching.Contains(declaration);
+
+  /// <summary>
+  /// Whether evaluating "exprs" may apply the argument-dependent bound of a bounded value (issue 211).  Such a bound
+  /// is a function that a later bound applies, so if it could apply one in turn, a bound read from an object's
+  /// constant could apply itself, as in "o =&gt; {1} + o.f.bound(o)", and its definition would be a contradiction.  So
+  /// the bound given to "bounded.certify" computes from data alone, as VeriFast's levels do.
+  /// </summary>
+  public bool AppliesArgumentBound(IEnumerable<Expression> exprs) {
+    var collector = new EdgeCollector(this, null);
+    collector.Visit(exprs);
+    return collector.AppliesArgumentBound || collector.AllCallees.Any(appliesArgumentBound.Contains);
+  }
 
   public enum FunctionValueKind {
     /// <summary>A lambda expression: its body is part of the code that creates it, and is checked there.</summary>
@@ -438,6 +877,16 @@ public class ModularTerminationAnalysis {
     KnownCode,
     /// <summary>An in-parameter of the enclosing callable that has a callback bound (M3b).</summary>
     CallbackParameter,
+    /// <summary>
+    /// A variable of a total arrow type bound by a quantifier or a ghost forall statement (the binder rule of issue 245
+    /// M4): applying it calls nothing.  It is not a value that may be passed for a parameter with a callback bound.
+    /// </summary>
+    Binder,
+    /// <summary>
+    /// The function value "X.erase" of a value "X" of a bounded type (issue 266): it runs under "X.bound", which the
+    /// verifier checks.
+    /// </summary>
+    Bounded,
     /// <summary>Any other value: its code is not known, so it has no bound (TOP).</summary>
     Unknown
   }
@@ -449,6 +898,12 @@ public class ModularTerminationAnalysis {
     switch (value.Resolved) {
       case LambdaExpr:
         return FunctionValueKind.Lambda;
+      case var erased when BoundedCallables.ErasedCallable(erased) != null:
+        return FunctionValueKind.Bounded;
+      case var bound when BoundedCallables.IsArgumentBound(bound):
+        return FunctionValueKind.KnownCode;
+      case IdentifierExpr { Var: { } binder } when logicalBinders.Contains(binder):
+        return FunctionValueKind.Binder;
       case IdentifierExpr { Var: Formal f } when enclosing != null && enclosing.Ins.IndexOf(f) is var i and >= 0 &&
                                                   ModularTermination.HasCallbackBound(enclosing, i):
         return FunctionValueKind.CallbackParameter;
@@ -516,6 +971,9 @@ public class ModularTerminationAnalysis {
   private class EdgeCollector : BottomUpVisitor {
     private readonly ModularTerminationAnalysis analysis;
     public readonly HashSet<Declaration> Callees = [];
+    // Every declaration the code depends on, in any module (issue 211)
+    public readonly HashSet<Declaration> AllCallees = [];
+    public bool AppliesArgumentBound;
     public bool Dispatches;
     public string? DispatchDescription;
 
@@ -526,6 +984,11 @@ public class ModularTerminationAnalysis {
       }
     }
 
+    /// <summary>The member being visited has no body, and a refining module may give it one.</summary>
+    public void BodyToCome() {
+      Dispatch("no body, which a refining module may give it");
+    }
+
     private readonly ModuleDefinition? callerModule;
 
     public EdgeCollector(ModularTerminationAnalysis analysis, ModuleDefinition? callerModule) {
@@ -534,7 +997,8 @@ public class ModularTerminationAnalysis {
     }
 
     private void AddDependency(Declaration node) {
-      if (callerModule != null && ModularTermination.ModuleOf(node) != callerModule) {
+      AllCallees.Add(node);
+      if (callerModule != null && ModularTermination.IsOutside(node, callerModule)) {
         if (analysis.HasGeneralContract(node, callerModule)) {
           Dispatch($"General contract of {NodeName(node)} (publish {{:termination_closed}} for independent closed code)");
         }
@@ -568,12 +1032,27 @@ public class ModularTerminationAnalysis {
         Mention(type);
       }
       switch (expr) {
+        // The orders library's Of(r) and WfoOf(r) make the order whose gt and aha run r and nothing else, and its
+        // wellFounded(r) and stops(r, c) run only r and c: each is an application of its arguments of arrow type
+        // (https://github.com/erniecohen/dafny/issues/245, M4).
+        case FunctionCallExpr call when call.Function != null && DecreasesOrders.AppliesOnlyItsArguments(call.Function):
+          foreach (var arg in call.Args.Where(a => a.Type.NormalizeExpand().IsArrowType)) {
+            Apply(arg);
+          }
+          break;
+        case DatatypeValue value when value.Ctor != null && DecreasesOrders.IsLibraryWfoOf(value.Ctor.EnclosingDatatype):
+          Apply(value.Arguments[0]);
+          break;
         case FunctionCallExpr call when call.Function != null:
           if (ModularTermination.IsArrowMember(call.Function)) {
             Apply(call.Receiver);
           } else {
             Call(call.Function);
           }
+          break;
+        // A method is never a value, so selecting one of the orders library's multiset lemmas is the callee of a
+        // call statement, which VisitOneStmt visits as an application of its arguments of arrow type.
+        case MemberSelectExpr { Member: MethodOrConstructor lemma } when DecreasesOrders.AppliesOnlyItsArguments(lemma):
           break;
         case MemberSelectExpr { Member: Function or MethodOrConstructor or ConstantField } select:
           Call(select.Member);
@@ -583,6 +1062,12 @@ public class ModularTerminationAnalysis {
           break;
         case SeqConstructionExpr seq:
           Apply(seq.Initializer);
+          break;
+        case DecreasesByExpr decreasesBy when DecreasesOrders.WfoTrait(decreasesBy.Order.Type) != null:
+          // A component "e by O" is an implied call of Wfo.gt and Wfo.aha (R3 of DecreasesOrders) on the value of O.
+          foreach (var implementation in analysis.orderImplementations) {
+            Call(implementation);
+          }
           break;
       }
     }
@@ -599,6 +1084,19 @@ public class ModularTerminationAnalysis {
       if (value.Resolved is MemberSelectExpr { Member: Function g } && !ModularTermination.IsArrowMember(g)) {
         return;
       }
+      if (value.Resolved is IdentifierExpr { Var: { } binder } && analysis.logicalBinders.Contains(binder)) {
+        return;
+      }
+      // The argument-dependent bound of a bounded value was checked to be closed when the value was formed, and to
+      // apply no such bound itself.
+      if (BoundedCallables.IsArgumentBound(value)) {
+        AppliesArgumentBound = true;
+        return;
+      }
+      // The relation MultisetRel(r) of the orders library applies only r, which the visit of that call applies.
+      if (value.Resolved is FunctionCallExpr { Function: { } function } && DecreasesOrders.IsLibraryMultisetRel(function)) {
+        return;
+      }
       Dispatch("a call through a function value whose code is not known");
     }
 
@@ -607,7 +1105,14 @@ public class ModularTerminationAnalysis {
         Mention(type);
       }
       if (stmt is CallStmt { Method: { } method }) {
-        Call(method);
+        if (DecreasesOrders.AppliesOnlyItsArguments(method)) {
+          // The orders library's lemmas of the multiset order (https://github.com/erniecohen/dafny/issues/211)
+          foreach (var arg in ((CallStmt)stmt).Args.Where(a => a.Type.NormalizeExpand().IsArrowType)) {
+            Apply(arg);
+          }
+        } else {
+          Call(method);
+        }
       }
       if (stmt is SingleAssignStmt { Rhs: AllocateArray { ElementInit: { } init } }) {
         Apply(init);
@@ -766,12 +1271,56 @@ public class ModularTerminationRewriter : IRewriter {
           $"{module.FullDafnyName}.{cl.Name}.{member.Name}",
           cl is TraitDecl && !member.HasStaticKeyword && (member is Method || member is Function { Body: null }),
           member is not ConstantField || member is ConstantField { Rhs: not null },
-          cl is TraitDecl owner && ModularTermination.IsExtensible(owner));
+          cl is TraitDecl { IsObjectTrait: false });
       }
     }
   }
 
+  /// <summary>
+  /// By default, a library that Dafny does not verify here and that was not verified under the rules (a source file
+  /// or a .dll given with --library, or a .doo built by a version of Dafny without them) is refused when it uses the
+  /// design: its leaf and bound obligations were never checked (https://github.com/erniecohen/dafny/issues/211, §6).
+  /// A library that uses none of the design is harmless: its code is TOP and no leaf.  Under --modular-termination
+  /// the parser admits libraries by their records instead.
+  /// </summary>
+  private void CheckUncheckedLibraries(Program program) {
+    var roots = program.Compilation.UncheckedTerminationRoots;
+    if (roots.Count == 0) {
+      return;
+    }
+    var edges = program.Compilation.Includes.GroupBy(i => i.IncluderFilename)
+      .ToDictionary(g => g.Key, g => g.Select(i => i.IncludedFilename).ToList());
+    var uncheckedFiles = new Dictionary<Uri, Uri>();
+    foreach (var root in roots) {
+      var work = new Stack<Uri>([root]);
+      while (work.TryPop(out var uri)) {
+        if (uncheckedFiles.TryAdd(uri, root)) {
+          foreach (var included in edges.GetValueOrDefault(uri, [])) {
+            work.Push(included);
+          }
+        }
+      }
+    }
+    var reported = new HashSet<Uri>();
+    while (ModularTermination.FirstDesignUse(program, uri => uncheckedFiles.ContainsKey(uri) && !reported.Contains(uncheckedFiles[uri]))
+           is var (declaration, use)) {
+      var root = uncheckedFiles[declaration.Origin.Uri];
+      reported.Add(root);
+      Reporter.Error(MessageSource.Resolver, "modular_termination_library", declaration.Origin,
+        $"cannot use {Reporter.Options.GetPrintPath(root.LocalPath)} as a library: it uses {use} here, but it was not " +
+        "verified under the rules of termination across modules; verify it with this program, or build it into a .doo " +
+        "with this version of Dafny");
+    }
+  }
+
   internal override void PostResolve(Program program) {
+    if (ModularTermination.RulesEnabled(Reporter.Options)) {
+      CheckUncheckedLibraries(program);
+    }
+    if (!ModularTermination.Active(Reporter.Options, program)) {
+      return;
+    }
+    CheckLibraryRefinements(program);
     var analysis = new ModularTerminationAnalysis(program);
     var checkedClauses = new HashSet<(Attributes, ModuleDefinition)>();
     foreach (var module in program.Modules()) {
@@ -781,6 +1330,7 @@ public class ModularTerminationRewriter : IRewriter {
           CheckExtensibleAncestors(type);
           foreach (var member in type.Members) {
             CheckClosedPromise(member, analysis);
+            CheckForeignImplementation(member, analysis);
           }
         }
         if (decl is not TopLevelDeclWithMembers cl) {
@@ -804,20 +1354,62 @@ public class ModularTerminationRewriter : IRewriter {
     }
   }
 
+  /// <summary>
+  /// A module that refines or replaces a module of a library inherits that module's bodies, which are
+  /// not part of the library's termination contracts (https://github.com/erniecohen/dafny/issues/211,
+  /// milestone M3-4): a changed body would leave the contract, and so the record of a library built
+  /// against it, unchanged.  Until contracts or records cover inherited bodies, such a module is rejected.
+  /// </summary>
+  private void CheckLibraryRefinements(Program program) {
+    var urisToVerify = program.Compilation.UrisToVerify;
+    if (urisToVerify == null) {
+      return;
+    }
+    foreach (var module in program.Modules()) {
+      if (module.Implements is not { } implements || implements.Target.Def is not { } target ||
+          module.Origin?.Uri == null || !urisToVerify.Contains(module.Origin.Uri) ||
+          target.Origin?.Uri == null || urisToVerify.Contains(target.Origin.Uri)) {
+        continue;
+      }
+      var verb = implements.Kind == ImplementationKind.Refinement ? "refines" : "replaces";
+      Reporter.Error(MessageSource.Resolver, module.NameNode.Origin,
+        $"modular termination: module '{module.Name}' {verb} module '{target.FullDafnyName}' of a library; " +
+        "under --modular-termination a module cannot refine or replace a library module, since the bodies it " +
+        "would inherit are not part of the library's termination contracts");
+    }
+  }
+
   private void CheckExtensibleAncestors(TopLevelDeclWithMembers child) {
     if (child is TraitDecl refined && child.TerminationContract is { } contract &&
         contract.IsExtensibleOwner != ModularTermination.IsExtensible(refined)) {
       Reporter.Error(MessageSource.Resolver, child.Origin,
         "modular termination: refinement cannot change a trait's declared extensibility");
     }
-    foreach (var ancestor in child.TraitAncestors().Where(a => !a.IsObjectTrait)) {
-      if (!ModularTermination.IsExtensible(ancestor) &&
-          (child.EnclosingModuleDefinition != ancestor.EnclosingModuleDefinition ||
-           child is TraitDecl trait && ModularTermination.IsExtensible(trait))) {
-        Reporter.Error(MessageSource.Resolver, child.Origin,
-          $"modular termination: '{child.Name}' cannot expose sealed ancestor '{ancestor.FullName}'; " +
-          "every non-object ancestor of a foreign implementation or extensible trait must declare {:termination false}");
-      }
+    // Every trait may be extended from any module (rule 1 of revision 3), so no ancestor is sealed.
+  }
+
+  /// <summary>
+  /// Rule 3 of revision 3: a foreign implementation of a member with no declared bound must be a leaf, unless it
+  /// has a bound of its own, declared or inherited from a subtrait.  A declared bound is checked like any other: every call the implementation makes
+  /// must be below it (or, to known code that reaches open dispatch, at most it), so the implementation cannot reach
+  /// a call dispatched to a member without a bound, which is TOP.  The order of bounds has no bottom, and needs none:
+  /// what matters is that bounded code never reaches TOP, so no cycle through an unbounded dispatch can close.
+  /// </summary>
+  private void CheckForeignImplementation(MemberDecl member, ModularTerminationAnalysis analysis) {
+    if (member is not (MethodOrConstructor or Function) || ModularTermination.UndeclaredForeignAncestor(member) is not { } ancestor) {
+      return;
+    }
+    if (ModularTermination.IsDispatchSlot(member) && member is Method { Body: null } or Function { Body: null }) {
+      return; // a bodyless member of a subtrait: its own implementations are checked
+    }
+    var name = ModularTermination.QualifiedName(ancestor);
+    if (ModularTermination.HasGlobalBound((ICallable)member)) {
+      return; // its bound, declared or inherited from a subtrait, is checked at each call it makes
+    }
+    if (analysis.NonLeafChain(member) is { } chain) {
+      Reporter.Error(MessageSource.Resolver, member.Origin,
+        $"modular termination: '{member.Name}' implements '{name}' of another module, which has no 'decreases {{:global}}' bound, " +
+        $"so it must be a leaf or declare a bound, but it is not a leaf ({chain}); declare a bound on '{name}' or on this implementation, or make this implementation a leaf");
     }
   }
 
@@ -827,7 +1419,7 @@ public class ModularTerminationRewriter : IRewriter {
     }
     if (declaration is MemberDecl member && ModularTermination.IsOpenDispatch(member, analysis.OpenTraits)) {
       Reporter.Error(MessageSource.Resolver, declaration.Origin,
-        "modular termination: an extensible trait's overridable slot cannot promise {:termination_closed}; use a proper global bound");
+        "modular termination: a trait's overridable slot cannot promise {:termination_closed}; use a global bound");
     }
     if (declaration is ICallable callable && ModularTermination.HasCallbackBounds(callable)) {
       Reporter.Error(MessageSource.Resolver, declaration.Origin,
@@ -947,9 +1539,8 @@ public class ModularTerminationRewriter : IRewriter {
     // A type is reported once per line: a declaration, its expressions and their subexpressions mention the same type.
     private readonly HashSet<(System.Uri, int, TopLevelDecl)> reportedTypes = new();
 
-    // The code inside a lambda expression, and inside a lambda expression passed for a parameter with a callback
-    // bound (a bounded lambda, M3b), whose body runs under that bound, and so does every lambda inside it.
-    private readonly HashSet<object> insideLambda = new(ReferenceEqualityComparer.Instance);
+    // The code inside a lambda expression passed for a parameter with a callback bound (a bounded lambda, M3b),
+    // whose body runs under that bound, and so does every lambda inside it.
     private readonly HashSet<object> insideBoundedLambda = new(ReferenceEqualityComparer.Instance);
     // The member selections that a call statement names its method by.
     private readonly HashSet<object> calledSelections = new(ReferenceEqualityComparer.Instance);
@@ -969,17 +1560,14 @@ public class ModularTerminationRewriter : IRewriter {
     /// </summary>
     public void Prepare(IEnumerable<Expression> exprs, IEnumerable<Statement> stmts) {
       foreach (var e in exprs) {
-        Walk(e, false, false);
+        Walk(e, false);
       }
       foreach (var st in stmts) {
-        Walk(st, false, false);
+        Walk(st, false);
       }
     }
 
-    private void Walk(object node, bool inLambda, bool inBounded) {
-      if (inLambda) {
-        insideLambda.Add(node);
-      }
+    private void Walk(object node, bool inBounded) {
       if (inBounded) {
         insideBoundedLambda.Add(node);
       }
@@ -1001,19 +1589,19 @@ public class ModularTerminationRewriter : IRewriter {
         case Expression expr:
           foreach (var sub in expr.SubExpressions) {
             var isLambda = sub.Resolved is LambdaExpr;
-            Walk(sub, inLambda || isLambda, inBounded || (isLambda && bounded.Contains(sub)));
+            Walk(sub, inBounded || (isLambda && bounded.Contains(sub)));
           }
           if (expr is StmtExpr stmtExpr) {
-            Walk(stmtExpr.S, inLambda, inBounded);
+            Walk(stmtExpr.S, inBounded);
           }
           break;
         case Statement stmt:
           foreach (var sub in stmt.SubExpressions) {
             var isLambda = sub.Resolved is LambdaExpr;
-            Walk(sub, inLambda || isLambda, inBounded || (isLambda && bounded.Contains(sub)));
+            Walk(sub, inBounded || (isLambda && bounded.Contains(sub)));
           }
           foreach (var sub in stmt.SubStatements) {
-            Walk(sub, inLambda, inBounded);
+            Walk(sub, inBounded);
           }
           break;
       }
@@ -1084,13 +1672,14 @@ public class ModularTerminationRewriter : IRewriter {
     /// <summary>
     /// An application of a function value (M3b).  A lambda's body is checked where it appears, and a function
     /// named as a value that reaches no dispatched call needs no check.  A parameter with a callback bound runs
-    /// under that bound, which the verifier checks to be below the caller's (smaller-bound rule), except inside a
-    /// lambda and as the initializer of a sequence or an array, where it counts as unknown.  Any other value runs
-    /// code that is not known, which has no bound (TOP): an error where the code runs under a bound.
+    /// under that bound, which the verifier checks to be below the caller's, or inside a lambda the lambda's
+    /// (smaller-bound rule), except as the initializer of a sequence or an array, where it counts as unknown.  Any
+    /// other value runs code that is not known, which has no bound (TOP): an error where the code runs under a bound.
     /// </summary>
     private void ReportApplication(IOrigin origin, Expression value, object site, string what, bool initializer) {
       var kind = analysis.Classify(value, caller);
-      if (kind == ModularTerminationAnalysis.FunctionValueKind.CallbackParameter && (initializer || insideLambda.Contains(site))) {
+      if (kind == ModularTerminationAnalysis.FunctionValueKind.CallbackParameter && initializer ||
+          kind == ModularTerminationAnalysis.FunctionValueKind.Bounded && initializer) {
         kind = ModularTerminationAnalysis.FunctionValueKind.Unknown;
       }
       if (kind == ModularTerminationAnalysis.FunctionValueKind.Lambda || !FirstReport(origin)) {
@@ -1101,6 +1690,15 @@ public class ModularTerminationRewriter : IRewriter {
         case ModularTerminationAnalysis.FunctionValueKind.KnownCode:
           reporter.Info(MessageSource.Resolver, origin,
             $"modular termination: in {CallerName}, {what} needs the smaller-bound rule; holds: the value is known code that reaches no dispatched call");
+          break;
+        case ModularTerminationAnalysis.FunctionValueKind.Binder:
+          reporter.Info(MessageSource.Resolver, origin,
+            $"modular termination: in {CallerName}, {what} needs the smaller-bound rule; holds: the value is a variable bound by a quantifier, which ranges over functions that exist already, so applying it calls nothing");
+          break;
+        case ModularTerminationAnalysis.FunctionValueKind.Bounded:
+          reporter.Info(MessageSource.Resolver, origin,
+            $"modular termination: in {CallerName}, {what} needs the smaller-bound rule; " +
+            (bounded ? "checked: the bounded value's bound must be below the caller's" : "holds: the caller has no 'decreases {:global}' bound, which is above every bound"));
           break;
         case ModularTerminationAnalysis.FunctionValueKind.CallbackParameter:
           reporter.Info(MessageSource.Resolver, origin,
@@ -1132,20 +1730,75 @@ public class ModularTerminationRewriter : IRewriter {
       if (callee is not ICallable callable) {
         return;
       }
+      if (BoundedCallables.IsCertify(callee) && args.Count == 2 && BoundedCallables.ArgumentOrderResult(args[0].Type) != null) {
+        ReportArgumentDependentCertify(callee, args[0], args[1]);
+        return;
+      }
       for (var i = 0; i < args.Count && i < callable.Ins.Count; i++) {
         if (!ModularTermination.HasCallbackBound(callable, i)) {
           continue;
         }
         var kind = analysis.Classify(args[i], caller);
-        if (kind == ModularTerminationAnalysis.FunctionValueKind.CallbackParameter && insideLambda.Contains(site)) {
-          kind = ModularTerminationAnalysis.FunctionValueKind.Unknown;
+        if (kind is ModularTerminationAnalysis.FunctionValueKind.Bounded &&
+            BoundedCallables.ArgumentOrderResult(BoundedCallables.ErasedCallable(args[i])!.Type.NormalizeExpand().TypeArgs[0]) != null) {
+          reporter.Error(MessageSource.Resolver, args[i].Origin,
+            $"modular termination: in {CallerName}, the function of a bounded value with an argument-dependent bound cannot be passed for " +
+            $"parameter '{callable.Ins[i].Name}' of '{QualifiedName(callee)}', whose 'decreases {{:callback}}' bound does not depend on the arguments; pass the bounded value itself");
+          continue;
         }
-        if (kind == ModularTerminationAnalysis.FunctionValueKind.Unknown) {
+        if (kind is ModularTerminationAnalysis.FunctionValueKind.Unknown && BoundedCallables.IsCertify(callee)) {
+          if (ModularTermination.AdmittedMember(reporter.Options, args[i], out var problem) != null) {
+            reporter.Info(MessageSource.Resolver, args[i].Origin,
+              $"modular termination: in {CallerName}, the function certified by '{QualifiedName(callee)}' runs its own code; " +
+              "checked: its 'decreases {:global}' bound must not exceed the bound given");
+            continue;
+          }
+          if (problem != null) {
+            reporter.Error(MessageSource.Resolver, args[i].Origin,
+              $"modular termination: in {CallerName}, the function passed to '{QualifiedName(callee)}' cannot be certified: {problem}");
+            continue;
+          }
+        }
+        if (kind is ModularTerminationAnalysis.FunctionValueKind.Unknown or ModularTerminationAnalysis.FunctionValueKind.Binder) {
           reporter.Error(MessageSource.Resolver, args[i].Origin,
             $"modular termination: in {CallerName}, the value passed for parameter '{callable.Ins[i].Name}' of '{QualifiedName(callee)}', " +
-            "which has a 'decreases {:callback}' bound, must be a lambda expression, a parameter with such a bound (outside a lambda), " +
-            "or a function that reaches no dispatched call");
+            "which has a 'decreases {:callback}' bound, must be a lambda expression, a parameter with such a bound, " +
+            "a function that reaches no dispatched call, or the function of a bounded value");
         }
+      }
+    }
+
+    /// <summary>
+    /// "bounded.certify(b, f)" with an argument-dependent bound b (issue 211): f must be a lambda expression, whose
+    /// body the verifier checks under b at its arguments, and b must be closed (rule 8), since "X.bound(args)" is
+    /// evaluated in the bounds of later calls: a lambda expression, a call of a function whose body is one, or a
+    /// function, that reaches no dispatch or unknown application and applies no argument-dependent bound, or the
+    /// argument-dependent bound of another bounded value.
+    /// </summary>
+    private void ReportArgumentDependentCertify(MemberDecl callee, Expression b, Expression f) {
+      if (f.Resolved is not LambdaExpr) {
+        reporter.Error(MessageSource.Resolver, f.Origin,
+          $"modular termination: in {CallerName}, the function certified by '{QualifiedName(callee)}' at an argument-dependent bound must be a lambda expression");
+      }
+      // A call of a function whose body is a lambda expression is that lambda expression, with the call's arguments
+      // for the function's parameters: it is a name for a family of bounds, such as the levels of the objects of
+      // each depth, so that a specification can say which bound a value has.
+      var closedCode = b.Resolved is LambdaExpr || BoundedCallables.IsArgumentBound(b) ||
+                       b.Resolved is FunctionCallExpr { Function: { Body.Resolved: LambdaExpr } factory } && !factory.IsVirtual ||
+                       analysis.Classify(b, caller) == ModularTerminationAnalysis.FunctionValueKind.KnownCode;
+      if (!closedCode) {
+        reporter.Error(MessageSource.Resolver, b.Origin,
+          $"modular termination: in {CallerName}, the argument-dependent bound given to '{QualifiedName(callee)}' must be a lambda expression, " +
+          "a call of a function whose body is one, a function that reaches no dispatched call, or the argument-dependent bound of a bounded value");
+      } else if (analysis.ReachingChain([b], caller.EnclosingModule) is { } chain) {
+        reporter.Error(MessageSource.Resolver, b.Origin,
+          $"modular termination: in {CallerName}, the argument-dependent bound given to '{QualifiedName(callee)}' can reach dispatch to " +
+          $"implementations that other modules may provide (bound -> {chain}); a bound may only use code that cannot reach one, " +
+          "since its value must not depend on the termination that the bounds establish");
+      } else if (analysis.AppliesArgumentBound([b])) {
+        reporter.Error(MessageSource.Resolver, b.Origin,
+          $"modular termination: in {CallerName}, the argument-dependent bound given to '{QualifiedName(callee)}' may apply the " +
+          "argument-dependent bound of a bounded value, which could be itself; it must compute from data alone");
       }
     }
 
@@ -1155,7 +1808,7 @@ public class ModularTerminationRewriter : IRewriter {
     }
 
     private void ReportDispatch(IOrigin origin, MemberDecl callee) {
-      if (ModularTermination.ModuleOf(callee) != caller.EnclosingModule && callee is ICallable callable) {
+      if (ModularTermination.IsOutside(callee, caller.EnclosingModule) && callee is ICallable callable) {
         for (ICallable? current = callable; current is MemberDecl member; current = member.OverriddenMember as ICallable) {
           var bounds = ModularTermination.GlobalClauses(current.Decreases.Attributes).SelectMany(a => a.Args)
             .Concat(ModularTermination.CallbackClauses(current.Decreases.Attributes).SelectMany(a => a.Args.Skip(1)));
@@ -1167,7 +1820,8 @@ public class ModularTerminationRewriter : IRewriter {
         }
       }
       var dispatched = ModularTermination.IsOpenDispatch(callee, analysis.OpenTraits);
-      if (!dispatched && !analysis.ReachesOpenDispatch(callee, caller.EnclosingModule)) {
+      if (!dispatched && (DecreasesOrders.CallAppliesOnlyItsArguments(callee) ||
+                          !analysis.ReachesOpenDispatch(callee, caller.EnclosingModule))) {
         return;
       }
       if (!FirstReport(origin)) {

@@ -1,0 +1,9 @@
+git-issue-105-raw-errors.dfy(24,18): Error: 'raw' applies only to a type that can declare a member invariant (a datatype, class, trait, newtype or abstract type), not to type synonym 'Synonym'
+git-issue-105-raw-errors.dfy(24,34): Error: 'raw' applies only to a type that can declare a member invariant (a datatype, class, trait, newtype or abstract type), not to subset type 'Subset'
+git-issue-105-raw-errors.dfy(26,29): Error: 'raw' does not apply to type parameter 'T'
+git-issue-105-raw-errors.dfy(37,30): Error: type parameter (T) passed to type Auto must support auto-initialization (got D)
+git-issue-105-raw-errors.dfy(37,62): Error: type parameter (T) passed to type Nonempty must be nonempty (got D)
+git-issue-105-raw-errors.dfy(43,8): Error: type parameter (T) passed to method Z must support auto-initialization (got D)
+6 resolution/type errors detected in git-issue-105-raw-errors.dfy
+git-issue-105-raw-codatatype.dfy(8,12): Error: 'raw' applies only to a type that can declare a member invariant (a datatype, class, trait, newtype or abstract type), not to codatatype 'Stream'
+1 resolution/type errors detected in git-issue-105-raw-codatatype.dfy

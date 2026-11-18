@@ -16,6 +16,43 @@ public class ProgramResolver {
   private readonly Dictionary<TopLevelDeclWithMembers, Dictionary<string, MemberDecl>> classMembers = new();
 
   protected readonly Graph<ModuleDecl> dependencies = new();
+
+  /// <summary>
+  /// What each edge of "dependencies" stands for.  Where two edges join the same two declarations, the
+  /// larger kind is kept.  Read only under --recursive-modules.
+  /// </summary>
+  private readonly Dictionary<(ModuleDecl From, ModuleDecl To), ModuleDependencyKind> dependencyKinds = new();
+
+  /// <summary>
+  /// The recursive module group of each declaration that is in one (--recursive-modules).  The first module
+  /// of a group, its leader, is resolved in place of the group: its worker resolves all the members together.
+  /// </summary>
+  private readonly Dictionary<ModuleDecl, RecursiveModuleGroup> groupOf = new();
+
+  private bool InGroupOf(ModuleDecl declaration, ModuleDecl other) {
+    return groupOf.TryGetValue(declaration, out var group) && groupOf.TryGetValue(other, out var otherGroup) && group == otherGroup;
+  }
+
+  /// <summary>
+  /// The declarations that must be resolved before "declaration".  For a declaration of a recursive module
+  /// group, those are the ones that any declaration of the group depends on outside the group and, unless
+  /// the declaration is the leader, the leader.
+  /// </summary>
+  private IEnumerable<ModuleDecl> Prerequisites(ModuleDecl declaration) {
+    if (!groupOf.TryGetValue(declaration, out var group)) {
+      return dependencies.FindVertex(declaration).Successors.Select(v => v.N);
+    }
+    var external = group.Declarations.SelectMany(d => dependencies.FindVertex(d).Successors.Select(v => v.N))
+      .Where(d => !InGroupOf(d, declaration));
+    return ReferenceEquals(declaration, group.Members[0]) ? external : external.Append(group.Members[0]);
+  }
+
+  private void AddDependency(ModuleDecl from, ModuleDecl to, ModuleDependencyKind kind) {
+    dependencies.AddEdge(from, to);
+    if (!dependencyKinds.TryGetValue((from, to), out var previous) || previous < kind) {
+      dependencyKinds[(from, to)] = kind;
+    }
+  }
   public DafnyOptions Options => Program.Options;
   public SystemModuleManager SystemModuleManager => Program.SystemModuleManager;
   public ErrorReporter Reporter => Program.Reporter;
@@ -38,6 +75,8 @@ public class ProgramResolver {
     Type.ResetScopes();
 
     Type.EnableScopes();
+    var profile = PipelineProfile.For(Options);
+    var profileStart = profile?.BeginThread();
     // For the formatter, we ensure we take snapshots of the PrefixNamedModules and topleveldecls
     Program.DefaultModuleDef.PreResolveSnapshotForFormatter();
 
@@ -46,86 +85,171 @@ public class ProgramResolver {
     Program.DefaultModuleDef.ProcessPrefixNamedModules();
 
     var startingErrorCount = Reporter.ErrorCount;
+    if (profile != null) {
+      profile.FrontEnd("resolve.prefixNamed", profileStart!.Value);
+      profileStart = profile.BeginThread();
+    }
+    if (!MemberInvariantChecks.Check(Program, Reporter) || !RecursiveModuleGroups.CheckOptions(Program, Reporter)) {
+      return Task.CompletedTask;
+    }
     ComputeModuleDependencyGraph(Program, out var moduleDeclarationPointers);
 
     if (Reporter.ErrorCount != startingErrorCount) {
       return Task.CompletedTask;
     }
 
-    var sortedDecls = dependencies.TopologicallySortedComponents();
+    // A component of more than one declaration is a recursive module group.  Its leader comes first, and
+    // every declaration of the group has the same height.
+    var sortedDecls = dependencies.TopologicallySortedComponents().SelectMany(representative =>
+      groupOf.TryGetValue(representative, out var group)
+        ? group.Declarations.OrderBy(d => ReferenceEquals(d, group.Members[0]) ? 0 : 1)
+        : Enumerable.Repeat(representative, 1)).ToList();
     Program.ModuleSigs = new();
 
-    if (Options.Get(CommonOptionBag.ResolutionThreads) > 0) {
-      foreach (var declaration in sortedDecls) {
-        declaration.Height = dependencies.FindVertex(declaration).Successors.Select(v => v.N.Height + 1).DefaultIfEmpty(0).Max();
-        if (declaration is LiteralModuleDecl literal) { literal.ModuleDef.Height = declaration.Height; }
+    foreach (var declaration in sortedDecls) {
+      if (groupOf.TryGetValue(declaration, out var group) && !ReferenceEquals(declaration, group.Members[0])) {
+        declaration.Height = group.Members[0].Height;
+      } else {
+        declaration.Height = Prerequisites(declaration).Select(d => d.Height + 1).DefaultIfEmpty(0).Max();
       }
-    } else {
-      SetHeights(sortedDecls);
+      if (declaration is LiteralModuleDecl literal) { literal.ModuleDef.Height = declaration.Height; }
+    }
+    if (profile != null) {
+      profile.FrontEnd("resolve.bind", profileStart!.Value, new Dictionary<string, object> { ["moduleDecls"] = sortedDecls.Count });
+      EmitModuleGraph(profile, sortedDecls);
+      profileStart = profile.BeginThread();
     }
 
-    if (Options.Get(CommonOptionBag.ResolutionThreads) > 0) {
-      var systemKey = ModuleResolutionKey.Compute("_System", "", ModuleResolutionKey.DafnyVersion,
-        ModuleResolutionKey.Options(Options), []);
-      Program.SystemModuleManager = PrepareResolutionSystemModule(systemKey);
+    // Initialize intrinsic arrow signatures before resolving the system module or forking builtin
+    // catalogs. Creating them in a module worker is too late for the resolved requires/reads calls.
+    if (SystemModuleManager.BoundedDecl != null && !SystemModuleManager.ArrowTypeDecls.ContainsKey(2)) {
+      SystemModuleManager.CreateArrowTypeDecl(2);
+      SystemModuleManager.BoundedArrowAdded = true;
     }
-    using var systemNames = Options.Get(CommonOptionBag.ResolutionThreads) > 0 ? new ModuleNamingScope("_System") : null;
+    var systemKey = ModuleResolutionKey.Compute("_System", "", ModuleResolutionKey.DafnyVersion,
+      ModuleResolutionKey.Options(Options), []);
+    Program.SystemModuleManager = PrepareResolutionSystemModule(systemKey);
+    using var systemNames = new ModuleNamingScope("_System");
     var systemClassMembers = ResolveSystemModule(Program);
     foreach (var moduleClassMembers in systemClassMembers) {
       classMembers[moduleClassMembers.Key] = moduleClassMembers.Value;
     }
 
     var rewriters = RewriterCollection.GetRewriters(Reporter, Program);
+    if (profile != null) {
+      profile.FrontEnd("resolve.system", profileStart!.Value);
+    }
 
     var compilation = Program.Compilation;
     foreach (var rewriter in rewriters) {
       cancellationToken.ThrowIfCancellationRequested();
+      profileStart = profile?.BeginThread();
       rewriter.PreResolve(Program);
+      profile?.FrontEnd("resolve.global.preResolve", profileStart!.Value, new Dictionary<string, object> { ["rewriter"] = rewriter.GetType().Name });
     }
 
-    if (Options.Get(CommonOptionBag.ResolutionThreads) > 0) {
-      ResolveModulesInParallel(sortedDecls, moduleDeclarationPointers, cancellationToken);
-    } else {
-      foreach (var decl in sortedDecls) {
-        cancellationToken.ThrowIfCancellationRequested();
-        var moduleResolutionResult = ResolveModuleDeclaration(compilation, decl);
-        ProcessDeclarationResolutionResult(moduleDeclarationPointers, decl, moduleResolutionResult);
-      }
-    }
+    // Local ownership is shared; zero resolves directly without the opt-in scheduler.
+    ResolveModuleOutputs(sortedDecls, moduleDeclarationPointers, cancellationToken);
 
     if (Reporter.ErrorCount != startingErrorCount) {
       return Task.CompletedTask;
     }
 
+    profileStart = profile?.BeginThread();
     Type.DisableScopes();
 
     InstantiateReplaceableModules(Program);
+    if (!Options.Get(CommonOptionBag.LegacyReplacementCycles)) {
+      ReplacementDependencyChecker.Check(Program, Reporter);
+    }
     CheckDuplicateModuleNames(Program);
+    profile?.FrontEnd("resolve.global.replaceable", profileStart!.Value);
 
     foreach (var rewriter in rewriters) {
       cancellationToken.ThrowIfCancellationRequested();
+      profileStart = profile?.BeginThread();
       rewriter.PostResolve(Program);
+      profile?.FrontEnd("resolve.global.postResolve", profileStart!.Value, new Dictionary<string, object> { ["rewriter"] = rewriter.GetType().Name });
     }
 
     // Module cache hits still reach this phase. A downstream implementation can
     // introduce a cardinality cycle without changing any imported module.
     if (Reporter.ErrorCount == 0) {
       cancellationToken.ThrowIfCancellationRequested();
+      profileStart = profile?.BeginThread();
       CardinalityValidator.Validate(Program, cancellationToken);
+      profile?.FrontEnd("resolve.global.cardinality", profileStart!.Value);
     }
     return Task.CompletedTask;
+  }
+
+  private static string ProfileModuleName(ModuleDecl decl) {
+    if (decl is LiteralModuleDecl literal) {
+      return PipelineProfile.ModuleName(literal.ModuleDef);
+    }
+    var enclosing = decl.EnclosingModuleDefinition;
+    var prefix = enclosing == null ? "" : PipelineProfile.ModuleName(enclosing) + ".";
+    return prefix + decl.Name;
+  }
+
+  private static string ProfileModuleKind(ModuleDecl decl) {
+    return decl switch {
+      LiteralModuleDecl => "module",
+      AliasModuleDecl => "import",
+      AbstractModuleDecl => "abstractImport",
+      ModuleExportDecl => "export",
+      _ => decl.GetType().Name
+    };
+  }
+
+  /// <summary>
+  /// The module dependency graph as resolution sees it (imports, refinement, nesting: a parent
+  /// depends on its submodules), with the ids of the "resolve.module" events: edge [a, b] means
+  /// that a is resolved after, and depends on, b.
+  /// </summary>
+  private void EmitModuleGraph(PipelineProfile profile, List<ModuleDecl> sortedDecls) {
+    var ids = new Dictionary<ModuleDecl, int>();
+    for (var i = 0; i < sortedDecls.Count; i++) {
+      ids[sortedDecls[i]] = i;
+    }
+    var edges = new List<int[]>();
+    foreach (var vertex in dependencies.GetVertices()) {
+      if (!ids.TryGetValue(vertex.N, out var from)) {
+        continue;
+      }
+      foreach (var successor in vertex.Successors) {
+        if (ids.TryGetValue(successor.N, out var to)) {
+          edges.Add([from, to]);
+        }
+      }
+    }
+    edges.Sort((x, y) => x[0] != y[0] ? x[0].CompareTo(y[0]) : x[1].CompareTo(y[1]));
+    profile.Point("moduleGraph", new Dictionary<string, object> {
+      ["nodes"] = sortedDecls.Select((d, i) => new Dictionary<string, object> {
+        ["id"] = i,
+        ["module"] = ProfileModuleName(d),
+        ["kind"] = ProfileModuleKind(d),
+        // A library module (from a .doo file or --library) is not verified; an import or export
+        // belongs to the library of the module that declares it.
+        ["library"] = d is LiteralModuleDecl l
+          ? !l.ModuleDef.ShouldVerify(Program.Compilation)
+          : d.EnclosingModuleDefinition is { } enclosing && !enclosing.ShouldVerify(Program.Compilation)
+      }).ToList(),
+      ["edges"] = edges
+    });
   }
 
   /// <summary>
   /// A dependency-ready queue, with publication to dependents distinct from ordered
   /// publication to the program and its reporter. No height barrier is introduced.
   /// </summary>
-  private void ResolveModulesInParallel(List<ModuleDecl> declarations,
+  private void ResolveModuleOutputs(List<ModuleDecl> declarations,
     Dictionary<ModuleDecl, Action<ModuleDecl>> pointers, CancellationToken cancellationToken) {
     var indices = declarations.Select((declaration, index) => (declaration, index))
       .ToDictionary(p => p.declaration, p => p.index);
-    var prerequisites = declarations.Select(d => dependencies.FindVertex(d).Successors
-      .Select(v => indices[v.N]).Distinct().Order().ToArray()).ToArray();
+    var prerequisites = declarations.Select(d => Prerequisites(d)
+      .Select(v => indices[v]).Distinct().Order().ToArray()).ToArray();
+    var groupResults = new Dictionary<ModuleDecl, ModuleResolutionResult>(); // guarded by "gate"
     var dependents = declarations.Select(_ => new List<int>()).ToArray();
     var remaining = prerequisites.Select(p => p.Length).ToArray();
     var ready = new SortedSet<int>();
@@ -134,6 +258,7 @@ public class ProgramResolver {
     var initialBuiltins = new SystemModuleManager(SystemModuleManager);
     var initialMembers = new Dictionary<TopLevelDeclWithMembers, Dictionary<string, MemberDecl>>(classMembers);
     var profile = PipelineProfile.For(Options);
+    var namePrefixes = ModuleNamePrefixes.For(declarations.Select(d => d.FullName));
     Program.ResolutionKeys = new();
     for (var i = 0; i < declarations.Count; i++) {
       foreach (var dependency in prerequisites[i]) {
@@ -149,7 +274,13 @@ public class ProgramResolver {
         // Initialize it before multiple importers can request the same view.
         _ = literal.AccessibleSignature();
       }
-      var key = ModuleResolutionKey.Compute(declaration.FullName, ModuleSource(declaration), ModuleResolutionKey.DafnyVersion,
+      var source = ModuleSource(declaration);
+      if (groupOf.TryGetValue(declaration, out var group) && ReferenceEquals(declaration, group.Members[0])) {
+        // The leader of a recursive module group stands for the group.
+        source = string.Join("\n", group.Declarations.Select(d => d.FullName + "\n" +
+          string.Join(",", KeyOptions(d).Select(option => option.Key + "=" + option.Value)) + "\n" + ModuleSource(d)));
+      }
+      var key = ModuleResolutionKey.Compute(declaration.FullName, source, ModuleResolutionKey.DafnyVersion,
         KeyOptions(declaration), prerequisites[i].Select(j =>
           new ModuleResolutionKey.Prerequisite(DependencyRole(declaration, declarations[j]),
             declarations[j].FullName, Program.ResolutionKeys[declarations[j]])));
@@ -183,7 +314,7 @@ public class ProgramResolver {
           Type.ResetScopes();
           Type.EnableScopes();
           try {
-            using var names = new ModuleNamingScope(declarations[index].FullName);
+            using var names = new ModuleNamingScope(declarations[index].FullName, namePrefixes);
             var builtins = new SystemModuleManager(initialBuiltins, catalog);
             builtins.Bitwidths.Clear();
             var workerProgram = new Program(Program.FullName, Program.DefaultModule, builtins,
@@ -207,43 +338,132 @@ public class ProgramResolver {
               foreach (var signature in result.Signatures) { workerProgram.ModuleSigs[signature.Key] = signature.Value; }
             }
             var start = profile?.Begin();
-            ResolutionWorkerStarting?.Invoke(declarations[index]);
-            ModuleResolutionResult ResolveOutput() {
-              var resolved = worker.ResolveModuleDeclaration(Program.Compilation, declarations[index]);
-              // An import can be unresolved without producing a new local diagnostic.
-              // Its resolved fields (and hence Children) are not safe to traverse.
-              var invalid = resolved.ErrorReporter.HasErrors ||
-                closure.Any(i => results[i].ErrorReporter.HasErrors ||
-                  results[i].Signatures.Keys.Any(m => !m.SuccessfullyResolved)) ||
-                resolved.Signatures.Keys.Any(m => !m.SuccessfullyResolved);
-              var translationInputs = new ModuleTranslationInputs(invalid ? null : declarations[index],
-                closure.Select(i => results[i].TranslationInputs));
-              translationInputs.Bitwidths.UnionWith(builtins.Bitwidths);
-              builtins.RestrictResolutionOutput(translationInputs);
-              foreach (var definition in resolved.Signatures.Keys) {
-                translationInputs.ModuleNames.Add(definition.FullName);
-                definition.TranslationInputs = translationInputs;
-                definition.ResolutionKey = Program.ResolutionKeys[declarations[index]];
+            var frontEndStart = profile?.BeginThread();
+            ModuleResolutionResult moduleOutput = null;
+            bool? cached = null;
+            var status = "failed";
+            try {
+              profile?.ModulePhasesStart();
+              ResolutionWorkerStarting?.Invoke(declarations[index]);
+              ModuleResolutionResult ResolveOutput() {
+                var resolved = worker.ResolveModuleDeclaration(Program.Compilation, declarations[index]);
+                // An import can be unresolved without producing a new local diagnostic.
+                // Its resolved fields (and hence Children) are not safe to traverse.
+                var invalid = resolved.ErrorReporter.HasErrors ||
+                  closure.Any(i => results[i].ErrorReporter.HasErrors ||
+                    results[i].Signatures.Keys.Any(m => !m.SuccessfullyResolved)) ||
+                  resolved.Signatures.Keys.Any(m => !m.SuccessfullyResolved);
+                var translationInputs = new ModuleTranslationInputs(invalid ? null : declarations[index],
+                  closure.Select(i => results[i].TranslationInputs));
+                translationInputs.Bitwidths.UnionWith(builtins.Bitwidths);
+                builtins.RestrictResolutionOutput(translationInputs);
+                foreach (var definition in resolved.Signatures.Keys) {
+                  translationInputs.ModuleNames.Add(definition.FullName);
+                  definition.TranslationInputs = translationInputs;
+                  definition.ResolutionKey = Program.ResolutionKeys[declarations[index]];
+                }
+                var output = resolved with {
+                  Key = Program.ResolutionKeys[declarations[index]],
+                  Builtins = builtins,
+                  SystemClassMembers = worker.classMembers.Where(p => p.Key.EnclosingModuleDefinition.Name == "_System" &&
+                      translationInputs.BuiltinNames.Contains(p.Key.Name))
+                    .ToDictionary(p => p.Key, p => p.Value),
+                  TranslationInputs = translationInputs
+                };
+                if (output.ResolvedDeclaration is LiteralModuleDecl resolvedModule) {
+                  resolvedModule.ModuleDef.TranslationInputs = output.TranslationInputs;
+                }
+                return output;
               }
-              var output = resolved with {
-                Key = Program.ResolutionKeys[declarations[index]], Builtins = builtins,
-                SystemClassMembers = worker.classMembers.Where(p => p.Key.EnclosingModuleDefinition.Name == "_System" &&
+              Dictionary<ModuleDecl, ModuleResolutionResult> ResolveGroupOutputs(RecursiveModuleGroup group) {
+                var resolved = RecursiveModuleGroupResolver.Resolve(worker, group, Program.Compilation);
+                var invalid = resolved.Values.Any(r => r.ErrorReporter.HasErrors || r.Signatures.Keys.Any(m => !m.SuccessfullyResolved)) ||
+                  closure.Any(i => results[i].ErrorReporter.HasErrors ||
+                    results[i].Signatures.Keys.Any(m => !m.SuccessfullyResolved));
+                // The members are translated with one another's declarations, so they share their inputs.
+                var translationInputs = new ModuleTranslationInputs(null, closure.Select(i => results[i].TranslationInputs)
+                  .Concat(invalid ? [] : group.Declarations.Select(d => new ModuleTranslationInputs(d, []))));
+                translationInputs.Bitwidths.UnionWith(builtins.Bitwidths);
+                builtins.RestrictResolutionOutput(translationInputs);
+                var signatures = new Dictionary<ModuleDefinition, ModuleSignature>();
+                var members = new Dictionary<TopLevelDeclWithMembers, Dictionary<string, MemberDecl>>();
+                foreach (var result in group.Declarations.Select(d => resolved[d])) {
+                  foreach (var signature in result.Signatures) {
+                    signatures[signature.Key] = signature.Value;
+                    translationInputs.ModuleNames.Add(signature.Key.FullName);
+                    signature.Key.TranslationInputs = translationInputs;
+                    signature.Key.ResolutionKey = Program.ResolutionKeys[result.ResolvedDeclaration];
+                  }
+                  foreach (var pair in result.ClassMembers) { members[pair.Key] = pair.Value; }
+                }
+                var systemClassMembers = worker.classMembers.Where(p => p.Key.EnclosingModuleDefinition.Name == "_System" &&
                     translationInputs.BuiltinNames.Contains(p.Key.Name))
-                  .ToDictionary(p => p.Key, p => p.Value),
-                TranslationInputs = translationInputs
-              };
-              if (output.ResolvedDeclaration is LiteralModuleDecl resolvedModule) {
-                resolvedModule.ModuleDef.TranslationInputs = output.TranslationInputs;
+                  .ToDictionary(p => p.Key, p => p.Value);
+                var outputs = new Dictionary<ModuleDecl, ModuleResolutionResult>();
+                foreach (var declaration in group.Declarations) {
+                  var result = resolved[declaration];
+                  if (ReferenceEquals(declaration, group.Members[0])) {
+                    // Every other declaration of the group, and so every dependent of the group, has the leader
+                    // as a prerequisite; the leader's output gives them the signatures and members of the group.
+                    result = new ModuleResolutionResult(declaration, result.ErrorReporter, signatures, members);
+                  }
+                  outputs[declaration] = result with {
+                    Key = Program.ResolutionKeys[declaration],
+                    Builtins = builtins,
+                    SystemClassMembers = systemClassMembers,
+                    TranslationInputs = translationInputs
+                  };
+                }
+                return outputs;
               }
-              return output;
+              if (groupOf.TryGetValue(declarations[index], out var group)) {
+                // A recursive module group is resolved by the worker of its leader, which is a prerequisite
+                // of the other declarations of the group.  A group is not cached.
+                if (ReferenceEquals(declarations[index], group.Members[0])) {
+                  var outputs = ResolveGroupOutputs(group);
+                  lock (gate) {
+                    foreach (var groupOutput in outputs) { groupResults[groupOutput.Key] = groupOutput.Value; }
+                  }
+                }
+                lock (gate) { moduleOutput = groupResults[declarations[index]]; }
+                cached = false;
+              } else {
+                moduleOutput = ResolveModuleOutput(declarations[index], Program.ResolutionKeys[declarations[index]],
+                  closure.Select(i => results[i]).ToArray(), ResolveOutput, out var cacheHit);
+                cached = cacheHit;
+              }
+              status = "completed";
+            } catch (OperationCanceledException) {
+              status = "cancelled";
+              throw;
             }
-            var output = ResolveModuleOutput(declarations[index], Program.ResolutionKeys[declarations[index]],
-              closure.Select(i => results[i]).ToArray(), ResolveOutput, out var cached);
-            if (profile != null) {
-              profile.Span("resolve.module", start.Value, new Dictionary<string, object> {
-                ["module"] = declarations[index].FullName, ["key"] = output.Key, ["cached"] = cached
-              });
+            finally {
+              if (profile != null) {
+                // Take clears thread-local state even after a cache hit, cancellation or failure.
+                // The id is canonical graph order; events are emitted as workers complete.
+                var phases = profile.ModulePhasesTake();
+                profile.FrontEnd("resolve.module", frontEndStart.Value, new Dictionary<string, object> {
+                  ["id"] = index,
+                  ["module"] = ProfileModuleName(declarations[index]),
+                  ["kind"] = ProfileModuleKind(declarations[index]),
+                  ["typeSystemRefresh"] = declarations[index].Options.Get(CommonOptionBag.TypeSystemRefresh),
+                  ["topLevelDecls"] = (declarations[index] as LiteralModuleDecl)?.ModuleDef.TopLevelDecls.Count(),
+                  ["key"] = Program.ResolutionKeys[declarations[index]],
+                  ["cached"] = cached,
+                  ["status"] = status,
+                  ["thread"] = Environment.CurrentManagedThreadId,
+                  ["errors"] = moduleOutput?.ErrorReporter.ErrorCount,
+                  ["phases"] = phases
+                });
+                profile.Span("resolve.module", start.Value, new Dictionary<string, object> {
+                  ["module"] = declarations[index].FullName,
+                  ["key"] = Program.ResolutionKeys[declarations[index]],
+                  ["cached"] = cached,
+                  ["status"] = status
+                });
+              }
             }
+            var output = moduleOutput;
             lock (gate) {
               results[index] = output;
               // A parent cannot be running: nesting is a prerequisite edge. Imports
@@ -257,7 +477,8 @@ public class ProgramResolver {
               }
               Monitor.PulseAll(gate);
             }
-          } finally {
+          }
+          finally {
             Type.ResetScopes();
           }
         }
@@ -272,10 +493,22 @@ public class ProgramResolver {
     // Plugins have arbitrary state and no concurrent-resolution contract. Retain
     // module-local outputs and names, but execute their callbacks on one worker.
     var count = Options.Plugins.Except(DafnyOptions.DefaultPlugins).Any()
-      ? 1 : Math.Min(Options.Get(CommonOptionBag.ResolutionThreads), declarations.Count);
-    var workers = Enumerable.Range(0, count).Select(_ => new Thread(RunWorker, 0x10000000) { IsBackground = true }).ToArray();
-    foreach (var worker in workers) { worker.Start(); }
-    foreach (var worker in workers) { worker.Join(); }
+      ? 1 : Math.Min(Math.Max(1, Options.Get(CommonOptionBag.ResolutionThreads)), declarations.Count);
+    if (Options.Get(CommonOptionBag.ResolutionThreads) == 0) {
+      // The worker resets the scope state of the thread it runs on, once per module. Here that is the
+      // caller's thread, whose scopes Resolve enabled and later disables, so give the caller its state back.
+      var callerScopes = Type.SaveScopes();
+      try {
+        RunWorker();
+      }
+      finally {
+        Type.RestoreScopes(callerScopes);
+      }
+    } else {
+      var workers = Enumerable.Range(0, count).Select(_ => new Thread(RunWorker, 0x10000000) { IsBackground = true }).ToArray();
+      foreach (var worker in workers) { worker.Start(); }
+      foreach (var worker in workers) { worker.Join(); }
+    }
     failure?.Throw();
     cancellationToken.ThrowIfCancellationRequested();
 
@@ -347,7 +580,10 @@ public class ProgramResolver {
       return literal.ModuleDef.Implements?.Target.Root == prerequisite ? "refinement" : "nested";
     }
     return declaration switch {
-      AliasModuleDecl => "import", AbstractModuleDecl => "abstract-import", ModuleExportDecl => "export-owner", _ => "resolution"
+      AliasModuleDecl => "import",
+      AbstractModuleDecl => "abstract-import",
+      ModuleExportDecl => "export-owner",
+      _ => "resolution"
     };
   }
 
@@ -394,6 +630,15 @@ public class ProgramResolver {
     ProcessDependencies(program.DefaultModule, defaultModuleBindings, moduleDeclarationPointers);
 
     // check for cycles in the import graph
+    if (Options.Get(CommonOptionBag.RecursiveModules)) {
+      // A cycle of plain imports is a recursive module group; any other cycle is an error.
+      foreach (var group in RecursiveModuleGroups.Compute(program, dependencies, (from, to) => dependencyKinds[(from, to)], Reporter)) {
+        foreach (var declaration in group.Declarations) {
+          groupOf[declaration] = group;
+        }
+      }
+      return;
+    }
     foreach (var cycle in dependencies.AllCycles()) {
       ModuleResolver.ReportCycleError(Reporter, cycle, m => m.Origin,
         m => (m is AliasModuleDecl ? "import " : "module ") + m.Name,
@@ -403,6 +648,9 @@ public class ProgramResolver {
 
   protected virtual Dictionary<TopLevelDeclWithMembers, Dictionary<string, MemberDecl>> ResolveSystemModule(Program program) {
     var systemModuleResolver = new ModuleResolver(this, Options);
+    if (SystemModuleManager.ResolvedSystem is { } previous) {
+      return ResolveAddedSystemDeclarations(systemModuleResolver, previous);
+    }
 
     SystemModuleManager.systemNameInfo = SystemModuleManager.SystemModule.RegisterTopLevelDecls(systemModuleResolver, false);
     systemModuleResolver.moduleInfo = SystemModuleManager.systemNameInfo;
@@ -432,7 +680,73 @@ public class ProgramResolver {
       ModuleDefinition.AllDeclarationsAndNonNullTypeDecls(systemModuleClassesWithNonNullTypes).ToList(),
       new Graph<IndDatatypeDecl>(), new Graph<CoDatatypeDecl>(), SystemModuleManager.SystemModule.Name, false);
 
+    if (SystemModuleManager.ResolutionCatalog != null) {
+      // Only a resolution view can be continued by a later resolution (CreateResolutionView).
+      SystemModuleManager.ResolvedSystem = new(SystemModuleManager.systemNameInfo,
+        SystemModuleManager.SystemModule.TopLevelDecls.ToHashSet<TopLevelDecl>(ReferenceEqualityComparer.Instance),
+        systemModuleResolver.moduleClassMembers);
+    }
     return systemModuleResolver.moduleClassMembers;
+  }
+
+  /// <summary>
+  /// A resolution view that an editor cache reuses keeps the canonical builtins that an earlier
+  /// resolution already registered and resolved. Setting those up again would replace parts of them
+  /// that earlier resolutions, and the module outputs cached from them, still hold (the non-null type
+  /// of "object", self-synonyms, datatype discriminators). So only the builtins that this view adds
+  /// are set up here, as ResolveSystemModule sets up all of them, and the signature and members
+  /// extend those of the earlier resolution.
+  /// </summary>
+  private Dictionary<TopLevelDeclWithMembers, Dictionary<string, MemberDecl>> ResolveAddedSystemDeclarations(
+    ModuleResolver systemModuleResolver, SystemModuleManager.ResolvedSystemModule previous) {
+    var system = SystemModuleManager.SystemModule;
+    var added = system.TopLevelDecls.Where(d => !previous.Declarations.Contains(d)).ToList();
+    var addedModule = new ModuleDefinition(SourceOrigin.NoToken, new Name(system.Name), [], ModuleKindEnum.Concrete,
+      false, null, null, null, added);
+    addedModule.ShareVisibilityScope(system);
+    var addedSignature = addedModule.RegisterTopLevelDecls(systemModuleResolver, false);
+
+    var signature = new ModuleSignature {
+      ModuleDef = system,
+      IsAbstract = previous.Signature.IsAbstract,
+      VisibilityScope = previous.Signature.VisibilityScope
+    };
+    foreach (var part in new[] { previous.Signature, addedSignature }) {
+      foreach (var pair in part.TopLevels) { signature.TopLevels[pair.Key] = pair.Value; }
+      foreach (var pair in part.Ctors) { signature.Ctors[pair.Key] = pair.Value; }
+      foreach (var pair in part.StaticMembers) { signature.StaticMembers[pair.Key] = pair.Value; }
+      foreach (var pair in part.ExportSets) { signature.ExportSets[pair.Key] = pair.Value; }
+      foreach (var pair in part.ShadowedImportedModules) { signature.ShadowedImportedModules[pair.Key] = pair.Value; }
+    }
+    SystemModuleManager.systemNameInfo = signature;
+    systemModuleResolver.moduleInfo = signature;
+
+    systemModuleResolver.RevealAllInScope(added, signature.VisibilityScope);
+    // The value types are not added builtins: the resolution this view continues resolved them.
+
+    if (Options.Get(CommonOptionBag.TypeSystemRefresh)) {
+      PreTypeResolver.ResolveDeclarations(added.Where(d => d is not ClassDecl).ToList(), systemModuleResolver, true);
+    }
+
+    var addedClassesWithNonNullTypes = added.Where(d => (d as ClassLikeDecl)?.NonNullTypeDecl != null).ToList();
+    foreach (var cl in addedClassesWithNonNullTypes) {
+      var d = ((ClassLikeDecl)cl).NonNullTypeDecl;
+      systemModuleResolver.allTypeParameters.PushMarker();
+      systemModuleResolver.ResolveTypeParameters(d.TypeArgs, true, d);
+      systemModuleResolver.ResolveType(d.Origin, d.Rhs, d, ResolveTypeOptionEnum.AllowPrefix, d.TypeArgs);
+      systemModuleResolver.allTypeParameters.PopMarker();
+    }
+
+    systemModuleResolver.ResolveTopLevelDecls_Core(
+      ModuleDefinition.AllDeclarationsAndNonNullTypeDecls(addedClassesWithNonNullTypes).ToList(),
+      new Graph<IndDatatypeDecl>(), new Graph<CoDatatypeDecl>(), system.Name, false);
+
+    var classMembers = new Dictionary<TopLevelDeclWithMembers, Dictionary<string, MemberDecl>>(previous.ClassMembers);
+    foreach (var pair in systemModuleResolver.moduleClassMembers) { classMembers[pair.Key] = pair.Value; }
+    var declarations = new HashSet<TopLevelDecl>(previous.Declarations, ReferenceEqualityComparer.Instance);
+    declarations.UnionWith(added);
+    SystemModuleManager.ResolvedSystem = new(signature, declarations, classMembers);
+    return classMembers;
   }
 
   protected virtual ModuleResolutionResult ResolveModuleDeclaration(CompilationData compilation, ModuleDecl decl) {
@@ -510,6 +824,19 @@ public class ProgramResolver {
   private void ProcessDependenciesDefinition(LiteralModuleDecl literalDecl, ModuleBindings bindings,
     IDictionary<ModuleDecl, Action<ModuleDecl>> declarationPointers) {
     var module = literalDecl.ModuleDef;
+    if (literalDecl.CopyImport != null) {
+      // A copying import, "import X := Q", names Q as an import does. The copy has no declarations of its own.
+      var copied = module.Implements.Target;
+      if (!bindings.ResolveQualifiedModuleIdRootCopy(literalDecl, copied, out var root)) {
+        Reporter.Error(MessageSource.Resolver, copied.Origin, ModuleNotFoundErrorMessage(0, copied.Path));
+      } else {
+        root = SkipEnclosingModules(copied, root);
+        copied.Root = root;
+        declarationPointers.AddOrUpdate(root, v => copied.Root = v, Util.Concat);
+        AddDependency(literalDecl, root, ModuleDependencyKind.Refinement);
+      }
+      return;
+    }
     if (module.Implements != null) {
       var refinementTarget = module.Implements.Target;
       bool res = bindings.ResolveQualifiedModuleIdRootRefines(literalDecl.ModuleDef, refinementTarget, out var other);
@@ -527,7 +854,9 @@ public class ProgramResolver {
             module.Implements.Target.ToString());
         } else {
           Contract.Assert(other != null); // follows from postcondition of TryGetValue
-          dependencies.AddEdge(literalDecl, other);
+          AddDependency(literalDecl, other, module.Implements.Kind == ImplementationKind.Replacement
+            ? ModuleDependencyKind.Replacement
+            : ModuleDependencyKind.Refinement);
         }
       }
     }
@@ -551,9 +880,10 @@ public class ProgramResolver {
       }
 
       if (toplevel is ModuleExportDecl) {
-        dependencies.AddEdge(moduleDecl, literalDecl);
+        AddDependency(moduleDecl, literalDecl, ModuleDependencyKind.Declaration);
       } else {
-        dependencies.AddEdge(literalDecl, moduleDecl);
+        AddDependency(literalDecl, moduleDecl,
+          moduleDecl is LiteralModuleDecl ? ModuleDependencyKind.Submodule : ModuleDependencyKind.Declaration);
       }
 
       var subBindings = bindings.SubBindings(moduleDecl.Name);
@@ -632,7 +962,7 @@ public class ProgramResolver {
         root = SkipEnclosingModules(aliasDecl.TargetQId, root);
         aliasDecl.TargetQId.Root = root;
         declarationPointers.AddOrUpdate(root, v => aliasDecl.TargetQId.Root = v, Util.Concat);
-        dependencies.AddEdge(aliasDecl, root);
+        AddDependency(aliasDecl, root, ModuleDependencyKind.Import);
       }
     } else if (moduleDecl is AbstractModuleDecl abstractDecl) {
       if (!bindings.ResolveQualifiedModuleIdRootAbstract(abstractDecl, abstractDecl.QId, out var root)) {
@@ -643,7 +973,7 @@ public class ProgramResolver {
         root = SkipEnclosingModules(abstractDecl.QId, root);
         abstractDecl.QId.Root = root;
         declarationPointers.AddOrUpdate(root, v => abstractDecl.QId.Root = v, Util.Concat);
-        dependencies.AddEdge(abstractDecl, root);
+        AddDependency(abstractDecl, root, ModuleDependencyKind.AbstractImport);
       }
     }
   }

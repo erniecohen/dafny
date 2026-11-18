@@ -133,7 +133,7 @@ def identity(args):
             cmd = [str(Path(dafny).resolve()), 'verify', str(fixtures / f'git-issue-264-{name}.dfy'),
                    '--solver-path', str(Path(args.z3).resolve()), '--cores:1', '--show-snippets:false',
                    '--use-basename-for-filename', '--bprint', str(bpl), '--solver-log', str(smt)]
-            if name in ['m2', 'callback']:
+            if mode == 'baseline' and name in ['m2', 'callback']:
                 cmd += ['--modular-termination']
             p = subprocess.run(cmd + extra, capture_output=True, timeout=120)
             paths = sorted(out.glob('program*'))

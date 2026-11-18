@@ -18,7 +18,7 @@ public abstract class NonglobalVariable : NodeWithOrigin, IVariable {
   }
 
   public NonglobalVariable(Cloner cloner, NonglobalVariable original) : base(cloner, original) {
-    NameNode = new Name(cloner, original.NameNode);
+    NameNode = cloner.CloneBinderName(original);
     SyntacticType = cloner.CloneType(original.SyntacticType);
     IsGhost = original.IsGhost;
     if (cloner.CloneResolvedFields) {

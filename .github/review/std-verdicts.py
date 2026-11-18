@@ -124,12 +124,10 @@ def part(label, cwd, args, dafny, z3, cores, fixed, measurements=None):
     return rows + sorted(decls)
 
 
-def run(libdir, dafny, z3, out, cores=4, boogie=None, additional_axioms=False, measurements=None, resolution_threads=0):
+def run(libdir, dafny, z3, out, cores=4, boogie=None, additional_axioms=False, measurements=None):
     if measurements is not None:
         os.makedirs(measurements, exist_ok=False)
     fixed = FIXED + (['--additional-axioms'] if additional_axioms else [])
-    if resolution_threads:
-        fixed += ['--resolution-threads', str(resolution_threads)]
     ts = os.path.join(libdir, 'src', 'Std', 'TargetSpecific')
     # The paths as the Makefile passes them, so that error lines read as in upstream's CI.
     extra = [a for b in (boogie or '').split() for a in ('--boogie', b)]
@@ -216,7 +214,7 @@ if __name__ == '__main__':
         opts = dict(zip(args[4::2], args[5::2]))
         run(*args[:4], cores=int(opts.get('--cores', '4')), boogie=opts.get('--boogie'),
             additional_axioms=opts.get('--additional-axioms', 'false') == 'true',
-            measurements=opts.get('--measurements'), resolution_threads=int(opts.get('--resolution-threads', '0')))
+            measurements=opts.get('--measurements'))
     elif cmd == 'summary':
         summary(*args)
     elif cmd == 'expected':

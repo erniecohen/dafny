@@ -66,6 +66,8 @@ namespace Microsoft.Dafny {
         }
         if (e.AtLabel != null) {
           freeHeapAtVariables.Add(e.AtLabel);
+        } else if (e.Member is TwoStateFunction or TwoStateLemma) {
+          usesOldHeap = true; // an unlabeled two-state member is applied to the previous heap
         }
       } else if (expr is SeqSelectExpr) {
         var e = (SeqSelectExpr)expr;
@@ -86,6 +88,12 @@ namespace Microsoft.Dafny {
         }
         if (e.AtLabel != null) {
           freeHeapAtVariables.Add(e.AtLabel);
+        } else if (e.Function is TwoStateFunction) {
+          usesOldHeap = true; // the translation of the call passes the previous heap
+        }
+      } else if (expr is LemmaResultExpr lemmaResultExpr) {
+        if (lemmaResultExpr.Lemma.PostconditionUsesHeap(options)) {
+          usesHeap = true; // the result is chosen among the values that satisfy the postcondition in the current heap
         }
       } else if (expr is UnchangedExpr) {
         var e = (UnchangedExpr)expr;
@@ -110,6 +118,14 @@ namespace Microsoft.Dafny {
           }
         } else if (e.Op == UnaryOpExpr.Opcode.Allocated) {
           usesHeap = true;
+        }
+      } else if (expr is ComprehensionExpr comprehension) {
+        if (RangesOverAllocatedValues(comprehension)) {
+          usesHeap = true;
+        }
+      } else if (expr is SeqConstructionExpr seqConstruction) {
+        if (!seqConstruction.Initializer.Type.IsArrowTypeWithoutReadEffects) {
+          usesHeap = true; // the translation applies the initializer in the current heap
         }
       }
 
@@ -173,6 +189,23 @@ namespace Microsoft.Dafny {
           fvs.Remove(v);
         }
       }
+    }
+
+    /// <summary>
+    /// Says whether the meaning of the quantifier or comprehension "e" depends on which values are allocated,
+    /// even if it reads no field.  It does when one of its bound variables has no bound that is independent
+    /// of the allocation state:  the translator then lets that variable range over the values allocated in
+    /// the current heap (see its uses of PoolVirtues.IndependentOfAlloc_or_ExplicitAlloc), so the translation
+    /// mentions the heap.
+    ///
+    /// A lambda expression has no bounds, and no comprehension has any before bounds discovery.  The answer
+    /// is then "no".
+    /// </summary>
+    public static bool RangesOverAllocatedValues(ComprehensionExpr e) {
+      if (e is LambdaExpr || e.Bounds == null) {
+        return false;
+      }
+      return BoundedPool.HasBounds(e.Bounds, BoundedPool.PoolVirtues.IndependentOfAlloc_or_ExplicitAlloc).Contains(false);
     }
 
     private static IEnumerable<IVariable> StatementBoundVariables(Statement statement) {

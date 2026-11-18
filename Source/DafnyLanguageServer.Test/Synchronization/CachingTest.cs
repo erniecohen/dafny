@@ -193,8 +193,11 @@ use-caching = false", Path.Combine(temp, "dfyconfig.toml"));
     ApplyChange(ref hasCaching, ((0, 0), (0, 0)), "// Pointless comment that triggers a reparse\n");
     var hitCount1 = await WaitAndCountHits(hasCaching, false);
     Assert.Equal(2, hitCount1.ParseHits);
+    // The system module is not counted.  Its whole-program cache, which logged a hit for it, was
+    // replaced by per-module outputs over a shared resolution view of the builtins
+    // (CachingResolver.PrepareResolutionSystemModule), which reuses the builtins without a log entry.
+    // See https://github.com/erniecohen/dafny/issues/336.
     var modules = new[] {
-      "System",
       "ModA", "ModB", "import A (in ModB)",
       "FilledWithPrefixes", "PrefixContent", "StandalonePrefix", "Prefix",
       "PrefixModuleInDefaultModule", "Content",
@@ -213,8 +216,8 @@ use-caching = false", Path.Combine(temp, "dfyconfig.toml"));
     var hitCount3 = await WaitAndCountHits(hasCaching, false);
     // No hit for B.dfy, since it was previously pruned
     Assert.Equal(hitCount2.ParseHits + 1, hitCount3.ParseHits);
-    // The resolution cache was pruned after the previous change, so no cache hits here, except for the system module
-    Assert.Equal(hitCount2.ResolutionHits + 1, hitCount3.ResolutionHits);
+    // The resolution cache was pruned after the previous change, so no cache hits here
+    Assert.Equal(hitCount2.ResolutionHits, hitCount3.ResolutionHits);
   }
 
   /// <summary>

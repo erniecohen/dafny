@@ -25,12 +25,28 @@ public class TypeRefinementVisitor : ASTVisitor<IASTVisitorContext> {
 
   private readonly SystemModuleManager systemModuleManager;
 
-  public TypeRefinementVisitor(string moduleDescription, SystemModuleManager systemModuleManager) {
+  /// <summary>
+  /// Issue 105: non-null when the declarations include a type with member invariants.
+  /// </summary>
+  private readonly RawMemberInference rawMemberInference;
+
+  public TypeRefinementVisitor(string moduleDescription, SystemModuleManager systemModuleManager,
+    RawMemberInference rawMemberInference = null) {
     this.moduleDescription = moduleDescription;
     this.systemModuleManager = systemModuleManager;
+    this.rawMemberInference = rawMemberInference;
   }
 
   private readonly List<Flow> flows = [];
+
+  /// <summary>
+  /// Issue 105: the application of "member" to "receiver" in "context" may make "member" a raw member.
+  /// </summary>
+  private void AddRawMemberFlow(IASTVisitorContext context, Expression receiver, MemberDecl member, IOrigin tok) {
+    if (rawMemberInference?.ApplicationFlow(context, receiver, member, tok) is { } flow) {
+      flows.Add(flow);
+    }
+  }
 
   public void DebugPrint() {
     var sw = new StringWriter();
@@ -62,7 +78,49 @@ public class TypeRefinementVisitor : ASTVisitor<IASTVisitorContext> {
     return base.VisitOneExpression(expr, context);
   }
 
+  /// <summary>
+  /// Issue 105: the flows of an arithmetic expression of a newtype N with member invariants, a tree of operations and
+  /// literals of N (see PreTypeToTypeVisitor.IsNewtypeArithmetic). The type of an operation is the join of the types
+  /// of its operands of N, as for any operation (below), and that type also flows down into the operands that are
+  /// literals or operations, never into a variable. So every node of the tree has the join of its other leaves: "raw N"
+  /// if one of them is raw, and N otherwise, which the verifier checks at each node, as it checks the constraint of
+  /// a newtype in the old syntax. A comparison has no result of N, so each of its operands flows into the other, if
+  /// that is a literal or an operation: in "r < 3", where "r" is raw, so is "3".
+  /// </summary>
+  private void AddNewtypeArithmeticFlows(Expression expr) {
+    void FlowDown(Expression source, Expression sink, string description) {
+      if (PreTypeToTypeVisitor.IsNewtypeArithmetic(sink.Resolved) && SamePreTypeDecl(source, sink.Resolved)) {
+        flows.Add(new FlowBetweenExpressions(sink.Resolved, source, description));
+      }
+    }
+    switch (expr) {
+      case BinaryExpr binaryExpr when PreTypeToTypeVisitor.IsNewtypeArithmetic(expr):
+        FlowDown(expr, binaryExpr.E0, BinaryExpr.OpcodeString(binaryExpr.Op));
+        if (binaryExpr.ResolvedOp is not (BinaryExpr.ResolvedOpcode.LeftShift or BinaryExpr.ResolvedOpcode.RightShift)) {
+          FlowDown(expr, binaryExpr.E1, BinaryExpr.OpcodeString(binaryExpr.Op));
+        }
+        break;
+      case UnaryOpExpr unaryOpExpr when PreTypeToTypeVisitor.IsNewtypeArithmetic(expr) && SamePreTypeDecl(expr, unaryOpExpr.E):
+        flows.Add(new FlowBetweenExpressions(expr, unaryOpExpr.E, "unary " + unaryOpExpr.Op));
+        FlowDown(expr, unaryOpExpr.E, "unary " + unaryOpExpr.Op);
+        break;
+      case BinaryExpr {
+        ResolvedOp: BinaryExpr.ResolvedOpcode.EqCommon or BinaryExpr.ResolvedOpcode.NeqCommon or BinaryExpr.ResolvedOpcode.Lt or
+        BinaryExpr.ResolvedOpcode.Le or BinaryExpr.ResolvedOpcode.Ge or BinaryExpr.ResolvedOpcode.Gt
+      } comparison:
+        FlowDown(comparison.E0, comparison.E1, BinaryExpr.OpcodeString(comparison.Op));
+        FlowDown(comparison.E1, comparison.E0, BinaryExpr.OpcodeString(comparison.Op));
+        break;
+    }
+  }
+
+  private static bool SamePreTypeDecl(Expression a, Expression b) {
+    return a.PreType?.Normalize() is DPreType { Decl: var declA } && b.PreType?.Normalize() is DPreType { Decl: var declB } &&
+           declA == declB;
+  }
+
   protected override void PostVisitOneExpression(Expression expr, IASTVisitorContext context) {
+    AddNewtypeArithmeticFlows(expr);
     if (expr is IdentifierExpr identifierExpr) {
       flows.Add(new FlowFromType(expr, identifierExpr.Var.UnnormalizedType, identifierExpr.Name));
 
@@ -90,10 +148,12 @@ public class TypeRefinementVisitor : ASTVisitor<IASTVisitorContext> {
 
     } else if (expr is NestedMatchExpr matchExpr) {
       foreach (var kase in matchExpr.Cases) {
+        VisitMatchCasePattern(kase.Pat, () => TypeRefinementWrapper.NormalizeSansBottom(matchExpr.Source));
         flows.Add(new FlowBetweenExpressions(expr, kase.Body, "case"));
       }
 
     } else if (expr is MemberSelectExpr memberSelectExpr) {
+      AddRawMemberFlow(context, memberSelectExpr.Obj, memberSelectExpr.Member, expr.Origin);
       if (memberSelectExpr.Member is Field field) {
         var dPreType = (DPreType)memberSelectExpr.Obj.PreType.Normalize();
         if (dPreType.Decl is ValuetypeDecl valuetypeDecl) {
@@ -118,6 +178,7 @@ public class TypeRefinementVisitor : ASTVisitor<IASTVisitorContext> {
       }
 
     } else if (expr is FunctionCallExpr functionCallExpr) {
+      AddRawMemberFlow(context, functionCallExpr.Receiver, functionCallExpr.Function, expr.Origin);
       Contract.Assert(functionCallExpr.Args.Count == functionCallExpr.Function.Ins.Count);
       for (var i = 0; i < functionCallExpr.Args.Count; i++) {
         var formal = functionCallExpr.Function.Ins[i];
@@ -133,6 +194,14 @@ public class TypeRefinementVisitor : ASTVisitor<IASTVisitorContext> {
         return functionCallExpr.Function.ResultType.Subst(typeMap);
       }, $"{functionCallExpr.Name}(...)"));
 
+    } else if (expr is LemmaResultExpr lemmaResultExpr) {
+      // The arguments are those of the call statement that precedes the result (see LetExpr.LemmaBinding), which
+      // has the flows from the actual to the formal parameters. Here, it remains to give the result its type.
+      flows.Add(new FlowFromComputedType(expr, () => {
+        var typeMap = lemmaResultExpr.TypeArgumentSubstitutionsWithParents();
+        return lemmaResultExpr.Out.Type.Subst(typeMap);
+      }, $"{lemmaResultExpr.Lemma.Name}(...)"));
+
     } else if (expr is DatatypeValue datatypeValue) {
       var ctor = datatypeValue.Ctor;
       var datatypeDecl = ctor.EnclosingDatatype;
@@ -147,6 +216,28 @@ public class TypeRefinementVisitor : ASTVisitor<IASTVisitorContext> {
       flows.Add(new FlowFromComputedType(expr,
         () => new UserDefinedType(expr.Origin, datatypeDecl.Name, datatypeDecl, datatypeValue.InferredTypeArgs),
         ctor.Name));
+
+    } else if (expr is ConversionExpr { IsBaseOperation: true } conversionExpr) {
+      Type BaseOperationType() {
+        var expected = ((DPreType)conversionExpr.PreType.Normalize()).Decl;
+        var view = NewtypeOperationView.Get(conversionExpr.E.Type, expected, preserveSubsetTypes: true);
+        if (expected is ArrowTypeDecl &&
+            (view.Status != NewtypeOperationView.ViewStatus.Resolved || view.BaseType?.AsArrowType?.ResolvedClass != expected)) {
+          // A hidden or unresolved carrier cannot replace a resolved arrow signature.
+          // Preserve any total/partial subset on a successful projection below.
+          return TypeRefinementWrapper.NormalizeSansBottom(expr);
+        }
+        // Keep the current lower bound until the source view is determined.
+        // Successful resolution supplies the concrete, instantiated visible base.
+        return view.BaseType ?? TypeRefinementWrapper.NormalizeSansBottom(expr);
+      }
+      if (((DPreType)conversionExpr.PreType.Normalize()).Decl is ArrowTypeDecl) {
+        // An operation view has the source's exact base signature. A subtype join
+        // here can broaden a contravariant domain and create an invalid totality demand.
+        flows.Add(new FlowFromComputedArrowOperationType(conversionExpr, BaseOperationType));
+      } else {
+        flows.Add(new FlowFromComputedType(expr, BaseOperationType, "base operation"));
+      }
 
     } else if (expr is ApplyExpr applyExpr) {
       flows.Add(new FlowFromTypeArgument(expr, applyExpr.Function.UnnormalizedType, applyExpr.Args.Count));
@@ -334,7 +425,9 @@ public class TypeRefinementVisitor : ASTVisitor<IASTVisitorContext> {
 
       Func<Type> GetPatternArgumentType(int argumentIndex) {
         return () => {
-          var sourceType = getPatternRhsType().NormalizeExpand();
+          var nominalSourceType = getPatternRhsType();
+          var sourceType = systemModuleManager.Options.Get(CommonOptionBag.ExtendedNewtypeBases)
+            ? NewtypeOperationView.Get(nominalSourceType).BaseType : nominalSourceType.NormalizeExpand();
           Contract.Assert(sourceType.IsDatatype);
           Contract.Assert(sourceType.TypeArgs.Count == ctor.EnclosingDatatype.TypeArgs.Count);
           var typeMap = TypeParameter.SubstitutionMap(ctor.EnclosingDatatype.TypeArgs, sourceType.TypeArgs);
@@ -350,9 +443,54 @@ public class TypeRefinementVisitor : ASTVisitor<IASTVisitorContext> {
 
   }
 
+  /// <summary>
+  /// Sets up the flows into the variables bound by a case pattern of a "match" expression or statement. A variable
+  /// bound at the top of the pattern gets the type of the match source; a variable bound to a constructor argument gets
+  /// the declared type of the constructor's formal, with the type arguments of the source substituted for those of the
+  /// datatype, as for a let-pattern (see VisitPattern above).
+  /// </summary>
+  private void VisitMatchCasePattern(ExtendedPattern pattern, Func<Type> getPatternRhsType) {
+    switch (pattern) {
+      case DisjunctivePattern disjunctivePattern:
+        foreach (var alternative in disjunctivePattern.Alternatives) {
+          VisitMatchCasePattern(alternative, getPatternRhsType);
+        }
+        break;
+      case IdPattern idPattern:
+        if (idPattern.BoundVar != null) {
+          flows.Add(new FlowIntoVariableFromComputedType(idPattern.BoundVar, getPatternRhsType, idPattern.Origin, "case"));
+        }
+        if (idPattern.Arguments != null && idPattern.Ctor != null) {
+          var ctor = idPattern.Ctor;
+          Contract.Assert(idPattern.Arguments.Count == ctor.Formals.Count);
+          for (var i = 0; i < idPattern.Arguments.Count; i++) {
+            var argumentIndex = i;
+            VisitMatchCasePattern(idPattern.Arguments[i], () => {
+              // As in VisitPattern: with --extended-newtype-bases the source may be a newtype
+              // whose instantiated base is the constructor's datatype.
+              var nominalSourceType = getPatternRhsType();
+              var sourceType = systemModuleManager.Options.Get(CommonOptionBag.ExtendedNewtypeBases)
+                ? NewtypeOperationView.Get(nominalSourceType).BaseType : nominalSourceType.NormalizeExpand();
+              Contract.Assert(sourceType.IsDatatype);
+              Contract.Assert(sourceType.TypeArgs.Count == ctor.EnclosingDatatype.TypeArgs.Count);
+              var typeMap = TypeParameter.SubstitutionMap(ctor.EnclosingDatatype.TypeArgs, sourceType.TypeArgs);
+              return ctor.Formals[argumentIndex].Type.Subst(typeMap);
+            });
+          }
+        }
+        break;
+      default:
+        break;
+    }
+  }
+
   protected override void PostVisitOneStatement(Statement stmt, IASTVisitorContext context) {
     if (stmt is VarDeclPattern varDeclPattern) {
       VisitPattern(varDeclPattern.LHS, () => TypeRefinementWrapper.NormalizeSansBottom(varDeclPattern.RHS), context);
+    } else if (stmt is NestedMatchStmt nestedMatchStmt) {
+      foreach (var kase in nestedMatchStmt.Cases) {
+        VisitMatchCasePattern(kase.Pat, () => TypeRefinementWrapper.NormalizeSansBottom(nestedMatchStmt.Source));
+      }
     } else if (stmt is SingleAssignStmt { Lhs: IdentifierExpr lhsIdentifierExpr } assignStmt) {
       if (assignStmt is { Rhs: ExprRhs exprRhs }) {
         flows.Add(new FlowIntoVariable(lhsIdentifierExpr.Var, exprRhs.Expr, assignStmt.Origin, $"{lhsIdentifierExpr.Var.Name} :="));
@@ -366,6 +504,7 @@ public class TypeRefinementVisitor : ASTVisitor<IASTVisitorContext> {
       }
 
     } else if (stmt is CallStmt callStmt) {
+      AddRawMemberFlow(context, callStmt.MethodSelect.Obj, callStmt.Method, callStmt.Origin);
       Contract.Assert(callStmt.Args.Count == callStmt.Method.Ins.Count);
       for (var i = 0; i < callStmt.Args.Count; i++) {
         var formal = callStmt.Method.Ins[i];
@@ -430,20 +569,26 @@ public class TypeRefinementVisitor : ASTVisitor<IASTVisitorContext> {
     base.VisitExtendedPattern(pattern, context);
   }
 
-  public void Solve(ErrorReporter reporter, bool debugPrint) {
+  /// <summary>
+  /// Returns whether any type changed.
+  /// </summary>
+  public bool Solve(ErrorReporter reporter, bool debugPrint) {
     var context = new FlowContext(systemModuleManager, reporter, debugPrint,
       InvariantConstructorInference: systemModuleManager.Options.Get(CommonOptionBag.InvariantConstructorInference));
+    var changed = false;
     bool anythingChanged;
     do {
       anythingChanged = false;
       foreach (var flow in flows.Where(flow => !flow.HasError)) {
         anythingChanged |= flow.Update(context);
       }
+      changed |= anythingChanged;
     } while (anythingChanged);
 
     if (debugPrint) {
       DebugPrint();
     }
+    return changed;
   }
 
 }

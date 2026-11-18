@@ -38,6 +38,12 @@ result may exist in a different enclosing module and with a different set of
 imports than the refinement parent, so that if names were reresolved, the
 result might be different (and possibly not semantically valid).
 This is why Dafny does not re-resolve the names in their new context.
+Dafny enforces this by checking that every name in a copied declaration denotes, in the
+refinement result, the counterpart of what it denoted in the parent. If a declaration that the
+refining module adds would capture such a name (for example, a function with the same name as
+one that the parent uses from an opened import, or a constant with the name of a pattern
+variable), the refining module is rejected, and the error names both declarations; rename the
+added declaration.
 
 2) All the declarations of the refining module that have different names
 than the declarations in the refinement parent are also copied into the
@@ -84,8 +90,9 @@ There must be no names in common among them.
 
 Abstract import declarations (declared with `:` instead of `=`, [Section 4.6](#sec-module-abstraction)) are refined. The refinement parent contains the
 abstract import and the refining module contains a regular aliasing
-import for the same name. Dafny checks that the refining import _adheres_ to
-the abstract import.
+import for the same name. The module that the refining import names must be a
+refinement of the abstract import's module: that module itself, or a module that
+reaches it along a chain of `refines` clauses.
 
 ## 10.3. Sub-module declarations
 
@@ -198,9 +205,11 @@ operations:
 
 The type signature of a child method must be the same as that of the
 parent method it refines. This can be ensured by providing an explicit
-type signature equivalent to that of the parent (with renaming of
-parameters allowed) or by using an ellipsis (`...`) to indicate copying
-of the parent type signature. The body of a child method must satisfy
+type signature equivalent to that of the parent or by using an ellipsis
+(`...`) to indicate copying of the parent type signature. The explicit
+signature repeats the names of the parent's parameters and type parameters,
+unless the option `--refinement-renaming` is used
+(see [renaming in a refinement](#sec-refinement-renaming)). The body of a child method must satisfy
 any ensures clauses from its parent in addition to any it adds.
 
 A refined method is allowed only if it does not invalidate any parent
@@ -285,6 +294,88 @@ module X refines P {
 }
 ```
 
+A member that overrides a trait member must meet the trait member's specification
+(the override check). A refining module may change a trait member's specification, for
+example by adding a postcondition, or it may give a class a parent, by refining an
+abstract type into a class that extends a trait. In both cases, the refining module
+makes the override check of every member that overrides the changed trait member, or
+that now overrides a member of the new parent. It does so even when it inherits the
+overriding member unchanged. A failure is reported at the inherited member, with the
+refining module as a related location. An override pair that the refining module
+inherits unchanged is not checked again.
+
+A refining module may add fields to a class whose constructor it inherits unchanged. A
+constructor must assign every field that is subject to definite-assignment rules before `new;`,
+or by the end of its body if it has no `new;`. An inherited constructor cannot assign a field
+that the refining module adds. So when the refining module adds such a field, it verifies the
+inherited constructor's body, which reports the unassigned field at the inherited constructor,
+with the refining module as a related location. To initialize the new field, the refining
+module declares the constructor itself.
+
+With the option `--refinement-extends`, a class or trait declaration in a refining module may
+add parent traits to the declaration it refines, by writing an `extends` clause after the `...`.
+
+<!-- %no-check -->
+```dafny
+module A {
+  trait T extends object {
+    function Size(): nat
+  }
+  class C extends T {
+    constructor () {}
+    function Size(): nat { 2 }
+  }
+}
+
+module B refines A {  // needs --refinement-extends
+  trait Sized extends object {
+    function Size(): nat
+    predicate IsEmpty() { Size() == 0 }
+  }
+  trait T ... extends Sized {}
+  method Test() {
+    var c := new C();
+    var s: Sized := c;
+    assert !s.IsEmpty();
+  }
+}
+```
+
+The parents of `B.T` are the parents of `A.T`, followed by the added ones; a parent that is
+named twice counts once. `B.T` is a type of `B`; `A.T` is unchanged. An added parent is checked
+in the refining module as it would be on a new declaration, also where the text concerned is
+inherited:
+
+- The added parents are subject to the usual rules for an `extends` clause: no cycles, type
+  arguments with the required characteristics, one instantiation of each generic parent, and
+  the rule for a parent trait from another module.
+- An inherited member of the refined type, or of a type below it, that has the name of a
+  member of an added parent becomes an override of it. The refining module makes the
+  override check, as described above. A field of the parent, and a function of the parent
+  that has a body, cannot be redeclared, so a clash with one is an error.
+- Every class below the refined type must implement the bodiless members of the added
+  parent. A class that the refining module inherits is refined (`class C ... { }`) to add
+  them.
+- The fields of the added parent become fields of every class below the refined type, and
+  each constructor of such a class, inherited or not, must leave them definitely assigned.
+- A call in inherited text that the new overrides put on a cycle of calls is checked for
+  termination in the refining module.
+- A member of the added parent cannot capture a name that inherited text uses for another
+  declaration.
+- A refinement cannot make a trait a reference type: if the refined trait does not have
+  `object` as an ancestor, no added parent may have it either.
+- Under `--modular-termination`, an added parent is subject to the rules for a parent trait
+  there: the `decreases {:global}` bound of an inherited member that becomes an override must
+  be below or equal to the bound in the added parent, a member that declares no bound inherits
+  the parent's, and an inherited member that becomes an implementation of a member of another
+  module that has no bound must be a leaf or have a bound of its own.
+
+A module that imports `A` abstractly and declares a type below `T` gets the same obligations
+when the import is bound to `B`.
+
+A datatype, codatatype or newtype adds parents with a different spelling and without the
+option; see the next section.
+
 ## 10.9. Type declarations
 
 Types can be refined in two ways:
@@ -351,6 +442,42 @@ cannot be refined: it is not possible to add or remove `datatype` constructors,
 nor to change destructors of a `codatatype`, nor to change the base
 type, constraint, or witness of a `newtype`.
 
+A refining datatype, codatatype or newtype may add parent traits, by writing an `extends`
+clause before the `...`. (A datatype extends a trait under `--general-traits=datatype`, and a
+newtype under `--general-traits=full`.) This needs no other option.
+
+<!-- %no-check -->
+```dafny
+module A {
+  datatype Color = Red | Green {
+    function Code(): nat { if this == Red then 1 else 2 }
+  }
+}
+
+module B refines A {
+  trait Coded {
+    function Code(): nat
+    predicate IsFirst() { Code() == 1 }
+  }
+  datatype Color extends Coded ... {}
+  method Test() {
+    var c: Coded := Red;
+    assert c.IsFirst();
+  }
+}
+```
+
+The parents of `B.Color` are the added ones and those of `A.Color`. An added parent is checked
+in the refining module as it would be on a new declaration, by the rules listed for classes
+and traits in the previous section: an inherited member with the name of a member of the added
+parent becomes an override of it and is checked as one, the refined type must implement the
+parent's bodiless members, a call in inherited text that a new override puts on a cycle is
+checked for termination, and a member of the parent cannot capture a name that inherited text
+uses for another declaration. A value type cannot have a reference type as a parent, and the
+admission rules for the parents of a datatype apply to the added ones. A type parameter of a
+datatype gets the characteristics that its parents require, so an added parent can make an
+inherited use of the datatype an error in the refining module.
+
 When a type takes arguments, its refinement must use the same type arguments
 with the same type constraints and the same variance.
  
@@ -407,3 +534,92 @@ module B refines A {  // needs --synonym-refines-abstract-type
 
 The refinement syntax (`...`) in statements is deprecated.
 
+
+## 10.11. Renaming parameters and type parameters {#sec-refinement-renaming}
+
+With the option `--refinement-renaming`, a declaration in a refining module may rename what is
+internal to the declaration it refines:
+
+* the type parameters of a function, method, lemma, class, trait, datatype, newtype or abstract type,
+* the out-parameters of a method or lemma, and the result of a function,
+* the name by which a function, method, lemma or constructor refers to one of its own in-parameters.
+
+The renaming goes by position. Everything that the refining declaration inherits (its
+specification, default-valued parameters, body, and, for a type, the members that mention its type
+parameters) is renamed with it: the inherited text means what it meant in the parent, with each
+renamed name replaced by its new name.
+
+An in-parameter has two names. Its _label_ is what a caller writes in a named argument, and it is
+the name the parameter had where the declaration was first given; no refinement changes it. Its
+local name is what the declaration's own specification and body use. So callers, including
+inherited ones, are unaffected by a renaming.
+
+<!-- %check-verify %options --refinement-renaming -->
+```dafny
+abstract module A {
+  function Take<T>(s: seq<T>, n: nat): (r: seq<T>)
+    requires n <= |s|
+    ensures |r| == n
+  {
+    s[..n]
+  }
+  method Swap<T>(a: T, b: T) returns (c: T, d: T)
+    ensures c == b && d == a
+}
+
+module B refines A {
+  // the specification and the body are those of A.Take, in the new names
+  function Take<Elem>(items: seq<Elem>, count: nat): (prefix: seq<Elem>)
+
+  method Swap<V>(first: V, second: V) returns (x: V, y: V)
+  {
+    x, y := second, first;
+  }
+
+  method Test() {
+    var p := Take(s := [1, 2, 3], n := 2);  // labels: the names given in A
+    assert p == [1, 2];
+  }
+}
+```
+
+A renaming must not change what any name in the inherited text refers to. If the new name of a
+parameter is the name of a variable, constant or type that the inherited text uses, or is bound
+again inside the inherited text where the parameter is used, the refining module is rejected, and
+the error names the two declarations. A renaming is also rejected if the old or the new name of a
+parameter or type parameter is the name of a label that the inherited text names in a `reveal`
+statement. Giving two parameters the same name is an error, as in any declaration. The number of
+parameters and their modifiers must still agree with the parent, and a refining declaration still
+cannot give a parameter a default value.
+
+The type of a parameter, and the result type of a function, must be the type it is in the parent.
+With the option it need not be written the same way. A refining module that gives a type a second
+name can use that name in its signatures, and it can write an imported type with or without the
+name of its module:
+
+<!-- %check-verify %options --refinement-renaming -->
+```dafny
+abstract module Chains {
+  type T
+  function Next(t: T): T
+}
+
+module Lists refines Chains {
+  datatype Node = Nil | Cons(tail: Node)
+  type T = Node
+  function Next(n: Node): Node {
+    if n.Nil? then n else n.tail
+  }
+}
+```
+
+The two types are compared once the refining module's types are known, with type synonyms
+replaced by what they stand for. A subset type and a newtype are types of their own, so `nat` does
+not stand in for `int`. A type that the refining module knows only as an opaque type is the same as
+no other type. Whatever the refining declaration writes, the declaration that results has the
+types of the parent. The type of a `const` or a field and the bound of a type parameter must still
+be written as in the parent.
+
+The type parameters of an iterator cannot be renamed, nor can those of an abstract type with
+members that a type synonym refines (`--synonym-refines-abstract-type`). When one module is refined
+in several steps, each step may rename again; the labels remain those of the first declaration.

@@ -1,0 +1,80 @@
+# Issue 194 addendum review
+
+## Findings
+
+- **P0 — Lower selected indexing/application to ordinary calls before primitive constraints, trigger collection and semantic cloning; retaining array/arrow-shaped semantic nodes would not preserve the named-call meaning.** [Resolver entry](https://github.com/erniecohen/dafny/blob/bb521a9522ec584d4b0069a8e80ba9e48291dee4/Source/DafnyCore/Resolver/PreType/PreTypeResolve.Expressions.cs#L212-L289), [triggers](https://github.com/erniecohen/dafny/blob/bb521a9522ec584d4b0069a8e80ba9e48291dee4/Source/DafnyCore/Triggers/TriggersCollector.cs#L91-L99).
+- **P0 — Value-index assignment replaces the whole root: parallel destinations must be distinct roots or have equal complete replacements; distinct indices alone do not suffice.** [Existing alias obligation](https://github.com/erniecohen/dafny/blob/bb521a9522ec584d4b0069a8e80ba9e48291dee4/Source/DafnyCore/Verifier/Statements/BoogieGenerator.TrAssignment.cs#L127-L184).
+- **P1 — Setter multi-assignment, effectful RHSs and aggregate forall indexed destinations need explicit initial rejection; arbitrary method effects cannot inherit array-cell independence.** [Assignment restrictions and lowering](https://github.com/erniecohen/dafny/blob/bb521a9522ec584d4b0069a8e80ba9e48291dee4/Source/DafnyCore/Resolver/PreType/PreTypeResolve.Statements.cs#L324-L376).
+- **P1 — Extend M1 source-shape cloning/freezing and manual substitution together; its current binary/negation assumptions do not cover these surfaces or their punctuation metadata.** [M1 wrapper](https://github.com/erniecohen/dafny/blob/558551c864b84df46c13be1855e4f6b157ff3d74/Source/DafnyCore/AST/Expressions/Operators/OperatorSyntaxExpr.cs#L14-L36), [substitution](https://github.com/erniecohen/dafny/blob/558551c864b84df46c13be1855e4f6b157ff3d74/Source/DafnyCore/AST/Substituter.cs#L122-L180).
+- **P1 — Comma multi-update spellings do not currently parse; guarded hooks are feasible, but this addendum deliberately uses nested updates, tuple keys and named multi-index calls instead.** [Existing suffix grammar](https://github.com/erniecohen/dafny/blob/bb521a9522ec584d4b0069a8e80ba9e48291dee4/Source/DafnyCore/Dafny.atg#L4439-L4510).
+- **P2 — Delimiter references must use separate opening/closing hits with one canonical occurrence; a full bracket span can hide operand navigation.** [M1 navigation range priority](https://github.com/erniecohen/dafny/blob/558551c864b84df46c13be1855e4f6b157ff3d74/Source/DafnyLanguageServer/Workspace/SymbolTable.cs#L166-L179).
+
+## Recommendation and decisions
+
+I recommend this addendum as the implementation contract for the accepted surfaces.
+The architecture remains ordinary call lowering with frozen selections; no new
+algebraic, array, lens or bitwise laws are assumed.
+
+Use attributes "[]" for read indexing, "[:=]" for pure update, "()" for applying
+a user value, and "[]:=" for zero-result setter methods. Four slice keys
+"[_.._]", "[_..]", "[.._]", "[..]" pass exactly the bounds written in source.
+This avoids invented length calls, optional-value types and dummy sentinels.
+All argument/result types are ordinary declared types, including user shift
+counts. Existing intrinsic families take priority; a failed bound, contract,
+count or argument check never triggers fallback.
+
+Multi-index reads and indexed assignments are supported by their existing
+syntax. Multi-index functional update and comma batch update spellings remain
+rejected deliberately, not because the no-new-token rule makes them impossible.
+The parser analysis describes feasible hooks and why they are not included.
+Chained updates use nested calls. User getters cannot supply array-element
+locations; ordinary object-valued getter results can still be ordinary frames.
+
+Pure expression additions can follow M1 before traits or newtypes. Trait/bound
+views wait on M2; newtype owners on M5; destination effects on M6. No arbitrary
+symbol/fixity milestone is recommended. A future fixity design must resolve
+syntactic precedence before type-dependent operator selection.
+
+Incremental product estimates, with per-file tables in the patch:
+E1 reads/application/shared support 636–1,167 lines; E2 updates/slices 188–348;
+B1 bitwise after E1 81–161 (101–201 independently); indexed M6 403–688.
+These are added-plus-deleted planning estimates, not measured diffs, and exclude
+tests/docs/generated output and the already planned trait/artifact/newtype work.
+
+## Packet and validation
+
+The patch changes only docs/dev/design/194-operators.md. It updates the two
+requested tables and adds sections 15–24, leaving other sections unchanged.
+It was applied successfully to the exact document at
+bb521a9522ec584d4b0069a8e80ba9e48291dee4 and compared with the assembled result.
+
+From a checkout with the pinned document:
+    git apply --check 194-operators-addendum.patch
+    git apply 194-operators-addendum.patch
+
+The packet includes 16 standalone Dafny example/control files and two Python
+models. Do not concatenate the Dafny files: their intentionally repeated type
+names and independent negative cases are separate programs. All Dafny outcomes
+are UNVERIFIED. No Dafny compiler run or implemented extension is claimed.
+A positive file includes successful substantive declarations and a deliberate
+assert-false control; it should not verify as an error-free whole file.
+Resolver-negative files cannot run their embedded controls; separate named-call
+controls are supplied.
+
+Executed with standard-library Python:
+    python3 models/functional_model.py
+    python3 models/assignment_model.py
+
+Results: functional model 18/18 tests passed, including one exhaustive test
+covering 288 small update chains; assignment model 20/20 tests passed.
+These models check evaluation order, values, aliasing and the proposed
+desugarings. They do not certify Dafny resolution, verification, compilation,
+clone transport, IDE behavior or disabled byte identity.
+
+## Handoff
+
+1. **Settled enough to implement:** direct-owner read/application/update/slice/bitwise function fallback and the specified restricted indexed assignments. This frees expression work to proceed without waiting for M2, M5 or the full M6 method feature.
+2. **Expected to change:** M1's hard-coded source/selection representation, intrinsic-before-fallback scheduling, suffix/destination hooks, clone/substitution metadata and IDE range plumbing. Exact factoring and line estimates can change; the ordinary-call and disabled-identity contracts must not.
+3. **Next question:** the addendum asks and answers whether lowering may cross old heaps, binders or short-circuit branches: no, expression calls stay in place and statement captures stay in the original statement block. The next empirical question is whether implemented notation produces the same calls, VCs, triggers and output as its named expansion.
+4. **Feedback on the request:** the pins, fixed decisions, exact examples and executable desugaring models made the review concrete. “Multi-update” usefully exposed three distinct cases: nested update, tuple/multi-index update, and parallel destination replacement; the design now separates them explicitly.
+5. **Stopped because:** the requested list and deliverables are complete. First item not done: product implementation and actual Dafny execution, which were outside this design-only request.

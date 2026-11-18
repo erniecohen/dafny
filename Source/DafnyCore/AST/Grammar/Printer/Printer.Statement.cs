@@ -87,9 +87,9 @@ namespace Microsoft.Dafny {
             wr.Write(s is YieldStmt ? "yield" : "return");
             if (s.Rhss != null) {
               var sep = " ";
-              foreach (var rhs in s.Rhss) {
+              for (var i = 0; i < s.Rhss.Count; i++) {
                 wr.Write(sep);
-                PrintRhs(rhs);
+                PrintRhs(s.Rhss[i], i + 1 < s.Rhss.Count ? s.Rhss[i + 1] : null);
                 sep = ", ";
               }
             }
@@ -207,7 +207,7 @@ namespace Microsoft.Dafny {
                 wr.Write(" ");
                 PrintQuantifierDomain(s.BoundVars, s.Attributes, s.Range);
               }
-              PrintSpec("ensures", s.Ens, indent + IndentAmount);
+              PrintSpec("ensures", s.Ens, indent + IndentAmount, true);
               if (s.Body != null) {
                 if (s.Ens.Count == 0) {
                   wr.Write(" ");
@@ -255,7 +255,7 @@ namespace Microsoft.Dafny {
               var h = s.Hints[i];
               // print the line
               Indent(lineInd);
-              PrintExpression(e, true, lineInd);
+              PrintCalcLine(e, lineInd, i != 0);
               wr.WriteLine(";");
               if (i == hintCount) {
                 break;
@@ -399,7 +399,7 @@ namespace Microsoft.Dafny {
               if (local.Attributes != null) {
                 PrintAttributes(local.Attributes, AtAttributesOnSameLineIndent, () => { });
               }
-              wr.Write(" {0}", local.DisplayName);
+              wr.Write(" {0}", VariableDisplayName(local));
               PrintType(": ", local.SafeSyntacticType);
               sep = ",";
             }
@@ -601,9 +601,9 @@ namespace Microsoft.Dafny {
           wr.Write(":= ");
         }
         var sep = "";
-        foreach (var rhs in update.Rhss) {
+        for (var i = 0; i < update.Rhss.Count; i++) {
           wr.Write(sep);
-          PrintRhs(rhs);
+          PrintRhs(update.Rhss[i], i + 1 < update.Rhss.Count ? update.Rhss[i + 1] : null);
           sep = ", ";
         }
       } else if (s is AssignSuchThatStmt) {
@@ -626,10 +626,18 @@ namespace Microsoft.Dafny {
           });
         }
         wr.Write(" ");
-        PrintRhs(stmt.Rhs);
-        foreach (var rhs in stmt.Rhss) {
+        var parenthesizeRhs = printMode == PrintModes.Serialization && stmt.KeywordToken == null &&
+                              Expression.StripParens(stmt.Rhs.Expr) is StmtExpr { S: PredicateStmt };
+        if (parenthesizeRhs) {
+          wr.Write("(");
+        }
+        PrintRhs(stmt.Rhs, parenthesizeRhs ? null : stmt.Rhss.FirstOrDefault());
+        if (parenthesizeRhs) {
+          wr.Write(")");
+        }
+        for (var i = 0; i < stmt.Rhss.Count; i++) {
           wr.Write(", ");
-          PrintRhs(rhs);
+          PrintRhs(stmt.Rhss[i], i + 1 < stmt.Rhss.Count ? stmt.Rhss[i + 1] : null);
         }
         if (options.DafnyPrintResolvedFile != null && stmt.ResolvedStatements.Count > 0) {
           wr.WriteLine();
@@ -673,6 +681,33 @@ namespace Microsoft.Dafny {
       }
     }
 
+    void PrintCalcLine(Expression expression, int indent, bool mayBeHint) {
+      if (printMode != PrintModes.Serialization || !mayBeHint) {
+        PrintExpression(expression, true, indent);
+        return;
+      }
+
+      // A noninitial line starting with '{' is parsed as a hint block, even
+      // when the set display is only the left operand of a larger expression.
+      var savedWriter = wr;
+      using var lineWriter = new StringWriter(wr.FormatProvider) { NewLine = wr.NewLine };
+      try {
+        wr = lineWriter;
+        PrintExpression(expression, true, indent);
+      } finally {
+        wr = savedWriter;
+      }
+      var line = lineWriter.ToString();
+      var needsParens = line.StartsWith("{", StringComparison.Ordinal);
+      if (needsParens) {
+        wr.Write("(");
+      }
+      wr.Write(line);
+      if (needsParens) {
+        wr.Write(")");
+      }
+    }
+
     void PrintWhileStatement(int indent, WhileStmt s, bool omitGuard, bool omitBody) {
       Contract.Requires(0 <= indent);
       PrintAttributes(s.Attributes, indent, () => {
@@ -691,7 +726,7 @@ namespace Microsoft.Dafny {
       if (omitBody) {
         wr.WriteLine();
         Indent(indent + IndentAmount);
-        wr.Write("...;");
+        wr.Write(printMode == PrintModes.Serialization ? "..." : "...;");
       } else if (s.Body != null) {
         if (s.Invariants.Count == 0 && s.Decreases.Expressions.Count == 0 && (s.Mod.Expressions == null || s.Mod.Expressions.Count == 0)) {
           wr.Write(" ");
@@ -737,7 +772,7 @@ namespace Microsoft.Dafny {
       PrintAttributes(s.Attributes, indent, () => {
         wr.Write("for");
       });
-      wr.Write($" {s.LoopIndex.Name}");
+      wr.Write($" {(printMode == PrintModes.Serialization ? VariableDisplayName(s.LoopIndex) : s.LoopIndex.Name)}");
       PrintType(": ", s.LoopIndex.Type);
       wr.Write(" := ");
       PrintExpression(s.Start, false);
@@ -762,6 +797,16 @@ namespace Microsoft.Dafny {
         }
         PrintStatement(s.Body, indent);
       }
+    }
+
+    /// <summary>
+    /// Prints "rhs", which is followed by ", " and "next" unless "next" is null.
+    /// </summary>
+    void PrintRhs(AssignmentRhs rhs, AssignmentRhs next) {
+      if (rhs is ExprRhs exprRhs && next is ExprRhs nextExprRhs) {
+        MarkBeforeComma(exprRhs.Expr, nextExprRhs.Expr);
+      }
+      PrintRhs(rhs);
     }
 
     void PrintRhs(AssignmentRhs rhs) {

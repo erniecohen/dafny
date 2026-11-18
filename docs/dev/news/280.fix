@@ -1,0 +1,3 @@
+Fix library serialization of newtype refinements, preserving inherited base types,
+constraints, witnesses, datatype constructors and omitted function signatures when
+the library is read back.

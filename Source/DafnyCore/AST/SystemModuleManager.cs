@@ -30,6 +30,16 @@ public class SystemModuleManager {
 
   public ModuleSignature systemNameInfo;
 
+  /// <summary>
+  /// The resolution of this manager's system module: its signature, the declarations it set up and
+  /// their members. A resolution view that continues this one sets up only the builtins it adds, so
+  /// that each canonical builtin declaration is registered and resolved exactly once.
+  /// </summary>
+  internal sealed record ResolvedSystemModule(ModuleSignature Signature, IReadOnlySet<TopLevelDecl> Declarations,
+    Dictionary<TopLevelDeclWithMembers, Dictionary<string, MemberDecl>> ClassMembers);
+
+  internal ResolvedSystemModule ResolvedSystem { get; set; }
+
   public int MaxNonGhostTupleSizeUsed { get; private set; }
   public IOrigin MaxNonGhostTupleSizeToken { get; private set; }
 
@@ -61,7 +71,9 @@ public class SystemModuleManager {
             Concat(ArrowTypeDecls.Keys.OrderBy(x => x)).
             Concat(PartialArrowTypeDecls.Keys.OrderBy(x => x)).
             Concat(TotalArrowTypeDecls.Keys.OrderBy(x => x)).
-            Concat(tupleInts.OrderBy(x => x));
+            Concat(tupleInts.OrderBy(x => x)).
+            Concat(BoundedDecl != null ? [-1] : []).
+            Concat(BoundedArrowAdded ? [-2] : []);
         var bytes = ints.SelectMany(BitConverter.GetBytes).ToArray();
         hash = SHA256.Create()!.ComputeHash(bytes);
       }
@@ -85,6 +97,8 @@ public class SystemModuleManager {
     StringDecl = source.StringDecl;
     NatDecl = source.NatDecl;
     ObjectDecl = source.ObjectDecl;
+    BoundedDecl = source.BoundedDecl;
+    BoundedArrowAdded = source.BoundedArrowAdded;
     ORDINAL_Offset = source.ORDINAL_Offset;
     MergeResolutionView(source);
   }
@@ -96,8 +110,10 @@ public class SystemModuleManager {
   /// </summary>
   public SystemModuleManager CreateResolutionView(SystemModuleManager parsed) {
     var catalog = ResolutionCatalog ?? new ResolutionBuiltinCatalog(this);
-    var view = new SystemModuleManager(this, catalog);
+    var view = new SystemModuleManager(this, catalog) { ResolvedSystem = ResolvedSystem };
     foreach (var arity in parsed.ArrowTypeDecls.Keys) { view.CreateArrowTypeDecl(arity); }
+    if (parsed.BoundedDecl != null) { view.CreateBoundedTypeDecl(); }
+    view.BoundedArrowAdded = parsed.BoundedArrowAdded;
     foreach (var dimensions in parsed.arrayTypeDecls.Keys) {
       var (_, modify) = ArrayType(Token.NoToken, dimensions, null, true);
       modify(view);
@@ -111,6 +127,9 @@ public class SystemModuleManager {
   }
 
   internal void MergeResolutionView(SystemModuleManager source) {
+    if (source.ArrowTypeDecls.ContainsKey(2)) {
+      BoundedArrowAdded &= source.BoundedArrowAdded;
+    }
     foreach (var pair in source.arrayTypeDecls) { arrayTypeDecls[pair.Key] = pair.Value; }
     foreach (var pair in source.ArrowTypeDecls) { ArrowTypeDecls[pair.Key] = pair.Value; }
     foreach (var pair in source.PartialArrowTypeDecls) { PartialArrowTypeDecls[pair.Key] = pair.Value; }
@@ -194,6 +213,36 @@ public class SystemModuleManager {
   public readonly SubsetTypeDecl NatDecl;
   public UserDefinedType Nat() { return new UserDefinedType(Token.NoToken, "nat", NatDecl, []); }
   public readonly TraitDecl ObjectDecl;
+  /// <summary>
+  /// The abstract type "bounded&lt;O, F&gt;" of bounded callables (issue 266), created on demand by parsing a use.
+  /// </summary>
+  public AbstractTypeDecl BoundedDecl { get; private set; }
+
+  public void CreateBoundedTypeDecl() {
+    if (BoundedDecl != null || !ModularTermination.RulesEnabled(Options)) {
+      return;
+    }
+    if (ResolutionCatalog != null) {
+      ResolutionCatalog.Bounded(this);
+      return;
+    }
+    BoundedDecl = BoundedCallables.CreateDecl(SystemModule, DontCompile());
+    RecordBuiltin(BoundedDecl);
+    hash = null;
+  }
+
+  internal void ImportBounded(SystemModuleManager source) {
+    BoundedDecl = source.BoundedDecl;
+    RecordBuiltin(BoundedDecl);
+    hash = null;
+  }
+  // The parser did not require a binary arrow, but bounded.certify needs its intrinsic signature.
+  // Keep that availability separate from emitting unused arrow axioms for ordinary programs.
+  private bool boundedArrowAdded;
+  public bool BoundedArrowAdded {
+    get => boundedArrowAdded;
+    internal set { boundedArrowAdded = value; hash = null; }
+  }
   public UserDefinedType ObjectQ() {
     Contract.Assume(ObjectDecl != null);
     return new UserDefinedType(Token.NoToken, "object?", null) { ResolvedClass = ObjectDecl };
@@ -227,6 +276,11 @@ public class SystemModuleManager {
     // create trait 'object'
     ObjectDecl = new TraitDecl(SourceOrigin.NoToken, new Name("object"), SystemModule, [], [], DontCompile(), false, []);
     SystemModule.SourceDecls.Add(ObjectDecl);
+    // The legacy comparison profile preserves the old opt-in experiment's
+    // builtin publication, even when the source does not mention bounded.
+    if (options.Get(CommonOptionBag.LegacyNoModularTermination) && options.Get(CommonOptionBag.ModularTermination)) {
+      CreateBoundedTypeDecl();
+    }
     // add one-dimensional arrays, since they may arise during type checking
     // Arrays of other dimensions may be added during parsing as the parser detects the need for these
     UserDefinedType tmp = ArrayType(1, Type.Int, true);

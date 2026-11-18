@@ -1,0 +1,97 @@
+{
+  "productSource": "470f93a90fc27d1e73b338fa8aa20d81d282993b",
+  "refresh": true,
+  "samplesPerScenario": 5,
+  "tasks": 3,
+  "exit": 4,
+  "summary": {
+    "cold": {
+      "wall": {
+        "median": 10.445237917,
+        "minimum": 5.960460249999997,
+        "maximum": 15.349828833
+      },
+      "cpu": {
+        "median": 8.482021,
+        "minimum": 5.251466,
+        "maximum": 9.250545
+      },
+      "solverStarts": {
+        "median": 3,
+        "minimum": 3,
+        "maximum": 3
+      },
+      "solverVersionProbes": {
+        "median": 1,
+        "minimum": 1,
+        "maximum": 1
+      },
+      "RU": {
+        "median": 7068,
+        "minimum": 7068,
+        "maximum": 7068
+      }
+    },
+    "warm": {
+      "wall": {
+        "median": 8.60808125,
+        "minimum": 5.715048375000002,
+        "maximum": 13.322424290999997
+      },
+      "cpu": {
+        "median": 6.534979,
+        "minimum": 5.071526,
+        "maximum": 8.765047
+      },
+      "solverStarts": {
+        "median": 0,
+        "minimum": 0,
+        "maximum": 0
+      },
+      "solverVersionProbes": {
+        "median": 0,
+        "minimum": 0,
+        "maximum": 0
+      },
+      "RU": {
+        "median": 7068,
+        "minimum": 7068,
+        "maximum": 7068
+      }
+    },
+    "edit": {
+      "wall": {
+        "median": 9.242472958000008,
+        "minimum": 6.169086708000002,
+        "maximum": 17.796299040999997
+      },
+      "cpu": {
+        "median": 7.049346,
+        "minimum": 5.405424,
+        "maximum": 11.91335
+      },
+      "solverStarts": {
+        "median": 1,
+        "minimum": 1,
+        "maximum": 1
+      },
+      "solverVersionProbes": {
+        "median": 0,
+        "minimum": 0,
+        "maximum": 0
+      },
+      "RU": {
+        "median": 7189,
+        "minimum": 7189,
+        "maximum": 7189
+      }
+    }
+  },
+  "exactColdWarmUntimedReportsAndOutput": true,
+  "exactChangedTaskOracle": true,
+  "imageHashes": {
+    "Dafny.dll": "5774bf0ab778b01b8e70be1a05e06b6e11b59ef427d651bc8b283296f1453c69",
+    "DafnyDriver.dll": "986432ce7cc18646f11a3d724928c1fbc3ff55f02ffa695038d4b136c308d1e0",
+    "DafnyCore.dll": "ccfba602d06c17876d371aaa36ab3ccefa3a8c0616e6d554a34e037b6b908e2d"
+  }
+}

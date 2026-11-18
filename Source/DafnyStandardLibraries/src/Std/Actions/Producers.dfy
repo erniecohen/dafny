@@ -1318,7 +1318,7 @@ module Std.Producers {
       }
 
       Repr := {this} + original.Repr + originalTotalAction.Repr;
-      assert Valid();
+      assert {:split_here} Valid();
       assert old(State()).ValidChange(State());
     }
 
@@ -1466,6 +1466,7 @@ module Std.Producers {
         old(DecreasesMetric()).SuccDecreasesToSucc(DecreasesMetric());
       }
 
+      assert {:split_here} Valid();
       if result.Some? {
         assert Seq.Last(source.Outputs()) == result;
         Seq.PartitionedLastTrueImpliesAll(source.Outputs(), IsSome);
@@ -1675,7 +1676,20 @@ module Std.Producers {
         }
       }
 
-      assert old(State()).ValidChange(State());
+      assert history == old(history) + [((), result)];
+      assert Outputs() == old(Outputs()) + [result];
+      assert old(State()).ValidChange(State()) by {
+        if old(Remaining()).Some? {
+          assert old(first.Remaining()).Some? && old(second.Remaining()).Some?;
+          if result.Some? {
+            assert 0 < old(Remaining()).value;
+            assert Remaining() == Some(old(Remaining()).value - 1);
+          } else {
+            assert old(Remaining()).value == 0;
+            assert Remaining() == Some(0);
+          }
+        }
+      }
 
       assert Ensures(t, result);
     }
@@ -2057,7 +2071,7 @@ module Std.Producers {
       }
 
       Repr := {this} + original.Repr + mapping.Repr;
-      assert Valid();
+      assert {:split_here} Valid();
       assert original.DecreasedBy(next);
       if next.Some? {
         old(DecreasesMetric()).TupleDecreasesToTuple(DecreasesMetric());
@@ -2311,6 +2325,7 @@ module Std.Producers {
           DecreasesMetric().second.SuccDecreasesToOriginal();
           result := currentInner.value.Next();
           this.Repr := {this} + original.Repr + currentInner.value.Repr;
+          assert {:split_here} Valid();
 
           assert old@beforeCurrentInnerNext(currentInner.value.DecreasesMetric()).NonIncreasesTo(currentInner.value.DecreasesMetric());
           InnerDecreasesMetricNonIncreases@beforeCurrentInnerNext();

@@ -27,3 +27,7 @@ verification-time-limit = 300
 # These give too many false positives right now, but should be enabled in the future
 warn-redundant-assumptions = false
 warn-contradictory-assumptions = false
+# Std.Actions has 20 classes and traits with @AssumeCrossModuleTermination, a known
+# unchecked premise tracked for migration in https://github.com/erniecohen/dafny/issues/211.
+# Programs that use the library are not warned about them in any case.
+warn-unchecked-termination = false

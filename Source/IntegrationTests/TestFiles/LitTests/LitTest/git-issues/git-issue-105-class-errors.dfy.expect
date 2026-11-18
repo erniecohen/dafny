@@ -1,0 +1,11 @@
+git-issue-105-class-errors.dfy(14,14): Error: an invariant may not read the mutable field 'v': it depends on no mutable state
+git-issue-105-class-errors.dfy(22,14): Error: a forall expression involved in a invariant definition is not allowed to depend on the set of allocated references, but values of 'c' (of type 'Max') may contain references (see documentation for 'older' parameters)
+git-issue-105-class-errors.dfy(32,20): Error: the invariant of 'Box' uses 'Fits', which is dynamically bound, so the bodies it stands for are not all known
+git-issue-105-class-errors.dfy(40,4): Error: class 'NoCtor' declares a member invariant, so it must declare a constructor
+git-issue-105-class-errors.dfy(46,8): Error: class 'Inherits' inherits a member invariant from 'T', so it must declare a constructor
+git-issue-105-class-errors.dfy(61,11): Error: an expression of type 'raw Cell' is not run-time checkable to be a 'Cell'
+git-issue-105-class-errors.dfy(62,13): Error: an expression of type 'raw Cell?' is not run-time checkable to be a 'Cell?'
+git-issue-105-class-errors.dfy(80,19): Error: a forall expression involved in a lambda expression is not allowed to depend on the set of allocated references, but values of 'c' (of type 'Cell') may contain references (see documentation for 'older' parameters)
+git-issue-105-class-errors.dfy(81,19): Error: a exists expression involved in a lambda expression is not allowed to depend on the set of allocated references, but values of 'c' (of type 'Cell') may contain references (see documentation for 'older' parameters)
+git-issue-105-class-errors.dfy(83,31): Error: a forall expression involved in a function definition is not allowed to depend on the set of allocated references, but values of 'c' (of type 'Cell') may contain references (see documentation for 'older' parameters)
+10 resolution/type errors detected in git-issue-105-class-errors.dfy

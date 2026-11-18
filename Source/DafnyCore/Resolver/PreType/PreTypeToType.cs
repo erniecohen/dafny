@@ -31,8 +31,22 @@ class PreTypeToTypeVisitor : ASTVisitor<IASTVisitorContext> {
 
   private readonly SystemModuleManager systemModuleManager;
 
-  public PreTypeToTypeVisitor(SystemModuleManager systemModuleManager) {
+  /// <summary>
+  /// The lambda binders that --contextual-lambda-domains gave the declared arrow domain as their type.
+  /// Such a binder's pre-type may print as a different, equivalent spelling of that domain, such as a type synonym
+  /// or subset type of a formal it is passed to, so it is combined with that pre-type modulo synonyms.
+  /// </summary>
+  private readonly HashSet<IVariable> contextualLambdaBinders = new();
+
+  /// <summary>
+  /// Issue 105: non-null when the declarations include a type with member invariants. It gives the type of "this" in
+  /// the instance members of such a type.
+  /// </summary>
+  private readonly RawMemberInference rawMemberInference;
+
+  public PreTypeToTypeVisitor(SystemModuleManager systemModuleManager, RawMemberInference rawMemberInference = null) {
     this.systemModuleManager = systemModuleManager;
+    this.rawMemberInference = rawMemberInference;
   }
 
   /// <summary>
@@ -96,15 +110,20 @@ class PreTypeToTypeVisitor : ASTVisitor<IASTVisitorContext> {
           // A declared arrow domain supplies a checking context for this lambda,
           // without refining unrelated quantified or comprehension variables.
           proxy.T = domain;
+          contextualLambdaBinders.Add(boundVar);
         }
       }
     }
     base.VisitFunction(function);
   }
 
-  private static void VisitVariableList(IEnumerable<IVariable> variables, bool allowFutureRefinements) {
+  private void VisitVariableList(IEnumerable<IVariable> variables, bool allowFutureRefinements) {
     foreach (var v in variables) {
-      PreType2TypeUtil.Combine(v.Type, v.PreType, allowFutureRefinements);
+      if (contextualLambdaBinders.Contains(v)) {
+        PreType2TypeUtil.CombineModuloPreTypeSynonyms(v.Type, v.PreType, allowFutureRefinements);
+      } else {
+        PreType2TypeUtil.Combine(v.Type, v.PreType, allowFutureRefinements);
+      }
     }
   }
 
@@ -158,6 +177,12 @@ class PreTypeToTypeVisitor : ASTVisitor<IASTVisitorContext> {
     }
   }
 
+  // Whether "type" is a type the program wrote, with no part left to inference
+  private static bool IsWritten(Type type) {
+    var t = type.Normalize();
+    return t is not TypeProxy && t.TypeArgs.All(IsWritten);
+  }
+
   protected override bool VisitOneExpression(Expression expr, IASTVisitorContext context) {
     if (expr is QuantifierExpr quantifierExpr && systemModuleManager.Options.Get(CommonOptionBag.ContextualQuantifierDomains)) {
       InferQuantifierDomains(quantifierExpr);
@@ -175,7 +200,16 @@ class PreTypeToTypeVisitor : ASTVisitor<IASTVisitorContext> {
   }
 
   protected override void PostVisitOneExpression(Expression expr, IASTVisitorContext context) {
-    if (expr is LiteralExpr or ThisExpr) {
+    if (IsNewtypeArithmetic(expr)) {
+      // Issue 105: the type of a literal or of an arithmetic operation of a newtype with member invariants is refined,
+      // to "raw N" or N (see TypeRefinementVisitor.AddNewtypeArithmeticFlows); with nothing raw, it is N
+      expr.UnnormalizedType = PreType2TypeUtil.PreType2RefinableType(expr.PreType);
+      return;
+    } else if (expr is ThisExpr && rawMemberInference?.ThisType(context) is { } thisType) {
+      // Issue 105: every "this" in the member shares one type, which becomes "raw T" if the member is raw
+      expr.UnnormalizedType = thisType;
+      return;
+    } else if (expr is LiteralExpr or ThisExpr) {
       // Note, for the LiteralExpr "null", we expect to get a possibly-null type, whereas for a reference-type ThisExpr, we expect
       // to get the non-null type. The .PreType of these two distinguish between those cases, because the latter has a .PrintablePreType
       // field that gives the non-null type.
@@ -183,6 +217,24 @@ class PreTypeToTypeVisitor : ASTVisitor<IASTVisitorContext> {
       return;
     } else if (expr is FunctionCallExpr functionCallExpr) {
       functionCallExpr.TypeApplication_AtEnclosingClass = functionCallExpr.PreTypeApplication_AtEnclosingClass.ConvertAll(PreType2TypeUtil.PreType2FixedType);
+      if (BoundedCallables.IsCertify(functionCallExpr.Function)) {
+        // Pre-types do not tell nat from int, and nat is the only int-based order a bounded type admits; nor do they
+        // tell the arrow families apart, so the payload is refined from the function argument (issue 266).  The
+        // call's type map comes from its static receiver, so that receiver carries both.
+        var typeArgs = functionCallExpr.TypeApplication_AtEnclosingClass;
+        if (typeArgs[0].NormalizeExpand() is IntType) {
+          typeArgs[0] = systemModuleManager.Nat();
+        }
+        if (functionCallExpr.Receiver is StaticReceiverExpr { UnresolvedType: UserDefinedType { TypeArgs.Count: 2 } written } &&
+            IsWritten(written.TypeArgs[0])) {
+          // A written order is kept as written: refinement from the bound argument would otherwise replace the order
+          // type that is the result of an argument-dependent order by its base type (issue 211)
+          typeArgs[0] = written.TypeArgs[0];
+        }
+        typeArgs[1] = PreType2TypeUtil.PreType2RefinableType(functionCallExpr.PreTypeApplication_AtEnclosingClass[1]);
+        functionCallExpr.Receiver.Type = new UserDefinedType(functionCallExpr.Receiver.Origin, BoundedCallables.TypeName,
+          functionCallExpr.Function.EnclosingClass, functionCallExpr.TypeApplication_AtEnclosingClass);
+      }
       functionCallExpr.TypeApplication_JustFunction = PreType2TypeUtil.Combine(functionCallExpr.TypeApplication_JustFunction,
         functionCallExpr.PreTypeApplication_JustFunction, true);
     } else if (expr is MemberSelectExpr memberSelectExpr) {
@@ -195,6 +247,16 @@ class PreTypeToTypeVisitor : ASTVisitor<IASTVisitorContext> {
       VisitVariableList(letExpr.BoundVars, letExpr.Exact);
       foreach (var lhs in letExpr.LHSs) {
         VisitPattern(lhs, context);
+      }
+      if (letExpr.Exact && letExpr.RHSs.Count != 0 && letExpr.RHSs[0] is StmtExpr { LemmaBindingCall: { } lemmaBindingCall, E: LemmaResultExpr }) {
+        // This let binds the results of a lemma (see LetExpr.LemmaBinding). The result expressions take the very type
+        // arguments of the call statement, so that the call and the results it justifies cannot come to differ.
+        var callSelection = (MemberSelectExpr)lemmaBindingCall.MethodSelect;
+        foreach (var rhs in letExpr.RHSs) {
+          var result = (LemmaResultExpr)(rhs is StmtExpr rhsStmtExpr ? rhsStmtExpr.E : rhs);
+          result.TypeApplicationAtEnclosingClass = callSelection.TypeApplicationAtEnclosingClass;
+          result.TypeApplicationJustMember = callSelection.TypeApplicationJustMember;
+        }
       }
     } else if (expr is DatatypeValue datatypeValue) {
       // If the datatype has no type parameters, then .InferredTypeArgs.Count == .InferredPreTypeArgs.Count == 0.
@@ -223,8 +285,19 @@ class PreTypeToTypeVisitor : ASTVisitor<IASTVisitorContext> {
       }
 
     } else if (expr is ConversionExpr conversionExpr) {
-      PreType2TypeUtil.Combine(conversionExpr.ToType, conversionExpr.PreType, false);
-      expr.Type = conversionExpr.ToType;
+      // Pre-types omit subset refinements, including total/no-reads arrow families.
+      // A synthetic base view must recover them from its nominal source during refinement.
+      PreType2TypeUtil.Combine(conversionExpr.ToType, conversionExpr.PreType, conversionExpr.IsBaseOperation);
+      if (conversionExpr.IsBaseOperation && conversionExpr.PreType.Normalize() is DPreType { Decl: ArrowTypeDecl }) {
+        // Combine can retain an explicit head, and Expression.Type normalizes away
+        // outer proxies. Give this projection an owned target before parent flows
+        // capture it, and share that target with its checked conversion type.
+        var target = new TypeRefinementWrapper(conversionExpr.ToType.Normalize());
+        conversionExpr.ToType = target;
+        conversionExpr.UnnormalizedType = target;
+      } else {
+        expr.Type = conversionExpr.ToType;
+      }
       return;
     }
 
@@ -280,6 +353,16 @@ class PreTypeToTypeVisitor : ASTVisitor<IASTVisitorContext> {
 
     // Case: refinement-wrapper pre-type type
     expr.UnnormalizedType = PreType2TypeUtil.PreType2RefinableType(expr.PreType);
+  }
+
+  /// <summary>
+  /// Issue 105: whether "expr" is a literal, or a unary or binary operation, whose pre-type is a newtype with member
+  /// invariants (a conversion and a type test are not). Its type is "raw N" if a value of "raw N" takes part, and N
+  /// otherwise (see TypeRefinementVisitor.AddNewtypeArithmeticFlows).
+  /// </summary>
+  public static bool IsNewtypeArithmetic(Expression expr) {
+    return expr is LiteralExpr or UnaryOpExpr or BinaryExpr &&
+           expr.PreType?.Normalize() is DPreType { Decl: NewtypeDecl { InvariantTypeDecl: not null } };
   }
 
   private void VisitPattern<VT>(CasePattern<VT> casePattern, IASTVisitorContext context) where VT : class, IVariable {
@@ -377,7 +460,9 @@ class PreTypeToTypeVisitor : ASTVisitor<IASTVisitorContext> {
         break;
       case IdPattern idPattern:
         if (idPattern.BoundVar != null) {
-          PreType2TypeUtil.Combine(idPattern.BoundVar.Type, idPattern.BoundVar.PreType, false);
+          // The type of a variable bound by a case pattern is refined by the flow that TypeRefinementVisitor sets up from
+          // the match source (for a constructor argument, the declared type of the constructor's formal).
+          PreType2TypeUtil.Combine(idPattern.BoundVar.Type, idPattern.BoundVar.PreType, true);
         }
         if (idPattern.ResolvedLit != null) {
           PostVisitOneExpression(idPattern.ResolvedLit, context);

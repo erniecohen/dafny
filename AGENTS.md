@@ -9,8 +9,8 @@ version is computed, is in [`REVIEW.md`](REVIEW.md).  Where the fork is going is
 ## The branches
 
 - **`review/4.11.0`**, the default branch, is the shipped line: Dafny 4.11.0 with
-  the fixes, built against a fixed Boogie.  A change to a product file makes a new
-  last product commit, which gets a new version and a new tag.  `REVIEW.md` defines
+  the fixes, built against a fixed Boogie.  A change to the product tree gets a new
+  version and a new tag, derived automatically from HEAD.  `REVIEW.md` defines
   the product, in "The version, and how to check it".
 - **`dev`** follows upstream's `master`, with this fork's CI in place of upstream's
   workflows.  Improvements are written there.  They come to `review/4.11.0` only
@@ -79,13 +79,23 @@ changes with that reason on record ("The verdict gates", below).  A feature that
 replaces an assumption with a check, such as `--modular-termination`, is not a
 soundness fix: it stays opt-in until it is believed sound.
 
+**An exception the owner made.**  On 2026-11-15 the owner decided ("Yes, default-on")
+that `--warn-unchecked-termination` is on by default, although it is a new warning
+and not a soundness fix.  It reports `{:termination false}` and
+`@AssumeCrossModuleTermination`, unchecked premises through which a program can prove
+`false` ([issue 211](https://github.com/erniecohen/dafny/issues/211)).  Like a soundness
+fix, it has a hidden opt-out, `--legacy-no-unchecked-termination-warning`.  It changes
+no verdict and no resource count, only the diagnostics and, without
+`--allow-warnings`, the exit code.  Other new warnings stay opt-in unless the owner
+decides otherwise.
+
 ## Merging fix pull requests
 
-Every product change updates `.github/review/base` and appends its test to
-`.github/review/regressions`, so two open fix pull requests always conflict there.
-They are merged one at a time.  After one merges, the next is rebased onto
-`review/4.11.0`, its `base` and `regressions` lines are redone, and its CI is run
-again before it merges.
+Every product change derives its version from HEAD and appends its test to
+`.github/review/regressions`; it does not restamp `.github/review/base`.
+Fix pull requests are merged one at a time. After one merges, the next is rebased
+onto `review/4.11.0`, any regression-list conflicts are resolved, and its CI is
+run again before it merges.
 
 ## New axioms are where soundness is lost
 
@@ -158,6 +168,10 @@ Label its issue `needs-owner-approval` before any pull request upstream.
   whose `review.yml` push run is green with `v` and its version, and starts the
   tag's release build.  Its task `scratch-cleanup` runs daily and deletes
   `scratch/**` branches older than seven days that no open pull request uses.
+- **CI skips a tree it already verified.**  `review.yml` and `obligation-proofs.yml`
+  reuse a successful run of the same tree (`REVIEW.md`, "CI"), so a squash merge of a
+  pull request that was current, and the tag of that tree, do not verify twice.  To force
+  a full run, dispatch the workflow on a branch.
 - **A failed run notifies the repository's owner.**  So a scratch or probe
   workflow that expects failures records them, in the job summary and an artifact,
   and exits 0.

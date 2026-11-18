@@ -1,0 +1,1 @@
+A library (`.doo`) keeps the `opaque` modifier of its constants.  The printer, which writes the program that a `.doo` stores and the output of `--print`, wrote `opaque const c := 5` as `const c := 5`, so a client of the library saw the value of every opaque constant without revealing it (https://github.com/erniecohen/dafny/issues/337).  Functions already kept the modifier.

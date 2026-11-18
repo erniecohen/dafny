@@ -1,0 +1,38 @@
+{
+  "removed": [
+    {
+      "formula": "axiom (forall b#0: DatatypeType :: { _module.__default.Encode(b#0) } _module.__default.Encode#canCall(b#0) ==> $Is(_module.__default.Encode(b#0), Tclass._module.Stream()));",
+      "multiplicity": 1
+    },
+    {
+      "formula": "axiom (forall v#0: DatatypeType :: { _module.__default.Decode#requires(v#0) } $Is(v#0, Tclass._module.Stream()) ==> _module.__default.Decode#requires(v#0) == true);",
+      "multiplicity": 1
+    }
+  ],
+  "added": [
+    {
+      "formula": "axiom (forall b#0: DatatypeType :: { _module.__default.Encode(b#0) } _module.__default.Encode#canCall(b#0) ==> $Is(_module.__default.Encode(b#0), Tclass._module.Value()));",
+      "multiplicity": 1
+    },
+    {
+      "formula": "axiom (forall bx: Box :: { $IsBox(bx, Tclass._module.Value()) } $IsBox(bx, Tclass._module.Value()) ==> $Box($Unbox(bx): DatatypeType) == bx && $Is($Unbox(bx): DatatypeType, Tclass._module.Value()));",
+      "multiplicity": 1
+    },
+    {
+      "formula": "axiom (forall c0#0: DatatypeType :: { $Is(c0#0, Tclass._module.Value()) } $Is(c0#0, Tclass._module.Value()) <==> $Is(c0#0, Tclass._module.Stream()) && Lit(true));",
+      "multiplicity": 1
+    },
+    {
+      "formula": "axiom (forall c1#0: DatatypeType, $h: Heap :: { $IsAlloc(c1#0, Tclass._module.Value(), $h) } $IsAlloc(c1#0, Tclass._module.Value(), $h) <==> $IsAlloc(c1#0, Tclass._module.Stream(), $h));",
+      "multiplicity": 1
+    },
+    {
+      "formula": "axiom (forall v#0: DatatypeType :: { _module.__default.Decode#requires(v#0) } $Is(v#0, Tclass._module.Value()) ==> _module.__default.Decode#requires(v#0) == true);",
+      "multiplicity": 1
+    },
+    {
+      "formula": "axiom Tag(Tclass._module.Value()) == Tagclass._module.Value && TagFamily(Tclass._module.Value()) == tytagFamily$Value;",
+      "multiplicity": 1
+    }
+  ]
+}

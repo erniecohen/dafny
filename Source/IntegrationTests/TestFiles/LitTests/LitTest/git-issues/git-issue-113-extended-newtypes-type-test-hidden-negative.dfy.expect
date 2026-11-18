@@ -1,0 +1,2 @@
+git-issue-113-extended-newtypes-type-test-hidden-negative.dfy(12,16): Error: type test for type 'Positive' must be from an expression assignable to it (got 'Box<int>')
+1 resolution/type errors detected in git-issue-113-extended-newtypes-type-test-hidden-negative.dfy

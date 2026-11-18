@@ -1,0 +1,11 @@
+// Clause 5 rejects raw tests and conversions throughout a recursive group, but allows finished operands and code outside the cone.
+// RUN: %verify --member-invariants --recursive-modules "%S/Inputs/git-issue-466-clause5-positive.dfy" > "%t"
+// RUN: %exits-with 4 %verify --member-invariants --recursive-modules "%S/Inputs/git-issue-466-clause5-false.dfy" >> "%t"
+// RUN: %exits-with 2 %resolve --member-invariants --recursive-modules "%S/Inputs/git-issue-466-clause5-2-is.dfy" >> "%t"
+// RUN: %exits-with 2 %resolve --member-invariants --recursive-modules "%S/Inputs/git-issue-466-clause5-2-as.dfy" >> "%t"
+// RUN: %exits-with 2 %resolve --member-invariants --recursive-modules "%S/Inputs/git-issue-466-clause5-2-implicit.dfy" >> "%t"
+// RUN: %exits-with 2 %resolve --member-invariants --recursive-modules "%S/Inputs/git-issue-466-clause5-3-is.dfy" >> "%t"
+// RUN: %exits-with 2 %resolve --member-invariants --recursive-modules "%S/Inputs/git-issue-466-clause5-3-as.dfy" >> "%t"
+// RUN: %exits-with 2 %resolve --member-invariants --recursive-modules "%S/Inputs/git-issue-466-clause5-3-implicit.dfy" >> "%t"
+// RUN: %exits-with 2 %baredafny resolve --type-system-refresh:false --use-basename-for-filename --show-snippets:false --standard-libraries:false --member-invariants --recursive-modules "%S/Inputs/git-issue-466-clause5-positive.dfy" >> "%t"
+// RUN: %diff "%s.expect" "%t"

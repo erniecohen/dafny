@@ -1,0 +1,1 @@
+Keep required parentheses around lambdas in requires and ensures clauses and in the requires and reads clauses of lambdas during library serialization.

@@ -249,11 +249,26 @@ abstract module M2 refines M1 {
         ghost var extendedPath := Path.Extend(path, t);
         ExtendInitialPath(root, path, t, child, S);
         path := extendedPath;
+        label BeforePush:
         ...;
         // Keep the witness tied to the child across the pointer reversal.
         assert t == child;
         assert old(allocated(path)) && old(ReachableVia(root, path, t, S));
         t.pathFromRoot := path;
+        // The newly marked node uses the extended path; every other marked
+        // node retains its witness from before the pointer reversal.
+        forall n | n in S && n.marked
+          ensures var pth := n.pathFromRoot;
+                    old(allocated(pth)) && old(ReachableVia(root, pth, n, S))
+        {
+          if n == t {
+            assert n.pathFromRoot == path;
+            assert old(ReachableVia(root, path, t, S));
+          } else {
+            assert old@BeforePush(n.marked);
+            assert n.pathFromRoot == old@BeforePush(n.pathFromRoot);
+          }
+        }
       }
     }
     // In M0 above, we placed two assume statements here.  In M1, we refined the first of these

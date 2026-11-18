@@ -137,10 +137,18 @@ axiom (forall n: int ::
   char#IsChar(n) ==> char#ToInt(char#FromInt(n)) == n);
 
 function char#ToInt(char): int;
+#if LEGACY_UNGUARDED_CHAR
 axiom (forall ch: char ::
   { char#ToInt(ch) }
   char#FromInt(char#ToInt(ch)) == ch &&
   char#IsChar(char#ToInt(ch)));
+#else
+axiom (forall ch: char ::
+  { char#ToInt(ch) }
+  $Is(ch,TChar) ==>
+    char#FromInt(char#ToInt(ch)) == ch &&
+    char#IsChar(char#ToInt(ch)));
+#endif
 
 function char#Plus(char, char): char;
 axiom (forall a: char, b: char ::
@@ -260,7 +268,15 @@ function $Is<T>(T,Ty): bool;           // no heap for now
 axiom(forall v : int  :: { $Is(v,TInt) }  $Is(v,TInt));
 axiom(forall v : real :: { $Is(v,TReal) } $Is(v,TReal));
 axiom(forall v : bool :: { $Is(v,TBool) } $Is(v,TBool));
+#if LEGACY_UNGUARDED_CHAR
 axiom(forall v : char :: { $Is(v,TChar) } $Is(v,TChar));
+#else
+axiom (forall ch: char ::
+  { $Is(ch,TChar) }
+  $Is(ch,TChar) <==>
+    char#IsChar(char#ToInt(ch)) &&
+    char#FromInt(char#ToInt(ch)) == ch);
+#endif
 axiom(forall v : Field :: { $Is(v,TField) } $Is(v,TField));
 axiom(forall v : ORDINAL :: { $Is(v,TORDINAL) } $Is(v,TORDINAL));
 

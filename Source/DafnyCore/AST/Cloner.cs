@@ -83,6 +83,7 @@ namespace Microsoft.Dafny {
         parentObligations = parentObligations.AddRange(iterator.Traits);
       }
       clone.CardinalityParentObligations = parentObligations.Select(CloneType).ToImmutableArray();
+      clone.ParentTraitsFromRefinementBase = d.ParentTraitsFromRefinementBase;
       // A generic clone may create a distinct refinement specialization. Only
       // a pure view cloner is allowed to identify it with the source declaration.
       operatorClones?.Register(d, clone);
@@ -111,16 +112,23 @@ namespace Microsoft.Dafny {
           newParent, CloneType(dd.Rhs), CloneAttributes(dd.Attributes));
       } else if (d is NewtypeDecl) {
         var dd = (NewtypeDecl)d;
-        if (dd.Var == null) {
+        // Issue 105: the clone has the clauses of the header as written; resolving it moves them again
+        if (dd.WrittenVar == null) {
           return new NewtypeDecl(Origin(dd.Origin), dd.NameNode.Clone(this), dd.TypeArgs.ConvertAll(CloneTypeParam), newParent,
-            CloneType(dd.BaseType), dd.WitnessKind, CloneExpr(dd.Witness),
+            CloneType(dd.BaseType), dd.WrittenWitnessKind, CloneExpr(dd.WrittenWitness),
             dd.Traits.ConvertAll(CloneType),
-            dd.Members.ConvertAll(d => CloneMember(d, false)), CloneAttributes(dd.Attributes), dd.IsRefining);
+            dd.Members.ConvertAll(d => CloneMember(d, false)), CloneAttributes(dd.Attributes), dd.IsRefining) {
+            UseBaseReferenceCharacteristics = CloneResolvedFields && dd.UseBaseReferenceCharacteristics,
+            InheritsBaseDefault = CloneResolvedFields && dd.InheritsBaseDefault
+          };
         } else {
           return new NewtypeDecl(Origin(dd.Origin), dd.NameNode.Clone(this), dd.TypeArgs.ConvertAll(CloneTypeParam), newParent,
-            CloneBoundVar(dd.Var, false), CloneExpr(dd.Constraint), dd.WitnessKind, CloneExpr(dd.Witness),
+            CloneBoundVar(dd.WrittenVar, false), CloneExpr(dd.WrittenConstraint), dd.WrittenWitnessKind, CloneExpr(dd.WrittenWitness),
             dd.Traits.ConvertAll(CloneType),
-            dd.Members.ConvertAll(d => CloneMember(d, false)), CloneAttributes(dd.Attributes), dd.IsRefining);
+            dd.Members.ConvertAll(d => CloneMember(d, false)), CloneAttributes(dd.Attributes), dd.IsRefining) {
+            UseBaseReferenceCharacteristics = CloneResolvedFields && dd.UseBaseReferenceCharacteristics,
+            InheritsBaseDefault = CloneResolvedFields && dd.InheritsBaseDefault
+          };
         }
       } else if (d is TupleTypeDecl) {
         // Tuple type declarations only exist in the system module. Therefore, they are never cloned.
@@ -210,7 +218,7 @@ namespace Microsoft.Dafny {
       }
 
       return new TypeParameterCharacteristics(eqSupport, characteristics.AutoInit,
-        characteristics.ContainsNoReferenceTypes);
+        characteristics.ContainsNoReferenceTypes, characteristics.ContainsNoReadingFunctions);
     }
 
     public DatatypeCtor CloneCtor(DatatypeCtor ct) {
@@ -218,10 +226,29 @@ namespace Microsoft.Dafny {
         ct.Formals.ConvertAll(bv => CloneFormal(bv, false)), CloneAttributes(ct.Attributes));
     }
 
-    public TypeParameter CloneTypeParam(TypeParameter tp) {
+    /// <summary>
+    /// The name of the copy of a parameter, local variable or bound variable. A cloner that renames
+    /// binders (the refinement cloner, under --refinement-renaming) overrides this.
+    /// </summary>
+    public virtual Name CloneBinderName(NonglobalVariable variable) {
+      return new Name(this, variable.NameNode);
+    }
+
+    /// <summary>
+    /// The name of the copy of a type parameter. See CloneBinderName.
+    /// </summary>
+    public virtual Name CloneTypeParamName(TypeParameter tp) {
+      return tp.NameNode.Clone(this);
+    }
+
+    public virtual TypeParameter CloneTypeParam(TypeParameter tp) {
       var result = (TypeParameter)typeParameterClones.GetOrCreate(tp,
-        () => new TypeParameter(Origin(tp.Origin), tp.NameNode.Clone(this), tp.VarianceSyntax,
-          CloneTPChar(tp.Characteristics), tp.TypeBounds.ConvertAll(CloneType), tp.Attributes));
+        () => new TypeParameter(Origin(tp.Origin), CloneTypeParamName(tp), tp.VarianceSyntax,
+          CloneTPChar(tp.Characteristics), tp.TypeBounds.ConvertAll(CloneType), tp.Attributes) {
+          // A clone that drops bodies (the signature of an abstract import, or of an export set) keeps
+          // what they stored (https://github.com/erniecohen/dafny/issues/481).
+          StoredInMemoryReason = tp.StoredInMemoryReason
+        });
       operatorClones?.Register(tp, result);
       return result;
     }
@@ -247,8 +274,10 @@ namespace Microsoft.Dafny {
         }
       });
       result.TerminationContract = member.TerminationContract;
+      result.DeclaredUnderInheritedTraitAxioms = member.DeclaredUnderInheritedTraitAxioms;
       if (!isReference && !ReferenceEquals(member, result)) {
         operatorClones?.Register(member, result);
+        OpaqueMemberRewriter.RecordCopy(member, result);
       }
       return result;
     }
@@ -483,7 +512,7 @@ namespace Microsoft.Dafny {
         c.Body.ConvertAll(stmt => CloneStmt(stmt, false)), CloneAttributes(c.Attributes));
     }
 
-    public ExtendedPattern CloneExtendedPattern(ExtendedPattern pat) {
+    public virtual ExtendedPattern CloneExtendedPattern(ExtendedPattern pat) {
       switch (pat) {
         case LitPattern p:
           return new LitPattern(p.Origin, CloneExpr(p.OrigLit));
@@ -524,6 +553,7 @@ namespace Microsoft.Dafny {
     public virtual Field CloneField(Field f) {
       Contract.Requires(f != null);
       return f switch {
+        MemberWitness w => new MemberWitness(this, w),
         ConstantField c => new ConstantField(this, c),
         // We don't expect a SpecialField to ever be cloned. However, it can happen for malformed programs, for example if
         // an iterator in a refined module is replaced by a class in the refining module.
@@ -548,34 +578,37 @@ namespace Microsoft.Dafny {
       }
 
       var newNameNode = new Name(Origin(f.NameNode.Origin), newName);
+      var signatureEllipsis = f.SignatureEllipsis == null ? null : Origin(f.SignatureEllipsis);
 
-      if (f is Predicate) {
+      if (f is MemberInvariant) {
+        return new MemberInvariant(Origin(f.Origin), Origin(f.NameNode.Origin), newName, body, CloneAttributes(f.Attributes));
+      } else if (f is Predicate) {
         return new Predicate(Origin(f.Origin), newNameNode, f.HasStaticKeyword, f.IsGhost, f.IsOpaque, tps, formals,
           result,
           req, reads, ens, decreases, body, Predicate.BodyOriginKind.OriginalOrInherited,
           f.ByMethodTok == null ? null : Origin(f.ByMethodTok), byMethodBody,
-          CloneAttributes(f.Attributes), null);
+          CloneAttributes(f.Attributes), signatureEllipsis);
       } else if (f is LeastPredicate) {
         return new LeastPredicate(Origin(f.Origin), newNameNode, f.HasStaticKeyword, f.IsOpaque,
           ((LeastPredicate)f).TypeOfK, tps, formals, result,
-          req, reads, ens, body, CloneAttributes(f.Attributes), null);
+          req, reads, ens, body, CloneAttributes(f.Attributes), signatureEllipsis);
       } else if (f is GreatestPredicate greatestPredicate) {
         return new GreatestPredicate(Origin(f.Origin), newNameNode, f.HasStaticKeyword, f.IsOpaque,
           ((GreatestPredicate)f).TypeOfK, tps, formals, result,
-          req, reads, ens, body, CloneAttributes(f.Attributes), null);
+          req, reads, ens, body, CloneAttributes(f.Attributes), signatureEllipsis);
       } else if (f is TwoStatePredicate) {
         return new TwoStatePredicate(Origin(f.Origin), newNameNode, f.HasStaticKeyword, f.IsOpaque, tps, formals,
           result,
-          req, reads, ens, decreases, body, CloneAttributes(f.Attributes), null);
+          req, reads, ens, decreases, body, CloneAttributes(f.Attributes), signatureEllipsis);
       } else if (f is TwoStateFunction) {
         return new TwoStateFunction(Origin(f.Origin), newNameNode, f.HasStaticKeyword, f.IsOpaque, tps, formals,
           result, CloneType(f.ResultType),
-          req, reads, ens, decreases, body, CloneAttributes(f.Attributes), null);
+          req, reads, ens, decreases, body, CloneAttributes(f.Attributes), signatureEllipsis);
       } else {
         return new Function(Origin(f.Origin), newNameNode, f.HasStaticKeyword, f.IsGhost, f.IsOpaque, tps, formals,
           result, CloneType(f.ResultType),
           req, reads, ens, decreases, body, f.ByMethodTok == null ? null : Origin(f.ByMethodTok), byMethodBody,
-          CloneAttributes(f.Attributes), null);
+          CloneAttributes(f.Attributes), signatureEllipsis);
       }
     }
 

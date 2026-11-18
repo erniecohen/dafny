@@ -36,6 +36,10 @@ public class NewtypeDecl : TopLevelDeclWithMembers, RevealableTypeDecl, Redirect
     }
   }
 
+  // Marks extended operations and equality behavior; reference freedom is checked for every newtype.
+  [FilledInDuringResolution] public bool UseBaseReferenceCharacteristics;
+  [FilledInDuringResolution] public bool InheritsBaseDefault;
+
   [FilledInDuringResolution] public bool TargetTypeCoversAllBitPatterns; // "target complete" -- indicates that any bit pattern that can fill the target type is a value of the newtype
 
   public NewtypeDecl(IOrigin origin, Name nameNode, List<TypeParameter> typeParameters, ModuleDefinition enclosingModule,
@@ -73,6 +77,41 @@ public class NewtypeDecl : TopLevelDeclWithMembers, RevealableTypeDecl, Redirect
   }
 
   public override bool IsRefining { get; }
+
+  /// <summary>
+  /// Issue 105: the clauses of a newtype header in the old syntax, "newtype N = x: B | P(x) witness w", where the
+  /// newtype has member invariants, declared or inherited, under --member-invariants. They are sugar for the member
+  /// form (section 3.5 of the plan): the constraint is a conjunct of the invariants, and the witness clause gives the
+  /// witness of the type with its invariants, its default included. Its InvariantTypeDecl takes them over when it is
+  /// made (see TakeHeaderClauses), and the newtype itself, "raw N", is then the base type with no constraint.
+  /// </summary>
+  public record HeaderClauses(BoundVar Var, Expression Constraint, SubsetTypeDecl.WKind WitnessKind, Expression Witness);
+
+  /// <summary>
+  /// The clauses that the InvariantTypeDecl took over, or null. Kept as written, for the printer, the cloner and
+  /// refinement, which use WrittenVar, WrittenConstraint, WrittenWitnessKind and WrittenWitness.
+  /// </summary>
+  public HeaderClauses MovedHeaderClauses { get; private set; }
+
+  public BoundVar WrittenVar => MovedHeaderClauses != null ? MovedHeaderClauses.Var : Var;
+  public Expression WrittenConstraint => MovedHeaderClauses != null ? MovedHeaderClauses.Constraint : Constraint;
+  public SubsetTypeDecl.WKind WrittenWitnessKind => MovedHeaderClauses?.WitnessKind ?? WitnessKind;
+  public Expression WrittenWitness => MovedHeaderClauses != null ? MovedHeaderClauses.Witness : Witness;
+
+  /// <summary>
+  /// Issue 105: give up the constraint and witness clauses of the header, if it has any, to the InvariantTypeDecl
+  /// being made for this newtype, before either is resolved, and return them (or null).
+  /// </summary>
+  public HeaderClauses TakeHeaderClauses() {
+    if (MovedHeaderClauses == null && (Var != null || WitnessKind != SubsetTypeDecl.WKind.CompiledZero)) {
+      MovedHeaderClauses = new HeaderClauses(Var, Constraint, WitnessKind, Witness);
+      Var = null;
+      Constraint = null;
+      WitnessKind = SubsetTypeDecl.WKind.CompiledZero;
+      Witness = null;
+    }
+    return MovedHeaderClauses;
+  }
 
   public Type ConcreteBaseType(List<Type> typeArguments) {
     Contract.Requires(TypeArgs.Count == typeArguments.Count);

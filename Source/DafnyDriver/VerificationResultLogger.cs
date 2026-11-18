@@ -39,6 +39,10 @@ namespace Microsoft.Dafny {
     private readonly DafnyOptions options;
 
     public static TestProperty ResourceCountProperty = TestProperty.Register("TestResult.ResourceCount", "TestResult.ResourceCount", typeof(int), typeof(TestResult));
+    public static TestProperty TimingReplayedProperty => ReplayTimingProperty.Value;
+    private static class ReplayTimingProperty {
+      internal static readonly TestProperty Value = TestProperty.Register("TestResult.TimingReplayed", "TestResult.TimingReplayed", typeof(bool), typeof(TestResult));
+    }
     public static TestProperty RandomSeedProperty = TestProperty.Register("TestResult.RandomSeed", "TestResult.RandomSeed", typeof(int), typeof(TestResult));
 
     private readonly IList<IVerificationResultFormatLogger> formatLoggers = new List<IVerificationResultFormatLogger>();
@@ -57,7 +61,7 @@ namespace Microsoft.Dafny {
           var logger = new TrxLogger();
           logger.Initialize(events, parameters!);
         } else if (loggerName == "csv") {
-          var csvLogger = new CSVTestLogger(options.OutputWriter);
+          var csvLogger = new CSVTestLogger(options.OutputWriter, !string.IsNullOrEmpty(options.Get(CommonOptionBag.VerificationCache)));
           csvLogger.Initialize(events, parameters);
         } else if (loggerName == "json") {
           // This logger doesn't implement the ITestLogger interface because
@@ -145,6 +149,9 @@ namespace Microsoft.Dafny {
           StartTime = vcResult.StartTime,
           Duration = vcResult.RunTime
         };
+        if (task is Caching.IReplayedVerificationTask { IsReplayed: true }) {
+          testResult.SetPropertyValue(TimingReplayedProperty, true);
+        }
         testResult.SetPropertyValue(ResourceCountProperty, vcResult.ResourceCount);
         if (task != null && task.Split.RandomSeed != 0) {
           testResult.SetPropertyValue(RandomSeedProperty, task.Split.RandomSeed);

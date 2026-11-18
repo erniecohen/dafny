@@ -31,10 +31,10 @@ class CollectFriendlyCallsInSpecVisitor : FindFriendlyCallsVisitor {
       }
       return false;  // don't explore subexpressions any further
     } else if (expr is BinaryExpr bin && IsCoContext) {
-      if (cp == CallingPosition.Positive && bin.ResolvedOp == BinaryExpr.ResolvedOpcode.EqCommon && bin.E0.Type.IsCoDatatype) {
+      if (cp == CallingPosition.Positive && bin.ResolvedOp == BinaryExpr.ResolvedOpcode.EqCommon && NewtypeOperationView.IsCoDatatype(bin.E0.Type, reporter.Options.Get(CommonOptionBag.ExtendedNewtypeBases))) {
         friendlyCalls.Add(bin);
         return false;  // don't explore subexpressions any further
-      } else if (cp == CallingPosition.Negative && bin.ResolvedOp == BinaryExpr.ResolvedOpcode.NeqCommon && bin.E0.Type.IsCoDatatype) {
+      } else if (cp == CallingPosition.Negative && bin.ResolvedOp == BinaryExpr.ResolvedOpcode.NeqCommon && NewtypeOperationView.IsCoDatatype(bin.E0.Type, reporter.Options.Get(CommonOptionBag.ExtendedNewtypeBases))) {
         friendlyCalls.Add(bin);
         return false;  // don't explore subexpressions any further
       }

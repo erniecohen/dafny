@@ -11,7 +11,7 @@ git-issue-264-mixed.dfy(8,9): Error: method's (possibly automatically generated)
 
 Dafny program verifier finished with 0 verified, 1 error
 m2, default
-git-issue-264-m2.dfy(20,9): Error: decreases clause might not decrease (--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
+git-issue-264-m2.dfy(20,9): Error: decreases clause might not decrease (modular termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
 
 Dafny program verifier finished with 2 verified, 1 error
 positive, default
@@ -22,7 +22,8 @@ git-issue-264-negative.dfy(2,2): Error: assertion might not hold
 git-issue-264-negative.dfy(5,2): Error: assertion might not hold
 git-issue-264-negative.dfy(8,2): Error: assertion might not hold
 git-issue-264-negative.dfy(11,2): Error: assertion might not hold
-git-issue-264-negative.dfy(16,19): Error: decreases clause might not decrease
+git-issue-264-negative.dfy(16,19): Error: decreases expression must be bounded below by 0
+git-issue-264-negative.dfy(15,12): Related location: this decreases clause was not satisfied
 git-issue-264-negative.dfy(19,2): Error: assertion might not hold
 git-issue-264-negative.dfy(22,34): Error: assertion might not hold
 git-issue-264-negative.dfy(25,37): Error: assertion might not hold
@@ -31,7 +32,7 @@ git-issue-264-negative.dfy(33,37): Error: assertion might not hold
 
 Dafny program verifier finished with 0 verified, 10 errors
 callback, default
-git-issue-264-callback.dfy(10,7): Error: decreases clause might not decrease (--modular-termination: the 'decreases {:callback}' bound of 'g' must not exceed that of the parameter it is passed for)
+git-issue-264-callback.dfy(10,7): Error: decreases clause might not decrease (modular termination: the 'decreases {:callback}' bound of 'g' must not exceed that of the parameter it is passed for)
 
 Dafny program verifier finished with 2 verified, 1 error
 laws, default

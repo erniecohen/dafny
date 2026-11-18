@@ -81,12 +81,12 @@ dafny0/ExternNegative.dfy	2		11,16
 dafny0/ExternNegative2.dfy	2		24
 dafny0/ExtremeReads.dfy	4	10 verified, 17 errors	47,50,69,83,105,127,130,149,168,171,181
 dafny0/ForLoops-Resolution.dfy	2		6,11,32,38,78,86,95,133,138,143,148,153,158,167,243,256,297,299,321,332,353,355,390,412,434,446,457,479,490,503,510,517
-dafny0/ForLoops.dfy	4	23 verified, 25 errors	19,24,116,150,155,204,218,225,230,238,241,272,275,287,290,298,306,311,344,362,372,415,432,441,457
+dafny0/ForLoops.dfy	4	23 verified, 25 errors	19,24,116,150,155,204,218,225,230,238,241,272,275,287,290,298,306,311,344,362,372,415,434,443,457
 dafny0/ForallCompilationNewSyntax.dfy	0	14 verified, 0 errors	
 dafny0/ForallStmtResolveErrors.dfy	2		8,25,26,36,48,55,62,63,64,73,74,85,86,105,129,130,131,132,133,134,143,149,154,162,174,176,178,190,251,253,267,269,283,285
 dafny0/ForbidNondeterminism.dfy	4	0 verified, 4 errors	9,14,15,23
 dafny0/Fuel.dfy	4	31 verified, 39 errors	17,66,71,92,93,94,120,121,122,129,132,133,157,200,245,247,280,335,336,397,398,399,407,435,436,437
-dafny0/FunctionSpecifications.dfy	4	11 verified, 11 errors	35,61,71,117,120,135,139,148,155,162,167
+dafny0/FunctionSpecifications.dfy	4	10 verified, 11 errors, 1 out of resource; 2 out of resource	35,49,61,71,117,120,135,139,148,155,162,167
 dafny0/GeneralNewtypeCollections.dfy	0	44 verified, 0 errors	
 dafny0/GeneralNewtypeCollectionsGeneric.dfy	0	44 verified, 0 errors	
 dafny0/GeneralNewtypeExtends.dfy	2		33,34,35,68,81
@@ -228,7 +228,7 @@ dafny0/Strings.dfy	2		84,88,92,114,115,122,131,134,140
 dafny0/SubsetTypes.dfy	4	13 verified, 91 errors	7,8,10,11,15,16,19,21,23,31,42,44,49,51,56,63,64,66,67,71,72,75,77,79,87,98,100,101,106,108,113,123,125,135,136,141,143,144,157,159,169,182,199,204,213,216,232,241,270,271,272,273,278,279,284,285,286,287,288,318,323,330,337,342,343,347,348,352,360,365,377,379,381,383,385,390,392,394,396,398,401,411,413,429,436,445,452,459,464
 dafny0/SubsetTypesERR.dfy	2		11,13,15,17,23,25,27,29,37,39,42,44,46,57,59,63,65
 dafny0/TailCalls.dfy	2		21,38,43,110,126,139,171,174,178,181,188,195,229,261,288,310,316,323,338,369,380,416,425,437,449,451,462
-dafny0/Termination.dfy	4	106 verified, 26 errors	108,125,255,296,361,441,534,542,549,556,563,571,577,579,589,674,714,722,730,806,1128,1130,1143,1145,1182,1198
+dafny0/Termination.dfy	4	106 verified, 27 errors	108,125,126,255,296,361,441,534,542,549,556,563,571,577,579,589,674,714,722,730,806,1128,1130,1143,1145,1182,1198
 dafny0/TriggerInPredicate.dfy	0	0 verified, 0 errors	
 dafny0/Tuples.dfy	4	0 verified, 2 errors	22,24
 dafny0/Twostate-Functions.dfy	4	18 verified, 13 errors	11,18,23,66,68,92,97,129,147,164,167,183,186
@@ -271,10 +271,10 @@ dafny1/ListCopy.dfy	0	2 verified, 0 errors
 dafny1/ListReverse.dfy	0	2 verified, 0 errors	
 dafny1/MatrixFun.dfy	0	6 verified, 0 errors	
 dafny1/MoreInduction.dfy	4	26 verified, 4 errors	78,83,88,93
-dafny1/PriorityQueue.dfy	0	109 verified, 0 errors	
+dafny1/PriorityQueue.dfy	0	110 verified, 0 errors	
 dafny1/Queue.dfy	0	18 verified, 0 errors	
 dafny1/SchorrWaite-stages.dfy	4	8 verified, 0 errors, 1 out of resource; 2 out of resource	36
-dafny1/SchorrWaite.dfy	0	269 verified, 0 errors	
+dafny1/SchorrWaite.dfy	0	299 verified, 0 errors	
 dafny1/SeparationLogicList.dfy	0	13 verified, 0 errors	
 dafny1/Substitution.dfy	0	9 verified, 0 errors	
 dafny1/SumOfCubes.dfy	0	17 verified, 0 errors	
@@ -293,12 +293,12 @@ dafny2/Calculations.dfy	0	20 verified, 0 errors
 dafny2/Classics.dfy	0	4 verified, 0 errors	
 dafny2/Intervals.dfy	0	5 verified, 0 errors	
 dafny2/MajorityVote.dfy	0	16 verified, 0 errors	
-dafny2/MinWindowMax.dfy	0	222 verified, 0 errors	
+dafny2/MinWindowMax.dfy	0	238 verified, 0 errors	
 dafny2/MonotonicHeapstate.dfy	0	17 verified, 0 errors	
 dafny2/SegmentSum.dfy	0	3 verified, 0 errors	
-dafny2/SmallestMissingNumber-functional.dfy	4	51 verified, 0 errors, 7 out of resource; 8 out of resource	157,230,277,278,279,297
+dafny2/SmallestMissingNumber-functional.dfy	4	53 verified, 0 errors, 7 out of resource; 8 out of resource	157,230,277,278,279,297
 dafny2/SmallestMissingNumber-imperative.dfy	0	8 verified, 0 errors	
-dafny2/SnapshotableTrees.dfy	4	108 verified, 1 error, 4 out of resource; 5 out of resource	72,363,383,426,451
+dafny2/SnapshotableTrees.dfy	4	108 verified, 1 error, 5 out of resource; 6 out of resource	72,363,383,426,451,598
 dafny2/StoreAndRetrieve.dfy	0	16 verified, 0 errors	
 dafny2/TreeBarrier.dfy	0	7 verified, 0 errors	
 dafny2/TreeFill.dfy	0	3 verified, 0 errors	
@@ -400,7 +400,7 @@ dafny4/Bug99.dfy	0	1 verified, 0 errors
 dafny4/Circ.dfy	4	2 verified, 1 error	18
 dafny4/ClassRefinement.dfy	0	11 verified, 0 errors	
 dafny4/CoqArt-InsertionSort.dfy	0	21 verified, 0 errors	
-dafny4/ExpandedGuardednessNeg.dfy	4	0 verified, 2 errors	8,13
+dafny4/ExpandedGuardednessNeg.dfy	4	0 verified, 4 errors	8,13
 dafny4/FlyingRobots.dfy	0	31 verified, 0 errors	
 dafny4/Fstar-QuickSort.dfy	0	6 verified, 0 errors	
 dafny4/GHC-MergeSort.dfy	0	55 verified, 0 errors	
@@ -533,6 +533,34 @@ git-issues/git-issue-1005.dfy	2		11,12,13,18,19,20,24,26,27,31,32,33,34,44,45,46
 git-issues/git-issue-1016.dfy	2		66,82,101,117,129
 git-issues/git-issue-1016a.dfy	2		34
 git-issues/git-issue-1029.dfy	0	3 verified, 0 errors	
+git-issues/git-issue-105-abstract-synonym.dfy	4	2 verified, 2 errors	25,26
+git-issues/git-issue-105-abstract-types.dfy	4	16 verified, 11 errors	18,25,53,56,79,108,119,120,121,146,169
+git-issues/git-issue-105-auto-reveal.dfy	4	25 verified, 4 errors	24,27,97,109
+git-issues/git-issue-105-class-compile.dfy	0	11 verified, 0 errors	
+git-issues/git-issue-105-classes.dfy	4	31 verified, 19 errors	38,52,60,69,138,141,144,163,166,169,176,197,200,203,206,209,212,216,219
+git-issues/git-issue-105-compile.dfy	0	7 verified, 0 errors	
+git-issues/git-issue-105-datatypes.dfy	4	14 verified, 9 errors	28,31,72,79,80,81,92,113
+git-issues/git-issue-105-emptiness.dfy	4	5 verified, 15 errors	33,37,44,45,48,56,59,64,65,68,70,76,79,85,93
+git-issues/git-issue-105-exports.dfy	4	11 verified, 1 error	109
+git-issues/git-issue-105-false-proofs.dfy	4	17 verified, 34 errors	19,20,22,23,25,26,28,30,37,38,45,54,55,61,62,71,72,74,75,84,85,91,96,99,103,104,107,120,122,124,126,139,143
+git-issues/git-issue-105-general-traits.dfy	4	14 verified, 11 errors	22,36,39,77,103,115,126,147,153
+git-issues/git-issue-105-generics.dfy	4	23 verified, 11 errors	20,25,32,36,74,77,80,87,95,115,151
+git-issues/git-issue-105-newtype-compile.dfy	0	9 verified, 0 errors	
+git-issues/git-issue-105-newtype-generics.dfy	4	21 verified, 17 errors	15,16,19,21,27,28,35,43,44,46,50,51,59,61,71,72,73
+git-issues/git-issue-105-newtype-trait-cast.dfy	4	2 verified, 1 error	27
+git-issues/git-issue-105-newtype-witness-checks.dfy	4	23 verified, 16 errors	12,14,19,21,23,29,32,40,45,52,54,62,63,64,70,78
+git-issues/git-issue-105-newtypes.dfy	4	34 verified, 20 errors	29,32,38,42,54,70,71,73,83,90,109,115,130,150,153
+git-issues/git-issue-105-opacity.dfy	0	1 verified, 0 errors	
+git-issues/git-issue-105-opaque.dfy	4	19 verified, 8 errors	18,26,35,54,57,73,89,96
+git-issues/git-issue-105-raw-compile.dfy	0	3 verified, 0 errors	
+git-issues/git-issue-105-refinement-verify.dfy	4	20 verified, 9 errors	19,22,41,50,81,92,112,114,132
+git-issues/git-issue-105-statements.dfy	4	7 verified, 4 errors	36,41,54,66
+git-issues/git-issue-105-trait-compile.dfy	0	8 verified, 0 errors	
+git-issues/git-issue-105-trait-gates.dfy	4	3 verified, 2 errors	27,42
+git-issues/git-issue-105-traits.dfy	4	21 verified, 22 errors	25,30,55,58,64,89,122,151,154,157,194,198
+git-issues/git-issue-105-vacuity.dfy	0	5 verified, 0 errors	
+git-issues/git-issue-105-verify.dfy	4	5 verified, 4 errors	13,20,26,34
+git-issues/git-issue-105-wellformedness.dfy	4	12 verified, 2 errors	52,57
 git-issues/git-issue-1074.dfy	0	3 verified, 0 errors	
 git-issues/git-issue-1093.dfy	0	2 verified, 0 errors	
 git-issues/git-issue-1094.dfy	0	12 verified, 0 errors	
@@ -543,6 +571,140 @@ git-issues/git-issue-1111.dfy	0	1 verified, 0 errors
 git-issues/git-issue-1112.dfy	4	5 verified, 22 errors	22,24,36,38,51,53,64,66,77,79,90,92,98,99,107,108
 git-issues/git-issue-1113.dfy	0	7 verified, 0 errors	
 git-issues/git-issue-1127.dfy	2		15,29
+git-issues/git-issue-113-dependency-newtype-finite-actual-positive-triggered.dfy	0	2 verified, 0 errors	
+git-issues/git-issue-113-dependency-newtype-general-arrow-characteristic-negative.dfy	2		8,9,10
+git-issues/git-issue-113-dependency-newtype-hidden-characteristic-negative.dfy	2		13
+git-issues/git-issue-113-dependency-newtype-mixed-subset-cycle-negative.dfy	2		6
+git-issues/git-issue-113-dependency-newtype-partial-total-positive.dfy	0	3 verified, 0 errors	
+git-issues/git-issue-113-dependency-newtype-partial-total-universal-proof-nonvacuity.dfy	4	1 verified, 3 errors	16,21,25
+git-issues/git-issue-113-dependency-newtype-partial-total-universal-proof.dfy	0	7 verified, 0 errors	
+git-issues/git-issue-113-dependency-newtype-reference-characteristic-negative.dfy	2		9,10,13
+git-issues/git-issue-113-dependency-provided-characteristic-positive.dfy	0	0 verified, 0 errors	
+git-issues/git-issue-113-dependency-provided-inhabited-false-negative.dfy	4	0 verified, 1 error	17
+git-issues/git-issue-113-dependency-provided-newtype-no-characteristic-negative.dfy	2		15,16
+git-issues/git-issue-113-dependency-provided-no-characteristic-negative.dfy	2		16,17,18,19,20,21
+git-issues/git-issue-113-dependency-revealed-control-positive.dfy	0	0 verified, 0 errors	
+git-issues/git-issue-113-existing-arrow-raw-arrow-subset-negative.dfy	4	1 verified, 1 error	9
+git-issues/git-issue-113-existing-arrow-raw-arrow-subset-nonvacuity-negative.dfy	4	1 verified, 1 error	11
+git-issues/git-issue-113-existing-arrow-raw-arrow-subset-positive.dfy	0	4 verified, 0 errors	
+git-issues/git-issue-113-existing-arrow-runtime-control.dfy	0	2 verified, 0 errors	
+git-issues/git-issue-113-existing-arrow-variance-control.dfy	4	2 verified, 4 errors	8,12,15,18
+git-issues/git-issue-113-existing-codata-suspension-destructor-refinement-negative-raw.dfy	4	1 verified, 1 error	8
+git-issues/git-issue-113-existing-codata-suspension-generic-carrier-change-negative-raw.dfy	4	0 verified, 1 error	7
+git-issues/git-issue-113-existing-codata-suspension-helper-boundary-valid-rejected-raw.dfy	4	0 verified, 1 error	8
+git-issues/git-issue-113-existing-codata-suspension-inhabited-final-false-raw.dfy	4	0 verified, 1 error	12
+git-issues/git-issue-113-existing-codata-suspension-let-refinement-negative-raw.dfy	4	1 verified, 1 error	8
+git-issues/git-issue-113-existing-codata-suspension-match-refinement-negative-raw.dfy	4	1 verified, 1 error	8
+git-issues/git-issue-113-existing-codata-suspension-productive-universal-raw.dfy	0	6 verified, 0 errors	
+git-issues/git-issue-113-existing-codata-suspension-strengthened-result-negative-raw.dfy	4	0 verified, 1 error	8
+git-issues/git-issue-113-existing-codata-suspension-unconditioned-predicate-negative-raw.dfy	4	0 verified, 1 error	9
+git-issues/git-issue-113-existing-codata-suspension-unguarded-negative-raw.dfy	4	0 verified, 1 error	7
+git-issues/git-issue-113-existing-codatatype-prefix-nequality-trigger-control.dfy	0	4 verified, 0 errors	
+git-issues/git-issue-113-existing-codatatype-subset-control.dfy	4	1 verified, 1 error	8
+git-issues/git-issue-113-existing-codatatype-subset-field-negative.dfy	4	1 verified, 1 error	7
+git-issues/git-issue-113-existing-codatatype-subset-nonvacuity-negative.dfy	4	0 verified, 2 errors	7,11
+git-issues/git-issue-113-existing-codatatype-subset-result-negative.dfy	4	1 verified, 1 error	8
+git-issues/git-issue-113-existing-datatype-base-trait-control.dfy	0	8 verified, 0 errors	
+git-issues/git-issue-113-existing-sequence-control.dfy	0	2 verified, 0 errors	
+git-issues/git-issue-113-existing-sequence-newtype-allocation-negative.dfy	4	2 verified, 1 error	20
+git-issues/git-issue-113-existing-sequence-newtype-allocation-preallocated.dfy	0	3 verified, 0 errors	
+git-issues/git-issue-113-existing-sequence-newtype-allocation-pure.dfy	0	3 verified, 0 errors	
+git-issues/git-issue-113-extended-newtypes-arrow-allocation-negative.dfy	4	3 verified, 13 errors	26,36,47,58,68,78,79,88,105,106,113,129,130
+git-issues/git-issue-113-extended-newtypes-arrow-allocation-positive.dfy	0	2 verified, 0 errors	
+git-issues/git-issue-113-extended-newtypes-arrow-base-cast-negative.dfy	4	0 verified, 11 errors	16,23,29,33,37,41,47
+git-issues/git-issue-113-extended-newtypes-arrow-base-cast-positive.dfy	0	1 verified, 0 errors	
+git-issues/git-issue-113-extended-newtypes-arrow-intermediate-negative.dfy	4	1 verified, 3 errors	9,12,17
+git-issues/git-issue-113-extended-newtypes-arrow-intermediate-positive.dfy	0	3 verified, 0 errors	
+git-issues/git-issue-113-extended-newtypes-arrow-membership-false-control.dfy	4	0 verified, 1 error	10
+git-issues/git-issue-113-extended-newtypes-arrow-membership-negative.dfy	4	1 verified, 5 errors	10,13,16,19,22
+git-issues/git-issue-113-extended-newtypes-arrow-membership-positive.dfy	0	3 verified, 0 errors	
+git-issues/git-issue-113-extended-newtypes-arrow-nominal-arrow-subset-negative.dfy	4	1 verified, 1 error	9
+git-issues/git-issue-113-extended-newtypes-arrow-nominal-arrow-subset-nonvacuity-negative.dfy	4	1 verified, 1 error	11
+git-issues/git-issue-113-extended-newtypes-arrow-nominal-arrow-subset-positive.dfy	0	3 verified, 0 errors	
+git-issues/git-issue-113-extended-newtypes-arrow-positive.dfy	0	21 verified, 0 errors	
+git-issues/git-issue-113-extended-newtypes-arrow-proof-negative.dfy	4	1 verified, 8 errors	12,25,29,33,37,43,49,54
+git-issues/git-issue-113-extended-newtypes-arrow-resolver-negative.dfy	2		41,44,45
+git-issues/git-issue-113-extended-newtypes-arrow-runtime.dfy	0	2 verified, 0 errors	
+git-issues/git-issue-113-extended-newtypes-arrow-variance-control.dfy	4	6 verified, 4 errors	8,12,17,22
+git-issues/git-issue-113-extended-newtypes-codata-suspension-destructor-refinement-negative-nominal.dfy	4	1 verified, 1 error	7
+git-issues/git-issue-113-extended-newtypes-codata-suspension-generic-carrier-change-negative-nominal.dfy	4	0 verified, 1 error	7
+git-issues/git-issue-113-extended-newtypes-codata-suspension-helper-boundary-valid-rejected-nominal.dfy	4	1 verified, 1 error	8
+git-issues/git-issue-113-extended-newtypes-codata-suspension-inhabited-final-false-nominal.dfy	4	0 verified, 1 error	12
+git-issues/git-issue-113-extended-newtypes-codata-suspension-let-refinement-negative-nominal.dfy	4	1 verified, 1 error	7
+git-issues/git-issue-113-extended-newtypes-codata-suspension-match-refinement-negative-nominal.dfy	4	1 verified, 1 error	7
+git-issues/git-issue-113-extended-newtypes-codata-suspension-productive-universal-nominal.dfy	0	14 verified, 0 errors	
+git-issues/git-issue-113-extended-newtypes-codata-suspension-strengthened-result-negative-nominal.dfy	4	0 verified, 1 error	8
+git-issues/git-issue-113-extended-newtypes-codata-suspension-unconditioned-predicate-negative-nominal.dfy	4	0 verified, 1 error	9
+git-issues/git-issue-113-extended-newtypes-codata-suspension-unguarded-negative-nominal.dfy	4	0 verified, 1 error	7
+git-issues/git-issue-113-extended-newtypes-codatatype-constrained-result-negative.dfy	4	0 verified, 4 errors	8,14,19,23
+git-issues/git-issue-113-extended-newtypes-codatatype-cycle-negative.dfy	2		5
+git-issues/git-issue-113-extended-newtypes-codatatype-default-negative.dfy	4	0 verified, 1 error	5
+git-issues/git-issue-113-extended-newtypes-codatatype-field-constraint-negative.dfy	4	1 verified, 1 error	12
+git-issues/git-issue-113-extended-newtypes-codatatype-field-refinement-proof-negative.dfy	4	1 verified, 4 errors	11,14,17,25
+git-issues/git-issue-113-extended-newtypes-codatatype-hidden-negative.dfy	2		14,15,16,23,24,25
+git-issues/git-issue-113-extended-newtypes-codatatype-positive.dfy	0	21 verified, 0 errors	
+git-issues/git-issue-113-extended-newtypes-codatatype-proof-negative.dfy	4	1 verified, 7 errors	8,12,16,23,29,35,41
+git-issues/git-issue-113-extended-newtypes-codatatype-resolver-negative.dfy	2		9,10,18,19
+git-issues/git-issue-113-extended-newtypes-codatatype-runtime.dfy	0	5 verified, 0 errors	
+git-issues/git-issue-113-extended-newtypes-datatype-base-cast-negative.dfy	4	2 verified, 11 errors	25,29,35,39,43,47,51,55,61,67,77
+git-issues/git-issue-113-extended-newtypes-datatype-base-cast-positive.dfy	0	3 verified, 0 errors	
+git-issues/git-issue-113-extended-newtypes-datatype-base-trait-nominality-negative.dfy	2		13,15
+git-issues/git-issue-113-extended-newtypes-datatype-base-trait-positive.dfy	0	8 verified, 0 errors	
+git-issues/git-issue-113-extended-newtypes-datatype-cycle.dfy	2		5,7
+git-issues/git-issue-113-extended-newtypes-datatype-descriptor-runtime.dfy	0	2 verified, 0 errors	
+git-issues/git-issue-113-extended-newtypes-datatype-generic-witness-runtime.dfy	0	3 verified, 0 errors	
+git-issues/git-issue-113-extended-newtypes-datatype-partial-equality.dfy	0	3 verified, 0 errors	
+git-issues/git-issue-113-extended-newtypes-datatype-phantom-positive.dfy	0	4 verified, 0 errors	
+git-issues/git-issue-113-extended-newtypes-datatype-positive.dfy	0	18 verified, 0 errors	
+git-issues/git-issue-113-extended-newtypes-datatype-proof-negative.dfy	4	2 verified, 6 errors	11,15,19,23,29,35
+git-issues/git-issue-113-extended-newtypes-datatype-resolver-cycle-negative.dfy	2		4
+git-issues/git-issue-113-extended-newtypes-datatype-resolver-negative.dfy	2		9,13,14,15
+git-issues/git-issue-113-extended-newtypes-datatype-runtime.dfy	0	12 verified, 0 errors	
+git-issues/git-issue-113-extended-newtypes-datatype-trait-negative.dfy	2		18
+git-issues/git-issue-113-extended-newtypes-datatype-type-test-resolver-negative.dfy	2		23
+git-issues/git-issue-113-extended-newtypes-datatype-type-test-runtime.dfy	0	3 verified, 0 errors	
+git-issues/git-issue-113-extended-newtypes-direct-reference-resolver-negative.dfy	2		8,13
+git-issues/git-issue-113-extended-newtypes-finite-actual-characteristic-nested-argument-positive-proof.dfy	0	5 verified, 0 errors	
+git-issues/git-issue-113-extended-newtypes-finite-actual-characteristic-positive-proof.dfy	0	5 verified, 0 errors	
+git-issues/git-issue-113-extended-newtypes-finite-actual-characteristic-proof-nonvacuity.dfy	4	2 verified, 1 error	16
+git-issues/git-issue-113-extended-newtypes-finite-codatatype-actual-positive.dfy	0	3 verified, 0 errors	
+git-issues/git-issue-113-extended-newtypes-generic-companion-runtime.dfy	0	3 verified, 0 errors	
+git-issues/git-issue-113-extended-newtypes-generic-conversion-runtime.dfy	0	7 verified, 0 errors	
+git-issues/git-issue-113-extended-newtypes-hidden-base-cast.dfy	2		13
+git-issues/git-issue-113-extended-newtypes-hidden-base-introduction.dfy	2		13
+git-issues/git-issue-113-extended-newtypes-hidden-base-member.dfy	2		13
+git-issues/git-issue-113-extended-newtypes-hidden-base-order.dfy	2		13
+git-issues/git-issue-113-extended-newtypes-hidden-base-plus.dfy	2		13
+git-issues/git-issue-113-extended-newtypes-hidden-base-typearguments.dfy	2		13
+git-issues/git-issue-113-extended-newtypes-hidden-cast.dfy	2		12
+git-issues/git-issue-113-extended-newtypes-hidden-member.dfy	2		12
+git-issues/git-issue-113-extended-newtypes-hidden-ordinal.dfy	2		21,22,36,37
+git-issues/git-issue-113-extended-newtypes-hidden-positive.dfy	0	10 verified, 0 errors	
+git-issues/git-issue-113-extended-newtypes-inhabited-false.dfy	4	1 verified, 1 error	9
+git-issues/git-issue-113-extended-newtypes-native-runtime.dfy	0	2 verified, 0 errors	
+git-issues/git-issue-113-extended-newtypes-numeric-view-errors.dfy	4	2 verified, 2 errors	9,14
+git-issues/git-issue-113-extended-newtypes-numeric-views.dfy	0	4 verified, 0 errors	
+git-issues/git-issue-113-extended-newtypes-option-off.dfy	2		4,5,7,9
+git-issues/git-issue-113-extended-newtypes-ordinal-bv-resolve.dfy	2		9,13
+git-issues/git-issue-113-extended-newtypes-ordinal-errors.dfy	4	4 verified, 9 errors	12,18,23,29,35,41,47,54,61
+git-issues/git-issue-113-extended-newtypes-ordinal-generic.dfy	4	4 verified, 2 errors	23,29
+git-issues/git-issue-113-extended-newtypes-ordinal-native-resolve.dfy	2		4
+git-issues/git-issue-113-extended-newtypes-ordinal-ranges.dfy	4	3 verified, 3 errors	10,15,22
+git-issues/git-issue-113-extended-newtypes-ordinal-resolve.dfy	2		8,9,13
+git-issues/git-issue-113-extended-newtypes-ordinal-runtime.dfy	0	4 verified, 0 errors	
+git-issues/git-issue-113-extended-newtypes-ordinal-unicode-errors.dfy	4	2 verified, 3 errors	9,14,21
+git-issues/git-issue-113-extended-newtypes-ordinal-unicode.dfy	0	3 verified, 0 errors	
+git-issues/git-issue-113-extended-newtypes-ordinal.dfy	0	13 verified, 0 errors	
+git-issues/git-issue-113-extended-newtypes-substitution.dfy	4	1 verified, 2 errors	17,25
+git-issues/git-issue-113-extended-newtypes-type-test-actuals-negative.dfy	2		8
+git-issues/git-issue-113-extended-newtypes-type-test-downcast-runtime.dfy	0	6 verified, 0 errors	
+git-issues/git-issue-113-extended-newtypes-type-test-ghost-negative.dfy	2		9
+git-issues/git-issue-113-extended-newtypes-type-test-ghost-positive.dfy	0	2 verified, 0 errors	
+git-issues/git-issue-113-extended-newtypes-type-test-hidden-negative.dfy	2		12
+git-issues/git-issue-113-extended-newtypes-type-test-nested-ghost-negative.dfy	2		10
+git-issues/git-issue-113-extended-newtypes-type-test-phantom-negative.dfy	2		8
+git-issues/git-issue-113-extended-newtypes-witness-negative.dfy	4	0 verified, 3 errors	6,7,8
+git-issues/git-issue-113.dfy	0	21 verified, 0 errors	
 git-issues/git-issue-1130.dfy	0	10 verified, 0 errors	
 git-issues/git-issue-1143.dfy	0	3 verified, 0 errors	
 git-issues/git-issue-1148.dfy	2		9,10,19,21,22,27,31,36,37,42,43,52,53,56,58,59,64,68,73,74,79,80
@@ -941,12 +1103,15 @@ git-issues/git-issue-4830.dfy	0	0 verified, 0 errors
 git-issues/git-issue-484.dfy	2		10,19,23,34,40
 git-issues/git-issue-4866.dfy	2		10
 git-issues/git-issue-4893.dfy	0	0 verified, 0 errors	
+git-issues/git-issue-491-newtypes.dfy	2		9
+git-issues/git-issue-491-positive.dfy	4	5 verified, 3 errors	32,43,54
+git-issues/git-issue-491.dfy	2		18,36,55,74,93,112,131,153,171,193,213,236
 git-issues/git-issue-4926.dfy	2		16,17,18,21,22,24,25,32,33,34,35,38,39,40,41,44,45,46,47,48,49,50,52,56,60,61,73,85,87,91,93
 git-issues/git-issue-4936a.dfy	0	0 verified, 0 errors	
 git-issues/git-issue-4936b.dfy	0	1 verified, 0 errors	
 git-issues/git-issue-4936c.dfy	2		32,42,53,64,95
 git-issues/git-issue-4936d.dfy	2		15
-git-issues/git-issue-4939a.dfy	4	11 verified, 4 errors	25,68,99,105
+git-issues/git-issue-4939a.dfy	4	11 verified, 6 errors	25,68,99,105
 git-issues/git-issue-4939b.dfy	4	1 verified, 2 errors	16,18
 git-issues/git-issue-4939c.dfy	0	0 verified, 0 errors	
 git-issues/git-issue-4946a.dfy	2		7
@@ -956,15 +1121,19 @@ git-issues/git-issue-4946d.dfy	2
 git-issues/git-issue-495.dfy	4	10 verified, 4 errors	9,15,20,47
 git-issues/git-issue-4952.dfy	0	6 verified, 0 errors	
 git-issues/git-issue-4953.dfy	2		6,9,14,15,16
+git-issues/git-issue-496.dfy	4	7 verified, 2 errors	39,45
 git-issues/git-issue-4982.dfy	0	10 verified, 0 errors	
 git-issues/git-issue-4983.dfy	2		6,12,18,25
 git-issues/git-issue-4994.dfy	2		12,14,16,18,25,27,29,31,35,36,38,39,41,42,44,45
 git-issues/git-issue-4998.dfy	0	1 verified, 0 errors	
+git-issues/git-issue-501.dfy	4	4 verified, 1 error	19
 git-issues/git-issue-5017a.dfy	4	14 verified, 4 errors	45,72,79,127
 git-issues/git-issue-5017b.dfy	2		31,34,38,44,66,69,94,117,118,119,120,124,125,132,133,134,135,136,140,141
 git-issues/git-issue-5017c.dfy	4	11 verified, 2 errors	33,75
 git-issues/git-issue-5023.dfy	4	7 verified, 9 errors	13,22,25,69,78,81,157,167,170
 git-issues/git-issue-503.dfy	4	0 verified, 1 error	18
+git-issues/git-issue-504-dependence.dfy	2		14,42,71,100,129
+git-issues/git-issue-504-positive.dfy	0	4 verified, 0 errors
 git-issues/git-issue-504.dfy	0	0 verified, 0 errors	
 git-issues/git-issue-5048.dfy	0	0 verified, 0 errors	
 git-issues/git-issue-505.dfy	0	2 verified, 0 errors	
@@ -1133,8 +1302,17 @@ git-issues/git-issue-Main2.dfy	0	0 verified, 0 errors
 git-issues/git-issue-Main3.dfy	0	0 verified, 0 errors	
 git-issues/git-issue1495.dfy	0	8 verified, 0 errors	
 git-issues/git-issue5822.dfy	4	1 verified, 1 error	7
+git-issues/github-issue-106.dfy	0	26 verified, 0 errors	
+git-issues/github-issue-107.dfy	0	28 verified, 0 errors	
 git-issues/github-issue-1267.dfy	0	1 verified, 0 errors	
 git-issues/github-issue-191.dfy	2	3 verified, 0 errors	14,19
+git-issues/github-issue-199-conclusions.dfy	4	4 verified, 3 errors	30,31,39
+git-issues/github-issue-199-heap.dfy	4	38 verified, 14 errors	32,38,44,72,98,100,111,130,140,176,217,240,252,271
+git-issues/github-issue-199-opaque.dfy	4	8 verified, 4 errors	22,53,71,78
+git-issues/github-issue-199-substitution.dfy	4	10 verified, 5 errors	72,73,74,75,76
+git-issues/github-issue-199-termination.dfy	4	12 verified, 20 errors	18,27,31,39,43,45,51,55,62,67,77,81,91,97,106,110,120,123,137,168
+git-issues/github-issue-199-triggers.dfy	0	18 verified, 0 errors	
+git-issues/github-issue-199.dfy	4	84 verified, 15 errors	32,53,92,119,124,142,144,171,200,349,381,413,417,461,518
 git-issues/github-issue-205.dfy	0	89 verified, 0 errors	
 git-issues/github-issue-2174.dfy	0	17 verified, 0 errors	
 git-issues/github-issue-2230.dfy	0	2 verified, 0 errors	
@@ -1145,14 +1323,26 @@ git-issues/github-issue-23-lambda-cost.dfy	0	1 verified, 0 errors
 git-issues/github-issue-23-lambda.dfy	4	1 verified, 1 error	11
 git-issues/github-issue-23-ordinal-subset.dfy	0	1 verified, 0 errors	
 git-issues/github-issue-23-ordinal-undefined.dfy	4	0 verified, 2 errors	8,9
+git-issues/github-issue-241-cache-background.dfy	4	29 verified, 4 errors	39,57,75,80
 git-issues/github-issue-2563.dfy	4	0 verified, 0 errors	
 git-issues/github-issue-26-ten.dfy	0	0 verified, 0 errors	
 git-issues/github-issue-26.dfy	4	2 verified, 1 error	22
+git-issues/github-issue-281-empty-quantifier.dfy	4	2 verified, 2 errors	14,38
+git-issues/github-issue-281-hide.dfy	4	3 verified, 3 errors	15,20,25
 git-issues/github-issue-2928.dfy	0	1 verified, 0 errors	
+git-issues/github-issue-315.dfy	4	16 verified, 12 errors	29,30,31,32,34,35,36,37,38,39,42,43
+git-issues/github-issue-325.dfy	0	1 verified, 0 errors	
+git-issues/github-issue-327.dfy	0	28 verified, 0 errors	
 git-issues/github-issue-3343.dfy	0	1 verified, 0 errors	
+git-issues/github-issue-337.dfy	0	0 verified, 0 errors	
+git-issues/github-issue-339.dfy	2		22,34,43,53,63,73,82,93
+git-issues/github-issue-34.dfy	0	12 verified, 0 errors	
 git-issues/github-issue-3484.dfy	4	0 verified, 4 errors	5,11,17,23
+git-issues/github-issue-354.dfy	0	7 verified, 0 errors	
 git-issues/github-issue-3615.dfy	0	0 verified, 0 errors	
+git-issues/github-issue-362.dfy	4	7 verified, 2 errors	43,44
 git-issues/github-issue-3658.dfy	0	2 verified, 0 errors	
+git-issues/github-issue-374.dfy	4	0 verified, 18 errors	26,34,43,51,57,66,75,78,81
 git-issues/github-issue-3766-a.dfy	0	1 verified, 0 errors	
 git-issues/github-issue-3766-b.dfy	0	1 verified, 0 errors	
 git-issues/github-issue-3766-c.dfy	0	0 verified, 0 errors	
@@ -1164,9 +1354,27 @@ git-issues/github-issue-39.dfy	4	11 verified, 15 errors	21,26,32,38,44,52,61,66,
 git-issues/github-issue-4004.dfy	0	0 verified, 0 errors	
 git-issues/github-issue-4004_v2.dfy	0	1 verified, 0 errors	
 git-issues/github-issue-4017.dfy	0	1 verified, 0 errors	
+git-issues/github-issue-404.dfy	4	51 verified, 15 errors	33,43,54,67,79,90,103,119,136,146,158,174,189,199
+git-issues/github-issue-405.dfy	2		25,38,43,50,54,58,69,75,83,84,89,95
+git-issues/github-issue-408.dfy	2		33,38,46,51,58,77
+git-issues/github-issue-409.dfy	4	27 verified, 12 errors	27,36,46,55,64,74,87,88,98,108,117,126
+git-issues/github-issue-410.dfy	2		26,39,52,63,78,93,102,116,126,138,154
+git-issues/github-issue-411.dfy	4	3 verified, 5 errors	21,38,56,72,90
 git-issues/github-issue-4144.dfy	0	2 verified, 0 errors	
+git-issues/github-issue-422.dfy	0	4 verified, 0 errors	
+git-issues/github-issue-431-more.dfy	4	12 verified, 10 errors	26,35,44,61,63,81,93,103,113,152
+git-issues/github-issue-431.dfy	4	11 verified, 6 errors	24,33,41,48,66,68
 git-issues/github-issue-4483.dfy	0	2 verified, 0 errors	
+git-issues/github-issue-457.dfy	2		21,28,32,37,44,48
 git-issues/github-issue-4804.dfy	4	3 verified, 0 errors, 1 out of resource; 2 out of resource	19
+git-issues/github-issue-493.dfy	4	9 verified, 1 error	18
+git-issues/github-issue-495.dfy	4	4 verified, 8 errors	22,31,35,39,43,47,55
+git-issues/github-issue-492.dfy	0	0 verified, 0 errors	
 git-issues/github-issue-5029.dfy	0	3 verified, 0 errors	
 git-issues/github-issue-5814.dfy	0	3 verified, 0 errors	
+git-issues/github-issue-88-89-interactions.dfy	4	5 verified, 3 errors	32,51,58
+git-issues/github-issue-88-modular-termination.dfy	4	20 verified, 6 errors	45,77,93,124,175,209
+git-issues/github-issue-88-value-types.dfy	4	20 verified, 9 errors	68,76,85,106,120,139,184,200,227
+git-issues/github-issue-88.dfy	4	46 verified, 17 errors	51,83,113,121,122,139,140,184,190,199,234,245,292,332,352,373,410
+git-issues/github-issue-89.dfy	4	60 verified, 20 errors	50,64,65,98,100,101,102,103,115,133,134,149,171,188,189,193,215,224,232,242
 git-issues/github-issue-90.dfy	4	9 verified, 1 error	23

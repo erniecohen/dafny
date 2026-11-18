@@ -1,0 +1,13 @@
+git-issue-113-extended-newtypes-datatype-base-cast-negative.dfy(25,24): Error: value of expression (of type 'B<int>') is not known to be an instance of type 'B<nat>'
+git-issue-113-extended-newtypes-datatype-base-cast-negative.dfy(29,27): Error: value of expression (of type 'B<int>') is not known to be an instance of type 'B<nat>'
+git-issue-113-extended-newtypes-datatype-base-cast-negative.dfy(35,24): Error: value of expression (of type 'B<int>') is not known to be an instance of type 'B<nat>'
+git-issue-113-extended-newtypes-datatype-base-cast-negative.dfy(39,24): Error: value of expression (of type 'B<int>') is not known to be an instance of type 'B<nat>'
+git-issue-113-extended-newtypes-datatype-base-cast-negative.dfy(43,24): Error: value of expression (of type 'B<int>') is not known to be an instance of type 'B<nat>'
+git-issue-113-extended-newtypes-datatype-base-cast-negative.dfy(47,13): Error: value of expression (of type 'B<int>') is not known to be an instance of type 'B<nat>'
+git-issue-113-extended-newtypes-datatype-base-cast-negative.dfy(51,24): Error: value of expression (of type 'B<int>') is not known to be an instance of type 'B<nat>'
+git-issue-113-extended-newtypes-datatype-base-cast-negative.dfy(55,19): Error: value of expression (of type '(int, int)') is not known to be an instance of type '(nat, int)'
+git-issue-113-extended-newtypes-datatype-base-cast-negative.dfy(61,23): Error: value of expression (of type 'S<int>') is not known to be an instance of type 'S<nat>'
+git-issue-113-extended-newtypes-datatype-base-cast-negative.dfy(67,13): Error: value of expression (of type 'IntBased') is not known to be an instance of type 'B<nat>'
+git-issue-113-extended-newtypes-datatype-base-cast-negative.dfy(77,2): Error: assertion might not hold
+
+Dafny program verifier finished with 2 verified, 11 errors

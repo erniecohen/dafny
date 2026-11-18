@@ -1,0 +1,6 @@
+legacy: merged wildcard library completes
+legacy: client verifies
+legacy: reachable false is the only failure
+refresh: merged wildcard library completes
+refresh: client verifies
+refresh: reachable false is the only failure

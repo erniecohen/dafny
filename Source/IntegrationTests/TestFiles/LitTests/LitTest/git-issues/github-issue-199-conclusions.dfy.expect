@@ -1,0 +1,6 @@
+github-issue-199-conclusions.dfy(30,2): Error: assertion might not hold
+github-issue-199-conclusions.dfy(31,2): Error: assertion might not hold
+github-issue-199-conclusions.dfy(39,45): Error: a precondition for this call could not be proved
+github-issue-199-conclusions.dfy(35,13): Related location: this is the precondition that could not be proved
+
+Dafny program verifier finished with 4 verified, 3 errors

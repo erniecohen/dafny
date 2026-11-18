@@ -1,0 +1,8 @@
+git-issue-105-statements.dfy(36,26): Error: assertion might not hold
+git-issue-105-statements.dfy(41,15): Error: assertion might not hold
+git-issue-105-statements.dfy(54,4): Error: a postcondition could not be proved on this return path
+git-issue-105-statements.dfy(53,14): Related location: this is the postcondition that could not be proved
+git-issue-105-statements.dfy(66,2): Error: a postcondition could not be proved on this return path
+git-issue-105-statements.dfy(65,12): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 7 verified, 4 errors

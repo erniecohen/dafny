@@ -1,0 +1,23 @@
+github-issue-199-termination.dfy(18,26): Error: cannot prove termination; try supplying a decreases clause
+github-issue-199-termination.dfy(27,28): Error: cannot prove termination; try supplying a decreases clause
+github-issue-199-termination.dfy(31,28): Error: cannot prove termination; try supplying a decreases clause
+github-issue-199-termination.dfy(39,14): Error: cannot prove termination; try supplying a decreases clause
+github-issue-199-termination.dfy(43,18): Error: cannot prove termination; try supplying a decreases clause
+github-issue-199-termination.dfy(45,10): Error: cannot prove termination; try supplying a decreases clause
+github-issue-199-termination.dfy(51,14): Error: cannot prove termination; try supplying a decreases clause
+github-issue-199-termination.dfy(55,18): Error: cannot prove termination; try supplying a decreases clause
+github-issue-199-termination.dfy(62,28): Error: cannot prove termination; try supplying a decreases clause
+github-issue-199-termination.dfy(67,23): Error: cannot prove termination; try supplying a decreases clause
+github-issue-199-termination.dfy(77,14): Error: cannot prove termination; try supplying a decreases clause
+github-issue-199-termination.dfy(81,14): Error: cannot prove termination; try supplying a decreases clause
+github-issue-199-termination.dfy(91,23): Error: cannot prove termination; try supplying a decreases clause
+github-issue-199-termination.dfy(97,18): Error: cannot prove termination; try supplying a decreases clause
+github-issue-199-termination.dfy(106,18): Error: cannot prove termination; try supplying a decreases clause
+github-issue-199-termination.dfy(110,48): Error: cannot prove termination; try supplying a decreases clause
+github-issue-199-termination.dfy(120,18): Error: cannot prove termination; try supplying a decreases clause
+github-issue-199-termination.dfy(123,24): Error: cannot prove termination; try supplying a decreases clause
+github-issue-199-termination.dfy(137,18): Error: decreases clause might not decrease
+github-issue-199-termination.dfy(168,2): Error: a postcondition could not be proved on this return path
+github-issue-199-termination.dfy(167,27): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 12 verified, 20 errors

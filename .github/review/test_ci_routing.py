@@ -21,22 +21,25 @@ def mac_jobs():
                 yield path.name + '/' + match[1], condition[1] if condition else ''
 
 
-def enabled(expression, event, head, repository, flags, ref_type="branch"):
+def enabled(expression, event, head, repository, flags, ref_type="branch", draft=False, head_ref="", ref=None, reuse='false'):
     expression = expression.removeprefix('${{').removesuffix('}}').strip()
     expression = expression.replace('&&', ' and ').replace('||', ' or ')
     expression = re.sub(r'!(?!=)', ' not ', expression)
-    expression = re.sub(r'\btrue\b', 'True', expression)
-    expression = re.sub(r'\bfalse\b', 'False', expression)
+    # Booleans only: a quoted 'true', as in needs.tree.outputs.reuse != 'true', is a string.
+    expression = re.sub(r"'[^']*'|\btrue\b|\bfalse\b",
+                        lambda m: m[0] if m[0].startswith("'") else m[0].capitalize(), expression)
     github = NS(repository=repository, event_name=event,
-                ref='refs/tags/v-test' if ref_type == 'tag' else 'refs/heads/scratch/probe',
-                ref_type=ref_type, event=NS(pull_request=NS(head=NS(repo=NS(full_name=head)))))
+                ref=ref or ('refs/tags/v-test' if ref_type == 'tag' else 'refs/heads/scratch/probe'),
+                head_ref=head_ref,
+                ref_type=ref_type, event=NS(pull_request=NS(draft=draft, head=NS(repo=NS(full_name=head)))))
     options = dict(platform_parity=False, binaries=False, default_comparison=False,
                    decreases_order_comparison=False, resolver_probe=False, additional_axioms_probe=False, platform='macos')
     options.update(flags if isinstance(flags, dict) else {k: flags for k in options if k != 'platform'})
     inputs = NS(**options)
     return bool(eval(expression.strip(), {'__builtins__': {}}, {
         'github': github, 'inputs': inputs, 'cancelled': lambda: False,
-        'startsWith': str.startswith, 'needs': NS(suite=NS(result='success'))}))
+        'startsWith': str.startswith, 'needs': NS(suite=NS(result='success'), tree=NS(outputs=NS(reuse=reuse)),
+                     build=NS(result='success'), binaries=NS(result='success'), verdict=NS(result='success'))}))
 
 
 class RoutingTests(unittest.TestCase):
@@ -53,6 +56,14 @@ class RoutingTests(unittest.TestCase):
                 self.assertIn('*/Runner.Worker|Runner.Worker)', first)
                 self.assertIn('renice 10 -p "$PPID" "$$"', first)
                 self.assertIn('ps -o nice= -p "$PPID"', first)
+
+    def test_mac_jobs_use_host_python(self):
+        for name, _ in mac_jobs():
+            workflow, job = name.split('/')
+            text = (ROOT / workflow).read_text()
+            body = re.search(r'^  ' + re.escape(job) + r':\n(.*?)(?=^  [\w-]+:|\Z)', text, re.M | re.S)[1]
+            with self.subTest(job=name):
+                self.assertNotIn('actions/setup-python@', body)
 
     def test_only_approved_library_version_routes_to_mac(self):
         text = (ROOT / 'review.yml').read_text()
@@ -85,6 +96,44 @@ class RoutingTests(unittest.TestCase):
                                         'erniecohen/dafny', False, 'tag'))
         self.assertFalse(enabled(jobs['review.yml/release'], 'workflow_dispatch', 'erniecohen/dafny',
                                  'erniecohen/dafny', {'binaries': True}, 'branch'))
+
+    def test_release_states_its_needs_explicitly(self):
+        # A reused verification skips verifier jobs upstream of verdict; the implicit success()
+        # would then skip the release, so its guard must not rely on it.
+        guard = dict(mac_jobs())['review.yml/release']
+        self.assertTrue(guard.removeprefix('${{').strip().startswith('!cancelled()'))
+        for need in ['build', 'binaries', 'verdict']:
+            self.assertIn(f"needs.{need}.result == 'success'", guard)
+
+    def test_a_reused_verification_skips_every_verifier_job(self):
+        # Jobs of review.yml and obligation-proofs.yml are keyed on the tree.  The build and the
+        # binaries stay for a tag, which still builds the release; nothing else runs on reuse.
+        for name, guard in mac_jobs():
+            if not name.startswith(('review.yml/', 'obligation-proofs.yml/')) or name in (
+                    'review.yml/build', 'review.yml/binaries', 'review.yml/release', 'review.yml/parity-macos',
+                    'review.yml/parity-report'):
+                continue
+            for event, flags, ref_type in [('push', False, 'branch'), ('pull_request', False, 'branch'),
+                                           ('workflow_dispatch', True, 'branch'), ('push', False, 'tag'),
+                                           ('workflow_dispatch', False, 'tag')]:
+                with self.subTest(job=name, event=event, ref_type=ref_type):
+                    head = 'erniecohen/dafny'
+                    self.assertFalse(enabled(guard, event, head, 'erniecohen/dafny', flags, ref_type, reuse='true'))
+
+    def test_build_stays_for_a_tag_but_not_for_a_reused_branch(self):
+        build = dict(mac_jobs())['review.yml/build']
+        r = 'erniecohen/dafny'
+        self.assertFalse(enabled(build, 'push', r, r, False, 'branch', reuse='true'))
+        self.assertFalse(enabled(build, 'pull_request', r, r, False, 'branch', reuse='true'))
+        self.assertTrue(enabled(build, 'push', r, r, False, 'tag', reuse='true'))
+        self.assertTrue(enabled(build, 'workflow_dispatch', r, r, False, 'tag', reuse='true'))
+        self.assertTrue(enabled(build, 'push', r, r, False, 'branch', reuse='false'))
+
+    def test_without_reuse_the_verifier_jobs_run_as_before(self):
+        jobs = dict(mac_jobs())
+        for name in ['review.yml/suite', 'review.yml/regressions', 'obligation-proofs.yml/shard']:
+            with self.subTest(job=name):
+                self.assertTrue(enabled(jobs[name], 'push', 'erniecohen/dafny', 'erniecohen/dafny', False))
 
     def test_fork_pull_requests_never_reach_mac_pool(self):
         for name, guard in mac_jobs():

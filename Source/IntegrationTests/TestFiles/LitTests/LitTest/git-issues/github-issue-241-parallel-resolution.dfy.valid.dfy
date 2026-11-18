@@ -1,4 +1,4 @@
-// RUN: %baredafny resolve --resolution-threads 8 %s > "%t"
+// RUN: %baredafny resolve --type-system-refresh --resolution-threads 8 %s > "%t"
 // Verification and translation fixture for parallel resolution.
 module Base {
   datatype D = X | Y(v: int)

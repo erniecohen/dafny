@@ -8,6 +8,7 @@
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.IO;
+using System.Linq;
 using JetBrains.Annotations;
 
 namespace Microsoft.Dafny;
@@ -218,6 +219,10 @@ abstract class Flow {
 
     // Before we do anything else, make a note of whether or not both "a" and "b" are non-null types.
     var abNonNullTypes = a.IsNonNullRefType && b.IsNonNullRefType;
+    // Issue 105: and whether either is a raw type, whose only supertypes are based on its declaration or on the parent
+    // traits with invariants
+    var rawA = InvariantTypeDecl.IsRawType(a);
+    var rawB = InvariantTypeDecl.IsRawType(b);
 
     var towerA = Type.GetTowerOfSubsetTypes(a, true);
     var towerB = Type.GetTowerOfSubsetTypes(b, true);
@@ -289,6 +294,10 @@ abstract class Flow {
     if (commonSupertypeDecl == null) {
       return null; // join does not exist (e.g., it is not unique)
     }
+    var commonInvariants = (commonSupertypeDecl as TopLevelDeclWithMembers)?.InvariantTypeDecl;
+    if (commonInvariants == null && ((rawA && commonSupertypeDecl != aDecl) || (rawB && commonSupertypeDecl != bDecl))) {
+      return null; // issue 105: a raw type is not a subtype of "object" or of a parent trait without invariants
+    }
     var aTypeSubstMap = TypeParameter.SubstitutionMap(aDecl.TypeArgs, a.TypeArgs);
     (aDecl as TopLevelDeclWithMembers)?.AddParentTypeParameterSubstitutions(aTypeSubstMap);
     var bTypeSubstMap = TypeParameter.SubstitutionMap(bDecl.TypeArgs, b.TypeArgs);
@@ -297,6 +306,22 @@ abstract class Flow {
     var aSubst = UserDefinedType.FromTopLevelDecl(commonSupertypeDecl.Origin, commonSupertypeDecl).Subst(aTypeSubstMap);
     var bSubst = UserDefinedType.FromTopLevelDecl(commonSupertypeDecl.Origin, commonSupertypeDecl).Subst(bTypeSubstMap);
 
+    if (commonInvariants != null) {
+      // Issue 105: the common supertype has invariants. Two values that are not raw join at the type its name denotes,
+      // and where either value is raw, at its raw type; both have the variance of the declaration.
+      var isReference = InvariantTypeDecl.IsReferenceType(commonInvariants.Owner);
+      var finished = !rawA && !rawB;
+      var typeArgs = Joins(TypeParameter.Variances(commonSupertypeDecl.TypeArgs), aSubst.TypeArgs, bSubst.TypeArgs, context);
+      if (typeArgs == null) {
+        return null;
+      }
+      return (finished, abNonNullTypes && isReference) switch {
+        (true, true) => commonInvariants.ThisType(a.Origin, typeArgs),
+        (true, false) => commonInvariants.FinishedType(a.Origin, typeArgs),
+        (false, true) => commonInvariants.RawThisType(a.Origin, typeArgs),
+        (false, false) => commonInvariants.RawType(a.Origin, typeArgs)
+      };
+    }
     var joinedTypeArgs = Joins(TypeParameter.Variances(commonSupertypeDecl.TypeArgs), aSubst.TypeArgs, bSubst.TypeArgs, context);
     if (joinedTypeArgs == null) {
       return null;
@@ -537,6 +562,40 @@ class FlowFromComputedType : FlowIntoExpr {
 
   protected override Type GetSourceType() {
     return getType();
+  }
+}
+
+// A synthetic arrow operation projects a nominal value to its declared base;
+// it is not a least-supertype inference site. Share the source's refined actuals
+// and preserve the complete arrow family and domain/result signature.
+class FlowFromComputedArrowOperationType : Flow {
+  private readonly ConversionExpr sink;
+  private readonly TypeRefinementWrapper target;
+  private readonly System.Func<Type> getType;
+
+  public FlowFromComputedArrowOperationType(ConversionExpr sink, System.Func<Type> getType)
+    : base(sink.Origin, "arrow base operation") {
+    this.sink = sink;
+    // PreTypeToType installed this owned proxy before any parent flow captured it.
+    // ToType and UnnormalizedType share it, so checking and translating the cast
+    // see the same exact signature. This flow is its only outer-target writer.
+    target = (TypeRefinementWrapper)sink.UnnormalizedType;
+    Contract.Assert(ReferenceEquals(sink.ToType, target));
+    this.getType = getType;
+  }
+
+  public override bool Update(FlowContext context) {
+    var source = getType();
+    if (EqualTypes(target.T, source)) {
+      return false;
+    }
+    target.T = source;
+    return true;
+  }
+
+  public override void DebugPrint(TextWriter output) {
+    output.WriteLine($"    {TypeRefinementWrapper.ToStringShowingWrapper(sink.UnnormalizedType)} := " +
+      $"{TypeRefinementWrapper.ToStringShowingWrapper(getType())}  {TokDescription()}");
   }
 }
 

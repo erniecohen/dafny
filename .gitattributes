@@ -32,3 +32,6 @@ Binaries/dafny-server text eol=lf
 *.xcf binary
 *.snk binary
 *.doo binary merge=keepMine
+
+# Unified-diff context lines contain a required space, including empty source lines.
+Source/DafnyStandardLibraries/modular-termination/overlay/Actions.patch whitespace=-blank-at-eol

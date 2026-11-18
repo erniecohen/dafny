@@ -1,0 +1,10 @@
+legacy: subtrait PASS
+legacy: leaf PASS
+legacy: false PASS
+legacy: nonleaf PASS
+legacy: legacy-opt-out PASS
+refresh: subtrait PASS
+refresh: leaf PASS
+refresh: false PASS
+refresh: nonleaf PASS
+refresh: legacy-opt-out PASS
