@@ -1,0 +1,6 @@
+
+Dafny program verifier finished with 4 verified, 0 errors
+git-issue-504-false.dfy(5,2): Error: assertion might not hold
+git-issue-504-false.dfy(9,2): Error: assertion might not hold
+
+Dafny program verifier finished with 0 verified, 2 errors
