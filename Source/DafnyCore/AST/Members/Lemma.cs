@@ -32,30 +32,49 @@ public class Lemma : Method {
 
   private bool? postconditionUsesHeap;
   private bool computingPostconditionUsesHeap;
+  private static int postconditionUsesHeapComputations;
+  private static readonly object PostconditionUsesHeapLock = new();
 
   /// <summary>
   /// Whether the postcondition of the lemma, as an expression, depends on the heap. If it does, then so do the
-  /// results of the lemma when they are bound in an expression (see LemmaResultExpr). To be called after resolution.
+  /// results of the lemma when they are bound in an expression (see LemmaResultExpr). A postcondition that binds
+  /// the results of another lemma depends on the heap if the postcondition of that lemma does. To be called after
+  /// resolution.
   /// </summary>
   public bool PostconditionUsesHeap(DafnyOptions options) {
-    if (postconditionUsesHeap == null) {
-      if (computingPostconditionUsesHeap) {
-        // The postcondition binds results whose own postcondition leads back here. The answer "yes" is always safe.
-        return true;
+    // Lemmas are shared by the translations of different modules, which may run at the same time.
+    lock (PostconditionUsesHeapLock) {
+      if (postconditionUsesHeap is { } known) {
+        return known;
       }
-      computingPostconditionUsesHeap = true;
+      if (computingPostconditionUsesHeap) {
+        // The postcondition binds results of a lemma whose own postcondition leads back to this lemma. What this
+        // postcondition itself uses is found by the computation that is in progress.
+        return false;
+      }
       bool usesHeap = false, usesOldHeap = false;
       Type? usesThis = null;
       var freeVariables = new HashSet<IVariable>();
       var freeHeapAtVariables = new HashSet<Label>();
-      foreach (var postcondition in Ens) {
-        FreeVariablesUtil.ComputeFreeVariables(options, postcondition.E, freeVariables, ref usesHeap, ref usesOldHeap,
-          freeHeapAtVariables, ref usesThis, false);
+      computingPostconditionUsesHeap = true;
+      postconditionUsesHeapComputations++;
+      try {
+        foreach (var postcondition in Ens) {
+          FreeVariablesUtil.ComputeFreeVariables(options, postcondition.E, freeVariables, ref usesHeap, ref usesOldHeap,
+            freeHeapAtVariables, ref usesThis, false);
+        }
+      } finally {
+        postconditionUsesHeapComputations--;
+        computingPostconditionUsesHeap = false;
       }
-      computingPostconditionUsesHeap = false;
-      postconditionUsesHeap = usesHeap || usesOldHeap || freeHeapAtVariables.Count != 0;
+      var result = usesHeap || usesOldHeap || freeHeapAtVariables.Count != 0;
+      if (result || postconditionUsesHeapComputations == 0) {
+        // "true" is right wherever it is found. "false" is right for the lemma that the computation started
+        // from; for another lemma, it may have left out a lemma whose computation was in progress.
+        postconditionUsesHeap = result;
+      }
+      return result;
     }
-    return postconditionUsesHeap.Value;
   }
 }
 

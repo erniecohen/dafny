@@ -64,7 +64,7 @@ namespace Microsoft.Dafny {
         return existingInfo;
       }
       var info = new LemmaBindingInfo(lemma, lemma.PostconditionUsesHeap(options),
-        LemmaBindings.WhyPostconditionCannotBeBound(lemma) == null);
+        LemmaBindings.WhyPostconditionCannotBeBound(lemma, options) == null);
       // Record the functions before the axiom is built, since the postcondition may itself bind the results of a lemma.
       lemmaBindingInfo.Add(lemma, info);
       var tok = lemma.Origin;
@@ -202,11 +202,13 @@ namespace Microsoft.Dafny {
     /// gets the origin of the binding, with its own origin as a related location, so that an error is reported at
     /// the binding. A parameter of the lemma for which "actuals" gives a variable is replaced by that variable, with
     /// the origin the variable has at the binding, so that an error message that mentions it shows what was written
-    /// there.
+    /// there. The same goes for a variable that names such a variable as an argument of a binding in the
+    /// postcondition.
     /// </summary>
     private class PostconditionAtBindingCloner : Cloner {
       private readonly IOrigin binding;
       private readonly Dictionary<IVariable, IdentifierExpr> actuals;
+      private readonly Dictionary<IVariable, IOrigin> writtenAs = new();
 
       public PostconditionAtBindingCloner(IOrigin binding, Dictionary<IVariable, IdentifierExpr> actuals) : base(false, true) {
         this.binding = binding;
@@ -214,8 +216,22 @@ namespace Microsoft.Dafny {
       }
 
       public override Expression CloneExpr(Expression expr) {
-        if (expr is IdentifierExpr identifierExpr && actuals.TryGetValue(identifierExpr.Var, out var actual)) {
-          return new IdentifierExpr(actual.Origin, actual.Var);
+        if (expr is IdentifierExpr identifierExpr) {
+          if (actuals.TryGetValue(identifierExpr.Var, out var actual)) {
+            return new IdentifierExpr(actual.Origin, actual.Var);
+          } else if (writtenAs.TryGetValue(identifierExpr.Var, out var origin)) {
+            return new IdentifierExpr(origin, CloneIVariable(identifierExpr.Var, true));
+          }
+        } else if (expr is LetExpr { LemmaBinding: { HasArgumentLet: true } } argumentLet) {
+          for (var i = 0; i < argumentLet.LHSs.Count; i++) {
+            if (argumentLet.RHSs[i].Resolved is IdentifierExpr argument) {
+              if (actuals.TryGetValue(argument.Var, out var actual)) {
+                writtenAs[argumentLet.LHSs[i].Var] = actual.Origin;
+              } else if (writtenAs.TryGetValue(argument.Var, out var origin)) {
+                writtenAs[argumentLet.LHSs[i].Var] = origin;
+              }
+            }
+          }
         }
         return base.CloneExpr(expr);
       }

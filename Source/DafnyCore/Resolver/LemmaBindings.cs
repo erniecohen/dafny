@@ -19,7 +19,9 @@ namespace Microsoft.Dafny;
 ///   2. no result may show a reference, since which references exist is not a function of the arguments; and
 ///   3. the postcondition is an expression that the body of a function may contain: it does not mention "old",
 ///      "allocated", "fresh", "unchanged" or a two-state function, and it does not quantify over the allocated
-///      references.
+///      references. Moreover, a postcondition that depends on the heap does not bind results of the lemma itself,
+///      directly or through the postconditions of other lemmas: a function that binds results of the lemma must
+///      be allowed to read what the postcondition reads, and that cannot be checked for such a postcondition.
 ///
 /// Condition 1 is checked when the binding is resolved.  Conditions 2 and 3 are checked by LemmaBindingChecker,
 /// once the bounds of quantifiers are known.  The translator asks again, and says nothing about the results of a
@@ -31,15 +33,53 @@ public static class LemmaBindings {
   /// postcondition does, to follow "because its postcondition ". To be called after bounds discovery of the
   /// module that declares "lemma".
   /// </summary>
-  public static string WhyPostconditionCannotBeBound(Lemma lemma) {
+  public static string WhyPostconditionCannotBeBound(Lemma lemma, DafnyOptions options) {
     Contract.Requires(lemma != null);
+    Contract.Requires(options != null);
     foreach (var postcondition in lemma.Ens) {
       var why = WhyNotAllowedInFunction(postcondition.E);
       if (why != null) {
         return why;
       }
     }
+    if (lemma.PostconditionUsesHeap(options) && PostconditionBindsOwnResults(lemma)) {
+      return $"depends on the heap and on bound results of '{lemma.Name}' itself, so what it reads cannot be checked";
+    }
     return null;
+  }
+
+  /// <summary>
+  /// Whether the postcondition of "lemma" binds results of "lemma", directly or through the postconditions of the
+  /// lemmas whose results it binds.
+  /// </summary>
+  private static bool PostconditionBindsOwnResults(Lemma lemma) {
+    var visited = new HashSet<Lemma>();
+    var toVisit = new Stack<Lemma>();
+    toVisit.Push(lemma);
+    while (toVisit.Count != 0) {
+      foreach (var postcondition in toVisit.Pop().Ens) {
+        foreach (var bound in LemmasBoundIn(postcondition.E)) {
+          if (bound == lemma) {
+            return true;
+          }
+          if (visited.Add(bound)) {
+            toVisit.Push(bound);
+          }
+        }
+      }
+    }
+    return false;
+  }
+
+  private static IEnumerable<Lemma> LemmasBoundIn(Expression expr) {
+    if (expr is LemmaResultExpr lemmaResultExpr) {
+      yield return lemmaResultExpr.Lemma;
+    }
+    foreach (var subexpression in expr.SubExpressions) {
+      foreach (var bound in LemmasBoundIn(subexpression)) {
+        yield return bound;
+      }
+    }
   }
 
   private static string WhyNotAllowedInFunction(Expression expr) {
@@ -113,7 +153,7 @@ class LemmaBindingChecker : ASTVisitor<IASTVisitorContext> {
     if (expr is StmtExpr { LemmaBindingCall: { Method: Lemma lemma } call }) {
       var typeMap = call.MethodSelect.TypeArgumentSubstitutionsWithParents();
       var why = LemmaBindings.WhyResultTypesCannotBeBound(lemma, typeMap);
-      if (why == null && LemmaBindings.WhyPostconditionCannotBeBound(lemma) is { } whyPostcondition) {
+      if (why == null && LemmaBindings.WhyPostconditionCannotBeBound(lemma, reporter.Options) is { } whyPostcondition) {
         why = "its postcondition " + whyPostcondition;
       }
       if (why != null) {
