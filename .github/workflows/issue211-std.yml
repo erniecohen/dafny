@@ -1,22 +1,19 @@
 name: Certified standard-library core
 # Milestones M5a and M5b of https://github.com/erniecohen/dafny/issues/211: build the certified core of the
-# standard library under --modular-termination with Z3 5.1.0, and the expanded core with the
-# standard-library trust list, then load them into clients.
+# standard library with Z3 5.1.0, and the expanded core with the named trust lists.
+# Produce the checked catalog, then validate its clients, embedding and compilation.
 on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
     branches: ['review/**']
     paths:
       - 'Source/DafnyStandardLibraries/**'
-      - 'Source/DafnyCore/ModularTerminationRecord.cs'
-      - 'Source/DafnyCore/ModularTerminationTrust.cs'
-      - 'Source/DafnyCore/ModularTerminationRuntimeTrust.cs'
-      - 'Source/DafnyCore/ModularTerminationRuntimeContracts.tsv'
-      - 'Source/DafnyCore/DooFile.cs'
-      - 'Source/DafnyCore/DafnyFile.cs'
-      - 'Source/DafnyCore/Backends/Library/LibraryBackend.cs'
+      - 'Source/DafnyCore/**'
+      - 'Source/DafnyPipeline/**'
+      - 'Source/DafnyDriver/**'
       - '.github/review/modular-termination-std.py'
       - '.github/review/modular-termination-checked-std.py'
+      - '.github/review/modular-termination-catalog.py'
       - '.github/workflows/issue211-std.yml'
   workflow_dispatch:
 permissions:
@@ -36,6 +33,12 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23.6'
+          cache: false
+      - name: Install the Go import formatter
+        run: go install golang.org/x/tools/cmd/goimports@v0.30.0
       - name: Build Dafny
         run: |
           sh Scripts/fetch-boogie-packages.sh
@@ -57,6 +60,14 @@ jobs:
             checked-std-results --cores 3 || status=$?
           cat checked-std-results/summary.md >> "$GITHUB_STEP_SUMMARY"
           exit $status
+      - name: Embed the checked catalog and validate selection and backends
+        run: |
+          dotnet publish Source/Dafny/Dafny.csproj -c Release -o out/dafny -p:GeneratePackageOnBuild=false
+          status=0
+          python3 .github/review/modular-termination-catalog.py out/dafny/Dafny '${{ steps.z3.outputs.path }}' \
+            checked-catalog-results || status=$?
+          cat checked-catalog-results/summary.md >> "$GITHUB_STEP_SUMMARY"
+          exit $status
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -64,4 +75,5 @@ jobs:
           path: |
             std-core-results
             checked-std-results
+            checked-catalog-results
           retention-days: 30
