@@ -543,13 +543,19 @@ git-issues/git-issue-105-emptiness.dfy	4	5 verified, 15 errors	33,37,44,45,48,56
 git-issues/git-issue-105-exports.dfy	4	11 verified, 1 error	109
 git-issues/git-issue-105-general-traits.dfy	4	14 verified, 11 errors	22,36,39,77,103,115,126,147,153
 git-issues/git-issue-105-generics.dfy	4	21 verified, 10 errors	20,25,32,36,74,77,80,87,95,115
+git-issues/git-issue-105-newtype-compile.dfy	0	9 verified, 0 errors	
+git-issues/git-issue-105-newtype-generics.dfy	4	21 verified, 17 errors	15,16,19,21,27,28,35,43,44,46,50,51,59,61,71,72,73
+git-issues/git-issue-105-newtype-trait-cast.dfy	4	2 verified, 1 error	27
+git-issues/git-issue-105-newtype-witness-checks.dfy	4	18 verified, 14 errors	12,14,19,21,23,29,32,40,45,52,54,62,63,64
+git-issues/git-issue-105-newtypes.dfy	4	34 verified, 20 errors	29,32,38,42,54,70,71,73,83,90,109,115,130,150,153
 git-issues/git-issue-105-raw-compile.dfy	0	3 verified, 0 errors	
 git-issues/git-issue-105-refinement-verify.dfy	4	20 verified, 9 errors	19,22,41,50,81,92,112,114,132
 git-issues/git-issue-105-statements.dfy	4	7 verified, 4 errors	36,41,54,66
 git-issues/git-issue-105-trait-compile.dfy	0	8 verified, 0 errors	
-git-issues/git-issue-105-trait-gates.dfy	2	0 verified, 0 errors	14,21,26
+git-issues/git-issue-105-trait-gates.dfy	4	3 verified, 2 errors	27,42
 git-issues/git-issue-105-traits.dfy	4	21 verified, 22 errors	25,30,55,58,64,89,122,151,154,157,194,198
 git-issues/git-issue-105-vacuity.dfy	0	3 verified, 0 errors	
+git-issues/git-issue-105-verify.dfy	4	5 verified, 4 errors	13,20,26,34
 git-issues/git-issue-105-wellformedness.dfy	4	12 verified, 2 errors	52,57
 git-issues/git-issue-1074.dfy	0	3 verified, 0 errors	
 git-issues/git-issue-1093.dfy	0	2 verified, 0 errors	
