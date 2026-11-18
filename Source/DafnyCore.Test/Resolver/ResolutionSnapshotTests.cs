@@ -321,6 +321,16 @@ public class ResolutionSnapshotTests : IDisposable {
   }
 
   [Fact]
+  public void ManifestUsesTomlStringRulesForUnicodeMetadata() {
+    const string identity = "Unicode 𐐀 \"quoted\" \\ metadata";
+    var table = new Tomlyn.Model.TomlTable { ["module_identity"] = identity };
+    var bytes = ResolutionSnapshots.EncodeManifest(table);
+    var decoded = Tomlyn.Toml.ToModel(Encoding.UTF8.GetString(bytes));
+    Assert.Equal(identity, decoded["module_identity"]);
+    Assert.Equal(bytes, ResolutionSnapshots.EncodeManifest(table));
+  }
+
+  [Fact]
   public async Task UnwritableStoreStillResolves() {
     File.WriteAllText(Path.Combine(directory, "blocked"), "file instead of directory");
     var normal = await Resolve(enabled: false);

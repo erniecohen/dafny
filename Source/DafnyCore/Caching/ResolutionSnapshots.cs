@@ -9,6 +9,8 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
+using Tomlyn;
+using Tomlyn.Model;
 
 namespace Microsoft.Dafny;
 
@@ -24,7 +26,7 @@ internal sealed class ResolutionSnapshots {
     "root=[schema,root-id,records];alias=[id=0,tag=1,graph-identity,target-id=1];" +
     "external=[id=1,tag=2,local-key,graph-identity,signature-selector,view=unrestricted-literal-signature];" +
     "current-alias-syntax-and-origin;Decl=external;Signature=external;Def=null;Sig=null;" +
-    "owned-signatures=empty;class-members=empty;diagnostics=empty;builtin-requests=empty";
+    "owned-signatures=empty;class-members=empty;diagnostics=empty;builtin-requests=empty;manifest=tomlyn-v1";
   internal const int MaximumEntryBytes = 1024 * 1024;
   internal const int MaximumArchiveBytes = 3 * MaximumEntryBytes;
   private static readonly UTF8Encoding Utf8 = new(false, true);
@@ -97,8 +99,8 @@ internal sealed class ResolutionSnapshots {
     var dependencies = JsonSerializer.Serialize(directPrerequisites.OrderBy(p => p.Role, StringComparer.Ordinal)
       .ThenBy(p => p.Name, StringComparer.Ordinal).ThenBy(p => p.Key, StringComparer.Ordinal)
       .Select(p => new[] { p.Role, p.Name, p.Key }));
-    var manifest = new StringBuilder("format_version = 1\n");
-    void Field(string name, string value) => manifest.Append(name).Append(" = ").Append(JsonSerializer.Serialize(value)).Append('\n');
+    var manifest = new TomlTable { ["format_version"] = 1 };
+    void Field(string name, string value) => manifest.Add(name, value);
     Field("dafny_version", owner.Options.VersionNumber);
     Field("producer_fingerprint", ModuleResolutionKey.DafnyVersion);
     Field("resolution_schema", Hash(Utf8.GetBytes(SchemaInventory)));
@@ -106,12 +108,14 @@ internal sealed class ResolutionSnapshots {
     Field("module_key", key); Field("module_identity", owner.FullName);
     Field("options", options); Field("prerequisites", dependencies);
     Field("naming_context", naming); Field("naming_context_sha256", context);
-    manifest.Append("payload_length = ").Append(bytes.Length).Append('\n');
+    manifest.Add("payload_length", bytes.Length);
     Field("payload_sha256", Hash(bytes));
-    var manifestBytes = Utf8.GetBytes(manifest.ToString());
+    var manifestBytes = EncodeManifest(manifest);
     if (manifestBytes.Length > MaximumEntryBytes || bytes.Length > MaximumEntryBytes) { return null; }
     return new(key, context, manifestBytes, bytes, alias, target, signature);
   }
+
+  internal static byte[] EncodeManifest(TomlTable manifest) => Utf8.GetBytes(Toml.FromModel(manifest));
 
   internal string PathFor(Candidate candidate) => Path.Combine(directory, candidate.Key + "." + candidate.Context + ".dres");
 
