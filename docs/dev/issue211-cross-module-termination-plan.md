@@ -399,7 +399,8 @@ Each stage is opt-in by use, so none needs the `AGENTS.md` exception for default
 
 **Stage 2: close what is left, one PR each:**
 
-- (a) The soundness gap the Reference Manual still lists (§7.1.3.2): a library
+- (a) **Done by default (§6):** libraries not verified under the rules that use the design are refused; an unmarked later extension is checked in its own program; the legacy forms stay premises.
+  Formerly: the soundness gap the Reference Manual still lists (§7.1.3.2): a library
   verified alone does not see a later extension. Under rule 3, a later foreign
   implementation is a leaf, bounded, or a legacy premise. Confirm this with tests in
   both resolvers, for `--library` source inputs and for `.doo` files. Then remove

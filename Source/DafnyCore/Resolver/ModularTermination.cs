@@ -51,31 +51,55 @@ public static class ModularTermination {
   /// the design can fail and none adds a proof obligation.
   /// </summary>
   public static bool UsesDesign(Program program) {
+    return FirstDesignUse(program, null) != null;
+  }
+
+  /// <summary>
+  /// The first declaration, among those whose file satisfies "inFile" (every file when it is null), that uses the
+  /// design: a declared global or callback bound, a {:termination_closed} promise, or an unmarked extension of a trait
+  /// of another module; with a description of the use.  Null when there is none.  Each member is located by its own
+  /// file, since the default class of a module has no location of its own.
+  /// </summary>
+  public static (Declaration Declaration, string Use)? FirstDesignUse(Program program, Func<Uri, bool> inFile) {
+    bool Located(Declaration declaration) {
+      if (declaration.Origin?.Uri is not { } uri) {
+        return inFile == null;
+      }
+      // The orders library promises {:termination_closed} for its relations; that a program loads it is no use of
+      // the design.
+      if (uri == DafnyMain.StandardLibrariesOrdersDooUri || uri == DafnyMain.StandardLibrariesOrdersInternalUri) {
+        return false;
+      }
+      return inFile == null || inFile(uri);
+    }
     foreach (var module in program.Modules()) {
       foreach (var decl in module.TopLevelDecls) {
-        // The orders library promises {:termination_closed} for its relations; that a program loads it is no use of
-        // the design.
-        if (decl.Origin?.Uri is { } uri &&
-            (uri == DafnyMain.StandardLibrariesOrdersDooUri || uri == DafnyMain.StandardLibrariesOrdersInternalUri)) {
-          continue;
-        }
-        if (Attributes.Contains(decl.Attributes, ClosedAttributeName) || DeclaresBound(decl)) {
-          return true;
+        if (Located(decl)) {
+          if (DesignUse(decl) is { } use) {
+            return (decl, use);
+          }
+          if (decl is TopLevelDeclWithMembers extending && ExtendsForeignTraitUnmarked(extending)) {
+            return (decl, "an extension of a trait of another module without a legacy form");
+          }
         }
         if (decl is not TopLevelDeclWithMembers type) {
           continue;
         }
-        if (ExtendsForeignTraitUnmarked(type)) {
-          return true;
-        }
         foreach (var member in type.Members) {
-          if (Attributes.Contains(member.Attributes, ClosedAttributeName) || DeclaresBound(member)) {
-            return true;
+          if (Located(member) && DesignUse(member) is { } memberUse) {
+            return (member, memberUse);
           }
         }
       }
     }
-    return false;
+    return null;
+  }
+
+  private static string DesignUse(Declaration declaration) {
+    if (Attributes.Contains(declaration.Attributes, ClosedAttributeName)) {
+      return "a {:" + ClosedAttributeName + "} promise";
+    }
+    return DeclaresBound(declaration) ? "a 'decreases {:global}' or 'decreases {:callback}' bound" : null;
   }
 
   private static bool DeclaresBound(Declaration declaration) {
@@ -1160,9 +1184,48 @@ public class ModularTerminationRewriter : IRewriter {
     }
   }
 
+  /// <summary>
+  /// By default, a library that Dafny does not verify here and that was not verified under the rules (a source file
+  /// or a .dll given with --library, or a .doo built by a version of Dafny without them) is refused when it uses the
+  /// design: its leaf and bound obligations were never checked (https://github.com/erniecohen/dafny/issues/211, §6).
+  /// A library that uses none of the design is harmless: its code is TOP and no leaf.  Under --modular-termination
+  /// the parser admits libraries by their records instead.
+  /// </summary>
+  private void CheckUncheckedLibraries(Program program) {
+    var roots = program.Compilation.UncheckedTerminationRoots;
+    if (roots.Count == 0) {
+      return;
+    }
+    var edges = program.Compilation.Includes.GroupBy(i => i.IncluderFilename)
+      .ToDictionary(g => g.Key, g => g.Select(i => i.IncludedFilename).ToList());
+    var uncheckedFiles = new Dictionary<Uri, Uri>();
+    foreach (var root in roots) {
+      var work = new Stack<Uri>([root]);
+      while (work.TryPop(out var uri)) {
+        if (uncheckedFiles.TryAdd(uri, root)) {
+          foreach (var included in edges.GetValueOrDefault(uri, [])) {
+            work.Push(included);
+          }
+        }
+      }
+    }
+    var reported = new HashSet<Uri>();
+    while (ModularTermination.FirstDesignUse(program, uri => uncheckedFiles.ContainsKey(uri) && !reported.Contains(uncheckedFiles[uri]))
+           is var (declaration, use)) {
+      var root = uncheckedFiles[declaration.Origin.Uri];
+      reported.Add(root);
+      Reporter.Error(MessageSource.Resolver, "modular_termination_library", declaration.Origin,
+        $"cannot use {Reporter.Options.GetPrintPath(root.LocalPath)} as a library: it uses {use} here, but it was not " +
+        "verified under the rules of termination across modules; verify it with this program, or build it into a .doo " +
+        "with this version of Dafny");
+    }
+  }
+
   internal override void PostResolve(Program program) {
     if (Reporter.Options.Get(CommonOptionBag.ModularTermination)) {
       CheckLibraryRefinements(program);
+    } else if (ModularTermination.RulesEnabled(Reporter.Options)) {
+      CheckUncheckedLibraries(program);
     }
     if (!ModularTermination.Active(Reporter.Options, program)) {
       return;

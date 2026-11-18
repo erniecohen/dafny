@@ -68,3 +68,25 @@ Dafny program verifier finished with 4 verified, 0 errors
 
 Dafny program verifier finished with 1 verified, 0 errors
 the same library used under legacy-off: rejected
+libraries not verified under the rules (https://github.com/erniecohen/dafny/issues/211, section 6)
+a source library that uses the design: rejected
+CLI: Warning: The file 'github-issue-211-xmod-lib.dfy' was passed to --library. Verification for that file might have used options incompatible with the current ones, or might have been skipped entirely. Use a .doo file to enable Dafny to check that compatible options were used
+github-issue-211-xmod-lib.dfy(3,42): Error: cannot use github-issue-211-xmod-lib.dfy as a library: it uses a 'decreases {:global}' or 'decreases {:callback}' bound here, but it was not verified under the rules of termination across modules; verify it with this program, or build it into a .doo with this version of Dafny
+1 resolution/type errors detected in github-issue-211-xmod-lib-client.dfy
+a source library that includes a file that uses the design: rejected
+CLI: Warning: The file 'github-issue-211-xmod-lib-inc.dfy' was passed to --library. Verification for that file might have used options incompatible with the current ones, or might have been skipped entirely. Use a .doo file to enable Dafny to check that compatible options were used
+github-issue-211-xmod-lib.dfy(3,42): Error: cannot use github-issue-211-xmod-lib-inc.dfy as a library: it uses a 'decreases {:global}' or 'decreases {:callback}' bound here, but it was not verified under the rules of termination across modules; verify it with this program, or build it into a .doo with this version of Dafny
+1 resolution/type errors detected in github-issue-211-xmod-lib-client.dfy
+a source library whose bound is on a method of the default class: rejected
+CLI: Warning: The file 'github-issue-211-xmod-lib-top.dfy' was passed to --library. Verification for that file might have used options incompatible with the current ones, or might have been skipped entirely. Use a .doo file to enable Dafny to check that compatible options were used
+github-issue-211-xmod-identity.dfy(5,29): Warning: trait 'T' has {:termination false} and no {:axiom} annotation: calls dispatched through it are not checked for termination
+github-issue-211-xmod-identity.dfy(17,38): Warning: class 'B' has @AssumeCrossModuleTermination and no {:axiom} annotation: calls dispatched to it through traits of other modules are not checked for termination
+github-issue-211-xmod-lib-top.dfy(2,7): Error: cannot use github-issue-211-xmod-lib-top.dfy as a library: it uses a 'decreases {:global}' or 'decreases {:callback}' bound here, but it was not verified under the rules of termination across modules; verify it with this program, or build it into a .doo with this version of Dafny
+1 resolution/type errors detected in github-issue-211-xmod-identity.dfy
+a source library with only the legacy forms: accepted, as in 4.11
+CLI: Warning: The file 'github-issue-211-xmod-identity.dfy' was passed to --library. Verification for that file might have used options incompatible with the current ones, or might have been skipped entirely. Use a .doo file to enable Dafny to check that compatible options were used
+
+Dafny program verifier finished with 1 verified, 0 errors
+the .doo library above, with a manifest written by a version of Dafny without the rules: rejected
+github-issue-211-xmod.dfy.tmp.old.doo(8,11): Error: cannot use github-issue-211-xmod.dfy.tmp.old.doo as a library: it uses a 'decreases {:global}' or 'decreases {:callback}' bound here, but it was not verified under the rules of termination across modules; verify it with this program, or build it into a .doo with this version of Dafny
+1 resolution/type errors detected in github-issue-211-xmod-lib-client.dfy

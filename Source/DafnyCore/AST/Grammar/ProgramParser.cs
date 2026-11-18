@@ -47,6 +47,8 @@ public class ProgramParser {
     var compiledRoots = files.Where(df => df.ShouldNotCompile).Select(df => df.Uri).ToHashSet();
     var compilation = new CompilationData(errorReporter, defaultModule.Includes, rootSourceUris, verifiedRoots,
       compiledRoots);
+    compilation.UncheckedTerminationRoots =
+      files.Where(df => df.ShouldNotVerify && !df.CheckedUnderTerminationRules).Select(df => df.Uri).ToHashSet();
     var program = new Program(
       programName,
       new LiteralModuleDecl(options, defaultModule, null, Guid.NewGuid()),

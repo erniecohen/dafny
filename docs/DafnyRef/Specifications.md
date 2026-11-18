@@ -871,12 +871,14 @@ can reach one, and each call through a function value that is not a lambda expre
 **This version does not yet establish termination in every program.** A program that it accepts
 can still fail to terminate, and can prove `false`, through what it does not check:
 
-* A trait is open because of `{:termination false}`, or because of the extensions in the
-  program being verified. A library verified on its own therefore does not see a type
+* The legacy forms are premises. A library verified on its own does not see a type
   that a later program declares with `@AssumeCrossModuleTermination` to extend one of its
-  traits. Calls through such a trait, and to the code that reaches them, were verified without
-  the rules. `{:termination false}` and `@AssumeCrossModuleTermination` keep their meaning;
-  `dafny audit` reports them, and so does `dafny verify`, by default (`--warn-unchecked-termination`).
+  traits, or a later implementation of a `{:termination false}` trait. Calls through such a trait,
+  and to the code that reaches them, were verified without the rules. `{:termination false}` and
+  `@AssumeCrossModuleTermination` keep their meaning; `dafny audit` reports them, and so does
+  `dafny verify`, by default (`--warn-unchecked-termination`). A later extension without a legacy form
+  is checked in the program that declares it: its implementations of members without a bound are
+  leaves, and those of members with one respect the bound.
 
 It also rejects some programs that terminate:
 
@@ -900,6 +902,13 @@ It also rejects some programs that terminate:
 * The C# parser is what turns `decreases {:global} E` and `decreases {:callback g} E` into bounds. A
   program that reaches Dafny through another front end, serialized, keeps them as ordinary decreases
   clauses with argument-less `{:global}` attributes or one-argument `{:callback g}` attributes.
+
+A library that Dafny does not verify with the program and that was not verified under these rules is
+refused when it uses them: a source or `.dll` file given with `--library`, or a `.doo` file written by
+a version of Dafny without them, that declares a global or callback bound or a `{:termination_closed}`
+promise, or extends a trait of another module without a legacy form. Its leaf and bound obligations
+were never checked. Verify such a library with the program, or rebuild it. A library that uses none of
+these is read as before.
 
 Under the experimental `--modular-termination`, a library is admitted only as a `.doo` file built with
 `dafny build --target:lib --modular-termination`. Such a build writes a termination record into the

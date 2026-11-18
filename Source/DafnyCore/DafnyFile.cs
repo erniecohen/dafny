@@ -34,6 +34,12 @@ public class DafnyFile {
   /// </summary>
   public ModularTerminationManifest? TerminationRecord { get; private set; }
 
+  /// <summary>
+  /// Whether this library was verified under the rules of termination across modules: a .doo whose manifest records
+  /// --legacy-no-modular-termination, which a version of Dafny without the rules does not write.
+  /// </summary>
+  public bool CheckedUnderTerminationRules { get; private set; }
+
   private static readonly Dictionary<Uri, Uri> ExternallyVisibleEmbeddedFiles = new();
 
   static DafnyFile() {
@@ -303,6 +309,7 @@ public class DafnyFile {
       ShouldNotCompile = asLibrary,
       ShouldNotVerify = !verifiedHere,
       TerminationRecord = options.Get(CommonOptionBag.ModularTermination) && !verifiedHere ? dooFile.Manifest.ModularTermination : null,
+      CheckedUnderTerminationRules = dooFile.Manifest.Options.ContainsKey(CommonOptionBag.LegacyNoModularTermination.Name),
     };
   }
 
