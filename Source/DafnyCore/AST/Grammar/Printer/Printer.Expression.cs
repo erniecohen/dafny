@@ -999,16 +999,25 @@ namespace Microsoft.Dafny {
         }
 
       } else if (expr is LemmaResultExpr lemmaResultExpr) {
-        // There is no concrete syntax for this expression, which stands for one result of a lemma call. Print it as the
-        // call, followed by the name of the out-parameter if the lemma has several.
+        // This expression stands for one result of a lemma call, and it is printed on its own only where it is not
+        // the right-hand side of the let expression it was written in (for example, as a trigger). Print the
+        // expression that binds the results of the call and returns this one.
+        var parensNeeded = !isRightmost;
+        if (parensNeeded) {
+          wr.Write("(");
+        }
+        wr.Write("var ");
+        wr.Write(string.Join(", ", lemmaResultExpr.Lemma.Outs.Select(o => o == lemmaResultExpr.Out ? o.Name : "_")));
+        wr.Write(" := ");
         if (!lemmaResultExpr.Receiver.IsImplicit) {
           PrintExpr(lemmaResultExpr.Receiver, BindingStrengthSuffix, false, false, false, -1, keyword);
           wr.Write(".");
         }
         wr.Write(lemmaResultExpr.Lemma.Name);
         PrintActualArguments(lemmaResultExpr.Bindings, lemmaResultExpr.Lemma.Name, null);
-        if (lemmaResultExpr.Lemma.Outs.Count != 1) {
-          wr.Write(".{0}", lemmaResultExpr.Out.Name);
+        wr.Write("; {0}", lemmaResultExpr.Out.Name);
+        if (parensNeeded) {
+          wr.Write(")");
         }
 
       } else if (expr is SeqConstructionExpr) {
