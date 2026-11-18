@@ -549,6 +549,7 @@ git-issues/git-issue-105-newtype-generics.dfy	4	21 verified, 17 errors	15,16,19,
 git-issues/git-issue-105-newtype-trait-cast.dfy	4	2 verified, 1 error	27
 git-issues/git-issue-105-newtype-witness-checks.dfy	4	23 verified, 16 errors	12,14,19,21,23,29,32,40,45,52,54,62,63,64,70,78
 git-issues/git-issue-105-newtypes.dfy	4	34 verified, 20 errors	29,32,38,42,54,70,71,73,83,90,109,115,130,150,153
+git-issues/git-issue-105-opacity.dfy	0	1 verified, 0 errors	
 git-issues/git-issue-105-opaque.dfy	4	19 verified, 8 errors	18,26,35,54,57,73,89,96
 git-issues/git-issue-105-raw-compile.dfy	0	3 verified, 0 errors	
 git-issues/git-issue-105-refinement-verify.dfy	4	20 verified, 9 errors	19,22,41,50,81,92,112,114,132
