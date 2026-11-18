@@ -741,6 +741,7 @@ public static class ModularTerminationRecords {
     CommonOptionBag.LegacyFirstPhaseConstReads,
     CommonOptionBag.LegacyAllocatedInLambdas,
     CommonOptionBag.LegacyElidedOverrideChecks,
+    CommonOptionBag.LegacyInferredNewtypeBaseConversions,
     CommonOptionBag.LegacySkeletonModifyingCalls,
     CommonOptionBag.LegacyInheritedConstructorFields,
     CommonOptionBag.LegacyFunctionStoreLocations,
