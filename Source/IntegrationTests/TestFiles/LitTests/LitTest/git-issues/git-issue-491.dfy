@@ -1,4 +1,4 @@
-// RUN: %exits-with 2 %verify "%s" > "%t"
+// RUN: %exits-with 2 %verify --type-system-refresh --general-traits=datatype --general-newtypes "%s" > "%t"
 // RUN: %exits-with 2 %resolve --type-system-refresh=false --general-newtypes=false "%s" >> "%t"
 // RUN: %exits-with 0 %verify --allow-warnings --legacy-unchecked-type-variance "%s" >> "%t"
 // RUN: %exits-with 0 %verify --allow-warnings --legacy-unchecked-type-variance --type-system-refresh=false --general-newtypes=false "%s" >> "%t"
