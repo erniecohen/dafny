@@ -521,6 +521,9 @@ namespace Microsoft.Dafny {
       }
       // add consequence axiom
       AddFunctionConsequenceAxiom(boogieFunction, f, f.Ens);
+      if (FunctionDomainTags) {
+        AddFunctionDomainAxioms(f);
+      }
       // add definition axioms, suitably specialized for literals
       if (f.Body != null && RevealedInScope(f)) {
         AddFunctionAxiom(boogieFunction, f, f.Body.Resolved);

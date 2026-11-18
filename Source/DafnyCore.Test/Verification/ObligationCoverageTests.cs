@@ -43,6 +43,7 @@ public class ObligationCoverageTests {
     ["BoogieGenerator.Obligations.cs"]="canonical-obligation-adapters",
     ["BoogieGenerator.Extremes.cs"]="extreme-prefix-contracts",
     ["BoogieGenerator.Functions.cs"]="definition-consequence-axioms",
+    ["BoogieGenerator.FunctionDomains.cs"]="definition-consequence-axioms",
     ["BoogieGenerator.BoogieFactory.cs"]="assertion-contract-sinks",
     ["OpaqueBlockVerifier.cs"]="opaque-block-contracts",
     ["BoogieGenerator.TrLoop.cs"]="loop-contracts",
