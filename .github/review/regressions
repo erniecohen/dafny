@@ -912,3 +912,4 @@ git-issues/git-issue-105-newtype-native.dfy
 git-issues/git-issue-105-newtype-compile.dfy
 git-issues/git-issue-105-opaque.dfy
 git-issues/git-issue-105-auto-reveal.dfy
+git-issues/git-issue-105-false-proofs.dfy

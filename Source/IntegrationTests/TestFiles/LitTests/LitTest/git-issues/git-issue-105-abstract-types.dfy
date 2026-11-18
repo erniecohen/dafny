@@ -172,3 +172,18 @@ abstract module ProvidedClient {
     s := a[0].Size();
   }
 }
+
+// A client of a refinement that keeps the promises of 'Characteristics' relies on them: the
+// positive control of the modules in git-issue-105-abstract-errors.dfy whose promise nothing keeps
+module WitnessedClient {
+  import Witnessed
+  lemma Choose() returns (s: int) ensures s > 1 {
+    var t: Witnessed.T :| true;
+    var u: Witnessed.U :| true;
+    s := t.Size() + u.Size();
+  }
+  method Arrays() returns (s: int) ensures s > 0 {
+    var a := new Witnessed.T[2];
+    s := a[0].Size();
+  }
+}
