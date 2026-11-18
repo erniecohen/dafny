@@ -827,3 +827,21 @@ triage is not whole-suite acceptance.
    measure. So the simulation of §7.1 goes through with bounds of type
    `multiset<multiset<L>>`, which stage 2(d) provides by applying the multiset
    order to itself. No consumable `bounded<O, F>` stage is added.
+
+### Checked Actions catalog release evidence
+
+The separate checked projection now passes the normal complete certificate producer
+for the common library and all six target bundles. The client/audit matrix passes
+27 controls: three common-library controls and four per target. Runtime-dependent
+results remain conditional on every named runtime contract, including termination;
+the explicit runtime list and the M5b ghost list are independent and empty by default.
+The source matrix additionally has concrete checked realizations of all three pure
+proof protocols. Each resolver verifies their positive calls and rejects only the
+reachable false assertion in the companion control.
+
+The legacy source projection is unchanged. Its four verdict inventories and issue
+205 diagnostic locations describe that unchanged source; checked-projection counts
+belong to the separate catalog gate. Rebuilding and comparing the legacy binary,
+final option-off byte identity, resource-unit comparison, and serial whole-suite
+mutation evidence are still release obligations. No gate is satisfied by a
+source-only run or by a skipped-verification artifact.
