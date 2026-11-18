@@ -1,0 +1,2 @@
+git-issue-466-codatatype.dfy(7,7): Error: a program that has a recursive module group may not declare a codatatype, but it declares codatatype 'Stream' in module 'Elsewhere'
+1 resolution/type errors detected in git-issue-466-codatatype.dfy

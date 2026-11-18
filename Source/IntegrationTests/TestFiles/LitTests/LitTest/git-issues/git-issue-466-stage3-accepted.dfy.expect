@@ -1,0 +1,36 @@
+git-issue-466-stage3-accepted.dfy(68,2): Error: a postcondition could not be proved on this return path
+git-issue-466-stage3-accepted.dfy(67,12): Related location: this is the postcondition that could not be proved
+git-issue-466-stage3-accepted.dfy(103,2): Error: a postcondition could not be proved on this return path
+git-issue-466-stage3-accepted.dfy(102,60): Related location: this is the postcondition that could not be proved
+git-issue-466-stage3-accepted.dfy(161,4): Error: assertion might not hold
+git-issue-466-stage3-accepted.dfy(223,13): Error: the function must provide an equal or more detailed postcondition than in its parent trait
+git-issue-466-stage3-accepted.dfy(227,11): Error: the method must provide an equal or more detailed postcondition than in its parent trait
+git-issue-466-stage3-accepted.dfy(227,11): Error: the method must provide an equal or more permissive precondition than in its parent trait
+git-issue-466-stage3-accepted.dfy(233,10): Error: the method must provide an equal or more permissive precondition than in its parent trait
+git-issue-466-stage3-accepted.dfy(262,2): Error: a postcondition could not be proved on this return path
+git-issue-466-stage3-accepted.dfy(261,24): Related location: this is the postcondition that could not be proved
+git-issue-466-stage3-accepted.dfy(290,2): Error: a postcondition could not be proved on this return path
+git-issue-466-stage3-accepted.dfy(289,26): Related location: this is the postcondition that could not be proved
+git-issue-466-stage3-accepted.dfy(310,2): Error: a postcondition could not be proved on this return path
+git-issue-466-stage3-accepted.dfy(309,22): Related location: this is the postcondition that could not be proved
+git-issue-466-stage3-accepted.dfy(343,4): Error: assertion might not hold
+
+Dafny program verifier finished with 58 verified, 11 errors
+git-issue-466-stage3-accepted.dfy(68,2): Error: a postcondition could not be proved on this return path
+git-issue-466-stage3-accepted.dfy(67,12): Related location: this is the postcondition that could not be proved
+git-issue-466-stage3-accepted.dfy(103,2): Error: a postcondition could not be proved on this return path
+git-issue-466-stage3-accepted.dfy(102,60): Related location: this is the postcondition that could not be proved
+git-issue-466-stage3-accepted.dfy(161,4): Error: assertion might not hold
+git-issue-466-stage3-accepted.dfy(223,13): Error: the function must provide an equal or more detailed postcondition than in its parent trait
+git-issue-466-stage3-accepted.dfy(227,11): Error: the method must provide an equal or more detailed postcondition than in its parent trait
+git-issue-466-stage3-accepted.dfy(227,11): Error: the method must provide an equal or more permissive precondition than in its parent trait
+git-issue-466-stage3-accepted.dfy(233,10): Error: the method must provide an equal or more permissive precondition than in its parent trait
+git-issue-466-stage3-accepted.dfy(262,2): Error: a postcondition could not be proved on this return path
+git-issue-466-stage3-accepted.dfy(261,24): Related location: this is the postcondition that could not be proved
+git-issue-466-stage3-accepted.dfy(290,2): Error: a postcondition could not be proved on this return path
+git-issue-466-stage3-accepted.dfy(289,26): Related location: this is the postcondition that could not be proved
+git-issue-466-stage3-accepted.dfy(310,2): Error: a postcondition could not be proved on this return path
+git-issue-466-stage3-accepted.dfy(309,22): Related location: this is the postcondition that could not be proved
+git-issue-466-stage3-accepted.dfy(343,4): Error: assertion might not hold
+
+Dafny program verifier finished with 58 verified, 11 errors

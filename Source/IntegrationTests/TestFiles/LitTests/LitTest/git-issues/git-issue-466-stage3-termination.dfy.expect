@@ -1,0 +1,36 @@
+git-issue-466-stage3-termination.dfy(129,29): Warning: trait 'T' has {:termination false} and no {:axiom} annotation: calls dispatched through it are not checked for termination
+git-issue-466-stage3-termination.dfy(30,52): Error: cannot prove termination; try supplying a decreases clause
+git-issue-466-stage3-termination.dfy(37,52): Error: cannot prove termination; try supplying a decreases clause
+git-issue-466-stage3-termination.dfy(72,9): Error: decreases clause might not decrease
+git-issue-466-stage3-termination.dfy(97,9): Error: cannot prove termination; try supplying a decreases clause
+git-issue-466-stage3-termination.dfy(115,9): Error: cannot prove termination; try supplying a decreases clause
+git-issue-466-stage3-termination.dfy(139,9): Error: cannot prove termination; try supplying a decreases clause
+git-issue-466-stage3-termination.dfy(151,39): Error: cannot prove termination; try supplying a decreases clause
+git-issue-466-stage3-termination.dfy(158,25): Error: cannot prove termination; try supplying a decreases clause
+git-issue-466-stage3-termination.dfy(163,43): Error: cannot prove termination; try supplying a decreases clause
+git-issue-466-stage3-termination.dfy(195,9): Error: decreases clause might not decrease
+git-issue-466-stage3-termination.dfy(225,9): Error: decreases clause might not decrease
+git-issue-466-stage3-termination.dfy(231,9): Error: decreases clause might not decrease
+git-issue-466-stage3-termination.dfy(249,9): Error: cannot prove termination; try supplying a decreases clause
+git-issue-466-stage3-termination.dfy(266,13): Error: function's (possibly automatically generated) decreases clause must be below or equal to that in the trait
+git-issue-466-stage3-termination.dfy(287,10): Error: cannot prove termination; try supplying a decreases clause
+
+Dafny program verifier finished with 29 verified, 15 errors
+git-issue-466-stage3-termination.dfy(129,29): Warning: trait 'T' has {:termination false} and no {:axiom} annotation: --modular-termination checks the calls dispatched through it only in code verified with that option
+git-issue-466-stage3-termination.dfy(30,52): Error: cannot prove termination; try supplying a decreases clause
+git-issue-466-stage3-termination.dfy(37,52): Error: cannot prove termination; try supplying a decreases clause
+git-issue-466-stage3-termination.dfy(72,9): Error: decreases clause might not decrease
+git-issue-466-stage3-termination.dfy(97,9): Error: cannot prove termination; try supplying a decreases clause
+git-issue-466-stage3-termination.dfy(115,9): Error: cannot prove termination; try supplying a decreases clause
+git-issue-466-stage3-termination.dfy(139,9): Error: cannot prove termination; try supplying a decreases clause
+git-issue-466-stage3-termination.dfy(151,39): Error: cannot prove termination; try supplying a decreases clause
+git-issue-466-stage3-termination.dfy(158,25): Error: cannot prove termination; try supplying a decreases clause
+git-issue-466-stage3-termination.dfy(163,43): Error: cannot prove termination; try supplying a decreases clause
+git-issue-466-stage3-termination.dfy(195,9): Error: decreases clause might not decrease
+git-issue-466-stage3-termination.dfy(225,9): Error: decreases clause might not decrease
+git-issue-466-stage3-termination.dfy(231,9): Error: decreases clause might not decrease
+git-issue-466-stage3-termination.dfy(249,9): Error: cannot prove termination; try supplying a decreases clause
+git-issue-466-stage3-termination.dfy(266,13): Error: function's (possibly automatically generated) decreases clause must be below or equal to that in the trait
+git-issue-466-stage3-termination.dfy(287,10): Error: cannot prove termination; try supplying a decreases clause
+
+Dafny program verifier finished with 29 verified, 15 errors

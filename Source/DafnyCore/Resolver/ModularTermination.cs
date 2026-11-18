@@ -61,6 +61,16 @@ public static class ModularTermination {
       ((TopLevelDecl)declaration).EnclosingModuleDefinition;
   }
 
+  /// <summary>
+  /// Whether code of "module" sees "declaration" from outside: by its contract, not by its body.  The members of
+  /// a recursive module group (--recursive-modules) are verified as one module would be, and a call from one
+  /// member to another is checked against the "decreases" clauses, so a declaration of another member of the
+  /// group of "module" is not seen from outside.
+  /// </summary>
+  public static bool IsOutside(Declaration declaration, ModuleDefinition module) {
+    return !ModuleDefinition.InSameRecursiveGroup(ModuleOf(declaration), module);
+  }
+
   public const string GlobalAttributeName = "global";
 
   public static bool IsGlobalClause(Attributes a) {
@@ -249,6 +259,8 @@ public static class ModularTermination {
   /// such a foreign implementation: an ancestor with no global bound, in a trait without the
   /// legacy form {:termination false}, declared in another module than "member".  A type with the legacy form
   /// @AssumeCrossModuleTermination is exempt, as an unchecked premise (section 2.4 of the plan).
+  /// Another member of the recursive module group of "member" counts as the same module: the calls dispatched
+  /// to an implementation in the group are checked against the "decreases" clauses, as they are inside one module.
   /// </summary>
   public static MemberDecl? UndeclaredForeignAncestor(MemberDecl member) {
     if (Attributes.Contains(member.EnclosingClass.Attributes, "AssumeCrossModuleTermination")) {
@@ -256,7 +268,7 @@ public static class ModularTermination {
     }
     for (var a = member.OverriddenMember; a != null; a = a.OverriddenMember) {
       if (a.EnclosingClass is TraitDecl trait && !IsExtensible(trait) && a is ICallable callable && !HasGlobalBound(callable) &&
-          ModuleOf(a) != ModuleOf(member)) {
+          IsOutside(a, ModuleOf(member))) {
         return a;
       }
     }
@@ -612,7 +624,7 @@ public class ModularTerminationAnalysis {
   /// </summary>
   public bool ReachesOpenDispatch(MemberDecl callee, ModuleDefinition? callerModule = null) {
     var node = NodeOf(callee);
-    return callerModule != null && ModularTermination.ModuleOf(node) != callerModule
+    return callerModule != null && ModularTermination.IsOutside(node, callerModule)
       ? HasGeneralContract(node, callerModule) : reaching.Contains(node);
   }
 
@@ -639,7 +651,7 @@ public class ModularTerminationAnalysis {
   }
 
   private bool NeedsGeneral(Declaration node, ModuleDefinition? callerModule) {
-    return callerModule != null && ModularTermination.ModuleOf(node) != callerModule
+    return callerModule != null && ModularTermination.IsOutside(node, callerModule)
       ? HasGeneralContract(node, callerModule) : reaching.Contains(node);
   }
 
@@ -767,7 +779,7 @@ public class ModularTerminationAnalysis {
     }
 
     private void AddDependency(Declaration node) {
-      if (callerModule != null && ModularTermination.ModuleOf(node) != callerModule) {
+      if (callerModule != null && ModularTermination.IsOutside(node, callerModule)) {
         if (analysis.HasGeneralContract(node, callerModule)) {
           Dispatch($"General contract of {NodeName(node)} (publish {{:termination_closed}} for independent closed code)");
         }
@@ -1483,7 +1495,7 @@ public class ModularTerminationRewriter : IRewriter {
     }
 
     private void ReportDispatch(IOrigin origin, MemberDecl callee) {
-      if (ModularTermination.ModuleOf(callee) != caller.EnclosingModule && callee is ICallable callable) {
+      if (ModularTermination.IsOutside(callee, caller.EnclosingModule) && callee is ICallable callable) {
         for (ICallable? current = callable; current is MemberDecl member; current = member.OverriddenMember as ICallable) {
           var bounds = ModularTermination.GlobalClauses(current.Decreases.Attributes).SelectMany(a => a.Args)
             .Concat(ModularTermination.CallbackClauses(current.Decreases.Attributes).SelectMany(a => a.Args.Skip(1)));

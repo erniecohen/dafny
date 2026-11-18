@@ -160,6 +160,12 @@ public class AutoRevealFunctionDependencies : IRewriter {
     // Here this function may be called with a callable that is in a different module than the original one.
 
     foreach (var callable in origVertex.Successors) {
+      if (callable.N.EnclosingModule != m.EnclosingModule && !IsRevealable(defaultRootModule.AccessibleMembers, (Declaration)callable.N)) {
+        // A callee in another module is in this call graph only when the two modules are in one recursive
+        // module group.  It is followed if the root module sees its body, as a callee of an imported
+        // module is.
+        continue;
+      }
       queue.Enqueue(new GraphTraversalVertex(callable, true, 1));
     }
 

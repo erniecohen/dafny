@@ -29,8 +29,18 @@ namespace Microsoft.Dafny {
     /// Inferred required equality support for datatypes and type synonyms, and for Function and Method signatures.
     /// </summary>
     private static void InferEqualitySupport(List<TopLevelDecl> declarations, ErrorReporter reporter) {
+      InferEqualitySupportOfTypes(declarations, reporter);
+      InferEqualitySupportOfSignatures(declarations, reporter);
+    }
+
+    /// <summary>
+    /// Returns whether anything was inferred.  In a recursive module group, the members call this in turn
+    /// until none of them infers anything.
+    /// </summary>
+    public static bool InferEqualitySupportOfTypes(List<TopLevelDecl> declarations, ErrorReporter reporter) {
       // First, do datatypes and type synonyms until a fixpoint is reached.
       bool inferredSomething;
+      var inferredAnything = false;
       do {
         inferredSomething = false;
         foreach (var d in declarations) {
@@ -69,8 +79,12 @@ namespace Microsoft.Dafny {
             }
           }
         }
+        inferredAnything = inferredAnything || inferredSomething;
       } while (inferredSomething);
+      return inferredAnything;
+    }
 
+    public static void InferEqualitySupportOfSignatures(List<TopLevelDecl> declarations, ErrorReporter reporter) {
       // Now do it for Function and Method signatures.
       foreach (var d in declarations) {
         if (d is IteratorDecl iter) {
@@ -207,7 +221,7 @@ namespace Microsoft.Dafny {
       return false;
     }
 
-    private static void Check(List<TopLevelDecl> declarations, bool isAnExport, ErrorReporter reporter) {
+    public static void Check(List<TopLevelDecl> declarations, bool isAnExport, ErrorReporter reporter) {
       var visitor = new CheckTypeCharacteristicsVisitor(reporter);
 
       foreach (var d in declarations) {

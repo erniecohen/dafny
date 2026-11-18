@@ -12,6 +12,9 @@ namespace Microsoft.Dafny {
   ///   -- the .IsRecursive and .AssignedAssumptionVariables fields of Method.
   /// It assumes that the given declarations have been resolved (name resolution and type checking).
   ///
+  /// The members of a recursive module group (--recursive-modules) share one call graph, and "the module"
+  /// below then stands for the group.
+  ///
   /// The call graph of a module is stored as a field .CallGraph in ModuleDefinition. The edges of such
   /// a call graph are between vertices of the module itself, with one exception: there can also be edges
   /// from trait members in a different module to the overriding members in the module. The methods
@@ -81,7 +84,7 @@ namespace Microsoft.Dafny {
             // which is checked separately.
             decl = invariantTypeDecl.Owner;
           }
-          if (decl is ICallable cl && caller.EnclosingModule == cl.EnclosingModule) {
+          if (decl is ICallable cl && ModuleDefinition.InSameRecursiveGroup(caller.EnclosingModule, cl.EnclosingModule)) {
             caller.EnclosingModule.CallGraph.AddEdge(caller, cl);
           }
         });
@@ -165,7 +168,7 @@ namespace Microsoft.Dafny {
 
         if (expr is DatatypeValue dtv) {
           var dt = dtv.Type.AsDatatype;
-          if (context.CodeContext is ICallable caller && caller.EnclosingModule == dt.EnclosingModuleDefinition) {
+          if (context.CodeContext is ICallable caller && ModuleDefinition.InSameRecursiveGroup(caller.EnclosingModule, dt.EnclosingModuleDefinition)) {
             caller.EnclosingModule.CallGraph.AddEdge(caller, dt);
           }
 
@@ -278,8 +281,9 @@ namespace Microsoft.Dafny {
         var callee = s.Method;
         ModuleDefinition callerModule = context.CodeContext.EnclosingModule;
         ModuleDefinition calleeModule = ((IASTVisitorContext)callee).EnclosingModule;
-        if (callerModule != calleeModule) {
-          // inter-module call; add edge in module's inter-module call graph
+        if (!ModuleDefinition.InSameRecursiveGroup(callerModule, calleeModule)) {
+          // inter-module call (a call to another member of a recursive module group is an intra-module call:
+          // the members share one call graph); add edge in module's inter-module call graph
           if (context.CodeContext is ICallable caller0) {
             if (caller0 is IteratorDecl iteratorDecl) {
               // use the MoveNext() method as the caller
@@ -315,8 +319,9 @@ namespace Microsoft.Dafny {
         Contract.Requires(e != null);
         ModuleDefinition callerModule = callingContext.EnclosingModule;
         ModuleDefinition calleeModule = callable is SpecialFunction ? null : callable.EnclosingModule;
-        if (callerModule != calleeModule) {
-          // inter-module call; add edge in module's inter-module call graph
+        if (!ModuleDefinition.InSameRecursiveGroup(callerModule, calleeModule)) {
+          // inter-module call (a call to another member of a recursive module group is an intra-module call:
+          // the members share one call graph); add edge in module's inter-module call graph
           if (callingContext is ICallable context && callable is Function { EnclosingClass: TraitDecl }) {
             callerModule.CallGraph.AddEdge(context, callable);
           }

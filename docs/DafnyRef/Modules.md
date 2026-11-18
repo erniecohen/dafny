@@ -996,6 +996,146 @@ module A.C refines A.B { }
 
 `A.C` depends on `A.B`, not on `A`, which depends on both.
 
+### 4.7.1. Recursive module groups (experimental, incomplete) {#sec-recursive-module-groups}
+
+The hidden, experimental option `--recursive-modules` defaults to `false` and
+requires `--member-invariants` (and so `--type-system-refresh`). It is being
+implemented in stages (https://github.com/erniecohen/dafny/issues/466; the
+design is in `docs/dev/design/xmod-recursion.md`). Without
+the option, any cycle of module dependencies is an error, as described above.
+
+With the option, modules that import each other form a _recursive module
+group_: the modules of a cycle of imports, together with every other module on
+a cycle with them. A group means what one module with the declarations of all
+its members would mean, with the names and export sets of the modules kept.
+
+<!-- %check-verify %options --type-system-refresh --member-invariants --recursive-modules -->
+```dafny
+module A {
+  import B
+  datatype T = Leaf | Node(u: B.U)
+  function Size(t: T): nat {
+    match t
+    case Leaf => 1
+    case Node(u) => 1 + B.Size(u)
+  }
+}
+module B {
+  import A
+  datatype U = U(t: A.T)
+  function Size(u: U): nat { A.Size(u.t) }
+}
+```
+
+The declarations of the members are resolved and verified together:
+
+* Types, constants, functions, methods and lemmas of the members may use each
+  other. A call from one member to another is checked for termination as a
+  call inside one module is, with the same `decreases` clauses and the same
+  errors, so mutual recursion across the members needs a measure that
+  decreases.
+* Each rule about the declarations of one module applies to the declarations
+  of the group: a cycle among constants, type synonyms, or the constraints of
+  subset types and newtypes is an error; a datatype may not occur left of an
+  arrow in its own definition; a cycle of datatypes with no value is reported;
+  and whether a type supports equality or can be auto-initialized is computed
+  for the group.
+* An export set hides from the other members what it hides from any other
+  importer: a function that a member provides and does not reveal is opaque to
+  the other members, and a name that it does not export is not visible to them.
+* A class, datatype or other type of one member may extend a trait of another
+  member, as it may extend a trait of its own module: the trait needs no
+  `{:termination false}` and the type no `@AssumeCrossModuleTermination`. A
+  call through the trait may be dispatched to an override in any member, and
+  it is checked for termination as it is when trait and override are in one
+  module. So a cycle of calls that goes through overrides in several members
+  needs a measure that decreases, and `{:termination false}` on a trait says
+  nothing about the types of its own group that extend it. An override is
+  checked against the specification of the member of the trait, and a type
+  must implement every member that the trait leaves without a body.
+  To a module outside the group, a trait of the group is a trait of another
+  module, under the rules that apply without the option. With
+  `--modular-termination`, the members of a group count as one module.
+* `--show-hints` lists the members of each group at each member.
+
+In the following group, the datatype of one member extends the trait of the
+other, and the function `Unit` of the trait's module creates a value of the
+datatype:
+
+<!-- %check-verify %options --type-system-refresh --general-traits=datatype --member-invariants --recursive-modules -->
+```dafny
+module Shapes {
+  import Squares
+  trait Shape {
+    function Area(): nat
+  }
+  function Total(shapes: seq<Shape>): nat {
+    if shapes == [] then 0 else shapes[0].Area() + Total(shapes[1..])
+  }
+  function Unit(): Shape { Squares.Square(1) }
+}
+module Squares {
+  import Shapes
+  datatype Square extends Shapes.Shape = Square(side: nat) {
+    function Area(): nat { side * side }
+  }
+}
+```
+
+Only plain imports (`import B`, `import X = B`, `import opened B`, and imports
+of export sets) may be part of a cycle. Each of the following must lead from a
+module to one that does not depend on it, and a cycle that goes through one is
+an error that names it:
+
+* the `refines` or `replaces` clause of a module;
+* an abstract import, `import X : I`;
+* an import `import X = M` that binds an abstract import that the module
+  inherits from the module it refines;
+* the nesting of a module in another. An import of a path, such as
+  `import P.Q`, depends on `P`, the first module of the path, so a cycle
+  through `Q` and the importing module also goes through the nesting of `Q`
+  in `P`. Sibling modules nested in a third may form a group.
+
+A replaceable module may not be in a group, a module may not import itself, and
+a program that has a group may not declare a codatatype.
+
+If two opened imports of a member bring in a type of the same name, and one of
+the two is declared in a member of the group, the name is ambiguous, also where
+both declarations denote the same type (outside a group, such a name is not
+ambiguous). Qualify the name with the module.
+
+Whether a trait is a reference type (whether it extends `object`, itself or
+through a parent trait) is needed before the imports among the members of a
+group are resolved. So for a trait of a group, the names of its parent traits
+are first looked up among all the declarations of the modules they lead
+through, whatever the export sets of those modules show. If the parent traits
+that resolution finds later give a different answer, that is an error. It
+arises only where a name means one trait with the export sets and another
+without them, and naming the parent trait through its module avoids it.
+
+Member invariants are checked across the whole group. An invariant may call a
+function of another member, and a type may inherit invariants from a trait of
+another member. The extension condition still follows every dependency, so an
+invariant may not define its meaning by quantifying over its own set of values,
+including through a function of another member.
+
+The following are not yet supported. Each is an error, so nothing is accepted
+that a later stage would have to reject:
+
+* a member of a group that is abstract, that refines or replaces a module, or
+  that declares an abstract import;
+* a module outside a group that refines a member, or that names a member in an
+  abstract import;
+* imports of the members of one group that name their targets through each
+  other (such as `import X = B.Y` in `A` beside `import Y = A.X` in `B`);
+* a group in a library: a module of a group must be among the files being
+  verified;
+* compiling a program that has a group: `dafny build`, `dafny run`,
+  `dafny translate` and a library build stop with an error after verification.
+
+A `.doo` library built with `--recursive-modules` requires its client to enable
+the option too; one built without it records nothing.
+
 ## 4.8. Name Resolution {#sec-name-resolution}
 
 When Dafny sees something like `A<T>.B<U>.C<V>`, how does it know what each part

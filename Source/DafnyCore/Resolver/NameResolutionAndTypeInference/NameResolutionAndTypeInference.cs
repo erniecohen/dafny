@@ -2915,7 +2915,7 @@ namespace Microsoft.Dafny {
 
       tp = tp.NormalizeExpand();
       var dependee = tp.AsIndDatatype;
-      if (dependee != null && dt.EnclosingModuleDefinition == dependee.EnclosingModuleDefinition) {
+      if (dependee != null && ModuleDefinition.InSameRecursiveGroup(dt.EnclosingModuleDefinition, dependee.EnclosingModuleDefinition)) {
         dependencies.AddEdge(dt, dependee);
         foreach (var ta in ((UserDefinedType)tp).TypeArgs) {
           AddDatatypeDependencyEdge(dt, ta, dependencies);

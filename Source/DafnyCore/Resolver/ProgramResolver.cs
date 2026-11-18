@@ -16,6 +16,43 @@ public class ProgramResolver {
   private readonly Dictionary<TopLevelDeclWithMembers, Dictionary<string, MemberDecl>> classMembers = new();
 
   protected readonly Graph<ModuleDecl> dependencies = new();
+
+  /// <summary>
+  /// What each edge of "dependencies" stands for.  Where two edges join the same two declarations, the
+  /// larger kind is kept.  Read only under --recursive-modules.
+  /// </summary>
+  private readonly Dictionary<(ModuleDecl From, ModuleDecl To), ModuleDependencyKind> dependencyKinds = new();
+
+  /// <summary>
+  /// The recursive module group of each declaration that is in one (--recursive-modules).  The first module
+  /// of a group, its leader, is resolved in place of the group: its worker resolves all the members together.
+  /// </summary>
+  private readonly Dictionary<ModuleDecl, RecursiveModuleGroup> groupOf = new();
+
+  private bool InGroupOf(ModuleDecl declaration, ModuleDecl other) {
+    return groupOf.TryGetValue(declaration, out var group) && groupOf.TryGetValue(other, out var otherGroup) && group == otherGroup;
+  }
+
+  /// <summary>
+  /// The declarations that must be resolved before "declaration".  For a declaration of a recursive module
+  /// group, those are the ones that any declaration of the group depends on outside the group and, unless
+  /// the declaration is the leader, the leader.
+  /// </summary>
+  private IEnumerable<ModuleDecl> Prerequisites(ModuleDecl declaration) {
+    if (!groupOf.TryGetValue(declaration, out var group)) {
+      return dependencies.FindVertex(declaration).Successors.Select(v => v.N);
+    }
+    var external = group.Declarations.SelectMany(d => dependencies.FindVertex(d).Successors.Select(v => v.N))
+      .Where(d => !InGroupOf(d, declaration));
+    return ReferenceEquals(declaration, group.Members[0]) ? external : external.Append(group.Members[0]);
+  }
+
+  private void AddDependency(ModuleDecl from, ModuleDecl to, ModuleDependencyKind kind) {
+    dependencies.AddEdge(from, to);
+    if (!dependencyKinds.TryGetValue((from, to), out var previous) || previous < kind) {
+      dependencyKinds[(from, to)] = kind;
+    }
+  }
   public DafnyOptions Options => Program.Options;
   public SystemModuleManager SystemModuleManager => Program.SystemModuleManager;
   public ErrorReporter Reporter => Program.Reporter;
@@ -52,7 +89,7 @@ public class ProgramResolver {
       profile.FrontEnd("resolve.prefixNamed", profileStart!.Value);
       profileStart = profile.BeginThread();
     }
-    if (!MemberInvariantChecks.Check(Program, Reporter)) {
+    if (!MemberInvariantChecks.Check(Program, Reporter) || !RecursiveModuleGroups.CheckOptions(Program, Reporter)) {
       return Task.CompletedTask;
     }
     ComputeModuleDependencyGraph(Program, out var moduleDeclarationPointers);
@@ -61,11 +98,20 @@ public class ProgramResolver {
       return Task.CompletedTask;
     }
 
-    var sortedDecls = dependencies.TopologicallySortedComponents();
+    // A component of more than one declaration is a recursive module group.  Its leader comes first, and
+    // every declaration of the group has the same height.
+    var sortedDecls = dependencies.TopologicallySortedComponents().SelectMany(representative =>
+      groupOf.TryGetValue(representative, out var group)
+        ? group.Declarations.OrderBy(d => ReferenceEquals(d, group.Members[0]) ? 0 : 1)
+        : Enumerable.Repeat(representative, 1)).ToList();
     Program.ModuleSigs = new();
 
     foreach (var declaration in sortedDecls) {
-      declaration.Height = dependencies.FindVertex(declaration).Successors.Select(v => v.N.Height + 1).DefaultIfEmpty(0).Max();
+      if (groupOf.TryGetValue(declaration, out var group) && !ReferenceEquals(declaration, group.Members[0])) {
+        declaration.Height = group.Members[0].Height;
+      } else {
+        declaration.Height = Prerequisites(declaration).Select(d => d.Height + 1).DefaultIfEmpty(0).Max();
+      }
       if (declaration is LiteralModuleDecl literal) { literal.ModuleDef.Height = declaration.Height; }
     }
     if (profile != null) {
@@ -195,8 +241,9 @@ public class ProgramResolver {
     Dictionary<ModuleDecl, Action<ModuleDecl>> pointers, CancellationToken cancellationToken) {
     var indices = declarations.Select((declaration, index) => (declaration, index))
       .ToDictionary(p => p.declaration, p => p.index);
-    var prerequisites = declarations.Select(d => dependencies.FindVertex(d).Successors
-      .Select(v => indices[v.N]).Distinct().Order().ToArray()).ToArray();
+    var prerequisites = declarations.Select(d => Prerequisites(d)
+      .Select(v => indices[v]).Distinct().Order().ToArray()).ToArray();
+    var groupResults = new Dictionary<ModuleDecl, ModuleResolutionResult>(); // guarded by "gate"
     var dependents = declarations.Select(_ => new List<int>()).ToArray();
     var remaining = prerequisites.Select(p => p.Length).ToArray();
     var ready = new SortedSet<int>();
@@ -221,7 +268,13 @@ public class ProgramResolver {
         // Initialize it before multiple importers can request the same view.
         _ = literal.AccessibleSignature();
       }
-      var key = ModuleResolutionKey.Compute(declaration.FullName, ModuleSource(declaration), ModuleResolutionKey.DafnyVersion,
+      var source = ModuleSource(declaration);
+      if (groupOf.TryGetValue(declaration, out var group) && ReferenceEquals(declaration, group.Members[0])) {
+        // The leader of a recursive module group stands for the group.
+        source = string.Join("\n", group.Declarations.Select(d => d.FullName + "\n" +
+          string.Join(",", KeyOptions(d).Select(option => option.Key + "=" + option.Value)) + "\n" + ModuleSource(d)));
+      }
+      var key = ModuleResolutionKey.Compute(declaration.FullName, source, ModuleResolutionKey.DafnyVersion,
         KeyOptions(declaration), prerequisites[i].Select(j =>
           new ModuleResolutionKey.Prerequisite(DependencyRole(declaration, declarations[j]),
             declarations[j].FullName, Program.ResolutionKeys[declarations[j]])));
@@ -304,7 +357,8 @@ public class ProgramResolver {
                   definition.ResolutionKey = Program.ResolutionKeys[declarations[index]];
                 }
                 var output = resolved with {
-                  Key = Program.ResolutionKeys[declarations[index]], Builtins = builtins,
+                  Key = Program.ResolutionKeys[declarations[index]],
+                  Builtins = builtins,
                   SystemClassMembers = worker.classMembers.Where(p => p.Key.EnclosingModuleDefinition.Name == "_System" &&
                       translationInputs.BuiltinNames.Contains(p.Key.Name))
                     .ToDictionary(p => p.Key, p => p.Value),
@@ -315,14 +369,69 @@ public class ProgramResolver {
                 }
                 return output;
               }
-              moduleOutput = ResolveModuleOutput(declarations[index], Program.ResolutionKeys[declarations[index]],
-                closure.Select(i => results[i]).ToArray(), ResolveOutput, out var cacheHit);
-              cached = cacheHit;
+              Dictionary<ModuleDecl, ModuleResolutionResult> ResolveGroupOutputs(RecursiveModuleGroup group) {
+                var resolved = RecursiveModuleGroupResolver.Resolve(worker, group, Program.Compilation);
+                var invalid = resolved.Values.Any(r => r.ErrorReporter.HasErrors || r.Signatures.Keys.Any(m => !m.SuccessfullyResolved)) ||
+                  closure.Any(i => results[i].ErrorReporter.HasErrors ||
+                    results[i].Signatures.Keys.Any(m => !m.SuccessfullyResolved));
+                // The members are translated with one another's declarations, so they share their inputs.
+                var translationInputs = new ModuleTranslationInputs(null, closure.Select(i => results[i].TranslationInputs)
+                  .Concat(invalid ? [] : group.Declarations.Select(d => new ModuleTranslationInputs(d, []))));
+                translationInputs.Bitwidths.UnionWith(builtins.Bitwidths);
+                builtins.RestrictResolutionOutput(translationInputs);
+                var signatures = new Dictionary<ModuleDefinition, ModuleSignature>();
+                var members = new Dictionary<TopLevelDeclWithMembers, Dictionary<string, MemberDecl>>();
+                foreach (var result in group.Declarations.Select(d => resolved[d])) {
+                  foreach (var signature in result.Signatures) {
+                    signatures[signature.Key] = signature.Value;
+                    translationInputs.ModuleNames.Add(signature.Key.FullName);
+                    signature.Key.TranslationInputs = translationInputs;
+                    signature.Key.ResolutionKey = Program.ResolutionKeys[result.ResolvedDeclaration];
+                  }
+                  foreach (var pair in result.ClassMembers) { members[pair.Key] = pair.Value; }
+                }
+                var systemClassMembers = worker.classMembers.Where(p => p.Key.EnclosingModuleDefinition.Name == "_System" &&
+                    translationInputs.BuiltinNames.Contains(p.Key.Name))
+                  .ToDictionary(p => p.Key, p => p.Value);
+                var outputs = new Dictionary<ModuleDecl, ModuleResolutionResult>();
+                foreach (var declaration in group.Declarations) {
+                  var result = resolved[declaration];
+                  if (ReferenceEquals(declaration, group.Members[0])) {
+                    // Every other declaration of the group, and so every dependent of the group, has the leader
+                    // as a prerequisite; the leader's output gives them the signatures and members of the group.
+                    result = new ModuleResolutionResult(declaration, result.ErrorReporter, signatures, members);
+                  }
+                  outputs[declaration] = result with {
+                    Key = Program.ResolutionKeys[declaration],
+                    Builtins = builtins,
+                    SystemClassMembers = systemClassMembers,
+                    TranslationInputs = translationInputs
+                  };
+                }
+                return outputs;
+              }
+              if (groupOf.TryGetValue(declarations[index], out var group)) {
+                // A recursive module group is resolved by the worker of its leader, which is a prerequisite
+                // of the other declarations of the group.  A group is not cached.
+                if (ReferenceEquals(declarations[index], group.Members[0])) {
+                  var outputs = ResolveGroupOutputs(group);
+                  lock (gate) {
+                    foreach (var groupOutput in outputs) { groupResults[groupOutput.Key] = groupOutput.Value; }
+                  }
+                }
+                lock (gate) { moduleOutput = groupResults[declarations[index]]; }
+                cached = false;
+              } else {
+                moduleOutput = ResolveModuleOutput(declarations[index], Program.ResolutionKeys[declarations[index]],
+                  closure.Select(i => results[i]).ToArray(), ResolveOutput, out var cacheHit);
+                cached = cacheHit;
+              }
               status = "completed";
             } catch (OperationCanceledException) {
               status = "cancelled";
               throw;
-            } finally {
+            }
+            finally {
               if (profile != null) {
                 // Take clears thread-local state even after a cache hit, cancellation or failure.
                 // The id is canonical graph order; events are emitted as workers complete.
@@ -342,7 +451,9 @@ public class ProgramResolver {
                 });
                 profile.Span("resolve.module", start.Value, new Dictionary<string, object> {
                   ["module"] = declarations[index].FullName,
-                  ["key"] = Program.ResolutionKeys[declarations[index]], ["cached"] = cached, ["status"] = status
+                  ["key"] = Program.ResolutionKeys[declarations[index]],
+                  ["cached"] = cached,
+                  ["status"] = status
                 });
               }
             }
@@ -360,7 +471,8 @@ public class ProgramResolver {
               }
               Monitor.PulseAll(gate);
             }
-          } finally {
+          }
+          finally {
             Type.ResetScopes();
           }
         }
@@ -382,7 +494,8 @@ public class ProgramResolver {
       var callerScopes = Type.SaveScopes();
       try {
         RunWorker();
-      } finally {
+      }
+      finally {
         Type.RestoreScopes(callerScopes);
       }
     } else {
@@ -461,7 +574,10 @@ public class ProgramResolver {
       return literal.ModuleDef.Implements?.Target.Root == prerequisite ? "refinement" : "nested";
     }
     return declaration switch {
-      AliasModuleDecl => "import", AbstractModuleDecl => "abstract-import", ModuleExportDecl => "export-owner", _ => "resolution"
+      AliasModuleDecl => "import",
+      AbstractModuleDecl => "abstract-import",
+      ModuleExportDecl => "export-owner",
+      _ => "resolution"
     };
   }
 
@@ -508,6 +624,15 @@ public class ProgramResolver {
     ProcessDependencies(program.DefaultModule, defaultModuleBindings, moduleDeclarationPointers);
 
     // check for cycles in the import graph
+    if (Options.Get(CommonOptionBag.RecursiveModules)) {
+      // A cycle of plain imports is a recursive module group; any other cycle is an error.
+      foreach (var group in RecursiveModuleGroups.Compute(program, dependencies, (from, to) => dependencyKinds[(from, to)], Reporter)) {
+        foreach (var declaration in group.Declarations) {
+          groupOf[declaration] = group;
+        }
+      }
+      return;
+    }
     foreach (var cycle in dependencies.AllCycles()) {
       ModuleResolver.ReportCycleError(Reporter, cycle, m => m.Origin,
         m => (m is AliasModuleDecl ? "import " : "module ") + m.Name,
@@ -702,7 +827,7 @@ public class ProgramResolver {
         root = SkipEnclosingModules(copied, root);
         copied.Root = root;
         declarationPointers.AddOrUpdate(root, v => copied.Root = v, Util.Concat);
-        dependencies.AddEdge(literalDecl, root);
+        AddDependency(literalDecl, root, ModuleDependencyKind.Refinement);
       }
       return;
     }
@@ -723,7 +848,9 @@ public class ProgramResolver {
             module.Implements.Target.ToString());
         } else {
           Contract.Assert(other != null); // follows from postcondition of TryGetValue
-          dependencies.AddEdge(literalDecl, other);
+          AddDependency(literalDecl, other, module.Implements.Kind == ImplementationKind.Replacement
+            ? ModuleDependencyKind.Replacement
+            : ModuleDependencyKind.Refinement);
         }
       }
     }
@@ -747,9 +874,10 @@ public class ProgramResolver {
       }
 
       if (toplevel is ModuleExportDecl) {
-        dependencies.AddEdge(moduleDecl, literalDecl);
+        AddDependency(moduleDecl, literalDecl, ModuleDependencyKind.Declaration);
       } else {
-        dependencies.AddEdge(literalDecl, moduleDecl);
+        AddDependency(literalDecl, moduleDecl,
+          moduleDecl is LiteralModuleDecl ? ModuleDependencyKind.Submodule : ModuleDependencyKind.Declaration);
       }
 
       var subBindings = bindings.SubBindings(moduleDecl.Name);
@@ -828,7 +956,7 @@ public class ProgramResolver {
         root = SkipEnclosingModules(aliasDecl.TargetQId, root);
         aliasDecl.TargetQId.Root = root;
         declarationPointers.AddOrUpdate(root, v => aliasDecl.TargetQId.Root = v, Util.Concat);
-        dependencies.AddEdge(aliasDecl, root);
+        AddDependency(aliasDecl, root, ModuleDependencyKind.Import);
       }
     } else if (moduleDecl is AbstractModuleDecl abstractDecl) {
       if (!bindings.ResolveQualifiedModuleIdRootAbstract(abstractDecl, abstractDecl.QId, out var root)) {
@@ -839,7 +967,7 @@ public class ProgramResolver {
         root = SkipEnclosingModules(abstractDecl.QId, root);
         abstractDecl.QId.Root = root;
         declarationPointers.AddOrUpdate(root, v => abstractDecl.QId.Root = v, Util.Concat);
-        dependencies.AddEdge(abstractDecl, root);
+        AddDependency(abstractDecl, root, ModuleDependencyKind.AbstractImport);
       }
     }
   }
