@@ -82,6 +82,16 @@ public class LibraryBackend : ExecutableBackend {
       dooFile.Manifest.ModularTermination = completion.CreateRecord();
       dooFile.TerminationContractsText = completion.Contracts.EntryText;
     }
+    if (Options.Get(CommonOptionBag.RecursiveModules)) {
+      var groups = dafnyProgram.RawModules().Select(m => m.RecursiveGroup).Where(g => g != null).Distinct().ToList();
+      if (groups.Any(g => g.Members.Select(m => m.ModuleDef.ShouldCompile(dafnyProgram.Compilation)).Distinct().Count() != 1)) {
+        dafnyProgram.Reporter.Error(MessageSource.Compiler, Token.Cli,
+          "a .doo library must retain every member of a recursive module group or none of them");
+        return;
+      }
+      dooFile.Manifest.RecursiveModules = RecursiveModuleManifest.Create(dooFile,
+        groups.Where(g => g.Members[0].ModuleDef.ShouldCompile(dafnyProgram.Compilation)));
+    }
     dooFile.Write(output);
   }
 

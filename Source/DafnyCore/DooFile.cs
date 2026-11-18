@@ -42,6 +42,8 @@ public class DooFile {
     /// </summary>
     public ModularTerminationManifest? ModularTermination { get; set; }
 
+    public RecursiveModuleManifest? RecursiveModules { get; set; }
+
     static ManifestData() {
       CommonOptionBag.EnsureStaticConstructorHasRun();
     }
@@ -196,6 +198,31 @@ public class DooFile {
       reporter.Error(MessageSource.Project, origin,
         $"cannot load {options.GetPrintPath(file.LocalPath)}: .doo files cannot be used with the legacy CLI");
       return null;
+    }
+
+    var recursive = Manifest.RecursiveModules;
+    if (Manifest.Options == null) {
+      reporter.Error(MessageSource.Project, origin, "cannot load a .doo library whose manifest has no options table");
+      return null;
+    }
+    var recordsGroups = Manifest.Options.TryGetValue(CommonOptionBag.RecursiveModules.Name, out var enabled) &&
+                        enabled is true;
+    if (recursive != null) {
+      if (!options.Get(CommonOptionBag.RecursiveModules) && !recordsGroups) {
+        reporter.Error(MessageSource.Project, origin,
+          "cannot load a recursive-module library without --recursive-modules");
+        return null;
+      }
+      if (options.Get(CommonOptionBag.RecursiveModules) &&
+          (!recordsGroups || recursive.Schema != 1 || recursive.Groups == null ||
+          recursive.Groups.Any(g => g.Members == null || g.Members.Count < 2) ||
+          recursive.ProgramSha256 != ModularTerminationRecords.Sha256(ProgramText) ||
+          recursive.ManifestSha256 != RecursiveModuleManifest.ManifestDigest(Manifest) ||
+          recursive.RecordSha256 != recursive.Digest())) {
+        reporter.Error(MessageSource.Project, origin,
+          "cannot load a recursive-module library: its group record is missing, unsupported or does not match its retained program; rebuild the library");
+        return null;
+      }
     }
 
     if (!options.Get(CommonOptionBag.ModularTermination) &&

@@ -30,6 +30,68 @@ public class TranslationCacheTests {
   private record Run(string Stdout, string Stderr, ExitValue Exit, string[] Tasks,
     long SolverStarts, long ResultHits);
 
+  [Theory]
+  [InlineData(0)]
+  [InlineData(3)]
+  public async Task RecursiveGroupEditCannotReuseASiblingsFalseProof(int threads) {
+    var directory = Path.Combine(Path.GetTempPath(), "dafny-group-cache-" + Guid.NewGuid());
+    Directory.CreateDirectory(directory);
+    var cache = ModuleTranslationCache.ProcessCache;
+    cache.Clear();
+    try {
+      var a = Path.Combine(directory, "a.dfy");
+      var b = Path.Combine(directory, "b.dfy");
+      var outside = Path.Combine(directory, "outside.dfy");
+      await File.WriteAllTextAsync(a, """
+        module A {
+          import B
+          lemma Attack() { if !B.Choice() { assert false; } }
+        }
+        """);
+      const string sibling = "module B { import A function Choice(): bool { true } lemma Private() { assert true; } }";
+      await File.WriteAllTextAsync(b, sibling);
+      await File.WriteAllTextAsync(outside, "module Outside { lemma Good() { assert true; } }");
+      var results = Path.Combine(directory, "results");
+      Task<Run> Run(bool translations = true) => Verify(a, translations, true, false,
+        verificationCache: results, recursiveModules: true, threads: threads, otherSources: [b, outside]);
+      var cold = await Run();
+      Assert.Equal(ExitValue.SUCCESS, cold.Exit);
+      Assert.True(cold.SolverStarts > 0);
+      var translations = cache.Translations;
+      var warm = await Run();
+      Assert.Equal(ExitValue.SUCCESS, warm.Exit);
+      Assert.Equal(0, warm.SolverStarts);
+      Assert.True(warm.ResultHits > 0);
+      Assert.Equal(translations, cache.Translations);
+
+      // A private method-body edit changes every member's resolution/translation inputs.
+      // Exact unchanged prepared verification tasks may still hit the result cache.
+      await File.WriteAllTextAsync(b, sibling.Replace("assert true;", "assert 0 == 0;"));
+      var privateEdit = await Run();
+      Assert.Equal(ExitValue.SUCCESS, privateEdit.Exit);
+      var siblingsRetranslated = cache.Translations >= translations + 2;
+      Assert.True(privateEdit.ResultHits > 0);
+      translations = cache.Translations;
+      await File.WriteAllTextAsync(outside, "module Outside { lemma Good() { assert 1 == 1; } }");
+      Assert.Equal(ExitValue.SUCCESS, (await Run()).Exit);
+      var onlyOutsideRetranslated = translations + 1 == cache.Translations;
+
+      // A's source is unchanged. Its formerly unreachable false assertion is now reached.
+      await File.WriteAllTextAsync(b, sibling.Replace("{ true }", "{ false }"));
+      var changed = await Run();
+      var uncached = await Run(false);
+      Assert.Equal(ExitValue.VERIFICATION_ERROR, changed.Exit);
+      Assert.Contains("assertion might not hold", changed.Stdout);
+      Assert.Equal(uncached.Exit, changed.Exit);
+      Assert.Equal(uncached.Tasks, changed.Tasks);
+      Assert.True(siblingsRetranslated);
+      Assert.True(onlyOutsideRetranslated);
+    } finally {
+      cache.Clear();
+      Directory.Delete(directory, true);
+    }
+  }
+
   [Fact]
   public async Task TranslationSnapshotsAndPersistentResultsComposeWithoutWarmSolverCalls() {
     var directory = Path.Combine(Path.GetTempPath(), "dafny-combined-cache-" + Guid.NewGuid());
@@ -224,13 +286,19 @@ public class TranslationCacheTests {
   }
 
   private static async Task<Run> Verify(string source, bool cached, bool refresh, bool coverage,
-    bool extractCounterexample = false, bool modularTermination = false, string? verificationCache = null) {
+    bool extractCounterexample = false, bool modularTermination = false, string? verificationCache = null,
+    bool recursiveModules = false, int threads = 0, string[]? otherSources = null) {
     var stdout = new StringWriter();
     var stderr = new StringWriter();
     var options = new DafnyOptions(TextReader.Null, stdout, stderr);
     options.ApplyDefaultOptionsWithoutSettingsDefault();
     options.Set(CommonOptionBag.UnicodeCharacters, true);
     options.Set(CommonOptionBag.TranslationCache, cached);
+    if (recursiveModules) {
+      options.Set(CommonOptionBag.RecursiveModules, true);
+      options.Set(CommonOptionBag.MemberInvariants, true);
+      options.Set(CommonOptionBag.ResolutionThreads, threads);
+    }
     if (verificationCache != null) {
       options.Set(CommonOptionBag.VerificationCache, verificationCache);
     }
@@ -253,6 +321,7 @@ public class TranslationCacheTests {
       options.ProverOptions.Add("PROVER_PATH=" + solver);
     }
     options.CliRootSourceUris.Add(new Uri(source));
+    foreach (var other in otherSources ?? []) { options.CliRootSourceUris.Add(new Uri(other)); }
     var cli = CliCompilation.Create(options);
     using var compilation = cli.Compilation;
     cli.Start();

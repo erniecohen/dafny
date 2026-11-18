@@ -271,8 +271,13 @@ public class ProgramResolver {
       var source = ModuleSource(declaration);
       if (groupOf.TryGetValue(declaration, out var group) && ReferenceEquals(declaration, group.Members[0])) {
         // The leader of a recursive module group stands for the group.
-        source = string.Join("\n", group.Declarations.Select(d => d.FullName + "\n" +
-          string.Join(",", KeyOptions(d).Select(option => option.Key + "=" + option.Value)) + "\n" + ModuleSource(d)));
+        // Frame every owned declaration and option separately. In particular, source and option
+        // separators must not be able to change which member owns an input. The leader's lower
+        // prerequisites below are the union for the entire component.
+        source = ModuleResolutionKey.Compute("recursive-module-group/v1", "", ModuleResolutionKey.DafnyVersion,
+          [], group.Declarations.Select(d => new ModuleResolutionKey.Prerequisite("member", d.FullName,
+            ModuleResolutionKey.Compute(d.FullName, ModuleSource(d), ModuleResolutionKey.DafnyVersion,
+              KeyOptions(d), []))));
       }
       var key = ModuleResolutionKey.Compute(declaration.FullName, source, ModuleResolutionKey.DafnyVersion,
         KeyOptions(declaration), prerequisites[i].Select(j =>

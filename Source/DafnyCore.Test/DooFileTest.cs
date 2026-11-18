@@ -59,6 +59,7 @@ public class DooFileTest {
     var writer = new StringWriter();
     without.Write(writer);
     Assert.DoesNotContain(name, writer.ToString());
+    Assert.DoesNotContain("recursive_modules", writer.ToString());
 
     options.Set(CommonOptionBag.RecursiveModules, true);
     var with = new DooFile.ManifestData(options);
