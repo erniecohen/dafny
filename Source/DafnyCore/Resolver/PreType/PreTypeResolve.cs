@@ -57,6 +57,13 @@ namespace Microsoft.Dafny {
     TopLevelDeclWithMembers currentClass;
     MethodOrConstructor currentMethod;
 
+    /// <summary>
+    /// Issue 105: while the constraint of an InvariantTypeDecl is resolved, the variable of its newtype's header whose
+    /// type is inferred, which the header conjunct shares with the newtype (see InvariantTypeDecl.HeaderConjunctOf), so
+    /// that it keeps the pre-type that the newtype gave it. Otherwise null.
+    /// </summary>
+    BoundVar sharedHeaderVariable;
+
     private readonly Dictionary<string, TopLevelDecl> preTypeBuiltins = new();
     public readonly PreTypeConstraints Constraints;
 
@@ -1199,7 +1206,10 @@ namespace Microsoft.Dafny {
           scope.PushMarker();
           scope.AllowInstance = false;
           ScopePushExpectSuccess(variable, dd.WhatKind + " variable", false);
+          sharedHeaderVariable = dd is InvariantTypeDecl { HeaderConjunct: LetExpr { LHSs: [{ Var: { Type: TypeProxy } shared }] } }
+            ? shared : null;
           ResolveExpression(constraint, new ResolutionContext(new CodeContextWrapper(dd, true), false));
+          sharedHeaderVariable = null;
           ConstrainTypeExprBool(constraint, dd.WhatKind + " constraint must be of type bool (instead got {0})");
           scope.PopMarker();
           Constraints.SolveAllTypeConstraints($"{dd.WhatKind} '{dd.Name}' constraint");

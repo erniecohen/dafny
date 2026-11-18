@@ -588,9 +588,9 @@ namespace Microsoft.Dafny {
               foreach (var bv in e.BoundVars) {
                 int prevErrorCount = ErrorCount;
                 resolver.ResolveType(bv.Origin, bv.Type, resolutionContext, ResolveTypeOptionEnum.InferTypeProxies, null);
-                // Issue 105: a variable whose type is to be inferred, and that has a pre-type already, is shared with a
-                // declaration that has resolved it (see InvariantTypeDecl.HeaderConjunctOf)
-                if (bv.PreType == null || bv.Type is not TypeProxy) {
+                // Issue 105: the variable of a newtype's header that a header conjunct shares keeps the pre-type that
+                // the newtype gave it (see sharedHeaderVariable)
+                if (bv.PreType == null || bv != sharedHeaderVariable) {
                   bv.PreType = Type2PreType(bv.Type);
                 }
               }
