@@ -72,10 +72,20 @@ public class StmtExpr : Expression, ICanFormat, ICloneable<StmtExpr> {
         return CreateBoolLiteral(Origin, true);  // one could use the postcondition of the method, suitably instantiated, but "true" is conservative and much simpler :)
       case BlockByProofStmt stmt:
         return GetStatementConclusion(stmt.Body);
+      case VarDeclStmt:
+        return CreateBoolLiteral(Origin, true);  // the call of a lemma whose results are bound (see LetExpr.LemmaBinding); "true" is conservative
       default:
         Contract.Assert(false); throw new Cce.UnreachableException();  // unexpected statement
     }
   }
+
+  /// <summary>
+  /// If this StmtExpr is the one that resolution builds for a lemma binding (see LetExpr.LemmaBinding), then
+  /// return the call statement that S makes. Otherwise, return null. No statement that a user can write as
+  /// the S of a StmtExpr declares a local variable, so the test is exact.
+  /// </summary>
+  public CallStmt LemmaBindingCall =>
+    S is VarDeclStmt { Assign: AssignStatement { ResolvedStatements: { Count: 1 } resolved } } && resolved[0] is CallStmt call ? call : null;
 
   public bool SetIndent(int indentBefore, TokenNewIndentCollector formatter) {
     formatter.Visit(S, indentBefore);

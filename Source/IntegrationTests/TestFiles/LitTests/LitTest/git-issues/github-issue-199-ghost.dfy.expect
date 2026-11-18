@@ -1,0 +1,5 @@
+github-issue-199-ghost.dfy(18,2): Error: ghost variables such as m are allowed only in specification contexts. m was inferred to be ghost based on its declaration or initialization.
+github-issue-199-ghost.dfy(23,2): Error: ghost variables such as m are allowed only in specification contexts. m was inferred to be ghost based on its declaration or initialization.
+github-issue-199-ghost.dfy(27,25): Error: ghost variables such as m are allowed only in specification contexts. m was inferred to be ghost based on its declaration or initialization.
+github-issue-199-ghost.dfy(32,4): Error: ghost variables such as m are allowed only in specification contexts. m was inferred to be ghost based on its declaration or initialization.
+4 resolution/type errors detected in github-issue-199-ghost.dfy

@@ -1,0 +1,13 @@
+github-issue-199-triggers.dfy(25,10): Info: Selected triggers: {var m := Find(n); m}
+github-issue-199-triggers.dfy(30,10): Info: Selected triggers:
+   {var _, b := Split(n); b}, {var a, _ := Split(n); a}
+github-issue-199-triggers.dfy(49,10): Info: Selected triggers: {s[i]}
+github-issue-199-triggers.dfy(48,11): Info: Selected triggers:
+   {var m := Find(i); m}, {s[i]}
+github-issue-199-triggers.dfy(61,10): Info: Selected triggers:
+   {var m := Further(n); m}, {var m := Find(n); m}
+github-issue-199-triggers.dfy(72,10): Info: Selected triggers: {var m := Find(n); m}
+github-issue-199-triggers.dfy(20,15): Info: hidden functions: Above
+github-issue-199-triggers.dfy(71,6): Info: hidden functions: Positive
+
+Dafny program verifier finished with 18 verified, 0 errors

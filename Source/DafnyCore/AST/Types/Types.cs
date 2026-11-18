@@ -347,17 +347,9 @@ public abstract class Type : NodeWithOrigin {
       if (rtd != null) {
         var udt = (UserDefinedType)type;
 
-        if (!rtd.AsTopLevelDecl.IsVisibleInScope(scope)) {
-          // This can only mean "rtd" is a class/trait that is only provided, not revealed. For a provided class/trait,
-          // it is the non-null type declaration that is visible, not the class/trait declaration itself.
-          if (rtd is ClassLikeDecl cl) {
-            Contract.Assert(cl.NonNullTypeDecl != null);
-            Contract.Assert(cl.NonNullTypeDecl.IsVisibleInScope(scope));
-          } else {
-            Contract.Assert(rtd is AbstractTypeDecl);
-          }
-        }
-
+        // Export checking and inferred types in imported specifications can refer to declarations
+        // that are not visible in this scope. Only revelation controls whether their definitions
+        // may be expanded; an invisible type must retain its opaque self-synonym.
         if (rtd.IsRevealedInScope(scope)) {
           if (expandMode != ExpandMode.DontExpandJustAdjustForScopes && rtd is TypeSynonymDecl { IsCyclic: false } typeSynonymDecl) {
             if (typeSynonymDecl is not SubsetTypeDecl || expandMode == ExpandMode.ExpandSynonymsAndSubsetTypes) {
@@ -375,16 +367,6 @@ public abstract class Type : NodeWithOrigin {
       var isyn = type.AsInternalTypeSynonym;
       if (isyn != null) {
         var udt = (UserDefinedType)type;
-
-        if (!isyn.IsVisibleInScope(scope)) {
-          // This can only mean "isyn" refers to a class/trait that is only provided, not revealed. For a provided class/trait,
-          // it is the non-null type declaration that is visible, not the class/trait declaration itself.
-          var rhs = isyn.RhsWithArgumentIgnoringScope(udt.TypeArgs);
-          Contract.Assert(rhs is UserDefinedType);
-          var cl = ((UserDefinedType)rhs).ResolvedClass as ClassLikeDecl;
-          Contract.Assert(cl != null && cl.NonNullTypeDecl != null, rhs.ToString());
-          Contract.Assert(cl.NonNullTypeDecl.IsVisibleInScope(scope));
-        }
 
         if (isyn.IsRevealedInScope(scope)) {
           type = isyn.RhsWithArgument(udt.TypeArgs);

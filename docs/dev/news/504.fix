@@ -1,0 +1,1 @@
+The member-invariant extension condition now follows type dependence through datatype cycles without retaining provisional negative answers. An unbounded quantifier over a dependent type is rejected regardless of which type was visited first. The hidden `--legacy-member-invariant-dependence` option restores the unsound cache for migration and comparison only.

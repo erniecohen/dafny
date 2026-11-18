@@ -1,0 +1,17 @@
+github-issue-199-substitution.dfy(72,26): Error: function precondition could not be proved
+ Asserted expression: (var m: nat := Find(x + 1); m) > 5
+github-issue-199-substitution.dfy(26,33): Related location: this proposition could not be proved
+github-issue-199-substitution.dfy(73,27): Error: function precondition could not be proved
+ Asserted expression: (var a: nat, b: nat := Split(y + 2); b) > 5
+github-issue-199-substitution.dfy(32,37): Related location: this proposition could not be proved
+github-issue-199-substitution.dfy(74,25): Error: function precondition could not be proved
+ Asserted expression: (var z: int := Add(t + 3, 2); z) + (var w: int := Add(t + 3, 1); w) > 100
+github-issue-199-substitution.dfy(38,68): Related location: this proposition could not be proved
+github-issue-199-substitution.dfy(75,28): Error: function precondition could not be proved
+ Asserted expression: (var m: int := c.Mine(u + 4); m) > 5
+github-issue-199-substitution.dfy(59,35): Related location: this proposition could not be proved
+github-issue-199-substitution.dfy(76,30): Error: function precondition could not be proved
+ Asserted expression: (var m: int := Static(v + 5); m) > 5
+github-issue-199-substitution.dfy(65,37): Related location: this proposition could not be proved
+
+Dafny program verifier finished with 10 verified, 5 errors

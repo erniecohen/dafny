@@ -211,6 +211,8 @@ namespace Microsoft.Dafny.Triggers {
         return ShallowEq((OldExpr)expr1, (OldExpr)expr2);
       } else if (expr1 is FunctionCallExpr && expr2 is FunctionCallExpr) {
         return ShallowEq((FunctionCallExpr)expr1, (FunctionCallExpr)expr2);
+      } else if (expr1 is LemmaResultExpr lemmaResult1 && expr2 is LemmaResultExpr lemmaResult2) {
+        return ShallowEq(lemmaResult1, lemmaResult2);
       } else if (expr1 is ApplyExpr && expr2 is ApplyExpr) {
         return ShallowEq((ApplyExpr)expr1, (ApplyExpr)expr2);
       } else if (expr1 is SeqUpdateExpr && expr2 is SeqUpdateExpr) {
@@ -390,6 +392,14 @@ namespace Microsoft.Dafny.Triggers {
       return expr1.Name == expr2.Name &&
              expr1.CoCall == expr2.CoCall && //TODO
              expr1.Function == expr2.Function; // TODO TypeArgumentSubstitutions?
+    }
+
+    private static bool ShallowEq(LemmaResultExpr expr1, LemmaResultExpr expr2) {
+      Func<Type, Type, bool> comparer = TypeEq;
+      return expr1.Lemma == expr2.Lemma &&
+             expr1.OutIndex == expr2.OutIndex &&
+             expr1.TypeApplicationAtEnclosingClass.SequenceEqual(expr2.TypeApplicationAtEnclosingClass, new PredicateEqualityComparer<Type>(comparer)) &&
+             expr1.TypeApplicationJustMember.SequenceEqual(expr2.TypeApplicationJustMember, new PredicateEqualityComparer<Type>(comparer));
     }
 
     private static bool ShallowEq(ApplyExpr expr1, ApplyExpr expr2) {

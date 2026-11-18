@@ -1,0 +1,2 @@
+github-issue-199-referrers.dfy(11,49): Error: Expected 'locals', got unrelated method name 'L'
+1 resolution/type errors detected in github-issue-199-referrers.dfy
