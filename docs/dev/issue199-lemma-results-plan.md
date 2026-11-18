@@ -2,7 +2,8 @@
 
 Issue: [erniecohen/dafny#199](https://github.com/erniecohen/dafny/issues/199), friction case
 [`friction/cases/004-lemma-in-function`](https://github.com/erniecohen/dafny/tree/review/4.11.0/friction/cases/004-lemma-in-function).
-Status: plan only, for the owner's ruling.  Nothing here is implemented.  This is
+Status: implemented, both stages, behind `--lemma-bindings`.  Section 12 says where
+the implementation differs from the plan and what it settled.  The plan itself is
 the second revision: an adversarial pass tried to break every soundness claim of
 the first with a program, and section 11 lists what it changed.
 
@@ -906,3 +907,69 @@ the releases named at the top.  The outcome:
   statement's (3.4, A13); the trigger collector must see a binding as an
   application (7, A15); the option gates the resolver only (7); a fourth owner
   question (5.4).
+
+## 12. The implementation
+
+Both stages are implemented, with the four recommendations of section 10.  The
+tests are `git-issues/github-issue-199*.dfy`.  What differs from the text above,
+or was left open by it:
+
+- **The resolved form.**  There is no `LemmaBindingExpr`.  Resolution rewrites the
+  let in place into
+
+      var t1, ..., tn := receiver-and-arguments;
+      var y1, ..., yk := (var z1, ..., zk := L(t1, ..., tn); R1), R2, ..., Rk;
+      e
+
+  where the parenthesized expression is a statement expression around the call
+  statement, and each `Ri` is a `LemmaResultExpr` for one out-parameter at the
+  `ti`.  So the call is checked by the code that checks every call statement, and
+  everything that is assumed about the results comes from that statement
+  (`LemmaBindingCanCall`), never from a result expression.  The let keeps the
+  call that was written, for printing and for cloning before resolution.  A
+  substitution changes the receiver and arguments of the rewritten form only, so
+  the let it leaves is printed from the rewritten form, as the call at the new
+  arguments (`Find(x + 1)` for a precondition `(var m := Find(n); m) > 5` at a
+  call with `x + 1`).
+- **A library needs the option in its client.**  Section 7 said that a program
+  built without the option may use a library built with it.  It may not: the
+  client resolves the library's source again, with its own value of the option,
+  and without it the library's bindings are the errors they are in any program.
+  The option is not recorded in a library, so a library built with the option off
+  is the file it was before.  A library built without the option can be used by a
+  client with it.
+- **Placement** (3.1, V7).  A binding is allowed wherever a parenthesized lemma
+  call already is, which includes `decreases`, `reads` and `requires` clauses.
+  Test V7's "a binding in `decreases` or `reads`" is therefore an accepted case.
+- **Condition 3 has a fourth clause.**  A postcondition that depends on the heap
+  may not bind results of its own lemma, directly or through the postconditions of
+  other lemmas.  The reads check of 4.5 re-checks the postcondition at the
+  binding, and for such a postcondition that check would contain itself.  Whether a
+  postcondition depends on the heap is the least fixpoint over the lemmas whose
+  results it binds, so a recursive postcondition that reads nothing stays
+  admissible.
+- **Extreme and prefix lemmas** are excluded with two-state lemmas (condition 1).
+  A least or greatest lemma cannot have out-parameters in any case.
+- **The reads check of stage 2** is the full well-formedness check of the
+  postcondition at the values the call returned, in the enclosing frame.  It
+  repeats the other well-formedness conditions of the postcondition, which hold
+  there, because the reads checks are not separable from them.
+- **Triggers and printing.**  A result expression is a trigger candidate.  It is
+  printed, in triggers, with `--rprint` and in hints, as an expression that binds
+  the results and returns that one, `var y := L(args); y`, with `_` for the other
+  results.  A user can write the same thing as a trigger, and printed programs
+  resolve again.  A binding has a statement in it, the call.  So, as for any
+  statement expression, a term that contains a binding, such as
+  `P(var y := L(x); y)`, is not selected as a trigger; the result in it is.
+- **`:-`** is not a binding.  `var y :- L(args); e` gets the errors it got before.
+- **The hint** for the option-off error is "a lemma's results can be bound in an
+  expression under --lemma-bindings", shown with `--show-hints`.  The error itself
+  is unchanged.
+- **The translator fails closed.**  It asks conditions 2 and 3 again.  For a lemma
+  that does not meet them it declares the functions, emits no axiom and never
+  assumes `L#bind$canCall`.  The resolver rejects such a binding first, so this is
+  not reachable in a test.
+
+Left for later: with PR 384, the cone clause of 6.3; the out-of-scope items of
+section 8.
+

@@ -28,6 +28,7 @@ Unless marked *opt-in*, a change is on by default. Soundness fixes are on by def
 - `--conservative-match-inference` and fixes to the refreshed resolver (`--type-system-refresh`) for crossed comparisons, match literals, subtype variance diagnostics and match pattern types.
 - `--contextual-quantifier-domains`, `--contextual-lambda-domains`, `--invariant-constructor-inference`, `--synonym-refines-abstract-type`, `--ancestor-qualified-module-ids`, `--datatype-subset-conversions`, `--statement-expression-conclusions` and `--quantified-check-call-facts`.
 - `--user-defined-operators` (milestone 1).
+- `--lemma-bindings`: `var y1, ..., yk := L(args); e` binds results of the lemma `L` in an expression. The call is checked as the call statement is, and the results are a fixed function of the lemma, its arguments and, where the postcondition reads it, the heap.
 
 **Proof automation** (*opt-in*)
 - `--additional-axioms`: extra facts the prelude omits, such as lambda preconditions, datatype field ranks and bounded bitvector round trips. These are gated and measured in Z3 resource units.

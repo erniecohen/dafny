@@ -2468,6 +2468,17 @@ or the Dafny 4 syntax (`ghost function` and `function`)
   verified with the program. Disabled by default. Use `decreases-orders = true` in a project file's
   `[options]` section. See [well-founded orders](#sec-decreases-by).
 
+* `--lemma-bindings` - (experimental) accept an expression `var y1, ..., yk := L(args); e`,
+  where `L` is a lemma with `k` out-parameters. The call is checked as a lemma call
+  statement is, and in `e` the variables, which are ghost, denote results that satisfy
+  `L`'s postcondition. The results are a fixed function of the lemma, its arguments and, if
+  the postcondition reads the heap, the heap. `L` must be an ordinary lemma whose
+  out-parameter types contain no references and whose postcondition is an expression that
+  a function body could contain. Requires `--type-system-refresh`. A program that uses a
+  library that binds the results of a lemma must set the option, too. Disabled by default. Use
+  `lemma-bindings = true` in a project file's `[options]` section. See
+  [binding the results of a lemma](#sec-lemma-binding).
+
 * `--modular-termination` - (experimental; it does not yet establish termination in every
   program) accept `decreases {:global}` clauses, and reject a call dispatched to a
   bodyless member of a trait whose implementations may lie in other modules unless it

@@ -1583,6 +1583,94 @@ else var v, v1 := tmp.Extract(), V1; E
 So, if tmp is a failure value, then a corresponding failure value is propagated along; otherwise, the expression
 is evaluated as normal.
 
+#### 9.31.7.1. Binding the results of a lemma {#sec-lemma-binding}
+
+With the option `--lemma-bindings` (off by default; it requires `--type-system-refresh`),
+the right-hand side of a let expression may be a call of a lemma that has out-parameters:
+
+<!-- %no-check -->
+```dafny
+var y1, ..., yk := L(args); E
+```
+
+The left-hand sides are variables, one for each out-parameter of `L`, and they are ghost.
+The call is checked as the call statement `L(args);` is at that place: its precondition
+must hold and the call must terminate. In `E`, the variables denote results of the call:
+values that have the declared types of the out-parameters and satisfy `L`'s postcondition.
+
+<!-- %check-verify %options --type-system-refresh --lemma-bindings -->
+```dafny
+lemma Find(n: nat) returns (m: nat)
+  ensures m > n
+{
+  m := n + 1;
+}
+
+ghost function Above(n: nat): nat {
+  var m := Find(n); m
+}
+
+lemma AboveIsAbove(n: nat)
+  ensures Above(n) > n
+{
+}
+
+lemma SameCallSameResult(n: nat)
+  ensures Above(n) == (var m := Find(n); m)
+{
+}
+```
+
+The results are chosen from the values that satisfy the postcondition. The choice depends
+only on the lemma, its type arguments, its receiver and its in-arguments (and on the
+heap, if the postcondition depends on the heap). So the same call binds the same results
+wherever it is written, as `SameCallSameResult` shows. The choice is not the value that the
+body of the lemma computes: `Above(n) == n + 1` cannot be proved, since `Find` promises only
+`m > n`. Nor do the results of a call _statement_ `m := Find(n);` have to equal the
+bound ones. What is known about the bound results is assumed only where a call has been
+checked; elsewhere the same expression stands for values about which nothing is known.
+
+The results of a lemma can be bound only if what is chosen is a value that an expression can
+denote:
+
+* `L` is an ordinary `lemma`, not a `twostate`, `least`, `greatest` or prefix lemma.
+* No value of the type of an out-parameter may contain a reference; that is, the types
+  satisfy `(!new)`. For a generic lemma, this is judged at the type arguments of the call.
+* The postcondition of `L` is an expression that the body of a function may contain. It uses
+  no `old`, `fresh`, `unchanged`, `allocated` or two-state function, and it has no quantifier
+  or comprehension that ranges over the allocated references.
+* A postcondition that depends on the heap does not bind results of `L` itself, directly
+  or through the postconditions of other lemmas.
+
+If the postcondition reads the heap, then so does the binding. A function that binds the
+results must be allowed to read what the postcondition reads, at any results that satisfy it:
+
+<!-- %check-verify %options --type-system-refresh --lemma-bindings -->
+```dafny
+class Cell { var data: int }
+
+lemma Get(c: Cell) returns (x: int)
+  ensures x == c.data
+{
+  x := c.data;
+}
+
+ghost function Data(c: Cell): int
+  reads c
+{
+  var x := Get(c); x
+}
+```
+
+The left-hand sides must be variables, not patterns, and a let expression that uses `:-`
+or `:|` does not bind the results of a lemma. A bound result can be a trigger of a quantifier. It is written, and
+reported by `--show-hints`, as an expression that binds the results and returns one of them,
+like `{:trigger var m := Find(n); m}`. A larger term that contains a binding, like `P(var m := Find(n); m)`,
+is not selected as a trigger, because the binding has a statement in it, the call.
+
+A library that binds the results of a lemma is resolved again by each program that uses it, so
+such a program must be given `--lemma-bindings`, too.
+
 ### 9.31.8. Map Comprehension Expression ([grammar](#g-map-comprehension-expression)) {#sec-map-comprehension-expression}
 
 Examples:
