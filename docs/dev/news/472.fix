@@ -1,0 +1,1 @@
+Add regression coverage for recursive calls through newtype-to-trait casts, whose boxing translation was already repaired with member invariants.

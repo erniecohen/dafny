@@ -1477,3 +1477,16 @@ The regressions are `git-issues/git-issue-491.dfy`,
 `git-issues/git-issue-491-positive.dfy`. The negative controls prove `false` under
 the legacy option; the positive controls retain reachable failing assertions.
 The release note is `docs/dev/news/491.fix`.
+
+## Recursive newtype-to-trait casts (https://github.com/erniecohen/dafny/issues/472)
+
+The reported recursive call `(this as T).F(n - 1)` already verifies after the
+boxing repair in the member-invariants change
+(https://github.com/erniecohen/dafny/commit/1e370470c9). The existing
+`git-issues/git-issue-105-newtype-trait-cast.dfy` regression covers ordinary
+newtype-to-trait casts. It now also retains the reported function definition,
+an inhabited cast-and-round-trip witness, a false assertion after a trait call,
+and failed downcast, newtype-constraint and argument-constraint checks. It runs
+with and without additional axioms and member invariants.
+These are regression additions only: the verifier implementation, axioms and
+options are unchanged. The release note is `docs/dev/news/472.fix`.
