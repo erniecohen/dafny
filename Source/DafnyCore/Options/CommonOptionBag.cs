@@ -466,7 +466,7 @@ Value implementations must retain their type parameters in compatible parent pos
   };
 
   public static readonly Option<bool> LegacyRecursiveModuleInvariants = new("--legacy-recursive-module-invariants", () => false,
-    "Use the legacy, unsound per-module extension analysis and provisional dependency results for invariants in recursive module groups, for migration and comparison only.") {
+    "Use the legacy, unsound per-module extension-analysis scope for invariants in recursive module groups, for migration and comparison only. The general member-invariant dependence analysis is unchanged.") {
     IsHidden = true
   };
 

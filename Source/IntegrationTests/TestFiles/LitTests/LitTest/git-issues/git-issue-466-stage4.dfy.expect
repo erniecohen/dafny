@@ -13,3 +13,17 @@ git-issue-466-stage4-dependence.dfy(13,48): Error: 'No' is used by the invariant
 Dafny program verifier finished with 1 verified, 0 errors
 
 Dafny program verifier finished with 3 verified, 0 errors
+git-issue-466-stage4-dependence.dfy(13,48): Error: 'No' is used by the invariant of 'Liar' and refers to the set of values of 'C', which depends on 'Liar'
+1 resolution/type errors detected in git-issue-466-stage4-dependence.dfy
+git-issue-504-dependence.dfy(14,48): Error: 'No' is used by the invariant of 'Liar' and refers to the set of values of 'C', which depends on 'Liar'
+git-issue-504-dependence.dfy(42,48): Error: 'No' is used by the invariant of 'Liar' and refers to the set of values of 'B', which depends on 'Liar'
+git-issue-504-dependence.dfy(71,48): Error: 'No' is used by the invariant of 'Liar' and refers to the set of values of 'C', which depends on 'Liar'
+git-issue-504-dependence.dfy(100,48): Error: 'No' is used by the invariant of 'Liar' and refers to the set of values of 'D', which depends on 'Liar'
+git-issue-504-dependence.dfy(129,48): Error: 'No' is used by the invariant of 'Liar' and refers to the set of values of 'B', which depends on 'Liar'
+5 resolution/type errors detected in git-issue-504-dependence.dfy
+git-issue-504-dependence.dfy(14,48): Error: 'No' is used by the invariant of 'Liar' and refers to the set of values of 'C', which depends on 'Liar'
+git-issue-504-dependence.dfy(42,48): Error: 'No' is used by the invariant of 'Liar' and refers to the set of values of 'B', which depends on 'Liar'
+git-issue-504-dependence.dfy(71,48): Error: 'No' is used by the invariant of 'Liar' and refers to the set of values of 'C', which depends on 'Liar'
+git-issue-504-dependence.dfy(100,48): Error: 'No' is used by the invariant of 'Liar' and refers to the set of values of 'D', which depends on 'Liar'
+git-issue-504-dependence.dfy(129,48): Error: 'No' is used by the invariant of 'Liar' and refers to the set of values of 'B', which depends on 'Liar'
+5 resolution/type errors detected in git-issue-504-dependence.dfy

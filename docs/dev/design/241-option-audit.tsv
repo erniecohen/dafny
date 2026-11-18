@@ -81,7 +81,7 @@ cli	legacy-inherited-constructor-fields	--legacy-inherited-constructor-fields	Sy
 cli	legacy-inherited-termination-checks	--legacy-inherited-termination-checks	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	legacy-allocated-in-lambdas	--legacy-allocated-in-lambdas	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	legacy-inherited-name-capture	--legacy-inherited-name-capture	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
-cli	legacy-recursive-module-invariants	--legacy-recursive-module-invariants	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
+cli	legacy-recursive-module-invariants	--legacy-recursive-module-invariants	System.CommandLine.Option`1[System.Boolean]	input	per-module extension-analysis scope only; general dependence cache unchanged; parsed/resolved/rewritten/lowered before task lookup
 cli	legacy-module-names	--legacy-module-names	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	lemma-bindings	--lemma-bindings	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	length-limit	--length-limit	System.CommandLine.Option`1[System.UInt32]	command-setup	setup or another command; executes before/outside proof transport
