@@ -1,0 +1,1 @@
+Added regression coverage for using a nested newtype's constraint through an integer conversion after asserting the constraint at its base newtype, with explicit and inferred bases.

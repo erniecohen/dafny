@@ -1,0 +1,16 @@
+git-issue-496.dfy(39,2): Error: assertion might not hold
+git-issue-496.dfy(45,2): Error: assertion might not hold
+
+Dafny program verifier finished with 7 verified, 2 errors
+git-issue-496.dfy(39,2): Error: assertion might not hold
+git-issue-496.dfy(45,2): Error: assertion might not hold
+
+Dafny program verifier finished with 7 verified, 2 errors
+git-issue-496.dfy(39,2): Error: assertion might not hold
+git-issue-496.dfy(45,2): Error: assertion might not hold
+
+Dafny program verifier finished with 7 verified, 2 errors
+git-issue-496.dfy(39,2): Error: assertion might not hold
+git-issue-496.dfy(45,2): Error: assertion might not hold
+
+Dafny program verifier finished with 7 verified, 2 errors
