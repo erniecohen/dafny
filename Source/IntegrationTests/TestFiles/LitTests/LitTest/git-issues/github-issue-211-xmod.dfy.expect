@@ -1,0 +1,70 @@
+default: rules, any trait extendable, foreign leaves, bounded foreign implementations: verifies
+
+Dafny program verifier finished with 27 verified, 0 errors
+default: rules vacuity control: assert false fails
+github-issue-211-rev3-rules-false.dfy(52,4): Error: assertion might not hold
+
+Dafny program verifier finished with 26 verified, 1 error
+default: foreign implementations without a bound that are not leaves: rejected
+github-issue-211-rev3-errors.dfy(16,13): Error: modular termination: 'Size' implements 'Tr.T.Size' of another module, which has no 'decreases {:global}' bound, so it must be a leaf or declare a bound, but it is not a leaf ('Y.Y.Size' -> dispatch of 'Tr.T.Size'); declare a bound on 'Tr.T.Size' or on this implementation, or make this implementation a leaf
+github-issue-211-rev3-errors.dfy(22,13): Error: modular termination: 'Size' implements 'Tr.T.Size' of another module, which has no 'decreases {:global}' bound, so it must be a leaf or declare a bound, but it is not a leaf ('Y.Z.Size' -> General contract of 'Tr.G' (publish {:termination_closed} for independent closed code)); declare a bound on 'Tr.T.Size' or on this implementation, or make this implementation a leaf
+github-issue-211-rev3-errors.dfy(24,11): Error: modular termination: 'Run' implements 'Tr.T.Run' of another module, which has no 'decreases {:global}' bound, so it must be a leaf or declare a bound, but it is not a leaf ('Y.Z.Run' -> dispatch of 'Tr.T.Run'); declare a bound on 'Tr.T.Run' or on this implementation, or make this implementation a leaf
+github-issue-211-rev3-errors.dfy(29,13): Error: modular termination: 'Size' implements 'Tr.T.Size' of another module, which has no 'decreases {:global}' bound, so it must be a leaf or declare a bound, but it is not a leaf ('Y.W.Size' -> a call through a function value whose code is not known); declare a bound on 'Tr.T.Size' or on this implementation, or make this implementation a leaf
+github-issue-211-rev3-errors.dfy(35,13): Error: modular termination: 'Size' implements 'Tr.T.Size' of another module, which has no 'decreases {:global}' bound, so it must be a leaf or declare a bound, but it is not a leaf ('Y.V.Size' -> General contract of 'Tr.H' (publish {:termination_closed} for independent closed code)); declare a bound on 'Tr.T.Size' or on this implementation, or make this implementation a leaf
+5 resolution/type errors detected in github-issue-211-rev3-errors.dfy
+default: tie without bounds: both foreign implementations rejected
+github-issue-211-rev3-tie.dfy(3,70): Error: modular termination: 'Go' implements 'Tr.T.Go' of another module, which has no 'decreases {:global}' bound, so it must be a leaf or declare a bound, but it is not a leaf ('A.A.Go' -> dispatch of 'Tr.T.Go'); declare a bound on 'Tr.T.Go' or on this implementation, or make this implementation a leaf
+github-issue-211-rev3-tie.dfy(4,70): Error: modular termination: 'Go' implements 'Tr.T.Go' of another module, which has no 'decreases {:global}' bound, so it must be a leaf or declare a bound, but it is not a leaf ('B.B.Go' -> dispatch of 'Tr.T.Go'); declare a bound on 'Tr.T.Go' or on this implementation, or make this implementation a leaf
+2 resolution/type errors detected in github-issue-211-rev3-tie.dfy
+default: p2, an unbounded member is TOP: rejected
+github-issue-211-rev3-p2.dfy(19,64): Error: decreases clause might not decrease (the dispatched callee has no 'decreases {:global}' bound, so it is TOP, above the caller's bound; declare a bound on it)
+
+Dafny program verifier finished with 5 verified, 1 error
+default: p3, a declared bound binds the home implementation: rejected
+github-issue-211-rev3-p3.dfy(12,61): Error: decreases clause might not decrease (modular termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+
+Dafny program verifier finished with 5 verified, 1 error
+default: legacy forms are premises, as in 4.11: a dispatch to an unbounded {:termination false} slot is accepted; declared bounds are still checked
+github-issue-211-rev3-legacy.dfy(3,29): Warning: trait 'T' has {:termination false} and no {:axiom} annotation: calls dispatched through it are not checked for termination
+github-issue-211-rev3-legacy.dfy(12,38): Warning: class 'B' has @AssumeCrossModuleTermination and no {:axiom} annotation: calls dispatched to it through traits of other modules are not checked for termination
+github-issue-211-rev3-legacy.dfy(10,77): Error: decreases clause might not decrease (modular termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+github-issue-211-rev3-legacy.dfy(15,77): Error: decreases clause might not decrease (modular termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+
+Dafny program verifier finished with 6 verified, 2 errors
+default: a global bound that does not decrease: rejected
+github-issue-211-xmod-legacy-off-verify.dfy(2,48): Error: cannot prove termination; try supplying a decreases clause
+
+Dafny program verifier finished with 1 verified, 1 error
+default: a legacy form on the edge that crosses modules covers the types below it, as in 4.11; an unmarked crossing edge does not
+github-issue-211-xmod-inherited.dfy(10,38): Warning: trait 'Mid' has @AssumeCrossModuleTermination and no {:axiom} annotation: calls dispatched to it through traits of other modules are not checked for termination
+github-issue-211-xmod-inherited.dfy(22,11): Error: modular termination: 'Run' implements 'Tr.T.Run' of another module, which has no 'decreases {:global}' bound, so it must be a leaf or declare a bound, but it is not a leaf ('B.C.Run' -> dispatch of 'Tr.T.Run'); declare a bound on 'Tr.T.Run' or on this implementation, or make this implementation a leaf
+1 resolution/type errors detected in github-issue-211-xmod-inherited.dfy
+default: traits/TraitMultiModule.dfy, whose unmarked extensions across modules are now allowed; its other error remains
+TraitMultiModule.dfy(10,29): Warning: trait 'T2' has {:termination false} and no {:axiom} annotation: calls dispatched through it are not checked for termination
+TraitMultiModule.dfy(35,8): Warning: class 'C4' has @AssumeCrossModuleTermination and no {:axiom} annotation: calls dispatched to it through traits of other modules are not checked for termination
+TraitMultiModule.dfy(30,8): Error: class 'C3' does not implement trait method 'T2.M2'
+TraitMultiModule.dfy(56,8): Warning: trait 'T6' has @AssumeCrossModuleTermination and no {:axiom} annotation: calls dispatched to it through traits of other modules are not checked for termination
+TraitMultiModule.dfy(70,8): Warning: class 'C3' has @AssumeCrossModuleTermination and no {:axiom} annotation: calls dispatched to it through traits of other modules are not checked for termination
+1 resolution/type errors detected in TraitMultiModule.dfy
+legacy-off: an unmarked extension across modules is rejected by the resolver of 4.11
+github-issue-211-xmod-legacy-off.dfy(5,21): Error: class 'A' is in a different module than trait 'Tr.T'. A class may only extend a trait in the same module, unless the parent trait is annotated with {:termination false} or the class with @AssumeCrossModuleTermination.
+1 resolution/type errors detected in github-issue-211-xmod-legacy-off.dfy
+legacy-off: 'decreases {:global} n' is an ordinary decreases clause
+github-issue-211-xmod-legacy-off-verify.dfy(2,48): Error: decreases clause might not decrease
+
+Dafny program verifier finished with 1 verified, 1 error
+a program that does not use the design: the same Boogie program with and without legacy-off
+github-issue-211-xmod-identity.dfy(5,29): Warning: trait 'T' has {:termination false} and no {:axiom} annotation: calls dispatched through it are not checked for termination
+github-issue-211-xmod-identity.dfy(17,38): Warning: class 'B' has @AssumeCrossModuleTermination and no {:axiom} annotation: calls dispatched to it through traits of other modules are not checked for termination
+
+Dafny program verifier finished with 10 verified, 0 errors
+github-issue-211-xmod-identity.dfy(5,29): Warning: trait 'T' has {:termination false} and no {:axiom} annotation: calls dispatched through it are not checked for termination
+github-issue-211-xmod-identity.dfy(17,38): Warning: class 'B' has @AssumeCrossModuleTermination and no {:axiom} annotation: calls dispatched to it through traits of other modules are not checked for termination
+
+Dafny program verifier finished with 10 verified, 0 errors
+a library with a bound and a foreign leaf, built and used by default: verifies
+
+Dafny program verifier finished with 4 verified, 0 errors
+
+Dafny program verifier finished with 1 verified, 0 errors
+the same library used under legacy-off: rejected
