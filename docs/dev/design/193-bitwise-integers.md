@@ -994,7 +994,7 @@ semantic-width descriptor is permitted; the I-off path remains unchanged.
 | `Source/DafnyRuntime/` C#, Java, Go/gomod, JS and other affected runtimes | Correct masks/count helpers and any popcount fallback; JavaScript wide integer repair or new correct helpers. |
 | `DooFile.cs`; `Backends/Library/LibraryBackend.cs` | Persist source annotation and language mode, rebuild descriptors/canonical bindings, retain exact-version compatibility; never accept a forged intrinsic identity. |
 | `Source/DafnyLanguageServer.Test/Synchronization/IncrementalBitvectorMembersTest.cs` and related option invalidation tests | Rebuild/cancel cached member and type information when widths, constraints or options change. Test both resolver modes. |
-| `docs/DafnyRef/`, `docs/dev/additional-axioms.md`, `docs/dev/news/193.feat`, `.github/review/regressions` | User semantics/options, every bridge model/control, release note and permanent regression registration. Product milestones update `.github/review/base` under the normal policy. |
+| `docs/DafnyRef/`, `docs/dev/additional-axioms.md`, `docs/dev/news/193.feat`, `.github/review/regressions` | User semantics/options, every bridge model/control, release note and permanent regression registration. Product milestones derive their version from HEAD under the normal policy. |
 
 Two traps deserve explicit code-review checks. First,
 `CheckWellformedSpecialFunction` currently checks rotation arguments and count
@@ -1743,7 +1743,7 @@ Testing a runtime rotate/popcount helper in M5 does not count as end-to-end
 source-feature acceptance before M6 supplies the source operation.
 
 Every product PR carries its regression driver, release-note fragment and
-required `.github/review/base`/regression updates. Any intended verdict change
+required regression updates (the version is derived from HEAD). Any intended verdict change
 follows the existing policy: first expose it in CI, then update the expected
 artifact in a separate explained commit. Do not defer these gates to M7.
 
