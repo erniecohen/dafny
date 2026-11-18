@@ -811,6 +811,12 @@ git-issues/github-issue-211-rev3.dfy
 # The multiset order of the orders library over any well-founded relation, and global bounds of --modular-termination by multiset orders, where a dispatched call needs a strictly smaller bag (https://github.com/erniecohen/dafny/issues/211).
 git-issues/github-issue-211-multiset.dfy
 
+# The ECOOP 2015 Figs. 10-14 (RealFunc, LinearFunc, Sum, integrate and main) in their own measure, bags of method levels under the multiset order, by default and under --modular-termination, with controls (https://github.com/erniecohen/dafny/issues/211).
+git-issues/github-issue-211-integrate.dfy
+
+# The stored-value forms of funcptr.c and cons.c (contains) of the VeriFast examples: a function object holding a bounded value, certified one level below its creator, with controls (https://github.com/erniecohen/dafny/issues/211).
+git-issues/github-issue-211-stored.dfy
+
 # Hiding or revealing a static function or constant through an object, as in `reveal foo.Q`, resolves under --type-system-refresh instead of crashing, and verifies (https://github.com/erniecohen/dafny/issues/416).
 git-issues/github-issue-416.dfy
 ast/reveal/revealQualified.dfy
