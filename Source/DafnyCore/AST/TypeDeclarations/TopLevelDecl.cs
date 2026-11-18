@@ -46,7 +46,6 @@ public abstract class TopLevelDecl : Declaration, TypeParameter.ParentType {
     TypeArgs = original.TypeArgs.ConvertAll(cloner.CloneTypeParam);
     EnclosingModuleDefinition = enclosingModule;
     CardinalityParentObligations = original.CardinalityParentObligations.Select(cloner.CloneType).ToImmutableArray();
-    ParentTraitsFromRefinementBase = original.ParentTraitsFromRefinementBase;
     // View identity and refinement ancestry are set only by their respective cloners.
   }
 
