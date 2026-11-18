@@ -16,9 +16,9 @@ module Covariance {
   type Fixpoint<+X(!new)> = s: Box<X> | s.b ==> Rec<X>(1) witness *
   newtype Numeric<+X(!new)> = n: int | n == 0 ==> Some<X>() witness *
   lemma Accepted() {
-    assert 0 is nat;
+    var witnessValue: G<nat> := G(0); // Give the generic existential a typed witness.
+    assert witnessValue.x == 0;
     assert Some<nat>();
-    var witnessValue: G<nat> := G(0);
     assert exists y: G<nat> {:nowarn} :: y == witnessValue;
     var a: Existential<nat> := Box(true);
     var b: Existential<int> := a;
