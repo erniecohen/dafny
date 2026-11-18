@@ -902,11 +902,9 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(AncestorQualifiedModuleIds, OptionScope.Cli);
     OptionRegistry.RegisterOption(SynonymRefinesAbstractType, OptionScope.Cli);
     OptionRegistry.RegisterOption(DecreasesOrders, OptionScope.Cli);
-    // A library is resolved again by its client, so a client of a library that binds the results of a lemma
-    // needs the option as well.
-    OptionRegistry.RegisterGlobalOption(LemmaBindings,
-      (reporter, origin, prefix, option, localValue, libraryValue) =>
-        OptionCompatibility.OptionLibraryImpliesLocalError(reporter, origin, prefix, option, localValue, libraryValue ?? false));
+    // A library is resolved again by its client, with the client's value of the option. So a client of a library
+    // that binds the results of a lemma needs the option as well, and without it gets the library's bindings rejected.
+    OptionRegistry.RegisterOption(LemmaBindings, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacyDecreasesOrder, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacyReadingFunctionsInDatatypes, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacyNoncanonicalMapPayloads, OptionScope.Cli);

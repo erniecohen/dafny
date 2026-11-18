@@ -2,16 +2,21 @@ a library that binds the results of lemmas builds
 
 Dafny program verifier finished with 11 verified, 0 errors
 a client with --lemma-bindings
-github-issue-199-library.dfy(28,2): Error: a postcondition could not be proved on this return path
-github-issue-199-library.dfy(27,25): Related location: this is the postcondition that could not be proved
-github-issue-199-library.dfy(42,2): Error: a postcondition could not be proved on this return path
-github-issue-199-library.dfy(41,29): Related location: this is the postcondition that could not be proved
-github-issue-199-library.dfy(51,2): Error: a postcondition could not be proved on this return path
-github-issue-199-library.dfy(50,25): Related location: this is the postcondition that could not be proved
+github-issue-199-library.dfy(29,2): Error: a postcondition could not be proved on this return path
+github-issue-199-library.dfy(28,25): Related location: this is the postcondition that could not be proved
+github-issue-199-library.dfy(43,2): Error: a postcondition could not be proved on this return path
+github-issue-199-library.dfy(42,29): Related location: this is the postcondition that could not be proved
+github-issue-199-library.dfy(52,2): Error: a postcondition could not be proved on this return path
+github-issue-199-library.dfy(51,25): Related location: this is the postcondition that could not be proved
 
 Dafny program verifier finished with 4 verified, 3 errors
 a client without --lemma-bindings
-CLI: Error: cannot load github-issue-199-library.dfy.tmp.lib.doo: --lemma-bindings is set locally to False, but the library was built with True
+github-issue-199-library.dfy.tmp.lib.doo(13,13): Error: expression is not allowed to invoke a lemma (Find)
+github-issue-199-library.dfy.tmp.lib.doo(30,13): Error: expression is not allowed to invoke a lemma (Private)
+github-issue-199-library.dfy.tmp.lib.doo(50,13): Error: expression is not allowed to invoke a lemma (Find)
+github-issue-199-library.dfy.tmp.lib.doo(50,13): Error: expression is not allowed to invoke a lemma (Find)
+github-issue-199-library.dfy.tmp.lib.doo(60,7): Related location: refining module
+4 resolution/type errors detected in github-issue-199-library.dfy
 a library built without --lemma-bindings, and a client that binds the results of its lemma
 
 Dafny program verifier finished with 1 verified, 0 errors

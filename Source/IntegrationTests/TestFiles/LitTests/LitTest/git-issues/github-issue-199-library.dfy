@@ -3,7 +3,7 @@
 // RUN: echo "a client with --lemma-bindings" >> "%t"
 // RUN: %exits-with 4 %baredafny verify %args --lemma-bindings --library "%t.lib.doo" "%s" >> "%t"
 // RUN: echo "a client without --lemma-bindings" >> "%t"
-// RUN: %exits-with 1 %baredafny verify %args --library "%t.lib.doo" "%s" >> "%t"
+// RUN: %exits-with 2 %baredafny verify %args --library "%t.lib.doo" "%s" >> "%t"
 // RUN: echo "a library built without --lemma-bindings, and a client that binds the results of its lemma" >> "%t"
 // RUN: %baredafny build %args -t:lib --output "%t.plain.doo" "%S/Inputs/github-issue-199-lib-plain.dfy" >> "%t"
 // RUN: %exits-with 4 %baredafny verify %args --lemma-bindings --library "%t.plain.doo" "%S/Inputs/github-issue-199-client-plain.dfy" >> "%t"
@@ -11,8 +11,9 @@
 
 // https://github.com/erniecohen/dafny/issues/199: a function of a library may bind the results of a lemma.  A
 // client knows about the bound results what the lemma's postcondition says, where it can see the function's
-// body, and its own binding of the same lemma at the same arguments gets the same results.  A library that was
-// built with --lemma-bindings is for clients that use the option too.  A client may bind the results of a
+// body, and its own binding of the same lemma at the same arguments gets the same results.  A client resolves a
+// library again, with its own options, so a library that binds the results of a lemma is for clients that use
+// --lemma-bindings too: for any other, the library's bindings are errors.  A client may bind the results of a
 // lemma from a library that was built without the option.
 
 module Client {
