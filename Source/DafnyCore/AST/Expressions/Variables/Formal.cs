@@ -16,6 +16,15 @@ public class Formal : NonglobalVariable {
   public bool IsOlder;
   public string NameForCompilation;
 
+  /// <summary>
+  /// The name by which a named argument binds this parameter. It is the parameter's name, unless a
+  /// refining module gave the parameter another local name (--refinement-renaming). Then the label
+  /// stays the name of the first declaration in the refinement chain, so that a call written against
+  /// a base module means the same against every refinement.
+  /// </summary>
+  public string Label => labelIfRenamed ?? Name;
+  private readonly string? labelIfRenamed;
+
   public Formal(IOrigin origin, string name, Type? type, bool inParam, bool isGhost, Expression? defaultValue,
     Attributes? attributes = null,
     bool isOld = false, bool isNameOnly = false, bool isOlder = false, string? nameForCompilation = null)
@@ -47,7 +56,9 @@ public class Formal : NonglobalVariable {
     Attributes = cloner.CloneAttributes(original.Attributes);
     IsNameOnly = original.IsNameOnly;
     IsOlder = original.IsOlder;
-    NameForCompilation = original.NameForCompilation;
+    // A cloner may give the copy another name (see Cloner.CloneBinderName); the label stays.
+    NameForCompilation = original.NameForCompilation == original.Name ? Name : original.NameForCompilation;
+    labelIfRenamed = original.labelIfRenamed ?? (Name == original.Name ? null : original.Name);
     localField = localField != null ? cloner.CloneField(localField) : null;
   }
 

@@ -110,7 +110,10 @@ class PhaseBoundaryTests(unittest.TestCase):
 
     def test_registration_is_closed_before_resolve(self):
         source = (ROOT / 'Source/DafnyCore/AST/Modules/LiteralModuleDecl.cs').read_text()
-        self.assertRegex(source, r'resolver.ResolveModuleExport\(this, sig\);\s*'
+        # Export work, such as a copying import's view, may sit between the export resolution and the
+        # phase boundary, but no other phase boundary and not the module's resolution.
+        self.assertRegex(source, r'resolver.ResolveModuleExport\(this, sig\);'
+                         r'(?:(?!ModulePhase|module\.Resolve\()[\s\S])*?'
                          r'PipelineProfile.ModulePhase\(resolver.Options, "registrationAndExports"\);\s*'
                          r'var good = module.Resolve\(sig, resolver\);')
         self.assertNotRegex(source, r'ModulePhase\(resolver.Options, "(?:signature|body)"\)')
