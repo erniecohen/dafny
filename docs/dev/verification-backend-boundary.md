@@ -21,7 +21,8 @@ input belongs before that mutating call; this slice installs no capture hook.
 
 `VerificationOutcome` distinguishes verified, failed, inconclusive, timeout,
 resource exhaustion, out of memory, cancelled, unsupported and tool error.
-Only `Verified` satisfies `IsVerified`. `Bounded` is represented separately:
+Only `Verified` satisfies `IsVerified`; a default-initialized outcome is tool
+error. `Bounded` is represented separately:
 the native API can report it, and the existing native consumer treats it as
 correct. The bridge preserves that historical treatment without claiming an
 unbounded proof at the neutral seam. An unrecognized native solver outcome maps

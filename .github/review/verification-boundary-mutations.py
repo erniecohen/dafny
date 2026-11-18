@@ -10,6 +10,7 @@ import subprocess
 
 ROOT = Path("Source/DafnyCore/Pipeline/Verification")
 CASES = [
+    ("default-outcome", "VerificationWork.cs", "ToolError, Verified", "Verified, ToolError"),
     ("proof-success", "VerificationWork.cs", "Outcome == VerificationOutcome.Verified", "true"),
     ("preparation-access", "VerificationWork.cs", "if (Error != null)", "if (false)"),
     ("preparation-outcome", "VerificationWork.cs", "if (outcome == VerificationOutcome.Verified)", "if (false)"),

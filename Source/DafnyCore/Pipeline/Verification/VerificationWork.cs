@@ -10,8 +10,8 @@ namespace Microsoft.Dafny;
 
 /// <summary>Only Verified is a successful proof result. Preparation is never a proof result.</summary>
 public enum VerificationOutcome {
-  Verified, Failed, Inconclusive, Timeout, ResourceExhaustion, OutOfMemory,
-  Cancelled, Unsupported, ToolError, Bounded
+  ToolError, Verified, Failed, Inconclusive, Timeout, ResourceExhaustion, OutOfMemory,
+  Cancelled, Unsupported, Bounded
 }
 
 public record VerificationWorkId(string Scope, int Part);

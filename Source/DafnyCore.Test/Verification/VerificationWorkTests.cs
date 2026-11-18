@@ -5,6 +5,12 @@ namespace DafnyCore.Test.Verification;
 
 public class VerificationWorkTests {
   [Fact]
+  public void DefaultOutcomeCannotClaimProofSuccess() {
+    Assert.Equal(VerificationOutcome.ToolError, default(VerificationOutcome));
+    Assert.False(new VerificationWorkResult(default).IsVerified);
+  }
+
+  [Fact]
   public void OnlyVerifiedIsProofSuccess() {
     foreach (var outcome in Enum.GetValues<VerificationOutcome>().Append((VerificationOutcome)12345)) {
       var result = new VerificationWorkResult(outcome, []);
