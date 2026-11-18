@@ -341,3 +341,39 @@ One PR (the decision put both steps in this one):
   context, an unlisted `{:axiom}`, an `assume` statement and a client that did not opt in are each
   refused, and a premise-free library is byte for byte the same with `none`, with the list and
   without the option, with the record digest of M5a.
+
+
+## 13. Separate runtime-contract opt-in for checked target bundles
+
+The owner selected a separate runtime trust boundary for M5 of
+[bounded callables](266-bounded-callables.md), rather than extending the ghost-premise list above.
+`--modular-termination-runtime-trust` defaults to `none`: it admits no runtime assumptions.
+A target bundle that needs them cannot receive or supply a modular certificate without explicit
+`--modular-termination-runtime-trust:standard-library`. The refusal names that option.
+Selecting it does not select `--modular-termination-trust`, and selecting the ghost list does not
+select the runtime list.
+
+`Source/DafnyCore/ModularTerminationRuntimeContracts.tsv` is the reviewed runtime allowlist.
+Every entry names one callable, its statement digest, its context digest and the complete assumed
+contract. That contract includes termination, preconditions, postconditions and frame/effect
+promises. There are no namespace patterns or user-provided lists. An omitted or changed contract
+remains rejected. Extern module/class attributes select foreign names and representations; their
+callable members still require individual entries. An entry never excuses an `assume` in a body,
+verification exemption, unchecked global-bound formation, or missing verification task.
+
+The producer checks both its original and retained program against that list. Schema 3 records
+runtime premises in fields separate from schema 2's ghost premises, with independent list and
+premise digests. Admission requires the client's runtime opt-in and exact reviewed entries.
+Verification summaries name every admitted runtime contract, including its termination promise;
+`dafny audit` also names each and exposes the computed statement and context digests.
+
+These are conditional termination results. In particular, file I/O can block and acquiring a lock
+can wait forever without suitable environmental progress. This opt-in assumes that the named
+runtime operations terminate under their stated preconditions; it does not prove progress of a
+filesystem, scheduler, foreign implementation or concurrent environment. Compiler/runtime
+correspondence and foreign effect specifications are assumptions too. A source-only,
+assumption-free certificate makes none of these runtime claims.
+
+Controls require refusal without opt-in, acceptance with opt-in, reachable `assert false` as the
+only failure of its companion, and refusal of an unlisted contract. Mutating admission or list
+matching must be detected. Default/off-mode translation and resource identity remain release gates.

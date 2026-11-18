@@ -336,6 +336,12 @@ namespace Microsoft.Dafny {
                   dafnyProgram.Compilation.ModularTerminationPremises) is { } summary) {
               await options.OutputWriter.Status(summary);
             }
+            IReadOnlyList<DafnyCore.ModularTerminationPremise> runtimeOwn =
+              completion is { Failure: null } ? completion.RuntimePremises : [];
+            if (DafnyCore.ModularTerminationRuntimeTrust.Summary(runtimeOwn,
+                  dafnyProgram.Compilation.ModularTerminationRuntimePremises) is { } runtimeSummary) {
+              await options.OutputWriter.Status(runtimeSummary);
+            }
           }
 
           if (options.TrackVerificationCoverage) {

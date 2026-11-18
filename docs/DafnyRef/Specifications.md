@@ -987,6 +987,21 @@ premises only when it selects the same list, and then reports them in its own su
 `Source/DafnyStandardLibraries/modular-termination/trusted` builds the standard-library core together with
 `Axioms`, `RealCompleteness`, `Ordinal` and `Strings`, and its record lists all 18 premises.
 
+Runtime contracts use a **separate** opt-in, `--modular-termination-runtime-trust:standard-library`.
+Its default, `none`, admits no runtime assumptions. A target bundle that requires them is unavailable
+to modular certificates without this opt-in; its error explains the option. Selecting it does not
+select the ghost-premise trust list, or conversely. The reviewable list is
+`Source/DafnyCore/ModularTerminationRuntimeContracts.tsv`: each entry names one callable and pins
+its statement and context. Unlisted or changed contracts are rejected. Library records keep runtime
+premises separate from ghost premises, and verification summaries and `dafny audit` name the runtime
+contracts being assumed, including termination.
+
+A result using that option is conditional on every named runtime contract: termination, functional
+behavior and frame/effect promises. For example, the verifier does not prove that a filesystem
+operation completes or a waiting lock is eventually acquired. The option assumes the corresponding
+runtime termination promises under their stated preconditions. It does not permit statement
+assumptions or omitted verification tasks in source bodies.
+
 A module of the library may refine another one that has opaque functions: the copies that the
 refinement makes of the reveal lemmas Dafny generates for them are generated too, and their
 `{:verify false}` is not refused. The library may also declare an `opaque const`: the reveal lemma

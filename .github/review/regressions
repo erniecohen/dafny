@@ -848,3 +848,4 @@ git-issues/github-issue-211-xmod.dfy
 traits/TraitMultiModule.dfy
 git-issues/github-issue-211-produced-allowances.dfy
 git-issues/github-issue-211-reveal-termination.dfy
+git-issues/github-issue-211-runtime-trust.dfy

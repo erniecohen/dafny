@@ -407,6 +407,11 @@ standard-library - Also record and admit the bodyless {:axiom} ghost lemmas and 
     IsHidden = true
   };
 
+  public static readonly Option<string> ModularTerminationRuntimeTrust = new("--modular-termination-runtime-trust", () => "none",
+    "Which separately reviewed runtime contracts a modular certificate may assume: none (default), or standard-library. " +
+    "The latter assumes every listed runtime contract, including termination, and reports each by name. " +
+    "It does not select the ghost-premise trust list. See the Reference Manual.") { IsHidden = true };
+
   public static readonly Option<bool> InvariantConstructorInference = new("--invariant-constructor-inference", () => false,
     "With the refreshed type system, let a datatype constructor argument whose formal type uses a type parameter in a non-variant position, such as the tail of a list, fix that type argument, instead of widening it to the type of another argument. Every argument is still checked against the chosen type. Disabled by default.");
 
@@ -732,6 +737,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
 
     QuantifierSyntax = QuantifierSyntax.FromAmong("3", "4");
     ModularTerminationTrust = ModularTerminationTrust.FromAmong("none", "standard-library");
+    ModularTerminationRuntimeTrust = ModularTerminationRuntimeTrust.FromAmong("none", "standard-library");
     DafnyOptions.RegisterLegacyBinding(JsonDiagnostics, (options, value) => {
       if (value) {
         options.Printer = new DafnyJsonConsolePrinter(options);
@@ -930,6 +936,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(LegacyInheritedNameCapture, OptionScope.Cli);
     OptionRegistry.RegisterOption(ModularTermination, OptionScope.Cli);
     OptionRegistry.RegisterOption(ModularTerminationTrust, OptionScope.Cli);
+    OptionRegistry.RegisterOption(ModularTerminationRuntimeTrust, OptionScope.Cli);
     OptionRegistry.RegisterOption(WarnUncheckedTermination, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacyNoUncheckedTerminationWarning, OptionScope.Cli);
     OptionRegistry.RegisterOption(InvariantConstructorInference, OptionScope.Cli);

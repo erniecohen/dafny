@@ -46,4 +46,6 @@ public class CompilationData(
   /// </summary>
   public IReadOnlyList<(string Library, string TrustList, DafnyCore.ModularTerminationPremise Premise)>
     ModularTerminationPremises { get; set; } = [];
+  public IReadOnlyList<(string Library, string TrustList, DafnyCore.ModularTerminationPremise Premise)>
+    ModularTerminationRuntimePremises { get; set; } = [];
 }

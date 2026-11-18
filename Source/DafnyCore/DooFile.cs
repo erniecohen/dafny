@@ -342,8 +342,11 @@ public class DooFile {
     if (!record.Enabled || record.Status != ModularTerminationManifest.CompleteStatus) {
       return Reject($"its record does not state a complete verification (status '{record.Status}'); {ModularTerminationRecords.RebuildInstruction}");
     }
-    if (record.Schema == ModularTerminationManifest.PremisesSchema && PremiseRefusal(record, options) is { } premiseRefusal) {
+    if (record.Premises is { Count: > 0 } && PremiseRefusal(record, options) is { } premiseRefusal) {
       return Reject(premiseRefusal);
+    }
+    if (record.RuntimePremises is { Count: > 0 } && RuntimePremiseRefusal(record, options) is { } runtimeRefusal) {
+      return Reject(runtimeRefusal);
     }
     if (ModularTerminationRecords.UnsupportedConfiguration(options) is { } unsupported) {
       return Reject(unsupported);
@@ -405,12 +408,38 @@ public class DooFile {
   private static bool SupportedSchema(ModularTerminationManifest record) {
     var hasPremiseFields = record.TrustList != null || record.TrustListSha256 != null || record.PremisesSha256 != null ||
                            record.Premises != null;
+    var ghostValid = !hasPremiseFields || record.TrustList != null && record.TrustListSha256 != null &&
+      record.PremisesSha256 != null && record.Premises is { Count: > 0 };
+    var hasRuntimeFields = record.RuntimeTrustList != null || record.RuntimeTrustListSha256 != null ||
+      record.RuntimePremisesSha256 != null || record.RuntimePremises != null;
     return record.Schema switch {
-      ModularTerminationManifest.CurrentSchema => !hasPremiseFields,
-      ModularTerminationManifest.PremisesSchema => record.TrustList != null && record.TrustListSha256 != null &&
-                                                   record.PremisesSha256 != null && record.Premises is { Count: > 0 },
+      ModularTerminationManifest.CurrentSchema => !hasPremiseFields && !hasRuntimeFields,
+      ModularTerminationManifest.PremisesSchema => hasPremiseFields && ghostValid && !hasRuntimeFields,
+      ModularTerminationManifest.RuntimePremisesSchema => ghostValid &&
+        record.RuntimeTrustList == ModularTerminationRuntimeTrust.StandardLibrary &&
+        record.RuntimeTrustListSha256 != null && record.RuntimePremisesSha256 != null &&
+        record.RuntimePremises is { Count: > 0 },
       _ => false
     };
+  }
+
+  private static string? RuntimePremiseRefusal(ModularTerminationManifest record, DafnyOptions options) {
+    if (ModularTerminationRuntimeTrust.Selected(options) != record.RuntimeTrustList) {
+      return $"it assumes runtime contract {record.RuntimePremises![0].Id}, including termination; " +
+        $"use {ModularTerminationRuntimeTrust.Option} to opt in to the separate runtime trust list";
+    }
+    var premises = record.RuntimePremises!;
+    if (record.RuntimeTrustListSha256 != ModularTerminationRuntimeTrust.Sha256() ||
+        record.RuntimePremisesSha256 != ModularTerminationTrustList.PremisesSha256(premises) ||
+        !premises.Select(p => p.Id).SequenceEqual(premises.Select(p => p.Id).Order(StringComparer.Ordinal).Distinct())) {
+      return "its runtime premise list or digest differs from the reviewed list; rebuild the library";
+    }
+    foreach (var premise in premises) {
+      if (ModularTerminationRuntimeTrust.Mismatch(premise) is { } mismatch) {
+        return mismatch;
+      }
+    }
+    return null;
   }
 
   /// <summary>
@@ -435,7 +464,7 @@ public class DooFile {
       return "its premise list does not match its digest; the library was modified after it was built";
     }
     foreach (var premise in premises) {
-      var entry = ModularTerminationTrustList.Find(selected, premise.Id);
+      var entry = ModularTerminationTrustList.Find(selected, premise);
       if (entry == null || entry.Kind != premise.Kind || entry.StatementSha256 != premise.StatementSha256 ||
           entry.ContextSha256 != premise.ContextSha256) {
         return $"its premise {premise.Id} is not an entry of the {selected} trust list; the library was modified after it was built";

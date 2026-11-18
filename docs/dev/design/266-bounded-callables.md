@@ -843,3 +843,11 @@ The next integration task after this design is the separate M4b Actions rank ove
 4. **Feedback on the request:** the pinned sources and fixed equality/erasure decisions expose the real representation issue. Requiring reads/precondition checks and exact line counts is valuable. A complete Std certification count needs the independently chosen hierarchy-rank overlay; keeping that dependency explicit prevents a misleading five-field estimate.
 5. **Stopped because the requested design/review list is finished. First work not performed: implementing and executing the proposed rules/tests, including the separate M4b rank overlay required for a fully certified Std build.**
 
+
+
+The checked target-bundle trust boundary is the owner's separate runtime-contract opt-in,
+specified in [M5b §13](211-m5b-trusted-premises.md#13-separate-runtime-contract-opt-in-for-checked-target-bundles).
+It is empty by default and is independent of the ghost-premise list. Every admitted runtime
+callable, including its termination and effect promises, is pinned by name, statement and context
+in `Source/DafnyCore/ModularTerminationRuntimeContracts.tsv` and reported in summaries/audits.
+This is an explicit conditional premise, not a checked liveness proof of external operations.

@@ -149,6 +149,7 @@ public static class DafnyCommands {
     CommonOptionBag.ModularTermination,
     CommonOptionBag.LegacyNoModularTermination,
     CommonOptionBag.ModularTerminationTrust,
+    CommonOptionBag.ModularTerminationRuntimeTrust,
     CommonOptionBag.InvariantConstructorInference,
     CommonOptionBag.TypeInferenceDebug,
     CommonOptionBag.NewTypeInferenceDebug,

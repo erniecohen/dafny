@@ -288,6 +288,12 @@ public class CliCompilation {
       ? DafnyCore.ModularTerminationTrustList.Summary([], null, resolution.ResolvedProgram.Compilation.ModularTerminationPremises)
       : null;
 
+    if (Options.Get(CommonOptionBag.ModularTermination) &&
+        DafnyCore.ModularTerminationRuntimeTrust.Summary([], resolution.ResolvedProgram.Compilation.ModularTerminationRuntimePremises)
+          is { } runtimeSummary) {
+      TrustedPremisesSummary = TrustedPremisesSummary == null ? runtimeSummary : TrustedPremisesSummary + "\n" + runtimeSummary;
+    }
+
     var canVerifies = FilterCanVerifies(resolution.CanVerifies, out var filterRange, filterPosition);
     VerifiedAssertions = filterRange.Filters;
 

@@ -181,6 +181,10 @@ public class ProgramParser {
       .Where(f => f.ShouldNotVerify && f.TerminationRecord is { TrustList: not null, Premises: not null })
       .SelectMany(f => f.TerminationRecord!.Premises!.Select(p =>
         (options.GetPrintPath(f.Uri.LocalPath), f.TerminationRecord.TrustList!, p))).ToList();
+    compilation.ModularTerminationRuntimePremises = files
+      .Where(f => f.ShouldNotVerify && f.TerminationRecord is { RuntimeTrustList: not null, RuntimePremises: not null })
+      .SelectMany(f => f.TerminationRecord!.RuntimePremises!.Select(p =>
+        (options.GetPrintPath(f.Uri.LocalPath), f.TerminationRecord.RuntimeTrustList!, p))).ToList();
     return ok;
 
     static string Short(string digest) => digest.Length > 12 ? digest[..12] : digest;
