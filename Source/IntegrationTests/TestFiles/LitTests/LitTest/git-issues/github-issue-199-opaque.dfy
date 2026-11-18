@@ -1,4 +1,4 @@
-// RUN: %exits-with 4 %verify --lemma-bindings "%s" > "%t"
+// RUN: %exits-with 4 %verify --type-system-refresh --lemma-bindings "%s" > "%t"
 // RUN: %exits-with 4 %verify --lemma-bindings --default-function-opacity:opaque "%s" >> "%t"
 // RUN: %diff "%s.expect" "%t"
 

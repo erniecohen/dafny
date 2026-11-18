@@ -188,3 +188,26 @@ ghost function BindSecond(c: C, n: nat): int
 ghost function BindWithoutTheHeap(n: nat): int {
   var m := WithoutTheHeap(n); m
 }
+
+// ---------- Whether a postcondition depends on the heap is the same wherever the question is asked first: here,
+// ---------- of Third, whose postcondition binds results of Fourth, before either lemma has been looked at
+
+ghost function BindThird(c: C, n: nat): int
+  reads c
+{
+  var m := Third(c, n); m  // error: the postcondition depends on the heap and binds results of Third
+}
+
+lemma {:axiom} Third(c: C, n: nat) returns (m: int)
+  ensures m == c.f + if n == 0 then 0 else var k := Fourth(c, n - 1); k  // error: so does Fourth, through Third
+lemma {:axiom} Fourth(c: C, n: nat) returns (m: int)
+  ensures m == if n == 0 then 0 else var k := Third(c, n - 1); k  // error: so does Third, through Fourth
+
+// ---------- A two-state function that a postcondition uses as a value is a two-state function, too
+
+lemma {:axiom} TwoStateFunctionValue(c: C) returns (b: int)
+  ensures var f := Increase; b == 0
+
+ghost function BindTwoStateFunctionValue(c: C): int {
+  var b := TwoStateFunctionValue(c); b  // error: a two-state function
+}

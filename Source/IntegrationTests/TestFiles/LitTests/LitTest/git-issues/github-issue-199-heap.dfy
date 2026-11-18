@@ -1,4 +1,4 @@
-// RUN: %exits-with 4 %verify --lemma-bindings "%s" > "%t"
+// RUN: %exits-with 4 %verify --type-system-refresh --lemma-bindings "%s" > "%t"
 // RUN: %diff "%s.expect" "%t"
 
 // https://github.com/erniecohen/dafny/issues/199: binding the results of a lemma whose
@@ -250,4 +250,23 @@ method Vacuity(c: Cell, k: Counter)
   c.f := 6;
   ghost var y := F(c) + AboveF(c) + old(var x := PositiveField(c); x) + TwoStateBinder(c);
   assert false;  // error
+}
+
+// ---------- What every ensures clause reads is checked, not only what the first one reads
+
+lemma SecondClauseReads(c: Cell) returns (x: int)
+  ensures x >= 0
+  ensures x >= c.g
+{
+  x := if c.g < 0 then 0 else c.g;
+}
+
+ghost function SecondClauseWithReads(c: Cell): int
+  reads c
+{
+  var x := SecondClauseReads(c); x
+}
+
+ghost function SecondClauseNoReads(c: Cell): int {
+  var x := SecondClauseReads(c); x  // error: insufficient reads clause
 }

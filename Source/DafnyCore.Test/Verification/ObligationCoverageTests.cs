@@ -36,6 +36,7 @@ public class ObligationCoverageTests {
     ["BoogieGenerator.BoundedCallables.cs"]="termination",
     ["BoogieGenerator.TypeObligations.cs"]="guarded-type-introduction",
     ["BoogieGenerator.LetExpr.cs"]="let-permissions",
+    ["BoogieGenerator.LemmaBinding.cs"]="lemma-result-bindings",
     ["BoogieGenerator.SplitExpr.cs"]="canonical-proposition-core",
     ["BoogieGenerator.Reveal.cs"]="visibility",
     ["BoogieGenerator.cs"]="membership-frame-spec-bridges",

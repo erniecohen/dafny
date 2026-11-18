@@ -1,4 +1,4 @@
-// RUN: %exits-with 4 %verify --lemma-bindings "%s" > "%t"
+// RUN: %exits-with 4 %verify --type-system-refresh --lemma-bindings "%s" > "%t"
 // RUN: %diff "%s.expect" "%t"
 
 // https://github.com/erniecohen/dafny/issues/199: under --lemma-bindings, an expression can bind

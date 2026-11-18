@@ -21,4 +21,8 @@ github-issue-199-conditions.dfy(166,51): Error: the results of lemma 'First' can
 github-issue-199-conditions.dfy(173,21): Error: the results of lemma 'OwnResults' cannot be bound in an expression, because its postcondition depends on the heap and on bound results of 'OwnResults' itself, so what it reads cannot be checked
 github-issue-199-conditions.dfy(179,16): Error: the results of lemma 'First' cannot be bound in an expression, because its postcondition depends on the heap and on bound results of 'First' itself, so what it reads cannot be checked
 github-issue-199-conditions.dfy(185,17): Error: the results of lemma 'Second' cannot be bound in an expression, because its postcondition depends on the heap and on bound results of 'Second' itself, so what it reads cannot be checked
-23 resolution/type errors detected in github-issue-199-conditions.dfy
+github-issue-199-conditions.dfy(198,16): Error: the results of lemma 'Third' cannot be bound in an expression, because its postcondition depends on the heap and on bound results of 'Third' itself, so what it reads cannot be checked
+github-issue-199-conditions.dfy(202,58): Error: the results of lemma 'Fourth' cannot be bound in an expression, because its postcondition depends on the heap and on bound results of 'Fourth' itself, so what it reads cannot be checked
+github-issue-199-conditions.dfy(204,51): Error: the results of lemma 'Third' cannot be bound in an expression, because its postcondition depends on the heap and on bound results of 'Third' itself, so what it reads cannot be checked
+github-issue-199-conditions.dfy(212,32): Error: the results of lemma 'TwoStateFunctionValue' cannot be bound in an expression, because its postcondition uses the twostate function 'Increase'
+27 resolution/type errors detected in github-issue-199-conditions.dfy
