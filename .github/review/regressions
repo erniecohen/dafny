@@ -1035,3 +1035,7 @@ git-issues/github-issue-199-modular-termination.dfy
 git-issues/github-issue-199-referrers.dfy
 git-issues/github-issue-199-conclusions.dfy
 git-issues/github-issue-199-substitution.dfy
+
+# Member-invariant dependence must reach the owner through a datatype cycle (issue 504).
+git-issues/git-issue-504-dependence.dfy
+git-issues/git-issue-504-positive.dfy
