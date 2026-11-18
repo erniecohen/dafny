@@ -47,9 +47,12 @@ def gate(kind, expected, actual, mode, output):
     if probe and not os.environ.get('GITHUB_REF', '').startswith('refs/heads/scratch/'):
         raise ValueError('Baseline probes require a scratch branch')
     module = runner('lit' if kind == 'suite' else 'std')
-    keys = [line.split('\t')[0] for line in Path(actual).read_text().splitlines() if line.strip()]
-    if len(keys) != len(set(keys)):
-        raise ValueError('Duplicate verdict rows')
+    for path in (Path(expected), Path(actual)):
+        if not path.is_file():
+            continue  # A missing baseline is handled below, including scratch probes.
+        keys = [line.split('\t')[0] for line in path.read_text().splitlines() if line.strip()]
+        if len(keys) != len(set(keys)):
+            raise ValueError('Duplicate verdict rows in ' + str(path))
     capture = io.StringIO()
     with contextlib.redirect_stdout(capture):
         if Path(expected).is_file():
