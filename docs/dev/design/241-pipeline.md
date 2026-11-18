@@ -915,8 +915,8 @@ local/global/final split in [the cache design](261-content-addressed-caches.md).
 The unit is the existing `ModuleResolutionResult` for a semantic resolution-graph
 node. Its owner key is the section 6.2.1 `ModuleResolutionKey`, called `L(m)` here.
 Literal modules, import/export views, refinement and nested prerequisites retain
-their graph identities and dependency roles. A directory contains `<L>.dres`
-files. Several generated abstract signatures can belong to one owner result;
+their graph identities and dependency roles. A directory contains `<L>.<ctx>.dres`
+files, with one payload per local-key/naming-context pair. Several generated abstract signatures can belong to one owner result;
 select one by its stable `ModuleDefinition.FullName`, not by owner key alone.
 `ModuleResolutionKey.Compute` and `Prerequisite` remain the shared interfaces.
 
@@ -949,6 +949,7 @@ The manifest has the following required fields:
 | `resolution_schema` | Digest of the complete typed tag/field schema and codec identity; no partially compatible schema is accepted. |
 | `profile` | The audited module-local resolution profile, including resolver engine and exact built-in plugin identity/order. |
 | `module_key`, `module_identity` | The full lowercase SHA-256 owner key and fully qualified graph-node identity. |
+| `naming_context`, `naming_context_sha256` | Canonically ordered owner and prerequisite graph identities, owner keys, generated-signature identities and their effective resolver naming prefixes; `ctx` is the domain-separated SHA-256 digest of this complete projection. |
 | `options` | Canonical effective modern/legacy options and verification-membership records used by `Compute`; execution/report/cache locations are excluded as in section 6.2.1. |
 | `prerequisites` | Canonically ordered role, qualified graph identity and full local key for every direct semantic prerequisite; include selected export-view selectors. |
 | `payload_length`, `payload_sha256` | Uncompressed CBOR byte length and SHA-256 digest. |
@@ -960,7 +961,18 @@ or authority for early cutoff. Inferred characteristics and nominal ownership
 must participate in any later view hash. Body-only reuse requires the separately
 reviewed view-read boundary and rebinding rules from the cache design.
 
-The filename, manifest key and freshly computed `L` must agree. Do not accept a
+The filename, manifest key and freshly computed `L` must agree. The filename's
+`ctx`, manifest context digest and freshly computed naming-context projection must
+also agree, including the full projection bytes. The projection includes the
+owner and every semantic prerequisite, including generated-signature selectors.
+A changed effective prefix is a miss even when all local keys are unchanged.
+Distinct contexts coexist as `<L>.<ctx>.dres`; determinism disputes concern one
+`(L, ctx)` pair. This follows the coordinator's
+[decision](https://github.com/erniecohen/dafny/issues/241#issuecomment-6991588268).
+Keep the shipped naming algorithm unchanged. Generated-name relocation is outside
+this milestone. In particular, adding `SnapshotModule51712` changes the prefix of
+`SnapshotModule4829` from `Mdwj6dt_` to `Mdwj6dtb_`; a snapshot from the first
+context cannot hit in the second. Do not accept a
 matching filename without recomputing source/options/prerequisite/producer inputs.
 Reject duplicate manifest fields or ZIP entries, unknown required fields, encrypted
 entries, unexpected entries, malformed/noncanonical keys, traversal names and
@@ -1043,7 +1055,7 @@ Publication encodes deterministic bytes, writes a unique temporary file in the
 target directory, closes/flushes it, validates lengths and hashes, then atomically
 publishes without replacing an existing final file. Readers open final names
 only. Concurrent equal writers validate and reuse the winner. Two valid but
-unequal payloads for the same key indicate a determinism/provenance failure:
+unequal payloads for the same `(L, ctx)` pair indicate a determinism/provenance failure:
 quarantine or bypass the key; do not select the last writer. Interrupted writes
 and orphan temporary files are ignored. Truncation, invalid IDs, unknown tags,
 reference mismatch, corruption or any uncertainty means re-resolution, with no
