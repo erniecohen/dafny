@@ -1,8 +1,8 @@
 
 Dafny program verifier finished with 4 verified, 0 errors
-issue-437-controls.dfy(38,39): Error: assertion might not hold
-issue-437-controls.dfy(39,39): Error: assertion might not hold
-issue-437-controls.dfy(40,49): Error: assertion might not hold
-issue-437-controls.dfy(41,43): Error: assertion might not hold
+issue-437-controls.dfy(40,4): Error: assertion might not hold
+issue-437-controls.dfy(45,4): Error: assertion might not hold
+issue-437-controls.dfy(50,4): Error: assertion might not hold
+issue-437-controls.dfy(58,4): Error: assertion might not hold
 
 Dafny program verifier finished with 0 verified, 4 errors

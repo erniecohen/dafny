@@ -35,8 +35,26 @@ module Issue437 {
     assert multiset(merged) == multiset([1, 2, 3, 4]);
   }
 
-  lemma NegativeMul() { PositiveMul(); assert false; }
-  lemma NegativeDiv() { PositiveDiv(); assert false; }
-  lemma NegativeQuotient() { PositiveQuotient(); assert false; }
-  lemma NegativeMerge() { PositiveMerge(); assert false; }
+  lemma NegativeMul() {
+    M.LemmaMulIsMulRecursive(-2, 3);
+    assert false;
+  }
+
+  lemma NegativeDiv() {
+    D.LemmaMultiplyDivideLt(-7, 3, -2);
+    assert false;
+  }
+
+  lemma NegativeQuotient() {
+    B.Quotient(-7, 3, -3, 2);
+    assert false;
+  }
+
+  lemma NegativeMerge() {
+    hide S.MergeSortedWith;
+    var le := (x: int, y: int) => x <= y;
+    assert R.TotalOrdering(le);
+    var merged := S.MergeSortedWith([1, 3], [2, 4], le);
+    assert false;
+  }
 }
