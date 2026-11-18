@@ -78,7 +78,49 @@ public class TypeRefinementVisitor : ASTVisitor<IASTVisitorContext> {
     return base.VisitOneExpression(expr, context);
   }
 
+  /// <summary>
+  /// Issue 105: the flows of an arithmetic expression of a newtype N with member invariants, a tree of operations and
+  /// literals of N (see PreTypeToTypeVisitor.IsNewtypeArithmetic). The type of an operation is the join of the types
+  /// of its operands of N, as for any operation (below), and that type also flows down into the operands that are
+  /// literals or operations, never into a variable. So every node of the tree has the join of its other leaves: "raw N"
+  /// if one of them is raw, and N otherwise, which the verifier checks at each node, as it checks the constraint of
+  /// a newtype in the old syntax. A comparison has no result of N, so each of its operands flows into the other, if
+  /// that is a literal or an operation: in "r < 3", where "r" is raw, so is "3".
+  /// </summary>
+  private void AddNewtypeArithmeticFlows(Expression expr) {
+    void FlowDown(Expression source, Expression sink, string description) {
+      if (PreTypeToTypeVisitor.IsNewtypeArithmetic(sink.Resolved) && SamePreTypeDecl(source, sink.Resolved)) {
+        flows.Add(new FlowBetweenExpressions(sink.Resolved, source, description));
+      }
+    }
+    switch (expr) {
+      case BinaryExpr binaryExpr when PreTypeToTypeVisitor.IsNewtypeArithmetic(expr):
+        FlowDown(expr, binaryExpr.E0, BinaryExpr.OpcodeString(binaryExpr.Op));
+        if (binaryExpr.ResolvedOp is not (BinaryExpr.ResolvedOpcode.LeftShift or BinaryExpr.ResolvedOpcode.RightShift)) {
+          FlowDown(expr, binaryExpr.E1, BinaryExpr.OpcodeString(binaryExpr.Op));
+        }
+        break;
+      case UnaryOpExpr unaryOpExpr when PreTypeToTypeVisitor.IsNewtypeArithmetic(expr) && SamePreTypeDecl(expr, unaryOpExpr.E):
+        flows.Add(new FlowBetweenExpressions(expr, unaryOpExpr.E, "unary " + unaryOpExpr.Op));
+        FlowDown(expr, unaryOpExpr.E, "unary " + unaryOpExpr.Op);
+        break;
+      case BinaryExpr {
+        ResolvedOp: BinaryExpr.ResolvedOpcode.EqCommon or BinaryExpr.ResolvedOpcode.NeqCommon or BinaryExpr.ResolvedOpcode.Lt or
+        BinaryExpr.ResolvedOpcode.Le or BinaryExpr.ResolvedOpcode.Ge or BinaryExpr.ResolvedOpcode.Gt
+      } comparison:
+        FlowDown(comparison.E0, comparison.E1, BinaryExpr.OpcodeString(comparison.Op));
+        FlowDown(comparison.E1, comparison.E0, BinaryExpr.OpcodeString(comparison.Op));
+        break;
+    }
+  }
+
+  private static bool SamePreTypeDecl(Expression a, Expression b) {
+    return a.PreType?.Normalize() is DPreType { Decl: var declA } && b.PreType?.Normalize() is DPreType { Decl: var declB } &&
+           declA == declB;
+  }
+
   protected override void PostVisitOneExpression(Expression expr, IASTVisitorContext context) {
+    AddNewtypeArithmeticFlows(expr);
     if (expr is IdentifierExpr identifierExpr) {
       flows.Add(new FlowFromType(expr, identifierExpr.Var.UnnormalizedType, identifierExpr.Name));
 

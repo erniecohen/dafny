@@ -595,7 +595,9 @@ public abstract class Type : NodeWithOrigin {
       var td = (NewtypeDecl)cl;
       switch (td.WitnessKind) {
         case SubsetTypeDecl.WKind.CompiledZero:
-          return td.InheritsBaseDefault
+          // Issue 105: "raw N", where the header of N has moved into its InvariantTypeDecl, is the base type with no
+          // constraint, and as inhabited as the base type
+          return td.InheritsBaseDefault || td.MovedHeaderClauses != null
             ? td.ConcreteBaseType(udt.TypeArgs).GetAutoInit(coDatatypesBeingVisited, Step(td.ConcreteBaseType))
             : AutoInitInfo.CompilableValue;
         case SubsetTypeDecl.WKind.Compiled:

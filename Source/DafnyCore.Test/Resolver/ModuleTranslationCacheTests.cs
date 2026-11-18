@@ -294,19 +294,20 @@ public class ModuleTranslationCacheTests {
   }
 
   /// <summary>
-  /// Issue 105: no module of a program that declares a member invariant whose verification is not yet supported is
-  /// verified. A module's key covers only what the module depends on, so its entry from before an unrelated file
-  /// declared such an invariant must not be reused. An unrelated invariant whose verification is supported does not
-  /// change the module's translation, so its entry is reused.
+  /// Issue 105: a member invariant in an unrelated file, of any kind of type, does not change a module's translation,
+  /// so the module's entry is reused. (While the verification of some invariants was not yet supported, a program
+  /// that declared one was not translated at all, and the cache stepped aside for it; with newtypes, the last kind,
+  /// supported, that step is gone.)
   /// </summary>
   [Theory]
-  [InlineData("module Unrelated { datatype D = D(x: int) { invariant x > 0 } }", true)]
-  [InlineData("module Unrelated { datatype D<X> = D(x: X) { invariant true } }", true)]
-  [InlineData("module Unrelated { class C { const k: int invariant k > 0 constructor () { k := 1; } } }", true)]
-  [InlineData("module Unrelated { newtype N = int { invariant this > 0 } }", false)]
-  [InlineData("module Unrelated { trait T extends object { const k: int invariant k > 0 } class C extends T { constructor () { k := 1; } } }", true)]
-  [InlineData("module Unrelated { type A { invariant true } }", true)]
-  public async Task AnUnsupportedMemberInvariantInAnUnrelatedFileStopsReuse(string with, bool supported) {
+  [InlineData("module Unrelated { datatype D = D(x: int) { invariant x > 0 } }")]
+  [InlineData("module Unrelated { datatype D<X> = D(x: X) { invariant true } }")]
+  [InlineData("module Unrelated { class C { const k: int invariant k > 0 constructor () { k := 1; } } }")]
+  [InlineData("module Unrelated { newtype N = int { invariant this > 0 } }")]
+  [InlineData("module Unrelated { newtype N = x: int | x < 10 { invariant this as int > 0 } }")]
+  [InlineData("module Unrelated { trait T extends object { const k: int invariant k > 0 } class C extends T { constructor () { k := 1; } } }")]
+  [InlineData("module Unrelated { type A { invariant true } }")]
+  public async Task AMemberInvariantInAnUnrelatedFileKeepsReuse(string with) {
     const string without = "module Unrelated { datatype D = D(x: int) }";
     var cache = new ModuleTranslationCache();
     var before = await Resolve(Source, without, refresh: true, memberInvariants: true);
@@ -319,17 +320,10 @@ public class ModuleTranslationCacheTests {
     var after = await Resolve(Source, with, refresh: true, memberInvariants: true);
     var second = cache.Translate(after, after.RawModules().Single(m => m.Name == "M"), new(after.Options), default,
       out var reused);
-    if (supported) {
-      Assert.True(reused);
-      Assert.Equal(2, cache.Hits);
-      Assert.Equal(ModuleTranslationCache.Emit(first, before.Options), ModuleTranslationCache.Emit(second, after.Options));
-      Assert.Equal(0, after.Reporter.ErrorCount);
-    } else {
-      Assert.False(reused);
-      Assert.Equal(1, cache.Hits);
-      Assert.Empty(second.Implementations);
-      Assert.Equal(1, after.Reporter.ErrorCount);
-    }
+    Assert.True(reused);
+    Assert.Equal(2, cache.Hits);
+    Assert.Equal(ModuleTranslationCache.Emit(first, before.Options), ModuleTranslationCache.Emit(second, after.Options));
+    Assert.Equal(0, after.Reporter.ErrorCount);
   }
 
   /// <summary>

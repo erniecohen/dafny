@@ -95,11 +95,21 @@ public partial class BoogieGenerator {
       notNull = etran.TrExpr(implication.E0);
       constraint = implication.E1;
     }
-    var description = new InvariantCheck(targetType.ToString());
+    CheckInvariantConjuncts(origin, declaration, constraint, targetType, builder, etran, close, forget,
+      BplAnd(valueCanCall ?? Bpl.Expr.True, notNull ?? Bpl.Expr.True));
+    return true;
+  }
+
+  /// <summary>
+  /// Issue 105: check each conjunct of "constraint", the constraint of "declaration" applied to a value, as a separate
+  /// obligation under "guard" (see CheckInvariantTypeMembership).
+  /// </summary>
+  private void CheckInvariantConjuncts(IOrigin origin, InvariantTypeDecl declaration, Expression constraint, Type targetType,
+    BoogieStmtListBuilder builder, ExpressionTranslator etran, Func<Bpl.Expr, Bpl.Expr> close, bool forget, Bpl.Expr guard0,
+    string errorMsgPrefix = "") {
+    var description = new InvariantCheck(targetType.ToString(), errorMsgPrefix);
     foreach (var conjunct in Expression.Conjuncts(constraint)) {
-      var guard = etran.CanCallAssumption(conjunct);
-      if (notNull != null) { guard = BplAnd(notNull, guard); }
-      if (valueCanCall != null) { guard = BplAnd(valueCanCall, guard); }
+      var guard = BplAnd(guard0, etran.CanCallAssumption(conjunct));
       var check = close(BplImp(guard, etran.TrExpr(conjunct)));
       var invariant = conjunct.Resolved is FunctionCallExpr { Function: MemberInvariant memberInvariant } ? memberInvariant : null;
       var token = invariant != null
@@ -108,11 +118,16 @@ public partial class BoogieGenerator {
       // At an inherited site, a conjunct that the refinement base checked there is assumed, and one that the refining
       // module added is checked (section 4.2)
       var refinesToken = invariant != null ? InheritedConjunctOrigin(origin, declaration.Owner, invariant) : origin;
+      // The constraint of the header of a newtype in the old syntax (see InvariantTypeDecl.HeaderConjunctOf) is
+      // reported as it is without invariants
+      ProofObligationDescription conjunctDescription = invariant == null && declaration.HeaderConjunct != null &&
+                                                       InvariantTypeDecl.IsHeaderConjunct(conjunct, out var headerConstraint)
+        ? new ConversionSatisfiesConstraints(errorMsgPrefix, declaration.Owner.WhatKind, declaration.Owner.Name, headerConstraint)
+        : description;
       builder.Add(forget
-        ? AssertAndForget(builder.Context, token, check, description, refinesToken, null)
-        : Assert(token, check, description, refinesToken, builder.Context));
+        ? AssertAndForget(builder.Context, token, check, conjunctDescription, refinesToken, null)
+        : Assert(token, check, conjunctDescription, refinesToken, builder.Context));
     }
-    return true;
   }
 
   /// <summary>

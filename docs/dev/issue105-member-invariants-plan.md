@@ -2053,7 +2053,7 @@ section 7.2).**
        must never be inlined where the earlier invariants are not known.  It
        never is: `invariant#k` cannot be named in source, and the translator
        asserts each invariant whole, as a call, at a conversion
-       (`CheckInvariantTypeMembership`), at `new;` and for a witness, while
+       (`CheckInvariantConjuncts`), at `new;` and for a witness, while
        `TrSplitExpr` sees only source expressions.  A change that inlines an
        invariant's body must guard it with the earlier invariants.
 
@@ -2496,6 +2496,147 @@ section 7.2).**
   `git-issue-105-datatypes.dfy` adds the by-method controls, and
   `git-issue-105-trait-gates.dfy` now holds only newtypes.
 
+**Newtypes (eighth step; stage 6 of section 7.2).**
+
+- *The gate is gone.*  The invariants of newtypes, declared or inherited from
+  a trait, are verified, so every kind of type that can declare an invariant
+  is verified in every module.  The program-wide gate
+  (`DeclaresUnsupportedMemberInvariants` and its errors) is removed, and with it
+  the translation cache's step-aside: a program with invariants is cached as any
+  program is, on the command line and in the IDE.  The resolver's early
+  rejections stay as controls (`git-issue-105-not-yet.dfy`).
+- *The two types.*  A newtype `N` with invariants, declared or inherited, is
+  `raw N`, the newtype declaration itself, and its derived declaration, the
+  subset of `raw N` that satisfies the invariants, which the name `N` denotes.
+  `raw N` has the base type's representation.  A newtype with no invariant has
+  no derived declaration and is unchanged.
+- *The old syntax* (section 3.5).  Where a newtype with invariants also has a
+  constraint or a witness clause in its header, the derived declaration takes
+  both over before they are resolved (`NewtypeDecl.TakeHeaderClauses`), and
+  `raw N` is the base type with no constraint.  The header's constraint
+  becomes one more conjunct of `N`, before the invariants, as
+  `var x: B := this as B; P(x)`, so that it is the constraint as written.  It
+  keeps its own message ("result of operation might violate newtype
+  constraint"), and its well-formedness is checked as the old syntax checks
+  it.  Where the header constraint has the type of a newtype based on `bool`,
+  as it may without invariants, the conjunct is converted to `bool`, which the
+  verifier translates as the constraint itself.  The printer, the cloner and a
+  refinement see the header as written (`WrittenVar`, `WrittenConstraint`,
+  `WrittenWitnessKind`, `WrittenWitness`).  The header's variable may have an
+  inferred type, `newtype int8 = x | -128 <= x < 128 { ... }`: the base type
+  is still inferred from the header, and the conjunct's variable is the
+  header's own, so that both have the type inferred (`HeaderToInfer` in
+  `PreTypeResolve`).  A generic newtype whose header variable is inferred gets
+  one more error than without invariants, a cascading "type conversion target
+  type not determined", where the base type cannot be inferred.
+- *Witnesses.*  These rules settle what section 3.5 left open:
+  - A witness in the header is a value of `N`, as a witness member is, and is
+    checked against every conjunct.  The sugar says so: `witness w` in the
+    header means the member `witness w`.  Without invariants, the header's
+    witness is a value of the base type, so `witness c` with `c: int` is
+    accepted there and rejected once the newtype declares an invariant
+    (`git-issue-105-newtype-errors.dfy`).  A literal is a value of either.
+  - With no witness clause, the old syntax keeps its default: the base type's
+    zero must satisfy every conjunct (section 3.6).  A newtype in the member
+    form, with no constraint in its header and no witness member, is possibly
+    empty, as a datatype with invariants and no witness is.
+  - A newtype gives its witness either in its header or as a member, not both,
+    and one with no invariant takes no witness member: the witness of a
+    constraint in its header is given in the header.  Both are resolver errors
+    (`git-issue-105-newtype-witness-errors.dfy`).
+  - Over a base type that may be empty, the witness is checked by the
+    verifier, as in the old syntax, not rejected by the resolver: the
+    characteristics of a derived declaration come from its witness, so the
+    check that a type synonym's declared characteristics hold of its right-hand
+    side does not apply to it (`TypeCharacteristicChecker`).
+- *Operations* (section 3.5, and question 11 of section 8).  The result of an
+  operation of `N` is a value of `N`, checked against each conjunct, as at a
+  conversion.  So is each operand that is a literal: in `a < 3`, the literal
+  `3` has type `N`, and is checked, though the result is a `bool`.  An operand
+  of type `raw N`, other than a literal, makes the whole operation raw, and
+  nothing in it is checked.  The resolver gives such an operation the type
+  `raw N` (`PreTypeToType`, `TypeRefinementVisitor`).
+- *`raw N` is ghost.*  A compiled value of `N` satisfies its invariants, which
+  is what lets the native representation be read from them.  So no compiled
+  expression has a type that mentions `raw N`, and a member that an invariant
+  applies to `this`, whose receiver may be raw, is ghost
+  (`ExpressionTester`, `ModuleResolver`).
+- *Native types.*  The native type of `N` is read from the header's constraint
+  and the bodies of the invariants `N` declares, with `this` as the variable
+  (`NativeTypeAnalysis.ConstraintOf`).  An invariant inherited from a trait
+  gives no bound, but keeps the type from being target-complete, as an
+  invariant that gives no bound does.  A newtype based on `raw N` has the values
+  of `raw N`, which only the base type of `N` bounds.
+- *Compilation.*  `raw N` compiles as `N`.  A derived declaration with a
+  compiled witness is compiled as a subset type, so that the witness is the
+  default value of `N`, for a local variable, an array element or a datatype
+  field.
+- *Verification.*  The derived declaration is translated as a subset type of
+  `raw N`, with its axioms and, where the header moved into it, its
+  well-formedness check, which covers the header's constraint and witness, the
+  default included, against every conjunct.  `raw N` has nothing of its own to
+  check.  The check runs under the newtype's attributes and is reported as part
+  of the newtype's verification.  A witness member is checked as a `const` of
+  the type.  Some fixes that newtypes needed:
+  - The where clause of a variable of type `N` is the constraint, which calls
+    the invariant functions; their definition axioms need their `CanCall`s,
+    which the where clause now assumes, as the `$Is` axioms of a subset type
+    do (`GetWhereClause`).
+  - The check that the result of an operation is in `N` applies each
+    invariant to a value of `raw N<A>`, so that the invariant has the type
+    arguments `A` (`CheckResultToBeInType_Aux`).  It crashed on a generic
+    newtype.
+  - With member invariants, the check against the base type of a generic
+    newtype instantiates it, as `--consistent-obligation-checks` does.  Without
+    that, the check of an invariant of a generic newtype in the base referred
+    to the outer newtype's type parameter, and Boogie rejected the program.
+  - A base type that was inferred, `newtype Y = six | Yes(six)` where `Yes`
+    takes a `NewSix`, is a type proxy, which `AsRedirectingType` does not look
+    through, so the conversion to `Y` did not check the constraint of
+    `NewSix`.  With member invariants it does.  Without them that is a
+    soundness bug of its own: a program that converts `3` to such a `Y` proves
+    `false`.  It is reported separately, and is not changed here, since the
+    option off must not change.
+  - A conversion from a newtype to a trait that it extends and that is not a
+    reference type failed an internal assertion, without the option too,
+    since the translation looked at the newtype's base type, which does not
+    show the trait.  The value is now boxed, as a datatype's is
+    (`ConvertExpression`).  The change affects no program that was translated
+    before (`git-issue-105-newtype-trait-cast.dfy`).
+- *The exit test* compared each of a sample of 97 existing tests that declare
+  newtypes with a copy in which each newtype on one line was given an
+  `invariant true`, and, where its header had no witness clause and no
+  variable, the variable `x105` (since a member form with no witness would
+  otherwise be possibly empty), both with the option on.  Seventeen copies gave
+  the same verdicts and errors.  Six gave the same verdicts with different
+  messages: an extra related location at the header's constraint, now a
+  separate conjunct, and, where more than one assertion or conjunct fails, a
+  different choice of which is reported.  Eight gave the same errors with more
+  procedures verified, the derived declarations' checks.  Eight differed in
+  exit code: in five, the rewriting broke the program's syntax, and three
+  declare a codatatype, which the declaration rule of section 3.8 forbids
+  beside an invariant.  The rest either did not verify with the sample's fixed
+  options or had no newtype the rewriting could change.  The sample found the
+  three fixes above, for an inferred base, a generic base and a base that may
+  be empty.  So the verdicts are the same, but the resource counts are not
+  compared: the member form verifies more, each conjunct separately.
+- *Tests.*  `git-issue-105-newtypes.dfy` holds the member form, the old
+  syntax with invariants, members, traits, refinement, export and other bases;
+  `git-issue-105-newtype-generics.dfy` generic newtypes, inferred header
+  variables, bases of type `bool`, and a generic newtype based on one with
+  invariants; `git-issue-105-newtype-witness-checks.dfy` the header's checks,
+  an inferred base and a base that may be empty;
+  `git-issue-105-newtype-witness-errors.dfy` and
+  `git-issue-105-newtype-errors.dfy` the resolver's rules;
+  `git-issue-105-newtype-native.dfy` native types;
+  `git-issue-105-newtype-compile.dfy` compiled code; and
+  `git-issue-105-newtype-trait-cast.dfy` the conversion to a trait, without
+  the option.  `git-issue-105-verify.dfy` and `git-issue-105-trait-gates.dfy`
+  now verify every module, each with negative controls.  `raw` of a newtype in
+  the old syntax with no invariant is still "not yet supported": it would be
+  the base type without the constraint, a type the program does not otherwise
+  have (`git-issue-105-not-yet.dfy`).
+
 **Variance by polarity (the owner's decision, replacing the variance rule of the step for generic datatypes).**
 
 - *The rule* is section 3.5's: a declared `+X` or `-X` of a type with
@@ -2577,7 +2718,7 @@ removed when no program can reach it.
   |---|---|---|---|---|
   | earlier invariants assumed in the well-formedness of a later one | assumption | `BoogieGenerator.Functions.Wellformedness.cs`, `Check` | `Check/1`, `CanCallAssumptionForVerification` (2 to 3) | wellformedness |
   | the `$Is` axioms of `D` use its constraint | axiom | `BoogieGenerator.Types.cs`, the axioms of a subset type | none | abstract-synonym, abstract-types, class-compile, classes, compile, datatypes, emptiness, exports, general-traits, generics, raw-compile, refinement-verify, statements, traits, vacuity |
-  | each invariant checked at a conversion to `D` | check | `BoogieGenerator.TypeObligations.cs` | `CheckInvariantTypeMembership/10`, `Assert`, `AssertAndForget`, `CanCallAssumption` | abstract-synonym, abstract-types, class-compile, classes, compile, datatypes, emptiness, exports, general-traits, generics, opacity, raw-compile, refinement-verify, trait-compile, traits, wellformedness |
+  | each invariant checked at a conversion to `D` | check | `BoogieGenerator.TypeObligations.cs` | `CheckInvariantConjuncts/10`, `Assert`, `AssertAndForget`, `CanCallAssumption` | abstract-synonym, abstract-types, class-compile, classes, compile, datatypes, emptiness, exports, general-traits, generics, opacity, raw-compile, refinement-verify, trait-compile, traits, wellformedness |
   | the value is in `raw D` before the invariants are checked | check | same | `CheckInvariantTypeMembership/10`, the second `CheckSubrange` | generics (`Components`) |
   | a value converted to `C` is not null | check | same | `CheckInvariantTypeMembership/10`, the first `CheckSubrange` | classes (`RawQToCell`) |
   | a member that is not raw is applied to a raw receiver only if it satisfies the invariants | check | same | `CheckReceiverInvariants/5`, `CheckSubrange` | traits |
@@ -2587,13 +2728,12 @@ removed when no program can reach it.
   | the object is raw until `new;` | restriction | same | none | classes, general-traits, refinement-verify, traits |
   | the parent axioms of a raw class reach the raw types of its traits | axiom | `BoogieGenerator.cs` | none | general-traits, refinement-verify, traits |
   | the constraint includes the inherited invariants | constraint | `InvariantTypeDecl.cs` | none | general-traits, refinement, refinement-verify, traits |
-  | the translator's gate for what is not yet verified | check | `BoogieGenerator.cs`, `DeclaresUnsupportedMemberInvariants` | none | trait-gates, verify |
   | `D` keeps the declared variance | subtyping | `InvariantTypeDecl.cs`, `TypeParametersOf` | none | generics, variance |
   | variance by polarity | check | `TypeParameterPolarity.cs`, `CheckInvariantVariance` | none | variance |
   | the extension condition | check | `InvariantExtensionCondition.cs` | none | abstract-errors, class-errors, extension, trait-errors |
   | the reads restriction | check | `MemberInvariantChecks.cs`, `CheckReadsRestrictions` | none | class-errors, reads |
   | the program-wide checks | check | `MemberInvariantChecks.cs`, `Check` | none | abstract-errors, class-witness, codatatypes, libraries, trait-witness |
-  | at an inherited site, a conjunct the base did not check is checked | check | `BoogieGenerator.InheritedInvariants.cs`, `InheritedConjunctOrigin` | `CheckInvariantTypeMembership/10`, `Assert`, `AssertAndForget` | refinement-verify |
+  | at an inherited site, a conjunct the base did not check is checked | check | `BoogieGenerator.InheritedInvariants.cs`, `InheritedConjunctOrigin` | `CheckInvariantConjuncts/10`, `Assert`, `AssertAndForget` | refinement-verify |
   | at an inherited site, a conjunct the base checked is assumed | assumption | same | same | refinement-verify |
   | at an inherited site, a membership check that is not split is checked whole | check | `BoogieGenerator.TypeObligations.cs`, `InheritedMembershipOrigin` | `CheckTypeMembership/12`, `CheckTypeMembership` (1 to 2) | refinement-verify |
   | a member that became raw is verified again | check | `BoogieGenerator.InheritedInvariants.cs`, `BecameRaw` | none | refinement-verify |
@@ -2621,10 +2761,12 @@ removed when no program can reach it.
   | an invariant or witness outside a type declaration | modifiers |
   | a witness in a class | class-witness |
   | a witness or an invariant in a codatatype | codatatypes, libraries |
-  | a witness of a declaration other than a datatype (not yet) | trait-witness |
+  | a witness of a declaration other than a datatype or a newtype (not yet) | trait-witness |
   | a witness of an abstract type | abstract-errors |
   | a refinement that does not keep the characteristics an abstract type with invariants promises | abstract-errors |
-  | a witness without an invariant, two witnesses | trait-witness |
+  | a witness without an invariant, two witnesses | trait-witness, newtype-witness-errors |
+  | a witness in the header of a newtype and a witness member | newtype-witness-errors |
+  | a compiled use of `raw N`, and a member that an invariant uses that is not ghost | newtype-errors |
   | the declaration rule (an invariant and a codatatype in one program) | codatatypes, libraries |
   | the reads restriction | reads, class-errors |
   | an inherited witness | trait-errors |
@@ -2634,7 +2776,6 @@ removed when no program can reach it.
   | `raw` where it is not yet supported | not-yet, raw-errors, class-exports, raw-exports |
   | an opaque invariant | modifiers |
   | `allocated` in an invariant | class-errors, two-state |
-  | the translator's gate | trait-gates, verify |
   | variance by polarity | variance |
   | `--member-invariants` without `--type-system-refresh` | option (command line); `MemberInvariantsRequireTypeSystemRefresh` in `DafnyCore.Test` (resolver); `MemberInvariantsTest.OptionsFromTheProjectFile` in `DafnyLanguageServer.Test` (a project file) |
 
@@ -2672,11 +2813,10 @@ removed when no program can reach it.
   tree showed the reserved names.
 - *Incremental reuse in the IDE.*  With `--translation-cache`, the language
   server translates each module through the same `ModuleTranslationCache` as
-  the command line, so it steps aside exactly when the command line does: only
-  while the program-wide gate is active.  A program the gate stops is not
-  translated at all; it gets the gate's errors instead of verification, so
-  there is nothing to reuse.  A program whose invariants are all of kinds that
-  are verified is cached as any program is, in the IDE too.  So the step-aside
-  is lifted kind by kind with the gate.  It goes entirely, with the gate and `DeclaresUnsupportedMemberInvariants`,
-  at the step that verifies the last kind: newtypes (step 8).  Since step 7,
-  newtypes are the only case left.
+  the command line, so it stepped aside exactly when the command line did:
+  only while the program-wide gate was active, for a program the gate stopped,
+  which got the gate's errors instead of verification.  The step-aside was
+  lifted kind by kind with the gate, and went entirely, with the gate and
+  `DeclaresUnsupportedMemberInvariants`, at the step that verified the last
+  kind, newtypes (step 8).  A program with invariants is now cached as any
+  program is, in the IDE too.

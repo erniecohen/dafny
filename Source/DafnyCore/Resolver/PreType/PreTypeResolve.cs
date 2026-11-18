@@ -995,18 +995,19 @@ namespace Microsoft.Dafny {
         nd.UseBaseReferenceCharacteristics = resolver.Options.Get(CommonOptionBag.ExtendedNewtypeBases);
         nd.InheritsBaseDefault = nd.UseBaseReferenceCharacteristics && nd.Var == null &&
           nd.WitnessKind == SubsetTypeDecl.WKind.CompiledZero;
+        var variable = nd.Var ?? HeaderToInfer(nd)?.Var;
         nd.BasePreType = CreateTemporaryPreTypeProxy();
-        if (nd.Var != null) {
-          nd.Var.PreType = nd.BasePreType;
+        if (variable != null) {
+          variable.PreType = nd.BasePreType;
         }
         nd.BasePreType = Type2PreType(nd.BaseType);
-        if (nd.Var != null) {
-          Contract.Assert(object.ReferenceEquals(nd.BaseType, nd.Var.Type));
-          nd.Var.PreType = nd.BasePreType;
+        if (variable != null) {
+          Contract.Assert(object.ReferenceEquals(nd.BaseType, variable.Type));
+          variable.PreType = nd.BasePreType;
         }
         var onProxyAction = () => {
           resolver.ReportError(ResolutionErrors.ErrorId.r_newtype_base_undetermined, nd.Origin,
-            $"base type of {nd.WhatKindAndName} is not fully determined; add an explicit type for bound variable '{nd.Var.Name}'");
+            $"base type of {nd.WhatKindAndName} is not fully determined; add an explicit type for bound variable '{nd.WrittenVar.Name}'");
         };
         if (resolver.Options.Get(CommonOptionBag.ExtendedNewtypeBases) &&
             (AncestorName(nd.BasePreType) == PreType.TypeNameORDINAL ||
@@ -1172,21 +1173,34 @@ namespace Microsoft.Dafny {
       }
     }
 
+    /// <summary>
+    /// Issue 105: the clauses of the header of "nd" that its InvariantTypeDecl has taken over (see
+    /// NewtypeDecl.TakeHeaderClauses), where the bound variable has no written type, or null. The constraint then
+    /// infers the base type of the newtype, as without invariants, so it is resolved with the newtype, in its first
+    /// pass, and the InvariantTypeDecl shares it and the variable (see InvariantTypeDecl.HeaderConjunctOf).
+    /// </summary>
+    static NewtypeDecl.HeaderClauses HeaderToInfer(NewtypeDecl nd) {
+      return nd.MovedHeaderClauses is { Var.Type: TypeProxy } header ? header : null;
+    }
+
     void ResolveConstraintAndWitness(RedirectingTypeDecl dd, bool initialResolutionPass) {
       Contract.Requires(dd != null);
       Contract.Requires(dd.Constraint != null);
 
-      if (dd.Var == null) {
+      var (variable, constraint) = dd is NewtypeDecl nd && HeaderToInfer(nd) is { } header
+        ? (header.Var, header.Constraint)
+        : (dd.Var, dd.Constraint);
+      if (variable == null) {
         if (initialResolutionPass) {
           Constraints.SolveAllTypeConstraints($"{dd.WhatKind} '{dd.Name}' constraint");
         }
       } else {
-        if (initialResolutionPass == dd.Var.Type is TypeProxy) {
+        if (initialResolutionPass == variable.Type is TypeProxy) {
           scope.PushMarker();
           scope.AllowInstance = false;
-          ScopePushExpectSuccess(dd.Var, dd.WhatKind + " variable", false);
-          ResolveExpression(dd.Constraint, new ResolutionContext(new CodeContextWrapper(dd, true), false));
-          ConstrainTypeExprBool(dd.Constraint, dd.WhatKind + " constraint must be of type bool (instead got {0})");
+          ScopePushExpectSuccess(variable, dd.WhatKind + " variable", false);
+          ResolveExpression(constraint, new ResolutionContext(new CodeContextWrapper(dd, true), false));
+          ConstrainTypeExprBool(constraint, dd.WhatKind + " constraint must be of type bool (instead got {0})");
           scope.PopMarker();
           Constraints.SolveAllTypeConstraints($"{dd.WhatKind} '{dd.Name}' constraint");
         } else {

@@ -769,78 +769,6 @@ namespace Microsoft.Dafny {
       return new Bpl.IdentifierExpr(tok, var.AssignUniqueName(CurrentDeclaration.IdGenerator), TrType(var.Type));
     }
 
-    /// <summary>
-    /// Issue 105: member invariants (--member-invariants) are verified for inductive datatypes, classes, traits and
-    /// abstract types, declared or inherited, in any module. If the program, libraries included, has any other
-    /// invariant, declared or inherited, no module of it is translated, since the types of every module may depend
-    /// on the invariants. Then report each unsupported invariant of "forModule", or, if it has none, the first of its
-    /// declarations that would have been verified. Return whether the program has an unsupported invariant.
-    /// </summary>
-    private bool ReportUnsupportedMemberInvariants(Program p, ModuleDefinition forModule) {
-      if (!DeclaresUnsupportedMemberInvariants(p)) {
-        return false;
-      }
-      var unsupported = UnsupportedInvariants(forModule).ToList();
-      foreach (var (origin, reason) in unsupported) {
-        reporter.Error(MessageSource.Translator, origin, reason);
-      }
-      if (unsupported.Count == 0) {
-        var verifiable = forModule.TopLevelDecls
-          .SelectMany(decl => decl is TopLevelDeclWithMembers withMembers ? withMembers.Members.Prepend<Declaration>(decl) : [decl])
-          .FirstOrDefault(decl => decl is ICanVerify { ShouldVerify: true } && decl.NameNode.Origin.Uri != null);
-        if (verifiable != null) {
-          var moduleName = forModule.IsDefaultModule ? "the default module" : $"module '{forModule.FullDafnyName}'";
-          reporter.Error(MessageSource.Translator, verifiable.NameNode.Origin,
-            $"{moduleName} is not verified: the program declares a member invariant whose verification is not yet supported");
-        }
-      }
-      return true;
-    }
-
-    private static IEnumerable<MemberInvariant> Invariants(ModuleDefinition module) {
-      return module.TopLevelDecls.OfType<TopLevelDeclWithMembers>().SelectMany(decl => decl.Members.OfType<MemberInvariant>());
-    }
-
-    /// <summary>
-    /// Issue 105: the invariants of "module" whose verification is not yet supported, each with where to report it and
-    /// why: an invariant of a newtype, and a newtype that extends a trait with invariants (reported at its name).
-    /// </summary>
-    private static IEnumerable<(IOrigin Origin, string Reason)> UnsupportedInvariants(ModuleDefinition module) {
-      const string notYet = "is not yet supported";
-      foreach (var decl in module.TopLevelDecls.OfType<TopLevelDeclWithMembers>()) {
-        var invariants = decl.Members.OfType<MemberInvariant>().ToList();
-        if (!InvariantTypeDecl.MayHaveInvariants(decl)) {
-          var kind = ("aeiou".Contains(decl.WhatKind[0]) ? "an " : "a ") + decl.WhatKind;
-          foreach (var invariant in invariants) {
-            yield return (invariant.NameNode.Origin, $"verification of a member invariant of {kind} {notYet}");
-          }
-          if (decl.Traits.Any(ExtendsTraitWithInvariants)) {
-            yield return (decl.NameNode.Origin, $"verification of {kind} that extends a trait with member invariants {notYet}");
-          }
-        }
-      }
-    }
-
-    private static bool ExtendsTraitWithInvariants(Type parent) {
-      return parent is UserDefinedType { ResolvedClass: InvariantTypeDecl or NonNullTypeDecl { Class.InvariantTypeDecl: not null } };
-    }
-
-    /// <summary>
-    /// Issue 105: whether the program, libraries included, declares a member invariant under --member-invariants
-    /// whose verification is not yet supported, in which case no module of it is translated. The translation cache
-    /// does not reuse a module of such a program, since a module's key covers only what the module depends on.
-    /// </summary>
-    internal static bool DeclaresUnsupportedMemberInvariants(Program p) {
-      return DeclaresMemberInvariants(p) && p.RawModules().Any(module => UnsupportedInvariants(module).Any());
-    }
-
-    /// <summary>
-    /// Issue 105: whether the program, libraries included, declares a member invariant under --member-invariants.
-    /// </summary>
-    private static bool DeclaresMemberInvariants(Program p) {
-      return p.Options.Get(CommonOptionBag.MemberInvariants) && p.RawModules().Any(module => Invariants(module).Any());
-    }
-
     public Bpl.Program DoTranslation(Program p, ModuleDefinition forModule) {
       var snapshot = DoTranslationForSnapshot(p, forModule);
       return BoogieSnapshotCloner.TryClone(snapshot, out var consumer, out _) ? consumer : snapshot;
@@ -850,9 +778,6 @@ namespace Microsoft.Dafny {
     // Cached and uncached callers materialize exactly one graph through the same copier.
     internal Bpl.Program DoTranslationForSnapshot(Program p, ModuleDefinition forModule) {
       RequireCardinalityValidation(p);
-      if (ReportUnsupportedMemberInvariants(p, forModule)) {
-        return new Bpl.Program();
-      }
       using var moduleNames = new ModuleNamingScope(forModule.FullName, p.ModuleNamePrefixes);
       Type.ResetScopes();
       ancestorTypeCache.Clear();
@@ -1455,6 +1380,14 @@ namespace Microsoft.Dafny {
           AddOtherDefinition(revealTrigger, new Axiom(f.Origin, implication));
         }
       }
+    }
+
+    /// <summary>
+    /// Issue 105: whether "parent" is a trait with member invariants, a general trait (its name resolves to the derived
+    /// declaration) or a reference trait (its non-null type is over a trait with one).
+    /// </summary>
+    private static bool ExtendsTraitWithInvariants(Type parent) {
+      return parent is UserDefinedType { ResolvedClass: InvariantTypeDecl or NonNullTypeDecl { Class.InvariantTypeDecl: not null } };
     }
 
     /// <summary>
@@ -4404,11 +4337,37 @@ namespace Microsoft.Dafny {
         (verificationType.IsNumericBased() || verificationType.IsBitVectorType || verificationType.IsBoolType)) {
         var constraint = ModuleResolver.GetImpliedTypeConstraint(new BoogieWrapper(x, normType), normType);
         isPred = etran.TrExpr(constraint);
+        if (HasInvariantTypeDeclInConstraints(normType)) {
+          // Issue 105: the constraint calls the invariant functions of a newtype, whose definition axioms need their
+          // "canCall"s. Its well-formedness was checked for every value of the base type, so they hold, as the $Is
+          // axioms of a subset type say.
+          isPred = BplAnd(etran.CanCallAssumption(constraint), isPred);
+        }
       } else {
         // go for the symbolic name
         isPred = MkIs(x, normType);
       }
       return isAlloc == null ? isPred : isPred == null ? isAlloc : BplAnd(isPred, isAlloc);
+    }
+
+    /// <summary>
+    /// Issue 105: whether the constraints that "type" implies, through its subset types and newtypes, include those of
+    /// the derived declaration of a newtype with member invariants.
+    /// </summary>
+    private static bool HasInvariantTypeDeclInConstraints(Type type) {
+      while (type.NormalizeExpandKeepConstraints() is UserDefinedType { ResolvedClass: RedirectingTypeDecl redirecting } udt) {
+        if (redirecting is InvariantTypeDecl) {
+          return true;
+        }
+        if (redirecting is NewtypeDecl newtypeDecl) {
+          type = newtypeDecl.RhsWithArgument(udt.TypeArgs);
+        } else if (redirecting is SubsetTypeDecl subsetTypeDecl) {
+          type = subsetTypeDecl.RhsWithArgument(udt.TypeArgs);
+        } else {
+          return false;
+        }
+      }
+      return false;
     }
 
     // Returns expressions, which, if false, means that the two LHS expressions are

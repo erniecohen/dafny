@@ -9,8 +9,9 @@ namespace Microsoft.Dafny;
 /// modules are resolved:
 ///  * the option requires --type-system-refresh;
 ///  * a codatatype may not declare an invariant or a witness member;
-///  * a datatype declares at most one witness member, and only if it has an invariant; a class or an abstract type
-///    declares none (witness members of traits and newtypes are not yet supported);
+///  * a datatype or a newtype declares at most one witness member, and only if it has an invariant; a class or an
+///    abstract type declares none (witness members of traits are not yet supported).  A newtype gives its witness
+///    either in its header or as a member, not both;
 ///  * the declaration rule: a program that declares a member invariant may not declare a codatatype.
 ///    Libraries are part of the program, so the rule covers them too.
 /// The checks are syntactic, so they see every declaration, including those of abstract modules and of
@@ -59,18 +60,24 @@ public static class MemberInvariantChecks {
           } else if (decl is AbstractTypeDecl) {
             reporter.Error(MessageSource.Resolver, witness.NameNode.Origin,
               "an abstract type may not declare a witness: its characteristics, '(0)' or '(00)', promise one, and each refinement that defines the type supplies it");
-          } else if (decl is not IndDatatypeDecl datatype) {
+          } else if (decl is not (IndDatatypeDecl or NewtypeDecl)) {
             reporter.Error(MessageSource.Resolver, witness.NameNode.Origin,
               $"a witness member of a {decl.WhatKind} is not yet supported");
           } else if (withMembers.Members.OfType<MemberWitness>().First() != witness) {
             reporter.Error(MessageSource.Resolver, witness.NameNode.Origin,
               $"'{decl.Name}' declares more than one witness");
-          } else if (!withMembers.Members.OfType<MemberInvariant>().Any() && datatype.Traits.Count == 0 &&
-                     datatype.EnclosingModuleDefinition.Implements == null) {
-            // A refining declaration may add a witness for the invariants of the declaration it refines, and a
-            // datatype may inherit invariants from its parent traits.
+          } else if (decl is NewtypeDecl { WrittenWitnessKind: not SubsetTypeDecl.WKind.CompiledZero }) {
+            // Section 3.5: the witness of the header is the witness of the newtype with its invariants, as the
+            // witness member is, so the two would compete.
             reporter.Error(MessageSource.Resolver, witness.NameNode.Origin,
-              $"'{decl.Name}' declares no invariant, so it needs no witness: its values are its constructors' values");
+              $"'{decl.Name}' gives a witness in its header, so it may not also declare a witness member");
+          } else if (!withMembers.Members.OfType<MemberInvariant>().Any() && withMembers.Traits.Count == 0 &&
+                     decl.EnclosingModuleDefinition.Implements == null) {
+            // A refining declaration may add a witness for the invariants of the declaration it refines, and a
+            // datatype or a newtype may inherit invariants from its parent traits.
+            reporter.Error(MessageSource.Resolver, witness.NameNode.Origin, decl is NewtypeDecl
+              ? $"'{decl.Name}' declares no invariant, so it takes no witness member: the witness of a constraint in its header is given in the header"
+              : $"'{decl.Name}' declares no invariant, so it needs no witness: its values are its constructors' values");
           }
         }
       }

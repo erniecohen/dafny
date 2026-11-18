@@ -1655,6 +1655,12 @@ namespace Microsoft.Dafny.Compilers {
           v.Visit(nt);
           CompileClassMembers(program, nt, w);
           w.Finish();
+          if (nt.InvariantTypeDecl is { WitnessKind: SubsetTypeDecl.WKind.Compiled } invariantTypeDecl) {
+            // Issue 105: as for a datatype below, the type of a newtype with member invariants is compiled as a subset
+            // type of "raw N", under a name of its own, where it has a compiled witness, which is then its default value
+            DeclareSubsetType(invariantTypeDecl, wr);
+            v.Visit(invariantTypeDecl);
+          }
         } else if ((d as TupleTypeDecl)?.NonGhostDims == 1 && SupportsDatatypeWrapperErasure &&
                    Options.Get(CommonOptionBag.OptimizeErasableDatatypeWrapper)) {
           // ignore this type declaration

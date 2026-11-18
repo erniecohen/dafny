@@ -1253,14 +1253,16 @@ public class InvariantCheck : ProofObligationDescription {
     $"invariant of '{targetType}' holds";
 
   public override string FailureDescription =>
-    "invariant might not hold";
+    $"{prefix}invariant might not hold";
 
   public override string ShortDescription => "invariant";
 
   private readonly string targetType;
+  private readonly string prefix;
 
-  public InvariantCheck(string targetType) {
+  public InvariantCheck(string targetType, string prefix = "") {
     this.targetType = targetType;
+    this.prefix = prefix;
   }
 }
 

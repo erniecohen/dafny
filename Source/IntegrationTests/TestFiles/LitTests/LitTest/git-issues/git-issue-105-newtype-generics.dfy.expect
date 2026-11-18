@@ -1,0 +1,25 @@
+git-issue-105-newtype-generics.dfy(15,58): Error: invariant might not hold
+git-issue-105-newtype-generics.dfy(11,33): Related location: this is the invariant that might not hold
+git-issue-105-newtype-generics.dfy(16,76): Error: invariant might not hold
+git-issue-105-newtype-generics.dfy(11,33): Related location: this is the invariant that might not hold
+git-issue-105-newtype-generics.dfy(19,30): Error: assertion might not hold
+git-issue-105-newtype-generics.dfy(21,72): Error: invariant might not hold
+git-issue-105-newtype-generics.dfy(11,33): Related location: this is the invariant that might not hold
+git-issue-105-newtype-generics.dfy(27,53): Error: invariant might not hold
+git-issue-105-newtype-generics.dfy(25,83): Related location: this is the invariant that might not hold
+git-issue-105-newtype-generics.dfy(28,59): Error: result of operation might violate newtype constraint for 'Pair'
+git-issue-105-newtype-generics.dfy(35,69): Error: result of operation might violate newtype constraint for 'Box'
+git-issue-105-newtype-generics.dfy(43,73): Error: invariant might not hold
+git-issue-105-newtype-generics.dfy(41,76): Related location: this is the invariant that might not hold
+git-issue-105-newtype-generics.dfy(44,72): Error: result of operation might violate newtype constraint for 'int8'
+git-issue-105-newtype-generics.dfy(46,23): Error: assertion might not hold
+git-issue-105-newtype-generics.dfy(50,70): Error: invariant might not hold
+git-issue-105-newtype-generics.dfy(48,44): Related location: this is the invariant that might not hold
+git-issue-105-newtype-generics.dfy(51,69): Error: result of operation might violate newtype constraint for 'R'
+git-issue-105-newtype-generics.dfy(59,39): Error: result of operation might violate newtype constraint for 'True'
+git-issue-105-newtype-generics.dfy(61,23): Error: assertion might not hold
+git-issue-105-newtype-generics.dfy(71,56): Error: result of operation might violate newtype constraint for 'Singleton'
+git-issue-105-newtype-generics.dfy(72,61): Error: result of operation might violate newtype constraint for 'Singleton'
+git-issue-105-newtype-generics.dfy(73,30): Error: assertion might not hold
+
+Dafny program verifier finished with 21 verified, 17 errors

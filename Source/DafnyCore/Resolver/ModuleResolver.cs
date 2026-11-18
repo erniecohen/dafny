@@ -1988,6 +1988,18 @@ namespace Microsoft.Dafny {
 
           new NativeTypeAnalysis(reporter).FigureOutNativeType(newtypeDecl, Options);
 
+          if (newtypeDecl.InvariantTypeDecl != null) {
+            // Issue 105: "raw N" is ghost (see InvariantTypeDecl.GhostRawNewtype), so a member whose receiver is raw is too
+            foreach (var member in newtypeDecl.Members) {
+              if (member is not MemberInvariant && !member.IsGhost && RawMemberInference.IsRawMember(member)) {
+                reporter.Error(MessageSource.Resolver, member.Origin,
+                  $"{member.WhatKind} '{member.Name}' must be ghost: an invariant of newtype '{newtypeDecl.Name}' uses it, so " +
+                  $"its receiver may be a value of 'raw {newtypeDecl.Name}', which is ghost, since a compiled value of " +
+                  $"'{newtypeDecl.Name}' satisfies its invariants");
+              }
+            }
+          }
+
         } else if (d is DatatypeDecl) {
           var dd = (DatatypeDecl)d;
           foreach (var member in GetClassMembers(dd)!.Values) {

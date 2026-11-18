@@ -1,6 +1,7 @@
 #nullable enable
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
 
@@ -56,14 +57,22 @@ public class InvariantTypeDecl : SubsetTypeDecl {
   }
 
   private InvariantTypeDecl(TopLevelDeclWithMembers owner, List<TypeParameter> tps, BoundVar var)
-    : this(owner, tps, var, owner.Members.OfType<MemberWitness>().FirstOrDefault()) {
+    : this(owner, tps, var, owner.Members.OfType<MemberWitness>().FirstOrDefault(), (owner as NewtypeDecl)?.TakeHeaderClauses()) {
   }
 
-  private InvariantTypeDecl(TopLevelDeclWithMembers owner, List<TypeParameter> tps, BoundVar var, MemberWitness? witness)
+  private InvariantTypeDecl(TopLevelDeclWithMembers owner, List<TypeParameter> tps, BoundVar var, MemberWitness? witness,
+    NewtypeDecl.HeaderClauses? header)
+    : this(owner, tps, var, witness, header, HeaderConjunctOf(owner, var, header)) {
+  }
+
+  private InvariantTypeDecl(TopLevelDeclWithMembers owner, List<TypeParameter> tps, BoundVar var, MemberWitness? witness,
+    NewtypeDecl.HeaderClauses? header, Expression? headerConjunct)
     : base(owner.Origin, owner.NameNode,
-      new TypeParameterCharacteristics(TypeParameter.EqualitySupportValue.Unspecified, AutoInit(owner, witness), false),
-      tps, owner.EnclosingModuleDefinition, var, OwnConstraintOf(owner, var), WitnessKindOf(owner, witness), WitnessReference(owner, tps, witness), null) {
+      new TypeParameterCharacteristics(TypeParameter.EqualitySupportValue.Unspecified, AutoInit(owner, witness, header), false),
+      tps, owner.EnclosingModuleDefinition, var, OwnConstraintOf(owner, var, headerConjunct), WitnessKindOf(owner, witness, header),
+      witness == null && header != null ? header.Witness : WitnessReference(owner, tps, witness), null) {
     Owner = owner;
+    HeaderConjunct = headerConjunct;
     OwnConstraint = Constraint;
     if (witness is { ExplicitType: null }) {
       // As if the witness had been written "static const witness#k: D<X, ...> := e", where X, ... are the type
@@ -77,9 +86,14 @@ public class InvariantTypeDecl : SubsetTypeDecl {
     this.NewSelfSynonym();
   }
 
-  private static Type.AutoInitInfo AutoInit(TopLevelDeclWithMembers owner, MemberWitness? witness) {
+  private static Type.AutoInitInfo AutoInit(TopLevelDeclWithMembers owner, MemberWitness? witness, NewtypeDecl.HeaderClauses? header) {
     return IsReferenceType(owner) ? Type.AutoInitInfo.CompilableValue
       : owner is AbstractTypeDecl abstractTypeDecl ? PromisedAutoInit(abstractTypeDecl)
+      : witness == null && header != null ? header.WitnessKind switch {
+        WKind.OptOut => Type.AutoInitInfo.MaybeEmpty,
+        WKind.Ghost => Type.AutoInitInfo.Nonempty,
+        _ => Type.AutoInitInfo.CompilableValue
+      }
       : witness == null ? Type.AutoInitInfo.MaybeEmpty
       : witness.IsGhost ? Type.AutoInitInfo.Nonempty : Type.AutoInitInfo.CompilableValue;
   }
@@ -98,10 +112,12 @@ public class InvariantTypeDecl : SubsetTypeDecl {
   /// A reference type has the witness null, which satisfies the constraint, as the base type's default value does.
   /// An abstract type has no witness of its own: what its characteristics promise, a refinement supplies (see
   /// PromisedAutoInit), so it opts out of the witness check, and where it is compiled, its default value is that of
-  /// "raw T".
+  /// "raw T". A newtype in the old syntax without a witness member has the witness its header gives, with the old
+  /// meaning, the default included: with no witness clause, the base type's zero must satisfy the constraint.
   /// </summary>
-  private static WKind WitnessKindOf(TopLevelDeclWithMembers owner, MemberWitness? witness) {
+  private static WKind WitnessKindOf(TopLevelDeclWithMembers owner, MemberWitness? witness, NewtypeDecl.HeaderClauses? header) {
     return IsReferenceType(owner) ? WKind.CompiledZero
+      : witness == null && header != null ? header.WitnessKind
       : witness == null ? WKind.OptOut : witness.IsGhost ? WKind.Ghost : WKind.Compiled;
   }
 
@@ -154,8 +170,55 @@ public class InvariantTypeDecl : SubsetTypeDecl {
   /// any other member. A declaration that declares no invariant but inherits some has the constraint "true" until
   /// SetInheritedInvariants gives it the inherited ones.
   /// </summary>
-  private static Expression OwnConstraintOf(TopLevelDeclWithMembers owner, BoundVar var) {
-    return Guarded(owner, var, Invariants(owner, var) ?? new LiteralExpr(owner.Origin, true));
+  private static Expression OwnConstraintOf(TopLevelDeclWithMembers owner, BoundVar var, Expression? headerConjunct) {
+    return Guarded(owner, var, OwnInvariants(owner, var, headerConjunct) ?? new LiteralExpr(owner.Origin, true));
+  }
+
+  /// <summary>
+  /// The constraint of the header of a newtype in the old syntax, "x: B | P(x)", as the conjunct "var x: B := v as B;
+  /// P(x)" (see NewtypeDecl.HeaderClauses), or null. It reuses the expression of the header, which the newtype has
+  /// given up, so that it is resolved once. It is resolved here, where the type parameters in scope are those of this
+  /// type, so "x" is a variable of its own, of a copy of the type B, which the newtype has resolved as its base type,
+  /// with its own type parameters. Where B is not written, the newtype infers it from P, as without invariants, so
+  /// "x" is the variable of the header, and P is resolved with the newtype (see PreTypeResolver.HeaderToInfer).
+  /// </summary>
+  private static Expression? HeaderConjunctOf(TopLevelDeclWithMembers owner, BoundVar var, NewtypeDecl.HeaderClauses? header) {
+    if (header?.Var is not { } headerVar) {
+      return null;
+    }
+    var tok = header.Constraint.Origin;
+    var letVar = headerVar.Type is TypeProxy ? headerVar : new Cloner().CloneBoundVar(headerVar, false);
+    return new LetExpr(tok, [new CasePattern<BoundVar>(letVar.Origin, letVar)],
+      [new ConversionExpr(tok, new IdentifierExpr(tok, var), letVar.Type)], header.Constraint, true);
+  }
+
+  /// <summary>
+  /// The constraint of the header of a newtype in the old syntax, as a conjunct of the invariants (see
+  /// HeaderConjunctOf), or null.
+  /// </summary>
+  public readonly Expression? HeaderConjunct;
+
+  /// <summary>
+  /// The conjunct of the header, if any, and then the invariants that "owner" declares, applied to "var". The
+  /// constraint of the header may have the type of a newtype based on bool, as without invariants, so the conjunct is
+  /// its conversion to bool, which the verifier translates as the constraint itself (see IsHeaderConjunct).
+  /// </summary>
+  private static Expression? OwnInvariants(TopLevelDeclWithMembers owner, BoundVar var, Expression? headerConjunct) {
+    var invariants = Invariants(owner, var);
+    if (headerConjunct == null) {
+      return invariants;
+    }
+    var header = new ConversionExpr(headerConjunct.Origin, headerConjunct, Type.Bool);
+    return invariants == null ? header : Conjoin(header, invariants);
+  }
+
+  /// <summary>
+  /// Whether "conjunct", one of the conjuncts of the constraint of an InvariantTypeDecl, is that of the header (see
+  /// OwnInvariants); if so, "headerConstraint" is the constraint of the header, as HeaderConjunct has it.
+  /// </summary>
+  public static bool IsHeaderConjunct(Expression conjunct, [NotNullWhen(true)] out Expression? headerConstraint) {
+    headerConstraint = conjunct.Resolved is ConversionExpr { E.Resolved: LetExpr let } ? let : null;
+    return headerConstraint != null;
   }
 
   private static Expression Guarded(TopLevelDeclWithMembers owner, BoundVar var, Expression invariants) {
@@ -219,7 +282,7 @@ public class InvariantTypeDecl : SubsetTypeDecl {
       var receiverType = (UserDefinedType)receiver.Subst(subst);
       conjunction = Conjoin(conjunction, Application(invariant, new ConversionExpr(tok, new IdentifierExpr(tok, Var), receiverType)));
     }
-    var own = Invariants(Owner, Var);
+    var own = OwnInvariants(Owner, Var, HeaderConjunct);
     Constraint = Guarded(Owner, Var, own == null ? conjunction! : Conjoin(conjunction, own));
   }
 
@@ -238,6 +301,15 @@ public class InvariantTypeDecl : SubsetTypeDecl {
     var thisExpr = new ThisExpr(tok) { Type = invariantTypeDecl.RawThisType(tok, typeArgs) };
     foreach (var (inherited, receiver) in invariantTypeDecl.InheritedInvariants) {
       yield return ResolvedApplication(inherited, new ConversionExpr(tok, thisExpr, receiver) { Type = receiver }, receiver.TypeArgs);
+    }
+    if (invariantTypeDecl.HeaderConjunct is LetExpr { LHSs: [{ Var: { } headerVar }], Body: var headerConstraint }) {
+      // The constraint of the header comes before the invariants, as "P(this as B)", with the type parameters of the
+      // owner for those of this type (see HeaderConjunctOf)
+      var subst = TypeParameter.SubstitutionMap(invariantTypeDecl.TypeArgs, typeArgs);
+      var baseType = headerVar.Type.Subst(subst);
+      var baseValue = new ConversionExpr(tok, thisExpr, baseType) { Type = baseType };
+      yield return new Substituter(null, new Dictionary<IVariable, Expression> { { headerVar, baseValue } }, subst)
+        .Substitute(headerConstraint);
     }
     foreach (var earlier in Invariants(owner).TakeWhile(other => other.Number < invariant.Number)) {
       yield return ResolvedApplication(earlier, thisExpr, typeArgs);
@@ -262,7 +334,7 @@ public class InvariantTypeDecl : SubsetTypeDecl {
 
   /// <summary>
   /// The declarations that get a derived InvariantTypeDecl when their names are registered: an inductive datatype, a
-  /// class, a trait or an abstract type that declares an invariant (in itself or, by refinement, in a declaration it refines). One that
+  /// class, a trait, an abstract type or a newtype that declares an invariant (in itself or, by refinement, in a declaration it refines). One that
   /// declares none, but extends a trait that has invariants, gets one once its extends clauses are resolved (see
   /// ModuleResolver.CreateInheritedInvariantTypeDecls).
   /// </summary>
@@ -274,7 +346,7 @@ public class InvariantTypeDecl : SubsetTypeDecl {
   /// The kinds of declaration whose invariants, declared or inherited, are supported.
   /// </summary>
   public static bool MayHaveInvariants(TopLevelDeclWithMembers decl) {
-    return decl is IndDatatypeDecl or ClassDecl or TraitDecl or AbstractTypeDecl;
+    return decl is IndDatatypeDecl or ClassDecl or TraitDecl or AbstractTypeDecl or NewtypeDecl;
   }
 
   /// <summary>
@@ -338,6 +410,23 @@ public class InvariantTypeDecl : SubsetTypeDecl {
   /// </summary>
   public static bool IsRawType(Type type) {
     return RawOwner(type) != null;
+  }
+
+  /// <summary>
+  /// A newtype N with member invariants such that "type" mentions "raw N", or null if there is none. A compiled value
+  /// of N satisfies the invariants, so that its native representation can be read from them (see NativeTypeAnalysis),
+  /// and "raw N" is ghost.
+  /// </summary>
+  public static NewtypeDecl? GhostRawNewtype(Type type) {
+    if (RawOwner(type) is NewtypeDecl newtypeDecl) {
+      return newtypeDecl;
+    }
+    foreach (var typeArg in type.NormalizeExpandKeepConstraints().TypeArgs) {
+      if (GhostRawNewtype(typeArg) is { } inner) {
+        return inner;
+      }
+    }
+    return null;
   }
 
   /// <summary>
