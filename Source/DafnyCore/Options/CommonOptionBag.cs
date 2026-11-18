@@ -618,6 +618,7 @@ If verification fails, report a detailed counterexample for the first failing as
 
     DafnyOptions.RegisterLegacyUi(AdditionalAxioms, DafnyOptions.ParseBoolean, "Verification options", legacyName: "additionalAxioms");
     DafnyOptions.RegisterLegacyUi(AllowAxioms, DafnyOptions.ParseBoolean, "Verification options", legacyName: "allowAxioms", defaultValue: true);
+    DafnyOptions.RegisterLegacyUi(LegacyNoModularTermination, DafnyOptions.ParseBoolean, "Verification options", legacyName: "legacyNoModularTermination");
     DafnyOptions.RegisterLegacyBinding(ShowHints, (options, value) => {
       options.PrintTooltips = value;
     });
