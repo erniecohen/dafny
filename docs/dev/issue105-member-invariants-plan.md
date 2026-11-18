@@ -2526,9 +2526,16 @@ section 7.2).**
   inferred type, `newtype int8 = x | -128 <= x < 128 { ... }`: the base type
   is still inferred from the header, and the conjunct's variable is the
   header's own, so that both have the type inferred (`HeaderToInfer` in
-  `PreTypeResolve`).  A generic newtype whose header variable is inferred gets
-  one more error than without invariants, a cascading "type conversion target
-  type not determined", where the base type cannot be inferred.
+  `PreTypeResolve`).  The pre-type resolver keeps the pre-type of that shared
+  variable only while it resolves the derived declaration's constraint
+  (`sharedHeaderVariable`): a test of the variable alone, a pre-type already
+  set and a type still a proxy, also holds of a let that is resolved a second
+  time, such as the one a datatype update becomes, and without the option it
+  changed the numbering of type proxies in error messages, which the option-off
+  sample of this step found.  A generic newtype whose header variable is
+  inferred gets one more error than without invariants, a cascading "type
+  conversion target type not determined", where the base type cannot be
+  inferred.
 - *Witnesses.*  These rules settle what section 3.5 left open:
   - A witness in the header is a value of `N`, as a witness member is, and is
     checked against every conjunct.  The sugar says so: `witness w` in the
@@ -2636,6 +2643,21 @@ section 7.2).**
   the old syntax with no invariant is still "not yet supported": it would be
   the base type without the constraint, a type the program does not otherwise
   have (`git-issue-105-not-yet.dfy`).
+- *Controls from the mutation run.*  The run of every site against the whole
+  suite found four sites of this step that no test was sensitive to, and
+  each now has a control at the end of an existing test, which a local mutant
+  of the site was shown to change.  In
+  `git-issue-105-newtype-witness-checks.dfy`, `EarlierConjuncts`
+  (header-earlier-conjunct: an invariant's well-formedness assumes the
+  header's constraint) and `BaseInvariants` (invariant-prefix: a default
+  witness that fails the base type's invariant, with the message naming the
+  witness tried).  In `git-issue-105-emptiness-errors.dfy`, `HeaderWitnesses`
+  and `ProvidedNewtypes` (header-autoinit: the header's witness clause gives a
+  newtype seen only as provided its characteristics; within the declaring
+  module the derived declaration's own witness kind decides) and
+  `RawNewtypes` (raw-autoinit-base: `raw N` is as inhabited as the base type).
+  The last is controlled at resolution only: no verification-level probe was
+  sensitive to it.
 
 **Variance by polarity (the owner's decision, replacing the variance rule of the step for generic datatypes).**
 
@@ -2710,36 +2732,37 @@ removed when no program can reach it.
 - *Translator and resolver sites.*  "Producer" names the entries of
   `docs/dev/obligation-producers.json` (file, member, producer) that a site
   adds; a site that adds no obligation has none.  "Flips" lists the tests that
-  change their result when the site is disabled, from a run of each site
-  against the whole suite (step 7).  The runs of steps 6 and 6a covered only
-  the tests predicted for each site, and their lists were incomplete.
+  change their result when the site is disabled, from a run of every site
+  against the whole suite (step 8; step 7's run was the first of that kind).
+  The runs of steps 6 and 6a covered only the tests predicted for each site,
+  and their lists were incomplete.
 
   | Site | Kind | Where | Producer | Flips |
   |---|---|---|---|---|
   | earlier invariants assumed in the well-formedness of a later one | assumption | `BoogieGenerator.Functions.Wellformedness.cs`, `Check` | `Check/1`, `CanCallAssumptionForVerification` (2 to 3) | wellformedness |
-  | the `$Is` axioms of `D` use its constraint | axiom | `BoogieGenerator.Types.cs`, the axioms of a subset type | none | abstract-synonym, abstract-types, class-compile, classes, compile, datatypes, emptiness, exports, general-traits, generics, raw-compile, refinement-verify, statements, traits, vacuity |
-  | each invariant checked at a conversion to `D` | check | `BoogieGenerator.TypeObligations.cs` | `CheckInvariantConjuncts/10`, `Assert`, `AssertAndForget`, `CanCallAssumption` | abstract-synonym, abstract-types, class-compile, classes, compile, datatypes, emptiness, exports, general-traits, generics, opacity, raw-compile, refinement-verify, trait-compile, traits, wellformedness |
+  | the `$Is` axioms of `D` use its constraint | axiom | `BoogieGenerator.Types.cs`, the axioms of a subset type | none | abstract-synonym, abstract-types, class-compile, classes, compile, datatypes, emptiness, exports, general-traits, generics, newtype-generics, raw-compile, refinement-verify, statements, traits, vacuity |
+  | each invariant checked at a conversion to `D` | check | `BoogieGenerator.TypeObligations.cs` | `CheckInvariantConjuncts/10`, `Assert`, `AssertAndForget`, `CanCallAssumption` | abstract-synonym, abstract-types, class-compile, classes, compile, datatypes, emptiness, exports, general-traits, generics, newtype-compile, newtype-generics, newtype-witness-checks, newtypes, opacity, raw-compile, refinement-verify, trait-compile, trait-gates, traits, verify, wellformedness |
   | the value is in `raw D` before the invariants are checked | check | same | `CheckInvariantTypeMembership/10`, the second `CheckSubrange` | generics (`Components`) |
   | a value converted to `C` is not null | check | same | `CheckInvariantTypeMembership/10`, the first `CheckSubrange` | classes (`RawQToCell`) |
-  | a member that is not raw is applied to a raw receiver only if it satisfies the invariants | check | same | `CheckReceiverInvariants/5`, `CheckSubrange` | traits |
-  | a raw reference reaches a type that is not raw only if it satisfies the invariants | check | same | `CheckTypeMembership/12`, `CheckSubrange`, `GetSubrangeCheck`, `CheckTypeMembership` | classes, general-traits, trait-compile, traits |
+  | a member that is not raw is applied to a raw receiver only if it satisfies the invariants | check | same | `CheckReceiverInvariants/5`, `CheckSubrange` | newtypes, traits |
+  | a raw reference reaches a type that is not raw only if it satisfies the invariants | check | same | `CheckTypeMembership/12`, `CheckSubrange`, `GetSubrangeCheck`, `CheckTypeMembership` | classes, general-traits, newtype-generics, newtypes, trait-compile, trait-gates, traits |
   | the same, in the type test and the membership check of a raw reference | check | `BoogieGenerator.cs`, `GetSubrangeCheck` | `GetSubrangeCheck/8`, `GetSubrangeCheck` | classes (`TestRawObjectChecked`) |
-  | the invariants checked at `new;` | check | `BoogieGenerator.TrStatement.cs`, `TrStmt` | `TrStmt/4`, `CheckSubrange` (1 to 2) | class-compile, classes, exports, general-traits, opacity, refinement-verify, trait-compile, traits, wellformedness |
-  | the object is raw until `new;` | restriction | same | none | classes, general-traits, refinement-verify, traits |
-  | the parent axioms of a raw class reach the raw types of its traits | axiom | `BoogieGenerator.cs` | none | general-traits, refinement-verify, traits |
-  | the constraint includes the inherited invariants | constraint | `InvariantTypeDecl.cs` | none | general-traits, refinement, refinement-verify, traits |
+  | the invariants checked at `new;` | check | `BoogieGenerator.TrStatement.cs`, `TrStmt` | `TrStmt/4`, `CheckSubrange` (1 to 2) | class-compile, classes, exports, general-traits, opacity, refinement-verify, trait-compile, trait-gates, traits, verify, wellformedness |
+  | the object is raw until `new;` | restriction | same | none | classes, general-traits, refinement-verify, trait-gates, traits, verify |
+  | the parent axioms of a raw class reach the raw types of its traits | axiom | `BoogieGenerator.cs` | none | general-traits, refinement-verify, trait-gates, traits |
+  | the constraint includes the inherited invariants | constraint | `InvariantTypeDecl.cs` | none | general-traits, newtypes, refinement, refinement-verify, trait-gates, traits |
   | `D` keeps the declared variance | subtyping | `InvariantTypeDecl.cs`, `TypeParametersOf` | none | generics, variance |
   | variance by polarity | check | `TypeParameterPolarity.cs`, `CheckInvariantVariance` | none | variance |
   | the extension condition | check | `InvariantExtensionCondition.cs` | none | abstract-errors, class-errors, extension, trait-errors |
   | the reads restriction | check | `MemberInvariantChecks.cs`, `CheckReadsRestrictions` | none | class-errors, reads |
-  | the program-wide checks | check | `MemberInvariantChecks.cs`, `Check` | none | abstract-errors, class-witness, codatatypes, libraries, trait-witness |
-  | at an inherited site, a conjunct the base did not check is checked | check | `BoogieGenerator.InheritedInvariants.cs`, `InheritedConjunctOrigin` | `CheckInvariantConjuncts/10`, `Assert`, `AssertAndForget` | refinement-verify |
+  | the program-wide checks | check | `MemberInvariantChecks.cs`, `Check` | none | abstract-errors, class-witness, codatatypes, libraries, newtype-witness-errors, trait-witness |
+  | at an inherited site, a conjunct the base did not check is checked | check | `BoogieGenerator.InheritedInvariants.cs`, `InheritedConjunctOrigin` | `CheckInvariantConjuncts/10`, `Assert`, `AssertAndForget` | newtypes, refinement-verify |
   | at an inherited site, a conjunct the base checked is assumed | assumption | same | same | refinement-verify |
   | at an inherited site, a membership check that is not split is checked whole | check | `BoogieGenerator.TypeObligations.cs`, `InheritedMembershipOrigin` | `CheckTypeMembership/12`, `CheckTypeMembership` (1 to 2) | refinement-verify |
   | a member that became raw is verified again | check | `BoogieGenerator.InheritedInvariants.cs`, `BecameRaw` | none | refinement-verify |
   | the inherited postconditions of a member that became raw are checked | check | `BoogieGenerator.Methods.cs`, `$_reverifyPost` | none | refinement-verify |
-  | the copies of a module that adds conjuncts are scheduled | check | `BoogieGenerator.Methods.cs`, `MustVerifyCopy` | none | refinement-verify |
-  | an implementation of a copy that makes such a check is marked | check | `BoogieGenerator.cs`, `AddImplementationWithAttributes` | none | refinement-verify |
+  | the copies of a module that adds conjuncts are scheduled | check | `BoogieGenerator.Methods.cs`, `MustVerifyCopy` | none | newtypes, refinement-verify |
+  | an implementation of a copy that makes such a check is marked | check | `BoogieGenerator.cs`, `AddImplementationWithAttributes` | none | newtypes, refinement-verify |
   | a copy from a library base enters the verification scope | check | `BoogieGenerator.InheritedInvariants.cs`, `AddedInvariantsInVerificationScope` | none | refinement-verify |
   | the implicit `new;` of an inherited constructor is at an inherited origin | check | `BoogieGenerator.TrStatement.cs`, `TrStmt` | `TrStmt/4`, `CheckSubrange` | refinement-verify |
   | a witness of the refining declaration replaces the inherited one | rule | `RefinementTransformer.cs` | none | refinement-verify |
@@ -2752,6 +2775,45 @@ removed when no program can reach it.
   | an abstract type may not declare a witness | check | `MemberInvariantChecks.cs`, `Check` | none | abstract-errors |
   | `raw` of an export set's view of a declaration that is provided only | check | `ScopeCloner.cs`; `NameResolutionAndTypeInference.cs`, `CheckRawType` | none | raw-exports, class-exports |
   | an abstract type's name denotes its derived declaration | rule | `NameResolutionAndTypeInference.cs` | none | abstract-errors, abstract-synonym, abstract-types |
+  | the header's constraint and witness clause move into the derived declaration | constraint | `NewtypeDecl.cs`, `TakeHeaderClauses` | none | newtype-compile, newtype-errors, newtype-generics, newtype-native, newtype-witness-checks, newtypes, trait-gates, verify |
+  | the header's constraint is the first conjunct of `N` | constraint | `InvariantTypeDecl.cs`, the constraint | none | newtype-compile, newtype-errors, newtype-generics, newtype-native, newtype-witness-checks, newtypes, syntax, trait-gates, verify |
+  | the header's constraint is assumed in the well-formedness of an invariant | assumption | `InvariantTypeDecl.cs`, `EarlierInvariants` | none | newtype-witness-checks |
+  | the header's witness clause is the witness of `N` | witness | `InvariantTypeDecl.cs`, `WitnessKindOf` | none | newtype-witness-checks, trait-gates |
+  | the characteristics of `N` follow the header's witness clause | characteristics | `InvariantTypeDecl.cs`, `AutoInit` | none | emptiness-errors |
+  | a header variable of written type is copied into the conjunct | resolution | `InvariantTypeDecl.cs`, `HeaderConjunctOf` | none | newtype-generics |
+  | a newtype with invariants has a derived declaration | rule | `InvariantTypeDecl.cs`, `MayHaveInvariants` | none | newtype-compile, newtype-errors, newtype-generics, newtype-native, newtype-witness-checks, newtypes, not-yet, trait-gates, verify |
+  | a type with `raw N` in a type argument is ghost | check | `InvariantTypeDecl.cs`, `GhostRawNewtype` | none | newtype-errors |
+  | `raw N` is as inhabited as the base type | characteristics | `Types.cs`, `GetAutoInit` | none | emptiness-errors |
+  | a compiled witness is the default value of `N` | compile | `SinglePassCodeGenerator.cs`, the declarations of a module | none | newtype-compile |
+  | a compiled expression of type `raw N` | check | `ExpressionTester.cs` | none | newtype-errors |
+  | a member that an invariant uses is ghost | check | `ModuleResolver.cs` | none | newtype-errors |
+  | a newtype may declare a witness member | rule | `MemberInvariantChecks.cs`, `Check` | none | newtype-compile, newtype-errors, newtype-generics, newtype-native, newtype-witness-checks, newtype-witness-errors, newtypes |
+  | a witness in the header and a witness member | check | same | none | newtype-witness-errors |
+  | a newtype's name denotes its derived declaration | rule | `NameResolutionAndTypeInference.cs` | none | newtype-compile, newtype-errors, newtype-generics, newtype-native, newtype-witness-checks, newtypes, trait-gates |
+  | `raw` of a newtype in the old syntax with no invariant (not yet) | check | same, `CheckRawType` | none | not-yet |
+  | the native type is read from the header's constraint and the invariants | native | `NativeTypeAnalysis.cs`, `ConstraintOf` | none | newtype-generics, newtype-native |
+  | a newtype based on `raw N` is bounded only by the base type of `N` | native | same | none | newtype-native |
+  | an inherited invariant is a constraint other than a range | native | same, `FigureOutNativeTypeForIntegerNewtype` | none | newtype-native |
+  | a newtype's pre-type stands for `N` | rule | `PreType2TypeUtil.cs` | none | newtype-compile, newtype-errors, newtype-generics, newtype-native, newtype-witness-checks, newtypes, syntax, verify |
+  | the pre-type of `N` combines with the type `raw N` | rule | same, `Combine` | none | newtype-compile, newtype-errors, newtype-generics, newtype-native, newtype-witness-checks, newtypes, syntax, trait-gates, verify |
+  | a header variable of inferred type is shared by the conjunct | resolution | `PreTypeResolve.Expressions.cs`, the let case (`sharedHeaderVariable`) | none | newtype-generics, newtype-witness-checks |
+  | a header variable of inferred type has its type inferred from the header | resolution | `PreTypeResolve.cs` | none | newtype-generics, newtype-witness-checks |
+  | the result of an operation of `N` is a value of `N` | check | `PreTypeToType.cs` | none | newtype-generics, newtypes, verify |
+  | an operand of type `raw N` makes the operation raw | check | `TypeRefinementVisitor.cs` | none | newtype-generics, newtypes, verify |
+  | the operands of a comparison have one type | check | same | none | newtype-generics, newtypes, verify |
+  | the characteristics of a derived declaration come from its witness, not its right-hand side | relaxation | `TypeCharacteristicChecker.cs` | none | newtype-witness-checks |
+  | a refinement copies the header as written | rule | `RefinementTransformer.cs` | none | newtypes |
+  | the header's conjunct keeps the old syntax's message | message | `BoogieGenerator.TypeObligations.cs`, `CheckInvariantConjuncts` | none | newtype-generics, newtype-witness-checks, newtypes, trait-gates |
+  | the derived declaration of a newtype is translated as a subset type of `raw N` | axiom | `BoogieGenerator.Types.cs`, `AddRevealableTypeDecl` | none | newtype-generics, newtype-witness-checks, trait-gates, verify |
+  | the well-formedness check of the derived declaration covers the header and the witness | check | same, `AddWellformednessCheck` | none | newtype-generics, newtype-witness-checks, trait-gates, verify |
+  | a newtype converted to a trait that is not a reference type is boxed (without the option) | translation | same, `ConvertExpression` | none | newtype-trait-cast, newtypes, trait-gates |
+  | the base type of a generic newtype is instantiated | translation | same, `CheckResultToBeInType_Aux` | none | newtype-generics |
+  | the constraint of an inferred base type is checked | check | same | none | newtype-witness-checks |
+  | each invariant is checked of an operation's result | check | same | `CheckInvariantConjuncts/10`, shared with the conversion | newtype-generics, newtype-witness-checks, newtypes, verify |
+  | each invariant is applied to a value of `raw N<A>` | translation | same | none | newtype-generics |
+  | a witness member is checked once, as a const of the type | check | same, `AddWellformednessCheck` | none | newtype-compile, newtype-generics, newtypes |
+  | the where clause of a variable of type `N` assumes the `CanCall`s of its invariants | assumption | `BoogieGenerator.cs`, `GetWhereClause` | `GetWhereClause/7`, `CanCallAssumption` | newtype-compile, newtype-generics, newtypes |
+  | the message of a default witness that fails an invariant of the base type names the witness | message | `ProofObligationDescription.cs`, `InvariantCheck` | none | newtype-witness-checks |
 
 - *Resolver errors.*  Each error that the feature adds has a negative control
   in the expect files named:
