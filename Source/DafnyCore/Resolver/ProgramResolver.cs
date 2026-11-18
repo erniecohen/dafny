@@ -803,7 +803,12 @@ public class ProgramResolver {
         var target = compiledModule.Implements.Target.Def;
         var replacement = Program.Replacements.GetValueOrDefault(target);
         if (replacement != null) {
-          Reporter!.Error(MessageSource.Resolver, new NestedOrigin(compiledModule.Origin, replacement.Origin,
+          // Dependency order can visit either replacement first. Report at the
+          // later source location, with files ordered as in ReplacementDependencyChecker.
+          var locations = new[] { compiledModule.Origin, replacement.Origin }
+            .OrderBy(origin => origin.Uri?.ToString() ?? "", StringComparer.Ordinal)
+            .ThenBy(origin => origin.pos).ToArray();
+          Reporter!.Error(MessageSource.Resolver, new NestedOrigin(locations[1], locations[0],
               $"other replacing module"),
             "a replaceable module may only be replaced once");
         } else {
