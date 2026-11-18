@@ -2722,7 +2722,20 @@ and what information it produces about the verification process.
   An application of a function stored in a field of type `A -> T` of an inductive
   datatype value, or of type `A --> T` where its precondition holds, is also
   strictly below that value in the termination order.
+  A lambda's value is tagged with its parameter types, and two ghost functions
+  marked `{:functionDomain "restrict"}` and `{:functionDomain "exactDom"}`, of
+  signatures `Restrict<A, B>(f: A -> B): A -> B` and `ExactDom<A, B>(f: A -> B):
+  bool`, give the restriction of a function to `A` and whether `A` is exactly its
+  domain; every total arrow on `int`, `real`, `bool` or `ORDINAL` has an exact
+  domain. Function extensionality for functions with exact domains can then be
+  stated as a lemma without a body.
   See [the soundness, trigger and solver-limit note](../dev/additional-axioms.md).
+
+* `--function-extensionality-axiom` - give function values domain tags, as
+  `--additional-axioms` does, and make two total functions of one argument with
+  the same exact domain equal when they agree on it, at each equality between
+  them. Disabled by default. It can change proof costs. See
+  [the soundness note](../dev/additional-axioms.md).
 
 * `--heap-free-lambda-facts` - check a lambda without a reads clause, whose
   body observes neither the heap nor allocation, in every heap and without
