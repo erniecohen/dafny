@@ -63,9 +63,11 @@ for resolver, flags in resolvers.items():
     plain = str(output / ('plain-%s.doo' % resolver))
 
     def client(name, client_source, expected_exit, diagnostic=None, verified=None, lib=library, enabled=True,
-               warnings=False):
+               warnings=False, legacy=False):
         run('%s: %s' % (resolver, name),
-            ['verify'] + (['--modular-termination'] if enabled else []) + flags + ['--library', lib, source(client_source)],
+            ['verify'] + (['--modular-termination'] if enabled else [])
+            + (['--legacy-no-modular-termination'] if legacy else []) + flags
+            + ['--library', lib, source(client_source)],
             expected_exit, diagnostic, verified, warnings)
 
     # The library is verified alone, and gets a termination record.
@@ -102,10 +104,18 @@ for resolver, flags in resolvers.items():
     client('library built without the option', 'ok', 1, 'it has no modular termination record', lib=plain)
     client('library with a record, option off', 'ok', 1, 'checked only under that option', enabled=False)
 
-    # What the option is for: without it, and with a library built without it, the client that implements the
-    # slot above its bound verifies, 'assert false' included.
-    client('without the option (the hole that the option closes)', 'raise', 0, verified='3 verified, 0 errors',
-           lib=plain, enabled=False)
+    # Without the option, and with a library built without it, the rules still hold by default: the client
+    # that implements the slot above its bound is rejected.
+    client('without the option, by default', 'raise', 4, "bound must not exceed the caller's", lib=plain,
+           enabled=False)
+
+    # The hole that the rules close: under --legacy-no-modular-termination, the rules of 4.11, with a library
+    # built the same way, the same client verifies, 'assert false' included.
+    legacy_lib = str(output / ('legacy-%s.doo' % resolver))
+    run(resolver + ': build library under legacy-off', ['build', '-t:lib', '--legacy-no-modular-termination'] + flags
+        + [source('lib'), '--output=' + legacy_lib], 0, verified='3 verified, 0 errors')
+    client('legacy-off (the hole that the rules close)', 'raise', 0, verified='3 verified, 0 errors',
+           lib=legacy_lib, enabled=False, legacy=True)
 
     # A least lemma of the library under a bound.  The library is built alone, and its client is verified
     # against it (https://github.com/erniecohen/dafny/issues/461: the generated prefix lemma's {:axiom} is not

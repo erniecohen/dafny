@@ -1262,11 +1262,11 @@ NoGhost - disable printing of functions, ghost methods, and proof
 
     /// <summary>
     /// Whether the printer writes callback clauses (--modular-termination, milestone M3b) as
-    /// "decreases {:callback g} E".  Only under the option, which is the only case in which the parser reads
-    /// that form back; otherwise a {:callback} attribute is printed as any other attribute, as before.
+    /// "decreases {:callback g} E".  Only while the rules are enabled, which is the only case in which the parser
+    /// reads that form back; otherwise a {:callback} attribute is printed as any other attribute, as before.
     /// </summary>
     private bool PrintsCallbackClauses(Attributes attrs) {
-      return options.Get(CommonOptionBag.ModularTermination) && ModularTermination.CallbackClauses(attrs).Any();
+      return ModularTermination.RulesEnabled(options) && ModularTermination.CallbackClauses(attrs).Any();
     }
 
     private void PrintOrdinaryDecreasesAttributes(Attributes a) {
@@ -1275,7 +1275,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
       }
       PrintOrdinaryDecreasesAttributes(a.Prev);
       if (!ModularTermination.IsGlobalClause(a) &&
-          !(options.Get(CommonOptionBag.ModularTermination) && ModularTermination.IsCallbackClause(a)) &&
+          !(ModularTermination.RulesEnabled(options) && ModularTermination.IsCallbackClause(a)) &&
           a is not UserSuppliedAtAttribute) {
         wr.Write(" ");
         PrintOneAttribute(a);

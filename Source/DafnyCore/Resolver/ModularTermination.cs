@@ -18,6 +18,94 @@ public static class ModularTermination {
   public const string ClosedAttributeName = "termination_closed";
 
   /// <summary>
+  /// Whether the rules of termination across modules (https://github.com/erniecohen/dafny/issues/211) are in force:
+  /// by default, unless the hidden --legacy-no-modular-termination restores the 4.11 rules, and always under
+  /// --modular-termination.  When they are, every trait may be extended from any module, and the parser reads
+  /// "decreases {:global} E" and "decreases {:callback f} E" as bounds.  The checks themselves run only in a program
+  /// that uses the design (<see cref="Active"/>).
+  /// </summary>
+  public static bool RulesEnabled(DafnyOptions options) {
+    return options.Get(CommonOptionBag.ModularTermination) || !options.Get(CommonOptionBag.LegacyNoModularTermination);
+  }
+
+  private static readonly ConditionalWeakTable<Program, StrongBox<bool>> UsesDesignCache = new();
+
+  /// <summary>
+  /// Whether the checks of modular termination run on "program": always under --modular-termination; otherwise, while
+  /// the rules are enabled, when the program uses the design (<see cref="UsesDesign"/>).  A program that does not is
+  /// one that 4.11 accepts or rejects as before, and is translated exactly as before.  Ask only once "program" is
+  /// resolved.
+  /// </summary>
+  public static bool Active(DafnyOptions options, Program program) {
+    if (options.Get(CommonOptionBag.ModularTermination)) {
+      return true;
+    }
+    return RulesEnabled(options) && UsesDesignCache.GetValue(program, p => new StrongBox<bool>(UsesDesign(p))).Value;
+  }
+
+  /// <summary>
+  /// Whether some declaration of the resolved "program", its libraries included, uses the design of issue 211: a global
+  /// or callback bound, a {:termination_closed} promise, or a type that extends a trait of another module without
+  /// either legacy form.  Without one of these, no caller has a bound, no code promises to be closed, and every
+  /// implementation of a trait member lies in the trait's module or is covered by a legacy premise, so no check of
+  /// the design can fail and none adds a proof obligation.
+  /// </summary>
+  public static bool UsesDesign(Program program) {
+    foreach (var module in program.Modules()) {
+      foreach (var decl in module.TopLevelDecls) {
+        // The orders library promises {:termination_closed} for its relations; that a program loads it is no use of
+        // the design.
+        if (decl.Origin?.Uri is { } uri &&
+            (uri == DafnyMain.StandardLibrariesOrdersDooUri || uri == DafnyMain.StandardLibrariesOrdersInternalUri)) {
+          continue;
+        }
+        if (Attributes.Contains(decl.Attributes, ClosedAttributeName) || DeclaresBound(decl)) {
+          return true;
+        }
+        if (decl is not TopLevelDeclWithMembers type) {
+          continue;
+        }
+        if (ExtendsForeignTraitUnmarked(type)) {
+          return true;
+        }
+        foreach (var member in type.Members) {
+          if (Attributes.Contains(member.Attributes, ClosedAttributeName) || DeclaresBound(member)) {
+            return true;
+          }
+        }
+      }
+    }
+    return false;
+  }
+
+  private static bool DeclaresBound(Declaration declaration) {
+    // Only methods, functions and iterators have a decreases clause (ConstantField is an ICallable whose Decreases throws).
+    var decreases = declaration switch {
+      MethodOrFunction m => m.Decreases,
+      IteratorDecl iter => iter.Decreases,
+      _ => null
+    };
+    for (var a = decreases?.Attributes; a != null; a = a.Prev) {
+      if (IsModularTerminationClause(a)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /// <summary>
+  /// Whether "type" extends a trait of another module, other than object, with neither {:termination false} on the trait
+  /// nor @AssumeCrossModuleTermination on "type": an extension that 4.11 rejects.
+  /// </summary>
+  public static bool ExtendsForeignTraitUnmarked(TopLevelDeclWithMembers type) {
+    if (Attributes.Contains(type.Attributes, "AssumeCrossModuleTermination")) {
+      return false;
+    }
+    return type.ParentTraitHeads.Any(trait => !trait.IsObjectTrait && trait.EnclosingModuleDefinition != type.EnclosingModuleDefinition &&
+                                              !IsExtensible(trait));
+  }
+
+  /// <summary>
   /// Whether "trait" carries the legacy form {:termination false}.  Under --modular-termination every trait may be
   /// extended from any module; the legacy form only exempts the foreign implementations of its members that have no
   /// declared bound from the leaf rule, as an unchecked premise.
@@ -256,11 +344,44 @@ public static class ModularTermination {
     }
     for (var a = member.OverriddenMember; a != null; a = a.OverriddenMember) {
       if (a.EnclosingClass is TraitDecl trait && !IsExtensible(trait) && a is ICallable callable && !HasGlobalBound(callable) &&
-          ModuleOf(a) != ModuleOf(member)) {
+          ModuleOf(a) != ModuleOf(member) && !CoveredByLegacyPremise(member.EnclosingClass, trait)) {
         return a;
       }
     }
     return null;
+  }
+
+  /// <summary>
+  /// Whether some path of extension from "type" to its ancestor "target" crosses modules at an edge that carries a
+  /// legacy form: @AssumeCrossModuleTermination on the child, or {:termination false} on the parent.  Dafny 4.11
+  /// checks only these crossing edges, so a type that extends, within its own module, a trait that extends a trait
+  /// of another module under a legacy form (as Std.Actions.FunctionAction extends Action, which extends
+  /// Frames.Validatable with @AssumeCrossModuleTermination) implements the foreign members under that premise.
+  /// </summary>
+  public static bool CoveredByLegacyPremise(TopLevelDecl type, TraitDecl target) {
+    if (type is not TopLevelDeclWithMembers child) {
+      return false;
+    }
+    foreach (var parent in child.ParentTraitHeads) {
+      if (parent != target && !ExtendsTransitively(parent, target, new HashSet<TraitDecl>())) {
+        continue;
+      }
+      if (parent.EnclosingModuleDefinition != child.EnclosingModuleDefinition &&
+          (Attributes.Contains(child.Attributes, "AssumeCrossModuleTermination") || IsExtensible(parent))) {
+        return true;
+      }
+      if (parent != target && CoveredByLegacyPremise(parent, target)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private static bool ExtendsTransitively(TraitDecl trait, TraitDecl target, HashSet<TraitDecl> seen) {
+    if (!seen.Add(trait)) {
+      return false;
+    }
+    return trait.ParentTraitHeads.Any(parent => parent == target || ExtendsTransitively(parent, target, seen));
   }
 
   /// <summary>
@@ -1040,7 +1161,12 @@ public class ModularTerminationRewriter : IRewriter {
   }
 
   internal override void PostResolve(Program program) {
-    CheckLibraryRefinements(program);
+    if (Reporter.Options.Get(CommonOptionBag.ModularTermination)) {
+      CheckLibraryRefinements(program);
+    }
+    if (!ModularTermination.Active(Reporter.Options, program)) {
+      return;
+    }
     var analysis = new ModularTerminationAnalysis(program);
     var checkedClauses = new HashSet<(Attributes, ModuleDefinition)>();
     foreach (var module in program.Modules()) {

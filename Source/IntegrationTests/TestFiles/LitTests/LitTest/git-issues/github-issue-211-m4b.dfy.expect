@@ -23,15 +23,15 @@ ancestors, refresh false, consistent false
 
 Dafny program verifier finished with 0 verified, 0 errors
 open-producer, refresh false, consistent false
-github-issue-211-m4b-open-producer.dfy(5,52): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+github-issue-211-m4b-open-producer.dfy(5,52): Error: decreases clause might not decrease (modular termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
 
 Dafny program verifier finished with 0 verified, 1 error
 general-top, refresh false, consistent false
-github-issue-211-m4b-general-top.dfy(4,61): Error: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so under --modular-termination it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
+github-issue-211-m4b-general-top.dfy(4,61): Error: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
 
 Dafny program verifier finished with 0 verified, 1 error
 general-bound, refresh false, consistent false
-github-issue-211-m4b-general-bound.dfy(4,55): Error: decreases clause might not decrease (--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
+github-issue-211-m4b-general-bound.dfy(4,55): Error: decreases clause might not decrease (modular termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
 
 Dafny program verifier finished with 0 verified, 1 error
 closed-bad, refresh false, consistent false
@@ -56,7 +56,7 @@ github-issue-211-m4b-iterator-false.dfy(7,4): Error: assertion might not hold
 
 Dafny program verifier finished with 0 verified, 1 error
 iterator-general, refresh false, consistent false
-github-issue-211-m4b-iterator-general.dfy(4,48): Error: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so under --modular-termination it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
+github-issue-211-m4b-iterator-general.dfy(4,48): Error: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
 
 Dafny program verifier finished with 2 verified, 1 error
 placement, refresh false, consistent false
@@ -75,7 +75,7 @@ provided, refresh false, consistent false
 
 Dafny program verifier finished with 1 verified, 0 errors
 provided-bad, refresh false, consistent false
-github-issue-211-m4b-provided-bad.dfy(9,59): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+github-issue-211-m4b-provided-bad.dfy(9,59): Error: decreases clause might not decrease (modular termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
 
 Dafny program verifier finished with 0 verified, 1 error
 provided-false, refresh false, consistent false
@@ -86,7 +86,7 @@ views, refresh false, consistent false
 
 Dafny program verifier finished with 5 verified, 0 errors
 views-bad, refresh false, consistent false
-github-issue-211-m4b-views-bad.dfy(10,56): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+github-issue-211-m4b-views-bad.dfy(10,56): Error: decreases clause might not decrease (modular termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
 
 Dafny program verifier finished with 1 verified, 1 error
 views-false, refresh false, consistent false
@@ -139,15 +139,15 @@ ancestors, refresh false, consistent true
 
 Dafny program verifier finished with 0 verified, 0 errors
 open-producer, refresh false, consistent true
-github-issue-211-m4b-open-producer.dfy(5,52): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+github-issue-211-m4b-open-producer.dfy(5,52): Error: decreases clause might not decrease (modular termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
 
 Dafny program verifier finished with 0 verified, 1 error
 general-top, refresh false, consistent true
-github-issue-211-m4b-general-top.dfy(4,61): Error: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so under --modular-termination it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
+github-issue-211-m4b-general-top.dfy(4,61): Error: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
 
 Dafny program verifier finished with 0 verified, 1 error
 general-bound, refresh false, consistent true
-github-issue-211-m4b-general-bound.dfy(4,55): Error: decreases clause might not decrease (--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
+github-issue-211-m4b-general-bound.dfy(4,55): Error: decreases clause might not decrease (modular termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
 
 Dafny program verifier finished with 0 verified, 1 error
 closed-bad, refresh false, consistent true
@@ -172,7 +172,7 @@ github-issue-211-m4b-iterator-false.dfy(7,4): Error: assertion might not hold
 
 Dafny program verifier finished with 0 verified, 1 error
 iterator-general, refresh false, consistent true
-github-issue-211-m4b-iterator-general.dfy(4,48): Error: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so under --modular-termination it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
+github-issue-211-m4b-iterator-general.dfy(4,48): Error: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
 
 Dafny program verifier finished with 2 verified, 1 error
 placement, refresh false, consistent true
@@ -191,7 +191,7 @@ provided, refresh false, consistent true
 
 Dafny program verifier finished with 1 verified, 0 errors
 provided-bad, refresh false, consistent true
-github-issue-211-m4b-provided-bad.dfy(9,59): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+github-issue-211-m4b-provided-bad.dfy(9,59): Error: decreases clause might not decrease (modular termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
 
 Dafny program verifier finished with 0 verified, 1 error
 provided-false, refresh false, consistent true
@@ -202,7 +202,7 @@ views, refresh false, consistent true
 
 Dafny program verifier finished with 5 verified, 0 errors
 views-bad, refresh false, consistent true
-github-issue-211-m4b-views-bad.dfy(10,56): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+github-issue-211-m4b-views-bad.dfy(10,56): Error: decreases clause might not decrease (modular termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
 
 Dafny program verifier finished with 1 verified, 1 error
 views-false, refresh false, consistent true
@@ -255,15 +255,15 @@ ancestors, refresh true, consistent false
 
 Dafny program verifier finished with 0 verified, 0 errors
 open-producer, refresh true, consistent false
-github-issue-211-m4b-open-producer.dfy(5,52): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+github-issue-211-m4b-open-producer.dfy(5,52): Error: decreases clause might not decrease (modular termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
 
 Dafny program verifier finished with 0 verified, 1 error
 general-top, refresh true, consistent false
-github-issue-211-m4b-general-top.dfy(4,61): Error: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so under --modular-termination it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
+github-issue-211-m4b-general-top.dfy(4,61): Error: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
 
 Dafny program verifier finished with 0 verified, 1 error
 general-bound, refresh true, consistent false
-github-issue-211-m4b-general-bound.dfy(4,55): Error: decreases clause might not decrease (--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
+github-issue-211-m4b-general-bound.dfy(4,55): Error: decreases clause might not decrease (modular termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
 
 Dafny program verifier finished with 0 verified, 1 error
 closed-bad, refresh true, consistent false
@@ -288,7 +288,7 @@ github-issue-211-m4b-iterator-false.dfy(7,4): Error: assertion might not hold
 
 Dafny program verifier finished with 0 verified, 1 error
 iterator-general, refresh true, consistent false
-github-issue-211-m4b-iterator-general.dfy(4,48): Error: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so under --modular-termination it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
+github-issue-211-m4b-iterator-general.dfy(4,48): Error: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
 
 Dafny program verifier finished with 2 verified, 1 error
 placement, refresh true, consistent false
@@ -307,7 +307,7 @@ provided, refresh true, consistent false
 
 Dafny program verifier finished with 1 verified, 0 errors
 provided-bad, refresh true, consistent false
-github-issue-211-m4b-provided-bad.dfy(9,59): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+github-issue-211-m4b-provided-bad.dfy(9,59): Error: decreases clause might not decrease (modular termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
 
 Dafny program verifier finished with 0 verified, 1 error
 provided-false, refresh true, consistent false
@@ -318,7 +318,7 @@ views, refresh true, consistent false
 
 Dafny program verifier finished with 5 verified, 0 errors
 views-bad, refresh true, consistent false
-github-issue-211-m4b-views-bad.dfy(10,56): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+github-issue-211-m4b-views-bad.dfy(10,56): Error: decreases clause might not decrease (modular termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
 
 Dafny program verifier finished with 1 verified, 1 error
 views-false, refresh true, consistent false
@@ -371,15 +371,15 @@ ancestors, refresh true, consistent true
 
 Dafny program verifier finished with 0 verified, 0 errors
 open-producer, refresh true, consistent true
-github-issue-211-m4b-open-producer.dfy(5,52): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+github-issue-211-m4b-open-producer.dfy(5,52): Error: decreases clause might not decrease (modular termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
 
 Dafny program verifier finished with 0 verified, 1 error
 general-top, refresh true, consistent true
-github-issue-211-m4b-general-top.dfy(4,61): Error: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so under --modular-termination it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
+github-issue-211-m4b-general-top.dfy(4,61): Error: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
 
 Dafny program verifier finished with 0 verified, 1 error
 general-bound, refresh true, consistent true
-github-issue-211-m4b-general-bound.dfy(4,55): Error: decreases clause might not decrease (--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
+github-issue-211-m4b-general-bound.dfy(4,55): Error: decreases clause might not decrease (modular termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
 
 Dafny program verifier finished with 0 verified, 1 error
 closed-bad, refresh true, consistent true
@@ -404,7 +404,7 @@ github-issue-211-m4b-iterator-false.dfy(7,4): Error: assertion might not hold
 
 Dafny program verifier finished with 0 verified, 1 error
 iterator-general, refresh true, consistent true
-github-issue-211-m4b-iterator-general.dfy(4,48): Error: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so under --modular-termination it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
+github-issue-211-m4b-iterator-general.dfy(4,48): Error: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
 
 Dafny program verifier finished with 2 verified, 1 error
 placement, refresh true, consistent true
@@ -423,7 +423,7 @@ provided, refresh true, consistent true
 
 Dafny program verifier finished with 1 verified, 0 errors
 provided-bad, refresh true, consistent true
-github-issue-211-m4b-provided-bad.dfy(9,59): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+github-issue-211-m4b-provided-bad.dfy(9,59): Error: decreases clause might not decrease (modular termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
 
 Dafny program verifier finished with 0 verified, 1 error
 provided-false, refresh true, consistent true
@@ -434,7 +434,7 @@ views, refresh true, consistent true
 
 Dafny program verifier finished with 5 verified, 0 errors
 views-bad, refresh true, consistent true
-github-issue-211-m4b-views-bad.dfy(10,56): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+github-issue-211-m4b-views-bad.dfy(10,56): Error: decreases clause might not decrease (modular termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
 
 Dafny program verifier finished with 1 verified, 1 error
 views-false, refresh true, consistent true

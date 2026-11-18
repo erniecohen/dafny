@@ -34,11 +34,11 @@ github-issue-211-multiset-mt-verify.dfy(48,4): Error: assertion might not hold
 github-issue-211-multiset-mt-verify.dfy(56,4): Error: assertion might not hold
 github-issue-211-multiset-mt-verify.dfy(67,4): Error: assertion might not hold
 github-issue-211-multiset-mt-verify.dfy(76,4): Error: assertion might not hold
-github-issue-211-multiset-mt-verify.dfy(96,9): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
-github-issue-211-multiset-mt-verify.dfy(104,9): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
-github-issue-211-multiset-mt-verify.dfy(112,9): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
-github-issue-211-multiset-mt-verify.dfy(120,9): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
-github-issue-211-multiset-mt-verify.dfy(128,9): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+github-issue-211-multiset-mt-verify.dfy(96,9): Error: decreases clause might not decrease (modular termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+github-issue-211-multiset-mt-verify.dfy(104,9): Error: decreases clause might not decrease (modular termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+github-issue-211-multiset-mt-verify.dfy(112,9): Error: decreases clause might not decrease (modular termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+github-issue-211-multiset-mt-verify.dfy(120,9): Error: decreases clause might not decrease (modular termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+github-issue-211-multiset-mt-verify.dfy(128,9): Error: decreases clause might not decrease (modular termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
 
 Dafny program verifier finished with 60 verified, 11 errors
 --modular-termination: a relation that is not known, passed to the library's multiset functions and lemmas

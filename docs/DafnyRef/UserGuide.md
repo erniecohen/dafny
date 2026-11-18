@@ -2469,7 +2469,11 @@ or the Dafny 4 syntax (`ghost function` and `function`)
   `[options]` section. See [well-founded orders](#sec-decreases-by).
 
 * `--modular-termination` - (experimental; it does not yet establish termination in every
-  program) accept `decreases {:global}` clauses, and reject a call dispatched to a
+  program) run the checks of [global bounds](#sec-global-decreases) on every program, not only
+  on one that uses them, and add those that are not yet on by default: a dispatched call from
+  code with a bound to an undeclared member of a `{:termination false}` trait is rejected, and
+  libraries must carry a termination record. By default Dafny accepts `decreases {:global}`
+  clauses, and, in a program that uses them, rejects a call dispatched to a
   bodyless member of a trait whose implementations may lie in other modules unless it
   goes to a smaller `decreases {:global}` bound, and a call to known code that can reach
   such a dispatched call unless it goes to a bound that is not larger. A helper that
@@ -2481,7 +2485,8 @@ or the Dafny 4 syntax (`ghost function` and `function`)
   has no bound either; `decreases {:callback g} E` gives an in-parameter `g` the bound `E`,
   which an application of `g` must be below and the value passed for `g` must run under. A
   global or callback bound may only use code that cannot reach such a dispatched call. With `--show-hints`, it
-  reports every call that needs one of the rules. Disabled by default. Use
+  reports every call that needs one of the rules. The hidden `--legacy-no-modular-termination`
+  restores the rules of Dafny 4.11, for migration and comparison. `--modular-termination` is disabled by default. Use
   `modular-termination = true` in a project file's `[options]` section. See
   [global bounds](#sec-global-decreases) for the rules and their limits. The option also declares the type
   `bounded<O, F>` of [bounded callables](#sec-bounded-callables).

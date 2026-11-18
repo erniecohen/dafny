@@ -134,6 +134,11 @@ The rules:
    every implementation, home or foreign, must be a leaf, and the member's bound
    is BOTTOM, a proper bound below every other one. Any caller may dispatch to it.
    This is revision 2's leaf default (`function value(): nat`), made explicit.
+   **Dropped (2026-11-17).** The owner's bar admits no leaf attribute: declared
+   `decreases {:global}` bounds are the only openness signal. A member that bounded
+   code must dispatch to declares a bound instead, the least of its order where it
+   has one (for example `decreases {:global} 0` on `nat`). Rules 1-4 and 6-9 do
+   not depend on rule 5.
 6. **Known call** from code with bound `B` to code that can reach dispatch or
    application at bound `b`: `b <= B`, plus the existing `(module, SCC, decreases)`
    check. A known call to `Closed` code needs only the existing check. `Closed`
@@ -267,7 +272,7 @@ Programs this design accepts each need an `assert false` control in their test.
 | A foreign subtrait `S.U extends Tr.T` adds a member `C` with a declared bound | accepted; control | `C`'s home is `S`. Rule 2 binds every implementation of `C`. |
 | `S.U` overrides undeclared `Tr.T.A` with a body | must be a leaf | Foreign to `A`'s home (rule 3). Declaring a bound on it is an error (rule 7). |
 | `S.U` adds an undeclared member `C`, and a class in `S` implements it with dispatch | accepted, as home code; control | Rule 4 in `S`. A class in a fourth module implementing `C` must be a leaf. |
-| A bounded implementation dispatches to `value()`, undeclared, whose home implementation is a leaf | rejected | Rule 4 does not look at bodies. Declaring `value()` an explicit leaf (rule 5) makes it accepted. |
+| A bounded implementation dispatches to `value()`, undeclared, whose home implementation is a leaf | rejected | Rule 4 does not look at bodies. Declaring a bound on `value()` makes it accepted (rule 5, the explicit leaf, is dropped). |
 | A foreign leaf stores a function value in a field, and home TOP code later applies it | accepted, as today | Storing is no call. Applying from TOP code is a plain-Dafny edge that exists today without any foreign implementation: a client can pass `Tr` a lambda. Bounded code cannot apply it (rule 9). |
 | A foreign leaf applies a stored function value | rejected | Rule 3. |
 | A foreign leaf reads an instance constant of `T` whose initializer dispatches; or calls a function whose default parameter value dispatches; or tests membership in a subset type whose constraint dispatches; or has a precondition that dispatches | rejected, once the implicit evaluations are covered | This is stage 2(b). Until it lands, these are the known gaps listed in the manual. M4b milestone 6 already requires the coverage argument for `Closed`. |
@@ -373,8 +378,8 @@ To extend a trait from another module, checked:
 | Leaf effect (rule 3) and foreign-implementation check | `ModularTermination.cs`: a third effect below `Closed`, computed over the same hooks (constants, defaults, constraints, witnesses, iterators, specifications) | new |
 | Rule 4: undeclared dispatch is TOP for bounded callers | `ModularTermination.cs`, `BoogieGenerator.Decreases.cs` | done in effect. Today's option already rejects bounded dispatch to an unbounded member (attack 1). New: it no longer rejects dispatch from TOP callers (the first row of the table in §1). |
 | Rule 2: home implementations bound | `BoogieGenerator.Decreases.cs`, `.Methods.cs`, `TrCall.cs` | done (attack 2 is rejected today) |
-| Explicit leaf (rule 5) | `Attributes.cs`, `ModularTermination.cs`, BOTTOM next to TOP in `BoogieGenerator.Decreases.cs` | new |
-| Running the checks by use (§2.5) | the gates on `CommonOptionBag.ModularTermination` in `ModuleResolver.cs`, `RewriterCollection.cs` and the translator | new: one predicate replaces the option test |
+| Explicit leaf (rule 5) | none | dropped: the owner's bar admits no leaf attribute |
+| Running the checks by use (§2.5) | the gates on `CommonOptionBag.ModularTermination` in `ModuleResolver.cs`, `RewriterCollection.cs` and the translator | done: `ModularTermination.RulesEnabled` and `ModularTermination.Active` replace the option test; the hidden `--legacy-no-modular-termination` restores 4.11. Library records, bounded callables and the strict legacy slot still need the option. |
 | Bound comparisons, orders, M4a | `BoogieGenerator.*`, `Resolver/DecreasesOrders.cs` | done (issues 211, 245, 264) |
 | Bounded callables | `AST/SystemModuleManager.cs`, `AST/Types/ArrowType.cs`, translator | M1 done (issue 266). Storage and return are still open. |
 | Library records | `ModularTerminationRecord.cs`, `ModularTerminationTrust.cs`, `DooFile.cs`, `DafnyFile.cs`, `Backends/Library/LibraryBackend.cs` | done (M3-4, M5a, M5b). New: record each member's bound or leaf declaration and each function's effect, written whenever the library uses the design. Legacy libraries' `.doo` bytes are unchanged. |
@@ -670,14 +675,15 @@ systems share.
 
 ## 8. Open questions
 
-1. The spelling of the explicit leaf (rule 5). Candidates are an attribute on the
+1. Settled: no explicit leaf (rule 5 is dropped; bounds are the only openness
+   signal). Formerly: the spelling of the explicit leaf. Candidates are an attribute on the
    member, such as `{:termination_leaf}`, or `decreases {:global} BOTTOM`. The
    owner's "implicitly 0" suggests the second, but 0 of `nat` is not below the
    bounds of other orders.
 2. Whether rule 4 should let a bounded caller dispatch to an undeclared member whose
    home implementations are all leaves. That would make a body-derived fact part of
    the interface, which the fork's rules forbid ("private bodies never strengthen an
-   imported contract"). The explicit leaf is the alternative.
+   imported contract"). Settled: no; the member declares a bound.
 3. Whether a `{:termination false}` trait whose members all have bounds or leaf
    declarations should get a "redundant" hint instead of the premise warning.
 4. When to remove `--modular-termination` after stage 4: after one release, as

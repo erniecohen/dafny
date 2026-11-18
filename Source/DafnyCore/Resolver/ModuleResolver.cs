@@ -2417,11 +2417,12 @@ namespace Microsoft.Dafny {
           if (trait != null) {
             // disallowing inheritance in multi module case
             bool termination = true;
-            // Under --modular-termination every trait may be extended from any module (rule 1 of revision 3 of
-            // https://github.com/erniecohen/dafny/issues/211): a foreign implementation is checked instead.
+            // Every trait may be extended from any module (rule 1 of revision 3 of
+            // https://github.com/erniecohen/dafny/issues/211): a foreign implementation is checked instead.  Only
+            // --legacy-no-modular-termination restores the rule of 4.11.
             if (cl.EnclosingModuleDefinition == trait.EnclosingModuleDefinition ||
                 trait.IsObjectTrait ||
-                Options.Get(CommonOptionBag.ModularTermination) ||
+                ModularTermination.RulesEnabled(Options) ||
                 (Attributes.ContainsBool(trait.Attributes, "termination", ref termination) && !termination) ||
                 Attributes.Contains(cl.Attributes, "AssumeCrossModuleTermination")) {
               // all is good (or the user takes responsibility for the lack of termination checking)
@@ -2789,7 +2790,7 @@ namespace Microsoft.Dafny {
           reporter.Error(MessageSource.Resolver, member.Origin,
             $"{baseMember.WhatKindAndName} is inherited from {baseType.WhatKindAndName} and is not allowed to be re-declared");
         } else if ((baseMember as Function)?.Body != null || (baseMember as Constructor)?.Body != null ||
-                   (Options.Get(CommonOptionBag.ModularTermination) && baseMember is Function &&
+                   (ModularTermination.RulesEnabled(Options) && baseMember is Function &&
                     baseMember.TerminationContract is { IsDispatchSlot: false })) {
           // the overridden member is a fully defined function or method, so the class is not allowed to do anything with it other than silently inherit it
           reporter.Error(MessageSource.Resolver, member.Origin,

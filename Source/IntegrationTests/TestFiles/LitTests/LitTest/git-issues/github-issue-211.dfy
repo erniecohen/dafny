@@ -10,8 +10,10 @@
 //
 // RUN: echo "tie, option off: verifies, as before" > "%t"
 // RUN: %exits-with 0 %baredafny verify --warn-unchecked-termination=false --solver-path %review-z3 --cores 1 --use-basename-for-filename --show-snippets:false --standard-libraries:false "%S/Inputs/github-issue-211-tie.dfy" >> "%t"
-// RUN: echo "clauses, option off: an ordinary decreases clause" >> "%t"
-// RUN: %exits-with 0 %baredafny verify --warn-unchecked-termination=false --solver-path %review-z3 --cores 1 --use-basename-for-filename --show-snippets:false --standard-libraries:false "%S/Inputs/github-issue-211-clauses.dfy" >> "%t"
+// RUN: echo "clauses, legacy-off: an ordinary decreases clause" >> "%t"
+// RUN: %exits-with 0 %baredafny verify --warn-unchecked-termination=false --legacy-no-modular-termination --solver-path %review-z3 --cores 1 --use-basename-for-filename --show-snippets:false --standard-libraries:false "%S/Inputs/github-issue-211-clauses.dfy" >> "%t"
+// RUN: echo "clauses, default: two global clauses rejected" >> "%t"
+// RUN: %exits-with 2 %baredafny verify --warn-unchecked-termination=false --solver-path %review-z3 --cores 1 --use-basename-for-filename --show-snippets:false --standard-libraries:false "%S/Inputs/github-issue-211-clauses.dfy" >> "%t"
 // RUN: echo "tie, option on, refresh false: rejected" >> "%t"
 // RUN: %exits-with 4 %baredafny verify --warn-unchecked-termination=false --solver-path %review-z3 --cores 1 --use-basename-for-filename --show-snippets:false --standard-libraries:false --type-system-refresh:false --modular-termination "%S/Inputs/github-issue-211-tie.dfy" >> "%t"
 // RUN: echo "tie with constant bounds, option on, refresh false: rejected" >> "%t"
@@ -106,8 +108,10 @@
 // termination it establishes: github-issue-211-rank-gap.dfy proved false and, run, overflowed the stack
 // (github-issue-211-rank-witness.dfy, not run here).  Without the option it verifies, as before: that is
 // the {:termination false} gap that the option closes.
-// RUN: echo "rank gap, option off: verifies, as before" >> "%t"
-// RUN: %exits-with 0 %baredafny verify --warn-unchecked-termination=false --solver-path %review-z3 --cores 1 --use-basename-for-filename --show-snippets:false --standard-libraries:false "%S/Inputs/github-issue-211-rank-gap.dfy" >> "%t"
+// RUN: echo "rank gap, legacy-off: verifies, as in 4.11" >> "%t"
+// RUN: %exits-with 0 %baredafny verify --warn-unchecked-termination=false --legacy-no-modular-termination --solver-path %review-z3 --cores 1 --use-basename-for-filename --show-snippets:false --standard-libraries:false "%S/Inputs/github-issue-211-rank-gap.dfy" >> "%t"
+// RUN: echo "rank gap, default: the bound rejected, as under the option" >> "%t"
+// RUN: %exits-with 2 %baredafny verify --warn-unchecked-termination=false --solver-path %review-z3 --cores 1 --use-basename-for-filename --show-snippets:false --standard-libraries:false "%S/Inputs/github-issue-211-rank-gap.dfy" >> "%t"
 // RUN: echo "rank gap, option on, refresh false: the bound rejected" >> "%t"
 // RUN: %exits-with 2 %baredafny verify --warn-unchecked-termination=false --solver-path %review-z3 --cores 1 --use-basename-for-filename --show-snippets:false --standard-libraries:false --type-system-refresh:false --modular-termination "%S/Inputs/github-issue-211-rank-gap.dfy" >> "%t"
 // RUN: echo "rank gap, option on, refresh true: the bound rejected" >> "%t"
@@ -133,8 +137,8 @@
 // RUN: echo "printed counter, option on: verifies" >> "%t"
 // RUN: %exits-with 0 %baredafny verify --warn-unchecked-termination=false --solver-path %review-z3 --cores 1 --use-basename-for-filename --show-snippets:false --standard-libraries:false --modular-termination "%t.counter.dfy" >> "%t"
 // Without the option, a {:callback} attribute is printed as written, as before.
-// RUN: echo "printed callback clauses, option off: attributes as written" >> "%t"
-// RUN: %baredafny resolve --warn-unchecked-termination=false --use-basename-for-filename --show-snippets:false --standard-libraries:false --print "%t.callback-off.dfy" "%S/Inputs/github-issue-211-callback.dfy" > "%t.ignore"
+// RUN: echo "printed callback clauses, legacy-off: attributes as written" >> "%t"
+// RUN: %baredafny resolve --warn-unchecked-termination=false --legacy-no-modular-termination --use-basename-for-filename --show-snippets:false --standard-libraries:false --print "%t.callback-off.dfy" "%S/Inputs/github-issue-211-callback.dfy" > "%t.ignore"
 // RUN: grep "{:callback" "%t.callback-off.dfy" >> "%t"
 // RUN: %baredafny resolve --warn-unchecked-termination=false --use-basename-for-filename --show-snippets:false --standard-libraries:false --modular-termination --print "%t.callback.dfy" "%S/Inputs/github-issue-211-callback.dfy" > "%t.ignore"
 // RUN: echo "printed callback, option on: verifies" >> "%t"

@@ -185,6 +185,12 @@ namespace Microsoft.Dafny {
     public IsAllocContext IsAllocContext { get; set; } = null;
     Program program;
 
+    /// <summary>
+    /// Whether the checks of modular termination (https://github.com/erniecohen/dafny/issues/211) apply to the program
+    /// being translated: see <see cref="ModularTermination.Active"/>.  When they do not, the translation is that of 4.11.
+    /// </summary>
+    internal bool ModularTerminationActive => program != null && ModularTermination.Active(options, program);
+
     [ContractInvariantMethod]
     void ObjectInvariant() {
       Contract.Invariant(Cce.NonNullDictionaryAndValues(classes));

@@ -559,8 +559,7 @@ another module only if the trait is marked `{:termination false}` or the type
 `@AssumeCrossModuleTermination`; calls through such a trait are not checked for
 termination, and a program can recurse through them forever and still verify.
 
-The option `--modular-termination` (off by default) checks these calls.  A method or
-function may declare a _global bound_:
+Dafny checks these calls.  A method or function may declare a _global bound_:
 
 <!-- %no-check -->
 ```dafny
@@ -576,7 +575,7 @@ not concatenated.  A member has at most one `decreases {:global}` clause.  An ov
 that declares none inherits its parent's; one that declares its own must give a bound no
 greater than its parent's, as an override's ordinary decreases clause must.
 
-Under the option, any trait may be extended from any module, with no `{:termination false}`
+Any trait may be extended from any module, with no `{:termination false}`
 or `@AssumeCrossModuleTermination`. What an implementation may do depends on whether the member
 it implements declares a global bound:
 
@@ -615,7 +614,19 @@ smaller bound, and a padded tuple descends as any tuple does.
 
 The legacy forms keep their meaning: an undeclared member of a trait with `{:termination false}`, or
 implemented by a type with `@AssumeCrossModuleTermination`, is exempt from the leaf rule, as an
-unchecked premise that `--warn-unchecked-termination` reports. Declared bounds still bind it.
+unchecked premise that `--warn-unchecked-termination` reports. Declared bounds still bind it. A
+dispatched call from code with a bound to an undeclared member of a `{:termination false}` trait is
+accepted on the same premise, as it is in Dafny 4.11; the experimental `--modular-termination`
+rejects it, as it rejects any call to TOP.
+
+The checks run on every program that uses this design: one that declares a global or callback
+bound, promises `{:termination_closed}`, or has a type that extends a trait of another module
+with neither legacy form. A program that does none of these is accepted or rejected as in Dafny
+4.11, with the same proof obligations. The hidden option `--legacy-no-modular-termination`, kept
+for migration and comparison, restores the rules of Dafny 4.11: a type may extend a trait of
+another module only with a legacy form, `decreases {:global} E` and `decreases {:callback g} E`
+are ordinary decreases clauses, and none of these checks runs. A library built under one setting
+of that option cannot be used under the other.
 
 A missing bound is above every other.  So a call from a member with a global bound to a member
 without one always fails, and so does a foreign implementation of a member without one that calls back
@@ -705,18 +716,18 @@ as the body of its prefix lemma, which has the same bounds, and a call `L#[k](..
 is checked as a call of `L`.
 
 A lemma with a global bound that can reach a dispatched call runs under that bound, and so does every
-instance of itself that its proof uses. So under the option its automatic induction hypothesis covers
+instance of itself that its proof uses. So its automatic induction hypothesis covers
 only the instances whose bound is at most the lemma's own bound (below it, if the lemma is itself an
 overridable member of an extensible trait). The same holds for the induction hypothesis of a prefix
 lemma, and for the case that Dafny generates for a prefix lemma at a limit ordinal. A proof that used
-one of these at a larger bound does not verify under the option.
+one of these at a larger bound does not verify.
 
 Some code belongs to no method or function: the constraint and the witness of a subset type or
 newtype, the default values of a datatype's or class's components (which a witness or an allocation
 may evaluate), and the initializer of a constant. Such code has no global bound, so it is TOP.
 It runs where a type test `x is T`, a conversion `x as T`, a subset check (when a value is assigned,
 passed or returned at type `T`), or the creation of a default value evaluates it, and where a
-constant is read. Under the option this counts as a call from the member in which it happens, under the
+constant is read. This counts as a call from the member in which it happens, under the
 same-bound rule: if that code can reach a dispatched call, a member with a global bound may not
 evaluate it, and a member without one reaches the dispatched call too, so that a member with a bound
 may not call it either. Dafny does not track which of these evaluations happen at run time, so it
@@ -745,9 +756,9 @@ General(TOP) unless its owner publishes `{:termination_closed}`. The attribute i
 constants, type declarations and iterators. On a type it covers its evaluation hooks, including
 field/component types and defaults, rather than its virtual members; on an iterator it covers
 its protocol and specifications. Public signature structure may establish that a hook is absent.
-Invalid attribute arguments or placement are rejected under the option.
+Invalid attribute arguments or placement are rejected.
 
-A call through a function value runs code that the call does not name. Under the option, an application
+A call through a function value runs code that the call does not name. An application
 `f(x)` (and a call of `f.requires` or `f.reads`, and the initializing function of `seq(n, f)` and
 `new T[n](f)`) counts as follows:
 
@@ -890,7 +901,7 @@ It also rejects some programs that terminate:
   program that reaches Dafny through another front end, serialized, keeps them as ordinary decreases
   clauses with argument-less `{:global}` attributes or one-argument `{:callback g}` attributes.
 
-Under the option, a library is admitted only as a `.doo` file built with
+Under the experimental `--modular-termination`, a library is admitted only as a `.doo` file built with
 `dafny build --target:lib --modular-termination`. Such a build writes a termination record into the
 library: a hash of its program, of the build of Dafny that verified it (its Dafny and Boogie
 assemblies and the prelude file it read), and of the options that change what a proof means (each also
@@ -915,10 +926,10 @@ that Dafny generates for an iterator as axioms, and the build refuses a library 
 build reports the first of these it finds and writes nothing. `--allow-warnings` does not hide them; it is
 recorded with the other options.
 
-Under the option, a module cannot refine or replace a module of a library: it would inherit bodies
+Under `--modular-termination`, a module cannot refine or replace a module of a library: it would inherit bodies
 that are not part of the library's contracts, so a change to them would not be detected.
 
-Under the option, `--boogie` arguments are refused, both when a library is built and when one is loaded:
+Under `--modular-termination`, `--boogie` arguments are refused, both when a library is built and when one is loaded:
 many of them (such as `/loopUnroll`, `/noVerify`, `/proc` and some `/proverOpt` settings) can make a
 program verify that is not proved. Only arguments on a reviewed list of ones that cannot weaken a proof
 are allowed, and that list is empty for now. The options are recorded with their values as given. Two libraries that both declare
@@ -986,11 +997,11 @@ that made it directly, so a helper without a bound, or with a larger one, could 
 dispatched call and hide a cycle; the rule for calls to known code rejects such a helper.
 
 Internally, the global clause is the attribute `{:global E}` on the decreases clause, and
-under the option that spelling is read the same way: `decreases {:global n} 7` declares
+that spelling is read the same way: `decreases {:global n} 7` declares
 the global bound `n` and the ordinary decreases clause `7`.
 
-Without the option, `decreases {:global} E` is an ordinary decreases clause with an
-unknown attribute, as before.
+Under `--legacy-no-modular-termination`, `decreases {:global} E` is an ordinary decreases clause
+with an unknown attribute, as in Dafny 4.11.
 
 #### 7.1.3.3. Bounded callables: `bounded<O, F>` (experimental) {#sec-bounded-callables}
 

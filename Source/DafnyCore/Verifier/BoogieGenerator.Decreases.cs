@@ -238,7 +238,7 @@ public partial class BoogieGenerator {
                                Dictionary<IVariable, Expression> substMap, Dictionary<IVariable, Expression> directSubstMap,
                                Dictionary<TypeParameter, Type> typeMap, ExpressionTranslator etranCurrent,
                                BoogieStmtListBuilder builder, ExpressionTranslator etranCallee) {
-    if (!options.Get(CommonOptionBag.ModularTermination) || codeContext is not ICallable caller) {
+    if (!ModularTerminationActive || codeContext is not ICallable caller) {
       return;
     }
     var analysis = ModularTerminationAnalysis.Of(program);
@@ -254,9 +254,11 @@ public partial class BoogieGenerator {
     var callerBound = lambdaBound ?? GlobalBound(caller);
     // A caller without a bound is TOP: it may make any call, including one dispatched to a member without a bound
     // (rule 4 of revision 3), whose foreign implementations are leaves.  A member without a bound of a legacy
-    // {:termination false} trait keeps its earlier rule: its foreign implementations need not be leaves, so a
-    // dispatched call to it always fails.
-    var legacySlot = dispatched && calleeBound == null && callee.EnclosingClass is TraitDecl calleeTrait &&
+    // {:termination false} trait is TOP as well, and its foreign implementations are an unchecked premise (section 2.4
+    // of the plan), as in 4.11.  Only --modular-termination, which checks a program as if the legacy forms were absent,
+    // keeps its earlier rule: a dispatched call to it always fails.
+    var legacySlot = options.Get(CommonOptionBag.ModularTermination) &&
+                     dispatched && calleeBound == null && callee.EnclosingClass is TraitDecl calleeTrait &&
                      ModularTermination.IsExtensible(calleeTrait);
     if (callerBound == null && !legacySlot) {
       return;
@@ -266,12 +268,12 @@ public partial class BoogieGenerator {
       hint = legacySlot
         ? "the dispatched callee has no 'decreases {:global}' bound, which --modular-termination requires of a member of a {:termination false} trait"
         : calleeBound == null
-        ? "the dispatched callee has no 'decreases {:global}' bound, so under --modular-termination it is TOP, above the caller's bound; declare a bound on it"
-        : "--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's";
+        ? "the dispatched callee has no 'decreases {:global}' bound, so it is TOP, above the caller's bound; declare a bound on it"
+        : "modular termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's";
     } else {
       hint = calleeBound == null
-        ? "the callee can reach a call dispatched to implementations that other modules may provide, so under --modular-termination it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it"
-        : "--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's";
+        ? "the callee can reach a call dispatched to implementations that other modules may provide, so it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it"
+        : "modular termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's";
     }
     var oldCaller = lambdaBound == null && codeContext is MethodOrConstructor and not TwoStateLemma;
     var contextBound = callerBound ?? [];
@@ -295,7 +297,7 @@ public partial class BoogieGenerator {
   /// </summary>
   ExpressionConverter RecursiveInstanceWithinGlobalBound(MethodOrConstructor m, Expression receiverReplacement,
                                                         Dictionary<IVariable, Expression> substMap) {
-    if (!options.Get(CommonOptionBag.ModularTermination) || GlobalBound(m) is not { } bound) {
+    if (!ModularTerminationActive || GlobalBound(m) is not { } bound) {
       // A lemma without a bound runs under TOP, and so may any call it makes.
       return null;
     }
@@ -364,7 +366,7 @@ public partial class BoogieGenerator {
   /// the translator of the code around the lambda, on entry: the lambda's body is checked in a heap of its own.
   /// </summary>
   void EnterLambda(LambdaExpr lambda, ICodeContext codeContext, ExpressionTranslator etran) {
-    if (!options.Get(CommonOptionBag.ModularTermination)) {
+    if (!ModularTerminationActive) {
       return;
     }
     var bound = modularTerminationLambdaBounds.GetValueOrDefault(lambda) ?? CurrentLambdaBound;
@@ -387,7 +389,7 @@ public partial class BoogieGenerator {
   }
 
   void ExitLambda() {
-    if (!options.Get(CommonOptionBag.ModularTermination)) {
+    if (!ModularTerminationActive) {
       return;
     }
     modularTerminationLambdaStack.RemoveAt(modularTerminationLambdaStack.Count - 1);
@@ -452,7 +454,7 @@ public partial class BoogieGenerator {
   /// </summary>
   void RegisterCallbackLambdas(MemberDecl callee, Expression receiver, List<Expression> args,
                                Dictionary<TypeParameter, Type> typeMap, ExpressionTranslator etran) {
-    if (!options.Get(CommonOptionBag.ModularTermination) || callee is not ICallable callable) {
+    if (!ModularTerminationActive || callee is not ICallable callable) {
       return;
     }
     Dictionary<IVariable, Expression> directSubstMap = null;
@@ -484,7 +486,7 @@ public partial class BoogieGenerator {
                               Dictionary<TypeParameter, Type> typeMap, ExpressionTranslator etranCurrent,
                               BoogieStmtListBuilder builder) {
     CheckBoundedArguments(tok, callee, args, receiverReplacement, substMap, typeMap, etranCurrent, builder);
-    if (!options.Get(CommonOptionBag.ModularTermination) || codeContext is not ICallable caller ||
+    if (!ModularTerminationActive || codeContext is not ICallable caller ||
         callee is not ICallable callable) {
       return;
     }
@@ -506,7 +508,7 @@ public partial class BoogieGenerator {
       }
       CheckCallTermination(tok, contextBound, comparedBound, null, null, new Dictionary<IVariable, Expression>(),
         new Dictionary<IVariable, Expression>(), new Dictionary<TypeParameter, Type>(), etranCurrent, false, builder, false,
-        $"--modular-termination: the 'decreases {{:callback}}' bound of '{formal.Name}' must not exceed that of the parameter it is passed for",
+        $"modular termination: the 'decreases {{:callback}}' bound of '{formal.Name}' must not exceed that of the parameter it is passed for",
         nonincrease: true);
     }
   }
@@ -525,7 +527,7 @@ public partial class BoogieGenerator {
       CheckBoundedApplication(tok, codeContext, bounded, etranCurrent, builder);
       return;
     }
-    if (!options.Get(CommonOptionBag.ModularTermination) || codeContext is not ICallable caller ||
+    if (!ModularTerminationActive || codeContext is not ICallable caller ||
         value.Resolved is not IdentifierExpr { Var: Formal formal }) {
       return;
     }
@@ -538,8 +540,8 @@ public partial class BoogieGenerator {
     CheckCallTermination(tok, callerBound, compared, null, null, new Dictionary<IVariable, Expression>(),
       new Dictionary<IVariable, Expression>(), new Dictionary<TypeParameter, Type>(), etranCurrent, oldCaller, builder, false,
       InsideLambda
-        ? $"--modular-termination: the 'decreases {{:callback}}' bound of '{formal.Name}' must be below the bound under which the enclosing lambda runs"
-        : $"--modular-termination: the 'decreases {{:callback}}' bound of '{formal.Name}' must be below the caller's 'decreases {{:global}}' bound");
+        ? $"modular termination: the 'decreases {{:callback}}' bound of '{formal.Name}' must be below the bound under which the enclosing lambda runs"
+        : $"modular termination: the 'decreases {{:callback}}' bound of '{formal.Name}' must be below the caller's 'decreases {{:global}}' bound");
   }
 
   /// <summary>

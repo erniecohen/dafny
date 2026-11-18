@@ -51,7 +51,7 @@ public static class RewriterCollection {
       result.Add(new AutoRevealFunctionDependencies(reporter));
     }
 
-    if (reporter.Options.Get(CommonOptionBag.ModularTermination)) {
+    if (ModularTermination.RulesEnabled(reporter.Options)) {
       result.Add(new ModularTerminationRewriter(reporter));
     }
 
