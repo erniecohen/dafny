@@ -729,17 +729,22 @@ namespace Microsoft.Dafny {
     /// A refinement must not turn a non-reference trait into a reference trait: a module that imports the refined
     /// module abstractly may declare a datatype or newtype that extends the trait, which is legal only while the
     /// trait is not a reference type.  A trait is a reference type iff it has "object" as an ancestor, so only an
-    /// added parent can change that.
+    /// added parent can change that.  The error is reported once, at the trait that adds a reference-type parent,
+    /// and not again at the traits below it.
     /// </summary>
     private void CheckAddedParentsKeepReferenceness(TraitDecl nw, TraitDecl prev, int inheritedParentCount) {
-      if (!nw.IsReferenceTypeDecl || prev.IsReferenceTypeDecl) {
+      if (prev.IsReferenceTypeDecl) {
         return;
       }
       var culprit = nw.Traits.Skip(inheritedParentCount).FirstOrDefault(parent =>
-        parent.IsObjectQ || parent.IsObject || parent.AsTraitType is { IsReferenceTypeDecl: true });
-      Reporter.Error(MessageSource.RefinementTransformer, "ref_added_parent_makes_reference_type", (culprit ?? nw.Traits.Last()).Origin,
-        $"a refinement is not allowed to make trait '{nw.Name}' a reference type: " +
-        (culprit == null ? "an added parent" : $"added parent '{culprit}'") +
+        parent.AsTraitType is { IsReferenceTypeDecl: true });
+      if (culprit == null) {
+        // No added parent is a reference type.  If the trait became one all the same, it did so through a parent
+        // it had already, and the error is reported at the trait that added the reference-type parent.
+        return;
+      }
+      Reporter.Error(MessageSource.RefinementTransformer, "ref_added_parent_makes_reference_type", culprit.Origin,
+        $"a refinement is not allowed to make trait '{nw.Name}' a reference type: added parent '{culprit}'" +
         $" is a reference type, and '{nw.Name}' in module '{prev.EnclosingModuleDefinition.Name}' is not");
     }
 
@@ -753,7 +758,7 @@ namespace Microsoft.Dafny {
         var inheritedParentCount = prev.Traits.Count;
         nw.Traits.InsertRange(0, prev.Traits.Select(refinementCloner.CloneType));
         nw.ParentTraitsFromRefinementBase = inheritedParentCount;
-        if (nw is TraitDecl nwTrait && prev is TraitDecl prevTrait && inheritedParentCount < nw.Traits.Count) {
+        if (nw is TraitDecl nwTrait && prev is TraitDecl prevTrait) {
           postTasks.Enqueue(() => CheckAddedParentsKeepReferenceness(nwTrait, prevTrait, inheritedParentCount));
         }
       } else {

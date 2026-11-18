@@ -82,6 +82,24 @@ module Kind2 refines Kind0 {
   trait S extends object {}
   trait U ... extends S {} // error: U is not a reference type in Kind0
 }
+// A trait that becomes a reference type through a parent it had already gets no error of its own.  The
+// error is at the trait that added the reference-type parent.
+module Kind3 refines Kind0 {
+  trait N {}
+  trait T ... extends object {} // error: T is not a reference type in Kind0
+  trait U ... extends N {} // no error here: the added parent N is not a reference type
+}
+module Kind4 refines Kind0 {
+  trait T ... extends object {} // error: T is not a reference type in Kind0
+  trait U ... {} // no error here: U adds no parent
+}
+// The error names the added parent that is a reference type, wherever it stands among the added parents.
+module Kind5 refines Kind0 {
+  trait S extends object {}
+  trait M {}
+  trait N {}
+  trait U ... extends M, S, N {} // error: U is not a reference type in Kind0, and S is the reason
+}
 
 // ----- Cycles among the parents
 

@@ -94,11 +94,14 @@ github-issue-88-rejected.dfy(49,7): Related location: refining module
 github-issue-88-rejected.dfy(69,8): Error: trait 'T' inherits a member named 'F' from both trait 'P' and trait 'S'
 github-issue-88-rejected.dfy(79,22): Error: a refinement is not allowed to make trait 'T' a reference type: added parent 'object' is a reference type, and 'T' in module 'Kind0' is not
 github-issue-88-rejected.dfy(83,22): Error: a refinement is not allowed to make trait 'U' a reference type: added parent 'S' is a reference type, and 'U' in module 'Kind0' is not
-github-issue-88-rejected.dfy(93,8): Error: trait definitions contain a cycle: T -> U -> T
-github-issue-88-rejected.dfy(103,27): Error: Type or type parameter is not declared in this scope: Z (did you forget to qualify a name or declare a module import 'opened'?) (note that names in outer modules are not visible in contained modules)
-github-issue-88-rejected.dfy(114,8): Error: declaration 'Fresh' indicates refining (notation `...`), but does not refine anything
-github-issue-88-rejected.dfy(113,22): Error: a class can only extend traits (found 'D')
-11 resolution/type errors detected in github-issue-88-rejected.dfy
+github-issue-88-rejected.dfy(89,22): Error: a refinement is not allowed to make trait 'T' a reference type: added parent 'object' is a reference type, and 'T' in module 'Kind0' is not
+github-issue-88-rejected.dfy(93,22): Error: a refinement is not allowed to make trait 'T' a reference type: added parent 'object' is a reference type, and 'T' in module 'Kind0' is not
+github-issue-88-rejected.dfy(101,25): Error: a refinement is not allowed to make trait 'U' a reference type: added parent 'S' is a reference type, and 'U' in module 'Kind0' is not
+github-issue-88-rejected.dfy(111,8): Error: trait definitions contain a cycle: T -> U -> T
+github-issue-88-rejected.dfy(121,27): Error: Type or type parameter is not declared in this scope: Z (did you forget to qualify a name or declare a module import 'opened'?) (note that names in outer modules are not visible in contained modules)
+github-issue-88-rejected.dfy(132,8): Error: declaration 'Fresh' indicates refining (notation `...`), but does not refine anything
+github-issue-88-rejected.dfy(131,22): Error: a class can only extend traits (found 'D')
+14 resolution/type errors detected in github-issue-88-rejected.dfy
 github-issue-88-rejected.dfy(7,8): Error: class 'C' does not implement trait lemma 'S.L'
 github-issue-88-rejected.dfy(11,7): Related location: refining module
 github-issue-88-rejected.dfy(33,8): Warning: class 'D' has @AssumeCrossModuleTermination and no {:axiom} annotation: calls dispatched to it through traits of other modules are not checked for termination
@@ -111,11 +114,14 @@ github-issue-88-rejected.dfy(49,7): Related location: refining module
 github-issue-88-rejected.dfy(69,8): Error: trait 'T' inherits a member named 'F' from both trait 'P' and trait 'S'
 github-issue-88-rejected.dfy(79,22): Error: a refinement is not allowed to make trait 'T' a reference type: added parent 'object' is a reference type, and 'T' in module 'Kind0' is not
 github-issue-88-rejected.dfy(83,22): Error: a refinement is not allowed to make trait 'U' a reference type: added parent 'S' is a reference type, and 'U' in module 'Kind0' is not
-github-issue-88-rejected.dfy(93,8): Error: trait definitions contain a cycle: T -> U -> T
-github-issue-88-rejected.dfy(103,27): Error: Type or type parameter is not declared in this scope: Z (did you forget to qualify a name or declare a module import 'opened'?) (note that names in outer modules are not visible in contained modules)
-github-issue-88-rejected.dfy(114,8): Error: declaration 'Fresh' indicates refining (notation `...`), but does not refine anything
-github-issue-88-rejected.dfy(113,22): Error: a class can only extend traits (found 'D')
-11 resolution/type errors detected in github-issue-88-rejected.dfy
+github-issue-88-rejected.dfy(89,22): Error: a refinement is not allowed to make trait 'T' a reference type: added parent 'object' is a reference type, and 'T' in module 'Kind0' is not
+github-issue-88-rejected.dfy(93,22): Error: a refinement is not allowed to make trait 'T' a reference type: added parent 'object' is a reference type, and 'T' in module 'Kind0' is not
+github-issue-88-rejected.dfy(101,25): Error: a refinement is not allowed to make trait 'U' a reference type: added parent 'S' is a reference type, and 'U' in module 'Kind0' is not
+github-issue-88-rejected.dfy(111,8): Error: trait definitions contain a cycle: T -> U -> T
+github-issue-88-rejected.dfy(121,27): Error: Type or type parameter is not declared in this scope: Z (did you forget to qualify a name or declare a module import 'opened'?) (note that names in outer modules are not visible in contained modules)
+github-issue-88-rejected.dfy(132,8): Error: declaration 'Fresh' indicates refining (notation `...`), but does not refine anything
+github-issue-88-rejected.dfy(131,22): Error: a class can only extend traits (found 'D')
+14 resolution/type errors detected in github-issue-88-rejected.dfy
 github-issue-88-rejected-later.dfy(8,22): Error: refining module 'Capture1' captures the name 'P' used in code inherited from module 'Capture0': in 'Capture0' it refers to predicate 'Capture0.P' (declared at github-issue-88-rejected-later.dfy(6,18)), but in 'Capture1' it would refer to predicate 'Capture1.S.P' (declared at github-issue-88-rejected-later.dfy(13,20))
 github-issue-88-rejected-later.dfy(11,7): Related location: refining module
 github-issue-88-rejected-later.dfy(25,8): Error: duplicate trait parents with the same head type must also have the same type arguments; got S<int> and S<bool>
