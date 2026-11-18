@@ -442,7 +442,7 @@ NewtypeDecl = "newtype" { Attribute } NewtypeName "="
 
 ````grammar
 ClassDecl = "class" { Attribute } ClassName [ GenericParameters ]
-  ["extends" Type {"," Type} | ellipsis ]
+  ["extends" Type {"," Type} | ellipsis [ "extends" Type {"," Type} ] ]
   "{" { { DeclModifier }
         ClassMemberDecl(modifiers,
                         allowConstructors: true,
@@ -466,7 +466,7 @@ ClassMemberDecl(modifiers, allowConstructors, isValueType, moduleLevelDecl) =
 ````grammar
 TraitDecl =
   "trait" { Attribute } ClassName [ GenericParameters ]
-  [ "extends" Type { "," Type } | ellipsis ]
+  [ "extends" Type { "," Type } | ellipsis [ "extends" Type { "," Type } ] ]
   "{"
    { { DeclModifier } ClassMemberDecl(allowConstructors: true,
                                       isValueType: false,

@@ -570,6 +570,13 @@ ClassDecl<DeclModifierData dmodClass, ModuleDefinition/*!*/ module, out TopLevel
   [ GenericParameters<typeArgs, true> ]
   [ ExtendsClause<parentTraits, null>
   | ellipsis                    (. isRefining = true; .)
+    [                           (. if (!theOptions.Get(CommonOptionBag.RefinementExtends)) {
+                                     SemErr(ErrorId.p_refinement_extends, la,
+                                       "a refining declaration (`...`) may add parent traits only with --refinement-extends");
+                                   }
+                                .)
+      ExtendsClause<parentTraits, null>
+    ]
   ]
   SYNC
   "{"                                            (. bodyStart = t; RetagMemberKeyword(); .)
@@ -622,6 +629,13 @@ TraitDecl<DeclModifierData dmodIn, ModuleDefinition/*!*/ module, out TraitDecl/*
   [ GenericParameters<typeArgs, true> ]
   [ ExtendsClause<parentTraits, null>
   | ellipsis                    (. isRefining = true; .)
+    [                           (. if (!theOptions.Get(CommonOptionBag.RefinementExtends)) {
+                                     SemErr(ErrorId.p_refinement_extends, la,
+                                       "a refining declaration (`...`) may add parent traits only with --refinement-extends");
+                                   }
+                                .)
+      ExtendsClause<parentTraits, null>
+    ]
   ]
   "{"                                            (. bodyStart = t; RetagMemberKeyword(); .)
     { (. dmod = new DeclModifierData(); .)
@@ -633,6 +647,12 @@ TraitDecl<DeclModifierData dmodIn, ModuleDefinition/*!*/ module, out TraitDecl/*
   "}"
   (. trait = new TraitDecl(new SourceOrigin(dmodIn.FirstToken, t, name.ReportingRange), name, module, typeArgs, members, dmodIn.Attributes, isRefining, parentTraits);
      trait.BodyStartTok = bodyStart;
+     if (theOptions.Get(CommonOptionBag.InheritedTraitAxioms)) {
+       // a member's status as a trait axiom is fixed here, by the options of the file that declares it
+       foreach (var member in members) {
+         member.DeclaredUnderInheritedTraitAxioms = true;
+       }
+     }
     .)
   .
 
