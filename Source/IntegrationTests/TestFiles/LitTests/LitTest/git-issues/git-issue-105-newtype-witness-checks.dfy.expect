@@ -16,5 +16,8 @@ git-issue-105-newtype-witness-checks.dfy(54,45): Error: result of operation migh
 git-issue-105-newtype-witness-checks.dfy(62,10): Error: trying witness 0: result of operation might violate subset type constraint for 'Empty'
 git-issue-105-newtype-witness-checks.dfy(63,43): Error: result of operation might violate subset type constraint for 'Empty'
 git-issue-105-newtype-witness-checks.dfy(64,61): Error: result of operation might violate subset type constraint for 'Empty'
+git-issue-105-newtype-witness-checks.dfy(70,59): Error: possible division by zero
+git-issue-105-newtype-witness-checks.dfy(78,10): Error: trying witness 0: invariant might not hold
+git-issue-105-newtype-witness-checks.dfy(77,48): Related location: this is the invariant that might not hold
 
-Dafny program verifier finished with 18 verified, 14 errors
+Dafny program verifier finished with 23 verified, 16 errors

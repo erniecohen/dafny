@@ -64,3 +64,17 @@ module EmptyBases {
   newtype Member = x: Empty | true { invariant true  witness 1 } // error: 1 is not an Empty
   newtype Maybe = x: Empty | true witness * { invariant true }
 }
+
+// The well-formedness of an invariant assumes the header's constraint, which is the conjunct before it.
+module EarlierConjuncts {
+  newtype Inverse = x: int | true witness 1 { invariant 12 / (this as int) != 5 } // error: division by zero
+  newtype Inverse' = x: int | x != 0 witness 1 { invariant 12 / (this as int) != 5 }
+}
+
+// The default witness of a newtype is checked against the invariants of its base type, and the error says
+// which witness was tried.
+module BaseInvariants {
+  newtype NonZero = int { invariant this as int != 0  witness 1 }
+  newtype Over = x: NonZero | true { invariant true } // error: trying witness 0
+  newtype Over' = x: NonZero | true witness 1 { invariant true }
+}

@@ -75,3 +75,42 @@ module Classes {
     }
   }
 }
+
+// Newtypes: "raw N", where the header of N has moved into the type with its invariants, is the base type
+// with no constraint, and as inhabited as the base type, so over a base that may be empty it may be empty.
+module RawNewtypes {
+  newtype Empty = x: int | false witness * { invariant true }
+  newtype Above = x: Empty | true witness * { invariant true }
+  newtype Pos = x: int | x > 0 witness 1 { invariant true }
+  newtype Over = x: Pos | true witness 2 { invariant true }
+
+  ghost method Nonempty<T(00)>() { }
+
+  ghost method Characteristics() {
+    Nonempty<raw Above>();  // error: (00)
+    Nonempty<raw Over>();
+  }
+}
+
+// Newtypes in the old syntax with no witness member: the header's witness clause, the default included,
+// gives the type its characteristics, which a module that sees the type only as provided relies on.
+module HeaderWitnesses {
+  export provides Digit, Ghostly, Opt
+  newtype Digit = x: int | 0 <= x < 10 { invariant this as int != 5 }
+  newtype Ghostly = x: int | 0 < x < 10 ghost witness 1 { invariant this as int != 5 }
+  newtype Opt = x: int | 0 < x < 10 witness * { invariant this as int != 5 }
+}
+
+module ProvidedNewtypes {
+  import HeaderWitnesses
+
+  method Zero<T(0)>() returns (t: T) { t := *; }
+  method Nonempty<T(00)>() { }
+
+  method Characteristics() {
+    var a := Zero<HeaderWitnesses.Digit>();
+    Nonempty<HeaderWitnesses.Ghostly>();
+    var b := Zero<HeaderWitnesses.Ghostly>();  // error: (0)
+    Nonempty<HeaderWitnesses.Opt>();  // error: (00)
+  }
+}
