@@ -983,6 +983,8 @@ git-issues/git-issue-491-positive.dfy
 # A member-form newtype witness satisfies the base constraint and invariants; invalid witnesses and the implicit zero remain checked (https://github.com/erniecohen/dafny/issues/501).
 git-issues/git-issue-501.dfy
 
+git-issues/github-issue-492.dfy
+
 # Under --lemma-bindings, `var y1, ..., yk := L(args); e` binds results of the lemma L in an expression: the call is checked as a call statement, the results satisfy the postcondition and depend only on the arguments (and the heap the postcondition reads), and inadmissible lemmas and forms are rejected (https://github.com/erniecohen/dafny/issues/199).
 git-issues/github-issue-199.dfy
 git-issues/github-issue-199-heap.dfy
