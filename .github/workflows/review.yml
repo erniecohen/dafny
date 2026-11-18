@@ -1235,6 +1235,10 @@ jobs:
           python3 .github/review/issue193-reference.py --dafny "$PWD/out/dafny/Dafny" \
             --z3 "$Z3" --resolver '${{ matrix.resolver }}' --output reference-results/proofs
           cat reference-results/proofs/summary.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Check fixed references, bootstrap and live unfolding controls
+        run: |
+          python3 .github/review/issue193-fixed-references.py --dafny "$PWD/out/dafny/Dafny" \
+            --z3 "$Z3" --resolver '${{ matrix.resolver }}' --full --output reference-results/fixed
       - uses: actions/upload-artifact@v4
         if: always()
         with:
