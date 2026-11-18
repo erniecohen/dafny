@@ -743,6 +743,35 @@ rewritten application did not resolve: an assertion failed. The erased value is
 now kept apart from the syntax. The legacy resolver rewrites it too, but resolves
 the rewritten clone (`github-issue-266-refine-bounded.dfy` checks both).
 
+The remaining M4 decisions are:
+
+- **Fresh realizations and slot bindings are required.** A library's completion
+  does not certify a later implementation. Its public slot contract is checked
+  against that implementation, and its body and new bounded formations receive
+  ordinary fresh verification tasks. The M4 driver checks a separately built
+  trait's new implementation, an abstract source import bound to a concrete
+  realization, an excessive implementation allowance, invalid new formations,
+  and reachable false assertions. A library refinement/replacement that would
+  inherit private bodies remains rejected: its general support is deferred,
+  rather than treating the old completion as proof of inherited code under new
+  bindings. Source refinements remain checked. This is a supported-scope limit,
+  not acceptance of unchecked library realizations.
+- **Cache behavior is required.** Translation snapshots are bypassed whenever
+  the design is active, including activation by use without the migration
+  option. Their current key does not include the finalized global analysis.
+  Reuse for these programs is deferred until that key and current-task coverage
+  are justified. Both resolvers check that repeated requests preserve reports
+  and proof-task/resource vectors, create no entries and get no hits; ordinary
+  programs retain their cold/warm cache equivalence controls. Producer issuance
+  separately reparses and verifies the retained library snapshot without a
+  shared result cache; a cached translation cannot supply a completion.
+- **Direct virtual-slot certification is deferred.** Design §3.2 permits this
+  only with a complete application/Requires/Reads simulation. It is unnecessary
+  for the acceptance examples: an explicitly certified lambda wrapper expresses
+  the same supported calls and receives all three checks. Direct formation from
+  a bodyless virtual slot remains rejected by the M2 controls. No axiom or
+  unproved slot certificate is added.
+
 ### 7.6 Triage after portable contracts
 
 The same 65 suspect tests were compared on the prerequisite build `b831b6b8c`

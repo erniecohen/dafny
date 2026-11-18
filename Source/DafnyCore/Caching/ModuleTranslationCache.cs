@@ -72,7 +72,7 @@ public sealed class ModuleTranslationCache {
     if (module.ResolutionKey == null || module.TranslationInputs == null ||
         // Resolution currently exposes L, not the finalized post-global G/R view.
         // Modular termination reads downstream open-trait/dispatch facts; recompute until keyed.
-        options.Get(CommonOptionBag.ModularTermination) || options.PrintWithUniqueASTIds ||
+        ModularTermination.Active(options, program) || options.PrintWithUniqueASTIds ||
         // Model extraction consumes graph/source report state not covered by the snapshot codec.
         options.ExtractCounterexample ||
         options.AdditionalPlugins.Count != 0 || options.AdditionalPluginArguments.Count != 0 ||

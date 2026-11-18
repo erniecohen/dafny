@@ -21,6 +21,19 @@ bound change: exit 1
 build lib-order: exit 0
 order change: exit 1
   CLI: Error: cannot load dependent.doo under --modular-termination: it was verified against a different termination contract of module Levels than the one lib-order.doo provides (recorded <digest>, loaded <digest>); rebuild dependent.doo against the loaded library
+build slots: exit 0
+fresh slot realization: exit 0
+fresh slot false control: exit 4
+  github-issue-266-m4-slot-false.dfy(13,4): Error: assertion might not hold
+fresh slot bound: exit 4
+  github-issue-266-m4-slot-bound.dfy(4,13): Error: function's 'decreases {:global}' bound must be below or equal to that in the trait
+fresh slot formation: exit 4
+  github-issue-266-m4-slot-formation.dfy(5,63): Error: decreases clause might not decrease (--modular-termination: the bound of the bounded value must be below the bound under which the enclosing lambda runs)
+source realization binding: exit 0
+source realization false control: exit 4
+  github-issue-266-m4-realization-false.dfy(27,4): Error: assertion might not hold
+source realization formation: exit 4
+  github-issue-266-m4-realization-formation.dfy(8,61): Error: decreases clause might not decrease (--modular-termination: the bound of the bounded value must be below the bound under which the enclosing lambda runs)
 tampered lib order-contract: exit 1
   CLI: Error: cannot load tampered-lib-order-contract.doo under --modular-termination: its stored termination contracts are not those of its program (module Levels); the library was modified after it was built
 tampered lib order-program: exit 1
@@ -45,4 +58,4 @@ build out-of-resource: exit 4
   DafnyStandardLibraries-orders.dfy(436,2): Error: a postcondition could not be proved on this return path
   DafnyStandardLibraries-orders.dfy(468,2): Error: a postcondition could not be proved on this return path
   github-issue-211-multiset-orders.dfy(28,73): Error: a postcondition could not be proved on this return path
-M4 portable contracts: 25 checks, all passed
+M4 portable contracts: 33 checks, all passed

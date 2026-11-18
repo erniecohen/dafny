@@ -103,9 +103,11 @@ public class TranslationCacheTests {
   }
 
   [Theory]
-  [InlineData(false)]
-  [InlineData(true)]
-  public async Task ModularTerminationBypassKeepsCurrentModuleCoverageMaps(bool refresh) {
+  [InlineData(false, false)]
+  [InlineData(false, true)]
+  [InlineData(true, false)]
+  [InlineData(true, true)]
+  public async Task ModularTerminationBypassKeepsCurrentModuleCoverageMaps(bool refresh, bool explicitOption) {
     var directory = Path.Combine(Path.GetTempPath(), "dafny-translation-modular-" + Guid.NewGuid());
     Directory.CreateDirectory(directory);
     var cache = ModuleTranslationCache.ProcessCache;
@@ -114,12 +116,14 @@ public class TranslationCacheTests {
     var bypasses = cache.Bypasses;
     try {
       var source = Path.Combine(directory, "input.dfy");
-      await File.WriteAllTextAsync(source, Source);
-      var baseline = await Verify(source, false, refresh, true, modularTermination: true);
+      // A declared bound activates the rules even without the migration option.
+      await File.WriteAllTextAsync(source, Source.Replace("function F(x: int): int {",
+        "function F(x: int): int decreases {:global} 0 {"));
+      var baseline = await Verify(source, false, refresh, true, modularTermination: explicitOption);
       Assert.Equal(ExitValue.VERIFICATION_ERROR, baseline.Exit);
       Assert.NotEmpty(baseline.Tasks);
       foreach (var repeated in new[] { 0, 1 }) {
-        var current = await Verify(source, true, refresh, true, modularTermination: true);
+        var current = await Verify(source, true, refresh, true, modularTermination: explicitOption);
         Assert.Equal(baseline.Stdout, current.Stdout);
         Assert.Equal(baseline.Stderr, current.Stderr);
         Assert.Equal(baseline.Exit, current.Exit);

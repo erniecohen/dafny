@@ -193,6 +193,30 @@ build('lib-order', [variant('lib-order', 'lib', ('{:order Bags()} Level', '{:ord
 verify('order change', [doo('lib-order'), doo('dependent')], source('client'), 1,
        'a different termination contract of module Levels')
 
+# A new realization of a library slot receives fresh body and override checks. No completion from
+# the library may certify the client's implementation or a new formation inside that implementation.
+build('slots', [source('slots')])
+verify('fresh slot realization', [doo('slots')], source('slot-client'), 0)
+verify('fresh slot false control', [doo('slots')],
+       variant('slot-false', 'slot-client', ('// CONTROL', 'assert false;')), 4, 'assertion might not hold')
+verify('fresh slot bound', [doo('slots')],
+       variant('slot-bound', 'slot-client',
+               ('x: int): int {', 'x: int): int decreases {:global} c.bound + 2 {')),
+       4, 'decreases')
+verify('fresh slot formation', [doo('slots')],
+       variant('slot-formation', 'slot-client',
+               ('c(x)', 'var f := bounded<nat, int -> int>.certify(0, (y: int) => c(y)); f(x)')),
+       4, 'the bound of the bounded value must be below the bound under which the enclosing lambda runs')
+
+# Source refinements and an abstract import binding form new resolved realizations too.
+verify('source realization binding', [], source('realization'), 0)
+verify('source realization false control', [],
+       variant('realization-false', 'realization', ('// CONTROL', 'assert false;')), 4, 'assertion might not hold')
+verify('source realization formation', [],
+       variant('realization-formation', 'realization',
+               ('c(x)', 'var f := bounded<nat, int -> int>.certify(0, (y: int) => c(y)); f(x)')),
+       4, 'the bound of the bounded value must be below the bound under which the enclosing lambda runs')
+
 # Admission: tampered contracts and programs, with every digest recomputed, and a program without.
 for library, kind, entry, old, new, diagnostic in [
     ('lib', 'order-contract', 'termination-contracts.json', '{:order Bags()}', '{:order PairBags()}',
