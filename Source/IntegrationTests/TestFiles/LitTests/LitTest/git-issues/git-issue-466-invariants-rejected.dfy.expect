@@ -1,0 +1,2 @@
+git-issue-466-invariants-rejected.dfy(14,34): Error: 'No' is used by the invariant of 'Liar' and refers to the set of values of 'Owner.Liar', which depends on 'Liar'
+1 resolution/type errors detected in git-issue-466-invariants-rejected.dfy

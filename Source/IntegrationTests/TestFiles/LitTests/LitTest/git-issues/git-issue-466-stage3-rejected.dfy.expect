@@ -1,0 +1,21 @@
+git-issue-466-stage3-rejected.dfy(31,8): Error: class 'C' does not implement trait lemma 'T.L'
+git-issue-466-stage3-rejected.dfy(55,8): Error: class 'C' does not implement trait lemma 'T.L'
+git-issue-466-stage3-rejected.dfy(74,15): Error: the type of parameter 'n' is different from the type of the corresponding parameter in trait function ('int' instead of 'nat')
+git-issue-466-stage3-rejected.dfy(75,30): Error: the type of out-parameter 'r' is different from the type of the corresponding out-parameter in trait method ('int' instead of 'nat')
+git-issue-466-stage3-rejected.dfy(76,13): Error: overridden function 'G' in 'C' has different ghost/compiled status than in trait 'T'
+git-issue-466-stage3-rejected.dfy(77,13): Error: fully defined function 'H' is inherited from trait 'T' and is not allowed to be re-declared
+6 resolution/type errors detected in git-issue-466-stage3-rejected.dfy
+git-issue-466-stage3-cycle.dfy(6,8): Error: trait definitions contain a cycle: U -> T -> U
+1 resolution/type errors detected in git-issue-466-stage3-cycle.dfy
+git-issue-466-stage3-reference.dfy(15,21): Error: datatype is not allowed to extend 'U', because it is a reference type
+1 resolution/type errors detected in git-issue-466-stage3-reference.dfy
+git-issue-466-stage3-opaque.dfy(6,20): Error: a trait can only extend traits (found 'B.T')
+1 resolution/type errors detected in git-issue-466-stage3-opaque.dfy
+git-issue-466-stage3-lookup1.dfy(9,29): Warning: trait 'T' has {:termination false} and no {:axiom} annotation: calls dispatched through it are not checked for termination
+git-issue-466-stage3-lookup1.dfy(14,8): Error: trait 'U' was taken not to be a reference type, but its parent traits say otherwise; name the parent traits of the traits of a recursive module group so that they can be looked up before the imports are resolved
+1 resolution/type errors detected in git-issue-466-stage3-lookup1.dfy
+git-issue-466-stage3-lookup2.dfy(5,29): Warning: trait 'T' has {:termination false} and no {:axiom} annotation: calls dispatched through it are not checked for termination
+git-issue-466-stage3-lookup2.dfy(10,8): Error: trait 'U' was taken to be a reference type, but its parent traits say otherwise; name the parent traits of the traits of a recursive module group so that they can be looked up before the imports are resolved
+1 resolution/type errors detected in git-issue-466-stage3-lookup2.dfy
+git-issue-466-stage3-above.dfy(21,21): Error: class 'X' is in a different module than trait 'Tr.T'. A class may only extend a trait in the same module, unless the parent trait is annotated with {:termination false} or the class with @AssumeCrossModuleTermination.
+1 resolution/type errors detected in git-issue-466-stage3-above.dfy

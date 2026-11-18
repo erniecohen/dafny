@@ -757,6 +757,7 @@ public static class ModularTerminationRecords {
     CommonOptionBag.GeneralTraits,
     CommonOptionBag.GeneralNewtypes,
     CommonOptionBag.MemberInvariants,
+    CommonOptionBag.RecursiveModules,
     CommonOptionBag.BitvectorMapKeys,
     CommonOptionBag.ContextualLambdaDomains,
     CommonOptionBag.ContextualQuantifierDomains,

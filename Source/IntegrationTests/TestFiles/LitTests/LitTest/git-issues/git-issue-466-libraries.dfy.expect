@@ -1,0 +1,28 @@
+
+Dafny program verifier did not attempt verification
+
+Dafny program verifier did not attempt verification
+
+Dafny program verifier did not attempt verification
+CLI: Error: cannot load git-issue-466-libraries.dfy.tmp-on.doo: --recursive-modules is set locally to False, but the library was built with True
+CLI: Error: cannot load git-issue-466-libraries.dfy.tmp-on.doo: --member-invariants is set locally to False, but the library was built with True
+CLI: Error: cannot load git-issue-466-libraries.dfy.tmp-on.doo: --recursive-modules is set locally to False, but the library was built with True
+
+Dafny program verifier did not attempt verification
+
+Dafny program verifier did not attempt verification
+
+Dafny program verifier finished with 1 verified, 0 errors
+CLI: Error: cannot load git-issue-466-libraries.dfy.tmp-record.doo under --modular-termination: it was verified with recursive-modules 'false', but this run uses 'true'; use the same value, or rebuild the library with it
+
+Dafny program verifier did not attempt verification
+git-issue-466-cyclic-library.dfy(1,7): Error: module LibA, which is in a recursive module group, is in a library; this is not yet supported
+git-issue-466-cyclic-library.dfy(6,7): Error: module LibB, which is in a recursive module group, is in a library; this is not yet supported
+2 resolution/type errors detected in git-issue-466-libraries.dfy
+git-issue-466-cyclic-library.dfy(1,7): Error: module definition contains a cycle (note: parent modules implicitly depend on submodules): module LibA -> import LibB -> module LibB -> import LibA -> module LibA
+1 resolution/type errors detected in git-issue-466-libraries.dfy
+
+Dafny program verifier did not attempt verification
+Error: module 'LibA' is in a recursive module group; compiling a program that has a recursive module group is not yet supported
+git-issue-466-cyclic-library.dfy(1,7): Error: module definition contains a cycle (note: parent modules implicitly depend on submodules): module LibA -> import LibB -> module LibB -> import LibA -> module LibA
+1 resolution/type errors detected in git-issue-466-cyclic-library.dfy

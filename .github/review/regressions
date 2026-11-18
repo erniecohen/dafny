@@ -937,3 +937,41 @@ git-issues/github-issue-88-value-types.dfy
 
 # Trait axioms and added parents with refinement renaming and copying imports.
 git-issues/github-issue-88-89-interactions.dfy
+
+# Recursion across module boundaries, first stage: the option, the groups, the edges that may not be on
+# a cycle, the codatatype rule, libraries, and an accepted control
+# (https://github.com/erniecohen/dafny/issues/466).
+git-issues/git-issue-466-option.dfy
+git-issues/git-issue-466-groups.dfy
+git-issues/git-issue-466-edges.dfy
+git-issues/git-issue-466-codatatype.dfy
+git-issues/git-issue-466-libraries.dfy
+git-issues/git-issue-466-accepted.dfy
+
+# Recursion across module boundaries, second stage: a recursive module group is resolved and verified
+# as one module would be.  Accepted programs with false controls, the termination gate (every cycle of
+# calls across members is broken by an error), the programs the resolver rejects, what is not yet
+# supported, the tools, and the default opacity of functions (https://github.com/erniecohen/dafny/issues/466).
+git-issues/git-issue-466-stage2-accepted.dfy
+git-issues/git-issue-466-stage2-termination.dfy
+git-issues/git-issue-466-stage2-rejected.dfy
+git-issues/git-issue-466-stage2-rejected-names.dfy
+git-issues/git-issue-466-stage2-unsupported.dfy
+git-issues/git-issue-466-stage2-tools.dfy
+git-issues/git-issue-466-stage2-opacity.dfy
+
+# Recursion across module boundaries, third stage: a type of one member of a recursive module group may
+# extend a trait of another member.  The termination gate (every cycle of calls through overrides in
+# several members is broken by an error, with and without --modular-termination), accepted programs with
+# false controls, the programs the resolver rejects, and a trait of a group extended from outside the
+# group (https://github.com/erniecohen/dafny/issues/466).
+git-issues/git-issue-466-stage3-termination.dfy
+git-issues/git-issue-466-stage3-accepted.dfy
+git-issues/git-issue-466-stage3-rejected.dfy
+git-issues/git-issue-466-stage3-outside.dfy
+git-issues/git-issue-466-invariants.dfy
+git-issues/git-issue-466-invariants-rejected.dfy
+
+# Recursive groups use opened copies and renamed refinements of lower modules; false results fail,
+# and copying a group member is rejected like written refinement (issue 466).
+git-issues/git-issue-466-refinement-imports.dfy

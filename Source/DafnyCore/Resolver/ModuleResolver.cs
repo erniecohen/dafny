@@ -46,6 +46,21 @@ namespace Microsoft.Dafny {
     public ErrorReporter reporter;
     public ModuleSignature moduleInfo = null;
 
+    /// <summary>
+    /// The recursive module group whose member this resolver is resolving (--recursive-modules), or null.
+    /// It is null while the resolver resolves anything else, such as an export view of the member.
+    /// </summary>
+    public RecursiveModuleGroup Group;
+
+    /// <summary>The result of the last ModuleDefinition.ResolveInPhases.</summary>
+    public bool ModuleResolveResult;
+
+    /// <summary>
+    /// While an export view of a member of a recursive module group is resolved: the group.  The view is
+    /// resolved as a module of its own, but its imports of other members are not finished yet.
+    /// </summary>
+    public RecursiveModuleGroup GroupOfExportView;
+
     public ErrorReporter Reporter => reporter;
     private HashSet<TopLevelDecl> operatorOwnersValidated;
     internal HashSet<TopLevelDecl> OperatorOwnersValidated => operatorOwnersValidated ??= new();
@@ -166,7 +181,8 @@ namespace Microsoft.Dafny {
       } catch (RedirectingTypeCycleException cycleError) {
         ReportRedirectingTypeCycle(cycleError.Cycle);
         checkpoint.Restore();
-      } finally {
+      }
+      finally {
         redirectingTypeTracker = enclosingTracker;
       }
     }
@@ -204,6 +220,11 @@ namespace Microsoft.Dafny {
 
     public Dictionary<string, MemberDecl> GetClassMembers(TopLevelDeclWithMembers key) {
       if (moduleClassMembers.TryGetValue(key, out var result)) {
+        return result;
+      }
+      if ((Group ?? GroupOfExportView) is { } group && key.EnclosingModuleDefinition is { } owner && group.Resolvers.TryGetValue(owner, out var ownerResolver) &&
+          ownerResolver != this && ownerResolver.moduleClassMembers.TryGetValue(key, out result)) {
+        // the type is declared in another member of the recursive module group
         return result;
       }
       return ProgramResolver.GetClassMembers(key);
@@ -399,6 +420,45 @@ namespace Microsoft.Dafny {
 
     // Resolve the exports and detect cycles.
     public void ResolveModuleExport(LiteralModuleDecl literalDecl, ModuleSignature sig) {
+      ResolveModuleExportSignatures(literalDecl, sig);
+      PropagateVisibilityOfExportedImports(sig);
+      ResolveModuleExportScopes();
+    }
+
+    /// <summary>
+    /// The export declarations of the module in dependency order, set by ResolveModuleExportSignatures; null
+    /// if the export declarations have a cycle.
+    /// </summary>
+    private List<ModuleExportDecl> sortedExportDecls;
+
+    /// <summary>
+    /// Adds, to the visibility scope of each export set and of the module, the scopes of the imports it
+    /// can see.  Returns whether any scope changed.  In a recursive module group, the imports of the members
+    /// are propagated together until nothing changes, since a member's import may be of a member whose own
+    /// scopes are not complete yet.
+    /// </summary>
+    public bool PropagateVisibilityOfExportedImports(ModuleSignature sig) {
+      if (sortedExportDecls == null) {
+        return false;
+      }
+      var changed = false;
+      var sigs = sortedExportDecls.Select(d => d.Signature).Append(sig);
+
+      foreach (var s in sigs) {
+        foreach (var decl in s.TopLevels) {
+          if (decl.Value is ModuleDecl modDecl and not ModuleExportDecl) {
+            if (s.VisibilityScope.Augment(modDecl.AccessibleSignature().VisibilityScope)) {
+              changed = true;
+            }
+          }
+        }
+      }
+      return changed;
+    }
+
+    // The first part of resolving the exports: the export signatures and the default export.
+    public void ResolveModuleExportSignatures(LiteralModuleDecl literalDecl, ModuleSignature sig) {
+      this.sortedExportDecls = null;
       ModuleDefinition m = literalDecl.ModuleDef;
       literalDecl.DefaultExport = sig;
       Graph<ModuleExportDecl> exportDependencies = new Graph<ModuleExportDecl>();
@@ -428,7 +488,7 @@ namespace Microsoft.Dafny {
       } // give up on trying to resolve anything else
 
       // fill in the exports for the extends.
-      List<ModuleExportDecl> sortedExportDecls = exportDependencies.TopologicallySortedComponents();
+      var sortedExportDecls = exportDependencies.TopologicallySortedComponents();
       ModuleExportDecl defaultExport = null;
 
       sig.TopLevels.TryGetValue("_default", out var defaultClass);
@@ -600,17 +660,14 @@ namespace Microsoft.Dafny {
         literalDecl.DefaultExport = null;
       }
 
-      // final pass to propagate visibility of exported imports
-      var sigs = sortedExportDecls.Select(d => d.Signature).Append(sig);
+      this.sortedExportDecls = sortedExportDecls;
+    }
 
-      foreach (var s in sigs) {
-        foreach (var decl in s.TopLevels) {
-          if (decl.Value is ModuleDecl modDecl and not ModuleExportDecl) {
-            s.VisibilityScope.Augment(modDecl.AccessibleSignature().VisibilityScope);
-          }
-        }
+    // The last part of resolving the exports: the scopes in which each exported declaration sees the types.
+    public void ResolveModuleExportScopes() {
+      if (sortedExportDecls == null) {
+        return;
       }
-
       var exported = new HashSet<Tuple<Declaration, bool>>();
 
       //some decls may not be set due to resolution errors
@@ -931,6 +988,8 @@ namespace Microsoft.Dafny {
             // It's okay if "d" and "kv.Value" denote the same type. This can happen, for example,
             // if both are type synonyms for "int".
             var scope = Type.GetScope();
+            // (A declaration of another member of the importer's recursive module group is not resolved yet, and
+            // is not equal to any other declaration here: the name is ambiguous.)
             if (sameNameSymbolInImporter.IsVisibleInScope(scope) && kv.Value.IsVisibleInScope(scope)) {
               var dType = UserDefinedType.FromTopLevelDecl(sameNameSymbolInImporter.Origin, sameNameSymbolInImporter);
               var vType = UserDefinedType.FromTopLevelDecl(kv.Value.Origin, kv.Value);
@@ -1221,11 +1280,13 @@ namespace Microsoft.Dafny {
       }
     }
 
-    public void ResolveTopLevelDecls_Signatures(ModuleDefinition def, ModuleSignature sig, List<TopLevelDecl> declarations,
+    /// <summary>
+    /// In a recursive module group, the graphs of this method are those of the group, and a cycle is reported
+    /// by the member that declares the first declaration on it.
+    /// </summary>
+    public IEnumerable<string> ResolveTopLevelDecls_SignaturesInPhases(ModuleDefinition def, ModuleSignature sig, List<TopLevelDecl> declarations,
       Graph<IndDatatypeDecl> datatypeDependencies, Graph<CoDatatypeDecl> codatatypeDependencies) {
-      Contract.Requires(declarations != null);
-      Contract.Requires(datatypeDependencies != null);
-      Contract.Requires(codatatypeDependencies != null);
+      var group = Group;
       RevealAllInScope(declarations, def.VisibilityScope);
       WarnUncheckedTermination(declarations);
 
@@ -1241,8 +1302,11 @@ namespace Microsoft.Dafny {
         moduleInfo.VisibilityScope.Augment(sig.Refines.VisibilityScope);
         sig.VisibilityScope.Augment(sig.Refines.VisibilityScope);
       }*/
+      // In a group, a member resolves the types of its signatures only when every member has revealed its
+      // declarations in its own scope.
+      yield return "scopes";
 
-      var typeRedirectionDependencies = new Graph<RedirectingTypeDecl>();  // this concerns the type directions, not their constraints (which are checked for cyclic dependencies later)
+      var typeRedirectionDependencies = group?.TypeRedirectionDependencies ?? new Graph<RedirectingTypeDecl>();  // this concerns the type directions, not their constraints (which are checked for cyclic dependencies later)
       foreach (TopLevelDecl d in declarations) {
         Contract.Assert(d != null);
         allTypeParameters.PushMarker();
@@ -1308,17 +1372,25 @@ namespace Microsoft.Dafny {
         allTypeParameters.PopMarker();
       }
 
+      yield return "signatureTypes";
+
       // Resolve the parent-trait types and fill in .ParentTraitHeads
       var prevErrorCount = reporter.Count(ErrorLevel.Error);
-      var parentRelation = new Graph<TopLevelDeclWithMembers>();
+      var parentRelation = group?.ParentRelation ?? new Graph<TopLevelDeclWithMembers>();
       foreach (TopLevelDecl d in declarations) {
         if (d is TopLevelDeclWithMembers cl) {
           ResolveParentTraitTypes(cl, parentRelation);
         }
       }
+      yield return "parentTraits";
       // Check for cycles among parent traits
-      foreach (var cycle in parentRelation.AllCycles()) {
+      foreach (var cycle in parentRelation.AllCycles().Where(cycle => group == null || cycle[0].EnclosingModuleDefinition == def)) {
         ReportCycleError(reporter, cycle, m => m.Origin, m => m.Name, "trait definitions contain a cycle");
+      }
+      if (group != null) {
+        // Not reached if any member has an error.
+        yield return "parentTraitCycles";
+        CheckReferenceTraitsOfGroup(declarations);
       }
       if (prevErrorCount == reporter.Count(ErrorLevel.Error)) {
         // check that only reference types (classes and some traits) inherit from 'object'
@@ -1375,7 +1447,7 @@ namespace Microsoft.Dafny {
       ResolveAllTypeParameterBounds(declarations);
 
       // perform acyclicity test on type synonyms
-      foreach (var cycle in typeRedirectionDependencies.AllCycles()) {
+      foreach (var cycle in typeRedirectionDependencies.AllCycles().Where(cycle => group == null || cycle[0].EnclosingModule == def)) {
         ReportCycleError(reporter, cycle, rtd => rtd.Tok, rtd => rtd.Name, "cycle among redirecting types (newtypes, subset types, type synonyms)");
       }
     }
@@ -1457,6 +1529,26 @@ namespace Microsoft.Dafny {
     public void ResolveTopLevelDecls_Core(List<TopLevelDecl> declarations,
       Graph<IndDatatypeDecl> datatypeDependencies, Graph<CoDatatypeDecl> codatatypeDependencies,
       string moduleDescription, bool isAnExport) {
+      var group = Group;
+      Group = null;
+      foreach (var _ in ResolveTopLevelDecls_CoreInPhases(declarations, datatypeDependencies, codatatypeDependencies, moduleDescription, isAnExport)) {
+      }
+      Group = group;
+    }
+
+    /// <summary>
+    /// The passes over the resolved signatures, phase by phase (see LiteralModuleDecl.ResolveInPhases).
+    ///
+    /// In a recursive module group, each phase is done for every member before the next, which is the order
+    /// of one module that has the declarations of all members.  What a phase computes for the module as a
+    /// whole it computes for the group: the graphs are those of the group, a fixpoint runs over all members,
+    /// and the work on a graph is done once.  The driver stops the group after a phase in which any member
+    /// reported an error, so a phase starts only if no member has an error.
+    /// </summary>
+    public IEnumerable<string> ResolveTopLevelDecls_CoreInPhases(List<TopLevelDecl> declarations,
+      Graph<IndDatatypeDecl> datatypeDependencies, Graph<CoDatatypeDecl> codatatypeDependencies,
+      string moduleDescription, bool isAnExport) {
+      var group = Group;
 
       Contract.Requires(declarations != null);
       Contract.Requires(Cce.NonNullElements(datatypeDependencies.GetVertices()));
@@ -1471,19 +1563,19 @@ namespace Microsoft.Dafny {
           (!Options.Get(CommonOptionBag.GeneralNewtypes) || !Options.Get(CommonOptionBag.TypeSystemRefresh))) {
         reporter.Error(MessageSource.Resolver, Token.NoToken,
           "use of --extended-newtype-bases requires --general-newtypes and --type-system-refresh");
-        return;
+        yield break;
       }
 
       if (Options.Get(CommonOptionBag.GeneralNewtypes) && !Options.Get(CommonOptionBag.TypeSystemRefresh)) {
         reporter.Error(MessageSource.Resolver, Token.NoToken, "use of --general-newtypes requires --type-system-refresh");
-        return;
+        yield break;
       }
 
       if (Options.Get(CommonOptionBag.RefinementRenaming) && Options.Get(CommonOptionBag.LegacyInheritedNameCapture)) {
         // A renaming is sound only if it captures no name in inherited code, which is what the legacy option stops checking.
         reporter.Error(MessageSource.Resolver, Token.NoToken,
           "--refinement-renaming cannot be used with --legacy-inherited-name-capture");
-        return;
+        yield break;
       }
 
       // ---------------------------------- Pass 0 ----------------------------------
@@ -1496,14 +1588,18 @@ namespace Microsoft.Dafny {
 
       if (Options.Get(CommonOptionBag.TypeSystemRefresh)) {
         // Resolve all names and infer types.
-        PreTypeResolver.ResolveDeclarations(declarations, this);
+        foreach (var phase in PreTypeResolver.ResolveDeclarationsInPhases(declarations, this)) {
+          yield return phase;
+        }
         RawMemberInference rawMemberInference = null;
+        yield return "preTypeBodies";
 
         if (reporter.Count(ErrorLevel.Error) == prevErrorCount) {
           // Look for any under-specified pre-types, and fill in all .ResolvedOp fields.
           var u = new UnderspecificationDetector(this);
           u.Check(declarations);
         }
+        yield return "underspecification";
 
         if (reporter.Count(ErrorLevel.Error) == prevErrorCount) {
           // Issue 105: the raw members are inferred during type refinement
@@ -1512,15 +1608,32 @@ namespace Microsoft.Dafny {
             : null;
           var preType2TypeVisitor = new PreTypeToTypeVisitor(SystemModuleManager, rawMemberInference);
           preType2TypeVisitor.VisitConstantsAndRedirectingTypes(declarations);
+          yield return "preTypeToTypeSignatures";
           preType2TypeVisitor.VisitDeclarations(declarations);
         }
+        yield return "preTypeToType";
 
         if (reporter.Count(ErrorLevel.Error) == prevErrorCount) {
           var typeAdjustor = new TypeRefinementVisitor(moduleDescription, SystemModuleManager, rawMemberInference);
           typeAdjustor.VisitDeclarations(declarations);
-          typeAdjustor.Solve(reporter, Options.Get(CommonOptionBag.NewTypeInferenceDebug));
+          var debugPrint = Options.Get(CommonOptionBag.NewTypeInferenceDebug);
+          if (group == null) {
+            typeAdjustor.Solve(reporter, debugPrint);
+          } else {
+            // A refined type of one member may depend on a declaration of another (the type inferred for a
+            // constant, say).  Each member solves its own flows, in its own scope, and the members repeat
+            // until a round in which no type changes.
+            yield return "typeRefinementFlows";
+            do {
+              if (typeAdjustor.Solve(reporter, debugPrint)) {
+                group.RoundChanged = true;
+              }
+              yield return "typeRefinement*";
+            } while (group.RepeatRound);
+          }
           rawMemberInference?.Finish();
         }
+        yield return "typeRefinement";
 
       } else {
         var checkpoint = new LegacyInferenceCheckpoint(this);
@@ -1547,8 +1660,9 @@ namespace Microsoft.Dafny {
         } catch (RedirectingTypeCycleException cycleError) {
           ReportRedirectingTypeCycle(cycleError.Cycle);
           checkpoint.Restore();
-          return;
-        } finally {
+          yield break;
+        }
+        finally {
           redirectingTypeTracker = enclosingTracker;
         }
       }
@@ -1567,6 +1681,7 @@ namespace Microsoft.Dafny {
       if (reporter.Count(ErrorLevel.Error) == prevErrorCount) {
         FillInDefaultValueExpressions();
       }
+      yield return "typeInference";
 
       // ---------------------------------- Pass 1 ----------------------------------
       // This pass does the following:
@@ -1609,20 +1724,32 @@ namespace Microsoft.Dafny {
       if (reporter.Count(ErrorLevel.Error) == prevErrorCount) {
         CallGraphBuilder.Build(declarations, reporter);
       }
+      yield return "callGraph";
 
       // The call graph hasn't been completely constructed, because it's missing the edges having to do with
       // extreme predicates/lemmas. However, figuring out whether or not constraints are compilable depends on
       // there being no cycles in the call graph. Therefore, we do an initial check for cycles at this time.
-      var cycleErrorHasBeenReported = new HashSet<ICallable>();
+      var cycleErrorHasBeenReported = group?.CycleErrorHasBeenReported ?? new HashSet<ICallable>();
       foreach (var decl in declarations) {
         if (decl is RedirectingTypeDecl dd) {
           CheckForCyclesAmongRedirectingTypes(dd, cycleErrorHasBeenReported);
         }
       }
 
+      yield return "redirectingTypeCycles";
       if (reporter.Count(ErrorLevel.Error) == prevErrorCount) {
-        ComputeGhostInterestAndMisc(declarations);
+        ComputeGhostInterestAndMisc_Types(declarations);
+        yield return "ghostInterestTypes";
+        // The order of this analysis follows the dependencies among the types, which are those of the group.
+        if (group == null) {
+          AnalyzeTypeConstraints.AssignConstraintIsCompilable(declarations, Options);
+        } else if (group.Once("constraintIsCompilable")) {
+          AnalyzeTypeConstraints.AssignConstraintIsCompilable(group.AllDeclarations(), Options);
+        }
+        yield return "constraintIsCompilable";
+        ComputeGhostInterestAndMisc_Members(declarations);
       }
+      yield return "ghostInterest";
 
       // ---------------------------------- Pass 2 ----------------------------------
       // This pass fills in various additional information.
@@ -1643,6 +1770,7 @@ namespace Microsoft.Dafny {
         // fill in the postconditions and bodies of prefix lemmas
         FillInPostConditionsAndBodiesOfPrefixLemmas(declarations);
       }
+      yield return "prefixLemmas";
 
       // A function is not allowed to be used naked (that is, without being applied to arguments) in its own SCC.
       // Also, a function is not allowed to be used in any way inside a "decreases" clause its its own SCC.
@@ -1670,8 +1798,10 @@ namespace Microsoft.Dafny {
         }
       }
 
+      yield return "datatypeEmptiness";
       // Perform the stratosphere check on inductive datatypes, and compute to what extent the inductive datatypes require equality support
-      if (reporter.Count(ErrorLevel.Error) == prevErrorCount) { // because SccStratosphereCheck depends on subset-type/newtype base types being successfully resolved
+      // (In a group, the graph is that of the group, and one member does this for all.)
+      if (reporter.Count(ErrorLevel.Error) == prevErrorCount && (group == null || group.Once("stratosphere"))) { // because SccStratosphereCheck depends on subset-type/newtype base types being successfully resolved
         foreach (var dtd in datatypeDependencies.TopologicallySortedComponents()) {
           if (datatypeDependencies.GetSCCRepresentative(dtd) == dtd) {
             // do the following check once per SCC, so call it on each SCC representative
@@ -1718,6 +1848,7 @@ namespace Microsoft.Dafny {
         }
       }
 
+      yield return "datatypes";
       if (reporter.Count(ErrorLevel.Error) == prevErrorCount) {  // because CheckCoCalls requires the given expression to have been successfully resolved
         // Perform the guardedness check on co-datatypes
         foreach (var repr in ModuleDefinition.AllFunctionSCCs(declarations)) {
@@ -1777,7 +1908,23 @@ namespace Microsoft.Dafny {
         // Check that type arguments satisfy their required
         //   - type characteristics, and
         //   - type bounds
-        TypeCharacteristicChecker.InferAndCheck(declarations, isAnExport, reporter);
+        yield return "coCalls";
+        if (group == null) {
+          TypeCharacteristicChecker.InferAndCheck(declarations, isAnExport, reporter);
+        } else {
+          // What is inferred for a type of one member may depend on a type of another, so the members
+          // repeat the inference until a round in which none of them infers anything.
+          do {
+            if (TypeCharacteristicChecker.InferEqualitySupportOfTypes(declarations, reporter)) {
+              group.RoundChanged = true;
+            }
+            yield return "equalitySupportOfTypes*";
+          } while (group.RepeatRound);
+          TypeCharacteristicChecker.InferEqualitySupportOfSignatures(declarations, reporter);
+          yield return "equalitySupportOfSignatures";
+          TypeCharacteristicChecker.Check(declarations, isAnExport, reporter);
+        }
+        yield return "typeCharacteristics";
 
         // Check the decreases components "e by O" (--decreases-orders)
         DecreasesOrders.Check(Options, reporter, declarations);
@@ -1840,6 +1987,7 @@ namespace Microsoft.Dafny {
         }
       }
 
+      yield return "pass2";
       // ---------------------------------- Pass 3 ----------------------------------
       // Further checks
       // ----------------------------------------------------------------------------
@@ -2060,7 +2208,7 @@ namespace Microsoft.Dafny {
     /// <summary>
     /// Compute ghost interests, figure out native types, check agreement among datatype destructors, and determine tail calls.
     /// </summary>
-    private void ComputeGhostInterestAndMisc(List<TopLevelDecl> declarations) {
+    private void ComputeGhostInterestAndMisc_Types(List<TopLevelDecl> declarations) {
       foreach (TopLevelDecl d in declarations) {
         if (d is IteratorDecl) {
           var iter = (IteratorDecl)d;
@@ -2134,8 +2282,12 @@ namespace Microsoft.Dafny {
         }
       }
 
-      AnalyzeTypeConstraints.AssignConstraintIsCompilable(declarations, Options);
+    }
 
+    /// <summary>
+    /// To be called after AnalyzeTypeConstraints.AssignConstraintIsCompilable.
+    /// </summary>
+    private void ComputeGhostInterestAndMisc_Members(List<TopLevelDecl> declarations) {
       // Now that we have filled in the .ConstraintIsCompilable field of all subset types and newtypes, we're ready to
       // visit iterator bodies and members (which will make calls to CheckIsCompilable).
       foreach (TopLevelDecl d in declarations) {
@@ -2601,9 +2753,12 @@ namespace Microsoft.Dafny {
           if (trait != null) {
             // disallowing inheritance in multi module case
             bool termination = true;
+            // A trait of another member of the recursive module group is like a trait of the same module: the members of
+            // a group are verified together, and a call that is dispatched to an override is checked against the "decreases"
+            // clauses as it is inside one module.
             // Under --modular-termination every trait may be extended from any module (rule 1 of revision 3 of
             // https://github.com/erniecohen/dafny/issues/211): a foreign implementation is checked instead.
-            if (cl.EnclosingModuleDefinition == trait.EnclosingModuleDefinition ||
+            if (ModuleDefinition.InSameRecursiveGroup(cl.EnclosingModuleDefinition, trait.EnclosingModuleDefinition) ||
                 trait.IsObjectTrait ||
                 Options.Get(CommonOptionBag.ModularTermination) ||
                 (Attributes.ContainsBool(trait.Attributes, "termination", ref termination) && !termination) ||
@@ -2631,6 +2786,26 @@ namespace Microsoft.Dafny {
       }
       allTypeParameters.PopMarker();
       currentClass = null;
+    }
+
+    /// <summary>
+    /// Whether a trait is a reference type is determined when the names of its module are registered, before its
+    /// parent traits are resolved (ModuleDefinition.DetermineReferenceTypes), by looking the parents up by name.
+    /// For a parent in another member of a recursive module group, that lookup does not go through the import that
+    /// the resolution of the parent goes through.  So check the answer against the resolved parents: a trait is a
+    /// reference type if and only if a parent is one.  Otherwise a trait that inherits from "object" would not be
+    /// treated as a reference type, or the reverse.
+    /// </summary>
+    void CheckReferenceTraitsOfGroup(List<TopLevelDecl> declarations) {
+      var legacy = Options.Get(CommonOptionBag.GeneralTraits) == CommonOptionBag.GeneralTraitsOptions.Legacy;
+      foreach (var trait in declarations.OfType<TraitDecl>()) {
+        var inheritsFromObject = legacy || trait.IsObjectTrait || trait.ParentTraitHeads.Exists(parent => parent.IsReferenceTypeDecl);
+        if (trait.IsReferenceTypeDecl != inheritsFromObject) {
+          reporter.Error(MessageSource.Resolver, trait.Origin,
+            $"trait '{trait.Name}' was taken {(trait.IsReferenceTypeDecl ? "" : "not ")}to be a reference type, but its parent traits say otherwise; " +
+            "name the parent traits of the traits of a recursive module group so that they can be looked up before the imports are resolved");
+        }
+      }
     }
 
     /// <summary>
@@ -2736,6 +2911,14 @@ namespace Microsoft.Dafny {
       Contract.Requires(cl != null);
 
       if (cl.ParentTypeInformation != null) {
+        return;
+      }
+      if (Group is { } recursiveGroup && cl.EnclosingModuleDefinition is { } owner &&
+          recursiveGroup.Resolvers.TryGetValue(owner, out var ownerResolver) && ownerResolver != this) {
+        // A parent in another member of the recursive module group is processed by the resolver of that member.
+        Type.PushScope(ownerResolver.moduleInfo.VisibilityScope);
+        ownerResolver.RegisterInheritedMembers(cl, basePreType);
+        Type.PopScope(ownerResolver.moduleInfo.VisibilityScope);
         return;
       }
       cl.ParentTypeInformation = new TopLevelDeclWithMembers.InheritanceInformationClass();

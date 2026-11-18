@@ -134,6 +134,19 @@ public class LiteralModuleDecl : ModuleDecl, ICanFormat, IHasSymbolChildren {
   }
 
   public ModuleSignature Resolve(ModuleResolver resolver, CompilationData compilation) {
+    foreach (var _ in ResolveInPhases(resolver, compilation)) {
+    }
+    return Signature;
+  }
+
+  /// <summary>
+  /// Resolves the module, and returns after each phase with the name of the phase.  The members of a
+  /// recursive module group (--recursive-modules) are resolved together, phase by phase: each phase is
+  /// done for every member before the next phase starts.  The caller owns the visibility scopes of the
+  /// thread between phases: a phase may leave scopes pushed.  A phase name is the same for every member,
+  /// so that the members stay in step.
+  /// </summary>
+  public IEnumerable<string> ResolveInPhases(ModuleResolver resolver, CompilationData compilation) {
     // The declaration is a literal module, so it has members and such that we need
     // to resolve. First we do refinement transformation. Then we construct the signature
     // of the module. This is the public, externally visible signature. Then we add in
@@ -171,14 +184,32 @@ public class LiteralModuleDecl : ModuleDecl, ICanFormat, IHasSymbolChildren {
     }
 
     PipelineProfile.ModulePhase(resolver.Options, "preResolve");
-    Signature = module.RegisterTopLevelDecls(resolver, true);
+    if (resolver.Group != null) {
+      // Whether a trait is a reference type depends on its parent traits, and a parent trait may be declared
+      // in another member of the group.  So every member registers its names before any member determines
+      // its reference types.
+      Signature = module.RegisterTopLevelDecls(resolver, true, deferReferenceTypes: true);
+      yield return "registerNames";
+      module.RegisterReferenceTypes();
+    } else {
+      Signature = module.RegisterTopLevelDecls(resolver, true);
+    }
     Signature.Refines = module.Implements?.Target.Sig;
+    yield return "register";
 
     var sig = Signature;
     // set up environment
     var preResolveErrorCount = resolver.reporter.ErrorCount;
 
-    resolver.ResolveModuleExport(this, sig);
+    resolver.ResolveModuleExportSignatures(this, sig);
+    if (resolver.Group != null) {
+      // The driver of the group resolves the imports among the members here, and propagates the visibility
+      // of exported imports for all members together.
+      yield return "exportSignatures";
+    } else {
+      resolver.PropagateVisibilityOfExportedImports(sig);
+    }
+    resolver.ResolveModuleExportScopes();
     if (CopyImport != null && module.Implements?.Target.Def is { } copiedModule) {
       if (CopyImport.Exports.Count > 0) {
         CopyImportView = resolver.CopyImportViewOf(this, copiedModule.Name);
@@ -189,12 +220,18 @@ public class LiteralModuleDecl : ModuleDecl, ICanFormat, IHasSymbolChildren {
       }
     }
     PipelineProfile.ModulePhase(resolver.Options, "registrationAndExports");
-    var good = module.Resolve(sig, resolver);
+    yield return "exports";
+    foreach (var phase in module.ResolveInPhases(sig, resolver)) {
+      yield return phase;
+    }
+    var good = resolver.ModuleResolveResult;
+    yield return "resolved";
 
     if (good && resolver.reporter.ErrorCount == preResolveErrorCount) {
       // Check that the module export gives a self-contained view of the module.
       resolver.CheckModuleExportConsistency(compilation, module);
     }
+    yield return "exportConsistency";
 
     var tempVis = new VisibilityScope();
     tempVis.Augment(sig.VisibilityScope);
@@ -217,18 +254,21 @@ public class LiteralModuleDecl : ModuleDecl, ICanFormat, IHasSymbolChildren {
 
     PipelineProfile.ModulePhase(resolver.Options, "exportsAndIntermediate");
     if (!good || resolver.reporter.HasErrors) {
-      return sig;
+      yield break;
     }
+    yield return "intermediate";
 
     Type.PushScope(tempVis);
     var phases = PipelineProfile.RecordingModulePhases;
     resolver.ComputeIsRecursiveBit(compilation, module, rewriters);
     PipelineProfile.ModulePhase(resolver.Options, "isRecursive");
+    yield return "isRecursive";
     resolver.FillInDecreasesClauses(module);
     foreach (var iter in module.TopLevelDecls.OfType<IteratorDecl>()) {
       resolver.reporter.Info(MessageSource.Resolver, iter.Origin, Printer.IteratorClassToString(resolver.Reporter.Options, iter));
     }
     PipelineProfile.ModulePhase(resolver.Options, "decreases");
+    yield return "decreases";
 
     foreach (var rewriter in rewriters) {
       rewriter.PostDecreasesResolve(module);
@@ -240,6 +280,7 @@ public class LiteralModuleDecl : ModuleDecl, ICanFormat, IHasSymbolChildren {
     resolver.FillInAdditionalInformation(module);
     FuelAdjustment.CheckForFuelAdjustments(resolver.reporter, module);
     PipelineProfile.ModulePhase(resolver.Options, "additionalInformation");
+    yield return "additionalInformation";
 
     foreach (var rewriter in rewriters) {
       rewriter.PostResolve(module);
@@ -249,7 +290,6 @@ public class LiteralModuleDecl : ModuleDecl, ICanFormat, IHasSymbolChildren {
     }
 
     Type.PopScope(tempVis);
-    return sig;
   }
 
   /// <summary>

@@ -95,27 +95,32 @@ class PhaseBoundaryTests(unittest.TestCase):
         # Require adjacent boundaries at the calls, not just phase names somewhere in the file.
         self.assertRegex(source, r'PipelineProfile.ModulePhase\(resolver.Options, exportSetName == null '
                          r'\? "resolveSetup" : "exportViewSetup"\);\s*'
-                         r'resolver.ResolveTopLevelDecls_Signatures\([^;]+;\s*'
+                         r'yield return "setup";\s*'
+                         r'foreach \(var phase in resolver.ResolveTopLevelDecls_SignaturesInPhases\([^;]+?\)\) {\s*'
+                         r'yield return phase;\s*}\s*'
                          r'PipelineProfile.ModulePhase\(resolver.Options, exportSetName == null '
                          r'\? "signature" : "exportSignature"\);')
         self.assertRegex(source, r'resolver.ResolveModuleAttributes\(this, allDeclarations\);\s*'
                          r'PipelineProfile.ModulePhase\(resolver.Options, exportSetName == null '
                          r'\? "moduleAttributes" : "exportModuleAttributes"\);\s*}\s*'
+                         r'yield return "moduleAttributes";\s*'
                          r'if \(resolver.reporter.Count\(ErrorLevel.Error\) == prevErrorCount\) {\s*'
-                         r'resolver.ResolveTopLevelDecls_Core\([^;]+;\s*'
+                         r'foreach \(var phase in resolver.ResolveTopLevelDecls_CoreInPhases\([^;]+?\)\) {\s*'
+                         r'yield return phase;\s*}\s*'
                          r'PipelineProfile.ModulePhase\(resolver.Options, exportSetName == null '
                          r'\? "body" : "exportBody"\);\s*}')
         self.assertRegex(source, r'PipelineProfile.ModulePhase\(resolver.Options, exportSetName == null '
-                         r'\? "accessibleMembers" : "exportAccessibleMembers"\);\s*return true;')
+                         r'\? "accessibleMembers" : "exportAccessibleMembers"\);\s*resolver.ModuleResolveResult = true;')
 
     def test_registration_is_closed_before_resolve(self):
         source = (ROOT / 'Source/DafnyCore/AST/Modules/LiteralModuleDecl.cs').read_text()
-        # Export work, such as a copying import's view, may sit between the export resolution and the
-        # phase boundary, but no other phase boundary and not the module's resolution.
-        self.assertRegex(source, r'resolver.ResolveModuleExport\(this, sig\);'
-                         r'(?:(?!ModulePhase|module\.Resolve\()[\s\S])*?'
+        # Copying-import views follow the group's phased export resolution.
+        self.assertRegex(source, r'resolver.ResolveModuleExportScopes\(\);'
+                         r'(?:(?!ModulePhase|module\.ResolveInPhases\()[\s\S])*?'
                          r'PipelineProfile.ModulePhase\(resolver.Options, "registrationAndExports"\);\s*'
-                         r'var good = module.Resolve\(sig, resolver\);')
+                         r'yield return "exports";\s*'
+                         r'foreach \(var phase in module.ResolveInPhases\(sig, resolver\)\) {\s*'
+                         r'yield return phase;\s*}\s*var good = resolver.ModuleResolveResult;')
         self.assertNotRegex(source, r'ModulePhase\(resolver.Options, "(?:signature|body)"\)')
 
     def test_export_view_reaches_distinct_phase_boundaries(self):

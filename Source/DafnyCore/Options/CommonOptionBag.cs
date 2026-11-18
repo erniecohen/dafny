@@ -452,6 +452,11 @@ Value implementations must retain their type parameters in compatible parent pos
     IsHidden = true
   };
 
+  public static readonly Option<bool> RecursiveModules = new("--recursive-modules", () => false,
+    "(experimental, incomplete) Allow modules to import each other. The modules of an import cycle form a recursive module group, which means what one module with all their declarations would mean. Only imports may form a cycle. Requires --member-invariants. A program that has a recursive module group may not declare a codatatype. At this stage a member of a group may not be abstract, refine or be refined, declare an abstract import, and a program that has a group is not compiled.") {
+    IsHidden = true
+  };
+
   public static readonly Option<bool> UncheckedInvariantExtension = new("--unchecked-invariant-extension", () => false,
     "Do not check the extension condition of member invariants (issue 105). The axioms of a type whose invariant refers to its own set of values may then be inconsistent. For the vacuity controls of the test suite only.") {
     IsHidden = true
@@ -922,6 +927,11 @@ NoGhost - disable printing of functions, ghost methods, and proof
     // option too.  The manifest records the option only when it is on (see DooFile.ManifestData), so a
     // library built without it is unchanged and may be used either way.
     OptionRegistry.RegisterGlobalOption(MemberInvariants,
+      (reporter, origin, prefix, option, localValue, libraryValue) =>
+        OptionCompatibility.OptionLibraryImpliesLocalError(reporter, origin, prefix, option, localValue, libraryValue ?? false));
+    // A library built with --recursive-modules may contain a recursive module group, so a program that uses
+    // it needs the option too.  Like --member-invariants, the manifest records it only when it is on.
+    OptionRegistry.RegisterGlobalOption(RecursiveModules,
       (reporter, origin, prefix, option, localValue, libraryValue) =>
         OptionCompatibility.OptionLibraryImpliesLocalError(reporter, origin, prefix, option, localValue, libraryValue ?? false));
     OptionRegistry.RegisterGlobalOption(ExtendedNewtypeBases,
