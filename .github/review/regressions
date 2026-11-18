@@ -979,3 +979,6 @@ git-issues/git-issue-466-refinement-imports.dfy
 git-issues/git-issue-491.dfy
 git-issues/git-issue-491-newtypes.dfy
 git-issues/git-issue-491-positive.dfy
+
+# A member-form newtype witness satisfies the base constraint and invariants; invalid witnesses and the implicit zero remain checked (https://github.com/erniecohen/dafny/issues/501).
+git-issues/git-issue-501.dfy
