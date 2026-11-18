@@ -26,7 +26,8 @@ internal sealed class ResolutionSnapshots {
     "root=[schema,root-id,records];alias=[id=0,tag=1,graph-identity,target-id=1];" +
     "external=[id=1,tag=2,local-key,graph-identity,signature-selector,view=unrestricted-literal-signature];" +
     "current-alias-syntax-and-origin;Decl=external;Signature=external;Def=null;Sig=null;" +
-    "owned-signatures=empty;class-members=empty;diagnostics=empty;builtin-requests=empty;manifest=tomlyn-v1";
+    "owned-signatures=empty;class-members=empty;diagnostics=empty;builtin-requests=empty;manifest=tomlyn-v1;" +
+    "container=canonical-seekable-zip-v1;entries=manifest.toml,module.cbor;compression=stored;timestamp=1980-01-01";
   internal const int MaximumEntryBytes = 1024 * 1024;
   internal const int MaximumArchiveBytes = 3 * MaximumEntryBytes;
   private static readonly UTF8Encoding Utf8 = new(false, true);
@@ -127,14 +128,11 @@ internal sealed class ResolutionSnapshots {
       if (File.Exists(path + ".conflict")) { state = "rejected"; return false; }
       if (!File.Exists(path)) { return false; }
       using var file = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
-      if (file.Length > MaximumArchiveBytes) { state = "rejected"; return false; }
-      using var zip = new ZipArchive(file, ZipArchiveMode.Read);
-      // Exact canonical manifests reject unknown/duplicate/malformed fields, stale producer/options,
-      // naming projections and checksums. Exact typed records reject unknown tags/IDs/references,
-      // even if an altered payload has a newly computed checksum. Nothing is partially materialized.
-      if (zip.Entries.Count != 2 || zip.Entries[0].FullName != "manifest.toml" ||
-          zip.Entries[1].FullName != "module.cbor" ||
-          !EqualEntry(zip.Entries[0], candidate.Manifest) || !EqualEntry(zip.Entries[1], candidate.Payload) ||
+      var archive = EncodeArchive(candidate);
+      // Validate the complete canonical envelope, including CRCs and local headers: reading only
+      // decoded ZIP entries does not establish container integrity. Expected bytes are bounded by
+      // the admitted manifest/payload sizes before any stored bytes are read or allocated.
+      if (file.Length > MaximumArchiveBytes || file.Length != archive.Length || !EqualStream(file, archive) ||
           File.Exists(path + ".conflict")) {
         state = "rejected";
         return false;
@@ -180,10 +178,7 @@ internal sealed class ResolutionSnapshots {
       var options = new FileStreamOptions { Mode = FileMode.CreateNew, Access = FileAccess.Write, Share = FileShare.None };
       if (!OperatingSystem.IsWindows()) { options.UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite; }
       using (var file = new FileStream(temporary, options)) {
-        using (var zip = new ZipArchive(file, ZipArchiveMode.Create, true)) {
-          WriteEntry(zip, "manifest.toml", candidate.Manifest);
-          WriteEntry(zip, "module.cbor", candidate.Payload);
-        }
+        file.Write(EncodeArchive(candidate));
         file.Flush(true);
       }
       cancellationToken.ThrowIfCancellationRequested();
@@ -203,12 +198,19 @@ internal sealed class ResolutionSnapshots {
     }
   }
 
-  private static bool EqualEntry(ZipArchiveEntry entry, byte[] expected) {
-    if (entry.Length != expected.Length || entry.Length > MaximumEntryBytes) { return false; }
-    using var input = entry.Open();
+  private static bool EqualStream(Stream input, byte[] expected) {
     var bytes = new byte[expected.Length];
     input.ReadExactly(bytes);
     return input.ReadByte() == -1 && expected.AsSpan().SequenceEqual(bytes);
+  }
+
+  private static byte[] EncodeArchive(Candidate candidate) {
+    using var bytes = new MemoryStream();
+    using (var archive = new ZipArchive(bytes, ZipArchiveMode.Create, true)) {
+      WriteEntry(archive, "manifest.toml", candidate.Manifest);
+      WriteEntry(archive, "module.cbor", candidate.Payload);
+    }
+    return bytes.ToArray();
   }
 
   private static void WriteEntry(ZipArchive archive, string name, byte[] bytes) {

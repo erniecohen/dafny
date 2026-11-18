@@ -936,7 +936,10 @@ until their input contract is covered, rather than a hit based on `L` alone.
 Each file is a ZIP container with exactly two case-sensitive entries, in this
 order: `manifest.toml` and `module.cbor`. This reuses the container and TOML
 conventions of `DooFile`; reusable bounded I/O and manifest handling belong in
-shared helpers. Today's `.doo` contains `manifest.toml` and source in `program`.
+shared helpers. The first closed alias profile validates a canonical complete
+container, including CRCs, local headers and metadata, as specified by its
+[schema inventory](241-resolution-snapshot-schema.md). Today's `.doo` contains
+`manifest.toml` and source in `program`.
 Its `Printer(PrintModes.Serialization)` calls `PrintProgram(..., false)` and its
 reader reparses that source. Neither that printer/parser nor `DooFile.Write`'s
 delete-then-create publication is a typed snapshot codec or an atomic publisher.

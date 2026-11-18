@@ -72,9 +72,14 @@ digest prefixes collide. Both owner and prerequisite context changes are tested.
 Validation regenerates the small canonical manifest and typed-reference table
 from current inputs, without running the module resolver, and compares the exact
 bytes. Thus a recomputed checksum cannot authorize altered tags, references or
-facts. ZIP files have exactly `manifest.toml` then `module.cbor`. Before reading,
-the archive is bounded to 3 MiB; each uncompressed entry is bounded to 1 MiB and
-must have the exact expected length and EOF. Strings use canonical definite-length
+facts. The complete ZIP envelope is canonical, with exactly `manifest.toml` then
+`module.cbor`, stored compression and the fixed timestamp 1980-01-01. Validation
+regenerates and compares every container byte as well as the typed records,
+including CRCs, local headers and metadata. Alternate container encodings are
+misses even when their decoded payloads match. This avoids relying on ZIP entry
+decoding to establish CRC integrity. Before reading, the archive is bounded to
+3 MiB and its exact expected length; each uncompressed entry is bounded to 1 MiB.
+Strings use canonical definite-length
 CBOR text, limited to 65,535 UTF-8 bytes. Larger valid inputs bypass. Malformed,
 truncated, duplicate, unknown, stale and inaccessible records are misses.
 

@@ -69,6 +69,10 @@ public class ResolutionSnapshotTests : IDisposable {
     var cold = await Resolve(threads: threads);
     Assert.Equal("miss", State(cold.Alias));
     var bytes = File.ReadAllBytes(Archive());
+    using (var zip = ZipFile.OpenRead(Archive())) {
+      Assert.Equal(new[] { "manifest.toml", "module.cbor" }, zip.Entries.Select(e => e.FullName));
+      Assert.All(zip.Entries, entry => Assert.Equal(entry.Length, entry.CompressedLength));
+    }
     var warm = await Resolve(threads: threads);
     Assert.Equal("hit", State(warm.Alias));
     Assert.Equal(0, warm.Alias.GetProperty("resolverCalls").GetInt32());
@@ -121,11 +125,27 @@ public class ResolutionSnapshotTests : IDisposable {
   [InlineData("oversized")]
   [InlineData("producer")]
   [InlineData("context")]
+  [InlineData("zip-crc")]
+  [InlineData("zip-local-crc")]
+  [InlineData("zip-metadata")]
   public async Task MalformedOrStaleBytesAreRejected(string mutation) {
     var cold = await Resolve(); var path = Archive();
     if (mutation == "truncated") { File.WriteAllBytes(path, new byte[] { 0x50, 0x4b }); }
+    else if (mutation.StartsWith("zip-", StringComparison.Ordinal)) {
+      var bytes = File.ReadAllBytes(path);
+      var local = bytes.AsSpan().IndexOf(new byte[] { 0x50, 0x4b, 3, 4 });
+      var central = bytes.AsSpan().IndexOf(new byte[] { 0x50, 0x4b, 1, 2 });
+      if (mutation == "zip-metadata") {
+        // A valid alternate timestamp is still outside the canonical producer format.
+        bytes[local + 10] ^= 1; bytes[central + 12] ^= 1;
+      } else {
+        bytes[local + 14] ^= 1;
+        if (mutation == "zip-crc") { bytes[central + 16] ^= 1; }
+      }
+      File.WriteAllBytes(path, bytes);
+    }
     else if (mutation == "oversized") {
-      // A valid ZIP with padding before its central directory isolates the archive-size check.
+      // A valid oversized ZIP exercises bounded rejection without a ZIP parsing failure.
       var original = File.ReadAllBytes(path);
       var central = original.AsSpan().IndexOf(new byte[] { 0x50, 0x4b, 1, 2 });
       var end = original.AsSpan().LastIndexOf(new byte[] { 0x50, 0x4b, 5, 6 });
@@ -307,7 +327,7 @@ public class ResolutionSnapshotTests : IDisposable {
   }
 
   [Fact]
-  public async Task RandomContainerCorruptionNeverEscapesTheReader() {
+  public async Task EveryRandomContainerBitFlipIsAMiss() {
     var observation = await Resolve(); var candidate = Candidate(observation);
     var store = new ResolutionSnapshots(Path.Combine(directory, "fuzz"));
     var output = observation.Outputs.Single(p => p.ResolvedDeclaration is AliasModuleDecl);
@@ -316,9 +336,8 @@ public class ResolutionSnapshotTests : IDisposable {
     for (var i = 0; i < 100; i++) {
       var changed = (byte[])bytes.Clone(); changed[random.Next(changed.Length)] ^= (byte)(1 << random.Next(8));
       File.WriteAllBytes(path, changed);
-      // Some mutations affect ignorable ZIP metadata. Any accepted entry must still match the
-      // complete canonical manifest and payload; mutated semantic bytes are rejected separately.
-      _ = store.TryRead(candidate, default, out _);
+      Assert.False(store.TryRead(candidate, default, out var state));
+      Assert.Equal("rejected", state);
     }
   }
 
