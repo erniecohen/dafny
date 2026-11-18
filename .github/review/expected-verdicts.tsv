@@ -1321,6 +1321,7 @@ git-issues/github-issue-431-more.dfy	4	12 verified, 10 errors	26,35,44,61,63,81,
 git-issues/github-issue-431.dfy	4	11 verified, 6 errors	24,33,41,48,66,68
 git-issues/github-issue-4483.dfy	0	2 verified, 0 errors	
 git-issues/github-issue-4804.dfy	4	3 verified, 0 errors, 1 out of resource; 2 out of resource	19
+git-issues/github-issue-495.dfy	4	4 verified, 8 errors	22,31,35,39,43,47,55
 git-issues/github-issue-5029.dfy	0	3 verified, 0 errors	
 git-issues/github-issue-5814.dfy	0	3 verified, 0 errors	
 git-issues/github-issue-90.dfy	4	9 verified, 1 error	23
