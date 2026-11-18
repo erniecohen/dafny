@@ -1,0 +1,1 @@
+Check member invariants across an experimental recursive module group as one definition, including dependencies through provided type synonyms and recursive component types. The hidden `--legacy-recursive-module-invariants` restores the previous unsound extension analysis for comparison and migration. `--recursive-modules` remains hidden and opt-in.

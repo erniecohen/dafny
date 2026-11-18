@@ -1117,7 +1117,9 @@ Member invariants are checked across the whole group. An invariant may call a
 function of another member, and a type may inherit invariants from a trait of
 another member. The extension condition still follows every dependency, so an
 invariant may not define its meaning by quantifying over its own set of values,
-including through a function of another member.
+including through a function of another member or a provided type synonym.
+This restriction uses all declarations of the group, independently of export
+views; those views still control what each member may use in a proof.
 
 The following are not yet supported. Each is an error, so nothing is accepted
 that a later stage would have to reject:

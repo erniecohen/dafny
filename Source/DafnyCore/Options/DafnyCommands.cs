@@ -155,6 +155,7 @@ public static class DafnyCommands {
     CommonOptionBag.LegacyUncheckedImportBinding,
     CommonOptionBag.LegacyStoredFunctionCallbacks,
     CommonOptionBag.LegacyInheritedNameCapture,
+    CommonOptionBag.LegacyRecursiveModuleInvariants,
     CommonOptionBag.UncheckedInvariantExtension,
     CommonOptionBag.ModularTermination,
     CommonOptionBag.ModularTerminationTrust,

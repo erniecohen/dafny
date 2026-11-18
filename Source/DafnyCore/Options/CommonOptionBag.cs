@@ -459,6 +459,11 @@ Value implementations must retain their type parameters in compatible parent pos
     IsHidden = true
   };
 
+  public static readonly Option<bool> LegacyRecursiveModuleInvariants = new("--legacy-recursive-module-invariants", () => false,
+    "Use the legacy, unsound per-module extension analysis and provisional dependency results for invariants in recursive module groups, for migration and comparison only.") {
+    IsHidden = true
+  };
+
   public static readonly Option<bool> UncheckedInvariantExtension = new("--unchecked-invariant-extension", () => false,
     "Do not check the extension condition of member invariants (issue 105). The axioms of a type whose invariant refers to its own set of values may then be inconsistent. For the vacuity controls of the test suite only.") {
     IsHidden = true
@@ -976,6 +981,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(LegacyUncheckedImportBinding, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacyStoredFunctionCallbacks, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacyInheritedNameCapture, OptionScope.Cli);
+    OptionRegistry.RegisterOption(LegacyRecursiveModuleInvariants, OptionScope.Cli);
     OptionRegistry.RegisterOption(UncheckedInvariantExtension, OptionScope.Cli);
     OptionRegistry.RegisterOption(ModularTermination, OptionScope.Cli);
     OptionRegistry.RegisterOption(ModularTerminationTrust, OptionScope.Cli);
