@@ -1,0 +1,10 @@
+git-issue-105-auto-reveal.dfy(24,9): Error: invariant might not hold
+git-issue-105-auto-reveal.dfy(14,4): Related location: this is the invariant that might not hold
+git-issue-105-auto-reveal.dfy(27,9): Error: invariant might not hold
+git-issue-105-auto-reveal.dfy(14,4): Related location: this is the invariant that might not hold
+git-issue-105-auto-reveal.dfy(97,9): Error: invariant might not hold
+git-issue-105-auto-reveal.dfy(94,22): Related location: this is the invariant that might not hold
+git-issue-105-auto-reveal.dfy(109,11): Error: invariant might not hold
+git-issue-105-auto-reveal.dfy(14,4): Related location: this is the invariant that might not hold
+
+Dafny program verifier finished with 25 verified, 4 errors
