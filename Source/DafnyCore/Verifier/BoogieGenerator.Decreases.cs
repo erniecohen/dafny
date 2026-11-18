@@ -95,7 +95,7 @@ public partial class BoogieGenerator {
 
     // A refinement can change a global/callback bound or a callee's dispatch effect. The base
     // did not necessarily establish this modular obligation, even if it checked the same body.
-    if (modularCheck && tok.IsInherited(currentModule)) {
+    if (modularCheck && !options.Get(CommonOptionBag.LegacyNoModularTermination) && tok.IsInherited(currentModule)) {
       tok = new ForceCheckOrigin(tok);
     }
 

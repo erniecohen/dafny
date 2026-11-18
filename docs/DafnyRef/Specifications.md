@@ -708,7 +708,8 @@ module, including bounds acquired through a new parent trait. The inherited call
 the refined contracts even when the refinement base had no bound. This includes forwarding
 bounded values from an unbounded caller to a refined callback contract. Unrelated assertions already
 checked by the refinement base remain assumed. `--legacy-no-modular-termination` restores the
-previous modular-termination behavior.
+previous modular-termination behavior, including when the earlier experimental checks are
+explicitly selected with `--modular-termination`.
 
 Here `Y.F` inherits the bound `n` and calls `L.H(this, n)`, whose bound `n` is not larger;
 `L.H` makes the dispatched call at the smaller bound `n - 1`. Without the bound on `H`, or with

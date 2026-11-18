@@ -94,7 +94,8 @@ namespace Microsoft.Dafny {
       // Refinement can introduce a bound through a new parent trait, or change the contracts and
       // dispatch effects of callees while leaving this body and its own bound unchanged (#493).
       // Schedule the inherited body even when no ordinary recursive edge needs to be rechecked.
-      if (ModularTermination.RulesEnabled(options) &&
+      // The opt-out also restores the older explicit --modular-termination experiment.
+      if (!options.Get(CommonOptionBag.LegacyNoModularTermination) &&
           (TerminationVertices(declaration).Any(vertex =>
             ModularTermination.HasGlobalBound(vertex is Method { FunctionFromWhichThisIsByMethodDecl: { } function }
               ? function : vertex) || ModularTermination.HasCallbackBounds(vertex)) ||

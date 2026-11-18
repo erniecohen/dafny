@@ -175,5 +175,8 @@ for refresh in [False, True]:
     assert text.count('Error: assertion might not hold') == 1, text
     run('legacy-opt-out', original, 2, ["class 'T' is in a different module"],
         ['--legacy-no-modular-termination'])
+    # Comparison only: preserve the earlier experiment's unchecked inherited body.
+    run('legacy-explicit-opt-out', original, 0, ['0 errors'],
+        ['--legacy-no-modular-termination', '--modular-termination'])
     run('old-recursion-opt-out', original, 4, ['Error: decreases clause might not decrease'],
         ['--legacy-inherited-termination-checks'])
