@@ -1,4 +1,4 @@
-# Recursive module invariants (issue 466, stage 4)
+# Recursive module invariants and refinement (issue 466)
 
 The model is the flattened module of `design/xmod-recursion.md`: the raw declarations
 of every member belong to one mutually recursive definition. The existing group
@@ -39,3 +39,56 @@ witnesses, reference types, and reachable false assertions. Its attacks are:
 Each attack is rejected normally and verifies under the hidden legacy option. The
 site mutations independently remove the combined scope and the negative-result
 invalidation, so neither attack relies only on disabling the whole extension check.
+
+## Refinement and abstract groups (stage 5)
+
+Only plain imports may form the group's cycle. Refinement bases, abstract-import
+interfaces, and bindings inherited through refinement must remain in strictly
+lower components. The existing edge classification rejects cycles through any
+of these dependencies before signatures are cloned. Replacement remains deferred.
+
+The existing refinement obligations also apply to a member in a group. Its
+inherited callables are vertices of the shared call graph. The counterpart,
+decreases-origin and edge checks of `BoogieGenerator.InheritedTermination.cs`
+determine whether an inherited recursive component is unchanged; a cycle closed
+through a sibling makes the inherited termination check a checked assertion.
+Added invariant conjuncts use `BoogieGenerator.InheritedInvariants.cs`: the base's
+proof justifies only its own conjuncts at an inherited site. A new conjunct is
+checked in inherited witnesses and bodies, and a member newly made raw is
+reverified. These obligations already exist; this stage removes admission errors
+only for the cases governed by them, and adds no axiom or unchecked assumption.
+
+An all-abstract group is the same fixed point with its abstract types and lower
+interfaces left as parameters. The existing prohibition on concrete imports of
+abstract modules excludes mixed groups. Refining one member creates fresh types,
+retains imports of the original siblings, and does not redirect their references
+back into the refinement. Whole-group refinement is deferred.
+
+`git-issue-466-stage5.dfy` covers decreasing inherited recursion, abstract groups
+and abstract imports, added invariant conjuncts, original sibling types, and
+reachable false assertions. The termination attack verifies false only when the
+inherited termination gate is disabled. The raw-member attack verifies false if
+`BecameRaw` is disabled, while the positive control gives a body valid on raw
+receivers. The invariant attacks, both inside a
+group and in a refinement of an abstract member, verify false when inherited
+conjunct checks are changed to assumptions. Normally their inherited witnesses
+and construction sites fail. The nominal-type and mixed-group cases are separate
+admission controls. Restoring each removed stage-2 admission error independently
+rejects the positive control.
+
+The site mutations can be reproduced in a disposable source build:
+
+* Replace the resolver's `CheckGroup(group, reporter)` call with
+  `Check(group.AllDeclarations(), reporter)` for the hidden-synonym attack.
+* Remove the negative-result invalidation in `DeclDependsOnOwner` for the
+  recursive-dependence attack.
+* Use `--legacy-inherited-termination-checks` for the inherited-call attack.
+* Return the original origin in `InheritedConjunctOrigin`, rather than wrapping
+  it in `ForceCheckOrigin`, for both added-conjunct attacks.
+* Make `BecameRaw` return false for the raw-member attack.
+* Restore each removed admission branch in `RecursiveModuleGroups` separately;
+  the positive stage-5 fixture must then be rejected for that branch.
+
+Restore every mutation before the ordinary regression run. The first five
+mutations must accept the corresponding `ensures false` proof; this distinguishes
+an attack on the gate from an unrelated resolution or verification failure.

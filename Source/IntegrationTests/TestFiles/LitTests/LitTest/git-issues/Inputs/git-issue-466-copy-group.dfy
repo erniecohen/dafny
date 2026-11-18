@@ -1,4 +1,4 @@
-// Copying is refinement, so copying a group member remains unsupported in stages 1 to 3.
+// Copying refines one member and keeps its references to the original siblings.
 module Left {
   import Right
   function F(): int { 1 }

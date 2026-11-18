@@ -985,3 +985,6 @@ git-issues/git-issue-501.dfy
 
 # Recursive-group invariants (issue 466, stage 4).
 git-issues/git-issue-466-stage4.dfy
+
+# Recursive-group refinement and abstract groups (issue 466, stage 5).
+git-issues/git-issue-466-stage5.dfy
