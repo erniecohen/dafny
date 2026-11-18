@@ -536,7 +536,6 @@ git-issues/git-issue-1029.dfy	0	3 verified, 0 errors
 git-issues/git-issue-105-abstract-synonym.dfy	4	2 verified, 2 errors	25,26
 git-issues/git-issue-105-abstract-types.dfy	4	16 verified, 11 errors	18,25,53,56,79,108,119,120,121,146,169
 git-issues/git-issue-105-auto-reveal.dfy	4	25 verified, 4 errors	24,27,97,109
-git-issues/git-issue-105-abstract-types.dfy	4	14 verified, 11 errors	18,25,53,56,79,108,119,120,121,146,169
 git-issues/git-issue-105-class-compile.dfy	0	11 verified, 0 errors	
 git-issues/git-issue-105-classes.dfy	4	31 verified, 19 errors	38,52,60,69,138,141,144,163,166,169,176,197,200,203,206,209,212,216,219
 git-issues/git-issue-105-compile.dfy	0	7 verified, 0 errors	
@@ -553,8 +552,6 @@ git-issues/git-issue-105-newtype-witness-checks.dfy	4	23 verified, 16 errors	12,
 git-issues/git-issue-105-newtypes.dfy	4	34 verified, 20 errors	29,32,38,42,54,70,71,73,83,90,109,115,130,150,153
 git-issues/git-issue-105-opacity.dfy	0	1 verified, 0 errors	
 git-issues/git-issue-105-opaque.dfy	4	19 verified, 8 errors	18,26,35,54,57,73,89,96
-git-issues/git-issue-105-general-traits.dfy	4	14 verified, 11 errors	22,36,39,77,103,115,126,147,153
-git-issues/git-issue-105-generics.dfy	4	21 verified, 10 errors	20,25,32,36,74,77,80,87,95,115
 git-issues/git-issue-105-raw-compile.dfy	0	3 verified, 0 errors	
 git-issues/git-issue-105-refinement-verify.dfy	4	20 verified, 9 errors	19,22,41,50,81,92,112,114,132
 git-issues/git-issue-105-statements.dfy	4	7 verified, 4 errors	36,41,54,66
@@ -563,9 +560,6 @@ git-issues/git-issue-105-trait-gates.dfy	4	3 verified, 2 errors	27,42
 git-issues/git-issue-105-traits.dfy	4	21 verified, 22 errors	25,30,55,58,64,89,122,151,154,157,194,198
 git-issues/git-issue-105-vacuity.dfy	0	5 verified, 0 errors	
 git-issues/git-issue-105-verify.dfy	4	5 verified, 4 errors	13,20,26,34
-git-issues/git-issue-105-trait-gates.dfy	2	0 verified, 0 errors	14,21,26
-git-issues/git-issue-105-traits.dfy	4	21 verified, 22 errors	25,30,55,58,64,89,122,151,154,157,194,198
-git-issues/git-issue-105-vacuity.dfy	0	3 verified, 0 errors	
 git-issues/git-issue-105-wellformedness.dfy	4	12 verified, 2 errors	52,57
 git-issues/git-issue-1074.dfy	0	3 verified, 0 errors	
 git-issues/git-issue-1093.dfy	0	2 verified, 0 errors	
