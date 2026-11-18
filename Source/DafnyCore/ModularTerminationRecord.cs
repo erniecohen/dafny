@@ -348,7 +348,10 @@ public static class ModularTerminationProducer {
     var reporter = new BatchErrorReporter(storedOptions);
     string FirstError() => reporter.AllMessagesByLevel[ErrorLevel.Error].FirstOrDefault()?.Message ?? "unknown error";
 
-    var files = inputs.Where(f => f.ShouldNotVerify)
+    // The libraries, and the orders library of --decreases-orders, which is verified with the program that loads it
+    // (DecreasesOrders.VerifiesOrdersLibrary) and is not part of the stored program: without it, an order of the
+    // stored program would not be the orders library's.
+    var files = inputs.Where(f => f.ShouldNotVerify || DecreasesOrders.VerifiesOrdersLibrary(options, f.Uri))
       .Append(DafnyFile.FromText(storedOptions, StoredProgramUri, programText)).ToList();
     var parsed = await new ProgramParser(Microsoft.Extensions.Logging.Abstractions.NullLogger<ProgramParser>.Instance,
       OnDiskFileSystem.Instance).ParseFiles("the stored program", files, reporter, System.Threading.CancellationToken.None);

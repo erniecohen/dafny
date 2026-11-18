@@ -447,6 +447,13 @@ NoGhost - disable printing of functions, ghost methods, and proof
               // so it's consistent to skip those modules here too. 
               continue;
             }
+            if (printMode == PrintModes.Serialization && DecreasesOrders.VerifiesOrdersLibrary(options, modDecl.Origin.Uri)) {
+              // Under --modular-termination the orders library is loaded by every program that uses it and verified
+              // with that program, so a library does not store a copy of it, which would be a second module of
+              // the same name, and whose orders would not be the orders library's
+              // (https://github.com/erniecohen/dafny/issues/266, M4).
+              continue;
+            }
 
             VisibilityScope scope = null;
             if (modDecl.Signature != null) {

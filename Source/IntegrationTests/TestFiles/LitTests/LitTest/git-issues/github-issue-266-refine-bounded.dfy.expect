@@ -1,0 +1,10 @@
+the pre-type resolver
+github-issue-266-refine-bounded.dfy(41,4): Error: assertion might not hold
+github-issue-266-refine-bounded.dfy(46,25): Error: decreases clause might not decrease (--modular-termination: the bound of the bounded value must be below the caller's 'decreases {:global}' bound)
+
+Dafny program verifier finished with 5 verified, 2 errors
+the legacy resolver
+github-issue-266-refine-bounded.dfy(41,4): Error: assertion might not hold
+github-issue-266-refine-bounded.dfy(46,25): Error: decreases clause might not decrease (--modular-termination: the bound of the bounded value must be below the caller's 'decreases {:global}' bound)
+
+Dafny program verifier finished with 5 verified, 2 errors

@@ -715,6 +715,34 @@ caller above `(b, ⊤)` may apply it. So a continuation certified at its
 intersection's own stock may resume that intersection; one that counts a smaller
 stock may not.
 
+### 7.5 Portable contracts of bounded values
+
+A library built with `dafny build --target:lib --modular-termination` stores the
+contracts of its modules in its termination record (M3-4), and those contracts
+carry what a client of a bounded value needs
+(https://github.com/erniecohen/dafny/issues/266, M4): an order type with its
+`{:order O}`, the `bounded<O, F>` types of fields, parameters and results, the
+argument-dependent orders `A -> R`, and the bounds in specifications and
+`decreases {:global}` clauses. They carry no certified body: the body of a method
+that calls `certify` or `certifyAt` is private, so replacing it keeps the
+contracts, and the client's Boogie input is unchanged byte for byte
+(`ModularTerminationContractTests`). A change of a bound in a specification, or of
+an order type's order, changes the contract of its module, and a dependent built
+against the old one is rejected. The orders library is loaded and verified by
+every program that uses it, so a library no longer stores a copy of it, which made
+every library that used `by O` or an order type fail its stored-program check.
+`github-issue-266-m4.dfy` builds such libraries, verifies clients and controls
+against them, and rejects tampered contracts and programs, a refinement of a
+library module, a formation that does not verify, `--no-verify`, and a build that
+runs out of resources.
+
+The pre-type resolver resolved a bounded application `c(args)`, and `c.requires`
+and `c.reads`, by rewriting the syntax in place to apply `c.erase`. A refining
+module clones the resolved syntax of the module it refines, and the clone of a
+rewritten application did not resolve: an assertion failed. The erased value is
+now kept apart from the syntax. The legacy resolver rewrites it too, but resolves
+the rewritten clone (`github-issue-266-refine-bounded.dfy` checks both).
+
 ## 8. Open questions
 
 1. Settled: no explicit leaf (rule 5 is dropped; bounds are the only openness
