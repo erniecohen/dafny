@@ -9,8 +9,8 @@ version is computed, is in [`REVIEW.md`](REVIEW.md).  Where the fork is going is
 ## The branches
 
 - **`review/4.11.0`**, the default branch, is the shipped line: Dafny 4.11.0 with
-  the fixes, built against a fixed Boogie.  A change to a product file makes a new
-  last product commit, which gets a new version and a new tag.  `REVIEW.md` defines
+  the fixes, built against a fixed Boogie.  A change to the product tree gets a new
+  version and a new tag, derived automatically from HEAD.  `REVIEW.md` defines
   the product, in "The version, and how to check it".
 - **`dev`** follows upstream's `master`, with this fork's CI in place of upstream's
   workflows.  Improvements are written there.  They come to `review/4.11.0` only
@@ -91,11 +91,11 @@ decides otherwise.
 
 ## Merging fix pull requests
 
-Every product change updates `.github/review/base` and appends its test to
-`.github/review/regressions`, so two open fix pull requests always conflict there.
-They are merged one at a time.  After one merges, the next is rebased onto
-`review/4.11.0`, its `base` and `regressions` lines are redone, and its CI is run
-again before it merges.
+Every product change derives its version from HEAD and appends its test to
+`.github/review/regressions`; it does not restamp `.github/review/base`.
+Fix pull requests are merged one at a time. After one merges, the next is rebased
+onto `review/4.11.0`, any regression-list conflicts are resolved, and its CI is
+run again before it merges.
 
 ## New axioms are where soundness is lost
 
