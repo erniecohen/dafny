@@ -8,8 +8,11 @@ legacy: callback PASS
 legacy: callback-forward PASS
 legacy: bounded-apply PASS
 legacy: bounded-forward PASS
+legacy: bymethod PASS
 legacy: positive PASS
 legacy: false PASS
+legacy: bymethod-positive PASS
+legacy: bymethod-false PASS
 legacy: legacy-opt-out PASS
 legacy: old-recursion-opt-out PASS
 refresh: original PASS
@@ -22,7 +25,10 @@ refresh: callback PASS
 refresh: callback-forward PASS
 refresh: bounded-apply PASS
 refresh: bounded-forward PASS
+refresh: bymethod PASS
 refresh: positive PASS
 refresh: false PASS
+refresh: bymethod-positive PASS
+refresh: bymethod-false PASS
 refresh: legacy-opt-out PASS
 refresh: old-recursion-opt-out PASS

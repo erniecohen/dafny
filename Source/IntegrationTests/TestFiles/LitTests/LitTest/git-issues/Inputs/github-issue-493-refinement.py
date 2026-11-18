@@ -103,6 +103,37 @@ bounded_forward = callback_forward.replace(
     'G(c: C, f: int -> int)', 'G(c: C, f: bounded<nat, (int -> int)>)').replace(
     'decreases {:global} 2 decreases {:callback f} 1', 'requires f.bound == 1').replace(
     'c.Use(f)', 'c.Use(f.erase)')
+bymethod = '''
+module Base {
+  trait A { method K() decreases {:global} 0 }
+  trait B { function G(a: A): int decreases {:global} 0 }
+  type T {
+    function G(a: A): int { 0 } by method { a.K(); return 0; }
+  }
+}
+module Refined refines Base {
+  class T extends B { constructor () {} }
+}
+'''
+bymethod_positive = bymethod.replace(
+    'function G(a: A): int decreases {:global} 0',
+    'function G(a: A): int decreases {:global} 1') + '''
+module Use {
+  import Base
+  import Refined
+  class Leaf extends Refined.A {
+    constructor () {}
+    method K() decreases {:global} 0 {}
+  }
+  method Exercise() {
+    var c := new Refined.T();
+    var a := new Leaf();
+    var x := c.G(a);
+    assert x == 0;
+    // CONTROL
+  }
+}
+'''
 
 for refresh in [False, True]:
     label = 'refresh' if refresh else 'legacy'
@@ -131,10 +162,15 @@ for refresh in [False, True]:
         ('callback-forward', callback_forward, []),
         ('bounded-apply', bounded_apply, []),
         ('bounded-forward', bounded_forward, []),
+        ('bymethod', bymethod, []),
     ]:
         run(name, source, 4, ['Error: decreases clause might not decrease'], extra)
     run('positive', positive)
     text = run('false', positive.replace('// CONTROL', 'assert false;'), 4,
+               ['Error: assertion might not hold', '1 error'])
+    assert text.count('Error: assertion might not hold') == 1, text
+    run('bymethod-positive', bymethod_positive)
+    text = run('bymethod-false', bymethod_positive.replace('// CONTROL', 'assert false;'), 4,
                ['Error: assertion might not hold', '1 error'])
     assert text.count('Error: assertion might not hold') == 1, text
     run('legacy-opt-out', original, 2, ["class 'T' is in a different module"],

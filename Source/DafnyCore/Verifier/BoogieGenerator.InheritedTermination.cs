@@ -96,7 +96,8 @@ namespace Microsoft.Dafny {
       // Schedule the inherited body even when no ordinary recursive edge needs to be rechecked.
       if (ModularTermination.RulesEnabled(options) &&
           (TerminationVertices(declaration).Any(vertex =>
-            ModularTermination.HasGlobalBound(vertex) || ModularTermination.HasCallbackBounds(vertex)) ||
+            ModularTermination.HasGlobalBound(vertex is Method { FunctionFromWhichThisIsByMethodDecl: { } function }
+              ? function : vertex) || ModularTermination.HasCallbackBounds(vertex)) ||
            UsesBoundedCallable(declaration))) {
         return true;
       }
