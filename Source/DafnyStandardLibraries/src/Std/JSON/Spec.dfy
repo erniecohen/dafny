@@ -18,9 +18,11 @@ module Std.JSON.Spec {
 
   type Result<+T> = SerializationResult<T>
 
+  ghost predicate IsASCII(c: char) { 0 <= c as int < 128 }
+
   function EscapeUnicode(c: uint16): seq<uint16> {
     var sStr := Strings.HexConversion.OfNat(c as nat);
-    Seq.MembershipImpliesIndexing(c => 0 <= c as int < 128, sStr);
+    Seq.MembershipImpliesIndexing(IsASCII, sStr);
     var s := ASCIIToUTF16(sStr);
     assert |s| <= 4 by {
       assert c as nat <= 0xFFFF;
