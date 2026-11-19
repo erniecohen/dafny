@@ -1,6 +1,6 @@
 # Recursive module compilation (issue 466, stage 7)
 
-The executable targets admitted for recursive module groups are C#, Java and Go.
+The executable targets admitted for recursive module groups are C#, Java, Go and Python.
 The feature remains behind the hidden, experimental `--recursive-modules`
 option and its existing prerequisites. Other executable targets are rejected
 before code generation, with the target named in the diagnostic. Library
@@ -47,9 +47,9 @@ remain in the issue's regression suite. The original resolver continues to
 reject the feature's member-invariant prerequisite.
 
 `git-issue-466-stage7-targets.dfy` checks the explicit rejection for
-JavaScript, Python, Rust, C++ and resolved Dafny (`dfy`) without needing their
+JavaScript, Rust, C++ and resolved Dafny (`dfy`) without needing their
 compiler toolchains. Restoring the blanket executable rejection must break the C# positive test; admitting
-Python must break its rejection control. These mutations change only the target
+an unqualified target must break its rejection control. These mutations change only the target
 admission site and are built and run separately.
 
 ## Why the existing Java lowering applies
@@ -128,6 +128,58 @@ This is an opt-in compilation feature. It adds no verification condition, axiom,
 trusted assumption or verifier-lowering site. With recursive modules off, the
 existing Go emission paths are unchanged.
 
+## Python group emission
+
+Python cannot initialize cyclic imports merely by adding the missing sibling
+imports: a class definition evaluates its trait bases immediately, before a
+partially initialized sibling necessarily has defined them. A group instead
+emits one file, named from its first member in ordinal full-name order. All
+declarations have a member prefix in that file. References within the group use
+those local names, including datatype constructor helpers. A wrapper file for
+each member exports the original names, so external clients keep their normal
+module-qualified references and share exactly the same class objects.
+
+Each declaration is collected before the file is assembled. Assembly visits
+parent traits before a declaration that extends them; datatype constructor
+classes follow their datatype base. Importing the file therefore creates the
+trait bases before its subclasses, even when each member has a subclass of a
+trait in the other member. Constants remain getters. Defaults, witnesses and
+type descriptors defer construction until called, after the group has finished
+initializing. No new initialization dependency is introduced by their bodies.
+Printed datatype, class and iterator names retain their Dafny spelling.
+
+Only dependencies below the group are imported into its implementation file.
+Every sibling is registered before the next module is emitted. The optional
+replacement-ordering pass visits a whole group together, applies replacements
+to its external dependencies, and omits its internal import edges. It retains
+the existing rejection of cycles introduced by replacements. A refinement above
+the group remains a separate module referring to its original siblings.
+
+The wrappers also preserve separate-compilation interfaces. Their imports use
+`--python-module-name` when present. Group and declaration identities and file
+assembly order depend on names, so relocating sources and reloading a complete
+archive preserve the implementation file. Extern modules, types and members
+inside a Python group remain explicitly rejected pending a foreign-linkage
+convention; ordinary foreign dependencies below a group keep their existing
+lowering.
+
+`git-issue-466-python.dfy` compares Python with C# for every runtime case of the
+Java fixture: source execution, both wrapper-erasure settings, scheduled
+resolution, additional axioms and complete `.doo` inputs. Its invalid invariant
+construction and reachable false assertion still fail verification.
+`git-issue-466-python-link.dfy` adds repeated names in several groups, nested
+members, defaults of constrained types, printed classes and iterators, opposing
+cross-module trait bases, an entry point inside a group and replacement
+ordering. It compares the implementation emitted from relocated archive inputs
+byte for byte and runs a separately translated client against the producer's
+Python package using its translation record.
+`git-issue-466-python-extern.dfy` has module, type and member rejection controls.
+
+This extends an opt-in compilation feature. It changes no verifier rule,
+verification condition, axiom, trusted assumption or obligation producer.
+With recursive modules off, declaration names, imports and emission stay on
+their existing paths.
+
 ## Remaining compilation work
 
 Qualify the other backends one at a time. Each needs runtime comparisons for
@@ -137,10 +189,8 @@ and library inputs. Targets that forbid cyclic imports need group emission as
 one target-language unit. No backend is admitted merely because its generated
 source parses or compiles.
 
-The Go milestone depends on https://github.com/erniecohen/dafny/pull/533 and,
-through it, https://github.com/erniecohen/dafny/pull/529. Python still emits
-separate files with imports and class definitions that can need a sibling before
-it is initialized. Bypassing admission fails with a missing sibling name; adding
-that import fails at a cross-module trait base in a partially initialized module.
-Python needs group-level emission and initialization work. JavaScript, Rust, C++
-and resolved Dafny remain unqualified too.
+The Python milestone depends on https://github.com/erniecohen/dafny/pull/535,
+through it https://github.com/erniecohen/dafny/pull/533, and through that
+https://github.com/erniecohen/dafny/pull/529. Go and Python foreign linkage within
+groups remains separate work. JavaScript, Rust, C++ and resolved Dafny remain
+unqualified. This milestone does not complete issue 466.

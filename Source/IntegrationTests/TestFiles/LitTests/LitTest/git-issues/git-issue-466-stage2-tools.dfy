@@ -12,7 +12,7 @@
 // RUN: %build --member-invariants --recursive-modules "%s" --output "%t-build" >> "%t"
 // RUN: %build --no-verify --member-invariants --recursive-modules "%s" --output "%t-build" >> "%t"
 // RUN: %run --member-invariants --recursive-modules "%s" --output "%t-run" >> "%t"
-// RUN: %exits-with 3 %translate py --type-system-refresh --use-basename-for-filename --show-snippets:false --standard-libraries:false --member-invariants --recursive-modules "%s" --output "%t-py" >> "%t"
+// RUN: %translate py --type-system-refresh --use-basename-for-filename --show-snippets:false --standard-libraries:false --member-invariants --recursive-modules "%s" --output "%t-py" >> "%t"
 // RUN: %build -t:lib --member-invariants --recursive-modules "%s" --output "%t.doo" >> "%t"
 // RUN: %exits-with 2 %baredafny verify --use-basename-for-filename --show-snippets:false --standard-libraries:false --type-system-refresh:false --member-invariants --recursive-modules "%s" >> "%t"
 // RUN: %diff "%s.expect" "%t"
