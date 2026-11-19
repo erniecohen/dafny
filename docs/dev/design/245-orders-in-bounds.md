@@ -46,7 +46,7 @@ counted every application of a function value as unknown code, so no order could
 3. the application is in a ghost context.  A quantifier over an arrow type has no bounds, so the resolver
    accepts one only in a ghost context.
 
-Every other application is still unknown code.  That covers parameters, locals, fields, results, and
+Except for the witness-chain summary below, every other application is still unknown code. That covers parameters, locals, fields, results, and
 lambdas formed in the program and bound to a variable.  A binder may not be passed for a parameter that
 has a callback bound.
 
@@ -67,8 +67,31 @@ and the bound's well-definedness relies on the lemma's postcondition.
 - A well-foundedness proof used in a bound binds each chain with a quantifier.  For example,
   `lemma Climbs(n: nat) ensures forall c: Chain<nat> :: ... ==> c(n) >= n` instead of
   `lemma Climbs(c: Chain<nat>, n: nat)`.
-- The `aha(c)` of a user implementation of `Wfo` applies a parameter, so it is unknown code, and a bound
-  with an order then reaches it.  Under `--modular-termination`, build orders with `Of`.
+
+## User chain-stopping witnesses
+
+With `--decreases-orders`, the reachability summary of a checked ghost override of `Wfo.aha` abstracts
+applications of its sole total-chain parameter. The resolved override chain must reach the actual
+library trait, not a declaration with the same name. This is the one distinguished formal parameter
+of the universally quantified chain-stopping proof. The proof still checks the body, its termination,
+and `!gt(c(r), c(r + 1))` for arbitrary `c`; neither that postcondition nor any implied-call cycle edge
+is removed. Other parameters, stored function values, open dispatch and helper calls retain their
+usual effects. A bodyless witness, a witness excluded from verification or termination checking,
+an axiom or extern witness, and an implementation admitted by `AssumeCrossModuleTermination` do not
+receive this summary.
+
+The summary is justified by the same total-function interpretation as the binder rule: proving the
+witness for every chain is a statement about pre-existing total mathematical functions. It is not
+permission to run arbitrary supplied callbacks. Consequently every explicit `aha(c)` call also
+applies the actual `c` in the reachability walk. Under a bound, the call checker requires a lambda,
+known closed function or quantifier binder; it rejects an unknown, bounded or callback parameter,
+since this call has no callback-bound verification condition. A witness selected as a function value
+is conservatively unknown: the abstract-chain summary must not make such a value known closed code.
+All of this is gated by `--decreases-orders`; its off-mode analysis is unchanged.
+
+This rule admits an implementation whose proof uses `c(n)` directly. A proof that forwards `c` to a
+helper with an ordinary chain parameter is still rejected. Such a helper can use the existing binder
+rule by quantifying over chains in its contract and proof.
 
 ## Tests
 
@@ -84,3 +107,9 @@ and the bound's well-definedness relies on the lemma's postcondition.
   - an order whose proof passes the chain to a lemma parameter;
   - an order whose lemma quantifies over `nat ~> nat`;
   - an order function that is not `{:termination_closed}`, used from another module.
+
+`git-issues/github-issue-245-witness.dfy` checks a user witness in local and imported global bounds,
+callback bounds and ordinary calls with closed or logical chains. Its controls reject a false
+well-foundedness postcondition, nondecreasing bounds, `assert false`, unchecked witnesses, actual
+unknown or callback chain arguments, and witness function values. The earlier implied-call-cycle
+and helper-parameter controls remain in force.
