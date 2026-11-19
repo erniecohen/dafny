@@ -47,8 +47,8 @@ remain in the issue's regression suite. The original resolver continues to
 reject the feature's member-invariant prerequisite.
 
 `git-issue-466-stage7-targets.dfy` checks the explicit rejection for Go, Java,
-JavaScript, Python, Rust and C++ without needing their compiler toolchains. Restoring
-the blanket executable rejection must break the C# positive test; admitting
+JavaScript, Python, Rust, C++ and resolved Dafny (`dfy`) without needing their
+compiler toolchains. Restoring the blanket executable rejection must break the C# positive test; admitting
 Python must break its rejection control. These mutations change only the target
 admission site and are built and run separately.
 
