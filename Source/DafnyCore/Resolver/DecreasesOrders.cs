@@ -100,7 +100,8 @@ public static class DecreasesOrders {
   /// not load the bundled standard library, on its own (it imports nothing).
   /// </summary>
   public static bool LoadsOrdersLibrary(DafnyOptions options) {
-    return options.Get(CommonOptionBag.DecreasesOrders) && TypeSystemSupportsOrders(options) &&
+    return options.Get(CommonOptionBag.DecreasesOrders) && !options.Get(DeveloperOptionBag.Bootstrapping) &&
+           TypeSystemSupportsOrders(options) &&
            (options.Get(CommonOptionBag.UseStandardLibraries) || ModularTermination.RulesEnabled(options));
   }
 
@@ -161,7 +162,7 @@ public static class DecreasesOrders {
   /// --modular-termination the call itself needs no bound check.  This holds only for a call, which supplies the
   /// arguments; a function named as a value is classified by what it reaches.
   /// </summary>
-  public static bool CallAppliesOnlyItsArguments(MemberDecl callee) {
+  public static bool IsIntrinsicArgumentApplication(MemberDecl callee) {
     return callee switch {
       Function function => AppliesOnlyItsArguments(function),
       MethodOrConstructor lemma => AppliesOnlyItsArguments(lemma),
