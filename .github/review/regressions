@@ -1067,3 +1067,7 @@ git-issues/git-issue-266-reachability.dfy
 # Duplicate-replacement diagnostics use source locations (issue 451).
 comp/replaceables/resolveManyReplacement.dfy
 git-issues/git-issue-451.dfy
+
+# Compiled generic parent additions and inherited bounds under default termination (https://github.com/erniecohen/dafny/issues/88).
+git-issues/github-issue-88-runtime.dfy
+git-issues/github-issue-88-inherited-bounds.dfy
