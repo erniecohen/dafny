@@ -34,7 +34,7 @@ def check_resources(directory):
         raise ValueError('Checked bundles were produced by different verifier builds')
 
 
-def check_archive(archive, reader, solver, inspect_only=False):
+def check_archive(archive, reader, solver, inspect_only=False, cores=3):
     with tempfile.TemporaryDirectory() as scratch:
         root = Path(scratch)
         with zipfile.ZipFile(archive) as package:
@@ -64,7 +64,7 @@ def check_archive(archive, reader, solver, inspect_only=False):
   }
 }
 '''
-        command = [str(executable), 'verify', str(source), '--solver-path', str(solver), '--cores', '3',
+        command = [str(executable), 'verify', str(source), '--solver-path', str(solver), '--cores', str(cores),
                    '--resource-limit', '16000000', '--standard-libraries', '--type-system-refresh',
                    '--general-traits=datatype', '--general-newtypes', '--reads-clauses-on-methods',
                    '--enforce-determinism', '--track-print-effects',
@@ -92,5 +92,7 @@ if __name__ == '__main__':
     parser.add_argument('--solver', type=Path, required=True)
     parser.add_argument('--inspect-only', action='store_true',
                         help='Inspect cross-published resources; execution must be qualified downstream')
+    parser.add_argument('--cores', type=int, choices=[1, 2, 3], default=3,
+                        help='Verification worker cap (default: 3)')
     args = parser.parse_args()
-    check_archive(args.archive.resolve(), args.reader.resolve(), args.solver.resolve(), args.inspect_only)
+    check_archive(args.archive.resolve(), args.reader.resolve(), args.solver.resolve(), args.inspect_only, args.cores)

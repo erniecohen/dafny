@@ -69,6 +69,45 @@ class ReleaseCatalogTests(unittest.TestCase):
                 catalog.check_archive(archive, directory / 'reader.dll', directory / 'z3', inspect_only=True)
                 self.assertEqual(run.call_count, 1)
 
+    def test_native_catalog_still_executes_positive_and_false_controls(self):
+        from types import SimpleNamespace
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = Path(tmp)
+            archive = directory / 'native.zip'
+            with zipfile.ZipFile(archive, 'w') as package:
+                package.writestr('dafny/DafnyPipeline.dll', 'managed fixture')
+                package.writestr('dafny/dafny', 'apphost fixture')
+            def execute(command, **kwargs):
+                if command[0] == 'dotnet':
+                    resources = Path(command[-1]); resources.mkdir()
+                    self.fixture(resources)
+                    return SimpleNamespace(returncode=0)
+                self.assertEqual(command[command.index('--cores') + 1], '2')
+                false = 'assert false;' in Path(command[2]).read_text()
+                text = 'Std.ActionsExterns.MakeSetReader including termination'
+                if false:
+                    text += '\nError: assertion might not hold; 1 error'
+                return SimpleNamespace(returncode=4 if false else 0, stdout=text, stderr='')
+            with patch.object(catalog.subprocess, 'run', side_effect=execute) as run:
+                catalog.check_archive(archive, directory / 'reader.dll', directory / 'z3', cores=2)
+                self.assertEqual(run.call_count, 3)
+
+    def test_cross_published_incomplete_catalog_is_rejected(self):
+        from types import SimpleNamespace
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = Path(tmp)
+            archive = directory / 'linux.zip'
+            with zipfile.ZipFile(archive, 'w') as package:
+                package.writestr('dafny/DafnyPipeline.dll', 'managed fixture')
+            def reader(command, **kwargs):
+                resources = Path(command[-1]); resources.mkdir()
+                self.fixture(resources)
+                (resources / 'DafnyStandardLibraries-checked-cs.doo').unlink()
+                return SimpleNamespace(returncode=0)
+            with patch.object(catalog.subprocess, 'run', side_effect=reader):
+                with self.assertRaisesRegex(ValueError, 'missing.*checked-cs'):
+                    catalog.check_archive(archive, directory / 'reader.dll', directory / 'z3', inspect_only=True)
+
     def test_both_archives_and_checksums_are_required(self):
         root = Path(__file__).resolve().parents[2]
         workflow = (root / '.github/workflows/review.yml').read_text()
