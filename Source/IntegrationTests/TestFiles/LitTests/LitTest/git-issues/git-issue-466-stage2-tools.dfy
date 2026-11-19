@@ -1,9 +1,9 @@
 // Recursion across module boundaries (https://github.com/erniecohen/dafny/issues/466), second
 // stage: tools.  A program with a recursive module group is verified, with any number of
-// resolution threads, with --isolate-assertions and with --filter-symbol. Stage 7 supports C# and Java:
-// build and run succeed; Python translation is still rejected. Stage 6 supports library builds. The option
+// resolution threads, with --isolate-assertions and with --filter-symbol. C# build and run
+// and Python translation succeed. Stage 6 supports library builds. The option
 // needs the new resolver.
-// NONUNIFORM: Recursive groups compile to C# and Java; Python rejection and library output are intentional.
+// NONUNIFORM: C# execution, Python translation and archive construction exercise distinct tool paths.
 // RUN: %verify --member-invariants --recursive-modules "%s" > "%t"
 // RUN: %verify --member-invariants --recursive-modules --resolution-threads 1 "%s" >> "%t"
 // RUN: %verify --member-invariants --recursive-modules --resolution-threads 4 "%s" >> "%t"
