@@ -1499,3 +1499,16 @@ same-module calls and concrete witnesses. `git-issue-471-controls.dfy` checks
 that false assertions after those calls and unmet prefix preconditions still
 fail. Both files run with both resolvers, with additional axioms, and with
 consistent obligation checks. The release note is `docs/dev/news/471.fix`.
+
+## Recursive newtype-to-trait casts (https://github.com/erniecohen/dafny/issues/472)
+
+The reported recursive call `(this as T).F(n - 1)` already verifies after the
+boxing repair in the member-invariants change
+(https://github.com/erniecohen/dafny/commit/1e370470c9). The existing
+`git-issues/git-issue-105-newtype-trait-cast.dfy` regression covers ordinary
+newtype-to-trait casts. It now also retains the reported function definition,
+an inhabited cast-and-round-trip witness, a false assertion after a trait call,
+and failed downcast, newtype-constraint and argument-constraint checks. It runs
+with and without additional axioms and member invariants.
+These are regression additions only: the verifier implementation, axioms and
+options are unchanged. The release note is `docs/dev/news/472.fix`.
