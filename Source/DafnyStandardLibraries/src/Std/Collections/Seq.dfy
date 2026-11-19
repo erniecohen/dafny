@@ -1007,6 +1007,7 @@ module Std.Collections.Seq {
 
   // Helper function for MergeSortBy
   @TailRecursion
+  @IsolateAssertions
   function MergeSortedWith<T(!new)>(left: seq<T>, right: seq<T>, lessThanOrEq: (T, T) -> bool) : (result :seq<T>)
     requires SortedBy(lessThanOrEq, left)
     requires SortedBy(lessThanOrEq, right)

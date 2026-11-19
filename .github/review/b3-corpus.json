@@ -1,0 +1,86 @@
+{
+  "schema": 1,
+  "language_options": {
+    "type-system-refresh": true,
+    "general-traits": "datatype",
+    "general-newtypes": true
+  },
+  "standard_library_dependencies": "Source/DafnyStandardLibraries/src/Std/",
+  "cases": [
+    {
+      "id": "prelude",
+      "stratum": "prelude",
+      "roots": [
+        "Source/DafnyCore/DafnyPrelude.bpl"
+      ]
+    },
+    {
+      "id": "std-math",
+      "stratum": "standard-library",
+      "roots": [
+        "Source/DafnyStandardLibraries/src/Std/Math.dfy"
+      ]
+    },
+    {
+      "id": "std-sequences",
+      "stratum": "standard-library",
+      "roots": [
+        "Source/DafnyStandardLibraries/src/Std/Collections/Seq.dfy"
+      ]
+    },
+    {
+      "id": "std-wrappers",
+      "stratum": "standard-library",
+      "roots": [
+        "Source/DafnyStandardLibraries/src/Std/Wrappers.dfy"
+      ]
+    },
+    {
+      "id": "std-dynamic-array",
+      "stratum": "standard-library",
+      "roots": [
+        "Source/DafnyStandardLibraries/src/Std/DynamicArray.dfy"
+      ]
+    },
+    {
+      "id": "git-issue-284-map",
+      "stratum": "soundness-regression",
+      "roots": [
+        "Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/git-issue-284-map.dfy"
+      ]
+    },
+    {
+      "id": "git-issue-491-positive",
+      "stratum": "soundness-regression",
+      "roots": [
+        "Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/git-issue-491-positive.dfy"
+      ]
+    },
+    {
+      "id": "github-issue-404",
+      "stratum": "soundness-regression",
+      "roots": [
+        "Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/github-issue-404.dfy"
+      ]
+    },
+    {
+      "id": "github-issue-147-original",
+      "stratum": "soundness-regression",
+      "roots": [
+        "Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/Inputs/github-issue-147-original.dfy"
+      ]
+    },
+    {
+      "id": "git-issue-132-newtype-partial-total-positive",
+      "stratum": "soundness-regression",
+      "roots": [
+        "Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/git-issue-132-newtype-partial-total-positive.dfy"
+      ]
+    }
+  ],
+  "standard_library_options": {
+    "reads-clauses-on-methods": true,
+    "enforce-determinism": true,
+    "track-print-effects": true
+  }
+}
