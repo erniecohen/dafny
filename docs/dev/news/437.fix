@@ -1,0 +1,1 @@
+Standard-library multiplication, strict division, merge, and optional integer-bitwise quotient proofs use smaller proof contexts and assertion batches to reduce sensitivity to solver symbol naming. Their contracts, executable code, and resource limits are unchanged.

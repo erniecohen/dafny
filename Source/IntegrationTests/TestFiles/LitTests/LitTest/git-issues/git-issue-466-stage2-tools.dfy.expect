@@ -22,5 +22,4 @@ Dafny program verifier finished with 3 verified, 0 errors
 Error: module 'Count1' is in a recursive module group; compiling a program that has a recursive module group is not yet supported
 
 Dafny program verifier finished with 3 verified, 0 errors
-Error: module 'Count1' is in a recursive module group; compiling a program that has a recursive module group is not yet supported
 Error: --member-invariants requires --type-system-refresh

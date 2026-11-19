@@ -197,12 +197,6 @@ public static class RecursiveModuleGroups {
         member.ModuleDef.RecursiveGroup = group;
         member.ModuleDef.CallGraph = group.CallGraph;
         CheckSupported(member, reporter);
-        _ = member.ShouldVerify(program.Compilation); // fills in UrisToVerify
-        if (program.Compilation.UrisToVerify?.Contains(member.Origin.Uri) == false) {
-          // A group that is not verified here: a library does not record groups yet.
-          reporter.Error(MessageSource.Resolver, member.Origin,
-            $"module {DisplayName(member)}, which is in a recursive module group, is in a library; this is not yet supported");
-        }
       }
     }
     if (groups.Count != 0) {
@@ -219,6 +213,7 @@ public static class RecursiveModuleGroups {
         }
       }
     }
+    DafnyCore.RecursiveModuleManifest.CheckBoundaries(program, groups, reporter);
     return groups;
   }
 

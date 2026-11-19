@@ -717,6 +717,7 @@ git-issues/git-issue-1164.dfy	0	0 verified, 0 errors
 git-issues/git-issue-1165.dfy	0	6 verified, 0 errors	
 git-issues/git-issue-1172.dfy	2		9,16,23,30,37,44,51,81,87,111,114,118,122,125,128,132,133,134,135,140,145,151,152,157,158,165,168,172,175,179,182,185
 git-issues/git-issue-1174.dfy	2		12
+git-issues/git-issue-118.dfy	4	2 verified, 1 error	14
 git-issues/git-issue-1180a.dfy	2		7,8,9,10,11,12,13,19,20,21,22,23,24,25,31,32,33,37,38,39,43,44,45,52,53,54,61,62,63,67,68,69,73,74,75,79,92,95,102,105,108,111,114,127,130,137,140,143,146,159,162,165,169,172,175,188,191,194,198,201,204,217,220,223,227,230,233
 git-issues/git-issue-1180b.dfy	4	7 verified, 20 errors	28,29,34,35,40,41,46,47,56,57,63,64,83,84,103,104,123,124,143,144
 git-issues/git-issue-1181.dfy	0	0 verified, 0 errors	
@@ -1092,6 +1093,8 @@ git-issues/git-issue-452a.dfy	2		20,25
 git-issues/git-issue-452b.dfy	2		13
 git-issues/git-issue-452c.dfy	0	0 verified, 0 errors	
 git-issues/git-issue-4684.dfy	0	4 verified, 0 errors	
+git-issues/git-issue-471-controls.dfy	4	0 verified, 5 errors	19,23,27,32,35
+git-issues/git-issue-471.dfy	0	17 verified, 0 errors	
 git-issues/git-issue-4724.dfy	4	2 verified, 1 error	8
 git-issues/git-issue-4731.dfy	0	3 verified, 0 errors	
 git-issues/git-issue-4768.dfy	0	0 verified, 0 errors	

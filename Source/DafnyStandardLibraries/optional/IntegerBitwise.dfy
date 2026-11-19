@@ -66,7 +66,7 @@ module Std.Arithmetic.IntegerBitwise {
     decreases a
   { reveal P(); if a > 0 { PowerSum(a-1,b); } }
 
-  lemma {:induction false} Quotient(a: int, d: int, q: int, r: int)
+  lemma {:induction false} {:isolate_assertions} Quotient(a: int, d: int, q: int, r: int)
     requires 0 < d && a == q*d+r && 0 <= r < d
     ensures a/d == q && a%d == r
   {
