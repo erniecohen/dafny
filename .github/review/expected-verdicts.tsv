@@ -927,6 +927,7 @@ git-issues/git-issue-2612b.dfy	4	1 verified, 1 error	11
 git-issues/git-issue-2640.dfy	4	3 verified, 11 errors	10,19,38,45,56,65,73,82,90,112
 git-issues/git-issue-2651.dfy	4	0 verified, 1 error	7
 git-issues/git-issue-2657.dfy	4	0 verified, 1 error	9
+git-issues/git-issue-266-persistence.dfy	0	2 verified, 0 errors	
 git-issues/git-issue-266-reachability.dfy	0	14 verified, 0 errors	
 git-issues/git-issue-267.dfy	0	0 verified, 0 errors	
 git-issues/git-issue-2672-legacy.dfy	0	5 verified, 0 errors	
