@@ -1,0 +1,1 @@
+Explicit calls of a least or greatest lemma's prefix lemma from another module no longer fail with an internal error about an undeclared Boogie procedure.
