@@ -11,6 +11,7 @@ git-issues/git-issue-6535.dfy
 git-issues/git-issue-6536.dfy
 git-issues/git-issue-6537.dfy
 git-issues/boogie-issue-1168.dfy
+git-issues/git-issue-281-shared-literals.dfy
 # Upstream tests whose expected output the fix for #6366 updated, or whose proofs
 # depended on the axioms it and the fix for #6531 changed:
 dafny4/GHC-MergeSort.dfy
@@ -1064,12 +1065,19 @@ git-issues/git-issue-118.dfy
 # Bounded stored callbacks through datatypes and constants, with raw-arrow and false controls (https://github.com/erniecohen/dafny/issues/266).
 git-issues/git-issue-266-reachability.dfy
 
+# Stored and returned bounded evidence, including ghost return and strict-cycle controls (https://github.com/erniecohen/dafny/issues/266).
+git-issues/git-issue-266-persistence.dfy
+
 # Duplicate-replacement diagnostics use source locations (issue 451).
 comp/replaceables/resolveManyReplacement.dfy
 git-issues/git-issue-451.dfy
 
 # User chain-stopping witnesses in modular-termination bounds (issue 245).
 git-issues/github-issue-245-witness.dfy
+
+# Compiled generic parent additions and inherited bounds under default termination (https://github.com/erniecohen/dafny/issues/88).
+git-issues/github-issue-88-runtime.dfy
+git-issues/github-issue-88-inherited-bounds.dfy
 
 # Total-function extensionality at every arity, including empty products (issue 374).
 git-issues/git-issue-374-arities.dfy
