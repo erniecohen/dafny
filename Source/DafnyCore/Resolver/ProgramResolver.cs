@@ -259,6 +259,8 @@ public class ProgramResolver {
     var initialMembers = new Dictionary<TopLevelDeclWithMembers, Dictionary<string, MemberDecl>>(classMembers);
     var profile = PipelineProfile.For(Options);
     var namePrefixes = ModuleNamePrefixes.For(declarations.Select(d => d.FullName));
+    var snapshots = Options.Get(CommonOptionBag.ResolutionCache) is { } directory
+      ? new ResolutionSnapshots(directory) : null;
     Program.ResolutionKeys = new();
     for (var i = 0; i < declarations.Count; i++) {
       foreach (var dependency in prerequisites[i]) {
@@ -347,11 +349,29 @@ public class ProgramResolver {
             ModuleResolutionResult moduleOutput = null;
             bool? cached = null;
             var status = "failed";
+            var snapshotState = "bypass";
+            string snapshotContext = null;
+            var snapshotHit = false;
+            var resolverCalls = 0;
             try {
               profile?.ModulePhasesStart();
               ResolutionWorkerStarting?.Invoke(declarations[index]);
               ModuleResolutionResult ResolveOutput() {
-                var resolved = worker.ResolveModuleDeclaration(Program.Compilation, declarations[index]);
+                var candidate = snapshots == null ? null : ResolutionSnapshots.Prepare(declarations[index],
+                  Program.ResolutionKeys[declarations[index]], closure.Select(i => results[i]).ToArray(), namePrefixes,
+                  prerequisites[index].Select(i => new ModuleResolutionKey.Prerequisite(
+                    DependencyRole(declarations[index], declarations[i]), declarations[i].FullName,
+                    Program.ResolutionKeys[declarations[i]])).ToArray());
+                snapshotContext = candidate?.Context;
+                ModuleResolutionResult resolved;
+                if (candidate != null && snapshots.TryRead(candidate, cancellationToken, out snapshotState)) {
+                  resolved = ResolutionSnapshots.Materialize(candidate);
+                  snapshotHit = true;
+                } else {
+                  resolverCalls++;
+                  resolved = worker.ResolveModuleDeclaration(Program.Compilation, declarations[index]);
+                  if (candidate != null) { snapshots.Publish(candidate, resolved, cancellationToken); }
+                }
                 // An import can be unresolved without producing a new local diagnostic.
                 // Its resolved fields (and hence Children) are not safe to traverse.
                 var invalid = resolved.ErrorReporter.HasErrors ||
@@ -425,6 +445,7 @@ public class ProgramResolver {
                 // A recursive module group is resolved by the worker of its leader, which is a prerequisite
                 // of the other declarations of the group.  A group is not cached.
                 if (ReferenceEquals(declarations[index], group.Members[0])) {
+                  resolverCalls++;
                   var outputs = ResolveGroupOutputs(group);
                   lock (gate) {
                     foreach (var groupOutput in outputs) { groupResults[groupOutput.Key] = groupOutput.Value; }
@@ -435,7 +456,7 @@ public class ProgramResolver {
               } else {
                 moduleOutput = ResolveModuleOutput(declarations[index], Program.ResolutionKeys[declarations[index]],
                   closure.Select(i => results[i]).ToArray(), ResolveOutput, out var cacheHit);
-                cached = cacheHit;
+                cached = cacheHit || snapshotHit;
               }
               status = "completed";
             } catch (OperationCanceledException) {
@@ -447,6 +468,16 @@ public class ProgramResolver {
                 // Take clears thread-local state even after a cache hit, cancellation or failure.
                 // The id is canonical graph order; events are emitted as workers complete.
                 var phases = profile.ModulePhasesTake();
+                if (snapshots != null) {
+                  profile.FrontEnd("resolve.snapshot", frontEndStart.Value, new Dictionary<string, object> {
+                    ["module"] = declarations[index].FullName,
+                    ["kind"] = ProfileModuleKind(declarations[index]),
+                    ["key"] = Program.ResolutionKeys[declarations[index]],
+                    ["context"] = snapshotContext,
+                    ["state"] = snapshotState,
+                    ["resolverCalls"] = resolverCalls
+                  });
+                }
                 profile.FrontEnd("resolve.module", frontEndStart.Value, new Dictionary<string, object> {
                   ["id"] = index,
                   ["module"] = ProfileModuleName(declarations[index]),
@@ -469,6 +500,7 @@ public class ProgramResolver {
               }
             }
             var output = moduleOutput;
+            if (snapshots != null) { cancellationToken.ThrowIfCancellationRequested(); }
             lock (gate) {
               results[index] = output;
               // A parent cannot be running: nesting is a prerequisite edge. Imports

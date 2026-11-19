@@ -1,0 +1,1 @@
+Add a hidden opt-in --resolution-cache DIR profile for detached direct-import alias results under --type-system-refresh. Snapshots validate current source, options, prerequisites and naming context; unsupported or invalid entries resolve normally. Literal module bodies remain outside this first closed schema.

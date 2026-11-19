@@ -5,7 +5,7 @@ import sys
 
 exe, solver, source, destination = (Path(s).resolve() for s in sys.argv[1:5])
 option = sys.argv[5]
-assert option in ("--translation-cache", "--verification-cache")
+assert option in ("--translation-cache", "--verification-cache", "--resolution-cache")
 assert not destination.exists(), "use a fresh test directory"
 destination.mkdir(parents=True)
 invalid = destination / "invalid.dfy"
@@ -24,7 +24,7 @@ for name, project_value, cli_value in [
     cache = destination / (name + "-cache")
     profile = destination / (name + ".jsonl")
     args = ["dotnet", str(exe), "verify", str(input_file), option]
-    if option == "--verification-cache":
+    if option in ("--verification-cache", "--resolution-cache"):
         args += [str(cache)]
     if cli_value is not None:
         args += ["--type-system-refresh:" + str(cli_value).lower()]

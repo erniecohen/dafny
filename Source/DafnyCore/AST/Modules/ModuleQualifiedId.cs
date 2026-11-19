@@ -63,6 +63,14 @@ public class ModuleQualifiedId : NodeWithoutOrigin, IHasReferences {
     return s;
   }
 
+  /// <summary>
+  /// Restore the one resolved field of a validated direct-alias snapshot. Alias resolution binds
+  /// Decl alone; SetTarget also fills Def/Sig and is used by other resolution paths.
+  /// </summary>
+  internal void RestoreAliasTarget(ModuleDecl target) {
+    Decl = target;
+  }
+
   public void SetTarget(ModuleDecl m) {
     if (m == null) {
       Decl = null;
