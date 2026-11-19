@@ -1,9 +1,12 @@
-// RUN: %verify --verify-included-files --standard-libraries --type-system-refresh --general-traits=datatype --decreases-orders --solver-path %review-z3 "%s" > "%t"
+// RUN: %exits-with 2 %verify --standard-libraries:false --decreases-orders:false --solver-path %review-z3 "%s" > "%t"
+// RUN: %verify --verify-included-files --standard-libraries --type-system-refresh --general-traits=datatype --decreases-orders --solver-path %review-z3 "%s" >> "%t"
 // RUN: %exits-with 0 %verify --verify-included-files --standard-libraries:false --decreases-orders --modular-termination --solver-path %review-z3 "%S/Inputs/git-issue-245-instances-mt.dfy" >> "%t"
 // RUN: %exits-with 4 %verify --standard-libraries --decreases-orders --solver-path %review-z3 "%S/Inputs/git-issue-245-instances-negative.dfy" >> "%t"
 // RUN: %exits-with 4 %verify --standard-libraries:false --decreases-orders --modular-termination --solver-path %review-z3 "%S/Inputs/git-issue-245-instances-mt-negative.dfy" >> "%t"
 // RUN: %diff "%s.expect" "%t"
 
+// The planned identity input checks option-off syntax rejection on both products.
+// The feature-on runs also check constructors introduced by this regression.
 include "Inputs/git-issue-245-instance-orders.dfy"
 import opened Std.Termination.Orders
 import opened InstanceOrders

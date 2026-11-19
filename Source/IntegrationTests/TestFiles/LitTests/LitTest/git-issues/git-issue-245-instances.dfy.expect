@@ -1,3 +1,8 @@
+git-issue-245-instances.dfy(17,14): Error: a decreases component of the form 'e by O' requires the option --decreases-orders
+git-issue-245-instances.dfy(35,14): Error: a decreases component of the form 'e by O' requires the option --decreases-orders
+git-issue-245-instances.dfy(43,14): Error: a decreases component of the form 'e by O' requires the option --decreases-orders
+git-issue-245-instances.dfy(51,14): Error: a decreases component of the form 'e by O' requires the option --decreases-orders
+4 parse errors detected in git-issue-245-instances.dfy
 
 Dafny program verifier finished with 74 verified, 0 errors
 
