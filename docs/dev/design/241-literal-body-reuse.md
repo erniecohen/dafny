@@ -64,7 +64,7 @@ allocation preserving sharing and both visibility modes. Overlap memoization and
 synchronization objects must be discarded. No resolved-clone API performs this.
 
 **Builtins must be the current interned objects.**
-[`ResolutionBuiltinCatalog`](../../../Source/DafnyCore/Resolver/ResolutionBuiltinCatalog.cs#L11-L83)
+[`ResolutionBuiltinCatalog`](../../../Source/DafnyCore/Resolver/ResolutionBuiltinCatalog.cs#L11-L80)
 interns arrays, arrow families, tuples, bitvectors and pretype declarations within
 one resolution lifetime. Worker views share these objects through
 [`SystemModuleManager`](../../../Source/DafnyCore/AST/SystemModuleManager.cs#L88-L178).
