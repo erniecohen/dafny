@@ -17,6 +17,12 @@ function worker() {
   }
   throw new Error('Expected a Runner.Worker ancestor');
 }
+function slots(value = process.env.INPUT_SLOTS || '2') {
+  if (!/^[1-9][0-9]*$/.test(value) || !Number.isSafeInteger(Number(value))) {
+    throw new Error('Admission slots must be a positive safe integer');
+  }
+  return Number(value);
+}
 async function main() {
   if (process.env.STATE_keeper) {
     // The action is cached outside the checkout by Actions, so cleaning untracked outputs
@@ -38,14 +44,15 @@ async function main() {
   }
   if (process.platform !== 'darwin' || process.arch !== 'arm64') throw new Error('Requires macOS ARM64');
   const owner = worker();
-  // One advisory lock shared by all runners and both forks. The OS releases it even
+  const capacity = slots();
+  // Numbered advisory locks shared by all runners and both forks. The OS releases them even
   // after a hard cancellation. Waiting jobs are never discarded as concurrency-group
   // pending jobs would be. The keeper also exits when its Runner.Worker disappears.
   const cache = path.join(os.homedir(), 'Library', 'Caches', 'fork-actions-admission');
   fs.mkdirSync(cache, {recursive: true});
   const ready = path.join(process.env.TMPDIR, 'admitted');
   const keeper = cp.spawn('python3', [path.join(__dirname, 'admit.py'),
-    path.join(cache, 'active.lock'), ready, String(owner.pid), owner.identity],
+    path.join(cache, 'active.lock'), ready, String(owner.pid), owner.identity, String(capacity)],
     {stdio: 'ignore'});
   for (const [key, value] of Object.entries({keeper: keeper.pid,
     keeperIdentity: identity(keeper.pid), tmp: process.env.TMPDIR})) {
@@ -61,7 +68,7 @@ async function main() {
   }
   fs.appendFileSync(process.env.GITHUB_STATE, `keeperIdentity=${identity(keeper.pid)}\n`);
   keeper.unref();
-  console.log('Admitted one job; other fork jobs wait until post cleanup');
+  console.log(`Admitted one of ${capacity} jobs; excess fork jobs wait until post cleanup`);
 }
 if (require.main === module) main().catch(e => { console.error(e.message); process.exitCode = 1; });
-module.exports = {identity, worker};
+module.exports = {identity, worker, slots};

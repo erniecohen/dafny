@@ -31,7 +31,7 @@ class AdmissionTests(unittest.TestCase):
                 identity = admission.identity(owner.pid)
                 for n in range(2):
                     keepers.append(subprocess.Popen([sys.executable, str(ACTION / 'admit.py'),
-                        str(root / 'lock'), str(root / str(n)), str(owner.pid), identity]))
+                        str(root / 'lock'), str(root / str(n)), str(owner.pid), identity, '1']))
                     if n == 0:
                         self.wait_ready(root / '0')
                 time.sleep(.2)
@@ -55,6 +55,55 @@ class AdmissionTests(unittest.TestCase):
                 str(root / 'lock'), str(root / 'ready'), str(__import__('os').getpid()), 'wrong identity'], timeout=5)
             self.assertEqual(child.returncode, 0)
             self.assertFalse((root / 'ready').exists())
+
+    def test_default_two_slots_hold_third_job_until_release(self):
+        import os
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            keepers = []
+            try:
+                for n in range(3):
+                    keepers.append(subprocess.Popen([sys.executable, str(ACTION / 'admit.py'),
+                        str(root / 'lock'), str(root / str(n)), str(os.getpid()),
+                        admission.identity(os.getpid())]))
+                    if n < 2:
+                        self.wait_ready(root / str(n))
+                time.sleep(1.2)
+                self.assertFalse((root / '2').exists())
+                self.assertTrue(all(child.poll() is None for child in keepers))
+                keepers[0].terminate(); keepers[0].wait(timeout=5)
+                self.wait_ready(root / '2')
+                self.assertIsNone(keepers[1].poll())
+            finally:
+                for child in keepers:
+                    if child.poll() is None:
+                        child.terminate()
+                    child.wait(timeout=5)
+
+    def test_invalid_capacity_is_rejected(self):
+        with self.assertRaisesRegex(ValueError, 'positive'):
+            admission.hold('unused', 'unused', 0, '', 0)
+
+class CapacityInputTests(unittest.TestCase):
+    def test_default_and_configured_capacity_and_invalid_inputs(self):
+        import shutil
+        node = shutil.which('node')
+        if not node:
+            self.skipTest('Node is provided by the Actions runner')
+        script = """
+const assert = require('node:assert/strict');
+const {slots} = require(process.argv[1]);
+delete process.env.INPUT_SLOTS;
+assert.equal(slots(), 2);
+process.env.INPUT_SLOTS = '3';
+assert.equal(slots(), 3);
+assert.equal(slots('1'), 1);
+for (const bad of ['0', '-1', '2.5', 'NaN', '3garbage', '9007199254740992']) {
+  assert.throws(() => slots(bad), /positive safe integer/);
+}
+"""
+        subprocess.run([node, '-e', script, str(ACTION / 'index.cjs')], check=True, timeout=5)
+
 
 class CleanupTests(unittest.TestCase):
     def test_post_removes_only_job_outputs_and_stops_its_keeper(self):
@@ -100,7 +149,7 @@ class WaitingCancellationTests(unittest.TestCase):
                 time.sleep(.2)
                 for n, pid in enumerate([os.getpid(), owner.pid]):
                     keepers.append(subprocess.Popen([sys.executable, str(ACTION / 'admit.py'),
-                        str(root / 'lock'), str(root / str(n)), str(pid), admission.identity(pid)]))
+                        str(root / 'lock'), str(root / str(n)), str(pid), admission.identity(pid), '1']))
                     if n == 0:
                         AdmissionTests.wait_ready(self, root / '0')
                 time.sleep(.2)
