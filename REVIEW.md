@@ -322,8 +322,8 @@ that runs Boogie's own test jobs and packs Boogie's NuGet packages.  The same fi
 is offered to Boogie's master as
 [boogie-org/boogie#1169](https://github.com/boogie-org/boogie/pull/1169).
 
-This branch builds against that fork's release `v3.5.5+review.dcd726f6`, whose
-packages have the version `3.5.5-review.dcd726f6`.  The release carries them with
+This branch builds against that fork's release `v3.5.5+review.a38b89f9`, whose
+packages have the version `3.5.5-review.a38b89f9`.  The release carries them with
 their sha256 sums, and its `REVIEW.md` says what the fork changes and how its
 version is computed.  Besides that fix, it brings:
 
@@ -384,10 +384,10 @@ version is computed.  Besides that fix, it brings:
   restores the old deadline for comparison, passed through Dafny's `--boogie`.
 
 `a48933e` made this branch build against the fork's packages, at
-`3.5.5-review.37e4435d`.  It now builds against `3.5.5-review.dcd726f6`:
+`3.5.5-review.37e4435d`.  It now builds against `3.5.5-review.a38b89f9`:
 
 - `Source/DafnyCore/DafnyCore.csproj` names `Boogie.ExecutionEngine`
-  `3.5.5-review.dcd726f6`, and `dotnet-tools.json` names the `boogie` tool at the
+  `3.5.5-review.a38b89f9`, and `dotnet-tools.json` names the `boogie` tool at the
   same version;
 - `nuget.config` adds a local package source, `Binaries/boogie-packages`, and maps
   every Boogie package to it and to nothing else, so a missing package stops the
@@ -433,6 +433,36 @@ check.  Its release note is `docs/dev/news/241-boogie-cache-background.feat`.
 
 **To build this branch, run `sh Scripts/fetch-boogie-packages.sh` once first.**
 CI does so in every job that builds.
+
+The move from `dcd726f6` to `a38b89f9` adopts
+[erniecohen/boogie#14](https://github.com/erniecohen/boogie/pull/14).
+Pass `--boogie "/typeEncoding:m /monomorphicSharedLiterals:1"` to preserve the
+existing shared Boolean constants during monomorphization. Their built-in Boolean
+type needs no instantiation. Passification can then recognize equal incoming
+definite-assignment trackers at joins. This adds no axiom, assumption or asserted
+fact. It defaults to 0, retains ordinary cloning for other expressions, and is
+ignored by the arguments and predicates encodings. It is opt-in because changing
+proof contexts and names can increase as well as decrease solver costs.
+The prover-interface option inventory includes `CoreOptions.MonomorphicSharedLiterals`.
+
+The complete commit range between those release tags is:
+
+- `83733108`: split canonical map rows by native result sort
+  ([erniecohen/boogie#12](https://github.com/erniecohen/boogie/pull/12));
+- `7b17437c`: revert that split
+  ([erniecohen/boogie#13](https://github.com/erniecohen/boogie/pull/13));
+- `32b013b1`: add the opt-in shared-Boolean policy, its controls and documentation
+  ([erniecohen/boogie#14](https://github.com/erniecohen/boogie/pull/14)).
+
+The intermediate `5d9897bc` release was withdrawn because the split's apparent
+benefit came from renaming later symbols, rather than useful instantiations of
+the split rows, and the renaming also caused resource regressions. PR 13 explains
+the renaming controls. Its revert restores the entire `Source` tree of the
+`dcd726f6` release. The `a38b89f9` release retains that revert: its map-encoding
+source is identical to `dcd726f6`. The shared-Boolean policy changes only the
+monomorphizer and its option interface; it does not reintroduce the map-row split.
+The regression is `git-issues/git-issue-281-shared-literals.dfy`; the release note
+is `docs/dev/news/281-shared-literals.feat`.
 
 ## Tests, release notes and the manual
 
