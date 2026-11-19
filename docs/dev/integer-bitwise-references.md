@@ -105,6 +105,13 @@ symbolic width clients. Positive/bootstrap scopes have a 2,000,000-RU ceiling;
 negative controls have a 200,000-RU ceiling. Warnings, resource exhaustion,
 unexpected diagnostics or missing logged scopes fail the check.
 
+The independent U/I cross-product checks fixed-reference availability alongside
+the existing user-arithmetic option, ordinary functions with misleading bitwise
+names, and existing Boolean/bitvector intrinsics. Neither flag enables the other.
+The user-operator prototype requires the refreshed resolver; its legacy rejection
+is checked explicitly. Integer-newtype capability, count/result and no-fallback
+checks remain M4 work, when those source intrinsics are implemented.
+
 `unfold-slices.py` constructs finite integer-only SMT slices from those actual
 emitted equations and a recursively evaluated M1 interpretation. It checks SAT
 and sensitivity to changing each equation's right-hand side by one. These finite

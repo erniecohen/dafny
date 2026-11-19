@@ -2,4 +2,5 @@
 // RUN: %diff "%s.expect" "%t"
 // https://github.com/erniecohen/dafny/issues/193
 // The driver checks actual emitted equations, independently checked bootstrap
-// proofs, live false/wrong-result controls, finite SAT slices, and identity.
+// proofs, live false/wrong-result controls, finite SAT slices, identity, and
+// independence from the existing user-operator option.

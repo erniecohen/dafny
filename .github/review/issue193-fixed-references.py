@@ -35,6 +35,7 @@ def main():
     parser.add_argument('--output', required=True, type=Path)
     parser.add_argument('--resolver', choices=['legacy', 'refreshed'], default='refreshed')
     parser.add_argument('--full', action='store_true')
+    parser.add_argument('--option-independence-only', action='store_true')
     args = parser.parse_args()
     out = args.output.resolve()
     out.mkdir(parents=True, exist_ok=True)
@@ -75,6 +76,54 @@ def main():
         path = out / (name + '.dfy')
         path.write_text('\n'.join(lines) + '\n')
         return path
+
+    # The two source features are independent. This is the M2 surface: fixed
+    # references, ordinary user arithmetic, and existing bool/BV intrinsics.
+    # Integer-newtype capability/count/fallback tests belong to M4.
+    number = ['datatype Number = Number(value:int) {',
+              '  function {:operator "+"} andNat(b:Number):Number { Number(value+b.value) }', '}']
+    native = source('ui-native', number + [
+        'lemma Native(x:bv8,y:bv8,p:bool) {',
+        '  assert (x & y) == (y & x);', '  assert !p == (p == false);', '}',
+        'lemma Named() { assert Number(2).andNat(Number(3)) == Number(5); }'])
+    wrong = source('ui-wrong', number + [
+        'lemma WrongResult() {', '  assert Number(2).andNat(Number(3)) == Number(6);', '}',
+        'lemma LiveFalse() {', '  assert Number(2).andNat(Number(3)) == Number(5);',
+        '  assert false;', '}'])
+    arithmetic = source('ui-arithmetic', number + [
+        'lemma Arithmetic() { assert (Number(2) + Number(3)).value == 5; }'])
+    reference = source('ui-reference', [
+        'lemma Zero() { IntegerBitwiseModel.unfoldP(0); assert IntegerBitwiseModel.P(0)==1; }',
+        'lemma ReferenceFalse() {', '  IntegerBitwiseModel.unfoldP(0);', '  assert false;', '}'])
+    for user in (False, True):
+        for integer in (False, True):
+            name = f'ui-u{int(user)}-i{int(integer)}'
+            flags = ['--user-defined-operators:' + str(user).lower(),
+                     '--integer-bitwise:' + str(integer).lower()]
+            resolve_flags = ['--standard-libraries:false', '--cores', '1',
+                             '--type-system-refresh:' + str(args.resolver == 'refreshed').lower(),
+                             *flags]
+            if user and args.resolver == 'legacy':
+                invoke(['resolve', str(native), *resolve_flags], name + '-unsupported', 1,
+                       ['--user-defined-operators currently requires --type-system-refresh'])
+                continue
+            verify(native, name + '-native', extra=flags)
+            verify(wrong, name + '-wrong', [(5, 'assertion might not hold'),
+                                          (9, 'assertion might not hold')], flags)
+            if user:
+                verify(arithmetic, name + '-arithmetic', extra=flags)
+            else:
+                invoke(['resolve', str(arithmetic), *resolve_flags], name + '-arithmetic', 2,
+                       ['Error:'])
+            if integer:
+                verify(reference, name + '-reference', [(4, 'assertion might not hold')], flags)
+            else:
+                invoke(['resolve', str(reference), *resolve_flags], name + '-reference', 2,
+                       ['unresolved identifier: IntegerBitwiseModel'])
+    if args.option_independence_only:
+        (out / 'summary.json').write_text(json.dumps({'checks': checks, 'passed': True}, indent=2) + '\n')
+        print(f'{len(checks)} option-independence checks passed ({args.resolver})')
+        return
 
     def activate(name, parameters):
         lines = ['  B.Power(n);', f'  B.{name}({parameters});']
