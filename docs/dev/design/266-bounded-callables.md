@@ -4,6 +4,49 @@ Design from the review at https://github.com/erniecohen/dafny/issues/266#issueco
 
 Implementation status: stage 4 of the issue 211 plan makes bounded callables and complete certificate production/admission available by use. The hidden `--modular-termination` is only a strict migration check for legacy markers. Programs that use none of the design retain their previous translation; `--legacy-no-modular-termination` restores the earlier interface. Checked standard-library catalog selection requires a named trust-list opt-in, independently of the migration flag. Runtime contracts have their separate explicit, audited trust list described in M5b §13 and at the end of this document.
 
+## Completion of the storage and return goal
+
+The implementation now covers the goal of [issue 266](https://github.com/erniecohen/dafny/issues/266).
+The design and milestone descriptions below record the original proposal; they
+are not an inventory of missing implementation work.
+
+- [M2](https://github.com/erniecohen/dafny/pull/474) checks formation and strict
+  application, with explicit erasure and bound projections.
+- [M3](https://github.com/erniecohen/dafny/pull/478) preserves that evidence in
+  heap-reading fields, generic values, collections, and returns. Portable
+  contracts and checked library production subsequently landed with the
+  [issue 211 plan](https://github.com/erniecohen/dafny/pull/380).
+- The checked source projection in
+  `Source/DafnyStandardLibraries/modular-termination/overlay/` supplies all five
+  fields in §6.1 and their independent allowance contracts. It removes the
+  twenty `@AssumeCrossModuleTermination` markers, rather than trusting their
+  termination. `github-issue-211-checked-std.dfy` exercises the four runtime
+  families and the ghost proof field under both resolvers, including clients
+  that store and return the callback before giving it to the library.
+- The stored-callback reachability search already exempts only a bounded
+  callable's outer arrow. Its order and argument/result components are still
+  searched for raw functions. [PR 513](https://github.com/erniecohen/dafny/pull/513)
+  covers both datatype and object-constant arguments and storage, plus
+  raw-arrow rejection and reachable-false controls.
+
+`git-issue-266-persistence.dfy` additionally checks runtime and ghost return,
+generic forwarding, duplication, and application of the stored package without
+the historical migration flag. Its negative input closes the concrete
+`High -> Use -> callback -> High` cycle through a datatype and through another
+object's constant. Each cycle must fail at strict application, as must applying
+a returned runtime or ghost callable at an equal bound. The companion false
+control retains the successful construction and application before asserting
+`false`. The original M2/M3 controls remain the tests for K1–K7.
+
+The checked projection is a separate library interface; the legacy library's
+public API and compiled behavior are preserved. The named ghost-premise list
+and the separate runtime-contract opt-in described below remain explicit
+conditions of their respective library certificates. This completion adds
+neither a trusted premise nor a new axiom, and does not require changing either
+library's implementation or standard-library verdict baselines. The order-library
+extensions in [issue 245](https://github.com/erniecohen/dafny/issues/245) are
+separate work, not missing storage or return evidence.
+
 ## Findings
 
 - Recommend a primitive, nondependent type `bounded<O,F>`: preserve a checked implementation, an immutable ghost bound, and the exact ordinary arrow flavor.

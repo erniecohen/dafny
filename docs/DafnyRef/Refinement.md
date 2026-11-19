@@ -364,11 +364,13 @@ inherited:
   declaration.
 - A refinement cannot make a trait a reference type: if the refined trait does not have
   `object` as an ancestor, no added parent may have it either.
-- Under `--modular-termination`, an added parent is subject to the rules for a parent trait
-  there: the `decreases {:global}` bound of an inherited member that becomes an override must
-  be below or equal to the bound in the added parent, a member that declares no bound inherits
+- Under the default trait-extension termination rules (also selected explicitly by
+  `--modular-termination`), the `decreases {:global}` bound of an inherited member that becomes
+  an override must be below or equal to the bound in the added parent, a member that declares no bound inherits
   the parent's, and an inherited member that becomes an implementation of a member of another
-  module that has no bound must be a leaf or have a bound of its own.
+  module that has no bound must be a leaf or have a bound of its own. If an inherited
+  body acquires a bound from its new parent, its calls are checked against that bound
+  in the refining module, even when its local call-graph component is unchanged.
 
 A module that imports `A` abstractly and declares a type below `T` gets the same obligations
 when the import is bound to `B`.
