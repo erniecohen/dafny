@@ -61,7 +61,8 @@ internal sealed class ResolutionSnapshots {
     IReadOnlyList<ModuleResolutionKey.Prerequisite> directPrerequisites) {
     // These checks define the whole supported schema; unsupported/partial/error graphs do not load
     // or publish. An alias's source graph is current, private input, not yesterday's live result.
-    if (!owner.Options.Get(CommonOptionBag.TypeSystemRefresh) || !owner.Options.Plugins.SequenceEqual(DafnyOptions.DefaultPlugins) ||
+    if (!owner.Options.Get(CommonOptionBag.TypeSystemRefresh) ||
+        !owner.Options.Plugins.SequenceEqual(DafnyOptions.DefaultPlugins, ReferenceEqualityComparer.Instance) ||
         owner is not AliasModuleDecl alias || alias.Attributes != null || alias.Exports.Count != 0 ||
         alias.TargetQId.Path.Count != 1 || alias.TargetQId.RootIndex != 0 ||
         alias.TargetQId.Sig != null || alias.TargetQId.Def != null ||

@@ -2,6 +2,7 @@ using System.IO.Compression;
 using System.Text;
 using System.Text.Json;
 using Microsoft.Dafny;
+using Microsoft.Dafny.Plugins;
 using Xunit;
 using DafnyType = Microsoft.Dafny.Type;
 using Program = Microsoft.Dafny.Program;
@@ -31,6 +32,15 @@ public class ResolutionSnapshotTests : IDisposable {
       var output = base.ResolveModuleOutput(declaration, key, prerequisites, resolve, out cached);
       Outputs.Add(output); return output;
     }
+  }
+
+  private sealed class EqualPlugin(Plugin original) : Plugin {
+    public override bool Equals(object? value) => ReferenceEquals(value, original);
+    public override int GetHashCode() => original.GetHashCode();
+    public IEnumerable<IExecutableBackend> GetCompilers(DafnyOptions options) => original.GetCompilers(options);
+    public IEnumerable<IRewriter> GetRewriters(ErrorReporter reporter) => original.GetRewriters(reporter);
+    public IEnumerable<DocstringRewriter> GetDocstringRewriters(DafnyOptions options) => original.GetDocstringRewriters(options);
+    public IEnumerable<CompilerInstrumenter> GetCompilerInstrumenters(ErrorReporter reporter) => original.GetCompilerInstrumenters(reporter);
   }
 
   private async Task<Observation> Resolve(string source = Source, string store = "cache", bool enabled = true,
@@ -376,6 +386,7 @@ public class ResolutionSnapshotTests : IDisposable {
   [InlineData("wrong-selector")]
   [InlineData("removed-plugin")]
   [InlineData("reordered-plugins")]
+  [InlineData("equal-plugin")]
   public async Task UnsupportedProfileStatesHaveNoCandidate(string state) {
     var observation = await Resolve();
     var output = observation.Outputs.Single(p => p.ResolvedDeclaration is AliasModuleDecl);
@@ -408,6 +419,12 @@ public class ResolutionSnapshotTests : IDisposable {
       case "wrong-selector": inputs = [prerequisite with { Signatures = new() { [target.ModuleDef] = new ModuleSignature() } }]; break;
       case "removed-plugin": alias.Options.Plugins.RemoveAt(0); break;
       case "reordered-plugins": (alias.Options.Plugins[0], alias.Options.Plugins[1]) = (alias.Options.Plugins[1], alias.Options.Plugins[0]); break;
+      case "equal-plugin":
+        var original = alias.Options.Plugins[0];
+        alias.Options.Plugins[0] = new EqualPlugin(original);
+        Assert.True(alias.Options.Plugins.SequenceEqual(DafnyOptions.DefaultPlugins));
+        Assert.NotSame(original, alias.Options.Plugins[0]);
+        break;
       default: throw new ArgumentException(state);
     }
     Assert.Null(ResolutionSnapshots.Prepare(alias, key, inputs,

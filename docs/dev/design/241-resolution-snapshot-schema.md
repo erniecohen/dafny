@@ -14,6 +14,8 @@ The profile is `refreshed-direct-alias-default-plugins-v1`. The plugin list must
 be exactly the two `DafnyOptions.DefaultPlugins`, in order and by identity. The
 producer fingerprint includes the resolver assembly MVID, covering their code.
 Custom, removed, reordered and duplicated plugins bypass lookup and publication.
+The admission comparison uses reference equality; a custom plugin's equality
+override cannot substitute for either default plugin.
 
 Only an `AliasModuleDecl` with no attributes, no explicit export selectors and a
 one-component target at root index zero is supported. Its target must be the
