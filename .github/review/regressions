@@ -1082,3 +1082,5 @@ git-issues/git-issue-466-stage7-targets.dfy
 
 # Java compilation and runtime comparisons for recursive groups (issue 466).
 git-issues/git-issue-466-java.dfy
+git-issues/git-issue-466-go.dfy
+git-issues/git-issue-466-go-extern.dfy

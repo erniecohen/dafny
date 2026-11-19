@@ -61,6 +61,16 @@ namespace Microsoft.Dafny.Compilers {
     }
 
     private readonly Dictionary<ModuleDefinition, Import> ModuleImports = new();
+    private readonly Dictionary<RecursiveModuleGroup, ConcreteSyntaxTree> GroupWriters = new();
+
+    // Package and declaration identities must survive source-file relocation.
+    // Full module names do not depend on source positions or archive layout.
+    private static IEnumerable<ModuleDefinition> GroupMembers(RecursiveModuleGroup group) =>
+      group.Members.Select(member => member.ModuleDef).OrderBy(member => member.FullDafnyName, StringComparer.Ordinal);
+
+    private string GroupPackage(ModuleDefinition module) =>
+      PublicModuleIdProtect(GroupMembers(module.RecursiveGroup).First().GetCompileName(Options));
+
     private readonly List<Import> ImportsNotFromDafnyModules = [.. StandardImports];
     private string ModuleName;
     private ModuleDefinition CurrentModule;
@@ -222,6 +232,22 @@ namespace Microsoft.Dafny.Compilers {
       }
       ModuleName = PublicModuleIdProtect(moduleName);
       CurrentModule = module;
+      if (module.RecursiveGroup is { } group) {
+        ModuleName = GroupPackage(module);
+        if (GroupWriters.TryGetValue(group, out var groupWriter)) {
+          return groupWriter;
+        }
+        var groupImport = CreateImport(ModuleName, externModule, libraryName);
+        groupWriter = wr.NewFile($"{groupImport.Path}/{groupImport.Path}.go");
+        EmitModuleHeader(groupWriter);
+        GroupWriters.Add(group, groupWriter);
+        groupImport.Path = goModuleName + groupImport.Path;
+        // Every sibling is available before any declaration is emitted.
+        foreach (var sibling in group.Members) {
+          AddImport(sibling.ModuleDef, groupImport);
+        }
+        return groupWriter;
+      }
       var import = CreateImport(ModuleName, externModule, libraryName);
       var filename = string.Format("{0}/{0}.go", import.Path);
       var w = wr.NewFile(filename);
@@ -266,7 +292,8 @@ namespace Microsoft.Dafny.Compilers {
         }
       }
 
-      var publicModuleName = PublicModuleIdProtect(module.GetCompileName(Options));
+      var publicModuleName = module.RecursiveGroup == null
+        ? PublicModuleIdProtect(module.GetCompileName(Options)) : GroupPackage(module);
       var import = CreateImport(publicModuleName, externModule, libraryName);
       import.Path = goModuleName + import.Path;
       AddImport(module, import);
@@ -428,7 +455,11 @@ namespace Microsoft.Dafny.Compilers {
           var wString = w.NewNamedBlock("func (*{0}) String() string", name);
           // Be consistent with other back ends, which don't fold _module into the main module
           var module = ModuleName == MainModuleName ? "_module" : ModuleName;
-          wString.WriteLine("return \"{0}.{1}\"", module, name);
+          if (classContext.EnclosingModuleDefinition.RecursiveGroup != null) {
+            wString.WriteLine("return \"{0}\"", fullPrintName ?? classContext.FullName);
+          } else {
+            wString.WriteLine("return \"{0}.{1}\"", module, name);
+          }
         }
       }
 
@@ -469,6 +500,9 @@ namespace Microsoft.Dafny.Compilers {
 
     protected override IClassWriter CreateTrait(string name, bool isExtern, List<TypeParameter> typeParameters /*?*/,
       TraitDecl trait, List<Type> superClasses /*?*/, IOrigin tok, ConcreteSyntaxTree wr) {
+      if (trait.EnclosingModuleDefinition.RecursiveGroup != null) {
+        name = IdName(trait);
+      }
       //
       // type Trait interface {
       //   String() string
@@ -783,7 +817,8 @@ namespace Microsoft.Dafny.Compilers {
         return null;
       }
 
-      string name = Capitalize(dt.GetCompileName(Options));
+      string name = dt.EnclosingModuleDefinition.RecursiveGroup == null
+        ? Capitalize(dt.GetCompileName(Options)) : IdName(dt);
       string companionTypeName = FormatCompanionTypeName(name);
       string dataName = FormatDatatypeInterfaceName(name);
       string ifaceName = FormatLazyInterfaceName(name);
@@ -2530,6 +2565,13 @@ namespace Microsoft.Dafny.Compilers {
     }
 
     private string IdName(Declaration decl) {
+      if (decl is TopLevelDecl top && top.EnclosingModuleDefinition.RecursiveGroup is { } group) {
+        // A package contains several Dafny namespaces, including their default classes.
+        // Prefix every top-level name; helpers derive their names from this same identity.
+        var index = GroupMembers(group).ToList().IndexOf(top.EnclosingModuleDefinition);
+        return $"G{index}_" + (HasCapitalizationConflict(decl)
+          ? "Go__" + decl.GetCompileName(Options) : IdProtect(Capitalize(decl.GetCompileName(Options))));
+      }
       if (HasCapitalizationConflict(decl)) {
         // Don't use Go_ because Capitalize might use it and we know there's a conflict
         return "Go__" + decl.GetCompileName(Options);
@@ -2724,7 +2766,10 @@ namespace Microsoft.Dafny.Compilers {
 
     private string UserDefinedTypeName(TopLevelDecl cl, bool full, MemberDecl/*?*/ member = null) {
       string enclosingModuleDefinitionId;
-      if (CurrentModule == cl.EnclosingModuleDefinition || cl.EnclosingModuleDefinition.IsDefaultModule) {
+      if (CurrentModule?.RecursiveGroup != null &&
+          ModuleDefinition.InSameRecursiveGroup(CurrentModule, cl.EnclosingModuleDefinition)) {
+        enclosingModuleDefinitionId = ModuleName;
+      } else if (CurrentModule == cl.EnclosingModuleDefinition || cl.EnclosingModuleDefinition.IsDefaultModule) {
         enclosingModuleDefinitionId = PublicModuleIdProtect(cl.EnclosingModuleDefinition.GetCompileName(Options));
       } else {
         enclosingModuleDefinitionId = ModuleImports[cl.EnclosingModuleDefinition].Name;
