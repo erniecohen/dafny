@@ -62,8 +62,9 @@ work list is substituted. The explicit native reporting bridge rejects work or r
 
 ## Checked result streams
 
-The scheduler validates each newly started work stream before publishing a terminal
-result. Progress is forwarded immediately. Exactly one `VerificationWorkCompleted`
+Scheduling calls `IVerificationWork.TryRunForScheduling`. Its default implementation
+validates each newly started backend stream before publishing a terminal result.
+Progress is forwarded immediately. Exactly one `VerificationWorkCompleted`
 must be followed by clean observable completion; its original result, diagnostics,
 metrics and evidence are then forwarded without reconstruction. Every defined
 outcome is retained, and only `Verified` denotes proof success at this seam.
@@ -75,6 +76,16 @@ is discarded on observable error, retaining the original exception, including
 cancellation. Holding the terminal result until completion prevents a malformed
 stream from publishing a successful proof before its protocol error is observed.
 This checks the stream envelope, not the truth or completeness of backend evidence.
+
+The Boogie adapter overrides this entry point to retain the native engine's existing
+publication point. Withholding native results until observable completion changes
+which task log receives prover-reset commands after a query, even when the queries,
+diagnostics and proof resources are unchanged. The adapter therefore preserves
+native publication and completion timing; it does not apply the new envelope check
+to native streams. Shared scheduling contains no native type test. Alternative
+backend work inherits checked completion unless its adapter explicitly overrides
+the scheduling entry point. These callbacks are an implementation contract, not
+a sandbox against a malicious backend.
 
 This does not add a timeout to a stream that never closes. P2 transport remains
 responsible for liveness and matching worker responses to requested work. Native
@@ -166,8 +177,9 @@ an implementation of alternative backend reporting. The remaining milestones are
   and gutter capabilities, including neutral CLI aggregate results.
 - Account for expected/completed work and every non-success outcome end to end,
   including failed preparation, unsupported input, cancellation and worker errors.
-  Individual newly started streams now reject malformed completion before publishing
-  their terminal result; module-wide and cross-run identity accounting remain open.
+  The default scheduling entry point now rejects malformed completion before publishing
+  a terminal result. Native stream auditing, module-wide and cross-run identity
+  accounting remain open; the native adapter retains its engine's publication timing.
 - Cover legacy entry points and opt-in translation/result caches explicitly, and
   repeat default-Boogie compatibility and full harness checks after reporting migration.
 

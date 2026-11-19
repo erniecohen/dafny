@@ -11,7 +11,10 @@ import subprocess
 ROOT = Path("Source/DafnyCore/Pipeline/Verification")
 CASES = [
     ("stream-scheduling", "Source/DafnyCore/Pipeline/Compilation.cs",
-     "VerificationWorkStream.Validate(statusUpdates).Subscribe(", "statusUpdates.Subscribe("),
+     "task.TryRunForScheduling()", "task.TryRun()"),
+    ("stream-default", "VerificationWork.cs", "VerificationWorkStream.Validate(source)", "source"),
+    ("stream-native-timing", "BoogieVerificationBackend.cs",
+     "TryRunForScheduling() => TryRun();", "TryRunForScheduling() => VerificationWorkStream.Validate(TryRun()!);"),
     ("stream-terminal-count", "VerificationWorkStream.cs", "if (terminal != null)", "if (false)"),
     ("stream-result-validation", "VerificationWorkStream.cs",
      "completed.Result == null || !Enum.IsDefined(completed.Result.Outcome)", "false"),

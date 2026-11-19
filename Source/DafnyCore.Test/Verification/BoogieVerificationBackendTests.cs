@@ -86,6 +86,24 @@ public class BoogieVerificationBackendTests {
     Assert.Equal(VerificationOutcome.Failed, completed.Result.Outcome);
   }
 
+  [Fact]
+  public void NativeSchedulingRetainsImmediateResultPublication() {
+    var result = new VerificationRunResult(0, 0, DateTime.UnixEpoch, SolverOutcome.Valid,
+      TimeSpan.Zero, 5, [], [], [], 99, null, []);
+    var native = new NativeTask();
+    IVerificationWork work = new BoogieVerificationWork(native);
+    var received = new List<VerificationWorkStatus>();
+    var closed = false;
+    using var subscription = work.TryRunForScheduling()!.Subscribe(received.Add, () => closed = true);
+    native.Updates.OnNext(new Completed(result));
+    var completed = Assert.IsType<VerificationWorkCompleted>(Assert.Single(received));
+    Assert.Same(result, BoogieVerificationReporting.GetResult(completed.Result));
+    Assert.False(closed);
+    native.Updates.OnCompleted();
+    Assert.True(closed);
+    Assert.Single(received);
+  }
+
   [Theory]
   [InlineData("procedure P(); implementation P() { assert true; }", true)]
   [InlineData("procedure P(); implementation P() { assert 0; }", false)]

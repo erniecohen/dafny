@@ -524,7 +524,7 @@ public class Compilation : IDisposable {
 
   private void VerifyTask(ICanVerify canVerify, IVerificationWork task) {
     profile?.TaskSubmitted(task);
-    var statusUpdates = task.TryRun();
+    var statusUpdates = task.TryRunForScheduling();
     if (statusUpdates == null) {
       if (task.CacheStatus is VerificationWorkCompleted completedCache) {
         profile?.TaskStatus(PipelineProfile.ModuleName(canVerify.ContainingModule), canVerify.FullDafnyName, task, completedCache, true);
@@ -534,7 +534,7 @@ public class Compilation : IDisposable {
       return;
     }
 
-    VerificationWorkStream.Validate(statusUpdates).Subscribe(
+    statusUpdates.Subscribe(
       update => {
         try {
           profile?.TaskStatus(PipelineProfile.ModuleName(canVerify.ContainingModule), canVerify.FullDafnyName, task, update, false);

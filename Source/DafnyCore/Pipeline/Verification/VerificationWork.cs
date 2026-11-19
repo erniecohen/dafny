@@ -49,8 +49,7 @@ public record VerificationWorkCompleted(VerificationWorkResult Result) : Verific
 /// <summary>
 /// Scheduling seam. A null TryRun means no new run was started, as on the native path;
 /// inspect CacheStatus for a completed cached result. Cancellation/errors remain observable errors.
-/// A newly started run must close its stream after exactly one terminal result. The scheduler
-/// withholds that result until clean completion; progress after it is a protocol error.
+/// A newly started run must close its stream after exactly one terminal result.
 /// </summary>
 public interface IVerificationWork {
   VerificationSource Source { get; }
@@ -62,6 +61,14 @@ public interface IVerificationWork {
   bool IsIdle { get; }
   IVerificationWork FromSeed(int seed);
   IObservable<VerificationWorkStatus>? TryRun();
+  /// <summary>
+  /// Scheduling entry point. By default, validate a backend stream before publishing its result.
+  /// The native adapter retains the engine's existing result-publication timing for compatibility.
+  /// </summary>
+  IObservable<VerificationWorkStatus>? TryRunForScheduling() {
+    var source = TryRun();
+    return source == null ? null : VerificationWorkStream.Validate(source);
+  }
   void Cancel();
 }
 

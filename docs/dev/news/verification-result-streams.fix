@@ -1,3 +1,3 @@
-Validate backend verification streams before publishing their terminal result. Missing,
+Validate non-native backend verification streams before publishing their terminal result. Missing,
 repeated, malformed or trailing results use the verification exception path. Native
 Boogie outcomes and reporting remain unchanged.
