@@ -100,7 +100,7 @@ def main():
                   '--verification-time-limit', '60', '--error-limit', '0',
                   '--boogie', '/normalizeDeclarationOrder:0', '--boogie', '/restartProver']
         if args.additional_axioms:
-            common += ['--additional-axioms']
+            common.insert(common.index('--resource-limit'), '--additional-axioms')
         verify(mode + '-model', clients(), common)
         verify(mode + '-false', clients(True), common)
         for lemma, op, raw in OPS:
@@ -203,7 +203,8 @@ def main():
             ' requires 0 <= IntegerBitwiseModel.andNat(8,a as int,b as int) < 256',
             '{ assert L.Mask(a,b) == ((a & b) as int); }'])
         invoke(mode + '-library-reload', ['verify', str(client), *common, '--library', str(library)])
-        invoke(mode + '-library-disabled', ['resolve', str(client), '--standard-libraries:false', '--library', str(library)],
+        invoke(mode + '-library-disabled', ['resolve', str(client), '--standard-libraries:false',
+               *(['--additional-axioms'] if args.additional_axioms else []), '--library', str(library)],
                1, ['--integer-bitwise is set locally to False, but the library was built with True'])
         off_source = source(mode + '-off-library', [
             'module OffLibrary { newtype {:bitWidth 8} U = x:nat | x < 256 }'])
