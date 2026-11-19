@@ -23,12 +23,15 @@ for refresh in [True, False]:
                                 ('proofs', 'proofs', 'ProofWitnesses')]:
         original = (here / ('github-issue-211-checked-std-' + source + '.dfy')).read_text()
         assert original.count('// CONTROL') == 1
+        family_controls = original.count('// FAMILY CONTROL')
+        assert family_controls == (4 if name == 'families' else 0)
         for negative in [False, True]:
             case = name + ('-refresh' if refresh else '-legacy') + ('-false' if negative else '-positive')
             client = o / (case + '.dfy')
-            client.write_text(original.replace('// CONTROL', 'hide *; assert false;' if negative else '// CONTROL'))
+            marker = '// FAMILY CONTROL' if family_controls else '// CONTROL'
+            client.write_text(original.replace(marker, 'hide *; assert false;' if negative else marker))
             cmd = command + ['verify', str(o / 'Std/dfyconfig.toml'), str(client),
-                '--solver-path', solver, '--use-basename-for-filename', '--show-snippets:false', '--cores', '3',
+                '--solver-path', solver, '--use-basename-for-filename', '--show-snippets:false', '--cores', '2',
                 '--type-system-refresh:' + str(refresh).lower(), '--general-newtypes:' + str(refresh).lower(),
                 '--boogie', '/deterministicLiteralHashes:1', '--boogie', '/restartProver',
                 '--resource-limit', '16000000', '--verification-time-limit', '300', '--filter-symbol', scope,
@@ -36,8 +39,9 @@ for refresh in [True, False]:
             result = subprocess.run(cmd, capture_output=True, text=True)
             text = result.stdout + result.stderr
             (o / (case + '.log')).write_text(text)
-            accepted = (result.returncode == 4 and text.count('Error: assertion might not hold') == 1 and
-                        '1 error' in text and 'out of resource' not in text and 'timed out' not in text
+            expected_errors = family_controls or 1
+            accepted = (result.returncode == 4 and text.count('Error: assertion might not hold') == expected_errors and
+                        f'{expected_errors} error' in text and 'out of resource' not in text and 'timed out' not in text
                         if negative else result.returncode == 0)
             rows.append({'case': case, 'exit': result.returncode, 'accepted': accepted})
             print(case + ': ' + ('PASS' if accepted else 'FAIL'))

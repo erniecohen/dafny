@@ -1067,3 +1067,6 @@ git-issues/git-issue-266-reachability.dfy
 # Duplicate-replacement diagnostics use source locations (issue 451).
 comp/replaceables/resolveManyReplacement.dfy
 git-issues/git-issue-451.dfy
+
+# Stored and returned bounded evidence, including ghost return and strict-cycle controls (https://github.com/erniecohen/dafny/issues/266).
+git-issues/git-issue-266-persistence.dfy
