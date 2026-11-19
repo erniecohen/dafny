@@ -206,16 +206,20 @@ class ContractIdentityTests(unittest.TestCase):
         self.assertNotIn('--candidate-legacy-no-modular-termination', text)
         self.assertIn("--shard '${{ matrix.shard }}'", text)
 
-    def test_resource_vectors_ignore_parallel_declaration_publication_order(self):
+    def test_resource_vectors_ignore_parallel_publication_order(self):
         import json
         with tempfile.TemporaryDirectory(prefix='contract-resources-') as directory:
             log = Path(directory) / 'results.json'
             declarations = [dict(name=name, outcome='Correct', resourceCount=100 + index,
                                  vcResults=[dict(vcNum=1, outcome='Valid', resourceCount=100 + index,
+                                                 assertions=[], randomSeed=0),
+                                            dict(vcNum=2, outcome='Valid', resourceCount=200 + index,
                                                  assertions=[], randomSeed=0)])
                             for index, name in enumerate(['A', 'B'])]
             log.write_text(json.dumps(dict(verificationResults=declarations)))
             first = contracts.resources(log)
+            for declaration in declarations:
+                declaration['vcResults'].reverse()
             log.write_text(json.dumps(dict(verificationResults=declarations[::-1])))
             self.assertEqual(first, contracts.resources(log))
             declarations[0]['vcResults'][0]['resourceCount'] += 1
@@ -233,6 +237,11 @@ class ContractIdentityTests(unittest.TestCase):
             first = contracts.resources(log)
             log.write_text(json.dumps(dict(verificationResults=[])))
             self.assertNotEqual(first, contracts.resources(log))
+            vcs = declaration['vcResults']
+            declaration['vcResults'] = []
+            log.write_text(json.dumps(dict(verificationResults=[declaration])))
+            self.assertNotEqual(first, contracts.resources(log))
+            declaration['vcResults'] = vcs
             declaration['vcResults'][0]['outcome'] = 'Invalid'
             log.write_text(json.dumps(dict(verificationResults=[declaration])))
             self.assertNotEqual(first, contracts.resources(log))

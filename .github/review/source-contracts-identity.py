@@ -6,7 +6,7 @@ Current PRs and historical milestone replays use identical flags on both product
 The explicit --candidate-legacy-no-modular-termination control is only for comparing
 a default-rule transition against a base that predates those rules.
 Diagnostics and Boogie bytes are not renamed, reordered or normalized. Resource
-vectors are matched by declaration name, independent of parallel publication order.
+vectors are matched by declaration name and VC number, independent of parallel publication order.
 The suite population comes from the standing verdict gate; Std includes all
 six target-specific parts. Existing negative verdicts are compared, not blessed.
 The fixed observation profile replaces RUN-line print/log destinations and
@@ -40,8 +40,8 @@ def resources(log):
     if not log.exists():
         return None
     return sorted([{key: declaration.get(key) for key in ['name', 'outcome', 'resourceCount']} | {
-        'vcs': [{key: vc.get(key) for key in ['vcNum', 'outcome', 'resourceCount', 'assertions', 'randomSeed']}
-                for vc in declaration.get('vcResults', [])]}
+        'vcs': sorted([{key: vc.get(key) for key in ['vcNum', 'outcome', 'resourceCount', 'assertions', 'randomSeed']}
+                       for vc in declaration.get('vcResults', [])], key=lambda row: row['vcNum'] or 0)}
             for declaration in json.loads(log.read_text())['verificationResults']], key=lambda row: row['name'])
 
 
