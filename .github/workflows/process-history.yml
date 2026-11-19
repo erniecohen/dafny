@@ -4,7 +4,7 @@
 # per proof batch, so that its resource fingerprint is the same in every run.  A user's
 # run reuses solver processes, and under Z3 5.1.0 a batch's count can then depend on
 # the batches that process checked before it.  This workflow verifies the library as a
-# user would (Z3 5.1.0, --cores 4, no /restartProver), three times in parallel, and
+# user would (Z3 5.1.0, --cores 2, no /restartProver), three times serially, and
 # reports the number of distinct count vectors and each declaration that differs, with
 # its spread and its distance to the limit (.github/review/process-history.py).
 #
@@ -24,6 +24,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
+  DOTNET_PROCESSOR_COUNT: '2'
   DOTNET_NOLOGO: 'true'
   # Self-hosted runners: no build process outlives the job (MSBuild nodes, Gradle daemons).
   MSBUILDDISABLENODEREUSE: '1'
@@ -32,78 +33,168 @@ env:
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 'true'
   # As in review.yml.
   Z3_RELEASE: https://github.com/Z3Prover/z3/releases/download/z3-5.1.0
-  Z3_LINUX_X64: z3-5.1.0-x64-glibc-2.39
-  Z3_LINUX_X64_SHA256: f47be8d27d3230e823bf1eeede2fe0abaca55bb78d0b59974370e6689a92284a
+  Z3_MACOS_ARM64: z3-5.1.0-arm64-osx-13.3
+  Z3_MACOS_ARM64_SHA256: 81d29e934fd863079a74af35eecaeaef8047e0e12414d33ca322b358d68383db
 
 jobs:
   build:
+    if: ${{ github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' || github.event_name == 'schedule') && (github.event_name != 'pull_request' || (!github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository)) }}
     name: Build (Release)
-    runs-on: ubuntu-24.04
-    timeout-minutes: 60
+    runs-on: [self-hosted, macOS, ARM64, mac-studio]
+    timeout-minutes: 1440 # Includes waiting for the shared admission slot.
     steps:
+      - name: Yield to interactive work
+        if: runner.os == 'macOS'
+        shell: bash
+        timeout-minutes: 60
+        run: |
+          case "$(ps -o comm= -p "$PPID")" in
+            */Runner.Worker|Runner.Worker) ;;
+            *) echo "::error::Expected this job's Runner.Worker parent"; exit 1 ;;
+          esac
+          renice 10 -p "$PPID" "$$" >/dev/null
+          test "$(ps -o nice= -p "$PPID" | tr -d ' ')" = 10
+          test "$(ps -o nice= -p "$$" | tr -d ' ')" = 10
+      - name: Create job temporary directory
+        shell: bash
+        timeout-minutes: 60
+        run: |
+          job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
+          echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@49f32698673db4858b4433a87e93df553aca013f
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-dotnet
       - name: Boogie packages
+        timeout-minutes: 60
         run: sh Scripts/fetch-boogie-packages.sh
       - name: Build
+        timeout-minutes: 60
         run: |
-          dotnet publish Source/Dafny/Dafny.csproj -c Release -o out/dafny \
-            -p:GeneratePackageOnBuild=false -p:SourceRevisionId=$(git rev-parse --short=8 HEAD)
+          dotnet publish -p:NuGetAudit=false Source/Dafny/Dafny.csproj -c Release -o out/dafny \
+            -p:GeneratePackageOnBuild=false -p:SourceRevisionId="$(git rev-parse --short=8 HEAD)"
           tar -C out -czf dafny.tar.gz dafny
       - uses: actions/upload-artifact@v4
         with:
           name: dafny
           path: dafny.tar.gz
           retention-days: 7
+      - name: Remove job temporary directory
+        if: always()
+        shell: bash
+        timeout-minutes: 5
+        run: |
+          case "${TMPDIR:-}" in
+            "$RUNNER_TEMP"/fork-job.*) rm -rf "$TMPDIR" ;;
+          esac
 
   verify:
+    if: ${{ github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' || github.event_name == 'schedule') && (github.event_name != 'pull_request' || (!github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository)) }}
     name: Standard library without /restartProver (run ${{ matrix.run }})
     needs: build
-    runs-on: ubuntu-24.04
-    timeout-minutes: 180
+    runs-on: [self-hosted, macOS, ARM64, mac-studio]
+    timeout-minutes: 1440 # Includes waiting for the shared admission slot.
     strategy:
       fail-fast: false
+      max-parallel: 1
       matrix:
         run: [1, 2, 3]
     steps:
+      - name: Yield to interactive work
+        if: runner.os == 'macOS'
+        shell: bash
+        timeout-minutes: 180
+        run: |
+          case "$(ps -o comm= -p "$PPID")" in
+            */Runner.Worker|Runner.Worker) ;;
+            *) echo "::error::Expected this job's Runner.Worker parent"; exit 1 ;;
+          esac
+          renice 10 -p "$PPID" "$$" >/dev/null
+          test "$(ps -o nice= -p "$PPID" | tr -d ' ')" = 10
+          test "$(ps -o nice= -p "$$" | tr -d ' ')" = 10
+      - name: Create job temporary directory
+        shell: bash
+        timeout-minutes: 180
+        run: |
+          job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
+          echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@49f32698673db4858b4433a87e93df553aca013f
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-dotnet
       - uses: actions/download-artifact@v4
         with:
           name: dafny
       - name: Unpack Dafny and Z3
+        timeout-minutes: 180
         run: |
           mkdir -p out && tar -C out -xzf dafny.tar.gz
-          curl -fsSLo z3.zip "$Z3_RELEASE/$Z3_LINUX_X64.zip"
-          echo "$Z3_LINUX_X64_SHA256  z3.zip" | sha256sum -c -
-          unzip -q z3.zip && chmod +x "$Z3_LINUX_X64/bin/z3"
+          curl -fsSLo z3.zip "$Z3_RELEASE/$Z3_MACOS_ARM64.zip"
+          echo "$Z3_MACOS_ARM64_SHA256  z3.zip" | shasum -a 256 -c -
+          unzip -q z3.zip && chmod +x "$Z3_MACOS_ARM64/bin/z3"
       - name: Verify
+        timeout-minutes: 180
         run: |
           python3 .github/review/std-verdicts.py run Source/DafnyStandardLibraries "$PWD/out/dafny/Dafny" \
-            "$PWD/$Z3_LINUX_X64/bin/z3" std-verdicts.tsv --cores 4 --additional-axioms false \
+            "$PWD/$Z3_MACOS_ARM64/bin/z3" std-verdicts.tsv --cores 2 --additional-axioms false \
             --boogie "/deterministicLiteralHashes:1"
-          rfp=$(awk -F'\t' '$1 !~ /^run /{print $1"\t"$5"\t"$6}' std-verdicts.tsv | sha256sum | cut -c1-16)
+          rfp=$(awk -F'\t' '$1 !~ /^run /{print $1"\t"$5"\t"$6}' std-verdicts.tsv | shasum -a 256 | cut -c1-16)
           echo "resource fingerprint $rfp"
       - uses: actions/upload-artifact@v4
         with:
           name: std-verdicts-${{ matrix.run }}
           path: std-verdicts.tsv
           retention-days: 90
+      - name: Remove job temporary directory
+        if: always()
+        shell: bash
+        timeout-minutes: 5
+        run: |
+          case "${TMPDIR:-}" in
+            "$RUNNER_TEMP"/fork-job.*) rm -rf "$TMPDIR" ;;
+          esac
 
   compare:
+    if: ${{ github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' || github.event_name == 'schedule') && (github.event_name != 'pull_request' || (!github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository)) }}
     name: Compare the runs
     needs: verify
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    runs-on: [self-hosted, macOS, ARM64, mac-studio]
+    timeout-minutes: 1440 # Includes waiting for the shared admission slot.
     steps:
+      - name: Yield to interactive work
+        if: runner.os == 'macOS'
+        shell: bash
+        timeout-minutes: 10
+        run: |
+          case "$(ps -o comm= -p "$PPID")" in
+            */Runner.Worker|Runner.Worker) ;;
+            *) echo "::error::Expected this job's Runner.Worker parent"; exit 1 ;;
+          esac
+          renice 10 -p "$PPID" "$$" >/dev/null
+          test "$(ps -o nice= -p "$PPID" | tr -d ' ')" = 10
+          test "$(ps -o nice= -p "$$" | tr -d ' ')" = 10
+      - name: Create job temporary directory
+        shell: bash
+        timeout-minutes: 10
+        run: |
+          job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
+          echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@49f32698673db4858b4433a87e93df553aca013f
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
           pattern: std-verdicts-*
       - name: Report
+        timeout-minutes: 10
         run: |
           {
             echo "## Standard library, Z3 5.1.0, axioms off, without /restartProver"
             echo
             python3 .github/review/process-history.py std-verdicts-*/std-verdicts.tsv
           } | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Remove job temporary directory
+        if: always()
+        shell: bash
+        timeout-minutes: 5
+        run: |
+          case "${TMPDIR:-}" in
+            "$RUNNER_TEMP"/fork-job.*) rm -rf "$TMPDIR" ;;
+          esac

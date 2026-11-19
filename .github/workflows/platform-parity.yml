@@ -9,7 +9,7 @@ on:
 permissions:
   contents: read
 env:
-  DOTNET_PROCESSOR_COUNT: '4'
+  DOTNET_PROCESSOR_COUNT: '2'
   DOTNET_NOLOGO: 'true'
   # Self-hosted runners: no build process outlives the job (MSBuild nodes, Gradle daemons).
   MSBUILDDISABLENODEREUSE: '1'
@@ -17,13 +17,17 @@ env:
   DOTNET_CLI_TELEMETRY_OPTOUT: 'true'
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 'true'
   COPYFILE_DISABLE: '1'
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref_type != 'tag' }}
+
 jobs:
   build:
-    if: ${{ github.repository == 'erniecohen/dafny' && github.event_name == 'workflow_dispatch' && (inputs.platform == 'macos' || inputs.platform == 'linux') }}
+    if: ${{ (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request') && (github.event_name != 'pull_request' || (!github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository))) && (github.repository == 'erniecohen/dafny' && github.event_name == 'workflow_dispatch' && inputs.platform == 'macos') }}
     name: "Parity ${{ inputs.platform }}: Build (Release)"
-    runs-on: ${{ inputs.platform == 'macos' && 'mac-studio' || 'ubuntu-24.04' }}
+    runs-on: [self-hosted, macOS, ARM64, mac-studio]
     continue-on-error: true
-    timeout-minutes: 60
+    timeout-minutes: 1440 # Includes waiting for the shared admission slot.
     outputs:
       revision: ${{ steps.version.outputs.revision }}
       version: ${{ steps.version.outputs.version }}
@@ -31,6 +35,7 @@ jobs:
       - name: Yield to interactive work
         if: runner.os == 'macOS'
         shell: bash
+        timeout-minutes: 60
         run: |
           case "$(ps -o comm= -p "$PPID")" in
             */Runner.Worker|Runner.Worker) ;;
@@ -39,11 +44,18 @@ jobs:
           renice 10 -p "$PPID" "$$" >/dev/null
           test "$(ps -o nice= -p "$PPID" | tr -d ' ')" = 10
           test "$(ps -o nice= -p "$$" | tr -d ' ')" = 10
-          echo 'Job worker and shell niceness: 10; subsequent actions inherit it.'
+      - name: Create job temporary directory
+        shell: bash
+        timeout-minutes: 60
+        run: |
+          job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
+          echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@49f32698673db4858b4433a87e93df553aca013f
       - uses: actions/checkout@v4
       - name: Version
         id: version
         # Not a pipe into tee: without pipefail a failing version.sh left the version empty.
+        timeout-minutes: 60
         run: |
           # version.sh fetches the upstream tag; HEAD supplies the product tree.
           out=$(sh .github/review/version.sh)
@@ -55,17 +67,21 @@ jobs:
           distribution: temurin
           java-version: '17'
       - name: Boogie packages
+        timeout-minutes: 60
         run: sh Scripts/fetch-boogie-packages.sh
       - name: Build
+        timeout-minutes: 60
         run: |
-          dotnet publish Source/Dafny/Dafny.csproj -c Release -o out/dafny \
+          dotnet publish -p:NuGetAudit=false Source/Dafny/Dafny.csproj -c Release -o out/dafny \
             -p:GeneratePackageOnBuild=false -p:ContinuousIntegrationBuild=true -p:SourceRevisionId=${{ steps.version.outputs.revision }}
       - name: Check the version it reports
+        timeout-minutes: 60
         run: |
           v=$(dotnet out/dafny/Dafny.dll --version | head -1)
           echo "dafny --version: $v"
           test "$v" = "${{ steps.version.outputs.version }}"
       - name: Check the packaged standard libraries
+        timeout-minutes: 60
         run: |
           v=$(sed -n 's/.*DefaultZ3Version = "\(.*\)";.*/\1/p' Source/DafnyCore/DafnyOptions.cs)
           z3h=$(sh .github/review/setup-z3.sh "$v" z3h)
@@ -84,6 +100,7 @@ jobs:
             out/packaged-libraries/*/package-smoke.bin
           retention-days: 14
       - name: Pack
+        timeout-minutes: 60
         run: |
           sh .github/review/portable-dafny.sh out/dafny
           tar -C out -czf dafny.tar.gz dafny
@@ -93,18 +110,25 @@ jobs:
           name: parity-${{ inputs.platform }}-dafny
           path: dafny.tar.gz
           retention-days: 14
-
-
+      - name: Remove job temporary directory
+        if: always()
+        shell: bash
+        timeout-minutes: 5
+        run: |
+          case "${TMPDIR:-}" in
+            "$RUNNER_TEMP"/fork-job.*) rm -rf "$TMPDIR" ;;
+          esac
 
   suite:
-    if: ${{ github.repository == 'erniecohen/dafny' && github.event_name == 'workflow_dispatch' && (inputs.platform == 'macos' || inputs.platform == 'linux') }}
+    if: ${{ (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request') && (github.event_name != 'pull_request' || (!github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository))) && (github.repository == 'erniecohen/dafny' && github.event_name == 'workflow_dispatch' && inputs.platform == 'macos') }}
     name: "Parity ${{ inputs.platform }}: Verifier suite (axioms ${{ matrix.axioms }}, shard ${{ matrix.shard }} of 4)"
     needs: build
-    runs-on: ${{ inputs.platform == 'macos' && 'mac-studio' || 'ubuntu-24.04' }}
+    runs-on: [self-hosted, macOS, ARM64, mac-studio]
     continue-on-error: true
-    timeout-minutes: 240
+    timeout-minutes: 1440 # Includes waiting for the shared admission slot.
     strategy:
       fail-fast: false
+      max-parallel: 1
       matrix:
         shard: [0, 1, 2, 3]
         axioms: ['off', 'on']
@@ -112,6 +136,7 @@ jobs:
       - name: Yield to interactive work
         if: runner.os == 'macOS'
         shell: bash
+        timeout-minutes: 240
         run: |
           case "$(ps -o comm= -p "$PPID")" in
             */Runner.Worker|Runner.Worker) ;;
@@ -120,31 +145,41 @@ jobs:
           renice 10 -p "$PPID" "$$" >/dev/null
           test "$(ps -o nice= -p "$PPID" | tr -d ' ')" = 10
           test "$(ps -o nice= -p "$$" | tr -d ' ')" = 10
-          echo 'Job worker and shell niceness: 10; subsequent actions inherit it.'
+      - name: Create job temporary directory
+        shell: bash
+        timeout-minutes: 240
+        run: |
+          job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
+          echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@49f32698673db4858b4433a87e93df553aca013f
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-dotnet
       - uses: actions/download-artifact@v4
         with:
           name: parity-${{ inputs.platform }}-dafny
       - name: Unpack Dafny
+        timeout-minutes: 240
         run: |
           mkdir -p out && tar -C out -xzf dafny.tar.gz
           sh .github/review/portable-dafny.sh out/dafny
       - name: Z3
+        timeout-minutes: 240
         run: |
           solver=$(sh .github/review/setup-z3.sh)
           echo "Z3=$solver" >> "$GITHUB_ENV"
       - name: Verify
+        timeout-minutes: 240
         run: |
           L=Source/IntegrationTests/TestFiles/LitTests/LitTest
           python3 .github/review/lit-verdicts.py plan "$L" plan.tsv
           python3 .github/review/lit-verdicts.py run plan.tsv "$L" "$PWD/out/dafny/Dafny" "$Z3" \
-            verdicts-${{ matrix.axioms }}-${{ matrix.shard }}.tsv --shard ${{ matrix.shard }}/4 --jobs 4 \
+            verdicts-${{ matrix.axioms }}-${{ matrix.shard }}.tsv --shard ${{ matrix.shard }}/4 --jobs 2 \
             --additional-axioms ${{ matrix.axioms == 'on' }} --measurements measurements/${{ matrix.axioms }}
           python3 .github/review/additional-axioms.py inventory measurements/${{ matrix.axioms }} \
             resources-${{ matrix.axioms }}-${{ matrix.shard }}.json
       - name: Record per-program resource counts and headroom
         if: always()
+        timeout-minutes: 240
         run: |
           python3 .github/review/program-resources.py suite measurements/${{ matrix.axioms }} \
             Source/IntegrationTests/TestFiles/LitTests/LitTest verdicts-${{ matrix.axioms }}-${{ matrix.shard }}.tsv ru \
@@ -166,18 +201,25 @@ jobs:
           path: measurements
           compression-level: 9
           retention-days: 90
-
-
+      - name: Remove job temporary directory
+        if: always()
+        shell: bash
+        timeout-minutes: 5
+        run: |
+          case "${TMPDIR:-}" in
+            "$RUNNER_TEMP"/fork-job.*) rm -rf "$TMPDIR" ;;
+          esac
 
   stdlib:
-    if: ${{ github.repository == 'erniecohen/dafny' && github.event_name == 'workflow_dispatch' && (inputs.platform == 'macos' || inputs.platform == 'linux') }}
+    if: ${{ (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request') && (github.event_name != 'pull_request' || (!github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository))) && (github.repository == 'erniecohen/dafny' && github.event_name == 'workflow_dispatch' && inputs.platform == 'macos') }}
     name: "Parity ${{ inputs.platform }}: Standard library (Z3 ${{ matrix.z3 }}, axioms ${{ matrix.axioms }})"
     needs: build
-    runs-on: ${{ inputs.platform == 'macos' && 'mac-studio' || 'ubuntu-24.04' }}
+    runs-on: [self-hosted, macOS, ARM64, mac-studio]
     continue-on-error: true
-    timeout-minutes: 180
+    timeout-minutes: 1440 # Includes waiting for the shared admission slot.
     strategy:
       fail-fast: false
+      max-parallel: 1
       matrix:
         # This line's Z3, and the Z3 that the tree's own tests expect (its
         # DefaultZ3Version), with which upstream builds the library.
@@ -187,6 +229,7 @@ jobs:
       - name: Yield to interactive work
         if: runner.os == 'macOS'
         shell: bash
+        timeout-minutes: 180
         run: |
           case "$(ps -o comm= -p "$PPID")" in
             */Runner.Worker|Runner.Worker) ;;
@@ -195,17 +238,25 @@ jobs:
           renice 10 -p "$PPID" "$$" >/dev/null
           test "$(ps -o nice= -p "$PPID" | tr -d ' ')" = 10
           test "$(ps -o nice= -p "$$" | tr -d ' ')" = 10
-          echo 'Job worker and shell niceness: 10; subsequent actions inherit it.'
+      - name: Create job temporary directory
+        shell: bash
+        timeout-minutes: 180
+        run: |
+          job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
+          echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@49f32698673db4858b4433a87e93df553aca013f
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-dotnet
       - uses: actions/download-artifact@v4
         with:
           name: parity-${{ inputs.platform }}-dafny
       - name: Unpack Dafny
+        timeout-minutes: 180
         run: |
           mkdir -p out && tar -C out -xzf dafny.tar.gz
           sh .github/review/portable-dafny.sh out/dafny
       - name: Z3
+        timeout-minutes: 180
         run: |
           v='${{ matrix.z3 }}'
           if [ "$v" = 'of the tests' ]; then
@@ -215,10 +266,11 @@ jobs:
           echo "Z3=$solver" >> "$GITHUB_ENV"
           echo "Z3V=$v" >> "$GITHUB_ENV"
       - name: Verify
+        timeout-minutes: 180
         run: |
           "$Z3" --version
           python3 .github/review/std-verdicts.py run Source/DafnyStandardLibraries "$PWD/out/dafny/Dafny" "$Z3" \
-            std-verdicts.tsv --cores 4 --additional-axioms ${{ matrix.axioms == 'on' }} \
+            std-verdicts.tsv --cores 2 --additional-axioms ${{ matrix.axioms == 'on' }} \
             --boogie "/deterministicLiteralHashes:1 /restartProver" --measurements measurements
           python3 .github/review/std-verdicts.py expected std-verdicts.tsv > "expected-std-verdicts-z3-$Z3V.tsv"
           # Fingerprints, to compare runs of one tree without downloading artifacts (#186):
@@ -239,6 +291,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
       - name: Record per-program resource counts and headroom
         if: always()
+        timeout-minutes: 180
         run: |
           python3 .github/review/program-resources.py library measurements \
             Source/DafnyStandardLibraries std-verdicts.tsv ru --solver "$Z3" --archive ci-z3/archive.zip
@@ -251,18 +304,26 @@ jobs:
             ru/
             measurements/
           retention-days: 90
-
+      - name: Remove job temporary directory
+        if: always()
+        shell: bash
+        timeout-minutes: 5
+        run: |
+          case "${TMPDIR:-}" in
+            "$RUNNER_TEMP"/fork-job.*) rm -rf "$TMPDIR" ;;
+          esac
 
   regressions:
-    if: ${{ github.repository == 'erniecohen/dafny' && github.event_name == 'workflow_dispatch' && (inputs.platform == 'macos' || inputs.platform == 'linux') }}
+    if: ${{ (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request') && (github.event_name != 'pull_request' || (!github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository))) && (github.repository == 'erniecohen/dafny' && github.event_name == 'workflow_dispatch' && inputs.platform == 'macos') }}
     name: "Parity ${{ inputs.platform }}: Regression tests (upstream harness)"
-    runs-on: ${{ inputs.platform == 'macos' && 'mac-studio' || 'ubuntu-24.04' }}
+    runs-on: [self-hosted, macOS, ARM64, mac-studio]
     continue-on-error: true
-    timeout-minutes: 90
+    timeout-minutes: 1440 # Includes waiting for the shared admission slot.
     steps:
       - name: Yield to interactive work
         if: runner.os == 'macOS'
         shell: bash
+        timeout-minutes: 90
         run: |
           case "$(ps -o comm= -p "$PPID")" in
             */Runner.Worker|Runner.Worker) ;;
@@ -271,7 +332,13 @@ jobs:
           renice 10 -p "$PPID" "$$" >/dev/null
           test "$(ps -o nice= -p "$PPID" | tr -d ' ')" = 10
           test "$(ps -o nice= -p "$$" | tr -d ' ')" = 10
-          echo 'Job worker and shell niceness: 10; subsequent actions inherit it.'
+      - name: Create job temporary directory
+        shell: bash
+        timeout-minutes: 90
+        run: |
+          job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
+          echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@49f32698673db4858b4433a87e93df553aca013f
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-dotnet
       - uses: actions/setup-java@v4
@@ -279,6 +346,7 @@ jobs:
           distribution: temurin
           java-version: '17'
       - name: The solvers the tests expect
+        timeout-minutes: 90
         run: |
           v=$(sed -n 's/.*DefaultZ3Version = "\(.*\)";.*/\1/p' Source/DafnyCore/DafnyOptions.cs)
           mkdir -p Binaries/z3/bin
@@ -287,46 +355,57 @@ jobs:
             cp "$solver" "Binaries/z3/bin/z3-$version"
           done
       - name: Boogie packages
+        timeout-minutes: 90
         run: sh Scripts/fetch-boogie-packages.sh
       - name: Build the test harness
-        run: dotnet build Source/IntegrationTests -c Release
+        timeout-minutes: 90
+        run: dotnet build -p:NuGetAudit=false Source/IntegrationTests -c Release
       - name: Cardinality resolver and translation admission tests
+        timeout-minutes: 90
         run: |
-          dotnet test --settings .github/review/ci.runsettings --logger "trx;LogFileName=test-1.trx" --results-directory parity-results Source/DafnyCore.Test -c Release --filter 'FullyQualifiedName~Cardinality|FullyQualifiedName~NewtypeReferenceCharacteristicTests'
-          dotnet test --settings .github/review/ci.runsettings --logger "trx;LogFileName=test-2.trx" --results-directory parity-results Source/DafnyLanguageServer.Test -c Release --filter FullyQualifiedName~Cardinality
-          dotnet test --settings .github/review/ci.runsettings --logger "trx;LogFileName=test-3.trx" --results-directory parity-results Source/IntegrationTests -c Release --no-build --filter FullyQualifiedName~CardinalityEmissionTests
+          dotnet test -p:NuGetAudit=false --settings .github/review/ci.runsettings --logger "trx;LogFileName=test-1.trx" --results-directory parity-results Source/DafnyCore.Test -c Release --filter 'FullyQualifiedName~Cardinality|FullyQualifiedName~NewtypeReferenceCharacteristicTests'
+          dotnet test -p:NuGetAudit=false --settings .github/review/ci.runsettings --logger "trx;LogFileName=test-2.trx" --results-directory parity-results Source/DafnyLanguageServer.Test -c Release --filter FullyQualifiedName~Cardinality
+          dotnet test -p:NuGetAudit=false --settings .github/review/ci.runsettings --logger "trx;LogFileName=test-3.trx" --results-directory parity-results Source/IntegrationTests -c Release --no-build --filter FullyQualifiedName~CardinalityEmissionTests
       - uses: actions/setup-node@v4
         with:
           node-version: '16.0.0'
       - name: JavaScript runtime dependency
+        timeout-minutes: 90
         run: npm install --no-save --package-lock=false bignumber.js@9.1.2
       - name: Run the tests named in .github/review/regressions
         env:
           DAFNY_INTEGRATION_TESTS_ONLY_COMPILERS: cs
+        timeout-minutes: 90
         run: |
           filter=$(grep -v '^#' .github/review/regressions | grep . | sed 's|^|DisplayName~|' | paste -sd'|' -)
           if [ -z "$filter" ]; then echo "no tests named"; exit 0; fi
           echo "$filter"
-          dotnet test --settings .github/review/ci.runsettings --logger "trx;LogFileName=test-4.trx" --results-directory parity-results Source/IntegrationTests -c Release --no-build \
+          dotnet test -p:NuGetAudit=false --settings .github/review/ci.runsettings --logger "trx;LogFileName=test-4.trx" --results-directory parity-results Source/IntegrationTests -c Release --no-build \
             --logger "console;verbosity=normal" --filter "$filter"
       - name: Batch requests reuse resolution and create fresh proof tasks
         env:
           Z3: ${{ github.workspace }}/Binaries/z3/bin/z3-5.1.0
-        run: dotnet test --settings .github/review/ci.runsettings --logger "trx;LogFileName=test-5.trx" --results-directory parity-results Source/IntegrationTests -c Release --no-build --filter FullyQualifiedName~VerificationBatchTests --logger "console;verbosity=normal"
+        timeout-minutes: 90
+        run: dotnet test -p:NuGetAudit=false --settings .github/review/ci.runsettings --logger "trx;LogFileName=test-5.trx" --results-directory parity-results Source/IntegrationTests -c Release --no-build --filter FullyQualifiedName~VerificationBatchTests --logger "console;verbosity=normal"
       - name: A module window reports what one module at a time reports (#241)
         env:
           Z3: ${{ github.workspace }}/Binaries/z3/bin/z3-5.1.0
-        run: dotnet test --settings .github/review/ci.runsettings --logger "trx;LogFileName=test-6.trx" --results-directory parity-results Source/IntegrationTests -c Release --no-build --filter FullyQualifiedName~ModuleWindowTests --logger "console;verbosity=normal"
+        timeout-minutes: 90
+        run: dotnet test -p:NuGetAudit=false --settings .github/review/ci.runsettings --logger "trx;LogFileName=test-6.trx" --results-directory parity-results Source/IntegrationTests -c Release --no-build --filter FullyQualifiedName~ModuleWindowTests --logger "console;verbosity=normal"
       - name: Literal identities are option guarded and local to each module
-        run: dotnet test --settings .github/review/ci.runsettings --logger "trx;LogFileName=test-7.trx" --results-directory parity-results Source/IntegrationTests -c Release --no-build --filter FullyQualifiedName~AdditionalAxiomsTranslationTests --logger "console;verbosity=normal"
+        timeout-minutes: 90
+        run: dotnet test -p:NuGetAudit=false --settings .github/review/ci.runsettings --logger "trx;LogFileName=test-7.trx" --results-directory parity-results Source/IntegrationTests -c Release --no-build --filter FullyQualifiedName~AdditionalAxiomsTranslationTests --logger "console;verbosity=normal"
       - name: Obligation lowering inventory and structural comparisons
-        run: dotnet test --settings .github/review/ci.runsettings --logger "trx;LogFileName=test-8.trx" --results-directory parity-results Source/DafnyCore.Test -c Release --filter FullyQualifiedName~Obligation --logger "console;verbosity=normal"
+        timeout-minutes: 90
+        run: dotnet test -p:NuGetAudit=false --settings .github/review/ci.runsettings --logger "trx;LogFileName=test-8.trx" --results-directory parity-results Source/DafnyCore.Test -c Release --filter FullyQualifiedName~Obligation --logger "console;verbosity=normal"
       - name: Editor obligation option changes invalidate verification results
         env:
           Z3: ${{ github.workspace }}/Binaries/z3/bin/z3-5.1.0
-        run: dotnet test --settings .github/review/ci.runsettings --logger "trx;LogFileName=test-9.trx" --results-directory parity-results Source/DafnyLanguageServer.Test -c Release --filter FullyQualifiedName~ConsistentObligationChecksTest --logger "console;verbosity=normal"
+        timeout-minutes: 90
+        run: dotnet test -p:NuGetAudit=false --settings .github/review/ci.runsettings --logger "trx;LogFileName=test-9.trx" --results-directory parity-results Source/DafnyLanguageServer.Test -c Release --filter FullyQualifiedName~ConsistentObligationChecksTest --logger "console;verbosity=normal"
       - name: Editor option changes invalidate verification results
-        run: dotnet test --settings .github/review/ci.runsettings --logger "trx;LogFileName=test-10.trx" --results-directory parity-results Source/DafnyLanguageServer.Test -c Release --filter FullyQualifiedName~AdditionalAxiomsTest --logger "console;verbosity=normal"
+        timeout-minutes: 90
+        run: dotnet test -p:NuGetAudit=false --settings .github/review/ci.runsettings --logger "trx;LogFileName=test-10.trx" --results-directory parity-results Source/DafnyLanguageServer.Test -c Release --filter FullyQualifiedName~AdditionalAxiomsTest --logger "console;verbosity=normal"
 
 
       - uses: actions/upload-artifact@v4
@@ -335,18 +414,26 @@ jobs:
           name: parity-${{ inputs.platform }}-regressions
           path: parity-results
           retention-days: 90
-
+      - name: Remove job temporary directory
+        if: always()
+        shell: bash
+        timeout-minutes: 5
+        run: |
+          case "${TMPDIR:-}" in
+            "$RUNNER_TEMP"/fork-job.*) rm -rf "$TMPDIR" ;;
+          esac
 
   resolver-tests:
-    if: ${{ github.repository == 'erniecohen/dafny' && github.event_name == 'workflow_dispatch' && (inputs.platform == 'macos' || inputs.platform == 'linux') }}
+    if: ${{ (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request') && (github.event_name != 'pull_request' || (!github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository))) && (github.repository == 'erniecohen/dafny' && github.event_name == 'workflow_dispatch' && inputs.platform == 'macos') }}
     name: "Parity ${{ inputs.platform }}: Resolver unit tests and language-server recovery"
-    runs-on: ${{ inputs.platform == 'macos' && 'mac-studio' || 'ubuntu-24.04' }}
+    runs-on: [self-hosted, macOS, ARM64, mac-studio]
     continue-on-error: true
-    timeout-minutes: 20
+    timeout-minutes: 1440 # Includes waiting for the shared admission slot.
     steps:
       - name: Yield to interactive work
         if: runner.os == 'macOS'
         shell: bash
+        timeout-minutes: 20
         run: |
           case "$(ps -o comm= -p "$PPID")" in
             */Runner.Worker|Runner.Worker) ;;
@@ -355,35 +442,47 @@ jobs:
           renice 10 -p "$PPID" "$$" >/dev/null
           test "$(ps -o nice= -p "$PPID" | tr -d ' ')" = 10
           test "$(ps -o nice= -p "$$" | tr -d ' ')" = 10
-          echo 'Job worker and shell niceness: 10; subsequent actions inherit it.'
+      - name: Create job temporary directory
+        shell: bash
+        timeout-minutes: 20
+        run: |
+          job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
+          echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@49f32698673db4858b4433a87e93df553aca013f
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-dotnet
       - name: Boogie packages
+        timeout-minutes: 20
         run: sh Scripts/fetch-boogie-packages.sh
       - name: Build resolver and language-server tests
-        run: dotnet build Source/DafnyLanguageServer.Test -c Release
+        timeout-minutes: 20
+        run: dotnet build -p:NuGetAudit=false Source/DafnyLanguageServer.Test -c Release
       # These tests exercise type resolution only. The language-server tests
       # explicitly disable automatic verification, so this job starts no solver.
       - name: Test redirecting dependencies, numeric ancestry and recovery scopes
+        timeout-minutes: 20
         run: |
-          dotnet test --settings .github/review/ci.runsettings --logger "trx;LogFileName=test-11.trx" --results-directory parity-results Source/DafnyCore.Test -c Release --no-build \
+          dotnet test -p:NuGetAudit=false --settings .github/review/ci.runsettings --logger "trx;LogFileName=test-11.trx" --results-directory parity-results Source/DafnyCore.Test -c Release --no-build \
             --logger "console;verbosity=normal" \
             --filter "FullyQualifiedName~DafnyCore.Test.RedirectingTypeDependencyTrackerTests|FullyQualifiedName~DafnyCore.Test.NumericAncestryTests|FullyQualifiedName~DafnyCore.Test.NumericAncestryAllocationTests|FullyQualifiedName~DafnyCore.Test.ScopeCheckpointTest|FullyQualifiedName~MapComprehensionSubstitutionTests" \
             --blame-hang --blame-hang-timeout 60s --blame-hang-dump-type none
       - name: Test newtype-cycle edits in both resolver modes
+        timeout-minutes: 20
         run: |
-          dotnet test --settings .github/review/ci.runsettings --logger "trx;LogFileName=test-12.trx" --results-directory parity-results Source/DafnyLanguageServer.Test -c Release --no-build \
+          dotnet test -p:NuGetAudit=false --settings .github/review/ci.runsettings --logger "trx;LogFileName=test-12.trx" --results-directory parity-results Source/DafnyLanguageServer.Test -c Release --no-build \
             --logger "console;verbosity=normal" \
             --filter "FullyQualifiedName~InferredNewtypeCycleTest" \
             --blame-hang --blame-hang-timeout 60s --blame-hang-dump-type none
 
       - name: Z3 for incremental bitvector verification
+        timeout-minutes: 20
         run: |
           solver=$(sh .github/review/setup-z3.sh)
           echo "Z3=$solver" >> "$GITHUB_ENV"
       - name: Test cached inherited members and rotations after edits
+        timeout-minutes: 20
         run: |
-          dotnet test --settings .github/review/ci.runsettings --logger "trx;LogFileName=test-13.trx" --results-directory parity-results Source/DafnyLanguageServer.Test -c Release --no-build \
+          dotnet test -p:NuGetAudit=false --settings .github/review/ci.runsettings --logger "trx;LogFileName=test-13.trx" --results-directory parity-results Source/DafnyLanguageServer.Test -c Release --no-build \
             --logger "console;verbosity=normal" \
             --filter "FullyQualifiedName~IncrementalBitvectorMembersTest" \
             --blame-hang --blame-hang-timeout 90s --blame-hang-dump-type none
@@ -394,3 +493,11 @@ jobs:
           name: parity-${{ inputs.platform }}-resolver-tests
           path: parity-results
           retention-days: 90
+      - name: Remove job temporary directory
+        if: always()
+        shell: bash
+        timeout-minutes: 5
+        run: |
+          case "${TMPDIR:-}" in
+            "$RUNNER_TEMP"/fork-job.*) rm -rf "$TMPDIR" ;;
+          esac

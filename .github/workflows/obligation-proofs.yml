@@ -55,7 +55,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  DOTNET_PROCESSOR_COUNT: '4'
+  DOTNET_PROCESSOR_COUNT: '2'
   DOTNET_NOLOGO: 'true'
   # Self-hosted runners: no build process outlives the job (MSBuild nodes, Gradle daemons).
   MSBUILDDISABLENODEREUSE: '1'
@@ -63,8 +63,8 @@ env:
   DOTNET_CLI_TELEMETRY_OPTOUT: 'true'
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 'true'
   Z3_RELEASE: https://github.com/Z3Prover/z3/releases/download/z3-5.1.0
-  Z3_LINUX_X64: z3-5.1.0-x64-glibc-2.39
-  Z3_LINUX_X64_SHA256: f47be8d27d3230e823bf1eeede2fe0abaca55bb78d0b59974370e6689a92284a
+  Z3_MACOS_ARM64: z3-5.1.0-arm64-osx-13.3
+  Z3_MACOS_ARM64_SHA256: 81d29e934fd863079a74af35eecaeaef8047e0e12414d33ca322b358d68383db
 
 jobs:
   tree:
@@ -72,9 +72,9 @@ jobs:
     # full run of the shards leaves the artifact verified-obligation-proofs-<tree>; a later run
     # of the same tree (the push after a squash merge) finds it and skips the shards.
     name: Tree reuse
-    if: ${{ github.repository == 'erniecohen/dafny' && (github.event_name != 'pull_request' || !github.event.pull_request.draft) }}
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    if: ${{ (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' || github.event_name == 'schedule') && (github.event_name != 'pull_request' || (!github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository))) && (github.repository == 'erniecohen/dafny' && (github.event_name != 'pull_request' || !github.event.pull_request.draft)) }}
+    runs-on: [self-hosted, macOS, ARM64, mac-studio]
+    timeout-minutes: 1440 # Includes waiting for the shared admission slot.
     permissions:
       contents: read
       actions: read
@@ -83,8 +83,28 @@ jobs:
       tree: ${{ steps.find.outputs.tree }}
       run: ${{ steps.find.outputs.run }}
     steps:
+      - name: Yield to interactive work
+        if: runner.os == 'macOS'
+        shell: bash
+        timeout-minutes: 10
+        run: |
+          case "$(ps -o comm= -p "$PPID")" in
+            */Runner.Worker|Runner.Worker) ;;
+            *) echo "::error::Expected this job's Runner.Worker parent"; exit 1 ;;
+          esac
+          renice 10 -p "$PPID" "$$" >/dev/null
+          test "$(ps -o nice= -p "$PPID" | tr -d ' ')" = 10
+          test "$(ps -o nice= -p "$$" | tr -d ' ')" = 10
+      - name: Create job temporary directory
+        shell: bash
+        timeout-minutes: 10
+        run: |
+          job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
+          echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@49f32698673db4858b4433a87e93df553aca013f
       - uses: actions/checkout@v4
       - name: Controls for the tree matching
+        timeout-minutes: 10
         run: python3 -m unittest discover -s .github/review -p test_tree_reuse.py
       - name: Look for a verified run of this tree
         id: find
@@ -95,22 +115,33 @@ jobs:
           REF_TYPE: ${{ github.ref_type }}
           HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
           RUN_ID: ${{ github.run_id }}
+        timeout-minutes: 10
         run: python3 .github/review/tree-reuse.py find --workflow .github/workflows/obligation-proofs.yml --marker verified-obligation-proofs
+      - name: Remove job temporary directory
+        if: always()
+        shell: bash
+        timeout-minutes: 5
+        run: |
+          case "${TMPDIR:-}" in
+            "$RUNNER_TEMP"/fork-job.*) rm -rf "$TMPDIR" ;;
+          esac
 
   shard:
-    if: ${{ ((github.event_name != 'pull_request' || !github.event.pull_request.draft) && (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'erniecohen/dafny')))) && needs.tree.outputs.reuse != 'true' }}
+    if: ${{ (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' || github.event_name == 'schedule') && (github.event_name != 'pull_request' || (!github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository))) && (((github.event_name != 'pull_request' || !github.event.pull_request.draft) && (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'erniecohen/dafny')))) && needs.tree.outputs.reuse != 'true') }}
     needs: tree
     name: Obligation proof repairs (#170), part ${{ matrix.part }} of 12
     runs-on: [self-hosted, macOS, ARM64, mac-studio]
-    timeout-minutes: 60
+    timeout-minutes: 1440 # Includes waiting for the shared admission slot.
     strategy:
       fail-fast: false
+      max-parallel: 1
       matrix:
         part: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
     steps:
       - name: Yield to interactive work
         if: runner.os == 'macOS'
         shell: bash
+        timeout-minutes: 60
         run: |
           case "$(ps -o comm= -p "$PPID")" in
             */Runner.Worker|Runner.Worker) ;;
@@ -119,7 +150,13 @@ jobs:
           renice 10 -p "$PPID" "$$" >/dev/null
           test "$(ps -o nice= -p "$PPID" | tr -d ' ')" = 10
           test "$(ps -o nice= -p "$$" | tr -d ' ')" = 10
-          echo 'Job worker and shell niceness: 10; subsequent actions inherit it.'
+      - name: Create job temporary directory
+        shell: bash
+        timeout-minutes: 60
+        run: |
+          job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
+          echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@49f32698673db4858b4433a87e93df553aca013f
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-dotnet
       - uses: actions/setup-java@v4
@@ -127,27 +164,31 @@ jobs:
           distribution: temurin
           java-version: '17'
       - name: Z3 5.1.0
+        timeout-minutes: 60
         run: |
           solver=$(sh .github/review/setup-z3.sh)
           mkdir -p Binaries/z3/bin
           cp "$solver" Binaries/z3/bin/z3-5.1.0
           chmod +x Binaries/z3/bin/z3-5.1.0
       - name: Boogie packages
+        timeout-minutes: 60
         run: sh Scripts/fetch-boogie-packages.sh
       - name: Build the test harness
-        run: dotnet build Source/IntegrationTests -c Release
+        timeout-minutes: 60
+        run: dotnet build -p:NuGetAudit=false Source/IntegrationTests -c Release
       - name: Run the shard
         env:
           DAFNY_INTEGRATION_TESTS_ONLY_COMPILERS: cs
           PART: ${{ matrix.part }}
         shell: bash
+        timeout-minutes: 60
         run: |
           set -o pipefail
           # Part 1 is git-issue-170.dfy; part n > 1 is git-issue-170-part-(n-1).dfy.
           if [ "$PART" = 1 ]; then test=git-issues/git-issue-170.dfy
           else test=git-issues/git-issue-170-part-$((PART - 1)).dfy; fi
           echo "$test"
-          dotnet test --settings .github/review/ci.runsettings Source/IntegrationTests -c Release --no-build \
+          dotnet test -p:NuGetAudit=false --settings .github/review/ci.runsettings Source/IntegrationTests -c Release --no-build \
             --logger "console;verbosity=normal" --filter "DisplayName~$test" | tee test.log
           # A filter that matches nothing passes; require exactly the one test.
           grep -Eq 'Total( tests)?: *1([^0-9]|$)' test.log
@@ -158,70 +199,49 @@ jobs:
           name: obligation-proof-part-${{ matrix.part }}
           path: Source/IntegrationTests/bin/Release/net10.0/TestFiles/LitTests/LitTest/git-issues/Output/git-issue-170*.dfy.tmp.dir
           retention-days: 90
-
-  hosted-shard:
-    if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.draft) && (!(github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'erniecohen/dafny')))) }}
-    name: Obligation proof repairs (#170), part ${{ matrix.part }} of 12
-    runs-on: ubuntu-24.04
-    timeout-minutes: 60
-    strategy:
-      fail-fast: false
-      matrix:
-        part: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/setup-dotnet
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
-      - name: Z3 5.1.0
-        run: |
-          solver=$(sh .github/review/setup-z3.sh)
-          mkdir -p Binaries/z3/bin
-          cp "$solver" Binaries/z3/bin/z3-5.1.0
-          chmod +x Binaries/z3/bin/z3-5.1.0
-      - name: Boogie packages
-        run: sh Scripts/fetch-boogie-packages.sh
-      - name: Build the test harness
-        run: dotnet build Source/IntegrationTests -c Release
-      - name: Run the shard
-        env:
-          DAFNY_INTEGRATION_TESTS_ONLY_COMPILERS: cs
-          PART: ${{ matrix.part }}
-        shell: bash
-        run: |
-          set -o pipefail
-          # Part 1 is git-issue-170.dfy; part n > 1 is git-issue-170-part-(n-1).dfy.
-          if [ "$PART" = 1 ]; then test=git-issues/git-issue-170.dfy
-          else test=git-issues/git-issue-170-part-$((PART - 1)).dfy; fi
-          echo "$test"
-          dotnet test --settings .github/review/ci.runsettings Source/IntegrationTests -c Release --no-build \
-            --logger "console;verbosity=normal" --filter "DisplayName~$test" | tee test.log
-          # A filter that matches nothing passes; require exactly the one test.
-          grep -Eq 'Total( tests)?: *1([^0-9]|$)' test.log
-      - name: Retain proof coverage and resource evidence
-        uses: actions/upload-artifact@v4
+      - name: Remove job temporary directory
         if: always()
-        with:
-          name: obligation-proof-part-${{ matrix.part }}
-          path: Source/IntegrationTests/bin/Release/net10.0/TestFiles/LitTests/LitTest/git-issues/Output/git-issue-170*.dfy.tmp.dir
-          retention-days: 90
+        shell: bash
+        timeout-minutes: 5
+        run: |
+          case "${TMPDIR:-}" in
+            "$RUNNER_TEMP"/fork-job.*) rm -rf "$TMPDIR" ;;
+          esac
 
   verdict:
     # Success when every shard succeeded or was skipped for a reused verification.  A full run
     # on a push or a pull request records the marker that a later run of the same tree reuses.
     name: Verdict
-    if: ${{ !cancelled() && !contains(needs.*.result, 'failure') && needs.tree.result == 'success' && (github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)) }}
+    if: ${{ !cancelled() && (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' || github.event_name == 'schedule') && (github.event_name != 'pull_request' || (!github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository))) && (!cancelled() && !contains(needs.*.result, 'failure') && needs.tree.result == 'success' && (github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository))) }}
     needs: [tree, shard]
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    runs-on: [self-hosted, macOS, ARM64, mac-studio]
+    timeout-minutes: 1440 # Includes waiting for the shared admission slot.
     steps:
+      - name: Yield to interactive work
+        if: runner.os == 'macOS'
+        shell: bash
+        timeout-minutes: 10
+        run: |
+          case "$(ps -o comm= -p "$PPID")" in
+            */Runner.Worker|Runner.Worker) ;;
+            *) echo "::error::Expected this job's Runner.Worker parent"; exit 1 ;;
+          esac
+          renice 10 -p "$PPID" "$$" >/dev/null
+          test "$(ps -o nice= -p "$PPID" | tr -d ' ')" = 10
+          test "$(ps -o nice= -p "$$" | tr -d ' ')" = 10
+      - name: Create job temporary directory
+        shell: bash
+        timeout-minutes: 10
+        run: |
+          job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
+          echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@49f32698673db4858b4433a87e93df553aca013f
       - uses: actions/checkout@v4
       - name: Judge the shards
         id: gate
         env:
           NEEDS: ${{ toJSON(needs) }}
+        timeout-minutes: 10
         run: python3 .github/review/tree-reuse.py gate --jobs shard
       - name: Marker for this tree
         if: ${{ steps.gate.outputs.verified == 'true' }}
@@ -229,6 +249,7 @@ jobs:
           EVENT: ${{ github.event_name }}
           SHA: ${{ github.event.pull_request.head.sha || github.sha }}
           RUN_ID: ${{ github.run_id }}
+        timeout-minutes: 10
         run: |
           mkdir verified
           python3 .github/review/tree-reuse.py marker --out verified/tree.json
@@ -239,3 +260,11 @@ jobs:
           path: verified
           overwrite: true
           retention-days: 90
+      - name: Remove job temporary directory
+        if: always()
+        shell: bash
+        timeout-minutes: 5
+        run: |
+          case "${TMPDIR:-}" in
+            "$RUNNER_TEMP"/fork-job.*) rm -rf "$TMPDIR" ;;
+          esac

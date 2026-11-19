@@ -20,58 +20,111 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 env:
+  DOTNET_PROCESSOR_COUNT: '2'
   DOTNET_NOLOGO: 'true'
   # Self-hosted runners: no build process outlives the job (MSBuild nodes, Gradle daemons).
   MSBUILDDISABLENODEREUSE: '1'
   GRADLE_OPTS: -Dorg.gradle.daemon=false
   DOTNET_CLI_TELEMETRY_OPTOUT: 'true'
-  Z3_ZIP: https://github.com/Z3Prover/z3/releases/download/z3-5.1.0/z3-5.1.0-x64-glibc-2.39.zip
-  Z3_SHA256: f47be8d27d3230e823bf1eeede2fe0abaca55bb78d0b59974370e6689a92284a
-  Z3_DIR: z3-5.1.0-x64-glibc-2.39
+  Z3_ZIP: https://github.com/Z3Prover/z3/releases/download/z3-5.1.0/z3-5.1.0-arm64-osx-13.3.zip
+  Z3_SHA256: 81d29e934fd863079a74af35eecaeaef8047e0e12414d33ca322b358d68383db
+  Z3_DIR: z3-5.1.0-arm64-osx-13.3
   SCRIPT: .github/review/issue241-module-window.py
 
 jobs:
   build:
-    runs-on: ubuntu-24.04
-    timeout-minutes: 60
+    if: ${{ github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request') && (github.event_name != 'pull_request' || (!github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository)) }}
+    runs-on: [self-hosted, macOS, ARM64, mac-studio]
+    timeout-minutes: 1440 # Includes waiting for the shared admission slot.
     steps:
+      - name: Yield to interactive work
+        if: runner.os == 'macOS'
+        shell: bash
+        timeout-minutes: 60
+        run: |
+          case "$(ps -o comm= -p "$PPID")" in
+            */Runner.Worker|Runner.Worker) ;;
+            *) echo "::error::Expected this job's Runner.Worker parent"; exit 1 ;;
+          esac
+          renice 10 -p "$PPID" "$$" >/dev/null
+          test "$(ps -o nice= -p "$PPID" | tr -d ' ')" = 10
+          test "$(ps -o nice= -p "$$" | tr -d ' ')" = 10
+      - name: Create job temporary directory
+        shell: bash
+        timeout-minutes: 60
+        run: |
+          job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
+          echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@49f32698673db4858b4433a87e93df553aca013f
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-dotnet
       - name: Build
+        timeout-minutes: 60
         run: |
           sh Scripts/fetch-boogie-packages.sh
-          dotnet publish Source/Dafny/Dafny.csproj -c Release -o out/dafny -p:GeneratePackageOnBuild=false
+          dotnet publish -p:NuGetAudit=false Source/Dafny/Dafny.csproj -c Release -o out/dafny -p:GeneratePackageOnBuild=false
           tar -C out -czf dafny.tar.gz dafny
       - uses: actions/upload-artifact@v4
         with:
           name: issue241-dafny
           path: dafny.tar.gz
           retention-days: 14
+      - name: Remove job temporary directory
+        if: always()
+        shell: bash
+        timeout-minutes: 5
+        run: |
+          case "${TMPDIR:-}" in
+            "$RUNNER_TEMP"/fork-job.*) rm -rf "$TMPDIR" ;;
+          esac
 
   time:
+    if: ${{ github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request') && (github.event_name != 'pull_request' || (!github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository)) }}
     needs: build
-    runs-on: ubuntu-24.04
-    timeout-minutes: 360
+    runs-on: [self-hosted, macOS, ARM64, mac-studio]
+    timeout-minutes: 1440 # Includes waiting for the shared admission slot.
     strategy:
       fail-fast: false
+      max-parallel: 1
       matrix:
         k: [1, 2, 4, 8, 16]
         gc: [0, 1]
     steps:
+      - name: Yield to interactive work
+        if: runner.os == 'macOS'
+        shell: bash
+        timeout-minutes: 360
+        run: |
+          case "$(ps -o comm= -p "$PPID")" in
+            */Runner.Worker|Runner.Worker) ;;
+            *) echo "::error::Expected this job's Runner.Worker parent"; exit 1 ;;
+          esac
+          renice 10 -p "$PPID" "$$" >/dev/null
+          test "$(ps -o nice= -p "$PPID" | tr -d ' ')" = 10
+          test "$(ps -o nice= -p "$$" | tr -d ' ')" = 10
+      - name: Create job temporary directory
+        shell: bash
+        timeout-minutes: 360
+        run: |
+          job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
+          echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@49f32698673db4858b4433a87e93df553aca013f
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-dotnet
       - uses: actions/download-artifact@v4
         with:
           name: issue241-dafny
       - name: Dafny and Z3
+        timeout-minutes: 360
         run: |
           mkdir -p out && tar -C out -xzf dafny.tar.gz
-          curl -fsSLo z3.zip "$Z3_ZIP" && echo "$Z3_SHA256  z3.zip" | sha256sum -c - && unzip -q z3.zip
+          curl -fsSLo z3.zip "$Z3_ZIP" && echo "$Z3_SHA256  z3.zip" | shasum -a 256 -c - && unzip -q z3.zip
           echo "Z3=$PWD/$Z3_DIR/bin/z3" >> "$GITHUB_ENV"
           echo "DAFNY=$PWD/out/dafny/Dafny" >> "$GITHUB_ENV"
-          nproc; free -m
+          sysctl -n hw.logicalcpu hw.memsize
       # K = 1 and K on the same runner, so that their ratio is not a difference between machines.
       - name: Standard library and examples, at K = 1 and at K
+        timeout-minutes: 360
         run: |
           L=Source/DafnyStandardLibraries
           for project in std examples; do
@@ -79,7 +132,7 @@ jobs:
             for k in 1 ${{ matrix.k }}; do
               d=runs/$project-gc${{ matrix.gc }}-k$k
               [ -e "$d" ] && d=$d-again
-              python3 "$SCRIPT" run "$d" "$DAFNY" "$Z3" "$cwd" $k --gc ${{ matrix.gc }} -- $arg || true
+              python3 "$SCRIPT" run "$d" "$DAFNY" "$Z3" "$cwd" $k --cores 2 --gc ${{ matrix.gc }} -- $arg || true
             done
           done
           python3 "$SCRIPT" table runs/* | tee -a "$GITHUB_STEP_SUMMARY"
@@ -89,68 +142,130 @@ jobs:
           name: issue241-time-k${{ matrix.k }}-gc${{ matrix.gc }}
           path: runs
           retention-days: 90
+      - name: Remove job temporary directory
+        if: always()
+        shell: bash
+        timeout-minutes: 5
+        run: |
+          case "${TMPDIR:-}" in
+            "$RUNNER_TEMP"/fork-job.*) rm -rf "$TMPDIR" ;;
+          esac
 
   smt:
+    if: ${{ github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request') && (github.event_name != 'pull_request' || (!github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository)) }}
     needs: build
-    runs-on: ubuntu-24.04
-    timeout-minutes: 360
+    runs-on: [self-hosted, macOS, ARM64, mac-studio]
+    timeout-minutes: 1440 # Includes waiting for the shared admission slot.
     strategy:
       fail-fast: false
+      max-parallel: 1
       matrix:
         k: [1, 2, 4, 8]
     steps:
+      - name: Yield to interactive work
+        if: runner.os == 'macOS'
+        shell: bash
+        timeout-minutes: 360
+        run: |
+          case "$(ps -o comm= -p "$PPID")" in
+            */Runner.Worker|Runner.Worker) ;;
+            *) echo "::error::Expected this job's Runner.Worker parent"; exit 1 ;;
+          esac
+          renice 10 -p "$PPID" "$$" >/dev/null
+          test "$(ps -o nice= -p "$PPID" | tr -d ' ')" = 10
+          test "$(ps -o nice= -p "$$" | tr -d ' ')" = 10
+      - name: Create job temporary directory
+        shell: bash
+        timeout-minutes: 360
+        run: |
+          job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
+          echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@49f32698673db4858b4433a87e93df553aca013f
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-dotnet
       - uses: actions/download-artifact@v4
         with:
           name: issue241-dafny
       - name: Dafny and Z3
+        timeout-minutes: 360
         run: |
           mkdir -p out && tar -C out -xzf dafny.tar.gz
-          curl -fsSLo z3.zip "$Z3_ZIP" && echo "$Z3_SHA256  z3.zip" | sha256sum -c - && unzip -q z3.zip
+          curl -fsSLo z3.zip "$Z3_ZIP" && echo "$Z3_SHA256  z3.zip" | shasum -a 256 -c - && unzip -q z3.zip
           echo "Z3=$PWD/$Z3_DIR/bin/z3" >> "$GITHUB_ENV"
           echo "DAFNY=$PWD/out/dafny/Dafny" >> "$GITHUB_ENV"
           # The SMT streams of the whole library go to the larger disk.
-          sudo mkdir -p /mnt/issue241 && sudo chown "$(id -u)" /mnt/issue241
-          df -h / /mnt
+          mkdir -p "$TMPDIR/issue241"
+          df -h "$TMPDIR"
       - name: Standard library with SMT streams
+        timeout-minutes: 360
         run: |
-          python3 "$SCRIPT" run /mnt/issue241/std-smt-k${{ matrix.k }} "$DAFNY" "$Z3" \
-            Source/DafnyStandardLibraries ${{ matrix.k }} --smt -- src/Std/dfyconfig.toml || true
-          mkdir -p runs && cp -r /mnt/issue241/std-smt-k${{ matrix.k }} runs/
-          df -h /mnt
+          python3 "$SCRIPT" run "$TMPDIR/issue241"/std-smt-k${{ matrix.k }} "$DAFNY" "$Z3" \
+            Source/DafnyStandardLibraries ${{ matrix.k }} --cores 2 --smt -- src/Std/dfyconfig.toml || true
+          mkdir -p runs && cp -r "$TMPDIR/issue241"/std-smt-k${{ matrix.k }} runs/
+          df -h "$TMPDIR"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: issue241-smt-k${{ matrix.k }}
           path: runs
           retention-days: 90
+      - name: Remove job temporary directory
+        if: always()
+        shell: bash
+        timeout-minutes: 5
+        run: |
+          case "${TMPDIR:-}" in
+            "$RUNNER_TEMP"/fork-job.*) rm -rf "$TMPDIR" ;;
+          esac
 
   corpus:
+    if: ${{ github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request') && (github.event_name != 'pull_request' || (!github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository)) }}
     needs: build
-    runs-on: ubuntu-24.04
-    timeout-minutes: 360
+    runs-on: [self-hosted, macOS, ARM64, mac-studio]
+    timeout-minutes: 1440 # Includes waiting for the shared admission slot.
     strategy:
       fail-fast: false
+      max-parallel: 1
       matrix:
         shard: [0, 1, 2, 3]
     steps:
+      - name: Yield to interactive work
+        if: runner.os == 'macOS'
+        shell: bash
+        timeout-minutes: 360
+        run: |
+          case "$(ps -o comm= -p "$PPID")" in
+            */Runner.Worker|Runner.Worker) ;;
+            *) echo "::error::Expected this job's Runner.Worker parent"; exit 1 ;;
+          esac
+          renice 10 -p "$PPID" "$$" >/dev/null
+          test "$(ps -o nice= -p "$PPID" | tr -d ' ')" = 10
+          test "$(ps -o nice= -p "$$" | tr -d ' ')" = 10
+      - name: Create job temporary directory
+        shell: bash
+        timeout-minutes: 360
+        run: |
+          job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
+          echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@49f32698673db4858b4433a87e93df553aca013f
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-dotnet
       - uses: actions/download-artifact@v4
         with:
           name: issue241-dafny
       - name: Dafny and Z3
+        timeout-minutes: 360
         run: |
           mkdir -p out && tar -C out -xzf dafny.tar.gz
-          curl -fsSLo z3.zip "$Z3_ZIP" && echo "$Z3_SHA256  z3.zip" | sha256sum -c - && unzip -q z3.zip
+          curl -fsSLo z3.zip "$Z3_ZIP" && echo "$Z3_SHA256  z3.zip" | shasum -a 256 -c - && unzip -q z3.zip
           echo "Z3=$PWD/$Z3_DIR/bin/z3" >> "$GITHUB_ENV"
           echo "DAFNY=$PWD/out/dafny/Dafny" >> "$GITHUB_ENV"
       - name: Multi-module programs of the verifier suite at K = 1, 4, 16
+        timeout-minutes: 360
         run: |
           L=Source/IntegrationTests/TestFiles/LitTests/LitTest
           python3 .github/review/lit-verdicts.py plan "$L" plan.tsv
-          python3 "$SCRIPT" corpus plan.tsv "$L" "$DAFNY" "$Z3" "$PWD/corpus" --ks 1,4,16 \
+          python3 "$SCRIPT" corpus plan.tsv "$L" "$DAFNY" "$Z3" "$PWD/corpus" --cores 2 --ks 1,4,16 \
             --shard ${{ matrix.shard }}/4 || true
           find corpus -name smt -type d -prune -exec rm -rf {} +
       - uses: actions/upload-artifact@v4
@@ -159,19 +274,47 @@ jobs:
           name: issue241-corpus-${{ matrix.shard }}
           path: corpus
           retention-days: 90
+      - name: Remove job temporary directory
+        if: always()
+        shell: bash
+        timeout-minutes: 5
+        run: |
+          case "${TMPDIR:-}" in
+            "$RUNNER_TEMP"/fork-job.*) rm -rf "$TMPDIR" ;;
+          esac
 
   report:
     needs: [time, smt, corpus]
-    if: always()
-    runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    if: ${{ (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request') && (github.event_name != 'pull_request' || (!github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository))) && (always()) }}
+    runs-on: [self-hosted, macOS, ARM64, mac-studio]
+    timeout-minutes: 1440 # Includes waiting for the shared admission slot.
     steps:
+      - name: Yield to interactive work
+        if: runner.os == 'macOS'
+        shell: bash
+        timeout-minutes: 30
+        run: |
+          case "$(ps -o comm= -p "$PPID")" in
+            */Runner.Worker|Runner.Worker) ;;
+            *) echo "::error::Expected this job's Runner.Worker parent"; exit 1 ;;
+          esac
+          renice 10 -p "$PPID" "$$" >/dev/null
+          test "$(ps -o nice= -p "$PPID" | tr -d ' ')" = 10
+          test "$(ps -o nice= -p "$$" | tr -d ' ')" = 10
+      - name: Create job temporary directory
+        shell: bash
+        timeout-minutes: 30
+        run: |
+          job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
+          echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@49f32698673db4858b4433a87e93df553aca013f
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
           pattern: issue241-*-*
           path: artifacts
       - name: Compare and tabulate
+        timeout-minutes: 30
         run: |
           # Fails when any K > 1 run differs from K = 1: output, exit code, obligations, RU or SMT streams.
           set +e
@@ -185,3 +328,11 @@ jobs:
           name: issue241-report
           path: report.md
           retention-days: 90
+      - name: Remove job temporary directory
+        if: always()
+        shell: bash
+        timeout-minutes: 5
+        run: |
+          case "${TMPDIR:-}" in
+            "$RUNNER_TEMP"/fork-job.*) rm -rf "$TMPDIR" ;;
+          esac

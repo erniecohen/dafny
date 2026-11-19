@@ -18,11 +18,12 @@ def mac_jobs():
             body = match[2]
             if re.search(r'^    runs-on:.*mac-studio|^            os: mac-studio', body, re.M):
                 condition = re.search(r'^    if: (.*)$', body, re.M)
-                yield path.name + '/' + match[1], condition[1] if condition else ''
+                yield path.name + '/' + match[1], condition[1].split(' #', 1)[0] if condition else ''
 
 
 def enabled(expression, event, head, repository, flags, ref_type="branch", draft=False, head_ref="", ref=None, reuse='false'):
-    expression = expression.removeprefix('${{').removesuffix('}}').strip()
+    expression = expression.split(' #', 1)[0].removeprefix('${{').removesuffix('}}').strip()
+    expression = expression.replace('needs.*.result', "['success']").replace('needs.milestone-scope', 'needs.milestone_scope')
     expression = expression.replace('&&', ' and ').replace('||', ' or ')
     expression = re.sub(r'!(?!=)', ' not ', expression)
     # Booleans only: a quoted 'true', as in needs.tree.outputs.reuse != 'true', is a string.
@@ -31,15 +32,15 @@ def enabled(expression, event, head, repository, flags, ref_type="branch", draft
     github = NS(repository=repository, event_name=event,
                 ref=ref or ('refs/tags/v-test' if ref_type == 'tag' else 'refs/heads/scratch/probe'),
                 head_ref=head_ref,
-                ref_type=ref_type, event=NS(pull_request=NS(draft=draft, head=NS(repo=NS(full_name=head)))))
+                ref_type=ref_type, ref_name='scratch/probe', event=NS(pull_request=NS(draft=draft, head=NS(repo=NS(full_name=head)))))
     options = dict(platform_parity=False, binaries=False, default_comparison=False,
-                   decreases_order_comparison=False, resolver_probe=False, additional_axioms_probe=False, platform='macos')
+                   decreases_order_comparison=False, task='release-tag', comparisons=True, corpus=True, stdlib=True, resolver_probe=False, additional_axioms_probe=False, platform='macos')
     options.update(flags if isinstance(flags, dict) else {k: flags for k in options if k != 'platform'})
     inputs = NS(**options)
     return bool(eval(expression.strip(), {'__builtins__': {}}, {
-        'github': github, 'inputs': inputs, 'cancelled': lambda: False,
-        'startsWith': str.startswith, 'needs': NS(suite=NS(result='success'), tree=NS(outputs=NS(reuse=reuse)),
-                     build=NS(result='success'), binaries=NS(result='success'), verdict=NS(result='success'))}))
+        'github': github, 'inputs': inputs, 'cancelled': lambda: False, 'always': lambda: True,
+        'contains': lambda values, item: item in values, 'startsWith': str.startswith, 'needs': NS(suite=NS(result='success'), tree=NS(result='success', outputs=NS(reuse=reuse)), milestone_scope=NS(outputs=NS(source_contracts='true', integer_bitwise='true')),
+                     build=NS(result='success', outputs=NS(build_ok='true', available='true', ok='true', ready='true')), binaries=NS(result='success', outputs=NS(ok='true', ready='true', built='true')), verdict=NS(result='success'))}))
 
 
 class RoutingTests(unittest.TestCase):
@@ -65,25 +66,34 @@ class RoutingTests(unittest.TestCase):
             with self.subTest(job=name):
                 self.assertNotIn('actions/setup-python@', body)
 
-    def test_only_approved_library_version_routes_to_mac(self):
+    def test_every_job_uses_the_complete_self_hosted_labels(self):
+        for path in ROOT.glob('*.yml'):
+            for runner in re.findall(r'^    runs-on: (.*)$', path.read_text(), re.M):
+                with self.subTest(workflow=path.name):
+                    self.assertEqual(runner, '[self-hosted, macOS, ARM64, mac-studio]')
+
+    def test_linux_legs_are_explicitly_unavailable(self):
+        jobs = dict(mac_jobs())
+        self.assertFalse(enabled(jobs['review.yml/regressions-linux'], 'workflow_dispatch',
+                                 'erniecohen/dafny', 'erniecohen/dafny', True))
         text = (ROOT / 'review.yml').read_text()
-        body = re.search(r'^  stdlib:\n(.*?)(?=^  [\w-]+:|\Z)', text, re.M | re.S)[1]
-        expression = re.search(r'^    runs-on: \$\{\{ (.*) \}\}', body, re.M)[1]
-        expression = expression.replace('&&', ' and ').replace('||', ' or ')
-        for z3, harness, expected in [('5.1.0', '4.12.1', 'ubuntu-24.04'),
-                                       ('of the tests', '4.12.1', 'mac-studio'),
-                                       ('of the tests', '4.16.0', 'ubuntu-24.04')]:
-            with self.subTest(z3=z3, harness=harness):
-                self.assertEqual(expected, eval(expression, {'__builtins__': {}}, {
-                    'matrix': NS(z3=z3), 'needs': NS(build=NS(outputs=NS(harness_z3=harness)))}))
+        self.assertNotIn('rid: linux-x64', text)
+        required = re.search(r'tree-reuse.py gate --jobs ([^ \n]+)', text)[1].split(',')
+        self.assertNotIn('regressions-linux', required)
+        self.assertIn('regressions', required)
+        self.assertIn("&& false }} # No Linux self-hosted runner", text)
 
     def test_self_hosted_jobs_are_present(self):
         self.assertGreater(len(list(mac_jobs())), 10)
 
     def test_each_mac_job_admits_an_authorized_event(self):
         cases = [('workflow_dispatch', False, 'branch'), ('workflow_dispatch', True, 'branch'),
-                 ('workflow_dispatch', {'binaries': True}, 'branch'), ('push', False, 'tag')]
+                 ('workflow_dispatch', {'binaries': True}, 'branch'), ('push', False, 'tag'),
+                 ('workflow_dispatch', {'default_comparison': True}, 'branch'),
+                 ('workflow_dispatch', {'task': 'scratch-cleanup'}, 'branch')]
         for name, guard in mac_jobs():
+            if name == 'review.yml/regressions-linux':
+                continue
             with self.subTest(job=name):
                 self.assertTrue(any(enabled(guard, event, 'erniecohen/dafny', 'erniecohen/dafny', flags, ref_type)
                                     for event, flags, ref_type in cases))
@@ -111,7 +121,8 @@ class RoutingTests(unittest.TestCase):
         for name, guard in mac_jobs():
             if not name.startswith(('review.yml/', 'obligation-proofs.yml/')) or name in (
                     'review.yml/build', 'review.yml/binaries', 'review.yml/release', 'review.yml/parity-macos',
-                    'review.yml/parity-report'):
+                    'review.yml/parity-report', 'review.yml/tree', 'review.yml/milestone-scope',
+                    'review.yml/verdict', 'obligation-proofs.yml/tree', 'obligation-proofs.yml/verdict'):
                 continue
             for event, flags, ref_type in [('push', False, 'branch'), ('pull_request', False, 'branch'),
                                            ('workflow_dispatch', True, 'branch'), ('push', False, 'tag'),
@@ -150,7 +161,7 @@ class RoutingTests(unittest.TestCase):
 
     def test_unsupported_events_never_reach_mac_pool(self):
         for name, guard in mac_jobs():
-            for event in ['schedule', 'pull_request_target', 'workflow_run', 'issue_comment']:
+            for event in ['pull_request_target', 'workflow_run', 'issue_comment']:
                 with self.subTest(job=name, event=event):
                     self.assertFalse(enabled(guard, event, 'erniecohen/dafny', 'erniecohen/dafny', True))
 

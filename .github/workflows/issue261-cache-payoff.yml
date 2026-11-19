@@ -39,6 +39,9 @@ concurrency:
   cancel-in-progress: true
 
 env:
+  GRADLE_OPTS: -Dorg.gradle.daemon=false
+  MSBUILDDISABLENODEREUSE: '1'
+  DOTNET_PROCESSOR_COUNT: '2'
   RELEASE: v4.11.0+fcb2042d.review.c1cccaa3
   SCRIPT: .github/review/cache-payoff.py
   NOOP: --solver-option SOLVER=noop --boogie /deterministicLiteralHashes:1
@@ -47,9 +50,9 @@ jobs:
   measure:
     # The fork's self-hosted runners share one machine, so the corpora are measured one at a time,
     # and each timed run records the other jobs active on those runners (and is repeated if any).
-    if: ${{ github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
+    if: ${{ (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request') && (github.event_name != 'pull_request' || (!github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository))) && (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')) }}
     runs-on: [self-hosted, macOS, ARM64, mac-studio]
-    timeout-minutes: 300
+    timeout-minutes: 1440 # Includes waiting for the shared admission slot.
     env:
       GH_TOKEN: ${{ github.token }}
     strategy:
@@ -63,6 +66,8 @@ jobs:
     steps:
       - name: Yield to interactive work
         if: runner.os == 'macOS'
+        shell: bash
+        timeout-minutes: 300
         run: |
           case "$(ps -o comm= -p "$PPID")" in
             */Runner.Worker|Runner.Worker) ;;
@@ -70,11 +75,19 @@ jobs:
           esac
           renice 10 -p "$PPID" "$$" >/dev/null
           test "$(ps -o nice= -p "$PPID" | tr -d ' ')" = 10
-          echo 'Job worker and shell niceness: 10; subsequent actions inherit it.'
+          test "$(ps -o nice= -p "$$" | tr -d ' ')" = 10
+      - name: Create job temporary directory
+        shell: bash
+        timeout-minutes: 300
+        run: |
+          job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
+          echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@49f32698673db4858b4433a87e93df553aca013f
       - uses: actions/checkout@v4
         with:
           clean: true
       - name: Released Dafny and Z3 5.1.0
+        timeout-minutes: 300
         run: |
           rm -rf rel ext results corpora.txt ci-z3
           mkdir -p rel && cd rel
@@ -90,6 +103,7 @@ jobs:
           rel/dafny/dafny --version
       - name: Fetch pinned sources
         if: matrix.corpus == 'cedar' || matrix.corpus == 'evm'
+        timeout-minutes: 300
         run: |
           fetch() {  # repository, commit, directory, sparse paths...
             git init -q "$3" && git -C "$3" remote add origin "$1"
@@ -106,6 +120,7 @@ jobs:
           fi
           cat corpora.txt
       - name: Measure
+        timeout-minutes: 300
         run: |
           out="$PWD/results/${{ matrix.corpus }}"
           # Other jobs in progress on the self-hosted runners, not counting this one.
@@ -120,7 +135,7 @@ jobs:
             done | awk '{ s += $1 } END { print s + 0 }'
           SH
           active="bash $RUNNER_TEMP/active.sh"
-          # A run waits for the 1-minute load average to fall to 8 (a run with --cores 4 alone keeps it
+          # A run waits for the 1-minute load average to fall to 8 (a run with --cores 2 alone keeps it
           # near 5), and one that overlapped a higher load or another job is repeated.
           only='${{ inputs.runs || '.*' }}'
           run() {  # --name NAME ...
@@ -132,20 +147,20 @@ jobs:
           std)
             cd Source/DafnyStandardLibraries
             run --name std-resolve-t0 --reps 3 -- resolve src/Std/dfyconfig.toml
-            run --name std-resolve-t4 --reps 3 -- resolve src/Std/dfyconfig.toml --resolution-threads 4
+            run --name std-resolve-t4 --reps 3 -- resolve src/Std/dfyconfig.toml --resolution-threads 2
             # As the Standard library CI job verifies the library (std-verdicts.py), no solver.
             # shellcheck disable=SC2086
             run --name std-verify-noop-t4 --warmup 0 --reps 2 -- verify src/Std/dfyconfig.toml \
-              --resolution-threads 4 --cores 4 --verification-time-limit 0 --solver-path "$Z3" $NOOP
+              --resolution-threads 2 --cores 2 --verification-time-limit 0 --solver-path "$Z3" $NOOP
             # shellcheck disable=SC2086
             run --name std-verify-noop-t0 --warmup 0 --reps 1 -- verify src/Std/dfyconfig.toml \
-              --cores 4 --verification-time-limit 0 --solver-path "$Z3" $NOOP
+              --cores 2 --verification-time-limit 0 --solver-path "$Z3" $NOOP
             # One target-specific part (on the committed Std .doo), as the CI job runs six.
             cd src/Std/TargetSpecific
             # It takes no --boogie options: they must equal those the .doo was built with.
             # shellcheck disable=SC2046
             run --name std-ts-js-verify-noop --reps 3 -- verify dfyconfig.toml $(find . -name '*-js*.dfy' | sort) \
-              --cores 4 --verification-time-limit 0 --solver-path "$Z3" --solver-option SOLVER=noop
+              --cores 2 --verification-time-limit 0 --solver-path "$Z3" --solver-option SOLVER=noop
             ;;
           core)
             # Since https://github.com/erniecohen/dafny/pull/343 the released resolver rejects two reads
@@ -156,7 +171,7 @@ jobs:
             perl -0pi -e 's/FactorPathsOptimization\.apply\(thisFile\)\]/FactorPathsOptimization.apply(if rootType.RootCrate? then R.crate else R.crate.MSel(rootType.moduleName))]/; s/var thisAsSelf := rcNew\(R\.self\.Clone\(\)\);/var thisAsSelf := (if syncType.NoSync? then R.RcPath else R.ArcPath).AsExpr().FSel("new").Apply([R.self.Clone()]);/' "$f"
             git diff --stat --exit-code -- "$f" && { echo "the DafnyCore workaround no longer applies"; exit 1; }
             run --name core-resolve-t0 --reps 3 -- resolve Source/DafnyCore/dfyconfig.toml
-            run --name core-resolve-t4 --reps 3 -- resolve Source/DafnyCore/dfyconfig.toml --resolution-threads 4
+            run --name core-resolve-t4 --reps 3 -- resolve Source/DafnyCore/dfyconfig.toml --resolution-threads 2
             ;;
           cedar)
             # Its own sources (not its tests).  The refreshed resolver rejects it (5 errors: receiver type
@@ -166,7 +181,7 @@ jobs:
             run --name cedar-resolve --reps 3 -- resolve "${files[@]}"
             # shellcheck disable=SC2086
             run --name cedar-verify-noop --warmup 0 --reps 2 -- verify "${files[@]}" \
-              --cores 4 --solver-path "$Z3" $NOOP
+              --cores 2 --solver-path "$Z3" $NOOP
             ;;
           evm)
             # Its Gradle build's Dafny 4 flags.  The refreshed resolver rejects it (2 errors: u8/u256
@@ -177,11 +192,12 @@ jobs:
             run --name evm-resolve --reps 3 -- resolve "${files[@]}" "${flags[@]}"
             # shellcheck disable=SC2086
             run --name evm-verify-noop --warmup 0 --reps 2 -- verify "${files[@]}" "${flags[@]}" \
-              --cores 4 --solver-path "$Z3" $NOOP
+              --cores 2 --solver-path "$Z3" $NOOP
             ;;
           esac
       - name: Job summary
         if: always()
+        timeout-minutes: 300
         run: |
           {
             echo "Runner $RUNNER_NAME: $(sysctl -n hw.ncpu) processors ($(for l in 0 1; do printf '%s %s; ' "$(sysctl -n hw.perflevel$l.physicalcpu 2>/dev/null)" "$(sysctl -n hw.perflevel$l.name 2>/dev/null)"; done)), $(( $(sysctl -n hw.memsize) / 1073741824 )) GB memory; Dafny $RELEASE; Z3 5.1.0."
@@ -194,18 +210,47 @@ jobs:
           name: cache-payoff-${{ matrix.corpus }}
           path: results
           retention-days: 30
+      - name: Remove job temporary directory
+        if: always()
+        shell: bash
+        timeout-minutes: 5
+        run: |
+          case "${TMPDIR:-}" in
+            "$RUNNER_TEMP"/fork-job.*) rm -rf "$TMPDIR" ;;
+          esac
 
   analyze:
     needs: measure
-    if: always()
-    runs-on: ubuntu-24.04
+    if: ${{ (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request') && (github.event_name != 'pull_request' || (!github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository))) && (always()) }}
+    runs-on: [self-hosted, macOS, ARM64, mac-studio]
+    timeout-minutes: 1440 # Includes waiting for the shared admission slot.
     steps:
+      - name: Yield to interactive work
+        if: runner.os == 'macOS'
+        shell: bash
+        timeout-minutes: 360
+        run: |
+          case "$(ps -o comm= -p "$PPID")" in
+            */Runner.Worker|Runner.Worker) ;;
+            *) echo "::error::Expected this job's Runner.Worker parent"; exit 1 ;;
+          esac
+          renice 10 -p "$PPID" "$$" >/dev/null
+          test "$(ps -o nice= -p "$PPID" | tr -d ' ')" = 10
+          test "$(ps -o nice= -p "$$" | tr -d ' ')" = 10
+      - name: Create job temporary directory
+        shell: bash
+        timeout-minutes: 360
+        run: |
+          job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
+          echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@49f32698673db4858b4433a87e93df553aca013f
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
           pattern: cache-payoff-*
           path: all
       - name: Analyze
+        timeout-minutes: 360
         run: |
           python3 "$SCRIPT" analyze all --out report.md --json report.json > /dev/null
           cat report.md >> "$GITHUB_STEP_SUMMARY"
@@ -216,3 +261,11 @@ jobs:
             report.md
             report.json
           retention-days: 30
+      - name: Remove job temporary directory
+        if: always()
+        shell: bash
+        timeout-minutes: 5
+        run: |
+          case "${TMPDIR:-}" in
+            "$RUNNER_TEMP"/fork-job.*) rm -rf "$TMPDIR" ;;
+          esac
