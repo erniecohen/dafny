@@ -55,6 +55,11 @@ supplies its error reporter, builtin publication view and translation-input
 projection. No previous compilation's live object is retained. Literal bodies
 still resolve normally on every invocation.
 
+The attempted extension is stopped at the current detachment boundary. See the
+[literal-body reuse review](241-literal-body-reuse.md) for the shared identities,
+visibility graph, builtin catalog and derived module state that require a complete
+typed-graph materializer before bodies can be reused safely.
+
 ## Identity, validation and publication
 
 The file is `<L>.<ctx>.dres`. The manifest records canonical effective options,
