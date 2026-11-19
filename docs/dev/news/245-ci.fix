@@ -1,1 +1,2 @@
 The order-construction regression checks option-off syntax rejection before its feature-on clients, so contract identity compares a common input without requiring constructors introduced by the change.
+The checked-catalog erasure check excludes the C# assembly attribute that retains original Dafny source while continuing to reject evidence fields in executable output.
