@@ -17,6 +17,11 @@ public class CompilationData(
   public ISet<Uri> AlreadyVerifiedRoots { get; } = alreadyVerifiedRoots;
   public ISet<Uri> AlreadyCompiledRoots { get; } = alreadyCompiledRoots;
 
+  // The default module combines files, including libraries with their own recorded
+  // option mode. Keep that provenance when an enabled root loads an off-built file.
+  // Leave this unallocated on the feature-off path.
+  public ISet<Uri> IntegerBitwiseDisabledSources { get; set; }
+
   /// <summary>
   /// The library roots that Dafny does not verify here and that were not verified under the rules of termination
   /// across modules: source and .dll libraries, and .doo files whose manifest does not record

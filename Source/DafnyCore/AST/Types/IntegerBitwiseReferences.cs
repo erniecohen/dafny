@@ -15,6 +15,10 @@ namespace Microsoft.Dafny;
 internal sealed class IntegerBitwiseReferences : ClassDecl {
   internal readonly Dictionary<string, Function> References = new();
 
+  // Both the nullable class and its non-null view carry the compiler identity.
+  internal static bool IsReferenceDecl(TopLevelDecl declaration) =>
+    declaration is IntegerBitwiseReferences or NonNullTypeDecl { Class: IntegerBitwiseReferences };
+
   internal IntegerBitwiseReferences(SystemModuleManager builtins)
     : base(SourceOrigin.NoToken, new Name("IntegerBitwiseModel"),
       new Attributes("compile", [Expression.CreateBoolLiteral(Token.NoToken, false)], null),

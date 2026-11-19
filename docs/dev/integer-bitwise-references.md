@@ -36,6 +36,15 @@ is shared by fork revisions and cannot identify the installed equations. Disable
 libraries retain the existing manifest and compatibility path. Source and library
 contents do not authenticate new compiler declarations.
 
+Local declarations and opened imports retain their ordinary bindings, including
+unqualified names inside an off-built library loaded by an enabled client. The
+compiler identity recognizes both the nullable class and its non-null view.
+Availability checks use the declaring module's option mode and the parsed file's
+recorded mode. File provenance matters because the default module can combine
+enabled client declarations with off-built library declarations. References to
+the compiler-owned class, including types and static receivers, are rejected in
+off-mode declarations; this check also traverses library bodies and signatures.
+
 The following mapping is exact. Width `n` is `nat`; all other inputs and every
 raw result are `int`. Arguments retain the M1 order.
 

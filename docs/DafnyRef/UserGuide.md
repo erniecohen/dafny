@@ -2738,8 +2738,11 @@ and what information it produces about the verification process.
   integer-newtype operators or native bitvector bridges. Include the optional
   `IntegerBitwiseCompiler.dfy` companion for checked range and algebra contracts.
   Set `integer-bitwise = true` in the project file's `[options]` section;
-  an enabled `.doo` library requires enabled clients. This option is independent
-  of `--additional-axioms`. See [the interface and model argument](../dev/integer-bitwise-references.md).
+  an enabled `.doo` library requires enabled clients. Declarations in an off-built
+  library cannot use this compiler interface merely because the client enables
+  it. Ordinary declarations with the same spelling keep their own meaning,
+  including local names and opened imports. This option is independent of
+  `--additional-axioms`. See [the interface and model argument](../dev/integer-bitwise-references.md).
 
 * `--additional-axioms` - enable the fork's additional verifier axioms. This
   shared option is disabled by default. It currently supplies the bounded

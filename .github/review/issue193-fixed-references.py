@@ -177,6 +177,15 @@ def main():
     spoof = source('spoof', ['module Spoof {', '  class IntegerBitwiseModel {',
                             '    static ghost function {:integerBitwiseIntrinsic "P"} P(n:nat):int { 7 }',
                             '    static lemma unfoldP(n:nat) ensures P(n)==7 { }', '  }',
+                            '  lemma Fact() ensures IntegerBitwiseModel.P(0)==7 { IntegerBitwiseModel.unfoldP(0); }',
+                            '}', 'module OpenedSpoof {', '  import opened S = Spoof',
+                            '  lemma Fact() ensures IntegerBitwiseModel.P(0)==7 { S.Fact(); }',
+                            '}', 'module ModuleSpoof {', '  module IntegerBitwiseModel {',
+                            '    ghost function P(n:nat):int { 7 }',
+                            '    lemma unfoldP(n:nat) ensures P(n)==7 { }', '  }',
+                            '  lemma Fact() ensures IntegerBitwiseModel.P(0)==7 { IntegerBitwiseModel.unfoldP(0); }',
+                            '}', 'module AliasSpoof {', '  import IntegerBitwiseModel = ModuleSpoof.IntegerBitwiseModel',
+                            '  lemma Fact() ensures IntegerBitwiseModel.P(0)==7 { IntegerBitwiseModel.unfoldP(0); }',
                             '}', 'import S = Spoof', 'lemma User() { S.IntegerBitwiseModel.unfoldP(0); assert S.IntegerBitwiseModel.P(0)==7; }'])
     verify(spoof, 'source-spoof')
 
@@ -221,9 +230,40 @@ def main():
         manifest = archive.read('manifest.toml').decode()
         assert 'integer_bitwise_reference_version' not in manifest and 'integer-bitwise' not in manifest, manifest
     spoof_client = source('spoof-client', ['import T = Spoof',
+        'import O = OpenedSpoof', 'import M = ModuleSpoof', 'import A = AliasSpoof',
+        'lemma UserFacts() { T.Fact(); O.Fact(); M.Fact(); A.Fact(); }',
         'lemma SpoofClient() { T.IntegerBitwiseModel.unfoldP(0); assert T.IntegerBitwiseModel.P(0)==7; }',
         'lemma FixedClient() { IntegerBitwiseModel.unfoldP(0); assert IntegerBitwiseModel.P(0)==1; }'])
     verify(spoof_client, 'spoof-library-reload', extra=['--library', str(spoof_library)])
+
+    rebound = source('rebound-client', ['import T = Spoof', 'import O = OpenedSpoof',
+        'import M = ModuleSpoof', 'import A = AliasSpoof', 'lemma MustRejectFalse() {',
+        '  T.Fact(); O.Fact(); M.Fact(); A.Fact();', '  IntegerBitwiseModel.unfoldP(0);',
+        '  assert false;', '}'])
+    verify(rebound, 'spoof-library-live-false', [(8, 'assertion might not hold')], extra=['--library', str(spoof_library)])
+
+    # Resolve every body/signature under its recorded source mode, including the
+    # default module where declarations from several files share one module.
+    # These deliberately edited archives test mode enforcement, not proof trust.
+    empty_client = source('empty-client', ['lemma Root() {}'])
+    for module in (False, True):
+        for kind, contents in [('call', 'ghost function Observe():int { IntegerBitwiseModel.P(0) }'),
+                               ('nullable', 'ghost function Id(x:IntegerBitwiseModel?):IntegerBitwiseModel? { x }'),
+                               ('nonnull', 'ghost function Id(x:IntegerBitwiseModel):IntegerBitwiseModel { x }')]:
+            name = 'off-capability-' + str(module) + '-' + kind
+            text = 'module OffLibrary {\n' + contents + '\n}' if module else contents
+            enabled = source(name + '-enabled', [text])
+            invoke(['resolve', str(enabled), '--integer-bitwise', '--standard-libraries:false',
+                    '--type-system-refresh:' + str(args.resolver == 'refreshed').lower()], name + '-enabled')
+            archive_path = out / (name + '.doo')
+            with zipfile.ZipFile(spoof_library) as archive, zipfile.ZipFile(archive_path, 'w') as target:
+                for entry in archive.infolist():
+                    target.writestr(entry.filename, text.encode() if entry.filename == 'program' else archive.read(entry))
+            invoke(['resolve', str(empty_client), '--integer-bitwise', '--standard-libraries:false',
+                    '--type-system-refresh:' + str(args.resolver == 'refreshed').lower(),
+                    '--library', str(archive_path)], name, 2,
+                   ['compiler-owned integer bitwise references require --integer-bitwise in the declaring source or library'])
+
 
     if args.full:
         m1 = load('m1', ROOT / '.github/review/issue193-reference.py')

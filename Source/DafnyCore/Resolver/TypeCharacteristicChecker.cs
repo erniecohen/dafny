@@ -5,6 +5,7 @@
 //
 //-----------------------------------------------------------------------------
 
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Linq;
@@ -20,9 +21,13 @@ namespace Microsoft.Dafny {
     ///
     /// Note that this method can only be called after determining which expressions are ghosts.
     /// </summary>
-    public static void InferAndCheck(List<TopLevelDecl> declarations, bool isAnExport, ErrorReporter reporter) {
+    public static void InferAndCheck(List<TopLevelDecl> declarations, bool isAnExport, ErrorReporter reporter) =>
+      InferAndCheck(declarations, isAnExport, reporter, null);
+
+    internal static void InferAndCheck(List<TopLevelDecl> declarations, bool isAnExport, ErrorReporter reporter,
+      Func<IOrigin, bool> integerBitwiseEnabled) {
       InferEqualitySupport(declarations, reporter);
-      Check(declarations, isAnExport, reporter);
+      Check(declarations, isAnExport, reporter, integerBitwiseEnabled);
     }
 
     /// <summary>
@@ -221,8 +226,12 @@ namespace Microsoft.Dafny {
       return false;
     }
 
-    public static void Check(List<TopLevelDecl> declarations, bool isAnExport, ErrorReporter reporter) {
-      var visitor = new CheckTypeCharacteristicsVisitor(reporter);
+    public static void Check(List<TopLevelDecl> declarations, bool isAnExport, ErrorReporter reporter) =>
+      Check(declarations, isAnExport, reporter, null);
+
+    internal static void Check(List<TopLevelDecl> declarations, bool isAnExport, ErrorReporter reporter,
+      Func<IOrigin, bool> integerBitwiseEnabled) {
+      var visitor = new CheckTypeCharacteristicsVisitor(reporter, integerBitwiseEnabled);
 
       foreach (var d in declarations) {
         CheckAttributes(d.Attributes, visitor);
