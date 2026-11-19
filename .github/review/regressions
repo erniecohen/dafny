@@ -1049,3 +1049,12 @@ git-issues/github-issue-199-substitution.dfy
 git-issues/git-issue-504-dependence.dfy
 git-issues/git-issue-504-positive.dfy
 git-issues/git-issue-496.dfy
+git-issues/git-issue-466-stage6.dfy
+
+git-issues/git-issue-471.dfy
+git-issues/git-issue-471-controls.dfy
+
+# Source-library proof stability under nonzero solver naming seeds, with concrete and false controls (https://github.com/erniecohen/dafny/issues/437).
+git-issues/git-issue-437.dfy
+
+git-issues/git-issue-118.dfy
