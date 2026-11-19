@@ -98,6 +98,19 @@ so that any edit to a premise or its context fails the test until the table and 
 updated. Version 1 offers no way for users to supply
 their own list. Section 8 lists that as an owner decision.
 
+The context refresh for [issue 437](https://github.com/erniecohen/dafny/issues/437)
+retains the same reviewed premises. `Seq.MergeSortedWith` gains assertion isolation;
+its function body and signature are unchanged. The context printer retains this proof
+attribute, so the ordinary and checked `HexConversion.CharsConsistent` contexts and
+the two `ActionsExterns.MakeSetReader` runtime contexts get new fingerprints. Their
+statement digests and assumed contracts are unchanged, as are both lists' matching rules.
+The hexadecimal tables are unchanged: each character of `0123456789ABCDEF` maps to
+its index, so indexing that same sequence returns the character; the lowercase aliases
+do not change this property. The existing premise states exactly this property of the
+canonical digits. The runtime declarations, mathematical definitions and contracts are
+unchanged; the proof attribute changes their recorded contexts without changing the
+assumed runtime behavior.
+
 ## 3. The option
 
 Add `--modular-termination-trust` with the values `none` (the default) and `standard-library`.

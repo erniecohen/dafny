@@ -1,0 +1,3 @@
+Translation-input collection no longer traverses unresolved AST snapshots retained
+for formatting. Pipeline unit tests now run in CI with Debug contract assertions;
+the verification-stability tests use the built driver and current expectations.

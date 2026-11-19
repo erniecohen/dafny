@@ -141,8 +141,7 @@ public partial class BoogieGenerator {
       isCoCall = true;
       callee = ((ExtremeLemma)method).PrefixLemma;
     } else if (method is PrefixLemma) {
-      // an explicit call to a prefix lemma is allowed only inside the SCC of the corresponding greatest lemma,
-      // so we consider this to be a co-call
+      // An explicit prefix call uses the prefix contract, just like a co-call.
       isCoCall = true;
     }
 
@@ -374,10 +373,9 @@ public partial class BoogieGenerator {
     }
 
     AddReferencedMember(callee);
-    if (isCoCall && callee is PrefixLemma prefixCallee && currentModule.RecursiveGroup != null &&
-        currentModule.RecursiveGroup == prefixCallee.EnclosingClass.EnclosingModuleDefinition.RecursiveGroup) {
-      // The CoCall procedure of a prefix lemma is declared with its least or greatest lemma.  When that
-      // lemma is in another module of the recursive module group, it is the member to reference.
+    if (isCoCall && callee is PrefixLemma prefixCallee) {
+      // The CoCall procedure of a prefix lemma is declared with its least or greatest lemma.
+      // Reference that declaration for calls from any other module, including ordinary imports.
       AddReferencedMember(prefixCallee.ExtremeLemma);
     }
     var calleeName = MethodName(callee, isCoCall ? MethodTranslationKind.CoCall : MethodTranslationKind.Call);

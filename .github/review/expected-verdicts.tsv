@@ -547,7 +547,7 @@ git-issues/git-issue-105-general-traits.dfy	4	14 verified, 11 errors	22,36,39,77
 git-issues/git-issue-105-generics.dfy	4	23 verified, 11 errors	20,25,32,36,74,77,80,87,95,115,151
 git-issues/git-issue-105-newtype-compile.dfy	0	9 verified, 0 errors	
 git-issues/git-issue-105-newtype-generics.dfy	4	21 verified, 17 errors	15,16,19,21,27,28,35,43,44,46,50,51,59,61,71,72,73
-git-issues/git-issue-105-newtype-trait-cast.dfy	4	2 verified, 1 error	27
+git-issues/git-issue-105-newtype-trait-cast.dfy	4	6 verified, 5 errors	30,59,63,67,73
 git-issues/git-issue-105-newtype-witness-checks.dfy	4	23 verified, 16 errors	12,14,19,21,23,29,32,40,45,52,54,62,63,64,70,78
 git-issues/git-issue-105-newtypes.dfy	4	34 verified, 20 errors	29,32,38,42,54,70,71,73,83,90,109,115,130,150,153
 git-issues/git-issue-105-opacity.dfy	0	1 verified, 0 errors	
@@ -717,6 +717,7 @@ git-issues/git-issue-1164.dfy	0	0 verified, 0 errors
 git-issues/git-issue-1165.dfy	0	6 verified, 0 errors	
 git-issues/git-issue-1172.dfy	2		9,16,23,30,37,44,51,81,87,111,114,118,122,125,128,132,133,134,135,140,145,151,152,157,158,165,168,172,175,179,182,185
 git-issues/git-issue-1174.dfy	2		12
+git-issues/git-issue-118.dfy	4	2 verified, 1 error	14
 git-issues/git-issue-1180a.dfy	2		7,8,9,10,11,12,13,19,20,21,22,23,24,25,31,32,33,37,38,39,43,44,45,52,53,54,61,62,63,67,68,69,73,74,75,79,92,95,102,105,108,111,114,127,130,137,140,143,146,159,162,165,169,172,175,188,191,194,198,201,204,217,220,223,227,230,233
 git-issues/git-issue-1180b.dfy	4	7 verified, 20 errors	28,29,34,35,40,41,46,47,56,57,63,64,83,84,103,104,123,124,143,144
 git-issues/git-issue-1181.dfy	0	0 verified, 0 errors	
@@ -926,6 +927,8 @@ git-issues/git-issue-2612b.dfy	4	1 verified, 1 error	11
 git-issues/git-issue-2640.dfy	4	3 verified, 11 errors	10,19,38,45,56,65,73,82,90,112
 git-issues/git-issue-2651.dfy	4	0 verified, 1 error	7
 git-issues/git-issue-2657.dfy	4	0 verified, 1 error	9
+git-issues/git-issue-266-persistence.dfy	0	2 verified, 0 errors	
+git-issues/git-issue-266-reachability.dfy	0	14 verified, 0 errors	
 git-issues/git-issue-267.dfy	0	0 verified, 0 errors	
 git-issues/git-issue-2672-legacy.dfy	0	5 verified, 0 errors	
 git-issues/git-issue-2672.dfy	0	5 verified, 0 errors	
@@ -947,6 +950,7 @@ git-issues/git-issue-276r.dfy	0	17 verified, 0 errors
 git-issues/git-issue-276v.dfy	0	18 verified, 0 errors	
 git-issues/git-issue-277.dfy	2		5
 git-issues/git-issue-2792.dfy	0	0 verified, 0 errors	
+git-issues/git-issue-281-shared-literals.dfy	4	3 verified, 2 errors	25,31
 git-issues/git-issue-2828.dfy	2		6
 git-issues/git-issue-2829.dfy	2		52,53,54,56
 git-issues/git-issue-2829b.dfy	0	0 verified, 0 errors	
@@ -1086,11 +1090,14 @@ git-issues/git-issue-446a.dfy	0	9 verified, 0 errors
 git-issues/git-issue-446b.dfy	0	10 verified, 0 errors	
 git-issues/git-issue-446e.dfy	2		23,24,29,30
 git-issues/git-issue-448.dfy	4	1 verified, 6 errors	18,21,23,25,27,40
+git-issues/git-issue-451.dfy	2		15,23
 git-issues/git-issue-452.dfy	0	0 verified, 0 errors	
 git-issues/git-issue-452a.dfy	2		20,25
 git-issues/git-issue-452b.dfy	2		13
 git-issues/git-issue-452c.dfy	0	0 verified, 0 errors	
 git-issues/git-issue-4684.dfy	0	4 verified, 0 errors	
+git-issues/git-issue-471-controls.dfy	4	0 verified, 5 errors	19,23,27,32,35
+git-issues/git-issue-471.dfy	0	17 verified, 0 errors	
 git-issues/git-issue-4724.dfy	4	2 verified, 1 error	8
 git-issues/git-issue-4731.dfy	0	3 verified, 0 errors	
 git-issues/git-issue-4768.dfy	0	0 verified, 0 errors	
@@ -1114,6 +1121,7 @@ git-issues/git-issue-4936d.dfy	2		15
 git-issues/git-issue-4939a.dfy	4	11 verified, 6 errors	25,68,99,105
 git-issues/git-issue-4939b.dfy	4	1 verified, 2 errors	16,18
 git-issues/git-issue-4939c.dfy	0	0 verified, 0 errors	
+git-issues/git-issue-494.dfy	0	1 verified, 0 errors	
 git-issues/git-issue-4946a.dfy	2		7
 git-issues/git-issue-4946b.dfy	4	0 verified, 2 errors	6,7
 git-issues/git-issue-4946c.dfy	4	0 verified, 2 errors	6,7
@@ -1373,7 +1381,9 @@ git-issues/github-issue-492.dfy	0	0 verified, 0 errors
 git-issues/github-issue-5029.dfy	0	3 verified, 0 errors	
 git-issues/github-issue-5814.dfy	0	3 verified, 0 errors	
 git-issues/github-issue-88-89-interactions.dfy	4	5 verified, 3 errors	32,51,58
+git-issues/github-issue-88-inherited-bounds.dfy	4	9 verified, 1 error	27
 git-issues/github-issue-88-modular-termination.dfy	4	20 verified, 6 errors	45,77,93,124,175,209
+git-issues/github-issue-88-runtime.dfy	0	4 verified, 0 errors	
 git-issues/github-issue-88-value-types.dfy	4	20 verified, 9 errors	68,76,85,106,120,139,184,200,227
 git-issues/github-issue-88.dfy	4	46 verified, 17 errors	51,83,113,121,122,139,140,184,190,199,234,245,292,332,352,373,410
 git-issues/github-issue-89.dfy	4	60 verified, 20 errors	50,64,65,98,100,101,102,103,115,133,134,149,171,188,189,193,215,224,232,242

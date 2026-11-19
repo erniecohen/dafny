@@ -1,0 +1,30 @@
+
+Dafny program verifier finished with 14 verified, 0 errors
+
+Dafny program verifier finished with 14 verified, 0 errors
+git-issue-266-reachability-false.dfy(11,4): Error: assertion might not hold
+git-issue-266-reachability-false.dfy(15,4): Error: assertion might not hold
+git-issue-266-reachability-false.dfy(19,4): Error: assertion might not hold
+git-issue-266-reachability-false.dfy(23,4): Error: assertion might not hold
+
+Dafny program verifier finished with 0 verified, 4 errors
+git-issue-266-reachability-false.dfy(11,4): Error: assertion might not hold
+git-issue-266-reachability-false.dfy(15,4): Error: assertion might not hold
+git-issue-266-reachability-false.dfy(19,4): Error: assertion might not hold
+git-issue-266-reachability-false.dfy(23,4): Error: assertion might not hold
+
+Dafny program verifier finished with 0 verified, 4 errors
+git-issue-266-reachability-raw.dfy(6,37): Error: To prevent the creation of non-terminating functions, storing functions into an object's fields that reads the object is disallowed: a function in the stored value takes an argument from which a function can reach a value of type 'C' without reading the heap
+git-issue-266-reachability-raw.dfy(12,32): Error: To prevent the creation of non-terminating functions, storing functions into an object's fields that reads the object is disallowed: a function in the stored value takes an argument from which a function can reach a value of type 'D' without reading the heap
+git-issue-266-reachability-raw.dfy(16,35): Error: To prevent the creation of non-terminating functions, storing functions into an object's fields that reads the object is disallowed: a function in the stored value takes an argument from which a function can reach a value of type 'C' without reading the heap
+git-issue-266-reachability-raw.dfy(23,36): Error: To prevent the creation of non-terminating functions, storing functions into an object's fields that reads the object is disallowed: a function in the stored value takes an argument from which a function can reach a value of type 'C' without reading the heap
+git-issue-266-reachability-raw.dfy(29,35): Error: To prevent the creation of non-terminating functions, storing functions into an object's fields that reads the object is disallowed: a function in the stored value takes an argument from which a function can reach a value of type 'D' without reading the heap
+git-issue-266-reachability-raw.dfy(33,32): Error: To prevent the creation of non-terminating functions, storing functions into an object's fields that reads the object is disallowed: a function in the stored value takes an argument from which a function can reach a value of type 'C' without reading the heap
+6 resolution/type errors detected in git-issue-266-reachability-raw.dfy
+git-issue-266-reachability-raw.dfy(6,37): Error: To prevent the creation of non-terminating functions, storing functions into an object's fields that reads the object is disallowed: a function in the stored value takes an argument from which a function can reach a value of type 'C' without reading the heap
+git-issue-266-reachability-raw.dfy(12,32): Error: To prevent the creation of non-terminating functions, storing functions into an object's fields that reads the object is disallowed: a function in the stored value takes an argument from which a function can reach a value of type 'D' without reading the heap
+git-issue-266-reachability-raw.dfy(16,35): Error: To prevent the creation of non-terminating functions, storing functions into an object's fields that reads the object is disallowed: a function in the stored value takes an argument from which a function can reach a value of type 'C' without reading the heap
+git-issue-266-reachability-raw.dfy(23,36): Error: To prevent the creation of non-terminating functions, storing functions into an object's fields that reads the object is disallowed: a function in the stored value takes an argument from which a function can reach a value of type 'C' without reading the heap
+git-issue-266-reachability-raw.dfy(29,35): Error: To prevent the creation of non-terminating functions, storing functions into an object's fields that reads the object is disallowed: a function in the stored value takes an argument from which a function can reach a value of type 'D' without reading the heap
+git-issue-266-reachability-raw.dfy(33,32): Error: To prevent the creation of non-terminating functions, storing functions into an object's fields that reads the object is disallowed: a function in the stored value takes an argument from which a function can reach a value of type 'C' without reading the heap
+6 resolution/type errors detected in git-issue-266-reachability-raw.dfy

@@ -65,10 +65,13 @@ internal sealed class ModuleTranslationInputs {
       // types (notably conversions in newtype constraints and array callbacks).
       // Translation consumes those fields too. Inspect node-valued fields without
       // following enclosing modules or imported declaration graphs.
+      // Formatter snapshots can contain distinct, unresolved copies of members.
+      // They are not translation inputs and their Children require resolution.
       foreach (var field in NodeFields.GetOrAdd(node.GetType(), type => {
         var fields = new List<FieldInfo>();
         for (var current = type; current != null; current = current.BaseType) {
           fields.AddRange(current.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly)
+            .Where(f => f.Name != nameof(TopLevelDeclWithMembers.MembersBeforeResolution))
             .Where(f => typeof(INode).IsAssignableFrom(f.FieldType) ||
               (f.FieldType != typeof(string) && typeof(IEnumerable).IsAssignableFrom(f.FieldType))));
         }

@@ -39,6 +39,9 @@ public class CompilationData(
 
   public TranslationRecord AlreadyTranslatedRecord { get; set; }
 
+  /// <summary>Each .doo input's group inventory; null for older archives without groups.</summary>
+  public Dictionary<Uri, DafnyCore.RecursiveModuleManifest> RecursiveModuleLibraries { get; } = new();
+
   /// <summary>
   /// Under --modular-termination, the termination contract of each module exported by an admitted
   /// .doo library, by module name.  A library built from this compilation records them as its imports.
