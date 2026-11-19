@@ -708,9 +708,10 @@ namespace Microsoft.Dafny {
       var oldErrorCount = dafnyProgram.Reporter.Count(ErrorLevel.Error);
       var options = dafnyProgram.Options;
 
-      if (dafnyProgram.Modules().FirstOrDefault(module => module.RecursiveGroup != null) is { } groupMember) {
+      if (options.Backend is not LibraryBackend &&
+          dafnyProgram.Modules().FirstOrDefault(module => module.RecursiveGroup != null) is { } groupMember) {
         // No back end has been checked for modules that import each other (some targets cannot express
-        // them), and a library does not record groups yet.
+        // them). The library backend retains and records the complete group instead.
         await outputWriter.Status($"Error: module '{groupMember.FullDafnyName}' is in a recursive module group; " +
                                   "compiling a program that has a recursive module group is not yet supported");
         return false;
