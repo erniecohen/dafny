@@ -658,7 +658,9 @@ proof, while the opposite move could.  Open question 4.
 - **Out-parameter types with an invariant.**  `y ∈ Y` includes `Y`'s invariant,
   so the chosen value satisfies it.  Existence holds because `L`'s verification
   checked the conversion to `Y`.  A `raw T` out-parameter carries no invariant
-  and nothing changes.
+  and nothing changes, except in the cone of `T`'s invariant, where an
+  out-parameter of any `T`-dependent type, `raw T` included, is rejected
+  (item 1 below).
 - **The invariant itself cannot bind**: PR 384 parses it with `allowLemma: false`.
 - **The cone.**  PR 384's extension condition (its section 3.3) ranges over the
   *cone* of `T`'s invariant: invariants and the bodies and specifications of the
@@ -669,11 +671,34 @@ proof, while the opposite move could.  Open question 4.
      them: an out-parameter of a `T`-dependent type in the cone is rejected,
      like `:|` over `T` without a collection bound;
   2. the cone includes the `ensures` of every lemma bound in it;
-  3. **recommended, conservative:** the cone also includes the body of every
-     lemma bound in it.  The existence of a solution, which the model of 4.2
-     needs, comes from the body's proof, and that proof may use `T`'s typing
-     facts, which are defined by the cone.  An argument that the `ensures` alone
-     suffice may exist; it is open question 3.
+  3. **settled: the proofs are in the cone too.**  A binding's axiom is
+     justified by two proofs: the body of the lemma, which shows that results
+     exist, and the well-formedness proof of the function that makes the
+     binding, which shows the precondition.  A proof that learns that some
+     value is in `T` learns `T`'s invariant, and with it the axioms of the
+     bindings in its cone, so either proof could assume what it is meant to
+     justify.  The termination check does not see this, because no call goes
+     back to the lemma.  The `ensures` alone do not suffice: with `T`-free
+     specifications, each of these proves `false` once item 2 is in place
+     (issue 522, [PR 527](https://github.com/erniecohen/dafny/pull/527)):
+     the bound lemma's body tests a raw value against `T`, or calls a lemma
+     that does; a proof hint in a function of the cone establishes the
+     binding's precondition with a lemma that does; the body reads a field or
+     an array element of type `T` from the heap; the binding's receiver is a
+     raw value of `T` and the lemma is an instance lemma of `T`; or the body
+     chooses a value of `T` with `:|`, where `T` has a `ghost witness`.  So,
+     when the cone contains a binding, it also contains the bodies of the
+     bound lemmas, the statements inside the expressions of the cone, and the
+     specifications and bodies of the lemmas these call.  In them the clauses
+     of the extension condition apply, and also: a local variable of a
+     `T`-dependent type has an initial value; a `:|` or `forall` statement
+     over such a type has a collection bound; no lemma has an out-parameter
+     of such a type; and no location of such a type is read from the heap.
+     Of these, the uninitialized local and the `forall` statement have no
+     known proof of `false`; they are rejected so that a proof in the cone
+     follows the rules of a function there.  Without a binding in the cone,
+     nothing new is followed.  The tests are
+     `git-issues/git-issue-199-invariant-proofs.dfy` and its controls.
 - **Reads.**  PR 384 requires an empty frame in the cone.  A stage-2 binding of
   a postcondition that reads a location fails the reads check there, as it should.
 
@@ -859,7 +884,9 @@ standing for its axiom.  Verdicts:
    only their `ensures`?**  *Recommended: the bodies too, until someone proves
    the `ensures` suffice.*  The choice exists because the body's proof succeeded,
    and that proof may use the typing facts the cone defines.  Over-inclusion can
-   only reject programs.
+   only reject programs.  *Settled: the bodies, and every other proof that
+   justifies a binding, must be in the cone; the `ensures` alone admit proofs
+   of `false` (6.3, item 3).*
 4. **Which arguments key the choice: all in-parameters, or only those the
    postcondition mentions?** (5.4)  *Recommended: all.*  Both are sound.  "The
    same call gives the same result" is predictable, and narrowing later only
@@ -970,6 +997,8 @@ or was left open by it:
   assumes `L#bind$canCall`.  The resolver rejects such a binding first, so this is
   not reachable in a test.
 
-Left for later: with PR 384, the cone clause of 6.3; the out-of-scope items of
-section 8.
+Left for later: the out-of-scope items of section 8.  The cone clause of 6.3
+is done: [PR 527](https://github.com/erniecohen/dafny/pull/527) follows the
+specifications of bound lemmas (item 2), and the follow-up to it the
+out-parameters and the proofs (items 1 and 3).
 
