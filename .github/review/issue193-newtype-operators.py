@@ -99,6 +99,8 @@ def main():
                   '--type-system-refresh:' + str(mode == 'refreshed').lower(), '--resource-limit', '200000',
                   '--verification-time-limit', '60', '--error-limit', '0',
                   '--boogie', '/normalizeDeclarationOrder:0', '--boogie', '/restartProver']
+        # Resolve has no additional-axioms option; library mode checks use verify.
+        resolver_common = common[:common.index('--resource-limit')]
         if args.additional_axioms:
             common.insert(common.index('--resource-limit'), '--additional-axioms')
         verify(mode + '-model', clients(), common)
@@ -160,7 +162,7 @@ def main():
             'wrong-arity': 'newtype {:bitWidth 8,9} T = x:nat | x < 256',
         }.items():
             path = source(mode + '-declaration-' + name, [declaration])
-            invoke(mode + '-declaration-' + name, ['resolve', str(path), *common[:common.index('--resource-limit')]], 2, [':bitWidth requires'])
+            invoke(mode + '-declaration-' + name, ['resolve', str(path), *resolver_common], 2, [':bitWidth requires'])
         for name, lines in {
             'different': ['newtype {:bitWidth 8} U = x:nat | x < 256',
                           'newtype {:bitWidth 8} V = x:nat | x < 256',
@@ -175,13 +177,13 @@ def main():
                          'function Compiled(a:U,b:U):U { a & b }'],
         }.items():
             path = source(mode + '-reject-' + name, lines)
-            invoke(mode + '-reject-' + name, ['resolve', str(path), *common[:common.index('--resource-limit')]], 2)
+            invoke(mode + '-reject-' + name, ['resolve', str(path), *resolver_common], 2)
         if mode == 'refreshed':
             members = source(mode + '-member-invariants', [
                 'newtype {:bitWidth 8} T = x:nat | x < 256 witness 1 {',
                 ' invariant this != 0', '}'])
             invoke(mode + '-member-invariants', ['resolve', str(members),
-                   *common[:common.index('--resource-limit')], '--member-invariants',
+                   *resolver_common, '--member-invariants',
                    '--general-newtypes'], 2, [':bitWidth requires an integer newtype with no member invariants'])
         # Reconstruct source operators through separate compilation and exports.
         library_source = source(mode + '-library', [
@@ -203,7 +205,7 @@ def main():
             ' requires 0 <= IntegerBitwiseModel.andNat(8,a as int,b as int) < 256',
             '{ assert L.Mask(a,b) == ((a & b) as int); }'])
         invoke(mode + '-library-reload', ['verify', str(client), *common, '--library', str(library)])
-        invoke(mode + '-library-disabled', ['resolve', str(client), '--standard-libraries:false',
+        invoke(mode + '-library-disabled', ['verify', str(client), '--standard-libraries:false',
                *(['--additional-axioms'] if args.additional_axioms else []), '--library', str(library)],
                1, ['--integer-bitwise is set locally to False, but the library was built with True'])
         off_source = source(mode + '-off-library', [
@@ -213,7 +215,7 @@ def main():
                '--integer-bitwise:false', '--output', str(off_library)])
         off_client = source(mode + '-off-client', ['import L = OffLibrary',
             'ghost function F(a:L.U,b:L.U):L.U { a & b }'])
-        invoke(mode + '-off-capability', ['resolve', str(off_client), *common[:common.index('--resource-limit')],
+        invoke(mode + '-off-capability', ['verify', str(off_client), *common,
                '--library', str(off_library)], 2, ['require --integer-bitwise'])
         refinement = source(mode + '-refinement', [
             'abstract module A {',
@@ -234,7 +236,7 @@ def main():
             'newtype {:bitWidth 8} U = x:nat | x < 256',
             'newtype {:bitWidth 8} V = U',
             'ghost function F(a:V,b:V):V { a & b }'])
-        invoke(mode + '-nested-resolve', ['resolve', str(nested), *common[:common.index('--resource-limit')]])
+        invoke(mode + '-nested-resolve', ['resolve', str(nested), *resolver_common])
         verify(mode + '-carrier-width', [
             'newtype {:bitWidth 12} {:nativeType "byte"} Small = x:nat | x < 256',
             'lemma Carrier() {',
