@@ -10,6 +10,22 @@ import subprocess
 
 ROOT = Path("Source/DafnyCore/Pipeline/Verification")
 CASES = [
+    ("stream-scheduling", "Source/DafnyCore/Pipeline/Compilation.cs",
+     "VerificationWorkStream.Validate(statusUpdates).Subscribe(", "statusUpdates.Subscribe("),
+    ("stream-terminal-count", "VerificationWorkStream.cs", "if (terminal != null)", "if (false)"),
+    ("stream-result-validation", "VerificationWorkStream.cs",
+     "completed.Result == null || !Enum.IsDefined(completed.Result.Outcome)", "false"),
+    ("stream-result-delay", "VerificationWorkStream.cs", "terminal = completed;",
+     "observer.OnNext(completed); terminal = completed;"),
+    ("stream-status-kind", "VerificationWorkStream.cs",
+     'Fail(new InvalidOperationException("Verification work emitted an unknown status"));',
+     "observer.OnNext(status);"),
+    ("stream-empty", "VerificationWorkStream.cs",
+     'Fail(new InvalidOperationException("Verification work completed without a terminal result"));',
+     "observer.OnCompleted();"),
+    ("stream-error", "VerificationWorkStream.cs", "if (!stopped) { Fail(error); }",
+     'if (!stopped) { Fail(new Exception("replaced error")); }'),
+    ("stream-forward", "VerificationWorkStream.cs", "observer.OnNext(terminal);", ""),
     ("default-outcome", "VerificationWork.cs", "ToolError, Verified", "Verified, ToolError"),
     ("proof-success", "VerificationWork.cs", "Outcome == VerificationOutcome.Verified", "true"),
     ("preparation-access", "VerificationWork.cs", "if (Error != null)", "if (false)"),
@@ -112,7 +128,7 @@ def main():
     args.work.mkdir(parents=True, exist_ok=False)
     test = ["dotnet", "test", "Source/DafnyCore.Test", "-c", "Release", "-m:1", "-p:NuGetAudit=false",
             "--settings", ".github/review/ci.runsettings", "--filter",
-            "FullyQualifiedName~VerificationWorkTests|FullyQualifiedName~BoogieVerificationBackendTests|FullyQualifiedName~VerificationPreparationPipelineTests|FullyQualifiedName~VerificationSchedulingTests"]
+            "FullyQualifiedName~VerificationWorkTests|FullyQualifiedName~VerificationWorkStreamTests|FullyQualifiedName~BoogieVerificationBackendTests|FullyQualifiedName~VerificationPreparationPipelineTests|FullyQualifiedName~VerificationSchedulingTests"]
     for name, filename, old, new in CASES:
         if args.case and name not in args.case:
             continue

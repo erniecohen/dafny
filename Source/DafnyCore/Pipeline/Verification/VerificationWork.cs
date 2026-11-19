@@ -49,6 +49,8 @@ public record VerificationWorkCompleted(VerificationWorkResult Result) : Verific
 /// <summary>
 /// Scheduling seam. A null TryRun means no new run was started, as on the native path;
 /// inspect CacheStatus for a completed cached result. Cancellation/errors remain observable errors.
+/// A newly started run must close its stream after exactly one terminal result. The scheduler
+/// withholds that result until clean completion; progress after it is a protocol error.
 /// </summary>
 public interface IVerificationWork {
   VerificationSource Source { get; }

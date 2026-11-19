@@ -534,7 +534,7 @@ public class Compilation : IDisposable {
       return;
     }
 
-    statusUpdates.Subscribe(
+    VerificationWorkStream.Validate(statusUpdates).Subscribe(
       update => {
         try {
           profile?.TaskStatus(PipelineProfile.ModuleName(canVerify.ContainingModule), canVerify.FullDafnyName, task, update, false);

@@ -1,4 +1,4 @@
-# Verification backend boundary: P1 preparation and scheduling slices
+# Verification backend boundary: P1 preparation, scheduling and result streams
 
 These are the preparation and scheduling slices of [P1](https://github.com/erniecohen/dafny/issues/118).
 They introduce work, result and preparation types, the native Boogie adapter,
@@ -59,6 +59,34 @@ and its original exception, and `GetWorkOrThrow` rethrows it. The Boogie adapter
 records resolution/type/admission errors this way; cancellation and other
 exceptions retain their existing exceptional completion. No empty successful
 work list is substituted. The explicit native reporting bridge rejects work or results without native evidence.
+
+## Checked result streams
+
+The scheduler validates each newly started work stream before publishing a terminal
+result. Progress is forwarded immediately. Exactly one `VerificationWorkCompleted`
+must be followed by clean observable completion; its original result, diagnostics,
+metrics and evidence are then forwarded without reconstruction. Every defined
+outcome is retained, and only `Verified` denotes proof success at this seam.
+
+Empty or progress-only completion, repeated terminal results, statuses after a
+terminal result, unknown status kinds and malformed results produce a
+`VerificationException` for the original work and source owner. A pending result
+is discarded on observable error, retaining the original exception, including
+cancellation. Holding the terminal result until completion prevents a malformed
+stream from publishing a successful proof before its protocol error is observed.
+This checks the stream envelope, not the truth or completeness of backend evidence.
+
+This does not add a timeout to a stream that never closes. P2 transport remains
+responsible for liveness and matching worker responses to requested work. Native
+cached completion and the native `TryRun() == null` already-running convention
+retain their existing behavior. Module-wide expected/completed identity accounting,
+cross-run response correlation and reporting capabilities remain separate work.
+
+The stream controls cover every outcome, withheld completion, evidence identity,
+errors before/after a result, cancellation, subscription isolation and disposal.
+Engine-free scheduling controls reject malformed streams without publishing a
+terminal result. Native lit controls cover isolated assertion batches, a failing
+assertion, module windows, filters and translation caching.
 
 ## Compatibility and controls
 
@@ -138,8 +166,8 @@ an implementation of alternative backend reporting. The remaining milestones are
   and gutter capabilities, including neutral CLI aggregate results.
 - Account for expected/completed work and every non-success outcome end to end,
   including failed preparation, unsupported input, cancellation and worker errors.
-  The current scheduler propagates errors, but does not yet audit observable completion
-  without a terminal result or repeated/missing task results.
+  Individual newly started streams now reject malformed completion before publishing
+  their terminal result; module-wide and cross-run identity accounting remain open.
 - Cover legacy entry points and opt-in translation/result caches explicitly, and
   repeat default-Boogie compatibility and full harness checks after reporting migration.
 

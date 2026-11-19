@@ -20,6 +20,10 @@ LIB = "Source/DafnyStandardLibraries/src/Std/"
 
 def corpus():
     cases = [
+        ("result-stream", [LIT + "git-issues/git-issue-118-stream.dfy"]),
+        ("result-stream-filter", [LIT + "git-issues/git-issue-118-stream.dfy", "--filter-symbol", "Streams.Positive"]),
+        ("result-stream-cache", [LIT + "git-issues/git-issue-118-stream.dfy", "--filter-symbol", "Streams.Positive", "--translation-cache"]),
+        ("result-stream-window", [LIT + "git-issues/git-issue-118-stream.dfy", "--verification-module-window=2"]),
         ("basics", [LIT + "dafny0/Basics.dfy", "--relax-definite-assignment", "--allow-axioms", "--allow-deprecation"]),
         ("loop", [LIT + "dafny1/FindZero.dfy"]),
         ("heap", [LIT + "dafny2/MonotonicHeapstate.dfy"]),

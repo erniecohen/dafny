@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Reactive.Linq;
 using DafnyCore.Test.Resolver;
 using Microsoft.Dafny;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -92,6 +93,47 @@ public class VerificationSchedulingTests {
     Assert.Same(owner, result.CanVerify);
     Assert.Same(work, result.Task);
     Assert.Same(error, result.Exception);
+  }
+
+  [Theory]
+  [InlineData("empty")]
+  [InlineData("progress-only")]
+  [InlineData("duplicate")]
+  [InlineData("after-terminal")]
+  [InlineData("unknown-status")]
+  [InlineData("unknown-outcome")]
+  [InlineData("null-result")]
+  public async Task MalformedWorkStreamsFailWithoutPublishingAProofResult(string script) {
+    var program = await ModuleTranslationCacheTests.Resolve("lemma Good() { assert true; }", cached: false);
+    var owner = Owner(program);
+    var terminal = new VerificationWorkCompleted(new(VerificationOutcome.Verified));
+    VerificationWorkStatus[] statuses = script switch {
+      "empty" => [],
+      "progress-only" => [new VerificationWorkRunning()],
+      "duplicate" => [terminal, terminal],
+      "after-terminal" => [terminal, new VerificationWorkRunning()],
+      "unknown-status" => [null!],
+      "unknown-outcome" => [new VerificationWorkCompleted(new((VerificationOutcome)12345))],
+      "null-result" => [new VerificationWorkCompleted(null!)],
+      _ => throw new ArgumentOutOfRangeException(nameof(script))
+    };
+    var work = new ScriptedWork(new(new("Good", 0), owner.Origin, owner.Origin) { CanVerify = owner },
+      statuses.ToObservable());
+    var verifier = new Verifier(new(VerificationPreparation.Ready([work]), new()));
+    using var compilation = Create(program, verifier, new(false, () => throw new Exception()));
+    var failure = new TaskCompletionSource<VerificationException>(TaskCreationOptions.RunContinuationsAsynchronously);
+    var results = new ConcurrentQueue<VerificationWorkResult>();
+    using var subscription = compilation.Updates.Subscribe(update => {
+      if (update is VerificationException error) { failure.TrySetResult(error); }
+      if (update is VerificationUpdate { Status: VerificationWorkCompleted completed }) { results.Enqueue(completed.Result); }
+    });
+    compilation.Start();
+    Assert.True(await compilation.VerifyCanVerify(owner, _ => true, null));
+    var rejected = await failure.Task.WaitAsync(TimeSpan.FromSeconds(5));
+    Assert.Same(work, rejected.Task);
+    Assert.Same(owner, rejected.CanVerify);
+    Assert.IsType<InvalidOperationException>(rejected.Exception);
+    Assert.Empty(results);
   }
 
   [Fact]
@@ -267,5 +309,14 @@ public class VerificationSchedulingTests {
       });
     }
     public void Cancel() { Cancellations++; }
+  }
+
+  private sealed class ScriptedWork(VerificationSource source, IObservable<VerificationWorkStatus> statuses) : IVerificationWork {
+    public VerificationSource Source => source;
+    public VerificationWorkStatus CacheStatus => new VerificationWorkStale();
+    public bool IsIdle => true;
+    public IVerificationWork FromSeed(int seed) => this;
+    public IObservable<VerificationWorkStatus> TryRun() => statuses;
+    public void Cancel() { }
   }
 }

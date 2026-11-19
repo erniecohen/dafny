@@ -1070,3 +1070,4 @@ git-issues/git-issue-451.dfy
 
 # User chain-stopping witnesses in modular-termination bounds (issue 245).
 git-issues/github-issue-245-witness.dfy
+git-issues/git-issue-118-stream.dfy
