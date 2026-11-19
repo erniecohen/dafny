@@ -41,7 +41,7 @@ for refresh in [True, False]:
             (o / (case + '.log')).write_text(text)
             expected_errors = family_controls or 1
             accepted = (result.returncode == 4 and text.count('Error: assertion might not hold') == expected_errors and
-                        f'{expected_errors} error' in text and 'out of resource' not in text and 'timed out' not in text
+                        f', {expected_errors} error' in text and 'out of resource' not in text and 'timed out' not in text
                         if negative else result.returncode == 0)
             rows.append({'case': case, 'exit': result.returncode, 'accepted': accepted})
             print(case + ': ' + ('PASS' if accepted else 'FAIL'))
