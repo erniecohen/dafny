@@ -425,7 +425,12 @@ namespace Microsoft.Dafny {
       // of this method will assign proxy type to the expression, which reduces the number of error messages that are produced
       // while type checking the rest of the program.
 
-      if (expr is ParensExpression) {
+      if (expr is IntegerBitwiseSyntaxExpr bitwise) {
+        ResolveExpression(bitwise.Syntax, resolutionContext);
+        bitwise.ResolvedExpression = bitwise.Syntax;
+        bitwise.Type = bitwise.Syntax.Type;
+
+      } else if (expr is ParensExpression) {
         var e = (ParensExpression)expr;
         ResolveExpression(e.E, resolutionContext);
         var innerRange = e.E.Origin;
@@ -759,7 +764,7 @@ namespace Microsoft.Dafny {
         Contract.Assert(e.E.Type != null);  // follows from postcondition of ResolveExpression
         switch (e.Op) {
           case UnaryOpExpr.Opcode.Not:
-            AddXConstraint(e.E.Origin, "BooleanBits", e.E.Type, "logical/bitwise negation expects a boolean or bitvector argument (instead got {0})");
+            AddXConstraint(e.E.Origin, IntegerBitwiseOperations.Enabled(this, expr.Origin) ? "BooleanIntegerBits" : "BooleanBits", e.E.Type, "logical/bitwise negation expects a boolean or bitvector argument (instead got {0})");
             expr.Type = e.E.Type;
             break;
           case UnaryOpExpr.Opcode.Cardinality:
@@ -901,7 +906,7 @@ namespace Microsoft.Dafny {
           case BinaryExpr.Opcode.LeftShift:
           case BinaryExpr.Opcode.RightShift: {
               expr.Type = new InferredTypeProxy();
-              AddXConstraint(e.Origin, "IsBitvector", expr.Type, "type of " + BinaryExpr.OpcodeString(e.Op) + " must be a bitvector type (instead got {0})");
+              AddXConstraint(e.Origin, IntegerBitwiseOperations.Enabled(this, expr.Origin) ? "IntegerBits" : "IsBitvector", expr.Type, "type of " + BinaryExpr.OpcodeString(e.Op) + " must be a bitvector type (instead got {0})");
               ConstrainSubtypeRelation(expr.Type, e.E0.Type, expr.Origin, "type of left argument to " + BinaryExpr.OpcodeString(e.Op) + " ({0}) must agree with the result type ({1})", e.E0.Type, expr.Type);
               AddXConstraint(expr.Origin, "IntLikeOrBitvector", e.E1.Type, "type of right argument to " + BinaryExpr.OpcodeString(e.Op) + " ({0}) must be an integer-numeric or bitvector type");
             }
@@ -981,10 +986,10 @@ namespace Microsoft.Dafny {
             expr.Type = NewIntegerBasedProxy(expr.Origin);
             var errFormat = "first argument to " + BinaryExpr.OpcodeString(e.Op) + " must be of a bitvector type (instead got {0})";
             ConstrainSubtypeRelation(expr.Type, e.E0.Type, expr, errFormat, e.E0.Type);
-            AddXConstraint(expr.Origin, "IsBitvector", e.E0.Type, errFormat);
+            AddXConstraint(expr.Origin, IntegerBitwiseOperations.Enabled(this, expr.Origin) ? "IntegerBits" : "IsBitvector", e.E0.Type, errFormat);
             errFormat = "second argument to " + BinaryExpr.OpcodeString(e.Op) + " must be of a bitvector type (instead got {0})";
             ConstrainSubtypeRelation(expr.Type, e.E1.Type, expr, errFormat, e.E1.Type);
-            AddXConstraint(expr.Origin, "IsBitvector", e.E1.Type, errFormat);
+            AddXConstraint(expr.Origin, IntegerBitwiseOperations.Enabled(this, expr.Origin) ? "IntegerBits" : "IsBitvector", e.E1.Type, errFormat);
             break;
 
           default:
