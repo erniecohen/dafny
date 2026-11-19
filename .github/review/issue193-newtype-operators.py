@@ -241,7 +241,15 @@ def main():
             *[f' IntegerBitwiseModel.unfoldP({j});' for j in range(13)],
             ' IntegerBitwiseModel.unfoldNorm(12,16);',
             ' IntegerBitwiseModel.unfoldNot(12,16);',
-            ' assert (!(16 as Small)) as int == 4079; // ERROR', '}'], common)
+            ' IntegerBitwiseModel.unfoldNorm(8,16);',
+            ' IntegerBitwiseModel.unfoldNot(8,16);',
+            ' var complement := !(16 as Small); // ERROR', '}',
+            'newtype {:bitWidth 5} {:nativeType "byte"} Narrow = x:nat | x < 32',
+            'lemma NarrowCarrier() {',
+            *[f' IntegerBitwiseModel.unfoldP({j});' for j in range(6)],
+            ' IntegerBitwiseModel.unfoldNorm(5,16);',
+            ' IntegerBitwiseModel.unfoldNot(5,16);',
+            ' assert (!(16 as Narrow)) as int == 15;', '}'], common)
         verify(mode + '-old-intrinsics', [
             'lemma Existing(a:bv8,b:bv8,p:bool) {',
             ' assert (a & b) == (b & a);', ' assert !p == (p == false);',
