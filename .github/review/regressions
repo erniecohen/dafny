@@ -1067,3 +1067,6 @@ git-issues/git-issue-266-reachability.dfy
 # Duplicate-replacement diagnostics use source locations (issue 451).
 comp/replaceables/resolveManyReplacement.dfy
 git-issues/git-issue-451.dfy
+
+# User chain-stopping witnesses in modular-termination bounds (issue 245).
+git-issues/github-issue-245-witness.dfy
