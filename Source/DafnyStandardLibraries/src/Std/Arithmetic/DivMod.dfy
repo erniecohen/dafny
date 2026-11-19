@@ -903,9 +903,13 @@ module Std.Arithmetic.DivMod {
     requires a < b * c
     ensures  a / b < c
   {
-    LemmaModMultiplesBasic(c, b);
-    LemmaDivInductionAuto(b, b * c - a, i => 0 < i && (i + a) % b == 0 ==> a / b < (i + a) / b);
-    LemmaDivMultiplesVanish(c, b);
+    LemmaFundamentalDivMod(a, b);
+    ModINL.LemmaModRange(a, b);
+    LemmaMulIsCommutative(b, c);
+    LemmaMulIsCommutative(b, a / b);
+    if c <= a / b {
+      LemmaMulInequality(c, a / b, b);
+    }
   }
 
   lemma LemmaMultiplyDivideLtAuto()
