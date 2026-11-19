@@ -1,0 +1,1 @@
+Introduce backend-neutral verification work, outcome and preparation types and a native Boogie preparation adapter. Existing CLI and IDE consumers retain their native task/result path through a temporary bridge; this does not add a verification backend or change verification semantics.
