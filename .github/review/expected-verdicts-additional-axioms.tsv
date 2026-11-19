@@ -1150,7 +1150,7 @@ git-issues/git-issue-5136.dfy	4	8 verified, 6 errors	12,16,37,49,54,75
 git-issues/git-issue-516-controls.dfy	4	0 verified, 10 errors	19,25,28,31,34,37
 git-issues/git-issue-516-member-invariants.dfy	4	2 verified, 6 errors	25,28,31,37
 git-issues/git-issue-516-representation.dfy	4	4 verified, 2 errors	27,31
-git-issues/git-issue-516.dfy	0	10 verified, 0 errors
+git-issues/git-issue-516.dfy	0	10 verified, 0 errors	
 git-issues/git-issue-5238.dfy	0	1 verified, 0 errors	
 git-issues/git-issue-5262.dfy	4	0 verified, 4 errors	7,16,24,37
 git-issues/git-issue-5274.dfy	2		15,17
