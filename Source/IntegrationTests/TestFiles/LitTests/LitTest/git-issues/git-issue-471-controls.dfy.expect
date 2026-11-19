@@ -1,0 +1,66 @@
+git-issue-471-controls.dfy(19,4): Error: assertion might not hold
+git-issue-471-controls.dfy(23,4): Error: assertion might not hold
+git-issue-471-controls.dfy(27,4): Error: assertion might not hold
+git-issue-471-controls.dfy(32,13): Error: a precondition for this call could not be proved
+git-issue-471.dfy(13,14): Related location: this is the precondition that could not be proved
+git-issue-471.dfy(11,18): Related location: this proposition could not be proved
+git-issue-471-controls.dfy(35,16): Error: a precondition for this call could not be proved
+git-issue-471.dfy(41,14): Related location: this is the precondition that could not be proved
+git-issue-471.dfy(39,18): Related location: this proposition could not be proved
+
+Dafny program verifier finished with 0 verified, 5 errors
+git-issue-471-controls.dfy(19,4): Error: assertion might not hold
+git-issue-471-controls.dfy(23,4): Error: assertion might not hold
+git-issue-471-controls.dfy(27,4): Error: assertion might not hold
+git-issue-471-controls.dfy(32,13): Error: a precondition for this call could not be proved
+git-issue-471.dfy(13,14): Related location: this is the precondition that could not be proved
+git-issue-471.dfy(11,18): Related location: this proposition could not be proved
+git-issue-471-controls.dfy(35,16): Error: a precondition for this call could not be proved
+git-issue-471.dfy(41,14): Related location: this is the precondition that could not be proved
+git-issue-471.dfy(39,18): Related location: this proposition could not be proved
+
+Dafny program verifier finished with 0 verified, 5 errors
+git-issue-471-controls.dfy(19,4): Error: assertion might not hold
+git-issue-471-controls.dfy(23,4): Error: assertion might not hold
+git-issue-471-controls.dfy(27,4): Error: assertion might not hold
+git-issue-471-controls.dfy(32,13): Error: a precondition for this call could not be proved
+git-issue-471.dfy(13,14): Related location: this is the precondition that could not be proved
+git-issue-471.dfy(11,18): Related location: this proposition could not be proved
+git-issue-471-controls.dfy(35,16): Error: a precondition for this call could not be proved
+git-issue-471.dfy(41,14): Related location: this is the precondition that could not be proved
+git-issue-471.dfy(39,18): Related location: this proposition could not be proved
+
+Dafny program verifier finished with 0 verified, 5 errors
+git-issue-471-controls.dfy(19,4): Error: assertion might not hold
+git-issue-471-controls.dfy(23,4): Error: assertion might not hold
+git-issue-471-controls.dfy(27,4): Error: assertion might not hold
+git-issue-471-controls.dfy(32,13): Error: a precondition for this call could not be proved
+git-issue-471.dfy(13,14): Related location: this is the precondition that could not be proved
+git-issue-471.dfy(11,18): Related location: this proposition could not be proved
+git-issue-471-controls.dfy(35,16): Error: a precondition for this call could not be proved
+git-issue-471.dfy(41,14): Related location: this is the precondition that could not be proved
+git-issue-471.dfy(39,18): Related location: this proposition could not be proved
+
+Dafny program verifier finished with 0 verified, 5 errors
+git-issue-471-controls.dfy(19,4): Error: assertion might not hold
+git-issue-471-controls.dfy(23,4): Error: assertion might not hold
+git-issue-471-controls.dfy(27,4): Error: assertion might not hold
+git-issue-471-controls.dfy(32,13): Error: function precondition could not be proved
+git-issue-471.dfy(13,14): Related location
+git-issue-471.dfy(11,18): Related location: this proposition could not be proved
+git-issue-471-controls.dfy(35,16): Error: function precondition could not be proved
+git-issue-471.dfy(41,14): Related location
+git-issue-471.dfy(39,18): Related location: this proposition could not be proved
+
+Dafny program verifier finished with 0 verified, 5 errors
+git-issue-471-controls.dfy(19,4): Error: assertion might not hold
+git-issue-471-controls.dfy(23,4): Error: assertion might not hold
+git-issue-471-controls.dfy(27,4): Error: assertion might not hold
+git-issue-471-controls.dfy(32,13): Error: function precondition could not be proved
+git-issue-471.dfy(13,14): Related location
+git-issue-471.dfy(11,18): Related location: this proposition could not be proved
+git-issue-471-controls.dfy(35,16): Error: function precondition could not be proved
+git-issue-471.dfy(41,14): Related location
+git-issue-471.dfy(39,18): Related location: this proposition could not be proved
+
+Dafny program verifier finished with 0 verified, 5 errors

@@ -1,0 +1,1 @@
+Document the dependency provenance, bootstrap qualifications and semantic prerequisites for the experimental B3 backend campaign, and add a developer-only typed translation census. This does not add a B3 backend or change verification behavior.
