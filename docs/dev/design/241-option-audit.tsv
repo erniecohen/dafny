@@ -230,6 +230,7 @@ prover	Microsoft.Boogie.CoreOptions.LockFreeExpansion		System.Boolean	execution	
 prover	Microsoft.Boogie.CoreOptions.LoopUnrollCount		System.Int32	execution	complete inherited prover interface enumerated and encoded before first query
 prover	Microsoft.Boogie.CoreOptions.ModelViewFile		System.String	execution	complete inherited prover interface enumerated and encoded before first query
 prover	Microsoft.Boogie.CoreOptions.ModifyTopologicalSorting		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.CoreOptions.MonomorphicSharedLiterals		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
 prover	Microsoft.Boogie.CoreOptions.NormalizeDeclarationOrder		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
 prover	Microsoft.Boogie.CoreOptions.OutputWriter		System.IO.TextWriter	current-report	current output binding
 prover	Microsoft.Boogie.CoreOptions.OverlookBoogieTypeErrors		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
