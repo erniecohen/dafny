@@ -170,7 +170,9 @@ construction and reachable false assertion still fail verification.
 `git-issue-466-python-link.dfy` adds repeated names in several groups, nested
 members, defaults of constrained types, printed classes and iterators, opposing
 cross-module trait bases, an entry point inside a group and replacement
-ordering. It compares the implementation emitted from relocated sources byte
+ordering. Each entry-point group member depends on a different replacement, so
+the compiler must schedule both dependencies before emitting the group.
+It compares the implementation emitted from relocated sources byte
 for byte, builds those sources into an archive, and runs a separately translated
 client against the producer's Python package using the archive and translation
 record.
