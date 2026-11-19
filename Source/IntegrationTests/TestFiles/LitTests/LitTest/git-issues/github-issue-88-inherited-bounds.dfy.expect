@@ -1,0 +1,20 @@
+github-issue-88-inherited-bounds.dfy(27,9): Error: decreases clause might not decrease (the dispatched callee has no 'decreases {:global}' bound, so it is TOP, above the caller's bound; declare a bound on it)
+github-issue-88-inherited-bounds.dfy(38,7): Related location: refining module
+
+Dafny program verifier finished with 7 verified, 1 error
+github-issue-88-inherited-bounds.dfy(27,9): Error: decreases clause might not decrease (the dispatched callee has no 'decreases {:global}' bound, so it is TOP, above the caller's bound; declare a bound on it)
+github-issue-88-inherited-bounds.dfy(38,7): Related location: refining module
+
+Dafny program verifier finished with 7 verified, 1 error
+github-issue-88-inherited-bounds.dfy(27,9): Error: decreases clause might not decrease (the dispatched callee has no 'decreases {:global}' bound, so it is TOP, above the caller's bound; declare a bound on it)
+github-issue-88-inherited-bounds.dfy(38,7): Related location: refining module
+
+Dafny program verifier finished with 7 verified, 1 error
+github-issue-88-inherited-bounds.dfy(27,9): Error: decreases clause might not decrease (the dispatched callee has no 'decreases {:global}' bound, so it is TOP, above the caller's bound; declare a bound on it)
+github-issue-88-inherited-bounds.dfy(38,7): Related location: refining module
+
+Dafny program verifier finished with 7 verified, 1 error
+
+Dafny program verifier finished with 7 verified, 0 errors
+
+Dafny program verifier finished with 7 verified, 0 errors

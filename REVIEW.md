@@ -1158,24 +1158,27 @@ changes, and every verdict and resource count is as before.  The option does not
 resolver, and the regression runs under both.  The regression is
 `git-issues/github-issue-88.dfy`; the release note is `docs/dev/news/88.feat`.
 
-Two neighbouring cases needed no change to the product, only regressions.  With
-`--modular-termination`, the added parent meets the existing rules where a new declaration would:
+Two neighbouring cases needed no change to the product, only regressions. Under the default
+trait-extension termination rules, also selected explicitly by `--modular-termination`,
+the added parent meets the existing rules where a new declaration would:
 the bound of an inherited member that becomes an override is compared with the parent's, an
 inherited call that the new overrides put on a cycle is checked, and an inherited member that
 becomes an implementation of a member of another module that has no bound must be a leaf
 (`git-issues/github-issue-88-modular-termination.dfy`, each case beside a one-module control with
-the same verdict).  One case is open, and it does not need this option:
-[issue 493](https://github.com/erniecohen/dafny/issues/493).  A member that has no bound of its
-own and gets one in a refining module, here from the added parent, keeps the calls of its
-inherited body unchecked against that bound, and a program proves `false` with it.  The base
-line has the same gap where a refinement turns an abstract type into a class that extends a
-trait.  Datatypes, codatatypes and newtypes keep the grammar they had,
+the same verdict). The fix for [issue 493](https://github.com/erniecohen/dafny/issues/493)
+also checks an inherited body's calls against a bound acquired from an added parent, even
+when its local call-graph component is unchanged. `git-issues/github-issue-88-inherited-bounds.dfy`
+covers that route under both resolvers, with the default and explicit modular rules; the legacy
+elision makes its `WouldBeBad` method prove `false` again. Compiled generic diamonds, inherited
+constructors, fields and default methods, and parents added directly to a class are covered by
+`git-issues/github-issue-88-runtime.dfy` for C# and JavaScript, with a failing false control.
+These regressions change no product file. Datatypes, codatatypes and newtypes keep the grammar they had,
 `datatype D extends S ...`, which needs no option, and the same default-on fixes cover the parents
 they add: override checks at inherited members, termination, name capture, the cardinality
 admission, and trait axioms under `--inherited-trait-axioms`
 (`git-issues/github-issue-88-value-types.dfy`).  The legacy resolver has no conversion from a
-datatype or a newtype to a trait, so the cases that upcast run under the new resolver only.  Not
-covered: member invariants, whose option is not in this line yet.
+datatype or a newtype to a trait, so the cases that upcast run under the new resolver only.
+Member invariants use the inherited-conjunct checks described in the member-invariant implementation.
 
 ## Comparing crossed component types ([issue 47](https://github.com/erniecohen/dafny/issues/47))
 
