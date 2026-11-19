@@ -7,7 +7,7 @@
 // RUN: %run --target java --member-invariants --recursive-modules --verify-included-files --resolution-threads 3 --optimize-erasable-datatype-wrapper:false --additional-axioms "%S/Inputs/git-issue-466-java-source.dfy" --output "%t-unerased" > "%t-unerased.out"
 // RUN: %diff "%t-cs-unerased.out" "%t-unerased.out"
 // RUN: %build -t:lib --member-invariants --recursive-modules "%S/Inputs/git-issue-466-stage7-library.dfy" --output "%t.doo" > "%t"
-// RUN: %cp "%t" "%t-cs-library.out"
+// RUN: %cp -f "%t" "%t-cs-library.out"
 // RUN: %run --target cs --member-invariants --recursive-modules "%S/Inputs/git-issue-466-java-client.dfy" --input "%t.doo" --output "%t-cs-library" >> "%t-cs-library.out"
 // RUN: %run --target java --member-invariants --recursive-modules "%S/Inputs/git-issue-466-java-client.dfy" --input "%t.doo" --output "%t-library" >> "%t"
 // RUN: %diff "%t-cs-library.out" "%t"
