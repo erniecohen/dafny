@@ -200,17 +200,42 @@ class ContractIdentityTests(unittest.TestCase):
         self.assertNotIn('--legacy-no-modular-termination', base + candidate)
         self.assertEqual(base[1:], candidate[1:])
 
-    def test_workflow_opts_out_only_for_current_prs(self):
-        import re
-        from types import SimpleNamespace as NS
+    def test_workflow_compares_the_current_products_under_identical_options(self):
         text = (Path(__file__).resolve().parents[1] / 'workflows/issue211-contracts.yml').read_text()
-        expression = re.search(r'^          CANDIDATE_LEGACY: \$\{\{ (.*) \}\}$', text, re.M)[1]
-        expression = expression.replace('&&', ' and ').replace('||', ' or ')
-        for event, expected in [('pull_request', '--candidate-legacy-no-modular-termination'),
-                                ('workflow_dispatch', '')]:
-            self.assertEqual(eval(expression, {'__builtins__': {}},
-                                  {'github': NS(event_name=event)}), expected)
-        self.assertIn("--shard '${{ matrix.shard }}' $CANDIDATE_LEGACY", text)
+        self.assertNotIn('CANDIDATE_LEGACY', text)
+        self.assertNotIn('--candidate-legacy-no-modular-termination', text)
+        self.assertIn("--shard '${{ matrix.shard }}'", text)
+
+    def test_resource_vectors_ignore_parallel_declaration_publication_order(self):
+        import json
+        with tempfile.TemporaryDirectory(prefix='contract-resources-') as directory:
+            log = Path(directory) / 'results.json'
+            declarations = [dict(name=name, outcome='Correct', resourceCount=100 + index,
+                                 vcResults=[dict(vcNum=1, outcome='Valid', resourceCount=100 + index,
+                                                 assertions=[], randomSeed=0)])
+                            for index, name in enumerate(['A', 'B'])]
+            log.write_text(json.dumps(dict(verificationResults=declarations)))
+            first = contracts.resources(log)
+            log.write_text(json.dumps(dict(verificationResults=declarations[::-1])))
+            self.assertEqual(first, contracts.resources(log))
+            declarations[0]['vcResults'][0]['resourceCount'] += 1
+            log.write_text(json.dumps(dict(verificationResults=declarations)))
+            self.assertNotEqual(first, contracts.resources(log))
+
+    def test_resource_vectors_retain_missing_obligations_and_outcome_changes(self):
+        import json
+        with tempfile.TemporaryDirectory(prefix='contract-resources-') as directory:
+            log = Path(directory) / 'results.json'
+            declaration = dict(name='Control', outcome='Correct', resourceCount=100,
+                               vcResults=[dict(vcNum=1, outcome='Valid', resourceCount=100,
+                                               assertions=[], randomSeed=0)])
+            log.write_text(json.dumps(dict(verificationResults=[declaration])))
+            first = contracts.resources(log)
+            log.write_text(json.dumps(dict(verificationResults=[])))
+            self.assertNotEqual(first, contracts.resources(log))
+            declaration['vcResults'][0]['outcome'] = 'Invalid'
+            log.write_text(json.dumps(dict(verificationResults=[declaration])))
+            self.assertNotEqual(first, contracts.resources(log))
 
 
 if __name__ == '__main__':
