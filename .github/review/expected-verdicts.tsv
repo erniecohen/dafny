@@ -947,6 +947,7 @@ git-issues/git-issue-276r.dfy	0	17 verified, 0 errors
 git-issues/git-issue-276v.dfy	0	18 verified, 0 errors	
 git-issues/git-issue-277.dfy	2		5
 git-issues/git-issue-2792.dfy	0	0 verified, 0 errors	
+git-issues/git-issue-281-shared-literals.dfy	4	3 verified, 2 errors	25,31
 git-issues/git-issue-2828.dfy	2		6
 git-issues/git-issue-2829.dfy	2		52,53,54,56
 git-issues/git-issue-2829b.dfy	0	0 verified, 0 errors	
