@@ -56,6 +56,64 @@ class AdmissionTests(unittest.TestCase):
             self.assertEqual(child.returncode, 0)
             self.assertFalse((root / 'ready').exists())
 
+class CleanupTests(unittest.TestCase):
+    def test_post_removes_only_job_outputs_and_stops_its_keeper(self):
+        import os
+        import shutil
+        node = shutil.which('node')
+        if not node:
+            self.skipTest('Node is provided by the Actions runner for the post action')
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            repo = root / 'repo'; repo.mkdir()
+            tmp = root / 'fork-job.example'; tmp.mkdir()
+            unrelated = root / 'unrelated'; unrelated.mkdir()
+            subprocess.run(['git', 'init', '-q', str(repo)], check=True)
+            (repo / 'tracked').touch()
+            subprocess.run(['git', '-C', str(repo), 'add', 'tracked'], check=True)
+            (repo / 'output').touch()
+            keeper = subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(30)'])
+            try:
+                time.sleep(.2)
+                env = dict(os.environ, STATE_keeper=str(keeper.pid), STATE_keeperIdentity=admission.identity(keeper.pid),
+                           STATE_tmp=str(tmp), RUNNER_TEMP=str(root), GITHUB_WORKSPACE=str(repo))
+                subprocess.run([node, str(ACTION / 'index.cjs')], env=env, check=True, timeout=5)
+                self.assertTrue((repo / 'tracked').exists())
+                self.assertFalse((repo / 'output').exists())
+                self.assertFalse(tmp.exists())
+                self.assertTrue(unrelated.exists())
+                self.assertNotEqual(keeper.wait(timeout=5), 0)
+            finally:
+                if keeper.poll() is None:
+                    keeper.terminate()
+                keeper.wait(timeout=5)
+
+
+class WaitingCancellationTests(unittest.TestCase):
+    def test_waiting_keeper_exits_when_its_owner_disappears(self):
+        import os
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            owner = subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(30)'])
+            keepers = []
+            try:
+                time.sleep(.2)
+                for n, pid in enumerate([os.getpid(), owner.pid]):
+                    keepers.append(subprocess.Popen([sys.executable, str(ACTION / 'admit.py'),
+                        str(root / 'lock'), str(root / str(n)), str(pid), admission.identity(pid)]))
+                    if n == 0:
+                        AdmissionTests.wait_ready(self, root / '0')
+                time.sleep(.2)
+                self.assertFalse((root / '1').exists())
+                owner.terminate(); owner.wait(timeout=5)
+                self.assertEqual(keepers[1].wait(timeout=5), 0)
+                self.assertIsNone(keepers[0].poll())
+            finally:
+                for child in [*keepers, owner]:
+                    if child.poll() is None:
+                        child.terminate()
+                    child.wait(timeout=5)
+
 
 if __name__ == '__main__':
     unittest.main()

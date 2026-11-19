@@ -14,7 +14,16 @@ def identity(pid):
 
 def hold(lock, ready, pid, expected):
     with open(lock, 'a') as stream:
-        fcntl.flock(stream, fcntl.LOCK_EX)
+        # Poll while queued as well: cancellation of a waiting worker must not leave
+        # a keeper blocked behind an unrelated long-running job.
+        while identity(pid) == expected:
+            try:
+                fcntl.flock(stream, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                break
+            except BlockingIOError:
+                time.sleep(1)
+        else:
+            return
         if identity(pid) != expected:
             return
         Path(ready).touch()
