@@ -5172,8 +5172,21 @@ and comparison only.
 Statements inside expressions are proof hints, and are not checked. Under
 `--lemma-bindings`, a binding of a lemma's results also contributes the bound
 lemma's `requires` and `ensures` clauses, and transitively the functions and
-lemma bindings they reach, to this check. The lemma's proof body remains a proof
-hint. A bound
+lemma bindings they reach, to this check, and no out-parameter of the bound
+lemma may have a type that depends on `D`.
+
+Once the check reaches a binding, the proofs that justify bindings are checked
+too, since a proof that learns that a value is in `D` learns `D`'s invariants,
+and with them the results of the bindings they contain. These proofs are the
+bodies of the bound lemmas, the statements inside the expressions the check
+reaches, and the lemmas these call, with their specifications and bodies. In
+them, rules 1 to 5 apply, and moreover a local variable of a type that depends
+on `D` must be given a value where it is declared, a `:|` or `forall` statement
+follows rule 1, no lemma has an out-parameter of such a type, and no field or
+array element of such a type is read from the heap. Without a binding, the
+proofs are not checked, as before.
+
+A bound
 variable whose type is inferred as `raw D` makes a test `k is D` a test of a raw
 value; write `k: D` to range over values of `D`.
 

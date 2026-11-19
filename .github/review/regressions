@@ -1086,3 +1086,7 @@ git-issues/github-issue-88-inherited-bounds.dfy
 # Lemma-binding specifications in member-invariant extension checks (issue 522).
 git-issues/git-issue-522.dfy
 git-issues/git-issue-522-controls.dfy
+
+# Proofs that justify a lemma binding in the cone of a member invariant (https://github.com/erniecohen/dafny/issues/199).
+git-issues/git-issue-199-invariant-proofs.dfy
+git-issues/git-issue-199-invariant-proofs-controls.dfy

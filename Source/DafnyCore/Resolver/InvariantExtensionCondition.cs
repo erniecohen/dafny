@@ -31,6 +31,23 @@ namespace Microsoft.Dafny;
 /// Statements inside expressions are proof hints and do not contribute to the meaning, so they are not in the cone.
 /// A lemma binding is different: its results depend on the lemma's specification, which is included in the cone.
 ///
+/// With --lemma-bindings, a binding in the cone also brings in proofs (issue 199).  The function that stands for the
+/// results of a binding of L at arguments G is axiomatized by L's postcondition, wherever a binding at G has been
+/// checked.  That axiom is justified by two proofs: the body of L, which shows that results exist, and the
+/// well-formedness proof of the function that makes the binding, which shows L's precondition at G.  Any proof that
+/// learns that a value has type T learns T's invariants, and so the axioms of the bindings in their cone.  If one of
+/// the two justifying proofs could do that, it could assume the very results it is meant to justify.  So, when the cone
+/// contains a binding, it also contains every proof that justifies one: the bodies of the bound lemmas, the statements
+/// inside the expressions of the cone (the proof hints of its functions), and the specifications and bodies of the
+/// lemmas those proofs call.  In them, besides the clauses above,
+///  6. a local variable of a T-dependent type has an initial value, a ":|" statement does not choose a value of a
+///     T-dependent type, and an out-parameter of a lemma does not have a T-dependent type, since any of these chooses
+///     from the set of values of the type, as an unbounded bound variable would (clause 1);
+///  7. no field or array element of a T-dependent type is read from the heap, since the heap says that it has its type.
+/// Clause 6 for out-parameters also applies to the bound lemmas themselves: a result of a T-dependent type is chosen
+/// from the set of values of its type (section 6.3 of docs/dev/issue199-lemma-results-plan.md).
+/// Without a binding in the cone, its axioms are a definition of T's values and no proof is followed, as before.
+///
 /// The plan notes that, where T may involve references, the existing restriction on function bodies discharges
 /// clauses 1 to 4 and accepts dynamically bound calls.  Clause 5 is not discharged that way: an override, or a
 /// stored function value, may test a constructor application, which is raw, against T.  So this first form applies
@@ -43,6 +60,12 @@ public class InvariantExtensionCondition {
   private readonly HashSet<string> visitedTypeNodes = [];
   private readonly HashSet<(MemberDecl, string)> visitedMembers = [];
   private readonly Queue<Node> worklist = new();
+
+  /// <summary>
+  /// Whether proofs are in the cone: set for a second pass over the cone when the first pass reached a binding.
+  /// </summary>
+  private bool followProofs;
+  private bool reachedBinding;
 
   /// <summary>
   /// A part of the cone: a member (an invariant, a function, a bound lemma or a constant), or a type declaration, instantiated with
@@ -97,6 +120,18 @@ public class InvariantExtensionCondition {
   }
 
   private void Run() {
+    RunPass();
+    if (reachedBinding) {
+      // The cone contains a binding, so it also contains the proofs that justify bindings.  Errors already reported
+      // in the first pass are not reported again.
+      followProofs = true;
+      visitedMembers.Clear();
+      visitedTypeNodes.Clear();
+      RunPass();
+    }
+  }
+
+  private void RunPass() {
     var none = new HashSet<TypeParameter>();
     foreach (var invariant in decl.Members.OfType<MemberInvariant>()) {
       Enqueue(invariant);
@@ -119,9 +154,24 @@ public class InvariantExtensionCondition {
           CheckSlot(function.Body, function.ResultType);
           Visit(function.Body);
         }
-      } else if (current.Member is Lemma lemma) {
-        lemma.Req.ForEach(req => Visit(req.E));
-        lemma.Ens.ForEach(ens => Visit(ens.E));
+      } else if (current.Member is Method method) {
+        // A bound lemma, or a lemma called by a proof in the cone.
+        foreach (var formal in method.Ins) {
+          ReachType(formal.Type, formal.Origin);
+        }
+        foreach (var formal in method.Outs) {
+          ReachType(formal.Type, formal.Origin);
+          if (DependsOnOwner(formal.Type)) {
+            // clause 6
+            Error(formal.Origin, $"has an out-parameter of type '{formal.Type}'{DependsOnOwnerNote(formal.Type)}, " +
+                                 $"whose value is chosen from the set of values of '{formal.Type}'");
+          }
+        }
+        method.Req.ForEach(req => Visit(req.E));
+        method.Ens.ForEach(ens => Visit(ens.E));
+        if (followProofs && method.Body != null) {
+          VisitStatement(method.Body);
+        }
       } else if (current.Member is ConstantField { Rhs: { } rhs } constant) {
         ReachType(constant.Type, constant.NameNode.Origin);
         CheckSlot(rhs, constant.Type);
@@ -345,8 +395,16 @@ public class InvariantExtensionCondition {
   /// Clauses 1 and 5 for a bound variable of a quantifier, a comprehension or a let-such-that expression.
   /// </summary>
   private void CheckBoundVariable(BoundVar boundVar, BoundedPool? bound) {
-    if (!DependsOnOwner(boundVar.Type)) {
-      ReachType(boundVar.Type, boundVar.Origin);
+    CheckChosenValue(boundVar.Type, boundVar.Origin, bound);
+  }
+
+  /// <summary>
+  /// Clauses 1 and 5 for a value of type "type" that ranges over "bound", if any: a bound variable, or (clause 6)
+  /// the left-hand side of a ":|" statement in a proof.
+  /// </summary>
+  private void CheckChosenValue(Type type, IOrigin origin, BoundedPool? bound) {
+    if (!DependsOnOwner(type)) {
+      ReachType(type, origin);
       return;
     }
     var elementType = bound switch {
@@ -356,11 +414,11 @@ public class InvariantExtensionCondition {
       _ => null
     };
     if (elementType == null) {
-      Error(boundVar.Origin, $"refers to the set of values of '{boundVar.Type}'{DependsOnOwnerNote(boundVar.Type)}");
-    } else if (ConvertsRawValue(elementType, boundVar.Type)) {
-      Error(boundVar.Origin, $"tests a raw value against '{boundVar.Type}'");
+      Error(origin, $"refers to the set of values of '{type}'{DependsOnOwnerNote(type)}");
+    } else if (ConvertsRawValue(elementType, type)) {
+      Error(origin, $"tests a raw value against '{type}'");
     }
-    ReachType(boundVar.Type, boundVar.Origin);
+    ReachType(type, origin);
   }
 
   /// <summary>
@@ -429,15 +487,87 @@ public class InvariantExtensionCondition {
     }
   }
 
+  /// <summary>
+  /// A call of a lemma, by a binding or by a statement of a proof in the cone.  Use the worklist so that calls and
+  /// bindings in the lemma's specification (and, when proofs are followed, its body) are followed transitively, with the
+  /// dependence of the actual type arguments, and recursive lemmas are visited only once.  The arguments are converted
+  /// to the types of the lemma's parameters (clause 5).  The receiver is checked where the call's member selection is
+  /// visited.
+  /// </summary>
+  private void CheckCall(CallStmt call) {
+    var method = call.Method;
+    var dependent = DependentFormals(method.EnclosingClass.TypeArgs, call.MethodSelect.TypeApplicationAtEnclosingClass);
+    dependent.UnionWith(DependentFormals(method.TypeArgs, call.MethodSelect.TypeApplicationJustMember));
+    Enqueue(method, dependent);
+    var typeMap = call.MethodSelect.TypeArgumentSubstitutionsWithParents();
+    for (var i = 0; i < call.Args.Count && i < method.Ins.Count; i++) {
+      CheckSlot(call.Args[i], method.Ins[i].Type.Subst(typeMap));
+    }
+  }
+
+  /// <summary>
+  /// A statement of a proof in the cone (see "followProofs"): its expressions are in the cone, and so are the lemmas it
+  /// calls.
+  /// </summary>
+  private void VisitStatement(Statement stmt) {
+    switch (stmt) {
+      case CallStmt call:
+        CheckCall(call);
+        break;
+      case SingleAssignStmt { Rhs: ExprRhs rhs } assign when assign.Lhs.Type != null:
+        CheckSlot(rhs.Expr, assign.Lhs.Type);
+        break;
+      case VarDeclStmt varDecl:
+        foreach (var local in varDecl.Locals) {
+          ReachType(local.Type, local.Origin);
+          if (varDecl.Assign == null && DependsOnOwner(local.Type)) {
+            // clause 6
+            Error(local.Origin, $"declares a variable of type '{local.Type}'{DependsOnOwnerNote(local.Type)} without a value, " +
+                                $"so its value is chosen from the set of values of '{local.Type}'");
+          }
+        }
+        break;
+      case AssignSuchThatStmt suchThat:
+        for (var i = 0; i < suchThat.Lhss.Count; i++) {
+          if (suchThat.Lhss[i].Type is { } lhsType) {
+            CheckChosenValue(lhsType, suchThat.Lhss[i].Origin, suchThat.Bounds?.ElementAtOrDefault(i));
+          }
+        }
+        break;
+      case ForallStmt forall:
+        for (var i = 0; i < forall.BoundVars.Count; i++) {
+          CheckBoundVariable(forall.BoundVars[i], forall.Bounds?.ElementAtOrDefault(i));
+        }
+        break;
+    }
+    foreach (var subExpression in stmt.SubExpressions) {
+      Visit(subExpression);
+    }
+    foreach (var subStatement in stmt.SubStatements) {
+      VisitStatement(subStatement);
+    }
+  }
+
+  /// <summary>
+  /// Clause 7, where proofs are followed: a read of a field or an array element of a T-dependent type.
+  /// </summary>
+  private void CheckHeapRead(Expression read) {
+    if (followProofs && read.Type != null && DependsOnOwner(read.Type)) {
+      Error(read.Origin, $"reads a location of type '{read.Type}'{DependsOnOwnerNote(read.Type)} from the heap");
+    }
+  }
+
   private void Visit(Expression expr) {
     switch (expr) {
-      case StmtExpr { LemmaBindingCall: { Method: Lemma lemma } call }:
-        // Unlike a proof hint, a binding contributes the lemma's specification to the expression's meaning.
-        // Use the worklist so calls and bindings in that specification are followed transitively, with the
-        // dependence of the actual type arguments, and recursive specifications are visited only once.
-        var dependent = DependentFormals(lemma.EnclosingClass.TypeArgs, call.MethodSelect.TypeApplicationAtEnclosingClass);
-        dependent.UnionWith(DependentFormals(lemma.TypeArgs, call.MethodSelect.TypeApplicationJustMember));
-        Enqueue(lemma, dependent);
+      case StmtExpr stmtExpr:
+        if (stmtExpr.LemmaBindingCall is { Method: Lemma } bindingCall) {
+          // Unlike a proof hint, a binding contributes the lemma's specification to the expression's meaning.
+          reachedBinding = true;
+          CheckCall(bindingCall);
+        }
+        if (followProofs) {
+          VisitStatement(stmtExpr.S);
+        }
         break;
       case LambdaExpr lambda:
         foreach (var boundVar in lambda.BoundVars) {
@@ -487,6 +617,10 @@ public class InvariantExtensionCondition {
         }
         break;
       case MemberSelectExpr select:
+        if (select.Member is Field { IsStatic: false } and not ConstantField { Rhs: not null } && select.Obj?.Type != null &&
+            select.Obj.Type.IsRefType) {
+          CheckHeapRead(select);
+        }
         if (select.Member is Function function) {
           CheckFunctionUse(function, select.TypeApplicationAtEnclosingClass, select.TypeApplicationJustMember, select.Origin);
         } else if (select.Member is ConstantField { Rhs: not null } constant) {
@@ -494,6 +628,12 @@ public class InvariantExtensionCondition {
           Enqueue(constant, DependentFormals(constant.EnclosingClass.TypeArgs, select.TypeApplicationAtEnclosingClass));
         }
         CheckReceiver(select.Obj, select.Member);
+        break;
+      case SeqSelectExpr arraySelect when arraySelect.Seq.Type?.IsArrayType == true:
+        CheckHeapRead(arraySelect);
+        break;
+      case MultiSelectExpr multiSelect:
+        CheckHeapRead(multiSelect);
         break;
       case ApplyExpr apply:
         CheckApplied(apply.Function);

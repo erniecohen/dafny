@@ -873,6 +873,8 @@ git-issues/git-issue-1963b.dfy	2		12
 git-issues/git-issue-1963c.dfy	0	2 verified, 0 errors	
 git-issues/git-issue-1984.dfy	0	0 verified, 0 errors	
 git-issues/git-issue-1989.dfy	4	17 verified, 7 errors	126,150,156,181,199,221,233
+git-issues/git-issue-199-invariant-proofs-controls.dfy	4	10 verified, 1 error	41
+git-issues/git-issue-199-invariant-proofs.dfy	2		14,21,22,29,40,49,59,67,76,84,91,98,111,112,113,114,121,123,132,142,149,150
 git-issues/git-issue-1996.dfy	2		59,68,89,95,105,111,188,242,310,355,373,391
 git-issues/git-issue-19a.dfy	2		12,54
 git-issues/git-issue-19b.dfy	4	19 verified, 9 errors	36,43,50,57,64,71,102,115,131
@@ -1151,8 +1153,8 @@ git-issues/git-issue-506.dfy	0	2 verified, 0 errors
 git-issues/git-issue-5065.dfy	0	2 verified, 0 errors	
 git-issues/git-issue-5092.dfy	0	0 verified, 0 errors	
 git-issues/git-issue-5136.dfy	4	8 verified, 6 errors	12,16,37,49,54,75
-git-issues/git-issue-522-controls.dfy	4	10 verified, 1 error	54
-git-issues/git-issue-522.dfy	2		12,29,38,48,61,73,86
+git-issues/git-issue-522-controls.dfy	4	10 verified, 1 error	55
+git-issues/git-issue-522.dfy	2		12,14,29,38,39,48,61,73,74,86
 git-issues/git-issue-5238.dfy	0	1 verified, 0 errors	
 git-issues/git-issue-5262.dfy	4	0 verified, 4 errors	7,16,24,37
 git-issues/git-issue-5274.dfy	2		15,17
