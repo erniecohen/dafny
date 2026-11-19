@@ -1158,6 +1158,7 @@ that a later stage would have to reject:
   Python emits a group in one file, orders class definitions after their trait bases,
   and preserves module-qualified imports through wrapper files.
   Go and Python groups containing extern modules, types or members are not yet supported.
+  Python groups also reject declarations marked `{:compile false}` pending a foreign-linkage convention.
 
 A `.doo` library built with `--recursive-modules` requires its client to enable
 the option too; one built without it records nothing. A group is retained as a

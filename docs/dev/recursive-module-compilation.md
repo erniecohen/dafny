@@ -159,8 +159,8 @@ The wrappers also preserve separate-compilation interfaces. Their imports use
 `--python-module-name` when present. Group and declaration identities and file
 assembly order depend on names, so relocating sources and reloading a complete
 archive preserve the implementation file. Extern modules, types and members
-inside a Python group remain explicitly rejected pending a foreign-linkage
-convention; ordinary foreign dependencies below a group keep their existing
+inside a Python group, and declarations marked `{:compile false}`, remain
+explicitly rejected pending a foreign-linkage convention; ordinary foreign dependencies below a group keep their existing
 lowering.
 
 `git-issue-466-python.dfy` compares Python with C# for every runtime case of the
@@ -174,7 +174,8 @@ ordering. It compares the implementation emitted from relocated sources byte
 for byte, builds those sources into an archive, and runs a separately translated
 client against the producer's Python package using the archive and translation
 record.
-`git-issue-466-python-extern.dfy` has module, type and member rejection controls.
+`git-issue-466-python-extern.dfy` has module, type and member rejection controls
+for both extern and omitted declarations.
 
 This extends an opt-in compilation feature. It changes no verifier rule,
 verification condition, axiom, trusted assumption or obligation producer.
