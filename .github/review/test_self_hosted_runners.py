@@ -14,6 +14,17 @@ class RunnerPolicyTests(unittest.TestCase):
         self.assertGreater(count, 50)
         self.assertEqual(errors, [])
 
+    def test_every_admission_uses_repository_capacity_with_default_two(self):
+        import re
+        count = 0
+        for workflow in (Path(__file__).parents[1] / 'workflows').glob('*.yml'):
+            text = workflow.read_text()
+            calls = re.findall(r'      - uses: erniecohen/dafny/\.github/actions/self-hosted-job@[^\n]+(?:\n        [^\n]*)*', text)
+            for call in calls:
+                self.assertIn("slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}", call, workflow.name)
+            count += len(calls)
+        self.assertEqual(count, 85)
+
     def test_rejects_hosted_labels_expressions_and_matrix_selectors(self):
         for label in ['ubuntu-24.04', 'macos-latest', 'windows-latest',
                       "${{ matrix.os }}", "${{ inputs.mac && 'mac-studio' || 'ubuntu-24.04' }}", '*labels']:

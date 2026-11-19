@@ -77,7 +77,7 @@ class RoutingTests(unittest.TestCase):
         self.assertFalse(enabled(jobs['review.yml/regressions-linux'], 'workflow_dispatch',
                                  'erniecohen/dafny', 'erniecohen/dafny', True))
         text = (ROOT / 'review.yml').read_text()
-        self.assertNotIn('rid: linux-x64', text)
+        self.assertIn('-r linux-x64 --self-contained', text)
         required = re.search(r'tree-reuse.py gate --jobs ([^ \n]+)', text)[1].split(',')
         self.assertNotIn('regressions-linux', required)
         self.assertIn('regressions', required)

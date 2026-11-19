@@ -66,7 +66,7 @@ concurrency:
   cancel-in-progress: ${{ github.ref_type != 'tag' }}
 
 env:
-  # One job at a time is admitted across the self-hosted pool.
+  # Admission defaults to two jobs across the self-hosted pool (SELF_HOSTED_JOB_SLOTS).
   DOTNET_PROCESSOR_COUNT: '2'
   DOTNET_NOLOGO: 'true'
   # Self-hosted runners: no build process outlives the job (MSBuild nodes, Gradle daemons).
@@ -131,7 +131,9 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@49f32698673db4858b4433a87e93df553aca013f
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@600ab4703a71d73df1e2d014bd1018c4c9e08d85
+        with:
+          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
       - uses: actions/checkout@v4
       - name: Controls for the tree matching
         timeout-minutes: 10
@@ -184,7 +186,9 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@49f32698673db4858b4433a87e93df553aca013f
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@600ab4703a71d73df1e2d014bd1018c4c9e08d85
+        with:
+          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -243,7 +247,9 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@49f32698673db4858b4433a87e93df553aca013f
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@600ab4703a71d73df1e2d014bd1018c4c9e08d85
+        with:
+          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
       - uses: actions/checkout@v4
       - name: Check Python version
         timeout-minutes: 60
@@ -362,7 +368,9 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@49f32698673db4858b4433a87e93df553aca013f
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@600ab4703a71d73df1e2d014bd1018c4c9e08d85
+        with:
+          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-dotnet
       - uses: actions/download-artifact@v4
@@ -518,7 +526,9 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@49f32698673db4858b4433a87e93df553aca013f
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@600ab4703a71d73df1e2d014bd1018c4c9e08d85
+        with:
+          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
@@ -600,7 +610,9 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@49f32698673db4858b4433a87e93df553aca013f
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@600ab4703a71d73df1e2d014bd1018c4c9e08d85
+        with:
+          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-dotnet
       - uses: actions/download-artifact@v4
@@ -660,7 +672,9 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@49f32698673db4858b4433a87e93df553aca013f
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@600ab4703a71d73df1e2d014bd1018c4c9e08d85
+        with:
+          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
       - uses: actions/checkout@v4
       - uses: actions/checkout@v4
         with:
@@ -804,7 +818,9 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@49f32698673db4858b4433a87e93df553aca013f
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@600ab4703a71d73df1e2d014bd1018c4c9e08d85
+        with:
+          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-dotnet
       - uses: actions/download-artifact@v4
@@ -899,7 +915,9 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@49f32698673db4858b4433a87e93df553aca013f
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@600ab4703a71d73df1e2d014bd1018c4c9e08d85
+        with:
+          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-dotnet
       - uses: actions/download-artifact@v4
@@ -1022,7 +1040,9 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@49f32698673db4858b4433a87e93df553aca013f
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@600ab4703a71d73df1e2d014bd1018c4c9e08d85
+        with:
+          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
@@ -1079,7 +1099,9 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@49f32698673db4858b4433a87e93df553aca013f
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@600ab4703a71d73df1e2d014bd1018c4c9e08d85
+        with:
+          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
@@ -1146,7 +1168,9 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@49f32698673db4858b4433a87e93df553aca013f
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@600ab4703a71d73df1e2d014bd1018c4c9e08d85
+        with:
+          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-dotnet
       - uses: actions/setup-java@v4
@@ -1308,7 +1332,9 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@49f32698673db4858b4433a87e93df553aca013f
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@600ab4703a71d73df1e2d014bd1018c4c9e08d85
+        with:
+          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-dotnet
       - name: Harness solver and Boogie packages
@@ -1382,7 +1408,9 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@49f32698673db4858b4433a87e93df553aca013f
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@600ab4703a71d73df1e2d014bd1018c4c9e08d85
+        with:
+          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-dotnet
       - name: Boogie packages
@@ -1472,7 +1500,9 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@49f32698673db4858b4433a87e93df553aca013f
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@600ab4703a71d73df1e2d014bd1018c4c9e08d85
+        with:
+          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-dotnet
       - uses: actions/download-artifact@v4
@@ -1533,7 +1563,9 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@49f32698673db4858b4433a87e93df553aca013f
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@600ab4703a71d73df1e2d014bd1018c4c9e08d85
+        with:
+          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-dotnet
       - uses: actions/download-artifact@v4
@@ -1603,7 +1635,9 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@49f32698673db4858b4433a87e93df553aca013f
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@600ab4703a71d73df1e2d014bd1018c4c9e08d85
+        with:
+          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-dotnet
       - uses: actions/download-artifact@v4
@@ -1663,8 +1697,9 @@ jobs:
     needs: build
     env:
       DOTNET_PROCESSOR_COUNT: '3'
-    # Linux binaries require a Linux self-hosted runner and are not produced here;
-    # this job only runs for tags and manual dispatches, never for pull requests.
+    # Build and execute the native product, then cross-publish Linux x64 from the same commit.
+    # Linux execution is qualified downstream, not on this macOS runner.
+    # This job only runs for tags and manual dispatches, never for pull requests.
     runs-on: [self-hosted, macOS, ARM64, mac-studio]
     timeout-minutes: 1440 # Includes waiting for the shared admission slot.
     strategy:
@@ -1691,7 +1726,9 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@49f32698673db4858b4433a87e93df553aca013f
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@600ab4703a71d73df1e2d014bd1018c4c9e08d85
+        with:
+          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
       - uses: actions/checkout@v4
       - name: The tag must name this tree's version
         if: github.ref_type == 'tag'
@@ -1752,7 +1789,7 @@ jobs:
           v=$(out/dafny/dafny --version | head -1)
           echo "dafny --version: $v"
           test "$v" = "${{ needs.build.outputs.version }}"
-          out/dafny/dafny verify --solver-path "$solver" \
+          out/dafny/dafny verify --cores 2 --solver-path "$solver" \
             Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/git-issue-6537.dfy
           # The persistent verification cache works on the self-contained layout, which has
           # no host/fxr (https://github.com/erniecohen/dafny/issues/387).
@@ -1766,6 +1803,28 @@ jobs:
           python3 .github/review/check-distribution.py out/dafny --archive "$name"
           dotnet build -p:NuGetAudit=false .github/review/CheckedCatalogResources/CheckedCatalogResources.csproj -c Release -o out/resource-reader -m:1
           python3 .github/review/check-release-catalog.py "$name" \
+            --reader out/resource-reader/CheckedCatalogResources.dll --solver '${{ steps.release-z3.outputs.path }}'
+          shasum -a 256 "$name"
+      - name: Cross-publish and inspect the Linux x64 archive
+        env:
+          RUNTIME_IDENTIFIER: linux-x64
+        timeout-minutes: 240
+        run: |
+          # The native archive above executes the same commit and checked catalog.
+          # Linux execution is qualified downstream; never execute its apphost here.
+          dotnet publish -p:NuGetAudit=false Source/Dafny/Dafny.csproj -m:1 -c Release -r linux-x64 --self-contained \
+            -o out/linux/dafny -p:GeneratePackageOnBuild=false -p:PathMap="$PWD=/_/" -p:ContinuousIntegrationBuild=true -p:SourceRevisionId=${{ needs.build.outputs.revision }} \
+            -p:RequireCheckedStandardLibraries=true
+          cmp release-catalog-core.dll out/linux/dafny/DafnyCore.dll
+          rm -f out/linux/dafny/*.pdb
+          mv out/linux/dafny/Dafny out/linux/dafny/dafny
+          for f in LICENSE.txt NOTICES.txt REVIEW.md; do if [ -f "$f" ]; then cp "$f" out/linux/dafny/; fi; done
+          name=dafny-${{ needs.build.outputs.version }}-linux-x64.zip
+          (cd out/linux && zip -Xqr "../../$name" dafny)
+          python3 .github/review/check-distribution.py out/linux/dafny --archive "$name"
+          python3 .github/review/check-linux-release.py "$name"
+          file out/linux/dafny/dafny
+          python3 .github/review/check-release-catalog.py "$name" --inspect-only \
             --reader out/resource-reader/CheckedCatalogResources.dll --solver '${{ steps.release-z3.outputs.path }}'
           shasum -a 256 "$name"
       - uses: actions/upload-artifact@v4
@@ -1816,7 +1875,9 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@49f32698673db4858b4433a87e93df553aca013f
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@600ab4703a71d73df1e2d014bd1018c4c9e08d85
+        with:
+          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
       - uses: actions/checkout@v4
       - name: Judge the jobs
         id: gate
@@ -1884,7 +1945,9 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@49f32698673db4858b4433a87e93df553aca013f
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@600ab4703a71d73df1e2d014bd1018c4c9e08d85
+        with:
+          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
@@ -1892,7 +1955,11 @@ jobs:
           merge-multiple: true
       - name: Sums
         timeout-minutes: 15
-        run: shasum -a 256 dafny-*.zip | tee SHA256SUMS
+        run: |
+          for rid in osx-arm64 linux-x64; do
+            test -f "dafny-${{ needs.build.outputs.version }}-$rid.zip"
+          done
+          shasum -a 256 dafny-*.zip | tee SHA256SUMS
       - name: Create the release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -1904,7 +1971,8 @@ jobs:
             echo "Dafny \`$VERSION\`, built from this tag by the workflow \`review\`."
             echo "What it contains is described in the tag's \`REVIEW.md\`, where there is one."
             echo
-            echo "Self-contained binaries for macOS on Apple silicon: they need no .NET."
+            echo "Self-contained binaries for macOS on Apple silicon and Linux x64: they need no .NET."
+            echo "Linux x64 is cross-published on macOS; Linux execution is qualified downstream."
             echo "\`dafny --version\` prints \`$VERSION\`."
             echo
             echo "Z3 is not included.  CI here verifies with Z3 5.1.0, from Z3's public GitHub release;"
@@ -1967,7 +2035,9 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@49f32698673db4858b4433a87e93df553aca013f
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@600ab4703a71d73df1e2d014bd1018c4c9e08d85
+        with:
+          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:

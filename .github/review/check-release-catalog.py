@@ -34,7 +34,7 @@ def check_resources(directory):
         raise ValueError('Checked bundles were produced by different verifier builds')
 
 
-def check_archive(archive, reader, solver):
+def check_archive(archive, reader, solver, inspect_only=False):
     with tempfile.TemporaryDirectory() as scratch:
         root = Path(scratch)
         with zipfile.ZipFile(archive) as package:
@@ -46,6 +46,9 @@ def check_archive(archive, reader, solver):
         if inspected.returncode:
             raise ValueError('Cannot inspect embedded release resources:\n' + inspected.stdout + inspected.stderr)
         check_resources(resources)
+        if inspect_only:
+            print('Release zip embeds all seven complete checked bundles; execution qualified downstream')
+            return
         executable = distribution / 'dafny'
         executable.chmod(executable.stat().st_mode | 0o111)
         source = root / 'client.dfy'
@@ -87,5 +90,7 @@ if __name__ == '__main__':
     parser.add_argument('archive', type=Path)
     parser.add_argument('--reader', type=Path, required=True)
     parser.add_argument('--solver', type=Path, required=True)
+    parser.add_argument('--inspect-only', action='store_true',
+                        help='Inspect cross-published resources; execution must be qualified downstream')
     args = parser.parse_args()
-    check_archive(args.archive.resolve(), args.reader.resolve(), args.solver.resolve())
+    check_archive(args.archive.resolve(), args.reader.resolve(), args.solver.resolve(), args.inspect_only)

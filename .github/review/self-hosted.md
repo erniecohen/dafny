@@ -9,10 +9,11 @@ pull requests do not execute code on these runners.
 
 Each workflow cancels superseded branch/PR runs. Tag and maintenance operations
 retain their existing serialization rules. Matrix jobs admit one variation at a
-time. A repository action pinned by commit additionally holds an OS advisory lock
-across runner services: one participating job executes at a time, and waiters are
-not discarded. The keeper checks the job worker's process identity and releases
-the lock if the worker disappears. Its post action cleans checkout outputs and
+time. A repository action pinned by commit additionally holds numbered OS advisory locks
+across runner services. The repository variable `SELF_HOSTED_JOB_SLOTS` sets the
+number of admitted jobs, defaulting to **2** when unset; excess waiters are not
+discarded. Configure the same capacity in every participating repository. The keeper checks the job worker's process identity and releases
+its slot if the worker disappears. Its post action cleans checkout outputs and
 job temporary files before stopping the keeper. An unconditional shell cleanup
 also removes temporary files if checkout or admission fails. The action is pinned
 by commit so that a historical checkout cannot replace its post script. An action
@@ -25,8 +26,10 @@ self-hosted setup. Frozen comparison SDK/runtime versions stay pinned. Ordinary
 verifier/corpus drivers use two workers, lit/xunit uses the existing two-thread
 settings, and release/certified-library jobs retain their three-core cap.
 
-Capacity planning allows 12 GiB for one active build/verifier job and 2 GiB for
-runner services and waiting action processes: 14 GiB of concurrent Actions memory.
+Capacity planning retains a 12 GiB allowance per active build/verifier job and
+2 GiB for runner services and waiting action processes. The default two slots
+therefore allow **2 × 12 + 2 = 26 GiB** of concurrent Actions memory; a configured
+capacity of N slots allows 12N + 2 GiB.
 This is a conservative planning allowance, not an enforced RSS limit or a measured
 peak. Jobs from older workflow revisions do not participate in this admission
 protocol.
@@ -40,8 +43,14 @@ protocol.
 - `review.yml/parity-linux` is explicitly skipped. The reusable parity workflow
   accepts only the macOS leg. The probe report still records missing Linux
   evidence; it cannot establish cross-platform parity.
-- The Linux self-contained binary leg is removed. Releases now produce only the
-  macOS ARM64 archive; release notes say so. No Linux executable is run on macOS.
+- The release job keeps both `dafny-<version>-osx-arm64.zip` and
+  `dafny-<version>-linux-x64.zip`. It checks the native product version, verification,
+  persistent cache and checked-catalog positive/negative controls, then cross-publishes
+  Linux x64 from the same commit with the same required checked catalog and assembly
+  identity. The Linux zip is inspected for required self-contained runtime files,
+  an ELF64 x86-64 apphost, complete embedded checked bundles and distribution hygiene.
+  Both archives appear in `SHA256SUMS` and the release-notes sha256 block. Linux
+  execution is qualified downstream, not here; no Linux executable is run on macOS.
 - Former hosted fallback jobs are removed. Untrusted fork PRs have no runner
   fallback.
 

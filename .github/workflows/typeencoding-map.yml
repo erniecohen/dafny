@@ -42,7 +42,9 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@49f32698673db4858b4433a87e93df553aca013f
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@600ab4703a71d73df1e2d014bd1018c4c9e08d85
+        with:
+          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
       - uses: actions/checkout@v4
       - uses: actions/checkout@v4
         with:
@@ -141,7 +143,9 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@49f32698673db4858b4433a87e93df553aca013f
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@600ab4703a71d73df1e2d014bd1018c4c9e08d85
+        with:
+          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-dotnet
       - uses: actions/download-artifact@v4
@@ -215,7 +219,9 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@49f32698673db4858b4433a87e93df553aca013f
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@600ab4703a71d73df1e2d014bd1018c4c9e08d85
+        with:
+          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-dotnet
       - uses: actions/download-artifact@v4
@@ -281,7 +287,9 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@49f32698673db4858b4433a87e93df553aca013f
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@600ab4703a71d73df1e2d014bd1018c4c9e08d85
+        with:
+          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:

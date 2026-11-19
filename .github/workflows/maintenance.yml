@@ -7,8 +7,8 @@
 # A tag pushed with GITHUB_TOKEN starts no `push: tags` run, but a workflow_dispatch
 # made with it does start one, and review.yml dispatched on a tag runs the same jobs as
 # a push of the tag (its conditions test github.ref_type): build, checks, binaries and
-# `gh release create --verify-tag` with the osx-arm64 zip and SHA256SUMS.
-# Linux binaries require a Linux self-hosted runner and are not produced.
+# `gh release create --verify-tag` with the osx-arm64 and linux-x64 zips and SHA256SUMS.
+# Linux x64 is cross-published; Linux execution is qualified downstream.
 #
 # release-tag only creates a tag when the workflow runs from review/4.11.0 and dry_run
 # is off.  Anywhere else, or with dry_run on, it makes every check and writes its
@@ -92,7 +92,9 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@49f32698673db4858b4433a87e93df553aca013f
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@600ab4703a71d73df1e2d014bd1018c4c9e08d85
+        with:
+          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
       - uses: actions/checkout@v4
       - name: Resolve the commit
         id: commit
@@ -249,7 +251,9 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@49f32698673db4858b4433a87e93df553aca013f
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@600ab4703a71d73df1e2d014bd1018c4c9e08d85
+        with:
+          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
       - uses: actions/checkout@v4
       - name: Delete stale scratch branches
         timeout-minutes: 15
