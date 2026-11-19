@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
-"""Exact option-off diagnostics/Boogie bytes and per-VC resource identity.
+"""Exact diagnostics/Boogie bytes and per-VC resource identity under matching options.
 
 Run both products on the same sources, observation paths and solver profile.
-For a current PR, --candidate-legacy-no-modular-termination restores the
-pre-default termination rules on the candidate only. Historical replays omit it.
-No semantic output is renamed, reordered or normalized before comparison.
+Current PRs and historical milestone replays use identical flags on both products.
+The explicit --candidate-legacy-no-modular-termination control is only for comparing
+a default-rule transition against a base that predates those rules.
+Diagnostics and Boogie bytes are not renamed, reordered or normalized. Resource
+vectors are matched by declaration name and VC number, independent of parallel publication order.
 The suite population comes from the standing verdict gate; Std includes all
 six target-specific parts. Existing negative verdicts are compared, not blessed.
 The fixed observation profile replaces RUN-line print/log destinations and
@@ -37,10 +39,10 @@ def digest(data):
 def resources(log):
     if not log.exists():
         return None
-    return [{key: declaration.get(key) for key in ['name', 'outcome', 'resourceCount']} | {
-        'vcs': [{key: vc.get(key) for key in ['vcNum', 'outcome', 'resourceCount', 'assertions', 'randomSeed']}
-                for vc in declaration.get('vcResults', [])]}
-            for declaration in json.loads(log.read_text())['verificationResults']]
+    return sorted([{key: declaration.get(key) for key in ['name', 'outcome', 'resourceCount']} | {
+        'vcs': sorted([{key: vc.get(key) for key in ['vcNum', 'outcome', 'resourceCount', 'assertions', 'randomSeed']}
+                       for vc in declaration.get('vcResults', [])], key=lambda row: row['vcNum'] or 0)}
+            for declaration in json.loads(log.read_text())['verificationResults']], key=lambda row: row['name'])
 
 
 def semantic_options(options):
@@ -170,7 +172,7 @@ def main():
         parser.add_argument(name, type=lambda value: Path(value).resolve())
     parser.add_argument('--shard', default='0/1')
     parser.add_argument('--candidate-legacy-no-modular-termination', action='store_true',
-                        help='restore pre-default termination rules on the candidate only; omit for historical products')
+                        help='restore pre-default termination rules only when comparing against a base that predates them')
     args = parser.parse_args()
     args.output.mkdir(parents=True, exist_ok=True)
     reports = suite(args) if args.kind == 'suite' else std(args)

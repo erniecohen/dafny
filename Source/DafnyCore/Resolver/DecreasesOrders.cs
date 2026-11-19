@@ -119,6 +119,19 @@ public static class DecreasesOrders {
   }
 
   /// <summary>
+  /// The chain-stopping witness of Wfo, or an override of it. Use the resolved override chain and library
+  /// identity, not a user-supplied name or attribute. Ordinary calls still apply their actual chain argument.
+  /// </summary>
+  public static bool IsChainWitness(MemberDecl member) {
+    for (MemberDecl? current = member; current != null; current = current.OverriddenMember) {
+      if (current.Name == AhaName && IsStandardLibraryWfo(current.EnclosingClass)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /// <summary>
   /// Whether "decl" is a declaration of the orders library's module.
   /// </summary>
   public static bool InOrdersLibrary(TopLevelDecl decl) {

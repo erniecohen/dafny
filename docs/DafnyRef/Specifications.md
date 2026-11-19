@@ -479,9 +479,17 @@ dispatch, and that includes the code of `O`:
   `c` to `Climbs` as a parameter, so under `--modular-termination` its `Climbs`
   would instead state `ensures forall c: Chain<nat> :: (forall k: nat ::
   Up(c(k), c(k + 1))) ==> c(n) >= n`.
-* The `aha` of a user implementation of `Wfo` applies its chain parameter, so
-  that code is not known. A bound with an order then reaches it, and the bound
-  is rejected. Build orders with `Of` instead.
+* A checked user implementation of `Wfo.aha` may apply its total chain
+  parameter directly. For the implied well-foundedness dependency of a bound,
+  that parameter is a logical input, ranging over all total chains. The body
+  and postcondition of `aha` are still verified, and its calls to other code
+  are still analyzed. Passing the chain to an ordinary helper that applies its
+  parameter remains unknown code; a helper can instead quantify over chains.
+  Unchecked implementations do not receive this logical-chain summary.
+* An ordinary call of `aha(c)` also accounts for the code of the actual `c`.
+  Under a global bound, `c` must be a lambda, known closed code, or a logical
+  quantifier binder. A callback bound is not transferred through this call.
+  A witness selected as a function value is conservatively unknown code.
 
 **Reusable constructions.** `Std.Termination.Orders` also provides
 `LexicographicOf(r, bound)`, `PointwiseOf(r)`, `ProductOf(r, s)` and

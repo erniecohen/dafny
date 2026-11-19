@@ -1,0 +1,128 @@
+{
+  "schema": 1,
+  "purpose": "P0 evidence baseline; not a backend support or release lock",
+  "dafny": {
+    "repository": "https://github.com/erniecohen/dafny",
+    "commit": "81062e7df6eecd9d73a0671abd83206d13b67893",
+    "version": "4.11.0+fcb2042d.review.846e5da5",
+    "upstream": "v4.11.0",
+    "version_script": ".github/review/version.sh",
+    "packaged_standard_library_sha256": {
+      "DafnyStandardLibraries-arithmetic.doo": "ddc1b5c6a955e50efeeae5f6659379a920936a28e80cfabcccaba72c1676213f",
+      "DafnyStandardLibraries-cs.doo": "30eff1f9613ed2b0680779b776ae070c17910518f21355f0d56603e80e218831",
+      "DafnyStandardLibraries-go.doo": "76a5c8bdeaa8a67c01c393774dd7d879e9dc5dd7940c2ec231d59975d26a5329",
+      "DafnyStandardLibraries-java.doo": "f741773b9ac9fa64d4f7778a27b62adc8a4c0a45aa42e23fe17073ddaf6b6100",
+      "DafnyStandardLibraries-js.doo": "e5ecbb10f8cb2a9c8bb52fc0104b865736b5c48577453be3bae34584c06ba095",
+      "DafnyStandardLibraries-notarget.doo": "2df50f2e27af37844c4132e0ab05d338bbd23344facab8c3f293c68f165483da",
+      "DafnyStandardLibraries-orders.doo": "05beeea010ccdabe0a62b5d25bfb7b3100187105158bcfdd397124ccf5fcf59f",
+      "DafnyStandardLibraries-py.doo": "551f27de1400f4262fbbbf437c8052154e45394f49a9c5f5a661e818d8127f3b",
+      "DafnyStandardLibraries.doo": "5257e24ffc792112a230811b620d307014818620bb6270ba952729fad6a5537e"
+    }
+  },
+  "boogie": {
+    "repository": "https://github.com/erniecohen/boogie",
+    "release_tag": "v3.5.5+review.dcd726f6",
+    "tag_commit": "677b5f6cfd74207612865adf1ecc08887ae15953",
+    "package_version": "3.5.5-review.dcd726f6",
+    "product_commit": "5a3ac68700a73b56ab822acaf64c54012d7e4885",
+    "product_base_tag": "v3.5.5",
+    "nuspec_repository_url": "https://github.com/boogie-org/boogie",
+    "nuspec_repository_commit": "677b5f6cfd74207612865adf1ecc08887ae15953",
+    "release_sums_sha256": "3e8c7191a3b3de5905a360b0ea97f8dc4483b991b91fcc4eaf343e3e054d36d7",
+    "ci": "https://github.com/erniecohen/boogie/actions/runs/43506186375",
+    "packages": [
+      {
+        "name": "Boogie.3.5.5-review.dcd726f6.nupkg",
+        "sha256": "a4ddf3b029f88836cb8952de431477f69f1160fd31034b5668e9b23575d04cbc"
+      },
+      {
+        "name": "Boogie.AbstractInterpretation.3.5.5-review.dcd726f6.nupkg",
+        "sha256": "afd395d1c926a2959302a341ffde8f11698345060c1772e7c9d5bb8ec760783c"
+      },
+      {
+        "name": "Boogie.BaseTypes.3.5.5-review.dcd726f6.nupkg",
+        "sha256": "47b44036ca2a047e0fb085ac8b21b0ef362a3b5083399fd52d750022e4518100"
+      },
+      {
+        "name": "Boogie.CodeContractsExtender.3.5.5-review.dcd726f6.nupkg",
+        "sha256": "53ec87e24c366a1a79ff25d7d2701d97db024d42c049ea5faee63a3ea533785e"
+      },
+      {
+        "name": "Boogie.Concurrency.3.5.5-review.dcd726f6.nupkg",
+        "sha256": "880098e24496ebd7782260423b006557351c90551fb226934daa74e5a7aef1ce"
+      },
+      {
+        "name": "Boogie.Core.3.5.5-review.dcd726f6.nupkg",
+        "sha256": "7153d83284e188a8ad3e43cb308225b9c2f2b44b4c90e3f3e87f7d81da1ac9ee"
+      },
+      {
+        "name": "Boogie.ExecutionEngine.3.5.5-review.dcd726f6.nupkg",
+        "sha256": "56fcbd3edf4294fb4140f4ccd819b70377e7a171a533fcc4cffa6c877de47d44"
+      },
+      {
+        "name": "Boogie.Graph.3.5.5-review.dcd726f6.nupkg",
+        "sha256": "725050a14270cf19600c9afc21a30fc9144e732fef3cf2776237c68de4ef4e09"
+      },
+      {
+        "name": "Boogie.Houdini.3.5.5-review.dcd726f6.nupkg",
+        "sha256": "3c3032b5931b4fd52d8118ecdef766ee5717bbd635a4c8db9bff7da4fa0848c3"
+      },
+      {
+        "name": "Boogie.Model.3.5.5-review.dcd726f6.nupkg",
+        "sha256": "e1f0cc63ac2928ae407234df1e0f1b0c2d8454e89508a46d9bef901c7b6df211"
+      },
+      {
+        "name": "Boogie.Provers.LeanAuto.3.5.5-review.dcd726f6.nupkg",
+        "sha256": "124a9cc333549dae78cca6cb0c68ba267b822bcabf561789c95922d9c1474efb"
+      },
+      {
+        "name": "Boogie.Provers.SMTLib.3.5.5-review.dcd726f6.nupkg",
+        "sha256": "9620b4d911eacd2ecd683593bca4c59e2ce1aeb8c4f5ed82db4cf7bb2c5e3739"
+      },
+      {
+        "name": "Boogie.VCExpr.3.5.5-review.dcd726f6.nupkg",
+        "sha256": "96d07f3b015ff80ab403e7affc00b224865dcaaf0db7ee681d4cd4bb5c5d53c3"
+      },
+      {
+        "name": "Boogie.VCGeneration.3.5.5-review.dcd726f6.nupkg",
+        "sha256": "631d9b9b3c533f44e8276fb38714b8f75f4fe709afa1bab09ade1eb799722b34"
+      }
+    ]
+  },
+  "b3": {
+    "repository": "https://github.com/dafny-lang/b3",
+    "commit": "b24a2b2d6101df900e67d3bb151c4e85af4cd16d",
+    "project": "src/dfyconfig.toml",
+    "target": "cs",
+    "source_edits": false,
+    "bootstrap": "verified and compiled with --allow-warnings; strict build rejected unchecked termination warnings",
+    "unchecked_termination_sources": [
+      "src/Solver/DeclarationMarkers.dfy:7",
+      "src/Driver/CommandLineOptions.dfy:11"
+    ],
+    "historical_operational_successor": "ea6e8a18dfe9e317d313de769291f989957dc5f2",
+    "successor_selected": false,
+    "generated_target_framework": "net8.0",
+    "minimum_runtime": "8.0.0",
+    "runtime_roll_forward": "Major"
+  },
+  "compiler_runtime": {
+    "repository_minimum_sdk": "10.0.100",
+    "repository_roll_forward": "latestFeature",
+    "sdk": "10.0.400",
+    "sdk_commit": "14fbf8d527",
+    "runtime": "10.0.11",
+    "runtime_commit": "e2f47b0110",
+    "language_version": "C# 12",
+    "target_framework": "net10.0",
+    "roll_forward": "Major"
+  },
+  "solver": {
+    "repository": "https://github.com/Z3Prover/z3",
+    "version": "5.1.0",
+    "tag": "z3-5.1.0",
+    "tag_commit": "0b6cdcdbc65da25ef0f73ac9da210574d0f66cf8",
+    "scope": "version/source reference; executable digest and build identity must be captured in a reproduction receipt; source tag alone does not identify executable bytes"
+  },
+  "assurance": "Package checksums, release/tag metadata, nuspec repository commit and public CI establish the published provenance chain. No independent bit-for-bit source rebuild or executing B3 soundness theorem is claimed."
+}
