@@ -1,0 +1,26 @@
+git-issue-451.dfy(15,9): Error: a replaceable module may only be replaced once
+git-issue-451.dfy(14,9): Related location: other replacing module
+git-issue-451.dfy(23,9): Error: a replaceable module may only be replaced once
+git-issue-451.dfy(22,9): Related location: other replacing module
+git-issue-451.dfy(15,9): Error: modules 'ZebraEarlier' and 'AlphaLater' both have CompileName 'Independent.Target'
+git-issue-451.dfy(23,9): Error: modules 'Earlier' and 'Later' both have CompileName 'Dependent.Target'
+4 resolution/type errors detected in git-issue-451.dfy
+git-issue-451.dfy(15,9): Error: a replaceable module may only be replaced once
+git-issue-451.dfy(14,9): Related location: other replacing module
+git-issue-451.dfy(23,9): Error: a replaceable module may only be replaced once
+git-issue-451.dfy(22,9): Related location: other replacing module
+git-issue-451.dfy(15,9): Error: modules 'ZebraEarlier' and 'AlphaLater' both have CompileName 'Independent.Target'
+git-issue-451.dfy(23,9): Error: modules 'Earlier' and 'Later' both have CompileName 'Dependent.Target'
+4 resolution/type errors detected in git-issue-451.dfy
+git-issue-451-b.dfy(1,7): Error: a replaceable module may only be replaced once
+git-issue-451-a.dfy(2,7): Related location: other replacing module
+git-issue-451-b.dfy(1,7): Error: modules 'FirstCross' and 'SecondCross' both have CompileName 'CrossTarget'
+2 resolution/type errors detected in git-issue-451-a.dfy
+git-issue-451-b.dfy(1,7): Error: a replaceable module may only be replaced once
+git-issue-451-a.dfy(2,7): Related location: other replacing module
+git-issue-451-b.dfy(1,7): Error: modules 'FirstCross' and 'SecondCross' both have CompileName 'CrossTarget'
+2 resolution/type errors detected in git-issue-451-a.dfy
+
+Dafny program verifier finished with 1 verified, 0 errors
+
+Dafny program verifier finished with 1 verified, 0 errors

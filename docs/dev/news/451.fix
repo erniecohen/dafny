@@ -1,0 +1,2 @@
+Duplicate-replacement errors now identify the later source location, with the
+earlier replacement as the related location, independently of dependency traversal.

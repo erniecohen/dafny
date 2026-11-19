@@ -1,0 +1,10 @@
+// These runs verify source-library members, rather than this harness fixture.
+// RUN: %verify --solver-path %review-z3 --cores 1 --verification-time-limit 0 --resource-limit 3000000 --boogie /deterministicLiteralHashes:1 --boogie /restartProver --boogie /randomSeed:5 --filter-symbol LemmaMulIsMulRecursive. "%repositoryRoot/Source/DafnyStandardLibraries/src/Std/dfyconfig.toml" > "%t"
+// RUN: %verify --solver-path %review-z3 --cores 1 --verification-time-limit 0 --resource-limit 1000000 --boogie /deterministicLiteralHashes:1 --boogie /restartProver --boogie /randomSeed:1 --filter-symbol LemmaMultiplyDivideLt. "%repositoryRoot/Source/DafnyStandardLibraries/src/Std/dfyconfig.toml" >> "%t"
+// RUN: %verify --solver-path %review-z3 --cores 1 --verification-time-limit 0 --resource-limit 2000000 --boogie /normalizeDeclarationOrder:0 --boogie /restartProver --boogie /randomSeed:12 --filter-symbol Quotient. "%repositoryRoot/Source/DafnyStandardLibraries/optional/IntegerBitwise.dfy" >> "%t"
+// RUN: %verify --solver-path %review-z3 --cores 1 --verification-time-limit 0 --resource-limit 1000000 --boogie /deterministicLiteralHashes:1 --boogie /restartProver --boogie /randomSeed:1 --filter-symbol MergeSortedWith. "%repositoryRoot/Source/DafnyStandardLibraries/src/Std/dfyconfig.toml" >> "%t"
+// RUN: %diff "%s.expect" "%t"
+// RUN: %verify --solver-path %review-z3 --cores 1 --filter-symbol Issue437.Positive "%repositoryRoot/Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/Inputs/issue-437-controls.dfy" "%repositoryRoot/Source/DafnyStandardLibraries/src/Std/dfyconfig.toml" > "%t.controls"
+// RUN: %exits-with 4 %verify --solver-path %review-z3 --cores 1 --filter-symbol Issue437.Negative "%repositoryRoot/Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/Inputs/issue-437-controls.dfy" "%repositoryRoot/Source/DafnyStandardLibraries/src/Std/dfyconfig.toml" >> "%t.controls"
+// RUN: %diff "%s.controls.expect" "%t.controls"
+// https://github.com/erniecohen/dafny/issues/437

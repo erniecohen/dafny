@@ -495,6 +495,8 @@ public class ModularTerminationAnalysis {
   private readonly Dictionary<Declaration, HashSet<Declaration>> allEdges = new();
   private readonly List<MemberDecl> orderImplementations = [];
   private readonly HashSet<IVariable> logicalBinders = [];
+  private readonly HashSet<IVariable> witnessChains = [];
+  private readonly bool ordersEnabled;
 
   /// <summary>
   /// The analysis of the program, computed once, the first time it is asked for.  Use it only once the
@@ -517,6 +519,7 @@ public class ModularTerminationAnalysis {
   }
 
   public ModularTerminationAnalysis(Program program) {
+    ordersEnabled = program.Options.Get(CommonOptionBag.DecreasesOrders);
     OpenTraits = ModularTermination.OpenTraits(program);
     systemModule = program.SystemModuleManager.SystemModule;
     foreach (var module in program.Modules()) {
@@ -536,6 +539,17 @@ public class ModularTerminationAnalysis {
         continue;
       }
       foreach (var member in cl.Members) {
+        // In aha's universal chain-stopping proof the total chain is a logical input. Explicit calls
+        // apply their actual argument below, and selecting aha as a value remains unknown.
+        if (ordersEnabled &&
+            member is Function { IsGhost: true, Body: not null, Ins: [var chain] } witness &&
+            DecreasesOrders.IsChainWitness(witness) && ModularTermination.IsTotalArrow(chain.Type) &&
+            Attributes.ContainsBoolAtAnyLevel(witness, "verify", true) &&
+            Attributes.ContainsBoolAtAnyLevel(witness, "termination", true) &&
+            !Attributes.Contains(witness.Attributes, "axiom") && !Attributes.Contains(witness.Attributes, "extern") &&
+            ModularTermination.UndeclaredForeignAncestor(witness) != null) {
+          witnessChains.Add(chain);
+        }
         for (var parent = member.OverriddenMember; parent != null; parent = parent.OverriddenMember) {
           if (parent.EnclosingClass is TraitDecl trait && DecreasesOrders.IsStandardLibraryWfo(trait) &&
               parent.Name is DecreasesOrders.GtName or DecreasesOrders.AhaName) {
@@ -566,7 +580,7 @@ public class ModularTerminationAnalysis {
     var callers = new Dictionary<Declaration, List<Declaration>>();
     var work = new Stack<Declaration>();
     void AddNode(Declaration node, System.Action<EdgeCollector> visit) {
-      var collector = new EdgeCollector(this, ModularTermination.ModuleOf(node));
+      var collector = new EdgeCollector(this, ModularTermination.ModuleOf(node), node as MemberDecl);
       if (node is TopLevelDeclWithMembers type) {
         foreach (var parent in type.Traits) {
           collector.Mention(parent);
@@ -891,6 +905,8 @@ public class ModularTerminationAnalysis {
     Unknown
   }
 
+  public bool IsChainWitness(MemberDecl member) => ordersEnabled && DecreasesOrders.IsChainWitness(member);
+
   /// <summary>
   /// What runs when the function value "value" is applied in "enclosing" (M3b).
   /// </summary>
@@ -904,6 +920,9 @@ public class ModularTerminationAnalysis {
         return FunctionValueKind.KnownCode;
       case IdentifierExpr { Var: { } binder } when logicalBinders.Contains(binder):
         return FunctionValueKind.Binder;
+      case MemberSelectExpr { Member: { } witness } when IsChainWitness(witness):
+        // The summary abstracts the chain, so an unapplied witness is not known closed code.
+        return FunctionValueKind.Unknown;
       case IdentifierExpr { Var: Formal f } when enclosing != null && enclosing.Ins.IndexOf(f) is var i and >= 0 &&
                                                   ModularTermination.HasCallbackBound(enclosing, i):
         return FunctionValueKind.CallbackParameter;
@@ -990,10 +1009,12 @@ public class ModularTerminationAnalysis {
     }
 
     private readonly ModuleDefinition? callerModule;
+    private readonly MemberDecl? enclosing;
 
-    public EdgeCollector(ModularTerminationAnalysis analysis, ModuleDefinition? callerModule) {
+    public EdgeCollector(ModularTerminationAnalysis analysis, ModuleDefinition? callerModule, MemberDecl? enclosing = null) {
       this.analysis = analysis;
       this.callerModule = callerModule;
+      this.enclosing = enclosing;
     }
 
     private void AddDependency(Declaration node) {
@@ -1044,6 +1065,9 @@ public class ModularTerminationAnalysis {
           Apply(value.Arguments[0]);
           break;
         case FunctionCallExpr call when call.Function != null:
+          if (analysis.IsChainWitness(call.Function)) {
+            Apply(call.Args[0]);
+          }
           if (ModularTermination.IsArrowMember(call.Function)) {
             Apply(call.Receiver);
           } else {
@@ -1055,6 +1079,9 @@ public class ModularTerminationAnalysis {
         case MemberSelectExpr { Member: MethodOrConstructor lemma } when DecreasesOrders.AppliesOnlyItsArguments(lemma):
           break;
         case MemberSelectExpr { Member: Function or MethodOrConstructor or ConstantField } select:
+          if (analysis.IsChainWitness(select.Member)) {
+            Dispatch("a chain-stopping witness used as a function value");
+          }
           Call(select.Member);
           break;
         case ApplyExpr apply:
@@ -1085,6 +1112,10 @@ public class ModularTerminationAnalysis {
         return;
       }
       if (value.Resolved is IdentifierExpr { Var: { } binder } && analysis.logicalBinders.Contains(binder)) {
+        return;
+      }
+      if (value.Resolved is IdentifierExpr { Var: { } chain } && analysis.witnessChains.Contains(chain) &&
+          enclosing is Function witness && witness.Ins.Contains(chain)) {
         return;
       }
       // The argument-dependent bound of a bounded value was checked to be closed when the value was formed, and to
@@ -1645,6 +1676,13 @@ public class ModularTerminationRewriter : IRewriter {
           break;
         case FunctionCallExpr call:
           ReportDispatch(call.Origin, call.Function);
+          if (analysis.IsChainWitness(call.Function) &&
+              analysis.Classify(call.Args[0], caller) is not (ModularTerminationAnalysis.FunctionValueKind.Lambda or
+                ModularTerminationAnalysis.FunctionValueKind.KnownCode or ModularTerminationAnalysis.FunctionValueKind.Binder)) {
+            // No implicit callback-bound VC is generated at this ordinary call. Require a closed/logical
+            // chain under a bound, rather than silently applying an unknown or bounded callback.
+            ReportTop(call.Origin, "the chain argument of a well-foundedness witness", Bounded(expr));
+          }
           ReportBoundedArguments(call.Function, call.Args, expr);
           break;
         case ApplyExpr apply:

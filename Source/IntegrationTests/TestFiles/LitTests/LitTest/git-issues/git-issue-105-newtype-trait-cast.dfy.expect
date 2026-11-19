@@ -1,3 +1,28 @@
-git-issue-105-newtype-trait-cast.dfy(27,2): Error: assertion might not hold
+git-issue-105-newtype-trait-cast.dfy(30,2): Error: assertion might not hold
+git-issue-105-newtype-trait-cast.dfy(59,4): Error: assertion might not hold
+git-issue-105-newtype-trait-cast.dfy(63,15): Error: value does not satisfy the subset constraints of 'A.N'
+git-issue-105-newtype-trait-cast.dfy(67,16): Error: result of operation might violate newtype constraint for 'N'
+git-issue-105-newtype-trait-cast.dfy(73,22): Error: value does not satisfy the subset constraints of 'nat'
 
-Dafny program verifier finished with 2 verified, 1 error
+Dafny program verifier finished with 6 verified, 5 errors
+git-issue-105-newtype-trait-cast.dfy(30,2): Error: assertion might not hold
+git-issue-105-newtype-trait-cast.dfy(59,4): Error: assertion might not hold
+git-issue-105-newtype-trait-cast.dfy(63,15): Error: value does not satisfy the subset constraints of 'A.N'
+git-issue-105-newtype-trait-cast.dfy(67,16): Error: result of operation might violate newtype constraint for 'N'
+git-issue-105-newtype-trait-cast.dfy(73,22): Error: value does not satisfy the subset constraints of 'nat'
+
+Dafny program verifier finished with 6 verified, 5 errors
+git-issue-105-newtype-trait-cast.dfy(30,2): Error: assertion might not hold
+git-issue-105-newtype-trait-cast.dfy(59,4): Error: assertion might not hold
+git-issue-105-newtype-trait-cast.dfy(63,15): Error: value does not satisfy the subset constraints of 'A.N'
+git-issue-105-newtype-trait-cast.dfy(67,16): Error: result of operation might violate newtype constraint for 'N'
+git-issue-105-newtype-trait-cast.dfy(73,22): Error: value does not satisfy the subset constraints of 'nat'
+
+Dafny program verifier finished with 6 verified, 5 errors
+git-issue-105-newtype-trait-cast.dfy(30,2): Error: assertion might not hold
+git-issue-105-newtype-trait-cast.dfy(59,4): Error: assertion might not hold
+git-issue-105-newtype-trait-cast.dfy(63,15): Error: value does not satisfy the subset constraints of 'A.N'
+git-issue-105-newtype-trait-cast.dfy(67,16): Error: result of operation might violate newtype constraint for 'N'
+git-issue-105-newtype-trait-cast.dfy(73,22): Error: value does not satisfy the subset constraints of 'nat'
+
+Dafny program verifier finished with 6 verified, 5 errors

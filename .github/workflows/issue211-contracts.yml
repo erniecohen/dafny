@@ -102,14 +102,13 @@ jobs:
           echo 'f47be8d27d3230e823bf1eeede2fe0abaca55bb78d0b59974370e6689a92284a  solver.zip' | sha256sum -c -
           unzip -q solver.zip -d solver
           chmod +x products/*/dafny/Dafny solver/*/bin/z3
-      - name: Compare exact outputs and resource units with the option off
-        # Dispatch replays the original milestone, whose candidate predates this opt-out.
-        env:
-          CANDIDATE_LEGACY: ${{ github.event_name == 'pull_request' && '--candidate-legacy-no-modular-termination' || '' }}
+      - name: Compare exact outputs and resource units under matching options
+        # Both current products already include the default termination rules.
+        # Historical dispatch compares the original opt-in milestone with identical flags too.
         run: |
           python3 .github/review/source-contracts-identity.py '${{ matrix.kind }}' \
             products/base/dafny/Dafny products/candidate/dafny/Dafny solver/*/bin/z3 \
-            'sources/${{ matrix.source }}' identity-results --shard '${{ matrix.shard }}' $CANDIDATE_LEGACY
+            'sources/${{ matrix.source }}' identity-results --shard '${{ matrix.shard }}'
       - uses: actions/upload-artifact@v4
         if: always()
         with:

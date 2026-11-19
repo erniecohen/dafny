@@ -277,8 +277,13 @@ public class ProgramResolver {
       var source = ModuleSource(declaration);
       if (groupOf.TryGetValue(declaration, out var group) && ReferenceEquals(declaration, group.Members[0])) {
         // The leader of a recursive module group stands for the group.
-        source = string.Join("\n", group.Declarations.Select(d => d.FullName + "\n" +
-          string.Join(",", KeyOptions(d).Select(option => option.Key + "=" + option.Value)) + "\n" + ModuleSource(d)));
+        // Frame every owned declaration and option separately. In particular, source and option
+        // separators must not be able to change which member owns an input. The leader's lower
+        // prerequisites below are the union for the entire component.
+        source = ModuleResolutionKey.Compute("recursive-module-group/v1", "", ModuleResolutionKey.DafnyVersion,
+          [], group.Declarations.Select(d => new ModuleResolutionKey.Prerequisite("member", d.FullName,
+            ModuleResolutionKey.Compute(d.FullName, ModuleSource(d), ModuleResolutionKey.DafnyVersion,
+              KeyOptions(d), []))));
       }
       var key = ModuleResolutionKey.Compute(declaration.FullName, source, ModuleResolutionKey.DafnyVersion,
         KeyOptions(declaration), prerequisites[i].Select(j =>
@@ -803,7 +808,12 @@ public class ProgramResolver {
         var target = compiledModule.Implements.Target.Def;
         var replacement = Program.Replacements.GetValueOrDefault(target);
         if (replacement != null) {
-          Reporter!.Error(MessageSource.Resolver, new NestedOrigin(compiledModule.Origin, replacement.Origin,
+          // Dependency order can visit either replacement first. Report at the
+          // later source location, with files ordered as in ReplacementDependencyChecker.
+          var locations = new[] { compiledModule.Origin, replacement.Origin }
+            .OrderBy(origin => origin.Uri?.ToString() ?? "", StringComparer.Ordinal)
+            .ThenBy(origin => origin.pos).ToArray();
+          Reporter!.Error(MessageSource.Resolver, new NestedOrigin(locations[1], locations[0],
               $"other replacing module"),
             "a replaceable module may only be replaced once");
         } else {

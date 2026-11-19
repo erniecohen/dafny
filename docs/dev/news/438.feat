@@ -1,0 +1,1 @@
+The opt-in review tool `.github/review/seed-sweep.py` compares per-member verification success and resource-unit distributions across naming seeds for two Dafny products or proof revisions. It retains raw evidence and reports unpaired, multiple-comparison-adjusted better/worse/indistinguishable verdicts; see `.github/review/seed-sweep.md`.
