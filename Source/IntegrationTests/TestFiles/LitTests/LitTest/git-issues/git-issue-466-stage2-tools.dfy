@@ -3,6 +3,7 @@
 // resolution threads, with --isolate-assertions and with --filter-symbol. Stage 7 supports C#:
 // build and run succeed; Python translation is still rejected. Stage 6 supports library builds. The option
 // needs the new resolver.
+// NONUNIFORM: Recursive groups compile to C# only; Python rejection and library output are intentional.
 // RUN: %verify --member-invariants --recursive-modules "%s" > "%t"
 // RUN: %verify --member-invariants --recursive-modules --resolution-threads 1 "%s" >> "%t"
 // RUN: %verify --member-invariants --recursive-modules --resolution-threads 4 "%s" >> "%t"
