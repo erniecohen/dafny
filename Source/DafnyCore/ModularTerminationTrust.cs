@@ -92,7 +92,7 @@ public static class ModularTerminationTrustList {
     new("Std.Ordinal.TimesDistributesOnLeft", LemmaKind, "e4528df57f3ab44e10ea5d0a42610107732cec0172ffde1e92ff363cda245a1e", "1e89b2229497a7de8f7cb739e3dd1d25dc34ee541c310080dba73b24fcb5cf4b", OrdinalLemmaReason),
     new("Std.Ordinal.TimesIncreasingOnLeft", LemmaKind, "5b44809184e1ea84953d2f61873429ff46f1eced6764ce83c42943e3f419dcba", "1e89b2229497a7de8f7cb739e3dd1d25dc34ee541c310080dba73b24fcb5cf4b", OrdinalLemmaReason),
     new("Std.Ordinal.TimesStrictlyIncreasingOnRight", LemmaKind, "4e847365a9b4f1b806e2fb45138549f586e5de74ba272f064f5fa6de94c5f31e", "1e89b2229497a7de8f7cb739e3dd1d25dc34ee541c310080dba73b24fcb5cf4b", OrdinalLemmaReason),
-    new("Std.Strings.HexConversion.CharsConsistent", LemmaKind, "b6e08ac0a93292eb9cccc3b0de7b02effc370cac04f7f5480b5e610c2a1aa3f4", "e923bd6bfce672a1303b2c70285db99055865236562a926348e5db9b9806968d", CharsConsistentReason),
+    new("Std.Strings.HexConversion.CharsConsistent", LemmaKind, "b6e08ac0a93292eb9cccc3b0de7b02effc370cac04f7f5480b5e610c2a1aa3f4", "e7e978eb6939973810f98d01bf7c6b51a34fd613c28201a13e9829a15e680726", CharsConsistentReason),
   ];
 
   // The on-only checked-Std overlay has the same mathematical premises, with Closed
@@ -116,7 +116,7 @@ public static class ModularTerminationTrustList {
     new("Std.Ordinal.TimesDistributesOnLeft", LemmaKind, "0010381d5796df94ce11356cfac99c64b87a1948e7ffb4338c2735a36054f088", "b92e251bf1fff4544388acfa0d3ae0dcdc58436f8feeb258654ddd91c52b1bc9", OrdinalLemmaReason),
     new("Std.Ordinal.TimesIncreasingOnLeft", LemmaKind, "5747fb7d25589a4148f9c14f7316d6b7a49de9e0f3836c48f6313d48dc5c83fe", "b92e251bf1fff4544388acfa0d3ae0dcdc58436f8feeb258654ddd91c52b1bc9", OrdinalLemmaReason),
     new("Std.Ordinal.TimesStrictlyIncreasingOnRight", LemmaKind, "3d533b48e823a562efad33225b60c1239f34595fe91b73f29150f2c96989792e", "b92e251bf1fff4544388acfa0d3ae0dcdc58436f8feeb258654ddd91c52b1bc9", OrdinalLemmaReason),
-    new("Std.Strings.HexConversion.CharsConsistent", LemmaKind, "b6e08ac0a93292eb9cccc3b0de7b02effc370cac04f7f5480b5e610c2a1aa3f4", "98c4c49faec4a1b651e8726a036edad502a061abc4a69eadcb53918a0b495102", CharsConsistentReason),
+    new("Std.Strings.HexConversion.CharsConsistent", LemmaKind, "b6e08ac0a93292eb9cccc3b0de7b02effc370cac04f7f5480b5e610c2a1aa3f4", "9b42df774b7639abc2b51578735dac9ac09ca054332a82dd4c04055d02e7d55f", CharsConsistentReason),
   ];
 
   /// <summary>
