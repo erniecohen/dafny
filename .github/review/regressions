@@ -1079,3 +1079,6 @@ git-issues/github-issue-88-inherited-bounds.dfy
 # C# compilation and target admission for recursive module groups (issue 466).
 git-issues/git-issue-466-stage7.dfy
 git-issues/git-issue-466-stage7-targets.dfy
+
+# Java compilation and runtime comparisons for recursive groups (issue 466).
+git-issues/git-issue-466-java.dfy

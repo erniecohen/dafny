@@ -1,7 +1,6 @@
 // Each unqualified backend is rejected before emitting executable target code.
 // NONUNIFORM: These are admission controls for backends without recursive-group support.
 // RUN: %exits-with 3 %build --no-verify --target go --member-invariants --recursive-modules "%s" --output "%t-go" > "%t"
-// RUN: %exits-with 3 %build --no-verify --target java --member-invariants --recursive-modules "%s" --output "%t-java" >> "%t"
 // RUN: %exits-with 3 %build --no-verify --target js --member-invariants --recursive-modules "%s" --output "%t-js" >> "%t"
 // RUN: %exits-with 3 %build --no-verify --target py --member-invariants --recursive-modules "%s" --output "%t-py" >> "%t"
 // RUN: %exits-with 3 %build --no-verify --target rs --member-invariants --recursive-modules "%s" --output "%t-rs" >> "%t"
