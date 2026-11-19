@@ -909,6 +909,8 @@ git-issues/git-issue-2380.dfy	0	2 verified, 0 errors
 git-issues/git-issue-2384.dfy	4	0 verified, 3 errors	11,14,17
 git-issues/git-issue-2429.dfy	0	7 verified, 0 errors	
 git-issues/git-issue-2441.dfy	0	0 verified, 0 errors	
+git-issues/git-issue-245-instances.dfy	2		17,35,43,51
+git-issues/git-issue-245-summary.dfy	0	71 verified, 0 errors	
 git-issues/git-issue-2496.dfy	2		5
 git-issues/git-issue-2500.dfy	4	27 verified, 3 errors	21,24,37
 git-issues/git-issue-2506.dfy	2		10,13,15,31,34,36,52,55,57,73,76,78,90,94,98,102

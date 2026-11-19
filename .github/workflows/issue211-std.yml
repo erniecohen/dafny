@@ -14,6 +14,8 @@ on:
       - '.github/review/modular-termination-std.py'
       - '.github/review/modular-termination-checked-std.py'
       - '.github/review/modular-termination-catalog.py'
+      - '.github/review/catalog_erasure.py'
+      - '.github/review/test_catalog_erasure.py'
       - '.github/workflows/issue211-std.yml'
   workflow_dispatch:
 permissions:
