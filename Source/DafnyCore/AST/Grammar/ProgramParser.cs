@@ -47,6 +47,11 @@ public class ProgramParser {
     var compiledRoots = files.Where(df => df.ShouldNotCompile).Select(df => df.Uri).ToHashSet();
     var compilation = new CompilationData(errorReporter, defaultModule.Includes, rootSourceUris, verifiedRoots,
       compiledRoots);
+    if (options.Get(CommonOptionBag.RecursiveModules)) {
+      foreach (var file in files.Where(f => f.Extension == DooFile.Extension)) {
+        compilation.RecursiveModuleLibraries[file.Uri] = file.RecursiveModuleRecord;
+      }
+    }
     compilation.UncheckedTerminationRoots =
       files.Where(df => df.ShouldNotVerify && df.TerminationRecord == null).Select(df => df.Uri).ToHashSet();
     var program = new Program(

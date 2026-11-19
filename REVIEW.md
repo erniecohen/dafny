@@ -1477,3 +1477,20 @@ The regressions are `git-issues/git-issue-491.dfy`,
 `git-issues/git-issue-491-positive.dfy`. The negative controls prove `false` under
 the legacy option; the positive controls retain reachable failing assertions.
 The release note is `docs/dev/news/491.fix`.
+
+## Explicit prefix-lemma calls across modules ([issue 471](https://github.com/erniecohen/dafny/issues/471))
+
+An explicit call `Lib.M#[k](args)` uses the prefix lemma's `CoCall` procedure.
+That procedure is declared when translating the associated least or greatest
+lemma, rather than when translating the prefix lemma alone. The caller now
+references that associated declaration for ordinary imports as well as calls
+within a recursive module group. The call target, arguments, preconditions,
+postconditions and termination checks are unchanged. This is a crash fix: it
+adds no axiom, fact or check, and needs no legacy option.
+
+The regression `git-issues/git-issue-471.dfy` covers the reported program,
+least lemmas with ordinal and natural-number indices, greatest lemmas,
+same-module calls and concrete witnesses. `git-issue-471-controls.dfy` checks
+that false assertions after those calls and unmet prefix preconditions still
+fail. Both files run with both resolvers, with additional axioms, and with
+consistent obligation checks. The release note is `docs/dev/news/471.fix`.
