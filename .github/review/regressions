@@ -1048,6 +1048,8 @@ git-issues/github-issue-199-substitution.dfy
 # Member-invariant dependence must reach the owner through a datatype cycle (issue 504).
 git-issues/git-issue-504-dependence.dfy
 git-issues/git-issue-504-positive.dfy
+# Formatting snapshots and pipeline test health (issue 494).
+git-issues/git-issue-494.dfy
 git-issues/git-issue-496.dfy
 git-issues/git-issue-466-stage6.dfy
 
@@ -1061,3 +1063,7 @@ git-issues/git-issue-118.dfy
 
 # Bounded stored callbacks through datatypes and constants, with raw-arrow and false controls (https://github.com/erniecohen/dafny/issues/266).
 git-issues/git-issue-266-reachability.dfy
+
+# Duplicate-replacement diagnostics use source locations (issue 451).
+comp/replaceables/resolveManyReplacement.dfy
+git-issues/git-issue-451.dfy

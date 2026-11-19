@@ -1,12 +1,9 @@
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Reflection;
 using System.Text;
 using DiffPlex.DiffBuilder;
 using DiffPlex.DiffBuilder.Model;
-using Microsoft.VisualStudio.TestPlatform.PlatformAbstractions;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -94,7 +91,7 @@ method M(heap: object)
   }
   var y := 200;
 }";
-      var tempPath = Path.GetTempFileName() + ".dfy";
+      var tempPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName() + ".dfy");
       var beforeBoogie = GetBoogie(beforeChange, tempPath);
       var afterBoogie = GetBoogie(afterChange, tempPath);
       var diff = GetDiff(beforeBoogie, afterBoogie);
@@ -129,28 +126,28 @@ method M(heap: object)
 +     havoc k#0_0;
 -         assume y#0_0 < x#0;
 +         assume k#0_0 < x#0;
--         x#1_0 := LitInt(0);
-+         a#1_0 := LitInt(0);
+-         x#1_0 := {:id ""id1""} LitInt(0);
++         a#1_0 := {:id ""id1""} LitInt(0);
 -         assume {:id ""id2""} !(exists eg$y#1: int :: eg$y#1 < x#0);
 +         assume {:id ""id2""} !(exists eg$k#1: int :: eg$k#1 < x#0);
--         y#2_0 := LitInt(0);
-+         b#2_0 := LitInt(0);
--         x#3_0 := LitInt(2);
-+         c#3_0 := LitInt(2);
--         y#3_0 := LitInt(0);
-+         d#3_0 := LitInt(0);
--         x#4_0 := LitInt(2);
-+         e#4_0 := LitInt(2);
--         y#4_0 := LitInt(0);
-+         f#4_0 := LitInt(0);
--         x#5_0 := LitInt(2);
-+         g#5_0 := LitInt(2);
--         y#5_0 := LitInt(0);
-+         h#5_0 := LitInt(0);
--         x#7_0 := x#0 + 2;
-+         i#7_0 := x#0 + 2;
--         y#7_0 := LitInt(0);
-+         j#7_0 := LitInt(0);
+-         y#2_0 := {:id ""id3""} LitInt(0);
++         b#2_0 := {:id ""id3""} LitInt(0);
+-         x#3_0 := {:id ""id4""} LitInt(2);
++         c#3_0 := {:id ""id4""} LitInt(2);
+-         y#3_0 := {:id ""id5""} LitInt(0);
++         d#3_0 := {:id ""id5""} LitInt(0);
+-         x#4_0 := {:id ""id9""} LitInt(2);
++         e#4_0 := {:id ""id9""} LitInt(2);
+-         y#4_0 := {:id ""id10""} LitInt(0);
++         f#4_0 := {:id ""id10""} LitInt(0);
+-         x#5_0 := {:id ""id12""} LitInt(2);
++         g#5_0 := {:id ""id12""} LitInt(2);
+-         y#5_0 := {:id ""id13""} LitInt(0);
++         h#5_0 := {:id ""id13""} LitInt(0);
+-         x#7_0 := {:id ""id17""} x#0 + 2;
++         i#7_0 := {:id ""id17""} x#0 + 2;
+-         y#7_0 := {:id ""id18""} LitInt(0);
++         j#7_0 := {:id ""id18""} LitInt(0);
 ";
       Assert.Equal(expectedDiff.Replace("\r\n", "\n"), diff.Replace("\r\n", "\n"));
     }
@@ -174,47 +171,35 @@ method M(heap: object)
       return result.ToString();
     }
 
-    static InterMethodVerificationStability() {
-      var testAssemblyPath = Assembly.GetAssembly(typeof(InterMethodVerificationStability)).GetAssemblyLocation();
-      var parts = testAssemblyPath.Split(Path.DirectorySeparatorChar);
-      // This way of finding the repository root is not reliable, we should instead reference the DafnyPipeline assembly and run Dafny in the same process as the unit tests.
-      var sourceIndex = Array.FindLastIndex(parts, e => e == "Source");
-      dafnyDirectory = Path.Combine(Path.GetPathRoot(testAssemblyPath)!, Path.Combine(parts.Take(sourceIndex).ToArray()));
-      Console.WriteLine("dafnyDirectory: " + dafnyDirectory);
-      Console.WriteLine("DafnyProjectFile: " + DafnyProjectFile);
-    }
-
-    private static readonly string dafnyDirectory;
-
     public InterMethodVerificationStability(ITestOutputHelper output) {
       this.output = output;
     }
 
-    private static string DafnyProjectFile => Path.Combine(dafnyDirectory, "Source", "Dafny", "Dafny.csproj");
-    private static string DefaultDafnyArgs => $"run --no-build --project \"{DafnyProjectFile}\" -- -useBaseNameForFileName -compileVerbose:0 /errorTrace:0";
-
-    string GetBoogie(string dafnyProgram, string optionalFileName = null) {
-      string fileName = optionalFileName ?? Path.GetTempFileName() + ".dfy";
+    string GetBoogie(string dafnyProgram, string fileName) {
       File.WriteAllText(fileName, dafnyProgram);
-      var processStartInfo = new ProcessStartInfo {
-        FileName = "dotnet",
-        Arguments = $"{DefaultDafnyArgs} /compile:0 /env:0 /print:- {fileName}",
-        RedirectStandardOutput = true,
-        RedirectStandardError = true,
-        UseShellExecute = false
-      };
-      using var dafnyProcess = Process.Start(processStartInfo);
-      var result = dafnyProcess.StandardOutput.ReadToEnd();
-      dafnyProcess.WaitForExit();
+      try {
+        var processStartInfo = new ProcessStartInfo {
+          FileName = "dotnet",
+          Arguments = $"\"{typeof(Microsoft.Dafny.DafnyNewCli).Assembly.Location}\" -useBaseNameForFileName -compileVerbose:0 /errorTrace:0 /compile:0 /env:0 /print:- \"{fileName}\"",
+          RedirectStandardOutput = true,
+          RedirectStandardError = true,
+          UseShellExecute = false
+        };
+        using var dafnyProcess = Process.Start(processStartInfo);
+        var result = dafnyProcess.StandardOutput.ReadToEnd();
+        dafnyProcess.WaitForExit();
 
-      if (dafnyProcess.ExitCode != 0) {
-        output.WriteLine("Arguments:", processStartInfo.Arguments);
-        output.WriteLine("Result:");
-        output.WriteLine(result);
-        output.WriteLine(dafnyProcess.StandardError.ReadToEnd());
+        if (dafnyProcess.ExitCode != 4) {
+          output.WriteLine("Arguments: {0}", processStartInfo.Arguments);
+          output.WriteLine("Result:");
+          output.WriteLine(result);
+          output.WriteLine(dafnyProcess.StandardError.ReadToEnd());
+        }
+        Assert.Equal(4, dafnyProcess.ExitCode);
+        return result;
+      } finally {
+        File.Delete(fileName);
       }
-      Assert.Equal(4, dafnyProcess.ExitCode);
-      return result;
     }
   }
 }

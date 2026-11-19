@@ -930,6 +930,8 @@ jobs:
           dotnet test --settings .github/review/ci.runsettings Source/DafnyCore.Test -c Debug \
             --filter 'FullyQualifiedName~ResolutionPipelineTests|FullyQualifiedName~PipelineProfileResolutionTests|FullyQualifiedName~Cardinality|FullyQualifiedName~NewtypeReferenceCharacteristicTests|FullyQualifiedName~NewtypeWitnessResolutionTests' \
             --logger "console;verbosity=normal"
+      - name: Pipeline unit tests with Debug contract assertions
+        run: dotnet test --settings .github/review/ci.runsettings Source/DafnyPipeline.Test -c Debug --logger "console;verbosity=normal"
       - name: Run the tests named in .github/review/regressions
         continue-on-error: ${{ github.event_name == 'workflow_dispatch' && inputs.review_followup_probe && startsWith(github.ref, 'refs/heads/scratch/') }}
         env:
