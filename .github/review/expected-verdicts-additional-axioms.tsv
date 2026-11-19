@@ -1379,7 +1379,9 @@ git-issues/github-issue-492.dfy	0	0 verified, 0 errors
 git-issues/github-issue-5029.dfy	0	3 verified, 0 errors	
 git-issues/github-issue-5814.dfy	0	3 verified, 0 errors	
 git-issues/github-issue-88-89-interactions.dfy	4	5 verified, 3 errors	32,51,58
+git-issues/github-issue-88-inherited-bounds.dfy	4	9 verified, 1 error	27
 git-issues/github-issue-88-modular-termination.dfy	4	20 verified, 6 errors	45,77,93,124,175,209
+git-issues/github-issue-88-runtime.dfy	0	4 verified, 0 errors	
 git-issues/github-issue-88-value-types.dfy	4	20 verified, 9 errors	68,76,85,106,120,139,184,200,227
 git-issues/github-issue-88.dfy	4	46 verified, 17 errors	51,83,113,121,122,139,140,184,190,199,234,245,292,332,352,373,410
 git-issues/github-issue-89.dfy	4	60 verified, 20 errors	50,64,65,98,100,101,102,103,115,133,134,149,171,188,189,193,215,224,232,242
