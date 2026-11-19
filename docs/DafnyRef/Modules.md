@@ -1147,13 +1147,18 @@ that a later stage would have to reject:
 * a member that replaces another module, or replacement of a member;
 * imports of the members of one group that name their targets through each
   other (such as `import X = B.Y` in `A` beside `import Y = A.X` in `B`);
-* a group in a library: a module of a group must be among the files being
-  verified;
-* compiling a program that has a group: `dafny build`, `dafny run`,
-  `dafny translate` and a library build stop with an error after verification.
+* a group supplied as unverified library source rather than a `.doo` archive;
+* executable compilation of a program that has a group: `dafny build`
+  (except `--target lib`), `dafny run` and `dafny translate` stop with an error
+  after verification.
 
 A `.doo` library built with `--recursive-modules` requires its client to enable
-the option too; one built without it records nothing.
+the option too; one built without it records nothing. A group is retained as a
+whole in one archive, with an inventory bound to the retained source. A client
+cannot supply missing members, join an archive's group or split it between
+archives. The client resolves the retained declarations again, including the
+group's invariant extension conditions and termination call graph. The inventory
+uses the ordinary `.doo` trust model; it is not a signed proof certificate.
 
 ## 4.8. Name Resolution {#sec-name-resolution}
 
