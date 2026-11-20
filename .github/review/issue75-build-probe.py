@@ -9,6 +9,10 @@ out = Path("issue75-probe")
 out.mkdir(exist_ok=True)
 records = []
 def run(name, command, timeout=1800):
+    if command[:2] in (["dotnet", "build"], ["dotnet", "test"]):
+        command = command[:2] + ["-p:NuGetAudit=false"] + command[2:]
+        if command[1] == "test":
+            command += ["--settings", str(Path(".github/review/ci.runsettings").resolve())]
     try:
         result = subprocess.run(command, text=True, capture_output=True, timeout=timeout)
         status, text = result.returncode, result.stdout + result.stderr

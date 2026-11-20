@@ -1,0 +1,1 @@
+Adopt Boogie 3.5.5-review.a38b89f9. Opt into preserving shared Boolean literals during monomorphization with `--boogie "/typeEncoding:m /monomorphicSharedLiterals:1"`, avoiding redundant definite-assignment contexts at joins. The option defaults to 0, adds no facts, and can change proof costs in either direction. Dafny's default arguments encoding is unchanged.

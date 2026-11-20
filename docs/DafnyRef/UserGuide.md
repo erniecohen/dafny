@@ -371,6 +371,17 @@ Various options control the verification process, in addition to all those descr
   `--standard-libraries` cannot pass them yet, because the library refuses
   `--boogie` options other than its own.
 
+- `--boogie "/typeEncoding:m /monomorphicSharedLiterals:1"` opts into preserving
+  Boogie's shared Boolean constants during monomorphization
+  ([#281](https://github.com/erniecohen/dafny/issues/281)). This lets joins recognize
+  equal definite-assignment tracker values and avoids redundant proof contexts.
+  The policy defaults to 0; it adds no axiom or assumption, but proof costs can
+  move in either direction. The arguments encoding (Dafny's default) and the
+  predicates encoding ignore this policy. Use `/monomorphicSharedLiterals:0` to
+  select the existing cloning behavior explicitly. As with other checked
+  `--boogie` arguments, a precompiled library must have matching build options;
+  use library sources when comparing different type encodings.
+
 - What is verified
    - `--verify-included-files` (when enabled, all included files are verified, except library files, otherwise just those files on the command-line)
    - `--relax-definite-assignment`

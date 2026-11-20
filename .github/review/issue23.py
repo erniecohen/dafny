@@ -52,11 +52,11 @@ if scope.startswith('suite'):
     mod = load('lit')
     mod.plan(str(LIT), str(OUT / 'plan.tsv'))
     mod.run(str(OUT / 'plan.tsv'), str(LIT), str(wrapper), z3, str(OUT / 'verdicts.tsv'),
-            shard=scope[-1] + '/4', jobs=4, measurements=str(OUT / 'measurements'))
+            shard=scope[-1] + '/4', jobs=2, measurements=str(OUT / 'measurements'))
 elif scope == 'std':
     mod = load('std')
     mod.run(str(ROOT / 'Source/DafnyStandardLibraries'), str(wrapper), z3,
-            str(OUT / 'verdicts.tsv'), cores=4,
+            str(OUT / 'verdicts.tsv'), cores=2,
             boogie='/deterministicLiteralHashes:1 /restartProver', measurements=str(OUT / 'measurements'))
 elif scope == 'focused':
     binary = ROOT / 'out' / variant / 'Dafny'
