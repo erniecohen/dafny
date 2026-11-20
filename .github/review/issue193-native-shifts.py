@@ -146,7 +146,7 @@ def main():
         common += ['--additional-axioms']
     records = []
 
-    def verify(name, path, extra=(), expected_lines=(), mutation=False, guard=False, limit=200000):
+    def verify(name, path, extra=(), expected_lines=(), mutation=False, guard=False, wellformedness=False, limit=200000):
         log = out / (name + '.csv')
         result = subprocess.run(exe + ['verify', str(path), *common, '--resource-limit', str(limit),
                                      '--log-format', 'csv;LogFileName=' + str(log), *extra],
@@ -158,6 +158,8 @@ def main():
             assert result.returncode in (0, 4), (name, result.returncode, text)
             actual = {int(i) for i in re.findall(r'\((\d+),\d+\): Error:', text)}
             assert actual < set(expected_lines), (name, actual, expected_lines, text)
+        elif wellformedness:
+            assert result.returncode == 4 and 'Error:' in text, (name, result.returncode, text)
         elif mutation:
             assert result.returncode == 4 and 'could not be proved' in text, (name, result.returncode, text)
         else:
@@ -167,8 +169,13 @@ def main():
         with log.open(encoding='utf-8-sig') as stream:
             rows = list(csv.DictReader(stream))
         assert rows and all(r['TestResult.Outcome'] in ('Passed', 'Failed') for r in rows), (name, rows)
+        if wellformedness:
+            assert any('well-formedness' in r['TestResult.DisplayName'] and
+                       r['TestResult.Outcome'] == 'Failed' for r in rows), (name, rows)
         record = dict(name=name, exit=result.returncode, scopes=len(rows),
                       failed=sum(r['TestResult.Outcome'] == 'Failed' for r in rows))
+        if wellformedness:
+            record['contract_wellformedness_failed'] = True
         if guard:
             record['lost_rejections'] = sorted(set(expected_lines) - actual)
         records.append(record)
@@ -219,7 +226,13 @@ def main():
                 mutated = mutated.replace('include "IntegerBitwiseNative.dfy"',
                                           'include "' + (LIBRARY.parent / 'IntegerBitwiseNative.dfy').as_posix() + '"')
                 path.write_text(mutated)
-                if contract[1] == 'requires':
+                if module.endswith('Arithmetic') and name == 'RightArithmetic' and j == 0:
+                    # This guard defines n-1 in the later premise. Its removal
+                    # must fail the contract check, independently of callers.
+                    verify('mutation-' + site, path,
+                           ['--type-system-refresh:true', '--filter-symbol', f'{module}.{name}.'],
+                           wellformedness=True, limit=2000000)
+                elif contract[1] == 'requires':
                     negative = fixtures()[2]
                     negative[0] = f'include "{path.as_posix()}"'
                     caller = out / 'mutation-callers.dfy'
@@ -229,7 +242,7 @@ def main():
                     caller.unlink()
                 else:
                     verify('mutation-' + site, path,
-                           ['--type-system-refresh:true', '--filter-symbol', f'{module}.{name}'],
+                           ['--type-system-refresh:true', '--filter-symbol', f'{module}.{name}.'],
                            mutation=True, limit=2000000)
         path.unlink(missing_ok=True)
         assert selected, 'No mutation selected'
