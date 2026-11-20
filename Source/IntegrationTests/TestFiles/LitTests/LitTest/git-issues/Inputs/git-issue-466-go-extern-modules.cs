@@ -16,7 +16,7 @@ namespace Foreign {
     public static BigInteger Triple(BigInteger x) { return 3 * x; }
   }
 }
-namespace OtherForeign {
+namespace OtherAlias {
   public partial class __default {
     public static BigInteger Get() { return 19; }
   }

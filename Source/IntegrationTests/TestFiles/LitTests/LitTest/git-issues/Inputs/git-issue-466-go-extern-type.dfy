@@ -50,7 +50,7 @@ module B {
     A.Test();
   }
 }
-module {:extern "OtherForeign"} C {
+module {:extern "OtherAlias", "OtherForeign"} C {
   import A
   method {:extern} Get() returns (y: int)
 }
