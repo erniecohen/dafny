@@ -60,7 +60,8 @@ def fixtures():
                       f' assert ({expr}) as int!=IntegerBitwiseModel.{raw}({w},{ints}); // ERROR', '}']
         for name, args in [('RoundTrip', '-1'), ('RoundTrip', str(2**w)),
                            (f'NoOverflow{w}', f'{2**w-1},1'), (f'Next{w}', str(2**w-1)),
-                           ('Successor', '5,5')]:
+                           ('Successor', '5,5'),
+                           ('Successor', f'{2**w-1},{2**w}')]:
             negative += [f'lemma Negative{w}_{len(negative)}() {{', f' B{w}.{name}({args}); // ERROR', '}']
         negative += [f'lemma BadCast{w}() {{ var x:= {2**w} as bv{w}; // ERROR', '}']
         calls = {f'Add{w}': '5,3', f'Widen{w}': '5', f'NoOverflow{w}': '5,3',
@@ -77,7 +78,10 @@ def fixtures():
                       f' B{w}.Power();', *([' IntegerBitwiseModel.unfoldAnd(0,0,0);'] if name == 'AndRecurrence' else []), f' B{w}.{name}({calls[name]});', ' assert false; // ERROR', '}']
         if w == 64:
             negative += ['lemma BadPrefix() { B64.Power(); B64.AndPrefix64(0,1,0); // ERROR', '}',
-                         'lemma BadRecurrence() { B64.AndRecurrence(0,1,1,0,1); // ERROR', '}']
+                         'lemma BadPrefixY() { B64.Power(); B64.AndPrefix64(0,0,1); // ERROR', '}',
+                         'lemma BadRecurrence() { B64.AndRecurrence(0,1,1,0,1); // ERROR', '}',
+                         'lemma BadRecurrenceHalf() { B64.AndRecurrence(1,1,1,1,3); // ERROR', '}',
+                         'lemma BadRecurrenceResult() { B64.AndRecurrence(1,1,1,0,0); // ERROR', '}']
     return lines, false, negative
 
 
@@ -153,6 +157,7 @@ def main():
                    ['--type-system-refresh:true', '--filter-symbol', f'IntegerBitwiseNative{width}.{name}'],
                    mutation=True, limit=2000000)
         path.unlink()
+    assert records, 'No verification or mutation selected'
     (out / 'summary.json').write_text(json.dumps(records, indent=2) + '\n')
     print('Native bridge checks passed')
 
