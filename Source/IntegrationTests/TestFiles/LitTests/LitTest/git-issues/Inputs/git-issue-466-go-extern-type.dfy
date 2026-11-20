@@ -3,6 +3,8 @@ module {:extern "Foreign", "Foreign"} A {
   method {:extern} Plain(x: int) returns (y: int)
   method {:extern "Renamed"} Named(x: int) returns (y: int)
   function {:extern "Foreign.Tools", "Twice"} Twice(x: int, ghost ignored: int): int
+  function {:extern "Foreign.Tools", "Identity"} Identity<T(0)>(x: T): T
+  function {:extern "Foreign.Tools", "Default"} Default<T(0)>(): T
   method {:extern "Foreign.Tools", "Triple"} Triple(x: int) returns (y: int)
   class {:extern "Actual"} Native {
     static method {:extern} Make() returns (v: Native)
@@ -34,7 +36,8 @@ module B {
     var triple := A.Triple(m);
     var other := C.Get();
     print n, " ", m, " ", x.Value(), " ", alias.Value(), " ", A.Local.F(), " ",
-      A.Twice(triple, 99), " ", other, " ", KeywordNative.Five(), "\n";
+      A.Twice(triple, 99), " ", other, " ", KeywordNative.Five(), " ",
+      A.Identity<int>(42) + 1, " ", A.Default<int>() + 2, "\n";
     A.Test();
   }
 }

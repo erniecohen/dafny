@@ -129,7 +129,8 @@ archive is rebuilt from renamed copies of those sources, to check that relocatio
 and the archive round trip preserve the package and declaration identities.
 `git-issue-466-go-extern.dfy` compares extern linkage with C#: module-, type-
 and member-level extern names, partial classes, sibling types in foreign method
-signatures, qualified functions with erased ghost arguments, multiple foreign
+signatures, qualified generic functions with result coercions, type descriptors and erased
+ghost arguments, built-in type names, multiple foreign
 files, calls within and outside a group, complete `.doo` inputs and separately
 translated producer/client packages. It repeats the foreign-module comparison
 with additional axioms and scheduled resolution.
