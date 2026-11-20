@@ -27,6 +27,10 @@ module B {
     static method {:extern} Make() returns (v: Alias)
     function {:extern} Value(): int
   }
+  class {:extern "map", "KeywordActual"} MapAlias {
+    static method {:extern} Make() returns (v: MapAlias)
+    function {:extern} Value(): int
+  }
   newtype Wrapped = int {
     function {:extern "Foreign.Tools", "AddTen"} AddTen(): int
   }
@@ -39,9 +43,10 @@ module B {
     var triple := A.Triple(m);
     var other := C.Get();
     var wrapped: Wrapped := 5;
+    var keyword := MapAlias.Make();
     print n, " ", m, " ", x.Value(), " ", alias.Value(), " ", A.Local.F(), " ",
       A.Twice(triple, 99), " ", other, " ", KeywordNative.Five(), " ",
-      A.Identity<int>(42) + 1, " ", A.Default<int>() + 2, " ", wrapped.AddTen(), "\n";
+      A.Identity<int>(42) + 1, " ", A.Default<int>() + 2, " ", wrapped.AddTen(), " ", keyword.Value(), "\n";
     A.Test();
   }
 }

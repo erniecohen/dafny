@@ -28,6 +28,10 @@ namespace NativeZero {
 }
 // C# keeps the declaring namespace for a class's two-argument extern form.
 namespace B {
+  public class KeywordActual {
+    public static KeywordActual Make() { return new KeywordActual(); }
+    public BigInteger Value() { return 29; }
+  }
   public class Actual : Foreign.Actual {
     public new static Actual Make() { return new Actual(); }
   }
