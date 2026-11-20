@@ -21,7 +21,10 @@ using Token = Microsoft.Dafny.Token;
 
 namespace DafnyDriver.Commands;
 
-public record CanVerifyResult(ICanVerify CanVerify, IReadOnlyList<VerificationTaskResult> Results) {
+public record CanVerifyResult(ICanVerify CanVerify, IReadOnlyList<VerificationWorkItemResult> WorkResults) {
+  // Compatibility projection for native loggers and dependency consumers, still awaiting migration.
+  public IReadOnlyList<VerificationTaskResult> Results => WorkResults
+    .Select(part => BoogieVerificationReporting.GetTaskResult(part.Task, part.Result)).ToList();
   public ProofDependencyManager? ProofDependencies { get; init; }
 }
 
@@ -370,7 +373,7 @@ public class CliCompilation {
         }
 
         yield return new CanVerifyResult(canVerify,
-          results.CompletedParts.Select(c => BoogieVerificationReporting.GetTaskResult(c.Task, c.Result.Result)).ToList()) {
+          results.CompletedParts.Select(c => new VerificationWorkItemResult(c.Task, c.Result.Result)).ToList()) {
           ProofDependencies = results.ProofDependencies
         };
 
@@ -532,7 +535,7 @@ public class CliCompilation {
           }
 
           yield return new CanVerifyResult(canVerify,
-            results.CompletedParts.Select(c => BoogieVerificationReporting.GetTaskResult(c.Task, c.Result.Result)).ToList()) {
+            results.CompletedParts.Select(c => new VerificationWorkItemResult(c.Task, c.Result.Result)).ToList()) {
             ProofDependencies = results.ProofDependencies
           };
 

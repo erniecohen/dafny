@@ -22,6 +22,135 @@ public class VerificationBatchCollection { }
 
 [Collection("Verification batch")]
 public class VerificationBatchTests {
+  [Theory]
+  [InlineData(VerificationOutcome.Verified, ExitValue.SUCCESS, "1 verified, 0 errors", false)]
+  [InlineData(VerificationOutcome.Failed, ExitValue.VERIFICATION_ERROR, "0 verified, 1 error", false)]
+  [InlineData(VerificationOutcome.Inconclusive, ExitValue.VERIFICATION_ERROR, "1 inconclusive", false)]
+  [InlineData(VerificationOutcome.Timeout, ExitValue.VERIFICATION_ERROR, "1 time out", false)]
+  [InlineData(VerificationOutcome.ResourceExhaustion, ExitValue.VERIFICATION_ERROR, "1 out of resource", false)]
+  [InlineData(VerificationOutcome.OutOfMemory, ExitValue.VERIFICATION_ERROR, "1 out of memory", false)]
+  [InlineData(VerificationOutcome.Cancelled, ExitValue.VERIFICATION_ERROR, "1 solver exceptions", false)]
+  [InlineData(VerificationOutcome.Unsupported, ExitValue.VERIFICATION_ERROR, "1 solver exceptions", false)]
+  [InlineData(VerificationOutcome.ToolError, ExitValue.VERIFICATION_ERROR, "1 solver exceptions", false)]
+  [InlineData(VerificationOutcome.Bounded, ExitValue.VERIFICATION_ERROR, "1 solver exceptions", false)]
+  [InlineData(VerificationOutcome.Bounded, ExitValue.SUCCESS, "1 verified, 0 errors", true)]
+  public async Task NeutralCliSummaryAndDiagnosticsNeedNoNativeEvidence(
+    VerificationOutcome outcome, ExitValue exit, string summaryText, bool legacyPolicy) {
+    var directory = Path.Combine(Path.GetTempPath(), "neutral-reporting-" + Guid.NewGuid());
+    Directory.CreateDirectory(directory);
+    var source = Path.Combine(directory, "input.dfy");
+    await File.WriteAllTextAsync(source, "lemma Good() { assert true; }\n");
+    try {
+      var output = new StringWriter();
+      var options = OptionsWithWriter(output, true, source);
+      options.Set(VerifyCommand.PerformanceStatisticsOption, 1);
+      var cli = CliCompilation.Create(options, new NeutralResultVerifier(outcome, payload: legacyPolicy ? new LegacyDiagnosticPolicy() : null));
+      using var compilation = cli.Compilation;
+      var runs = new List<VerificationRun>();
+      using var events = compilation.Updates.Subscribe(update => {
+        if (update is VerificationRunStarted started) { runs.Add(started.Run); }
+      });
+      cli.Start();
+      using var results = new Subject<CanVerifyResult>();
+      VerifyCommand.ReportVerificationDiagnostics(cli, results);
+      var summary = VerifyCommand.ReportVerificationSummary(cli, results);
+      await foreach (var result in cli.VerifyAllLazily()) {
+        var part = Assert.Single(result.WorkResults);
+        Assert.Equal(legacyPolicy, part.Result.Payload != null);
+        Assert.Null(part.Result.Metrics);
+        Assert.Equal(outcome, part.Result.Outcome);
+        Assert.Throws<InvalidOperationException>(() => result.Results);
+        results.OnNext(result);
+      }
+      results.OnCompleted();
+      await summary;
+      Assert.Equal(exit, await cli.GetAndReportExitValue());
+      Assert.Contains(summaryText, output.ToString());
+      Assert.Contains("Proof resource counts are unavailable", output.ToString());
+      Assert.DoesNotContain("Total resources used is 0", output.ToString());
+      var run = Assert.Single(runs);
+      await run.AuditCompletion.WaitAsync(TimeSpan.FromSeconds(5));
+      Assert.True(run.IsClosed);
+      Assert.Equal(outcome == VerificationOutcome.Verified, run.IsVerified);
+    } finally {
+      Directory.Delete(directory, true);
+    }
+  }
+
+  [Theory]
+  [InlineData(false, VerificationOutcome.Failed)]
+  [InlineData(true, VerificationOutcome.Failed)]
+  [InlineData(false, VerificationOutcome.Bounded)]
+  [InlineData(true, VerificationOutcome.Bounded)]
+  public async Task NeutralCliDistinguishesMissingAndAvailableDetails(bool available, VerificationOutcome outcome) {
+    var directory = Path.Combine(Path.GetTempPath(), "neutral-details-" + Guid.NewGuid());
+    Directory.CreateDirectory(directory);
+    var source = Path.Combine(directory, "input.dfy");
+    await File.WriteAllTextAsync(source, "lemma Good() { assert true; }\n");
+    try {
+      var output = new StringWriter();
+      var options = OptionsWithWriter(output, true, source);
+      options.Set(VerifyCommand.PerformanceStatisticsOption, 1);
+      var cli = CliCompilation.Create(options, new NeutralResultVerifier(outcome,
+        available ? new VerificationMetrics(654) : null, available ? new AssertionCounts() : null));
+      using var compilation = cli.Compilation;
+      cli.Start();
+      using var results = new Subject<CanVerifyResult>();
+      VerifyCommand.ReportVerificationDiagnostics(cli, results);
+      var summary = VerifyCommand.ReportVerificationSummary(cli, results);
+      await foreach (var result in cli.VerifyAllLazily(filterPosition: ":1")) { results.OnNext(result); }
+      results.OnCompleted();
+      await summary;
+      Assert.Equal(ExitValue.VERIFICATION_ERROR, await cli.GetAndReportExitValue());
+      if (available) {
+        if (outcome == VerificationOutcome.Failed) {
+          Assert.Contains("2 assertions verified, 1 error", output.ToString());
+        } else {
+          Assert.Contains("0 assertions verified, 0 errors, 1 solver exceptions", output.ToString());
+        }
+        Assert.Contains("Total resources used is 654", output.ToString());
+        Assert.Contains("Max resources used by VC is 654", output.ToString());
+        Assert.DoesNotContain("unavailable", output.ToString());
+      } else {
+        Assert.Contains("assertion counts unavailable", output.ToString());
+        Assert.Contains("Proof resource counts are unavailable", output.ToString());
+        Assert.DoesNotContain("0 assertions verified", output.ToString());
+      }
+    } finally {
+      Directory.Delete(directory, true);
+    }
+  }
+
+  private sealed class AssertionCounts : IVerificationPayload, IVerificationAssertionStatistics {
+    public int AssertionCount => 3;
+    public int FailedAssertionCount => 1;
+  }
+
+  private sealed class LegacyDiagnosticPolicy : IVerificationPayload, IVerificationDiagnosticReporting {
+    public bool UsesLegacyDiagnosticPolicy => true;
+    public void ReportDiagnostics(IVerificationWork work, DafnyOptions options, string name, ErrorReporter reporter) { }
+  }
+
+  private sealed class NeutralResultVerifier(VerificationOutcome outcome, VerificationMetrics? metrics = null,
+    IVerificationPayload? payload = null) : IProgramVerifier {
+    public Task<ModuleVerificationPreparation> GetVerificationTasksAsync(VerificationPreparationRequest request,
+      ResolutionResult resolution, ModuleDefinition moduleDefinition, CancellationToken cancellationToken) {
+      var owner = resolution.CanVerifies!.Values.SelectMany(tree => tree.Values).Single(c => c.ContainingModule == moduleDefinition);
+      var work = new NeutralWork(new(new(owner.FullDafnyName, 0), owner.Origin, owner.Origin) { CanVerify = owner }, new(outcome, Metrics: metrics, Payload: payload));
+      return Task.FromResult(new ModuleVerificationPreparation(VerificationPreparation.Ready([work]), new()));
+    }
+
+    private sealed class NeutralWork(VerificationSource source, VerificationWorkResult result) : IVerificationWork {
+      public VerificationSource Source => source;
+      public VerificationWorkStatus CacheStatus => new VerificationWorkStale();
+      public bool IsIdle => true;
+      public IVerificationWork FromSeed(int seed) => this;
+      public IObservable<VerificationWorkStatus>? TryRun() => Observable.Return<VerificationWorkStatus>(
+        new VerificationWorkCompleted(result));
+      public void Cancel() { }
+    }
+  }
+
   [Fact]
   public async Task LateErrorsBelongToTheirOriginalRequest() {
     var directory = Path.Combine(Path.GetTempPath(), "verification-request-" + Guid.NewGuid());
@@ -374,8 +503,10 @@ public class VerificationBatchTests {
     }
   }
 
-  private static DafnyOptions Options(bool refresh, params string[] files) {
-    var options = new DafnyOptions(TextReader.Null, TextWriter.Null, TextWriter.Null);
+  private static DafnyOptions Options(bool refresh, params string[] files) => OptionsWithWriter(TextWriter.Null, refresh, files);
+
+  private static DafnyOptions OptionsWithWriter(TextWriter output, bool refresh, params string[] files) {
+    var options = new DafnyOptions(TextReader.Null, output, TextWriter.Null);
     options.ApplyDefaultOptionsWithoutSettingsDefault();
     // API construction does not populate the CLI option defaults.
     options.Set(CommonOptionBag.UnicodeCharacters, true);

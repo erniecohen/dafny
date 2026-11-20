@@ -223,6 +223,36 @@ public class BoogieVerificationBackendTests {
     Assert.Throws<InvalidOperationException>(() => BoogieVerificationReporting.GetResult(new(VerificationOutcome.Unsupported)));
   }
 
+  [Theory]
+  [InlineData(SolverOutcome.Valid)]
+  [InlineData(SolverOutcome.Invalid)]
+  [InlineData(SolverOutcome.Undetermined)]
+  [InlineData(SolverOutcome.TimeOut)]
+  [InlineData(SolverOutcome.OutOfResource)]
+  [InlineData(SolverOutcome.OutOfMemory)]
+  [InlineData(SolverOutcome.Bounded)]
+  public void NativeDiagnosticCapabilityPreservesOriginalPolicy(SolverOutcome outcome) {
+    var options = new DafnyOptions(TextReader.Null, TextWriter.Null, TextWriter.Null);
+    var task = new NativeTask();
+    var nativeResult = new VerificationRunResult(0, 0, DateTime.UnixEpoch, outcome,
+      TimeSpan.FromSeconds(7), 5, [], [], [], 99, null, []);
+    var result = Assert.IsType<VerificationWorkCompleted>(BoogieVerificationWork.ConvertStatus(new Completed(nativeResult))).Result;
+    var direct = new BatchErrorReporter(options);
+    var adapted = new BatchErrorReporter(options);
+    Compilation.ReportDiagnosticsInResult(options, "scope", BoogieGenerator.ToDafnyToken(task.Token),
+      7, nativeResult, direct);
+    new VerificationWorkItemResult(new BoogieVerificationWork(task), result).ReportDiagnostics(options, "scope", adapted);
+    Assert.Equal(direct.AllMessages.Select(d => (d.Source, d.ErrorId, d.Message, d.Level, Range: d.Range.ToString())),
+      adapted.AllMessages.Select(d => (d.Source, d.ErrorId, d.Message, d.Level, Range: d.Range.ToString())));
+    Assert.True(Assert.IsAssignableFrom<IVerificationDiagnosticReporting>(result.Payload).UsesLegacyDiagnosticPolicy);
+    var counts = Assert.IsAssignableFrom<IVerificationAssertionStatistics>(result.Payload);
+    Assert.Equal(nativeResult.Asserts.Count, counts.AssertionCount);
+    Assert.Equal(nativeResult.CounterExamples.Count, counts.FailedAssertionCount);
+    Assert.Throws<InvalidOperationException>(() =>
+      new VerificationWorkItemResult(new ForeignWork(), result).ReportDiagnostics(options, "scope", adapted));
+    Assert.Equal(outcome == SolverOutcome.Valid, result.IsVerified);
+  }
+
   private class ForeignWork : IVerificationWork {
     public VerificationSource Source => new(new("foreign", 0), Microsoft.Dafny.Token.NoToken, Microsoft.Dafny.Token.NoToken);
     public VerificationWorkStatus CacheStatus => new VerificationWorkStale();

@@ -1,0 +1,1 @@
+Carry backend-neutral work/result pairs into CLI aggregation, with optional assertion counts and lazy diagnostic reporting. Native summary counts and diagnostic policy remain unchanged; backend results without diagnostics or metrics need no synthetic native evidence. Native log, dependency, model and gutter migration remains separate.

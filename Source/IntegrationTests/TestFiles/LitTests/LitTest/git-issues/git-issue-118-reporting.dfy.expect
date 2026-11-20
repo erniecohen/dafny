@@ -1,0 +1,3 @@
+git-issue-118-reporting.dfy(18,4): Error: assertion might not hold
+
+Dafny program verifier finished with 2 verified, 1 error

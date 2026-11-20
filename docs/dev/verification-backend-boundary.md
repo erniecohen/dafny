@@ -1,4 +1,4 @@
-# Verification backend boundary: P1 preparation, scheduling and result streams
+# Verification backend boundary: P1 preparation, scheduling and reporting
 
 These are the preparation and scheduling slices of [P1](https://github.com/erniecohen/dafny/issues/118).
 They introduce work, result and preparation types, the native Boogie adapter,
@@ -147,8 +147,41 @@ translation completeness. Native publication, CLI result delivery and reporting
 retain their existing timing; CLI aggregate results do not yet await this separate
 audit. Propagating audited success through reporting consumers, IDE handling of
 superseded requests and transport-level response correlation remain open.
-CLI aggregate outcomes still use genuine native evidence, including its historical
-treatment of `Bounded`; the neutral ledger never labels `Bounded` as verified.
+Native CLI reporting retains its historical treatment of `Bounded`; the neutral
+ledger never labels `Bounded` as verified.
+
+## Neutral CLI aggregation and optional diagnostics
+
+`CanVerifyResult.WorkResults` carries the original neutral work/result pairs at the
+existing publication point, including the module-window path. CLI summaries consume
+neutral outcomes and optional resource metrics. `IVerificationAssertionStatistics`
+supplies assertion counts when available; missing counts or resources are reported
+as unavailable when the corresponding detail is requested. The native adapter supplies
+its original assertion and counterexample counts, preserving native summary arithmetic
+and the historical bounded-result summary. The neutral ledger still never treats
+`Bounded` as an unbounded proof.
+
+`VerificationWorkItemResult.ReportDiagnostics` forwards materialized diagnostics by
+identity or delegates lazy materialization through `IVerificationDiagnosticReporting`.
+The Boogie result implements that optional capability and retains the existing native
+name, token, runtime limit, model extraction and diagnostic policy. An attempt to pair
+native diagnostic evidence with foreign work fails explicitly. A non-verified result
+with missing, empty or warning-only diagnostics receives an error at its work origin,
+even when a lazy reporter emits no error or another part already reported an error.
+The native adapter explicitly retains its legacy diagnostic policy through the
+reporting-only `UsesLegacyDiagnosticPolicy` capability; optional reporters default to
+false. That policy also identifies the native bounded-result summary. Assertion counts
+alone cannot confer that display policy, and neither capability changes proof success. Display labels do
+not determine this check. No backend or new command-line option is enabled.
+
+This is a delivery/reporting milestone, not audited CLI acceptance. It deliberately
+retains publication timing: CLI aggregates do not wait for `AuditCompletion`, so a native
+result may still be reported before a late closure error. Propagating that audit through
+all consumers remains a follow-up. `CanVerifyResult.Results` is a temporary native
+projection for loggers, dependency consumers and complexity reporting; it rejects foreign
+evidence. Batch-progress descriptions, IDE model/gutter/dependency reporting and legacy
+entry points retain their native paths. This change does not claim that a foreign backend
+can use those capabilities or the complete CLI reporting workflow yet.
 
 ## Compatibility and controls
 
@@ -204,6 +237,17 @@ Execution receipts are evidence for a particular run, not an unbounded
 equivalence proof. Full upstream harness and IDE regression results are separate
 acceptance gates; this runner does not replace them.
 
+The CLI reporting controls also run a recording verifier without native work or
+result payloads. They cover every defined outcome, absent and available metrics/counts,
+filtered assertion summaries, lazy diagnostics that emit no errors, and bounded display
+compatibility without changing the ledger's proof outcome. The registered reporting lit
+control checks native assertion counts, a failing assertion, module windows and translation
+caching. The serial reporting counterfactuals exercise these controls:
+
+```sh
+python3 .github/review/verification-reporting-mutations.py --work work/reporting-mutations
+```
+
 ## Remaining P1 work
 
 `IProgramVerifier` accepts a `VerificationPreparationRequest` and returns explicit
@@ -218,14 +262,15 @@ lazily at the same scheduling point as before. Profiling preserves native outcom
 names and metric values; absent foreign metrics remain absent. Verifier mocks use
 the same interface and forward optional native reporting evidence when decorating work.
 
-This is still a partial P1 migration. Native diagnostic/model/dependency interpretation,
-CLI result aggregation/loggers and IDE gutters cross `BoogieVerificationReporting`
+This is still a partial P1 migration. Native model/dependency interpretation, CLI loggers and IDE gutters cross
+`BoogieVerificationReporting`
 to the original native objects. Foreign evidence is rejected explicitly; no split,
 implementation, counterexample or proof result is fabricated. This bridge is not
 an implementation of alternative backend reporting. The remaining milestones are:
 
-- Replace the reporting bridge with optional diagnostic, model, dependency, logger
-  and gutter capabilities, including neutral CLI aggregate results.
+- Finish optional model, dependency, logger, batch-progress and gutter capabilities.
+  CLI aggregate outcomes and diagnostics now have a neutral path; complete foreign
+  reporting still needs the remaining capability adapters.
 - Finish non-success accounting through reporting consumers, including failed
   preparation, unsupported input, cancellation and worker errors.
   The default scheduling entry point now rejects malformed completion before publishing

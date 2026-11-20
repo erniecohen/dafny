@@ -56,8 +56,17 @@ public sealed class BoogieVerificationBackend(ExecutionEngine engine, TaskCacheS
 
 /// <summary>Native evidence retains its object identity, including models and assertion batches.</summary>
 public sealed record BoogieVerificationResult(VerificationRunResult NativeResult)
-  : IVerificationPayload, IVerificationOutcomeLabel {
+  : IVerificationPayload, IVerificationOutcomeLabel, IVerificationAssertionStatistics, IVerificationDiagnosticReporting {
   public string OutcomeLabel => NativeResult.Outcome.ToString();
+  public bool UsesLegacyDiagnosticPolicy => true;
+  public int AssertionCount => NativeResult.Asserts.Count;
+  public int FailedAssertionCount => NativeResult.CounterExamples.Count;
+
+  public void ReportDiagnostics(IVerificationWork work, DafnyOptions options, string name, ErrorReporter reporter) {
+    var task = BoogieVerificationReporting.GetTask(work);
+    Compilation.ReportDiagnosticsInResult(options, name, BoogieGenerator.ToDafnyToken(task.Token),
+      (uint)NativeResult.RunTime.TotalSeconds, NativeResult, reporter);
+  }
 }
 
 public record AssertionBatchResult(Implementation Implementation, VerificationRunResult Result);

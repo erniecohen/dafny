@@ -187,50 +187,63 @@ public static class VerifyCommand {
     CliCompilation cliCompilation,
     IObservable<CanVerifyResult> verificationResults) {
     var statistics = new VerificationStatistics();
+    int missingResources = 0;
+    int missingAssertionCounts = 0;
 
     verificationResults.Subscribe(result => {
-      foreach (var taskResult in result.Results) {
+      foreach (var taskResult in result.WorkResults) {
         var runResult = taskResult.Result;
-        Interlocked.Add(ref statistics.TotalResourcesUsed, runResult.ResourceCount);
-        lock (statistics) {
-          statistics.MaxVcResourcesUsed = Math.Max(statistics.MaxVcResourcesUsed, runResult.ResourceCount);
+        if (runResult.Metrics?.ResourceCount is { } resources) {
+          Interlocked.Add(ref statistics.TotalResourcesUsed, (int)resources);
+          lock (statistics) {
+            statistics.MaxVcResourcesUsed = Math.Max(statistics.MaxVcResourcesUsed, (int)resources);
+          }
+        } else {
+          Interlocked.Exchange(ref missingResources, 1);
         }
-
+        var counts = runResult.Payload as IVerificationAssertionStatistics;
+        if (counts == null) { Interlocked.Exchange(ref missingAssertionCounts, 1); }
         switch (runResult.Outcome) {
-          case SolverOutcome.Valid:
-          case SolverOutcome.Bounded:
+          case VerificationOutcome.Verified:
+          case VerificationOutcome.Bounded when runResult.Payload is
+              IVerificationDiagnosticReporting { UsesLegacyDiagnosticPolicy: true }:
+            // Preserve the native CLI's historical bounded summary without conferring proof success.
             Interlocked.Increment(ref statistics.VerifiedSymbols);
-            Interlocked.Add(ref statistics.VerifiedAssertions, runResult.Asserts.Count);
+            if (counts != null) { Interlocked.Add(ref statistics.VerifiedAssertions, counts.AssertionCount); }
             break;
-          case SolverOutcome.Invalid:
-            var total = runResult.Asserts.Count;
-            var errors = runResult.CounterExamples.Count;
-            Interlocked.Add(ref statistics.VerifiedAssertions, total - errors);
-            Interlocked.Add(ref statistics.ErrorCount, errors);
+          case VerificationOutcome.Failed:
+            if (counts != null) {
+              Interlocked.Add(ref statistics.VerifiedAssertions, counts.AssertionCount - counts.FailedAssertionCount);
+            }
+            Interlocked.Add(ref statistics.ErrorCount, counts?.FailedAssertionCount ?? 1);
             break;
-          case SolverOutcome.TimeOut:
+          case VerificationOutcome.Timeout:
             Interlocked.Increment(ref statistics.TimeoutCount);
             break;
-          case SolverOutcome.OutOfMemory:
+          case VerificationOutcome.OutOfMemory:
             Interlocked.Increment(ref statistics.OutOfMemoryCount);
             break;
-          case SolverOutcome.OutOfResource:
+          case VerificationOutcome.ResourceExhaustion:
             Interlocked.Increment(ref statistics.OutOfResourceCount);
             break;
-          case SolverOutcome.Undetermined:
+          case VerificationOutcome.Inconclusive:
             Interlocked.Increment(ref statistics.InconclusiveCount);
             break;
           default:
-            throw new ArgumentOutOfRangeException();
+            // Unsupported, cancelled, tool-error and unknown outcomes cannot disappear as success.
+            Interlocked.Increment(ref statistics.SolverExceptionCount);
+            break;
         }
       }
     }, e => {
       Interlocked.Increment(ref statistics.SolverExceptionCount);
     });
     await verificationResults.WaitForComplete();
-    await WriteTrailer(cliCompilation, statistics);
+    await WriteTrailer(cliCompilation, statistics, missingAssertionCounts == 0);
     var performanceStatisticsDivisor = cliCompilation.Options.Get(PerformanceStatisticsOption);
-    if (performanceStatisticsDivisor != 0) {
+    if (performanceStatisticsDivisor != 0 && missingResources != 0) {
+      await cliCompilation.Options.OutputWriter.Status("Proof resource counts are unavailable for some verification work");
+    } else if (performanceStatisticsDivisor != 0) {
       int Round(int number) {
         var numberForUpRounding = number + performanceStatisticsDivisor / 2;
         return (numberForUpRounding / performanceStatisticsDivisor) * performanceStatisticsDivisor;
@@ -242,7 +255,7 @@ public static class VerifyCommand {
   }
 
   private static async Task WriteTrailer(CliCompilation cliCompilation,
-    VerificationStatistics statistics) {
+    VerificationStatistics statistics, bool hasAssertionCounts) {
     if (cliCompilation.Options.Verbosity <= CoreOptions.VerbosityLevel.Quiet) {
       return;
     }
@@ -256,11 +269,14 @@ public static class VerifyCommand {
     await using var trailer = output.StatusWriter();
     await trailer.WriteLineAsync();
 
-    if (cliCompilation.VerifiedAssertions) {
+    if (cliCompilation.VerifiedAssertions && hasAssertionCounts) {
       await trailer.WriteAsync($"{cliCompilation.Options.DescriptiveToolName} finished with {statistics.VerifiedAssertions} assertions verified, {statistics.ErrorCount} error{Util.Plural(statistics.ErrorCount)}");
     } else {
       await trailer.WriteAsync($"{cliCompilation.Options.DescriptiveToolName} finished with {statistics.VerifiedSymbols} verified, {statistics.ErrorCount} error{Util.Plural(statistics.ErrorCount)}");
     };
+    if (cliCompilation.VerifiedAssertions && !hasAssertionCounts) {
+      await trailer.WriteAsync(", assertion counts unavailable");
+    }
     if (statistics.InconclusiveCount != 0) {
       await trailer.WriteAsync($", {statistics.InconclusiveCount} inconclusive{Util.Plural(statistics.InconclusiveCount)}");
     }
@@ -291,11 +307,8 @@ public static class VerifyCommand {
     verificationResults.Subscribe(result => {
       // We use an intermediate reporter so we can sort the diagnostics from all parts by token
       var batchReporter = new BatchErrorReporter(compilation.Options);
-      foreach (var completed in result.Results) {
-        Compilation.ReportDiagnosticsInResult(compilation.Options, result.CanVerify.FullDafnyName,
-          BoogieGenerator.ToDafnyToken(completed.Task.Token),
-          (uint)completed.Result.RunTime.TotalSeconds,
-          completed.Result, batchReporter);
+      foreach (var completed in result.WorkResults) {
+        completed.ReportDiagnostics(compilation.Options, result.CanVerify.FullDafnyName, batchReporter);
       }
 
       foreach (var diagnostic in batchReporter.AllMessages.Order()) {
