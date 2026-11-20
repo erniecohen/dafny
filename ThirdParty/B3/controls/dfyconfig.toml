@@ -1,0 +1,9 @@
+includes = ["../src/**/*.dfy", "../target/cs/src/**/*.cs", "Controls.dfy"]
+
+excludes = ["../src/Driver/Main.dfy"]
+
+[options]
+type-system-refresh = true
+general-traits = "datatype"
+general-newtypes = true
+standard-libraries = true

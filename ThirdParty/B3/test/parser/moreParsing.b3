@@ -1,0 +1,81 @@
+// RUN: %b3 parse --print "%s" > "%t"
+// RUN: %diff "%s.expect" "%t"
+
+// here is a comment
+
+procedure Test(x:int)   procedure // another comment alright
+Mote() {var x: string
+val y: int := 200
+exit MyLabel
+              return return
+  { return }
+  {}{  }
+
+  myLabel: { check 62 }
+
+  check 99
+  assume 98
+  assert 97
+  probe 96
+
+  forall x: int {
+    check 5050
+    val y: bool := 12
+    assume y
+  }
+
+  if 100 {
+    return return
+  }
+
+  if 200 { } else {
+    exit hello
+  }
+
+  if AaA {}
+  else if BbB {}
+  else if CcC {}
+
+  if
+    case 3 { return }
+    case 4 { exit four }
+
+  if 600 { exit yes }
+  else if case 601 { } case 602 { } case 603 { check 9 }
+
+  x := 800
+  y := 801
+
+  loop { a := 1 }
+  loop
+    invariant 618 { }
+  asap :loop
+    invariant 619
+    invariant 620
+    invariant { check 8 assume 7 if 2 { assume 9 }}
+    invariant 622
+  { exit asap }
+
+  M0()
+  M1(1000)
+  M2(out x, 1000)
+  M3(out x, 1000, inout y)
+  M4(1000, out a, out b, out c)
+  M5(1000, 2000, inout x, inout y, inout z)
+  M6(1000, 2000, inout m, inout n, out x, out z)
+}
+
+type string type
+MyClass
+
+  procedure Egon( testb  :bool, inout testi :  int,abc: bool,out xyz: string)
+
+procedure   MyProc   (     )
+  requires 10
+  requires 20
+  requires 30
+  requires { check 8 assume 7 if 2 { assume 9 }}
+  ensures { check 8 assume 7 if 2 { assume 9 }}
+  ensures 55
+{ }
+

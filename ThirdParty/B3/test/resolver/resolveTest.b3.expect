@@ -1,0 +1,431 @@
+// Resolved B3 program
+
+type string
+
+type MyClass
+
+type Abc
+
+type MyString
+
+type Color
+
+type List
+
+function MyTag(subject: MyClass): tag
+
+function ColorTag(subject: Color): tag
+
+function ListTag(subject: List): tag
+
+function F(a: int, injective b: bool): bool
+
+function F..b(subject: bool): bool
+
+function G(): int
+  when true
+{
+  15
+}
+
+function H(injective str: string, a: int): string
+  when str == str
+  when a < 10
+{
+  str
+}
+
+function H..str(subject: string): string
+
+function NicelyIndented(x: int, y: int, b: bool, c: MyClass): int
+{
+  if x == 12
+    20
+  else if x == 13
+    val u: int := 2 * y
+    val v: int := 3 * u + x
+    if u + v <= v + u
+      300
+    else
+      -1 + G()
+  else
+    4000
+}
+
+function AnotherNicelyIndented(x: int, y: int): bool
+{
+  x < y && x <= y && x != y && y < x && y <= x && x <= y &&
+  val u: int := 19
+  val v: int := 21
+  if u + v <= v + u
+    300 < 400
+  else
+    -1 + G() != 75
+}
+
+function Inc(x: int): int
+
+function Stringy(s: MyString): bool
+
+function NotStringy(s: MyString): bool
+
+function Red(): Color tag ColorTag
+
+function Red..tag(): tag
+{
+  |%tag: tag|
+}
+
+function Green(): Color tag ColorTag
+
+function Green..tag(): tag
+{
+  |%tag: tag|
+}
+
+function Gray(injective n: int): Color tag ColorTag
+
+function Gray..n(subject: Color): int
+
+function Gray..tag(): tag
+{
+  |%tag: tag|
+}
+
+function Nil(): List tag ListTag
+
+function Nil..tag(): tag
+{
+  |%tag: tag|
+}
+
+function Cons(injective head: int, injective tail: List): List tag ListTag
+
+function Cons..head(subject: List): int
+
+function Cons..tail(subject: List): List
+
+function Cons..tag(): tag
+{
+  |%tag: tag|
+}
+
+axiom explains F
+  forall a: int, b: bool
+    pattern F(a, b)
+    F..b(F(a, b)) == b
+
+axiom explains H
+  forall str: string, a: int
+    pattern H(str, a)
+    H..str(H(str, a)) == str
+
+axiom explains Red
+  ColorTag(Red()) == Red..tag()
+
+axiom explains Green
+  ColorTag(Green()) == Green..tag()
+
+axiom explains Gray
+  forall n: int
+    pattern Gray(n)
+    Gray..n(Gray(n)) == n
+
+axiom explains Gray
+  forall n: int
+    pattern Gray(n)
+    ColorTag(Gray(n)) == Gray..tag()
+
+axiom explains Nil
+  ListTag(Nil()) == Nil..tag()
+
+axiom explains Cons
+  forall head: int, tail: List
+    pattern Cons(head, tail)
+    Cons..head(Cons(head, tail)) == head
+
+axiom explains Cons
+  forall head: int, tail: List
+    pattern Cons(head, tail)
+    Cons..tail(Cons(head, tail)) == tail
+
+axiom explains Cons
+  forall head: int, tail: List
+    pattern Cons(head, tail)
+    ListTag(Cons(head, tail)) == Cons..tag()
+
+axiom explains G
+  true ==>
+  G() == 15
+
+axiom explains H
+  forall str: string, a: int
+    pattern H(str, a)
+    str == str && a < 10 ==>
+    H(str, a) == str
+
+axiom explains NicelyIndented
+  forall x: int, y: int, b: bool, c: MyClass
+    pattern NicelyIndented(x, y, b, c)
+    NicelyIndented(x, y, b, c) == if x == 12 20 else if x == 13 val u: int := 2 * y val v: int := 3 * u + x if u + v <= v + u 300 else -1 + G() else 4000
+
+axiom explains AnotherNicelyIndented
+  forall x: int, y: int
+    pattern AnotherNicelyIndented(x, y)
+    AnotherNicelyIndented(x, y) == (x < y && x <= y && x != y && y < x && y <= x && x <= y && val u: int := 19 val v: int := 21 if u + v <= v + u 300 < 400 else -1 + G() != 75)
+
+axiom explains Red..tag
+  Red..tag() == |%tag: tag|
+
+axiom explains Green..tag
+  Green..tag() == |%tag: tag|
+
+axiom explains Gray..tag
+  Gray..tag() == |%tag: tag|
+
+axiom explains Nil..tag
+  Nil..tag() == |%tag: tag|
+
+axiom explains Cons..tag
+  Cons..tag() == |%tag: tag|
+
+axiom
+  true ==>
+  5 < 7
+
+axiom
+  forall s: MyString
+    pattern Stringy(s)
+    pattern NotStringy(s)
+    Stringy(s) ||
+    NotStringy(s)
+
+procedure Test(x: int)
+
+procedure Mote()
+{
+  return: {
+    var x: string
+    val y: int := 200
+    MyLabel: {
+      exit MyLabel
+    }
+    exit return
+    exit return
+    {
+      exit return
+    }
+    {
+    }
+    {
+    }
+    myLabel: {
+      check true
+    }
+    check true
+    assume true
+    assert true
+    probe 96
+    forall x: int {
+      check true
+      val y: bool := false
+      assume y
+    }
+    choose {
+      assume false
+      exit return
+      exit return
+    } or {
+      assume !false
+    }
+    hello: {
+      var something: bool
+      choose {
+        assume something
+      } or {
+        assume !something
+        exit hello
+      }
+    }
+    four: {
+      yes: {
+        var AaA: bool
+        var BbB: bool
+        var CcC: bool
+        choose {
+          assume AaA
+        } or {
+          assume !AaA
+          choose {
+            assume BbB
+          } or {
+            assume !BbB
+            choose {
+              assume CcC
+            } or {
+              assume !CcC
+            }
+          }
+        }
+        choose {
+          assume true
+          exit return
+        } or {
+          assume true
+          exit four
+        }
+        var s600: bool
+        var s601: bool
+        var s602: bool
+        var s603: bool
+        choose {
+          assume s600
+          exit yes
+        } or {
+          assume !s600
+          choose {
+            assume s601
+          } or {
+            assume s602
+          } or {
+            assume s603
+            check true
+          }
+        }
+      }
+    }
+    var a: int
+    var x: int
+    var y: int
+    x := 800
+    y := 801
+    loop: loop {
+      a := 1
+    }
+    loop: loop
+      invariant true
+    {
+    }
+    asap: {
+      loop: loop
+        invariant true
+        invariant true
+        invariant {
+          check true
+          assume true
+          choose {
+            assume true
+            assume true
+          } or {
+            assume !true
+          }
+        }
+        invariant true
+      {
+        exit asap
+      }
+    }
+    M0()
+    M1(1000)
+    M2(out x, 1000)
+    M3(out x, 1000, inout y)
+    var b: int
+    var c: int
+    var z: int
+    M4(1000, out a, out b, out c)
+    M5(1000, 2000, inout x, inout y, inout z)
+    var m: int
+    var n: int
+    M6(1000, 2000, inout m, inout n, out x, out z)
+  }
+}
+
+procedure Egon(testb: bool, inout testi: int, abc: bool, out xyz: string)
+
+procedure MyProc()
+  requires true
+  requires true
+  requires true
+  requires {
+    check true
+    assume true
+    choose {
+      assume false
+      assume false
+    } or {
+      assume !false
+    }
+  }
+  ensures {
+    check true
+    assume true
+    choose {
+      assume false
+      assume false
+    } or {
+      assume !false
+    }
+  }
+  ensures true
+{
+  return: {
+  }
+}
+
+procedure M0()
+
+procedure M1(g: int)
+
+procedure M2(out g: int, h: int)
+
+procedure M3(out g: int, h: int, inout i: int)
+
+procedure M4(g: int, out h: int, out i: int, out j: int)
+
+procedure M5(g: int, h: int, inout i: int, inout j: int, inout k: int)
+
+procedure M6(g: int, h: int, inout i: int, inout j: int, out k: int, out l: int)
+
+procedure TestTypeUse(y: Abc)
+{
+  return: {
+    var x: Abc
+    x := y
+    check x == y
+    var k: int := 12
+    check Inc(k) == Inc(12)
+  }
+}
+
+procedure UseQuantifier(t: MyString, u: MyString)
+{
+  return: {
+    assume forall s: MyString pattern Stringy(s) s != t ==> Stringy(s)
+    choose {
+      assume t != u
+      check Stringy(u)
+    } or {
+      assume !(t != u)
+    }
+  }
+}
+
+procedure OptionalType(w: int, x: int, out r: int)
+{
+  return: {
+    var y: int := x
+    var z: int := 5 + val u: int := if w < x 2 else y u + u
+    r := y + z
+  }
+}
+
+procedure Reinit(u: int, inout v: int, out w: int)
+{
+  return: {
+    var x: int
+    reinit v
+    reinit u, v, w
+    reinit x, v, w
+  }
+}
+reinit assignment to immutable variable 'u'
