@@ -23,13 +23,27 @@ function slots(value = process.env.INPUT_SLOTS || '2') {
   }
   return Number(value);
 }
+function prepareWorkspace(workspace, runnerWorkspace) {
+  // Only this runner's repository directory may be cleared. The cached action and
+  // RUNNER_TEMP live outside it. Remove stale Git metadata as well as build outputs:
+  // checkout's working-tree cleanup cannot repair colliding remote refs.
+  const root = fs.realpathSync(workspace);
+  if (path.dirname(root) !== fs.realpathSync(runnerWorkspace)) {
+    throw new Error('Workspace must be an immediate child of RUNNER_WORKSPACE');
+  }
+  for (const entry of fs.readdirSync(root)) {
+    fs.rmSync(path.join(root, entry), {recursive: true, force: true});
+  }
+}
 async function main() {
   if (process.env.STATE_keeper) {
     // The action is cached outside the checkout by Actions, so cleaning untracked outputs
     // does not remove this post action. Never remove tracked files or another job's checkout.
     try {
-      const r = cp.spawnSync('git', ['clean', '-ffdx'], {cwd: process.env.GITHUB_WORKSPACE, stdio: 'ignore'});
-      if (r.status !== 0) throw new Error('Checkout output cleanup failed');
+      if (fs.existsSync(path.join(process.env.GITHUB_WORKSPACE, '.git'))) {
+        const r = cp.spawnSync('git', ['clean', '-ffdx'], {cwd: process.env.GITHUB_WORKSPACE, stdio: 'ignore'});
+        if (r.status !== 0) throw new Error('Checkout output cleanup failed');
+      }
       const tmp = process.env.STATE_tmp;
       const base = fs.realpathSync(process.env.RUNNER_TEMP);
       if (tmp && fs.existsSync(tmp) && path.dirname(fs.realpathSync(tmp)) === base && path.basename(tmp).startsWith('fork-job.')) {
@@ -68,7 +82,8 @@ async function main() {
   }
   fs.appendFileSync(process.env.GITHUB_STATE, `keeperIdentity=${identity(keeper.pid)}\n`);
   keeper.unref();
+  prepareWorkspace(process.env.GITHUB_WORKSPACE, process.env.RUNNER_WORKSPACE);
   console.log(`Admitted one of ${capacity} jobs; excess fork jobs wait until post cleanup`);
 }
 if (require.main === module) main().catch(e => { console.error(e.message); process.exitCode = 1; });
-module.exports = {identity, worker, slots};
+module.exports = {identity, worker, slots, prepareWorkspace};
