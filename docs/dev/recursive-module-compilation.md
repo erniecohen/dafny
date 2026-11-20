@@ -142,5 +142,35 @@ through it, https://github.com/erniecohen/dafny/pull/529. Python still emits
 separate files with imports and class definitions that can need a sibling before
 it is initialized. Bypassing admission fails with a missing sibling name; adding
 that import fails at a cross-module trait base in a partially initialized module.
-Python needs group-level emission and initialization work. JavaScript, Rust, C++
+Python needs group-level emission and initialization work. JavaScript, C++
 and resolved Dafny remain unqualified too.
+
+
+## Rust group emission
+
+Rust places each group in one generated container. Member modules remain distinct
+inside it, and public facades at the original module paths re-export their
+contents. This preserves type identity, associated constructors, constants,
+entry-point calls and references from separately translated clients. Rust permits
+forward module references, so no runtime initialization ordering is required.
+Container names are chosen deterministically from member names and checked for
+collisions after Rust identifier escaping. Nested facade modules merge with other
+modules at the same enclosing path.
+
+The Rust milestone depends on https://github.com/erniecohen/dafny/pull/535.
+It extends only the existing experimental option and changes no verifier rule.
+Extern modules, types and members inside a group are explicitly rejected pending
+a linkage convention. Rust's existing implicit datatype-default and general-trait
+limitations remain: the runtime comparisons use the existing three-member producer
+with explicit array initializers and reference traits (`--general-traits=legacy`).
+C# comparisons disable wrapper erasure, which Rust already disables. Group programs
+that require implicit array initialization are rejected rather than emitted with
+placebo elements. Supporting implicit defaults is a separate milestone.
+
+`git-issue-466-rust.dfy` compares the resulting recursion, constants, values,
+witness construction, traits, refinement and complete-archive execution with C#.
+It also tests repeated declaration names, nested groups, Rust keywords, entry-point
+arguments and a separately translated producer/client pair compiled into one crate.
+The facades export constructors through their types; clients do not need the
+private layout of a group container. `git-issue-466-rust-rejected.dfy` supplies
+module, type and member extern controls and an implicit-array-initialization control.
