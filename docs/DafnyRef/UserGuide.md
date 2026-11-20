@@ -2782,9 +2782,12 @@ and what information it produces about the verification process.
   See [the soundness, trigger and solver-limit note](../dev/additional-axioms.md).
 
 * `--function-extensionality-axiom` - give function values domain tags, as
-  `--additional-axioms` does, and make two total functions of one argument with
-  the same exact domain equal when they agree on it, at each equality between
-  them. Disabled by default. It can change proof costs. See
+  `--additional-axioms` does, and make two total functions of the same arity and
+  exact domain equal when they agree on it, at each equality between
+  them, including nullary functions. Products of `int`, `real`, `bool` and
+  `ORDINAL` have exact domains; for other types the functions must have been
+  built with that exact domain. `Restrict` and `ExactDom` currently support
+  unary functions only. Disabled by default. It can change proof costs. See
   [the soundness note](../dev/additional-axioms.md).
 
 * `--heap-free-lambda-facts` - check a lambda without a reads clause, whose

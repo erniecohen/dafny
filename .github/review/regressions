@@ -1082,3 +1082,6 @@ git-issues/github-issue-245-witness.dfy
 # Compiled generic parent additions and inherited bounds under default termination (https://github.com/erniecohen/dafny/issues/88).
 git-issues/github-issue-88-runtime.dfy
 git-issues/github-issue-88-inherited-bounds.dfy
+
+# Total-function extensionality at every arity, including empty products (issue 374).
+git-issues/git-issue-374-arities.dfy
