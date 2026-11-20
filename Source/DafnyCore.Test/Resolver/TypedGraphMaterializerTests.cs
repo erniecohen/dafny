@@ -81,10 +81,10 @@ public class TypedGraphMaterializerTests {
         .CloneModuleDefinition(original, original.EnclosingModule);
       var originalId = Functions(original).Single(f => f.Name == "Id");
       var cloneId = Functions(clone).Single(f => f.Name == "Id");
-      var call = (FunctionCallExpr)Functions(clone).Single(f => f.Name == "Use").Body.Resolved;
+      var call = (FunctionCallExpr)Functions(clone).Single(f => f.Name == "Use").Body!.Resolved;
       Assert.Same(originalId, call.Function);
       Assert.NotSame(cloneId, call.Function);
-      var originalCall = (FunctionCallExpr)Functions(original).Single(f => f.Name == "Use").Body.Resolved;
+      var originalCall = (FunctionCallExpr)Functions(original).Single(f => f.Name == "Use").Body!.Resolved;
       Assert.Same(originalCall.Type, call.Type);
       Assert.Same(originalCall.PreType, call.PreType);
       Assert.Same(originalCall.TypeApplication_JustFunction, call.TypeApplication_JustFunction);
@@ -113,7 +113,7 @@ public class TypedGraphMaterializerTests {
     var (expected, copy, bindings) = await RoundTrip();
     Assert.NotSame(expected, copy);
     var id = Functions(copy.ModuleDef).Single(f => f.Name == "Id");
-    var call = (FunctionCallExpr)Functions(copy.ModuleDef).Single(f => f.Name == "Use").Body.Resolved;
+    var call = (FunctionCallExpr)Functions(copy.ModuleDef).Single(f => f.Name == "Use").Body!.Resolved;
     Assert.Same(id, call.Function);
     Assert.NotSame(Functions(expected.ModuleDef).Single(f => f.Name == "Id"), id);
     Assert.True(id.IsRevealedInScope(copy.ModuleDef.VisibilityScope));
@@ -122,6 +122,17 @@ public class TypedGraphMaterializerTests {
     Assert.NotEmpty(copy.ModuleDef.CallGraph.GetVertices());
     var array = Functions(copy.ModuleDef).Single(f => f.Name == "Read").Ins.Single().Type.NormalizeExpand();
     Assert.Contains(((UserDefinedType)array).ResolvedClass, bindings.Selectors.Keys);
+  }
+
+  [Fact]
+  public async Task DatatypePretypesKeepCurrentCanonicalBuiltinIdentity() {
+    await RoundTrip("module M { datatype D = C(x: bv8) function Id(d: D): D { d } }",
+      (expected, copy, _) => {
+        static TopLevelDecl Builtin(LiteralModuleDecl module) =>
+          ((DPreType)module.ModuleDef.SourceDecls.OfType<DatatypeDecl>().Single()
+            .Ctors.Single().Formals.Single().PreType!.Normalize()).Decl;
+        Assert.Same(Builtin(expected), Builtin(copy));
+      });
   }
 
   [Theory]
@@ -169,8 +180,8 @@ public class TypedGraphMaterializerTests {
       var functions = Functions(copy.ModuleDef).ToArray();
       var use = functions.Single(f => f.Name == "Use");
       switch (change) {
-        case "target": ((FunctionCallExpr)use.Body.Resolved).Function = Functions(expected.ModuleDef).Single(f => f.Name == "Id"); break;
-        case "type": use.Body.Type = Microsoft.Dafny.Type.Bool; break;
+        case "target": ((FunctionCallExpr)use.Body!.Resolved).Function = Functions(expected.ModuleDef).Single(f => f.Name == "Id"); break;
+        case "type": use.Body!.Type = Microsoft.Dafny.Type.Bool; break;
         case "visibility": GraphData.Tokens(copy.ModuleDef.VisibilityScope).Clear(); break;
         case "call-graph": copy.ModuleDef.CallGraph = new(); break;
         case "recursive": functions.Single(f => f.Name == "Count").IsRecursive = false; break;
@@ -251,6 +262,18 @@ public class TypedGraphMaterializerTests {
     Assert.Null(new TypedGraphEquality(bindings).Difference(first, second));
     second.T = Microsoft.Dafny.Type.Bool;
     Assert.NotNull(new TypedGraphEquality(bindings).Difference(first, second));
+  }
+
+  [Fact]
+  public void EnumerableGraphNodesStillCompareTheirBackingEdges() {
+    var bindings = new GraphBindings();
+    var name = new Name("item");
+    var expected = new ConcatReadOnlyLists<Name>(new List<Name> { name }, new List<Name>());
+    var different = new ConcatReadOnlyLists<Name>(new List<Name>(), new List<Name> { name });
+    Assert.Equal(expected.ToArray(), different.ToArray());
+    Assert.NotNull(new TypedGraphEquality(bindings).Difference(expected, different));
+    var copy = TypedGraphSnapshot.Capture(expected, bindings).Materialize(bindings);
+    Assert.Null(new TypedGraphEquality(bindings).Difference(expected, copy));
   }
 
   [Fact]

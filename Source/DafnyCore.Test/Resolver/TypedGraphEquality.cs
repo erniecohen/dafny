@@ -54,7 +54,8 @@ internal sealed class TypedGraphEquality(GraphBindings bindings) {
       scopes.Add((scope, (VisibilityScope)actual));
       return null;
     }
-    if (expected is IDictionary dictionary) {
+    if (GraphData.CollectionKind(type) == "dictionary") {
+      var dictionary = (IDictionary)expected;
       var other = (IDictionary)actual;
       if (dictionary.Count != other.Count) { return Fail("dictionary count"); }
       if (GraphData.Comparer(expected) != GraphData.Comparer(actual)) { return Fail("dictionary comparer"); }
@@ -67,7 +68,8 @@ internal sealed class TypedGraphEquality(GraphBindings bindings) {
       }
       return null;
     }
-    if (expected is IEnumerable sequence && !type.IsValueType) {
+    if (expected is Array || GraphData.CollectionKind(type) != null) {
+      var sequence = (IEnumerable)expected;
       if (GraphData.CollectionKind(type) != null && GraphData.Comparer(expected) != GraphData.Comparer(actual)) {
         return Fail("sequence comparer");
       }
