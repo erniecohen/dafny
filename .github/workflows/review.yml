@@ -1226,6 +1226,18 @@ jobs:
           dotnet test -p:NuGetAudit=false --settings .github/review/ci.runsettings Source/DafnyCore.Test -c Debug \
             --filter 'FullyQualifiedName~ResolutionPipelineTests|FullyQualifiedName~PipelineProfileResolutionTests|FullyQualifiedName~Cardinality|FullyQualifiedName~NewtypeReferenceCharacteristicTests|FullyQualifiedName~NewtypeWitnessResolutionTests' \
             --logger "console;verbosity=normal"
+      - name: Typed graph materializer tests in Release
+        timeout-minutes: 90
+        run: |
+          dotnet test -p:NuGetAudit=false --settings .github/review/ci.runsettings Source/DafnyCore.Test -c Release --no-build \
+            --filter 'FullyQualifiedName~TypedGraphMaterializerTests' \
+            --logger "console;verbosity=normal"
+      - name: Typed graph materializer tests in Debug
+        timeout-minutes: 90
+        run: |
+          dotnet test -p:NuGetAudit=false --settings .github/review/ci.runsettings Source/DafnyCore.Test -c Debug --no-build \
+            --filter 'FullyQualifiedName~TypedGraphMaterializerTests' \
+            --logger "console;verbosity=normal"
       - name: Pipeline unit tests with Debug contract assertions
         timeout-minutes: 90
         run: dotnet test -p:NuGetAudit=false --settings .github/review/ci.runsettings Source/DafnyPipeline.Test -c Debug --logger "console;verbosity=normal"
