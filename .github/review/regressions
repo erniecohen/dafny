@@ -1082,3 +1082,6 @@ git-issues/github-issue-245-witness.dfy
 # Compiled generic parent additions and inherited bounds under default termination (https://github.com/erniecohen/dafny/issues/88).
 git-issues/github-issue-88-runtime.dfy
 git-issues/github-issue-88-inherited-bounds.dfy
+# Base-type values in the cone of a newtype's member invariants (https://github.com/erniecohen/dafny/issues/105).
+git-issues/git-issue-105-newtype-base-values.dfy
+git-issues/git-issue-105-newtype-base-values-controls.dfy
