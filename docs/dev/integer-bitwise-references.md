@@ -244,7 +244,9 @@ The permanent native regression independently checks all included proof bodies,
 symbolic native and composed integer callers, wrong equations and an inhabited
 false assertion after each rule. Invalid casts, overflowing increments/additions,
 invalid prefix ranges and recurrence premises must fail. Mutation mode negates
-every postcondition separately and requires rejection by its proof body. It
+every postcondition separately and requires rejection by its proof body. Recursive
+fact mutations use an inhabited base input, keeping a broken induction hypothesis
+from obscuring the counterexample; the unmodified proofs remain generic. It
 removes each explicit guard separately and requires a concrete invalid caller
 to lose its expected rejection; the guard making a recurrence contract
 well-formed is checked directly in that rule's verification. Positive

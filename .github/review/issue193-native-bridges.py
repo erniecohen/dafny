@@ -168,6 +168,12 @@ def main():
                 start, finish = header.start()+contract.start(), header.start()+contract.end()
                 replacement = '    ensures !(' + contract[2] + ')' if contract[1] == 'ensures' else ''
                 mutated = original[:start] + replacement + original[finish:]
+                # A false recursive contract also changes its induction hypothesis.
+                # Use an inhabited base case to demand a conclusive rejection.
+                base_case = 'a == 0' if name == 'RoundTrip' else 'n == 0 && x == 0 && y == 0' if name == 'AndPrefix64' else None
+                if contract[1] == 'ensures' and base_case:
+                    header_end = original.index('\n', header.start())
+                    mutated = mutated[:header_end] + '\n    requires ' + base_case + mutated[header_end:]
                 # Keep includes valid without editing the authoritative source.
                 mutated = mutated.replace('include "IntegerBitwiseCompilerFoundation.dfy"',
                                           'include "' + (LIBRARY.parent / 'IntegerBitwiseCompilerFoundation.dfy').as_posix() + '"')
