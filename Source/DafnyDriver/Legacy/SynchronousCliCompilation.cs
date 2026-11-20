@@ -717,7 +717,7 @@ namespace Microsoft.Dafny {
         return false;
       }
 
-      if (options.Backend is not (LibraryBackend or CsharpBackend or JavaBackend or GoBackend) &&
+      if (options.Backend is not (LibraryBackend or CsharpBackend or JavaBackend or GoBackend or JavaScriptBackend) &&
           dafnyProgram.Modules().FirstOrDefault(module => module.RecursiveGroup != null) is { } groupMember) {
         // C# namespaces and Java packages can refer to each other; Go emits one package per group.
         // Other executable targets still need their own module and initialization-order checks.

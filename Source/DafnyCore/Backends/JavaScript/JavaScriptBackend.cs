@@ -27,6 +27,19 @@ public class JavaScriptBackend : ExecutableBackend {
     return new JavaScriptCodeGenerator(Options, Reporter);
   }
 
+  public override void Compile(Program dafnyProgram, string dafnyProgramName, ConcreteSyntaxTree output) {
+    foreach (var module in dafnyProgram.Modules().Where(module => module.RecursiveGroup != null)) {
+      if (module.IsExtern(Options, out _, out _) || module.TopLevelDecls.Any(declaration =>
+            declaration.IsExtern(Options, out _, out _) || declaration is TopLevelDeclWithMembers type &&
+            type.Members.Any(member => member.IsExtern(Options, out _, out _)))) {
+        Reporter.Error(MessageSource.Compiler, module.Origin,
+          "JavaScript compilation of recursive module groups with extern declarations is not yet supported");
+        return;
+      }
+    }
+    base.Compile(dafnyProgram, dafnyProgramName, output);
+  }
+
   public override async Task<(bool Success, object CompilationResult)> CompileTargetProgram(string dafnyProgramName,
     string targetProgramText,
     string callToMain /*?*/, string targetFilename /*?*/, ReadOnlyCollection<string> otherFileNames,

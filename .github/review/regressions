@@ -1084,3 +1084,5 @@ git-issues/git-issue-466-stage7-targets.dfy
 git-issues/git-issue-466-java.dfy
 git-issues/git-issue-466-go.dfy
 git-issues/git-issue-466-go-extern.dfy
+git-issues/git-issue-466-js.dfy
+git-issues/git-issue-466-js-extern.dfy
