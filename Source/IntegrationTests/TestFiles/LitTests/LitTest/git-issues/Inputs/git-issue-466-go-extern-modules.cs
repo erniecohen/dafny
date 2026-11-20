@@ -41,3 +41,9 @@ namespace map {
     public static BigInteger Five() { return 5; }
   }
 }
+
+namespace type {
+  public static class Tools {
+    public static System.Numerics.BigInteger Six() => 6;
+  }
+}

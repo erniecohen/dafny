@@ -27,7 +27,12 @@ namespace Microsoft.Dafny.Compilers {
     }
 
     private string ExternQualifier(string qualifier) {
-      foreach (var (module, import) in ExternModuleImports) {
+      var imports = ExternModuleImports.AsEnumerable();
+      if (Options.Get(CommonOptionBag.RecursiveModules)) {
+        imports = imports.Concat(ModuleImports.Where(entry => entry.Key.RecursiveGroup == null &&
+          entry.Key.IsExtern(Options, out _, out _)));
+      }
+      foreach (var (module, import) in imports) {
         var name = module.GetCompileName(Options);
         if (qualifier == name || qualifier.StartsWith(name + ".", StringComparison.Ordinal)) {
           return import.Name + qualifier.Substring(name.Length);
@@ -1981,6 +1986,11 @@ namespace Microsoft.Dafny.Compilers {
     }
 
     internal override string TypeName_Companion(Type type, ConcreteSyntaxTree wr, IOrigin tok, MemberDecl/*?*/ member) {
+      if (member is Function { Body: null } &&
+          member.EnclosingClass.EnclosingModuleDefinition.RecursiveGroup != null &&
+          member.IsExtern(Options, out var qualifier, out _) && qualifier != null) {
+        return ExternQualifier(qualifier);
+      }
       type = UserDefinedType.UpcastToMemberEnclosingType(type, member);
       // XXX This duplicates some of the logic in UserDefinedTypeName, but if we
       // don't do it here, we end up passing the name of the module to

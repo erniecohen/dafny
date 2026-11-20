@@ -20,6 +20,8 @@ module {:extern "Foreign", "Foreign"} A {
   }
 }
 module B {
+  import OutsideNative
+  function {:extern "type.Tools", "Six"} Six(): int
   import KeywordNative
   import A
   import C
@@ -47,6 +49,10 @@ module B {
     print n, " ", m, " ", x.Value(), " ", alias.Value(), " ", A.Local.F(), " ",
       A.Twice(triple, 99), " ", other, " ", KeywordNative.Five(), " ",
       A.Identity<int>(42) + 1, " ", A.Default<int>() + 2, " ", wrapped.AddTen(), " ", keyword.Value(), "\n";
+    var identity := A.Identity<int>;
+    var addTen := wrapped.AddTen;
+    var five := KeywordNative.Five;
+    print identity(43) + 1, " ", addTen(), " ", five(), " ", Six(), "\n";
     A.Test();
   }
 }
@@ -84,3 +90,5 @@ module {:extern "map"} KeywordNative {
   import B
   function {:extern "map.Tools", "Five"} Five(): int
 }
+
+module {:extern "type"} OutsideNative { }
