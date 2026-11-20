@@ -103,7 +103,7 @@ jobs:
     # it finds one the expensive jobs skip.  Without one everything runs, as before.
     name: Tree reuse
     if: ${{ (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request') && (github.event_name != 'pull_request' || (!github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository))) && (github.repository == 'erniecohen/dafny' && (github.event_name != 'pull_request' || !github.event.pull_request.draft)) }}
-    runs-on: [self-hosted, macOS, ARM64, mac-studio]
+    runs-on: [self-hosted, macOS, ARM64, fork-ci]
     timeout-minutes: 1440 # Includes waiting for the shared admission slot.
     permissions:
       contents: read
@@ -131,7 +131,7 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@600ab4703a71d73df1e2d014bd1018c4c9e08d85
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@18b15fb544432352965a832a1e4cdad4374acf10
         with:
           slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
       - uses: actions/checkout@v4
@@ -160,7 +160,7 @@ jobs:
 
   milestone-scope:
     if: ${{ (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request') && (github.event_name != 'pull_request' || (!github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository))) && (github.event_name != 'pull_request' || !github.event.pull_request.draft) }}
-    runs-on: [self-hosted, macOS, ARM64, mac-studio]
+    runs-on: [self-hosted, macOS, ARM64, fork-ci]
     outputs:
       integer_bitwise: ${{ steps.scope.outputs.integer_bitwise }}
       source_contracts: ${{ steps.scope.outputs.source_contracts }}
@@ -186,12 +186,20 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@600ab4703a71d73df1e2d014bd1018c4c9e08d85
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@18b15fb544432352965a832a1e4cdad4374acf10
         with:
           slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 1
+          clean: true
+      - uses: ./.github/actions/fetch-refs
+        if: github.event_name == 'pull_request'
+        with:
+          full-history: 'true'
+          refs: |
+            ${{ github.event.pull_request.base.sha }}
+            ${{ github.event.pull_request.head.sha }}
       - name: Scope milestone identity checks
         id: scope
         env:
@@ -222,7 +230,7 @@ jobs:
     if: ${{ (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request') && (github.event_name != 'pull_request' || (!github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository))) && (((github.event_name != 'pull_request' || !github.event.pull_request.draft) && ((github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'erniecohen/dafny'))) && !inputs.platform_parity && (!(github.event_name == 'workflow_dispatch' && (inputs.default_comparison || inputs.decreases_order_comparison) && startsWith(github.ref, 'refs/heads/scratch/'))))) && (needs.tree.outputs.reuse != 'true' || github.ref_type == 'tag')) }}
     name: Build (Release)
     needs: tree
-    runs-on: [self-hosted, macOS, ARM64, mac-studio]
+    runs-on: [self-hosted, macOS, ARM64, fork-ci]
     timeout-minutes: 1440 # Includes waiting for the shared admission slot.
     outputs:
       revision: ${{ steps.version.outputs.revision }}
@@ -247,7 +255,7 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@600ab4703a71d73df1e2d014bd1018c4c9e08d85
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@18b15fb544432352965a832a1e4cdad4374acf10
         with:
           slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
       - uses: actions/checkout@v4
@@ -341,7 +349,7 @@ jobs:
     if: ${{ (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request') && (github.event_name != 'pull_request' || (!github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository))) && (((github.event_name != 'pull_request' || !github.event.pull_request.draft) && ((github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'erniecohen/dafny'))) && !inputs.platform_parity)) && needs.tree.outputs.reuse != 'true') }}
     name: Verifier suite (axioms ${{ matrix.axioms }}, shard ${{ matrix.shard }} of 4)
     needs: [build, tree]
-    runs-on: [self-hosted, macOS, ARM64, mac-studio]
+    runs-on: [self-hosted, macOS, ARM64, fork-ci]
     timeout-minutes: 1440 # Includes waiting for the shared admission slot.
     strategy:
       fail-fast: false
@@ -368,7 +376,7 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@600ab4703a71d73df1e2d014bd1018c4c9e08d85
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@18b15fb544432352965a832a1e4cdad4374acf10
         with:
           slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
       - uses: actions/checkout@v4
@@ -500,7 +508,7 @@ jobs:
     if: ${{ (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request') && (github.event_name != 'pull_request' || (!github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository))) && (((github.event_name != 'pull_request' || !github.event.pull_request.draft) && (!inputs.platform_parity && ((github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'erniecohen/dafny'))) && (true)))) && needs.tree.outputs.reuse != 'true') }}
     name: Verdicts (axioms ${{ matrix.axioms }})
     needs: [build, suite, tree]
-    runs-on: [self-hosted, macOS, ARM64, mac-studio]
+    runs-on: [self-hosted, macOS, ARM64, fork-ci]
     timeout-minutes: 1440 # Includes waiting for the shared admission slot.
     strategy:
       fail-fast: false
@@ -526,7 +534,7 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@600ab4703a71d73df1e2d014bd1018c4c9e08d85
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@18b15fb544432352965a832a1e4cdad4374acf10
         with:
           slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
       - uses: actions/checkout@v4
@@ -589,7 +597,7 @@ jobs:
     if: ${{ (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request') && (github.event_name != 'pull_request' || (!github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository))) && (((github.event_name != 'pull_request' || !github.event.pull_request.draft) && ((github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'erniecohen/dafny'))) && !inputs.platform_parity)) && needs.tree.outputs.reuse != 'true') }}
     name: Resolve-once verification batch controls
     needs: [build, tree]
-    runs-on: [self-hosted, macOS, ARM64, mac-studio]
+    runs-on: [self-hosted, macOS, ARM64, fork-ci]
     timeout-minutes: 1440 # Includes waiting for the shared admission slot.
     steps:
       - name: Yield to interactive work
@@ -610,7 +618,7 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@600ab4703a71d73df1e2d014bd1018c4c9e08d85
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@18b15fb544432352965a832a1e4cdad4374acf10
         with:
           slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
       - uses: actions/checkout@v4
@@ -651,7 +659,7 @@ jobs:
   default-comparison:
     if: ${{ (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request') && (github.event_name != 'pull_request' || (!github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository))) && ((github.event_name != 'pull_request' || !github.event.pull_request.draft) && (!inputs.platform_parity && (github.event_name == 'workflow_dispatch' && inputs.default_comparison && startsWith(github.ref, 'refs/heads/scratch/')))) }}
     name: Repeated default suite and standard-library comparison (probe)
-    runs-on: [self-hosted, macOS, ARM64, mac-studio]
+    runs-on: [self-hosted, macOS, ARM64, fork-ci]
     timeout-minutes: 1440 # Includes waiting for the shared admission slot.
     steps:
       - name: Yield to interactive work
@@ -672,7 +680,7 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@600ab4703a71d73df1e2d014bd1018c4c9e08d85
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@18b15fb544432352965a832a1e4cdad4374acf10
         with:
           slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
       - uses: actions/checkout@v4
@@ -727,7 +735,7 @@ jobs:
           esac
           test "$(cat default-comparison/candidate-source.txt)" = "$expected_candidate"
           echo "$COMPARISON_MODE" > default-comparison/comparison-mode.txt
-          git fetch --no-tags --depth=1 origin b85e4b6f3af7eedd39bf355394a3f50c1b348646
+          git fetch --no-tags --refmap= --depth=1 origin b85e4b6f3af7eedd39bf355394a3f50c1b348646
           for variant in baseline candidate; do
             source="$PWD/comparison-$variant"
             output="$PWD/default-comparison/build-$variant"
@@ -797,7 +805,7 @@ jobs:
     if: ${{ (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request') && (github.event_name != 'pull_request' || (!github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository))) && (((github.event_name != 'pull_request' || !github.event.pull_request.draft) && ((github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'erniecohen/dafny'))) && !inputs.platform_parity)) && needs.tree.outputs.reuse != 'true') }}
     name: Resolver matrix (both modes)
     needs: [build, tree]
-    runs-on: [self-hosted, macOS, ARM64, mac-studio]
+    runs-on: [self-hosted, macOS, ARM64, fork-ci]
     timeout-minutes: 1440 # Includes waiting for the shared admission slot.
     steps:
       - name: Yield to interactive work
@@ -818,7 +826,7 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@600ab4703a71d73df1e2d014bd1018c4c9e08d85
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@18b15fb544432352965a832a1e4cdad4374acf10
         with:
           slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
       - uses: actions/checkout@v4
@@ -886,7 +894,7 @@ jobs:
     if: ${{ (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request') && (github.event_name != 'pull_request' || (!github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository))) && (((github.event_name != 'pull_request' || !github.event.pull_request.draft) && ((github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'erniecohen/dafny'))) && !inputs.platform_parity)) && needs.tree.outputs.reuse != 'true') }}
     name: Standard library (Z3 ${{ matrix.z3 }}, axioms ${{ matrix.axioms }})
     needs: [build, tree]
-    runs-on: [self-hosted, macOS, ARM64, mac-studio]
+    runs-on: [self-hosted, macOS, ARM64, fork-ci]
     timeout-minutes: 1440 # Includes waiting for the shared admission slot.
     strategy:
       fail-fast: false
@@ -915,7 +923,7 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@600ab4703a71d73df1e2d014bd1018c4c9e08d85
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@18b15fb544432352965a832a1e4cdad4374acf10
         with:
           slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
       - uses: actions/checkout@v4
@@ -1019,7 +1027,7 @@ jobs:
     needs: [suite, stdlib, tree]
     # Also after a failed standard-library job, but not after a cancellation, which can leave its
     # artifacts missing (#133).
-    runs-on: [self-hosted, macOS, ARM64, mac-studio]
+    runs-on: [self-hosted, macOS, ARM64, fork-ci]
     timeout-minutes: 1440 # Includes waiting for the shared admission slot.
     steps:
       - name: Yield to interactive work
@@ -1040,7 +1048,7 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@600ab4703a71d73df1e2d014bd1018c4c9e08d85
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@18b15fb544432352965a832a1e4cdad4374acf10
         with:
           slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
       - uses: actions/checkout@v4
@@ -1074,7 +1082,7 @@ jobs:
     if: ${{ (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request') && (github.event_name != 'pull_request' || (!github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository))) && (((github.event_name != 'pull_request' || !github.event.pull_request.draft) && ((github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'erniecohen/dafny'))) && !inputs.platform_parity)) && needs.tree.outputs.reuse != 'true') }}
     name: JavaScript runtime (Node ${{ matrix.node }})
     needs: tree
-    runs-on: [self-hosted, macOS, ARM64, mac-studio]
+    runs-on: [self-hosted, macOS, ARM64, fork-ci]
     strategy:
       max-parallel: 1
       matrix:
@@ -1099,7 +1107,7 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@600ab4703a71d73df1e2d014bd1018c4c9e08d85
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@18b15fb544432352965a832a1e4cdad4374acf10
         with:
           slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
       - uses: actions/checkout@v4
@@ -1116,7 +1124,7 @@ jobs:
         if: matrix.node == '22'
         timeout-minutes: 360
         run: |
-          git fetch --depth=1 origin 428e348b0b125cb67505f03a0026b3f497f98e48
+          git fetch --no-tags --refmap= --depth=1 origin 428e348b0b125cb67505f03a0026b3f497f98e48
           git show 428e348b0b125cb67505f03a0026b3f497f98e48:Source/DafnyRuntime/DafnyRuntimeJs/DafnyRuntime.js > before.js
           if node .github/review/246-js-bitwise.cjs before.js > before-control.txt 2>&1; then
             echo "The original runtime unexpectedly passed the regression"
@@ -1147,7 +1155,7 @@ jobs:
     if: ${{ (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request') && (github.event_name != 'pull_request' || (!github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository))) && (((github.event_name != 'pull_request' || !github.event.pull_request.draft) && ((github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'erniecohen/dafny'))) && !inputs.platform_parity && (!(github.event_name == 'workflow_dispatch' && (inputs.default_comparison || inputs.decreases_order_comparison) && startsWith(github.ref, 'refs/heads/scratch/'))))) && needs.tree.outputs.reuse != 'true') }}
     name: Regression tests (upstream harness)
     needs: tree
-    runs-on: [self-hosted, macOS, ARM64, mac-studio]
+    runs-on: [self-hosted, macOS, ARM64, fork-ci]
     timeout-minutes: 1440 # Includes waiting for the shared admission slot.
     steps:
       - name: Yield to interactive work
@@ -1168,7 +1176,7 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@600ab4703a71d73df1e2d014bd1018c4c9e08d85
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@18b15fb544432352965a832a1e4cdad4374acf10
         with:
           slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
       - uses: actions/checkout@v4
@@ -1311,7 +1319,7 @@ jobs:
     name: Regression tests with Linux resource expectations
     if: ${{ github.repository == 'erniecohen/dafny' && false }} # Linux resource expectations require a Linux self-hosted runner.
     needs: tree
-    runs-on: [self-hosted, macOS, ARM64, mac-studio]
+    runs-on: [self-hosted, macOS, ARM64, fork-ci]
     timeout-minutes: 1440 # Includes waiting for the shared admission slot.
     steps:
       - name: Yield to interactive work
@@ -1332,7 +1340,7 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@600ab4703a71d73df1e2d014bd1018c4c9e08d85
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@18b15fb544432352965a832a1e4cdad4374acf10
         with:
           slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
       - uses: actions/checkout@v4
@@ -1387,7 +1395,7 @@ jobs:
     if: ${{ (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request') && (github.event_name != 'pull_request' || (!github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository))) && (((github.event_name != 'pull_request' || !github.event.pull_request.draft) && ((github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'erniecohen/dafny'))) && !inputs.platform_parity && (!(github.event_name == 'workflow_dispatch' && (inputs.default_comparison || inputs.decreases_order_comparison) && startsWith(github.ref, 'refs/heads/scratch/'))))) && needs.tree.outputs.reuse != 'true') }}
     name: Resolver unit tests and language-server recovery
     needs: tree
-    runs-on: [self-hosted, macOS, ARM64, mac-studio]
+    runs-on: [self-hosted, macOS, ARM64, fork-ci]
     timeout-minutes: 1440 # Includes waiting for the shared admission slot.
     steps:
       - name: Yield to interactive work
@@ -1408,7 +1416,7 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@600ab4703a71d73df1e2d014bd1018c4c9e08d85
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@18b15fb544432352965a832a1e4cdad4374acf10
         with:
           slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
       - uses: actions/checkout@v4
@@ -1479,7 +1487,7 @@ jobs:
     if: ${{ (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request') && (github.event_name != 'pull_request' || (!github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository))) && (((github.event_name != 'pull_request' || !github.event.pull_request.draft) && ((github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'erniecohen/dafny'))) && !inputs.platform_parity)) && needs.tree.outputs.reuse != 'true') }}
     name: Finite-support encoding and boundary controls
     needs: [build, tree]
-    runs-on: [self-hosted, macOS, ARM64, mac-studio]
+    runs-on: [self-hosted, macOS, ARM64, fork-ci]
     timeout-minutes: 1440 # Includes waiting for the shared admission slot.
     steps:
       - name: Yield to interactive work
@@ -1500,7 +1508,7 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@600ab4703a71d73df1e2d014bd1018c4c9e08d85
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@18b15fb544432352965a832a1e4cdad4374acf10
         with:
           slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
       - uses: actions/checkout@v4
@@ -1542,7 +1550,7 @@ jobs:
     if: ${{ (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request') && (github.event_name != 'pull_request' || (!github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository))) && (((github.event_name != 'pull_request' || !github.event.pull_request.draft) && ((github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'erniecohen/dafny'))) && !inputs.platform_parity)) && needs.tree.outputs.reuse != 'true') }}
     name: Statement-expression conclusions (opt-in)
     needs: [build, tree]
-    runs-on: [self-hosted, macOS, ARM64, mac-studio]
+    runs-on: [self-hosted, macOS, ARM64, fork-ci]
     timeout-minutes: 1440 # Includes waiting for the shared admission slot.
     steps:
       - name: Yield to interactive work
@@ -1563,7 +1571,7 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@600ab4703a71d73df1e2d014bd1018c4c9e08d85
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@18b15fb544432352965a832a1e4cdad4374acf10
         with:
           slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
       - uses: actions/checkout@v4
@@ -1608,7 +1616,7 @@ jobs:
     if: ${{ (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request') && (github.event_name != 'pull_request' || (!github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository))) && ((github.event_name != 'pull_request' || !github.event.pull_request.draft) && needs.tree.outputs.reuse != 'true') }}
     name: Integer bitwise reference (Z3 ${{ matrix.z3 }}, ${{ matrix.resolver }})
     needs: [build, milestone-scope, tree]
-    runs-on: [self-hosted, macOS, ARM64, mac-studio]
+    runs-on: [self-hosted, macOS, ARM64, fork-ci]
     timeout-minutes: 1440 # Includes waiting for the shared admission slot.
     strategy:
       fail-fast: false
@@ -1635,7 +1643,7 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@600ab4703a71d73df1e2d014bd1018c4c9e08d85
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@18b15fb544432352965a832a1e4cdad4374acf10
         with:
           slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
       - uses: actions/checkout@v4
@@ -1650,7 +1658,7 @@ jobs:
         if: needs.milestone-scope.outputs.integer_bitwise == 'true'
         timeout-minutes: 30
         run: |
-          git fetch --no-tags --depth=2 origin 25203d9115f8f104b325c8a058bf41051bdbbe69
+          git fetch --no-tags --refmap= --depth=2 origin 25203d9115f8f104b325c8a058bf41051bdbbe69
           python3 .github/review/issue193-identity.py reference-results/identity
       - name: Pinned solver
         timeout-minutes: 30
@@ -1700,7 +1708,7 @@ jobs:
     # Build and execute the native product, then cross-publish Linux x64 from the same commit.
     # Linux execution is qualified downstream, not on this macOS runner.
     # This job only runs for tags and manual dispatches, never for pull requests.
-    runs-on: [self-hosted, macOS, ARM64, mac-studio]
+    runs-on: [self-hosted, macOS, ARM64, fork-ci]
     timeout-minutes: 1440 # Includes waiting for the shared admission slot.
     strategy:
       max-parallel: 1
@@ -1726,7 +1734,7 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@600ab4703a71d73df1e2d014bd1018c4c9e08d85
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@18b15fb544432352965a832a1e4cdad4374acf10
         with:
           slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
       - uses: actions/checkout@v4
@@ -1854,7 +1862,7 @@ jobs:
     name: Verdict
     if: ${{ !cancelled() && (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request') && (github.event_name != 'pull_request' || (!github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository))) && (!cancelled() && !contains(needs.*.result, 'failure') && needs.tree.result == 'success' && (github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) || (github.event_name == 'workflow_dispatch' && github.ref_type == 'tag'))) }}
     needs: [tree, build, suite, verdicts, verification-batch, resolver, stdlib, axiom-resources, javascript-runtime, regressions, regressions-linux, resolver-tests, finite-support, statement-conclusions, integer-bitwise-reference]
-    runs-on: [self-hosted, macOS, ARM64, mac-studio]
+    runs-on: [self-hosted, macOS, ARM64, fork-ci]
     timeout-minutes: 1440 # Includes waiting for the shared admission slot.
     steps:
       - name: Yield to interactive work
@@ -1875,7 +1883,7 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@600ab4703a71d73df1e2d014bd1018c4c9e08d85
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@18b15fb544432352965a832a1e4cdad4374acf10
         with:
           slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
       - uses: actions/checkout@v4
@@ -1922,7 +1930,7 @@ jobs:
     if: ${{ !cancelled() && (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request') && (github.event_name != 'pull_request' || (!github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository))) && (!cancelled() && needs.build.result == 'success' && needs.binaries.result == 'success' && needs.verdict.result == 'success' && (github.event_name != 'pull_request' || !github.event.pull_request.draft) && (!inputs.platform_parity && (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref_type == 'tag'))) }}
     name: GitHub release
     needs: [build, binaries, verdict]
-    runs-on: [self-hosted, macOS, ARM64, mac-studio]
+    runs-on: [self-hosted, macOS, ARM64, fork-ci]
     timeout-minutes: 1440 # Includes waiting for the shared admission slot.
     permissions:
       contents: write
@@ -1945,7 +1953,7 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@600ab4703a71d73df1e2d014bd1018c4c9e08d85
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@18b15fb544432352965a832a1e4cdad4374acf10
         with:
           slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
       - uses: actions/checkout@v4
@@ -2011,7 +2019,7 @@ jobs:
     name: Platform parity report (probe)
     needs: [parity-linux, parity-macos]
     if: ${{ !cancelled() && (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request') && (github.event_name != 'pull_request' || (!github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository))) && ((github.event_name != 'pull_request' || !github.event.pull_request.draft) && (!cancelled() && github.repository == 'erniecohen/dafny' && github.event_name == 'workflow_dispatch' && inputs.platform_parity)) }}
-    runs-on: [self-hosted, macOS, ARM64, mac-studio]
+    runs-on: [self-hosted, macOS, ARM64, fork-ci]
     timeout-minutes: 1440 # Includes waiting for the shared admission slot.
     permissions:
       contents: read
@@ -2035,7 +2043,7 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@600ab4703a71d73df1e2d014bd1018c4c9e08d85
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@18b15fb544432352965a832a1e4cdad4374acf10
         with:
           slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
       - uses: actions/checkout@v4

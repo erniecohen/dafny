@@ -31,7 +31,7 @@ env:
 jobs:
   core:
     if: ${{ (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request') && (github.event_name != 'pull_request' || (!github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository))) && (github.event_name != 'pull_request' || !github.event.pull_request.draft) }}
-    runs-on: [self-hosted, macOS, ARM64, mac-studio]
+    runs-on: [self-hosted, macOS, ARM64, fork-ci]
     timeout-minutes: 1440 # Includes waiting for the shared admission slot.
     env:
       DOTNET_PROCESSOR_COUNT: '3'
@@ -54,7 +54,7 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@600ab4703a71d73df1e2d014bd1018c4c9e08d85
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@18b15fb544432352965a832a1e4cdad4374acf10
         with:
           slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
       - uses: actions/checkout@v4

@@ -1,7 +1,7 @@
 # Self-hosted Actions policy
 
 Every executable job in `.github/workflows/` selects the literal labels
-`[self-hosted, macOS, ARM64, mac-studio]`. There is no hosted fallback or dynamic
+`[self-hosted, macOS, ARM64, fork-ci]`. There is no hosted fallback or dynamic
 runner expression. `check-self-hosted-runners.py` rejects selectors outside this
 policy and external reusable workflows; actionlint validates the workflow YAML.
 The routing tests retain the same-repository event restrictions. Draft and fork
@@ -18,6 +18,22 @@ job temporary files before stopping the keeper. An unconditional shell cleanup
 also removes temporary files if checkout or admission fails. The action is pinned
 by commit so that a historical checkout cannot replace its post script. An action
 update must also update the workflow references.
+
+After admission and before the first checkout, the pinned action clears this job's
+repository workspace, including all Git metadata and stale output. It verifies
+that the workspace is an immediate child of `RUNNER_WORKSPACE`, and never follows
+workspace symlinks into another directory. Cached actions, toolchains and job
+scratch directories are outside this cleanup. The checkout starts from fresh
+metadata even after a prior job failed during fetch.
+
+All checkouts use the default one-commit depth or explicitly set depth 1. The shared
+`fetch-refs` composite fetches only supplied commit IDs or fully qualified refs into
+numbered private refs, with no tag following or configured remote refmap. The two
+milestone jobs fetch complete ancestry of the PR base and head for `merge-base`;
+`--unshallow` is used only while the repository is shallow, so a completed fetch
+can be retried safely. Baseline build jobs fetch only their pinned commit at depth
+1. No all-branch or all-tag fetch is needed; versioning retains its explicit
+single-tag fetch. Case-colliding unrelated remote branches are never imported.
 
 The job timeout includes admission waiting; shell commands retain the former job
 execution timeout as a per-step safety cap. Worker niceness, .NET/Gradle daemon

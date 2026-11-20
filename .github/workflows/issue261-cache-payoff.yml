@@ -51,7 +51,7 @@ jobs:
     # The fork's self-hosted runners share one machine, so the corpora are measured one at a time,
     # and each timed run records the other jobs active on those runners (and is repeated if any).
     if: ${{ (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request') && (github.event_name != 'pull_request' || (!github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository))) && (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')) }}
-    runs-on: [self-hosted, macOS, ARM64, mac-studio]
+    runs-on: [self-hosted, macOS, ARM64, fork-ci]
     timeout-minutes: 1440 # Includes waiting for the shared admission slot.
     env:
       GH_TOKEN: ${{ github.token }}
@@ -82,7 +82,7 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@600ab4703a71d73df1e2d014bd1018c4c9e08d85
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@18b15fb544432352965a832a1e4cdad4374acf10
         with:
           slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
       - uses: actions/checkout@v4
@@ -110,7 +110,7 @@ jobs:
           fetch() {  # repository, commit, directory, sparse paths...
             git init -q "$3" && git -C "$3" remote add origin "$1"
             if [ $# -gt 3 ]; then git -C "$3" sparse-checkout set "${@:4}"; fi
-            git -C "$3" fetch -q --depth 1 --filter=blob:none origin "$2"
+            git -C "$3" fetch -q --no-tags --refmap= --depth 1 --filter=blob:none origin "$2"
             git -C "$3" checkout -q FETCH_HEAD
             echo "$1 $(git -C "$3" rev-parse HEAD)" >> corpora.txt
           }
@@ -133,7 +133,7 @@ jobs:
           done | sort -u |
             while read -r id; do
               gh api "repos/$GITHUB_REPOSITORY/actions/runs/$id/jobs?per_page=100" \
-                --jq "[.jobs[] | select(.status == \"in_progress\" and (.labels | index(\"mac-studio\")) and .runner_name != \"$RUNNER_NAME\")] | length"
+                --jq "[.jobs[] | select(.status == \"in_progress\" and (.labels | index(\"fork-ci\")) and .runner_name != \"$RUNNER_NAME\")] | length"
             done | awk '{ s += $1 } END { print s + 0 }'
           SH
           active="bash $RUNNER_TEMP/active.sh"
@@ -224,7 +224,7 @@ jobs:
   analyze:
     needs: measure
     if: ${{ (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request') && (github.event_name != 'pull_request' || (!github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository))) && (always()) }}
-    runs-on: [self-hosted, macOS, ARM64, mac-studio]
+    runs-on: [self-hosted, macOS, ARM64, fork-ci]
     timeout-minutes: 1440 # Includes waiting for the shared admission slot.
     steps:
       - name: Yield to interactive work
@@ -245,7 +245,7 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@600ab4703a71d73df1e2d014bd1018c4c9e08d85
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@18b15fb544432352965a832a1e4cdad4374acf10
         with:
           slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
       - uses: actions/checkout@v4

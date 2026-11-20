@@ -9,7 +9,7 @@ from pathlib import Path
 import re
 import sys
 
-LABELS = '[self-hosted, macOS, ARM64, mac-studio]'
+LABELS = '[self-hosted, macOS, ARM64, fork-ci]'
 
 
 def check(directory):
@@ -17,6 +17,10 @@ def check(directory):
     errors = []
     for workflow in sorted([*directory.glob('*.yml'), *directory.glob('*.yaml')]):
         text = workflow.read_text()
+        if re.search(r'''["']?fetch-depth["']?\s*:\s*["']?0(?:\s|["']|$)''', text):
+            errors.append(f'{workflow.name}: unbounded checkout history is forbidden')
+        if '-'.join(('mac', 'studio')) in text.lower():
+            errors.append(f'{workflow.name}: retired runner label is forbidden')
         jobs = text.split('\njobs:\n', 1)[-1]
         for match in re.finditer(r'^  ([\w-]+):\n(.*?)(?=^  [\w-]+:\n|\Z)', jobs, re.M | re.S):
             name, body = match.groups()

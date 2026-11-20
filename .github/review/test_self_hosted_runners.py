@@ -25,9 +25,16 @@ class RunnerPolicyTests(unittest.TestCase):
             count += len(calls)
         self.assertEqual(count, 85)
 
+    def test_admission_prepares_workspace_after_acquiring_slot(self):
+        action = Path(__file__).parents[1] / 'actions/self-hosted-job/index.cjs'
+        text = action.read_text()
+        call = 'prepareWorkspace(process.env.GITHUB_WORKSPACE, process.env.RUNNER_WORKSPACE);'
+        self.assertIn(call, text)
+        self.assertLess(text.index('keeper.unref();'), text.index(call))
+
     def test_rejects_hosted_labels_expressions_and_matrix_selectors(self):
         for label in ['ubuntu-24.04', 'macos-latest', 'windows-latest',
-                      "${{ matrix.os }}", "${{ inputs.mac && 'mac-studio' || 'ubuntu-24.04' }}", '*labels']:
+                      "${{ matrix.os }}", "${{ inputs.mac && 'fork-ci' || 'ubuntu-24.04' }}", '*labels']:
             with self.subTest(label=label), tempfile.TemporaryDirectory() as directory:
                 root = Path(directory)
                 (root / 'workflow.yml').write_text(f'on: push\njobs:\n  test:\n    runs-on: {label}\n')
@@ -38,6 +45,14 @@ class RunnerPolicyTests(unittest.TestCase):
             root = Path(directory)
             (root / 'workflow.yml').write_text('on: push\njobs:\n  test:\n    uses: example/repo/.github/workflows/test.yml@main\n')
             self.assertEqual(len(runners.check(root)[1]), 1)
+
+    def test_rejects_unbounded_checkout_and_retired_label(self):
+        for prohibited in ['fetch-depth: 0', "'fetch-depth': '0'", '-'.join(('mac', 'studio'))]:
+            with self.subTest(prohibited=prohibited), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                (root / 'workflow.yml').write_text('on: push\njobs:\n  test:\n    runs-on: ' +
+                    runners.LABELS + '\n    # ' + prohibited + '\n')
+                self.assertTrue(runners.check(root)[1])
 
 class SolverPlatformTests(unittest.TestCase):
     def test_workflow_downloads_keep_pinned_macos_solvers(self):

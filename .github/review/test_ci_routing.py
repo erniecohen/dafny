@@ -16,7 +16,7 @@ def mac_jobs():
         text = path.read_text().split('\njobs:\n', 1)[-1]
         for match in re.finditer(r'^  ([\w-]+):\n(.*?)(?=^  [\w-]+:\n|\Z)', text, re.M | re.S):
             body = match[2]
-            if re.search(r'^    runs-on:.*mac-studio|^            os: mac-studio', body, re.M):
+            if re.search(r'^    runs-on:.*fork-ci|^            os: fork-ci', body, re.M):
                 condition = re.search(r'^    if: (.*)$', body, re.M)
                 yield path.name + '/' + match[1], condition[1].split(' #', 1)[0] if condition else ''
 
@@ -44,6 +44,13 @@ def enabled(expression, event, head, repository, flags, ref_type="branch", draft
 
 
 class RoutingTests(unittest.TestCase):
+    def test_workflows_exclude_unbounded_checkout_and_retired_labels(self):
+        for path in [*ROOT.glob('*.yml'), *ROOT.glob('*.yaml')]:
+            with self.subTest(workflow=path.name):
+                text = path.read_text()
+                self.assertNotRegex(text, r'''["']?fetch-depth["']?\s*:\s*["']?0(?:\s|["']|$)''')
+                self.assertNotIn('-'.join(('mac', 'studio')), text.lower())
+
     def test_mac_job_worker_is_reniced_before_checkout(self):
         for name, _ in mac_jobs():
             workflow, job = name.split('/')
@@ -70,7 +77,7 @@ class RoutingTests(unittest.TestCase):
         for path in ROOT.glob('*.yml'):
             for runner in re.findall(r'^    runs-on: (.*)$', path.read_text(), re.M):
                 with self.subTest(workflow=path.name):
-                    self.assertEqual(runner, '[self-hosted, macOS, ARM64, mac-studio]')
+                    self.assertEqual(runner, '[self-hosted, macOS, ARM64, fork-ci]')
 
     def test_linux_legs_are_explicitly_unavailable(self):
         jobs = dict(mac_jobs())
