@@ -1148,9 +1148,12 @@ that a later stage would have to reject:
 * imports of the members of one group that name their targets through each
   other (such as `import X = B.Y` in `A` beside `import Y = A.X` in `B`);
 * a group supplied as unverified library source rather than a `.doo` archive;
-* executable compilation of a program that has a group: `dafny build`
-  (except `--target lib`), `dafny run` and `dafny translate` stop with an error
-  after verification.
+* executable compilation of a program that has a group for a target other than
+  C# or Java: `dafny build` (except `--target lib`), `dafny run` and `dafny translate`
+  stop with an error naming that target after verification. C# and Java compilation
+  are supported, including groups loaded from `.doo` libraries. Their namespaces
+  and packages can refer to each other, and their constant getters evaluate
+  dependencies on use. Java compiles the generated packages together.
 
 A `.doo` library built with `--recursive-modules` requires its client to enable
 the option too; one built without it records nothing. A group is retained as a

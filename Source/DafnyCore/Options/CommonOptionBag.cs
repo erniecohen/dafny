@@ -471,7 +471,7 @@ Value implementations must retain their type parameters in compatible parent pos
   };
 
   public static readonly Option<bool> RecursiveModules = new("--recursive-modules", () => false,
-    "(experimental, incomplete) Allow modules to import each other. The modules of an import cycle form a recursive module group, which means what one module with all their declarations would mean. Only imports may form a cycle. Requires --member-invariants. A program that has a recursive module group may not declare a codatatype. A group is all concrete or all abstract. Refinement and abstract imports must point to strictly lower groups. A .doo library retains and records complete groups; its client needs the same option. Replacement in a group and executable compilation of a program that has a group are not yet supported.") {
+    "(experimental, incomplete) Allow modules to import each other. The modules of an import cycle form a recursive module group, which means what one module with all their declarations would mean. Only imports may form a cycle. Requires --member-invariants. A program that has a recursive module group may not declare a codatatype. A group is all concrete or all abstract. Refinement and abstract imports must point to strictly lower groups. A .doo library retains and records complete groups; its client needs the same option. Executable compilation supports the C# and Java targets. Replacement in a group is not yet supported.") {
     IsHidden = true
   };
 
