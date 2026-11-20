@@ -28,9 +28,8 @@ module OtherNewtype {
 
 module Null {
   class C {
-    const next: C?
     const k: int
-    invariant next != null ==> next.k > 0
-    constructor (n: C?) requires n != null ==> n.k > 0 { next := n; k := 1; }
+    invariant k > 0 && var x: C? := null; x == null
+    constructor () { k := 1; }
   }
 }
