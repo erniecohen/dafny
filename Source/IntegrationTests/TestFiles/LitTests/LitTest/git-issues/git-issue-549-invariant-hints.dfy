@@ -90,3 +90,26 @@ module DynamicLemma {
     lemma Ok() ensures false { var t: T := T(0, this); }
   }
 }
+
+// A field of type C read from the heap in a function of the cone: the heap says that the value has type C, so a proof
+// about it learns C's invariant.  In a hint ...
+module HeapReadInHint {
+  class C {
+    const next: C
+    invariant Inv(this)
+    constructor (n: C) { next := n; }
+  }
+  ghost predicate Inv(c: raw C) ensures !Inv(c) { G(c.next); true }
+  lemma G(x: C) ensures false { }
+}
+
+// ... or in the body of a function, whose parameter then has type C.
+module HeapReadInBody {
+  class C {
+    const next: C
+    invariant Inv(this)
+    constructor (n: C) { next := n; }
+  }
+  ghost predicate Inv(c: raw C) ensures !Inv(c) { Q(c.next) }
+  ghost predicate Q(x: C) ensures false { assert Inv(x); true }
+}

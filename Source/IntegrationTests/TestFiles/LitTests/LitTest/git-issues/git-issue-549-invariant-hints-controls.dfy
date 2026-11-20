@@ -50,3 +50,18 @@ module Independent {
   // A function outside the cone may use T in its hints, and call dynamically bound lemmas.
   ghost function Outside(t: T, o: Oracle): int { assert t is T; o.Ok(t.n); var x: T :| x == t; x.n }
 }
+
+// In the cone of a class, a field of a type that does not depend on the class may be read, and 'null' may have a type
+// that does (git-issue-549-invariant-hints.dfy rejects a read of a field whose type does).
+module ClassFields {
+  class D {
+    const k: int
+    constructor () { k := 1; }
+  }
+  class C {
+    const d: D?
+    const k: int
+    invariant k > 0 && (d != null ==> d.k > 0) && var x: C? := null; x == null
+    constructor (e: D?) requires e != null ==> e.k > 0 { d := e; k := 1; }
+  }
+}

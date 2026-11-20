@@ -2175,6 +2175,14 @@ section 7.2).**
     - no field or array element of such a type is read from the heap;
     - no dynamically bound lemma is called, as for functions (clause 4).
 
+    The heap rule (clause 7) applies to the expressions of the cone as well,
+    not only to its proofs.  A function of the cone that reads a field of type
+    `C` from the heap may pass it to another function whose well-formedness
+    proof learns `C`'s invariant from its parameter's type
+    (`HeapReadInBody`, which proved `false` before this change).  So a class
+    invariant may not read a field of type `C?`; it may still compare `null`
+    with such a value (the `ClassFields` control).
+
     `git-issue-105-statements.dfy` now shows that each statement of the earlier
     controls (a quantifier over the type without a bound, a test of a raw
     `this`, a lemma that does both, a dynamically bound lemma call) is

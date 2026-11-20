@@ -5,4 +5,6 @@ git-issue-549-invariant-hints.dfy(51,26): Error: 'Inv' is used by the invariant 
 git-issue-549-invariant-hints.dfy(63,53): Error: 'Inv' is used by the invariant of 'T' and tests a raw value against 'T'
 git-issue-549-invariant-hints.dfy(74,56): Error: 'Helper' is used by the invariant of 'T' and converts a raw value to 'T'
 git-issue-549-invariant-hints.dfy(88,56): Error: 'Inv' is used by the invariant of 'T' and calls 'Ok', which is dynamically bound, so the proofs it stands for are not all known
-7 resolution/type errors detected in git-issue-549-invariant-hints.dfy
+git-issue-549-invariant-hints.dfy(102,54): Error: 'Inv' is used by the invariant of 'C' and reads a location of type 'C' from the heap
+git-issue-549-invariant-hints.dfy(113,54): Error: 'Inv' is used by the invariant of 'C' and reads a location of type 'C' from the heap
+9 resolution/type errors detected in git-issue-549-invariant-hints.dfy

@@ -40,7 +40,9 @@ namespace Microsoft.Dafny;
 ///  6. a local variable of a T-dependent type has an initial value, a ":|" statement does not choose a value of a
 ///     T-dependent type, and an out-parameter of a lemma does not have a T-dependent type, since any of these chooses
 ///     from the set of values of the type, as an unbounded bound variable would (clause 1);
-///  7. no field or array element of a T-dependent type is read from the heap, since the heap says that it has its type;
+///  7. no field or array element of a T-dependent type is read from the heap, since the heap says that it has its type
+///     (this clause applies to the expressions of the cone too: a function there that reads such a value may pass it to
+///     one whose well-formedness proof learns T's invariants from its parameter's type);
 ///  8. no dynamically bound lemma is called, since the bodies of its overrides are not all known (as clause 4).
 /// Clause 6 for out-parameters also applies to the bound lemmas themselves: a result of a T-dependent type is chosen
 /// from the set of values of its type (section 6.3 of docs/dev/issue199-lemma-results-plan.md).
