@@ -90,14 +90,48 @@ a sandbox against a malicious backend.
 This does not add a timeout to a stream that never closes. P2 transport remains
 responsible for liveness and matching worker responses to requested work. Native
 cached completion and the native `TryRun() == null` already-running convention
-retain their existing behavior. Module-wide expected/completed identity accounting,
-cross-run response correlation and reporting capabilities remain separate work.
+retain their existing behavior. Transport response correlation and reporting
+capabilities remain separate work.
 
 The stream controls cover every outcome, withheld completion, evidence identity,
 errors before/after a result, cancellation, subscription isolation and disposal.
 Engine-free scheduling controls reject malformed streams without publishing a
 terminal result. Native lit controls cover isolated assertion batches, a failing
 assertion, module windows, filters and translation caching.
+
+## Module manifests and request accounting
+
+After preparation, `Compilation` checks the whole module's work before refinement
+and request filtering. A scope/part identity must be nonempty and unique within
+that module, and every work item must have an owner in that module. The immutable
+identity map is published as `ModuleVerificationWorkIdentified`. It describes the
+backend's prepared work; it does not independently establish that translation or
+the backend generated every required obligation.
+
+Each selected, seeded request gets a distinct `VerificationRun`, linked to the
+module manifest and published before its work starts. Seeding must preserve the
+original source identity and owner. The run records its expected identities,
+original result objects and original errors. Missing identities leave it incomplete;
+duplicate, substituted, malformed or foreign results cannot fill the missing work.
+All outcomes remain distinct, and only a complete set of `Verified` results with
+no errors satisfies the neutral `IsVerified` predicate. Cancellation errors remain
+`Cancelled`; other execution errors remain `ToolError`. Read snapshots cannot
+change the ledger, and later errors remain non-success even after a result.
+
+CLI state accepts only results recorded for its current run, once per identity.
+It finishes after every selected result has been delivered, preserving the native
+publication point and completion order. Late errors from an older request update
+that run's ledger and cannot finish or fault a new request for the same source
+identities. Synchronous start errors and status-handler errors use the existing
+verification-exception path. Preparation exceptions still use the existing
+internal-compilation-exception path and never publish an empty ready manifest.
+
+This is accounting at the scheduling/publication boundary, not a stream-closure
+certificate. The native adapter still publishes before observable completion and
+retains the already-running convention. Native completion auditing, IDE handling
+of superseded requests and transport-level response correlation remain open.
+CLI aggregate outcomes still use genuine native evidence, including its historical
+treatment of `Bounded`; the neutral ledger never labels `Bounded` as verified.
 
 ## Compatibility and controls
 
@@ -175,11 +209,13 @@ an implementation of alternative backend reporting. The remaining milestones are
 
 - Replace the reporting bridge with optional diagnostic, model, dependency, logger
   and gutter capabilities, including neutral CLI aggregate results.
-- Account for expected/completed work and every non-success outcome end to end,
-  including failed preparation, unsupported input, cancellation and worker errors.
+- Finish non-success accounting through reporting consumers, including failed
+  preparation, unsupported input, cancellation and worker errors.
   The default scheduling entry point now rejects malformed completion before publishing
-  a terminal result. Native stream auditing, module-wide and cross-run identity
-  accounting remain open; the native adapter retains its engine's publication timing.
+  a terminal result. Module manifests and request ledgers now account for prepared
+  and selected work identities and observed outcomes. Native stream auditing,
+  superseded IDE requests and transport response correlation remain open; the
+  native adapter retains its engine's publication timing.
 - Cover legacy entry points and opt-in translation/result caches explicitly, and
   repeat default-Boogie compatibility and full harness checks after reporting migration.
 

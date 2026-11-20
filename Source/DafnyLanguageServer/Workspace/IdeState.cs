@@ -198,6 +198,9 @@ public record IdeState(
     TelemetryPublisherBase telemetryPublisher,
     IProjectDatabase projectDatabase, ICompilationEvent e) {
     switch (e) {
+      case ModuleVerificationWorkIdentified:
+      case VerificationRunStarted:
+        return this;
       case DeterminedRootFiles determinedRootFiles:
         return await HandleDeterminedRootFiles(options, logger, projectDatabase, determinedRootFiles);
       case VerificationUpdate verificationUpdate:

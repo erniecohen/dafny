@@ -1,0 +1,1 @@
+Check module-wide prepared work identities before filtering, and account for each selected verification request by identity and outcome. CLI completion uses those request identities while retaining native result publication and reporting.

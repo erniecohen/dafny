@@ -3,12 +3,16 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reactive.Linq;
+using System.Reactive.Subjects;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Dafny.LanguageServer.Workspace;
 using DafnyDriver.Commands;
 using Microsoft.Boogie;
 using Microsoft.Dafny;
+using Microsoft.Dafny.LanguageServer.Language;
+using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
 namespace IntegrationTests;
@@ -18,6 +22,67 @@ public class VerificationBatchCollection { }
 
 [Collection("Verification batch")]
 public class VerificationBatchTests {
+  [Fact]
+  public async Task LateErrorsBelongToTheirOriginalRequest() {
+    var directory = Path.Combine(Path.GetTempPath(), "verification-request-" + Guid.NewGuid());
+    Directory.CreateDirectory(directory);
+    var source = Path.Combine(directory, "input.dfy");
+    await File.WriteAllTextAsync(source, "lemma Good() { assert true; }\n");
+    try {
+      var verifier = new RetainedResultVerifier();
+      var cli = CliCompilation.Create(Options(true, source), verifier);
+      using var compilation = cli.Compilation;
+      var runs = new List<VerificationRun>();
+      using var events = compilation.Updates.Subscribe(update => {
+        if (update is VerificationRunStarted started) { runs.Add(started.Run); }
+      });
+      cli.Start();
+      Assert.NotEmpty(await Request(cli, "input.dfy"));
+      Assert.True(Assert.Single(runs).IsVerified);
+      Assert.NotEmpty(await Request(cli, "input.dfy"));
+      Assert.Equal(2, runs.Count);
+      Assert.Same(verifier.LateError, Assert.Single(runs[0].Failures).Value.Exception);
+      Assert.False(runs[0].IsVerified);
+      Assert.True(runs[1].IsVerified);
+    } finally {
+      Directory.Delete(directory, true);
+    }
+  }
+
+  // Retain native publication but leave its stream open so an older request can fail
+  // while a new request for the same source identities is starting.
+  private sealed class RetainedResultVerifier : IProgramVerifier {
+    private readonly DafnyProgramVerifier inner = new(NullLogger<DafnyProgramVerifier>.Instance);
+    private Subject<VerificationWorkStatus>? previous;
+    public Exception LateError { get; } = new InvalidOperationException("late worker error");
+    public async Task<ModuleVerificationPreparation> GetVerificationTasksAsync(VerificationPreparationRequest request,
+      ResolutionResult resolution, ModuleDefinition moduleDefinition, CancellationToken cancellationToken) {
+      var result = await inner.GetVerificationTasksAsync(request, resolution, moduleDefinition, cancellationToken);
+      return result with { Preparation = VerificationPreparation.Ready(result.Preparation.GetWorkOrThrow().Select(w => new RetainedWork(w, this))) };
+    }
+
+    private sealed class RetainedWork(IVerificationWork inner, RetainedResultVerifier owner) : IVerificationWork {
+      public VerificationSource Source => inner.Source;
+      public IVerificationPayload? Payload => inner.Payload;
+      public IReadOnlyList<Microsoft.Dafny.Function> HiddenFunctions => inner.HiddenFunctions;
+      public VerificationWorkStatus CacheStatus => inner.CacheStatus;
+      public bool IsIdle => inner.IsIdle;
+      public IVerificationWork FromSeed(int seed) => new RetainedWork(inner.FromSeed(seed), owner);
+      public IObservable<VerificationWorkStatus>? TryRun() => TryRunForScheduling();
+      public IObservable<VerificationWorkStatus>? TryRunForScheduling() {
+        owner.previous?.OnError(owner.LateError);
+        var subject = new Subject<VerificationWorkStatus>();
+        owner.previous = subject;
+        return Observable.Create<VerificationWorkStatus>(observer => {
+          var subscription = subject.Subscribe(observer);
+          inner.TryRunForScheduling()!.Subscribe(subject.OnNext, subject.OnError);
+          return subscription;
+        });
+      }
+      public void Cancel() => inner.Cancel();
+    }
+  }
+
   [Theory]
   [InlineData(false)]
   [InlineData(true)]
@@ -34,9 +99,11 @@ public class VerificationBatchTests {
       using var compilation = cli.Compilation;
       var parsing = 0;
       var resolving = 0;
+      var runs = new List<VerificationRun>();
       using var events = compilation.Updates.Subscribe(ev => {
         if (ev is FinishedParsing) { parsing++; }
         if (ev is FinishedResolution) { resolving++; }
+        if (ev is VerificationRunStarted started) { runs.Add(started.Run); }
       });
       cli.Start();
       var resolution = await cli.Resolution;
@@ -49,6 +116,29 @@ public class VerificationBatchTests {
       var overlap = await Request(cli, "first.dfy:2");
       var negative = await Request(cli, "second.dfy");
       var afterNegative = await Request(cli, "first.dfy");
+      Assert.Equal(5, runs.Count);
+      Assert.All(runs, run => {
+        Assert.True(run.IsComplete);
+        Assert.Equal(run.ExpectedCount, run.Results.Count);
+        Assert.Empty(run.Failures);
+        Assert.NotNull(run.Manifest);
+        Assert.All(run.Results.Keys, id => Assert.Contains(id, run.Manifest!.Expected.Keys));
+      });
+      Assert.True(runs[0].IsVerified);
+      Assert.False(runs[3].IsVerified);
+      Assert.Contains(runs[3].Results.Values, r => r.Outcome == VerificationOutcome.Failed);
+      Assert.NotSame(runs[0], runs[1]);
+      Assert.Equal(runs[0].Results.Keys, runs[1].Results.Keys);
+      Assert.True(runs[2].ExpectedCount < runs[0].ExpectedCount);
+      var state = new CliCanVerifyState { Run = runs[0] };
+      foreach (var task in runs[0].Work) {
+        state.RecordCompletion(task, new(runs[0].Results[task.Source.Id]));
+      }
+      Assert.Equal(state.TaskCount, state.CompletedCount);
+      var repeated = runs[0].Work[0];
+      Assert.Throws<InvalidOperationException>(() => state.RecordCompletion(repeated, new(runs[0].Results[repeated.Source.Id])));
+      Assert.Throws<InvalidOperationException>(() => new CliCanVerifyState { Run = runs[1] }
+        .RecordCompletion(repeated, new(runs[0].Results[repeated.Source.Id])));
       foreach (var result in new[] { original, duplicate, overlap, afterNegative }) {
         Assert.NotEmpty(result);
         Assert.All(result, part => Assert.Equal(SolverOutcome.Valid, part.Result.Outcome));

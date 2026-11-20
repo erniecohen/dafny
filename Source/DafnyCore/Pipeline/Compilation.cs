@@ -52,6 +52,7 @@ public class Compilation : IDisposable {
     Task<IReadOnlyDictionary<ICanVerify, IReadOnlyList<IVerificationWork>>>> translatedModules = new();
 
   private readonly ConcurrentDictionary<ModuleDefinition, ProofDependencyManager> moduleProofDependencies = new();
+  private readonly ConcurrentDictionary<ModuleDefinition, VerificationWorkManifest> moduleWork = new();
 
   private readonly ConcurrentDictionary<ICanVerify, Unit> verifyingOrVerifiedSymbols = new();
   private readonly LazyConcurrentDictionary<ICanVerify, IReadOnlyList<IVerificationWork>> tasksPerVerifiable = new();
@@ -425,27 +426,23 @@ public class Compilation : IDisposable {
       var ticket = verificationTickets.Dequeue();
       var containingModule = canVerify.ContainingModule;
 
-      IReadOnlyDictionary<ICanVerify, IReadOnlyList<IVerificationWork>> tasksForModule;
-      try {
-        tasksForModule = await translatedModules.GetOrAdd(containingModule, async () => {
-          var result = await verifier.GetVerificationTasksAsync(
-            createPreparationRequest(resolution, containingModule), resolution, containingModule,
-            cancellationSource.Token);
+      var tasksForModule = await translatedModules.GetOrAdd(containingModule, async () => {
+        var result = await verifier.GetVerificationTasksAsync(
+          createPreparationRequest(resolution, containingModule), resolution, containingModule,
+          cancellationSource.Token);
 
-          moduleProofDependencies[containingModule] = result.ProofDependencies;
-          return result.Preparation.GetWorkOrThrow().GroupBy(GetCanVerify).ToDictionary(
-            g => g.Key,
-            // A copy from a refinement base is scheduled only for the checks its module must make itself;
-            // its other tasks assert nothing new.
-            g => (IReadOnlyList<IVerificationWork>)g.Where(t =>
-              !g.Key.Origin.IsCopy || t.Source.IsReverifiedInheritedCheck).ToList());
-        });
-      } catch (OperationCanceledException) {
-        throw;
-      } catch (Exception e) {
-        HandleException(e);
-        throw;
-      }
+        moduleProofDependencies[containingModule] = result.ProofDependencies;
+        var work = result.Preparation.GetWorkOrThrow();
+        var manifest = VerificationWorkManifest.Check(containingModule, work);
+        moduleWork[containingModule] = manifest;
+        updates.OnNext(new ModuleVerificationWorkIdentified(manifest));
+        return work.GroupBy(GetCanVerify).ToDictionary(
+          g => g.Key,
+          // A copy from a refinement base is scheduled only for the checks its module must make itself;
+          // its other tasks assert nothing new.
+          g => (IReadOnlyList<IVerificationWork>)g.Where(t =>
+            !g.Key.Origin.IsCopy || t.Source.IsReverifiedInheritedCheck).ToList());
+      });
 
       // For updated to be reliable, tasksPerVerifiable must be Lazy
       var updated = false;
@@ -477,15 +474,25 @@ public class Compilation : IDisposable {
           }
         }
 
-        foreach (var task in tasks.Where(taskFilter)) {
-
-          var seededTask = randomSeed == null ? task : task.FromSeed(randomSeed.Value);
-          VerifyTask(canVerify, seededTask);
+        var selected = tasks.Where(taskFilter).Select(task => {
+          var seeded = randomSeed == null ? task : task.FromSeed(randomSeed.Value);
+          if (seeded.Source.Id != task.Source.Id || !ReferenceEquals(seeded.Source.CanVerify, task.Source.CanVerify)) {
+            throw new InvalidOperationException("Seeded verification work changed its source identity");
+          }
+          return seeded;
+        }).ToList();
+        var run = moduleWork[containingModule].StartRun(canVerify, selected);
+        updates.OnNext(new VerificationRunStarted(run));
+        foreach (var task in run.Work) {
+          VerifyTask(canVerify, task, run);
         }
       }
 
-    }
-    finally {
+    } catch (OperationCanceledException) {
+      throw;
+    } catch (Exception error) {
+      HandleException(error);
+    } finally {
       verificationTickets.Enqueue(Unit.Default);
     }
   }
@@ -522,34 +529,42 @@ public class Compilation : IDisposable {
     return groups;
   }
 
-  private void VerifyTask(ICanVerify canVerify, IVerificationWork task) {
-    profile?.TaskSubmitted(task);
-    var statusUpdates = task.TryRunForScheduling();
-    if (statusUpdates == null) {
-      if (task.CacheStatus is VerificationWorkCompleted completedCache) {
-        profile?.TaskStatus(PipelineProfile.ModuleName(canVerify.ContainingModule), canVerify.FullDafnyName, task, completedCache, true);
-        HandleStatusUpdate(canVerify, task, completedCache);
+  private void VerifyTask(ICanVerify canVerify, IVerificationWork task, VerificationRun run) {
+    void Fail(Exception error) {
+      run.Fail(task, error);
+      updates.OnNext(new VerificationException(canVerify, task, error) { Run = run });
+      if (error is not OperationCanceledException) {
+        logger.LogError(error, "Caught error in verification work.");
       }
-
-      return;
     }
+    try {
+      profile?.TaskSubmitted(task);
+      var statusUpdates = task.TryRunForScheduling();
+      if (statusUpdates == null) {
+        if (task.CacheStatus is VerificationWorkCompleted completedCache) {
+          profile?.TaskStatus(PipelineProfile.ModuleName(canVerify.ContainingModule), canVerify.FullDafnyName, task, completedCache, true);
+          HandleStatusUpdate(canVerify, task, completedCache, run);
+        }
 
-    statusUpdates.Subscribe(
-      update => {
-        try {
-          profile?.TaskStatus(PipelineProfile.ModuleName(canVerify.ContainingModule), canVerify.FullDafnyName, task, update, false);
-          HandleStatusUpdate(canVerify, task, update);
-        } catch (Exception e) {
-          logger.LogError(e, "Caught exception in statusUpdates OnNext.");
-        }
-      },
-      e => {
-        updates.OnNext(new VerificationException(canVerify, task, e));
-        if (e is not OperationCanceledException) {
-          logger.LogError(e, $"Caught error in statusUpdates observable.");
-        }
+        return;
       }
-    );
+
+      statusUpdates.Subscribe(
+        update => {
+          try {
+            profile?.TaskStatus(PipelineProfile.ModuleName(canVerify.ContainingModule), canVerify.FullDafnyName, task, update, false);
+            HandleStatusUpdate(canVerify, task, update, run);
+          } catch (Exception e) {
+            Fail(e);
+          }
+        },
+        e => {
+          Fail(e);
+        }
+      );
+    } catch (Exception error) {
+      Fail(error);
+    }
   }
 
   public async Task Cancel(FilePosition filePosition) {
@@ -569,13 +584,16 @@ public class Compilation : IDisposable {
     }
   }
 
-  private void HandleStatusUpdate(ICanVerify canVerify, IVerificationWork verificationTask, VerificationWorkStatus status) {
+  private void HandleStatusUpdate(ICanVerify canVerify, IVerificationWork verificationTask, VerificationWorkStatus status, VerificationRun run) {
+    if (status is VerificationWorkCompleted completed) {
+      run.Complete(verificationTask, completed.Result);
+    }
     var tokenString = verificationTask.Source.Origin.OriginToString(Options);
     logger.LogDebug($"Received verification status {status} for {tokenString}, version {Input.Version}");
 
     updates.OnNext(new VerificationUpdate(moduleProofDependencies[canVerify.ContainingModule], canVerify,
       verificationTask,
-      status));
+      status) { Run = run });
   }
 
   public void CancelPendingUpdates() {
@@ -830,6 +848,7 @@ public class Compilation : IDisposable {
   public void ClearModuleCache(ModuleDefinition moduleDefinition) {
     translatedModules.Remove(moduleDefinition);
     moduleProofDependencies.TryRemove(moduleDefinition, out _);
+    moduleWork.TryRemove(moduleDefinition, out _);
   }
 
   public void ClearCanVerifyCache(ICanVerify canVerify, bool allowRepeat = false) {

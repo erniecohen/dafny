@@ -187,14 +187,11 @@ public class CliCompilation {
     var canVerifyResults = new ConcurrentDictionary<ICanVerify, CliCanVerifyState>();
     using var subscription = Compilation.Updates.Subscribe(ev => {
 
-      if (ev is CanVerifyPartsIdentified canVerifyPartsIdentified) {
-        var canVerifyResult = canVerifyResults[canVerifyPartsIdentified.CanVerify];
-        foreach (var part in canVerifyPartsIdentified.Parts.Where(canVerifyResult.TaskFilter)) {
-          Interlocked.Increment(ref canVerifyResult.TaskCount);
-        }
-
-        if (canVerifyResult.CompletedParts.Count == canVerifyResult.TaskCount) {
-          canVerifyResult.Finished.SetResult();
+      if (ev is VerificationRunStarted started) {
+        var canVerifyResult = canVerifyResults[started.Run.Owner];
+        canVerifyResult.Run = started.Run;
+        if (started.Run.IsComplete) {
+          canVerifyResult.Finished.TrySetResult();
         }
       }
       if (ev is InternalCompilationException internalCompilationException) {
@@ -207,15 +204,19 @@ public class CliCompilation {
       }
 
       if (ev is VerificationException verificationException) {
-        var canVerifyResult = canVerifyResults[verificationException.CanVerify];
-        canVerifyResult.Finished.SetException(verificationException.Exception);
+        if (canVerifyResults.TryGetValue(verificationException.CanVerify, out var canVerifyResult) &&
+            ReferenceEquals(canVerifyResult.Run, verificationException.Run)) {
+          canVerifyResult.Finished.TrySetException(verificationException.Exception);
+        }
       }
 
       if (ev is VerificationUpdate { Status: VerificationWorkCompleted completed } verificationUpdate) {
-        var canVerifyResult = canVerifyResults[verificationUpdate.CanVerify];
+        if (!canVerifyResults.TryGetValue(verificationUpdate.CanVerify, out var canVerifyResult) ||
+            !ReferenceEquals(canVerifyResult.Run, verificationUpdate.Run)) {
+          return;
+        }
         canVerifyResult.ProofDependencies = verificationUpdate.ProofDependencyManager;
-        canVerifyResult.CompletedParts.Enqueue((verificationUpdate.VerificationTask, completed));
-        var completedPartsCount = Interlocked.Increment(ref canVerifyResult.CompletedCount);
+        var completedPartsCount = canVerifyResult.RecordCompletion(verificationUpdate.VerificationTask, completed);
 
         if (Options.Get(CommonOptionBag.ProgressOption) == CommonOptionBag.ProgressLevel.Batch) {
           var partOrigin = BoogieVerificationReporting.GetTask(verificationUpdate.VerificationTask).Split.Token;

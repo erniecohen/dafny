@@ -34,6 +34,14 @@ public class VerificationSchedulingTests {
     Assert.True(await compilation.VerifyCanVerify(owner, w => w.Source.Id.Part == 1, 73));
     var parts = await identified.Task.WaitAsync(TimeSpan.FromSeconds(30));
     var result = await completed.Task.WaitAsync(TimeSpan.FromSeconds(30));
+    var run = Assert.Single(events.OfType<VerificationRunStarted>()).Run;
+    Assert.Same(run, result.Run);
+    Assert.Single(run.Work);
+    Assert.Equal(2, run.Manifest!.Expected.Count);
+    Assert.Same(run.Manifest, Assert.Single(events.OfType<ModuleVerificationWorkIdentified>()).Manifest);
+    Assert.True(run.IsComplete);
+    Assert.False(run.IsVerified);
+    Assert.Equal(VerificationOutcome.Unsupported, Assert.Single(run.Results).Value.Outcome);
     Assert.Equal(new IVerificationWork[] { kept, excluded }, parts.Parts);
     Assert.Same(request, verifier.Request);
     Assert.Same(dependencies, result.ProofDependencyManager);
@@ -93,6 +101,67 @@ public class VerificationSchedulingTests {
     Assert.Same(owner, result.CanVerify);
     Assert.Same(work, result.Task);
     Assert.Same(error, result.Exception);
+    Assert.Same(error, Assert.Single(result.Run!.Failures).Value.Exception);
+    Assert.True(result.Run.IsComplete);
+    Assert.False(result.Run.IsVerified);
+  }
+
+  [Theory]
+  [InlineData(false, false)]
+  [InlineData(false, true)]
+  [InlineData(true, false)]
+  public async Task ModuleIdentityChecksPrecedeRequestFiltering(bool foreignOwner, bool duplicateOwner) {
+    var program = await ModuleTranslationCacheTests.Resolve("""
+      lemma Good() { assert true; }
+      lemma Sibling() { assert true; }
+      module Other { lemma Foreign() { assert true; } }
+      """, cached: false);
+    var owner = Owner(program);
+    var other = program.Modules().SelectMany(m => m.TopLevelDecls).OfType<TopLevelDeclWithMembers>()
+      .SelectMany(d => d.Members).OfType<Method>().Single(m => m.Name == (foreignOwner ? "Foreign" : "Sibling"));
+    var source = new VerificationSource(new("Good", 1), owner.Origin, owner.Origin) { CanVerify = owner };
+    var first = new Work(source, false);
+    var invalid = new Work(foreignOwner ? source with { Id = new("Other", 2), CanVerify = other } :
+      source with { CanVerify = duplicateOwner ? other : owner }, false);
+    var verifier = new Verifier(new(VerificationPreparation.Ready([first, invalid]), new()));
+    using var compilation = Create(program, verifier, new(false, () => throw new Exception()));
+    var failure = new TaskCompletionSource<Exception>(TaskCreationOptions.RunContinuationsAsynchronously);
+    var parts = new ConcurrentQueue<CanVerifyPartsIdentified>();
+    using var subscription = compilation.Updates.Subscribe(update => {
+      if (update is InternalCompilationException error) { failure.TrySetResult(error.Exception); }
+      if (update is CanVerifyPartsIdentified identified) { parts.Enqueue(identified); }
+    });
+    compilation.Start();
+    Assert.True(await compilation.VerifyCanVerify(owner, _ => false, null));
+    Assert.IsType<InvalidOperationException>(await failure.Task.WaitAsync(TimeSpan.FromSeconds(5)));
+    Assert.Empty(parts);
+    Assert.Equal(0, first.Runs);
+    Assert.Equal(0, invalid.Runs);
+  }
+
+  [Fact]
+  public async Task SeedingCannotSubstituteWorkAndSynchronousStartErrorsAreAccountedFor() {
+    var program = await ModuleTranslationCacheTests.Resolve("lemma Good() { assert true; }", cached: false);
+    var owner = Owner(program);
+    var source = new VerificationSource(new("Good", 1), owner.Origin, owner.Origin) { CanVerify = owner };
+    var error = new InvalidOperationException("failed before returning a stream");
+    var work = new StartFailureWork(source, error);
+    var excluded = new Work(source with { Id = new("Other", 0) }, false);
+    var verifier = new Verifier(new(VerificationPreparation.Ready([work, excluded]), new()));
+    using var compilation = Create(program, verifier, new(false, () => throw new Exception()));
+    var rejected = new TaskCompletionSource<Exception>(TaskCreationOptions.RunContinuationsAsynchronously);
+    var failure = new TaskCompletionSource<VerificationException>(TaskCreationOptions.RunContinuationsAsynchronously);
+    using var subscription = compilation.Updates.Subscribe(update => {
+      if (update is InternalCompilationException exception) { rejected.TrySetResult(exception.Exception); }
+      if (update is VerificationException workFailure) { failure.TrySetResult(workFailure); }
+    });
+    compilation.Start();
+    Assert.True(await compilation.VerifyCanVerify(owner, w => w.Source.Id.Scope == "Good", 73));
+    Assert.IsType<InvalidOperationException>(await rejected.Task.WaitAsync(TimeSpan.FromSeconds(5)));
+    Assert.True(await compilation.VerifyCanVerify(owner, w => w.Source.Id.Scope == "Good", 74));
+    var failed = await failure.Task.WaitAsync(TimeSpan.FromSeconds(5));
+    Assert.Same(error, failed.Exception);
+    Assert.Same(error, Assert.Single(failed.Run!.Failures).Value.Exception);
   }
 
   [Theory]
@@ -317,6 +386,16 @@ public class VerificationSchedulingTests {
     public bool IsIdle => true;
     public IVerificationWork FromSeed(int seed) => this;
     public IObservable<VerificationWorkStatus> TryRun() => statuses;
+    public void Cancel() { }
+  }
+
+  private sealed class StartFailureWork(VerificationSource source, Exception error) : IVerificationWork {
+    public VerificationSource Source => source;
+    public VerificationWorkStatus CacheStatus => new VerificationWorkStale();
+    public bool IsIdle => true;
+    public IVerificationWork FromSeed(int seed) => seed == 73
+      ? new StartFailureWork(source with { Id = new("Other", 0) }, error) : this;
+    public IObservable<VerificationWorkStatus>? TryRun() => throw error;
     public void Cancel() { }
   }
 }

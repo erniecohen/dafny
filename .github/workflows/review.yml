@@ -971,7 +971,7 @@ jobs:
       - name: Obligation lowering inventory and structural comparisons
         run: dotnet test --settings .github/review/ci.runsettings Source/DafnyCore.Test -c Release --filter FullyQualifiedName~Obligation --logger "console;verbosity=normal"
       - name: Backend-neutral work and Boogie preparation controls
-        run: dotnet test --settings .github/review/ci.runsettings Source/DafnyCore.Test -c Release --filter 'FullyQualifiedName~VerificationWorkTests|FullyQualifiedName~BoogieVerificationBackendTests|FullyQualifiedName~VerificationPreparationPipelineTests|FullyQualifiedName~VerificationSchedulingTests' --logger "console;verbosity=normal"
+        run: dotnet test --settings .github/review/ci.runsettings Source/DafnyCore.Test -c Release --filter 'FullyQualifiedName~VerificationRunTests|FullyQualifiedName~VerificationWorkStreamTests|FullyQualifiedName~VerificationWorkTests|FullyQualifiedName~BoogieVerificationBackendTests|FullyQualifiedName~VerificationPreparationPipelineTests|FullyQualifiedName~VerificationSchedulingTests' --logger "console;verbosity=normal"
       - name: Persistent task cache storage, lifecycle and option inventory
         run: |
           dotnet test --settings .github/review/ci.runsettings Source/DafnyCore.Test -c Release --filter 'FullyQualifiedName~ContentAddressedCacheTests|FullyQualifiedName~CacheTableTests|FullyQualifiedName~CachedTaskSolverTests|FullyQualifiedName~SmtExecutionLimitsTests|FullyQualifiedName~ExecutionImageIdentityTests|FullyQualifiedName~TaskCacheSessionPolicyTests' --logger "console;verbosity=normal"

@@ -10,6 +10,44 @@ import subprocess
 
 ROOT = Path("Source/DafnyCore/Pipeline/Verification")
 CASES = [
+    ("ide-accounting-events", "Source/DafnyLanguageServer/Workspace/IdeState.cs",
+     "case ModuleVerificationWorkIdentified:\n      case VerificationRunStarted:\n        return this;", ""),
+    ("manifest-identity", "VerificationRun.cs",
+     "!identities.TryAdd(source.Id, task)", "!(identities.TryAdd(source.Id, task) || identities.ContainsKey(source.Id))"),
+    ("manifest-owner", "VerificationRun.cs",
+     "source.CanVerify == null || !ReferenceEquals(source.CanVerify.ContainingModule, module)", "false"),
+    ("manifest-selection", "VerificationRun.cs",
+     "!Expected.TryGetValue(task.Source.Id, out var original) || !ReferenceEquals(original.Source.CanVerify, owner)", "false"),
+    ("run-identity", "VerificationRun.cs",
+     "!ReferenceEquals(work.Source.CanVerify, Owner) || !expected.TryGetValue(id, out var task) || !ReferenceEquals(task, work)", "false"),
+    ("run-outcome", "VerificationRun.cs",
+     "!Enum.IsDefined(result.Outcome)", "false"),
+    ("run-repeat", "VerificationRun.cs",
+     "!completed.TryAdd(id, result)", "(!completed.TryAdd(id, result) && false)"),
+    ("run-non-success", "VerificationRun.cs",
+     "completed.Values.All(r => r.IsVerified)", "true"),
+    ("run-error", "VerificationRun.cs",
+     "failures.TryAdd(id, new(error is OperationCanceledException ? VerificationOutcome.Cancelled : VerificationOutcome.ToolError, error));", ""),
+    ("run-cancel", "VerificationRun.cs",
+     "error is OperationCanceledException ? VerificationOutcome.Cancelled : VerificationOutcome.ToolError", "VerificationOutcome.ToolError"),
+    ("run-snapshot", "VerificationRun.cs",
+     "return new Dictionary<VerificationWorkId, VerificationWorkResult>(completed);", "return completed;"),
+    ("manifest-scheduling", "Source/DafnyCore/Pipeline/Compilation.cs",
+     "VerificationWorkManifest.Check(containingModule, work)", "VerificationWorkManifest.Check(containingModule, [])"),
+    ("run-seed", "Source/DafnyCore/Pipeline/Compilation.cs",
+     "seeded.Source.Id != task.Source.Id || !ReferenceEquals(seeded.Source.CanVerify, task.Source.CanVerify)", "false"),
+    ("run-started", "Source/DafnyCore/Pipeline/Compilation.cs",
+     "updates.OnNext(new VerificationRunStarted(run));", ""),
+    ("run-complete", "Source/DafnyCore/Pipeline/Compilation.cs",
+     "run.Complete(verificationTask, completed.Result);", ""),
+    ("run-failure", "Source/DafnyCore/Pipeline/Compilation.cs",
+     "run.Fail(task, error);", ""),
+    ("cli-request", "Source/DafnyDriver/CliCompilation.cs",
+     "ReferenceEquals(canVerifyResult.Run, verificationException.Run)", "true"),
+    ("cli-identity", "Source/DafnyDriver/CliCanVerifyState.cs",
+     "Run == null || !Run.HasResult(task, result.Result) || !received.Add(task.Source.Id)", "Run == null || !received.Add(task.Source.Id)"),
+    ("cli-repeat", "Source/DafnyDriver/CliCanVerifyState.cs",
+     "!received.Add(task.Source.Id)", "(!received.Add(task.Source.Id) && false)"),
     ("stream-scheduling", "Source/DafnyCore/Pipeline/Compilation.cs",
      "task.TryRunForScheduling()", "task.TryRun()"),
     ("stream-default", "VerificationWork.cs", "VerificationWorkStream.Validate(source)", "source"),
@@ -93,12 +131,12 @@ CASES = [
      "createPreparationRequest(resolution, containingModule)",
      "new VerificationPreparationRequest(false, () => throw new InvalidOperationException())"),
     ("schedule-failure", "Source/DafnyCore/Pipeline/Compilation.cs",
-     "result.Preparation.GetWorkOrThrow().GroupBy(GetCanVerify)", "Array.Empty<IVerificationWork>().GroupBy(GetCanVerify)"),
+     "work.GroupBy(GetCanVerify)", "Array.Empty<IVerificationWork>().GroupBy(GetCanVerify)"),
     ("schedule-filter", "Source/DafnyCore/Pipeline/Compilation.cs", "tasks.Where(taskFilter)", "tasks"),
     ("schedule-seed", "Source/DafnyCore/Pipeline/Compilation.cs", "task.FromSeed(randomSeed.Value)", "task"),
     ("schedule-cache", "Source/DafnyCore/Pipeline/Compilation.cs",
-     "HandleStatusUpdate(canVerify, task, completedCache);", ""),
-    ("schedule-status", "Source/DafnyCore/Pipeline/Compilation.cs", "HandleStatusUpdate(canVerify, task, update);", ""),
+     "HandleStatusUpdate(canVerify, task, completedCache, run);", ""),
+    ("schedule-status", "Source/DafnyCore/Pipeline/Compilation.cs", "HandleStatusUpdate(canVerify, task, update, run);", ""),
     ("schedule-cancel", "Source/DafnyCore/Pipeline/Compilation.cs", "foreach (var (_, tasks) in tasksPerVerifiable) {\n      foreach (var task in tasks) {\n        task.Cancel();\n      }\n    }", ""),
     ("schedule-owner-guard", "Source/DafnyCore/Pipeline/Compilation.cs",
      'throw new InvalidOperationException("Verification work has no source owner")', "null!"),
@@ -107,13 +145,13 @@ CASES = [
     ("schedule-ranges", "Source/DafnyCore/Pipeline/Compilation.cs",
      "currentGroupRange.Intersects(currentTaskRange)", "false"),
     ("schedule-exception", "Source/DafnyCore/Pipeline/Compilation.cs",
-     "updates.OnNext(new VerificationException(canVerify, task, e));", ""),
+     "updates.OnNext(new VerificationException(canVerify, task, error) { Run = run });", ""),
     ("refinement-filter", "Source/DafnyCore/Pipeline/Compilation.cs",
      "!g.Key.Origin.IsCopy || t.Source.IsReverifiedInheritedCheck", "!g.Key.Origin.IsCopy"),
     ("cli-filter", "Source/DafnyDriver/CliCompilation.cs",
      "range.Contains(task.Source.ScopeOrigin.line) || range.Contains(task.Source.Origin.line)", "true"),
-    ("cli-completion", "Source/DafnyDriver/CliCompilation.cs",
-     "canVerifyResult.CompletedParts.Enqueue((verificationUpdate.VerificationTask, completed));", ""),
+    ("cli-completion", "Source/DafnyDriver/CliCanVerifyState.cs",
+     "CompletedParts.Enqueue((task, result));", ""),
     ("ide-outcome", "Source/DafnyLanguageServer/Workspace/IdeState.cs", "completed.Result.IsVerified", "true"),
     ("profile-resource", "Source/DafnyCore/Pipeline/PipelineProfile.cs",
      '["resourceCount"] = result.Metrics?.ResourceCount', '["resourceCount"] = 0'),
@@ -131,7 +169,7 @@ def main():
     args.work.mkdir(parents=True, exist_ok=False)
     test = ["dotnet", "test", "Source/DafnyCore.Test", "-c", "Release", "-m:1", "-p:NuGetAudit=false",
             "--settings", ".github/review/ci.runsettings", "--filter",
-            "FullyQualifiedName~VerificationWorkTests|FullyQualifiedName~VerificationWorkStreamTests|FullyQualifiedName~BoogieVerificationBackendTests|FullyQualifiedName~VerificationPreparationPipelineTests|FullyQualifiedName~VerificationSchedulingTests"]
+            "FullyQualifiedName~VerificationRunTests|FullyQualifiedName~VerificationWorkTests|FullyQualifiedName~VerificationWorkStreamTests|FullyQualifiedName~BoogieVerificationBackendTests|FullyQualifiedName~VerificationPreparationPipelineTests|FullyQualifiedName~VerificationSchedulingTests"]
     for name, filename, old, new in CASES:
         if args.case and name not in args.case:
             continue
@@ -142,14 +180,17 @@ def main():
         try:
             path.write_text(source.replace(old, new))
             case_test = test
-            if name in ("pipeline", "refinement-filter", "cli-filter", "cli-completion"):
+            if name in ("pipeline", "refinement-filter", "cli-filter", "cli-completion", "cli-request", "cli-identity", "cli-repeat"):
                 selected = "DisplayName~github-issue-404.dfy" if name == "refinement-filter" else (
                     "FullyQualifiedName~OneResolutionFreshRequestsAndNextInvocationReloadsSources" if name == "cli-filter" else "DisplayName~git-issue-118.dfy")
+                if name in ("cli-request", "cli-identity", "cli-repeat"):
+                    selected = "FullyQualifiedName~LateErrorsBelong|FullyQualifiedName~OneResolutionFresh"
                 case_test = ["dotnet", "test", "Source/IntegrationTests", "-c", "Release", "-m:1", "-p:NuGetAudit=false",
                              "--settings", ".github/review/ci.runsettings", "--filter", selected]
-            elif name == "ide-outcome":
+            elif name in ("ide-outcome", "ide-accounting-events"):
                 case_test = ["dotnet", "test", "Source/DafnyLanguageServer.Test", "-c", "Release", "-m:1", "-p:NuGetAudit=false",
                              "--settings", ".github/review/ci.runsettings", "--filter",
+                             "FullyQualifiedName~RefinedLemmaNewEnsuresIsVerified" if name == "ide-accounting-events" else
                              "FullyQualifiedName~StatusesOfDifferentImplementationUnderOneNamedVerifiableAreCorrectlyMerged"]
             with (args.work / (name + ".log")).open("w") as log:
                 result = subprocess.run(case_test, stdout=log, stderr=subprocess.STDOUT)

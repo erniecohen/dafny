@@ -25,3 +25,10 @@ module OtherStream {
     assert true;
   }
 }
+
+// Filtered requests select identities from the whole module, including isolated batches.
+// RUN: %exits-with 0 %verify "%s" --filter-symbol Streams.Positive --boogie /randomSeed:73 > "%t.seeded"
+// RUN: %diff "%t.positive" "%t.seeded"
+// RUN: %exits-with 0 %verify "%s" --filter-position :14 > "%t.part"
+// RUN: %exits-with 0 %verify "%s" --filter-position :14 --translation-cache > "%t.part.cached"
+// RUN: %diff "%t.part" "%t.part.cached"
