@@ -921,14 +921,26 @@ jobs:
       - name: Worker resolution and front-end profile integration
         run: |
           dotnet test -p:NuGetAudit=false --settings .github/review/ci.runsettings Source/DafnyCore.Test -c Release --no-build \
-            --filter 'FullyQualifiedName~ResolutionPipelineTests|FullyQualifiedName~PipelineProfileResolutionTests|FullyQualifiedName~TypedGraphMaterializerTests' \
+            --filter 'FullyQualifiedName~ResolutionPipelineTests|FullyQualifiedName~PipelineProfileResolutionTests' \
             --logger "console;verbosity=normal"
       - name: Resolution and cardinality tests with Debug contract assertions
         # Release builds compile Contract.Assert and Debug.Assert out; here a failed assertion fails the step.
         # NewtypeWitnessResolutionTests: https://github.com/erniecohen/dafny/issues/422.
         run: |
           dotnet test -p:NuGetAudit=false --settings .github/review/ci.runsettings Source/DafnyCore.Test -c Debug \
-            --filter 'FullyQualifiedName~ResolutionPipelineTests|FullyQualifiedName~PipelineProfileResolutionTests|FullyQualifiedName~TypedGraphMaterializerTests|FullyQualifiedName~Cardinality|FullyQualifiedName~NewtypeReferenceCharacteristicTests|FullyQualifiedName~NewtypeWitnessResolutionTests' \
+            --filter 'FullyQualifiedName~ResolutionPipelineTests|FullyQualifiedName~PipelineProfileResolutionTests|FullyQualifiedName~Cardinality|FullyQualifiedName~NewtypeReferenceCharacteristicTests|FullyQualifiedName~NewtypeWitnessResolutionTests' \
+            --logger "console;verbosity=normal"
+      - name: Typed graph materializer tests in Release
+        timeout-minutes: 90
+        run: |
+          dotnet test -p:NuGetAudit=false --settings .github/review/ci.runsettings Source/DafnyCore.Test -c Release --no-build \
+            --filter 'FullyQualifiedName~TypedGraphMaterializerTests' \
+            --logger "console;verbosity=normal"
+      - name: Typed graph materializer tests in Debug
+        timeout-minutes: 90
+        run: |
+          dotnet test -p:NuGetAudit=false --settings .github/review/ci.runsettings Source/DafnyCore.Test -c Debug --no-build \
+            --filter 'FullyQualifiedName~TypedGraphMaterializerTests' \
             --logger "console;verbosity=normal"
       - name: Pipeline unit tests with Debug contract assertions
         run: dotnet test --settings .github/review/ci.runsettings Source/DafnyPipeline.Test -c Debug --logger "console;verbosity=normal"
