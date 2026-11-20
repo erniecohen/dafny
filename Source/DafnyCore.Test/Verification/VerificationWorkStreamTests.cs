@@ -84,6 +84,37 @@ public class VerificationWorkStreamTests {
     Assert.False(closed);
   }
 
+  [Theory]
+  [InlineData("empty", 0)]
+  [InlineData("progress-only", 1)]
+  [InlineData("duplicate", 0)]
+  [InlineData("after-terminal", 0)]
+  [InlineData("unknown-status", 0)]
+  [InlineData("unknown-outcome", 0)]
+  [InlineData("null-result", 0)]
+  public void EnvelopeChecksRejectMalformedStreamsIndependentlyOfTheLedger(string script, int progressCount) {
+    var terminal = new VerificationWorkCompleted(new(VerificationOutcome.Verified));
+    VerificationWorkStatus[] statuses = script switch {
+      "empty" => [],
+      "progress-only" => [new VerificationWorkRunning()],
+      "duplicate" => [terminal, terminal],
+      "after-terminal" => [terminal, new VerificationWorkRunning()],
+      "unknown-status" => [new UnknownStatus()],
+      "unknown-outcome" => [new VerificationWorkCompleted(new((VerificationOutcome)12345))],
+      "null-result" => [new VerificationWorkCompleted(null!)],
+      _ => throw new ArgumentOutOfRangeException(nameof(script))
+    };
+    var received = new List<VerificationWorkStatus>();
+    var errors = new List<Exception>();
+    var closed = false;
+    using var subscription = VerificationWorkStream.Validate(statuses.ToObservable())
+      .Subscribe(received.Add, errors.Add, () => closed = true);
+    Assert.IsType<InvalidOperationException>(Assert.Single(errors));
+    Assert.False(closed);
+    Assert.Equal(progressCount, received.Count);
+    Assert.All(received, status => Assert.IsType<VerificationWorkRunning>(status));
+  }
+
   private sealed record Evidence : IVerificationPayload;
   private sealed record UnknownStatus : VerificationWorkStatus;
 }
