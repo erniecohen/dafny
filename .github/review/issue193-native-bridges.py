@@ -139,25 +139,34 @@ def main():
     if args.mutations or args.mutations_only:
         mutation_start = len(records)
         original = LIBRARY.read_text()
-        # Negate each proved rule separately. A body must reject its changed
-        # contract even when its clients would become inconsistent under it.
-        pattern = r'(lemma (?:\{:[^}]+\}\s*)*(\w+)\([^\n]*\n(?:[^\n]*\n)*?)(  +ensures )([^\n]+)'
-        matches = list(re.finditer(pattern, original))
-        assert len(matches) == len(declarations(original)), (len(matches), declarations(original))
-        for i, match in enumerate(matches):
-            mutated = original[:match.start(4)] + '!(' + match[4] + ')' + original[match.end(4):]
-            # Keep included paths valid without editing the authoritative source.
-            mutated = mutated.replace('include "IntegerBitwiseCompilerFoundation.dfy"',
-                                      'include "' + (LIBRARY.parent / 'IntegerBitwiseCompilerFoundation.dfy').as_posix() + '"')
-            path = out / 'mutation.dfy'
-            path.write_text(mutated)
-            width, name = declarations(original)[i]
-            if args.mutation_filter and args.mutation_filter not in f'{width}.{name}':
-                continue
-            verify(f'mutation-{width}-{name}', path,
-                   ['--type-system-refresh:true', '--filter-symbol', f'IntegerBitwiseNative{width}.{name}'],
-                   mutation=True, limit=2000000)
-        path.unlink()
+        # Mutate every postcondition and remove each explicit guard separately.
+        # Filter to the affected body; imported contracts cannot hide a bad rule.
+        headers = list(re.finditer(r'^  lemma (?:\{:[^}]+\}\s*)*(\w+)\(', original, re.M))
+        rules = declarations(original)
+        assert len(headers) == len(rules), (len(headers), rules)
+        path = out / 'mutation.dfy'
+        for i, header in enumerate(headers):
+            width, name = rules[i]
+            end = headers[i+1].start() if i+1 < len(headers) else len(original)
+            section = original[header.start():end]
+            contracts = list(re.finditer(r'^    (ensures|requires) (.+)$', section, re.M))
+            assert contracts, (width, name)
+            for j, contract in enumerate(contracts):
+                site = f'{width}.{name}.{contract[1]}.{j}'
+                if args.mutation_filter and args.mutation_filter not in site:
+                    continue
+                start, finish = header.start()+contract.start(), header.start()+contract.end()
+                replacement = '    ensures !(' + contract[2] + ')' if contract[1] == 'ensures' else ''
+                mutated = original[:start] + replacement + original[finish:]
+                # Keep includes valid without editing the authoritative source.
+                mutated = mutated.replace('include "IntegerBitwiseCompilerFoundation.dfy"',
+                                          'include "' + (LIBRARY.parent / 'IntegerBitwiseCompilerFoundation.dfy').as_posix() + '"')
+                path.write_text(mutated)
+                verify('mutation-' + site.replace('.', '-'), path,
+                       ['--type-system-refresh:true', '--filter-symbol', f'IntegerBitwiseNative{width}.{name}'],
+                       mutation=True, limit=2000000)
+        if path.exists():
+            path.unlink()
         assert len(records) > mutation_start, 'No mutation selected'
     assert records, 'No verification or mutation selected'
     (out / 'summary.json').write_text(json.dumps(records, indent=2) + '\n')

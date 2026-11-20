@@ -244,9 +244,10 @@ The permanent native regression independently checks all included proof bodies,
 symbolic native and composed integer callers, wrong equations and an inhabited
 false assertion after each rule. Invalid casts, overflowing increments/additions,
 invalid prefix ranges and recurrence premises must fail. Mutation mode negates
-each rule's first proved contract separately and requires the rule's own body to
-reject it. Positive construction has a 2,000,000-RU scope ceiling; live negative
-and vacuity controls must finish within 200,000 RU. Exhaustion never passes.
+every postcondition and removes each explicit guard separately, requiring the
+affected rule's own body to reject each mutation. Positive construction has a
+2,000,000-RU scope ceiling; live negative and vacuity controls must finish within
+200,000 RU. Exhaustion never passes.
 
 This is a checked Boolean/conversion sub-milestone, depending on PR 538 and
 through it PR 532. Shift, modular arithmetic, order, rotation and population-count
