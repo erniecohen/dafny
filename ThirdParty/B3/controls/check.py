@@ -170,6 +170,8 @@ def main():
         if not rows or any(row['TestResult.Outcome'] != 'Passed' for row in rows):
             raise RuntimeError('incomplete bootstrap')
         run(dafny + ['verify', ROOT / 'controls/dfyconfig.toml', '--filter-symbol', 'CheckedB3Controls'] + flags, work / 'control-proof.log', env)
+        if b'2 verified, 0 errors' not in (work / 'control-proof.log').read_bytes():
+            raise RuntimeError('unexpected positive control denominator')
         run(dafny + ['verify', ROOT / 'controls/dfyconfig.toml', ROOT / 'controls/Vacuity.dfy', '--filter-symbol', 'CheckedLookupVacuity'] + flags,
             work / 'vacuity.log', env, expected=4)
         if b'0 verified, 3 errors' not in (work / 'vacuity.log').read_bytes():

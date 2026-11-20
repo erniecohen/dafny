@@ -11,6 +11,14 @@ module CheckedB3Controls {
   import OSProcesses
   import ExternalSolvers
 
+  method ProcessContractPositive() {
+    var result := OSProcesses.OSProcess.Create("unused", "");
+    if result.Success? {
+      assert fresh(result.value);
+      assert result.value.Valid();
+    }
+  }
+
   method Main(args: seq<string>) {
     expect |args| >= 2;
     var mode := args[1];

@@ -72,7 +72,7 @@ python3 ThirdParty/B3/controls/mutations.py --dafny-dll <Dafny.dll> \
 ```
 
 `check.py` requires a nonempty, entirely passed verification CSV, checks the
-control program, requires three deliberately false postconditions to fail, then
+control program, requires three deliberately false proof goals to fail, then
 compiles and runs positive and negative controls. The optional upstream checkout
 is compiled only for runtime comparison; allowing its existing warnings during
 that compilation is not proof acceptance. `--skip-proof` is explicitly diagnostic

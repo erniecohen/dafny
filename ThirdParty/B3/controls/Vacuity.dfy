@@ -15,10 +15,14 @@ module CheckedLookupVacuity {
   {
     var value := inc.Get(v);
   }
+
   // Native input and the checked fresh wrapper establish no arbitrary fact.
   method ProcessDoesNotImplyFalse()
-    ensures false
   {
     var result := OSProcesses.OSProcess.Create("unused", "");
+    if result.Success? {
+      assert fresh(result.value) && result.value.Valid();
+      assert false;
+    }
   }
 }
