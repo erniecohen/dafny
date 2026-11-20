@@ -34,6 +34,7 @@ public class VerificationRunTests {
     var closures = run.Closures;
     Assert.Single(closures);
     Assert.False(run.IsClosed);
+    Assert.False(run.AuditCompletion.IsCompleted);
     run.Close(first, VerificationCompletionKind.CachedResult);
     await run.AuditCompletion.WaitAsync(TimeSpan.FromSeconds(5));
     Assert.True(run.IsClosed);
