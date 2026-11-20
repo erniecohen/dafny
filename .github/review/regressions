@@ -1087,3 +1087,4 @@ git-issues/git-issue-466-go-extern.dfy
 git-issues/git-issue-466-python.dfy
 git-issues/git-issue-466-python-extern.dfy
 git-issues/git-issue-466-python-link.dfy
+cli/help.dfy
