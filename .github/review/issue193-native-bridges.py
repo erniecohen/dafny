@@ -62,7 +62,9 @@ def fixtures():
                            (f'NoOverflow{w}', f'{2**w-1},1'), (f'Next{w}', str(2**w-1)),
                            ('Successor', '5,5'),
                            ('Successor', f'{2**w-1},{2**w}')]:
-            negative += [f'lemma Negative{w}_{len(negative)}() {{', f' B{w}.{name}({args}); // ERROR', '}']
+            negative += [f'lemma Negative{w}_{len(negative)}() {{',
+                         *([f' B{w}.RoundTrip({2**w-1});'] if name == 'Successor' and args == f'{2**w-1},{2**w}' else []),
+                         f' B{w}.{name}({args}); // ERROR', '}']
         negative += [f'lemma BadCast{w}() {{ var x:= {2**w} as bv{w}; // ERROR', '}']
         calls = {f'Add{w}': '5,3', f'Widen{w}': '5', f'NoOverflow{w}': '5,3',
                  f'Split{w}': '5', f'DigitSplit{w}': '5', f'Next{w}': '5',
@@ -80,8 +82,8 @@ def fixtures():
             negative += ['lemma BadPrefix() { B64.Power(); B64.AndPrefix64(0,1,0); // ERROR', '}',
                          'lemma BadPrefixY() { B64.Power(); B64.AndPrefix64(0,0,1); // ERROR', '}',
                          'lemma BadRecurrence() { B64.AndRecurrence(0,1,1,0,1); // ERROR', '}',
-                         'lemma BadRecurrenceHalf() { B64.AndRecurrence(1,1,1,1,3); // ERROR', '}',
-                         'lemma BadRecurrenceResult() { B64.AndRecurrence(1,1,1,0,0); // ERROR', '}']
+                         'lemma BadRecurrenceHalf() { IntegerBitwiseModel.unfoldAnd(0,0,0); B64.AndRecurrence(1,1,1,1,3); // ERROR', '}',
+                         'lemma BadRecurrenceResult() { IntegerBitwiseModel.unfoldAnd(0,0,0); B64.AndRecurrence(1,1,1,0,0); // ERROR', '}']
     return lines, false, negative
 
 
@@ -107,7 +109,7 @@ def main():
         common += ['--additional-axioms']
     records = []
 
-    def verify(name, path, extra=(), expected_lines=(), mutation=False, limit=200000):
+    def verify(name, path, extra=(), expected_lines=(), mutation=False, guard=False, limit=200000):
         log = out / (name + '.csv')
         result = subprocess.run(exe + ['verify', str(path), *common, '--resource-limit', str(limit),
                                      '--log-format', 'csv;LogFileName=' + str(log), *extra],
@@ -115,7 +117,11 @@ def main():
         text = result.stdout + result.stderr
         (out / (name + '.log')).write_text(text)
         assert not re.search(r'out of resource|timed out|inconclusive|unknown|Warning:|internal error|Unhandled exception', text, re.I), (name, text)
-        if mutation:
+        if guard:
+            assert result.returncode in (0, 4), (name, result.returncode, text)
+            actual = {int(i) for i in re.findall(r'\((\d+),\d+\): Error:', text)}
+            assert actual < set(expected_lines), (name, actual, expected_lines, text)
+        elif mutation:
             assert result.returncode == 4 and 'could not be proved' in text, (name, result.returncode, text)
         else:
             assert result.returncode == (4 if expected_lines else 0), (name, result.returncode, text)
@@ -124,8 +130,11 @@ def main():
         with log.open(encoding='utf-8-sig') as stream:
             rows = list(csv.DictReader(stream))
         assert rows and all(r['TestResult.Outcome'] in ('Passed', 'Failed') for r in rows), (name, rows)
-        records.append(dict(name=name, exit=result.returncode, scopes=len(rows),
-                            failed=sum(r['TestResult.Outcome'] == 'Failed' for r in rows)))
+        record = dict(name=name, exit=result.returncode, scopes=len(rows),
+                      failed=sum(r['TestResult.Outcome'] == 'Failed' for r in rows))
+        if guard:
+            record['lost_rejections'] = sorted(set(expected_lines) - actual)
+        records.append(record)
 
     modes = ['legacy', 'refreshed'] if args.resolver == 'both' else [args.resolver]
     for mode in ([] if args.mutations_only else modes):
@@ -140,7 +149,8 @@ def main():
         mutation_start = len(records)
         original = LIBRARY.read_text()
         # Mutate every postcondition and remove each explicit guard separately.
-        # Filter to the affected body; imported contracts cannot hide a bad rule.
+        # Facts must fail in their bodies. Guard mutations must lose a concrete
+        # caller rejection, except the guard needed for contract well-formedness.
         headers = list(re.finditer(r'^  lemma (?:\{:[^}]+\}\s*)*(\w+)\(', original, re.M))
         rules = declarations(original)
         assert len(headers) == len(rules), (len(headers), rules)
@@ -162,9 +172,19 @@ def main():
                 mutated = mutated.replace('include "IntegerBitwiseCompilerFoundation.dfy"',
                                           'include "' + (LIBRARY.parent / 'IntegerBitwiseCompilerFoundation.dfy').as_posix() + '"')
                 path.write_text(mutated)
-                verify('mutation-' + site.replace('.', '-'), path,
-                       ['--type-system-refresh:true', '--filter-symbol', f'IntegerBitwiseNative{width}.{name}'],
-                       mutation=True, limit=2000000)
+                if contract[1] == 'requires' and not (name == 'AndRecurrence' and j == 0):
+                    negative = fixtures()[2]
+                    negative[0] = 'include "' + path.as_posix() + '"'
+                    caller = out / 'mutation-callers.dfy'
+                    caller.write_text('\n'.join(negative) + '\n')
+                    errors = {k for k, line in enumerate(negative, 1) if '// ERROR' in line}
+                    verify('mutation-' + site.replace('.', '-'), caller,
+                           ['--type-system-refresh:true'], errors, guard=True)
+                    caller.unlink()
+                else:
+                    verify('mutation-' + site.replace('.', '-'), path,
+                           ['--type-system-refresh:true', '--filter-symbol', f'IntegerBitwiseNative{width}.{name}'],
+                           mutation=True, limit=2000000)
         if path.exists():
             path.unlink()
         assert len(records) > mutation_start, 'No mutation selected'
