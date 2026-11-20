@@ -1149,13 +1149,16 @@ that a later stage would have to reject:
   other (such as `import X = B.Y` in `A` beside `import Y = A.X` in `B`);
 * a group supplied as unverified library source rather than a `.doo` archive;
 * executable compilation of a program that has a group for a target other than
-  C#, Java or Go: `dafny build` (except `--target lib`), `dafny run` and `dafny translate`
-  stop with an error naming that target after verification. C#, Java and Go compilation
+  C#, Java, Go or Python: `dafny build` (except `--target lib`), `dafny run` and `dafny translate`
+  stop with an error naming that target after verification. C#, Java, Go and Python compilation
   are supported, including groups loaded from `.doo` libraries. C# namespaces
   and Java packages can refer to each other; Go emits the whole group in one
   package, with distinct names for declarations from each member. Constant getters
   evaluate dependencies on use. Java compiles the generated packages together.
-  Go groups containing extern modules, types or members are not yet supported.
+  Python emits a group in one file, orders class definitions after their trait bases,
+  and preserves module-qualified imports through wrapper files.
+  Go and Python groups containing extern modules, types or members are not yet supported.
+  Python groups also reject declarations marked `{:compile false}` pending a foreign-linkage convention.
 
 A `.doo` library built with `--recursive-modules` requires its client to enable
 the option too; one built without it records nothing. A group is retained as a
