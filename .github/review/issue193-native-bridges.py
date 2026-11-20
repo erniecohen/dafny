@@ -137,6 +137,7 @@ def main():
             errors = {i for i, line in enumerate(lines, 1) if '// ERROR' in line}
             verify(mode + '-' + kind, path, option, errors, limit=2000000 if kind == 'clients' else 200000)
     if args.mutations or args.mutations_only:
+        mutation_start = len(records)
         original = LIBRARY.read_text()
         # Negate each proved rule separately. A body must reject its changed
         # contract even when its clients would become inconsistent under it.
@@ -157,6 +158,7 @@ def main():
                    ['--type-system-refresh:true', '--filter-symbol', f'IntegerBitwiseNative{width}.{name}'],
                    mutation=True, limit=2000000)
         path.unlink()
+        assert len(records) > mutation_start, 'No mutation selected'
     assert records, 'No verification or mutation selected'
     (out / 'summary.json').write_text(json.dumps(records, indent=2) + '\n')
     print('Native bridge checks passed')
