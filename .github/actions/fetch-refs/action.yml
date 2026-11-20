@@ -1,0 +1,17 @@
+name: Fetch only required refs
+description: Fetch explicit commits or refs without importing unrelated branch or tag names
+inputs:
+  refs:
+    description: Required commit IDs or fully qualified refs, one per line
+    required: true
+  full-history:
+    description: Fetch complete ancestry of these refs for merge-base computations
+    default: 'false'
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      env:
+        REQUIRED_REFS: ${{ inputs.refs }}
+        FULL_HISTORY: ${{ inputs.full-history }}
+      run: bash "$GITHUB_ACTION_PATH/fetch.sh"

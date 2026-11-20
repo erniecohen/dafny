@@ -16,12 +16,12 @@ def suite(args):
  runner=load('lit-verdicts')
  if args.enabled:runner.FIXED+=['--consistent-obligation-checks']
  runner.run(args.plan,args.sources,args.dafny,args.solver,args.output,
-  shard=args.shard,jobs=4,additional_axioms=args.axioms,measurements=args.measurements)
+  shard=args.shard,jobs=2,additional_axioms=args.axioms,measurements=args.measurements)
 
 def library(args):
  runner=load('std-verdicts')
  if args.enabled:runner.FIXED+=['--consistent-obligation-checks']
- runner.run(args.sources,args.dafny,args.solver,args.output,cores=4,additional_axioms=args.axioms)
+ runner.run(args.sources,args.dafny,args.solver,args.output,cores=2,additional_axioms=args.axioms)
 
 def compare(args):
  root=Path(args.directory)

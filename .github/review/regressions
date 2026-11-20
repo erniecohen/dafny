@@ -1054,6 +1054,10 @@ git-issues/git-issue-494.dfy
 git-issues/git-issue-496.dfy
 git-issues/git-issue-193-bootstrap.dfy
 git-issues/git-issue-193-reference-emission.dfy
+
+# Proved order constructions and checked ghost helper effects (issue 245).
+git-issues/git-issue-245-instances.dfy
+git-issues/git-issue-245-summary.dfy
 git-issues/git-issue-466-stage6.dfy
 
 git-issues/git-issue-471.dfy
