@@ -1593,10 +1593,10 @@ Compatibility with the existing encoding is checked component by component:
   fixed extension of its handle's graph; no checked source call grants a
   permission there. Outside its declared argument types the existing argument
   guards likewise leave it free. The arrow members remain a special case with
-  their existing domain guards. `.requires` denotes `P`; `.reads` denotes `R`
-  where its receiver's precondition permits the call. For a partial receiver
-  `R` is empty on the entire exact domain, so equality cannot change either
-  member, including at arguments outside `P`.
+  their existing domain guards. `.requires` denotes `P`; `.reads` denotes `R`.
+  For an effect-free receiver, `.reads` is total on the declared argument
+  domain, including outside `P`. Partial-arrow typing makes `R` empty on that
+  entire domain, so equality cannot change either member there.
 - **Identity and selectors.** There is no injectivity axiom requiring distinct
   lambda maps or distinct named functions to have different handles. Equal
   tuples have equal requires, reads and valid application projections. Fixed
