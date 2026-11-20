@@ -1,0 +1,1 @@
+Recursive module groups can link Go extern members, classes and foreign module packages. Foreign names are preserved, qualified extern functions use Go selectors, and multiple foreign source files can supplement a generated group package without overwriting it. This requires the experimental --recursive-modules option.

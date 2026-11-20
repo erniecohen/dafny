@@ -539,6 +539,44 @@ imported.  Then we use a special two-argument `{:extern}` form that specifies
 that `Reader` actually lives in the `io` namespace.  Dafny will understand that
 we can call `Open` and use the `File` returned as a `Reader`.
 
+### Recursive module groups
+
+With the experimental `--recursive-modules` option, the generated declarations
+of a recursive module group share one Go package. An ordinary member's generated
+types and default class have the prefix `G<i>_`, where `i` is its zero-based index
+in ordinal full Dafny-name order. Extern types keep their external names instead.
+The non-null type of an extern class uses that same external name, including for
+allocation and type descriptors.
+
+An extern member in a non-extern module is implemented in the shared package.
+For example, a method of the first member's default class has receiver
+`*CompanionStruct_G0_Default___`. A renamed extern class uses its specified name,
+and its foreign methods may complete the generated class in another Go file.
+Parameters and results may use generated types of sibling members in the package.
+
+An extern module still names a foreign package, including the optional second
+argument that gives its import path. Its extern top-level members are package
+functions, and its extern types refer to that package. Generated declarations in
+that module, including ordinary classes and functions, belong to the shared
+package. When a group contains an extern module, the generated package name is
+`DafnyGroup_` followed by its first member's protected compile name. This keeps
+the generated implementation distinct from the foreign package. Explicit extern
+qualifiers select foreign symbols; qualified functions use Go's dot selector,
+like qualified methods. External names must be valid for their Go declarations.
+
+Pass foreign `.go` files as additional inputs (`--input` with `dafny run`). Each
+file's `package` declaration selects its destination directory. With
+`--recursive-modules`, the files are copied as `dafny_extern_<i>.go`, in input
+order, so several files can contribute to a package without replacing each other
+or its generated source. With the option off, the historical `<package>.go`
+layout is unchanged.
+
+Foreign Go packages remain subject to Go's import-cycle restriction. In
+particular, a foreign package imported by the shared package cannot import that
+shared package back. A partial extern class that needs generated methods should
+be declared in a non-extern group member and completed in the shared package;
+methods cannot be added to a type owned by a separate Go package.
+
 TODO
 ----
 
