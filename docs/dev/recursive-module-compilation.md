@@ -1,6 +1,6 @@
 # Recursive module compilation (issue 466, stage 7)
 
-The executable targets admitted for recursive module groups are C#, Java and Go.
+The executable targets admitted for recursive module groups are C#, Java, Go and JavaScript.
 The feature remains behind the hidden, experimental `--recursive-modules`
 option and its existing prerequisites. Other executable targets are rejected
 before code generation, with the target named in the diagnostic. Library
@@ -47,7 +47,7 @@ remain in the issue's regression suite. The original resolver continues to
 reject the feature's member-invariant prerequisite.
 
 `git-issue-466-stage7-targets.dfy` checks the explicit rejection for
-JavaScript, Python, Rust, C++ and resolved Dafny (`dfy`) without needing their
+Python, Rust, C++ and resolved Dafny (`dfy`) without needing their
 compiler toolchains. Restoring the blanket executable rejection must break the C# positive test; admitting
 Python must break its rejection control. These mutations change only the target
 admission site and are built and run separately.
@@ -128,6 +128,32 @@ This is an opt-in compilation feature. It adds no verification condition, axiom,
 trusted assumption or verifier-lowering site. With recursive modules off, the
 existing Go emission paths are unchanged.
 
+## JavaScript group emission
+
+JavaScript emits one closure and module object per recursive group. Names of
+classes, traits, datatypes, iterators and default classes carry a member prefix;
+qualified type, constructor, conversion and entry-point references use the same
+identity. Both the group name and member order depend on full module names,
+so separately translated clients reconstruct them after source relocation.
+The generated constructor strings retain their Dafny names.
+
+Declarations initialize only class objects: sibling type descriptors, constants,
+trait identities and datatype defaults are evaluated when used, after all module
+closures have initialized. No ordering of the members is needed. Abstract groups
+emit nothing, and refinement retains its original sibling references.
+
+`git-issue-466-js.dfy` compares the existing group fixtures against C#, including
+wrapper-erasure settings, scheduled resolution, additional axioms, complete
+archives, repeated names, nested groups, constrained defaults, value-type trait
+conversions and a group entry point. It links a separately translated client to
+a producer using an archive rebuilt from relocated source files. The invalid
+invariant and reachable false assertion remain errors. Module, type and member
+extern controls reject unsupported foreign linkage explicitly.
+
+This milestone depends on https://github.com/erniecohen/dafny/pull/535. It adds
+no verifier rule, axiom or trusted assumption. Programs without a recursive
+group use their existing emission paths.
+
 ## Remaining compilation work
 
 Qualify the other backends one at a time. Each needs runtime comparisons for
@@ -142,5 +168,5 @@ through it, https://github.com/erniecohen/dafny/pull/529. Python still emits
 separate files with imports and class definitions that can need a sibling before
 it is initialized. Bypassing admission fails with a missing sibling name; adding
 that import fails at a cross-module trait base in a partially initialized module.
-Python needs group-level emission and initialization work. JavaScript, Rust, C++
+Python needs group-level emission and initialization work. Rust, C++
 and resolved Dafny remain unqualified too.
