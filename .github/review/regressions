@@ -1081,3 +1081,5 @@ git-issues/git-issue-374-library.dfy
 # Allocation-independent pointwise interfaces for reference domains (issue 374).
 git-issues/git-issue-374-pointwise.dfy
 git-issues/git-issue-374-pointwise-intrinsic.dfy
+git-issues/git-issue-374-partial.dfy
+git-issues/git-issue-374-partial-probe.dfy

@@ -958,9 +958,18 @@
     "Member": "AddTaggedHandleAxioms/5",
     "Producer": "Requires",
     "Family": "definition-consequence-axioms",
-    "Count": 1,
-    "Hash": "969118E8696F1FEC279E25595EB0357ACF381D568D2342BE72D608966BFA91EE",
-    "FileHash": "AB4816FF71FC1461DB57A7B7107C870DF571D959C1D7E9B59635D289E3A63455"
+    "Count": 2,
+    "Hash": "C26D0B538DD916BB7B407F8FA8E236A41AD087927FEF18A0C32A4F1CA9163BF6",
+    "FileHash": "9FDEF72F9223055CFDE031FEFB3DBCDB06D72A66EB618F7953AA940FEE69FB19"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.FunctionDomains.cs",
+    "Member": "PartialAgreement/5",
+    "Producer": "Requires",
+    "Family": "definition-consequence-axioms",
+    "Count": 2,
+    "Hash": "C26D0B538DD916BB7B407F8FA8E236A41AD087927FEF18A0C32A4F1CA9163BF6",
+    "FileHash": "9FDEF72F9223055CFDE031FEFB3DBCDB06D72A66EB618F7953AA940FEE69FB19"
   },
   {
     "File": "Source/DafnyCore/Verifier/BoogieGenerator.Functions.cs",

@@ -1199,7 +1199,8 @@ With `--additional-axioms` (or `--function-extensionality-axiom`), in
   so the Boogie program is unchanged.
 - A lambda whose parameters all have type `int`, `real`, `bool` or `ORDINAL`
   (not a subset type or a newtype of one) is built by `BasicHandleN`, with the
-  same tags and domain, and with the original, unguarded selector axioms. Its maps
+  same tags and domain, and without argument-domain guards on the selectors.
+  Application now additionally requires the precondition, as described below. Its maps
   read each box only through an unboxing to that type, and every box unboxes to a
   value of the type, so its value at any box is its value at a box in its domain.
   Guarding these selectors costs proofs about integer lambdas: each application
@@ -1327,7 +1328,7 @@ Two differently spelled products that are both empty can therefore be equal.
 The model above extends componentwise. A value of arity `N` contains a domain
 set of box tuples and its three selector maps restricted to that set. Canonical
 extension unboxes and reboxes each component using its representation type.
-`BasicHandleN`'s unguarded selectors are consistent with this extension when
+`BasicHandleN`'s selectors without argument-domain guards are consistent with this extension when
 every component is basic, including the empty tuple. Declared function handles
 and guarded arrow-member handles follow the same rules as at arity one. Total
 arrows have a true precondition and empty reads on their exact domain; pointwise
@@ -1492,3 +1493,172 @@ Partial arrows need a separate model of precondition agreement and application
 outside that precondition; this total-arrow definition does not supply it.
 Heap-reading arrows additionally need agreement across heaps and reads sets.
 The M1/M2 resource-unit trial and precompiled-library packaging remain open.
+
+### Explicit extensionality for partial arrows
+
+`function-domains/Partial.dfy` adds the opt-in source API
+`Std.PartialFunctionDomains.Arity0` through `Arity4`. It needs
+`--additional-axioms`. Each module supplies `ExactDom`, `Pointwise`, `Equal`
+and a checked `Extensionality` lemma. The compiler hooks support every arity;
+ordinary equality and the automatic total-arrow rule are unchanged. This is a
+partial-arrow milestone of https://github.com/erniecohen/dafny/issues/374,
+based on https://github.com/erniecohen/dafny/pull/540 and through it
+https://github.com/erniecohen/dafny/pull/530 and
+https://github.com/erniecohen/dafny/pull/526.
+
+Here `ExactDom` still means the declared argument product, not just the set
+where the precondition holds. A wider value subsumed to a narrower arrow is
+not silently restricted. `Pointwise(f, g)` means **both** agreement of the
+preconditions on that whole product and agreement of results wherever the
+common precondition holds. Its definition is:
+
+```
+forall bx1, ..., bxn ::
+  $IsBox(bx1, A1) && ... && $IsBox(bxn, An) ==>
+    (RequiresN(types, $OneHeap, f, bx1, ..., bxn) <==>
+     RequiresN(types, $OneHeap, g, bx1, ..., bxn)) &&
+    (RequiresN(types, $OneHeap, f, bx1, ..., bxn) ==>
+      ApplyN(types, $OneHeap, f, bx1, ..., bxn) ==
+      ApplyN(types, $OneHeap, g, bx1, ..., bxn))
+```
+
+This quantifies over every correctly typed tuple, without an allocation
+antecedent. In the nullary case there is one tuple; two false preconditions
+therefore describe the same nowhere-defined function, regardless of their
+body expressions. Agreement only on the intersection of two preconditions
+is insufficient. Result types are unrestricted.
+
+The three new intrinsic names are `partialExactDom`, `partialPointwise` and
+`partialEqual`. They accept only static ghost predicates with matching generic
+partial-arrow parameters, a plain Boolean result and no other specification,
+`older` parameters, opacity or fuel. The first two have no body. The last must
+have the checked body `f == g`. At its explicit application the compiler derives
+its truth from partial-arrow typing, exactness of both domains and the formula
+above. The ordinary checked definition then supplies equality. No trusted
+source lemma or source postcondition is introduced. The existing total-arrow
+intrinsic signatures continue to reject partial arrows, and all these
+interfaces reject heap-reading arrows.
+
+#### Why the application equation changes
+
+Previously even a tagged source lambda had a body equation at arguments where
+its precondition was false. For example, two integer lambdas with precondition
+`x >= 0`, and bodies `x` and `if x < 0 then 7 else x`, had different application
+selectors at `-1`. Equating their handles while retaining those equations
+would be inconsistent. A failed source call at `-1` does not make those Boogie
+equations disappear.
+
+Under the existing domain-tag options, the `ApplyN` equations of **both**
+`TagHandleN` and `BasicHandleN` now additionally require `RequiresN`. The
+precondition selector's sufficient direction and the reads membership equation
+are unchanged. The argument-type guard of `TagHandleN` remains. For a total
+arrow the additional premise holds everywhere in its domain, so this retains
+its specified applications. With both domain-tag options off this path is not
+emitted, and the original native translation is unchanged.
+
+#### Representation and soundness argument
+
+The total-arrow model extends as follows. At each arity, a value has a domain
+`D` of boxed tuples, a precondition map `P`, a reads map `R` on `D`, and an
+application graph `V` **only where `P` holds**. Heap-reading values may have
+heap-indexed maps. A heap-independent partial value with exact domain `D`
+has `R = {}` throughout `D`, and its `P` and valid results are independent of
+the heap. Values are these mathematical tuples, rather than distinct identities
+for different source expressions. Outside `D`, and for application outside
+`P`, use a fixed extension of the tuple. In particular, no body value is stored
+at an argument outside the precondition.
+
+For every such model, and every pair satisfying the new premises, exactness
+identifies the same `D`. The first conjunct identifies `P` everywhere in `D`.
+The second identifies `V` at every point of its domain. Partial-arrow typing
+identifies `R`: both are empty on all of `D`. Hence the tuples are identical,
+as are all their fixed extensions. This proves Leibniz equality in every model
+of this representation, without relying on how undefined application results
+were chosen. It is not a claim that the new fact follows from the old,
+unguarded lambda equations; those equations are precisely what must be weakened.
+
+Compatibility with the existing encoding is checked component by component:
+
+- **Lambda constructors.** Interpret the constructor using its tagged domain,
+  the precondition and reads maps, and the body map restricted to the true
+  precondition. The sufficient requires equation holds. The reads equation
+  still holds on the entire declared domain. The revised application equation
+  holds wherever it asserts anything, and imposes no body result elsewhere.
+  For a basic domain, unboxing and reboxing extend the selectors as before;
+  the application equation now applies only where the extended precondition
+  holds. Source lambdas over basic types read arguments through these unboxings.
+- **Named functions.** Their direct and reverse handle equations are unchanged.
+  A declared function's definition and postconditions are constrained where its
+  checked call permissions hold. Outside its precondition its result can be the
+  fixed extension of its handle's graph; no checked source call grants a
+  permission there. Outside its declared argument types the existing argument
+  guards likewise leave it free. The arrow members remain a special case with
+  their existing domain guards. `.requires` denotes `P`; `.reads` denotes `R`
+  where its receiver's precondition permits the call. For a partial receiver
+  `R` is empty on the entire exact domain, so equality cannot change either
+  member, including at arguments outside `P`.
+- **Identity and selectors.** There is no injectivity axiom requiring distinct
+  lambda maps or distinct named functions to have different handles. Equal
+  tuples have equal requires, reads and valid application projections. Fixed
+  extension makes congruence outside those regions consistent as well.
+- **Typing and variance.** `$Is(f, A ~> B)` requires correctly typed results
+  where the precondition holds. The partial subtype additionally has empty
+  reads throughout `A`; the total subtype additionally has a true precondition
+  throughout `A`. Restricting the argument view or widening the result view
+  preserves those properties. The exact-domain premises are essential: empty
+  reads and precondition agreement on a proper subdomain say nothing about
+  the rest of a wider value. As with total arrows, a product of basic types
+  has no proper superdomain, which justifies the additional basic-domain
+  exactness instance for partial values.
+- **Heaps and framing.** The existing empty-reads axioms transport requires
+  between a good heap and `$OneHeap`; framing transports valid application.
+  Thus the formula uses the whole heap-independent partial function, not an
+  observation in just one current heap. Existing allocation consequences of
+  application are guarded by its precondition. Sufficient allocation facts
+  about captured values remain valid; unused captures need not distinguish
+  extensionally equal values. The established restrictions on source lambdas
+  observing allocation continue to apply.
+- **Other intrinsic facts.** Total arrows are the special case `P = true`, so
+  existing total extensionality and restrictions keep their interpretations.
+  The new `Pointwise` is defined by the displayed formula on typed pairs and
+  left unconstrained outside that signature, as for the total predicate. The
+  new exactness predicate names the existing tuple-domain relation. No other
+  family enabled by `--additional-axioms` asserts a result at a newly undefined
+  application. The argument retains the existing boundary of well-formed,
+  translator-emitted handles; it does not endorse arbitrary heap-dependent
+  maps supplied to the native handle constructor.
+
+This establishes the new explicit-call fact in the representation, rather than
+assuming a generic extensionality theorem in the source library. A `~>` value
+can retain a nonempty reads map or heap-dependent precondition, so the tuple
+identification above does not apply to it.
+
+#### Controls and limits
+
+`git-issue-374-partial.dfy` checks the library from source, generic clients,
+integer and subset domains, functions differing outside their precondition,
+named functions, empty and inhabited preconditions, reference identity,
+projection of the predicate, first-class predicate values and arities zero
+through five. `--heap-free-lambda-facts` exposes the existing necessary
+precondition facts at every heap for the subset-domain examples; the basic
+integer reproducer also verifies with additional axioms alone.
+
+The negative input retains failures for different preconditions in both
+inclusion directions, overlap-only agreement, different valid results, missing
+exactness, an omitted explicit call, invalid applications, heap-reading values,
+and agreement only on allocated reference arguments. Live equality calls in
+every convenience module retain failing `assert false` controls. Malformed
+intrinsic declarations are rejected under both resolvers.
+
+`git-issue-374-partial-probe.dfy` adds a fresh predicate and axioms asserting
+that predicate at application terms outside the precondition. Interpreting the
+fresh predicate as true extends **every** original model, irrespective of the
+old selectors. Thus the probe adds terms but no constraint on any original
+symbol. The live vacuity controls must still fail with it. Restoring an
+unguarded lambda application equation makes these controls prove `false`,
+which detects that mutation without making an invalid source call.
+
+Automatic partial-arrow equality, partial restriction helpers, stronger source
+introduction rules for reference-containing preconditions, precompiled-library
+packaging and the M1/M2 resource-unit trial remain separate work. Heap-reading
+extensionality remains out of scope.
