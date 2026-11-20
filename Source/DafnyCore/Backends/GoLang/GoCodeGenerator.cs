@@ -135,8 +135,14 @@ namespace Microsoft.Dafny.Compilers {
           var args = Attributes.FindExpressions(member.Attributes, "extern");
           var library = args.Count == 2 ? (args[1] as StringLiteralExpr)?.Value as string : null;
           var import = CreateImport(PublicModuleIdProtect(member.GetCompileName(Options)), member, library);
+          if (import.Path == "") {
+            // An empty extern module names Go's built-in scope.
+            import.Name = "";
+          }
           ExternModuleImports.Add(member, import);
-          EmitImport(import, RootImportWriter, RootImportDummyWriter);
+          if (import.Path != "") {
+            EmitImport(import, RootImportWriter, RootImportDummyWriter);
+          }
         }
       }
     }
@@ -214,7 +220,8 @@ namespace Microsoft.Dafny.Compilers {
       wr.WriteLine(")");
       importDummyWriter = wr.Fork();
       if (ModuleName != "dafny") {
-        foreach (var import in ImportsNotFromDafnyModules.Concat(ModuleImports.Values).Concat(ExternModuleImports.Values)) {
+        foreach (var import in ImportsNotFromDafnyModules.Concat(ModuleImports.Values)
+                   .Concat(ExternModuleImports.Values.Where(import => import.Path != ""))) {
           EmitImport(import, importWriter, importDummyWriter);
         }
       }

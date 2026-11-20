@@ -563,6 +563,7 @@ package. When a group contains an extern module, the generated package name is
 the generated implementation distinct from the foreign package. Explicit extern
 qualifiers select foreign symbols; qualified functions use Go's dot selector,
 like qualified methods. External names must be valid for their Go declarations.
+An empty extern module name preserves unqualified references to built-in types.
 
 Pass foreign `.go` files as additional inputs (`--input` with `dafny run`). Each
 file's `package` declaration selects its destination directory. With
