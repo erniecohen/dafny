@@ -1,0 +1,1 @@
+With `--member-invariants`, a downcast `g as D` of a value of a general trait to a datatype `D` with invariants no longer stops the verifier with a Boogie type error: the check of `D`'s invariants now applies them to the unboxed value (https://github.com/erniecohen/dafny/issues/550).

@@ -84,7 +84,12 @@ public partial class BoogieGenerator {
     var rawType = declaration.Var.Type.Subst(typeMap);
     CheckSubrange(origin, value, sourceType, rawType, null, builder, etran: etran, close: close, forget: forget,
       universalClosure: universalClosure, valueCanCall: valueCanCall);
-    var wrapper = new BoogieWrapper(AdaptBoxing(origin, value, sourceType, rawType), rawType);
+    // A value of a general trait is boxed, as a type parameter's is; a downcast to a datatype with invariants
+    // unboxes it (https://github.com/erniecohen/dafny/issues/550)
+    var rawValue = ModeledAsBoxType(sourceType)
+      ? CondApplyUnbox(origin, value, sourceType, rawType)
+      : AdaptBoxing(origin, value, sourceType, rawType);
+    var wrapper = new BoogieWrapper(rawValue, rawType);
     var constraint = Substitute(declaration.Constraint, null,
       new Dictionary<IVariable, Expression> { { declaration.Var, wrapper } }, typeMap);
     Bpl.Expr notNull = null;
