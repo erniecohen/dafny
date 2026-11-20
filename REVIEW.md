@@ -626,12 +626,14 @@ once with Z3 5.1.0 and once with the Z3 that the tree's own tests expect (4.12.1
 this branch), and reports each declaration's verdict.  It also runs the tests named in `.github/review/regressions` in
 upstream's own harness.  On a tag it attaches self-contained binaries for `linux-x64` and `osx-arm64`
 to a GitHub release, with their sha256 sums.  The `osx-arm64` binary and the release
-itself are built on the self-hosted Apple-silicon pool (label `mac-studio`).
+itself are built on the self-hosted Apple-silicon pool (label `fork-ci`); Linux x64
+is cross-published there, with Linux execution qualified downstream.
 The framework-dependent build, artifact reports and portable regression tests
 also use this pool, together with JavaScript runtime tests, resolver matrix and unit tests,
 finite-support controls, statement-expression controls and verification-batch controls. The test `dafny0/CoinductiveProofs.dfy` declares macOS
 unsupported because its expected resource counts differ, so it stays in a
-separate hosted Linux job. `.github/review/regression-filter.py` partitions the
+separate Linux job that is explicitly skipped until a Linux self-hosted runner is
+available. `.github/review/regression-filter.py` partitions the
 standing manifest without dropping or duplicating entries. Every
 self-hosted job has an explicit repository/event guard: only pushes, manual
 runs, or pull requests whose head repository is `erniecohen/dafny` are admitted.

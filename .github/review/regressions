@@ -1052,6 +1052,10 @@ git-issues/git-issue-504-positive.dfy
 # Formatting snapshots and pipeline test health (issue 494).
 git-issues/git-issue-494.dfy
 git-issues/git-issue-496.dfy
+
+# Proved order constructions and checked ghost helper effects (issue 245).
+git-issues/git-issue-245-instances.dfy
+git-issues/git-issue-245-summary.dfy
 git-issues/git-issue-466-stage6.dfy
 
 git-issues/git-issue-471.dfy
@@ -1084,3 +1088,11 @@ git-issues/git-issue-516-member-invariants.dfy
 # Compiled generic parent additions and inherited bounds under default termination (https://github.com/erniecohen/dafny/issues/88).
 git-issues/github-issue-88-runtime.dfy
 git-issues/github-issue-88-inherited-bounds.dfy
+
+# Lemma-binding specifications in member-invariant extension checks (issue 522).
+git-issues/git-issue-522.dfy
+git-issues/git-issue-522-controls.dfy
+
+# C# compilation and target admission for recursive module groups (issue 466).
+git-issues/git-issue-466-stage7.dfy
+git-issues/git-issue-466-stage7-targets.dfy

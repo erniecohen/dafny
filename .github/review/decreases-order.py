@@ -54,12 +54,12 @@ def record(args):
         litdir = ROOT / 'Source/IntegrationTests/TestFiles/LitTests/LitTest'
         module.plan(litdir, out / 'plan.tsv')
         module.run(out / 'plan.tsv', str(litdir), dafny, z3, out / 'verdicts.tsv',
-                   shard=args.shard, jobs=4, additional_axioms=args.axioms == 'on',
+                   shard=args.shard, jobs=2, additional_axioms=args.axioms == 'on',
                    measurements=out / 'measurements')
         inventory(out)
     else:
         module.run(str(ROOT / 'Source/DafnyStandardLibraries'), dafny, z3, out / 'verdicts.tsv',
-                   cores=4, additional_axioms=args.axioms == 'on',
+                   cores=2, additional_axioms=args.axioms == 'on',
                    boogie='/deterministicLiteralHashes:1 /restartProver', measurements=str(out / 'measurements'))
 
 

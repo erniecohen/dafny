@@ -1,0 +1,11 @@
+name: Admit and clean a self-hosted job
+description: Bound concurrent fork jobs and remove job-owned temporary and checkout outputs
+inputs:
+  slots:
+    description: Number of admitted jobs across runner services; configure consistently across repositories
+    default: '2'
+runs:
+  using: node24
+  main: index.cjs
+  post: index.cjs
+  post-if: always()
