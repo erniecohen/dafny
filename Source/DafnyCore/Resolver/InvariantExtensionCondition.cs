@@ -29,6 +29,7 @@ namespace Microsoft.Dafny;
 /// In the same way, the constraint of a generic type in the cone (a subset type, a newtype, or a type with invariants,
 /// whose constraint is its invariants) is analysed with each type parameter T-dependent where its type argument is.
 /// Statements inside expressions are proof hints and do not contribute to the meaning, so they are not in the cone.
+/// A lemma binding is different: its results depend on the lemma's specification, which is included in the cone.
 ///
 /// The plan notes that, where T may involve references, the existing restriction on function bodies discharges
 /// clauses 1 to 4 and accepts dynamically bound calls.  Clause 5 is not discharged that way: an override, or a
@@ -44,9 +45,9 @@ public class InvariantExtensionCondition {
   private readonly Queue<Node> worklist = new();
 
   /// <summary>
-  /// A part of the cone: a member (an invariant, a function or a constant), or a type declaration, instantiated with
+  /// A part of the cone: a member (an invariant, a function, a bound lemma or a constant), or a type declaration, instantiated with
   /// type arguments of which those at "DependentParameters" are T-dependent.  The parameters of a member are those of
-  /// its enclosing declaration and, for a function, its own.
+  /// its enclosing declaration and, for a function or lemma, its own.
   /// </summary>
   private record Node(MemberDecl? Member, TopLevelDecl? Type, ISet<TypeParameter> DependentParameters);
 
@@ -118,6 +119,9 @@ public class InvariantExtensionCondition {
           CheckSlot(function.Body, function.ResultType);
           Visit(function.Body);
         }
+      } else if (current.Member is Lemma lemma) {
+        lemma.Req.ForEach(req => Visit(req.E));
+        lemma.Ens.ForEach(ens => Visit(ens.E));
       } else if (current.Member is ConstantField { Rhs: { } rhs } constant) {
         ReachType(constant.Type, constant.NameNode.Origin);
         CheckSlot(rhs, constant.Type);
@@ -181,7 +185,7 @@ public class InvariantExtensionCondition {
   private void Enqueue(MemberDecl member) => Enqueue(member, new HashSet<TypeParameter>());
 
   private void Enqueue(MemberDecl member, ISet<TypeParameter> dependentParameters) {
-    var typeParameters = member is Function function ? member.EnclosingClass.TypeArgs.Concat(function.TypeArgs) : member.EnclosingClass.TypeArgs;
+    var typeParameters = member is MethodOrFunction callable ? member.EnclosingClass.TypeArgs.Concat(callable.TypeArgs) : member.EnclosingClass.TypeArgs;
     var key = string.Join(",", typeParameters.Select(dependentParameters.Contains));
     if (visitedMembers.Add((member, key))) {
       worklist.Enqueue(new Node(member, null, dependentParameters));
@@ -427,6 +431,14 @@ public class InvariantExtensionCondition {
 
   private void Visit(Expression expr) {
     switch (expr) {
+      case StmtExpr { LemmaBindingCall: { Method: Lemma lemma } call }:
+        // Unlike a proof hint, a binding contributes the lemma's specification to the expression's meaning.
+        // Use the worklist so calls and bindings in that specification are followed transitively, with the
+        // dependence of the actual type arguments, and recursive specifications are visited only once.
+        var dependent = DependentFormals(lemma.EnclosingClass.TypeArgs, call.MethodSelect.TypeApplicationAtEnclosingClass);
+        dependent.UnionWith(DependentFormals(lemma.TypeArgs, call.MethodSelect.TypeApplicationJustMember));
+        Enqueue(lemma, dependent);
+        break;
       case LambdaExpr lambda:
         foreach (var boundVar in lambda.BoundVars) {
           ReachType(boundVar.Type, boundVar.Origin);

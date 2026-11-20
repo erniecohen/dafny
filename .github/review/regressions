@@ -1082,3 +1082,7 @@ git-issues/github-issue-245-witness.dfy
 # Compiled generic parent additions and inherited bounds under default termination (https://github.com/erniecohen/dafny/issues/88).
 git-issues/github-issue-88-runtime.dfy
 git-issues/github-issue-88-inherited-bounds.dfy
+
+# Lemma-binding specifications in member-invariant extension checks (issue 522).
+git-issues/git-issue-522.dfy
+git-issues/git-issue-522-controls.dfy
