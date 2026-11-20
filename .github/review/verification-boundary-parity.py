@@ -23,7 +23,7 @@ def corpus():
         ("result-reporting", [LIT + "git-issues/git-issue-118-reporting.dfy"]),
         ("result-reporting-part", [LIT + "git-issues/git-issue-118-reporting.dfy", "--filter-position", ":15"]),
         ("result-reporting-window", [LIT + "git-issues/git-issue-118-reporting.dfy", "--verification-module-window=2"]),
-        ("result-reporting-json", [LIT + "git-issues/git-issue-118-reporting.dfy", "--diagnostics-format=json"]),
+        ("result-reporting-json", [LIT + "git-issues/git-issue-118-reporting.dfy", "--json-diagnostics"]),
         ("result-reporting-resources", [LIT + "git-issues/git-issue-118-reporting.dfy", "--performance-stats=1"]),
         ("legacy-stream", [LIT + "git-issues/git-issue-118-stream.dfy"]),
         ("legacy-negative", [LIT + "git-issues/git-issue-118-stream.dfy", "/proc:*Streams.Negative*"]),
