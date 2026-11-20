@@ -56,6 +56,7 @@ def main():
     dafny = [args.dotnet, str(args.dafny_dll.resolve())]
     flags = ['--cores', '2', '--solver-path', str(args.solver.absolute()), '--resource-limit', '100000000', '--verification-time-limit', '60']
     rows = []
+    tree = work / 'source'
     for name, file, before, after, symbol in MUTATIONS:
         if args.only and name not in args.only:
             continue
@@ -116,7 +117,8 @@ def main():
     # The closure case used to obtain a value from Expect(false). Removing its
     # executable halt still verifies, so its runtime negative control is needed.
     tree = work / 'source'
-    shutil.rmtree(tree)
+    if tree.exists():
+        shutil.rmtree(tree)
     shutil.copytree(ROOT, tree, ignore=shutil.ignore_patterns('__pycache__'))
     source = tree / 'src/Verifier/Incarnations.dfy'
     source.write_text(source.read_text().replace('        expect false, "closure-not-elaborated";\n', ''))
