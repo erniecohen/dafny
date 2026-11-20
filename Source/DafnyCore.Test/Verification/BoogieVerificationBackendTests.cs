@@ -53,6 +53,8 @@ public class BoogieVerificationBackendTests {
     native.NoRun = true;
     Assert.Null(work.TryRun());
     Assert.Equal(1, native.Runs);
+    Assert.Null(work.TryRunForScheduling());
+    Assert.Equal(2, native.Runs);
   }
 
   [Fact]
@@ -102,6 +104,55 @@ public class BoogieVerificationBackendTests {
     native.Updates.OnCompleted();
     Assert.True(closed);
     Assert.Single(received);
+  }
+
+  [Theory]
+  [InlineData("empty", 0)]
+  [InlineData("progress-only", 1)]
+  [InlineData("duplicate", 1)]
+  [InlineData("after-terminal", 1)]
+  public void NativeSchedulingAuditsMalformedClosure(string script, int delivered) {
+    var native = new NativeTask();
+    IVerificationWork work = new BoogieVerificationWork(native);
+    var received = new List<VerificationWorkStatus>();
+    var errors = new List<Exception>();
+    var closed = false;
+    using var subscription = work.TryRunForScheduling()!.Subscribe(received.Add, errors.Add, () => closed = true);
+    var result = new Completed(new VerificationRunResult(0, 0, DateTime.UnixEpoch, SolverOutcome.Valid,
+      TimeSpan.Zero, 5, [], [], [], 99, null, []));
+    if (script == "progress-only") { native.Updates.OnNext(new Running()); }
+    if (script is "duplicate" or "after-terminal") {
+      native.Updates.OnNext(result);
+      Assert.Single(received); // Native publication must still precede closure.
+      native.Updates.OnNext(script == "duplicate" ? result : new Running());
+    }
+    native.Updates.OnCompleted();
+    Assert.IsType<InvalidOperationException>(Assert.Single(errors));
+    Assert.False(closed);
+    Assert.Equal(delivered, received.Count);
+  }
+
+  [Theory]
+  [InlineData(false, false)]
+  [InlineData(false, true)]
+  [InlineData(true, false)]
+  [InlineData(true, true)]
+  public void NativeAuditRetainsErrorsAndCancellationAfterPublication(bool afterResult, bool cancelled) {
+    var native = new NativeTask();
+    IVerificationWork work = new BoogieVerificationWork(native);
+    var received = new List<VerificationWorkStatus>();
+    Exception? failure = null;
+    var closed = false;
+    using var subscription = work.TryRunForScheduling()!.Subscribe(received.Add, e => failure = e, () => closed = true);
+    if (afterResult) {
+      native.Updates.OnNext(new Completed(new VerificationRunResult(0, 0, DateTime.UnixEpoch, SolverOutcome.Valid,
+        TimeSpan.Zero, 5, [], [], [], 99, null, [])));
+    }
+    var error = cancelled ? (Exception)new OperationCanceledException() : new InvalidOperationException("native worker error");
+    native.Updates.OnError(error);
+    Assert.Same(error, failure);
+    Assert.False(closed);
+    Assert.Equal(afterResult ? 1 : 0, received.Count);
   }
 
   [Theory]

@@ -27,6 +27,19 @@ public class VerificationRunTests {
     Assert.Equal(1, run.CompletedCount);
     run.Complete(first, new(VerificationOutcome.Verified));
     Assert.True(run.IsComplete);
+    Assert.False(run.IsClosed);
+    Assert.False(run.IsVerified);
+    Assert.False(run.AuditCompletion.IsCompleted);
+    run.Close(second, VerificationCompletionKind.StreamClosed);
+    var closures = run.Closures;
+    Assert.Single(closures);
+    Assert.False(run.IsClosed);
+    run.Close(first, VerificationCompletionKind.CachedResult);
+    await run.AuditCompletion.WaitAsync(TimeSpan.FromSeconds(5));
+    Assert.True(run.IsClosed);
+    Assert.Single(closures);
+    Assert.Equal(VerificationCompletionKind.CachedResult, run.Closures[first.Source.Id]);
+    Assert.Equal(VerificationCompletionKind.StreamClosed, run.Closures[second.Source.Id]);
     Assert.Equal(outcome == VerificationOutcome.Verified, run.IsVerified);
     Assert.Single(snapshot);
     Assert.Equal(2, run.Results.Count);
@@ -98,10 +111,41 @@ public class VerificationRunTests {
     Assert.Same(manifest, selected.Manifest);
     Assert.Throws<InvalidOperationException>(() => manifest.StartRun(owner, [new Work(owner, new("Unknown", 0))]));
     selected.Complete(first, new(VerificationOutcome.Verified));
+    Assert.False(selected.IsVerified);
+    selected.Close(first, VerificationCompletionKind.StreamClosed);
     Assert.True(selected.IsVerified);
     var empty = new VerificationRun(owner, []);
     Assert.True(empty.IsComplete);
     Assert.Empty(empty.Results);
+    Assert.True(empty.IsClosed);
+    Assert.True(empty.AuditCompletion.IsCompletedSuccessfully);
+  }
+
+  [Fact]
+  public async Task ClosureCannotReplaceResultsOrFailuresAndRequiresOriginalWork() {
+    var owner = await Owner();
+    var work = new Work(owner, new("Scope", 1));
+    var run = new VerificationRun(owner, [work]);
+    Assert.Throws<InvalidOperationException>(() => run.Close(work, VerificationCompletionKind.StreamClosed));
+    Assert.Empty(run.Closures);
+    Assert.False(run.AuditCompletion.IsCompleted);
+    run.Complete(work, new(VerificationOutcome.Verified));
+    Assert.Throws<InvalidOperationException>(() => run.Close(new Work(owner, work.Source.Id), VerificationCompletionKind.StreamClosed));
+    Assert.Throws<InvalidOperationException>(() => run.Close(work, (VerificationCompletionKind)123));
+    run.Close(work, VerificationCompletionKind.StreamClosed);
+    Assert.True(run.IsVerified);
+    Assert.Throws<InvalidOperationException>(() => run.Close(work, VerificationCompletionKind.StreamClosed));
+    var error = new OperationCanceledException();
+    run.Fail(work, error);
+    Assert.False(run.IsVerified);
+    Assert.Same(error, Assert.Single(run.Failures).Value.Exception);
+    var failed = new VerificationRun(owner, [work]);
+    failed.Complete(work, new(VerificationOutcome.Verified));
+    failed.Fail(work, error);
+    await failed.AuditCompletion.WaitAsync(TimeSpan.FromSeconds(5));
+    Assert.False(failed.IsClosed);
+    Assert.False(failed.IsVerified);
+    Assert.Throws<InvalidOperationException>(() => failed.Close(work, VerificationCompletionKind.StreamClosed));
   }
 
   private static async Task<Method> Owner() {

@@ -63,7 +63,7 @@ public interface IVerificationWork {
   IObservable<VerificationWorkStatus>? TryRun();
   /// <summary>
   /// Scheduling entry point. By default, validate a backend stream before publishing its result.
-  /// The native adapter retains the engine's existing result-publication timing for compatibility.
+  /// The native adapter audits closure while retaining the engine's result-publication timing.
   /// </summary>
   IObservable<VerificationWorkStatus>? TryRunForScheduling() {
     var source = TryRun();

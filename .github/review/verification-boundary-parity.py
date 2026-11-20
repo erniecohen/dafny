@@ -20,6 +20,8 @@ LIB = "Source/DafnyStandardLibraries/src/Std/"
 
 def corpus():
     cases = [
+        ("legacy-negative", [LIT + "git-issues/git-issue-118-stream.dfy", "/proc:*Streams.Negative*"]),
+        ("legacy-filter", [LIT + "git-issues/git-issue-118-stream.dfy", "/proc:*Streams.Positive*"]),
         ("result-stream-part", [LIT + "git-issues/git-issue-118-stream.dfy", "--filter-position", ":14"]),
         ("result-stream", [LIT + "git-issues/git-issue-118-stream.dfy"]),
         ("result-stream-filter", [LIT + "git-issues/git-issue-118-stream.dfy", "--filter-symbol", "Streams.Positive"]),
@@ -77,8 +79,17 @@ def capture(args):
         # Target-specific projects import a library whose manifest records no extra Boogie flags.
         if not name.startswith("library-"):
             command += ["--boogie", "/deterministicLiteralHashes:1", "--boogie", "/restartProver"]
-        command += ["--solver-log", str(active / "@PROC@.smt2"),
-                    "--log-format", "csv;LogFileName=" + str(active / "resources.csv")] + inputs
+        if name.startswith("legacy-"):
+            command = ["dotnet", str(args.dafny.resolve()), "/compile:0", "/vcsCores:1",
+                       "/timeLimit:120", "/rlimit:16000000", "/deprecation:0",
+                       "/showSnippets:0", "/useBaseNameForFileName", "/compileVerbose:0",
+                       "/proverOpt:PROVER_PATH=" + str(args.solver.resolve()),
+                       "/deterministicLiteralHashes:1", "/restartProver",
+                       "/proverLog:" + str(active / "@PROC@.smt2"),
+                       "/verificationLogger:csv;LogFileName=" + str(active / "resources.csv")] + inputs
+        else:
+            command += ["--solver-log", str(active / "@PROC@.smt2"),
+                        "--log-format", "csv;LogFileName=" + str(active / "resources.csv")] + inputs
         print(args.name, name, flush=True)
         with (active / "stdout").open("wb") as stdout, (active / "stderr").open("wb") as stderr:
             result = subprocess.run(command, stdout=stdout, stderr=stderr, timeout=7200)

@@ -81,8 +81,11 @@ The Boogie adapter overrides this entry point to retain the native engine's exis
 publication point. Withholding native results until observable completion changes
 which task log receives prover-reset commands after a query, even when the queries,
 diagnostics and proof resources are unchanged. The adapter therefore preserves
-native publication and completion timing; it does not apply the new envelope check
-to native streams. Shared scheduling contains no native type test. Alternative
+native publication and completion timing. The same envelope checks run in audit mode:
+the first valid result is forwarded immediately, while missing/repeated results,
+trailing statuses and observable errors prevent clean closure. Publication is not
+a closure certificate, so a later native error can coexist with an earlier result.
+Shared scheduling contains no native type test. Alternative
 backend work inherits checked completion unless its adapter explicitly overrides
 the scheduling entry point. These callbacks are an implementation contract, not
 a sandbox against a malicious backend.
@@ -93,7 +96,7 @@ cached completion and the native `TryRun() == null` already-running convention
 retain their existing behavior. Transport response correlation and reporting
 capabilities remain separate work.
 
-The stream controls cover every outcome, withheld completion, evidence identity,
+The stream controls cover every outcome, withheld and immediate native completion, evidence identity,
 errors before/after a result, cancellation, subscription isolation and disposal.
 Engine-free scheduling controls reject malformed streams without publishing a
 terminal result. Native lit controls cover isolated assertion batches, a failing
@@ -113,8 +116,11 @@ module manifest and published before its work starts. Seeding must preserve the
 original source identity and owner. The run records its expected identities,
 original result objects and original errors. Missing identities leave it incomplete;
 duplicate, substituted, malformed or foreign results cannot fill the missing work.
-All outcomes remain distinct, and only a complete set of `Verified` results with
-no errors satisfies the neutral `IsVerified` predicate. Cancellation errors remain
+All outcomes remain distinct. `IsComplete` describes result/error delivery, while
+`IsClosed` requires closure accounting for every identity. `IsVerified` additionally
+requires every result to be `Verified`, no execution errors, and complete closure
+accounting. A published native result alone cannot satisfy this predicate.
+Cancellation errors remain
 `Cancelled`; other execution errors remain `ToolError`. Read snapshots cannot
 change the ledger, and later errors remain non-success even after a result.
 
@@ -126,10 +132,21 @@ identities. Synchronous start errors and status-handler errors use the existing
 verification-exception path. Preparation exceptions still use the existing
 internal-compilation-exception path and never publish an empty ready manifest.
 
-This is accounting at the scheduling/publication boundary, not a stream-closure
-certificate. The native adapter still publishes before observable completion and
-retains the already-running convention. Native completion auditing, IDE handling
-of superseded requests and transport-level response correlation remain open.
+The scheduler records `StreamClosed` only after clean observable completion and a
+unique recorded result, or `CachedResult` when no stream starts and an already
+completed cache result is delivered. These are distinct in the immutable closure
+snapshot; cached delivery does not claim to audit the cache producer's past stream.
+`AuditCompletion` settles when every selected identity has closed, delivered a
+cached result or failed. It does not itself imply proof success; inspect the ledger.
+An already-running task without a cached result remains pending, and no timeout or
+liveness guarantee is added. Errors and cancellation retain their original objects
+and invalidate success even after publication. Empty selected requests close immediately.
+
+This audits stream envelopes and selected identities, not backend evidence or
+translation completeness. Native publication, CLI result delivery and reporting
+retain their existing timing; CLI aggregate results do not yet await this separate
+audit. Propagating audited success through reporting consumers, IDE handling of
+superseded requests and transport-level response correlation remain open.
 CLI aggregate outcomes still use genuine native evidence, including its historical
 treatment of `Bounded`; the neutral ledger never labels `Bounded` as verified.
 
@@ -213,11 +230,16 @@ an implementation of alternative backend reporting. The remaining milestones are
   preparation, unsupported input, cancellation and worker errors.
   The default scheduling entry point now rejects malformed completion before publishing
   a terminal result. Module manifests and request ledgers now account for prepared
-  and selected work identities and observed outcomes. Native stream auditing,
-  superseded IDE requests and transport response correlation remain open; the
-  native adapter retains its engine's publication timing.
-- Cover legacy entry points and opt-in translation/result caches explicitly, and
-  repeat default-Boogie compatibility and full harness checks after reporting migration.
+  and selected work identities, observed outcomes and native stream closure.
+  Reporting consumers still need to consume the separate audit before claiming
+  audited completion. Superseded IDE requests and transport response correlation
+  remain open; the native adapter retains its engine's publication timing.
+- Migrate legacy entry points to the neutral boundary. The deprecated CLI,
+  synchronous build/run path, `DafnyMain.BoogieOnce` and the legacy server still
+  invoke native Boogie directly. Legacy CLI compatibility controls cover positive,
+  negative and filtered runs; they do not migrate those entry points.
+- Complete opt-in translation/result-cache coverage and repeat default-Boogie
+  compatibility and full harness checks after reporting migration.
 
 No B3 worker, transport, normalization or source/model correspondence is included.
 P0 bootstrap acceptance and P2 and later work remain separate.

@@ -77,9 +77,11 @@ public sealed class BoogieVerificationWork(IVerificationTask nativeTask) : IVeri
   public bool IsIdle => NativeTask.IsIdle;
   public IVerificationWork FromSeed(int seed) => new BoogieVerificationWork(NativeTask.FromSeed(seed));
   public IObservable<VerificationWorkStatus>? TryRun() => NativeTask.TryRun()?.Select(ConvertStatus);
-  // Native task completion is owned by the engine. Retain its publication point, including
-  // prover reuse and teardown logging; future backend streams use the interface's checked path.
-  public IObservable<VerificationWorkStatus>? TryRunForScheduling() => TryRun();
+  // Audit the stream envelope while retaining native publication, prover reuse and teardown logging.
+  public IObservable<VerificationWorkStatus>? TryRunForScheduling() {
+    var source = TryRun();
+    return source == null ? null : VerificationWorkStream.Audit(source);
+  }
   public void Cancel() => NativeTask.Cancel();
 
   internal static VerificationWorkStatus ConvertStatus(IVerificationStatus status) => status switch {

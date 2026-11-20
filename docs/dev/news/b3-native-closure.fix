@@ -1,0 +1,1 @@
+Audit native verification streams while preserving result publication timing. Request ledgers distinguish published results, clean stream closure and cached delivery; audited success requires completion of every selected identity.

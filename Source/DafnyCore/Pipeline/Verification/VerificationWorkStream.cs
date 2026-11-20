@@ -5,12 +5,20 @@ using System.Reactive.Linq;
 namespace Microsoft.Dafny;
 
 /// <summary>
-/// A run publishes exactly one terminal result, and only after its observable closes cleanly.
-/// Keep that result pending so a duplicate, trailing status or error cannot first publish success.
+/// A run has exactly one terminal result followed by clean observable completion.
+/// Validation holds the result pending; native auditing preserves immediate publication.
 /// Progress is forwarded immediately; backend evidence and original errors are preserved.
 /// </summary>
 internal static class VerificationWorkStream {
   public static IObservable<VerificationWorkStatus> Validate(IObservable<VerificationWorkStatus> source) =>
+    Check(source, publishBeforeClosure: false);
+
+  /// <summary>Audit native closure without moving the engine's result publication point.</summary>
+  public static IObservable<VerificationWorkStatus> Audit(IObservable<VerificationWorkStatus> source) =>
+    Check(source, publishBeforeClosure: true);
+
+  private static IObservable<VerificationWorkStatus> Check(IObservable<VerificationWorkStatus> source,
+    bool publishBeforeClosure) =>
     Observable.Create<VerificationWorkStatus>(observer => {
       VerificationWorkCompleted? terminal = null;
       var stopped = false;
@@ -27,6 +35,7 @@ internal static class VerificationWorkStream {
             Fail(new InvalidOperationException("Verification work emitted an invalid terminal result"));
           } else {
             terminal = completed;
+            if (publishBeforeClosure) { observer.OnNext(terminal); }
           }
         } else if (status is VerificationWorkStale or VerificationWorkQueued or VerificationWorkRunning) {
           observer.OnNext(status);
@@ -40,7 +49,7 @@ internal static class VerificationWorkStream {
         if (terminal == null) {
           Fail(new InvalidOperationException("Verification work completed without a terminal result"));
         } else {
-          observer.OnNext(terminal);
+          if (!publishBeforeClosure) { observer.OnNext(terminal); }
           observer.OnCompleted();
         }
       });

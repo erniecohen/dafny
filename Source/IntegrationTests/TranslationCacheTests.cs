@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reactive.Subjects;
+using System.Reactive.Linq;
 using System.Threading.Tasks;
 using System.Threading;
 using System.Text.Json;
@@ -328,6 +329,10 @@ public class TranslationCacheTests {
     foreach (var other in otherSources ?? []) { options.CliRootSourceUris.Add(new Uri(other)); }
     var cli = CliCompilation.Create(options);
     using var compilation = cli.Compilation;
+    var runs = new System.Collections.Concurrent.ConcurrentQueue<VerificationRun>();
+    using var events = compilation.Updates.Subscribe(update => {
+      if (update is VerificationRunStarted started) { runs.Enqueue(started.Run); }
+    });
     cli.Start();
     var resolution = (await cli.Resolution)!;
     Assert.False(resolution.HasErrors);
@@ -344,6 +349,13 @@ public class TranslationCacheTests {
       results.OnCompleted();
       await summary;
       await dependencies;
+    }
+    foreach (var run in runs) {
+      await run.AuditCompletion.WaitAsync(TimeSpan.FromSeconds(30));
+      Assert.True(run.IsClosed);
+      Assert.Empty(run.Failures);
+      Assert.Equal(run.ExpectedCount, run.Closures.Count);
+      Assert.Equal(run.Results.Values.All(result => result.IsVerified), run.IsVerified);
     }
     var exit = await cli.GetAndReportExitValue();
     var resultCache = Microsoft.Dafny.Caching.TaskCacheSession.TryFor(options);

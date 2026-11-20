@@ -32,3 +32,10 @@ module OtherStream {
 // RUN: %exits-with 0 %verify "%s" --filter-position :14 > "%t.part"
 // RUN: %exits-with 0 %verify "%s" --filter-position :14 --translation-cache > "%t.part.cached"
 // RUN: %diff "%t.part" "%t.part.cached"
+
+// Legacy verification retains its direct native entry point, including negative assertions.
+// RUN: %exits-with 4 %dafny /compile:0 /deprecation:0 "%s" > "%t.legacy"
+// RUN: %diff "%s.legacy.expect" "%t.legacy"
+// RUN: %exits-with 0 %dafny /compile:0 /deprecation:0 '/proc:*Streams.Positive*' "%s" > "%t.legacy.filtered"
+// RUN: %OutputCheck --file-to-check "%t.legacy.filtered" "%s"
+// CHECK: Dafny program verifier finished with 1 verified, 0 errors

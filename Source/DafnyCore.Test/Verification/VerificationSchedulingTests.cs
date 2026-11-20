@@ -39,7 +39,11 @@ public class VerificationSchedulingTests {
     Assert.Single(run.Work);
     Assert.Equal(2, run.Manifest!.Expected.Count);
     Assert.Same(run.Manifest, Assert.Single(events.OfType<ModuleVerificationWorkIdentified>()).Manifest);
+    await run.AuditCompletion.WaitAsync(TimeSpan.FromSeconds(5));
     Assert.True(run.IsComplete);
+    Assert.True(run.IsClosed);
+    Assert.Equal(cached ? VerificationCompletionKind.CachedResult : VerificationCompletionKind.StreamClosed,
+      Assert.Single(run.Closures).Value);
     Assert.False(run.IsVerified);
     Assert.Equal(VerificationOutcome.Unsupported, Assert.Single(run.Results).Value.Outcome);
     Assert.Equal(new IVerificationWork[] { kept, excluded }, parts.Parts);
@@ -203,6 +207,59 @@ public class VerificationSchedulingTests {
     Assert.Same(owner, rejected.CanVerify);
     Assert.IsType<InvalidOperationException>(rejected.Exception);
     Assert.Empty(results);
+  }
+
+  [Theory]
+  [InlineData(false)]
+  [InlineData(true)]
+  public async Task ClosureAuditSeparatesPublicationFromCleanCompletion(bool hasResult) {
+    var program = await ModuleTranslationCacheTests.Resolve("lemma Good() { assert true; }", cached: false);
+    var owner = Owner(program);
+    using var source = new System.Reactive.Subjects.Subject<VerificationWorkStatus>();
+    var work = new ScriptedWork(new(new("Good", 0), owner.Origin, owner.Origin) { CanVerify = owner }, source, raw: true);
+    using var compilation = Create(program, new Verifier(new(VerificationPreparation.Ready([work]), new())),
+      new(false, () => throw new Exception()));
+    var started = new TaskCompletionSource<VerificationRun>(TaskCreationOptions.RunContinuationsAsynchronously);
+    using var events = compilation.Updates.Subscribe(update => {
+      if (update is VerificationRunStarted run) { started.TrySetResult(run.Run); }
+    });
+    compilation.Start();
+    await compilation.VerifyCanVerify(owner, _ => true);
+    var run = await started.Task.WaitAsync(TimeSpan.FromSeconds(5));
+    // Simulate an adapter retaining native publication timing, including a missing terminal result.
+    if (hasResult) { source.OnNext(new VerificationWorkCompleted(new(VerificationOutcome.Verified))); }
+    Assert.False(run.IsVerified);
+    Assert.False(run.IsClosed);
+    Assert.False(run.AuditCompletion.IsCompleted);
+    source.OnCompleted();
+    await run.AuditCompletion.WaitAsync(TimeSpan.FromSeconds(5));
+    Assert.Equal(hasResult, run.IsClosed);
+    Assert.Equal(hasResult, run.IsVerified);
+    Assert.Equal(hasResult ? 0 : 1, run.Failures.Count);
+    if (!hasResult) { Assert.IsType<InvalidOperationException>(Assert.Single(run.Failures).Value.Exception); }
+  }
+
+  [Fact]
+  public async Task AlreadyRunningWorkDoesNotInventAResultOrClosure() {
+    var program = await ModuleTranslationCacheTests.Resolve("lemma Good() { assert true; }", cached: false);
+    var owner = Owner(program);
+    var work = new PendingWork(new(new("Good", 0), owner.Origin, owner.Origin) { CanVerify = owner });
+    using var compilation = Create(program, new Verifier(new(VerificationPreparation.Ready([work]), new())),
+      new(false, () => throw new Exception()));
+    var started = new TaskCompletionSource<VerificationRun>(TaskCreationOptions.RunContinuationsAsynchronously);
+    using var events = compilation.Updates.Subscribe(update => {
+      if (update is VerificationRunStarted run) { started.TrySetResult(run.Run); }
+    });
+    compilation.Start();
+    await compilation.VerifyCanVerify(owner, _ => true);
+    var run = await started.Task.WaitAsync(TimeSpan.FromSeconds(5));
+    Assert.False(run.IsComplete);
+    Assert.False(run.IsClosed);
+    Assert.False(run.IsVerified);
+    Assert.False(run.AuditCompletion.IsCompleted);
+    Assert.Empty(run.Results);
+    Assert.Empty(run.Failures);
+    Assert.Empty(run.Closures);
   }
 
   [Fact]
@@ -380,12 +437,22 @@ public class VerificationSchedulingTests {
     public void Cancel() { Cancellations++; }
   }
 
-  private sealed class ScriptedWork(VerificationSource source, IObservable<VerificationWorkStatus> statuses) : IVerificationWork {
+  private sealed class ScriptedWork(VerificationSource source, IObservable<VerificationWorkStatus> statuses, bool raw = false) : IVerificationWork {
     public VerificationSource Source => source;
     public VerificationWorkStatus CacheStatus => new VerificationWorkStale();
     public bool IsIdle => true;
     public IVerificationWork FromSeed(int seed) => this;
     public IObservable<VerificationWorkStatus> TryRun() => statuses;
+    public IObservable<VerificationWorkStatus> TryRunForScheduling() => raw ? statuses : VerificationWorkStream.Validate(statuses);
+    public void Cancel() { }
+  }
+
+  private sealed class PendingWork(VerificationSource source) : IVerificationWork {
+    public VerificationSource Source => source;
+    public VerificationWorkStatus CacheStatus => new VerificationWorkRunning();
+    public bool IsIdle => false;
+    public IVerificationWork FromSeed(int seed) => this;
+    public IObservable<VerificationWorkStatus>? TryRun() => null;
     public void Cancel() { }
   }
 

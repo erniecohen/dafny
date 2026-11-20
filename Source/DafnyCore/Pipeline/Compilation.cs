@@ -544,6 +544,7 @@ public class Compilation : IDisposable {
         if (task.CacheStatus is VerificationWorkCompleted completedCache) {
           profile?.TaskStatus(PipelineProfile.ModuleName(canVerify.ContainingModule), canVerify.FullDafnyName, task, completedCache, true);
           HandleStatusUpdate(canVerify, task, completedCache, run);
+          run.Close(task, VerificationCompletionKind.CachedResult);
         }
 
         return;
@@ -560,6 +561,13 @@ public class Compilation : IDisposable {
         },
         e => {
           Fail(e);
+        },
+        () => {
+          try {
+            run.Close(task, VerificationCompletionKind.StreamClosed);
+          } catch (Exception error) {
+            Fail(error);
+          }
         }
       );
     } catch (Exception error) {

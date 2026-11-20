@@ -38,12 +38,18 @@ public class VerificationBatchTests {
       });
       cli.Start();
       Assert.NotEmpty(await Request(cli, "input.dfy"));
-      Assert.True(Assert.Single(runs).IsVerified);
+      var first = Assert.Single(runs);
+      Assert.True(first.IsComplete);
+      Assert.False(first.IsVerified);
+      Assert.False(first.IsClosed);
+      Assert.False(first.AuditCompletion.IsCompleted);
       Assert.NotEmpty(await Request(cli, "input.dfy"));
       Assert.Equal(2, runs.Count);
       Assert.Same(verifier.LateError, Assert.Single(runs[0].Failures).Value.Exception);
       Assert.False(runs[0].IsVerified);
-      Assert.True(runs[1].IsVerified);
+      Assert.False(runs[1].IsVerified);
+      Assert.False(runs[1].IsClosed);
+      Assert.True(runs[0].AuditCompletion.IsCompletedSuccessfully);
     } finally {
       Directory.Delete(directory, true);
     }
@@ -117,6 +123,11 @@ public class VerificationBatchTests {
       var negative = await Request(cli, "second.dfy");
       var afterNegative = await Request(cli, "first.dfy");
       Assert.Equal(5, runs.Count);
+      foreach (var run in runs) {
+        await run.AuditCompletion.WaitAsync(TimeSpan.FromSeconds(30));
+        Assert.True(run.IsClosed);
+        Assert.All(run.Closures.Values, kind => Assert.Equal(VerificationCompletionKind.StreamClosed, kind));
+      }
       Assert.All(runs, run => {
         Assert.True(run.IsComplete);
         Assert.Equal(run.ExpectedCount, run.Results.Count);
