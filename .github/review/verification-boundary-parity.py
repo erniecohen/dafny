@@ -20,6 +20,7 @@ LIB = "Source/DafnyStandardLibraries/src/Std/"
 
 def corpus():
     cases = [
+        ("legacy-stream", [LIT + "git-issues/git-issue-118-stream.dfy"]),
         ("legacy-negative", [LIT + "git-issues/git-issue-118-stream.dfy", "/proc:*Streams.Negative*"]),
         ("legacy-filter", [LIT + "git-issues/git-issue-118-stream.dfy", "/proc:*Streams.Positive*"]),
         ("result-stream-part", [LIT + "git-issues/git-issue-118-stream.dfy", "--filter-position", ":14"]),
