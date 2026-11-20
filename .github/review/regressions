@@ -1081,3 +1081,4 @@ git-issues/github-issue-245-witness.dfy
 git-issues/github-issue-88-runtime.dfy
 git-issues/github-issue-88-inherited-bounds.dfy
 git-issues/git-issue-193-newtype-operators.dfy
+git-issues/git-issue-193-native-bridges.dfy
