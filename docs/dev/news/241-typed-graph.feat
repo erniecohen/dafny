@@ -1,0 +1,4 @@
+Added a test-only detached typed-graph snapshot and materialization harness. It
+compares module bodies with independent normal resolution, including type and
+call-target identity, visibility, call graphs and recursion state. No resolution
+cache path or default compiler behavior changes.
