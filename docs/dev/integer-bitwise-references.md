@@ -257,3 +257,65 @@ This is a checked Boolean/conversion sub-milestone, depending on PR 538 and
 through it PR 532. Shift, modular arithmetic, order, rotation and population-count
 native bridges remain separate proof work. It implements no trusted emitter and
 no runtime lowering.
+
+
+## Checked native shifts and modular addition
+
+This milestone depends on PR 543. Include
+`Source/DafnyStandardLibraries/optional/IntegerBitwiseNativeShifts.dfy` with
+`--integer-bitwise`. The modules `Std.Arithmetic.IntegerBitwiseNativeShifts8`,
+`16`, `32` and `64` extend the explicitly included proof API. All bodies are
+checked with additional axioms off; the compiler and packaged library inputs
+are unchanged.
+
+`Plus(x,y)` proves `(x+y) as int == (x as int+y as int) % 2^N`.
+`NativeLeft(x,k)` and `NativeRight(x,k)` prove the unsigned integer observations
+`(U(x)*P(k)) % 2^N` and `U(x)/P(k)`. Their natural count must satisfy `k <= N`.
+`LeftShift` and `RightShift` transport these results to the compiler-owned
+`shlNat` and `shrNat` references. Counts zero and N are included: the former
+preserves the word and the latter produces zero. Integer inputs use the checked
+conversion round trips from the predecessor. Integer-newtype clients still
+prove their complete result predicate through the existing checked foundation.
+
+### Model and proof decomposition
+
+Interpret a word as its unsigned weighted digit sum U and put M=2^N. The native
+carry equation writes the widened sum as the zero extension of the low word
+plus either zero or M. Widened addition and `CarryValue` prove the corresponding
+integer sum. Euclidean quotient/remainder uniqueness then gives `Plus`.
+`PlusWitness` simply names the native result so later proofs can use its
+observation without rediscovering a native equality in a mixed-theory context.
+
+The existing shift rewriter narrows counts to `bit_length(N)` bits. The checked
+count modules therefore supply exact conversions and predecessor equations for
+widths 4, 5, 6 and 7. These are internal count helpers, not general word-operation
+APIs at additional widths. Their proofs use exact widened addition, native
+inversion and terminating induction, as in the predecessor's checked round trip.
+`CountBound` checks agreement of the small native count bound with its integer
+observation.
+
+At positive count the checked native recurrences remove one low digit for a
+right shift, and double the preceding shifted word for a left shift. The
+witness lemmas name the result word explicitly. Induction decreases the integer
+count. The right-shift proof combines digit decomposition with the already
+checked division-product theorem. The left-shift proof uses `PlusWitness` and
+the checked modular-shift law. Separate integer-only helpers establish the
+power recurrence and the zero-count arithmetic. The reference adapters then
+use the existing foundation, normalization identity and endpoint arithmetic.
+Every helper has a body. No assumption, axiom, verification exemption or new
+trusted compiler fact is introduced. No native rotation is used. The issue-284
+backend qualification above remains applicable.
+
+The regression independently checks all included bodies, symbolic native and
+composed integer-newtype clients, endpoint and overflow examples, wrong equations,
+and an inhabited false assertion after each rule. Invalid counts, count
+conversions and helper premises are rejected. Serial mutation mode negates each
+postcondition and removes each explicit precondition separately. Fact mutations
+are checked on concrete inhabited inputs; recursive ones use base inputs to avoid
+an inconsistent induction hypothesis. Guard mutations must lose a designated
+invalid-caller rejection. Exhaustion never counts as a control or mutation pass.
+The proof/control ceilings remain 2,000,000/200,000 resource units per scope.
+
+Remaining native equations include subtraction, multiplication, unsigned
+division/remainder, ordering, rotations and population count. General word APIs
+at other widths and runtime lowering of integer-newtype operators also remain.
