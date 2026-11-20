@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "B3 transport envelope version 1",
+  "oneOf": [
+    { "$ref": "#/$defs/request" },
+    { "$ref": "#/$defs/response" }
+  ],
+  "$defs": {
+    "identity": {
+      "type": "string", "minLength": 1, "maxLength": 128,
+      "pattern": "^[A-Za-z0-9_.:-]+$"
+    },
+    "request": {
+      "type": "object", "additionalProperties": false,
+      "required": ["Version", "RequestId", "UnitId", "Obligations"],
+      "properties": {
+        "Version": { "const": 1 },
+        "RequestId": { "$ref": "#/$defs/identity" },
+        "UnitId": { "$ref": "#/$defs/identity" },
+        "Obligations": {
+          "type": "array", "minItems": 1, "maxItems": 256, "uniqueItems": true,
+          "items": { "$ref": "#/$defs/identity" }
+        }
+      }
+    },
+    "response": {
+      "type": "object", "additionalProperties": false,
+      "required": ["Version", "RequestId", "UnitId", "Sequence", "Kind", "ObligationId", "Outcome", "Completed"],
+      "properties": {
+        "Version": { "const": 1 },
+        "RequestId": { "$ref": "#/$defs/identity" },
+        "UnitId": { "$ref": "#/$defs/identity" },
+        "Sequence": { "type": "integer", "minimum": 0, "maximum": 256 },
+        "Kind": { "enum": ["result", "complete"] },
+        "ObligationId": { "oneOf": [{ "$ref": "#/$defs/identity" }, { "type": "null" }] },
+        "Outcome": { "enum": ["ToolError", "Proved", "Failed", "Unknown", "Unsupported", "Cancelled", "Timeout", "ResourceLimit"] },
+        "Completed": { "type": "integer", "minimum": 0, "maximum": 256 }
+      },
+      "oneOf": [
+        {
+          "properties": {
+            "Kind": { "const": "result" },
+            "ObligationId": { "$ref": "#/$defs/identity" },
+            "Completed": { "const": 0 }
+          }
+        },
+        {
+          "properties": {
+            "Kind": { "const": "complete" },
+            "ObligationId": { "type": "null" },
+            "Completed": { "minimum": 1 }
+          }
+        }
+      ]
+    }
+  }
+}

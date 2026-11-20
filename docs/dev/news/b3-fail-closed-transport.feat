@@ -1,0 +1,4 @@
+Add a separately invoked experimental B3 transport scaffold with a versioned,
+bounded protocol, complete request accounting and process cancellation. No B3
+implementation is included: the scaffold explicitly returns unsupported, and
+the default verification backend is unchanged.

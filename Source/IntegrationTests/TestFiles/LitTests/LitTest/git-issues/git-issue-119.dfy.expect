@@ -1,0 +1,3 @@
+{"Version":1,"RequestId":"lit","UnitId":"unit:0","Sequence":0,"Kind":"result","ObligationId":"a","Outcome":"Unsupported","Completed":0}
+{"Version":1,"RequestId":"lit","UnitId":"unit:0","Sequence":1,"Kind":"result","ObligationId":"b","Outcome":"Unsupported","Completed":0}
+{"Version":1,"RequestId":"lit","UnitId":"unit:0","Sequence":2,"Kind":"complete","ObligationId":null,"Outcome":"Unsupported","Completed":2}
