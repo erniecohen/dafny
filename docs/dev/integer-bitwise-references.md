@@ -2,8 +2,9 @@
 
 `--integer-bitwise` is disabled by default. It installs the ghost class
 `IntegerBitwiseModel` and its explicit one-step unfold lemmas. It also enables the six basic bitwise operators in ghost code on
-explicitly width-qualified integer newtypes. Native bitvector bridges and
-runtime operators remain later milestones. The independent
+explicitly width-qualified integer newtypes. The optional native companion below
+provides checked conversion and Boolean bridges; runtime operators remain later
+milestones. The independent
 `--additional-axioms` option does not expose this public interface.
 
 Include `Source/DafnyStandardLibraries/optional/IntegerBitwiseCompiler.dfy` for
@@ -187,3 +188,67 @@ invalid width declarations, mixed nominal types, opaque capability and compiled
 uses. It preserves existing BV and Boolean intrinsics. Negative controls must
 finish within 200,000 RU; exhaustion is never accepted. The existing M2
 foundation/emission controls remain separate gates.
+
+## Checked native Boolean bridges
+
+Include `Source/DafnyStandardLibraries/optional/IntegerBitwiseNative.dfy` with
+`--integer-bitwise` to use `Std.Arithmetic.IntegerBitwiseNative8`, `16`, `32`
+and `64`. The suffix selects the native `bvN` type. These ordinary ghost
+lemmas work with `--additional-axioms` off. No collector, new prelude formula,
+compiler assumption or globally installed bridge is added. Including the file
+is explicit; the packaged standard library and all existing compiler inputs
+are unchanged.
+
+Each module exports `RoundTrip(a)` for `0 <= a < 2^N`, `InverseN(x)`, and
+`And(x,y)`, `Not(x)`, `Or(x,y)`, `Xor(x,y)` and `AndNot(x,y)`. For example,
+`And` proves `(x & y) as int == IntegerBitwiseModel.andNat(N,x as int,y as int)`.
+Call the corresponding checked foundation lemma to transport the result to M1.
+For integer inputs call `RoundTrip` first, then apply the Boolean bridge to the
+checked conversions. Width-zero and other native widths are outside this API.
+The existing checked cast still enforces its destination range; nothing here
+makes a cast wrap or presumes closure of a stricter integer newtype predicate.
+
+### Model argument for every checked rule
+
+Fix `M = 2^N`, interpret a native word as its unsigned little-endian weighted
+sum `U`, and interpret the compiler references by M1 as above. All following
+rules are proved from the existing theory and finite M2 definitions. Their
+model arguments explain the proof decomposition; they are not new axioms.
+
+| Checked rules | Model and proof |
+|---|---|
+| `WidenN`, `WidenTo64` | Zero extension adds only zero high digits, preserving `U`. The smaller-word AND adapters use the same fact for both operands and their result. |
+| `AddN` | Widen both words by one bit. Their sum is below `2M`, so native addition in that wider sort equals `U(a)+U(b)`. |
+| `NoOverflowN` | Its checked premise equates the widened sum with the zero extension of the narrow sum. Substitute the widening and addition equations. The premise excludes carry out of the original width. |
+| `Split64`, `DigitSplit64` | Write `x = 2h+l` with `h=x>>1`, `l=x&1`. Both narrow additions in the reconstruction fit. The low digit is zero or one, so Euclidean uniqueness gives `U(h)=U(x)/2` and `U(l)=U(x)%2`. Smaller copies of these support lemmas have the identical argument. |
+| `NextN`, `Successor` | Excluding the all-ones word excludes the only overflowing increment. Checked addition gives `U(p+1)=U(p)+1`; substitute the stated integer value in `Successor`. |
+| `InverseN` | Converting the unsigned weighted sum of a word back to its native width reconstructs exactly those digits. This inverse is checked against the existing native theory. |
+| `RoundTrip` | Induction on nonnegative `a`. Zero is immediate. Reconstruct the preceding word by induction; it is not all ones because `a<M`. Its checked successor has value `a`; the native inverse identifies that successor with the checked cast of `a`. No integer round-trip axiom is used. |
+| `Zero64` | A sum of nonnegative binary digits is zero exactly when every digit is zero. |
+| `AndStep64` | Native AND commutes with removing the low digit; its low digit is one exactly when both operand low digits are one. Apply the checked digit decomposition to its result. |
+| `AndPrefix64`, `AndRecurrence` | At width zero the range premises force both operands to zero. At positive width the checked digit equations divide each operand by two, satisfying the smaller range. Induction and one finite defining equation give the exact integer AND recurrence. The smaller native adapters zero-extend into this proof at their original semantic width. |
+| `Power` | Explicit finite evaluations of the terminating M1 power recurrence, followed by the checked M2 power-agreement theorem, give the literal modulus for each supported width. |
+| `NativeNot`, `Not` | Each complemented digit contributes with the original digit exactly once to `M-1`. Their widened native sum therefore equals `M-1`; checked addition proves subtraction from that value. For unsigned input, normalization is identity, giving the exact M2 complement definition. |
+| `Or` | Native De Morgan identity is checked, then the checked complement and AND bridges instantiate the M2 OR definition. |
+| `Xor` | The checked native identity `x^y == (x|y)&!(x&y)`, the preceding bridges, and the finite M2 XOR equation give the result. |
+| `AndNot` | Apply checked complement to the second operand and checked AND to the pair, then instantiate the finite M2 ANDNOT equation. |
+
+All recursive proof calls decrease a natural number. Every helper has a body;
+there is no new bodyless declaration, `assume`, `{:axiom}` or `{:verify false}`.
+No rotation operator is used, so these proofs introduce no reachability of the
+rotation rewrite discussed in issue 147. The issue-284 backend qualification
+above remains in force: checked source proofs and live controls do not establish
+whole-theory consistency of the erased backend.
+
+The permanent native regression independently checks all included proof bodies,
+symbolic native and composed integer callers, wrong equations and an inhabited
+false assertion after each rule. Invalid casts, overflowing increments/additions,
+invalid prefix ranges and recurrence premises must fail. Mutation mode negates
+each rule's first proved contract separately and requires the rule's own body to
+reject it. Positive construction has a 2,000,000-RU scope ceiling; live negative
+and vacuity controls must finish within 200,000 RU. Exhaustion never passes.
+
+This is a checked Boolean/conversion sub-milestone, depending on PR 538 and
+through it PR 532. Shift, modular arithmetic, order, rotation and population-count
+native bridges remain separate proof work. It implements no trusted emitter and
+no runtime lowering.
