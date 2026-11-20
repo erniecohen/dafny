@@ -322,8 +322,8 @@ that runs Boogie's own test jobs and packs Boogie's NuGet packages.  The same fi
 is offered to Boogie's master as
 [boogie-org/boogie#1169](https://github.com/boogie-org/boogie/pull/1169).
 
-This branch builds against that fork's release `v3.5.5+review.dcd726f6`, whose
-packages have the version `3.5.5-review.dcd726f6`.  The release carries them with
+This branch builds against that fork's release `v3.5.5+review.a38b89f9`, whose
+packages have the version `3.5.5-review.a38b89f9`.  The release carries them with
 their sha256 sums, and its `REVIEW.md` says what the fork changes and how its
 version is computed.  Besides that fix, it brings:
 
@@ -384,10 +384,10 @@ version is computed.  Besides that fix, it brings:
   restores the old deadline for comparison, passed through Dafny's `--boogie`.
 
 `a48933e` made this branch build against the fork's packages, at
-`3.5.5-review.37e4435d`.  It now builds against `3.5.5-review.dcd726f6`:
+`3.5.5-review.37e4435d`.  It now builds against `3.5.5-review.a38b89f9`:
 
 - `Source/DafnyCore/DafnyCore.csproj` names `Boogie.ExecutionEngine`
-  `3.5.5-review.dcd726f6`, and `dotnet-tools.json` names the `boogie` tool at the
+  `3.5.5-review.a38b89f9`, and `dotnet-tools.json` names the `boogie` tool at the
   same version;
 - `nuget.config` adds a local package source, `Binaries/boogie-packages`, and maps
   every Boogie package to it and to nothing else, so a missing package stops the
@@ -433,6 +433,36 @@ check.  Its release note is `docs/dev/news/241-boogie-cache-background.feat`.
 
 **To build this branch, run `sh Scripts/fetch-boogie-packages.sh` once first.**
 CI does so in every job that builds.
+
+The move from `dcd726f6` to `a38b89f9` adopts
+[erniecohen/boogie#14](https://github.com/erniecohen/boogie/pull/14).
+Pass `--boogie "/typeEncoding:m /monomorphicSharedLiterals:1"` to preserve the
+existing shared Boolean constants during monomorphization. Their built-in Boolean
+type needs no instantiation. Passification can then recognize equal incoming
+definite-assignment trackers at joins. This adds no axiom, assumption or asserted
+fact. It defaults to 0, retains ordinary cloning for other expressions, and is
+ignored by the arguments and predicates encodings. It is opt-in because changing
+proof contexts and names can increase as well as decrease solver costs.
+The prover-interface option inventory includes `CoreOptions.MonomorphicSharedLiterals`.
+
+The complete commit range between those release tags is:
+
+- `83733108`: split canonical map rows by native result sort
+  ([erniecohen/boogie#12](https://github.com/erniecohen/boogie/pull/12));
+- `7b17437c`: revert that split
+  ([erniecohen/boogie#13](https://github.com/erniecohen/boogie/pull/13));
+- `32b013b1`: add the opt-in shared-Boolean policy, its controls and documentation
+  ([erniecohen/boogie#14](https://github.com/erniecohen/boogie/pull/14)).
+
+The intermediate `5d9897bc` release was withdrawn because the split's apparent
+benefit came from renaming later symbols, rather than useful instantiations of
+the split rows, and the renaming also caused resource regressions. PR 13 explains
+the renaming controls. Its revert restores the entire `Source` tree of the
+`dcd726f6` release. The `a38b89f9` release retains that revert: its map-encoding
+source is identical to `dcd726f6`. The shared-Boolean policy changes only the
+monomorphizer and its option interface; it does not reintroduce the map-row split.
+The regression is `git-issues/git-issue-281-shared-literals.dfy`; the release note
+is `docs/dev/news/281-shared-literals.feat`.
 
 ## Tests, release notes and the manual
 
@@ -596,12 +626,14 @@ once with Z3 5.1.0 and once with the Z3 that the tree's own tests expect (4.12.1
 this branch), and reports each declaration's verdict.  It also runs the tests named in `.github/review/regressions` in
 upstream's own harness.  On a tag it attaches self-contained binaries for `linux-x64` and `osx-arm64`
 to a GitHub release, with their sha256 sums.  The `osx-arm64` binary and the release
-itself are built on the self-hosted Apple-silicon pool (label `mac-studio`).
+itself are built on the self-hosted Apple-silicon pool (label `fork-ci`); Linux x64
+is cross-published there, with Linux execution qualified downstream.
 The framework-dependent build, artifact reports and portable regression tests
 also use this pool, together with JavaScript runtime tests, resolver matrix and unit tests,
 finite-support controls, statement-expression controls and verification-batch controls. The test `dafny0/CoinductiveProofs.dfy` declares macOS
 unsupported because its expected resource counts differ, so it stays in a
-separate hosted Linux job. `.github/review/regression-filter.py` partitions the
+separate Linux job that is explicitly skipped until a Linux self-hosted runner is
+available. `.github/review/regression-filter.py` partitions the
 standing manifest without dropping or duplicating entries. Every
 self-hosted job has an explicit repository/event guard: only pushes, manual
 runs, or pull requests whose head repository is `erniecohen/dafny` are admitted.
@@ -1128,24 +1160,27 @@ changes, and every verdict and resource count is as before.  The option does not
 resolver, and the regression runs under both.  The regression is
 `git-issues/github-issue-88.dfy`; the release note is `docs/dev/news/88.feat`.
 
-Two neighbouring cases needed no change to the product, only regressions.  With
-`--modular-termination`, the added parent meets the existing rules where a new declaration would:
+Two neighbouring cases needed no change to the product, only regressions. Under the default
+trait-extension termination rules, also selected explicitly by `--modular-termination`,
+the added parent meets the existing rules where a new declaration would:
 the bound of an inherited member that becomes an override is compared with the parent's, an
 inherited call that the new overrides put on a cycle is checked, and an inherited member that
 becomes an implementation of a member of another module that has no bound must be a leaf
 (`git-issues/github-issue-88-modular-termination.dfy`, each case beside a one-module control with
-the same verdict).  One case is open, and it does not need this option:
-[issue 493](https://github.com/erniecohen/dafny/issues/493).  A member that has no bound of its
-own and gets one in a refining module, here from the added parent, keeps the calls of its
-inherited body unchecked against that bound, and a program proves `false` with it.  The base
-line has the same gap where a refinement turns an abstract type into a class that extends a
-trait.  Datatypes, codatatypes and newtypes keep the grammar they had,
+the same verdict). The fix for [issue 493](https://github.com/erniecohen/dafny/issues/493)
+also checks an inherited body's calls against a bound acquired from an added parent, even
+when its local call-graph component is unchanged. `git-issues/github-issue-88-inherited-bounds.dfy`
+covers that route under both resolvers, with the default and explicit modular rules; the legacy
+elision makes its `WouldBeBad` method prove `false` again. Compiled generic diamonds, inherited
+constructors, fields and default methods, and parents added directly to a class are covered by
+`git-issues/github-issue-88-runtime.dfy` for C# and JavaScript, with a failing false control.
+These regressions change no product file. Datatypes, codatatypes and newtypes keep the grammar they had,
 `datatype D extends S ...`, which needs no option, and the same default-on fixes cover the parents
 they add: override checks at inherited members, termination, name capture, the cardinality
 admission, and trait axioms under `--inherited-trait-axioms`
 (`git-issues/github-issue-88-value-types.dfy`).  The legacy resolver has no conversion from a
-datatype or a newtype to a trait, so the cases that upcast run under the new resolver only.  Not
-covered: member invariants, whose option is not in this line yet.
+datatype or a newtype to a trait, so the cases that upcast run under the new resolver only.
+Member invariants use the inherited-conjunct checks described in the member-invariant implementation.
 
 ## Comparing crossed component types ([issue 47](https://github.com/erniecohen/dafny/issues/47))
 
