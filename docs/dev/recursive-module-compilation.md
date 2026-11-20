@@ -158,10 +158,39 @@ the group remains a separate module referring to its original siblings.
 The wrappers also preserve separate-compilation interfaces. Their imports use
 `--python-module-name` when present. Group and declaration identities and file
 assembly order depend on names, so relocating sources and reloading a complete
-archive preserve the implementation file. Extern modules, types and members
-inside a Python group, and declarations marked `{:compile false}`, remain
-explicitly rejected pending a foreign-linkage convention; ordinary foreign dependencies below a group keep their existing
-lowering.
+archive preserve the implementation file.
+
+### Python foreign interfaces
+
+A group member with an extern or omitted declaration is a complete foreign
+Python module. No declarations from that member, including ordinary bodies,
+are added to the group's implementation, and no generated wrapper replaces its
+foreign interface. This follows Python's existing whole-module input convention:
+`# Module: Name` overrides the input filename, and otherwise the `.py` filename
+selects the module. Dotted extern module names use the ordinary directory
+layout. The generated group filename comes from a generated member, so a
+foreign name does not become an implementation path. Extern module and declaration names keep their ordinary
+spelling; internal group prefixes never appear in the foreign API. Static
+functions with a two-argument extern qualifier retain Python's underscore
+separator, while static methods retain the dot separator.
+
+A group's foreign interfaces are registered before its implementation file's
+imports are emitted, after lower dependencies have been generated. This is necessary even when the foreign member appears
+later in compilation order. Generated siblings use module-qualified references
+to foreign declarations and datatype constructors. Foreign files must defer
+imports of generated siblings until their callables execute: importing a wrapper
+and reading its classes during foreign-module initialization can re-enter a
+partially initialized implementation. This is a foreign-code initialization
+requirement, not an extra verifier assumption.
+
+Ordinary builds copy foreign files supplied with `--input` using the existing
+backend convention. For package translation, place those files in the generated
+package. Package-mode source compilation imports them in the current package.
+A separate client imports the package recorded by the producer. A wholly
+omitted module has no record row, so its compiled sibling supplies the group's
+package. Package translation of a wholly omitted group remains explicitly
+unsupported, as do the existing dotted extern names in package mode. Ordinary
+foreign dependencies below a group keep their existing lowering.
 
 `git-issue-466-python.dfy` compares Python with C# for every runtime case of the
 Java fixture: source execution, both wrapper-erasure settings, scheduled
@@ -176,8 +205,14 @@ It compares the implementation emitted from relocated sources byte
 for byte, builds those sources into an archive, and runs a separately translated
 client against the producer's Python package using the archive and translation
 record.
-`git-issue-466-python-extern.dfy` has module, type and member rejection controls
-for both extern and omitted declarations.
+`git-issue-466-python-extern.dfy` now accepts the six former module, type and
+member rejection cases. `git-issue-466-python-foreign.dfy` compares complete
+foreign-module execution with C#, constructs a foreign datatype, tests renamed
+classes and members and explicit static qualifiers, exercises callbacks through
+each group, inherits a lower generated trait in two foreign modules, and runs
+both a complete archive input and a separately translated
+client using the producer's package and translation record. Its negative control
+rejects a wholly omitted group in package mode.
 
 This extends an opt-in compilation feature. It changes no verifier rule,
 verification condition, axiom, trusted assumption or obligation producer.
