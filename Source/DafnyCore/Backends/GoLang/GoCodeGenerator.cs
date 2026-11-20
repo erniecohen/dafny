@@ -140,9 +140,7 @@ namespace Microsoft.Dafny.Compilers {
             import.Name = "";
           }
           ExternModuleImports.Add(member, import);
-          if (import.Path != "") {
-            EmitImport(import, RootImportWriter, RootImportDummyWriter);
-          }
+          EmitImport(import, RootImportWriter, RootImportDummyWriter);
         }
       }
     }
@@ -220,8 +218,7 @@ namespace Microsoft.Dafny.Compilers {
       wr.WriteLine(")");
       importDummyWriter = wr.Fork();
       if (ModuleName != "dafny") {
-        foreach (var import in ImportsNotFromDafnyModules.Concat(ModuleImports.Values)
-                   .Concat(ExternModuleImports.Values.Where(import => import.Path != ""))) {
+        foreach (var import in ImportsNotFromDafnyModules.Concat(ModuleImports.Values).Concat(ExternModuleImports.Values)) {
           EmitImport(import, importWriter, importDummyWriter);
         }
       }
