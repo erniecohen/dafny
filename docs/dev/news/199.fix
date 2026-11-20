@@ -6,4 +6,4 @@ lemma whose type depends on the invariant's type, and, in those proofs, raw
 tests and conversions, choices of a value of that type, and reads of a field or
 array element of that type from the heap. Without these checks, a result of
 such a type, a raw test, a heap read or a `:|` choice in such a proof can prove
-`false`. Programs without a binding in an invariant's cone are unaffected.
+`false`.

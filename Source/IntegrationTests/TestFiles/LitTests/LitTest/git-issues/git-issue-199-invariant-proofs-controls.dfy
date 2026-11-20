@@ -49,9 +49,3 @@ module OutsideCone {
   ghost function Elsewhere(): int { var y := Pick(); y.n }
 }
 
-// Without a binding in the cone, proof hints in it are not followed, as before.
-module NoBinding {
-  datatype T = T(n: int) { invariant Ok(this) }
-  ghost function Ok(t: raw T): bool { H(); t.n >= 0 }
-  lemma H() ensures true { var r: raw T := T(0); if r is T {} }
-}

@@ -5169,22 +5169,26 @@ is independent of `D`. The hidden `--legacy-member-invariant-dependence` option
 restores the former unsound cache of provisional negative answers, for migration
 and comparison only.
 
-Statements inside expressions are proof hints, and are not checked. Under
+Statements inside expressions are proof hints. They do not change what an
+expression means, but they are checked, together with the lemmas they call: the
+well-formedness proof of a function, hints included, justifies its `ensures`
+clauses, its termination and the preconditions of its calls, which the
+definition of `D` assumes. A proof that learns that a value is in `D` learns
+`D`'s invariants, and could then assume what it is meant to prove. Under
 `--lemma-bindings`, a binding of a lemma's results also contributes the bound
-lemma's `requires` and `ensures` clauses, and transitively the functions and
-lemma bindings they reach, to this check, and no out-parameter of the bound
-lemma may have a type that depends on `D`.
+lemma's `requires` and `ensures` clauses to this check, and its body is a proof
+that is checked as a hint is.
 
-Once the check reaches a binding, the proofs that justify bindings are checked
-too, since a proof that learns that a value is in `D` learns `D`'s invariants,
-and with them the results of the bindings they contain. These proofs are the
-bodies of the bound lemmas, the statements inside the expressions the check
-reaches, and the lemmas these call, with their specifications and bodies. In
-them, rules 1 to 5 apply, and moreover a local variable of a type that depends
-on `D` must be given a value where it is declared, a `:|` or `forall` statement
-follows rule 1, no lemma has an out-parameter of such a type, and no field or
-array element of such a type is read from the heap. Without a binding, the
-proofs are not checked, as before.
+So the check also reaches the statements inside the expressions it reaches, the
+bodies of bound lemmas, and the lemmas these call, with their specifications and
+bodies. In them, rules 1 to 5 apply, and moreover:
+
+- a local variable of a type that depends on `D` must be given a value where it
+  is declared;
+- a `:|` or `forall` statement follows rule 1;
+- no lemma has an out-parameter of such a type, a bound lemma included;
+- no field or array element of such a type is read from the heap;
+- no dynamically bound lemma is called, since its overrides are not all known.
 
 A bound
 variable whose type is inferred as `raw D` makes a test `k is D` a test of a raw

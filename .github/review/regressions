@@ -1090,3 +1090,7 @@ git-issues/git-issue-522-controls.dfy
 # Proofs that justify a lemma binding in the cone of a member invariant (https://github.com/erniecohen/dafny/issues/199).
 git-issues/git-issue-199-invariant-proofs.dfy
 git-issues/git-issue-199-invariant-proofs-controls.dfy
+
+# Proof hints in the cone of a member invariant, with or without a lemma binding (https://github.com/erniecohen/dafny/issues/549).
+git-issues/git-issue-549-invariant-hints.dfy
+git-issues/git-issue-549-invariant-hints-controls.dfy

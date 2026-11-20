@@ -665,7 +665,8 @@ proof, while the opposite move could.  Open question 4.
 - **The cone.**  PR 384's extension condition (its section 3.3) ranges over the
   *cone* of `T`'s invariant: invariants and the bodies and specifications of the
   functions they reach.  A lemma *call* in a function of the cone does not
-  matter today (fact 3).  A *binding* does: it makes `Post_L` part of the
+  change the function's value (fact 3), but it is a proof, which is in the cone
+  since issue 549 (item 3).  A *binding* also makes `Post_L` part of the
   function's value.  So with both features on:
   1. a binding's out-parameters are bound variables, and clause 1 applies to
      them: an out-parameter of a `T`-dependent type in the cone is rejected,
@@ -696,9 +697,16 @@ proof, while the opposite move could.  Open question 4.
      of such a type; and no location of such a type is read from the heap.
      Of these, the uninitialized local and the `forall` statement have no
      known proof of `false`; they are rejected so that a proof in the cone
-     follows the rules of a function there.  Without a binding in the cone,
-     nothing new is followed.  The tests are
+     follows the rules of a function there.  The tests are
      `git-issues/git-issue-199-invariant-proofs.dfy` and its controls.
+     Issue 549 found that a binding is not needed: a proof hint in a function
+     of the cone justifies that function's postcondition, termination and
+     callee preconditions in the same circular way.  So the proofs above are
+     in the cone whether or not it has a binding, and a dynamically bound
+     lemma may not be called from them (as clause 4 rejects a dynamically
+     bound function).  See section 10 of
+     docs/dev/issue105-member-invariants-plan.md and
+     `git-issues/git-issue-549-invariant-hints.dfy`.
 - **Reads.**  PR 384 requires an empty frame in the cone.  A stage-2 binding of
   a postcondition that reads a location fails the reads check there, as it should.
 
@@ -1000,5 +1008,6 @@ or was left open by it:
 Left for later: the out-of-scope items of section 8.  The cone clause of 6.3
 is done: [PR 527](https://github.com/erniecohen/dafny/pull/527) follows the
 specifications of bound lemmas (item 2), and the follow-up to it the
-out-parameters and the proofs (items 1 and 3).
+out-parameters and the proofs (items 1 and 3), the proofs whether or not the
+cone has a binding (issue 549).
 
