@@ -920,14 +920,14 @@ jobs:
         run: npm install --no-save --package-lock=false bignumber.js@9.1.2
       - name: Worker resolution and front-end profile integration
         run: |
-          dotnet test --settings .github/review/ci.runsettings Source/DafnyCore.Test -c Release --no-build \
+          dotnet test -p:NuGetAudit=false --settings .github/review/ci.runsettings Source/DafnyCore.Test -c Release --no-build \
             --filter 'FullyQualifiedName~ResolutionPipelineTests|FullyQualifiedName~PipelineProfileResolutionTests|FullyQualifiedName~TypedGraphMaterializerTests' \
             --logger "console;verbosity=normal"
       - name: Resolution and cardinality tests with Debug contract assertions
         # Release builds compile Contract.Assert and Debug.Assert out; here a failed assertion fails the step.
         # NewtypeWitnessResolutionTests: https://github.com/erniecohen/dafny/issues/422.
         run: |
-          dotnet test --settings .github/review/ci.runsettings Source/DafnyCore.Test -c Debug \
+          dotnet test -p:NuGetAudit=false --settings .github/review/ci.runsettings Source/DafnyCore.Test -c Debug \
             --filter 'FullyQualifiedName~ResolutionPipelineTests|FullyQualifiedName~PipelineProfileResolutionTests|FullyQualifiedName~TypedGraphMaterializerTests|FullyQualifiedName~Cardinality|FullyQualifiedName~NewtypeReferenceCharacteristicTests|FullyQualifiedName~NewtypeWitnessResolutionTests' \
             --logger "console;verbosity=normal"
       - name: Pipeline unit tests with Debug contract assertions
