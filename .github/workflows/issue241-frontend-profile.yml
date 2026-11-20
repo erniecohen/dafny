@@ -33,6 +33,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
+  DOTNET_PROCESSOR_COUNT: '2'
   DOTNET_NOLOGO: 'true'
   # Self-hosted runners: no build process outlives the job (MSBuild nodes, Gradle daemons).
   MSBUILDDISABLENODEREUSE: '1'
@@ -44,47 +45,82 @@ env:
 
 jobs:
   build:
-    runs-on: ubuntu-24.04
+    if: ${{ github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request') && (github.event_name != 'pull_request' || (!github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository)) }}
+    runs-on: [self-hosted, macOS, ARM64, fork-ci]
+    timeout-minutes: 1440 # Includes waiting for the shared admission slot.
     steps:
+      - name: Yield to interactive work
+        if: runner.os == 'macOS'
+        shell: bash
+        timeout-minutes: 360
+        run: |
+          case "$(ps -o comm= -p "$PPID")" in
+            */Runner.Worker|Runner.Worker) ;;
+            *) echo "::error::Expected this job's Runner.Worker parent"; exit 1 ;;
+          esac
+          renice 10 -p "$PPID" "$$" >/dev/null
+          test "$(ps -o nice= -p "$PPID" | tr -d ' ')" = 10
+          test "$(ps -o nice= -p "$$" | tr -d ' ')" = 10
+      - name: Create job temporary directory
+        shell: bash
+        timeout-minutes: 360
+        run: |
+          job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
+          echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@18b15fb544432352965a832a1e4cdad4374acf10
+        with:
+          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-dotnet
       - name: Boogie packages
+        timeout-minutes: 360
         run: sh Scripts/fetch-boogie-packages.sh
       - name: Build
-        run: dotnet publish Source/Dafny/Dafny.csproj -c Release -o out/dafny -p:GeneratePackageOnBuild=false
+        timeout-minutes: 360
+        run: dotnet publish -p:NuGetAudit=false Source/Dafny/Dafny.csproj -c Release -o out/dafny -p:GeneratePackageOnBuild=false
       - uses: actions/upload-artifact@v4
         with:
           name: dafny
           path: out/dafny
           retention-days: 3
+      - name: Remove job temporary directory
+        if: always()
+        shell: bash
+        timeout-minutes: 5
+        run: |
+          case "${TMPDIR:-}" in
+            "$RUNNER_TEMP"/fork-job.*) rm -rf "$TMPDIR" ;;
+          esac
 
   measure:
+    if: ${{ github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request') && (github.event_name != 'pull_request' || (!github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository)) }}
     needs: build
-    runs-on: ubuntu-24.04
-    timeout-minutes: 330
+    runs-on: [self-hosted, macOS, ARM64, fork-ci]
+    timeout-minutes: 1440 # Includes waiting for the shared admission slot.
     strategy:
       fail-fast: false
+      max-parallel: 1
       matrix:
         include:
           # Std, resolution only, both GC modes; profile off, on, and on with GC events.
           - name: std-resolve
             run: >-
-              run --corpus std-resolve --command resolve --project Source/DafnyStandardLibraries/src/Std/dfyconfig.toml
+              run --corpus std-resolve --command resolve --cores 2 --project Source/DafnyStandardLibraries/src/Std/dfyconfig.toml
               --configs ws-default-off,ws-default-on,ws-default-gcev,srv-default-off,srv-default-on,srv-default-gcev
           # DafnyCore's Dafny project (the Dafny and Rust back ends, on the Std .doo).
           - name: core-resolve
             run: >-
-              run --corpus core-resolve --command resolve --project Source/DafnyCore/dfyconfig.toml
+              run --corpus core-resolve --command resolve --cores 2 --project Source/DafnyCore/dfyconfig.toml
               --configs ws-default-off,ws-default-on,ws-default-gcev,srv-default-off,srv-default-on,srv-default-gcev
           # Std's examples, a project on the Std .doo.
           - name: examples-resolve
             run: >-
-              run --corpus examples-resolve --command resolve --project Source/DafnyStandardLibraries/examples/dfyconfig.toml
+              run --corpus examples-resolve --command resolve --cores 2 --project Source/DafnyStandardLibraries/examples/dfyconfig.toml
               --configs ws-default-off,ws-default-on,ws-default-gcev,srv-default-off,srv-default-on,srv-default-gcev
           # Std through translation and Boogie's preparation, no-op solver.
           - name: std-translate
             run: >-
-              run --corpus std-translate --command verify --cores 4 --project Source/DafnyStandardLibraries/src/Std/dfyconfig.toml
+              run --corpus std-translate --command verify --cores 2 --project Source/DafnyStandardLibraries/src/Std/dfyconfig.toml
               --configs ws-default-off,ws-default-on,srv-default-off,srv-default-on
           # The suite's multi-module programs under both resolvers, no-op solver, in three shards.
           - name: suite-0
@@ -97,6 +133,27 @@ jobs:
           - name: std-heap
             heap: Source/DafnyStandardLibraries/src/Std/dfyconfig.toml
     steps:
+      - name: Yield to interactive work
+        if: runner.os == 'macOS'
+        shell: bash
+        timeout-minutes: 330
+        run: |
+          case "$(ps -o comm= -p "$PPID")" in
+            */Runner.Worker|Runner.Worker) ;;
+            *) echo "::error::Expected this job's Runner.Worker parent"; exit 1 ;;
+          esac
+          renice 10 -p "$PPID" "$$" >/dev/null
+          test "$(ps -o nice= -p "$PPID" | tr -d ' ')" = 10
+          test "$(ps -o nice= -p "$$" | tr -d ' ')" = 10
+      - name: Create job temporary directory
+        shell: bash
+        timeout-minutes: 330
+        run: |
+          job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
+          echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@18b15fb544432352965a832a1e4cdad4374acf10
+        with:
+          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-dotnet
       - uses: actions/download-artifact@v4
@@ -109,6 +166,7 @@ jobs:
           SUITE: ${{ matrix.suite }}
           HEAP: ${{ matrix.heap }}
           NAME: ${{ matrix.name }}
+        timeout-minutes: 330
         run: |
           chmod +x out/dafny/Dafny
           D="$PWD/out/dafny/Dafny"
@@ -118,15 +176,15 @@ jobs:
           elif [ -n "$SUITE" ]; then
             L=Source/IntegrationTests/TestFiles/LitTests/LitTest
             python3 .github/review/lit-verdicts.py plan "$L" plan.tsv
-            python3 "$SCRIPT" run --corpus "suite-${SUITE%/*}" --command verify --cores 4 --plan plan.tsv --litdir "$L" \
+            python3 "$SCRIPT" run --corpus "suite-${SUITE%/*}" --command verify --cores 2 --plan plan.tsv --litdir "$L" \
               --shard "$SUITE" --configs ws-legacy-off,ws-legacy-on,ws-refresh-off,ws-refresh-on \
               --dafny "$D" --out "results/$NAME" --reps "$REPS" --seed "$SEED"
           else
-            dotnet tool install --global dotnet-gcdump --version 10.0.750501
-            export PATH="$PATH:$HOME/.dotnet/tools"
-            python3 "$SCRIPT" heap --corpus std --project "$HEAP" --windows 1,4 --reps 3 --cores 4 \
+            dotnet tool install --tool-path "$TMPDIR/dotnet-tools" dotnet-gcdump --version 10.0.750501
+            export PATH="$PATH:$TMPDIR/dotnet-tools"
+            python3 "$SCRIPT" heap --corpus std --project "$HEAP" --windows 1,4 --reps 3 --cores 2 \
               --dafny "$D" --out "results/$NAME"
-            python3 "$SCRIPT" gcdump --corpus std --project "$HEAP" --windows 1,4 --cores 4 \
+            python3 "$SCRIPT" gcdump --corpus std --project "$HEAP" --windows 1,4 --cores 2 \
               --points parsed,resolved,1,20,43,80 --dafny "$D" --out "results/$NAME"
             rm -f results/"$NAME"/gcdumps/*.gcdump.tmp
           fi
@@ -134,9 +192,10 @@ jobs:
         if: always()
         env:
           NAME: ${{ matrix.name }}
+        timeout-minutes: 330
         run: |
           {
-            echo "Runner: $(nproc) processors, $(free -g | awk '/Mem:/{print $2}') GB memory, $(uname -sr)."
+            echo "Runner: $(sysctl -n hw.logicalcpu) processors, $(($(sysctl -n hw.memsize) / 1073741824)) GB memory, $(uname -sr)."
             cat results/"$NAME"/identity-*.txt 2>/dev/null || true
             python3 "$SCRIPT" analyze "results/$NAME" --out "results/$NAME/report.md" > /dev/null && cat "results/$NAME/report.md"
           } >> "$GITHUB_STEP_SUMMARY"
@@ -146,18 +205,49 @@ jobs:
           name: frontend-${{ matrix.name }}
           path: results
           retention-days: 30
+      - name: Remove job temporary directory
+        if: always()
+        shell: bash
+        timeout-minutes: 5
+        run: |
+          case "${TMPDIR:-}" in
+            "$RUNNER_TEMP"/fork-job.*) rm -rf "$TMPDIR" ;;
+          esac
 
   analyze:
     needs: measure
-    if: always()
-    runs-on: ubuntu-24.04
+    if: ${{ (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request') && (github.event_name != 'pull_request' || (!github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository))) && (always()) }}
+    runs-on: [self-hosted, macOS, ARM64, fork-ci]
+    timeout-minutes: 1440 # Includes waiting for the shared admission slot.
     steps:
+      - name: Yield to interactive work
+        if: runner.os == 'macOS'
+        shell: bash
+        timeout-minutes: 360
+        run: |
+          case "$(ps -o comm= -p "$PPID")" in
+            */Runner.Worker|Runner.Worker) ;;
+            *) echo "::error::Expected this job's Runner.Worker parent"; exit 1 ;;
+          esac
+          renice 10 -p "$PPID" "$$" >/dev/null
+          test "$(ps -o nice= -p "$PPID" | tr -d ' ')" = 10
+          test "$(ps -o nice= -p "$$" | tr -d ' ')" = 10
+      - name: Create job temporary directory
+        shell: bash
+        timeout-minutes: 360
+        run: |
+          job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
+          echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@18b15fb544432352965a832a1e4cdad4374acf10
+        with:
+          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
           pattern: frontend-*
           path: all
       - name: Analyze
+        timeout-minutes: 360
         run: |
           python3 "$SCRIPT" analyze all --out report.md > /dev/null
           cat report.md >> "$GITHUB_STEP_SUMMARY"
@@ -175,3 +265,11 @@ jobs:
             report.md
             csv
           retention-days: 30
+      - name: Remove job temporary directory
+        if: always()
+        shell: bash
+        timeout-minutes: 5
+        run: |
+          case "${TMPDIR:-}" in
+            "$RUNNER_TEMP"/fork-job.*) rm -rf "$TMPDIR" ;;
+          esac
