@@ -2742,6 +2742,19 @@ and what information it produces about the verification process.
   so it also takes precedence over `--solver-option O:smt.arith.solver=N` or the
   corresponding `--boogie /proverOpt:O:smt.arith.solver=N` option.
 
+* `--integer-bitwise` - enable the compiler-owned ghost class
+  `IntegerBitwiseModel` and its explicit one-step definition-unfold lemmas for
+  powers, normalization, Boolean operations, shifts, rotations and population
+  count. Disabled by default. This reference-only milestone does not enable
+  integer-newtype operators or native bitvector bridges. Include the optional
+  `IntegerBitwiseCompiler.dfy` companion for checked range and algebra contracts.
+  Set `integer-bitwise = true` in the project file's `[options]` section;
+  an enabled `.doo` library requires enabled clients. Declarations in an off-built
+  library cannot use this compiler interface merely because the client enables
+  it. Ordinary declarations with the same spelling keep their own meaning,
+  including local names and opened imports. This option is independent of
+  `--additional-axioms`. See [the interface and model argument](../dev/integer-bitwise-references.md).
+
 * `--additional-axioms` - enable the fork's additional verifier axioms. This
   shared option is disabled by default. It currently supplies the bounded
   integer/bitvector round trip: for `0 <= a < 2^N`, `(a as bvN) as int == a`.

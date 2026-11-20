@@ -329,3 +329,4 @@ solver-field	Verbosity		System.Int32	bypass	observable warning or native transpo
 solver-property	Help		System.String	command-setup	static option documentation; no execution read
 solver-property	LibOptions		Microsoft.Boogie.SMTLibOptions	execution	covered by complete inherited prover interfaces; never serialized as an opaque object
 solver-property	UseTickleBool		System.Boolean	execution	all public solver fields/properties enumerated and encoded
+cli	integer-bitwise	--integer-bitwise	System.CommandLine.Option`1[System.Boolean]	input	compiler-owned resolved signatures and local defining equations before task lookup
