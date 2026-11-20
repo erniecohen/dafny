@@ -1,8 +1,9 @@
-# Verification backend boundary: P1 first slice
+# Verification backend boundary: P1 preparation slices
 
-This is the first slice of [P1](https://github.com/erniecohen/dafny/issues/118).
-It introduces work, result and preparation types plus the native Boogie adapter.
-It adds no backend, command-line option, axiom or proof obligation. Native
+These are the first two slices of [P1](https://github.com/erniecohen/dafny/issues/118).
+They introduce work, result and preparation types, the native Boogie adapter,
+and shared translation/preparation with capture before backend mutation.
+They add no backend, command-line option, axiom or proof obligation. Native
 verification behavior remains the compatibility requirement.
 
 `IVerificationBackend<TInput>` takes a backend's typed input and a cancellation
@@ -11,11 +12,22 @@ the existing translated `Microsoft.Boogie.Program` and owns its mutating native
 preparation call. It then applies the existing opt-in result-cache wrapper, in
 the same order as before. It neither translates again nor proves during preparation.
 
-`DafnyProgramVerifier` still owns synchronized large-stack translation, scope
-reset, translation-cache lookup, dependency ownership, cancellation checks and
-printing before preparation. The adapter is called at the former
-`GetVerificationTasks` site, after printing. Capturing an alternative backend's
-input belongs before that mutating call; this slice installs no capture hook.
+`VerificationPreparationPipeline` owns synchronized large-stack translation,
+scope reset, translation-cache lookup, dependency ownership and cancellation
+checks. It takes a backend factory and an optional capture callback, with no
+`ExecutionEngine` argument. The callback observes the translator graph before
+the backend factory runs or preparation mutates that graph. A caller retaining
+the graph must copy it; this is an ordering seam, not an immutable snapshot or
+a normalizer. Each backend remains responsible for checking its input.
+
+`DafnyProgramVerifier` uses that shared path, with native printing as the capture
+callback and native cache/adapter construction as the delayed factory. Printing
+still precedes result-cache lookup and preparation; the Boogie engine still
+resolves, typechecks and prepares the graph exactly once. Translation and backend
+preparation remain under the same semaphore, including across asynchronous work.
+The returned preparation and module-owned proof dependencies travel together.
+Failed preparations remain explicit, and exceptions and cancellation propagate;
+profiling a failed preparation does not try to enumerate its work.
 
 ## States and evidence
 
@@ -57,9 +69,18 @@ and ill-typed negative controls. Failed preparation must throw through the same
 bridge used by the shipped pipeline. The registered lit regression contains
 passing and failing assertions in multiple modules and a filtered successful run.
 
+Engine-free preparation controls use a recording backend on actual translated
+Dafny modules. They exercise capture before mutation, default/cold/warm graphs,
+checksum flags, independent dependency maps, explicit failure outcomes, capture
+and backend exceptions, cancellation and serialization. The native lit regression
+also compares filtered output with translation caching off and on.
+
 The serial counterfactual runner removes preparation guards, changes outcome
 classification, drops seeding/cancellation/statuses/metrics/evidence, omits cache
-wrapping and replaces the pipeline's prepared work by an empty list. Each mutated
+wrapping and replaces the pipeline's prepared work by an empty list. It also
+removes capture, checksum propagation, translation-cache routing, module dependency
+ownership and serialization, replaces a failed backend preparation by an
+empty ready result, and makes profiling enumerate failed work. Each mutated
 build must compile and then fail an executing control; a compilation error does
 not count. Source bytes are restored in a `finally` block:
 
@@ -97,11 +118,11 @@ acceptance gates; this runner does not replace them.
 
 This slice deliberately retains `ModuleVerificationTasks`, `IProgramVerifier`'s
 engine argument and the native CLI/IDE task/result consumers through
-`BoogieVerificationBackend.GetNativeTasks`. It does not close P1. The follow-up
+`BoogieVerificationBackend.GetNativeTasks`. It does not close P1. Shared translation
+and pre-mutation capture are now available without an engine; no B3 implementation
+or acceptance of its qualified bootstrap is implied. The follow-up
 must migrate those consumers together:
 
-- Share typed translation preparation and capture before backend mutation,
-  without requiring a Boogie engine for an alternative backend.
 - Migrate `Compilation`, filters, refinement grouping, seeded work, profiling,
   pipeline events, CLI aggregation/loggers, IDE state/gutters and verifier mocks.
 - Move native diagnostic/model/dependency interpretation into reporting adapters;
