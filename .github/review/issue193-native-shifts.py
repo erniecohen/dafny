@@ -226,8 +226,8 @@ def main():
                 mutated = mutated.replace('include "IntegerBitwiseNative.dfy"',
                                           'include "' + (LIBRARY.parent / 'IntegerBitwiseNative.dfy').as_posix() + '"')
                 path.write_text(mutated)
-                if module.endswith('Arithmetic') and name == 'RightArithmetic' and j == 0:
-                    # This guard defines n-1 in the later premise. Its removal
+                if module.endswith('Arithmetic') and name in ('RightArithmetic', 'LeftArithmetic') and j == 0:
+                    # These guards define later count/divisor premises. Removal
                     # must fail the contract check, independently of callers.
                     verify('mutation-' + site, path,
                            ['--type-system-refresh:true', '--filter-symbol', f'{module}.{name}.'],

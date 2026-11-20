@@ -314,7 +314,7 @@ postcondition and removes each explicit precondition separately. Fact mutations
 are checked on concrete inhabited inputs; recursive ones use base inputs to avoid
 an inconsistent induction hypothesis. Guard mutations must lose a designated
 invalid-caller rejection, or fail contract well-formedness when the guard defines
-a later premise (the positive count in `RightArithmetic`). Exhaustion never counts as a control or mutation pass.
+a later premise (the count/divisor guards in `RightArithmetic` and `LeftArithmetic`). Exhaustion never counts as a control or mutation pass.
 The proof/control ceilings remain 2,000,000/200,000 resource units per scope.
 
 Remaining native equations include subtraction, multiplication, unsigned
