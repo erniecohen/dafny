@@ -1096,3 +1096,7 @@ git-issues/git-issue-522-controls.dfy
 # C# compilation and target admission for recursive module groups (issue 466).
 git-issues/git-issue-466-stage7.dfy
 git-issues/git-issue-466-stage7-targets.dfy
+
+# Base-type values in the cone of a newtype's member invariants (https://github.com/erniecohen/dafny/issues/105).
+git-issues/git-issue-105-newtype-base-values.dfy
+git-issues/git-issue-105-newtype-base-values-controls.dfy

@@ -25,7 +25,8 @@ namespace Microsoft.Dafny;
 ///     may only go to a type parameter the callee does not quantify over without a bound);
 ///  3. no function value is applied other than a lambda expression or a named function, applied on the spot;
 ///  4. no dynamically bound function is called or mentioned, since its overrides are not all known;
-///  5. no raw value is tested against, or converted to, a T-dependent type, explicitly or implicitly.
+///  5. no raw value is tested against, or converted to, a T-dependent type, explicitly or implicitly.  A value of a
+///     type that is not T-dependent, such as a literal or a value of the base type of a newtype, counts as raw here.
 /// In the same way, the constraint of a generic type in the cone (a subset type, a newtype, or a type with invariants,
 /// whose constraint is its invariants) is analysed with each type parameter T-dependent where its type argument is.
 /// Statements inside expressions are proof hints and do not contribute to the meaning, so they are not in the cone.
@@ -306,6 +307,11 @@ public class InvariantExtensionCondition {
     if (RawOwner(source) != null) {
       return !Type.GetTowerOfSubsetTypes(source).Exists(supertype => supertype.Equals(target, true)) && DependsOnOwner(target);
     }
+    if (DependsOnOwner(target) && !DependsOnOwner(source)) {
+      // A value of a type that does not depend on T, such as the base type of a newtype with invariants, converted to
+      // one that does: the conversion tests the value against the invariants, as a conversion of a raw value does.
+      return true;
+    }
     var s = source.NormalizeExpand();
     var t = target.NormalizeExpand();
     return s.TypeArgs.Count != 0 && s.TypeArgs.Count == t.TypeArgs.Count && Type.SameHead(s, t) &&
@@ -534,6 +540,12 @@ public class InvariantExtensionCondition {
             CheckSlot(update.Index, multiSetType.Arg);
             break;
         }
+        break;
+      case LiteralExpr { Value: not null } literal when literal.Type != null && RawOwner(literal.Type) == null &&
+                                                         DependsOnOwner(literal.Type):
+        // A literal of a newtype with invariants (or of a type built from one, such as a string of a newtype of
+        // characters) is a value of the base type, checked against the invariants: a conversion of a raw value.
+        Error(literal.Origin, $"converts a raw value to '{literal.Type}'");
         break;
       case TypeTestExpr test:
         ReachType(test.ToType, test.Origin);
