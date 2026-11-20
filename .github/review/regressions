@@ -1083,3 +1083,7 @@ git-issues/git-issue-374-pointwise.dfy
 git-issues/git-issue-374-pointwise-intrinsic.dfy
 git-issues/git-issue-374-partial.dfy
 git-issues/git-issue-374-partial-probe.dfy
+
+# Opt-in automatic partial equality and checked partial restriction (issue 374).
+git-issues/git-issue-374-partial-equality.dfy
+git-issues/git-issue-374-partial-restrict.dfy
