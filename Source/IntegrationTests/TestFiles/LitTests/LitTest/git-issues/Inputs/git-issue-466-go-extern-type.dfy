@@ -27,6 +27,9 @@ module B {
     static method {:extern} Make() returns (v: Alias)
     function {:extern} Value(): int
   }
+  newtype Wrapped = int {
+    function {:extern "Foreign.Tools", "AddTen"} AddTen(): int
+  }
   function Seed(): int { 7 }
   method Test() {
     var n := A.Plain(A.F());
@@ -35,9 +38,10 @@ module B {
     var alias := Alias.Make();
     var triple := A.Triple(m);
     var other := C.Get();
+    var wrapped: Wrapped := 5;
     print n, " ", m, " ", x.Value(), " ", alias.Value(), " ", A.Local.F(), " ",
       A.Twice(triple, 99), " ", other, " ", KeywordNative.Five(), " ",
-      A.Identity<int>(42) + 1, " ", A.Default<int>() + 2, "\n";
+      A.Identity<int>(42) + 1, " ", A.Default<int>() + 2, " ", wrapped.AddTen(), "\n";
     A.Test();
   }
 }

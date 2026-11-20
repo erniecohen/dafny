@@ -11,6 +11,7 @@ namespace Foreign {
   public static class Tools {
     public static T Identity<T>(Dafny.TypeDescriptor<T> _td_T, T x) { return x; }
     public static T Default<T>(Dafny.TypeDescriptor<T> _td_T) { return _td_T.Default(); }
+    public static BigInteger AddTen(BigInteger x) { return x + 10; }
     public static BigInteger Twice(BigInteger x) { return 2 * x; }
     public static BigInteger Triple(BigInteger x) { return 3 * x; }
   }
