@@ -678,6 +678,21 @@ persist that result only under verified executable, dependency and relevant
 environment bytes. A path-based process-local memo is not the cross-process
 identity cache. [Version probe][version-probe]
 
+**Which environment variables are keyed.** One cache per machine is shared by
+every shell, checkout, project and runner, so neither the task results nor the
+validated solver version hash the whole process environment. They key the
+solver image's bytes and audited dependencies, the operating-system family, the
+effective options (classified in `261-option-classes.tsv`), the Dafny and Boogie
+builds, and only the variables in `TaskExecutionEnvironment.ResultVariables`.
+Z3 reads no variable that changes a verdict or resource count. The list holds
+the dynamic loader's variables (`DYLD_*`, `LD_LIBRARY_PATH`, `LD_PRELOAD`,
+`LD_AUDIT`), which can change the code the solver image runs. Each listed
+variable is keyed by a digest of its relocated value. `TaskEnvironmentVariablesTests`
+checks that `PATH`, `HOME`, `DAFNY_CACHE_DIR` and `DAFNY_CACHE_PARTITION` are not
+keyed, and that each listed variable is. The integration script checks that a run
+with another `PATH` order, home directory and partition hits without probing the
+solver version again, and that a run with a loader variable set misses.
+
 ## 9. Next question answered: can BPL text stand for the live translated graph?
 
 **Not automatically.** The fixed translation table is useful, but text equality
