@@ -212,7 +212,8 @@ public sealed class VerificationPreparationPipeline : IDisposable {
       await previous;
       if (profile != null) {
         profile.Span("translate.commit", profileStart!.Value, new Dictionary<string, object?> {
-          ["module"] = moduleName, ["ticket"] = ticket
+          ["module"] = moduleName,
+          ["ticket"] = ticket
         });
       }
       cancellationToken.ThrowIfCancellationRequested();
@@ -328,8 +329,10 @@ public sealed class VerificationPreparationPipeline : IDisposable {
       var cached = module.Program;
       if (profile != null) {
         profile.Span("translate", profileStart!.Value, new Dictionary<string, object?> {
-          ["module"] = moduleName, ["cached"] = reused,
-          ["declarations"] = cached.TopLevelDeclarations.Count(), ["implementations"] = cached.Implementations.Count()
+          ["module"] = moduleName,
+          ["cached"] = reused,
+          ["declarations"] = cached.TopLevelDeclarations.Count(),
+          ["implementations"] = cached.Implementations.Count()
         });
       }
       return (cached, module.ProofDependencies, GC.GetAllocatedBytesForCurrentThread() - started);
