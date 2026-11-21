@@ -487,7 +487,7 @@ public sealed class PipelineProfile {
           ["module"] = module,
           ["symbol"] = symbol,
           ["task"] = Compilation.GetTaskName(task),
-          ["split"] = task.Split.SplitIndex,
+          ["split"] = Caching.VerificationTaskFacts.SplitIndex(task),
           ["cached"] = cached,
           ["submitted"] = times.Submitted,
           ["queued"] = times.Queued,

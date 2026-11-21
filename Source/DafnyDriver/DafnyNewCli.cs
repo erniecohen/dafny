@@ -65,6 +65,9 @@ public static class DafnyNewCli {
     Parser = builder.Build();
   }
 
+  /// <summary>The environment variable that names the cache root when no option does.</summary>
+  public const string CacheDirectoryVariable = "DAFNY_CACHE_DIR";
+
   public delegate Task<int> ContinueWithOptions(DafnyOptions dafnyOptions, InvocationContext context);
   public static void SetHandlerUsingDafnyOptionsContinuation(Command command, ContinueWithOptions continuation,
     Func<Option, DafnyOptions, bool>? useProjectOption = null) {
@@ -147,6 +150,15 @@ public static class DafnyNewCli {
         }
       }
 
+      // The cache root comes from the command line, then the project file, then DAFNY_CACHE_DIR.
+      // The variable is a default for runs that can use a cache; it never makes another run fail.
+      if (command.Options.Contains(CommonOptionBag.VerificationCache) &&
+          string.IsNullOrEmpty(dafnyOptions.Get(CommonOptionBag.VerificationCache)) &&
+          dafnyOptions.Get(CommonOptionBag.TypeSystemRefresh) &&
+          Environment.GetEnvironmentVariable(CacheDirectoryVariable) is { Length: > 0 } cacheDirectory) {
+        options.OptionArguments[CommonOptionBag.VerificationCache] = cacheDirectory;
+      }
+
       if (dafnyOptions.Get(CommonOptionBag.VerificationCache) != null &&
           !dafnyOptions.Get(CommonOptionBag.TypeSystemRefresh) && !CacheCommand.IsCacheCommand(command)) {
         await dafnyOptions.OutputWriter.Status("Error: --verification-cache requires --type-system-refresh");
@@ -157,6 +169,27 @@ public static class DafnyNewCli {
       if (dafnyOptions.Get(CommonOptionBag.TranslationCache) &&
           !dafnyOptions.Get(CommonOptionBag.TypeSystemRefresh)) {
         await dafnyOptions.OutputWriter.Status("Error: --translation-cache requires --type-system-refresh");
+        context.ExitCode = (int)ExitValue.DAFNY_ERROR;
+        return;
+      }
+
+      if (dafnyOptions.Get(CommonOptionBag.PersistentTranslation) &&
+          !dafnyOptions.Get(CommonOptionBag.TypeSystemRefresh)) {
+        await dafnyOptions.OutputWriter.Status("Error: --persistent-translation requires --type-system-refresh");
+        context.ExitCode = (int)ExitValue.DAFNY_ERROR;
+        return;
+      }
+
+      if (dafnyOptions.Get(CommonOptionBag.PersistentTranslation) &&
+          string.IsNullOrEmpty(dafnyOptions.Get(CommonOptionBag.VerificationCache))) {
+        await dafnyOptions.OutputWriter.Status("Error: --persistent-translation requires --verification-cache");
+        context.ExitCode = (int)ExitValue.DAFNY_ERROR;
+        return;
+      }
+
+      if (dafnyOptions.Get(CommonOptionBag.PersistentTranslationAudit) &&
+          !dafnyOptions.Get(CommonOptionBag.PersistentTranslation)) {
+        await dafnyOptions.OutputWriter.Status("Error: --persistent-translation-audit requires --persistent-translation");
         context.ExitCode = (int)ExitValue.DAFNY_ERROR;
         return;
       }

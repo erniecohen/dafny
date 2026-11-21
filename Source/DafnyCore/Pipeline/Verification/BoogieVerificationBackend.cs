@@ -46,7 +46,7 @@ public sealed record BoogieVerificationResult(VerificationRunResult NativeResult
 public sealed class BoogieVerificationWork(IVerificationTask nativeTask) : IVerificationWork {
   public IVerificationTask NativeTask { get; } = nativeTask;
   public VerificationSource Source => new(
-    new VerificationWorkId(NativeTask.ScopeId, NativeTask.Split.SplitIndex),
+    new VerificationWorkId(NativeTask.ScopeId, VerificationTaskFacts.SplitIndex(NativeTask)),
     BoogieGenerator.ToDafnyToken(NativeTask.Token), BoogieGenerator.ToDafnyToken(NativeTask.ScopeToken));
   public VerificationWorkStatus CacheStatus => ConvertStatus(NativeTask.CacheStatus);
   public bool IsIdle => NativeTask.IsIdle;

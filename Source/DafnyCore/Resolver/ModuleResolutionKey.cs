@@ -59,6 +59,8 @@ public static class ModuleResolutionKey {
     ["resolution-cache"] = "switches this cache; a reused result equals a fresh one",
     ["resolution-cache-check"] = "compares reused results with fresh ones; changes no result",
     ["translation-cache"] = "a later stage's cache",
+    ["persistent-translation"] = "a later stage's cache",
+    ["persistent-translation-audit"] = "checks a later stage's cache; changes no result",
     ["verification-cache"] = "the store's root, not an input; keys never name a location",
     ["cache-partition"] = "store accounting only",
     ["cache-partition-budget"] = "store retention only",

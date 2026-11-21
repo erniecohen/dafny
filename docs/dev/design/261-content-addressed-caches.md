@@ -573,6 +573,25 @@ temporary files only after a conservative stale interval. No eviction changes a
 logical result. Unsupported filesystems fail closed to ordinary execution rather
 than emulate atomic publication with overwrite-in-place.
 
+As implemented for `--persistent-translation`, translation records and the Boogie
+texts they name are entries of the resolution cache's artifact store, in its
+`translations` table (`v1/artifacts/translations`); a text's key is a digest of its
+hash under its own domain, so it never collides with a translation key. The store's
+partitions, budgets, cap, tags and sweeps (see the resolution cache's design)
+bound them; a translation hit also holds the text it names. Only the large tier is
+evicted; module results, verdicts and resource counts are kept. Races are misses: a
+translation entry evicted under a reader is retranslated, and a Boogie text is
+never read as an input. `.github/review/persistent-translation.py` checks that a run
+in one partition hits another's entries and holds them in its own, and that an
+evicted translation ends in early cutoff, not in a re-solve.
+
+A translation key is a resolution identity, which leaves out where the source is,
+so translations under one key may differ in the positions and paths their Boogie
+texts record. Only the graph fingerprint, which records positions relative to
+their declarations and files by content, must agree: a hit replays results by the
+fingerprint alone, audit compares fingerprints, and two different fingerprints
+published under one key quarantine it.
+
 [model_storage.py](261/models/model_storage.py) exercises actual filesystem no-clobber publication,
 separate processes, conflicts, corrupt/truncated/version-mismatched entries,
 abandoned temporary files, and eviction. It is a POSIX executable model; a product

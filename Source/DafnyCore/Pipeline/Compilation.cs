@@ -335,7 +335,7 @@ public class Compilation : IDisposable {
   }
 
   public static string GetTaskName(IVerificationTask task) {
-    var prefix = task.ScopeId + task.Split.SplitIndex;
+    var prefix = task.ScopeId + Caching.VerificationTaskFacts.SplitIndex(task);
 
     // Refining declarations get the token of what they're refining, so to distinguish them we need to
     // add the refining module name to the prefix.
@@ -457,9 +457,7 @@ public class Compilation : IDisposable {
         var groups = GroupOverlappingRanges(tasks).
           OrderBy(g => g.Group.StartToken);
         foreach (var tokenTasks in groups) {
-          var functions = tokenTasks.Tasks.SelectMany(t => t.Split.HiddenFunctions.Select(f => f.tok).
-            OfType<FromDafnyNode>().Select(n => n.Node).
-            OfType<Function>()).Distinct().OrderBy(f => f.Origin.Center);
+          var functions = tokenTasks.Tasks.SelectMany(Caching.VerificationTaskFacts.HiddenFunctions).Distinct().OrderBy(f => f.Origin.Center);
           var hiddenFunctions = string.Join(", ", functions.Select(f => f.FullDafnyName));
           if (!string.IsNullOrEmpty(hiddenFunctions)) {
             Reporter.Info(MessageSource.Verifier,
@@ -561,7 +559,7 @@ public class Compilation : IDisposable {
   }
 
   private void HandleStatusUpdate(ICanVerify canVerify, IVerificationTask verificationTask, IVerificationStatus boogieStatus) {
-    var tokenString = BoogieGenerator.ToDafnyToken(verificationTask.Split.Token).OriginToString(Options);
+    var tokenString = BoogieGenerator.ToDafnyToken(Caching.VerificationTaskFacts.SplitToken(verificationTask)).OriginToString(Options);
     logger.LogDebug($"Received Boogie status {boogieStatus} for {tokenString}, version {Input.Version}");
 
     updates.OnNext(new BoogieUpdate(moduleProofDependencies[canVerify.ContainingModule], canVerify,
