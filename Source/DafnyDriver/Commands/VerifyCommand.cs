@@ -337,6 +337,7 @@ public static class VerifyCommand {
     var usedDependencies = new HashSet<TrackedNodeComponent>();
     Dictionary<ProofDependencyManager, HashSet<TrackedNodeComponent>>? batchDependencies = null;
     var proofDependencyManager = resolution.ResolvedProgram.ProofDependencyManager;
+    var coverageReportDir = cliCompilation.Options.Get(CommonOptionBag.VerificationCoverageReport);
 
     verificationResults.Subscribe(result => {
       var manager = result.ProofDependencies ?? proofDependencyManager;
@@ -346,6 +347,12 @@ public static class VerifyCommand {
           resolution.ResolvedProgram.Reporter, manager);
       }
 
+      if (coverageReportDir == null) {
+        // Only the coverage report reads the dependencies used.  Keeping a batch request's
+        // manager here would keep its proof dependencies, and the program nodes they name,
+        // alive until the batch ends (issue 241, F4).
+        return;
+      }
       var usedForResult = usedDependencies;
       if (result.ProofDependencies != null) {
         batchDependencies ??= new();
@@ -359,7 +366,6 @@ public static class VerifyCommand {
       }
     }, e => { }, () => { });
     await verificationResults.WaitForComplete();
-    var coverageReportDir = cliCompilation.Options.Get(CommonOptionBag.VerificationCoverageReport);
     if (coverageReportDir != null) {
       var reporter = new CoverageReporter(cliCompilation.Options);
       if (batchDependencies is { Count: > 0 }) {

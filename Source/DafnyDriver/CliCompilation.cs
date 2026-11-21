@@ -65,7 +65,7 @@ public class CliCompilation {
 
     options.RunningBoogieFromCommandLine = true;
 
-    var input = new CompilationInput(options, 0, options.DafnyProject);
+    var input = new CompilationInput(options, 0, options.DafnyProject) { OneShot = true };
     var executionEngine = new ExecutionEngine(options, new EmptyVerificationResultCache(), DafnyMain.LargeThreadScheduler);
     Compilation = createCompilation(executionEngine, input);
   }
@@ -113,8 +113,9 @@ public class CliCompilation {
         new TextDocumentLoader(factory.CreateLogger<ITextDocumentLoader>(),
           new DafnyLangParser(options, fileSystem, telemetryPublisher,
             factory.CreateLogger<DafnyLangParser>(),
-            factory.CreateLogger<CachingParser>()),
-          new DafnyLangSymbolResolver(factory.CreateLogger<DafnyLangSymbolResolver>(), factory.CreateLogger<CachingResolver>(), telemetryPublisher)),
+            factory.CreateLogger<CachingParser>(), oneShot: input.OneShot),
+          new DafnyLangSymbolResolver(factory.CreateLogger<DafnyLangSymbolResolver>(), factory.CreateLogger<CachingResolver>(),
+            telemetryPublisher, oneShot: input.OneShot)),
         programVerifier ?? new DafnyProgramVerifier(factory.CreateLogger<DafnyProgramVerifier>()), engine, input);
   }
 

@@ -278,6 +278,13 @@ public class Compilation : IDisposable {
     updates.OnNext(new FinishedParsing(parseResult with { Program = programAfterParsing }));
     logger.LogDebug(
       $"Passed parsedCompilation to documentUpdates.OnNext, resolving ParsedCompilation task for version {Input.Version}.");
+    if (Input.OneShot) {
+      // Only formatting and the IDE read the parsed program after FinishedParsing; a one-shot run has
+      // neither, so the clone, about a whole AST, need not live while the program is resolved and
+      // verified.  It is still made, so that the run is otherwise the same.
+      programAfterParsing = null;
+      return null;
+    }
     return programAfterParsing;
   }
 
@@ -579,6 +586,9 @@ public class Compilation : IDisposable {
   }
 
   public async Task<TextEditContainer?> GetTextEditToFormatCode(Uri uri) {
+    if (Input.OneShot) {
+      throw new InvalidOperationException("A one-shot compilation does not keep the parsed program that formatting reads");
+    }
     var program = await ParsedProgram;
     if (program == null) {
       return null;
@@ -818,9 +828,32 @@ public class Compilation : IDisposable {
     }
   }
 
+  /// <summary>
+  /// Forgets the module's translation, after its symbols are reported.  Its Boogie programs will not
+  /// be verified again (a later request translates the module again), so the idle solver checkers
+  /// last set up for them forget them too; otherwise each keeps its last program, and that program's
+  /// prover context, alive until it is set up for another (issue 241, F4 change 3).  That sends the
+  /// solvers nothing and changes nothing they receive.
+  /// </summary>
   public void ClearModuleCache(ModuleDefinition moduleDefinition) {
+    translatedModules.TryGetValue(moduleDefinition, out var translation);
     translatedModules.Remove(moduleDefinition);
     moduleProofDependencies.TryRemove(moduleDefinition, out _);
+    if (translation is { IsCompletedSuccessfully: true }) {
+      ReleaseBoogiePrograms(translation.Result.Values.SelectMany(tasks => tasks));
+    }
+  }
+
+  /// <summary>The number of solver checkers released by <see cref="ClearModuleCache"/>, for tests.</summary>
+  public int ReleasedCheckers => releasedCheckers;
+  private int releasedCheckers;
+
+  private void ReleaseBoogiePrograms(IEnumerable<IVerificationTask> tasks) {
+    var programs = tasks.OfType<VerificationTask>().Select(task => task.ProcessedProgram.Program)
+      .Distinct(ReferenceEqualityComparer.Instance);
+    foreach (var program in programs) {
+      Interlocked.Add(ref releasedCheckers, boogieEngine.CheckerPool.Release((Boogie.Program)program!));
+    }
   }
 
   public void ClearCanVerifyCache(ICanVerify canVerify, bool allowRepeat = false) {
