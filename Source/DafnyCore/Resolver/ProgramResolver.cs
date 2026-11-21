@@ -291,10 +291,8 @@ public class ProgramResolver {
           new ModuleResolutionKey.Prerequisite(DependencyRole(declaration, declarations[j]),
             declarations[j].FullName, Program.ResolutionKeys[declarations[j]])));
       Program.ResolutionKeys[declaration] = key;
-      var locationNodes = groupOf.TryGetValue(declaration, out var locationGroup) && ReferenceEquals(declaration, locationGroup.Members[0])
-        ? locationGroup.Declarations.SelectMany(SourceNodes) : SourceNodes(declaration);
       var identity = ModuleResolutionIdentity.Compute(key, ModuleResolutionIdentity.Context(
-        namePrefixes.Prefix(declaration.FullName), ModuleResolutionIdentity.Location(locationNodes),
+        namePrefixes.Prefix(declaration.FullName),
         prerequisites[i].Select(j => new ModuleResolutionIdentity.Prerequisite(DependencyRole(declaration, declarations[j]),
           declarations[j].FullName, Program.ResolutionIdentities[declarations[j]]))));
       Program.ResolutionIdentities[declaration] = identity;
