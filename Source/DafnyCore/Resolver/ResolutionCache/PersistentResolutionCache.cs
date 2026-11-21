@@ -50,7 +50,9 @@ internal sealed class PersistentResolutionCache {
   private readonly ResolutionBuiltinCatalog catalog;
   private readonly (string Name, Dictionary<string, MemberDecl> Members)[] initialMembers;
   private readonly Lazy<ResolutionTokenIndex> sourceTokens;
-  private readonly ConcurrentDictionary<object, ResolutionExternal> owners = new(ReferenceEqualityComparer.Instance);
+  // Presized: a warm run registers every reused module's objects, and growing the table dominated its profile.
+  private readonly ConcurrentDictionary<object, ResolutionExternal> owners =
+    new(Environment.ProcessorCount, 1 << 16, ReferenceEqualityComparer.Instance);
   private readonly ConcurrentDictionary<uint, ResolutionExternalToken> tokenOwners = new();
   private readonly ConcurrentDictionary<string, Record> records = new(StringComparer.Ordinal);
   private readonly Dictionary<string, HashSet<uint>> ownScopeTokens = new(StringComparer.Ordinal);

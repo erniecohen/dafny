@@ -56,8 +56,9 @@ internal static class ResolutionGraphSchema {
   public static SortedSet<uint> Tokens(VisibilityScope scope) => (SortedSet<uint>)ScopeTokens.GetValue(scope)!;
   public static SortedSet<string> Ids(VisibilityScope scope) => (SortedSet<string>)ScopeIds.GetValue(scope)!;
 
-  public static bool IsScalar(System.Type type) => type.IsPrimitive || type.IsEnum ||
-    type == typeof(string) || type == typeof(decimal) || type == typeof(BigInteger) || type == typeof(Uri) || type == typeof(Guid);
+  public static bool IsScalar(System.Type type) => ScalarCache.GetOrAdd(type, static t => t.IsPrimitive || t.IsEnum ||
+    t == typeof(string) || t == typeof(decimal) || t == typeof(BigInteger) || t == typeof(Uri) || t == typeof(Guid));
+  private static readonly ConcurrentDictionary<System.Type, bool> ScalarCache = new();
 
   /// <summary>Immutable records whose fields are all scalars, compared by value rather than identity.</summary>
   public static bool IsValueRecord(System.Type type) => type == typeof(TerminationSourceContract);
@@ -74,7 +75,16 @@ internal static class ResolutionGraphSchema {
   public static bool IsContextual(FieldInfo field) => ContextualFields.Contains(Name(field));
   public static bool IsPositional(FieldInfo field) => PositionalFields.Contains(Name(field));
 
+  /// <summary>Throws when <paramref name="type"/> is not data a snapshot may hold; the verdict is memoized per type.</summary>
   public static void RequireDataType(System.Type type) {
+    var verdict = DataTypeVerdicts.GetOrAdd(type, static t => {
+      try { CheckDataType(t); return null; } catch (ResolutionSnapshotUnsupported e) { return e.Message; }
+    });
+    if (verdict != null) { throw new ResolutionSnapshotUnsupported(verdict); }
+  }
+  private static readonly ConcurrentDictionary<System.Type, string?> DataTypeVerdicts = new();
+
+  private static void CheckDataType(System.Type type) {
     if (typeof(Delegate).IsAssignableFrom(type) || type.IsPointer || type.IsByRef) {
       throw new ResolutionSnapshotUnsupported("unsupported type " + type.FullName);
     }
