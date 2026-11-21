@@ -1096,3 +1096,6 @@ git-issues/git-issue-522-controls.dfy
 # C# compilation and target admission for recursive module groups (issue 466).
 git-issues/git-issue-466-stage7.dfy
 git-issues/git-issue-466-stage7-targets.dfy
+# The persistent per-module resolution cache (issue 261).
+git-issues/git-issue-261-resolution-cache.dfy
+git-issues/git-issue-241-resolution-cache-requires-refresh.dfy

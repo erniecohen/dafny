@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
+using System.Globalization;
 using System.Linq;
 using System.Runtime.ExceptionServices;
 using System.Threading;
@@ -261,6 +262,11 @@ public class ProgramResolver {
     var namePrefixes = ModuleNamePrefixes.For(declarations.Select(d => d.FullName));
     Program.ResolutionKeys = new();
     Program.ResolutionIdentities = new();
+    // Issue 261: each module's own source and options, before any module is resolved (resolution changes what
+    // the source printer sees, and where a refinement points).
+    var localKeys = new string[declarations.Count];
+    var roles = new string[declarations.Count][];
+    var locations = new string[declarations.Count];
     for (var i = 0; i < declarations.Count; i++) {
       foreach (var dependency in prerequisites[i]) {
         dependents[dependency].Add(i);
@@ -276,6 +282,10 @@ public class ProgramResolver {
         _ = literal.AccessibleSignature();
       }
       var source = ModuleSource(declaration);
+      var own = OwnSource(declaration);
+      localKeys[i] = ModuleResolutionKey.Compute(declaration.FullName, own.Source, ModuleResolutionKey.DafnyVersion, KeyOptions(declaration), []);
+      roles[i] = prerequisites[i].Select(j => DependencyRole(declaration, declarations[j])).ToArray();
+      locations[i] = own.Location;
       if (groupOf.TryGetValue(declaration, out var group) && ReferenceEquals(declaration, group.Members[0])) {
         // The leader of a recursive module group stands for the group.
         // Frame every owned declaration and option separately. In particular, source and option
@@ -302,6 +312,11 @@ public class ProgramResolver {
       }
     }
 
+    // Issue 261: the persistent cache replaces the editor hook. Plugins have no snapshot contract.
+    var persistent = Options.Get(CommonOptionBag.ResolutionCache) is { } cacheDirectory &&
+                     !Options.Plugins.Except(DafnyOptions.DefaultPlugins).Any()
+      ? new PersistentResolutionCache(cacheDirectory, Program, initialBuiltins, catalog, initialMembers, declarations) : null;
+
     var gate = new object();
     ExceptionDispatchInfo failure = null;
     var completed = 0;
@@ -327,13 +342,6 @@ public class ProgramResolver {
           Type.EnableScopes();
           try {
             using var names = new ModuleNamingScope(declarations[index].FullName, namePrefixes);
-            var builtins = new SystemModuleManager(initialBuiltins, catalog);
-            builtins.Bitwidths.Clear();
-            var workerProgram = new Program(Program.FullName, Program.DefaultModule, builtins,
-              new BatchErrorReporter(Options), Program.Compilation) { ModuleSigs = new() };
-            foreach (var file in Program.Files) { workerProgram.Files.Add(file); }
-            var worker = new ProgramResolver(workerProgram);
-            foreach (var member in initialMembers) { worker.classMembers[member.Key] = member.Value; }
             var closure = new SortedSet<int>();
             void AddPrerequisites(int current) {
               foreach (var prerequisite in prerequisites[current]) {
@@ -341,24 +349,43 @@ public class ProgramResolver {
               }
             }
             AddPrerequisites(index);
-            foreach (var prerequisite in closure) {
-              var result = results[prerequisite];
-              builtins.MergeResolutionView(result.Builtins);
-              foreach (var members in result.SystemClassMembers.Concat(result.ClassMembers)) {
-                worker.classMembers[members.Key] = members.Value;
+            SystemModuleManager builtins = null;
+            Program workerProgram = null;
+            ProgramResolver worker = null;
+            // A worker's builtins view, program and resolver; a persistent cache entry that does not apply discards them.
+            void CreateWorker() {
+              builtins = new SystemModuleManager(initialBuiltins, catalog);
+              builtins.Bitwidths.Clear();
+              workerProgram = new Program(Program.FullName, Program.DefaultModule, builtins,
+                new BatchErrorReporter(Options), Program.Compilation) { ModuleSigs = new() };
+              foreach (var file in Program.Files) { workerProgram.Files.Add(file); }
+              worker = new ProgramResolver(workerProgram);
+              foreach (var member in initialMembers) { worker.classMembers[member.Key] = member.Value; }
+              foreach (var prerequisite in closure) {
+                var result = results[prerequisite];
+                builtins.MergeResolutionView(result.Builtins);
+                foreach (var members in result.SystemClassMembers.Concat(result.ClassMembers)) {
+                  worker.classMembers[members.Key] = members.Value;
+                }
+                foreach (var signature in result.Signatures) { workerProgram.ModuleSigs[signature.Key] = signature.Value; }
               }
-              foreach (var signature in result.Signatures) { workerProgram.ModuleSigs[signature.Key] = signature.Value; }
             }
+            CreateWorker();
             var start = profile?.Begin();
             var frontEndStart = profile?.BeginThread();
             ModuleResolutionResult moduleOutput = null;
             bool? cached = null;
             var status = "failed";
+            string snapshotState = null;
+            string snapshotKey = null;
+            var resolverCalls = 0;
             try {
               profile?.ModulePhasesStart();
               ResolutionWorkerStarting?.Invoke(declarations[index]);
               ModuleResolutionResult ResolveOutput() {
-                var resolved = worker.ResolveModuleDeclaration(Program.Compilation, declarations[index]);
+                resolverCalls++;
+                var resolved = worker.ResolveModuleDeclaration(Program.Compilation,
+                  persistent != null ? OwnedExport(declarations[index], prerequisites[index].Select(i => results[i])) : declarations[index]);
                 // An import can be unresolved without producing a new local diagnostic.
                 // Its resolved fields (and hence Children) are not safe to traverse.
                 var invalid = resolved.ErrorReporter.HasErrors ||
@@ -443,6 +470,23 @@ public class ProgramResolver {
                 }
                 lock (gate) { moduleOutput = groupResults[declarations[index]]; }
                 cached = false;
+                if (persistent != null) {
+                  snapshotState = "uncacheable: recursive module group";
+                  persistent.Uncacheable(declarations[index]);
+                }
+              } else if (persistent != null) {
+                var declaration = declarations[index];
+                var context = new PersistentResolutionCache.ModuleContext(declaration, localKeys[index],
+                  namePrefixes.Prefix(declaration.FullName), locations[index],
+                  prerequisites[index].Select((j, k) => (roles[index][k], declarations[j])).ToArray(),
+                  closure.Select(i => declarations[i]).ToArray());
+                var closureResults = closure.Select(i => results[i]).ToArray();
+                moduleOutput = persistent.Resolve(context, () => new(builtins, worker, workerProgram), CreateWorker, ResolveOutput,
+                  (_, output, closureOutputs) => !output.ErrorReporter.HasErrors &&
+                    closureOutputs.All(r => !r.ErrorReporter.HasErrors && r.Signatures.Keys.All(m => m.SuccessfullyResolved)) &&
+                    output.Signatures.Keys.All(m => m.SuccessfullyResolved),
+                  closureResults, out snapshotState, out snapshotKey);
+                cached = snapshotState.StartsWith("hit", StringComparison.Ordinal);
               } else {
                 moduleOutput = ResolveModuleOutput(declarations[index], Program.ResolutionKeys[declarations[index]],
                   closure.Select(i => results[i]).ToArray(), ResolveOutput, out var cacheHit);
@@ -458,6 +502,16 @@ public class ProgramResolver {
                 // Take clears thread-local state even after a cache hit, cancellation or failure.
                 // The id is canonical graph order; events are emitted as workers complete.
                 var phases = profile.ModulePhasesTake();
+                if (persistent != null) {
+                  profile.FrontEnd("resolve.snapshot", frontEndStart.Value, new Dictionary<string, object> {
+                    ["module"] = declarations[index].FullName,
+                    ["kind"] = ProfileModuleKind(declarations[index]),
+                    ["key"] = snapshotKey,
+                    ["identity"] = Program.ResolutionIdentities[declarations[index]],
+                    ["state"] = snapshotState,
+                    ["resolverCalls"] = resolverCalls
+                  });
+                }
                 profile.FrontEnd("resolve.module", frontEndStart.Value, new Dictionary<string, object> {
                   ["id"] = index,
                   ["module"] = ProfileModuleName(declarations[index]),
@@ -552,6 +606,23 @@ public class ProgramResolver {
     }
   }
 
+  /// <summary>
+  /// An export set is resolved with the module that declares it, and its own declaration only stands for it.
+  /// When that module's output is a cached one, the export set is the one of that output (issue 261).
+  /// </summary>
+  private static ModuleDecl OwnedExport(ModuleDecl declaration, IEnumerable<ModuleResolutionResult> prerequisites) {
+    if (declaration is not ModuleExportDecl export) { return declaration; }
+    foreach (var prerequisite in prerequisites) {
+      if (prerequisite.ResolvedDeclaration is LiteralModuleDecl owner &&
+          ReferenceEquals(declaration.EnclosingModuleDefinition, owner.ModuleDef) is false &&
+          owner.ModuleDef.FullName == declaration.EnclosingModuleDefinition?.FullName) {
+        var copies = owner.ModuleDef.TopLevelDecls.OfType<ModuleExportDecl>().Where(d => d.Name == export.Name).ToArray();
+        if (copies.Length == 1) { return copies[0]; }
+      }
+    }
+    return declaration;
+  }
+
   /// <summary>Editor caches may supply canonical intrinsic identities across resolutions.</summary>
   protected virtual SystemModuleManager PrepareResolutionSystemModule(string optionsKey) => SystemModuleManager;
 
@@ -568,6 +639,48 @@ public class ProgramResolver {
 
   private static string ModuleSource(ModuleDecl declaration) {
     return string.Join("\n", SourceNodes(declaration).Select(d => d.EntireRange.PrintOriginal()));
+  }
+
+  /// <summary>
+  /// Issue 261: the source of a module without the text of its nested modules, and where each piece of it starts.
+  /// The nested modules are prerequisites of the module, and the persistent resolution cache keys it by their
+  /// results, so an edit of a nested module that leaves its result alike does not change the module's key.
+  /// </summary>
+  private static (string Source, string Location) OwnSource(ModuleDecl declaration) {
+    var nested = declaration is LiteralModuleDecl literal
+      ? literal.ModuleDef.TopLevelDecls.OfType<ModuleDecl>().Select(m => m.EntireRange).ToArray()
+      : [];
+    bool Inside(Token token) => nested.Any(range => range.StartToken.Uri == token.Uri &&
+      range.StartToken.pos <= token.pos && token.pos <= range.EndToken.pos);
+    var pieces = new List<System.Text.StringBuilder>();
+    var location = new System.Text.StringBuilder();
+    foreach (var node in SourceNodes(declaration)) {
+      if (node is ModuleDecl && !ReferenceEquals(node, declaration)) { continue; }
+      var range = node.EntireRange;
+      Token? previous = null;
+      for (var token = range.StartToken; ; token = token.Next) {
+        if (Inside(token)) {
+          previous = null;
+        } else {
+          if (previous == null) {
+            // A piece starts: at the node's start, or after a nested module.
+            var uri = token.Uri?.ToString() ?? "";
+            location.Append(uri.Length.ToString(CultureInfo.InvariantCulture)).Append(':').Append(uri)
+              .Append(':').Append(token.line.ToString(CultureInfo.InvariantCulture))
+              .Append(':').Append(token.col.ToString(CultureInfo.InvariantCulture))
+              .Append(':').Append(token.pos.ToString(CultureInfo.InvariantCulture)).Append(';');
+            pieces.Add(new System.Text.StringBuilder());
+          } else {
+            pieces[^1].Append(previous.TrailingTrivia).Append(token.LeadingTrivia);
+          }
+          pieces[^1].Append(token.val);
+          previous = token;
+        }
+        if (token.Next == null || token.pos >= range.EndToken.pos) { break; }
+      }
+    }
+    // Each piece is framed by its length, so that no text of one piece can stand for a boundary.
+    return (string.Concat(pieces.Select(piece => piece.Length.ToString(CultureInfo.InvariantCulture) + ":" + piece)), location.ToString());
   }
 
   /// <summary>The nodes whose original text is the module's source in its key.</summary>

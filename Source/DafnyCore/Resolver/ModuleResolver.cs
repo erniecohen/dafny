@@ -2796,7 +2796,11 @@ namespace Microsoft.Dafny {
             if (cl is TraitDecl td) {
               // If the parent trait's type parameters contain all the type parameters of this trait,
               // it can be downcasted at run-time to cl trait. We record this dependency in td
-              trait.TraitDeclsCanBeDowncastedTo.Add(td);
+              // The parent may be a builtin trait (object) or a trait of another module, which modules resolved
+              // in parallel extend at the same time.
+              lock (trait.TraitDeclsCanBeDowncastedTo) {
+                trait.TraitDeclsCanBeDowncastedTo.Add(td);
+              }
             }
           } else {
             reporter.Error(MessageSource.Resolver, parentTypeToken, $"a {cl.WhatKind} can only extend traits (found '{parentTrait}')");

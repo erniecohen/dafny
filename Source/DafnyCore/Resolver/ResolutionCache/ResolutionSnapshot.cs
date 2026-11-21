@@ -1,0 +1,629 @@
+#nullable enable
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.IO;
+using System.Linq;
+using System.Numerics;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Security.Cryptography;
+using System.Text;
+
+namespace Microsoft.Dafny;
+
+/// <summary>An object outside a module's own graph: a static, a named context object, or an object of a prerequisite or of a builtin.</summary>
+internal readonly record struct ResolutionExternal(ResolutionExternal.Kinds Kind, string Name, int Index) {
+  internal enum Kinds : byte { Static = 1, Named = 2, Prerequisite = 3, Anchor = 4 }
+}
+
+/// <summary>A visibility-scope token of a prerequisite or of a builtin: the rank among that owner's tokens.</summary>
+internal readonly record struct ResolutionExternalToken(ResolutionExternal.Kinds Kind, string Name, int Rank);
+
+/// <summary>
+/// The tokens of the parsed program, so that a snapshot refers to a source token by its file and
+/// offset instead of copying it. A token whose file, offset and text are not unique is not indexed.
+/// </summary>
+internal sealed class ResolutionTokenIndex {
+  private readonly Dictionary<Token, (string Uri, int Pos)> positions = new(ReferenceEqualityComparer.Instance);
+  private readonly Dictionary<(string Uri, int Pos, string Val), Token> tokens = new();
+
+  public static ResolutionTokenIndex For(Program program, IEnumerable<INode> extraRoots) {
+    var index = new ResolutionTokenIndex();
+    var visited = new HashSet<Token>(ReferenceEqualityComparer.Instance);
+    var ambiguous = new HashSet<(string, int, string)>();
+    void Walk(Token? start) {
+      if (start == null || ReferenceEquals(start, Token.NoToken) || visited.Contains(start)) { return; }
+      var first = start;
+      var guard = 0;
+      while (first.Prev != null && !visited.Contains(first.Prev) && guard++ < 100_000_000) { first = first.Prev; }
+      for (var token = first; token != null && visited.Add(token); token = token.Next) {
+        if (token.Uri == null) { continue; }
+        var key = (token.Uri.ToString(), token.pos, token.val ?? "");
+        if (!index.tokens.TryAdd(key, token)) { ambiguous.Add(key); }
+      }
+    }
+    foreach (var file in program.Files) {
+      Walk(file.EntireRange?.StartToken);
+      Walk(file.Origin.EntireRange?.StartToken);
+      Walk(file.Origin.ReportingRange.StartToken);
+    }
+    foreach (var node in extraRoots) { Walk(node.EntireRange?.StartToken); }
+    foreach (var key in ambiguous) { index.tokens.Remove(key); }
+    foreach (var (key, token) in index.tokens) { index.positions[token] = (key.Uri, key.Pos); }
+    return index;
+  }
+
+  public bool TryGet(Token token, out (string Uri, int Pos) position) => positions.TryGetValue(token, out position);
+
+  public Token Find(string uri, int pos, int line, int col, string val) {
+    if (!tokens.TryGetValue((uri, pos, val), out var token) || token.line != line || token.col != col) {
+      throw new ResolutionSnapshotInvalid("source token moved: " + uri + "@" + pos);
+    }
+    return token;
+  }
+}
+
+/// <summary>
+/// The reference graph of a resolved module (issue 261): its declaration, signatures, member tables and
+/// translation inputs, as a list of entries in breadth-first order. An entry is the type and data fields of
+/// an object, the items of a collection or array, or the tokens of a visibility scope. A value is a scalar,
+/// another entry, an external (see <see cref="ResolutionExternal"/>) or a source token. The structure digest
+/// is the digest of the encoding with every source coordinate set to zero: two snapshots with the same
+/// structure digest differ at most in where their tokens are.
+/// </summary>
+internal static class ResolutionSnapshot {
+  public const int MaxObjects = 4_000_000;
+  private const string StructureDomain = "dafny-resolution-structure-v1";
+
+  private enum EntryKind : byte { Fields = 1, Array = 2, Collection = 3, Scope = 4, Lock = 5 }
+
+  private enum Tag : byte {
+    Null = 0, False = 1, True = 2, Int32 = 3, Int64 = 4, String = 5, Char = 6, Double = 7, Byte = 8, SByte = 9,
+    Int16 = 10, UInt16 = 11, UInt32 = 12, UInt64 = 13, Single = 14, Decimal = 15, BigInteger = 16, Uri = 17, Guid = 18,
+    Enum = 19, Reference = 30, External = 31, SourceToken = 32
+  }
+
+  public sealed class CaptureWorld {
+    /// <summary>The external an object is, or null for an object of the module's own graph.</summary>
+    public required Func<object, ResolutionExternal?> Object { get; init; }
+    /// <summary>The external a scope token is, or null for a token of the module itself.</summary>
+    public required Func<uint, ResolutionExternalToken?> Token { get; init; }
+    public required ResolutionTokenIndex SourceTokens { get; init; }
+  }
+
+  public sealed record Captured(byte[] Payload, string Structure, object[] Owned, uint[] OwnedTokens, HashSet<string> Anchors);
+
+  public sealed class MaterializeWorld {
+    public required Func<ResolutionExternal, object> Object { get; init; }
+    public required Func<ResolutionExternalToken, uint> Token { get; init; }
+    public required ResolutionTokenIndex SourceTokens { get; init; }
+  }
+
+  public sealed record Materialized(object?[] Roots, object[] Owned, uint[] OwnedTokens);
+
+  // ---------------------------------------------------------------- capture
+
+  /// <param name="contextual">Objects whose contextual fields (<see cref="ResolutionGraphSchema.IsContextual"/>) are written as defaults.</param>
+  public static Captured Capture(object?[] roots, CaptureWorld world, IReadOnlySet<object> contextual) {
+    var ids = new Dictionary<object, int>(ReferenceEqualityComparer.Instance);
+    var owned = new List<object>();
+    var children = new List<object?[]>();
+    var anchors = new HashSet<string>(StringComparer.Ordinal);
+    var parents = new List<int>();
+    var current = -1;
+
+    bool IsLeaf(object? value) => value == null || ResolutionGraphSchema.IsScalar(value.GetType()) ||
+      world.Object(value) != null || (value is Token token && world.SourceTokens.TryGet(token, out _));
+    void Enqueue(object? value) {
+      if (IsLeaf(value) || ids.ContainsKey(value!)) { return; }
+      if (owned.Count >= MaxObjects) { throw new ResolutionSnapshotUnsupported("graph too large"); }
+      ids.Add(value!, owned.Count);
+      owned.Add(value!);
+      parents.Add(current);
+    }
+    // The types on the path from a root to an object, which an unsupported graph names.
+    string Path(int id) {
+      var path = new List<string>();
+      for (; id >= 0 && path.Count < 8; id = parents[id]) { path.Add(owned[id].GetType().Name); }
+      return string.Join(" < ", path);
+    }
+    foreach (var root in roots) { Enqueue(root); }
+    var scopeTokens = new SortedSet<uint>();
+    for (var i = 0; i < owned.Count; i++) {
+      var value = owned[i];
+      current = i;
+      try {
+        var kids = Children(value, contextual.Contains(value));
+        if (value is VisibilityScope scope) {
+          foreach (var token in ResolutionGraphSchema.Tokens(scope)) {
+            if (world.Token(token) == null) { scopeTokens.Add(token); }
+          }
+        }
+        children.Add(kids);
+        foreach (var kid in kids) { Enqueue(kid); }
+      } catch (ResolutionSnapshotUnsupported error) when (!error.Message.Contains(" in ", StringComparison.Ordinal)) {
+        throw new ResolutionSnapshotUnsupported(error.Message + " in " + Path(i));
+      }
+    }
+    var logical = new Dictionary<uint, int>();
+    foreach (var token in scopeTokens) { logical[token] = logical.Count; }
+
+    var writer = new Writer();
+    void WriteValue(object? value, bool positional = false) {
+      switch (value) {
+        case null: writer.Byte((byte)Tag.Null); return;
+        case bool b: writer.Byte((byte)(b ? Tag.True : Tag.False)); return;
+        case int n: writer.Byte((byte)Tag.Int32); writer.Int(n, positional); return;
+        case string s: writer.Byte((byte)Tag.String); writer.String(s); return;
+        case long n: writer.Byte((byte)Tag.Int64); writer.Int(n); return;
+        case char c: writer.Byte((byte)Tag.Char); writer.Int(c); return;
+        case double d: writer.Byte((byte)Tag.Double); writer.Int(BitConverter.DoubleToInt64Bits(d)); return;
+        case byte n: writer.Byte((byte)Tag.Byte); writer.Int(n); return;
+        case sbyte n: writer.Byte((byte)Tag.SByte); writer.Int(n); return;
+        case short n: writer.Byte((byte)Tag.Int16); writer.Int(n); return;
+        case ushort n: writer.Byte((byte)Tag.UInt16); writer.Int(n); return;
+        case uint n: writer.Byte((byte)Tag.UInt32); writer.Int(n); return;
+        case ulong n: writer.Byte((byte)Tag.UInt64); writer.Int(unchecked((long)n)); return;
+        case float f: writer.Byte((byte)Tag.Single); writer.Int(BitConverter.SingleToInt32Bits(f)); return;
+        case decimal m:
+          writer.Byte((byte)Tag.Decimal);
+          foreach (var part in decimal.GetBits(m)) { writer.Int(part); }
+          return;
+        case BigInteger big: writer.Byte((byte)Tag.BigInteger); writer.String(big.ToString(System.Globalization.CultureInfo.InvariantCulture)); return;
+        case Uri uri: writer.Byte((byte)Tag.Uri); writer.String(uri.OriginalString); writer.Int(uri.IsAbsoluteUri ? 1 : 0); return;
+        case Guid guid: writer.Byte((byte)Tag.Guid); writer.String(guid.ToString("N")); return;
+      }
+      var type = value.GetType();
+      if (type.IsEnum) {
+        writer.Byte((byte)Tag.Enum);
+        writer.Type(type, false);
+        writer.Int(Convert.ToInt64(value, System.Globalization.CultureInfo.InvariantCulture));
+        return;
+      }
+      if (world.Object(value) is { } external) {
+        writer.Byte((byte)Tag.External);
+        writer.Byte((byte)external.Kind);
+        writer.String(external.Name);
+        writer.Int(external.Index);
+        writer.Type(type, false);
+        if (external.Kind == ResolutionExternal.Kinds.Anchor) { anchors.Add(external.Name); }
+        return;
+      }
+      if (value is Token token && world.SourceTokens.TryGet(token, out var position)) {
+        writer.Byte((byte)Tag.SourceToken);
+        writer.String(position.Uri);
+        writer.Int(position.Pos, true);
+        writer.Int(token.line, true);
+        writer.Int(token.col, true);
+        writer.String(token.val ?? "");
+        return;
+      }
+      writer.Byte((byte)Tag.Reference);
+      writer.Int(ids[value]);
+    }
+
+    writer.Int(owned.Count);
+    for (var i = 0; i < owned.Count; i++) {
+      var value = owned[i];
+      var kids = children[i];
+      switch (value) {
+        case VisibilityScope scope:
+          writer.Byte((byte)EntryKind.Scope);
+          // A token's number depends on when it was allocated, and a prerequisite that was reused allocated its
+          // tokens later than one resolved afresh. So the tokens are written in the order of their names.
+          var tokens = ResolutionGraphSchema.Tokens(scope).Select(token => world.Token(token) is { } external
+              ? (Kind: (byte)external.Kind, external.Name, external.Rank)
+              : ((byte)0, "", logical[token]))
+            .OrderBy(t => t.Item1).ThenBy(t => t.Item2, StringComparer.Ordinal).ThenBy(t => t.Item3).ToArray();
+          writer.Int(tokens.Length);
+          foreach (var (kind, name, rank) in tokens) {
+            writer.Byte(kind);
+            if (kind != 0) { writer.String(name); }
+            writer.Int(rank);
+            if (kind == (byte)ResolutionExternal.Kinds.Anchor) { anchors.Add(name); }
+          }
+          var names = ResolutionGraphSchema.Ids(scope);
+          writer.Int(names.Count);
+          foreach (var name in names) { writer.String(name); }
+          continue;
+        case Array array:
+          writer.Byte((byte)EntryKind.Array);
+          writer.Type(array.GetType(), false);
+          writer.Int(kids.Length);
+          foreach (var kid in kids) { WriteValue(kid); }
+          continue;
+      }
+      var type = value.GetType();
+      if (type == typeof(object)) {
+        writer.Byte((byte)EntryKind.Lock);
+        continue;
+      }
+      if (ResolutionGraphSchema.CollectionKind(type) != null) {
+        writer.Byte((byte)EntryKind.Collection);
+        writer.Type(type, false);
+        var comparer = ResolutionGraphSchema.Comparer(value, out var comparerType);
+        writer.Byte(comparer);
+        if (comparerType != null) { writer.Type(comparerType, false); }
+        writer.Int(kids.Length);
+        foreach (var kid in kids) { WriteValue(kid); }
+        continue;
+      }
+      writer.Byte((byte)EntryKind.Fields);
+      writer.Type(type, true);
+      var fields = ResolutionGraphSchema.Fields(type);
+      for (var j = 0; j < fields.Length; j++) { WriteValue(kids[j], ResolutionGraphSchema.IsPositional(fields[j])); }
+    }
+    writer.Int(roots.Length);
+    foreach (var root in roots) { WriteValue(root); }
+    writer.Int(scopeTokens.Count);
+    var (payload, structure) = writer.Finish();
+    return new(payload, Digest(structure), owned.ToArray(), scopeTokens.ToArray(), anchors);
+  }
+
+  private static string Digest(byte[] structure) {
+    using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+    hash.AppendData(Encoding.UTF8.GetBytes(StructureDomain));
+    hash.AppendData(structure);
+    return Convert.ToHexStringLower(hash.GetHashAndReset());
+  }
+
+  /// <summary>The values an entry holds, in encoding order.</summary>
+  internal static object?[] Children(object value, bool contextual = false) {
+    switch (value) {
+      case VisibilityScope:
+        return [];
+      case Array array:
+        if (array.Rank != 1 || array.GetLowerBound(0) != 0) { throw new ResolutionSnapshotUnsupported("array shape"); }
+        if (typeof(Delegate).IsAssignableFrom(array.GetType().GetElementType())) { throw new ResolutionSnapshotUnsupported("delegate array"); }
+        return array.Cast<object?>().ToArray();
+    }
+    var type = value.GetType();
+    if (type == typeof(object)) { return []; }
+    if (ResolutionGraphSchema.CollectionKind(type) != null) {
+      if (value is IDictionary dictionary) {
+        var items = new List<object?>();
+        foreach (DictionaryEntry pair in dictionary) { items.Add(pair.Key); items.Add(pair.Value); }
+        return items.ToArray();
+      }
+      return ((IEnumerable)value).Cast<object?>().ToArray();
+    }
+    ResolutionGraphSchema.RequireDataType(type);
+    var fields = ResolutionGraphSchema.Fields(type);
+    var result = new object?[fields.Length];
+    for (var i = 0; i < fields.Length; i++) {
+      result[i] = contextual && ResolutionGraphSchema.IsContextual(fields[i])
+        ? fields[i].FieldType.IsValueType ? Activator.CreateInstance(fields[i].FieldType) : null
+        : fields[i].GetValue(value);
+    }
+    return result;
+  }
+
+  private sealed class Writer {
+    private readonly MemoryStream bodyStream = new();
+    private readonly MemoryStream structureStream = new();
+    private readonly BinaryWriter body;
+    private readonly BinaryWriter structure;
+    private readonly Dictionary<string, int> strings = new(StringComparer.Ordinal);
+    private readonly List<string> stringList = [];
+    private readonly Dictionary<System.Type, int> types = new();
+    private readonly List<(System.Type Type, bool Schema)> typeList = [];
+
+    public Writer() {
+      body = new BinaryWriter(bodyStream, Encoding.UTF8, true);
+      structure = new BinaryWriter(structureStream, Encoding.UTF8, true);
+    }
+
+    public void Byte(byte b) { body.Write(b); structure.Write(b); }
+    public void Int(long n, bool positional = false) {
+      body.Write7BitEncodedInt64(n);
+      structure.Write7BitEncodedInt64(positional ? 0 : n);
+    }
+    public void String(string s) {
+      if (!strings.TryGetValue(s, out var index)) {
+        index = stringList.Count;
+        strings.Add(s, index);
+        stringList.Add(s);
+      }
+      Int(index);
+    }
+    public void Type(System.Type type, bool schema) {
+      if (!types.TryGetValue(type, out var index)) {
+        index = typeList.Count;
+        types.Add(type, index);
+        typeList.Add((type, schema));
+      } else if (schema && !typeList[index].Schema) {
+        typeList[index] = (type, true);
+      }
+      Int(index);
+    }
+
+    public (byte[] Payload, byte[] Structure) Finish() {
+      body.Flush();
+      structure.Flush();
+      using var tables = new MemoryStream();
+      using (var writer = new BinaryWriter(tables, Encoding.UTF8, true)) {
+        writer.Write7BitEncodedInt(stringList.Count);
+        foreach (var s in stringList) { writer.Write(s); }
+        writer.Write7BitEncodedInt(typeList.Count);
+        foreach (var (type, schema) in typeList) {
+          writer.Write(type.AssemblyQualifiedName!);
+          writer.Write(schema);
+          if (schema) {
+            var fields = ResolutionGraphSchema.Fields(type);
+            writer.Write7BitEncodedInt(fields.Length);
+            foreach (var field in fields) { writer.Write(ResolutionGraphSchema.Name(field)); }
+          }
+        }
+      }
+      var prefix = tables.ToArray();
+      return ([.. prefix, .. bodyStream.ToArray()], [.. prefix, .. structureStream.ToArray()]);
+    }
+  }
+
+  // ---------------------------------------------------------------- materialize
+
+  private readonly record struct Value(int Reference, object? Data);
+
+  private sealed record Entry(EntryKind Kind, System.Type? Type, Value[] Values, (ResolutionExternal.Kinds Kind, string Name, int Rank)[]? Tokens,
+    byte Comparer = 0, System.Type? ComparerType = null, string[]? Names = null);
+
+  public static Materialized Materialize(byte[] payload, MaterializeWorld world) {
+    using var stream = new MemoryStream(payload, false);
+    using var reader = new BinaryReader(stream, Encoding.UTF8);
+    int Count(long limit) {
+      var n = reader.Read7BitEncodedInt();
+      if (n < 0 || n > limit) { throw new ResolutionSnapshotInvalid("bad count"); }
+      return n;
+    }
+    var remaining = () => stream.Length - stream.Position;
+    var strings = new string[Count(remaining())];
+    for (var i = 0; i < strings.Length; i++) { strings[i] = reader.ReadString(); }
+    var types = new System.Type[Count(remaining())];
+    var schemas = new bool[types.Length];
+    for (var i = 0; i < types.Length; i++) {
+      types[i] = ResolutionGraphSchema.ResolveType(reader.ReadString());
+      schemas[i] = reader.ReadBoolean();
+      if (schemas[i]) {
+        ResolutionGraphSchema.RequireDataType(types[i]);
+        var fields = ResolutionGraphSchema.Fields(types[i]);
+        var n = Count(remaining());
+        if (n != fields.Length) { throw new ResolutionSnapshotInvalid("field schema of " + types[i].FullName); }
+        for (var j = 0; j < n; j++) {
+          if (reader.ReadString() != ResolutionGraphSchema.Name(fields[j])) {
+            throw new ResolutionSnapshotInvalid("field schema of " + types[i].FullName);
+          }
+        }
+      }
+    }
+    long Int() => reader.Read7BitEncodedInt64();
+    string Str() {
+      var index = Int();
+      if (index < 0 || index >= strings.Length) { throw new ResolutionSnapshotInvalid("bad string"); }
+      return strings[index];
+    }
+    System.Type TypeAt() {
+      var index = Int();
+      if (index < 0 || index >= types.Length) { throw new ResolutionSnapshotInvalid("bad type"); }
+      return types[index];
+    }
+    var entryCount = Count(Math.Min(MaxObjects, remaining()));
+    Value ReadValue() {
+      var tag = (Tag)reader.ReadByte();
+      switch (tag) {
+        case Tag.Null: return new(-1, null);
+        case Tag.False: return new(-1, false);
+        case Tag.True: return new(-1, true);
+        case Tag.Int32: return new(-1, checked((int)Int()));
+        case Tag.Int64: return new(-1, Int());
+        case Tag.String: return new(-1, Str());
+        case Tag.Char: return new(-1, checked((char)Int()));
+        case Tag.Double: return new(-1, BitConverter.Int64BitsToDouble(Int()));
+        case Tag.Byte: return new(-1, checked((byte)Int()));
+        case Tag.SByte: return new(-1, checked((sbyte)Int()));
+        case Tag.Int16: return new(-1, checked((short)Int()));
+        case Tag.UInt16: return new(-1, checked((ushort)Int()));
+        case Tag.UInt32: return new(-1, checked((uint)Int()));
+        case Tag.UInt64: return new(-1, unchecked((ulong)Int()));
+        case Tag.Single: return new(-1, BitConverter.Int32BitsToSingle(checked((int)Int())));
+        case Tag.Decimal:
+          return new(-1, new decimal([checked((int)Int()), checked((int)Int()), checked((int)Int()), checked((int)Int())]));
+        case Tag.BigInteger: return new(-1, BigInteger.Parse(Str(), System.Globalization.CultureInfo.InvariantCulture));
+        case Tag.Uri: {
+            var text = Str();
+            return new(-1, new Uri(text, Int() == 1 ? UriKind.Absolute : UriKind.RelativeOrAbsolute));
+          }
+        case Tag.Guid: return new(-1, Guid.ParseExact(Str(), "N"));
+        case Tag.Enum: {
+            var type = TypeAt();
+            if (!type.IsEnum) { throw new ResolutionSnapshotInvalid("not an enum"); }
+            return new(-1, Enum.ToObject(type, Int()));
+          }
+        case Tag.External: {
+            var kind = (ResolutionExternal.Kinds)reader.ReadByte();
+            var name = Str();
+            var index = checked((int)Int());
+            var type = TypeAt();
+            var bound = world.Object(new ResolutionExternal(kind, name, index));
+            if (bound.GetType() != type) { throw new ResolutionSnapshotInvalid("external " + name + "#" + index + " has another type"); }
+            return new(-1, bound);
+          }
+        case Tag.SourceToken: {
+            var uri = Str();
+            var pos = checked((int)Int());
+            var line = checked((int)Int());
+            var col = checked((int)Int());
+            return new(-1, world.SourceTokens.Find(uri, pos, line, col, Str()));
+          }
+        case Tag.Reference: {
+            var id = Int();
+            if (id < 0 || id >= entryCount) { throw new ResolutionSnapshotInvalid("bad reference"); }
+            return new((int)id, null);
+          }
+        default: throw new ResolutionSnapshotInvalid("bad tag");
+      }
+    }
+    var entries = new Entry[entryCount];
+    var objects = new object[entryCount];
+    for (var i = 0; i < entryCount; i++) {
+      var kind = (EntryKind)reader.ReadByte();
+      switch (kind) {
+        case EntryKind.Scope: {
+            var tokens = new (ResolutionExternal.Kinds, string, int)[Count(remaining())];
+            for (var j = 0; j < tokens.Length; j++) {
+              var tokenKind = (ResolutionExternal.Kinds)reader.ReadByte();
+              tokens[j] = tokenKind == 0 ? (0, "", checked((int)Int())) : (tokenKind, Str(), checked((int)Int()));
+            }
+            var names = new string[Count(remaining())];
+            for (var j = 0; j < names.Length; j++) { names[j] = Str(); }
+            entries[i] = new(kind, typeof(VisibilityScope), [], tokens, Names: names);
+            objects[i] = new VisibilityScope();
+            break;
+          }
+        case EntryKind.Array: {
+            var type = TypeAt();
+            if (!type.IsArray || type.GetArrayRank() != 1) { throw new ResolutionSnapshotInvalid("not an array"); }
+            var values = new Value[Count(remaining())];
+            for (var j = 0; j < values.Length; j++) { values[j] = ReadValue(); }
+            entries[i] = new(kind, type, values, null);
+            objects[i] = Array.CreateInstance(type.GetElementType()!, values.Length);
+            break;
+          }
+        case EntryKind.Collection: {
+            var type = TypeAt();
+            var comparer = reader.ReadByte();
+            var comparerType = comparer == 3 ? TypeAt() : null;
+            var values = new Value[Count(remaining())];
+            for (var j = 0; j < values.Length; j++) { values[j] = ReadValue(); }
+            entries[i] = new(kind, type, values, null, comparer, comparerType);
+            objects[i] = ResolutionGraphSchema.NewCollection(type, comparer, comparerType);
+            break;
+          }
+        case EntryKind.Lock:
+          entries[i] = new(kind, typeof(object), [], null);
+          objects[i] = new object();
+          break;
+        case EntryKind.Fields: {
+            var typeIndex = Int();
+            if (typeIndex < 0 || typeIndex >= types.Length || !schemas[typeIndex]) { throw new ResolutionSnapshotInvalid("bad fields type"); }
+            var type = types[typeIndex];
+            var values = new Value[ResolutionGraphSchema.Fields(type).Length];
+            for (var j = 0; j < values.Length; j++) { values[j] = ReadValue(); }
+            entries[i] = new(kind, type, values, null);
+            objects[i] = RuntimeHelpers.GetUninitializedObject(type);
+            break;
+          }
+        default: throw new ResolutionSnapshotInvalid("bad entry kind");
+      }
+    }
+    var roots = new Value[Count(remaining())];
+    for (var i = 0; i < roots.Length; i++) { roots[i] = ReadValue(); }
+    var ownedTokenCount = Count(int.MaxValue);
+    if (stream.Position != stream.Length) { throw new ResolutionSnapshotInvalid("trailing data"); }
+
+    // Fresh tokens, minted in rank order, keep the order of the captured tokens among themselves.
+    var ownedTokens = new uint[ownedTokenCount];
+    for (var i = 0; i < ownedTokenCount; i++) { ownedTokens[i] = ResolutionGraphSchema.Tokens(new VisibilityScope("snapshot")).Single(); }
+
+    var initialized = new bool[entryCount];
+    // A boxed value is copied wherever it is stored, and an immutable list cannot be filled once created,
+    // so each is completed before it is first read.
+    bool IsLazy(Entry entry) => (entry.Kind == EntryKind.Fields && entry.Type!.IsValueType) ||
+      (entry.Kind == EntryKind.Collection && ResolutionGraphSchema.CollectionKind(entry.Type!) == ResolutionGraphSchema.Collection.ImmutableList);
+    object ReadReference(int id) {
+      if (IsLazy(entries[id]) && !initialized[id]) {
+        initialized[id] = true;
+        Fill(id);
+      }
+      return objects[id];
+    }
+    object? Read(Value value) => value.Reference >= 0 ? ReadReference(value.Reference) : value.Data;
+    void Fill(int id) {
+      var entry = entries[id];
+      var target = objects[id];
+      switch (entry.Kind) {
+        case EntryKind.Fields: {
+            var fields = ResolutionGraphSchema.Fields(entry.Type!);
+            for (var j = 0; j < fields.Length; j++) {
+              var value = Read(entry.Values[j]);
+              if (value == null && fields[j].FieldType.IsValueType && Nullable.GetUnderlyingType(fields[j].FieldType) == null) {
+                throw new ResolutionSnapshotInvalid("null value field");
+              }
+              fields[j].SetValue(target, value);
+            }
+            break;
+          }
+        case EntryKind.Array:
+          for (var j = 0; j < entry.Values.Length; j++) { ((Array)target).SetValue(Read(entry.Values[j]), j); }
+          break;
+        case EntryKind.Scope: {
+            var tokens = ResolutionGraphSchema.Tokens((VisibilityScope)target);
+            foreach (var (kind, name, rank) in entry.Tokens!) {
+              if (kind == 0) {
+                if (rank < 0 || rank >= ownedTokens.Length) { throw new ResolutionSnapshotInvalid("bad scope token"); }
+                tokens.Add(ownedTokens[rank]);
+              } else {
+                tokens.Add(world.Token(new ResolutionExternalToken(kind, name, rank)));
+              }
+            }
+            ResolutionGraphSchema.Ids((VisibilityScope)target).UnionWith(entry.Names!);
+            break;
+          }
+        case EntryKind.Collection:
+          switch (ResolutionGraphSchema.CollectionKind(entry.Type!)) {
+            case ResolutionGraphSchema.Collection.Dictionary:
+              if (entry.Values.Length % 2 != 0) { throw new ResolutionSnapshotInvalid("dictionary arity"); }
+              for (var j = 0; j < entry.Values.Length; j += 2) {
+                ((IDictionary)target).Add(Read(entry.Values[j]) ?? throw new ResolutionSnapshotInvalid("null key"), Read(entry.Values[j + 1]));
+              }
+              break;
+            case ResolutionGraphSchema.Collection.ImmutableList: {
+                var items = (IList)target;
+                foreach (var value in entry.Values) { items.Add(Read(value)); }
+                var element = entry.Type!.GetGenericArguments()[0];
+                objects[id] = typeof(ImmutableList).GetMethods().Single(m => m.Name == nameof(ImmutableList.CreateRange) && m.GetParameters().Length == 1)
+                  .MakeGenericMethod(element).Invoke(null, [target])!;
+                break;
+              }
+            case ResolutionGraphSchema.Collection.Stack: {
+                var push = entry.Type!.GetMethod("Push")!;
+                for (var j = entry.Values.Length - 1; j >= 0; j--) { push.Invoke(target, [Read(entry.Values[j])]); }
+                break;
+              }
+            default: {
+                var add = entry.Type!.GetMethod("Add")!;
+                foreach (var value in entry.Values) {
+                  var added = add.Invoke(target, [Read(value)]);
+                  if (added is false) { throw new ResolutionSnapshotInvalid("duplicate set item"); }
+                }
+                break;
+              }
+          }
+          break;
+      }
+    }
+    bool IsHashed(Entry entry) => entry.Kind == EntryKind.Collection &&
+      ResolutionGraphSchema.CollectionKind(entry.Type!) is ResolutionGraphSchema.Collection.Dictionary or
+        ResolutionGraphSchema.Collection.Set or ResolutionGraphSchema.Collection.SortedSet;
+    try {
+      // Hash containers are filled last, after every field their keys' hash codes may read.
+      for (var i = 0; i < entryCount; i++) {
+        if (!IsHashed(entries[i]) && !IsLazy(entries[i])) { Fill(i); }
+      }
+      for (var i = 0; i < entryCount; i++) {
+        if (IsLazy(entries[i])) { ReadReference(i); }
+      }
+      for (var i = 0; i < entryCount; i++) {
+        if (IsHashed(entries[i])) { Fill(i); }
+      }
+    } catch (TargetInvocationException error) {
+      throw new ResolutionSnapshotInvalid("materialization failed: " + error.InnerException?.Message);
+    } catch (ArgumentException error) {
+      throw new ResolutionSnapshotInvalid("materialization failed: " + error.Message);
+    } catch (InvalidCastException error) {
+      throw new ResolutionSnapshotInvalid("materialization failed: " + error.Message);
+    }
+    return new(roots.Select(Read).ToArray(), objects, ownedTokens);
+  }
+}

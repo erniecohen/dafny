@@ -120,6 +120,8 @@ public static class DafnyCommands {
     CommonOptionBag.RecursiveModules,
     CommonOptionBag.TypeSystemRefresh,
     CommonOptionBag.ResolutionThreads,
+    CommonOptionBag.ResolutionCache,
+    CommonOptionBag.ResolutionCacheCheck,
     CommonOptionBag.UserDefinedOperators,
     CommonOptionBag.BitvectorMapKeys,
     CommonOptionBag.ContextualLambdaDomains,

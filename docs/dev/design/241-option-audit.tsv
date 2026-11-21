@@ -154,6 +154,8 @@ cli	refinement-extends	--refinement-extends	System.CommandLine.Option`1[System.B
 cli	relax-definite-assignment	--relax-definite-assignment	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	report-file	--report-file	System.CommandLine.Option`1[System.String]	command-setup	setup or another command; executes before/outside proof transport
 cli	report-format	--report-format	System.CommandLine.Option`1[System.Nullable`1[Microsoft.Dafny.Auditor.Auditor+ReportFormat]]	command-setup	setup or another command; executes before/outside proof transport
+cli	resolution-cache	--resolution-cache	System.CommandLine.Option`1[System.String]	input	per-module resolution snapshots precede task lookup; current global admission and exact prepared SMT
+cli	resolution-cache-check	--resolution-cache-check	System.CommandLine.Option`1[System.Boolean]	input	test-only oracle: each reused module is also resolved and the two graphs compared
 cli	resolution-threads	--resolution-threads	System.CommandLine.Option`1[System.Int32]	input	resolution scheduling precedes task lookup; exact prepared SMT and current assertion map
 cli	resource-limit	--resource-limit	System.CommandLine.Option`1[System.UInt32]	execution	effective prover interfaces/options plus exact SMT command stream; overrides retained
 cli	rprint	--rprint	System.CommandLine.Option`1[System.String]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
