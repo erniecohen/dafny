@@ -337,10 +337,16 @@ internal sealed class PersistentResolutionCache {
   private static readonly Regex PositionText = new(@"\bline \d+|\(\d+,\d+\)|\.dfy[:(]\d", RegexOptions.CultureInvariant);
   private static bool NamesPosition(string text) => PositionText.IsMatch(text);
 
-  private static object?[] Roots(ModuleResolutionResult output, SystemModuleManager view) => [
-    output.ResolvedDeclaration, output.Signatures, output.ClassMembers, output.TranslationInputs, output.SystemClassMembers,
-    view.MaxNonGhostTupleSizeToken, view.MaxNonGhostTupleSizeUsed, output.ErrorReporter.AllMessages, Effects(output)
-  ];
+  private object?[] Roots(ModuleResolutionResult output, SystemModuleManager view) {
+    // The parser records the widest tuple of the whole program, at its first use, in every view; a module's result
+    // holds the widest tuple only when the module or a prerequisite used a wider one.
+    var wider = view.MaxNonGhostTupleSizeUsed > initialBuiltins.MaxNonGhostTupleSizeUsed;
+    return [
+      output.ResolvedDeclaration, output.Signatures, output.ClassMembers, output.TranslationInputs, output.SystemClassMembers,
+      wider ? view.MaxNonGhostTupleSizeToken : null, wider ? view.MaxNonGhostTupleSizeUsed : 0, output.ErrorReporter.AllMessages,
+      Effects(output)
+    ];
+  }
 
   /// <summary>
   /// What a module's resolution wrote into declarations of other modules and of the builtins: each trait of the
@@ -486,7 +492,10 @@ internal sealed class PersistentResolutionCache {
       CopyContextual(parsed.ModuleDef, literal.ModuleDef);
     }
     // Only the builtins the module's output uses remain in its view, in the order of its fresh resolution.
-    view.SetMaxNonGhostTupleSize(maxTupleSize, (IOrigin?)materialized.Roots[5]!);
+    // A fresh resolution would only widen the view's widest tuple, which the parse and the prerequisites set.
+    if (maxTupleSize > view.MaxNonGhostTupleSizeUsed) {
+      view.SetMaxNonGhostTupleSize(maxTupleSize, (IOrigin?)materialized.Roots[5]!);
+    }
     view.RestrictResolutionOutput(translationInputs);
     manifest.Journal.Order(view);
     Register(name, manifest.Structure, materialized.Owned, materialized.OwnedTokens, materialized.SourceTokens);

@@ -116,6 +116,21 @@ internal sealed class ResolutionFrames {
     return found >= 0 && pos <= pieces[found].End.pos + (pieces[found].End.val?.Length ?? 0) ? pieces[found] : null;
   }
 
+  /// <summary>
+  /// The piece that contains <paramref name="line"/> and <paramref name="col"/> of <paramref name="uri"/>, if any: the
+  /// place of a token that resolution made from another's line and column but not its offset.
+  /// </summary>
+  public Piece? FindLine(string uri, int line, int col) {
+    if (!byUri.TryGetValue(uri, out var pieces)) { return null; }
+    foreach (var piece in pieces) {
+      if ((piece.Start.line, piece.Start.col).CompareTo((line, col)) <= 0 &&
+          (line, col).CompareTo((piece.End.line, piece.End.col + (piece.End.val?.Length ?? 0))) <= 0) {
+        return piece;
+      }
+    }
+    return null;
+  }
+
   public Piece[] Of(string module) => byModule.GetValueOrDefault(module) ?? [];
 }
 
@@ -136,7 +151,7 @@ internal static class ResolutionSnapshot {
   private enum Tag : byte {
     Null = 0, False = 1, True = 2, Int32 = 3, Int64 = 4, String = 5, Char = 6, Double = 7, Byte = 8, SByte = 9,
     Int16 = 10, UInt16 = 11, UInt32 = 12, UInt64 = 13, Single = 14, Decimal = 15, BigInteger = 16, Uri = 17, Guid = 18,
-    Enum = 19, Reference = 30, External = 31, SourceToken = 32, PieceUri = 33
+    Enum = 19, Reference = 30, External = 31, SourceToken = 32, PieceUri = 33, AnchorUri = 34
   }
 
   private enum TokenOwner : byte { Own = 0, Prerequisite = 1 }
@@ -167,6 +182,15 @@ internal static class ResolutionSnapshot {
   }
 
   public sealed record Materialized(object?[] Roots, object[] Owned, uint[] OwnedTokens, Token[] SourceTokens);
+
+  /// <summary>The relative offset of a copied token whose offset resolution left at 0.</summary>
+  private const int NoOffset = int.MinValue;
+
+  /// <summary>
+  /// Whether resolution made <paramref name="token"/> from a line and column without an offset. Only the first token
+  /// of a file has offset 0 at line 1, column 1.
+  /// </summary>
+  private static bool HasNoOffset(Token token) => token.pos == 0 && (token.line, token.col) != (1, 1);
 
   /// <summary>The fields of a token that say where it is, which a copied token stores relative to its piece.</summary>
   private static readonly int[] TokenPlace = new[] { "<Uri>k__BackingField", "<pos>k__BackingField", "<line>k__BackingField", "<col>k__BackingField" }
@@ -228,11 +252,25 @@ internal static class ResolutionSnapshot {
       }
       return null;
     }
-    // A token that resolution made from a source token's coordinates, if they are in the module's own source.
-    ResolutionFrames.Piece? CopiedPlace(Token token) {
+    // Where a token that resolution made from a source token's coordinates is: in a piece of the module's own source,
+    // or at a token of a prerequisite that the prerequisite's result refers to (a refinement copies the refined
+    // module's text, and resolving the copy makes tokens there). Its coordinates are stored relative to that start.
+    (Token Start, int Piece, string? Module, int Rank)? CopiedPlace(Token token) {
       if (token.Uri == null) { return null; }
-      var piece = world.Frames.Find(token.Uri.ToString(), token.pos);
-      if (piece?.Module == world.Module) { return piece; }
+      var noOffset = HasNoOffset(token);
+      // Resolution makes some tokens from another's line and column only, leaving the offset at 0.
+      var piece = noOffset ? world.Frames.FindLine(token.Uri.ToString(), token.line, token.col)
+        : world.Frames.Find(token.Uri.ToString(), token.pos);
+      if (piece is { } own && own.Module == world.Module) { return (own.Start, own.Index, null, -1); }
+      if (piece is { } other) {
+        for (var at = other.Start; at != null; at = at.Next) {
+          if (noOffset ? (at.line, at.col) == (token.line, token.col) : at.pos == token.pos) {
+            if (world.PrerequisiteToken(other.Module, at) is { } rank) { return (at, -1, other.Module, rank); }
+            break;
+          }
+          if (at.pos >= other.End.pos) { break; }
+        }
+      }
       if (world.Frames.IsSourceFile(token.Uri)) { throw new ResolutionSnapshotUnsupported("copied token outside the module"); }
       return null;
     }
@@ -363,17 +401,21 @@ internal static class ResolutionSnapshot {
       writer.Type(type, true);
       var fields = ResolutionGraphSchema.Fields(type);
       if (type == typeof(Token) && CopiedPlace((Token)value) is { } place) {
-        // Relative to the piece's start: the offset, the line difference, and the column difference on its first line.
+        // Relative to the piece's start or the anchor: the offset, the line difference, and the column difference on its first line.
         var copy = (Token)value;
         var lines = copy.line - place.Start.line;
         kids = (object?[])kids.Clone();
-        kids[TokenPlace[1]] = copy.pos - place.Start.pos;
+        kids[TokenPlace[1]] = HasNoOffset(copy) ? NoOffset : copy.pos - place.Start.pos;
         kids[TokenPlace[2]] = lines;
         kids[TokenPlace[3]] = lines == 0 ? copy.col - place.Start.col : copy.col;
         for (var j = 0; j < fields.Length; j++) {
-          if (j == TokenPlace[0]) {
+          if (j == TokenPlace[0] && place.Module == null) {
             writer.Byte((byte)Tag.PieceUri);
-            writer.Int(place.Index);
+            writer.Int(place.Piece);
+          } else if (j == TokenPlace[0]) {
+            writer.Byte((byte)Tag.AnchorUri);
+            writer.String(place.Module);
+            writer.Int(place.Rank);
           } else {
             WriteValue(kids[j], ResolutionGraphSchema.IsPositional(fields[j]));
           }
@@ -543,6 +585,7 @@ internal static class ResolutionSnapshot {
     var entryCount = Count(Math.Min(MaxObjects, remaining()));
     var ownPieces = world.Frames.Of(world.Module);
     var ownTokens = new List<Token>();
+    var copyAnchors = new List<Token>();
     ResolutionFrames.Piece PieceAt(long index) =>
       index >= 0 && index < ownPieces.Length ? ownPieces[index] : throw new ResolutionSnapshotInvalid("bad piece");
     Value ReadValue() {
@@ -588,6 +631,12 @@ internal static class ResolutionSnapshot {
         case Tag.PieceUri: {
             var index = Int();
             return new(-1, PieceAt(index).Start.Uri, (int)index);
+          }
+        case Tag.AnchorUri: {
+            var module = Str();
+            var anchor = world.PrerequisiteToken(module, checked((int)Int()));
+            copyAnchors.Add(anchor);
+            return new(-1, anchor.Uri, -1 - copyAnchors.Count);
           }
         case Tag.SourceToken: {
             Token token;
@@ -714,11 +763,12 @@ internal static class ResolutionSnapshot {
               }
               fields[j].SetValue(target, value);
             }
-            if (entry.Type == typeof(Token) && entry.Values[TokenPlace[0]].Piece is >= 0 and var index) {
-              var start = ownPieces[index].Start;
+            if (entry.Type == typeof(Token) && entry.Values[TokenPlace[0]].Piece is var index && index != -1) {
+              // An own piece's index, or an anchor's, as -2 - its index among the anchors read.
+              var start = index >= 0 ? ownPieces[index].Start : copyAnchors[-2 - index];
               var copy = (Token)target;
               var lines = copy.line;
-              copy.pos = checked(start.pos + copy.pos);
+              copy.pos = copy.pos == NoOffset ? 0 : checked(start.pos + copy.pos);
               copy.line = checked(start.line + lines);
               if (lines == 0) { copy.col = checked(start.col + copy.col); }
             }

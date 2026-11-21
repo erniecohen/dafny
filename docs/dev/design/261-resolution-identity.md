@@ -60,7 +60,24 @@ coordinate is a function of the identity and of where the module's text starts:
   the column difference on that text's first line, rebased on load.
 - A URI of the module's own file can be stored as a reference to that file.
 
-The persistent resolution cache of issue 261 does all four. A consumer of the
+Three cases refine this:
+
+- **Export sets.** A module resolves its export sets and its result refers to their
+  tokens, so an export set's text is part of its module's text in L, though the
+  text of nested modules and imports is not (they are prerequisites, keyed by
+  their results). The export set itself is a dependent of its module, and its own
+  result refers to those tokens as its module's.
+- **Tokens without an offset.** Resolution makes some tokens from another token's
+  line and column only, leaving the offset 0 (the argument names of the
+  constructor call a datatype update becomes, for example). Such a token is placed
+  by its line and column and keeps offset 0 when it is rebased.
+- **Copies of a prerequisite's text.** A refinement resolves a copy of the refined
+  module, so resolving it makes tokens at the refined module's coordinates. Such a
+  token is stored relative to the prerequisite's token at the same place, by that
+  token's rank, when the prerequisite's result refers to it; otherwise the module
+  is not cached.
+
+The persistent resolution cache of issue 261 does all of these. A consumer of the
 identity that keeps absolute coordinates, such as Boogie text with source
 positions, must rebase them the same way or add where the module's text starts
 to its own key.
@@ -86,3 +103,27 @@ the module's pieces of source are (see above). That is what lets a
 persistent cache reuse a result in another process. It does not cover the program
 outside the module's prerequisites: whole-program admission (replaceable modules,
 cardinality, the global rewriters) runs again on every resolution.
+
+## Mutation controls
+
+The persistent cache's entry key (`PersistentResolutionCache.Key`) adds to L the
+build (`Producer`), the module's name, the naming prefix, its direct prerequisites
+by role and name, and the snapshot structure of every module of its closure. A
+mutation run removed one component at a time, and the controls,
+`.github/review/resolution-cache.py` and the reuse-equals-fresh oracle over a lit
+subset, had to fail for each:
+
+| removed | caught by |
+|---|---|
+| L (source, options) | the comment and option scenarios |
+| the options in L | the option scenario's output |
+| the prefix | the prefix scenario |
+| the structures, or the whole closure | the signature scenario (the snapshot no longer applies) |
+| the build: `Producer`, the MVID in L's version, and the entry's own producer check | a cache warmed by one build and read by another hits instead of missing |
+| the name: in the key, in L, and the entry's own name check | the cold run of the main scenario (two modules share an entry) |
+
+The build and the name are each held three times (in the key, in L and in the
+entry's manifest), so removing any one copy leaves them guarded and no control
+fails; only removing every copy is caught. The direct prerequisites are
+defensive: they follow from the module's own source (in L) and from the names of
+its closure, and no mutation of them alone is caught.

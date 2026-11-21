@@ -285,7 +285,9 @@ public class ProgramResolver {
       var own = OwnSource(declaration);
       localKeys[i] = ModuleResolutionKey.Compute(declaration.FullName, own.Source, ModuleResolutionKey.DafnyVersion, KeyOptions(declaration), []);
       roles[i] = prerequisites[i].Select(j => DependencyRole(declaration, declarations[j])).ToArray();
-      pieces[i] = own.Pieces;
+      // An export set's text is part of its module's source: the module's resolution checks and records it, and its
+      // result refers to the export's tokens. The export's own result refers to them as its module's.
+      pieces[i] = declaration is ModuleExportDecl ? [] : own.Pieces;
       if (groupOf.TryGetValue(declaration, out var group) && ReferenceEquals(declaration, group.Members[0])) {
         // The leader of a recursive module group stands for the group.
         // Frame every owned declaration and option separately. In particular, source and option
@@ -656,11 +658,12 @@ public class ProgramResolver {
   /// Issue 261: the source of a module without the text of its nested modules, and the first and last token of each
   /// piece of it. The persistent resolution cache stores a token of the module as its offset in its piece.
   /// The nested modules are prerequisites of the module, and the persistent resolution cache keys it by their
-  /// results, so an edit of a nested module that leaves its result alike does not change the module's key.
+  /// results, so an edit of a nested module that leaves its result alike does not change the module's key. Export
+  /// sets are not prerequisites but dependents of their module, which resolves them, so their text stays in it.
   /// </summary>
   private static (string Source, (Token Start, Token End)[] Pieces) OwnSource(ModuleDecl declaration) {
     var nested = declaration is LiteralModuleDecl literal
-      ? literal.ModuleDef.TopLevelDecls.OfType<ModuleDecl>().Select(m => m.EntireRange).ToArray()
+      ? literal.ModuleDef.TopLevelDecls.OfType<ModuleDecl>().Where(m => m is not ModuleExportDecl).Select(m => m.EntireRange).ToArray()
       : [];
     bool Inside(Token token) => nested.Any(range => range.StartToken.Uri == token.Uri &&
       range.StartToken.pos <= token.pos && token.pos <= range.EndToken.pos);

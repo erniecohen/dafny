@@ -220,6 +220,64 @@ control("rename", expect_reused=["_module.N17608"], check=True)
 # A new module can change another's naming prefix, and so the names its resolution generates.
 main.write_text(X + "module N67866 { }\n")
 control("prefix", expect_reused=["_module.P", "P.Q"], check=True)
+# The parse records the program's widest tuple, at its first use, in every module's builtins; a module that uses
+# no tuple is still cached, and so is one whose tuples are narrower. (A wider tuple elsewhere adds a builtin, and
+# an entry made with other builtins is discarded.)
+tree = destination / "tree3"
+tree.mkdir()
+cache = destination / "cache3"
+main = tree / "Y.dfy"
+Y = """module Wide {
+  function F(): (int, int, int) { (1, 2, 3) }
+  lemma One() ensures F().0 == 1 {}
+}
+module Plain {
+  lemma P(x: int) ensures x + 0 == x {}
+  method Bad() { assert false; }
+}
+"""
+main.write_text(Y)
+modules = sorted(["_module", "_module.Wide", "_module.Plain"])
+control("tuple-cold", expect_reused=[])
+control("tuple-warm", expect_reused=modules, check=True)
+main.write_text(Y + "module Narrow { function G(): (int, int) { (1, 2) } }\n")
+control("tuple-narrower", expect_reused=["_module.Wide", "_module.Plain"], check=True)
+
+# An export set is resolved with its module, which refers to its tokens, so its text is in the module's key. A datatype
+# update makes a token from a line and column only, and a refinement resolves a copy of the refined module's text,
+# making such tokens there: both are stored relative to their place and rebased when lines move above them.
+tree = destination / "tree4"
+tree.mkdir()
+cache = destination / "cache4"
+main = tree / "Z.dfy"
+Z = """abstract module Base {
+  datatype D = D(a: int, b: int)
+  function Set(d: D): D { d.(a := 1) }
+}
+module Refined refines Base {
+  lemma L(d: D) ensures Set(d).b == d.b {}
+}
+module Api {
+  export provides F
+  function F(x: int): int { x + 1 }
+}
+module User {
+  import Api
+  lemma U() ensures Api.F(1) == 2 {}
+  method Bad() { assert false; }
+}
+"""
+main.write_text(Z)
+cold, _ = control("copies-cold", expect_reused=[])
+modules = sorted(cold)
+assert {"_module.Api", "Api.Api", "_module.Refined"} <= set(modules), modules
+control("copies-warm", expect_reused=modules, check=True)
+main.write_text("// moved\n\n" + Z)
+control("copies-lines-above", expect_reused=modules, check=True)
+main.write_text("// moved\n\n" + Z.replace("export provides F", "export reveals F"))
+control("export-edited", expect_reused=["_module.Base", "_module.Refined"], check=True)
 print("resolution cache: %d runs; cold stores, warm reuses all and checks equal; a comment re-resolves one module, "
       "a signature its dependents, an option all; a damaged or corrupt entry is a miss; lines above, a move and another "
-      "checkout reuse all; changed text, a rename and a new naming prefix re-resolve the modules they change" % runs)
+      "checkout reuse all; changed text, a rename and a new naming prefix re-resolve the modules they change; the program's widest tuple "
+      "leaves other modules cacheable; export sets, datatype updates and refinement copies are cached, and an export edit "
+      "re-resolves its module" % runs)
