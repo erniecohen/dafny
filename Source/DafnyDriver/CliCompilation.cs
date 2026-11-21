@@ -539,6 +539,9 @@ public class CliCompilation {
           canVerifyResults.TryRemove(canVerify, out _); // Free memory
           Compilation.ClearCanVerifyCache(canVerify, repeatVerification);
         }
+        // The slot stays in the window's list until the run ends; it must not keep the states, and
+        // through them the verification tasks and results, of a module already reported.
+        slot.Reported();
         Compilation.ClearModuleCache(slot.Module);
         // The live heap once this module is reported and released, with later modules in flight.
         windowProfile?.HeapPoint("module", new Dictionary<string, object?> {
@@ -596,6 +599,11 @@ public class CliCompilation {
         deferred.Clear();
         released = true;
       }
+    }
+
+    public void Reported() {
+      States.Clear();
+      ToAwait.Clear();
     }
 
     public void Abandon() {

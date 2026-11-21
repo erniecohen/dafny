@@ -1,0 +1,1 @@
+With `--verification-module-window` greater than 1, a module that has been reported no longer keeps the verification tasks and results of its symbols until the run ends, so the memory of a windowed run no longer grows with every module verified. The output is unchanged.
