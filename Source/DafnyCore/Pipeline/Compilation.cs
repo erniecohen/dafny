@@ -844,6 +844,48 @@ public class Compilation : IDisposable {
     }
   }
 
+  /// <summary>
+  /// For --release-verified-modules: drops the bodies of the module's methods, lemmas, constructors
+  /// and iterators once the module is verified and reported.  Translating another module reads only
+  /// their signatures and specifications, so nothing reads the bodies again; a read that does throws
+  /// (see <see cref="MethodOrConstructor.ReleaseBody"/>) rather than see a body that is gone.  Returns
+  /// the number of bodies released.
+  /// </summary>
+  public int ReleaseModuleBodies(ModuleDefinition moduleDefinition) {
+    var released = 0;
+    foreach (var decl in moduleDefinition.TopLevelDecls) {
+      if (decl is IteratorDecl iterator) {
+        iterator.ReleaseBody();
+        released++;
+      }
+      if (decl is TopLevelDeclWithMembers withMembers) {
+        // The translation of every module visits each member for {:only} assertions; a body that
+        // holds one is kept, so that the visit of the member without its body finds the same ones.
+        foreach (var member in withMembers.Members.OfType<MethodOrConstructor>()) {
+          if (member.Body == null || !HoldsAssertOnly(member.Body)) {
+            member.ReleaseBody();
+            released++;
+          }
+        }
+      }
+    }
+    Interlocked.Add(ref releasedBodies, released);
+    return released;
+  }
+
+  private static bool HoldsAssertOnly(Node body) {
+    var holds = false;
+    body.Visit(node => {
+      holds |= node is AssertStmt assertStmt && assertStmt.HasAssertOnlyAttribute(out _);
+      return !holds;
+    });
+    return holds;
+  }
+
+  /// <summary>The number of bodies released by <see cref="ReleaseModuleBodies"/>, for tests.</summary>
+  public int ReleasedBodies => releasedBodies;
+  private int releasedBodies;
+
   /// <summary>The number of solver checkers released by <see cref="ClearModuleCache"/>, for tests.</summary>
   public int ReleasedCheckers => releasedCheckers;
   private int releasedCheckers;

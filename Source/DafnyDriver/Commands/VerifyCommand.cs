@@ -26,6 +26,7 @@ public static class VerifyCommand {
     OptionRegistry.RegisterOption(FilterPositionBatch, OptionScope.Cli);
     OptionRegistry.RegisterOption(VerificationModuleWindow, OptionScope.Cli);
     OptionRegistry.RegisterOption(VerificationModuleWindowMemory, OptionScope.Cli);
+    OptionRegistry.RegisterOption(ReleaseVerifiedModules, OptionScope.Cli);
     OptionRegistry.RegisterOption(PerformanceStatisticsOption, OptionScope.Cli);
   }
 
@@ -57,6 +58,9 @@ public static class VerifyCommand {
     ArgumentHelpName = "MiB"
   };
 
+  public static readonly Option<bool> ReleaseVerifiedModules = new("--release-verified-modules",
+    "Once a module is verified and its results reported, drop the bodies of its methods, lemmas, constructors and iterators, so that the memory they hold can be reused for later modules. Output is unchanged. Any later read of a dropped body throws an exception. Cannot be combined with --filter-position-batch or --verification-coverage-report, which read the program again after a module is reported.");
+
   public static Command Create() {
     var result = new Command("verify", "Verify the program.");
     result.AddArgument(DafnyCommands.FilesArgument);
@@ -77,6 +81,7 @@ public static class VerifyCommand {
         FilterPositionBatch,
         VerificationModuleWindow,
         VerificationModuleWindowMemory,
+        ReleaseVerifiedModules,
         DafnyFile.DoNotVerifyDependencies
       }.Concat(DafnyCommands.VerificationOptions).
       Concat(DafnyCommands.ConsoleOutputOptions).
@@ -84,14 +89,21 @@ public static class VerifyCommand {
 
   public static async Task<int> HandleVerification(DafnyOptions options) {
     var batch = options.GetOrOptionDefault(FilterPositionBatch).ToArray();
+    string? conflict = null;
     if (batch.Length != 0 && options.Get(FilterPosition) != null) {
+      conflict = "--filter-position-batch cannot be combined with --filter-position";
+    } else if (options.Get(ReleaseVerifiedModules) && batch.Length != 0) {
+      conflict = "--release-verified-modules cannot be combined with --filter-position-batch";
+    } else if (options.Get(ReleaseVerifiedModules) && options.Get(CommonOptionBag.VerificationCoverageReport) != null) {
+      conflict = "--release-verified-modules cannot be combined with --verification-coverage-report";
+    }
+    if (conflict != null) {
       ErrorReporter reporter = options.DiagnosticsFormat switch {
         DafnyOptions.DiagnosticsFormats.PlainText => new ConsoleErrorReporter(options),
         DafnyOptions.DiagnosticsFormats.JSON => new JsonConsoleErrorReporter(options),
         _ => throw new ArgumentOutOfRangeException()
       };
-      reporter.Error(MessageSource.Project, Token.Cli,
-        "--filter-position-batch cannot be combined with --filter-position");
+      reporter.Error(MessageSource.Project, Token.Cli, conflict);
       return (int)ExitValue.PREPROCESSING_ERROR;
     }
 

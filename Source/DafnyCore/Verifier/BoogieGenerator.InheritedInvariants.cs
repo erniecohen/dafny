@@ -229,8 +229,9 @@ namespace Microsoft.Dafny {
     /// refinement base outside the scope, such as a library.
     /// </summary>
     private bool AddedInvariantsInVerificationScope(Declaration declaration) {
-      return MustCheckAddedInvariants(declaration, options) && EnclosingModule(declaration) is { IsFacade: false } module &&
-             module.ShouldVerify(program.Compilation) && declaration.IsVisibleInScope(verificationScope);
+      // The visibility is tested first; see BodyInVerificationScope.
+      return declaration.IsVisibleInScope(verificationScope) && EnclosingModule(declaration) is { IsFacade: false } module &&
+             module.ShouldVerify(program.Compilation) && MustCheckAddedInvariants(declaration, options);
     }
 
     /// <summary>
