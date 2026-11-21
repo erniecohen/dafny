@@ -162,16 +162,19 @@ internal static class ResolutionGraphSchema {
   }
 
   /// <summary>Resolve a type name of a snapshot, among the loaded assemblies only.</summary>
+  // Every snapshot names its types, and resolving a name searches the loaded assemblies.
+  private static readonly ConcurrentDictionary<string, System.Type?> ResolvedTypes = new(StringComparer.Ordinal);
+
   public static System.Type ResolveType(string name) {
-    System.Type? type;
-    try {
-      type = System.Type.GetType(name, assemblyName => AppDomain.CurrentDomain.GetAssemblies()
-        .FirstOrDefault(a => a.GetName().FullName == assemblyName.FullName), null, false);
-    } catch (Exception error) when (error is not OutOfMemoryException) {
-      throw new ResolutionSnapshotInvalid("unknown type " + name);
-    }
-    if (type == null) { throw new ResolutionSnapshotInvalid("unknown type " + name); }
-    return type;
+    var type = ResolvedTypes.GetOrAdd(name, static name => {
+      try {
+        return System.Type.GetType(name, assemblyName => AppDomain.CurrentDomain.GetAssemblies()
+          .FirstOrDefault(a => a.GetName().FullName == assemblyName.FullName), null, false);
+      } catch (Exception error) when (error is not OutOfMemoryException) {
+        return null;
+      }
+    });
+    return type ?? throw new ResolutionSnapshotInvalid("unknown type " + name);
   }
 
   /// <summary>
@@ -204,18 +207,23 @@ internal static class ResolutionGraphSchema {
     return null;
   }
 
-  private static object EmptyArray(System.Type element) =>
-    typeof(Array).GetMethod(nameof(Array.Empty))!.MakeGenericMethod(element).Invoke(null, null)!;
+  // The singletons of an element type, found by reflection once.
+  private static readonly ConcurrentDictionary<System.Type, object> EmptyArrays = new();
+  private static readonly ConcurrentDictionary<System.Type, object?> EmptyImmutableArrays = new();
+  private static readonly ConcurrentDictionary<System.Type, object> EmptyLists = new();
+
+  private static object EmptyArray(System.Type element) => EmptyArrays.GetOrAdd(element, static element =>
+    typeof(Array).GetMethod(nameof(Array.Empty))!.MakeGenericMethod(element).Invoke(null, null)!);
 
   /// <summary>The array inside <c>ImmutableArray.Empty</c>.</summary>
-  private static object? EmptyImmutableArray(System.Type element) {
+  private static object? EmptyImmutableArray(System.Type element) => EmptyImmutableArrays.GetOrAdd(element, static element => {
     var empty = typeof(ImmutableArray<>).MakeGenericType(element).GetField(nameof(ImmutableArray<int>.Empty))!.GetValue(null)!;
     return typeof(System.Runtime.InteropServices.ImmutableCollectionsMarshal).GetMethod(
       nameof(System.Runtime.InteropServices.ImmutableCollectionsMarshal.AsArray))!.MakeGenericMethod(element).Invoke(null, [empty]);
-  }
+  });
 
-  private static object EmptyList(System.Type element) =>
-    typeof(ImmutableList<>).MakeGenericType(element).GetField(nameof(ImmutableList<int>.Empty))!.GetValue(null)!;
+  private static object EmptyList(System.Type element) => EmptyLists.GetOrAdd(element, static element =>
+    typeof(ImmutableList<>).MakeGenericType(element).GetField(nameof(ImmutableList<int>.Empty))!.GetValue(null)!);
 
   /// <summary>
   /// Static fields of DafnyCore syntax types, as singletons a resolved module may share
@@ -255,6 +263,14 @@ internal static class ResolutionGraphSchema {
     // The native types are shared elements of a static list, not static fields themselves.
     for (var i = 0; i < ModuleResolver.NativeTypes.Count; i++) {
       result[typeof(ModuleResolver).FullName + ".NativeTypes[" + i + "]"] = ModuleResolver.NativeTypes[i];
+    }
+    // A resolved @-attribute holds the default value of an omitted argument itself, and that value is shared.
+    foreach (var attribute in Attributes.BuiltinAtAttributes) {
+      foreach (var argument in attribute.Args) {
+        if (argument.DefaultValue is { } value) {
+          result[typeof(Attributes).FullName + ".BuiltinAtAttributes[" + attribute.Name + "]." + argument.ArgName] = value;
+        }
+      }
     }
     return result;
   });

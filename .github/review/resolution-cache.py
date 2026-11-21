@@ -50,6 +50,9 @@ def write(a=A, b=B, c=C):
         (tree / (name + ".dfy")).write_text(text)
 
 
+main = tree / "C.dfy"
+
+
 runs = 0
 
 
@@ -59,7 +62,7 @@ def run(name, cached, *options):
     profile = destination / (name + ".jsonl")
     bpl = destination / name / "out.bpl"
     bpl.parent.mkdir()
-    args = ["dotnet", str(exe), "verify", str(tree / "C.dfy"), "--type-system-refresh", "--cores", "1",
+    args = ["dotnet", str(exe), "verify", str(main), "--type-system-refresh", "--cores", "1",
             "--solver-path", str(solver), "--verification-time-limit", "0", "--resource-limit", "1000000",
             "--allow-warnings", "--standard-libraries:false", "--use-basename-for-filename", "--show-snippets:false",
             "--bprint", str(bpl), "--pipeline-profile", str(profile),
@@ -143,5 +146,35 @@ assert on == off, "corruption must re-resolve rather than restore any cached fac
 assert snapshots["_module.B"]["state"].startswith("invalid: "), snapshots["_module.B"]
 assert reused(snapshots) == [m for m in modules if m != "_module.B"], states(snapshots)
 control("repaired", expect_reused=modules, check=True)
+
+# The rest of the key, in a second tree with its own cache. Q's text and place do not depend on its parent's
+# name, and the prefix of the generated names of N17608 changes when a module whose name digest starts the
+# same way (N67866) joins the program.
+tree = destination / "tree2"
+tree.mkdir()
+cache = destination / "cache2"
+main = tree / "X.dfy"
+X = """module P {
+  module Q { lemma R(x: int) ensures (var y := x; y) == x {} }
+}
+module N17608 {
+  lemma S(x: int) ensures (var y := x; y) == x {}
+  method Bad() { assert false; }
+}
+"""
+main.write_text(X)
+modules = sorted(["_module", "_module.P", "P.Q", "_module.N17608"])
+control("cold2", expect_reused=[])
+control("warm2", expect_reused=modules, check=True)
+# Moved text re-resolves the moved modules, whose results hold source positions; the default module holds no text.
+main.write_text("\n\n" + X)
+control("move", expect_reused=["_module"], check=True)
+# A renamed parent re-resolves its unchanged child, whose name changes.
+main.write_text(X.replace("module P", "module T"))
+control("rename", expect_reused=["_module.N17608"], check=True)
+# A new module can change another's naming prefix, and so the names its resolution generates.
+main.write_text(X + "module N67866 { }\n")
+control("prefix", expect_reused=["_module.P", "P.Q"], check=True)
 print("resolution cache: %d runs; cold stores, warm reuses all and checks equal; a comment re-resolves one module, "
-      "a signature its dependents, an option all; a corrupt entry is a miss" % runs)
+      "a signature its dependents, an option all; a corrupt entry is a miss; a move, a rename and a new naming "
+      "prefix re-resolve the modules they change" % runs)

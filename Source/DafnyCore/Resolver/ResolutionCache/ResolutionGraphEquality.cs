@@ -111,7 +111,10 @@ internal sealed class ResolutionGraphEquality(Func<object, bool> boundary) {
       }
       if (expected is IDictionary dictionary) {
         var otherDictionary = (IDictionary)actual;
-        if (dictionary.Count != otherDictionary.Count) { return Fail("count " + dictionary.Count + " != " + otherDictionary.Count); }
+        if (dictionary.Count != otherDictionary.Count) {
+          static string Keys(IDictionary d) => string.Join(",", d.Keys.Cast<object>().Select(k => k is Declaration n ? n.Name : k.ToString()).Order(StringComparer.Ordinal));
+          return Fail("count " + dictionary.Count + " != " + otherDictionary.Count + " (" + Keys(dictionary) + " / " + Keys(otherDictionary) + ")");
+        }
         var a = dictionary.GetEnumerator();
         var b = otherDictionary.GetEnumerator();
         for (var i = 0; a.MoveNext() && b.MoveNext(); i++) {
