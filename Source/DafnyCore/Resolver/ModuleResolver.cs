@@ -23,6 +23,8 @@ namespace Microsoft.Dafny {
     Dictionary<TopLevelDeclWithMembers, Dictionary<string, MemberDecl>> ClassMembers
     ) {
     public string Key { get; init; }
+    /// <summary>The module's <see cref="ModuleResolutionIdentity"/>.</summary>
+    public string Identity { get; init; }
     public SystemModuleManager Builtins { get; init; }
     public Dictionary<TopLevelDeclWithMembers, Dictionary<string, MemberDecl>> SystemClassMembers { get; init; }
     internal ModuleTranslationInputs TranslationInputs { get; init; }
