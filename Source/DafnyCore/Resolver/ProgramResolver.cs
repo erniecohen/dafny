@@ -260,6 +260,7 @@ public class ProgramResolver {
     var profile = PipelineProfile.For(Options);
     var namePrefixes = ModuleNamePrefixes.For(declarations.Select(d => d.FullName));
     Program.ResolutionKeys = new();
+    Program.ResolutionIdentities = new();
     for (var i = 0; i < declarations.Count; i++) {
       foreach (var dependency in prerequisites[i]) {
         dependents[dependency].Add(i);
@@ -290,8 +291,16 @@ public class ProgramResolver {
           new ModuleResolutionKey.Prerequisite(DependencyRole(declaration, declarations[j]),
             declarations[j].FullName, Program.ResolutionKeys[declarations[j]])));
       Program.ResolutionKeys[declaration] = key;
+      var locationNodes = groupOf.TryGetValue(declaration, out var locationGroup) && ReferenceEquals(declaration, locationGroup.Members[0])
+        ? locationGroup.Declarations.SelectMany(SourceNodes) : SourceNodes(declaration);
+      var identity = ModuleResolutionIdentity.Compute(key, ModuleResolutionIdentity.Context(
+        namePrefixes.Prefix(declaration.FullName), ModuleResolutionIdentity.Location(locationNodes),
+        prerequisites[i].Select(j => new ModuleResolutionIdentity.Prerequisite(DependencyRole(declaration, declarations[j]),
+          declarations[j].FullName, Program.ResolutionIdentities[declarations[j]]))));
+      Program.ResolutionIdentities[declaration] = identity;
       if (declaration is LiteralModuleDecl module) {
         module.ModuleDef.ResolutionKey = key;
+        module.ModuleDef.ResolutionIdentity = identity;
       }
     }
 
@@ -366,9 +375,11 @@ public class ProgramResolver {
                   translationInputs.ModuleNames.Add(definition.FullName);
                   definition.TranslationInputs = translationInputs;
                   definition.ResolutionKey = Program.ResolutionKeys[declarations[index]];
+                  definition.ResolutionIdentity = Program.ResolutionIdentities[declarations[index]];
                 }
                 var output = resolved with {
                   Key = Program.ResolutionKeys[declarations[index]],
+                  Identity = Program.ResolutionIdentities[declarations[index]],
                   Builtins = builtins,
                   SystemClassMembers = worker.classMembers.Where(p => p.Key.EnclosingModuleDefinition.Name == "_System" &&
                       translationInputs.BuiltinNames.Contains(p.Key.Name))
@@ -398,6 +409,7 @@ public class ProgramResolver {
                     translationInputs.ModuleNames.Add(signature.Key.FullName);
                     signature.Key.TranslationInputs = translationInputs;
                     signature.Key.ResolutionKey = Program.ResolutionKeys[result.ResolvedDeclaration];
+                    signature.Key.ResolutionIdentity = Program.ResolutionIdentities[result.ResolvedDeclaration];
                   }
                   foreach (var pair in result.ClassMembers) { members[pair.Key] = pair.Value; }
                 }
@@ -414,6 +426,7 @@ public class ProgramResolver {
                   }
                   outputs[declaration] = result with {
                     Key = Program.ResolutionKeys[declaration],
+                    Identity = Program.ResolutionIdentities[declaration],
                     Builtins = builtins,
                     SystemClassMembers = systemClassMembers,
                     TranslationInputs = translationInputs
@@ -556,14 +569,18 @@ public class ProgramResolver {
   }
 
   private static string ModuleSource(ModuleDecl declaration) {
+    return string.Join("\n", SourceNodes(declaration).Select(d => d.EntireRange.PrintOriginal()));
+  }
+
+  /// <summary>The nodes whose original text is the module's source in its key.</summary>
+  private static IEnumerable<INode> SourceNodes(ModuleDecl declaration) {
     if (declaration is LiteralModuleDecl { ModuleDef.IsDefaultModule: true } literal) {
       // The synthetic default class has no token range, and its members can
       // span several files. Hash each source member rather than its wrapper.
-      return string.Join("\n", literal.ModuleDef.TopLevelDecls.SelectMany(d =>
-        d is DefaultClassDecl defaults ? defaults.Members.Cast<INode>() : new INode[] { d })
-        .Select(d => d.EntireRange.PrintOriginal()));
+      return literal.ModuleDef.TopLevelDecls.SelectMany(d =>
+        d is DefaultClassDecl defaults ? defaults.Members.Cast<INode>() : new INode[] { d });
     }
-    return declaration.EntireRange.PrintOriginal();
+    return new INode[] { declaration };
   }
 
   private IEnumerable<KeyValuePair<string, string>> KeyOptions(ModuleDecl declaration) {
