@@ -20,3 +20,6 @@ module IndependentOther {
     assert 2 + 2 == 4;
   }
 }
+
+// RUN: %exits-with 0 %verify "%s" --filter-symbol Boundary.Positive --translation-cache > "%t.cached"
+// RUN: %diff "%t.positive" "%t.cached"

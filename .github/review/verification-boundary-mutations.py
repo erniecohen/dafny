@@ -36,8 +36,22 @@ CASES = [
      'throw new InvalidOperationException("Expected Boogie verification work")', "null!"),
     ("cache-wrap", "BoogieVerificationBackend.cs", "if (resultCache != null)", "if (false)"),
     ("pipeline", "Source/DafnyLanguageServer/Language/DafnyProgramVerifier.cs",
-     "var tasks = BoogieVerificationBackend.GetNativeTasks(preparation);",
-     "IReadOnlyList<IVerificationTask> tasks = Array.Empty<IVerificationTask>();"),
+     "var tasks = BoogieVerificationBackend.GetNativeTasks(prepared.Preparation);",
+     "var tasks = Array.Empty<IVerificationTask>();"),
+    ("capture", "VerificationPreparationPipeline.cs", "capture?.Invoke(boogieProgram);", ""),
+    ("checksums", "VerificationPreparationPipeline.cs", "InsertChecksums = insertChecksums", "InsertChecksums = false"),
+    ("translation-cache", "VerificationPreparationPipeline.cs",
+     "if (program.Options.Get(CommonOptionBag.TranslationCache))", "if (false)"),
+    ("dependency-owner", "VerificationPreparationPipeline.cs",
+     "new ModuleVerificationPreparation(preparation, dependencies)",
+     "new ModuleVerificationPreparation(preparation, new ProofDependencyManager())"),
+    ("shared-serialization", "VerificationPreparationPipeline.cs", "await mutex.WaitAsync(cancellationToken);", ""),
+    ("backend-failure", "VerificationPreparationPipeline.cs",
+     "return new ModuleVerificationPreparation(preparation, dependencies);",
+     "return new ModuleVerificationPreparation(VerificationPreparation.Ready([]), dependencies);"),
+    ("profile-failure", "VerificationPreparationPipeline.cs",
+     "preparation.IsReady ? preparation.GetWorkOrThrow().Count : (int?)null",
+     "preparation.GetWorkOrThrow().Count"),
 ]
 
 
@@ -49,7 +63,7 @@ def main():
     args.work.mkdir(parents=True, exist_ok=False)
     test = ["dotnet", "test", "Source/DafnyCore.Test", "-c", "Release", "-m:1",
             "--settings", ".github/review/ci.runsettings", "--filter",
-            "FullyQualifiedName~VerificationWorkTests|FullyQualifiedName~BoogieVerificationBackendTests"]
+            "FullyQualifiedName~VerificationWorkTests|FullyQualifiedName~BoogieVerificationBackendTests|FullyQualifiedName~VerificationPreparationPipelineTests"]
     for name, filename, old, new in CASES:
         if args.case and name not in args.case:
             continue
