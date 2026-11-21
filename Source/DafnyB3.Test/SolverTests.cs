@@ -171,6 +171,7 @@ public class SolverSessionTests {
   [InlineData("error-pop", Outcome.ToolError)]
   [InlineData("omit-pop-ack", Outcome.Timeout)]
   [InlineData("malformed-reason", Outcome.ToolError)]
+  [InlineData("stale-echo", Outcome.ToolError)]
   [InlineData("unknown-error", Outcome.ToolError)]
   public async Task MalformedOrUncorrelatedTranscriptIsNeverAProof(string mode, Outcome expected) {
     // A missing acknowledgement stalls the lock-step exchange, so it ends at the deadline.
@@ -334,28 +335,61 @@ public class SolverSessionTests {
       Options with { CommandDeadline = TimeSpan.FromSeconds(value) }));
   }
 
+  private static async Task<int[]> Pids(string file) {
+    using var wait = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+    while (!File.Exists(file)) { await Task.Delay(10, wait.Token); }
+    var pids = (await File.ReadAllTextAsync(file)).Split(',').Select(int.Parse).ToArray();
+    Assert.Equal(2, pids.Length);
+    return pids;
+  }
+
+  private static async Task AssertReaped(int[] pids) {
+    foreach (var pid in pids) {
+      using var reaped = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+      while (IsRunning(pid) && !reaped.IsCancellationRequested) { await Task.Delay(10); }
+      Assert.False(IsRunning(pid), $"Solver process {pid} survived");
+    }
+  }
+
+  private static async Task CleanUp(string file) {
+    if (File.Exists(file)) {
+      foreach (var pid in (await File.ReadAllTextAsync(file)).Split(',').Select(int.Parse)) {
+        try { using var p = Process.GetProcessById(pid); p.Kill(entireProcessTree: true); } catch (Exception) { }
+      }
+    }
+    File.Delete(file);
+  }
+
   [Fact]
-  public async Task FailuresReapTheSolverTreeRepeatedly() {
+  public async Task FailuresReapTheSolverTreeBeforeDisposalRepeatedly() {
     for (var attempt = 0; attempt < 3; attempt++) {
       var file = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
       try {
         var (result, session) = await CheckOne(Fake("tree", file), Options with { CommandDeadline = TimeSpan.FromMilliseconds(700) });
-        await using (session) { Assert.Equal(Outcome.Timeout, result.Outcome); }
-        var pids = (await File.ReadAllTextAsync(file)).Split(',').Select(int.Parse).ToArray();
-        Assert.Equal(2, pids.Length);
-        foreach (var pid in pids) {
-          using var reaped = new CancellationTokenSource(TimeSpan.FromSeconds(3));
-          while (IsRunning(pid) && !reaped.IsCancellationRequested) { await Task.Delay(10); }
-          Assert.False(IsRunning(pid), $"Solver process {pid} survived");
+        await using (session) {
+          Assert.Equal(Outcome.Timeout, result.Outcome);
+          // A poisoned session has already killed its solver, before its owner disposes it.
+          await AssertReaped(await Pids(file));
         }
       } finally {
-        if (File.Exists(file)) {
-          foreach (var pid in (await File.ReadAllTextAsync(file)).Split(',').Select(int.Parse)) {
-            try { using var p = Process.GetProcessById(pid); p.Kill(entireProcessTree: true); } catch (Exception) { }
-          }
-        }
-        File.Delete(file);
+        await CleanUp(file);
       }
+    }
+  }
+
+  [Fact]
+  public async Task DisposalWithoutCloseReapsTheSolverTree() {
+    var file = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+    try {
+      int[] pids;
+      await using (var session = await SolverSession.StartAsync(Fake("tree", file), Options)) {
+        await session.DeclareAsync("(declare-const x Int)");
+        pids = await Pids(file);
+        Assert.False(session.Poisoned);
+      }
+      await AssertReaped(pids);
+    } finally {
+      await CleanUp(file);
     }
   }
 

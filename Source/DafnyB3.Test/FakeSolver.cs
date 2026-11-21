@@ -12,6 +12,7 @@ public static class FakeSolver {
     StreamWriter? record = mode == "record" ? new StreamWriter(rest[0]) { AutoFlush = true } : null;
     var echoes = 0;
     string? lastNonce = null;
+    string? firstNonce = null;
 
     async Task Write(string text) {
       var bytes = Encoding.UTF8.GetBytes(text);
@@ -35,7 +36,9 @@ public static class FakeSolver {
         var nonce = command["(echo \"".Length..^2];
         echoes++;
         if (mode == "reorder" && lastNonce == "reordered") { await Line("unsat"); lastNonce = nonce; continue; }
+        firstNonce ??= nonce;
         lastNonce = nonce;
+        if (mode == "stale-echo") { await Line(firstNonce); continue; }
         await Line(mode == "quoted-echo" ? $"\"{nonce}\"" : mode == "wrong-echo" ? nonce + "x" : nonce);
         continue;
       }
