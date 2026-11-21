@@ -52,6 +52,7 @@ public static class ModuleResolutionKey {
     // Execution, reporting, and lookup locations are not semantic resolution inputs.
     var ignored = new HashSet<string>(StringComparer.Ordinal) {
       "resolution-threads", "resolution-cache", "resolution-cache-check", "translation-cache", "verification-cache", "pipeline-profile",
+      "cache-partition", "cache-partition-budget", "cache-size-cap", "cache-orphan-days",
       "pipeline-profile-heap", "pipeline-profile-gc-events", "pipeline-profile-hold", "bprint", "rprint", "print", "sprint", "pprint",
       "log-level", "log-location", "show-snippets", "use-basename-for-filename", "cores", "library",
       "log-format", "verification-coverage-report", "solver-log", "output", "progress"

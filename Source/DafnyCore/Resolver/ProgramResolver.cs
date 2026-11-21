@@ -313,9 +313,8 @@ public class ProgramResolver {
     }
 
     // Issue 261: the persistent cache replaces the editor hook. Plugins have no snapshot contract.
-    var persistent = Options.Get(CommonOptionBag.ResolutionCache) is { } cacheDirectory &&
-                     !Options.Plugins.Except(DafnyOptions.DefaultPlugins).Any()
-      ? new PersistentResolutionCache(cacheDirectory, Program, initialBuiltins, catalog, initialMembers, declarations, pieces) : null;
+    var persistent = PersistentResolutionCache.Enabled(Options) && Caching.ArtifactStore.For(Options) is { } store
+      ? new PersistentResolutionCache(store, Program, initialBuiltins, catalog, initialMembers, declarations, pieces) : null;
 
     var gate = new object();
     ExceptionDispatchInfo failure = null;

@@ -9,30 +9,36 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
+using Microsoft.Dafny.Caching;
 
 namespace Microsoft.Dafny;
 
 /// <summary>
-/// The persistent per-module resolution cache of issue 261, enabled by the hidden option
-/// --resolution-cache DIR, which requires --type-system-refresh.
+/// The persistent per-module resolution cache of issue 261. It is on with a cache store (--cache-dir, its
+/// project-file key or DAFNY_CACHE_DIR) and --type-system-refresh; --resolution-cache:false leaves it out.
+/// Entries live in the store's <see cref="ArtifactTable.Resolutions"/> table (docs/dev/design/261-cache-store.md).
 ///
 /// A module's entry is keyed by
 /// <code>
-///   K(m) = H(domain, producer, name(m), L(m without prerequisites), naming prefix(m), location(m),
+///   K(m) = H(domain, producer, name(m), L(m without prerequisites), naming prefix(m),
 ///            [(role, name) of each direct prerequisite], [(name, S(q)) for each prerequisite q of the closure])
 /// </code>
 /// where S(q) is the structure digest of q's resolution result: the digest of its snapshot with every source
 /// coordinate left out. S(q) changes only if q's resolution result changes, so an edit of q that leaves its
 /// result's structure unchanged (a comment, a proof body that resolves alike) does not invalidate dependents:
 /// this is early cutoff. A module whose snapshot is unsupported has no S, and neither has a dependent.
+/// No path and no position is in K: L(m) is the text of the module's pieces (its source split around nested
+/// module and import declarations), and every source token of the entry is stored relative to its piece, or
+/// to the prerequisite result that refers to it, and rebased onto the current parse on a hit. Text that names
+/// a position (a message naming a line, a string naming a source file) makes a module uncacheable.
 ///
 /// An entry is the module's <see cref="ResolutionSnapshot"/> together with a builtin journal: which
 /// builtin declarations (tuples, arrows, arrays, bitvectors, pre-type builtins) its resolution demanded.
 /// A hit replays the journal into the worker's builtins view, binds the snapshot's externals (statics,
 /// context objects, builtins, prerequisites' objects and source tokens), and materializes the module's
 /// result. A hit is checked against the current program: an external that is missing or has another
-/// type, a builtin whose structure differs, or a source token that moved is a miss. A miss resolves
-/// the module afresh and writes its entry.
+/// type, a builtin whose structure differs, or a source token that is not where the entry puts it is a miss.
+/// A miss resolves the module afresh and writes its entry, replacing one that did not apply.
 /// </summary>
 internal sealed class PersistentResolutionCache {
   private const string KeyDomain = "dafny-resolution-cache-key-v2";
@@ -44,7 +50,7 @@ internal sealed class PersistentResolutionCache {
   public static string Producer { get; } = ModuleResolutionKey.DafnyVersion + "+" +
     ResolutionGraphSchema.Core.ManifestModule.ModuleVersionId.ToString("N");
 
-  private readonly string directory;
+  private readonly ArtifactStore store;
   private readonly Program program;
   private readonly SystemModuleManager initialBuiltins;
   private readonly ResolutionBuiltinCatalog catalog;
@@ -92,10 +98,10 @@ internal sealed class PersistentResolutionCache {
   /// <summary>A worker's mutable state, which a failed hit discards.</summary>
   public sealed record Worker(SystemModuleManager Builtins, ProgramResolver Resolver, Program Program);
 
-  public PersistentResolutionCache(string directory, Program program, SystemModuleManager initialBuiltins,
+  public PersistentResolutionCache(ArtifactStore store, Program program, SystemModuleManager initialBuiltins,
     ResolutionBuiltinCatalog catalog, IReadOnlyDictionary<TopLevelDeclWithMembers, Dictionary<string, MemberDecl>> initialMembers,
     IReadOnlyList<ModuleDecl> declarations, IReadOnlyList<(Token Start, Token End)[]> pieces) {
-    this.directory = directory;
+    this.store = store;
     this.program = program;
     this.initialBuiltins = initialBuiltins;
     this.catalog = catalog;
@@ -147,7 +153,13 @@ internal sealed class PersistentResolutionCache {
     return Convert.ToHexStringLower(SHA256.HashData(bytes.ToArray()));
   }
 
-  private string PathOf(string key) => Path.Combine(directory, key + ".dres");
+  /// <summary>
+  /// Whether a run caches resolution: with a cache store, --type-system-refresh, --resolution-cache (on by default)
+  /// and no plugins, which have no snapshot contract.
+  /// </summary>
+  public static bool Enabled(DafnyOptions options) =>
+    options.Get(CommonOptionBag.TypeSystemRefresh) && options.GetOrOptionDefault(CommonOptionBag.ResolutionCache) &&
+    CacheRoot.Directory(options) != null && !options.Plugins.Except(DafnyOptions.DefaultPlugins).Any();
 
   // ---------------------------------------------------------------- resolve
 
@@ -165,10 +177,9 @@ internal sealed class PersistentResolutionCache {
       return Uncacheable(name, resolve());
     }
     var invalid = (string?)null;
-    var path = PathOf(key);
-    if (File.Exists(path)) {
+    if (store.TryRead(ArtifactTable.Resolutions, key) is { } entry) {
       try {
-        var hit = Hit(context, key, File.ReadAllBytes(path), worker());
+        var hit = Hit(context, key, entry, worker());
         state = "hit";
         if (program.Options.Get(CommonOptionBag.ResolutionCacheCheck)) { Check(context, hit, recreate, resolve, worker, closure, ref state); }
         return hit;
@@ -184,14 +195,15 @@ internal sealed class PersistentResolutionCache {
       return Uncacheable(name, output);
     }
     try {
-      Store(context, key, output, worker());
-      state = invalid == null ? "stored" : "invalid: " + invalid;
+      // An entry that did not apply is replaced. The module's structure is known even if the entry is not
+      // written, so dependents can still be cached.
+      state = Store(context, key, output, worker(), replace: invalid != null) switch {
+        CachePublication.Stored or CachePublication.AlreadyPresent => invalid == null ? "stored" : "invalid: " + invalid,
+        var publication => "unwritten: " + publication
+      };
     } catch (ResolutionSnapshotUnsupported error) {
       state = "uncacheable: " + error.Message;
       return Uncacheable(name, output);
-    } catch (IOException error) {
-      // The entry is not written, but the module's structure is known: dependents can still be cached.
-      state = "unwritten: " + error.Message;
     }
     return output;
   }
@@ -258,7 +270,7 @@ internal sealed class PersistentResolutionCache {
 
   // ---------------------------------------------------------------- miss
 
-  private void Store(ModuleContext context, string key, ModuleResolutionResult output, Worker worker) {
+  private CachePublication Store(ModuleContext context, string key, ModuleResolutionResult output, Worker worker, bool replace) {
     var name = context.Declaration.FullName;
     var view = worker.Builtins;
     var journal = BuiltinJournal.Of(view);
@@ -317,8 +329,9 @@ internal sealed class PersistentResolutionCache {
     var usedAnchors = captured.Anchors.Order(StringComparer.Ordinal).ToArray();
     var manifest = new Manifest(key, Producer, name, captured.Structure, journal,
       usedAnchors.Select(a => (a, anchors.Guard(a))).ToArray(), anchors.TokenCount);
-    Write(PathOf(key), manifest, captured.Payload);
+    var publication = store.TryPublish(ArtifactTable.Resolutions, key, Encode(manifest, captured.Payload), replace);
     Register(name, captured.Structure, captured.Owned, captured.OwnedTokens, captured.SourceTokens);
+    return publication;
   }
 
   private static readonly Regex PositionText = new(@"\bline \d+|\(\d+,\d+\)|\.dfy[:(]\d", RegexOptions.CultureInvariant);
@@ -719,9 +732,9 @@ internal sealed class PersistentResolutionCache {
 
   /// <summary>
   /// "DRES", the format version, the manifest and the snapshot, then the SHA-256 of everything before it.
-  /// The entry is written to a temporary file and renamed, so a reader sees a complete entry or none.
+  /// The store publishes it atomically, so a reader sees a complete entry or none.
   /// </summary>
-  private static void Write(string path, Manifest manifest, byte[] payload) {
+  private static byte[] Encode(Manifest manifest, byte[] payload) {
     using var bytes = new MemoryStream();
     using (var writer = new BinaryWriter(bytes, Encoding.UTF8, true)) {
       writer.Write(Encoding.ASCII.GetBytes(Magic));
@@ -738,17 +751,7 @@ internal sealed class PersistentResolutionCache {
       writer.Write(payload);
     }
     var body = bytes.ToArray();
-    Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-    var temporary = path + "." + Guid.NewGuid().ToString("N") + ".tmp";
-    try {
-      using (var stream = new FileStream(temporary, FileMode.CreateNew, FileAccess.Write)) {
-        stream.Write(body);
-        stream.Write(SHA256.HashData(body));
-      }
-      File.Move(temporary, path, true);
-    } finally {
-      if (File.Exists(temporary)) { File.Delete(temporary); }
-    }
+    return [.. body, .. SHA256.HashData(body)];
   }
 
   private static (Manifest, byte[]) Read(byte[] file) {

@@ -5,6 +5,7 @@ module Boogie and per-VC outcomes and resource counts. The profile's resolve.sna
 which modules were reused: a warm run reuses every module, an edit re-resolves only the modules
 whose results it can change, and --resolution-cache-check compares every reused module with a
 fresh resolution of it."""
+import hashlib
 import json
 from pathlib import Path
 import re
@@ -68,7 +69,7 @@ def run(name, cached, *options):
             "--bprint", str(bpl), "--pipeline-profile", str(profile),
             "--log-format", "json;LogFileName=" + str(destination / (name + ".proof.json"))] + list(options)
     if cached:
-        args += ["--resolution-cache", str(cache)]
+        args += ["--cache-dir", str(cache)]
     result = subprocess.run(args, capture_output=True, timeout=180)
     events = [json.loads(line) for line in profile.read_text().splitlines()]
     snapshots = {e["module"]: e for e in events if e.get("stage") == "resolve.snapshot"}
@@ -105,13 +106,35 @@ def control(name, *options, expect_reused, check=False):
     return snapshots, off
 
 
+def entries(store):
+    return sorted(store.glob("v1/artifacts/resolutions/*/*"))
+
+
+def entry(store, key):
+    return store / "v1" / "artifacts" / "resolutions" / key[:2] / key
+
+
+def wrapped(key, payload):
+    """A store entry, as ArtifactStore writes it, around an arbitrary payload."""
+    def string(text):
+        data, prefix, n = text.encode(), bytearray(), len(text.encode())
+        while True:
+            prefix.append((n & 0x7F) | (0x80 if n > 0x7F else 0))
+            n >>= 7
+            if not n:
+                return bytes(prefix) + data
+    body = b"DART" + (1).to_bytes(4, "little") + string("resolutions") + string(key) + \
+        len(payload).to_bytes(8, "little") + payload
+    return body + hashlib.sha256(body).digest()
+
+
 write()
 modules = sorted(["_module", "_module.A", "_module.B", "_module.C", "_module.D", "B.A", "C.A", "C.B"])
 # A cold run stores every module, and the off run fails on D only.
 cold, off = control("cold", expect_reused=[])
 assert off[0] == 4 and b"1 verified, 1 error" in off[1], off[:3]
 assert sorted(cold) == modules, sorted(cold)
-assert len(list(cache.glob("*.dres"))) == len(modules)
+assert len(entries(cache)) == len(modules)
 # A warm run reuses every module, resolves none, and each reused module equals a fresh resolution of it.
 control("warm", expect_reused=modules)
 control("warm-check", expect_reused=modules, check=True)
@@ -140,12 +163,19 @@ _, shadow = control("option", "--warn-shadowing", expect_reused=[])
 assert b"Shadowed local-variable name: y" in shadow[1], shadow[1]
 control("option-warm", "--warn-shadowing", expect_reused=modules, check=True)
 
-# A corrupt entry is a miss: the module is resolved again and its entry rewritten.
+# A damaged entry is a miss: the store deletes it, and the module is resolved again and stored.
 write()
 control("rewarm", expect_reused=modules)
 key = cold["_module.B"]["key"]
-(cache / (key + ".dres")).write_bytes(b"DRES\x01")
-off, events = run("corrupt-off", False)
+entry(cache, key).write_bytes(b"DART\x01")
+off, events = run("damaged-off", False)
+on, snapshots = run("damaged", True)
+assert on == off, "a damaged entry must re-resolve rather than restore any cached facts"
+assert snapshots["_module.B"]["state"] == "stored", snapshots["_module.B"]
+assert reused(snapshots) == [m for m in modules if m != "_module.B"], states(snapshots)
+control("restored", expect_reused=modules, check=True)
+# An intact entry whose snapshot does not apply is a miss too, and is replaced.
+entry(cache, key).write_bytes(wrapped(key, b"DRES\x01"))
 on, snapshots = run("corrupt", True)
 assert on == off, "corruption must re-resolve rather than restore any cached facts"
 assert snapshots["_module.B"]["state"].startswith("invalid: "), snapshots["_module.B"]
@@ -191,5 +221,5 @@ control("rename", expect_reused=["_module.N17608"], check=True)
 main.write_text(X + "module N67866 { }\n")
 control("prefix", expect_reused=["_module.P", "P.Q"], check=True)
 print("resolution cache: %d runs; cold stores, warm reuses all and checks equal; a comment re-resolves one module, "
-      "a signature its dependents, an option all; a corrupt entry is a miss; lines above, a move and another "
+      "a signature its dependents, an option all; a damaged or corrupt entry is a miss; lines above, a move and another "
       "checkout reuse all; changed text, a rename and a new naming prefix re-resolve the modules they change" % runs)

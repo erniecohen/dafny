@@ -42,11 +42,30 @@ public class CommonOptionBag {
     };
 
   public static readonly Option<string> VerificationCache = new("--verification-cache",
-    "Reuse complete verification-task solver exchanges in DIR. Requires --type-system-refresh. Opt-in; uses a fresh solver history and stable numeric declaration order for each task. " +
-    "Replayed timing fields are identified in CSV/JSON logs. Unsupported tasks run normally.") { ArgumentHelpName = "DIR" };
-  public static readonly Option<string> ResolutionCache = new("--resolution-cache",
-    "Reuse per-module resolution results stored in DIR, keyed by each module's source, options and prerequisites. Requires --type-system-refresh. Modules whose results cannot be stored resolve normally.") {
-    ArgumentHelpName = "DIR", IsHidden = true
+    "Use the cache store in DIR (also --cache-dir; or DAFNY_CACHE_DIR): reuse per-module resolution results and complete verification-task solver exchanges. " +
+    "Requires --type-system-refresh. Opt-in; uses a fresh solver history and stable numeric declaration order for each task. " +
+    "Replayed timing fields are identified in CSV/JSON logs. Unsupported modules and tasks run normally.") { ArgumentHelpName = "DIR" };
+  public static readonly Option<string> CachePartition = new("--cache-partition",
+    "The partition of the cache store whose budget this run's large cache entries (resolution snapshots, Boogie text) count against. " +
+    "Defaults to DAFNY_CACHE_PARTITION, or else a name derived from the project's directory. It never changes what is reused.") {
+    ArgumentHelpName = "NAME"
+  };
+  public static readonly Option<int> CachePartitionBudget = new("--cache-partition-budget",
+    () => (int)Caching.ArtifactLimits.DefaultPartitionBudgetMegabytes,
+    "The size in megabytes of the large cache entries one partition may hold; its least recently used entries are dropped beyond it.") {
+    ArgumentHelpName = "MB"
+  };
+  public static readonly Option<int> CacheSizeCap = new("--cache-size-cap", () => (int)Caching.ArtifactLimits.DefaultStoreCapMegabytes,
+    "The size in megabytes of all large cache entries in the store; beyond it the least recently used entries are deleted, untagged ones first.") {
+    ArgumentHelpName = "MB"
+  };
+  public static readonly Option<int> CacheOrphanDays = new("--cache-orphan-days", () => Caching.ArtifactLimits.DefaultOrphanDays,
+    "Drop the large cache entries of a partition that has not been used for this many days.") {
+    ArgumentHelpName = "DAYS"
+  };
+  public static readonly Option<bool> ResolutionCache = new("--resolution-cache", () => true,
+    "With a cache store (--cache-dir), reuse per-module resolution results from it. Set to false to leave resolution out. Requires --type-system-refresh.") {
+    IsHidden = true
   };
   public static readonly Option<bool> ResolutionCacheCheck = new("--resolution-cache-check",
     "With --resolution-cache, also resolve each module whose result is reused, and report an error if the two results differ. For testing the cache.") {
@@ -918,7 +937,22 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(WarnAsErrors, OptionScope.Cli);
     OptionRegistry.RegisterOption(ProgressOption, OptionScope.Cli);
     OptionRegistry.RegisterOption(LogLocation, OptionScope.Cli);
+    VerificationCache.AddAlias("--cache-dir");
     OptionRegistry.RegisterOption(VerificationCache, OptionScope.Cli);
+    CachePartition.AddValidator(result => {
+      if (result.Tokens.Count != 0 && !Caching.ArtifactStore.IsValidName(result.GetValueOrDefault<string>())) {
+        result.ErrorMessage = "--cache-partition must be 1 to 100 letters, digits, '-', '_' or '.', not starting with '.'.";
+      }
+    });
+    foreach (var limit in new[] { CachePartitionBudget, CacheSizeCap, CacheOrphanDays }) {
+      limit.AddValidator(result => {
+        if (result.Tokens.Count != 0 && result.GetValueOrDefault<int>() < 1) { result.ErrorMessage = limit.Name + " must be a positive integer."; }
+      });
+    }
+    OptionRegistry.RegisterOption(CachePartition, OptionScope.Cli);
+    OptionRegistry.RegisterOption(CachePartitionBudget, OptionScope.Cli);
+    OptionRegistry.RegisterOption(CacheSizeCap, OptionScope.Cli);
+    OptionRegistry.RegisterOption(CacheOrphanDays, OptionScope.Cli);
     OptionRegistry.RegisterOption(ResolutionCache, OptionScope.Cli);
     OptionRegistry.RegisterOption(ResolutionCacheCheck, OptionScope.Cli);
     ResolutionThreads.AddValidator(result => {

@@ -71,7 +71,7 @@ public class CachingResolver : ProgramResolver {
 
   protected override ModuleResolutionResult ResolveModuleOutput(ModuleDecl declaration, string key,
     IReadOnlyList<ModuleResolutionResult> prerequisites, Func<ModuleResolutionResult> resolve, out bool cached) {
-    if (Options.Get(CommonOptionBag.ResolutionCache) != null) {
+    if (Options.UsesPersistentResolutionCache) {
       // The detached profile always materializes against this compilation. The live IDE cache
       // remains the default profile, with its existing pruning and telemetry.
       return base.ResolveModuleOutput(declaration, key, prerequisites, resolve, out cached);
