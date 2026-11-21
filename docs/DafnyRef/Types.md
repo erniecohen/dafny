@@ -5169,7 +5169,11 @@ is independent of `D`. The hidden `--legacy-member-invariant-dependence` option
 restores the former unsound cache of provisional negative answers, for migration
 and comparison only.
 
-Statements inside expressions are proof hints, and are not checked. A bound
+Statements inside expressions are proof hints, and are not checked. Under
+`--lemma-bindings`, a binding of a lemma's results also contributes the bound
+lemma's `requires` and `ensures` clauses, and transitively the functions and
+lemma bindings they reach, to this check. The lemma's proof body remains a proof
+hint. A bound
 variable whose type is inferred as `raw D` makes a test `k is D` a test of a raw
 value; write `k: D` to range over values of `D`.
 

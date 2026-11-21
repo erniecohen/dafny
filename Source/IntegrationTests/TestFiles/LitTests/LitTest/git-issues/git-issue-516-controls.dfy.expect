@@ -1,0 +1,42 @@
+git-issue-516-controls.dfy(19,4): Error: assertion might not hold
+git-issue-516-controls.dfy(25,4): Error: assertion might not hold
+git-issue-516-controls.dfy(28,15): Error: value of expression (of type 'G') is not known to be an instance of type 'int'
+git-issue-516-controls.dfy(28,15): Error: value does not satisfy the subset constraints of 'Original.N'
+git-issue-516.dfy(12,35): Related location
+git-issue-516-controls.dfy(31,16): Error: result of operation might violate newtype constraint for 'N'
+git-issue-516.dfy(12,35): Related location
+git-issue-516-controls.dfy(34,15): Error: value of expression (of type 'G') is not known to be an instance of type 'real'
+git-issue-516-controls.dfy(34,15): Error: value does not satisfy the subset constraints of 'RealBase.N'
+git-issue-516.dfy(55,38): Related location
+git-issue-516-controls.dfy(34,15): Error: value does not satisfy the subset constraints of 'RealBase.N'
+git-issue-516.dfy(55,43): Related location
+git-issue-516-controls.dfy(37,15): Error: value of expression (of type 'G') is not known to be an instance of type 'bv8'
+git-issue-516-controls.dfy(37,15): Error: value does not satisfy the subset constraints of 'BitvectorBase.N'
+git-issue-516.dfy(67,35): Related location
+
+Dafny program verifier finished with 0 verified, 10 errors
+git-issue-516-controls.dfy(19,4): Error: assertion might not hold
+git-issue-516-controls.dfy(25,4): Error: assertion might not hold
+git-issue-516-controls.dfy(28,15): Error: value of expression (of type 'G') is not known to be an instance of type 'int'
+git-issue-516-controls.dfy(28,15): Error: value does not satisfy the subset constraints of 'Original.N'
+git-issue-516.dfy(12,35): Related location
+git-issue-516-controls.dfy(31,16): Error: result of operation might violate newtype constraint for 'N'
+git-issue-516.dfy(12,35): Related location
+git-issue-516-controls.dfy(34,15): Error: value of expression (of type 'G') is not known to be an instance of type 'real'
+git-issue-516-controls.dfy(34,15): Error: value does not satisfy the subset constraints of 'RealBase.N'
+git-issue-516.dfy(55,38): Related location
+git-issue-516-controls.dfy(34,15): Error: value does not satisfy the subset constraints of 'RealBase.N'
+git-issue-516.dfy(55,43): Related location
+git-issue-516-controls.dfy(37,15): Error: value of expression (of type 'G') is not known to be an instance of type 'bv8'
+git-issue-516-controls.dfy(37,15): Error: value does not satisfy the subset constraints of 'BitvectorBase.N'
+git-issue-516.dfy(67,35): Related location
+
+Dafny program verifier finished with 0 verified, 10 errors
+git-issue-516-controls.dfy(19,4): Error: assertion might not hold
+git-issue-516-controls.dfy(25,4): Error: assertion might not hold
+git-issue-516-controls.dfy(28,15): Error: value does not satisfy the subset constraints of 'Original.N'
+git-issue-516-controls.dfy(31,16): Error: result of operation might violate newtype constraint for 'N'
+git-issue-516-controls.dfy(34,15): Error: value does not satisfy the subset constraints of 'RealBase.N'
+git-issue-516-controls.dfy(37,15): Error: value does not satisfy the subset constraints of 'BitvectorBase.N'
+
+Dafny program verifier finished with 0 verified, 6 errors
