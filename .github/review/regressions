@@ -1100,3 +1100,4 @@ git-issues/git-issue-466-stage7-targets.dfy
 git-issues/git-issue-261-resolution-cache.dfy
 git-issues/git-issue-241-resolution-cache-requires-refresh.dfy
 git-issues/git-issue-261-cache-command.dfy
+git-issues/git-issue-261-resolution-cache-options.dfy

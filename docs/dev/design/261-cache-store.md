@@ -39,6 +39,19 @@ options, the Dafny release and solver bytes, never on a path, branch, project ro
 the same sources share entries. The resolution key is described in `261-resolution-identity.md`; the
 classification of every option into the keys of each stage is `261-option-classes.tsv`.
 
+## Option sensitivity
+
+Each stage's key is default-deny over options: every option is an input unless the stage lists it as irrelevant,
+with a reason. For resolution the list is `ModuleResolutionKey.IgnoredOptions`.
+`DafnyDriver.Test/ResolutionKeyOptionTest` starts from every option of every command at its default and toggles
+each in turn: the digest must change exactly for the options not listed, and `--progress` at any level must
+leave it. That test cannot tell an option that is wrongly listed, so
+`.github/review/resolution-cache-options.py` checks the listed options it can reach from the command line
+semantically: with the cache warmed at defaults, a run with the option changed must reuse every module, and
+`--resolution-cache-check` must find each reused module equal to a fresh resolution under that option. (Listing
+`--warn-shadowing` as a mutation makes the check report a difference.) Options in the key, from the command
+line, a project file, `--boogie`, and hidden and `--legacy-*` options, must reuse nothing.
+
 ## Entries
 
 An entry is `"DART"`, a format number (1), the table and key as strings, the payload's length, the payload,
