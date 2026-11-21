@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <ImportDirectoryBuildTargets>false</ImportDirectoryBuildTargets>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../DafnyB3.Protocol/DafnyB3.Protocol.csproj" />
+  </ItemGroup>
+</Project>

@@ -87,12 +87,10 @@ Still required before any Dafny-to-B3 proof result:
   and check static consistency before traversal.
 - Account for generated obligations and traversal independently of the response
   manifest, and connect this transport to P1's request ledger and consumers.
-- Harden the executing solver shim and implement bounded SMT response parsing,
-  including strings, quoted symbols and comments; acknowledge declarations,
-  assertions and stack operations, poisoning any failure.
-- Require successful submission of the intended negated goal and its correlated
-  exact `unsat` response. Distinguish `sat`, `unknown` and limits, and mutation-test
-  omitted goals, stale errors and failed stack operations against a fake solver.
+- Connect the worker to the solver shim described in [solver-shim.md](solver-shim.md),
+  which acknowledges declarations, assertions and stack operations, parses bounded
+  SMT responses and admits only a correlated exact `unsat` for the submitted
+  negated goal. The scaffold does not call it yet.
 
 No existing B3 source is vendored or patched here, so its original OSProcess and
 solver defects remain open. No completion of P2, semantic lowering, source/model
