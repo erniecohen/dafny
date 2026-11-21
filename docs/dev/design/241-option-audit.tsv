@@ -95,6 +95,7 @@ cli	legacy-inferred-newtype-base-conversions	--legacy-inferred-newtype-base-conv
 cli	legacy-replacement-cycles	--legacy-replacement-cycles	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	legacy-unchecked-import-binding	--legacy-unchecked-import-binding	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	legacy-member-invariant-dependence	--legacy-member-invariant-dependence	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
+cli	legacy-unchecked-member-invariant-proofs	--legacy-unchecked-member-invariant-proofs	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	legacy-unchecked-type-variance	--legacy-unchecked-type-variance	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	legacy-stored-function-callbacks	--legacy-stored-function-callbacks	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	legacy-unguarded-char	--legacy-unguarded-char	System.CommandLine.Option`1[System.Boolean]	input	character encoding is lowered before task lookup; exact SMT and current assertion map
