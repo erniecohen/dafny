@@ -210,7 +210,8 @@ internal sealed class PersistentResolutionCache {
       }
     }
     var freshRoots = Roots(fresh, worker().Builtins);
-    var difference = fresh.ErrorReporter.HasErrors ? "the fresh resolution has errors"
+    var difference = fresh.ErrorReporter.HasErrors
+      ? "the fresh resolution has errors: " + fresh.ErrorReporter.AllMessagesByLevel[ErrorLevel.Error].FirstOrDefault()?.Message
       : equality.Difference(freshRoots.Append(ViewTables(fresh.Builtins)).ToArray(),
         Roots(hit, hit.Builtins).Append(ViewTables(hit.Builtins)).ToArray());
     // The fresh resolution also registered its traits with the traits they extend; only the reused ones stay.
@@ -372,7 +373,8 @@ internal sealed class PersistentResolutionCache {
 
   private void Register(string name, string structure, object[] owned, uint[] tokens) {
     for (var i = 0; i < owned.Length; i++) {
-      if (!owned[i].GetType().IsValueType) {
+      // A value record belongs to no module: a clone shares its original's, and a snapshot holds it by value.
+      if (!owned[i].GetType().IsValueType && !ResolutionGraphSchema.IsValueRecord(owned[i].GetType())) {
         owners.TryAdd(owned[i], new ResolutionExternal(ResolutionExternal.Kinds.Prerequisite, name, i));
       }
     }
@@ -478,6 +480,10 @@ internal sealed class PersistentResolutionCache {
     }
     Add(context.Declaration.Options, "options.module");
     Add(program.Options, "options.program");
+    // A refinement or an export copies a prerequisite's declarations with the options of that prerequisite's file.
+    foreach (var prerequisite in context.Closure.OrderBy(d => d.FullName, StringComparer.Ordinal)) {
+      Add(prerequisite.Options, "options.prerequisite:" + prerequisite.FullName);
+    }
     Add(program.Compilation, "compilation");
     Add(program, "program");
     Add(worker.Program, "program.worker");

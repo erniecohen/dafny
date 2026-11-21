@@ -78,6 +78,11 @@ internal sealed class ResolutionGraphEquality(Func<object, bool> boundary) {
       return Rename(expected, actual, Fail);
     }
     if (ResolutionGraphSchema.IsScalar(type) || type.IsEnum) { return Equals(expected, actual) ? null : Fail("value " + expected + " != " + actual); }
+    if (ResolutionGraphSchema.IsValueRecord(type)) {
+      // An immutable record of scalars is a value: a clone shares its original's, and which copy a module holds
+      // does not matter.
+      return Equals(expected, actual) ? null : Fail("value " + expected + " != " + actual);
+    }
     if (pairs.TryGetValue(expected, out var paired)) { return ReferenceEquals(paired, actual) ? null : Fail("paired identity"); }
     if (ResolutionGraphSchema.Statics.ContainsKey(expected) || ResolutionGraphSchema.SingletonName(expected) != null ||
         boundary(expected) || boundary(actual)) {

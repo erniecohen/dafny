@@ -59,6 +59,9 @@ internal static class ResolutionGraphSchema {
   public static bool IsScalar(System.Type type) => type.IsPrimitive || type.IsEnum ||
     type == typeof(string) || type == typeof(decimal) || type == typeof(BigInteger) || type == typeof(Uri) || type == typeof(Guid);
 
+  /// <summary>Immutable records whose fields are all scalars, compared by value rather than identity.</summary>
+  public static bool IsValueRecord(System.Type type) => type == typeof(TerminationSourceContract);
+
   public static FieldInfo[] Fields(System.Type type) => FieldCache.GetOrAdd(type, t => {
     var fields = new List<FieldInfo>();
     for (var current = t; current != null; current = current.BaseType) {
@@ -248,6 +251,10 @@ internal static class ResolutionGraphSchema {
           result[type.FullName + "." + field.Name] = value;
         }
       }
+    }
+    // The native types are shared elements of a static list, not static fields themselves.
+    for (var i = 0; i < ModuleResolver.NativeTypes.Count; i++) {
+      result[typeof(ModuleResolver).FullName + ".NativeTypes[" + i + "]"] = ModuleResolver.NativeTypes[i];
     }
     return result;
   });

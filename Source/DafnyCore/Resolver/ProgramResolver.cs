@@ -540,6 +540,18 @@ public class ProgramResolver {
               // cannot run until all their prerequisite declarations have completed.
               if (!ReferenceEquals(declarations[index], output.ResolvedDeclaration)) {
                 pointers[declarations[index]](output.ResolvedDeclaration);
+                // Issue 261: the nested modules of a reused module are complete, and are rebound to it now rather
+                // than after all modules, so that a refinement of it that is resolved in this run sees one module
+                // and its nested modules inside it.
+                if (declarations[index] is LiteralModuleDecl parsedParent &&
+                    output.ResolvedDeclaration is LiteralModuleDecl { ModuleDef: var reusedParent } &&
+                    !ReferenceEquals(parsedParent.ModuleDef, reusedParent)) {
+                  foreach (var child in prerequisites[index]) {
+                    if (!ReferenceEquals(declarations[child].EnclosingModuleDefinition, parsedParent.ModuleDef)) { continue; }
+                    results[child].ResolvedDeclaration.EnclosingModuleDefinition = reusedParent;
+                    if (results[child].ResolvedDeclaration is LiteralModuleDecl nested) { nested.ModuleDef.EnclosingModule = reusedParent; }
+                  }
+                }
               }
               completed++;
               foreach (var dependent in dependents[index]) {
