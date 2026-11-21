@@ -2191,6 +2191,16 @@ section 7.2).**
     those that use only types that do not depend on `T`, and any hint in a
     function outside the cone.
 
+    This is a soundness fix, so it is on whenever `--member-invariants` is.
+    The hidden `--legacy-unchecked-member-invariant-proofs` restores the
+    earlier form of this step, byte for byte, for migration and comparison
+    only: the cone then contains the specifications of bound lemmas but no
+    proof, and clauses 6 to 8 (the initial-value, out-parameter, heap and
+    dynamically-bound-lemma rules above) do not apply.
+    `git-issue-549-legacy.dfy` is its vacuity control: the issue's
+    reproducers are rejected by default, and with the legacy option every one
+    of them verifies a lemma `ensures false`.
+
     The caution about inlining an invariant's body still applies.  The
     inlining rule relies on `C`, the conclusion of `S`, holding wherever the
     call is made, which Dafny ensures by checking `S` under the function's

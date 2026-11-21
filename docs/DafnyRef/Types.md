@@ -5195,6 +5195,10 @@ that the value is in `D`: a function could pass it to another whose proof then
 learns `D`'s invariants. So the invariant of a class `C` may not read a field of
 type `C?`, although it may compare `null` with a value of that type.
 
+The hidden `--legacy-unchecked-member-invariant-proofs` option restores the
+former, unsound check, which follows only the specifications of bound lemmas and
+none of the proofs above, for migration and comparison only.
+
 A bound
 variable whose type is inferred as `raw D` makes a test `k is D` a test of a raw
 value; write `k: D` to range over values of `D`.
