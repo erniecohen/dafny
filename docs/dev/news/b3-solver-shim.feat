@@ -1,0 +1,4 @@
+Add an experimental, unused B3 solver shim library. It drives one SMT-LIB solver in
+lock step, requires every declaration, assertion, push and pop to be acknowledged,
+parses bounded responses exactly, and reports a goal as proved only on a correlated,
+exact `unsat` for its submitted negation. The default verification backend is unchanged.

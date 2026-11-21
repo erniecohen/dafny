@@ -13,5 +13,6 @@
     <PackageReference Include="xunit.runner.visualstudio" Version="2.5.1" />
     <ProjectReference Include="../DafnyB3.Protocol/DafnyB3.Protocol.csproj" />
     <ProjectReference Include="../DafnyB3.Worker/DafnyB3.Worker.csproj" />
+    <ProjectReference Include="../DafnyB3.Solver/DafnyB3.Solver.csproj" />
   </ItemGroup>
 </Project>
