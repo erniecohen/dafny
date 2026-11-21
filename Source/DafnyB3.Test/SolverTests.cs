@@ -242,7 +242,7 @@ public class SolverSessionTests {
       await using (var session = await SolverSession.StartAsync(Fake("record", file), Options with { ResourceLimit = 7 })) {
         await session.DeclareAsync("(declare-fun f ( Int )  Int)");
         await session.AssertAsync("(> (f 0) 0) ; comment");
-        Assert.Equal(Outcome.Proved, (await session.CheckGoalAsync("g", "(= |a b| \"s\"\"t\")")).Outcome);
+        Assert.Equal(Outcome.Proved, (await session.CheckGoalAsync("g", "(=  |a b|\n \"s\"\"t\") ; note")).Outcome);
         await session.CloseAsync();
       }
       var lines = (await File.ReadAllLinesAsync(file))
