@@ -35,9 +35,9 @@ namespace Microsoft.Dafny;
 /// the module afresh and writes its entry.
 /// </summary>
 internal sealed class PersistentResolutionCache {
-  private const string KeyDomain = "dafny-resolution-cache-key-v1";
+  private const string KeyDomain = "dafny-resolution-cache-key-v2";
   private const string Magic = "DRES";
-  private const int FormatVersion = 1;
+  private const int FormatVersion = 2;
   private const string BuiltinTokenOwner = "builtins";
 
   /// <summary>The release and the build: snapshots hold field layouts, which a rebuild may change.</summary>
@@ -57,14 +57,20 @@ internal sealed class PersistentResolutionCache {
   private readonly ConcurrentDictionary<string, Record> records = new(StringComparer.Ordinal);
   private readonly Dictionary<string, HashSet<uint>> ownScopeTokens = new(StringComparer.Ordinal);
   private readonly HashSet<string> ambiguousNames;
+  private readonly ResolutionFrames frames;
   private readonly uint lastParseToken;
 
   /// <summary>
   /// A completed module: its objects, in snapshot order, its scope tokens, its structure digest (null if
   /// uncacheable), and the size of each of its collections (-1 for other objects) when it completed.
   /// </summary>
-  private sealed record Record(string? Structure, object[] Owned, uint[] Tokens, int[] Sizes) {
-    public static readonly Record None = new(null, [], [], []);
+  private sealed record Record(string? Structure, object[] Owned, uint[] Tokens, int[] Sizes, Token[] SourceTokens) {
+    public static readonly Record None = new(null, [], [], [], []);
+
+    /// <summary>The rank of each source token of the module that its result refers to.</summary>
+    public Dictionary<Token, int> SourceTokenRanks => sourceTokenRanks ??= SourceTokens.Select((t, i) => (t, i))
+      .ToDictionary(p => p.t, p => p.i, (IEqualityComparer<Token>)ReferenceEqualityComparer.Instance);
+    private Dictionary<Token, int>? sourceTokenRanks;
 
     /// <summary>The first collection of this module that has another size now, or null.</summary>
     public int? Changed() {
@@ -80,7 +86,7 @@ internal sealed class PersistentResolutionCache {
     value is ICollection collection && effects?.Contains(value) != true ? collection.Count : -1;
 
   /// <summary>One module to resolve, with what its key needs.</summary>
-  public sealed record ModuleContext(ModuleDecl Declaration, string LocalKey, string Prefix, string Location,
+  public sealed record ModuleContext(ModuleDecl Declaration, string LocalKey, string Prefix,
     IReadOnlyList<(string Role, ModuleDecl Prerequisite)> Direct, IReadOnlyList<ModuleDecl> Closure);
 
   /// <summary>A worker's mutable state, which a failed hit discards.</summary>
@@ -88,7 +94,7 @@ internal sealed class PersistentResolutionCache {
 
   public PersistentResolutionCache(string directory, Program program, SystemModuleManager initialBuiltins,
     ResolutionBuiltinCatalog catalog, IReadOnlyDictionary<TopLevelDeclWithMembers, Dictionary<string, MemberDecl>> initialMembers,
-    IEnumerable<ModuleDecl> declarations) {
+    IReadOnlyList<ModuleDecl> declarations, IReadOnlyList<(Token Start, Token End)[]> pieces) {
     this.directory = directory;
     this.program = program;
     this.initialBuiltins = initialBuiltins;
@@ -98,6 +104,7 @@ internal sealed class PersistentResolutionCache {
     sourceTokens = new(() => ResolutionTokenIndex.For(program, []));
     var all = declarations.ToList();
     ambiguousNames = all.GroupBy(d => d.FullName).Where(g => g.Count() > 1).Select(g => g.Key).ToHashSet();
+    frames = new ResolutionFrames(all.Select((d, i) => (d.FullName, pieces[i])).Where(p => !ambiguousNames.Contains(p.FullName)));
     foreach (var declaration in all) {
       // A module's own scope, and those of its export sets, which its dependents see through its result.
       if (declaration is LiteralModuleDecl literal && ResolutionGraphSchema.Tokens(literal.ModuleDef.VisibilityScope) is { Count: 1 } own) {
@@ -128,7 +135,6 @@ internal sealed class PersistentResolutionCache {
       writer.Write(context.Declaration.FullName);
       writer.Write(context.LocalKey);
       writer.Write(context.Prefix);
-      writer.Write(context.Location);
       var direct = context.Direct.Select(p => (p.Role, p.Prerequisite.FullName)).Order().ToArray();
       writer.Write(direct.Length);
       foreach (var (role, name) in direct) { writer.Write(role); writer.Write(name); }
@@ -287,7 +293,11 @@ internal sealed class PersistentResolutionCache {
         if (token <= lastParseToken && !ownTokens.Contains(token)) { throw new ResolutionSnapshotUnsupported("scope of another module"); }
         return null;
       },
-      SourceTokens = sourceTokens.Value
+      SourceTokens = sourceTokens.Value,
+      Module = name,
+      Frames = frames,
+      PrerequisiteToken = (module, token) => closureNames.Contains(module) && records.TryGetValue(module, out var record) &&
+                                             record.SourceTokenRanks.TryGetValue(token, out var rank) ? rank : null
     };
     // A module whose resolution changed a collection of a prerequisite, other than by its effects, would lose that
     // change on a hit.
@@ -296,6 +306,11 @@ internal sealed class PersistentResolutionCache {
         throw new ResolutionSnapshotUnsupported("changes " + record.Owned[index].GetType().Name + " of " + prerequisite.FullName);
       }
     }
+    // A hit rebases tokens, but not text: a message that names a coordinate would keep the old one.
+    if (output.ErrorReporter.AllMessages.FirstOrDefault(m => NamesPosition(m.Message) ||
+          m.RelatedInformation.Any(r => NamesPosition(r.Message))) is { } positional) {
+      throw new ResolutionSnapshotUnsupported("a message names a position: " + positional.ErrorId);
+    }
     var contextual = Contextual(output);
     var captured = ResolutionSnapshot.Capture(Roots(output, view), world, contextual);
     CheckOwnership(output, captured.Owned);
@@ -303,8 +318,11 @@ internal sealed class PersistentResolutionCache {
     var manifest = new Manifest(key, Producer, name, captured.Structure, journal,
       usedAnchors.Select(a => (a, anchors.Guard(a))).ToArray(), anchors.TokenCount);
     Write(PathOf(key), manifest, captured.Payload);
-    Register(name, captured.Structure, captured.Owned, captured.OwnedTokens);
+    Register(name, captured.Structure, captured.Owned, captured.OwnedTokens, captured.SourceTokens);
   }
+
+  private static readonly Regex PositionText = new(@"\bline \d+|\(\d+,\d+\)|\.dfy[:(]\d", RegexOptions.CultureInvariant);
+  private static bool NamesPosition(string text) => PositionText.IsMatch(text);
 
   private static object?[] Roots(ModuleResolutionResult output, SystemModuleManager view) => [
     output.ResolvedDeclaration, output.Signatures, output.ClassMembers, output.TranslationInputs, output.SystemClassMembers,
@@ -373,7 +391,7 @@ internal sealed class PersistentResolutionCache {
     }
   }
 
-  private void Register(string name, string structure, object[] owned, uint[] tokens) {
+  private void Register(string name, string structure, object[] owned, uint[] tokens, Token[] sourceTokens) {
     for (var i = 0; i < owned.Length; i++) {
       // A value record belongs to no module: a clone shares its original's, and a snapshot holds it by value.
       if (!owned[i].GetType().IsValueType && !ResolutionGraphSchema.IsValueRecord(owned[i].GetType())) {
@@ -389,7 +407,7 @@ internal sealed class PersistentResolutionCache {
     for (var i = 0; i < owned.Length; i++) {
       sizes[i] = Size(owned[i], effects);
     }
-    records[name] = new Record(structure, owned, tokens, sizes);
+    records[name] = new Record(structure, owned, tokens, sizes, sourceTokens);
   }
 
   // ---------------------------------------------------------------- hit
@@ -431,7 +449,12 @@ internal sealed class PersistentResolutionCache {
           ? record.Tokens[external.Rank] : throw new ResolutionSnapshotInvalid("no scope of " + external.Name),
         _ => throw new ResolutionSnapshotInvalid("bad external scope")
       },
-      SourceTokens = sourceTokens.Value
+      SourceTokens = sourceTokens.Value,
+      Module = name,
+      Frames = frames,
+      PrerequisiteToken = (module, rank) => closureNames.Contains(module) && records.TryGetValue(module, out var record) &&
+                                            rank >= 0 && rank < record.SourceTokens.Length
+        ? record.SourceTokens[rank] : throw new ResolutionSnapshotInvalid("no token of " + module)
     };
     var materialized = ResolutionSnapshot.Materialize(payload, world);
     if (materialized.Roots.Length != 9 || materialized.Roots[0] is not ModuleDecl resolved ||
@@ -453,7 +476,7 @@ internal sealed class PersistentResolutionCache {
     view.SetMaxNonGhostTupleSize(maxTupleSize, (IOrigin?)materialized.Roots[5]!);
     view.RestrictResolutionOutput(translationInputs);
     manifest.Journal.Order(view);
-    Register(name, manifest.Structure, materialized.Owned, materialized.OwnedTokens);
+    Register(name, manifest.Structure, materialized.Owned, materialized.OwnedTokens, materialized.SourceTokens);
     Replay(effects, false);
     // The module's warnings and information messages, which its fresh resolution reported.
     var reporter = new BatchErrorReporter(context.Declaration.Options);

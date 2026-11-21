@@ -116,17 +116,22 @@ assert len(list(cache.glob("*.dres"))) == len(modules)
 control("warm", expect_reused=modules)
 control("warm-check", expect_reused=modules, check=True)
 
-# A comment in B changes B's source but not its result: B is resolved again, and its dependents are
-# still reused (early cutoff).
-write(b=B.replace("lemma L", "// a comment\n  lemma L"))
+# A comment inside B's lemma changes B's source but not its result: B is resolved again, and its dependents
+# are still reused (early cutoff).
+commented = B.replace("ensures", "/* a comment */ ensures")
+write(b=commented)
 control("comment", expect_reused=[m for m in modules if m != "_module.B"], check=True)
+# Lines inserted above the modules of a file move them without changing their text: every module is reused,
+# with the tokens of the current parse.
+write(b=commented, c="// a comment\n\n" + C.replace("module C {", "\n\nmodule C {"))
+control("lines-above", expect_reused=modules, check=True)
 
 # A new declaration in A changes A's result: A and the modules that see it are resolved again.
-write(a=A.replace("}\n", "}\n  function G(): int { 0 }\n", 1), b=B.replace("lemma L", "// a comment\n  lemma L"))
+write(a=A.replace("}\n", "}\n  function G(): int { 0 }\n", 1), b=commented)
 control("signature", expect_reused=["_module.D"], check=True)
 
 # A new use of B's lemma changes C, and the default module, which contains C.
-write(a=A.replace("}\n", "}\n  function G(): int { 0 }\n", 1), b=B.replace("lemma L", "// a comment\n  lemma L"),
+write(a=A.replace("}\n", "}\n  function G(): int { 0 }\n", 1), b=commented,
       c=C.replace("B.L(1); }", "B.L(1); B.L(2); }"))
 control("body", expect_reused=["_module.A", "_module.B", "_module.D", "B.A", "C.A", "C.B"], check=True)
 
@@ -166,9 +171,19 @@ main.write_text(X)
 modules = sorted(["_module", "_module.P", "P.Q", "_module.N17608"])
 control("cold2", expect_reused=[])
 control("warm2", expect_reused=modules, check=True)
-# Moved text re-resolves the moved modules, whose results hold source positions; the default module holds no text.
+# Moved text keeps every key: the modules are reused at their new positions.
 main.write_text("\n\n" + X)
-control("move", expect_reused=["_module"], check=True)
+control("move", expect_reused=modules, check=True)
+# Another checkout of the same tree, under another directory, shares the entries of the first.
+other = destination / "second-checkout" / "tree2"
+other.mkdir(parents=True)
+(other / "X.dfy").write_text("\n\n" + X)
+main = other / "X.dfy"
+control("checkout", expect_reused=modules, check=True)
+# Changed text in Q misses Q and the modules that contain it, in either checkout.
+(other / "X.dfy").write_text("\n\n" + X.replace("(var y := x; y) == x {} }", "(var y := x + 0; y) == x {} }"))
+control("changed", expect_reused=["_module.N17608"], check=True)
+main = tree / "X.dfy"
 # A renamed parent re-resolves its unchanged child, whose name changes.
 main.write_text(X.replace("module P", "module T"))
 control("rename", expect_reused=["_module.N17608"], check=True)
@@ -176,5 +191,5 @@ control("rename", expect_reused=["_module.N17608"], check=True)
 main.write_text(X + "module N67866 { }\n")
 control("prefix", expect_reused=["_module.P", "P.Q"], check=True)
 print("resolution cache: %d runs; cold stores, warm reuses all and checks equal; a comment re-resolves one module, "
-      "a signature its dependents, an option all; a corrupt entry is a miss; a move, a rename and a new naming "
-      "prefix re-resolve the modules they change" % runs)
+      "a signature its dependents, an option all; a corrupt entry is a miss; lines above, a move and another "
+      "checkout reuse all; changed text, a rename and a new naming prefix re-resolve the modules they change" % runs)

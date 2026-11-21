@@ -266,7 +266,7 @@ public class ProgramResolver {
     // the source printer sees, and where a refinement points).
     var localKeys = new string[declarations.Count];
     var roles = new string[declarations.Count][];
-    var locations = new string[declarations.Count];
+    var pieces = new (Token Start, Token End)[declarations.Count][];
     for (var i = 0; i < declarations.Count; i++) {
       foreach (var dependency in prerequisites[i]) {
         dependents[dependency].Add(i);
@@ -285,7 +285,7 @@ public class ProgramResolver {
       var own = OwnSource(declaration);
       localKeys[i] = ModuleResolutionKey.Compute(declaration.FullName, own.Source, ModuleResolutionKey.DafnyVersion, KeyOptions(declaration), []);
       roles[i] = prerequisites[i].Select(j => DependencyRole(declaration, declarations[j])).ToArray();
-      locations[i] = own.Location;
+      pieces[i] = own.Pieces;
       if (groupOf.TryGetValue(declaration, out var group) && ReferenceEquals(declaration, group.Members[0])) {
         // The leader of a recursive module group stands for the group.
         // Frame every owned declaration and option separately. In particular, source and option
@@ -315,7 +315,7 @@ public class ProgramResolver {
     // Issue 261: the persistent cache replaces the editor hook. Plugins have no snapshot contract.
     var persistent = Options.Get(CommonOptionBag.ResolutionCache) is { } cacheDirectory &&
                      !Options.Plugins.Except(DafnyOptions.DefaultPlugins).Any()
-      ? new PersistentResolutionCache(cacheDirectory, Program, initialBuiltins, catalog, initialMembers, declarations) : null;
+      ? new PersistentResolutionCache(cacheDirectory, Program, initialBuiltins, catalog, initialMembers, declarations, pieces) : null;
 
     var gate = new object();
     ExceptionDispatchInfo failure = null;
@@ -477,7 +477,7 @@ public class ProgramResolver {
               } else if (persistent != null) {
                 var declaration = declarations[index];
                 var context = new PersistentResolutionCache.ModuleContext(declaration, localKeys[index],
-                  namePrefixes.Prefix(declaration.FullName), locations[index],
+                  namePrefixes.Prefix(declaration.FullName),
                   prerequisites[index].Select((j, k) => (roles[index][k], declarations[j])).ToArray(),
                   closure.Select(i => declarations[i]).ToArray());
                 var closureResults = closure.Select(i => results[i]).ToArray();
@@ -654,18 +654,19 @@ public class ProgramResolver {
   }
 
   /// <summary>
-  /// Issue 261: the source of a module without the text of its nested modules, and where each piece of it starts.
+  /// Issue 261: the source of a module without the text of its nested modules, and the first and last token of each
+  /// piece of it. The persistent resolution cache stores a token of the module as its offset in its piece.
   /// The nested modules are prerequisites of the module, and the persistent resolution cache keys it by their
   /// results, so an edit of a nested module that leaves its result alike does not change the module's key.
   /// </summary>
-  private static (string Source, string Location) OwnSource(ModuleDecl declaration) {
+  private static (string Source, (Token Start, Token End)[] Pieces) OwnSource(ModuleDecl declaration) {
     var nested = declaration is LiteralModuleDecl literal
       ? literal.ModuleDef.TopLevelDecls.OfType<ModuleDecl>().Select(m => m.EntireRange).ToArray()
       : [];
     bool Inside(Token token) => nested.Any(range => range.StartToken.Uri == token.Uri &&
       range.StartToken.pos <= token.pos && token.pos <= range.EndToken.pos);
     var pieces = new List<System.Text.StringBuilder>();
-    var location = new System.Text.StringBuilder();
+    var bounds = new List<(Token Start, Token End)>();
     foreach (var node in SourceNodes(declaration)) {
       if (node is ModuleDecl && !ReferenceEquals(node, declaration)) { continue; }
       var range = node.EntireRange;
@@ -676,23 +677,20 @@ public class ProgramResolver {
         } else {
           if (previous == null) {
             // A piece starts: at the node's start, or after a nested module.
-            var uri = token.Uri?.ToString() ?? "";
-            location.Append(uri.Length.ToString(CultureInfo.InvariantCulture)).Append(':').Append(uri)
-              .Append(':').Append(token.line.ToString(CultureInfo.InvariantCulture))
-              .Append(':').Append(token.col.ToString(CultureInfo.InvariantCulture))
-              .Append(':').Append(token.pos.ToString(CultureInfo.InvariantCulture)).Append(';');
             pieces.Add(new System.Text.StringBuilder());
+            bounds.Add((token, token));
           } else {
             pieces[^1].Append(previous.TrailingTrivia).Append(token.LeadingTrivia);
           }
           pieces[^1].Append(token.val);
+          bounds[^1] = (bounds[^1].Start, token);
           previous = token;
         }
         if (token.Next == null || token.pos >= range.EndToken.pos) { break; }
       }
     }
     // Each piece is framed by its length, so that no text of one piece can stand for a boundary.
-    return (string.Concat(pieces.Select(piece => piece.Length.ToString(CultureInfo.InvariantCulture) + ":" + piece)), location.ToString());
+    return (string.Concat(pieces.Select(piece => piece.Length.ToString(CultureInfo.InvariantCulture) + ":" + piece)), bounds.ToArray());
   }
 
   /// <summary>The nodes whose original text is the module's source in its key.</summary>

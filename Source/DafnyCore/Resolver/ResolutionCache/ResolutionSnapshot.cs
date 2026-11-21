@@ -57,12 +57,66 @@ internal sealed class ResolutionTokenIndex {
 
   public bool TryGet(Token token, out (string Uri, int Pos) position) => positions.TryGetValue(token, out position);
 
-  public Token Find(string uri, int pos, int line, int col, string val) {
-    if (!tokens.TryGetValue((uri, pos, val), out var token) || token.line != line || token.col != col) {
-      throw new ResolutionSnapshotInvalid("source token moved: " + uri + "@" + pos);
+  public Token Find(string uri, int pos, string val) =>
+    tokens.TryGetValue((uri, pos, val), out var token) ? token : throw new ResolutionSnapshotInvalid("no source token " + val + " at " + pos);
+}
+
+/// <summary>
+/// The pieces of every module's own source (see ProgramResolver.OwnSource), so that a snapshot locates a token by
+/// its module, piece and offset in the piece instead of by its file and absolute offset. Pieces do not overlap.
+/// </summary>
+internal sealed class ResolutionFrames {
+  public readonly record struct Piece(string Module, int Index, Token Start, Token End);
+
+  private readonly Dictionary<string, Piece[]> byUri = new(StringComparer.Ordinal);
+  private readonly Dictionary<string, Piece[]> byModule = new(StringComparer.Ordinal);
+  private readonly HashSet<Uri> files = new();
+
+  public ResolutionFrames(IEnumerable<(string Module, (Token Start, Token End)[] Pieces)> modules) {
+    var lists = new Dictionary<string, List<Piece>>(StringComparer.Ordinal);
+    foreach (var (module, pieces) in modules) {
+      var own = pieces.Select((p, i) => new Piece(module, i, p.Start, p.End)).ToArray();
+      byModule[module] = own;
+      foreach (var piece in own) {
+        if (piece.Start.Uri == null || piece.End.Uri != piece.Start.Uri) { continue; }
+        files.Add(piece.Start.Uri);
+        var uri = piece.Start.Uri.ToString();
+        if (!lists.TryGetValue(uri, out var list)) { lists[uri] = list = []; }
+        list.Add(piece);
+      }
     }
-    return token;
+    foreach (var (uri, list) in lists) {
+      byUri[uri] = list.OrderBy(p => p.Start.pos).ToArray();
+    }
   }
+
+  /// <summary>Whether <paramref name="text"/> contains the path or URI of a source file.</summary>
+  public bool NamesSourceFile(string text) {
+    if (text.IndexOfAny(['/', '\\']) < 0) { return false; }
+    foreach (var file in files) {
+      if (text.Contains(file.OriginalString, StringComparison.Ordinal) ||
+          (file.IsFile && text.Contains(file.LocalPath, StringComparison.Ordinal))) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /// <summary>Whether <paramref name="uri"/> is the file of a piece of some module.</summary>
+  public bool IsSourceFile(Uri uri) => files.Contains(uri);
+
+  /// <summary>The piece that contains <paramref name="pos"/> of <paramref name="uri"/>, if any.</summary>
+  public Piece? Find(string uri, int pos) {
+    if (!byUri.TryGetValue(uri, out var pieces)) { return null; }
+    int low = 0, high = pieces.Length - 1, found = -1;
+    while (low <= high) {
+      var middle = (low + high) / 2;
+      if (pieces[middle].Start.pos <= pos) { found = middle; low = middle + 1; } else { high = middle - 1; }
+    }
+    return found >= 0 && pos <= pieces[found].End.pos + (pieces[found].End.val?.Length ?? 0) ? pieces[found] : null;
+  }
+
+  public Piece[] Of(string module) => byModule.GetValueOrDefault(module) ?? [];
 }
 
 /// <summary>
@@ -82,8 +136,10 @@ internal static class ResolutionSnapshot {
   private enum Tag : byte {
     Null = 0, False = 1, True = 2, Int32 = 3, Int64 = 4, String = 5, Char = 6, Double = 7, Byte = 8, SByte = 9,
     Int16 = 10, UInt16 = 11, UInt32 = 12, UInt64 = 13, Single = 14, Decimal = 15, BigInteger = 16, Uri = 17, Guid = 18,
-    Enum = 19, Reference = 30, External = 31, SourceToken = 32
+    Enum = 19, Reference = 30, External = 31, SourceToken = 32, PieceUri = 33
   }
+
+  private enum TokenOwner : byte { Own = 0, Prerequisite = 1 }
 
   public sealed class CaptureWorld {
     /// <summary>The external an object is, or null for an object of the module's own graph.</summary>
@@ -91,17 +147,30 @@ internal static class ResolutionSnapshot {
     /// <summary>The external a scope token is, or null for a token of the module itself.</summary>
     public required Func<uint, ResolutionExternalToken?> Token { get; init; }
     public required ResolutionTokenIndex SourceTokens { get; init; }
+    /// <summary>The module whose pieces of source are its own.</summary>
+    public required string Module { get; init; }
+    public required ResolutionFrames Frames { get; init; }
+    /// <summary>The rank of a source token of a prerequisite among the tokens its result refers to, or null.</summary>
+    public required Func<string, Token, int?> PrerequisiteToken { get; init; }
   }
 
-  public sealed record Captured(byte[] Payload, string Structure, object[] Owned, uint[] OwnedTokens, HashSet<string> Anchors);
+  /// <param name="SourceTokens">The tokens of the module's own source that the snapshot refers to, in order of first reference.</param>
+  public sealed record Captured(byte[] Payload, string Structure, object[] Owned, uint[] OwnedTokens, HashSet<string> Anchors, Token[] SourceTokens);
 
   public sealed class MaterializeWorld {
     public required Func<ResolutionExternal, object> Object { get; init; }
     public required Func<ResolutionExternalToken, uint> Token { get; init; }
     public required ResolutionTokenIndex SourceTokens { get; init; }
+    public required string Module { get; init; }
+    public required ResolutionFrames Frames { get; init; }
+    public required Func<string, int, Token> PrerequisiteToken { get; init; }
   }
 
-  public sealed record Materialized(object?[] Roots, object[] Owned, uint[] OwnedTokens);
+  public sealed record Materialized(object?[] Roots, object[] Owned, uint[] OwnedTokens, Token[] SourceTokens);
+
+  /// <summary>The fields of a token that say where it is, which a copied token stores relative to its piece.</summary>
+  private static readonly int[] TokenPlace = new[] { "<Uri>k__BackingField", "<pos>k__BackingField", "<line>k__BackingField", "<col>k__BackingField" }
+    .Select(name => Array.FindIndex(ResolutionGraphSchema.Fields(typeof(Token)), f => f.Name == name)).ToArray();
 
   // ---------------------------------------------------------------- capture
 
@@ -150,6 +219,24 @@ internal static class ResolutionSnapshot {
     var logical = new Dictionary<uint, int>();
     foreach (var token in scopeTokens) { logical[token] = logical.Count; }
 
+    var ownPieces = world.Frames.Of(world.Module);
+    var ownTokenRanks = new Dictionary<Token, int>(ReferenceEqualityComparer.Instance);
+    var ownTokens = new List<Token>();
+    int? PieceOf(Uri uri) {
+      for (var i = 0; i < ownPieces.Length; i++) {
+        if (ownPieces[i].Start.Uri == uri) { return i; }
+      }
+      return null;
+    }
+    // A token that resolution made from a source token's coordinates, if they are in the module's own source.
+    ResolutionFrames.Piece? CopiedPlace(Token token) {
+      if (token.Uri == null) { return null; }
+      var piece = world.Frames.Find(token.Uri.ToString(), token.pos);
+      if (piece?.Module == world.Module) { return piece; }
+      if (world.Frames.IsSourceFile(token.Uri)) { throw new ResolutionSnapshotUnsupported("copied token outside the module"); }
+      return null;
+    }
+
     var writer = new Writer();
     void WriteValue(object? value, bool positional = false) {
       switch (value) {
@@ -172,7 +259,14 @@ internal static class ResolutionSnapshot {
           foreach (var part in decimal.GetBits(m)) { writer.Int(part); }
           return;
         case BigInteger big: writer.Byte((byte)Tag.BigInteger); writer.String(big.ToString(System.Globalization.CultureInfo.InvariantCulture)); return;
-        case Uri uri: writer.Byte((byte)Tag.Uri); writer.String(uri.OriginalString); writer.Int(uri.IsAbsoluteUri ? 1 : 0); return;
+        case Uri uri:
+          if (PieceOf(uri) is { } own) {
+            writer.Byte((byte)Tag.PieceUri);
+            writer.Int(own);
+            return;
+          }
+          if (world.Frames.IsSourceFile(uri)) { throw new ResolutionSnapshotUnsupported("file of another module"); }
+          writer.Byte((byte)Tag.Uri); writer.String(uri.OriginalString); writer.Int(uri.IsAbsoluteUri ? 1 : 0); return;
         case Guid guid: writer.Byte((byte)Tag.Guid); writer.String(guid.ToString("N")); return;
       }
       var type = value.GetType();
@@ -192,11 +286,26 @@ internal static class ResolutionSnapshot {
         return;
       }
       if (value is Token token && world.SourceTokens.TryGet(token, out var position)) {
+        var piece = world.Frames.Find(position.Uri, position.Pos) ?? throw new ResolutionSnapshotUnsupported("token outside every module");
         writer.Byte((byte)Tag.SourceToken);
-        writer.String(position.Uri);
-        writer.Int(position.Pos, true);
-        writer.Int(token.line, true);
-        writer.Int(token.col, true);
+        if (piece.Module == world.Module) {
+          // The rank, by first reference, says which references are to one token; the offset, where it is.
+          if (!ownTokenRanks.TryGetValue(token, out var rank)) {
+            rank = ownTokens.Count;
+            ownTokenRanks.Add(token, rank);
+            ownTokens.Add(token);
+          }
+          writer.Byte((byte)TokenOwner.Own);
+          writer.Int(rank);
+          writer.Int(piece.Index);
+          writer.Int(position.Pos - piece.Start.pos, true);
+        } else {
+          var rank = world.PrerequisiteToken(piece.Module, token) ??
+                     throw new ResolutionSnapshotUnsupported("token of " + piece.Module + " that its result does not refer to");
+          writer.Byte((byte)TokenOwner.Prerequisite);
+          writer.String(piece.Module);
+          writer.Int(rank);
+        }
         writer.String(token.val ?? "");
         return;
       }
@@ -253,13 +362,34 @@ internal static class ResolutionSnapshot {
       writer.Byte((byte)EntryKind.Fields);
       writer.Type(type, true);
       var fields = ResolutionGraphSchema.Fields(type);
+      if (type == typeof(Token) && CopiedPlace((Token)value) is { } place) {
+        // Relative to the piece's start: the offset, the line difference, and the column difference on its first line.
+        var copy = (Token)value;
+        var lines = copy.line - place.Start.line;
+        kids = (object?[])kids.Clone();
+        kids[TokenPlace[1]] = copy.pos - place.Start.pos;
+        kids[TokenPlace[2]] = lines;
+        kids[TokenPlace[3]] = lines == 0 ? copy.col - place.Start.col : copy.col;
+        for (var j = 0; j < fields.Length; j++) {
+          if (j == TokenPlace[0]) {
+            writer.Byte((byte)Tag.PieceUri);
+            writer.Int(place.Index);
+          } else {
+            WriteValue(kids[j], ResolutionGraphSchema.IsPositional(fields[j]));
+          }
+        }
+        continue;
+      }
       for (var j = 0; j < fields.Length; j++) { WriteValue(kids[j], ResolutionGraphSchema.IsPositional(fields[j])); }
     }
     writer.Int(roots.Length);
     foreach (var root in roots) { WriteValue(root); }
     writer.Int(scopeTokens.Count);
+    if (writer.Strings.FirstOrDefault(world.Frames.NamesSourceFile) is { } path) {
+      throw new ResolutionSnapshotUnsupported("a string names a source file: " + path);
+    }
     var (payload, structure) = writer.Finish();
-    return new(payload, Digest(structure), owned.ToArray(), scopeTokens.ToArray(), anchors);
+    return new(payload, Digest(structure), owned.ToArray(), scopeTokens.ToArray(), anchors, ownTokens.ToArray());
   }
 
   private static string Digest(byte[] structure) {
@@ -307,6 +437,7 @@ internal static class ResolutionSnapshot {
     private readonly BinaryWriter structure;
     private readonly Dictionary<string, int> strings = new(StringComparer.Ordinal);
     private readonly List<string> stringList = [];
+    public IReadOnlyList<string> Strings => stringList;
     private readonly Dictionary<System.Type, int> types = new();
     private readonly List<(System.Type Type, bool Schema)> typeList = [];
 
@@ -364,7 +495,8 @@ internal static class ResolutionSnapshot {
 
   // ---------------------------------------------------------------- materialize
 
-  private readonly record struct Value(int Reference, object? Data);
+  /// <param name="Piece">For a URI stored as a piece of the module's own source, the piece; otherwise -1.</param>
+  private readonly record struct Value(int Reference, object? Data, int Piece = -1);
 
   private sealed record Entry(EntryKind Kind, System.Type? Type, Value[] Values, (ResolutionExternal.Kinds Kind, string Name, int Rank)[]? Tokens,
     byte Comparer = 0, System.Type? ComparerType = null, string[]? Names = null);
@@ -409,6 +541,10 @@ internal static class ResolutionSnapshot {
       return types[index];
     }
     var entryCount = Count(Math.Min(MaxObjects, remaining()));
+    var ownPieces = world.Frames.Of(world.Module);
+    var ownTokens = new List<Token>();
+    ResolutionFrames.Piece PieceAt(long index) =>
+      index >= 0 && index < ownPieces.Length ? ownPieces[index] : throw new ResolutionSnapshotInvalid("bad piece");
     Value ReadValue() {
       var tag = (Tag)reader.ReadByte();
       switch (tag) {
@@ -449,12 +585,38 @@ internal static class ResolutionSnapshot {
             if (bound.GetType() != type) { throw new ResolutionSnapshotInvalid("external " + name + "#" + index + " has another type"); }
             return new(-1, bound);
           }
+        case Tag.PieceUri: {
+            var index = Int();
+            return new(-1, PieceAt(index).Start.Uri, (int)index);
+          }
         case Tag.SourceToken: {
-            var uri = Str();
-            var pos = checked((int)Int());
-            var line = checked((int)Int());
-            var col = checked((int)Int());
-            return new(-1, world.SourceTokens.Find(uri, pos, line, col, Str()));
+            Token token;
+            switch ((TokenOwner)reader.ReadByte()) {
+              case TokenOwner.Own: {
+                  var rank = Int();
+                  var piece = PieceAt(Int());
+                  var offset = checked((int)Int());
+                  var val = Str();
+                  if (rank == ownTokens.Count) {
+                    ownTokens.Add(world.SourceTokens.Find(piece.Start.Uri.ToString(), checked(piece.Start.pos + offset), val));
+                  } else if (rank < 0 || rank > ownTokens.Count) {
+                    throw new ResolutionSnapshotInvalid("bad token rank");
+                  }
+                  token = ownTokens[(int)rank];
+                  if (token.val != val) { throw new ResolutionSnapshotInvalid("token " + val + " differs"); }
+                  break;
+                }
+              case TokenOwner.Prerequisite: {
+                  var module = Str();
+                  var rank = checked((int)Int());
+                  var val = Str();
+                  token = world.PrerequisiteToken(module, rank);
+                  if ((token.val ?? "") != val) { throw new ResolutionSnapshotInvalid("token " + val + " of " + module + " differs"); }
+                  break;
+                }
+              default: throw new ResolutionSnapshotInvalid("bad token owner");
+            }
+            return new(-1, token);
           }
         case Tag.Reference: {
             var id = Int();
@@ -552,6 +714,14 @@ internal static class ResolutionSnapshot {
               }
               fields[j].SetValue(target, value);
             }
+            if (entry.Type == typeof(Token) && entry.Values[TokenPlace[0]].Piece is >= 0 and var index) {
+              var start = ownPieces[index].Start;
+              var copy = (Token)target;
+              var lines = copy.line;
+              copy.pos = checked(start.pos + copy.pos);
+              copy.line = checked(start.line + lines);
+              if (lines == 0) { copy.col = checked(start.col + copy.col); }
+            }
             break;
           }
         case EntryKind.Array:
@@ -624,6 +794,6 @@ internal static class ResolutionSnapshot {
     } catch (InvalidCastException error) {
       throw new ResolutionSnapshotInvalid("materialization failed: " + error.Message);
     }
-    return new(roots.Select(Read).ToArray(), objects, ownedTokens);
+    return new(roots.Select(Read).ToArray(), objects, ownedTokens, ownTokens.ToArray());
   }
 }
