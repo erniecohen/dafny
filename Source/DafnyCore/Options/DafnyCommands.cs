@@ -146,6 +146,7 @@ public static class DafnyCommands {
     CommonOptionBag.LegacyAllocatedInLambdas,
     CommonOptionBag.LegacyElidedOverrideChecks,
     CommonOptionBag.LegacyInferredNewtypeBaseConversions,
+    CommonOptionBag.LegacyBoxedNewtypeObligations,
     CommonOptionBag.LegacySkeletonModifyingCalls,
     CommonOptionBag.LegacyInheritedConstructorFields,
     CommonOptionBag.LegacyFunctionStoreLocations,

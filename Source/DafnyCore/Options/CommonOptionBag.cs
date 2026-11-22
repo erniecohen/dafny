@@ -384,6 +384,9 @@ true - All class instances are raw pointers and need to be manually deallocated"
   public static readonly Option<bool> LegacyInferredNewtypeBaseConversions = new("--legacy-inferred-newtype-base-conversions", () => false,
     "Use the legacy, unsound check of a conversion to a newtype whose base type is inferred, which skips the constraints of that base type, for migration and comparison only.") { IsHidden = true };
 
+  public static readonly Option<bool> LegacyBoxedNewtypeObligations = new("--legacy-boxed-newtype-obligations", () => false,
+    "Use the legacy type obligation lowering that omits boxed base membership and does not unbox trait receivers in constraints or member invariants, for migration and comparison only.") { IsHidden = true };
+
   public static readonly Option<bool> LegacySkeletonModifyingCalls = new("--legacy-skeleton-modifying-calls", () => false,
     "Use the legacy, unsound rule that lets a statement a refinement skeleton adds call a method with a nonempty modifies clause, for migration and comparison only.") { IsHidden = true };
 
@@ -474,7 +477,7 @@ Value implementations must retain their type parameters in compatible parent pos
   };
 
   public static readonly Option<bool> RecursiveModules = new("--recursive-modules", () => false,
-    "(experimental, incomplete) Allow modules to import each other. The modules of an import cycle form a recursive module group, which means what one module with all their declarations would mean. Only imports may form a cycle. Requires --member-invariants. A program that has a recursive module group may not declare a codatatype. A group is all concrete or all abstract. Refinement and abstract imports must point to strictly lower groups. A .doo library retains and records complete groups; its client needs the same option. Replacement in a group and executable compilation of a program that has a group are not yet supported.") {
+    "(experimental, incomplete) Allow modules to import each other. The modules of an import cycle form a recursive module group, which means what one module with all their declarations would mean. Only imports may form a cycle. Requires --member-invariants. A program that has a recursive module group may not declare a codatatype. A group is all concrete or all abstract. Refinement and abstract imports must point to strictly lower groups. A .doo library retains and records complete groups; its client needs the same option. Executable compilation supports the C# target only. Replacement in a group is not yet supported.") {
     IsHidden = true
   };
 
@@ -1002,6 +1005,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(LegacyAllocatedInLambdas, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacyElidedOverrideChecks, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacyInferredNewtypeBaseConversions, OptionScope.Cli);
+    OptionRegistry.RegisterOption(LegacyBoxedNewtypeObligations, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacySkeletonModifyingCalls, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacyInheritedConstructorFields, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacyFunctionStoreLocations, OptionScope.Cli);

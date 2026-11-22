@@ -2890,6 +2890,13 @@ and what information it produces about the verification process.
   default; use `datatype-subset-conversions = true` in a project file's `[options]`.
 * `--consistent-obligation-checks` - prepare and check matching implicit obligations once using the existing local assertion machinery and fuel rules (experimental, disabled by default; also a project-file option).
 
+When a visible newtype constraint is checked on a boxed value, this lowering
+checks membership in its base type before checking the constraint on the unboxed
+value. The hidden `--legacy-boxed-newtype-obligations` switch restores the old
+lowering, which omitted boxed base membership and could produce a type error
+for trait receivers in constraints or member invariants. It is for comparison
+and migration only.
+
 Native-result map read-over-write axioms require canonical stored payloads in
 the arguments type encoding. The hidden `--legacy-noncanonical-map-payloads`
 switch restores the previous inconsistent axiom for comparison and migration
