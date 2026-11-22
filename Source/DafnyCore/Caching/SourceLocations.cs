@@ -56,8 +56,9 @@ internal sealed class SourceLocations {
       list.Add(new Enclosing(start.pos, end.pos, start.line, name));
     }
     foreach (var module in program.RawModules()) {
-      if (module.IsDefaultModule) { continue; }
-      Add(module.Origin, module.FullName);
+      // The default module spans whole files, so it encloses nothing by its name; its own
+      // declarations do, so that top-level code, too, is recorded apart from the rest of its file.
+      if (!module.IsDefaultModule) { Add(module.Origin, module.FullName); }
       foreach (var declaration in module.TopLevelDecls) {
         if (declaration is not DefaultClassDecl) { Add(declaration.Origin, declaration.FullDafnyName); }
         if (declaration is TopLevelDeclWithMembers withMembers) {

@@ -253,6 +253,22 @@ assert moved["translated"] == ["H"], moved["translated"]
 assert moved["modules"] == {"A": "translation-key", "B": "translation-key", "C": "translation-key", "H": None}, moved["modules"]
 assert moved["solver"] == 0, moved["solver"]
 
+# Top-level declarations are recorded relative to themselves, as a module's are, and not by the
+# file they are in: another file that holds the same top-level program under another comment is a
+# translation-key hit, and audit finds the same graph; so is a line inserted above it.
+top_cache = destination / "top-cache"
+top_source = "lemma Top(x: int) ensures x + 1 > x { }\nfunction Twice(x: int): int { 2 * x }\nlemma UsesTwice() ensures Twice(3) == 6 { }\n"
+first_top = destination / "top-first.dfy"
+first_top.write_text("// one comment\n" + top_source, encoding="utf-8")
+top = run("top-first", directory=top_cache, program=first_top)
+assert top["modules"] == {"_module": None} and top["stats"]["manifestPublications"] == 1, (top["modules"], top["stats"])
+second_top = destination / "top-second.dfy"
+second_top.write_text("// another comment,\n// two lines long\n" + top_source, encoding="utf-8")
+top_again = run("top-second", directory=top_cache, program=second_top)
+assert top_again["modules"] == {"_module": "translation-key"} and top_again["solver"] == 0, top_again["modules"]
+top_audit = run("top-second-audit", directory=top_cache, program=second_top, extra=("--persistent-translation-audit",))
+assert top_audit["stats"]["auditChecks"] == 2 and top_audit["stats"]["auditMismatches"] == 0, top_audit["output"][1]
+
 # A changed verification environment (here, the resource limit, which the task-result cache does
 # not key) is not the one the module results were recorded under.
 limit = run("limit", resource_limit="15999999")
