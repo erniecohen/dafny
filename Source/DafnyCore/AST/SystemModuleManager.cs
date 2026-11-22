@@ -332,6 +332,9 @@ public class SystemModuleManager {
         t => t.IsIMapType, typeArgs => new MapType(false, typeArgs[0], typeArgs[1]))
     ];
     SystemModule.SourceDecls.AddRange(valuetypeDecls);
+    if (options.Get(CommonOptionBag.IntegerBitwise)) {
+      RecordBuiltin(new IntegerBitwiseReferences(this));
+    }
     // Resolution error handling relies on being able to get to the 0-tuple declaration
     TupleType(Token.NoToken, 0, true);
 

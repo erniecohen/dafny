@@ -498,6 +498,7 @@ proofs and does not establish that the whole project is verified.
 - Scheduling
    - `--verification-module-window`
    - `--verification-module-window-memory`
+   - `--translation-workers`
 
 By default `dafny verify` verifies one module at a time: it starts every symbol of a
 module, waits until all of them have finished, and only then translates and starts
@@ -527,6 +528,24 @@ A proof's verdict and resource count do not depend on K: each proof sends the so
 the same commands. A proof limited by `--verification-time-limit`, though, can
 finish just before or just after its limit depending on how busy the machine is, as
 it can with a different `--cores`.
+
+The opt-in `--translation-workers N` ([#241](https://github.com/erniecohen/dafny/issues/241)),
+for N greater than 1, translates to Boogie and prepares for verification up to N of
+the modules that the window admits at once, instead of one at a time. It requires
+`--type-system-refresh`: with the legacy type system, N greater than 1 is an error
+(exit code 2). It has an effect only with `--verification-module-window` greater than 1.
+Each module's translation uses names private to that module, and translations
+commit in the window's order. So generated names, the Boogie text that `--bprint`
+writes, diagnostics, status lines, logs, resource counts and the exit code are the
+same as with N = 1. A translation starts only when no other is running, or while
+the managed heap plus the mean allocation of a translation, for each translation in
+progress, is below `--verification-module-window-memory` (by default, half of the
+memory available to the process). Each translation in progress holds its own Boogie
+program, so memory grows with N. The option falls back to one worker, with the same
+output, when a plugin is loaded, the log level is verbose, or a Boogie option
+prints, traces, emits debug information, verifies snapshots or selects a type
+encoding other than the default. It composes with `--resolution-threads` and
+`--translation-cache`.
 
 
 #### 13.6.1.4. `dafny translate <language>` {#sec-dafny-translate}
@@ -2809,6 +2828,19 @@ and what information it produces about the verification process.
   over either. The selected value is emitted on each verification implementation,
   so it also takes precedence over `--solver-option O:smt.arith.solver=N` or the
   corresponding `--boogie /proverOpt:O:smt.arith.solver=N` option.
+
+* `--integer-bitwise` - enable the compiler-owned ghost class
+  `IntegerBitwiseModel` and its explicit one-step definition-unfold lemmas for
+  powers, normalization, Boolean operations, shifts, rotations and population
+  count. Disabled by default. This reference-only milestone does not enable
+  integer-newtype operators or native bitvector bridges. Include the optional
+  `IntegerBitwiseCompiler.dfy` companion for checked range and algebra contracts.
+  Set `integer-bitwise = true` in the project file's `[options]` section;
+  an enabled `.doo` library requires enabled clients. Declarations in an off-built
+  library cannot use this compiler interface merely because the client enables
+  it. Ordinary declarations with the same spelling keep their own meaning,
+  including local names and opened imports. This option is independent of
+  `--additional-axioms`. See [the interface and model argument](../dev/integer-bitwise-references.md).
 
 * `--additional-axioms` - enable the fork's additional verifier axioms. This
   shared option is disabled by default. It currently supplies the bounded

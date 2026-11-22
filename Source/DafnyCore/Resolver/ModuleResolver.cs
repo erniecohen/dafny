@@ -856,8 +856,9 @@ namespace Microsoft.Dafny {
       // add for the module itself
       foreach (var kv in m.TopLevels) {
         if (info.TopLevels.TryGetValue(kv.Key, out var infoValue)) {
-          if (infoValue != kv.Value && BoundedCallables.IsBoundedDecl(infoValue)) {
-            // "bounded" is a contextual name (issue 266): a declaration of the module named "bounded" hides the system's.
+          if (infoValue != kv.Value && (BoundedCallables.IsBoundedDecl(infoValue) ||
+              IntegerBitwiseReferences.IsReferenceDecl(infoValue) && !IntegerBitwiseReferences.IsReferenceDecl(kv.Value))) {
+            // Contextual builtins do not hide an ordinary declaration of the module.
             info.TopLevels[kv.Key] = kv.Value;
             continue;
           }
@@ -974,8 +975,9 @@ namespace Microsoft.Dafny {
             // the caller, and let the caller remap the symbol after all opened imports have been processed.
             topLevelDeclReplacement = kv.Value;
           }
-        } else if (BoundedCallables.IsBoundedDecl(sameNameSymbolInImporter)) {
-          // "bounded" is a contextual name (issue 266): an opened import's declaration named "bounded" hides the system's.
+        } else if (BoundedCallables.IsBoundedDecl(sameNameSymbolInImporter) ||
+                   IntegerBitwiseReferences.IsReferenceDecl(sameNameSymbolInImporter) && !IntegerBitwiseReferences.IsReferenceDecl(kv.Value)) {
+          // An opened import's ordinary declaration also hides a contextual builtin.
           importerSignature.TopLevels[kv.Key] = kv.Value;
         } else {
           bool unambiguous = false;
@@ -1922,8 +1924,14 @@ namespace Microsoft.Dafny {
         //   - type characteristics, and
         //   - type bounds
         yield return "coCalls";
+        Func<IOrigin, bool> integerBitwiseEnabled = null;
+        var compilation = ProgramResolver.Program.Compilation;
+        if (compilation.Options.Get(CommonOptionBag.IntegerBitwise)) {
+          integerBitwiseEnabled = origin => Options.Get(CommonOptionBag.IntegerBitwise) &&
+            !(compilation.IntegerBitwiseDisabledSources?.Contains(origin.Uri) ?? false);
+        }
         if (group == null) {
-          TypeCharacteristicChecker.InferAndCheck(declarations, isAnExport, reporter);
+          TypeCharacteristicChecker.InferAndCheck(declarations, isAnExport, reporter, integerBitwiseEnabled);
         } else {
           // What is inferred for a type of one member may depend on a type of another, so the members
           // repeat the inference until a round in which none of them infers anything.
@@ -1935,7 +1943,7 @@ namespace Microsoft.Dafny {
           } while (group.RepeatRound);
           TypeCharacteristicChecker.InferEqualitySupportOfSignatures(declarations, reporter);
           yield return "equalitySupportOfSignatures";
-          TypeCharacteristicChecker.Check(declarations, isAnExport, reporter);
+          TypeCharacteristicChecker.Check(declarations, isAnExport, reporter, integerBitwiseEnabled);
         }
         yield return "typeCharacteristics";
 
