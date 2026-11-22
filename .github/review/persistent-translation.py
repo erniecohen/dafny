@@ -49,6 +49,9 @@ def run(name, directory=cache, extra=(), persistent=True, resource_limit="160000
         "solver": [e for e in events if e.get("ev") == "result-cache"][0]["solverStarts"],
         "probes": [e for e in events if e.get("ev") == "result-cache"][0]["solverVersionProbes"],
         "translated": sorted(e["module"] for e in events if e.get("ev") == "span" and e.get("stage") == "translate"),
+        # Commits of the parallel translation path (--translation-workers), in ticket order.
+        "commits": [e["module"] for e in sorted((e for e in events if e.get("ev") == "span" and e.get("stage") == "translate.commit"),
+                                                key=lambda e: e["ticket"])],
         "modules": modules,
     }
     assert (observation["stats"] is not None) == persistent, summary
@@ -184,10 +187,10 @@ assert audit["stats"]["auditChecks"] == 7 and audit["stats"]["auditMismatches"] 
 assert audit["stats"]["translationPublications"] == 0 and audit["stats"]["manifestPublications"] == 0, audit["stats"]
 
 
-def edit(name, old, new, translated, hits, solver):
+def edit(name, old, new, translated, hits, solver, directory=cache, extra=()):
     assert original.count(old) == 1
     input_file.write_text(original.replace(old, new), encoding="utf-8")
-    edited = run(name)
+    edited = run(name, directory, extra)
     fresh = run(name + "-oracle", destination / (name + "-oracle-cache"), persistent=False)
     same_report(edited, fresh)
     # A translation key is a module's resolution identity and those of the modules it reads: a
@@ -350,6 +353,38 @@ caught = run("mistranslated-audit", mistranslated, extra=("--persistent-translat
 assert caught["stats"]["auditMismatches"] == 4, caught["stats"]
 assert b"persistent translation audit: the stored translation differs" in caught["output"][1]
 
+# Parallel translation (--translation-workers) with the persistent tables, in a cache of its own.
+# The stress schedule makes each group of four translations finish in reverse arrival order.
+workers_cache = destination / "workers-cache"
+WORKERS = ("--translation-workers", "4", "--translation-workers-stress", "-1")
+parallel_cold = run("workers-cold", workers_cache, WORKERS)
+same_report(cold, parallel_cold)
+check(parallel_cold, MODULES, {m: None for m in MODULES}, 5)
+# Positive control: the parallel path ran (every translation committed through the cursor), and it
+# recorded what one worker records: the same translations and Boogie texts, under the same keys.
+assert sorted(parallel_cold["commits"]) == MODULES, parallel_cold["commits"]
+assert parallel_cold["stats"]["translationPublications"] == 4 and parallel_cold["stats"]["manifestPublications"] == 3
+assert {e.name for e in entries(workers_cache)} <= {e.name for e in entries(cache)}, "a parallel translation differs"
+# One worker replays what four recorded, and four replay what they recorded: no module that verified
+# is translated or committed, and the failing one is translated and committed alone.
+serial_warm = run("workers-serial-warm", workers_cache)
+same_report(cold, serial_warm)
+check(serial_warm, ["H"], {"A": "translation-key", "B": "translation-key", "C": "translation-key", "H": None}, 0)
+parallel_warm = run("workers-warm", workers_cache, WORKERS)
+same_report(cold, parallel_warm)
+check(parallel_warm, ["H"], {"A": "translation-key", "B": "translation-key", "C": "translation-key", "H": None}, 0)
+assert parallel_warm["commits"] == ["H"] and parallel_warm["stats"]["keyHits"] == 3, parallel_warm
+# Early cutoff with four workers: a proof edit of A replays B by its regenerated graph (positive
+# control); a function edit that B reads misses B (negative control).
+edit("workers-body", "assert x + 0 == x;", "assert 0 + x == x;", ["A", "B", "H"],
+     {"A": None, "B": "boogie-graph", "C": "translation-key", "H": None}, 1, workers_cache, WORKERS)
+edit("workers-spec", "int { x + 1 }", "int { x + 2 }", ["A", "B", "H"],
+     {"A": None, "B": None, "C": "translation-key", "H": None}, 1, workers_cache, WORKERS)
+# With the in-process translation cache too, the three caches compose: a warm run is all key hits.
+both = run("workers-both", workers_cache, WORKERS + ("--translation-cache",))
+same_report(cold, both)
+check(both, ["H"], {"A": "translation-key", "B": "translation-key", "C": "translation-key", "H": None}, 0)
+
 # Corrupt every stored translation and module result: no false hits, the same report.
 for index in (cache / "v1/module-results").glob("*/*/data"):
     blob = json.loads(index.read_text())["Blob"]
@@ -365,4 +400,4 @@ assert corrupt["stats"]["keyHits"] == 0 and corrupt["stats"]["graphHits"] == 0, 
 plain = destination / "plain-cache"
 run("plain", plain, persistent=False)
 assert not (plain / "v1/artifacts/translations").exists() and not (plain / "v1/module-results").exists()
-print("persistent translation: warm runs translate nothing; early cutoff across edits, line shifts, checkouts and eviction; shared partitions; audit, environment, corruption and vacuity controls")
+print("persistent translation: warm runs translate nothing; early cutoff across edits, line shifts, checkouts and eviction; shared partitions; parallel translation; audit, environment, corruption and vacuity controls")
