@@ -5169,11 +5169,33 @@ is independent of `D`. The hidden `--legacy-member-invariant-dependence` option
 restores the former unsound cache of provisional negative answers, for migration
 and comparison only.
 
-Statements inside expressions are proof hints, and are not checked. Under
+Statements inside expressions are proof hints. They do not change what an
+expression means, but they are checked, together with the lemmas they call: the
+well-formedness proof of a function, hints included, justifies its `ensures`
+clauses, its termination and the preconditions of its calls, which the
+definition of `D` assumes. A proof that learns that a value is in `D` learns
+`D`'s invariants, and could then assume what it is meant to prove. Under
 `--lemma-bindings`, a binding of a lemma's results also contributes the bound
-lemma's `requires` and `ensures` clauses, and transitively the functions and
-lemma bindings they reach, to this check. The lemma's proof body remains a proof
-hint. A bound
+lemma's `requires` and `ensures` clauses to this check, and its body is a proof
+that is checked as a hint is.
+
+So the check also reaches the statements inside the expressions it reaches, the
+bodies of bound lemmas, and the lemmas these call, with their specifications and
+bodies. In them, rules 1 to 5 apply, and moreover:
+
+- a local variable of a type that depends on `D` must be given a value where it
+  is declared;
+- a `:|` or `forall` statement follows rule 1;
+- no lemma has an out-parameter of such a type, a bound lemma included;
+- no dynamically bound lemma is called, since its overrides are not all known.
+
+Anywhere the check reaches, expressions and proofs alike, no field or array
+element of a type that depends on `D` is read from the heap, since the heap says
+that the value is in `D`: a function could pass it to another whose proof then
+learns `D`'s invariants. So the invariant of a class `C` may not read a field of
+type `C?`, although it may compare `null` with a value of that type.
+
+A bound
 variable whose type is inferred as `raw D` makes a test `k is D` a test of a raw
 value; write `k: D` to range over values of `D`.
 
