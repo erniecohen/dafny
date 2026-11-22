@@ -71,7 +71,8 @@ internal static class ResolutionGraphSchema {
     return fields.OrderBy(Name, StringComparer.Ordinal).ToArray();
   });
 
-  public static string Name(FieldInfo field) => field.DeclaringType!.FullName + "." + field.Name;
+  private static readonly ConcurrentDictionary<FieldInfo, string> NameCache = new();
+  public static string Name(FieldInfo field) => NameCache.GetOrAdd(field, f => f.DeclaringType!.FullName + "." + f.Name);
   public static bool IsContextual(FieldInfo field) => ContextualFields.Contains(Name(field));
   public static bool IsPositional(FieldInfo field) => PositionalFields.Contains(Name(field));
 
@@ -156,18 +157,57 @@ internal static class ResolutionGraphSchema {
   }
 
   public static object NewCollection(System.Type type, byte comparer, System.Type? comparerType) {
-    var kind = CollectionKind(type) ?? throw new ResolutionSnapshotInvalid("not a collection: " + type.FullName);
-    if (kind == Collection.ImmutableList) {
+    var ops = Ops(type) ?? throw new ResolutionSnapshotInvalid("not a collection: " + type.FullName);
+    if (ops.Kind == Collection.ImmutableList) {
       // Filled in place of the empty list (see ResolutionSnapshot.Materialize).
-      return Activator.CreateInstance(typeof(List<>).MakeGenericType(type.GetGenericArguments()))!;
+      return ops.New(null);
     }
     return comparer switch {
-      0 => Activator.CreateInstance(type)!,
-      1 => Activator.CreateInstance(type, StringComparer.Ordinal)!,
-      2 => Activator.CreateInstance(type, ReferenceEqualityComparer.Instance)!,
+      0 => ops.New(null),
+      1 => ops.New(StringComparer.Ordinal),
+      2 => ops.New(ReferenceEqualityComparer.Instance),
       3 when comparerType != null && comparerType.Assembly == Core && Fields(comparerType).Length == 0 =>
-        Activator.CreateInstance(type, Activator.CreateInstance(comparerType))!,
+        ops.New(Activator.CreateInstance(comparerType)),
       _ => throw new ResolutionSnapshotInvalid("unknown comparer")
+    };
+  }
+
+  /// <summary>
+  /// How materialization builds and fills a collection type, without reflection per item: a factory taking the
+  /// comparer (or null for the default), an adder that fails on a duplicate set item, and for an immutable list
+  /// the conversion of the filled list. Memoized per type.
+  /// </summary>
+  public sealed record CollectionOps(Collection Kind, Func<object?, object> New, Action<object, object?> Add, Func<object, object>? Freeze);
+
+  private static readonly ConcurrentDictionary<System.Type, CollectionOps?> OpsCache = new();
+
+  public static CollectionOps? Ops(System.Type type) => OpsCache.GetOrAdd(type, t => {
+    if (CollectionKind(t) is not { } kind) { return null; }
+    var arguments = t.GetGenericArguments();
+    if (kind == Collection.Dictionary) {
+      return (CollectionOps)typeof(DictionaryOps<,>).MakeGenericType(arguments).GetMethod(nameof(DictionaryOps<object, object>.Make))!.Invoke(null, null)!;
+    }
+    return (CollectionOps)typeof(OpsOf<>).MakeGenericType(arguments[0]).GetMethod(nameof(OpsOf<object>.Make))!.Invoke(null, [kind])!;
+  });
+
+  private static class DictionaryOps<TKey, TValue> where TKey : notnull {
+    // Entries are added in pairs through IDictionary; Add here is never called.
+    public static CollectionOps Make() => new(Collection.Dictionary,
+      comparer => comparer == null ? new Dictionary<TKey, TValue>() : new Dictionary<TKey, TValue>((IEqualityComparer<TKey>)comparer),
+      (_, _) => throw new InvalidOperationException(), null);
+  }
+
+  private static class OpsOf<T> {
+    public static CollectionOps Make(Collection kind) => kind switch {
+      Collection.List => new(kind, _ => new List<T>(), (list, value) => ((List<T>)list).Add((T)value!), null),
+      Collection.ImmutableList => new(kind, _ => new List<T>(), (list, value) => ((List<T>)list).Add((T)value!),
+        list => ImmutableList.CreateRange((List<T>)list)),
+      Collection.Stack => new(kind, _ => new Stack<T>(), (stack, value) => ((Stack<T>)stack).Push((T)value!), null),
+      Collection.Set => new(kind, comparer => comparer == null ? new HashSet<T>() : new HashSet<T>((IEqualityComparer<T>)comparer),
+        (set, value) => { if (!((HashSet<T>)set).Add((T)value!)) { throw new ResolutionSnapshotInvalid("duplicate set item"); } }, null),
+      Collection.SortedSet => new(kind, comparer => comparer == null ? new SortedSet<T>() : new SortedSet<T>((IComparer<T>)comparer),
+        (set, value) => { if (!((SortedSet<T>)set).Add((T)value!)) { throw new ResolutionSnapshotInvalid("duplicate set item"); } }, null),
+      _ => throw new InvalidOperationException()
     };
   }
 

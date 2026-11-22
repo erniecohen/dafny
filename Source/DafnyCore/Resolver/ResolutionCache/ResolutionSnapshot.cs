@@ -207,13 +207,23 @@ internal static class ResolutionSnapshot {
     var parents = new List<int>();
     var current = -1;
 
-    bool IsLeaf(object? value) => value == null || ResolutionGraphSchema.IsScalar(value.GetType()) ||
-      world.Object(value) != null || (value is Token token && world.SourceTokens.TryGet(token, out _));
+    // An object outside the module is referred to many times; the world is asked about it once.
+    var externals = new Dictionary<object, ResolutionExternal?>(ReferenceEqualityComparer.Instance);
+    ResolutionExternal? External(object value) {
+      if (!externals.TryGetValue(value, out var external)) {
+        external = world.Object(value);
+        externals.Add(value, external);
+      }
+      return external;
+    }
+    bool IsLeaf(object value) => ResolutionGraphSchema.IsScalar(value.GetType()) ||
+      External(value) != null || (value is Token token && world.SourceTokens.TryGet(token, out _));
     void Enqueue(object? value) {
-      if (IsLeaf(value) || ids.ContainsKey(value!)) { return; }
+      // An object already in the snapshot is not a leaf, so the cheap test comes first.
+      if (value == null || ids.ContainsKey(value) || IsLeaf(value)) { return; }
       if (owned.Count >= MaxObjects) { throw new ResolutionSnapshotUnsupported("graph too large"); }
-      ids.Add(value!, owned.Count);
-      owned.Add(value!);
+      ids.Add(value, owned.Count);
+      owned.Add(value);
       parents.Add(current);
     }
     // The types on the path from a root to an object, which an unsupported graph names.
@@ -314,7 +324,12 @@ internal static class ResolutionSnapshot {
         writer.Int(Convert.ToInt64(value, System.Globalization.CultureInfo.InvariantCulture));
         return;
       }
-      if (world.Object(value) is { } external) {
+      if (ids.TryGetValue(value, out var id)) {
+        writer.Byte((byte)Tag.Reference);
+        writer.Int(id);
+        return;
+      }
+      if (External(value) is { } external) {
         writer.Byte((byte)Tag.External);
         writer.Byte((byte)external.Kind);
         writer.String(external.Name);
@@ -540,10 +555,47 @@ internal static class ResolutionSnapshot {
   /// <param name="Piece">For a URI stored as a piece of the module's own source, the piece; otherwise -1.</param>
   private readonly record struct Value(int Reference, object? Data, int Piece = -1);
 
-  private sealed record Entry(EntryKind Kind, System.Type? Type, Value[] Values, (ResolutionExternal.Kinds Kind, string Name, int Rank)[]? Tokens,
-    byte Comparer = 0, System.Type? ComparerType = null, string[]? Names = null);
+  // An entry's values are the slice [Start, Start + Count) of one array shared by all entries of a payload.
+  private struct Entry {
+    public EntryKind Kind;
+    public System.Type Type;
+    public int Start, Count;
+    public ScopeEntry? Scope;
+  }
+
+  private sealed record ScopeEntry((ResolutionExternal.Kinds Kind, string Name, int Rank)[] Tokens, string[] Names);
+
+  /// <summary>
+  /// The entry and value arrays of one materialization, reused by the next on the same thread: they are
+  /// as large as the payload, and allocating them per module was most of a warm run's garbage.
+  /// </summary>
+  private sealed class Scratch {
+    public Entry[] Entries = [];
+    public Value[] Values = new Value[1 << 12];
+    public int Used, EntryCount;
+    public const int Retained = 1 << 20;
+  }
+
+  [ThreadStatic] private static Scratch? pooledScratch;
 
   public static Materialized Materialize(byte[] payload, MaterializeWorld world) {
+    var scratch = pooledScratch ?? new Scratch();
+    pooledScratch = null;
+    try {
+      return Materialize(payload, world, scratch);
+    } finally {
+      Array.Clear(scratch.Entries, 0, Math.Min(scratch.EntryCount, scratch.Entries.Length));
+      scratch.EntryCount = 0;
+      Array.Clear(scratch.Values, 0, Math.Min(scratch.Used, scratch.Values.Length));
+      scratch.Used = 0;
+      if (scratch.Entries.Length <= Scratch.Retained && scratch.Values.Length <= Scratch.Retained) { pooledScratch = scratch; }
+    }
+  }
+
+  private const int CollectionMask = 0xff, LazyBit = 0x100, HashedBit = 0x200;
+  private static readonly object BoxedFalse = false, BoxedTrue = true;
+
+  private static Materialized Materialize(byte[] payload, MaterializeWorld world, Scratch scratch) {
     using var stream = new MemoryStream(payload, false);
     using var reader = new BinaryReader(stream, Encoding.UTF8);
     int Count(long limit) {
@@ -592,8 +644,8 @@ internal static class ResolutionSnapshot {
       var tag = (Tag)reader.ReadByte();
       switch (tag) {
         case Tag.Null: return new(-1, null);
-        case Tag.False: return new(-1, false);
-        case Tag.True: return new(-1, true);
+        case Tag.False: return new(-1, BoxedFalse);
+        case Tag.True: return new(-1, BoxedTrue);
         case Tag.Int32: return new(-1, checked((int)Int()));
         case Tag.Int64: return new(-1, Int());
         case Tag.String: return new(-1, Str());
@@ -675,7 +727,18 @@ internal static class ResolutionSnapshot {
         default: throw new ResolutionSnapshotInvalid("bad tag");
       }
     }
-    var entries = new Entry[entryCount];
+    if (scratch.Entries.Length < entryCount) { scratch.Entries = new Entry[entryCount]; }
+    var entries = scratch.Entries;
+    scratch.EntryCount = entryCount;
+    var vals = scratch.Values;
+    void Push(Value value) {
+      if (scratch.Used == vals.Length) { Array.Resize(ref vals, vals.Length * 2); scratch.Values = vals; }
+      vals[scratch.Used++] = value;
+    }
+    void ReadValues(int i, EntryKind kind, System.Type type, int n) {
+      entries[i] = new Entry { Kind = kind, Type = type, Start = scratch.Used, Count = n };
+      for (var j = 0; j < n; j++) { Push(ReadValue()); }
+    }
     var objects = new object[entryCount];
     for (var i = 0; i < entryCount; i++) {
       var kind = (EntryKind)reader.ReadByte();
@@ -688,40 +751,35 @@ internal static class ResolutionSnapshot {
             }
             var names = new string[Count(remaining())];
             for (var j = 0; j < names.Length; j++) { names[j] = Str(); }
-            entries[i] = new(kind, typeof(VisibilityScope), [], tokens, Names: names);
+            entries[i] = new Entry { Kind = kind, Type = typeof(VisibilityScope), Start = scratch.Used, Scope = new(tokens, names) };
             objects[i] = new VisibilityScope();
             break;
           }
         case EntryKind.Array: {
             var type = TypeAt();
             if (!type.IsArray || type.GetArrayRank() != 1) { throw new ResolutionSnapshotInvalid("not an array"); }
-            var values = new Value[Count(remaining())];
-            for (var j = 0; j < values.Length; j++) { values[j] = ReadValue(); }
-            entries[i] = new(kind, type, values, null);
-            objects[i] = Array.CreateInstance(type.GetElementType()!, values.Length);
+            var n = Count(remaining());
+            ReadValues(i, kind, type, n);
+            objects[i] = Array.CreateInstance(type.GetElementType()!, n);
             break;
           }
         case EntryKind.Collection: {
             var type = TypeAt();
             var comparer = reader.ReadByte();
             var comparerType = comparer == 3 ? TypeAt() : null;
-            var values = new Value[Count(remaining())];
-            for (var j = 0; j < values.Length; j++) { values[j] = ReadValue(); }
-            entries[i] = new(kind, type, values, null, comparer, comparerType);
+            ReadValues(i, kind, type, Count(remaining()));
             objects[i] = ResolutionGraphSchema.NewCollection(type, comparer, comparerType);
             break;
           }
         case EntryKind.Lock:
-          entries[i] = new(kind, typeof(object), [], null);
+          entries[i] = new Entry { Kind = kind, Type = typeof(object), Start = scratch.Used };
           objects[i] = new object();
           break;
         case EntryKind.Fields: {
             var typeIndex = Int();
             if (typeIndex < 0 || typeIndex >= types.Length || !schemas[typeIndex]) { throw new ResolutionSnapshotInvalid("bad fields type"); }
             var type = types[typeIndex];
-            var values = new Value[ResolutionGraphSchema.Fields(type).Length];
-            for (var j = 0; j < values.Length; j++) { values[j] = ReadValue(); }
-            entries[i] = new(kind, type, values, null);
+            ReadValues(i, kind, type, ResolutionGraphSchema.Fields(type).Length);
             objects[i] = RuntimeHelpers.GetUninitializedObject(type);
             break;
           }
@@ -740,10 +798,20 @@ internal static class ResolutionSnapshot {
     var initialized = new bool[entryCount];
     // A boxed value is copied wherever it is stored, and an immutable list cannot be filled once created,
     // so each is completed before it is first read.
-    bool IsLazy(Entry entry) => (entry.Kind == EntryKind.Fields && entry.Type!.IsValueType) ||
-      (entry.Kind == EntryKind.Collection && ResolutionGraphSchema.CollectionKind(entry.Type!) == ResolutionGraphSchema.Collection.ImmutableList);
+    // Each entry's collection kind and whether it is lazy or hashed, computed once.
+    var modes = new int[entryCount];
+    for (var i = 0; i < entryCount; i++) {
+      var entry = entries[i];
+      var collection = entry.Kind == EntryKind.Collection ? (int)(ResolutionGraphSchema.CollectionKind(entry.Type) ?? 0) : 0;
+      var lazy = (entry.Kind == EntryKind.Fields && entry.Type.IsValueType) || collection == (int)ResolutionGraphSchema.Collection.ImmutableList;
+      var hashed = collection is (int)ResolutionGraphSchema.Collection.Dictionary or (int)ResolutionGraphSchema.Collection.Set or
+        (int)ResolutionGraphSchema.Collection.SortedSet;
+      modes[i] = collection | (lazy ? LazyBit : 0) | (hashed ? HashedBit : 0);
+    }
+    bool IsLazy(int id) => (modes[id] & LazyBit) != 0;
+    bool IsHashed(int id) => (modes[id] & HashedBit) != 0;
     object ReadReference(int id) {
-      if (IsLazy(entries[id]) && !initialized[id]) {
+      if (IsLazy(id) && !initialized[id]) {
         initialized[id] = true;
         Fill(id);
       }
@@ -755,15 +823,15 @@ internal static class ResolutionSnapshot {
       var target = objects[id];
       switch (entry.Kind) {
         case EntryKind.Fields: {
-            var fields = ResolutionGraphSchema.Fields(entry.Type!);
+            var fields = ResolutionGraphSchema.Fields(entry.Type);
             for (var j = 0; j < fields.Length; j++) {
-              var value = Read(entry.Values[j]);
+              var value = Read(vals[entry.Start + j]);
               if (value == null && fields[j].FieldType.IsValueType && Nullable.GetUnderlyingType(fields[j].FieldType) == null) {
                 throw new ResolutionSnapshotInvalid("null value field");
               }
               fields[j].SetValue(target, value);
             }
-            if (entry.Type == typeof(Token) && entry.Values[TokenPlace[0]].Piece is var index && index != -1) {
+            if (entry.Type == typeof(Token) && vals[entry.Start + TokenPlace[0]].Piece is var index && index != -1) {
               // An own piece's index, or an anchor's, as -2 - its index among the anchors read.
               var start = index >= 0 ? ownPieces[index].Start : copyAnchors[-2 - index];
               var copy = (Token)target;
@@ -775,11 +843,11 @@ internal static class ResolutionSnapshot {
             break;
           }
         case EntryKind.Array:
-          for (var j = 0; j < entry.Values.Length; j++) { ((Array)target).SetValue(Read(entry.Values[j]), j); }
+          for (var j = 0; j < entry.Count; j++) { ((Array)target).SetValue(Read(vals[entry.Start + j]), j); }
           break;
         case EntryKind.Scope: {
             var tokens = ResolutionGraphSchema.Tokens((VisibilityScope)target);
-            foreach (var (kind, name, rank) in entry.Tokens!) {
+            foreach (var (kind, name, rank) in entry.Scope!.Tokens) {
               if (kind == 0) {
                 if (rank < 0 || rank >= ownedTokens.Length) { throw new ResolutionSnapshotInvalid("bad scope token"); }
                 tokens.Add(ownedTokens[rank]);
@@ -787,55 +855,47 @@ internal static class ResolutionSnapshot {
                 tokens.Add(world.Token(new ResolutionExternalToken(kind, name, rank)));
               }
             }
-            ResolutionGraphSchema.Ids((VisibilityScope)target).UnionWith(entry.Names!);
+            ResolutionGraphSchema.Ids((VisibilityScope)target).UnionWith(entry.Scope!.Names);
             break;
           }
         case EntryKind.Collection:
-          switch (ResolutionGraphSchema.CollectionKind(entry.Type!)) {
+          switch ((ResolutionGraphSchema.Collection)(modes[id] & CollectionMask)) {
             case ResolutionGraphSchema.Collection.Dictionary:
-              if (entry.Values.Length % 2 != 0) { throw new ResolutionSnapshotInvalid("dictionary arity"); }
-              for (var j = 0; j < entry.Values.Length; j += 2) {
-                ((IDictionary)target).Add(Read(entry.Values[j]) ?? throw new ResolutionSnapshotInvalid("null key"), Read(entry.Values[j + 1]));
+              if (entry.Count % 2 != 0) { throw new ResolutionSnapshotInvalid("dictionary arity"); }
+              for (var j = entry.Start; j < entry.Start + entry.Count; j += 2) {
+                ((IDictionary)target).Add(Read(vals[j]) ?? throw new ResolutionSnapshotInvalid("null key"), Read(vals[j + 1]));
               }
               break;
             case ResolutionGraphSchema.Collection.ImmutableList: {
-                var items = (IList)target;
-                foreach (var value in entry.Values) { items.Add(Read(value)); }
-                var element = entry.Type!.GetGenericArguments()[0];
-                objects[id] = typeof(ImmutableList).GetMethods().Single(m => m.Name == nameof(ImmutableList.CreateRange) && m.GetParameters().Length == 1)
-                  .MakeGenericMethod(element).Invoke(null, [target])!;
+                var ops = ResolutionGraphSchema.Ops(entry.Type)!;
+                for (var j = entry.Start; j < entry.Start + entry.Count; j++) { ops.Add(target, Read(vals[j])); }
+                objects[id] = ops.Freeze!(target);
                 break;
               }
             case ResolutionGraphSchema.Collection.Stack: {
-                var push = entry.Type!.GetMethod("Push")!;
-                for (var j = entry.Values.Length - 1; j >= 0; j--) { push.Invoke(target, [Read(entry.Values[j])]); }
+                var ops = ResolutionGraphSchema.Ops(entry.Type)!;
+                for (var j = entry.Start + entry.Count - 1; j >= entry.Start; j--) { ops.Add(target, Read(vals[j])); }
                 break;
               }
             default: {
-                var add = entry.Type!.GetMethod("Add")!;
-                foreach (var value in entry.Values) {
-                  var added = add.Invoke(target, [Read(value)]);
-                  if (added is false) { throw new ResolutionSnapshotInvalid("duplicate set item"); }
-                }
+                var ops = ResolutionGraphSchema.Ops(entry.Type)!;
+                for (var j = entry.Start; j < entry.Start + entry.Count; j++) { ops.Add(target, Read(vals[j])); }
                 break;
               }
           }
           break;
       }
     }
-    bool IsHashed(Entry entry) => entry.Kind == EntryKind.Collection &&
-      ResolutionGraphSchema.CollectionKind(entry.Type!) is ResolutionGraphSchema.Collection.Dictionary or
-        ResolutionGraphSchema.Collection.Set or ResolutionGraphSchema.Collection.SortedSet;
     try {
       // Hash containers are filled last, after every field their keys' hash codes may read.
       for (var i = 0; i < entryCount; i++) {
-        if (!IsHashed(entries[i]) && !IsLazy(entries[i])) { Fill(i); }
+        if (!IsHashed(i) && !IsLazy(i)) { Fill(i); }
       }
       for (var i = 0; i < entryCount; i++) {
-        if (IsLazy(entries[i])) { ReadReference(i); }
+        if (IsLazy(i)) { ReadReference(i); }
       }
       for (var i = 0; i < entryCount; i++) {
-        if (IsHashed(entries[i])) { Fill(i); }
+        if (IsHashed(i)) { Fill(i); }
       }
     } catch (TargetInvocationException error) {
       throw new ResolutionSnapshotInvalid("materialization failed: " + error.InnerException?.Message);

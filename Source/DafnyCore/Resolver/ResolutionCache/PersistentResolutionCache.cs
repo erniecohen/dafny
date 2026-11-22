@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -56,9 +57,104 @@ internal sealed class PersistentResolutionCache {
   private readonly ResolutionBuiltinCatalog catalog;
   private readonly (string Name, Dictionary<string, MemberDecl> Members)[] initialMembers;
   private readonly Lazy<ResolutionTokenIndex> sourceTokens;
-  // Presized: a warm run registers every reused module's objects, and growing the table dominated its profile.
-  private readonly ConcurrentDictionary<object, ResolutionExternal> owners =
-    new(Environment.ProcessorCount, 1 << 16, ReferenceEqualityComparer.Instance);
+  // The owner of each object of a completed module, as its module's number and its index. Only a miss (storing an
+  // entry) and the check read it, so a module's objects are queued when it completes and entered when one of those
+  // first asks: a warm run never hashes its objects. A plain table under a lock, packed, allocates no entry per object.
+  private readonly object ownerLock = new();
+  private readonly OwnerIndex ownerTable = new();
+  private readonly List<string> ownerNames = new();
+  private readonly ConcurrentQueue<(string Name, object[] Owned)> pendingOwners = new();
+  /// <summary>Every completed module's objects, in completion order; a builtin region scans what it has not seen.</summary>
+  private readonly List<(string Name, object[] Owned)> completed = new();
+
+  private bool TryOwner(object value, out ResolutionExternal owner) {
+    lock (ownerLock) {
+      if (!pendingOwners.IsEmpty) {
+        // Size the table once for everything queued: growing it module by module rehashes it each time.
+        var batch = new List<(string Name, object[] Owned)>();
+        var total = ownerTable.Count;
+        while (pendingOwners.TryDequeue(out var queued)) {
+          batch.Add(queued);
+          total += queued.Owned.Length;
+        }
+        ownerTable.EnsureCapacity(total);
+        foreach (var pending in batch) {
+          var module = (long)ownerNames.Count << 32;
+          ownerNames.Add(pending.Name);
+          for (var i = 0; i < pending.Owned.Length; i++) {
+            var item = pending.Owned[i];
+            // A value record belongs to no module: a clone shares its original's, and a snapshot holds it by value.
+            if (!item.GetType().IsValueType && !ResolutionGraphSchema.IsValueRecord(item.GetType())) {
+              ownerTable.TryAdd(item, module | (uint)i);
+            }
+          }
+        }
+      }
+      if (ownerTable.TryGetValue(value, out var packed)) {
+        owner = new ResolutionExternal(ResolutionExternal.Kinds.Prerequisite, ownerNames[(int)(packed >> 32)], (int)(uint)packed);
+        return true;
+      }
+    }
+    owner = default;
+    return false;
+  }
+  /// <summary>
+  /// A table from objects, by reference, to packed owners: open addressing over a power-of-two array, so that
+  /// entering the millions of objects of a large program costs a hash and a store each.
+  /// </summary>
+  private sealed class OwnerIndex {
+    private object?[] keys = new object?[1 << 16];
+    private long[] values = new long[1 << 16];
+    public int Count { get; private set; }
+
+    private int shift = 64 - 16;
+
+    // Fibonacci hashing: the top bits of the product, which every bit of the hash code reaches.
+    private int Slot(object key) => (int)(((ulong)(uint)RuntimeHelpers.GetHashCode(key) * 0x9E3779B97F4A7C15UL) >> shift);
+
+    public void EnsureCapacity(int count) {
+      if ((long)count * 4 <= (long)keys.Length * 3) { return; }
+      var size = keys.Length;
+      while ((long)count * 4 > (long)size * 3) { size *= 2; }
+      var (oldKeys, oldValues) = (keys, values);
+      keys = new object?[size];
+      values = new long[size];
+      shift = 64 - System.Numerics.BitOperations.Log2((uint)size);
+      for (var i = 0; i < oldKeys.Length; i++) {
+        if (oldKeys[i] is { } key) { Insert(key, oldValues[i]); }
+      }
+    }
+
+    public void TryAdd(object key, long value) {
+      EnsureCapacity(Count + 1);
+      if (Insert(key, value)) { Count++; }
+    }
+
+    private bool Insert(object key, long value) {
+      var mask = keys.Length - 1;
+      for (var i = Slot(key); ; i = (i + 1) & mask) {
+        if (keys[i] is not { } present) {
+          keys[i] = key;
+          values[i] = value;
+          return true;
+        }
+        if (ReferenceEquals(present, key)) { return false; }
+      }
+    }
+
+    public bool TryGetValue(object key, out long value) {
+      var mask = keys.Length - 1;
+      for (var i = Slot(key); keys[i] is { } present; i = (i + 1) & mask) {
+        if (ReferenceEquals(present, key)) {
+          value = values[i];
+          return true;
+        }
+      }
+      value = 0;
+      return false;
+    }
+  }
+
   private readonly ConcurrentDictionary<uint, ResolutionExternalToken> tokenOwners = new();
   private readonly ConcurrentDictionary<string, Record> records = new(StringComparer.Ordinal);
   private readonly Dictionary<string, HashSet<uint>> ownScopeTokens = new(StringComparer.Ordinal);
@@ -172,14 +268,19 @@ internal sealed class PersistentResolutionCache {
     IReadOnlyList<ModuleResolutionResult> closure, out string state, out string? key) {
     var name = context.Declaration.FullName;
     key = Key(context);
+    PipelineProfile.ModulePhase(program.Options, "cache.key");
     if (key == null) {
       state = "uncacheable: prerequisite";
       return Uncacheable(name, resolve());
     }
     var invalid = (string?)null;
-    if (store.TryRead(ArtifactTable.Resolutions, key) is { } entry) {
+    var stored = store.TryRead(ArtifactTable.Resolutions, key);
+    PipelineProfile.ModulePhase(program.Options, "cache.read");
+    if (stored is { } entry) {
       try {
-        var hit = Hit(context, key, entry, worker());
+        var hitWorker = worker();
+        PipelineProfile.ModulePhase(program.Options, "cache.worker");
+        var hit = Hit(context, key, entry, hitWorker);
         state = "hit";
         if (program.Options.Get(CommonOptionBag.ResolutionCacheCheck)) { Check(context, hit, recreate, resolve, worker, closure, ref state); }
         return hit;
@@ -220,7 +321,7 @@ internal sealed class PersistentResolutionCache {
       .Select(p => p.Key).ToHashSet(ReferenceEqualityComparer.Instance);
     var closureNames = context.Closure.Select(d => d.FullName).ToHashSet(StringComparer.Ordinal);
     var equality = new ResolutionGraphEquality(value => shared.Contains(value) ||
-      (owners.TryGetValue(value, out var owner) && closureNames.Contains(owner.Name)) ||
+      (TryOwner(value, out var owner) && closureNames.Contains(owner.Name)) ||
       (value is Token token && sourceTokens.Value.TryGet(token, out _)));
     // The fresh resolution sees the parsed declarations of its prerequisites; the reused one, their results.
     for (var i = 0; i < context.Closure.Count && i < closure.Count; i++) {
@@ -274,11 +375,15 @@ internal sealed class PersistentResolutionCache {
     var name = context.Declaration.FullName;
     var view = worker.Builtins;
     var journal = BuiltinJournal.Of(view);
-    var anchors = Anchors(view, journal, worker);
+    var anchors = Anchors(view, journal, worker, true);
+    PipelineProfile.ModulePhase(program.Options, "store.anchors");
     var closureNames = context.Closure.Select(d => d.FullName).ToHashSet(StringComparer.Ordinal);
     var named = Named(context, worker);
     var ancestorTokens = AncestorTokens(context);
     var ownTokens = ownScopeTokens.GetValueOrDefault(name) ?? [];
+    var objects = anchors.Objects;
+    var anchorTokens = anchors.Tokens;
+    PipelineProfile.ModulePhase(program.Options, "store.objects");
     var world = new ResolutionSnapshot.CaptureWorld {
       Object = value => {
         if (ResolutionGraphSchema.Statics.TryGetValue(value, out var staticName)) {
@@ -288,8 +393,8 @@ internal sealed class PersistentResolutionCache {
           return new ResolutionExternal(ResolutionExternal.Kinds.Static, singleton, 0);
         }
         if (named.TryGetValue(value, out var namedName)) { return new ResolutionExternal(ResolutionExternal.Kinds.Named, namedName, 0); }
-        if (anchors.Objects.TryGetValue(value, out var anchor)) { return anchor; }
-        if (owners.TryGetValue(value, out var owner)) {
+        if (objects.TryGetValue(value, out var anchor)) { return anchor; }
+        if (TryOwner(value, out var owner)) {
           if (!closureNames.Contains(owner.Name)) { throw new ResolutionSnapshotUnsupported("object of " + owner.Name + ": " + value.GetType()); }
           return owner;
         }
@@ -300,7 +405,7 @@ internal sealed class PersistentResolutionCache {
           if (!closureNames.Contains(owner.Name)) { throw new ResolutionSnapshotUnsupported("scope of " + owner.Name); }
           return owner;
         }
-        if (anchors.Tokens.TryGetValue(token, out var anchor)) { return anchor; }
+        if (anchorTokens.TryGetValue(token, out var anchor)) { return anchor; }
         if (ancestorTokens.TryGetValue(token, out var ancestor)) { return ancestor; }
         if (token <= lastParseToken && !ownTokens.Contains(token)) { throw new ResolutionSnapshotUnsupported("scope of another module"); }
         return null;
@@ -325,11 +430,14 @@ internal sealed class PersistentResolutionCache {
     }
     var contextual = Contextual(output);
     var captured = ResolutionSnapshot.Capture(Roots(output, view), world, contextual);
+    PipelineProfile.ModulePhase(program.Options, "store.capture");
     CheckOwnership(output, captured.Owned);
+    PipelineProfile.ModulePhase(program.Options, "store.ownership");
     var usedAnchors = captured.Anchors.Order(StringComparer.Ordinal).ToArray();
     var manifest = new Manifest(key, Producer, name, captured.Structure, journal,
       usedAnchors.Select(a => (a, anchors.Guard(a))).ToArray(), anchors.TokenCount);
     var publication = store.TryPublish(ArtifactTable.Resolutions, key, Encode(manifest, captured.Payload), replace);
+    PipelineProfile.ModulePhase(program.Options, "store.publish");
     Register(name, captured.Structure, captured.Owned, captured.OwnedTokens, captured.SourceTokens);
     return publication;
   }
@@ -411,12 +519,8 @@ internal sealed class PersistentResolutionCache {
   }
 
   private void Register(string name, string structure, object[] owned, uint[] tokens, Token[] sourceTokens) {
-    for (var i = 0; i < owned.Length; i++) {
-      // A value record belongs to no module: a clone shares its original's, and a snapshot holds it by value.
-      if (!owned[i].GetType().IsValueType && !ResolutionGraphSchema.IsValueRecord(owned[i].GetType())) {
-        owners.TryAdd(owned[i], new ResolutionExternal(ResolutionExternal.Kinds.Prerequisite, name, i));
-      }
-    }
+    pendingOwners.Enqueue((name, owned));
+    lock (completed) { completed.Add((name, owned)); }
     for (var i = 0; i < tokens.Length; i++) {
       tokenOwners.TryAdd(tokens[i], new ResolutionExternalToken(ResolutionExternal.Kinds.Prerequisite, name, i));
     }
@@ -433,20 +537,25 @@ internal sealed class PersistentResolutionCache {
 
   private ModuleResolutionResult Hit(ModuleContext context, string key, byte[] file, Worker worker) {
     var (manifest, payload) = Read(file);
+    PipelineProfile.ModulePhase(program.Options, "cache.decode");
     var name = context.Declaration.FullName;
     if (manifest.Key != key || manifest.Producer != Producer || manifest.Name != name) {
       throw new ResolutionSnapshotInvalid("entry of another module");
     }
     var view = worker.Builtins;
     manifest.Journal.Replay(view, new ModuleResolver(worker.Resolver, context.Declaration.Options));
-    var anchors = Anchors(view, manifest.Journal, worker);
+    PipelineProfile.ModulePhase(program.Options, "cache.journal");
+    var anchors = Anchors(view, manifest.Journal, worker, false);
+    PipelineProfile.ModulePhase(program.Options, "cache.anchors");
     if (anchors.TokenCount != manifest.BuiltinTokens) { throw new ResolutionSnapshotInvalid("builtin scopes differ"); }
     foreach (var (anchor, guard) in manifest.Anchors) {
       if (anchors.Guard(anchor) != guard) { throw new ResolutionSnapshotInvalid("builtin " + anchor + " differs"); }
     }
+    PipelineProfile.ModulePhase(program.Options, "cache.guards");
     var closureNames = context.Closure.Select(d => d.FullName).ToHashSet(StringComparer.Ordinal);
     var named = Named(context, worker).ToDictionary(p => p.Value, p => p.Key, StringComparer.Ordinal);
     var ancestorTokens = AncestorTokens(context).ToDictionary(p => p.Value, p => p.Key);
+    PipelineProfile.ModulePhase(program.Options, "cache.named");
     var world = new ResolutionSnapshot.MaterializeWorld {
       Object = external => external.Kind switch {
         ResolutionExternal.Kinds.Static => ResolutionGraphSchema.StaticsByName.GetValueOrDefault(external.Name) ??
@@ -476,6 +585,7 @@ internal sealed class PersistentResolutionCache {
         ? record.SourceTokens[rank] : throw new ResolutionSnapshotInvalid("no token of " + module)
     };
     var materialized = ResolutionSnapshot.Materialize(payload, world);
+    PipelineProfile.ModulePhase(program.Options, "cache.materialize");
     if (materialized.Roots.Length != 9 || materialized.Roots[0] is not ModuleDecl resolved ||
         materialized.Roots[1] is not Dictionary<ModuleDefinition, ModuleSignature> signatures ||
         materialized.Roots[2] is not Dictionary<TopLevelDeclWithMembers, Dictionary<string, MemberDecl>> members ||
@@ -498,7 +608,9 @@ internal sealed class PersistentResolutionCache {
     }
     view.RestrictResolutionOutput(translationInputs);
     manifest.Journal.Order(view);
+    PipelineProfile.ModulePhase(program.Options, "cache.restrict");
     Register(name, manifest.Structure, materialized.Owned, materialized.OwnedTokens, materialized.SourceTokens);
+    PipelineProfile.ModulePhase(program.Options, "cache.register");
     Replay(effects, false);
     // The module's warnings and information messages, which its fresh resolution reported.
     var reporter = new BatchErrorReporter(context.Declaration.Options);
@@ -562,7 +674,12 @@ internal sealed class PersistentResolutionCache {
 
   // ---------------------------------------------------------------- builtins
 
-  private BuiltinAnchors Anchors(SystemModuleManager view, BuiltinJournal journal, Worker worker) {
+  /// <summary>
+  /// The builtin anchors of a module's view. The regions of the same roots are computed once per run. A capture
+  /// makes the module uncacheable when a region reaches a declaration or object of another module;
+  /// <c>--resolution-cache-check</c> also recomputes each hit's regions and compares them with the memo.
+  /// </summary>
+  private BuiltinAnchors Anchors(SystemModuleManager view, BuiltinJournal journal, Worker worker, bool capture) {
     var singles = new List<(string, object?)> {
       ("module:view", view.SystemModule), ("module:initial", initialBuiltins.SystemModule),
       ("module:program", program.SystemModuleManager.SystemModule), ("module:factory", catalog.Factory.SystemModule),
@@ -588,8 +705,107 @@ internal sealed class PersistentResolutionCache {
       regions.Add(("value:" + i.ToString(CultureInfo.InvariantCulture), view.valuetypeDecls[i]));
     }
     var index = sourceTokens.Value;
-    return BuiltinAnchors.For(singles, regions, value => value is ModuleDefinition || owners.ContainsKey(value) ||
-      ResolutionGraphSchema.Statics.ContainsKey(value) || ResolutionGraphSchema.SingletonName(value) != null || (value is Token token && index.TryGet(token, out _)));
+    var check = !capture && program.Options.Get(CommonOptionBag.ResolutionCacheCheck);
+    var anchors = BuiltinAnchors.For(singles, regions, anchorRegions, value => value is ModuleDefinition ||
+      ResolutionGraphSchema.Statics.ContainsKey(value) || ResolutionGraphSchema.SingletonName(value) != null ||
+      (value is Token token && index.TryGet(token, out _)), check);
+    if (anchors.Foreign is { } foreign) { throw new ResolutionSnapshotUnsupported("a builtin refers to " + foreign); }
+    if ((capture || check) && anchors.Owned(completed) is { } owned) {
+      throw new ResolutionSnapshotUnsupported("a builtin refers to " + owned);
+    }
+    return anchors;
+  }
+
+  /// <summary>
+  /// The regions of each set of builtin roots, computed once. The roots are interned builtins that every view
+  /// shares, so modules that use the same builtins share their regions; only the system modules differ per view,
+  /// and a region stops at a module.
+  /// </summary>
+  private readonly ConcurrentDictionary<RegionKey, Lazy<BuiltinRegions>> anchorRegions = new();
+
+  /// <summary>Region roots and the single anchors a region stops at, by name and identity.</summary>
+  private sealed class RegionKey : IEquatable<RegionKey> {
+    private readonly string[] names;
+    private readonly object[] objects;
+    private readonly int hash;
+
+    public RegionKey(string[] names, object[] objects) {
+      this.names = names;
+      this.objects = objects;
+      var combined = new HashCode();
+      foreach (var name in names) { combined.Add(name, StringComparer.Ordinal); }
+      foreach (var value in objects) { combined.Add(RuntimeHelpers.GetHashCode(value)); }
+      hash = combined.ToHashCode();
+    }
+
+    public bool Equals(RegionKey? other) {
+      if (other == null || other.hash != hash || other.names.Length != names.Length || other.objects.Length != objects.Length) { return false; }
+      for (var i = 0; i < names.Length; i++) {
+        if (!string.Equals(names[i], other.names[i], StringComparison.Ordinal)) { return false; }
+      }
+      for (var i = 0; i < objects.Length; i++) {
+        if (!ReferenceEquals(objects[i], other.objects[i])) { return false; }
+      }
+      return true;
+    }
+
+    public override bool Equals(object? other) => other is RegionKey key && Equals(key);
+    public override int GetHashCode() => hash;
+  }
+
+  /// <summary>The breadth-first regions of a set of builtin roots, with the scopes they hold and their guards.</summary>
+  private sealed class BuiltinRegions {
+    public required Dictionary<string, List<object>> Regions { get; init; }
+    public required VisibilityScope[] Scopes { get; init; }
+    /// <summary>A declaration of another module that a region reaches, or null.</summary>
+    public required string? Foreign { get; init; }
+    private readonly ConcurrentDictionary<string, string> guards = new(StringComparer.Ordinal);
+    private Dictionary<object, ResolutionExternal>? objects;
+
+    private int scanned;
+    private string? owned;
+
+    public string Guard(string name, List<object> region) => guards.GetOrAdd(name, _ => BuiltinAnchors.GuardOf(region));
+
+    /// <summary>
+    /// An object of a completed module that a region holds, or null. A region must hold builtins only: one that
+    /// reached a module's object would depend on which modules completed first. Each region tests each completed
+    /// module once, against its own objects, so no table of every module's objects is built.
+    /// </summary>
+    public string? Owned(List<(string Name, object[] Owned)> completed) {
+      lock (guards) {
+        var regionObjects = Objects;
+        while (true) {
+          (string Name, object[] Owned) next;
+          lock (completed) {
+            if (scanned == completed.Count) { return owned; }
+            next = completed[scanned++];
+          }
+          if (owned != null) { continue; }
+          foreach (var value in next.Owned) {
+            if (regionObjects.ContainsKey(value) && !value.GetType().IsValueType) {
+              owned = value.GetType().Name + " of " + next.Name;
+              break;
+            }
+          }
+        }
+      }
+    }
+
+    public Dictionary<object, ResolutionExternal> Objects {
+      get {
+        lock (guards) {
+          if (objects == null) {
+            var result = new Dictionary<object, ResolutionExternal>(ReferenceEqualityComparer.Instance);
+            foreach (var (name, region) in Regions) {
+              for (var i = 0; i < region.Count; i++) { result.Add(region[i], new ResolutionExternal(ResolutionExternal.Kinds.Anchor, name, i)); }
+            }
+            objects = result;
+          }
+          return objects;
+        }
+      }
+    }
   }
 
   /// <summary>
@@ -598,29 +814,81 @@ internal sealed class PersistentResolutionCache {
   /// reachable from the anchor without passing another anchor, a module, a static or a source token.
   /// </summary>
   private sealed class BuiltinAnchors {
-    public readonly Dictionary<object, ResolutionExternal> Objects = new(ReferenceEqualityComparer.Instance);
-    public readonly Dictionary<uint, ResolutionExternalToken> Tokens = new();
-    private readonly Dictionary<string, List<object>> regions = new(StringComparer.Ordinal);
+    private readonly Dictionary<object, ResolutionExternal> singleObjects = new(ReferenceEqualityComparer.Instance);
+    private readonly Dictionary<string, List<object>> singleRegions = new(StringComparer.Ordinal);
+    private BuiltinRegions shared = null!;
     private uint[] tokenList = [];
+    private Dictionary<object, ResolutionExternal>? objects;
+    private Dictionary<uint, ResolutionExternalToken>? tokens;
     public int TokenCount => tokenList.Length;
+    public string? Foreign => shared.Foreign;
+    public string? Owned(List<(string Name, object[] Owned)> completed) => shared.Owned(completed);
+
+    /// <summary>Every anchored object, for capturing a module.</summary>
+    public Dictionary<object, ResolutionExternal> Objects {
+      get {
+        if (objects == null) {
+          objects = new Dictionary<object, ResolutionExternal>(shared.Objects, ReferenceEqualityComparer.Instance);
+          foreach (var (value, external) in singleObjects) { objects[value] = external; }
+        }
+        return objects;
+      }
+    }
+
+    /// <summary>Every builtin scope token, for capturing a module.</summary>
+    public Dictionary<uint, ResolutionExternalToken> Tokens {
+      get {
+        if (tokens == null) {
+          tokens = new Dictionary<uint, ResolutionExternalToken>();
+          for (var i = 0; i < tokenList.Length; i++) {
+            tokens[tokenList[i]] = new ResolutionExternalToken(ResolutionExternal.Kinds.Anchor, BuiltinTokenOwner, i);
+          }
+        }
+        return tokens;
+      }
+    }
 
     public static BuiltinAnchors For(IEnumerable<(string Name, object? Root)> singles, IEnumerable<(string Name, object Root)> regionRoots,
-      Func<object, bool> stop) {
+      ConcurrentDictionary<RegionKey, Lazy<BuiltinRegions>> memo, Func<object, bool> stop, bool check) {
       var result = new BuiltinAnchors();
       foreach (var (name, root) in singles) {
-        if (root != null && !result.Objects.ContainsKey(root)) {
-          result.Objects.Add(root, new ResolutionExternal(ResolutionExternal.Kinds.Anchor, name, 0));
-          result.regions[name] = [root];
+        if (root != null && !result.singleObjects.ContainsKey(root)) {
+          result.singleObjects.Add(root, new ResolutionExternal(ResolutionExternal.Kinds.Anchor, name, 0));
+          result.singleRegions[name] = [root];
         }
       }
-      var roots = regionRoots.Where(r => !result.Objects.ContainsKey(r.Root)).GroupBy(r => r.Root, ReferenceEqualityComparer.Instance)
+      var roots = regionRoots.Where(r => !result.singleObjects.ContainsKey(r.Root)).GroupBy(r => r.Root, ReferenceEqualityComparer.Instance)
         .Select(g => g.First()).OrderBy(r => r.Name, StringComparer.Ordinal).ToArray();
+      // A region stops at every anchor. The system modules, which differ per view, are modules, where a region stops anyway.
+      var stops = result.singleObjects.Where(p => p.Key is not ModuleDefinition).OrderBy(p => p.Value.Name, StringComparer.Ordinal).ToArray();
+      var key = new RegionKey(roots.Select(r => r.Name).Concat(stops.Select(p => p.Value.Name)).ToArray(),
+        roots.Select(r => r.Root).Concat(stops.Select(p => p.Key)).ToArray());
+      result.shared = memo.GetOrAdd(key, _ => new Lazy<BuiltinRegions>(() => Regions(roots, stops.Select(p => p.Key), stop))).Value;
+      if (check) {
+        // The memo is sound only while builtins do not change; a fresh computation must find the same regions.
+        var fresh = Regions(roots, stops.Select(p => p.Key), stop);
+        if (fresh.Foreign != null || fresh.Regions.Any(p => !p.Value.SequenceEqual(result.shared.Regions[p.Key], ReferenceEqualityComparer.Instance))) {
+          throw new ResolutionSnapshotInvalid("a builtin region changed since it was computed");
+        }
+      }
+      var scopeTokens = new SortedSet<uint>();
+      foreach (var scope in result.singleRegions.Values.SelectMany(r => r).OfType<VisibilityScope>().Concat(result.shared.Scopes)) {
+        scopeTokens.UnionWith(ResolutionGraphSchema.Tokens(scope));
+      }
+      result.tokenList = scopeTokens.ToArray();
+      return result;
+    }
+
+    private static BuiltinRegions Regions((string Name, object Root)[] roots, IEnumerable<object> stops, Func<object, bool> stop) {
+      var seen = new HashSet<object>(stops, ReferenceEqualityComparer.Instance);
+      var regions = new Dictionary<string, List<object>>(StringComparer.Ordinal);
+      string? foreign = null;
       foreach (var (name, root) in roots) {
-        result.Objects.Add(root, new ResolutionExternal(ResolutionExternal.Kinds.Anchor, name, 0));
-        result.regions[name] = [root];
+        seen.Add(root);
+        regions[name] = [root];
       }
       foreach (var (name, _) in roots) {
-        var region = result.regions[name];
+        var region = regions[name];
         for (var i = 0; i < region.Count; i++) {
           object?[] children;
           try {
@@ -632,27 +900,38 @@ internal sealed class PersistentResolutionCache {
             // A dependent's traits are recorded in a builtin trait (object); they are the dependent's effects.
             if (region[i] is TraitDecl trait && ReferenceEquals(child, trait.TraitDeclsCanBeDowncastedTo)) { continue; }
             if (child == null || ResolutionGraphSchema.IsScalar(child.GetType()) || child.GetType().IsValueType ||
-                result.Objects.ContainsKey(child) || stop(child)) {
+                seen.Contains(child) || stop(child)) {
               continue;
             }
-            result.Objects.Add(child, new ResolutionExternal(ResolutionExternal.Kinds.Anchor, name, region.Count));
+            // A region holds builtins only. A module's resolution that hung one of its declarations on a builtin
+            // would make the region depend on which modules completed first, so no module is cached with it.
+            if (foreign == null && ForeignDeclaration(child) is { } where) { foreign = where; }
+            seen.Add(child);
             region.Add(child);
           }
         }
       }
-      var tokens = new SortedSet<uint>();
-      foreach (var scope in result.regions.Values.SelectMany(r => r).OfType<VisibilityScope>()) {
-        tokens.UnionWith(ResolutionGraphSchema.Tokens(scope));
-      }
-      result.tokenList = tokens.ToArray();
-      for (var i = 0; i < result.tokenList.Length; i++) {
-        result.Tokens[result.tokenList[i]] = new ResolutionExternalToken(ResolutionExternal.Kinds.Anchor, BuiltinTokenOwner, i);
-      }
-      return result;
+      return new BuiltinRegions {
+        Regions = regions,
+        Scopes = regions.Values.SelectMany(r => r).OfType<VisibilityScope>().ToArray(),
+        Foreign = foreign
+      };
     }
 
+    private static string? ForeignDeclaration(object value) {
+      var module = value switch {
+        TopLevelDecl declaration => declaration.EnclosingModuleDefinition,
+        MemberDecl member => member.EnclosingClass?.EnclosingModuleDefinition,
+        _ => null
+      };
+      return module != null && module.Name != "_System" ? ((Declaration)value).Name + " of " + module.FullName : null;
+    }
+
+    private List<object>? Region(string name) =>
+      singleRegions.TryGetValue(name, out var single) ? single : shared.Regions.GetValueOrDefault(name);
+
     public object Object(string name, int index) =>
-      regions.TryGetValue(name, out var region) && index >= 0 && index < region.Count
+      Region(name) is { } region && index >= 0 && index < region.Count
         ? region[index] : throw new ResolutionSnapshotInvalid("no builtin " + name + "#" + index);
 
     public uint Token(int rank) =>
@@ -660,7 +939,11 @@ internal sealed class PersistentResolutionCache {
 
     /// <summary>The size and type sequence of an anchor's region.</summary>
     public string Guard(string name) {
-      if (!regions.TryGetValue(name, out var region)) { return "absent"; }
+      if (singleRegions.TryGetValue(name, out var single)) { return GuardOf(single); }
+      return shared.Regions.TryGetValue(name, out var region) ? shared.Guard(name, region) : "absent";
+    }
+
+    public static string GuardOf(List<object> region) {
       var types = string.Join(";", region.Select(o => o.GetType().FullName));
       return region.Count.ToString(CultureInfo.InvariantCulture) + ":" +
         Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(types)));

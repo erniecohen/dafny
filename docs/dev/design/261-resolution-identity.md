@@ -127,3 +127,41 @@ entry's manifest), so removing any one copy leaves them guarded and no control
 fails; only removing every copy is caught. The direct prerequisites are
 defensive: they follow from the module's own source (in L) and from the names of
 its closure, and no mutation of them alone is caught.
+
+## What a warm run costs
+
+A hit must cost less than resolving the module. What a hit does, and what it is
+kept from doing:
+
+- **Builtin regions.** An entry names the builtin objects it uses as anchors, by
+  region (a breadth-first walk from one builtin root) and index. Each region is
+  computed once per run and view, with its guards (its size and a digest of the
+  types in it), and every module of the run uses that copy. A region must hold
+  builtins only, so a store (and `--resolution-cache-check`) scans each completed
+  module's objects against the regions once, incrementally; a hit does not. Under
+  `--resolution-cache-check` every hit also recomputes its regions afresh and
+  reports a region that differs from the remembered one.
+- **Owners.** A store must name, for each object of a prerequisite that its
+  module reaches, that prerequisite and the object's index. The table from objects
+  to owners is built only when a store or the check first asks, from the objects
+  of the modules completed by then, sized once for all of them, and held as an
+  open-addressing array of references and packed (module, index) numbers. A run
+  in which every module hits never builds it.
+- **Materialization.** Reading an entry fills its objects from one pooled array of
+  entries and one of values per thread, with no record per object. Collections are
+  created and filled through delegates made once per collection type, not by
+  reflection per element, and a field's name is computed once.
+- **Capture.** A store asks where an object outside its module is (a builtin, a
+  named context object, an anchor or a prerequisite's) once per object, not once
+  per reference, and an object already in the snapshot is recognized before that
+  question is asked.
+
+Fields are still read and written by reflection, in a capture and in a
+materialization; accessors compiled per type would cut that, at the price of
+compiling them in every process.
+
+Each phase of a module's hit or store is reported in the `resolve.module` events
+of `--pipeline-profile`, among them `cache.read`, `cache.decode`,
+`cache.anchors`, `cache.guards`, `cache.materialize` and `cache.register` for a
+hit; `store.anchors`, `store.capture`, `store.ownership` and `store.publish` for
+a store.
