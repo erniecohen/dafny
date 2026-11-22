@@ -335,9 +335,36 @@ Various options control the verification process, in addition to all those descr
   weaker than hashing the bytes on every run: a rewrite that kept all of these
   would be missed. An ordinary process cannot set the status-change time, and the
   images are read-only system files and build outputs, so the cache relies on it.
-  Only trusted local writers may share a cache. Remove `DIR/v1` to evict it;
-  there is no automatic disk eviction. This option is off by default and can
-  also be set in `dfyconfig.toml`.
+  Only trusted local writers may share a cache. Verification results are small
+  and are not evicted automatically; remove `DIR/v1` to evict everything. This
+  option is off by default and can also be set in `dfyconfig.toml`.
+- **The shared cache store.** `DIR` is one store for every persistent cache:
+  verification results, and, in its large tier `DIR/v1/artifacts`, module
+  resolutions and other intermediate results. `--cache-dir DIR` is another name
+  for `--verification-cache DIR`. The root is taken from the command line, then
+  from `verification-cache` in `dfyconfig.toml`, then from the environment
+  variable `DAFNY_CACHE_DIR`; with none of them nothing is cached. A root from
+  the environment is ignored without `--type-system-refresh`. Under it, each
+  module whose source, options, Dafny release and prerequisites are unchanged
+  is not resolved again, and an edit re-resolves only the modules it affects.
+  Entries are named by a digest of their content and never by a path, so
+  several checkouts of a project share them, and several processes may use one
+  store at the same time.
+  The large tier is bounded. Each run accounts to a *partition*, set by
+  `--cache-partition NAME` (or `cache-partition` in `dfyconfig.toml`, or
+  `DAFNY_CACHE_PARTITION`), by default one per project directory. A partition
+  holds the entries it wrote or read and is charged their full size; when it
+  exceeds `--cache-partition-budget MB` (default 10240) it drops its least
+  recently used ones. An entry is deleted only when no partition holds it. A
+  partition unused for `--cache-orphan-days N` days (default 30) is dropped,
+  and when the whole store exceeds `--cache-size-cap MB` (default 102400) its
+  least recently used entries are deleted, and Dafny reports which partitions
+  lost entries. The partition does not affect what is reused.
+  `dafny cache keep --tag T` keeps the current partition's entries under tag T
+  until `dafny cache release --tag T`; the cap deletes tagged entries last.
+  `dafny cache status` lists the store's holders and sizes, and `dafny cache gc`
+  enforces the limits now. These commands take the same root and partition
+  options.
 - `--resolution-threads N` uses N workers for dependency-ready module resolution.
   It requires `--type-system-refresh`; an incompatible configuration is rejected
   before parsing with exit code 2. The effective CLI or project-file options apply.
@@ -430,6 +457,7 @@ proofs and does not establish that the whole project is verified.
 - Scheduling
    - `--verification-module-window`
    - `--verification-module-window-memory`
+   - `--translation-workers`
 
 By default `dafny verify` verifies one module at a time: it starts every symbol of a
 module, waits until all of them have finished, and only then translates and starts
@@ -459,6 +487,24 @@ A proof's verdict and resource count do not depend on K: each proof sends the so
 the same commands. A proof limited by `--verification-time-limit`, though, can
 finish just before or just after its limit depending on how busy the machine is, as
 it can with a different `--cores`.
+
+The opt-in `--translation-workers N` ([#241](https://github.com/erniecohen/dafny/issues/241)),
+for N greater than 1, translates to Boogie and prepares for verification up to N of
+the modules that the window admits at once, instead of one at a time. It requires
+`--type-system-refresh`: with the legacy type system, N greater than 1 is an error
+(exit code 2). It has an effect only with `--verification-module-window` greater than 1.
+Each module's translation uses names private to that module, and translations
+commit in the window's order. So generated names, the Boogie text that `--bprint`
+writes, diagnostics, status lines, logs, resource counts and the exit code are the
+same as with N = 1. A translation starts only when no other is running, or while
+the managed heap plus the mean allocation of a translation, for each translation in
+progress, is below `--verification-module-window-memory` (by default, half of the
+memory available to the process). Each translation in progress holds its own Boogie
+program, so memory grows with N. The option falls back to one worker, with the same
+output, when a plugin is loaded, the log level is verbose, or a Boogie option
+prints, traces, emits debug information, verifies snapshots or selects a type
+encoding other than the default. It composes with `--resolution-threads` and
+`--translation-cache`.
 
 
 #### 13.6.1.4. `dafny translate <language>` {#sec-dafny-translate}
@@ -2741,6 +2787,19 @@ and what information it produces about the verification process.
   over either. The selected value is emitted on each verification implementation,
   so it also takes precedence over `--solver-option O:smt.arith.solver=N` or the
   corresponding `--boogie /proverOpt:O:smt.arith.solver=N` option.
+
+* `--integer-bitwise` - enable the compiler-owned ghost class
+  `IntegerBitwiseModel` and its explicit one-step definition-unfold lemmas for
+  powers, normalization, Boolean operations, shifts, rotations and population
+  count. Disabled by default. This reference-only milestone does not enable
+  integer-newtype operators or native bitvector bridges. Include the optional
+  `IntegerBitwiseCompiler.dfy` companion for checked range and algebra contracts.
+  Set `integer-bitwise = true` in the project file's `[options]` section;
+  an enabled `.doo` library requires enabled clients. Declarations in an off-built
+  library cannot use this compiler interface merely because the client enables
+  it. Ordinary declarations with the same spelling keep their own meaning,
+  including local names and opened imports. This option is independent of
+  `--additional-axioms`. See [the interface and model argument](../dev/integer-bitwise-references.md).
 
 * `--additional-axioms` - enable the fork's additional verifier axioms. This
   shared option is disabled by default. It currently supplies the bounded

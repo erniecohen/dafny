@@ -34,7 +34,11 @@ public class CachingParser : ProgramParser {
     using var reader = fileSnapshot.Reader;
 
     // Add NUL delimiter to avoid collisions (otherwise hash("A" + "BC") == hash("AB" + "C"))
-    var uriBytes = Encoding.UTF8.GetBytes(uri + "\0");
+    // Parsed declarations and their reporter retain the file's option mode. An
+    // enabled parse must not supply that capability to a later off-built file
+    // with identical text. Preserve the old hash input when the feature is off.
+    var modeDomain = options.Get(CommonOptionBag.IntegerBitwise) ? "\0integer-bitwise\0" : "";
+    var uriBytes = Encoding.UTF8.GetBytes(modeDomain + uri + "\0");
 
     var (newReader, hash) = ComputeHashFromReader(uriBytes, reader, SHA256.Create()!);
     if (!parseCache.TryGet(hash, out var result)) {

@@ -262,6 +262,11 @@ public class ProgramParser {
     Dictionary<Uri, int> versionedFiles) {
     program.Compilation.RootSourceUris.AddRange(parseFileResult.NewRootUris);
 
+    if (program.Compilation.Options.Get(CommonOptionBag.IntegerBitwise) &&
+        !parseFileResult.ErrorReporter.Options.Get(CommonOptionBag.IntegerBitwise)) {
+      (program.Compilation.IntegerBitwiseDisabledSources ??= new HashSet<Uri>()).Add(parseFileResult.Uri);
+    }
+
     if (parseFileResult.Version != null) {
       versionedFiles.Add(parseFileResult.Uri, parseFileResult.Version.Value);
     }
