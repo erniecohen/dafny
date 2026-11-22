@@ -626,12 +626,14 @@ once with Z3 5.1.0 and once with the Z3 that the tree's own tests expect (4.12.1
 this branch), and reports each declaration's verdict.  It also runs the tests named in `.github/review/regressions` in
 upstream's own harness.  On a tag it attaches self-contained binaries for `linux-x64` and `osx-arm64`
 to a GitHub release, with their sha256 sums.  The `osx-arm64` binary and the release
-itself are built on the self-hosted Apple-silicon pool (label `mac-studio`).
+itself are built on the self-hosted Apple-silicon pool (label `fork-ci`); Linux x64
+is cross-published there, with Linux execution qualified downstream.
 The framework-dependent build, artifact reports and portable regression tests
 also use this pool, together with JavaScript runtime tests, resolver matrix and unit tests,
 finite-support controls, statement-expression controls and verification-batch controls. The test `dafny0/CoinductiveProofs.dfy` declares macOS
 unsupported because its expected resource counts differ, so it stays in a
-separate hosted Linux job. `.github/review/regression-filter.py` partitions the
+separate Linux job that is explicitly skipped until a Linux self-hosted runner is
+available. `.github/review/regression-filter.py` partitions the
 standing manifest without dropping or duplicating entries. Every
 self-hosted job has an explicit repository/event guard: only pushes, manual
 runs, or pull requests whose head repository is `erniecohen/dafny` are admitted.
@@ -1545,3 +1547,34 @@ and failed downcast, newtype-constraint and argument-constraint checks. It runs
 with and without additional axioms and member invariants.
 These are regression additions only: the verifier implementation, axioms and
 options are unchanged. The release note is `docs/dev/news/472.fix`.
+
+## Trait receivers in visible newtype checks (https://github.com/erniecohen/dafny/issues/516)
+
+Under `--consistent-obligation-checks`, the visible newtype-constraint check
+adapted a boxed trait receiver as if only a type parameter could need unboxing.
+Substituting that receiver into an integer constraint then produced a Boogie
+type error. Visible constraints and member invariants now share a representation
+adapter that unboxes any source modeled as a box before substituting the value
+into the base constraint. This also repairs trait-to-newtype casts with actual
+member invariants. A boxed source must satisfy base membership before
+the numeric constraint is checked; a true constraint alone cannot establish that
+the box contains an integer. Its kind is **weakens only**: it retains the
+constraint checks and adds the required base check, with no new fact, axiom or
+trusted assumption. With consistent obligation checks and member invariants
+off, translation is unchanged. The hidden `--legacy-boxed-newtype-obligations`
+option restores the old lowering, including its missing base check, for migration
+and comparison. This option is necessary for the membership repair: even when
+the constraint is `true`, the old lowering accepts a trait value without evidence
+that its representation belongs to the newtype's base type.
+
+`git-issues/git-issue-516.dfy` covers the reported program, inhabited round trips,
+constants with several result types, and real and bitvector bases.
+`git-issue-516-controls.dfy` retains failing constraints, downcasts without
+membership, and reachable false assertions. The legacy resolver's existing
+rejection of these general-newtype conversions is retained too.
+`git-issue-516-representation.dfy` checks a datatype behind the same trait as an
+unconstrained integer newtype; its downcasts must fail even though the newtype
+constraint is true. The release
+note is `docs/dev/news/516.fix`. `git-issue-516-member-invariants.dfy` covers
+inherited and local member invariants, a round-trip witness, and failing
+downcasts, constraints, invariants and a reachable false assertion.

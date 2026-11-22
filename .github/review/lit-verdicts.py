@@ -202,7 +202,7 @@ def verify(args):
     return (path, rc, fin + ('; %d out of resource' % oor if oor else ''), ','.join(errs), secs)
 
 
-def run(planf, litdir, dafny, z3, out, shard='0/1', jobs=4, additional_axioms=False, measurements=None,
+def run(planf, litdir, dafny, z3, out, shard='0/1', jobs=2, additional_axioms=False, measurements=None,
         cache=None, cached_only=False):
     i, n = (int(x) for x in shard.split('/'))
     with open(planf) as f:
@@ -353,7 +353,7 @@ if __name__ == '__main__':
         plan(*args)
     elif cmd == 'run':
         opts = dict(zip(args[5::2], args[6::2]))
-        run(*args[:5], shard=opts.get('--shard', '0/1'), jobs=int(opts.get('--jobs', '4')),
+        run(*args[:5], shard=opts.get('--shard', '0/1'), jobs=int(opts.get('--jobs', '2')),
             additional_axioms=opts.get('--additional-axioms', 'false') == 'true',
             measurements=opts.get('--measurements'), cache=opts.get('--verification-cache'),
             cached_only=opts.get('--cached-only', 'false') == 'true')

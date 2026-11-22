@@ -1,0 +1,22 @@
+
+Dafny program verifier finished with 2 verified, 0 errors
+
+Dafny program verifier finished with 2 verified, 0 errors
+git-issue-266-persistence-false.dfy(8,4): Error: assertion might not hold
+
+Dafny program verifier finished with 0 verified, 1 error
+git-issue-266-persistence-false.dfy(8,4): Error: assertion might not hold
+
+Dafny program verifier finished with 0 verified, 1 error
+git-issue-266-persistence-knots.dfy(16,13): Error: decreases clause might not decrease (--modular-termination: the bound of the bounded value must be below the caller's 'decreases {:global}' bound)
+git-issue-266-persistence-knots.dfy(47,13): Error: decreases clause might not decrease (--modular-termination: the bound of the bounded value must be below the caller's 'decreases {:global}' bound)
+git-issue-266-persistence-knots.dfy(68,10): Error: decreases clause might not decrease (--modular-termination: the bound of the bounded value must be below the caller's 'decreases {:global}' bound)
+git-issue-266-persistence-knots.dfy(76,35): Error: decreases clause might not decrease (--modular-termination: the bound of the bounded value must be below the caller's 'decreases {:global}' bound)
+
+Dafny program verifier finished with 11 verified, 4 errors
+git-issue-266-persistence-knots.dfy(16,13): Error: decreases clause might not decrease (--modular-termination: the bound of the bounded value must be below the caller's 'decreases {:global}' bound)
+git-issue-266-persistence-knots.dfy(47,13): Error: decreases clause might not decrease (--modular-termination: the bound of the bounded value must be below the caller's 'decreases {:global}' bound)
+git-issue-266-persistence-knots.dfy(68,10): Error: decreases clause might not decrease (--modular-termination: the bound of the bounded value must be below the caller's 'decreases {:global}' bound)
+git-issue-266-persistence-knots.dfy(76,35): Error: decreases clause might not decrease (--modular-termination: the bound of the bounded value must be below the caller's 'decreases {:global}' bound)
+
+Dafny program verifier finished with 11 verified, 4 errors
