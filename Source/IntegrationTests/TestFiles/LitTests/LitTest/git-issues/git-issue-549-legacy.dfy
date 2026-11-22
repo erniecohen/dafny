@@ -12,8 +12,8 @@
 // The last two runs pin the legacy output of the issue's other reproducers, and of issue 199's, to that of the
 // former condition: with the option, git-issue-549-invariant-hints.dfy verifies every module but DynamicLemma, and
 // git-issue-199-invariant-proofs.dfy reports only the error that the former condition reported.
-// The issue's newtype reproducer, where the value is a literal of the base type, also needs the rule that such a
-// literal is a raw value, and is not here.
+// The newtype reproducer, where the value is a literal of the base type, is rejected because such a literal is a raw
+// value (https://github.com/erniecohen/dafny/pull/548).
 
 // The function's postcondition.
 module Ensures {
@@ -57,4 +57,14 @@ module SuchThatInHint {
     true
   }
   lemma False() ensures false { var x: T :| true; }
+}
+
+// A literal of the base type, converted to the newtype in a hint.
+module Newtype {
+  newtype N = x: int | true {
+    invariant Inv(this)
+  }
+  ghost predicate Inv(x: raw N) ensures !Inv(x) { G(0); true }
+  lemma G(x: N) ensures false { }
+  lemma False() ensures false { G(0); }
 }
