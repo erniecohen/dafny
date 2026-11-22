@@ -1,4 +1,5 @@
 """Cache admission rejects the legacy type system before parsing or cache I/O."""
+import shutil
 import os
 from pathlib import Path
 import subprocess
@@ -9,7 +10,8 @@ option = sys.argv[5]
 assert option in ("--translation-cache", "--verification-cache", "--cache-dir")
 # --cache-dir is an alias of --verification-cache, the cache store's root.
 named = "--verification-cache" if option == "--cache-dir" else option
-assert not destination.exists(), "use a fresh test directory"
+# A rerun reuses the test's output directory: start from an empty one.
+shutil.rmtree(destination, ignore_errors=True)
 destination.mkdir(parents=True)
 invalid = destination / "invalid.dfy"
 invalid.write_text("this is not a Dafny program\n")

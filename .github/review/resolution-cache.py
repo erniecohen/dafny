@@ -5,6 +5,7 @@ module Boogie and per-VC outcomes and resource counts. The profile's resolve.sna
 which modules were reused: a warm run reuses every module, an edit re-resolves only the modules
 whose results it can change, and --resolution-cache-check compares every reused module with a
 fresh resolution of it."""
+import shutil
 import hashlib
 import json
 from pathlib import Path
@@ -13,7 +14,8 @@ import subprocess
 import sys
 
 exe, solver, source, destination = (Path(s).resolve() for s in sys.argv[1:5])
-assert not destination.exists(), "use a fresh test directory"
+# A rerun reuses the test's output directory: start from an empty one.
+shutil.rmtree(destination, ignore_errors=True)
 destination.mkdir(parents=True)
 tree = destination / "tree"
 tree.mkdir()

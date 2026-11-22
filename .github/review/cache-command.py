@@ -10,7 +10,8 @@ import subprocess
 import sys
 
 exe, solver, source, destination = (Path(s).resolve() for s in sys.argv[1:5])
-assert not destination.exists(), "use a fresh test directory"
+# A rerun reuses the test's output directory: start from an empty one.
+shutil.rmtree(destination, ignore_errors=True)
 destination.mkdir(parents=True)
 store = destination / "store"
 artifacts = store / "v1" / "artifacts"

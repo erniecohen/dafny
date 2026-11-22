@@ -5,6 +5,7 @@ must reuse every module, and --resolution-cache-check must find each reused modu
 under the changed option: that is the semantic control that the option cannot change a result. A run that
 changes an option in the key, whether on the command line, in a project file, through --boogie, as a hidden
 option or as a --legacy-* option, must reuse no module."""
+import shutil
 import json
 import os
 from pathlib import Path
@@ -12,7 +13,8 @@ import subprocess
 import sys
 
 exe, solver, source, destination = (Path(s).resolve() for s in sys.argv[1:5])
-assert not destination.exists(), "use a fresh test directory"
+# A rerun reuses the test's output directory: start from an empty one.
+shutil.rmtree(destination, ignore_errors=True)
 destination.mkdir(parents=True)
 store = destination / "store"
 environment = {k: v for k, v in os.environ.items() if not k.startswith("DAFNY_CACHE_")}
