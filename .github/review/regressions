@@ -1113,3 +1113,6 @@ git-issues/git-issue-549-invariant-hints-controls.dfy
 # Base-type values in the cone of a newtype's member invariants (https://github.com/erniecohen/dafny/issues/105).
 git-issues/git-issue-105-newtype-base-values.dfy
 git-issues/git-issue-105-newtype-base-values-controls.dfy
+# A downcast of a general trait's value to a datatype with invariants (https://github.com/erniecohen/dafny/issues/550).
+git-issues/git-issue-550-trait-downcast.dfy
+git-issues/git-issue-550-trait-downcast-controls.dfy

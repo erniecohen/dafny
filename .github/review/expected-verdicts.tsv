@@ -1171,6 +1171,8 @@ git-issues/git-issue-5469.dfy	0	0 verified, 0 errors
 git-issues/git-issue-549.dfy	0	2 verified, 0 errors	
 git-issues/git-issue-549-invariant-hints-controls.dfy	4	8 verified, 1 error	48
 git-issues/git-issue-549-invariant-hints.dfy	2		18,28,38,51,63,74,88,102,113
+git-issues/git-issue-550-trait-downcast-controls.dfy	0	4 verified, 0 errors	
+git-issues/git-issue-550-trait-downcast.dfy	4	0 verified, 3 errors	16,20,26
 git-issues/git-issue-551.dfy	2		27
 git-issues/git-issue-5520.dfy	4	8 verified, 4 errors	12,25,48,61
 git-issues/git-issue-5521.dfy	4	6 verified, 5 errors	6,24,42,52,70
