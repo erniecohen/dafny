@@ -5161,7 +5161,10 @@ types they use), must not:
 4. call a dynamically bound function, since its overrides are not all known;
 5. test a raw value against, or convert it to, a type that depends on `D`,
    explicitly or implicitly. In particular, a raw member cannot pass `this`
-   where a `D` is expected.
+   where a `D` is expected. A value of a type that does not depend on `D`
+   counts as raw here: for a newtype `N` with invariants, a literal of type
+   `N`, a conversion `e as N` of a value of its base type, and a test
+   `e is N` of one, all test that value against the invariants of `N`.
 
 Dependence follows every path through a cycle of datatype components, regardless
 of the type at which the search enters the cycle. A cycle with no path to `D`
