@@ -21,6 +21,18 @@ public class VerificationWorkTests {
   }
 
   [Fact]
+  public void DisplayLabelsCannotDetermineProofSuccess() {
+    var result = new VerificationWorkResult(VerificationOutcome.Unsupported, Payload: new Label());
+    Assert.Equal("Valid", result.OutcomeLabel);
+    Assert.False(result.IsVerified);
+    Assert.Equal("Unsupported", (result with { Payload = null }).OutcomeLabel);
+  }
+
+  private sealed record Label : IVerificationPayload, IVerificationOutcomeLabel {
+    public string OutcomeLabel => "Valid";
+  }
+
+  [Fact]
   public void FailedPreparationCannotSupplyEmptySuccessfulWork() {
     var error = new ArgumentException("ill-typed backend input");
     var preparation = VerificationPreparation.Failed(VerificationOutcome.ToolError, error);

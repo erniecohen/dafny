@@ -141,6 +141,19 @@ public class BoogieVerificationBackendTests {
     }
   }
 
+  [Fact]
+  public void ReportingRetainsNativeIdentityAndRejectsForeignEvidence() {
+    var task = new NativeTask();
+    var nativeResult = new VerificationRunResult(0, 0, DateTime.UnixEpoch, SolverOutcome.Invalid,
+      TimeSpan.Zero, 5, [], [], [], 99, null, []);
+    var result = new VerificationWorkResult(VerificationOutcome.Failed, Payload: new BoogieVerificationResult(nativeResult));
+    var pair = BoogieVerificationReporting.GetTaskResult(new BoogieVerificationWork(task), result);
+    Assert.Same(task, pair.Task);
+    Assert.Same(nativeResult, pair.Result);
+    Assert.Throws<InvalidOperationException>(() => BoogieVerificationReporting.GetTask(new ForeignWork()));
+    Assert.Throws<InvalidOperationException>(() => BoogieVerificationReporting.GetResult(new(VerificationOutcome.Unsupported)));
+  }
+
   private class ForeignWork : IVerificationWork {
     public VerificationSource Source => new(new("foreign", 0), Microsoft.Dafny.Token.NoToken, Microsoft.Dafny.Token.NoToken);
     public VerificationWorkStatus CacheStatus => new VerificationWorkStale();

@@ -1,6 +1,6 @@
 intersects, with argument-dependent bounds in bags of levels
 
-Dafny program verifier finished with 76 verified, 0 errors
+Dafny program verifier finished with 91 verified, 0 errors
 controls (assert false in each positive context), and bounds at arguments that do not go down
 github-issue-211-stored-arguments-verify.dfy(20,9): Error: assertion might not hold
 github-issue-211-stored-arguments-verify.dfy(33,4): Error: assertion might not hold
@@ -9,7 +9,7 @@ github-issue-211-stored-arguments-verify.dfy(55,6): Error: decreases clause migh
 github-issue-211-stored-arguments-verify.dfy(65,39): Error: decreases clause might not decrease (modular termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
 github-issue-211-stored-arguments-verify.dfy(74,23): Error: decreases clause might not decrease (modular termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
 
-Dafny program verifier finished with 79 verified, 6 errors
+Dafny program verifier finished with 94 verified, 6 errors
 argument-dependent bounds that are not closed, or that may apply their own
 github-issue-211-stored-arguments-resolve.dfy(35,6): Error: modular termination: in 'RejectedBounds.Bad', the argument-dependent bound given to '_System.bounded.certifyAt' may apply the argument-dependent bound of a bounded value, which could be itself; it must compute from data alone
 github-issue-211-stored-arguments-resolve.dfy(36,77): Error: modular termination: in 'RejectedBounds.Bad', the argument-dependent bound given to '_System.bounded.certifyAt' may apply the argument-dependent bound of a bounded value, which could be itself; it must compute from data alone

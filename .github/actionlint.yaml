@@ -1,2 +1,2 @@
 self-hosted-runner:
-  labels: [mac-studio]
+  labels: [fork-ci]

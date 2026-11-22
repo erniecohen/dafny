@@ -1,0 +1,1 @@
+Complete regression coverage for bounded callables stored and returned through datatypes, constants, and ghost fields, including checked Actions clients and rejection of non-decreasing callback cycles.

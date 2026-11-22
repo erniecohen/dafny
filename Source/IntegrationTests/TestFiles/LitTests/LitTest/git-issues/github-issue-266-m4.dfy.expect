@@ -55,7 +55,7 @@ build flat: exit 4
 build no-verify: exit 3
   CLI: Error: cannot build a library under --modular-termination: its program was not completely verified in this build (for example, --no-verify was used). A library built with --modular-termination records that its own program was completely verified; build it without --no-verify, --boogie arguments, {:verify false}, {:only}, decreases *, assumptions (anything 'dafny audit' reports, bodyless members, --allow-axioms) or {:extern}, and with every verification task succeeding
 build out-of-resource: exit 4
-  DafnyStandardLibraries-orders.dfy(436,2): Error: a postcondition could not be proved on this return path
-  DafnyStandardLibraries-orders.dfy(468,2): Error: a postcondition could not be proved on this return path
+  DafnyStandardLibraries-orders.dfy(689,2): Error: a postcondition could not be proved on this return path
+  DafnyStandardLibraries-orders.dfy(721,2): Error: a postcondition could not be proved on this return path
   github-issue-211-multiset-orders.dfy(28,73): Error: a postcondition could not be proved on this return path
 M4 portable contracts: 33 checks, all passed

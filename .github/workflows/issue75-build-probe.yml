@@ -5,11 +5,42 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref_type != 'tag' }}
+
+env:
+  DOTNET_PROCESSOR_COUNT: '2'
+  MSBUILDDISABLENODEREUSE: '1'
+  GRADLE_OPTS: -Dorg.gradle.daemon=false
+
 jobs:
   migration:
-    runs-on: ubuntu-24.04
-    timeout-minutes: 90
+    if: ${{ github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request') && (github.event_name != 'pull_request' || (!github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository)) }}
+    runs-on: [self-hosted, macOS, ARM64, fork-ci]
+    timeout-minutes: 1440 # Includes waiting for the shared admission slot.
     steps:
+      - name: Yield to interactive work
+        if: runner.os == 'macOS'
+        shell: bash
+        timeout-minutes: 90
+        run: |
+          case "$(ps -o comm= -p "$PPID")" in
+            */Runner.Worker|Runner.Worker) ;;
+            *) echo "::error::Expected this job's Runner.Worker parent"; exit 1 ;;
+          esac
+          renice 10 -p "$PPID" "$$" >/dev/null
+          test "$(ps -o nice= -p "$PPID" | tr -d ' ')" = 10
+          test "$(ps -o nice= -p "$$" | tr -d ' ')" = 10
+      - name: Create job temporary directory
+        shell: bash
+        timeout-minutes: 90
+        run: |
+          job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
+          echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@18b15fb544432352965a832a1e4cdad4374acf10
+        with:
+          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-dotnet
       - uses: actions/setup-java@v4
@@ -17,17 +48,19 @@ jobs:
           distribution: temurin
           java-version: '17'
       - name: Pin solvers for test harness and resource comparisons
+        timeout-minutes: 90
         run: |
-          curl -fsSLo z3.zip https://github.com/Z3Prover/z3/releases/download/z3-5.1.0/z3-5.1.0-x64-glibc-2.39.zip
-          echo 'f47be8d27d3230e823bf1eeede2fe0abaca55bb78d0b59974370e6689a92284a  z3.zip' | sha256sum -c -
+          curl -fsSLo z3.zip https://github.com/Z3Prover/z3/releases/download/z3-5.1.0/z3-5.1.0-arm64-osx-13.3.zip
+          echo '81d29e934fd863079a74af35eecaeaef8047e0e12414d33ca322b358d68383db  z3.zip' | shasum -a 256 -c -
           unzip -q z3.zip
-          echo "$PWD/z3-5.1.0-x64-glibc-2.39/bin" >> "$GITHUB_PATH"
-          curl -fsSLo z3h.zip https://github.com/dafny-lang/solver-builds/releases/download/snapshot-2026-04-03/z3-4.12.1-x64-ubuntu-24.04-bin.zip
-          echo 'e07d4193d8e1851114fe4d507332a43576639f4aeaa33c7df15c36426d3cbf3b  z3h.zip' | sha256sum -c -
+          echo "$PWD/z3-5.1.0-arm64-osx-13.3/bin" >> "$GITHUB_PATH"
+          curl -fsSLo z3h.zip https://github.com/dafny-lang/solver-builds/releases/download/snapshot-2026-04-03/z3-4.12.1-arm64-macos-15-bin.zip
+          echo '5941a521e8868db9b57ed81d1cc0cc408b37e55443087bcb6eb207583b47183f  z3h.zip' | shasum -a 256 -c -
           mkdir -p Binaries/z3/bin
           unzip -q z3h.zip -d Binaries/z3/bin
-          cp z3-5.1.0-x64-glibc-2.39/bin/z3 Binaries/z3/bin/z3-5.1.0
+          cp z3-5.1.0-arm64-osx-13.3/bin/z3 Binaries/z3/bin/z3-5.1.0
       - name: Record migration checks, including expected failures
+        timeout-minutes: 90
         run: |
           args=()
           if [ "$GITHUB_REF_NAME" = scratch/issue75/unit-probe ]; then args+=(--units-only); fi
@@ -38,3 +71,11 @@ jobs:
           name: issue75-build-probe
           path: issue75-probe
           retention-days: 14
+      - name: Remove job temporary directory
+        if: always()
+        shell: bash
+        timeout-minutes: 5
+        run: |
+          case "${TMPDIR:-}" in
+            "$RUNNER_TEMP"/fork-job.*) rm -rf "$TMPDIR" ;;
+          esac
