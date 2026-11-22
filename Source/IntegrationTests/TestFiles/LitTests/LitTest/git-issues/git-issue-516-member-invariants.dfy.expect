@@ -1,0 +1,30 @@
+git-issue-516-member-invariants.dfy(25,13): Error: result of operation might violate newtype constraint for 'N'
+git-issue-516-member-invariants.dfy(25,13): Error: value of expression (of type 'G') is not known to be an instance of type 'raw N'
+git-issue-516-member-invariants.dfy(25,13): Error: invariant might not hold
+git-issue-516-member-invariants.dfy(13,24): Related location: this is the invariant that might not hold
+git-issue-516-member-invariants.dfy(28,14): Error: result of operation might violate newtype constraint for 'N'
+git-issue-516-member-invariants.dfy(31,14): Error: invariant might not hold
+git-issue-516-member-invariants.dfy(13,24): Related location: this is the invariant that might not hold
+git-issue-516-member-invariants.dfy(37,2): Error: assertion might not hold
+
+Dafny program verifier finished with 2 verified, 6 errors
+git-issue-516-member-invariants.dfy(25,13): Error: result of operation might violate newtype constraint for 'N'
+git-issue-516-member-invariants.dfy(25,13): Error: value of expression (of type 'G') is not known to be an instance of type 'raw N'
+git-issue-516-member-invariants.dfy(25,13): Error: invariant might not hold
+git-issue-516-member-invariants.dfy(13,24): Related location: this is the invariant that might not hold
+git-issue-516-member-invariants.dfy(28,14): Error: result of operation might violate newtype constraint for 'N'
+git-issue-516-member-invariants.dfy(31,14): Error: invariant might not hold
+git-issue-516-member-invariants.dfy(13,24): Related location: this is the invariant that might not hold
+git-issue-516-member-invariants.dfy(37,2): Error: assertion might not hold
+
+Dafny program verifier finished with 2 verified, 6 errors
+git-issue-516-member-invariants.dfy(25,13): Error: result of operation might violate newtype constraint for 'N'
+git-issue-516-member-invariants.dfy(25,13): Error: value of expression (of type 'G') is not known to be an instance of type 'raw N'
+git-issue-516-member-invariants.dfy(25,13): Error: invariant might not hold
+git-issue-516-member-invariants.dfy(13,24): Related location: this is the invariant that might not hold
+git-issue-516-member-invariants.dfy(28,14): Error: result of operation might violate newtype constraint for 'N'
+git-issue-516-member-invariants.dfy(31,14): Error: invariant might not hold
+git-issue-516-member-invariants.dfy(13,24): Related location: this is the invariant that might not hold
+git-issue-516-member-invariants.dfy(37,2): Error: assertion might not hold
+
+Dafny program verifier finished with 2 verified, 6 errors

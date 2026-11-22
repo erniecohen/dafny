@@ -289,7 +289,7 @@ sys.exit(probe.run_probe())
             args = ['src/Std/dfyconfig.toml'] if part == 'Std' else ['dfyconfig.toml']
             if part == 'TargetSpecific-cs':
                 args += ['./helper-cs.dfy']
-            command = ['/mock/dafny', 'verify'] + args + ['--solver-path', '/mock/z3', '--cores', '4',
+            command = ['/mock/dafny', 'verify'] + args + ['--solver-path', '/mock/z3', '--cores', '2',
                        '--verification-time-limit', '0', '--log-format', 'json;LogFileName=/mock/output.json']
             (measurements / (part + '.invocation.json')).write_text(json.dumps({'cwd': str(cwd), 'command': command}))
         result = comparison.std_commands(measurements.parent, candidate, Path('/mock/dafny'), Path('/mock/z3'))
@@ -479,7 +479,7 @@ class WorkflowControls(unittest.TestCase):
     def test_comparison_only_skips_require_manual_scratch_dispatch(self):
         workflow = Path(__file__).parents[1] / 'workflows/review.yml'
         text = workflow.read_text()
-        guards = {name: re.search(r'^  ' + name + r':\n(?:    name:[^\n]*\n)?    if: \$\{\{ (.*) \}\}', text, re.M)[1]
+        guards = {name: re.search(r'^  ' + name + r':\n.*?    if: \$\{\{ ([^\n]*) \}\}', text, re.M | re.S)[1]
                   for name in ['build', 'regressions', 'resolver-tests', 'default-comparison', 'decreases-order-comparison']}
         for event in ['push', 'pull_request', 'workflow_dispatch']:
             for ref in ['refs/heads/dev', 'refs/heads/review/4.11.0', 'refs/tags/v1', 'refs/heads/scratch/test']:
@@ -516,11 +516,11 @@ class WorkflowControls(unittest.TestCase):
     def test_runtime_repair_and_both_builds_use_the_same_isolated_root(self):
         text = (Path(__file__).parents[1] / 'workflows/review.yml').read_text()
         section = text[text.index('  default-comparison:'):text.index('  resolver:')]
-        self.assertIn('DOTNET_INSTALL_DIR: ${{ runner.temp }}/comparison-dotnet', section)
-        self.assertIn('test "$DOTNET_ROOT" = "$RUNNER_TEMP/comparison-dotnet"', section)
+        self.assertIn('DOTNET_INSTALL_DIR: ${{ env.TMPDIR }}/comparison-dotnet', section)
+        self.assertIn('test "$DOTNET_ROOT" = "$TMPDIR/comparison-dotnet"', section)
         self.assertIn('dotnet-version: 10.0.402', section)
-        self.assertIn('/Runtime/8.0.32/dotnet-runtime-8.0.32-linux-x64.tar.gz', section)
-        self.assertIn('639a17d84e4d52fecd62c7d4e528e7bc0ae3c9860de2530cb41a2ee7196b69ea18271d8795849180742770e25b4f913df292a5a236fa197cf5d3cd0ec5ba665f', section)
+        self.assertIn('/Runtime/8.0.32/dotnet-runtime-8.0.32-osx-arm64.tar.gz', section)
+        self.assertIn('982888e828ab7815fb14d1fabe1bd8230672dd4249923e69ba35be7c5272dfc41a7d7981c7bb1260b6e3858d48614cf2bb65c9b4bd5d03db3c85fb20e8930a34', section)
         self.assertIn('-C "$DOTNET_ROOT" --exclude=dotnet --exclude=./dotnet', section)
         self.assertIn('--record-dotnet-environment "$PWD/default-comparison" "$DOTNET_ROOT"', section)
         self.assertLess(section.index('--record-dotnet-environment'), section.index('for variant in baseline candidate; do'))
