@@ -333,6 +333,9 @@ true - All class instances are raw pointers and need to be manually deallocated"
     IsHidden = true
   };
 
+  public static readonly Option<bool> IntegerBitwise = new("--integer-bitwise", () => false,
+    "Enable the compiler-owned ghost integer bitwise reference functions and explicit one-step unfolding lemmas. Integer-newtype operators are not yet implemented.");
+
   public static readonly Option<bool> AdditionalAxioms = new("--additional-axioms", () => false,
     "Enable additional verifier axioms. May change verification performance and proof stability. Disabled by default.");
 
@@ -716,6 +719,7 @@ If verification fails, report a detailed counterexample for the first failing as
     });
 
     DafnyOptions.RegisterLegacyUi(AdditionalAxioms, DafnyOptions.ParseBoolean, "Verification options", legacyName: "additionalAxioms");
+    DafnyOptions.RegisterLegacyUi(IntegerBitwise, DafnyOptions.ParseBoolean, "Language feature selection", legacyName: "integerBitwise");
     DafnyOptions.RegisterLegacyUi(AllowAxioms, DafnyOptions.ParseBoolean, "Verification options", legacyName: "allowAxioms", defaultValue: true);
     DafnyOptions.RegisterLegacyUi(LegacyNoModularTermination, DafnyOptions.ParseBoolean, "Verification options", legacyName: "legacyNoModularTermination");
     DafnyOptions.RegisterLegacyBinding(ShowHints, (options, value) => {
@@ -993,6 +997,9 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(ManualTriggerOption, OptionScope.Module);
     OptionRegistry.RegisterOption(UserDefinedOperators, OptionScope.Cli);
     OptionRegistry.RegisterOption(AdditionalAxioms, OptionScope.Cli);
+    OptionRegistry.RegisterGlobalOption(IntegerBitwise,
+      (reporter, origin, prefix, option, localValue, libraryValue) =>
+        OptionCompatibility.OptionLibraryImpliesLocalError(reporter, origin, prefix, option, localValue, libraryValue ?? false));
     OptionRegistry.RegisterOption(MapComprehensionDomainTriggers, OptionScope.Cli);
     OptionRegistry.RegisterOption(HeapFreeLambdaFacts, OptionScope.Cli);
     OptionRegistry.RegisterOption(FunctionExtensionalityAxiom, OptionScope.Cli);
