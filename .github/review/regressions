@@ -1112,3 +1112,7 @@ git-issues/git-issue-199-invariant-proofs-controls.dfy
 # Proof hints in the cone of a member invariant, with or without a lemma binding (https://github.com/erniecohen/dafny/issues/549).
 git-issues/git-issue-549-invariant-hints.dfy
 git-issues/git-issue-549-invariant-hints-controls.dfy
+
+# Base-type values in the cone of a newtype's member invariants (https://github.com/erniecohen/dafny/issues/105).
+git-issues/git-issue-105-newtype-base-values.dfy
+git-issues/git-issue-105-newtype-base-values-controls.dfy
