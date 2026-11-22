@@ -459,23 +459,23 @@ public sealed class PipelineProfile {
     public double? Running;
   }
 
-  public void TaskSubmitted(IVerificationTask task) {
+  public void TaskSubmitted(IVerificationWork task) {
     Interlocked.Increment(ref tasksSubmitted);
     tasks[task] = new TaskTimes { Submitted = Now };
   }
 
   /// <summary>Record a status of a task; on completion, emit its event.</summary>
-  public void TaskStatus(string module, string symbol, IVerificationTask task, IVerificationStatus status, bool cached) {
+  public void TaskStatus(string module, string symbol, IVerificationWork task, VerificationWorkStatus status, bool cached) {
     var now = Now;
     var times = tasks.GetOrAdd(task, _ => new TaskTimes { Submitted = now });
     switch (status) {
-      case Queued:
+      case VerificationWorkQueued:
         times.Queued ??= now;
         return;
-      case Running:
+      case VerificationWorkRunning:
         times.Running ??= now;
         return;
-      case Completed completed:
+      case VerificationWorkCompleted completed:
         tasks.TryRemove(task, out _);
         Interlocked.Increment(ref tasksCompleted);
         if (cached) {
@@ -487,7 +487,7 @@ public sealed class PipelineProfile {
           ["module"] = module,
           ["symbol"] = symbol,
           ["task"] = Compilation.GetTaskName(task),
-          ["split"] = Caching.VerificationTaskFacts.SplitIndex(task),
+          ["split"] = task.Source.Id.Part,
           ["cached"] = cached,
           ["submitted"] = times.Submitted,
           ["queued"] = times.Queued,
@@ -497,9 +497,9 @@ public sealed class PipelineProfile {
           // submission to Running either way.
           ["queueWaitMs"] = times.Running != null ? Math.Round(times.Running.Value - times.Submitted, 3) : null,
           ["solveMs"] = times.Running != null ? Math.Round(now - times.Running.Value, 3) : null,
-          ["solverRunMs"] = Math.Round(result.RunTime.TotalMilliseconds, 3),
-          ["outcome"] = result.Outcome.ToString(),
-          ["resourceCount"] = result.ResourceCount
+          ["solverRunMs"] = result.Metrics?.RunTime is { } runTime ? Math.Round(runTime.TotalMilliseconds, 3) : null,
+          ["outcome"] = result.OutcomeLabel,
+          ["resourceCount"] = result.Metrics?.ResourceCount
         });
         return;
     }

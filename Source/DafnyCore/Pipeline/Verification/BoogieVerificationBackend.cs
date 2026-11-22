@@ -17,6 +17,20 @@ namespace Microsoft.Dafny;
 /// </summary>
 public sealed class BoogieVerificationBackend(ExecutionEngine engine, TaskCacheSession? resultCache = null)
   : IVerificationBackend<Boogie.Program> {
+  public static VerificationPreparationRequest CreateRequest(ExecutionEngine engine,
+    ResolutionResult resolution, ModuleDefinition module) => new(
+    0 < engine.Options.VerifySnapshots,
+    () => new BoogieVerificationBackend(engine, TaskCacheSession.For(resolution.ResolvedProgram.Options)),
+    graph => {
+      if (engine.Options.PrintFile != null) {
+        var moduleCount = BoogieGenerator.VerifiableModules(resolution.ResolvedProgram).Count();
+        var fileName = moduleCount > 1
+          ? DafnyMain.BoogieProgramSuffix(engine.Options.PrintFile, module.SanitizedName)
+          : engine.Options.PrintFile;
+        ExecutionEngine.PrintBplFile(engine.Options, fileName, graph, false, false, engine.Options.PrettyPrint);
+      }
+    });
+
   public async Task<VerificationPreparation> PrepareAsync(Boogie.Program input, CancellationToken cancellationToken) {
     IReadOnlyList<IVerificationTask> tasks;
     try {
@@ -41,13 +55,23 @@ public sealed class BoogieVerificationBackend(ExecutionEngine engine, TaskCacheS
 }
 
 /// <summary>Native evidence retains its object identity, including models and assertion batches.</summary>
-public sealed record BoogieVerificationResult(VerificationRunResult NativeResult) : IVerificationPayload;
+public sealed record BoogieVerificationResult(VerificationRunResult NativeResult)
+  : IVerificationPayload, IVerificationOutcomeLabel {
+  public string OutcomeLabel => NativeResult.Outcome.ToString();
+}
+
+public record AssertionBatchResult(Implementation Implementation, VerificationRunResult Result);
 
 public sealed class BoogieVerificationWork(IVerificationTask nativeTask) : IVerificationWork {
   public IVerificationTask NativeTask { get; } = nativeTask;
+  public IVerificationPayload Payload => new BoogieVerificationTask(NativeTask);
   public VerificationSource Source => new(
     new VerificationWorkId(NativeTask.ScopeId, VerificationTaskFacts.SplitIndex(NativeTask)),
-    BoogieGenerator.ToDafnyToken(NativeTask.Token), BoogieGenerator.ToDafnyToken(NativeTask.ScopeToken));
+    BoogieGenerator.ToDafnyToken(NativeTask.Token), BoogieGenerator.ToDafnyToken(NativeTask.ScopeToken)) {
+    CanVerify = (NativeTask.ScopeToken as CanVerifyOrigin)?.CanVerify,
+    IsReverifiedInheritedCheck = (NativeTask.ScopeToken as CanVerifyOrigin)?.IsReverifiedInheritedCheck ?? false
+  };
+  public IReadOnlyList<Function> HiddenFunctions => VerificationTaskFacts.HiddenFunctions(NativeTask).ToList();
   public VerificationWorkStatus CacheStatus => ConvertStatus(NativeTask.CacheStatus);
   public bool IsIdle => NativeTask.IsIdle;
   public IVerificationWork FromSeed(int seed) => new BoogieVerificationWork(NativeTask.FromSeed(seed));
@@ -77,4 +101,24 @@ public sealed class BoogieVerificationWork(IVerificationTask nativeTask) : IVeri
     SolverOutcome.Bounded => VerificationOutcome.Bounded,
     _ => VerificationOutcome.ToolError
   };
+}
+
+/// <summary>Optional native reporting capability. No synthetic task, split or result is constructed.</summary>
+public sealed record BoogieVerificationTask(IVerificationTask NativeTask) : IVerificationPayload;
+
+/// <summary>
+/// Temporary reporting bridge while native diagnostic, model, logger and gutter capabilities migrate.
+/// A foreign backend is rejected explicitly rather than fabricating native evidence.
+/// </summary>
+public static class BoogieVerificationReporting {
+  public static IVerificationTask GetTask(IVerificationWork work) =>
+    work.Payload is BoogieVerificationTask native ? native.NativeTask :
+      throw new InvalidOperationException("Boogie reporting requires native task evidence");
+
+  public static VerificationRunResult GetResult(VerificationWorkResult result) =>
+    result.Payload is BoogieVerificationResult native ? native.NativeResult :
+      throw new InvalidOperationException("Boogie reporting requires native result evidence");
+
+  public static VerificationTaskResult GetTaskResult(IVerificationWork work, VerificationWorkResult result) =>
+    new(GetTask(work), GetResult(result));
 }
