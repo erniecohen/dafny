@@ -47,6 +47,7 @@ public static class DafnyNewCli {
     AddCommand(CoverageReportCommand.Create());
     AddCommand(DocumentationCommand.Create());
     AddCommand(ExtractCommand.Create());
+    AddCommand(CacheCommand.Create());
 
     OptionRegistry.CheckOptionsAreKnown(AllOptions);
 
@@ -147,7 +148,7 @@ public static class DafnyNewCli {
       }
 
       if (dafnyOptions.Get(CommonOptionBag.VerificationCache) != null &&
-          !dafnyOptions.Get(CommonOptionBag.TypeSystemRefresh)) {
+          !dafnyOptions.Get(CommonOptionBag.TypeSystemRefresh) && !CacheCommand.IsCacheCommand(command)) {
         await dafnyOptions.OutputWriter.Status("Error: --verification-cache requires --type-system-refresh");
         context.ExitCode = (int)ExitValue.DAFNY_ERROR;
         return;
