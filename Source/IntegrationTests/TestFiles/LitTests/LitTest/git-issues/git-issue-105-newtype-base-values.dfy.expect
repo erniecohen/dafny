@@ -1,0 +1,11 @@
+git-issue-105-newtype-base-values.dfy(11,30): Error: the invariant of 'N' tests a raw value against 'N'
+git-issue-105-newtype-base-values.dfy(19,62): Error: 'Inv' is used by the invariant of 'N' and converts a raw value to 'N'
+git-issue-105-newtype-base-values.dfy(26,78): Error: 'Inv' is used by the invariant of 'N' and converts a raw value to 'N'
+git-issue-105-newtype-base-values.dfy(33,16): Error: 'C' is used by the invariant of 'N' and converts a raw value to 'N'
+git-issue-105-newtype-base-values.dfy(41,62): Error: 'Inv' is used by the invariant of 'N' and converts a raw value to 'N'
+git-issue-105-newtype-base-values.dfy(41,66): Error: 'Inv' is used by the invariant of 'N' and converts a raw value to 'N'
+git-issue-105-newtype-base-values.dfy(49,66): Error: 'Inv' is used by the invariant of 'N' and converts a raw value to 'N'
+git-issue-105-newtype-base-values.dfy(48,26): Error: 'Small' is used by the invariant of 'N' and converts a raw value to 'N'
+git-issue-105-newtype-base-values.dfy(56,69): Error: 'Inv' is used by the invariant of 'Ch' and converts a raw value to 'seq<Ch>'
+git-issue-105-newtype-base-values.dfy(63,63): Error: 'Inv' is used by the invariant of 'R' and converts a raw value to 'R'
+10 resolution/type errors detected in git-issue-105-newtype-base-values.dfy
