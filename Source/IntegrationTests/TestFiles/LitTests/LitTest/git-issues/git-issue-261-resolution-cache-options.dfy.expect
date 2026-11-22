@@ -1,0 +1,1 @@
+resolution cache options: 19 runs; 11 ignored options reuse every module and check equal to a fresh resolution; 5 key options (command line, project file, --boogie, legacy, hidden) reuse none, and a project file option keys as on the command line

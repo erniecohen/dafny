@@ -353,7 +353,6 @@ jobs:
     timeout-minutes: 1440 # Includes waiting for the shared admission slot.
     strategy:
       fail-fast: false
-      max-parallel: 1
       matrix:
         shard: [0, 1, 2, 3]
         axioms: ['off', 'on']
@@ -423,7 +422,7 @@ jobs:
           L=Source/IntegrationTests/TestFiles/LitTests/LitTest
           python3 .github/review/lit-verdicts.py plan "$L" plan.tsv
           python3 .github/review/lit-verdicts.py run plan.tsv "$L" "$PWD/out/dafny/Dafny" "$Z3" \
-            verdicts-${{ matrix.axioms }}-${{ matrix.shard }}.tsv --shard ${{ matrix.shard }}/4 --jobs 2 \
+            verdicts-${{ matrix.axioms }}-${{ matrix.shard }}.tsv --shard ${{ matrix.shard }}/4 --jobs 3 \
             --additional-axioms ${{ matrix.axioms == 'on' }} --measurements measurements/${{ matrix.axioms }} \
             --verification-cache "$PWD/verification-cache"
           python3 .github/review/additional-axioms.py inventory measurements/${{ matrix.axioms }} \
@@ -444,7 +443,7 @@ jobs:
         run: |
           L=Source/IntegrationTests/TestFiles/LitTests/LitTest
           python3 .github/review/lit-verdicts.py run plan.tsv "$L" "$PWD/out/dafny/Dafny" "$Z3" \
-            cache-reuse-${{ matrix.axioms }}-${{ matrix.shard }}.tsv --shard ${{ matrix.shard }}/4 --jobs 2 \
+            cache-reuse-${{ matrix.axioms }}-${{ matrix.shard }}.tsv --shard ${{ matrix.shard }}/4 --jobs 3 \
             --additional-axioms ${{ matrix.axioms == 'on' }} --measurements cache-reuse/${{ matrix.axioms }} \
             --verification-cache "$PWD/verification-cache" --cached-only true > cache-reuse.log
           python3 .github/review/lit-verdicts.py same measurements/${{ matrix.axioms }} cache-reuse/${{ matrix.axioms }} \
@@ -512,7 +511,6 @@ jobs:
     timeout-minutes: 1440 # Includes waiting for the shared admission slot.
     strategy:
       fail-fast: false
-      max-parallel: 1
       matrix:
         axioms: ['off', 'on']
     steps:
@@ -898,7 +896,6 @@ jobs:
     timeout-minutes: 1440 # Includes waiting for the shared admission slot.
     strategy:
       fail-fast: false
-      max-parallel: 1
       matrix:
         # This line's Z3, and the Z3 that the tree's own tests expect (its
         # DefaultZ3Version), with which upstream builds the library.
@@ -1084,7 +1081,6 @@ jobs:
     needs: tree
     runs-on: [self-hosted, macOS, ARM64, fork-ci]
     strategy:
-      max-parallel: 1
       matrix:
         node: ['16.0.0', '22']
     timeout-minutes: 1440 # Includes waiting for the shared admission slot.
@@ -1625,7 +1621,6 @@ jobs:
     timeout-minutes: 1440 # Includes waiting for the shared admission slot.
     strategy:
       fail-fast: false
-      max-parallel: 1
       matrix:
         z3: ['5.1.0', 'of the tests']
         resolver: ['legacy', 'refreshed']
@@ -1716,7 +1711,6 @@ jobs:
     runs-on: [self-hosted, macOS, ARM64, fork-ci]
     timeout-minutes: 1440 # Includes waiting for the shared admission slot.
     strategy:
-      max-parallel: 1
       matrix:
         include:
           - rid: osx-arm64
