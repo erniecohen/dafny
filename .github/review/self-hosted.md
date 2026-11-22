@@ -12,7 +12,7 @@ retain their existing serialization rules. Matrix variations of the review and
 obligation-proofs workflows run in parallel, bounded by the shared admission below. A repository action pinned by commit additionally holds numbered OS advisory locks
 across runner services. The repository variable `SELF_HOSTED_JOB_SLOTS` sets the
 number of admitted jobs, defaulting to **2** when unset; excess waiters are not
-discarded. Configure the same capacity in every participating repository. The keeper checks the job worker's process identity and releases
+discarded. Configure the same capacity in every participating repository. The action also takes optional `min-free-percent` and `max-pressure` inputs, which workflows pass from `SELF_HOSTED_JOB_MIN_FREE_PERCENT` and `SELF_HOSTED_JOB_MAX_PRESSURE`. When set, a job that has taken a free slot is admitted only while the system-wide free memory percentage (`memory_pressure -Q`) is at least the floor and the kernel pressure level (`kern.memorystatus_vm_pressure_level`) is no higher than the ceiling; otherwise it releases the slot and retries every 10 seconds. Memory is checked only at admission, so an admitted job is never stopped, and an unset variable drops its condition. The keeper checks the job worker's process identity and releases
 its slot if the worker disappears. Its post action cleans checkout outputs and
 job temporary files before stopping the keeper. An unconditional shell cleanup
 also removes temporary files if checkout or admission fails. The action is pinned
