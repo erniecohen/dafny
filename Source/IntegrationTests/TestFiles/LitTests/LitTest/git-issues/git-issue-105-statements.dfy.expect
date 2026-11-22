@@ -1,8 +1,8 @@
-git-issue-105-statements.dfy(36,26): Error: assertion might not hold
-git-issue-105-statements.dfy(41,15): Error: assertion might not hold
-git-issue-105-statements.dfy(54,4): Error: a postcondition could not be proved on this return path
-git-issue-105-statements.dfy(53,14): Related location: this is the postcondition that could not be proved
-git-issue-105-statements.dfy(66,2): Error: a postcondition could not be proved on this return path
-git-issue-105-statements.dfy(65,12): Related location: this is the postcondition that could not be proved
-
-Dafny program verifier finished with 7 verified, 4 errors
+git-issue-105-statements.dfy(15,29): Error: the invariant of 'D' refers to the set of values of 'D'
+git-issue-105-statements.dfy(21,27): Error: the invariant of 'E' tests a raw value against 'E'
+git-issue-105-statements.dfy(26,14): Error: 'AllNonnegative' is used by the invariant of 'F' and tests a raw value against 'F'
+git-issue-105-statements.dfy(26,42): Error: 'AllNonnegative' is used by the invariant of 'F' and refers to the set of values of 'F'
+git-issue-105-statements.dfy(36,42): Error: the invariant of 'Liar' refers to the set of values of 'Liar'
+git-issue-105-statements.dfy(41,29): Error: the invariant of 'Liar2' tests a raw value against 'Liar2'
+git-issue-105-statements.dfy(49,19): Error: the invariant of 'Liar3' calls 'Ok', which is dynamically bound, so the proofs it stands for are not all known
+7 resolution/type errors detected in git-issue-105-statements.dfy

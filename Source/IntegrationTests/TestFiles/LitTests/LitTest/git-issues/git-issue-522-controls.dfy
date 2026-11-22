@@ -30,14 +30,15 @@ module NoBinding {
   }
 }
 
-// A raw test only in the proof body does not define the binding's value.
+// A proof body that does not test against T may justify the binding.  (A raw test there is
+// rejected: see git-issue-199-invariant-proofs.dfy.)
 module ProofHint {
   datatype T = T(n: int) { invariant Pick(this) }
   ghost function Pick(t: raw T): bool { var b := Decide(t); b }
   lemma Decide(t: raw T) returns (b: bool)
     ensures b
   {
-    var ignored := t is T;
+    var ignored := t.n;
     b := true;
   }
   lemma Witness() {
