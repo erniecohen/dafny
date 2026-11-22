@@ -9,6 +9,10 @@ using Bpl = Microsoft.Boogie;
 
 namespace Microsoft.Dafny;
 
+/// <summary>Backend selection and translation flags, independent of a native execution engine.</summary>
+public record VerificationPreparationRequest(bool InsertChecksums,
+  Func<IVerificationBackend<Bpl.Program>> CreateBackend, Action<Bpl.Program>? Capture = null);
+
 /// <summary>A prepared module and its source/dependency map retain one reporting owner.</summary>
 public record ModuleVerificationPreparation(VerificationPreparation Preparation, ProofDependencyManager ProofDependencies);
 

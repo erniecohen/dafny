@@ -1,0 +1,9 @@
+With both `--lemma-bindings` and `--member-invariants`, the member-invariant
+extension check now also covers the proofs that justify a lemma binding in an
+invariant's cone: the bound lemma's body, the proof hints of the functions in
+the cone, and the lemmas they call. It rejects an out-parameter of the bound
+lemma whose type depends on the invariant's type, and, in those proofs, raw
+tests and conversions, choices of a value of that type, and reads of a field or
+array element of that type from the heap. Without these checks, a result of
+such a type, a raw test, a heap read or a `:|` choice in such a proof can prove
+`false`.
