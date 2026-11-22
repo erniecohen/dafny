@@ -1,0 +1,12 @@
+git-issue-516-representation.dfy(27,13): Error: value of expression (of type 'G') is not known to be an instance of type 'int'
+git-issue-516-representation.dfy(31,13): Error: value of expression (of type 'G') is not known to be an instance of type 'int'
+
+Dafny program verifier finished with 4 verified, 2 errors
+git-issue-516-representation.dfy(27,13): Error: value of expression (of type 'G') is not known to be an instance of type 'int'
+git-issue-516-representation.dfy(31,13): Error: value of expression (of type 'G') is not known to be an instance of type 'int'
+
+Dafny program verifier finished with 4 verified, 2 errors
+git-issue-516-representation.dfy(27,13): Error: value does not satisfy the subset constraints of 'I'
+git-issue-516-representation.dfy(31,13): Error: value does not satisfy the subset constraints of 'I'
+
+Dafny program verifier finished with 4 verified, 2 errors

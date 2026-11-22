@@ -9,7 +9,7 @@
     issue241-module-window.py table    <run dir>...                      wall time, CPU time, busy cores, peak RSS
     issue241-module-window.py report   <artifacts dir> <report.md>       the workflow's report
 
-`run` verifies once, under /usr/bin/time -v, with
+`run` verifies once, with wait4 resource accounting, using
 
     --verification-module-window K --verification-time-limit 0 --cores N
     --boogie /deterministicLiteralHashes:1 --boogie /restartProver
@@ -43,6 +43,7 @@ modules (by a `module` keyword at the start of a line), at each K, through `run`
 with --smt, and compares each K with K=1, program by program.
 """
 import csv
+import time
 import hashlib
 import io
 import json
@@ -54,7 +55,7 @@ import shutil
 import subprocess
 import sys
 
-TIME = '/usr/bin/time'
+
 TRUNCATED = re.compile(r'-n\d+\.smt2$')
 ANSWER = re.compile(rb'^; [A-Z][A-Za-z]*\s*$')
 MODULE = re.compile(r'^\s*(?:abstract\s+|replaceable\s+)?module\s', re.M)
@@ -79,7 +80,7 @@ def stream_hash(path):
 def run(out, dafny, z3, cwd, k, args, gc='0', cores=None, smt=False):
     out = Path(out).resolve()
     out.mkdir(parents=True, exist_ok=False)
-    cores = cores or os.cpu_count()
+    cores = cores or 2
     # An option the program sets itself is left to the program, as in lit-verdicts.py.
     own = {t.split('=')[0].split(':')[0] for t in args if t.startswith('--')}
     fixed = [('--cores', str(cores)), ('--verification-time-limit', '0')]
@@ -98,7 +99,17 @@ def run(out, dafny, z3, cwd, k, args, gc='0', cores=None, smt=False):
     (out / 'command.json').write_text(json.dumps({'cmd': cmd, 'cwd': str(cwd), 'gcServer': gc, 'k': k,
                                                   'out': str(out)}))
     with open(out / 'stdout.txt', 'wb') as so, open(out / 'stderr.txt', 'wb') as se:
-        p = subprocess.run([TIME, '-v', '-o', str(out / 'time.txt')] + cmd, cwd=cwd, stdout=so, stderr=se, env=env)
+        started = time.monotonic()
+        p = subprocess.Popen(cmd, cwd=cwd, stdout=so, stderr=se, env=env)
+        _, status, usage = os.wait4(p.pid, 0)
+        p.returncode = os.waitstatus_to_exitcode(status)
+        elapsed = time.monotonic() - started
+        rss_kib = usage.ru_maxrss / 1024 if sys.platform == 'darwin' else usage.ru_maxrss
+        (out / 'time.txt').write_text(
+            f'Elapsed (wall clock) time (h:mm:ss or m:ss): {elapsed}\n'
+            f'User time (seconds): {usage.ru_utime}\n'
+            f'System time (seconds): {usage.ru_stime}\n'
+            f'Maximum resident set size (kbytes): {int(rss_kib)}\n')
     (out / 'exit.txt').write_text(str(p.returncode) + '\n')
     if smt:
         with open(out / 'smt.tsv', 'w') as f:

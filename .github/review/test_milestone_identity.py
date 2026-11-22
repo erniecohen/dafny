@@ -158,7 +158,7 @@ class ScopeTests(unittest.TestCase):
                 expr = expr.replace('&&', ' and ').replace('||', ' or ')
                 expr = re.sub(r'!(?!=)', ' not ', expr)
                 value = bool(eval(expr.strip(), {'__builtins__': {}}, {
-                    'github': NS(event_name=event, event=NS(pull_request=NS(draft=draft))),
+                    'github': NS(repository='erniecohen/dafny', event_name=event, event=NS(pull_request=NS(draft=draft, head=NS(repo=NS(full_name='erniecohen/dafny'))))),
                     'needs': NS(tree=NS(outputs=NS(reuse='false')))}))
                 expected = not draft
                 if name.endswith(('/products', '/identity')):

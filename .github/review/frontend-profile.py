@@ -960,7 +960,7 @@ def main(argv):
         s.add_argument('--corpus', required=True)
         s.add_argument('--project')
         s.add_argument('--cwd')
-        s.add_argument('--cores', type=int, default=os.cpu_count())
+        s.add_argument('--cores', type=int, default=2)
         s.add_argument('--seed', type=int, default=1)
         if name == 'run':
             s.add_argument('--configs', required=True)
