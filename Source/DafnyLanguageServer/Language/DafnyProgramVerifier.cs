@@ -1,7 +1,4 @@
-﻿using Microsoft.Boogie;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -23,27 +20,12 @@ namespace Microsoft.Dafny.LanguageServer.Language {
       this.logger = logger;
     }
 
-    public async Task<ModuleVerificationTasks> GetVerificationTasksAsync(ExecutionEngine engine,
+    public Task<ModuleVerificationPreparation> GetVerificationTasksAsync(VerificationPreparationRequest request,
       ResolutionResult resolution,
       ModuleDefinition moduleDefinition,
-      CancellationToken cancellationToken) {
-
-      var program = resolution.ResolvedProgram;
-      var prepared = await preparationPipeline.PrepareAsync(resolution, moduleDefinition,
-        0 < engine.Options.VerifySnapshots,
-        () => new BoogieVerificationBackend(engine, Caching.TaskCacheSession.For(program.Options)),
-        cancellationToken, boogieProgram => {
-          if (engine.Options.PrintFile != null) {
-            var moduleCount = BoogieGenerator.VerifiableModules(program).Count();
-            var fileName = moduleCount > 1
-              ? DafnyMain.BoogieProgramSuffix(engine.Options.PrintFile, moduleDefinition.SanitizedName)
-              : engine.Options.PrintFile;
-            ExecutionEngine.PrintBplFile(engine.Options, fileName, boogieProgram, false, false, engine.Options.PrettyPrint);
-          }
-        });
-      var tasks = BoogieVerificationBackend.GetNativeTasks(prepared.Preparation);
-      return new ModuleVerificationTasks(tasks, prepared.ProofDependencies);
-    }
+      CancellationToken cancellationToken) =>
+      preparationPipeline.PrepareAsync(resolution, moduleDefinition, request.InsertChecksums,
+        request.CreateBackend, cancellationToken, request.Capture);
 
     public void Dispose() {
       preparationPipeline.Dispose();
