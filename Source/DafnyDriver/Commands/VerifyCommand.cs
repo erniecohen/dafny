@@ -70,7 +70,6 @@ public static class VerifyCommand {
   private static IReadOnlyList<Option> VerifyOptions =>
     new Option[] {
         PerformanceStatisticsOption,
-        CommonOptionBag.VerificationCache,
         CommonOptionBag.TranslationCache,
         CommonOptionBag.TranslationWorkers,
         CommonOptionBag.TranslationWorkersStress,

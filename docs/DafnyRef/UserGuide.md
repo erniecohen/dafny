@@ -335,9 +335,36 @@ Various options control the verification process, in addition to all those descr
   weaker than hashing the bytes on every run: a rewrite that kept all of these
   would be missed. An ordinary process cannot set the status-change time, and the
   images are read-only system files and build outputs, so the cache relies on it.
-  Only trusted local writers may share a cache. Remove `DIR/v1` to evict it;
-  there is no automatic disk eviction. This option is off by default and can
-  also be set in `dfyconfig.toml`.
+  Only trusted local writers may share a cache. Verification results are small
+  and are not evicted automatically; remove `DIR/v1` to evict everything. This
+  option is off by default and can also be set in `dfyconfig.toml`.
+- **The shared cache store.** `DIR` is one store for every persistent cache:
+  verification results, and, in its large tier `DIR/v1/artifacts`, module
+  resolutions and other intermediate results. `--cache-dir DIR` is another name
+  for `--verification-cache DIR`. The root is taken from the command line, then
+  from `verification-cache` in `dfyconfig.toml`, then from the environment
+  variable `DAFNY_CACHE_DIR`; with none of them nothing is cached. A root from
+  the environment is ignored without `--type-system-refresh`. Under it, each
+  module whose source, options, Dafny release and prerequisites are unchanged
+  is not resolved again, and an edit re-resolves only the modules it affects.
+  Entries are named by a digest of their content and never by a path, so
+  several checkouts of a project share them, and several processes may use one
+  store at the same time.
+  The large tier is bounded. Each run accounts to a *partition*, set by
+  `--cache-partition NAME` (or `cache-partition` in `dfyconfig.toml`, or
+  `DAFNY_CACHE_PARTITION`), by default one per project directory. A partition
+  holds the entries it wrote or read and is charged their full size; when it
+  exceeds `--cache-partition-budget MB` (default 10240) it drops its least
+  recently used ones. An entry is deleted only when no partition holds it. A
+  partition unused for `--cache-orphan-days N` days (default 30) is dropped,
+  and when the whole store exceeds `--cache-size-cap MB` (default 102400) its
+  least recently used entries are deleted, and Dafny reports which partitions
+  lost entries. The partition does not affect what is reused.
+  `dafny cache keep --tag T` keeps the current partition's entries under tag T
+  until `dafny cache release --tag T`; the cap deletes tagged entries last.
+  `dafny cache status` lists the store's holders and sizes, and `dafny cache gc`
+  enforces the limits now. These commands take the same root and partition
+  options.
 - `--resolution-threads N` uses N workers for dependency-ready module resolution.
   It requires `--type-system-refresh`; an incompatible configuration is rejected
   before parsing with exit code 2. The effective CLI or project-file options apply.
