@@ -1,8 +1,8 @@
-# Verification backend boundary: P1 preparation slices
+# Verification backend boundary: P1 preparation and scheduling slices
 
-These are the first two slices of [P1](https://github.com/erniecohen/dafny/issues/118).
+These are the preparation and scheduling slices of [P1](https://github.com/erniecohen/dafny/issues/118).
 They introduce work, result and preparation types, the native Boogie adapter,
-and shared translation/preparation with capture before backend mutation.
+shared translation/preparation with capture before backend mutation, and neutral scheduling through the CLI/IDE event pipeline.
 They add no backend, command-line option, axiom or proof obligation. Native
 verification behavior remains the compatibility requirement.
 
@@ -58,7 +58,7 @@ legitimately contain no work. A failed preparation carries a non-success outcome
 and its original exception, and `GetWorkOrThrow` rethrows it. The Boogie adapter
 records resolution/type/admission errors this way; cancellation and other
 exceptions retain their existing exceptional completion. No empty successful
-work list is substituted. The native bridge rejects work from another backend.
+work list is substituted. The explicit native reporting bridge rejects work or results without native evidence.
 
 ## Compatibility and controls
 
@@ -116,20 +116,32 @@ acceptance gates; this runner does not replace them.
 
 ## Remaining P1 work
 
-This slice deliberately retains `ModuleVerificationTasks`, `IProgramVerifier`'s
-engine argument and the native CLI/IDE task/result consumers through
-`BoogieVerificationBackend.GetNativeTasks`. It does not close P1. Shared translation
-and pre-mutation capture are now available without an engine; no B3 implementation
-or acceptance of its qualified bootstrap is implied. The follow-up
-must migrate those consumers together:
+`IProgramVerifier` accepts a `VerificationPreparationRequest` and returns explicit
+module preparation, without an engine argument. `Compilation` has an engine-free
+request-factory constructor; its existing constructor selects the Boogie request.
+The native request owns snapshot flags, printing and delayed result-cache construction.
 
-- Migrate `Compilation`, filters, refinement grouping, seeded work, profiling,
-  pipeline events, CLI aggregation/loggers, IDE state/gutters and verifier mocks.
-- Move native diagnostic/model/dependency interpretation into reporting adapters;
-  preserve all native output and optional capabilities without fabrication.
+Scheduling, source ownership, refinement filtering, range grouping, seeded work,
+cache completion, cancellation, profiling, pipeline events and CLI/IDE task state
+use `IVerificationWork` and neutral statuses. Hidden-function metadata is obtained
+lazily at the same scheduling point as before. Profiling preserves native outcome
+names and metric values; absent foreign metrics remain absent. Verifier mocks use
+the same interface and forward optional native reporting evidence when decorating work.
+
+This is still a partial P1 migration. Native diagnostic/model/dependency interpretation,
+CLI result aggregation/loggers and IDE gutters cross `BoogieVerificationReporting`
+to the original native objects. Foreign evidence is rejected explicitly; no split,
+implementation, counterexample or proof result is fabricated. This bridge is not
+an implementation of alternative backend reporting. The remaining milestones are:
+
+- Replace the reporting bridge with optional diagnostic, model, dependency, logger
+  and gutter capabilities, including neutral CLI aggregate results.
 - Account for expected/completed work and every non-success outcome end to end,
   including failed preparation, unsupported input, cancellation and worker errors.
+  The current scheduler propagates errors, but does not yet audit observable completion
+  without a terminal result or repeated/missing task results.
 - Cover legacy entry points and opt-in translation/result caches explicitly, and
-  repeat default-Boogie compatibility and full harness checks after migration.
+  repeat default-Boogie compatibility and full harness checks after reporting migration.
 
 No B3 worker, transport, normalization or source/model correspondence is included.
+P0 bootstrap acceptance and P2 and later work remain separate.

@@ -17,7 +17,10 @@ public enum VerificationOutcome {
 public record VerificationWorkId(string Scope, int Part);
 
 /// <summary>Source ownership and identity do not require a backend implementation or split.</summary>
-public record VerificationSource(VerificationWorkId Id, IOrigin Origin, IOrigin ScopeOrigin);
+public record VerificationSource(VerificationWorkId Id, IOrigin Origin, IOrigin ScopeOrigin) {
+  public ICanVerify? CanVerify { get; init; }
+  public bool IsReverifiedInheritedCheck { get; init; }
+}
 
 /// <summary>Metrics are optional; absence must not be interpreted as a zero cost proof.</summary>
 public record VerificationMetrics(long? ResourceCount = null, TimeSpan? RunTime = null);
@@ -25,9 +28,15 @@ public record VerificationMetrics(long? ResourceCount = null, TimeSpan? RunTime 
 /// <summary>Backend-specific evidence, for example a native model, is kept intact in a payload.</summary>
 public interface IVerificationPayload { }
 
+/// <summary>Optional display vocabulary. A label never determines proof success.</summary>
+public interface IVerificationOutcomeLabel {
+  string OutcomeLabel { get; }
+}
+
 public record VerificationWorkResult(VerificationOutcome Outcome,
   IReadOnlyList<DafnyDiagnostic>? Diagnostics = null, VerificationMetrics? Metrics = null,
   IVerificationPayload? Payload = null) {
+  public string OutcomeLabel => Payload is IVerificationOutcomeLabel labeled ? labeled.OutcomeLabel : Outcome.ToString();
   public bool IsVerified => Outcome == VerificationOutcome.Verified;
 }
 
@@ -43,6 +52,10 @@ public record VerificationWorkCompleted(VerificationWorkResult Result) : Verific
 /// </summary>
 public interface IVerificationWork {
   VerificationSource Source { get; }
+  /// <summary>Source hints queried at scheduling time, preserving lazy backend preparation.</summary>
+  IReadOnlyList<Function> HiddenFunctions => [];
+  /// <summary>Optional backend reporting evidence; scheduling never requires it.</summary>
+  IVerificationPayload? Payload => null;
   VerificationWorkStatus CacheStatus { get; }
   bool IsIdle { get; }
   IVerificationWork FromSeed(int seed);
