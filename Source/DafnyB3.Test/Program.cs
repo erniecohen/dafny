@@ -6,6 +6,7 @@ using DafnyB3;
 if (args.Length == 0) { return 2; }
 var mode = args[0];
 if (mode == "hang-child") { await Task.Delay(Timeout.Infinite); return 2; }
+if (mode.StartsWith("smt-")) { return await FakeSolver.RunAsync(mode[4..], args[1..]); }
 if (mode == "no-read") { await Task.Delay(Timeout.Infinite); return 2; }
 if (mode == "close") { return 0; }
 var input = Console.OpenStandardInput();
