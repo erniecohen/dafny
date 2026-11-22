@@ -207,21 +207,21 @@ public class CliCompilation {
         }
       }
 
-      if (ev is BoogieException boogieException) {
-        var canVerifyResult = canVerifyResults[boogieException.CanVerify];
-        canVerifyResult.Finished.SetException(boogieException.Exception);
+      if (ev is VerificationException verificationException) {
+        var canVerifyResult = canVerifyResults[verificationException.CanVerify];
+        canVerifyResult.Finished.SetException(verificationException.Exception);
       }
 
-      if (ev is BoogieUpdate { BoogieStatus: Completed completed } boogieUpdate) {
-        var canVerifyResult = canVerifyResults[boogieUpdate.CanVerify];
-        canVerifyResult.ProofDependencies = boogieUpdate.ProofDependencyManager;
-        canVerifyResult.CompletedParts.Enqueue((boogieUpdate.VerificationTask, completed));
+      if (ev is VerificationUpdate { Status: VerificationWorkCompleted completed } verificationUpdate) {
+        var canVerifyResult = canVerifyResults[verificationUpdate.CanVerify];
+        canVerifyResult.ProofDependencies = verificationUpdate.ProofDependencyManager;
+        canVerifyResult.CompletedParts.Enqueue((verificationUpdate.VerificationTask, completed));
         var completedPartsCount = Interlocked.Increment(ref canVerifyResult.CompletedCount);
 
         if (Options.Get(CommonOptionBag.ProgressOption) == CommonOptionBag.ProgressLevel.Batch) {
-          var partOrigin = boogieUpdate.VerificationTask.Split.Token;
+          var partOrigin = BoogieVerificationReporting.GetTask(verificationUpdate.VerificationTask).Split.Token;
 
-          var wellFormedness = boogieUpdate.VerificationTask.Split.Implementation.Name.Contains("CheckWellFormed$");
+          var wellFormedness = BoogieVerificationReporting.GetTask(verificationUpdate.VerificationTask).Split.Implementation.Name.Contains("CheckWellFormed$");
 
           string OriginDescription(IImplementationPartOrigin origin, bool outer) {
             if (outer && origin is ImplementationRootOrigin) {
@@ -247,10 +247,10 @@ public class CliCompilation {
             return result;
           }
 
-          var runResult = completed.Result;
+          var runResult = BoogieVerificationReporting.GetResult(completed.Result);
           var timeString = runResult.RunTime.ToString("g");
           _ = Options.OutputWriter.Status(
-            $"Verified {completedPartsCount}/{canVerifyResult.TaskCount} of {boogieUpdate.CanVerify.FullDafnyName}: " +
+            $"Verified {completedPartsCount}/{canVerifyResult.TaskCount} of {verificationUpdate.CanVerify.FullDafnyName}: " +
             $"{OriginDescription(partOrigin, true)} - " +
             $"{DescribeOutcome(Compilation.GetOutcome(runResult.Outcome))}" +
             $" (time: {timeString}, resource count: {runResult.ResourceCount})");
@@ -373,7 +373,7 @@ public class CliCompilation {
         }
 
         yield return new CanVerifyResult(canVerify,
-          results.CompletedParts.Select(c => new VerificationTaskResult(c.Task, c.Result.Result)).ToList()) {
+          results.CompletedParts.Select(c => BoogieVerificationReporting.GetTaskResult(c.Task, c.Result.Result)).ToList()) {
           ProofDependencies = results.ProofDependencies
         };
 
@@ -538,7 +538,7 @@ public class CliCompilation {
           }
 
           yield return new CanVerifyResult(canVerify,
-            results.CompletedParts.Select(c => new VerificationTaskResult(c.Task, c.Result.Result)).ToList()) {
+            results.CompletedParts.Select(c => BoogieVerificationReporting.GetTaskResult(c.Task, c.Result.Result)).ToList()) {
             ProofDependencies = results.ProofDependencies
           };
 
@@ -705,8 +705,8 @@ public class CliCompilation {
 
   }
 
-  private bool KeepVerificationTask(IVerificationTask task, LineRange range) {
-    return range.Contains(task.ScopeToken.line) || range.Contains(task.Token.line);
+  private bool KeepVerificationTask(IVerificationWork task, LineRange range) {
+    return range.Contains(task.Source.ScopeOrigin.line) || range.Contains(task.Source.Origin.line);
   }
 }
 

@@ -1283,7 +1283,7 @@ jobs:
         run: dotnet test -p:NuGetAudit=false --settings .github/review/ci.runsettings Source/DafnyCore.Test -c Release --filter FullyQualifiedName~Obligation --logger "console;verbosity=normal"
       - name: Backend-neutral work and Boogie preparation controls
         timeout-minutes: 90
-        run: dotnet test -p:NuGetAudit=false --settings .github/review/ci.runsettings Source/DafnyCore.Test -c Release --filter 'FullyQualifiedName~VerificationWorkTests|FullyQualifiedName~BoogieVerificationBackendTests' --logger "console;verbosity=normal"
+        run: dotnet test -p:NuGetAudit=false --settings .github/review/ci.runsettings Source/DafnyCore.Test -c Release --filter 'FullyQualifiedName~VerificationWorkTests|FullyQualifiedName~BoogieVerificationBackendTests|FullyQualifiedName~VerificationPreparationPipelineTests|FullyQualifiedName~VerificationSchedulingTests' --logger "console;verbosity=normal"
       - name: Persistent task cache storage, lifecycle and option inventory
         timeout-minutes: 90
         run: |

@@ -192,6 +192,16 @@ public static class DafnyNewCli {
         return;
       }
 
+      var translationWorkersResult = context.ParseResult.FindResultFor(CommonOptionBag.TranslationWorkers);
+      var translationWorkersRequested = translationWorkersResult?.Token is not null ||
+        dafnyOptions.DafnyProject?.Options.ContainsKey(CommonOptionBag.TranslationWorkers.Name) == true;
+      if (translationWorkersRequested && dafnyOptions.Get(CommonOptionBag.TranslationWorkers) > 1 &&
+          !dafnyOptions.Get(CommonOptionBag.TypeSystemRefresh)) {
+        await dafnyOptions.OutputWriter.Status("Error: --translation-workers requires --type-system-refresh.");
+        context.ExitCode = (int)ExitValue.DAFNY_ERROR;
+        return;
+      }
+
       if (dafnyOptions.Get(CommonOptionBag.WaitForDebugger)) {
         while (!Debugger.IsAttached) {
           Thread.Sleep(100);
