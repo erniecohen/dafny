@@ -322,8 +322,8 @@ that runs Boogie's own test jobs and packs Boogie's NuGet packages.  The same fi
 is offered to Boogie's master as
 [boogie-org/boogie#1169](https://github.com/boogie-org/boogie/pull/1169).
 
-This branch builds against that fork's release `v3.5.5+review.a38b89f9`, whose
-packages have the version `3.5.5-review.a38b89f9`.  The release carries them with
+This branch builds against that fork's release `v3.5.5+review.76ad65b4`, whose
+packages have the version `3.5.5-review.76ad65b4`.  The release carries them with
 their sha256 sums, and its `REVIEW.md` says what the fork changes and how its
 version is computed.  Besides that fix, it brings:
 
@@ -384,10 +384,10 @@ version is computed.  Besides that fix, it brings:
   restores the old deadline for comparison, passed through Dafny's `--boogie`.
 
 `a48933e` made this branch build against the fork's packages, at
-`3.5.5-review.37e4435d`.  It now builds against `3.5.5-review.a38b89f9`:
+`3.5.5-review.37e4435d`.  It now builds against `3.5.5-review.76ad65b4`:
 
 - `Source/DafnyCore/DafnyCore.csproj` names `Boogie.ExecutionEngine`
-  `3.5.5-review.a38b89f9`, and `dotnet-tools.json` names the `boogie` tool at the
+  `3.5.5-review.76ad65b4`, and `dotnet-tools.json` names the `boogie` tool at the
   same version;
 - `nuget.config` adds a local package source, `Binaries/boogie-packages`, and maps
   every Boogie package to it and to nothing else, so a missing package stops the
@@ -463,6 +463,26 @@ source is identical to `dcd726f6`. The shared-Boolean policy changes only the
 monomorphizer and its option interface; it does not reintroduce the map-row split.
 The regression is `git-issues/git-issue-281-shared-literals.dfy`; the release note
 is `docs/dev/news/281-shared-literals.feat`.
+
+The move from `a38b89f9` to `76ad65b4` adopts
+[erniecohen/boogie#16](https://github.com/erniecohen/boogie/pull/16):
+`CheckerPool.Release(Program)`, which makes the idle checkers last set up for a program
+forget it and drop their prover's managed context, including the VC variables the
+translator keeps for every program it has translated.  The solver process is sent nothing
+and gets the same commands with or without a release.  It adds no option and changes no
+output.  `Compilation.ClearModuleCache` calls it once a module is reported, so that a
+one-shot run does not keep every finished module alive through the checkers
+([#241](https://github.com/erniecohen/dafny/issues/241), F4).  The complete commit range
+between those release tags is:
+
+- `6a393d66`: CI on self-hosted runners, skipping draft pull requests
+  ([erniecohen/boogie#15](https://github.com/erniecohen/boogie/pull/15)); no product file;
+- `a93a02c8`: `CheckerPool.Release(Program)`, its tests and documentation
+  ([erniecohen/boogie#16](https://github.com/erniecohen/boogie/pull/16)).
+
+The regressions are `MemoryReleaseTests` and
+`git-issues/github-issue-241-release-verified-modules.dfy`; the release note is
+`docs/dev/news/241-memory-release.fix`.
 
 ## Tests, release notes and the manual
 
