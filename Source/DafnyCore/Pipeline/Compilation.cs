@@ -870,6 +870,9 @@ public class Compilation : IDisposable {
       }
     }
     Interlocked.Add(ref releasedBodies, released);
+    profile?.Point("release", new Dictionary<string, object?> {
+      ["module"] = PipelineProfile.ModuleName(moduleDefinition), ["bodies"] = released
+    });
     return released;
   }
 
