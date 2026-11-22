@@ -336,7 +336,7 @@ internal sealed class PersistentResolutionCache {
       : equality.Difference(freshRoots.Append(ViewTables(fresh.Builtins)).ToArray(),
         Roots(hit, hit.Builtins).Append(ViewTables(hit.Builtins)).ToArray());
     // The fresh resolution also registered its traits with the traits they extend; only the reused ones stay.
-    Replay((List<TraitDecl>)freshRoots[^1]!, true);
+    Replay((List<TraitDecl>)freshRoots[8]!, true);
     if (difference == null) {
       state = "hit (checked " + equality.Compared.ToString(CultureInfo.InvariantCulture) + " objects)";
       return;
@@ -452,7 +452,7 @@ internal sealed class PersistentResolutionCache {
     return [
       output.ResolvedDeclaration, output.Signatures, output.ClassMembers, output.TranslationInputs, output.SystemClassMembers,
       wider ? view.MaxNonGhostTupleSizeToken : null, wider ? view.MaxNonGhostTupleSizeUsed : 0, output.ErrorReporter.AllMessages,
-      Effects(output)
+      Effects(output), RefinementBases(output)
     ];
   }
 
@@ -474,6 +474,27 @@ internal sealed class PersistentResolutionCache {
           result.Add(parent);
           result.Add(trait);
         }
+      }
+    }
+    return result;
+  }
+
+  /// <summary>
+  /// The other write of a module's resolution into declarations it does not own: a module that refines another
+  /// records, on each of its own module declarations, the declaration of the refined module it replaces
+  /// (<see cref="TopLevelDecl.CardinalityRefinementBase"/>). A module declaration is resolved, and cached, as a
+  /// module of its own, before the module that encloses it, so the enclosing module's resolution writes into an
+  /// object of another entry. The list holds (declaration, base) pairs, flattened. A hit replays them.
+  /// </summary>
+  private static List<TopLevelDecl> RefinementBases(ModuleResolutionResult output) {
+    var result = new List<TopLevelDecl>();
+    foreach (var module in output.Signatures.Keys) {
+      foreach (var declaration in module.TopLevelDecls.OfType<ModuleDecl>()) {
+        if (ReferenceEquals(declaration, output.ResolvedDeclaration) || declaration.CardinalityRefinementBase is not { } refined) {
+          continue;
+        }
+        result.Add(declaration);
+        result.Add(refined);
       }
     }
     return result;
@@ -586,7 +607,7 @@ internal sealed class PersistentResolutionCache {
     };
     var materialized = ResolutionSnapshot.Materialize(payload, world);
     PipelineProfile.ModulePhase(program.Options, "cache.materialize");
-    if (materialized.Roots.Length != 9 || materialized.Roots[0] is not ModuleDecl resolved ||
+    if (materialized.Roots.Length != 10 || materialized.Roots[0] is not ModuleDecl resolved ||
         materialized.Roots[1] is not Dictionary<ModuleDefinition, ModuleSignature> signatures ||
         materialized.Roots[2] is not Dictionary<TopLevelDeclWithMembers, Dictionary<string, MemberDecl>> members ||
         materialized.Roots[3] is not ModuleTranslationInputs translationInputs ||
@@ -594,6 +615,7 @@ internal sealed class PersistentResolutionCache {
         materialized.Roots[5] is not (null or IOrigin) || materialized.Roots[6] is not int maxTupleSize ||
         materialized.Roots[7] is not List<DafnyDiagnostic> messages || messages.Any(m => m.Level == ErrorLevel.Error) ||
         materialized.Roots[8] is not List<TraitDecl> effects || effects.Count % 2 != 0 ||
+        materialized.Roots[9] is not List<TopLevelDecl> refinementBases || refinementBases.Count % 2 != 0 ||
         resolved.GetType() != context.Declaration.GetType()) {
       throw new ResolutionSnapshotInvalid("bad roots");
     }
@@ -612,6 +634,9 @@ internal sealed class PersistentResolutionCache {
     Register(name, manifest.Structure, materialized.Owned, materialized.OwnedTokens, materialized.SourceTokens);
     PipelineProfile.ModulePhase(program.Options, "cache.register");
     Replay(effects, false);
+    for (var i = 0; i + 1 < refinementBases.Count; i += 2) {
+      refinementBases[i].CardinalityRefinementBase = refinementBases[i + 1];
+    }
     // The module's warnings and information messages, which its fresh resolution reported.
     var reporter = new BatchErrorReporter(context.Declaration.Options);
     foreach (var message in messages) { reporter.MessageCore(message); }

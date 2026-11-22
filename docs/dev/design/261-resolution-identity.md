@@ -128,6 +128,24 @@ fails; only removing every copy is caught. The direct prerequisites are
 defensive: they follow from the module's own source (in L) and from the names of
 its closure, and no mutation of them alone is caught.
 
+## What a snapshot cannot see
+
+A snapshot holds what a module's resolution left in the fields of the objects it owns, and the oracle compares the
+same graph. Neither sees what the resolution leaves elsewhere, and a hit loses it:
+
+- **A table beside the program.** The reveal lemmas that the opaque-member rewriter generates were known from a
+  static weak table keyed by the lemma; a reused lemma was not in it, so modular termination took it for a user's
+  lemma. The lemma now holds the member it reveals (`Method.GeneratedRevealOf`), a field the snapshot copies.
+- **A field of another module's object.** A module declaration is resolved, and cached, as a module of its own,
+  before the module that encloses it. A refining module then records, on its binding of an abstract import, the
+  import the binding replaces (`TopLevelDecl.CardinalityRefinementBase`): a write into another entry. A hit of the
+  binding lacked it, and the inherited code was not checked against the invariants the binding adds. The refining
+  module's entry now holds these writes, as (declaration, base) pairs that a hit replays, like the subtraits its
+  traits add to traits elsewhere. A collection of another entry that a resolution changes is detected (the entry is
+  not stored); a scalar field is not, so a new write of this kind needs its own effect.
+
+`.github/review/resolution-cache.py` has a scenario for each.
+
 ## What a warm run costs
 
 A hit must cost less than resolving the module. What a hit does, and what it is

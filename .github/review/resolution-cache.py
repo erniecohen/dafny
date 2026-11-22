@@ -276,8 +276,59 @@ main.write_text("// moved\n\n" + Z)
 control("copies-lines-above", expect_reused=modules, check=True)
 main.write_text("// moved\n\n" + Z.replace("export provides F", "export reveals F"))
 control("export-edited", expect_reused=["_module.Base", "_module.Refined"], check=True)
+# State a module's resolution leaves outside its own objects must survive a hit. A refining module records, on the
+# binding of an abstract import, the import it replaces; the binding is cached as a module of its own, resolved
+# before the module that encloses it, so the record is a write into another entry. Without it the hit drops the
+# check of the inherited function against the invariant that the binding adds.
+tree = destination / "tree5"
+tree.mkdir()
+cache = destination / "cache5"
+main = tree / "R.dfy"
+main.write_text("""abstract module Lib0 {
+  datatype D = D(x: int) {
+    invariant x >= 0
+  }
+}
+module Lib1 refines Lib0 {
+  datatype D ... {
+    invariant x < 10
+  }
+}
+abstract module User0 {
+  import L : Lib0
+  function Make(): L.D { L.D(20) }
+}
+module User1 refines User0 {
+  import L = Lib1
+}
+""")
+binding = ["--general-traits=datatype", "--general-newtypes=true", "--member-invariants"]
+cold, off = control("binding-cold", *binding, expect_reused=[])
+assert off[0] == 4 and b"invariant" in off[1], ("the uncached run checks the inherited function", off[:2])
+# Unchecked first: the oracle's fresh resolution of User1 writes the record again, onto the reused binding.
+control("binding-warm", *binding, expect_reused=sorted(cold))
+control("binding-checked", *binding, expect_reused=sorted(cold), check=True)
+
+# The lemma that reveals an opaque function was known from a table beside the program, which a hit did not fill.
+tree = destination / "tree6"
+tree.mkdir()
+cache = destination / "cache6"
+main = tree / "O.dfy"
+main.write_text("""module Opaque {
+  opaque function F(x: nat): nat { x + 1 }
+}
+module Client {
+  import Opaque
+  lemma Uses(x: nat) ensures Opaque.F(x) == x + 1 { reveal Opaque.F(); }
+  method Bad() { assert false; }
+}
+""")
+termination = ["--general-traits=datatype", "--decreases-orders", "--modular-termination"]
+cold, _ = control("reveal-cold", *termination, expect_reused=[])
+control("reveal-warm", *termination, expect_reused=sorted(cold))
+control("reveal-checked", *termination, expect_reused=sorted(cold), check=True)
 print("resolution cache: %d runs; cold stores, warm reuses all and checks equal; a comment re-resolves one module, "
       "a signature its dependents, an option all; a damaged or corrupt entry is a miss; lines above, a move and another "
       "checkout reuse all; changed text, a rename and a new naming prefix re-resolve the modules they change; the program's widest tuple "
       "leaves other modules cacheable; export sets, datatype updates and refinement copies are cached, and an export edit "
-      "re-resolves its module" % runs)
+      "re-resolves its module; a refining module's record on an import binding and a reveal lemma survive a hit" % runs)
