@@ -4,10 +4,8 @@ using System.Linq;
 using System.Reactive.Subjects;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Boogie;
 using Microsoft.Dafny.LanguageServer.Language;
 using Microsoft.Extensions.Logging;
-using VC;
 
 namespace Microsoft.Dafny.LanguageServer.IntegrationTest.Various;
 
@@ -21,41 +19,40 @@ class SlowVerifier : IProgramVerifier {
 
   private readonly DafnyProgramVerifier verifier;
 
-  public async Task<ModuleVerificationTasks> GetVerificationTasksAsync(ExecutionEngine engine,
+  public async Task<ModuleVerificationPreparation> GetVerificationTasksAsync(VerificationPreparationRequest request,
     ResolutionResult resolution, ModuleDefinition moduleDefinition, CancellationToken cancellationToken) {
     var program = resolution.ResolvedProgram;
     var attributes = program.Modules().SelectMany(m => {
       return m.TopLevelDecls.OfType<TopLevelDeclWithMembers>().SelectMany(d => d.Members.Select(member => member.Attributes));
     }).ToList();
 
-    var tasks = await verifier.GetVerificationTasksAsync(engine, resolution, moduleDefinition, cancellationToken);
+    var tasks = await verifier.GetVerificationTasksAsync(request, resolution, moduleDefinition, cancellationToken);
     if (attributes.Any(a => Attributes.Contains(a, "neverVerify"))) {
-      tasks = tasks with { Tasks = tasks.Tasks.Select(t => (IVerificationTask)new NeverVerifiesImplementationTask(t)).ToList() };
+      tasks = tasks with { Preparation = VerificationPreparation.Ready(tasks.Preparation.GetWorkOrThrow().Select(t => new NeverVerifiesImplementationTask(t))) };
     }
 
     return tasks;
   }
 
-  class NeverVerifiesImplementationTask : IVerificationTask {
-    private readonly IVerificationTask original;
-    private readonly Subject<IVerificationStatus> source;
+  class NeverVerifiesImplementationTask : IVerificationWork {
+    private readonly IVerificationWork original;
+    private readonly Subject<VerificationWorkStatus> source;
 
-    public NeverVerifiesImplementationTask(IVerificationTask original) {
+    public NeverVerifiesImplementationTask(IVerificationWork original) {
       this.original = original;
       source = new();
     }
 
-    public IVerificationTask FromSeed(int newSeed) {
+    public IVerificationWork FromSeed(int newSeed) {
       return this;
     }
 
-    public IVerificationStatus CacheStatus => new Stale();
-    public ManualSplit Split => original.Split;
-    public Boogie.IToken ScopeToken => original.ScopeToken;
-    public string ScopeId => original.ScopeId;
-    public Boogie.IToken Token => original.Token;
+    public VerificationWorkStatus CacheStatus => new VerificationWorkStale();
+    public VerificationSource Source => original.Source;
+    public IReadOnlyList<Microsoft.Dafny.Function> HiddenFunctions => original.HiddenFunctions;
+    public IVerificationPayload? Payload => original.Payload;
 
-    public IObservable<IVerificationStatus> TryRun() {
+    public IObservable<VerificationWorkStatus> TryRun() {
       return source;
     }
 

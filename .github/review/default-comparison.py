@@ -230,7 +230,7 @@ def std_commands(directory, candidate, dafny, solver):
         log = command[-1]
         require(isinstance(log, str) and log.startswith('json;LogFileName=') and log != 'json;LogFileName=',
                 part + ': missing observation filename')
-        expected = [str(dafny), 'verify'] + args + ['--solver-path', str(solver), '--cores', '4',
+        expected = [str(dafny), 'verify'] + args + ['--solver-path', str(solver), '--cores', '2',
                     '--verification-time-limit', '0', '--log-format', log]
         require(invocation['cwd'] == str(cwd) and command == expected,
                 part + ': actual command/cwd differs from original native proof options')
@@ -382,13 +382,13 @@ def main():
         (directory / 'plan.tsv').write_bytes(plan.read_bytes())
         return [sys.executable, str(harness / '.github/review/lit-verdicts.py'), 'run', str(directory / 'plan.tsv'),
                 str(candidate / LIT), str(builds[name[0]] / 'Dafny'), str(solver51), str(directory / 'verdicts.tsv'),
-                '--shard', '0/1', '--jobs', '4', '--measurements', str(directory / 'measurements')]
+                '--shard', '0/1', '--jobs', '2', '--measurements', str(directory / 'measurements')]
     results = {'suite-z3-5.1.0': repeated_scope('suite-z3-5.1.0', output, suite_invocation,
         lambda directory, name: suite.vector(directory, suite_inventory, builds[name[0]] / 'Dafny', solver51, merge_outcomes))}
     for version, solver in [('5.1.0', solver51), ('4.16.0', solver_harness)]:
         def std_invocation(name, directory):
             return [sys.executable, str(harness / '.github/review/std-verdicts.py'), 'run', str(candidate / 'Source/DafnyStandardLibraries'),
-                    str(builds[name[0]] / 'Dafny'), str(solver), str(directory / 'std-verdicts.tsv'), '--cores', '4',
+                    str(builds[name[0]] / 'Dafny'), str(solver), str(directory / 'std-verdicts.tsv'), '--cores', '2',
                     '--measurements', str(directory / 'measurements')]
         def std_vector(directory, name):
             result = vector(directory, inventory)

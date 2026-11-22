@@ -8,7 +8,7 @@ class PipelineHealthTests(unittest.TestCase):
     def test_pipeline_project_runs_with_contract_assertions(self):
         workflow = Path(__file__).parents[1] / 'workflows' / 'review.yml'
         self.assertRegex(workflow.read_text(), re.compile(
-            r'^        run: dotnet test --settings \.github/review/ci\.runsettings '
+            r'^        run: dotnet test -p:NuGetAudit=false --settings \.github/review/ci\.runsettings '
             r'Source/DafnyPipeline\.Test -c Debug --logger "console;verbosity=normal"$', re.M))
 
 
