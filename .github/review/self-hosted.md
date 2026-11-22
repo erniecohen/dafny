@@ -8,8 +8,8 @@ The routing tests retain the same-repository event restrictions. Draft and fork
 pull requests do not execute code on these runners.
 
 Each workflow cancels superseded branch/PR runs. Tag and maintenance operations
-retain their existing serialization rules. Matrix jobs admit one variation at a
-time. A repository action pinned by commit additionally holds numbered OS advisory locks
+retain their existing serialization rules. Matrix variations of the review and
+obligation-proofs workflows run in parallel, bounded by the shared admission below. A repository action pinned by commit additionally holds numbered OS advisory locks
 across runner services. The repository variable `SELF_HOSTED_JOB_SLOTS` sets the
 number of admitted jobs, defaulting to **2** when unset; excess waiters are not
 discarded. Configure the same capacity in every participating repository. The keeper checks the job worker's process identity and releases
