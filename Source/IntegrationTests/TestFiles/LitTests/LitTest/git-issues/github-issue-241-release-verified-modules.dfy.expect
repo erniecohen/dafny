@@ -1,4 +1,4 @@
-github-issue-241-release-verified-modules.dfy(66,48): Error: a postcondition could not be proved on this return path
-github-issue-241-release-verified-modules.dfy(66,44): Related location: this is the postcondition that could not be proved
+github-issue-241-release-verified-modules.dfy(69,48): Error: a postcondition could not be proved on this return path
+github-issue-241-release-verified-modules.dfy(69,44): Related location: this is the postcondition that could not be proved
 
 Dafny program verifier finished with 24 verified, 1 error

@@ -1,6 +1,7 @@
 // RUN: ! %verify --cores=4 %s > "%t.k1"
 // RUN: ! %verify --cores=4 --release-verified-modules %s > "%t.r1"
 // RUN: ! %verify --cores=4 --release-verified-modules --verification-module-window 4 --pipeline-profile "%t.r4.jsonl" %s > "%t.r4"
+// RUN: ! %verify --cores=4 --release-verified-modules --verification-module-window 4 --translation-workers 4 --pipeline-profile "%t.t4.jsonl" %s > "%t.t4"
 // RUN: ! %verify --cores=4 --release-verified-modules --filter-symbol=Client %s > "%t.f1"
 // RUN: ! %verify --cores=4 --filter-symbol=Client %s > "%t.f0"
 // RUN: %exits-with 1 %baredafny verify --use-basename-for-filename --release-verified-modules --filter-position-batch=:30 %s > "%t.rejected"
@@ -8,7 +9,9 @@
 // RUN: %diff "%s.expect" "%t.k1"
 // RUN: %diff "%t.k1" "%t.r1"
 // RUN: %diff "%t.k1" "%t.r4"
+// RUN: %diff "%t.k1" "%t.t4"
 // RUN: python3 "%S/Inputs/github-issue-241-release-verified-modules.py" "%t.r4.jsonl"
+// RUN: python3 "%S/Inputs/github-issue-241-release-verified-modules.py" "%t.t4.jsonl" parallel
 // RUN: %diff "%t.f0" "%t.f1"
 // RUN: %OutputCheck --file-to-check "%t.rejected" "%s"
 // CHECK: --release-verified-modules cannot be combined with --filter-position-batch
