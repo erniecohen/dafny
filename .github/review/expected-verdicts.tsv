@@ -1172,6 +1172,8 @@ git-issues/git-issue-5469.dfy	0	0 verified, 0 errors
 git-issues/git-issue-549.dfy	0	2 verified, 0 errors	
 git-issues/git-issue-549-invariant-hints-controls.dfy	4	8 verified, 1 error	48
 git-issues/git-issue-549-invariant-hints.dfy	2		18,28,38,51,63,74,88,102,113
+git-issues/git-issue-550-trait-downcast-controls.dfy	0	4 verified, 0 errors	
+git-issues/git-issue-550-trait-downcast.dfy	4	0 verified, 3 errors	16,20,26
 git-issues/git-issue-551.dfy	2		27
 git-issues/git-issue-5520.dfy	4	8 verified, 4 errors	12,25,48,61
 git-issues/git-issue-5521.dfy	4	6 verified, 5 errors	6,24,42,52,70
@@ -1347,6 +1349,7 @@ git-issues/github-issue-23-lambda.dfy	4	1 verified, 1 error	11
 git-issues/github-issue-23-ordinal-subset.dfy	0	1 verified, 0 errors	
 git-issues/github-issue-23-ordinal-undefined.dfy	4	0 verified, 2 errors	8,9
 git-issues/github-issue-241-cache-background.dfy	4	29 verified, 4 errors	39,57,75,80
+git-issues/github-issue-241-translation-workers.dfy	4	18 verified, 1 error	112,117
 git-issues/github-issue-2563.dfy	4	0 verified, 0 errors	
 git-issues/github-issue-26-ten.dfy	0	0 verified, 0 errors	
 git-issues/github-issue-26.dfy	4	2 verified, 1 error	22
@@ -1403,3 +1406,4 @@ git-issues/github-issue-88-value-types.dfy	4	20 verified, 9 errors	68,76,85,106,
 git-issues/github-issue-88.dfy	4	46 verified, 17 errors	51,83,113,121,122,139,140,184,190,199,234,245,292,332,352,373,410
 git-issues/github-issue-89.dfy	4	60 verified, 20 errors	50,64,65,98,100,101,102,103,115,133,134,149,171,188,189,193,215,224,232,242
 git-issues/github-issue-90.dfy	4	9 verified, 1 error	23
+git-issues/git-issue-193-bootstrap.dfy	0	4 verified, 0 errors

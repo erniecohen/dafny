@@ -71,6 +71,11 @@ public class CachingResolver : ProgramResolver {
 
   protected override ModuleResolutionResult ResolveModuleOutput(ModuleDecl declaration, string key,
     IReadOnlyList<ModuleResolutionResult> prerequisites, Func<ModuleResolutionResult> resolve, out bool cached) {
+    if (Options.UsesPersistentResolutionCache) {
+      // The detached profile always materializes against this compilation. The live IDE cache
+      // remains the default profile, with its existing pruning and telemetry.
+      return base.ResolveModuleOutput(declaration, key, prerequisites, resolve, out cached);
+    }
     usedModuleKeys.TryAdd(key, 0);
     // The key certifies semantics. Parse identity additionally certifies that
     // retained diagnostic tokens still belong to this editor document version.
