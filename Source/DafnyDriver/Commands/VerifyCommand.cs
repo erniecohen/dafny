@@ -71,6 +71,8 @@ public static class VerifyCommand {
     new Option[] {
         PerformanceStatisticsOption,
         CommonOptionBag.TranslationCache,
+        CommonOptionBag.TranslationWorkers,
+        CommonOptionBag.TranslationWorkersStress,
         FilterSymbol,
         FilterPosition,
         FilterPositionBatch,
@@ -98,6 +100,10 @@ public static class VerifyCommand {
       options.TrackVerificationCoverage = true;
     }
 
+    var windowMemoryMiB = options.Get(VerificationModuleWindowMemory);
+    if (windowMemoryMiB > 0) {
+      VerificationPreparationPipeline.SetMemoryBudget(options, windowMemoryMiB * 1024L * 1024L);
+    }
     var compilation = CliCompilation.Create(options);
     compilation.Start();
 

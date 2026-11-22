@@ -457,6 +457,7 @@ proofs and does not establish that the whole project is verified.
 - Scheduling
    - `--verification-module-window`
    - `--verification-module-window-memory`
+   - `--translation-workers`
 
 By default `dafny verify` verifies one module at a time: it starts every symbol of a
 module, waits until all of them have finished, and only then translates and starts
@@ -486,6 +487,24 @@ A proof's verdict and resource count do not depend on K: each proof sends the so
 the same commands. A proof limited by `--verification-time-limit`, though, can
 finish just before or just after its limit depending on how busy the machine is, as
 it can with a different `--cores`.
+
+The opt-in `--translation-workers N` ([#241](https://github.com/erniecohen/dafny/issues/241)),
+for N greater than 1, translates to Boogie and prepares for verification up to N of
+the modules that the window admits at once, instead of one at a time. It requires
+`--type-system-refresh`: with the legacy type system, N greater than 1 is an error
+(exit code 2). It has an effect only with `--verification-module-window` greater than 1.
+Each module's translation uses names private to that module, and translations
+commit in the window's order. So generated names, the Boogie text that `--bprint`
+writes, diagnostics, status lines, logs, resource counts and the exit code are the
+same as with N = 1. A translation starts only when no other is running, or while
+the managed heap plus the mean allocation of a translation, for each translation in
+progress, is below `--verification-module-window-memory` (by default, half of the
+memory available to the process). Each translation in progress holds its own Boogie
+program, so memory grows with N. The option falls back to one worker, with the same
+output, when a plugin is loaded, the log level is verbose, or a Boogie option
+prints, traces, emits debug information, verifies snapshots or selects a type
+encoding other than the default. It composes with `--resolution-threads` and
+`--translation-cache`.
 
 
 #### 13.6.1.4. `dafny translate <language>` {#sec-dafny-translate}

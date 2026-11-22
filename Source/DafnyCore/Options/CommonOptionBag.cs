@@ -80,6 +80,22 @@ public class CommonOptionBag {
     ArgumentHelpName = "N"
   };
 
+  public static readonly Option<int> TranslationWorkers = new("--translation-workers", () => 1,
+    "Translate to Boogie, and prepare for verification, up to N modules at once. Requires --type-system-refresh, " +
+    "and has an effect only with --verification-module-window greater than 1, which admits the modules. " +
+    "Generated names, Boogie text, diagnostics, logs and resource counts are the same as with 1, the default. " +
+    "A translation starts only while the managed heap, plus the mean allocation of a translation for each one " +
+    "in progress, is below --verification-module-window-memory. Falls back to 1 with a plugin, a verbose log " +
+    "level, or a Boogie print, trace, debug-information, snapshot or non-default type-encoding option.") {
+    ArgumentHelpName = "N"
+  };
+
+  public static readonly Option<int> TranslationWorkersStress = new("--translation-workers-stress", () => 0,
+    "(testing) With --translation-workers, delay each translation's start: a positive seed draws a delay of up to " +
+    "40 ms per module, -1 delays the k-th module by 100·(3 - k mod 4) ms, so that translations finish in reverse order.") {
+    IsHidden = true
+  };
+
   public static readonly Option<string> PipelineProfile =
     new("--pipeline-profile", @"
 (experimental) Write timing events of the verification pipeline to the given file, one JSON object per line: parsing, resolution, translation to Boogie, Boogie's preparation of each module, and each verification task's queue wait and solver time, with process-wide allocation, garbage-collection and CPU deltas; and front-end events with the running thread's CPU time and allocation: each file parsed or .doo file read, the module dependency graph, each module's resolution and its phases, each global resolution pass, and each module's translation. Also accepted by resolve. Only the file is added; Dafny's other output and its solver input are unchanged.".TrimStart()) {
@@ -962,6 +978,13 @@ NoGhost - disable printing of functions, ghost methods, and proof
     });
     OptionRegistry.RegisterOption(ResolutionThreads, OptionScope.Cli);
     OptionRegistry.RegisterOption(TranslationCache, OptionScope.Cli);
+    TranslationWorkers.AddValidator(result => {
+      if (result.Tokens.Count != 0 && result.GetValueOrDefault<int>() < 1) {
+        result.ErrorMessage = "--translation-workers must be a positive integer.";
+      }
+    });
+    OptionRegistry.RegisterOption(TranslationWorkers, OptionScope.Cli);
+    OptionRegistry.RegisterOption(TranslationWorkersStress, OptionScope.Cli);
     OptionRegistry.RegisterOption(PipelineProfile, OptionScope.Cli);
     OptionRegistry.RegisterOption(PipelineProfileHeap, OptionScope.Cli);
     OptionRegistry.RegisterOption(PipelineProfileGcEvents, OptionScope.Cli);
