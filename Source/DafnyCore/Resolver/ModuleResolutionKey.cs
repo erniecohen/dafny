@@ -48,15 +48,60 @@ public static class ModuleResolutionKey {
     return Convert.ToHexStringLower(SHA256.HashData(bytes.ToArray()));
   }
 
+  /// <summary>
+  /// The options left out of every module's resolution key, each with the reason it cannot change a module's
+  /// resolution result. Every other option is in the key (default-deny): a new option is a key input until it is
+  /// listed here. DafnyDriver.Test checks that each name is a registered option and that toggling any other option
+  /// changes the digest.
+  /// </summary>
+  public static IReadOnlyDictionary<string, string> IgnoredOptions { get; } = new Dictionary<string, string>(StringComparer.Ordinal) {
+    ["resolution-threads"] = "scheduling only: sequential and parallel resolution produce the same results",
+    ["resolution-cache"] = "switches this cache; a reused result equals a fresh one",
+    ["resolution-cache-check"] = "compares reused results with fresh ones; changes no result",
+    ["translation-cache"] = "a later stage's cache",
+    ["verification-cache"] = "the store's root, not an input; keys never name a location",
+    ["cache-partition"] = "store accounting only",
+    ["cache-partition-budget"] = "store retention only",
+    ["cache-size-cap"] = "store retention only",
+    ["cache-orphan-days"] = "store retention only",
+    ["pipeline-profile"] = "profiling output",
+    ["pipeline-profile-heap"] = "profiling output",
+    ["pipeline-profile-gc-events"] = "profiling output",
+    ["pipeline-profile-hold"] = "profiling output",
+    ["bprint"] = "writes the Boogie program of a later stage",
+    ["rprint"] = "prints the resolved program; does not change it",
+    ["print"] = "prints the parsed program; does not change it",
+    ["sprint"] = "prints the program; does not change it",
+    ["pprint"] = "prints the program; does not change it",
+    ["log-level"] = "language server logging",
+    ["log-location"] = "language server logging",
+    ["show-snippets"] = "how diagnostics are rendered at report time",
+    ["use-basename-for-filename"] = "how file names are rendered at report time; keys and snapshots hold no file names",
+    ["cores"] = "verification parallelism",
+    ["library"] = "which files are libraries reaches the key as each declaration's effective verification membership",
+    ["log-format"] = "verification logs",
+    ["verification-coverage-report"] = "a verification report",
+    ["solver-log"] = "solver logging",
+    ["output"] = "where compiled output goes",
+    ["progress"] = "progress reporting",
+  };
+
+  /// <summary>A digest of the options in the resolution key of a module resolved under <paramref name="options"/>.</summary>
+  public static string OptionsDigest(DafnyOptions options) {
+    using var bytes = new MemoryStream();
+    using (var writer = new BinaryWriter(bytes, Encoding.UTF8, true)) {
+      foreach (var option in Options(options).OrderBy(p => p.Key, StringComparer.Ordinal)) {
+        writer.Write(option.Key);
+        writer.Write(option.Value);
+      }
+    }
+    return Convert.ToHexStringLower(SHA256.HashData(bytes.ToArray()));
+  }
+
   internal static IEnumerable<KeyValuePair<string, string>> Options(DafnyOptions options) {
     // Execution, reporting, and lookup locations are not semantic resolution inputs.
-    var ignored = new HashSet<string>(StringComparer.Ordinal) {
-      "resolution-threads", "resolution-cache", "translation-cache", "verification-cache", "pipeline-profile",
-      "pipeline-profile-heap", "pipeline-profile-gc-events", "pipeline-profile-hold", "bprint", "rprint", "print", "sprint", "pprint",
-      "log-level", "log-location", "show-snippets", "use-basename-for-filename", "cores", "library",
-      "log-format", "verification-coverage-report", "solver-log", "output", "progress"
-    };
-    var current = options.Options.OptionArguments.Where(p => !ignored.Contains(p.Key.Name))
+    var ignored = IgnoredOptions;
+    var current = options.Options.OptionArguments.Where(p => !ignored.ContainsKey(p.Key.Name))
       .Select(p => new KeyValuePair<string, string>(p.Key.Name, Value(p.Value)));
     // Legacy parsing and module-local {:options} can write effective fields
     // without updating OptionArguments. Those fields still affect resolution,
