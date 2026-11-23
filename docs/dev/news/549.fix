@@ -1,0 +1,11 @@
+With `--member-invariants`, the member-invariant extension check now covers the
+proof hints (statements inside expressions) of the functions in an invariant's
+cone, and the lemmas they call, whether or not the cone has a lemma binding.
+In them it rejects raw tests and conversions, unbounded choices and quantifiers
+over a type that depends on the invariant's type, reads of a field or array
+element of such a type (in any expression of the cone, too), and calls of
+dynamically bound lemmas. Without this, a hint could assume the type's
+invariants while proving a function's postcondition, termination or a callee's
+precondition, and prove `false`. The hidden
+`--legacy-unchecked-member-invariant-proofs` option restores the former, unsound
+check, for migration and comparison only.

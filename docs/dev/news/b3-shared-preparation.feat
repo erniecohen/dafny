@@ -1,0 +1,1 @@
+Extract shared verification translation and preparation with capture before backend mutation, without requiring a Boogie execution engine at that boundary. Native verification retains its existing adapter, printing, cache ordering and reporting path. This is preparatory infrastructure for the alternative backend, not a new backend or completion of P1.

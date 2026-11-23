@@ -1,11 +1,13 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Security;
 using System.Text.Json;
 
 namespace Microsoft.Dafny.Caching;
 
-internal enum CacheTable { Translation, VerificationResult, SolverIdentity, ImageDigest }
+internal enum CacheTable { Translation, VerificationResult, SolverIdentity, ImageDigest, ModuleResult }
 internal enum CachePublication { Stored, AlreadyPresent, Unavailable, Conflict }
 
 /// <summary>
@@ -86,8 +88,10 @@ internal sealed class ContentAddressedCache {
           return CachePublication.Conflict;
         }
       }
-      return IsDisabled(table, key) ? CachePublication.Conflict :
-        stored ? CachePublication.Stored : CachePublication.AlreadyPresent;
+      if (IsDisabled(table, key)) {
+        return CachePublication.Conflict;
+      }
+      return stored ? CachePublication.Stored : CachePublication.AlreadyPresent;
     } catch (Exception exception) when (IsStorageFailure(exception)) {
       // In particular, do not keep reading this instance after a failed conflict marker.
       unavailable = true;
@@ -148,6 +152,13 @@ internal sealed class ContentAddressedCache {
     PublishFile(DisabledPath(table, key), []);
   }
 
+  /// <summary>Whether a conflict, or a caller's quarantine, has disabled <paramref name="key"/> of <paramref name="table"/>.</summary>
+  internal bool IsQuarantined(CacheTable table, string key) {
+    ValidateKey(key);
+    try { return IsDisabled(table, key); }
+    catch (Exception exception) when (IsStorageFailure(exception)) { return true; }
+  }
+
   internal void Quarantine(CacheTable table, string key) {
     ValidateKey(key);
     try { Disable(table, key); }
@@ -202,10 +213,12 @@ internal sealed class ContentAddressedCache {
     exception is IOException or UnauthorizedAccessException or SecurityException or JsonException;
 
   private static string TableName(CacheTable table) => table switch {
+    // Only conflict markers: translations are entries of the large tier (ArtifactTable.Translations).
     CacheTable.Translation => "translations",
     CacheTable.VerificationResult => "results",
     CacheTable.SolverIdentity => "solver-identities",
     CacheTable.ImageDigest => "image-digests",
+    CacheTable.ModuleResult => "module-results",
     _ => throw new ArgumentOutOfRangeException(nameof(table))
   };
 
@@ -220,6 +233,8 @@ internal sealed class ContentAddressedCache {
     }
   }
 
+  // This is the small tier, which is never evicted: verdicts, resource counts, the identities they
+  // are keyed by, module results, and conflict markers. The large tier, v1/artifacts, is ArtifactStore's.
   private string BlobPath(string digest) => Path.Combine(root, "blobs", "sha256", digest[..2], digest);
   private string EntryPath(CacheTable table, string key) =>
     Path.Combine(root, TableName(table), key[..2], key);

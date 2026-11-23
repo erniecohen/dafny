@@ -7,8 +7,8 @@
 # A tag pushed with GITHUB_TOKEN starts no `push: tags` run, but a workflow_dispatch
 # made with it does start one, and review.yml dispatched on a tag runs the same jobs as
 # a push of the tag (its conditions test github.ref_type): build, checks, binaries and
-# `gh release create --verify-tag` with the linux-x64 zip and SHA256SUMS.  The osx-arm64
-# zip is added afterwards from a Mac by .github/review/release-macos.sh.
+# `gh release create --verify-tag` with the osx-arm64 and linux-x64 zips and SHA256SUMS.
+# Linux x64 is cross-published; Linux execution is qualified downstream.
 #
 # release-tag only creates a tag when the workflow runs from review/4.11.0 and dry_run
 # is off.  Anywhere else, or with dry_run on, it makes every check and writes its
@@ -45,12 +45,21 @@ on:
 
 permissions: {}
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref_type != 'tag' }}
+
+env:
+  DOTNET_PROCESSOR_COUNT: '2'
+  MSBUILDDISABLENODEREUSE: '1'
+  GRADLE_OPTS: -Dorg.gradle.daemon=false
+
 jobs:
   release-tag:
     name: Release tag
-    if: github.event_name == 'workflow_dispatch' && inputs.task == 'release-tag'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    if: ${{ (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' || github.event_name == 'schedule') && (github.event_name != 'pull_request' || (!github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository))) && (github.event_name == 'workflow_dispatch' && inputs.task == 'release-tag') }}
+    runs-on: [self-hosted, macOS, ARM64, fork-ci]
+    timeout-minutes: 1440 # Includes waiting for the shared admission slot.
     concurrency:
       group: maintenance-release-tag
       cancel-in-progress: false
@@ -65,9 +74,34 @@ jobs:
       INPUT_MESSAGE: ${{ inputs.message }}
       DRY_RUN: ${{ inputs.dry_run || github.ref != 'refs/heads/review/4.11.0' }}
     steps:
+      - name: Yield to interactive work
+        if: runner.os == 'macOS'
+        shell: bash
+        timeout-minutes: 15
+        run: |
+          case "$(ps -o comm= -p "$PPID")" in
+            */Runner.Worker|Runner.Worker) ;;
+            *) echo "::error::Expected this job's Runner.Worker parent"; exit 1 ;;
+          esac
+          renice 10 -p "$PPID" "$$" >/dev/null
+          test "$(ps -o nice= -p "$PPID" | tr -d ' ')" = 10
+          test "$(ps -o nice= -p "$$" | tr -d ' ')" = 10
+      - name: Create job temporary directory
+        shell: bash
+        timeout-minutes: 15
+        run: |
+          job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
+          echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@a8ef9c0acd833e35e6a13f798ac4c17dad9a64e1
+        with:
+          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
+          min-free-percent: ${{ vars.SELF_HOSTED_JOB_MIN_FREE_PERCENT || '' }}
+          max-pressure: ${{ vars.SELF_HOSTED_JOB_MAX_PRESSURE || '' }}
+      - uses: actions/checkout@v4
       - name: Resolve the commit
         id: commit
         continue-on-error: ${{ env.DRY_RUN == 'true' }}
+        timeout-minutes: 15
         run: |
           refuse() { echo "verdict=refused: $1" >> "$GITHUB_OUTPUT"; echo "::error::$1"; exit 1; }
           if [ -z "$INPUT_COMMIT" ]; then
@@ -87,6 +121,7 @@ jobs:
         if: steps.commit.outcome == 'success'
         env:
           SHA: ${{ steps.commit.outputs.sha }}
+        timeout-minutes: 15
         run: |
           refuse() { echo "verdict=refused: $1" >> "$GITHUB_OUTPUT"; echo "::error::$1"; exit 1; }
           # Capture before filtering so a failed HEAD-based derivation cannot be hidden.
@@ -112,7 +147,8 @@ jobs:
           run=$(gh api "repos/$REPO/actions/workflows/review.yml/runs?head_sha=$SHA&event=push&per_page=1" \
             --jq '.workflow_runs[0] // empty | "\(.status) \(.conclusion) \(.html_url)"')
           [ -n "$run" ] || refuse "no review.yml push run for $SHA"
-          set -- $run
+          read -r -a fields <<< "$run"
+          set -- "${fields[@]}"
           [ "$1 $2" = "completed success" ] || refuse "the latest review.yml push run for $SHA is $1/$2: $3"
           echo "green run: $3"
 
@@ -120,7 +156,7 @@ jobs:
           msg=$INPUT_MESSAGE
           [ -n "$msg" ] || refuse "the tag message is empty"
           if [ "$(printf '%s' "$msg" | wc -l)" -eq 0 ]; then
-            msg=$(printf '%s' "$msg" | sed 's/\\n/\n/g')
+            msg=$(printf '%s' "$msg" | python3 -c 'import sys; print(sys.stdin.read().replace("\\n", "\n"), end="")')
           fi
           printf '%s\n' "$msg" > "$RUNNER_TEMP/message"
 
@@ -139,9 +175,10 @@ jobs:
         if: steps.tag.outputs.pushed == 'true'
         env:
           TAG: ${{ steps.tag.outputs.tag }}
+        timeout-minutes: 15
         run: |
           gh workflow run review.yml --repo "$REPO" --ref "$TAG"
-          for i in 1 2 3 4 5 6 7 8 9 10 11 12; do
+          for _ in 1 2 3 4 5 6 7 8 9 10 11 12; do
             sleep 5
             url=$(gh api "repos/$REPO/actions/workflows/review.yml/runs?event=workflow_dispatch&branch=$TAG&per_page=1" \
               --jq '.workflow_runs[0].html_url // empty')
@@ -155,6 +192,7 @@ jobs:
           TAG: ${{ steps.tag.outputs.tag }}
           VERDICT: ${{ steps.tag.outputs.verdict || steps.commit.outputs.verdict }}
           RELEASE: ${{ steps.release.outputs.url }}
+        timeout-minutes: 15
         run: |
           {
             echo "## Release tag"
@@ -171,12 +209,20 @@ jobs:
               echo; echo "Message:"; echo; echo '```'; cat "$RUNNER_TEMP/message"; echo '```'
             fi
           } >> "$GITHUB_STEP_SUMMARY"
+      - name: Remove job temporary directory
+        if: always()
+        shell: bash
+        timeout-minutes: 5
+        run: |
+          case "${TMPDIR:-}" in
+            "$RUNNER_TEMP"/fork-job.*) rm -rf "$TMPDIR" ;;
+          esac
 
   scratch-cleanup:
     name: Scratch cleanup
-    if: github.event_name == 'schedule' || inputs.task == 'scratch-cleanup'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    if: ${{ (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' || github.event_name == 'schedule') && (github.event_name != 'pull_request' || (!github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository))) && (github.event_name == 'schedule' || inputs.task == 'scratch-cleanup') }}
+    runs-on: [self-hosted, macOS, ARM64, fork-ci]
+    timeout-minutes: 1440 # Includes waiting for the shared admission slot.
     concurrency:
       group: maintenance-scratch-cleanup
       cancel-in-progress: false
@@ -189,7 +235,32 @@ jobs:
       DAYS: ${{ inputs.days || '7' }}
       DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
     steps:
+      - name: Yield to interactive work
+        if: runner.os == 'macOS'
+        shell: bash
+        timeout-minutes: 15
+        run: |
+          case "$(ps -o comm= -p "$PPID")" in
+            */Runner.Worker|Runner.Worker) ;;
+            *) echo "::error::Expected this job's Runner.Worker parent"; exit 1 ;;
+          esac
+          renice 10 -p "$PPID" "$$" >/dev/null
+          test "$(ps -o nice= -p "$PPID" | tr -d ' ')" = 10
+          test "$(ps -o nice= -p "$$" | tr -d ' ')" = 10
+      - name: Create job temporary directory
+        shell: bash
+        timeout-minutes: 15
+        run: |
+          job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
+          echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@a8ef9c0acd833e35e6a13f798ac4c17dad9a64e1
+        with:
+          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
+          min-free-percent: ${{ vars.SELF_HOSTED_JOB_MIN_FREE_PERCENT || '' }}
+          max-pressure: ${{ vars.SELF_HOSTED_JOB_MAX_PRESSURE || '' }}
+      - uses: actions/checkout@v4
       - name: Delete stale scratch branches
+        timeout-minutes: 15
         run: |
           printf '%s' "$DAYS" | grep -Eqx '[0-9]+' || { echo "::error::days '$DAYS' is not a whole number"; exit 1; }
           cutoff=$(( $(date -u +%s) - DAYS * 86400 ))
@@ -204,10 +275,10 @@ jobs:
             case "$ref" in refs/heads/scratch/?*) ;; *) continue ;; esac
             branch=${ref#refs/heads/}
             date=$(gh api "repos/$REPO/commits/$sha" --jq .commit.committer.date)
-            age=$(( ( $(date -u +%s) - $(date -u -d "$date" +%s) ) / 86400 ))
+            age=$(( ( $(date -u +%s) - $(date -j -u -f "%Y-%m-%dT%H:%M:%SZ" "$date" +%s) ) / 86400 ))
             if grep -Fqx -- "$branch" open-heads; then
               action="kept: head of an open pull request"
-            elif [ "$(date -u -d "$date" +%s)" -ge "$cutoff" ]; then
+            elif [ "$(date -j -u -f "%Y-%m-%dT%H:%M:%SZ" "$date" +%s)" -ge "$cutoff" ]; then
               action="kept: newer than $DAYS days"
             elif [ "$DRY_RUN" = true ]; then
               action="would delete"
@@ -222,6 +293,7 @@ jobs:
                 action="delete failed"
               fi
             fi
+            # shellcheck disable=SC2016
             printf '| `%s` | `%.8s` | %s | %s | %s |\n' "$branch" "$sha" "$date" "$age" "$action" | tee -a table
           done < scratch
           {
@@ -235,3 +307,11 @@ jobs:
             sort -t'|' -k6 table
           } >> "$GITHUB_STEP_SUMMARY"
           if grep -q 'delete failed' table; then exit 1; fi
+      - name: Remove job temporary directory
+        if: always()
+        shell: bash
+        timeout-minutes: 5
+        run: |
+          case "${TMPDIR:-}" in
+            "$RUNNER_TEMP"/fork-job.*) rm -rf "$TMPDIR" ;;
+          esac

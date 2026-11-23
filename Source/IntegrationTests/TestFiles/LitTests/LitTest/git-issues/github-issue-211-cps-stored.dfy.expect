@@ -1,6 +1,6 @@
 Figs. 16-17 with stored continuations, in bags of bags of levels
 
-Dafny program verifier finished with 85 verified, 0 errors
+Dafny program verifier finished with 100 verified, 0 errors
 controls (assert false in each positive context), and continuations whose stock does not go down
 github-issue-211-cps-stored-verify.dfy(15,4): Error: assertion might not hold
 github-issue-211-cps-stored-verify.dfy(31,8): Error: assertion might not hold
@@ -9,4 +9,4 @@ github-issue-211-cps-stored-verify.dfy(56,8): Error: decreases clause might not 
 github-issue-211-cps-stored-verify.dfy(58,23): Error: decreases clause might not decrease (modular termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
 github-issue-211-cps-stored-verify.dfy(68,21): Error: decreases clause might not decrease (modular termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
 
-Dafny program verifier finished with 85 verified, 6 errors
+Dafny program verifier finished with 100 verified, 6 errors
