@@ -43,7 +43,9 @@ select the refreshed type system themselves (the option requires it), and runs t
 with only the environment variables in CACHE_ENVIRONMENT, since the cache keys the
 solver's environment, and with PATH reduced to the directory of `dotnet` and the system
 directories, so that a runner's own tool directories do not reach the key; every other
-program runs as before.  `--cached-only true` runs only those programs.
+program runs as before.  `--cached-only true` runs only those programs, and
+`--persistent-translation true` (or `audit`) adds `--persistent-translation` (and
+`--persistent-translation-audit`) to them.
 `same <measurements> <measurements'> <verdicts> <verdicts'>` checks that the programs of
 the second run have the verdicts and the per-proof outcomes and resource counts of the
 first, and prints both runs' times.  `cache-stats <measurements> <verdicts>` prints the
@@ -154,6 +156,7 @@ def cached(opts, cache):
 def verify(args):
     litdir, dafny, z3, path, opts, additional_axioms, measurements, *rest = args
     cache = rest[0] if rest else None
+    persistent = rest[1] if len(rest) > 1 else None
     own = shlex.split(opts)
     names = {t.split('=')[0].split(':')[0] for t in own if t.startswith('--')}
     # A precompiled library (--standard-libraries, a .doo) records the --boogie
@@ -177,6 +180,8 @@ def verify(args):
     env = None
     if cached(opts, cache):
         extra += ['--verification-cache', str(Path(cache).resolve())]
+        if persistent:
+            extra += ['--persistent-translation'] + (['--persistent-translation-audit'] if persistent == 'audit' else [])
         if dest:
             extra += ['--pipeline-profile', str(dest / 'profile.jsonl')]
         env = cache_environment()
@@ -202,8 +207,8 @@ def verify(args):
     return (path, rc, fin + ('; %d out of resource' % oor if oor else ''), ','.join(errs), secs)
 
 
-def run(planf, litdir, dafny, z3, out, shard='0/1', jobs=4, additional_axioms=False, measurements=None,
-        cache=None, cached_only=False):
+def run(planf, litdir, dafny, z3, out, shard='0/1', jobs=2, additional_axioms=False, measurements=None,
+        cache=None, cached_only=False, persistent=None):
     i, n = (int(x) for x in shard.split('/'))
     with open(planf) as f:
         rows = [l.rstrip('\n').split('\t') for l in f if l.strip()]
@@ -213,7 +218,8 @@ def run(planf, litdir, dafny, z3, out, shard='0/1', jobs=4, additional_axioms=Fa
         mine = [r for r in mine if cached(r[1], cache)]
     elif cache:
         print('%d programs with --verification-cache' % sum(1 for r in mine if cached(r[1], cache)), flush=True)
-    work = [(litdir, dafny, z3, p, o, additional_axioms, measurements, cache) for p, o in mine]
+    assert persistent in (None, 'true', 'audit') and (not persistent or cache), persistent
+    work = [(litdir, dafny, z3, p, o, additional_axioms, measurements, cache, persistent) for p, o in mine]
     print('shard %d/%d: %d of %d programs, %d at a time' % (i, n, len(mine), len(rows), jobs), flush=True)
     with concurrent.futures.ThreadPoolExecutor(jobs) as ex, open(out, 'w') as f:
         for r in ex.map(verify, work):
@@ -353,10 +359,11 @@ if __name__ == '__main__':
         plan(*args)
     elif cmd == 'run':
         opts = dict(zip(args[5::2], args[6::2]))
-        run(*args[:5], shard=opts.get('--shard', '0/1'), jobs=int(opts.get('--jobs', '4')),
+        run(*args[:5], shard=opts.get('--shard', '0/1'), jobs=int(opts.get('--jobs', '2')),
             additional_axioms=opts.get('--additional-axioms', 'false') == 'true',
             measurements=opts.get('--measurements'), cache=opts.get('--verification-cache'),
-            cached_only=opts.get('--cached-only', 'false') == 'true')
+            cached_only=opts.get('--cached-only', 'false') == 'true',
+            persistent=opts.get('--persistent-translation'))
     elif cmd == 'same':
         sys.exit(1 if same(*args) else 0)
     elif cmd == 'cache-stats':

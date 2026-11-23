@@ -23,6 +23,8 @@ namespace Microsoft.Dafny {
     Dictionary<TopLevelDeclWithMembers, Dictionary<string, MemberDecl>> ClassMembers
     ) {
     public string Key { get; init; }
+    /// <summary>The module's <see cref="ModuleResolutionIdentity"/>.</summary>
+    public string Identity { get; init; }
     public SystemModuleManager Builtins { get; init; }
     public Dictionary<TopLevelDeclWithMembers, Dictionary<string, MemberDecl>> SystemClassMembers { get; init; }
     internal ModuleTranslationInputs TranslationInputs { get; init; }
@@ -2806,7 +2808,11 @@ namespace Microsoft.Dafny {
             if (cl is TraitDecl td) {
               // If the parent trait's type parameters contain all the type parameters of this trait,
               // it can be downcasted at run-time to cl trait. We record this dependency in td
-              trait.TraitDeclsCanBeDowncastedTo.Add(td);
+              // The parent may be a builtin trait (object) or a trait of another module, which modules resolved
+              // in parallel extend at the same time.
+              lock (trait.TraitDeclsCanBeDowncastedTo) {
+                trait.TraitDeclsCanBeDowncastedTo.Add(td);
+              }
             }
           } else {
             reporter.Error(MessageSource.Resolver, parentTypeToken, $"a {cl.WhatKind} can only extend traits (found '{parentTrait}')");

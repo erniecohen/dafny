@@ -22,9 +22,9 @@ if [ -f .github/review/base ]; then
   # A shallow fetch can fail transiently ("shallow file has changed since we read it"), so
   # each is tried three times.
   fetch() {
-    git fetch --quiet --no-tags --depth=1 origin "$1" && return 0
-    sleep 5; git fetch --quiet --no-tags --depth=1 origin "$1" && return 0
-    sleep 15; git fetch --quiet --no-tags --depth=1 origin "$1"
+    git fetch --quiet --no-tags --refmap= --depth=1 origin "$1" && return 0
+    sleep 5; git fetch --quiet --no-tags --refmap= --depth=1 origin "$1" && return 0
+    sleep 15; git fetch --quiet --no-tags --refmap= --depth=1 origin "$1"
   }
   fetch "+refs/tags/$base:refs/tags/$base"
   # Not product: tests (the integration tests and the unit-test projects, Source/*.Test and

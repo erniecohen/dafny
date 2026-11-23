@@ -1301,3 +1301,52 @@ are each rejected under both options.
 `git-issues/github-issue-34.dfy` (`Std.Axioms.FunctionExtensionality`) is
 unchanged under both options. Under the axiom, its control that an uncalled
 lemma cannot prove `f == g` becomes provable, as intended.
+
+
+### Extensionality at every arity
+
+The `--function-extensionality-axiom` translation also handles total arrows of
+arity zero and arity greater than one. For arity `N`, `$ExactDomN(a_1, ..., a_N,
+f)` compares `$FunDomN(f, bx_1, ..., bx_N)` with the conjunction of the `N`
+box-membership predicates, universally over the argument tuple. `$FunEqN` is
+Leibniz equality, just as `$FunEq1` is. Its extensionality axiom has the same
+premises: both values have the total arrow type, both domains are exactly the
+product of the operand's argument types, and their applications at `$OneHeap`
+agree throughout that product. The two equality operands supply the trigger.
+No result is asserted for partial or heap-reading arrows.
+
+The product of basic domains (`int`, `real`, `bool`, `ORDINAL`) is exact for
+any value of the corresponding total arrow type. The axiom uses a conjunction
+of four-way tests on the argument types, rather than enumerating every product.
+For nullary arrows the product is the singleton empty tuple, so pointwise
+agreement is simply agreement of the two results. Products with an empty
+component are empty: exactness compares sets of tuples, not separate type tags.
+Two differently spelled products that are both empty can therefore be equal.
+
+The model above extends componentwise. A value of arity `N` contains a domain
+set of box tuples and its three selector maps restricted to that set. Canonical
+extension unboxes and reboxes each component using its representation type.
+`BasicHandleN`'s unguarded selectors are consistent with this extension when
+every component is basic, including the empty tuple. Declared function handles
+and guarded arrow-member handles follow the same rules as at arity one. Total
+arrows have a true precondition and empty reads on their exact domain; pointwise
+equality of results therefore identifies all three maps there. Extensionality
+identifies the values without equating wider domains that merely agree on a
+proper subdomain. The existing framing and variance axioms are unchanged.
+This argument retains the existing restriction to translator-emitted handles.
+The allocation-dependent lambda issue mentioned above was subsequently fixed
+by the default checks described in `REVIEW.md`, "allocated in lambda expressions".
+
+Only `--function-extensionality-axiom` emits the new non-unary declarations and
+axioms. With it off, `--additional-axioms` retains its unary exact-domain API.
+`Restrict` and `ExactDom` themselves remain unary. Providing a library interface
+without new trusted source declarations, and the complete M1/M2 trial over the
+suite, standard library and documentation, remain follow-up work for issue 374.
+
+`git-issues/git-issue-374-arities.dfy` covers arbitrary nullary and binary
+values, a four-argument function using every basic type, subset lambdas,
+named functions, datatype results, Leibniz substitution and empty products.
+It verifies only with the extensionality option. The negative input rejects
+distinct functions, proper-subdomain and generic extensionality, partial and
+heap-reading extensionality, and `assert false` after each live positive fact.
+Both resolvers run these controls. No test adds a trusted lemma.

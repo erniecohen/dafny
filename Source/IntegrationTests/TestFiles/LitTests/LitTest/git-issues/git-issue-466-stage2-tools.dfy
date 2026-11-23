@@ -1,16 +1,17 @@
 // Recursion across module boundaries (https://github.com/erniecohen/dafny/issues/466), second
 // stage: tools.  A program with a recursive module group is verified, with any number of
-// resolution threads, with --isolate-assertions and with --filter-symbol.  It is not compiled yet:
-// build, run and translate stop with an error after verification. Stage 6 supports library builds. The option
+// resolution threads, with --isolate-assertions and with --filter-symbol. Stage 7 supports C# and Java:
+// build and run succeed; Python translation is still rejected. Stage 6 supports library builds. The option
 // needs the new resolver.
+// NONUNIFORM: Recursive groups compile to C# and Java; Python rejection and library output are intentional.
 // RUN: %verify --member-invariants --recursive-modules "%s" > "%t"
 // RUN: %verify --member-invariants --recursive-modules --resolution-threads 1 "%s" >> "%t"
 // RUN: %verify --member-invariants --recursive-modules --resolution-threads 4 "%s" >> "%t"
 // RUN: %verify --member-invariants --recursive-modules --isolate-assertions "%s" >> "%t"
 // RUN: %verify --member-invariants --recursive-modules --filter-symbol Count2 "%s" >> "%t"
-// RUN: %exits-with 3 %build --member-invariants --recursive-modules "%s" --output "%t-build" >> "%t"
-// RUN: %exits-with 3 %build --no-verify --member-invariants --recursive-modules "%s" --output "%t-build" >> "%t"
-// RUN: %exits-with 3 %run --member-invariants --recursive-modules "%s" >> "%t"
+// RUN: %build --member-invariants --recursive-modules "%s" --output "%t-build" >> "%t"
+// RUN: %build --no-verify --member-invariants --recursive-modules "%s" --output "%t-build" >> "%t"
+// RUN: %run --member-invariants --recursive-modules "%s" --output "%t-run" >> "%t"
 // RUN: %exits-with 3 %translate py --type-system-refresh --use-basename-for-filename --show-snippets:false --standard-libraries:false --member-invariants --recursive-modules "%s" --output "%t-py" >> "%t"
 // RUN: %build -t:lib --member-invariants --recursive-modules "%s" --output "%t.doo" >> "%t"
 // RUN: %exits-with 2 %baredafny verify --use-basename-for-filename --show-snippets:false --standard-libraries:false --type-system-refresh:false --member-invariants --recursive-modules "%s" >> "%t"
