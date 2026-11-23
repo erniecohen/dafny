@@ -23,6 +23,8 @@ namespace Microsoft.Dafny {
     Dictionary<TopLevelDeclWithMembers, Dictionary<string, MemberDecl>> ClassMembers
     ) {
     public string Key { get; init; }
+    /// <summary>The module's <see cref="ModuleResolutionIdentity"/>.</summary>
+    public string Identity { get; init; }
     public SystemModuleManager Builtins { get; init; }
     public Dictionary<TopLevelDeclWithMembers, Dictionary<string, MemberDecl>> SystemClassMembers { get; init; }
     internal ModuleTranslationInputs TranslationInputs { get; init; }
@@ -854,8 +856,9 @@ namespace Microsoft.Dafny {
       // add for the module itself
       foreach (var kv in m.TopLevels) {
         if (info.TopLevels.TryGetValue(kv.Key, out var infoValue)) {
-          if (infoValue != kv.Value && BoundedCallables.IsBoundedDecl(infoValue)) {
-            // "bounded" is a contextual name (issue 266): a declaration of the module named "bounded" hides the system's.
+          if (infoValue != kv.Value && (BoundedCallables.IsBoundedDecl(infoValue) ||
+              IntegerBitwiseReferences.IsReferenceDecl(infoValue) && !IntegerBitwiseReferences.IsReferenceDecl(kv.Value))) {
+            // Contextual builtins do not hide an ordinary declaration of the module.
             info.TopLevels[kv.Key] = kv.Value;
             continue;
           }
@@ -972,8 +975,9 @@ namespace Microsoft.Dafny {
             // the caller, and let the caller remap the symbol after all opened imports have been processed.
             topLevelDeclReplacement = kv.Value;
           }
-        } else if (BoundedCallables.IsBoundedDecl(sameNameSymbolInImporter)) {
-          // "bounded" is a contextual name (issue 266): an opened import's declaration named "bounded" hides the system's.
+        } else if (BoundedCallables.IsBoundedDecl(sameNameSymbolInImporter) ||
+                   IntegerBitwiseReferences.IsReferenceDecl(sameNameSymbolInImporter) && !IntegerBitwiseReferences.IsReferenceDecl(kv.Value)) {
+          // An opened import's ordinary declaration also hides a contextual builtin.
           importerSignature.TopLevels[kv.Key] = kv.Value;
         } else {
           bool unambiguous = false;
@@ -1920,8 +1924,14 @@ namespace Microsoft.Dafny {
         //   - type characteristics, and
         //   - type bounds
         yield return "coCalls";
+        Func<IOrigin, bool> integerBitwiseEnabled = null;
+        var compilation = ProgramResolver.Program.Compilation;
+        if (compilation.Options.Get(CommonOptionBag.IntegerBitwise)) {
+          integerBitwiseEnabled = origin => Options.Get(CommonOptionBag.IntegerBitwise) &&
+            !(compilation.IntegerBitwiseDisabledSources?.Contains(origin.Uri) ?? false);
+        }
         if (group == null) {
-          TypeCharacteristicChecker.InferAndCheck(declarations, isAnExport, reporter);
+          TypeCharacteristicChecker.InferAndCheck(declarations, isAnExport, reporter, integerBitwiseEnabled);
         } else {
           // What is inferred for a type of one member may depend on a type of another, so the members
           // repeat the inference until a round in which none of them infers anything.
@@ -1933,7 +1943,7 @@ namespace Microsoft.Dafny {
           } while (group.RepeatRound);
           TypeCharacteristicChecker.InferEqualitySupportOfSignatures(declarations, reporter);
           yield return "equalitySupportOfSignatures";
-          TypeCharacteristicChecker.Check(declarations, isAnExport, reporter);
+          TypeCharacteristicChecker.Check(declarations, isAnExport, reporter, integerBitwiseEnabled);
         }
         yield return "typeCharacteristics";
 
@@ -2794,7 +2804,11 @@ namespace Microsoft.Dafny {
             if (cl is TraitDecl td) {
               // If the parent trait's type parameters contain all the type parameters of this trait,
               // it can be downcasted at run-time to cl trait. We record this dependency in td
-              trait.TraitDeclsCanBeDowncastedTo.Add(td);
+              // The parent may be a builtin trait (object) or a trait of another module, which modules resolved
+              // in parallel extend at the same time.
+              lock (trait.TraitDeclsCanBeDowncastedTo) {
+                trait.TraitDeclsCanBeDowncastedTo.Add(td);
+              }
             }
           } else {
             reporter.Error(MessageSource.Resolver, parentTypeToken, $"a {cl.WhatKind} can only extend traits (found '{parentTrait}')");

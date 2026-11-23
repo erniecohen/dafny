@@ -56,7 +56,31 @@ public sealed class ModuleTranslationCache {
     return TranslateModule(program, module, flags, cancellationToken, out reused).Program;
   }
 
-  public sealed record ModuleTranslation(Bpl.Program Program, ProofDependencyManager ProofDependencies);
+  /// <param name="Text">The printed Boogie program, when this is a complete translation that reported nothing:
+  /// the only kind the persistent tables may record. Null otherwise.</param>
+  public sealed record ModuleTranslation(Bpl.Program Program, ProofDependencyManager ProofDependencies, string? Text = null);
+
+  /// <summary>
+  /// Why a module's translation cannot be keyed by its descriptor, or null when it can. A module
+  /// that cannot is translated afresh, by this cache and by the persistent tables alike.
+  /// </summary>
+  internal static string? BypassReason(Program program, ModuleDefinition module, BoogieGenerator.TranslatorFlags flags) {
+    var options = program.Options;
+    if (BoogieGenerator.DeclaresUnsupportedMemberInvariants(program)) {
+      return "a member invariant whose verification is not yet supported";
+    }
+    if (module.ResolutionKey == null || module.TranslationInputs == null ||
+        // Resolution currently exposes L, not the finalized post-global G/R view.
+        // Modular termination reads downstream open-trait/dispatch facts; recompute until keyed.
+        ModularTermination.Active(options, program) || options.PrintWithUniqueASTIds ||
+        // Model extraction consumes graph/source report state not covered by the snapshot codec.
+        options.ExtractCounterexample ||
+        options.AdditionalPlugins.Count != 0 || options.AdditionalPluginArguments.Count != 0 ||
+        flags.ObligationLowered != null || flags.ObligationPrepared != null) {
+      return "missing module key, nonlocal names, debug identities or external callbacks";
+    }
+    return null;
+  }
 
   public ModuleTranslation TranslateModule(Program program, ModuleDefinition module, BoogieGenerator.TranslatorFlags flags,
     CancellationToken cancellationToken, out bool reused) {
@@ -69,24 +93,12 @@ public sealed class ModuleTranslationCache {
     }
     cancellationToken.ThrowIfCancellationRequested();
     var options = program.Options;
-    if (BoogieGenerator.DeclaresUnsupportedMemberInvariants(program)) {
-      // Issue 105: no module of a program that declares a member invariant whose verification is not yet supported
-      // is translated. A module's key covers only what the module depends on, so an entry made before another module
-      // declared such an invariant must not be reused. Otherwise a module's translation depends only on the modules
-      // its key covers, invariants included, and the cache is used as for any program.
-      lock (gate) { Bypasses++; LastBypassReason = "a member invariant whose verification is not yet supported"; }
-      var snapshot = Fresh(program, module, flags, program.Reporter, manager);
-      return new ModuleTranslation(BoogieSnapshotCloner.TryClone(snapshot, out var fresh, out _) ? fresh! : snapshot, manager);
-    }
-    if (module.ResolutionKey == null || module.TranslationInputs == null ||
-        // Resolution currently exposes L, not the finalized post-global G/R view.
-        // Modular termination reads downstream open-trait/dispatch facts; recompute until keyed.
-        ModularTermination.Active(options, program) || options.PrintWithUniqueASTIds ||
-        // Model extraction consumes graph/source report state not covered by the snapshot codec.
-        options.ExtractCounterexample ||
-        options.AdditionalPlugins.Count != 0 || options.AdditionalPluginArguments.Count != 0 ||
-        flags.ObligationLowered != null || flags.ObligationPrepared != null) {
-      lock (gate) { Bypasses++; LastBypassReason = "missing module key, nonlocal names, debug identities or external callbacks"; }
+    // Issue 105: no module of a program that declares a member invariant whose verification is not yet supported
+    // is translated. A module's key covers only what the module depends on, so an entry made before another module
+    // declared such an invariant must not be reused. Otherwise a module's translation depends only on the modules
+    // its key covers, invariants included, and the cache is used as for any program.
+    if (BypassReason(program, module, flags) is { } bypass) {
+      lock (gate) { Bypasses++; LastBypassReason = bypass; }
       var snapshot = Fresh(program, module, flags, program.Reporter, manager);
       return new ModuleTranslation(BoogieSnapshotCloner.TryClone(snapshot, out var fresh, out _) ? fresh! : snapshot, manager);
     }
@@ -105,7 +117,7 @@ public sealed class ModuleTranslationCache {
           lru.AddFirst(node);
           Hits++;
           reused = true;
-          return new ModuleTranslation(graph!, manager);
+          return new ModuleTranslation(graph!, manager, node.Value.Value.Diagnostics.Length == 0 ? node.Value.Value.Text : null);
         }
       }
       var reporter = new BatchErrorReporter(options);
@@ -133,7 +145,7 @@ public sealed class ModuleTranslationCache {
         textBytes += Encoding.UTF8.GetByteCount(text);
         while (textBytes > maximumTextBytes || entries.Count > maximumEntries) { Remove(lru.Last!); }
       }
-      return new ModuleTranslation(consumer!, manager);
+      return new ModuleTranslation(consumer!, manager, reporter.AllMessages.Count == 0 ? text : null);
     }
   }
 
@@ -176,8 +188,16 @@ public sealed class ModuleTranslationCache {
     return text.ToString();
   }
 
-  private static string Descriptor(Program program, ModuleDefinition module, BoogieGenerator.TranslatorFlags flags) {
-    var parts = DescriptorParts(program, module, flags);
+  /// <summary>
+  /// The key of a module's translation in the persistent translation table: the in-process
+  /// descriptor under its own domain, less the command line as typed, whose effective values the
+  /// descriptor covers member by member.
+  /// </summary>
+  internal static string PersistentDescriptor(Program program, ModuleDefinition module, BoogieGenerator.TranslatorFlags flags) =>
+    Descriptor(program, module, flags, true);
+
+  private static string Descriptor(Program program, ModuleDefinition module, BoogieGenerator.TranslatorFlags flags, bool persistent = false) {
+    var parts = DescriptorParts(program, module, flags, persistent);
     using var bytes = new MemoryStream();
     using (var writer = new BinaryWriter(bytes, Encoding.UTF8, true)) {
       writer.Write(parts.Count); foreach (var part in parts) { writer.Write(part); }
@@ -185,11 +205,13 @@ public sealed class ModuleTranslationCache {
     return Hash(bytes.ToArray());
   }
 
-  internal static List<string> DescriptorParts(Program program, ModuleDefinition module, BoogieGenerator.TranslatorFlags flags) {
+  internal static List<string> DescriptorParts(Program program, ModuleDefinition module, BoogieGenerator.TranslatorFlags flags,
+    bool persistent = false) {
     // A resolution result can contain several generated abstract signatures. They
     // share the owner's resolution key but have distinct translated declarations.
     // The module's generated-name prefix depends on the other module names of the program.
-    var parts = new List<string> { "translation-in-process-v3", module.ResolutionKey!, module.FullName,
+    var parts = new List<string> { persistent ? "translation-persistent-v2" : "translation-in-process-v3",
+      persistent ? module.ResolutionIdentity! : module.ResolutionKey!, module.FullName,
       program.ModuleNamePrefixes.Prefix(module.FullName),
       typeof(BoogieGenerator).Module.ModuleVersionId.ToString(), typeof(Bpl.Program).Module.ModuleVersionId.ToString(),
       flags.PreludeText ?? File.ReadAllText(BoogieGenerator.PreludePath(program.Options)),
@@ -199,6 +221,16 @@ public sealed class ModuleTranslationCache {
     var names = module.TranslationInputs!.ModuleNames;
     var closure = program.RawModules().Where(m => names.Contains(m.FullName) || ReferenceEquals(m, module))
       .OrderBy(m => m.FullName, StringComparer.Ordinal).ToArray();
+    if (persistent) {
+      // A resolution identity fixes the module's resolved result, its generated names and source
+      // coordinates included, and those of its prerequisites; each module of the translation's
+      // closure is bound by its own. Neither another module of the same file nor the file's path
+      // is part of the key.
+      parts.Add(closure.Length.ToString(CultureInfo.InvariantCulture));
+      foreach (var member in closure) { parts.Add(member.FullName); parts.Add(member.ResolutionIdentity!); }
+      AddOptionParts(parts, program.Options, persistent);
+      return parts;
+    }
     var uris = closure.Select(m => m.Origin.Uri).Where(u => u != null).ToHashSet();
     parts.Add(closure.Length.ToString(CultureInfo.InvariantCulture));
     foreach (var member in closure) {
@@ -215,17 +247,31 @@ public sealed class ModuleTranslationCache {
       parts.Add(file.Origin.Uri.ToString());
       parts.Add(file.Origin.EntireRangeWithFallback.PrintOriginal());
     }
+    AddOptionParts(parts, program.Options, persistent);
+    return parts;
+  }
+
+  /// <summary>Every public scalar or string-sequence member of the effective options, less print and log locations.</summary>
+  internal static void AddOptionParts(List<string> parts, DafnyOptions options, bool persistent) {
     foreach (var member in typeof(DafnyOptions).GetMembers(BindingFlags.Public | BindingFlags.Instance).OrderBy(m => m.Name, StringComparer.Ordinal)) {
       // A cold result-cache version probe increments telemetry; it cannot affect
       // translation and must not distinguish an otherwise identical warm module.
       if (member.Name is "PrintFile" or "LogPrefix" or "FileTimestamp" or "DafnyPrintFile" or "DafnyPrintResolvedFile" or
           nameof(DafnyOptions.VerificationCacheVersionProbes)) { continue; }
+      // Not keyed persistently: the environment variables that can change a result are keyed by the
+      // task environment (TaskExecutionEnvironment.ResultVariables); the
+      // number of parallel solver processes changes neither a translation nor any task's
+      // verdict or resource count; the per-task prints (passive programs, split programs, solver
+      // input) bypass replay (see PersistentModuleCache.ReplayBypass) and are not inputs; a module
+      // resolved through the persistent resolution cache is the one a fresh resolution produces.
+      if (persistent && member.Name is "Environment" or "VcsCores" or "PrintPassiveFile" or "PrintSplitFile" or
+            "PrintSplitDeclarations" or "ProverLogFilePath" or nameof(DafnyOptions.UsesPersistentResolutionCache)) { continue; }
       var valueType = member switch { FieldInfo f => f.FieldType, PropertyInfo p => p.PropertyType, _ => null };
       if (valueType == null || !(valueType.IsPrimitive || valueType.IsEnum || valueType == typeof(string) ||
           typeof(IEnumerable<string>).IsAssignableFrom(valueType))) { continue; }
       object? value = member switch {
-        FieldInfo field => field.GetValue(program.Options),
-        PropertyInfo property when property.GetIndexParameters().Length == 0 && property.CanRead => property.GetValue(program.Options),
+        FieldInfo field => field.GetValue(options),
+        PropertyInfo property when property.GetIndexParameters().Length == 0 && property.CanRead => property.GetValue(options),
         _ => null
       };
       if (value is string or bool or int or uint or long or ulong or double or float or Enum) {
@@ -235,7 +281,6 @@ public sealed class ModuleTranslationCache {
         parts.Add(member.Name); parts.Add("sequence"); parts.Add(items.Length.ToString(CultureInfo.InvariantCulture)); parts.AddRange(items);
       }
     }
-    return parts;
   }
 
   private static string Hash(string text) => Hash(Encoding.UTF8.GetBytes(text));

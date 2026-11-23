@@ -154,7 +154,8 @@ Label its issue `needs-owner-approval` before any pull request upstream.
 
 - **Build:** run `sh Scripts/fetch-boogie-packages.sh` once, then build as upstream
   does.  The script fetches the fixed Boogie packages and checks their hashes.
-- **Test in this repository's CI.**  It is free for a public repository.  The
+- **Test in this repository's CI.** Actions run only on self-hosted runners,
+  never on GitHub-hosted runners. The
   workflow `review.yml` runs on pushes to `review/**` and `dev`, on pull requests to
   them, on `v*` tags, and on demand.  To run it on a scratch branch, use
   `gh workflow run review.yml --ref scratch/<name>/...`.

@@ -5161,7 +5161,10 @@ types they use), must not:
 4. call a dynamically bound function, since its overrides are not all known;
 5. test a raw value against, or convert it to, a type that depends on `D`,
    explicitly or implicitly. In particular, a raw member cannot pass `this`
-   where a `D` is expected.
+   where a `D` is expected. A value of a type that does not depend on `D`
+   counts as raw here: for a newtype `N` with invariants, a literal of type
+   `N`, a conversion `e as N` of a value of its base type, and a test
+   `e is N` of one, all test that value against the invariants of `N`.
 
 Dependence follows every path through a cycle of datatype components, regardless
 of the type at which the search enters the cycle. A cycle with no path to `D`
@@ -5169,7 +5172,37 @@ is independent of `D`. The hidden `--legacy-member-invariant-dependence` option
 restores the former unsound cache of provisional negative answers, for migration
 and comparison only.
 
-Statements inside expressions are proof hints, and are not checked. A bound
+Statements inside expressions are proof hints. They do not change what an
+expression means, but they are checked, together with the lemmas they call: the
+well-formedness proof of a function, hints included, justifies its `ensures`
+clauses, its termination and the preconditions of its calls, which the
+definition of `D` assumes. A proof that learns that a value is in `D` learns
+`D`'s invariants, and could then assume what it is meant to prove. Under
+`--lemma-bindings`, a binding of a lemma's results also contributes the bound
+lemma's `requires` and `ensures` clauses to this check, and its body is a proof
+that is checked as a hint is.
+
+So the check also reaches the statements inside the expressions it reaches, the
+bodies of bound lemmas, and the lemmas these call, with their specifications and
+bodies. In them, rules 1 to 5 apply, and moreover:
+
+- a local variable of a type that depends on `D` must be given a value where it
+  is declared;
+- a `:|` or `forall` statement follows rule 1;
+- no lemma has an out-parameter of such a type, a bound lemma included;
+- no dynamically bound lemma is called, since its overrides are not all known.
+
+Anywhere the check reaches, expressions and proofs alike, no field or array
+element of a type that depends on `D` is read from the heap, since the heap says
+that the value is in `D`: a function could pass it to another whose proof then
+learns `D`'s invariants. So the invariant of a class `C` may not read a field of
+type `C?`, although it may compare `null` with a value of that type.
+
+The hidden `--legacy-unchecked-member-invariant-proofs` option restores the
+former, unsound check, which follows only the specifications of bound lemmas and
+none of the proofs above, for migration and comparison only.
+
+A bound
 variable whose type is inferred as `raw D` makes a test `k is D` a test of a raw
 value; write `k: D` to range over values of `D`.
 

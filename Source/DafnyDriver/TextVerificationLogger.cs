@@ -46,8 +46,8 @@ public class TextVerificationLogger : IVerificationResultFormatLogger {
       textWriter.WriteLine("");
       textWriter.WriteLine($"  Assertion batch {vcResult.VcNum}:");
       textWriter.WriteLine($"    Outcome: {vcResult.Outcome}");
-      if (taskResult.Task != null && taskResult.Task.Split.RandomSeed != 0) {
-        textWriter.WriteLine($"    Random seed: {taskResult.Task.Split.RandomSeed}");
+      if (taskResult.Task != null && Caching.VerificationTaskFacts.RandomSeed(taskResult.Task) != 0) {
+        textWriter.WriteLine($"    Random seed: {Caching.VerificationTaskFacts.RandomSeed(taskResult.Task)}");
       }
       textWriter.WriteLine($"    Duration: {vcResult.RunTime}");
       textWriter.WriteLine($"    Resource count: {vcResult.ResourceCount}");

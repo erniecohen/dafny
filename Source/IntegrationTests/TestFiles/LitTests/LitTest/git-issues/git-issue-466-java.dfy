@@ -1,0 +1,15 @@
+// Java packages support recursive groups; compare every runtime case with C#.
+// NONUNIFORM: Only the qualified C# and Java backends admit executable groups.
+// RUN: %run --target cs --member-invariants --recursive-modules --verify-included-files "%S/Inputs/git-issue-466-java-source.dfy" --output "%t-cs" > "%t-cs.out"
+// RUN: %run --target java --member-invariants --recursive-modules --verify-included-files "%S/Inputs/git-issue-466-java-source.dfy" --output "%t-java" > "%t-java.out"
+// RUN: %diff "%t-cs.out" "%t-java.out"
+// RUN: %run --target cs --member-invariants --recursive-modules --verify-included-files --optimize-erasable-datatype-wrapper:false "%S/Inputs/git-issue-466-java-source.dfy" --output "%t-cs-unerased" > "%t-cs-unerased.out"
+// RUN: %run --target java --member-invariants --recursive-modules --verify-included-files --resolution-threads 3 --optimize-erasable-datatype-wrapper:false --additional-axioms "%S/Inputs/git-issue-466-java-source.dfy" --output "%t-unerased" > "%t-unerased.out"
+// RUN: %diff "%t-cs-unerased.out" "%t-unerased.out"
+// RUN: %build -t:lib --member-invariants --recursive-modules "%S/Inputs/git-issue-466-stage7-library.dfy" --output "%t.doo" > "%t"
+// RUN: %cp -f "%t" "%t-cs-library.out"
+// RUN: %run --target cs --member-invariants --recursive-modules "%S/Inputs/git-issue-466-java-client.dfy" --input "%t.doo" --output "%t-cs-library" >> "%t-cs-library.out"
+// RUN: %run --target java --member-invariants --recursive-modules "%S/Inputs/git-issue-466-java-client.dfy" --input "%t.doo" --output "%t-library" >> "%t"
+// RUN: %diff "%t-cs-library.out" "%t"
+// RUN: %exits-with 4 %run --target java --member-invariants --recursive-modules "%S/Inputs/git-issue-466-stage7-negative.dfy" --output "%t-negative" >> "%t"
+// RUN: %diff "%s.expect" "%t"

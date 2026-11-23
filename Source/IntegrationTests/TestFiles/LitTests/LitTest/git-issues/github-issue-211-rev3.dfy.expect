@@ -35,27 +35,27 @@ github-issue-211-rev3-legacy.dfy(15,77): Error: decreases clause might not decre
 Dafny program verifier finished with 5 verified, 3 errors
 ECOOP 2015 Fig. 4: verifies
 
-Dafny program verifier finished with 57 verified, 0 errors
+Dafny program verifier finished with 72 verified, 0 errors
 Fig. 4 vacuity control
 github-issue-211-rev3-fig4-false.dfy(32,4): Error: assertion might not hold
 
-Dafny program verifier finished with 56 verified, 1 error
+Dafny program verifier finished with 71 verified, 1 error
 Fig. 4 with the level increment removed: rejected
 github-issue-211-rev3-fig4-loopy.dfy(22,86): Error: decreases clause might not decrease (modular termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
 github-issue-211-rev3-fig4-loopy.dfy(23,95): Error: decreases clause might not decrease (modular termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
 
-Dafny program verifier finished with 55 verified, 2 errors
+Dafny program verifier finished with 70 verified, 2 errors
 ECOOP 2015 Figs. 16-17, CPS with nested stock: verifies
 
-Dafny program verifier finished with 101 verified, 0 errors
+Dafny program verifier finished with 116 verified, 0 errors
 CPS vacuity control
 github-issue-211-rev3-cps-false.dfy(247,4): Error: assertion might not hold
 
-Dafny program verifier finished with 100 verified, 1 error
+Dafny program verifier finished with 115 verified, 1 error
 CPS passing itself as its continuation: rejected
 github-issue-211-rev3-cps-loopy.dfy(214,32): Error: decreases clause might not decrease (modular termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
 
-Dafny program verifier finished with 100 verified, 1 error
+Dafny program verifier finished with 115 verified, 1 error
 a bounded caller calling a home least predicate that reaches an unbounded dispatch: rejected
 github-issue-211-rev3-extreme-callee.dfy(20,70): Error: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
 
