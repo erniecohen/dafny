@@ -1104,6 +1104,9 @@ git-issues/git-issue-241-resolution-cache-requires-refresh.dfy
 git-issues/git-issue-261-cache-command.dfy
 git-issues/git-issue-261-resolution-cache-options.dfy
 
+# Java compilation and runtime comparisons for recursive groups (issue 466).
+git-issues/git-issue-466-java.dfy
+
 # Proofs that justify a lemma binding in the cone of a member invariant (https://github.com/erniecohen/dafny/issues/199).
 git-issues/git-issue-199-invariant-proofs.dfy
 git-issues/git-issue-199-invariant-proofs-controls.dfy
