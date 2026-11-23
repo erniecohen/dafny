@@ -45,6 +45,15 @@ public class CommonOptionBag {
     "Use the cache store in DIR (also --cache-dir; or DAFNY_CACHE_DIR): reuse per-module resolution results, complete verification-task solver exchanges and, with --persistent-translation, module translations and results. " +
     "Requires --type-system-refresh. Opt-in; uses a fresh solver history and stable numeric declaration order for each task. " +
     "Replayed timing fields are identified in CSV/JSON logs. Unsupported modules and tasks run normally.") { ArgumentHelpName = "DIR" };
+  public static readonly Option<IList<string>> VerificationCacheSolverDigest = new("--verification-cache-solver-digest",
+    () => new List<string>(),
+    "With --verification-cache, also accept a solver binary whose SHA-256 digest is SHA256 (64 hexadecimal digits), in addition to " +
+    "the built-in list of audited Z3 5.1.0 release binaries. Repeatable; also verification-cache-solver-digest in dfyconfig.toml. " +
+    "Declare only a build you have audited, such as a reproducible source build of the same Z3 release. The binary's digest is still " +
+    "computed on every run and is part of every cache key: a binary whose digest is neither built-in nor declared is not cached, " +
+    "with a warning, and results from different binaries never mix.") {
+    ArgumentHelpName = "SHA256"
+  };
   public static readonly Option<string> CachePartition = new("--cache-partition",
     "The partition of the cache store whose budget this run's large cache entries (resolution snapshots, Boogie text) count against. " +
     "Defaults to DAFNY_CACHE_PARTITION, or else a name derived from the project's directory. It never changes what is reused.") {
@@ -969,6 +978,12 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(LogLocation, OptionScope.Cli);
     VerificationCache.AddAlias("--cache-dir");
     OptionRegistry.RegisterOption(VerificationCache, OptionScope.Cli);
+    VerificationCacheSolverDigest.AddValidator(result => {
+      if (result.GetValueOrDefault<IList<string>>()?.FirstOrDefault(digest => !Caching.CacheDigest.IsSolverDigest(digest)) is { } bad) {
+        result.ErrorMessage = $"--verification-cache-solver-digest must be a SHA-256 digest of 64 hexadecimal digits, not '{bad}'.";
+      }
+    });
+    OptionRegistry.RegisterOption(VerificationCacheSolverDigest, OptionScope.Cli);
     CachePartition.AddValidator(result => {
       if (result.Tokens.Count != 0 && !Caching.ArtifactStore.IsValidName(result.GetValueOrDefault<string>())) {
         result.ErrorMessage = "--cache-partition must be 1 to 100 letters, digits, '-', '_' or '.', not starting with '.'.";
