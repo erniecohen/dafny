@@ -1,0 +1,7 @@
+Add opt-in --persistent-translation, which keeps module translations and whole-module results in the --verification-cache directory across processes.
+It requires --verification-cache and --type-system-refresh. A module whose translation key is unchanged is not translated again, and a module whose regenerated Boogie graph is unchanged after a dependency changed is not prepared or solved again (early cutoff).
+A module's results are recorded only when every task it schedules verified through the result cache and its translation reported nothing.
+The hidden --persistent-translation-audit replays nothing and reports any stored translation or module result that differs from a fresh one.
+The cache directory comes from --verification-cache, the project file, or the DAFNY_CACHE_DIR environment variable, in that order.
+Translations are entries of the shared store's large tier, bounded like resolution results (--cache-partition, --cache-partition-budget, --cache-size-cap); verdicts and resource counts are never evicted.
+Keys and fingerprints do not record where the source is, so another checkout, or lines inserted above a module, reuse its translation and results.

@@ -129,6 +129,8 @@ cli	optimize-erasable-datatype-wrapper	--optimize-erasable-datatype-wrapper	Syst
 cli	outer-module	--outer-module	System.CommandLine.Option`1[System.String]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	output	--output,-o	System.CommandLine.Option`1[System.IO.FileInfo]	command-setup	setup or another command; executes before/outside proof transport
 cli	performance-stats	--performance-stats	System.CommandLine.Option`1[System.Int32]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
+cli	persistent-translation	--persistent-translation	System.CommandLine.Option`1[System.Boolean]	profile	explicit opt-in module tables beside the task results; keyed by translation descriptor, Boogie graph and verification environment; unsupported modules and reporting options bypass
+cli	persistent-translation-audit	--persistent-translation-audit	System.CommandLine.Option`1[System.Boolean]	profile	never replays a module; compares stored translations and module results with fresh ones and reports differences
 cli	pipeline-profile	--pipeline-profile	System.CommandLine.Option`1[System.String]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
 cli	pipeline-profile-gc-events	--pipeline-profile-gc-events	System.CommandLine.Option`1[System.Boolean]	current-report	measurement side effects only; diagnostics/reporting and solver input unchanged
 cli	pipeline-profile-heap	--pipeline-profile-heap	System.CommandLine.Option`1[System.Boolean]	current-report	measurement side effects only; diagnostics/reporting and solver input unchanged

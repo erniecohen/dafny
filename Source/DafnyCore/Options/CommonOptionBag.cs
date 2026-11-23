@@ -42,7 +42,7 @@ public class CommonOptionBag {
     };
 
   public static readonly Option<string> VerificationCache = new("--verification-cache",
-    "Use the cache store in DIR (also --cache-dir; or DAFNY_CACHE_DIR): reuse per-module resolution results and complete verification-task solver exchanges. " +
+    "Use the cache store in DIR (also --cache-dir; or DAFNY_CACHE_DIR): reuse per-module resolution results, complete verification-task solver exchanges and, with --persistent-translation, module translations and results. " +
     "Requires --type-system-refresh. Opt-in; uses a fresh solver history and stable numeric declaration order for each task. " +
     "Replayed timing fields are identified in CSV/JSON logs. Unsupported modules and tasks run normally.") { ArgumentHelpName = "DIR" };
   public static readonly Option<string> CachePartition = new("--cache-partition",
@@ -74,6 +74,14 @@ public class CommonOptionBag {
   public static readonly Option<bool> TranslationCache = new("--translation-cache",
     "Reuse module translations in this process using semantic resolution keys. " +
     "Requires --type-system-refresh. Uses the default module-scoped translator. Stores no files or verification results.");
+  public static readonly Option<bool> PersistentTranslation = new("--persistent-translation",
+    "Also keep module translations and whole-module results in the --verification-cache directory, across processes. " +
+    "Requires --verification-cache and --type-system-refresh. A module whose translation key is unchanged is not translated again, " +
+    "and a module whose regenerated Boogie program is unchanged is not prepared or solved again, when every one of its tasks " +
+    "was verified through the result cache. Unsupported modules and reporting options run normally.");
+  public static readonly Option<bool> PersistentTranslationAudit = new("--persistent-translation-audit",
+    "With --persistent-translation, translate, prepare and verify every module as if nothing were stored, and report an error " +
+    "when a stored translation or module result differs from the fresh one.") { IsHidden = true };
 
   public static readonly Option<int> ResolutionThreads = new("--resolution-threads", () => 0,
     "Resolve independent modules with N workers. Requires --type-system-refresh. Scheduling is opt-in; generated names are module-scoped in every mode.") {
@@ -984,6 +992,8 @@ NoGhost - disable printing of functions, ghost methods, and proof
     });
     OptionRegistry.RegisterOption(ResolutionThreads, OptionScope.Cli);
     OptionRegistry.RegisterOption(TranslationCache, OptionScope.Cli);
+    OptionRegistry.RegisterOption(PersistentTranslation, OptionScope.Cli);
+    OptionRegistry.RegisterOption(PersistentTranslationAudit, OptionScope.Cli);
     TranslationWorkers.AddValidator(result => {
       if (result.Tokens.Count != 0 && result.GetValueOrDefault<int>() < 1) {
         result.ErrorMessage = "--translation-workers must be a positive integer.";
