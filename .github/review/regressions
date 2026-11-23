@@ -415,6 +415,9 @@ git-issues/github-issue-241-translation-cache.dfy
 # Persistent module translations and results with early cutoff (https://github.com/erniecohen/dafny/issues/261).
 git-issues/git-issue-261-persistent-translation.dfy
 git-issues/git-issue-261-persistent-translation-requires-refresh.dfy
+# Opt-in --release-verified-modules with persistent translation and translation workers: the same report,
+# bodies released, translation-key and Boogie-graph replay (https://github.com/erniecohen/dafny/issues/241).
+git-issues/github-issue-241-release-persistent.dfy
 
 
 # Source-only opt-in function operators, clone preservation and negative controls (https://github.com/erniecohen/dafny/issues/194).
