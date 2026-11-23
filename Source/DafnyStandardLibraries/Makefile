@@ -99,3 +99,7 @@ Z3 ?= z3
 CHECKED_CORES ?= 3
 build-checked-standard-libraries:
 	python3 modular-termination/overlay/build-checked.py --dafny '$(DAFNY)' --solver '$(Z3)' --cores $(CHECKED_CORES)
+
+# Opt-in total function domains, checked from source (issue 374).
+verify-function-domains:
+	$(DAFNY) verify function-domains/dfyconfig.toml
