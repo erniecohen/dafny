@@ -1188,6 +1188,7 @@ git-issues/git-issue-5642.dfy	0	1 verified, 0 errors
 git-issues/git-issue-5643.dfy	0	0 verified, 0 errors	
 git-issues/git-issue-5647.dfy	0	3 verified, 0 errors	
 git-issues/git-issue-5719.dfy	0	3 verified, 0 errors	
+git-issues/git-issue-572.dfy	4	3 verified, 3 errors	37,44,53
 git-issues/git-issue-5726a.dfy	2		20,42
 git-issues/git-issue-5726b.dfy	4	3 verified, 3 errors	15,24,42
 git-issues/git-issue-580.dfy	4	0 verified, 1 error	8
@@ -1408,3 +1409,29 @@ git-issues/github-issue-88.dfy	4	46 verified, 17 errors	51,83,113,121,122,139,14
 git-issues/github-issue-89.dfy	4	60 verified, 20 errors	50,64,65,98,100,101,102,103,115,133,134,149,171,188,189,193,215,224,232,242
 git-issues/github-issue-90.dfy	4	9 verified, 1 error	23
 git-issues/git-issue-193-bootstrap.dfy	0	4 verified, 0 errors
+hofs/Apply.dfy	4	7 verified, 7 errors	46,48,57,58,61,93,95
+hofs/ArrowTypeOptimizations.dfy	4	10 verified, 3 errors	10,16
+hofs/Classes.dfy	4	4 verified, 2 errors	33,60
+hofs/Compilation.dfy	0	2 verified, 0 errors	
+hofs/Consequence.dfy	0	2 verified, 0 errors	
+hofs/Field.dfy	4	0 verified, 4 errors	12,21
+hofs/Fold.dfy	0	3 verified, 0 errors	
+hofs/Frame.dfy	4	6 verified, 7 errors	23,37,63,66,68,120,123
+hofs/Lambda.dfy	0	4 verified, 0 errors	
+hofs/LambdaParsefail.dfy	2		5,6,7,8,9
+hofs/LambdaParsefail2.dfy	2		6
+hofs/Monads.dfy	0	14 verified, 0 errors	
+hofs/MutableField.dfy	2		12
+hofs/Naked.dfy	2		9,12,17,22,26,32,38,42,49,56,60,67
+hofs/ReadsReads.dfy	4	16 verified, 19 errors	35,40,52,64,93,95,105,107,179,189,199,209,242,252,262,272
+hofs/ReadsReadsOnMethods.dfy	4	20 verified, 7 errors	37,43,55,67
+hofs/Renaming.dfy	0	4 verified, 0 errors	
+hofs/Requires.dfy	0	10 verified, 0 errors	
+hofs/ResolveError.dfy	2		7,8,21,31,32,33,34,35,36,37,38,39,46,47,56,59,62,68,86,101,102,107,131,132,133,134,136,137,138,139
+hofs/Simple.dfy	4	5 verified, 6 errors	14,27,37,49,61,73
+hofs/SumSum.dfy	0	11 verified, 0 errors	
+hofs/TreeMapSimple.dfy	0	7 verified, 0 errors	
+hofs/Types.dfy	2		9,14,18,26
+hofs/Underspecified.dfy	2		6,7,8
+hofs/VectorUpdate.dfy	0	8 verified, 0 errors	
+hofs/WhileLoop.dfy	0	4 verified, 0 errors	

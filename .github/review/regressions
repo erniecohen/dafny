@@ -1130,3 +1130,8 @@ git-issues/git-issue-550-trait-downcast-controls.dfy
 
 # Total-function extensionality at every arity, including empty products (issue 374).
 git-issues/git-issue-374-arities.dfy
+
+# Exact finite-set reads footprints keep f.requires.reads equal to f.reads; hofs verdicts (issue 572).
+git-issues/git-issue-572.dfy
+hofs/ReadsReads.dfy
+hofs/Apply.dfy
