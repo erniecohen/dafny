@@ -47,6 +47,7 @@ public static class DafnyNewCli {
     AddCommand(CoverageReportCommand.Create());
     AddCommand(DocumentationCommand.Create());
     AddCommand(ExtractCommand.Create());
+    AddCommand(CacheCommand.Create());
 
     OptionRegistry.CheckOptionsAreKnown(AllOptions);
 
@@ -147,7 +148,7 @@ public static class DafnyNewCli {
       }
 
       if (dafnyOptions.Get(CommonOptionBag.VerificationCache) != null &&
-          !dafnyOptions.Get(CommonOptionBag.TypeSystemRefresh)) {
+          !dafnyOptions.Get(CommonOptionBag.TypeSystemRefresh) && !CacheCommand.IsCacheCommand(command)) {
         await dafnyOptions.OutputWriter.Status("Error: --verification-cache requires --type-system-refresh");
         context.ExitCode = (int)ExitValue.DAFNY_ERROR;
         return;
@@ -188,6 +189,16 @@ public static class DafnyNewCli {
       if (resolutionThreadsRequested && dafnyOptions.Get(CommonOptionBag.ResolutionThreads) > 0 &&
           !dafnyOptions.Get(CommonOptionBag.TypeSystemRefresh)) {
         await dafnyOptions.OutputWriter.Status("Error: --resolution-threads requires --type-system-refresh.");
+        context.ExitCode = (int)ExitValue.DAFNY_ERROR;
+        return;
+      }
+
+      var translationWorkersResult = context.ParseResult.FindResultFor(CommonOptionBag.TranslationWorkers);
+      var translationWorkersRequested = translationWorkersResult?.Token is not null ||
+        dafnyOptions.DafnyProject?.Options.ContainsKey(CommonOptionBag.TranslationWorkers.Name) == true;
+      if (translationWorkersRequested && dafnyOptions.Get(CommonOptionBag.TranslationWorkers) > 1 &&
+          !dafnyOptions.Get(CommonOptionBag.TypeSystemRefresh)) {
+        await dafnyOptions.OutputWriter.Status("Error: --translation-workers requires --type-system-refresh.");
         context.ExitCode = (int)ExitValue.DAFNY_ERROR;
         return;
       }

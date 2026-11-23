@@ -1052,6 +1052,8 @@ git-issues/git-issue-504-positive.dfy
 # Formatting snapshots and pipeline test health (issue 494).
 git-issues/git-issue-494.dfy
 git-issues/git-issue-496.dfy
+git-issues/git-issue-193-bootstrap.dfy
+git-issues/git-issue-193-reference-emission.dfy
 
 # Proved order constructions and checked ghost helper effects (issue 245).
 git-issues/git-issue-245-instances.dfy
@@ -1096,6 +1098,11 @@ git-issues/git-issue-522-controls.dfy
 # C# compilation and target admission for recursive module groups (issue 466).
 git-issues/git-issue-466-stage7.dfy
 git-issues/git-issue-466-stage7-targets.dfy
+# The persistent per-module resolution cache (issue 261).
+git-issues/git-issue-261-resolution-cache.dfy
+git-issues/git-issue-241-resolution-cache-requires-refresh.dfy
+git-issues/git-issue-261-cache-command.dfy
+git-issues/git-issue-261-resolution-cache-options.dfy
 
 # Java compilation and runtime comparisons for recursive groups (issue 466).
 git-issues/git-issue-466-java.dfy
@@ -1115,3 +1122,6 @@ git-issues/git-issue-549-invariant-hints-controls.dfy
 # Base-type values in the cone of a newtype's member invariants (https://github.com/erniecohen/dafny/issues/105).
 git-issues/git-issue-105-newtype-base-values.dfy
 git-issues/git-issue-105-newtype-base-values-controls.dfy
+# A downcast of a general trait's value to a datatype with invariants (https://github.com/erniecohen/dafny/issues/550).
+git-issues/git-issue-550-trait-downcast.dfy
+git-issues/git-issue-550-trait-downcast-controls.dfy
