@@ -1,6 +1,6 @@
 user witness: local/imported global and callback bounds
 
-Dafny program verifier finished with 57 verified, 0 errors
+Dafny program verifier finished with 72 verified, 0 errors
 well-foundedness, strict-descent and nonvacuity controls
 github-issue-245-witness-verify.dfy(12,21): Error: a postcondition could not be proved on this return path
 github-issue-245-witness-verify.dfy(11,14): Related location: this is the postcondition that could not be proved
@@ -8,7 +8,7 @@ github-issue-245-witness-verify.dfy(17,10): Error: decreases clause might not de
 github-issue-245-witness-verify.dfy(21,10): Error: decreases clause might not decrease (modular termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
 github-issue-245-witness-verify.dfy(27,4): Error: assertion might not hold
 
-Dafny program verifier finished with 50 verified, 4 errors
+Dafny program verifier finished with 65 verified, 4 errors
 actual chains, function values and name spoofing
 github-issue-245-witness-resolve.dfy(38,39): Error: modular termination: the {:termination_closed} promise of 'Closed' is not established; its body, specifications or implicit evaluations can reach open dispatch, an unknown application or an imported General contract
 github-issue-245-witness-resolve.dfy(10,23): Error: modular termination: in 'Controls.Unknown', this may evaluate the chain argument of a well-foundedness witness, which can reach dispatch to implementations that other modules may provide and has no 'decreases {:global}' bound, so it cannot run under the caller's bound (same-bound rule)

@@ -148,105 +148,121 @@ public partial class BoogieGenerator {
       AddOtherDefinition(GetOrCreateTypeConstructor(ad), new Axiom(tok,
         BplForall(bvars, BplTrigger(dom), BplIff(dom, guard))));
     }
-    if (arity == 1) {
+    if (arity == 1 || FunctionExtensionalityAxiom) {
       AddExactDomainAxioms(ad);
     }
   }
 
   /// <summary>
-  ///   function $ExactDom1(Ty, HandleType): bool
-  ///   forall a, f :: $ExactDom1(a, f) <==> (forall bx :: $FunDom1(f, bx) <==> $IsBox(bx, a))
-  ///   forall b, f :: $Is(f, TotalFunc1(T, b)) ==> $ExactDom1(T, f), for T among int, real, bool and ORDINAL
-  /// and, with --function-extensionality-axiom,
-  ///   function $FunEq1(Ty, Ty, HandleType, HandleType): bool
-  ///   forall a, b, f, g :: $FunEq1(a, b, f, g) <==> f == g
-  ///   forall a, b, f, g :: $Is(f, TotalFunc1(a, b)) && $Is(g, TotalFunc1(a, b)) && $ExactDom1(a, f) && $ExactDom1(a, g) &&
-  ///     (forall bx :: $IsBox(bx, a) ==> Apply1(a, b, $OneHeap, f, bx) == Apply1(a, b, $OneHeap, g, bx))
-  ///     ==> $FunEq1(a, b, f, g)
+  /// ExactDomN compares a handle's domain with the product of the given types' box sets.
+  /// Under --function-extensionality-axiom, FunEqN is Leibniz equality, with a second
+  /// axiom deriving it from totality, exact domains and pointwise agreement at OneHeap.
+  /// The empty product is the singleton nullary argument tuple.
   /// </summary>
   private void AddExactDomainAxioms(ArrowTypeDecl ad) {
+    var arity = ad.Arity;
     var tok = ad.Origin;
     var typeConstructor = GetOrCreateTypeConstructor(ad);
-    sink.AddTopLevelDeclaration(new Bpl.Function(Token.NoToken, ExactDom(1),
-      [BplFormalVar(null, Predef.Ty, true), BplFormalVar(null, Predef.HandleType, true)],
+    sink.AddTopLevelDeclaration(new Bpl.Function(Token.NoToken, ExactDom(arity),
+      Enumerable.Range(0, arity).Select(_ => (Bpl.Variable)BplFormalVar(null, Predef.Ty, true))
+        .Append(BplFormalVar(null, Predef.HandleType, true)).ToList(),
       BplFormalVar(null, Bpl.Type.Bool, false)));
     {
       var bvars = new List<Bpl.Variable>();
-      var a = BplBoundVar("a", Predef.Ty, bvars);
+      var domains = Map(Enumerable.Range(0, arity), i => BplBoundVar(arity == 1 ? "a" : "a" + i, Predef.Ty, bvars));
       var fn = BplBoundVar("f", Predef.HandleType, bvars);
-      var exact = FunctionCall(tok, ExactDom(1), Bpl.Type.Bool, a, fn);
-      var bxVar = new Bpl.BoundVariable(tok, new Bpl.TypedIdent(tok, "bx", Predef.BoxType));
-      var bx = new Bpl.IdentifierExpr(tok, bxVar);
-      var dom = FunctionCall(tok, FunDom(1), Bpl.Type.Bool, fn, bx);
-      var same = BplForall(bxVar, BplTrigger(dom), BplIff(dom, MkIs(bx, a, true)));
+      var exact = FunctionCall(tok, ExactDom(arity), Bpl.Type.Bool, Snoc(domains, fn));
+      var boxVars = new List<Bpl.Variable>();
+      var boxes = Map(Enumerable.Range(0, arity), i => BplBoundVar(arity == 1 ? "bx" : "bx" + i, Predef.BoxType, boxVars));
+      var dom = FunctionCall(tok, FunDom(arity), Bpl.Type.Bool, Cons(fn, boxes));
+      var inDomain = BplAnd(boxes.Zip(domains, (bx, a) => MkIs(bx, a, true)));
+      var same = BplForall(boxVars, BplTrigger(dom), BplIff(dom, inDomain));
       AddOtherDefinition(typeConstructor, new Axiom(tok, BplForall(bvars, BplTrigger(exact), BplIff(exact, same))));
     }
-    // The verifier's values of int, real, bool and ORDINAL are all values of the Dafny type, and no
-    // Dafny type has a box of one of them together with a box of another type; so a domain that
-    // contains every box of T is exactly T's boxes.
-    var total = program.SystemModuleManager.TotalArrowTypeDecls[1];
-    foreach (var t in new[] { Type.Int, Type.Real, Type.Bool, (Type)new BigOrdinalType() }) {
+    // A basic domain has no proper supertype. A product of basic domains therefore
+    // cannot be the proper subset of a domain built by the translator. This includes
+    // the empty product. Keep the unary axioms unchanged for --additional-axioms alone.
+    var total = program.SystemModuleManager.TotalArrowTypeDecls[arity];
+    var basicTypes = new[] { Type.Int, Type.Real, Type.Bool, (Type)new BigOrdinalType() };
+    if (arity == 1) {
+      foreach (var t in basicTypes) {
+        var bvars = new List<Bpl.Variable>();
+        var b = BplBoundVar("b", Predef.Ty, bvars);
+        var fn = BplBoundVar("f", Predef.HandleType, bvars);
+        var a = TypeToTy(t);
+        var exact = FunctionCall(tok, ExactDom(1), Bpl.Type.Bool, a, fn);
+        var isTotal = MkIs(fn, ClassTyCon(total, [a, b]));
+        AddOtherDefinition(typeConstructor, new Axiom(tok,
+          BplForall(bvars, new Bpl.Trigger(tok, true, [exact, isTotal]), BplImp(isTotal, exact))));
+      }
+    } else {
       var bvars = new List<Bpl.Variable>();
+      var domains = Map(Enumerable.Range(0, arity), i => BplBoundVar("a" + i, Predef.Ty, bvars));
       var b = BplBoundVar("b", Predef.Ty, bvars);
       var fn = BplBoundVar("f", Predef.HandleType, bvars);
-      var a = TypeToTy(t);
-      var exact = FunctionCall(tok, ExactDom(1), Bpl.Type.Bool, a, fn);
-      var isTotal = MkIs(fn, ClassTyCon(total, [a, b]));
+      var exact = FunctionCall(tok, ExactDom(arity), Bpl.Type.Bool, Snoc(domains, fn));
+      var isTotal = MkIs(fn, ClassTyCon(total, Snoc(domains, b)));
+      var basicDomains = BplAnd(domains.Select(a =>
+        BplOr(basicTypes.Select(t => Bpl.Expr.Eq(a, TypeToTy(t))))));
       AddOtherDefinition(typeConstructor, new Axiom(tok,
-        BplForall(bvars, new Bpl.Trigger(tok, true, [exact, isTotal]), BplImp(isTotal, exact))));
+        BplForall(bvars, new Bpl.Trigger(tok, true, [exact, isTotal]),
+          BplImp(BplAnd(isTotal, basicDomains), exact))));
     }
     if (!FunctionExtensionalityAxiom) {
       return;
     }
-    sink.AddTopLevelDeclaration(new Bpl.Function(Token.NoToken, FunEq(1),
-      [BplFormalVar(null, Predef.Ty, true), BplFormalVar(null, Predef.Ty, true),
-        BplFormalVar(null, Predef.HandleType, true), BplFormalVar(null, Predef.HandleType, true)],
+    sink.AddTopLevelDeclaration(new Bpl.Function(Token.NoToken, FunEq(arity),
+      Enumerable.Range(0, arity + 1).Select(_ => (Bpl.Variable)BplFormalVar(null, Predef.Ty, true))
+        .Concat(new[] { BplFormalVar(null, Predef.HandleType, true), BplFormalVar(null, Predef.HandleType, true) }).ToList(),
       BplFormalVar(null, Bpl.Type.Bool, false)));
     {
       var bvars = new List<Bpl.Variable>();
-      var a = BplBoundVar("a", Predef.Ty, bvars);
-      var b = BplBoundVar("b", Predef.Ty, bvars);
+      var types = Map(Enumerable.Range(0, arity + 1), i => BplBoundVar("t" + i, Predef.Ty, bvars));
       var f = BplBoundVar("f", Predef.HandleType, bvars);
       var g = BplBoundVar("g", Predef.HandleType, bvars);
-      var eq = FunctionCall(tok, FunEq(1), Bpl.Type.Bool, a, b, f, g);
+      var eq = FunctionCall(tok, FunEq(arity), Bpl.Type.Bool, Concat(types, new List<Bpl.Expr> { f, g }));
       AddOtherDefinition(typeConstructor, new Axiom(tok, BplForall(bvars, BplTrigger(eq), BplIff(eq, Bpl.Expr.Eq(f, g)))));
     }
     {
       var bvars = new List<Bpl.Variable>();
-      var a = BplBoundVar("a", Predef.Ty, bvars);
+      var domains = Map(Enumerable.Range(0, arity), i => BplBoundVar("a" + i, Predef.Ty, bvars));
       var b = BplBoundVar("b", Predef.Ty, bvars);
+      var types = Snoc(domains, b);
       var f = BplBoundVar("f", Predef.HandleType, bvars);
       var g = BplBoundVar("g", Predef.HandleType, bvars);
-      var eq = FunctionCall(tok, FunEq(1), Bpl.Type.Bool, a, b, f, g);
-      var arrow = ClassTyCon(total, [a, b]);
-      var bxVar = new Bpl.BoundVariable(tok, new Bpl.TypedIdent(tok, "bx", Predef.BoxType));
-      var bx = new Bpl.IdentifierExpr(tok, bxVar);
+      var eq = FunctionCall(tok, FunEq(arity), Bpl.Type.Bool, Concat(types, new List<Bpl.Expr> { f, g }));
+      var arrow = ClassTyCon(total, types);
+      var boxVars = new List<Bpl.Variable>();
+      var boxes = Map(Enumerable.Range(0, arity), i => BplBoundVar("bx" + i, Predef.BoxType, boxVars));
       var oneHeap = NewOneHeapExpr(tok);
-      var fx = FunctionCall(tok, Apply(1), Predef.BoxType, a, b, oneHeap, f, bx);
-      var gx = FunctionCall(tok, Apply(1), Predef.BoxType, a, b, oneHeap, g, bx);
-      var pointwise = BplForall(bxVar, new Bpl.Trigger(tok, true, [fx], new Bpl.Trigger(tok, true, [gx])),
-        BplImp(MkIs(bx, a, true), Bpl.Expr.Eq(fx, gx)));
+      var fx = FunctionCall(tok, Apply(arity), Predef.BoxType, Concat(types, Cons(oneHeap, Cons(f, boxes))));
+      var gx = FunctionCall(tok, Apply(arity), Predef.BoxType, Concat(types, Cons(oneHeap, Cons(g, boxes))));
+      var inDomain = BplAnd(boxes.Zip(domains, (bx, a) => MkIs(bx, a, true)));
+      var pointwise = BplForall(boxVars, new Bpl.Trigger(tok, true, [fx], new Bpl.Trigger(tok, true, [gx])),
+        BplImp(inDomain, Bpl.Expr.Eq(fx, gx)));
       var premises = BplAnd(BplAnd(MkIs(f, arrow), MkIs(g, arrow)),
-        BplAnd(FunctionCall(tok, ExactDom(1), Bpl.Type.Bool, a, f), FunctionCall(tok, ExactDom(1), Bpl.Type.Bool, a, g)));
+        BplAnd(FunctionCall(tok, ExactDom(arity), Bpl.Type.Bool, Snoc(domains, f)),
+          FunctionCall(tok, ExactDom(arity), Bpl.Type.Bool, Snoc(domains, g))));
       AddOtherDefinition(typeConstructor, new Axiom(tok,
         BplForall(bvars, BplTrigger(eq), BplImp(BplAnd(premises, pointwise), eq))));
     }
   }
 
   /// <summary>
-  /// With --function-extensionality-axiom, an equality between total arrows of one argument is $FunEq1
+  /// With --function-extensionality-axiom, an equality between total arrows is FunEqN
   /// at the left operand's type arguments; otherwise null.
   /// </summary>
   internal Bpl.Expr FunctionEquality(IOrigin tok, Type t0, Type t1, Bpl.Expr e0, Bpl.Expr e1) {
-    if (!FunctionExtensionalityAxiom || !IsTotalArrowOfOne(t0) || !IsTotalArrowOfOne(t1)) {
+    if (!FunctionExtensionalityAxiom || !IsTotalArrow(t0) || !IsTotalArrow(t1)) {
       return null;
     }
-    var args = t0.AsArrowType.TypeArgs;
-    return FunctionCall(tok, FunEq(1), Bpl.Type.Bool, TypeToTy(args[0]), TypeToTy(args[1]), e0, e1);
+    var arrow = t0.AsArrowType;
+    return FunctionCall(tok, FunEq(arrow.Arity), Bpl.Type.Bool,
+      arrow.TypeArgs.Select(TypeToTy).Concat(new[] { e0, e1 }).ToList());
   }
 
-  private static bool IsTotalArrowOfOne(Type t) {
-    return t.AsArrowType is { Arity: 1 } && t.IsArrowTypeWithoutPreconditions && t.IsArrowTypeWithoutReadEffects;
+  private static bool IsTotalArrow(Type t) {
+    return t.AsArrowType != null && t.IsArrowTypeWithoutPreconditions && t.IsArrowTypeWithoutReadEffects;
   }
 
   /// <summary>

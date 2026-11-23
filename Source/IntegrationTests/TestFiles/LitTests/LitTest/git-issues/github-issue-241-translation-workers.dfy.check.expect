@@ -1,0 +1,5 @@
+Boogie text identical: 15 modules, 4 runs
+translations overlapped; 15 commits in arrival order
+fell back to one translation worker
+Error: --translation-workers requires --type-system-refresh.
+--translation-workers must be a positive integer.

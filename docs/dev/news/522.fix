@@ -1,0 +1,5 @@
+With both `--lemma-bindings` and `--member-invariants`, the member-invariant
+extension check now follows a bound lemma's preconditions and postconditions,
+including their transitive function calls and lemma bindings. This rejects a
+raw type test hidden in a binding's specification that could otherwise make
+the invariant's definition inconsistent.

@@ -1,0 +1,1 @@
+Add proved bounded lexicographic, finite pointwise, binary product and inverse-image well-founded order constructions. Check application summaries for closed ghost helpers under decreases orders, allowing reusable constructors in modular termination bounds.
