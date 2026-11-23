@@ -23,6 +23,10 @@ function slots(value = process.env.INPUT_SLOTS || '2') {
   }
   return Number(value);
 }
+// Empty when unset: admit.py then drops that condition. admit.py validates the values.
+function memoryThresholds(env = process.env) {
+  return [(env['INPUT_MIN-FREE-PERCENT'] || '').trim(), (env['INPUT_MAX-PRESSURE'] || '').trim()];
+}
 function prepareWorkspace(workspace, runnerWorkspace) {
   // Only this runner's repository directory may be cleared. The cached action and
   // RUNNER_TEMP live outside it. Remove stale Git metadata as well as build outputs:
@@ -66,7 +70,8 @@ async function main() {
   fs.mkdirSync(cache, {recursive: true});
   const ready = path.join(process.env.TMPDIR, 'admitted');
   const keeper = cp.spawn('python3', [path.join(__dirname, 'admit.py'),
-    path.join(cache, 'active.lock'), ready, String(owner.pid), owner.identity, String(capacity)],
+    path.join(cache, 'active.lock'), ready, String(owner.pid), owner.identity, String(capacity),
+    ...memoryThresholds()],
     {stdio: 'ignore'});
   for (const [key, value] of Object.entries({keeper: keeper.pid,
     keeperIdentity: identity(keeper.pid), tmp: process.env.TMPDIR})) {
@@ -83,7 +88,8 @@ async function main() {
   fs.appendFileSync(process.env.GITHUB_STATE, `keeperIdentity=${identity(keeper.pid)}\n`);
   keeper.unref();
   prepareWorkspace(process.env.GITHUB_WORKSPACE, process.env.RUNNER_WORKSPACE);
-  console.log(`Admitted one of ${capacity} jobs; excess fork jobs wait until post cleanup`);
+  const [minFree, maxPressure] = memoryThresholds();
+  console.log(`Admitted one of ${capacity} jobs (memory floor ${minFree || 'none'}%, pressure ceiling ${maxPressure || 'none'}); excess fork jobs wait until post cleanup`);
 }
 if (require.main === module) main().catch(e => { console.error(e.message); process.exitCode = 1; });
-module.exports = {identity, worker, slots, prepareWorkspace};
+module.exports = {identity, worker, slots, memoryThresholds, prepareWorkspace};

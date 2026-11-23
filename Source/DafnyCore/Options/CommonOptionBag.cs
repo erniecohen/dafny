@@ -42,8 +42,35 @@ public class CommonOptionBag {
     };
 
   public static readonly Option<string> VerificationCache = new("--verification-cache",
-    "Reuse complete verification-task solver exchanges in DIR. Requires --type-system-refresh. Opt-in; uses a fresh solver history and stable numeric declaration order for each task. " +
-    "Replayed timing fields are identified in CSV/JSON logs. Unsupported tasks run normally.") { ArgumentHelpName = "DIR" };
+    "Use the cache store in DIR (also --cache-dir; or DAFNY_CACHE_DIR): reuse per-module resolution results and complete verification-task solver exchanges. " +
+    "Requires --type-system-refresh. Opt-in; uses a fresh solver history and stable numeric declaration order for each task. " +
+    "Replayed timing fields are identified in CSV/JSON logs. Unsupported modules and tasks run normally.") { ArgumentHelpName = "DIR" };
+  public static readonly Option<string> CachePartition = new("--cache-partition",
+    "The partition of the cache store whose budget this run's large cache entries (resolution snapshots, Boogie text) count against. " +
+    "Defaults to DAFNY_CACHE_PARTITION, or else a name derived from the project's directory. It never changes what is reused.") {
+    ArgumentHelpName = "NAME"
+  };
+  public static readonly Option<int> CachePartitionBudget = new("--cache-partition-budget",
+    () => (int)Caching.ArtifactLimits.DefaultPartitionBudgetMegabytes,
+    "The size in megabytes of the large cache entries one partition may hold; its least recently used entries are dropped beyond it.") {
+    ArgumentHelpName = "MB"
+  };
+  public static readonly Option<int> CacheSizeCap = new("--cache-size-cap", () => (int)Caching.ArtifactLimits.DefaultStoreCapMegabytes,
+    "The size in megabytes of all large cache entries in the store; beyond it the least recently used entries are deleted, untagged ones first.") {
+    ArgumentHelpName = "MB"
+  };
+  public static readonly Option<int> CacheOrphanDays = new("--cache-orphan-days", () => Caching.ArtifactLimits.DefaultOrphanDays,
+    "Drop the large cache entries of a partition that has not been used for this many days.") {
+    ArgumentHelpName = "DAYS"
+  };
+  public static readonly Option<bool> ResolutionCache = new("--resolution-cache", () => true,
+    "With a cache store (--cache-dir), reuse per-module resolution results from it. Set to false to leave resolution out. Requires --type-system-refresh.") {
+    IsHidden = true
+  };
+  public static readonly Option<bool> ResolutionCacheCheck = new("--resolution-cache-check",
+    "With --resolution-cache, also resolve each module whose result is reused, and report an error if the two results differ. For testing the cache.") {
+    IsHidden = true
+  };
   public static readonly Option<bool> TranslationCache = new("--translation-cache",
     "Reuse module translations in this process using semantic resolution keys. " +
     "Requires --type-system-refresh. Uses the default module-scoped translator. Stores no files or verification results.");
@@ -51,6 +78,22 @@ public class CommonOptionBag {
   public static readonly Option<int> ResolutionThreads = new("--resolution-threads", () => 0,
     "Resolve independent modules with N workers. Requires --type-system-refresh. Scheduling is opt-in; generated names are module-scoped in every mode.") {
     ArgumentHelpName = "N"
+  };
+
+  public static readonly Option<int> TranslationWorkers = new("--translation-workers", () => 1,
+    "Translate to Boogie, and prepare for verification, up to N modules at once. Requires --type-system-refresh, " +
+    "and has an effect only with --verification-module-window greater than 1, which admits the modules. " +
+    "Generated names, Boogie text, diagnostics, logs and resource counts are the same as with 1, the default. " +
+    "A translation starts only while the managed heap, plus the mean allocation of a translation for each one " +
+    "in progress, is below --verification-module-window-memory. Falls back to 1 with a plugin, a verbose log " +
+    "level, or a Boogie print, trace, debug-information, snapshot or non-default type-encoding option.") {
+    ArgumentHelpName = "N"
+  };
+
+  public static readonly Option<int> TranslationWorkersStress = new("--translation-workers-stress", () => 0,
+    "(testing) With --translation-workers, delay each translation's start: a positive seed draws a delay of up to " +
+    "40 ms per module, -1 delays the k-th module by 100·(3 - k mod 4) ms, so that translations finish in reverse order.") {
+    IsHidden = true
   };
 
   public static readonly Option<string> PipelineProfile =
@@ -289,6 +332,9 @@ true - All class instances are raw pointers and need to be manually deallocated"
     // Automatic usage on old CLI errors must retain its literal disabled output.
     IsHidden = true
   };
+
+  public static readonly Option<bool> IntegerBitwise = new("--integer-bitwise", () => false,
+    "Enable the compiler-owned ghost integer bitwise reference functions and explicit one-step unfolding lemmas. Integer-newtype operators are not yet implemented.");
 
   public static readonly Option<bool> AdditionalAxioms = new("--additional-axioms", () => false,
     "Enable additional verifier axioms. May change verification performance and proof stability. Disabled by default.");
@@ -673,6 +719,7 @@ If verification fails, report a detailed counterexample for the first failing as
     });
 
     DafnyOptions.RegisterLegacyUi(AdditionalAxioms, DafnyOptions.ParseBoolean, "Verification options", legacyName: "additionalAxioms");
+    DafnyOptions.RegisterLegacyUi(IntegerBitwise, DafnyOptions.ParseBoolean, "Language feature selection", legacyName: "integerBitwise");
     DafnyOptions.RegisterLegacyUi(AllowAxioms, DafnyOptions.ParseBoolean, "Verification options", legacyName: "allowAxioms", defaultValue: true);
     DafnyOptions.RegisterLegacyUi(LegacyNoModularTermination, DafnyOptions.ParseBoolean, "Verification options", legacyName: "legacyNoModularTermination");
     DafnyOptions.RegisterLegacyBinding(ShowHints, (options, value) => {
@@ -910,7 +957,24 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(WarnAsErrors, OptionScope.Cli);
     OptionRegistry.RegisterOption(ProgressOption, OptionScope.Cli);
     OptionRegistry.RegisterOption(LogLocation, OptionScope.Cli);
+    VerificationCache.AddAlias("--cache-dir");
     OptionRegistry.RegisterOption(VerificationCache, OptionScope.Cli);
+    CachePartition.AddValidator(result => {
+      if (result.Tokens.Count != 0 && !Caching.ArtifactStore.IsValidName(result.GetValueOrDefault<string>())) {
+        result.ErrorMessage = "--cache-partition must be 1 to 100 letters, digits, '-', '_' or '.', not starting with '.'.";
+      }
+    });
+    foreach (var limit in new[] { CachePartitionBudget, CacheSizeCap, CacheOrphanDays }) {
+      limit.AddValidator(result => {
+        if (result.Tokens.Count != 0 && result.GetValueOrDefault<int>() < 1) { result.ErrorMessage = limit.Name + " must be a positive integer."; }
+      });
+    }
+    OptionRegistry.RegisterOption(CachePartition, OptionScope.Cli);
+    OptionRegistry.RegisterOption(CachePartitionBudget, OptionScope.Cli);
+    OptionRegistry.RegisterOption(CacheSizeCap, OptionScope.Cli);
+    OptionRegistry.RegisterOption(CacheOrphanDays, OptionScope.Cli);
+    OptionRegistry.RegisterOption(ResolutionCache, OptionScope.Cli);
+    OptionRegistry.RegisterOption(ResolutionCacheCheck, OptionScope.Cli);
     ResolutionThreads.AddValidator(result => {
       if (result.Tokens.Count != 0 && result.GetValueOrDefault<int>() < 1) {
         result.ErrorMessage = "--resolution-threads must be a positive integer.";
@@ -918,6 +982,13 @@ NoGhost - disable printing of functions, ghost methods, and proof
     });
     OptionRegistry.RegisterOption(ResolutionThreads, OptionScope.Cli);
     OptionRegistry.RegisterOption(TranslationCache, OptionScope.Cli);
+    TranslationWorkers.AddValidator(result => {
+      if (result.Tokens.Count != 0 && result.GetValueOrDefault<int>() < 1) {
+        result.ErrorMessage = "--translation-workers must be a positive integer.";
+      }
+    });
+    OptionRegistry.RegisterOption(TranslationWorkers, OptionScope.Cli);
+    OptionRegistry.RegisterOption(TranslationWorkersStress, OptionScope.Cli);
     OptionRegistry.RegisterOption(PipelineProfile, OptionScope.Cli);
     OptionRegistry.RegisterOption(PipelineProfileHeap, OptionScope.Cli);
     OptionRegistry.RegisterOption(PipelineProfileGcEvents, OptionScope.Cli);
@@ -926,6 +997,9 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(ManualTriggerOption, OptionScope.Module);
     OptionRegistry.RegisterOption(UserDefinedOperators, OptionScope.Cli);
     OptionRegistry.RegisterOption(AdditionalAxioms, OptionScope.Cli);
+    OptionRegistry.RegisterGlobalOption(IntegerBitwise,
+      (reporter, origin, prefix, option, localValue, libraryValue) =>
+        OptionCompatibility.OptionLibraryImpliesLocalError(reporter, origin, prefix, option, localValue, libraryValue ?? false));
     OptionRegistry.RegisterOption(MapComprehensionDomainTriggers, OptionScope.Cli);
     OptionRegistry.RegisterOption(HeapFreeLambdaFacts, OptionScope.Cli);
     OptionRegistry.RegisterOption(FunctionExtensionalityAxiom, OptionScope.Cli);

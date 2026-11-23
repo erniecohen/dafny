@@ -43,6 +43,16 @@ public class SystemModuleManager {
   public int MaxNonGhostTupleSizeUsed { get; private set; }
   public IOrigin MaxNonGhostTupleSizeToken { get; private set; }
 
+  /// <summary>The ghostness shapes of this view's tuple types (issue 261).</summary>
+  internal IEnumerable<List<bool>> TupleShapes => tupleTypeDecls.Keys;
+  internal IEnumerable<KeyValuePair<List<bool>, TupleTypeDecl>> Tuples => tupleTypeDecls;
+
+  /// <summary>Restore the largest non-ghost tuple of a cached module output (issue 261).</summary>
+  internal void SetMaxNonGhostTupleSize(int size, IOrigin token) {
+    MaxNonGhostTupleSizeUsed = size;
+    MaxNonGhostTupleSizeToken = token;
+  }
+
   private byte[] hash;
 
   public byte[] MyHash {
@@ -322,6 +332,9 @@ public class SystemModuleManager {
         t => t.IsIMapType, typeArgs => new MapType(false, typeArgs[0], typeArgs[1]))
     ];
     SystemModule.SourceDecls.AddRange(valuetypeDecls);
+    if (options.Get(CommonOptionBag.IntegerBitwise)) {
+      RecordBuiltin(new IntegerBitwiseReferences(this));
+    }
     // Resolution error handling relies on being able to get to the 0-tuple declaration
     TupleType(Token.NoToken, 0, true);
 

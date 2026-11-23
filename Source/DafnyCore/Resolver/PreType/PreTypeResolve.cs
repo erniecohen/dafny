@@ -67,6 +67,23 @@ namespace Microsoft.Dafny {
     private readonly Dictionary<string, TopLevelDecl> preTypeBuiltins = new();
     public readonly PreTypeConstraints Constraints;
 
+    /// <summary>
+    /// Demand the builtin pre-type declaration "name" of the resolver's builtins view, as resolution does
+    /// (issue 261: a cached module output replays the builtins its resolution demanded).
+    /// </summary>
+    internal static TopLevelDecl ReplayBuiltin(ModuleResolver resolver, string name) {
+      var state = new PreTypeInferenceModuleState(new List<Declaration>(), resolver.SystemModuleManager.PreTypeBuiltins);
+      var preTypeResolver = new PreTypeResolver(resolver, state);
+      // An arrow pre-type names the arrow declaration of its arity, which BuiltInArrowTypeDecl records.
+      if (System.Text.RegularExpressions.Regex.Match(name, @"^_#(Partial|Total)?Func(\d+)$") is { Success: true } arrow &&
+          int.TryParse(arrow.Groups[2].Value, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var arity)) {
+        var kind = arrow.Groups[1].Value;
+        var expected = kind == "" ? ArrowType.ArrowTypeName(arity) : kind == "Partial" ? ArrowType.PartialArrowTypeName(arity) : ArrowType.TotalArrowTypeName(arity);
+        if (expected == name) { return preTypeResolver.BuiltInArrowTypeDecl(arity, kind == "", kind != "Total"); }
+      }
+      return preTypeResolver.BuiltInTypeDecl(name);
+    }
+
     TopLevelDecl BuiltInTypeDecl(string name) {
       if (resolver.SystemModuleManager.ResolutionCatalog is { } catalog) {
         var declaration = catalog.Pretype(name, () => BuiltInTypeDeclCore(name));

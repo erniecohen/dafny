@@ -4,6 +4,12 @@ inputs:
   slots:
     description: Number of admitted jobs across runner services; configure consistently across repositories
     default: '2'
+  min-free-percent:
+    description: Admit only while the system-wide free memory percentage is at least this; empty drops the condition
+    default: ''
+  max-pressure:
+    description: Admit only while the kernel memory pressure is no higher than this (normal, warn or critical); empty drops the condition
+    default: ''
 runs:
   using: node24
   main: index.cjs
