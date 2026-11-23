@@ -448,9 +448,15 @@ public abstract class MethodOrConstructor : MethodOrFunction, TypeParameter.Pare
     return $"{AstExtensions.GetMemberQualification(this)}{Name}";
   }
 
+  /// <summary>
+  /// The out-parameters and the body's local variables.  A body that --release-verified-modules
+  /// released contributes nothing: its locals are not verifiable symbols, and a whole-program symbol
+  /// walk (the persistent module cache's replay, issue 261) must not read it.
+  /// </summary>
   public IEnumerable<ISymbol> ChildSymbols {
     get {
-      IEnumerable<INode> childStatements = Body?.Visit(node => node is Statement) ?? Enumerable.Empty<INode>();
+      IEnumerable<INode> childStatements = BodyReleased ? Enumerable.Empty<INode>()
+        : Body?.Visit(node => node is Statement) ?? Enumerable.Empty<INode>();
       return Outs.Concat(childStatements.OfType<VarDeclStmt>().SelectMany(v => (IEnumerable<ISymbol>)v.Locals));
     }
   }
