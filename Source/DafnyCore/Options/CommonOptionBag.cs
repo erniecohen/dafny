@@ -348,7 +348,7 @@ true - All class instances are raw pointers and need to be manually deallocated"
     "Enable additional verifier axioms. May change verification performance and proof stability. Disabled by default.");
 
   public static readonly Option<bool> FunctionExtensionalityAxiom = new("--function-extensionality-axiom", () => false,
-    "Give function values domain tags, as --additional-axioms does, and make two total functions of one argument with the same exact domain equal when they agree on it, at each equality between them. May change verification performance. Disabled by default.");
+    "Give function values domain tags, as --additional-axioms does, and make two total functions of the same arity and exact domain equal when they agree on it, at each equality between them. May change verification performance. Disabled by default.");
 
   public static readonly Option<bool> HeapFreeLambdaFacts = new("--heap-free-lambda-facts", () => false,
     "Check a lambda without a reads clause, whose body observes neither the heap nor allocation, in every heap and without assuming its parameters allocated, and let the calls in its body unfold wherever it is applied. May change verification performance. Disabled by default.");
