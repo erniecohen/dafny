@@ -1811,6 +1811,17 @@ public partial class BoogieGenerator {
   }
 
 
+  /// <summary>
+  /// The witness check sets the origin of its substituted constraint, and Substitute returns the
+  /// constraint itself when the bound variable does not occur in it (as in "v: T | true"). Setting
+  /// the origin of the declaration's own constraint would change the tokens of every later
+  /// translation of that constraint in this process, in other modules too, and under
+  /// --translation-workers it would race with those translations. The shared constraint is
+  /// cloned first (issue 569).
+  /// </summary>
+  private static Expression Unshared(Expression substituted, Expression constraint) =>
+    ReferenceEquals(substituted, constraint) ? new Cloner(false, true).CloneExpr(substituted) : substituted;
+
   void AddWellformednessCheck(RedirectingTypeDecl decl) {
     Contract.Requires(decl != null);
     Contract.Requires(sink != null && Predef != null);
@@ -1915,7 +1926,7 @@ public partial class BoogieGenerator {
           // check that the witness is assignable to the type of the given bound variable
           CheckResultToBeInType(decl.Witness.Origin, decl.Witness, baseType, locals, witnessCheckBuilder, etran);
           // check that the witness expression checks out
-          witnessExpr = decl.Constraint != null ? Substitute(decl.Constraint, decl.Var, decl.Witness) : null;
+          witnessExpr = decl.Constraint != null ? Unshared(Substitute(decl.Constraint, decl.Var, decl.Witness), decl.Constraint) : null;
           if (witnessExpr != null) {
             witnessExpr.SetOrigin(result.Origin);
             var desc = new WitnessCheck(witnessString, witnessExpr);
@@ -1937,7 +1948,7 @@ public partial class BoogieGenerator {
         // before trying 0 as a witness, check that 0 can be assigned to baseType
         witnessString = Printer.ExprToString(options, witness);
         CheckResultToBeInType(decl.Tok, witness, baseType, locals, witnessCheckBuilder, etran, $"trying witness {witnessString}: ");
-        witnessExpr = decl.Constraint != null ? Substitute(decl.Constraint, decl.Var, witness) : null;
+        witnessExpr = decl.Constraint != null ? Unshared(Substitute(decl.Constraint, decl.Var, witness), decl.Constraint) : null;
         if (witnessExpr != null) {
           witnessExpr.SetOrigin(decl.Tok);
           var desc = new WitnessCheck(witnessString, witnessExpr);
