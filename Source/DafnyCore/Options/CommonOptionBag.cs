@@ -437,6 +437,8 @@ true - All class instances are raw pointers and need to be manually deallocated"
     "Use the legacy, unsound check of the types of iterator yield parameters, made before the resolver knows how each datatype is constructed, for migration and comparison only.") { IsHidden = true };
   public static readonly Option<bool> LegacyMemberInvariantDependence = new("--legacy-member-invariant-dependence", () => false,
     "Use the legacy, unsound cache of provisional negative type-dependence results in the member-invariant extension condition, for migration and comparison only.") { IsHidden = true };
+  public static readonly Option<bool> LegacyUncheckedMemberInvariantProofs = new("--legacy-unchecked-member-invariant-proofs", () => false,
+    "Use the legacy, unsound member-invariant extension condition that does not check the proofs in an invariant's cone (proof hints, and the bodies of bound lemmas), for migration and comparison only.") { IsHidden = true };
 
   public static readonly Option<bool> LegacyUncheckedTypeVariance = new("--legacy-unchecked-type-variance", () => false,
     "Use the legacy, unsound rule that ignores subset-type and newtype constraints when checking declared variance, for migration and comparison only.") { IsHidden = true };
@@ -1081,6 +1083,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(LegacyGenericFunctionStores, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacyInheritedTerminationChecks, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacyMemberInvariantDependence, OptionScope.Cli);
+    OptionRegistry.RegisterOption(LegacyUncheckedMemberInvariantProofs, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacyUncheckedTypeVariance, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacyUncheckedImportBinding, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacyStoredFunctionCallbacks, OptionScope.Cli);
