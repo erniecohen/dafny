@@ -321,6 +321,17 @@ Various options control the verification process, in addition to all those descr
   describe the current invocation, not a new solver measurement. Unsupported
   execution profiles run normally. The initial native profile supports macOS
   and Linux; custom loading environments and solver launcher scripts bypass.
+  Results are stored and replayed only for an audited solver binary: one of the
+  Z3 5.1.0 release binaries, identified by the SHA-256 digest of their bytes, or
+  one declared by `--verification-cache-solver-digest SHA256`
+  ([#574](https://github.com/erniecohen/dafny/issues/574)). The option is
+  repeatable, and `verification-cache-solver-digest = ["..."]` in `dfyconfig.toml`
+  declares digests too; declare only a build you have audited, such as a
+  reproducible source build of the same Z3 release. A declaration adds to the
+  built-in list and replaces no check: the binary is still hashed, its digest must
+  be built in or declared, and the digest stays in every key, so results from
+  different binaries never mix. When digests are declared and the binary matches
+  none of them, the run verifies without the cache and prints a warning.
   Both a framework-dependent build, whose .NET host is identified by the
   installation's `host/fxr`, and a self-contained build, whose bundled
   `libhostfxr` and `libhostpolicy` identify its host, are supported. Each request of
