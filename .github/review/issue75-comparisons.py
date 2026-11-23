@@ -23,8 +23,8 @@ try:
         ["--output", str(out / "translation")])
     sample = "dafny0/ForLoops.dfy,dafny0/SubsetTypes.dfy,dafny0/MultiSets.dfy,dafny1/Queue.dfy,dafny1/ExtensibleArray.dfy,dafny1/SchorrWaite.dfy,dafny2/SnapshotableTrees.dfy,dafny4/Ackermann.dfy,dafny4/Lucas-up.dfy"
     run("paired-sample", ["python3", ".github/review/issue74-corpus.py"] + common +
-        ["--z3", str(Path("z3-5.1.0-x64-glibc-2.39/bin/z3").resolve()), "--output", str(out / "sample"),
-         "--only", sample, "--jobs", "4"])
+        ["--z3", str(Path("z3-5.1.0-arm64-osx-13.3/bin/z3").resolve()), "--output", str(out / "sample"),
+         "--only", sample, "--jobs", "2"])
     for mode in ["off", "on"]:
         batches = {}
         unavailable = {}

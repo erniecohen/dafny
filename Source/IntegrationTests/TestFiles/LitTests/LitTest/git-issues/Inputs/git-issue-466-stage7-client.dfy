@@ -1,0 +1,20 @@
+module Client {
+  import A
+  import B
+  import C
+  import Refined
+  method Main() {
+    print A.Count(6), " ", B.Count(7), " ", C.Count(8), "\n";
+    print A.Start, " ", B.Middle, " ", C.Last, " ", A.End, "\n";
+    var tree := A.Node(B.Branch(A.Leaf(42)));
+    print tree.child.tree.value, "\n";
+    var trees := new A.Tree<int>[1];
+    var edges := new B.Edge[1];
+    var paths := new A.Path[1];
+    print trees[0].Leaf?, " ", edges[0].path.Stop?, " ", paths[0].Stop?, "\n";
+    var boxes := new B.Box[1];
+    print boxes[0].p.n, "\n";
+    var counter: A.Counter := new B.Implementation();
+    print counter.Eval(4), " ", Refined.Count(3), "\n";
+  }
+}

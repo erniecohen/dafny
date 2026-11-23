@@ -38,6 +38,8 @@ public class Program : NodeWithoutOrigin {
   // Contains the definitions to be used for compilation.
 
   internal Dictionary<ModuleDecl, string> ResolutionKeys { get; set; } = new();
+  /// <summary>The <see cref="ModuleResolutionIdentity"/> of each module declaration, by declaration.</summary>
+  internal Dictionary<ModuleDecl, string> ResolutionIdentities { get; set; } = new();
 
   public Method MainMethod; // Method to be used as main if compiled
   public LiteralModuleDecl DefaultModule;

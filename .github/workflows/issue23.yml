@@ -5,54 +5,128 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref_type != 'tag' }}
+
+env:
+  DOTNET_PROCESSOR_COUNT: '2'
+  MSBUILDDISABLENODEREUSE: '1'
+  GRADLE_OPTS: -Dorg.gradle.daemon=false
+
 jobs:
   build:
-    runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    if: ${{ github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request') && (github.event_name != 'pull_request' || (!github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository)) }}
+    runs-on: [self-hosted, macOS, ARM64, fork-ci]
+    timeout-minutes: 1440 # Includes waiting for the shared admission slot.
     steps:
+      - name: Yield to interactive work
+        if: runner.os == 'macOS'
+        shell: bash
+        timeout-minutes: 45
+        run: |
+          case "$(ps -o comm= -p "$PPID")" in
+            */Runner.Worker|Runner.Worker) ;;
+            *) echo "::error::Expected this job's Runner.Worker parent"; exit 1 ;;
+          esac
+          renice 10 -p "$PPID" "$$" >/dev/null
+          test "$(ps -o nice= -p "$PPID" | tr -d ' ')" = 10
+          test "$(ps -o nice= -p "$$" | tr -d ' ')" = 10
+      - name: Create job temporary directory
+        shell: bash
+        timeout-minutes: 45
+        run: |
+          job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
+          echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@a8ef9c0acd833e35e6a13f798ac4c17dad9a64e1
+        with:
+          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
+          min-free-percent: ${{ vars.SELF_HOSTED_JOB_MIN_FREE_PERCENT || '' }}
+          max-pressure: ${{ vars.SELF_HOSTED_JOB_MAX_PRESSURE || '' }}
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 1
+          clean: true
+      - uses: ./.github/actions/fetch-refs
+        with:
+          refs: 428e348b0b125cb67505f03a0026b3f497f98e48
       - uses: ./.github/actions/setup-dotnet
       - name: Build the fixed baseline and candidate
+        timeout-minutes: 45
         run: |
           git worktree add --detach baseline 428e348b0b125cb67505f03a0026b3f497f98e48
           for variant in before after; do
             source="$PWD"
             if [ "$variant" = before ]; then source="$PWD/baseline"; fi
-            (cd "$source" && sh Scripts/fetch-boogie-packages.sh && dotnet publish Source/Dafny/Dafny.csproj -c Release -o "$GITHUB_WORKSPACE/out/$variant" -p:GeneratePackageOnBuild=false -p:SourceRevisionId=review-followup)
+            (cd "$source" && sh Scripts/fetch-boogie-packages.sh && dotnet publish -p:NuGetAudit=false Source/Dafny/Dafny.csproj -c Release -o "$GITHUB_WORKSPACE/out/$variant" -p:GeneratePackageOnBuild=false -p:SourceRevisionId=review-followup)
           done
           tar -czf builds.tar.gz out
       - uses: actions/upload-artifact@v4
         with:
           name: issue23-builds
           path: builds.tar.gz
+      - name: Remove job temporary directory
+        if: always()
+        shell: bash
+        timeout-minutes: 5
+        run: |
+          case "${TMPDIR:-}" in
+            "$RUNNER_TEMP"/fork-job.*) rm -rf "$TMPDIR" ;;
+          esac
+
   measure:
+    if: ${{ github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request') && (github.event_name != 'pull_request' || (!github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository)) }}
     needs: build
-    runs-on: ubuntu-24.04
-    timeout-minutes: 100
+    runs-on: [self-hosted, macOS, ARM64, fork-ci]
+    timeout-minutes: 1440 # Includes waiting for the shared admission slot.
     strategy:
       fail-fast: false
+      max-parallel: 1
       matrix:
         variant: [before, after]
         scope: [suite0, suite1, suite2, suite3, std, focused]
     steps:
+      - name: Yield to interactive work
+        if: runner.os == 'macOS'
+        shell: bash
+        timeout-minutes: 100
+        run: |
+          case "$(ps -o comm= -p "$PPID")" in
+            */Runner.Worker|Runner.Worker) ;;
+            *) echo "::error::Expected this job's Runner.Worker parent"; exit 1 ;;
+          esac
+          renice 10 -p "$PPID" "$$" >/dev/null
+          test "$(ps -o nice= -p "$PPID" | tr -d ' ')" = 10
+          test "$(ps -o nice= -p "$$" | tr -d ' ')" = 10
+      - name: Create job temporary directory
+        shell: bash
+        timeout-minutes: 100
+        run: |
+          job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
+          echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@a8ef9c0acd833e35e6a13f798ac4c17dad9a64e1
+        with:
+          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
+          min-free-percent: ${{ vars.SELF_HOSTED_JOB_MIN_FREE_PERCENT || '' }}
+          max-pressure: ${{ vars.SELF_HOSTED_JOB_MAX_PRESSURE || '' }}
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-dotnet
       - uses: actions/download-artifact@v4
         with:
           name: issue23-builds
       - name: Unpack and pin Z3
+        timeout-minutes: 100
         run: |
           tar -xzf builds.tar.gz
-          curl -fsSLo z3.zip https://github.com/Z3Prover/z3/releases/download/z3-5.1.0/z3-5.1.0-x64-glibc-2.39.zip
-          echo 'f47be8d27d3230e823bf1eeede2fe0abaca55bb78d0b59974370e6689a92284a  z3.zip' | sha256sum -c -
+          curl -fsSLo z3.zip https://github.com/Z3Prover/z3/releases/download/z3-5.1.0/z3-5.1.0-arm64-osx-13.3.zip
+          echo '81d29e934fd863079a74af35eecaeaef8047e0e12414d33ca322b358d68383db  z3.zip' | shasum -a 256 -c -
           unzip -q z3.zip
       - name: Record evidence (probe, outcomes retained)
+        timeout-minutes: 100
         run: |
           mkdir evidence
           set +e
-          python3 .github/review/issue23.py '${{ matrix.variant }}' '${{ matrix.scope }}' "$PWD/z3-5.1.0-x64-glibc-2.39/bin/z3" > evidence/probe.log 2>&1
+          python3 .github/review/issue23.py '${{ matrix.variant }}' '${{ matrix.scope }}' "$PWD/z3-5.1.0-arm64-osx-13.3/bin/z3" > evidence/probe.log 2>&1
           echo "$?" > evidence/probe-exit.txt
           cat evidence/probe.log
           exit 0
@@ -63,3 +137,11 @@ jobs:
           path: evidence
           compression-level: 9
           retention-days: 90
+      - name: Remove job temporary directory
+        if: always()
+        shell: bash
+        timeout-minutes: 5
+        run: |
+          case "${TMPDIR:-}" in
+            "$RUNNER_TEMP"/fork-job.*) rm -rf "$TMPDIR" ;;
+          esac
