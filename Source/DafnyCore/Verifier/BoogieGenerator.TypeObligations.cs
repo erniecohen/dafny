@@ -21,11 +21,19 @@ public partial class BoogieGenerator {
     var baseType = declaration.Var.Type.Subst(typeMap);
     // The wrapper names the already translated value, never reevaluates the source
     // expression and retains its representation at this logical program state.
-    var baseValue = AdaptBoxing(origin, value, sourceType, baseType);
+    var checkBoxedBase = !options.Get(CommonOptionBag.LegacyBoxedNewtypeObligations) && ModeledAsBoxType(sourceType);
+    var baseValue = AdaptTypeObligationBoxing(origin, value, sourceType, baseType);
     var wrapper = new BoogieWrapper(baseValue, baseType);
     Expression constraint;
     if (baseType.IsNumericBased() || baseType.IsBitVectorType || baseType.IsBoolType ||
         (baseType.IsCharType && options.Get(CommonOptionBag.LegacyUnguardedChar))) {
+      if (checkBoxedBase) {
+        // A constraint on the unboxed value does not establish the box's type.
+        // The combined predicate below already includes redirecting base constraints;
+        // check only their primitive carrier here, without checking them twice.
+        CheckSubrange(origin, value, sourceType, baseType.NormalizeToAncestorType(), null, builder, etran: etran, close: close, forget: forget,
+          universalClosure: universalClosure, valueCanCall: valueCanCall);
+      }
       // This is the authoritative combined predicate used by the numeric $Is axiom.
       constraint = ModuleResolver.GetImpliedTypeConstraint(wrapper, udt);
     } else {
@@ -41,6 +49,15 @@ public partial class BoogieGenerator {
     if (valueCanCall != null) { guard = BplAnd(valueCanCall, guard); }
     CheckPropositionUnderGuard(origin, constraint, guard, description, builder, etran, close, forget, universalClosure: universalClosure);
     return true;
+  }
+
+  private Bpl.Expr AdaptTypeObligationBoxing(IOrigin origin, Bpl.Expr value, Type sourceType, Type targetType) {
+    // A non-reference trait receiver is boxed too, not just a type parameter.
+    // Both visible constraints and member invariants substitute a value in its
+    // base representation, independently of the receiver's source type.
+    return !options.Get(CommonOptionBag.LegacyBoxedNewtypeObligations) && ModeledAsBoxType(sourceType)
+      ? CondApplyUnbox(origin, value, sourceType, targetType)
+      : AdaptBoxing(origin, value, sourceType, targetType);
   }
 
   /// <summary>
@@ -84,7 +101,7 @@ public partial class BoogieGenerator {
     var rawType = declaration.Var.Type.Subst(typeMap);
     CheckSubrange(origin, value, sourceType, rawType, null, builder, etran: etran, close: close, forget: forget,
       universalClosure: universalClosure, valueCanCall: valueCanCall);
-    var wrapper = new BoogieWrapper(AdaptBoxing(origin, value, sourceType, rawType), rawType);
+    var wrapper = new BoogieWrapper(AdaptTypeObligationBoxing(origin, value, sourceType, rawType), rawType);
     var constraint = Substitute(declaration.Constraint, null,
       new Dictionary<IVariable, Expression> { { declaration.Var, wrapper } }, typeMap);
     Bpl.Expr notNull = null;

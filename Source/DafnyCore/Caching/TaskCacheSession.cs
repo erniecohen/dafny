@@ -40,6 +40,8 @@ public sealed class TaskCacheSession {
   public static int ImageDigestsRemembered => ExecutionImageIdentity.ImageDigestsRemembered;
   public string? LastBypassReason { get; internal set; }
   private readonly TaskExecutionEnvironment environment;
+  /// <summary>The directory's store, shared with the persistent translation and module-result tables.</summary>
+  internal ContentAddressedCache Store { get; }
 
   private sealed class Run(IVerificationTask task, bool disabled) {
     public readonly IVerificationTask Task = task;
@@ -51,8 +53,10 @@ public sealed class TaskCacheSession {
     this.options = options;
     // Normalized numeric declaration order must survive a fresh CLR process.
     options.DeterministicLiteralHashes = true;
-    results = new TaskResultCache(new ContentAddressedCache(directory));
+    Store = new ContentAddressedCache(directory);
+    results = new TaskResultCache(Store);
     environment = new TaskExecutionEnvironment(options);
+    blankEnvironment = new Lazy<(byte[]?, string?)>(FreezeBlankEnvironment, LazyThreadSafetyMode.ExecutionAndPublication);
     var original = options.CreateSolver;
     options.RestartProverPerVC = true;
     options.CreateSolver = (library, solverOptions) => {
@@ -73,6 +77,35 @@ public sealed class TaskCacheSession {
   }
 
   private byte[]? Bypass(string? reason) { LastBypassReason = reason; return null; }
+
+  private readonly Lazy<(byte[]? Identity, string? Reason)> blankEnvironment;
+
+  /// <summary>
+  /// The execution environment of a task before any task-specific input: the frozen solver options
+  /// a fresh checker parses from this compilation's options, the audited solver image and toolchain,
+  /// and the digests of the environment variables that can change a result. Null, with a reason, when no task of this compilation
+  /// could be recorded. A task's own key adds its solver input and declaration order.
+  /// </summary>
+  internal byte[]? EnvironmentIdentity(out string? reason) {
+    var (identity, why) = blankEnvironment.Value;
+    reason = why;
+    return identity;
+  }
+
+  private (byte[]?, string?) FreezeBlankEnvironment() {
+    try {
+      if (options.TheProverFactory.BlankProverOptions(options) is not SMTLibSolverOptions solver) {
+        return (null, "unsupported prover factory");
+      }
+      solver.Parse(options.ProverOptions);
+      solver.RandomSeed = options.RandomSeed ?? 0;
+      var frozen = environment.Freeze(options, solver, out var reason);
+      return (frozen, reason);
+    } catch (Exception e) when (e is NotSupportedException or IOException or UnauthorizedAccessException or
+                               ArgumentException or InvalidOperationException) {
+      return (null, e.Message);
+    }
+  }
 
   public static TaskCacheSession? TryFor(DafnyOptions options) => Sessions.TryGetValue(options, out var value) ? value : null;
 

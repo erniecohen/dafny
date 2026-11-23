@@ -495,8 +495,12 @@ public class ModularTerminationAnalysis {
   private readonly Dictionary<Declaration, HashSet<Declaration>> allEdges = new();
   private readonly List<MemberDecl> orderImplementations = [];
   private readonly HashSet<IVariable> logicalBinders = [];
+  private readonly HashSet<MemberDecl> argumentSummaries;
   private readonly HashSet<IVariable> witnessChains = [];
   private readonly bool ordersEnabled;
+
+  public bool AppliesOnlyItsArguments(MemberDecl member) =>
+    DecreasesOrders.IsIntrinsicArgumentApplication(member) || argumentSummaries.Contains(member);
 
   /// <summary>
   /// The analysis of the program, computed once, the first time it is asked for.  Use it only once the
@@ -519,6 +523,10 @@ public class ModularTerminationAnalysis {
   }
 
   public ModularTerminationAnalysis(Program program) {
+    // RulesEnabled includes the default modular rules; the legacy opt-out disables this extension.
+    argumentSummaries = program.Options.Get(CommonOptionBag.DecreasesOrders) &&
+                        ModularTermination.RulesEnabled(program.Options)
+      ? ArgumentApplicationSummary.Compute(program) : [];
     ordersEnabled = program.Options.Get(CommonOptionBag.DecreasesOrders);
     OpenTraits = ModularTermination.OpenTraits(program);
     systemModule = program.SystemModuleManager.SystemModule;
@@ -1056,7 +1064,7 @@ public class ModularTerminationAnalysis {
         // The orders library's Of(r) and WfoOf(r) make the order whose gt and aha run r and nothing else, and its
         // wellFounded(r) and stops(r, c) run only r and c: each is an application of its arguments of arrow type
         // (https://github.com/erniecohen/dafny/issues/245, M4).
-        case FunctionCallExpr call when call.Function != null && DecreasesOrders.AppliesOnlyItsArguments(call.Function):
+        case FunctionCallExpr call when call.Function != null && analysis.AppliesOnlyItsArguments(call.Function):
           foreach (var arg in call.Args.Where(a => a.Type.NormalizeExpand().IsArrowType)) {
             Apply(arg);
           }
@@ -1076,7 +1084,7 @@ public class ModularTerminationAnalysis {
           break;
         // A method is never a value, so selecting one of the orders library's multiset lemmas is the callee of a
         // call statement, which VisitOneStmt visits as an application of its arguments of arrow type.
-        case MemberSelectExpr { Member: MethodOrConstructor lemma } when DecreasesOrders.AppliesOnlyItsArguments(lemma):
+        case MemberSelectExpr { Member: MethodOrConstructor lemma } when analysis.AppliesOnlyItsArguments(lemma):
           break;
         case MemberSelectExpr { Member: Function or MethodOrConstructor or ConstantField } select:
           if (analysis.IsChainWitness(select.Member)) {
@@ -1105,6 +1113,11 @@ public class ModularTerminationAnalysis {
     /// callback bound, runs code that is not known, which counts as open dispatch.
     /// </summary>
     private void Apply(Expression value) {
+      // The checked summary has accounted for every use and escape of these local arrow values.
+      if (enclosing is { } member && analysis.argumentSummaries.Contains(member) &&
+          value.Resolved is IdentifierExpr) {
+        return;
+      }
       if (value.Resolved is LambdaExpr) {
         return;
       }
@@ -1136,7 +1149,7 @@ public class ModularTerminationAnalysis {
         Mention(type);
       }
       if (stmt is CallStmt { Method: { } method }) {
-        if (DecreasesOrders.AppliesOnlyItsArguments(method)) {
+        if (analysis.AppliesOnlyItsArguments(method)) {
           // The orders library's lemmas of the multiset order (https://github.com/erniecohen/dafny/issues/211)
           foreach (var arg in ((CallStmt)stmt).Args.Where(a => a.Type.NormalizeExpand().IsArrowType)) {
             Apply(arg);
@@ -1858,7 +1871,7 @@ public class ModularTerminationRewriter : IRewriter {
         }
       }
       var dispatched = ModularTermination.IsOpenDispatch(callee, analysis.OpenTraits);
-      if (!dispatched && (DecreasesOrders.CallAppliesOnlyItsArguments(callee) ||
+      if (!dispatched && (analysis.AppliesOnlyItsArguments(callee) ||
                           !analysis.ReachesOpenDispatch(callee, caller.EnclosingModule))) {
         return;
       }

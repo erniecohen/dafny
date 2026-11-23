@@ -26,7 +26,7 @@ runs:
         usable() { test -x "$root/dotnet" && test -f "$stamp" && test "$(cat "$stamp")" = "$want"; }
         fresh() { usable && test -z "$(find "$stamp" -mtime +"$MAX_AGE_DAYS")"; }
         install() {
-          local dir="$1" script="$RUNNER_TEMP/dotnet-install.sh"
+          local dir="$1" script="$TMPDIR/dotnet-install.sh"
           rm -rf "$dir"
           # Fetch the script from the CDN directly: the dot.net redirector timed out on TCP connect
           # while the CDN answered in <0.1 s. Bounded timeouts turn a hang into a retry.
