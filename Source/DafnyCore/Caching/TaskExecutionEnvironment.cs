@@ -11,6 +11,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Threading;
 using Microsoft.Boogie;
 using Microsoft.Boogie.SMTLib;
 using BplType = Microsoft.Boogie.Type;
@@ -135,13 +136,16 @@ internal sealed class TaskExecutionEnvironment(DafnyOptions options) {
       }
     }
     var manifest = ExecutionImageIdentity.Read(solver.ExecutablePath(), options.Get(CommonOptionBag.VerificationCache));
-    // Public Z3 5.1.0 release profiles used by this fork's CI. Native executable magic
-    // and a version string cannot establish that an arbitrary launcher reads no files.
-    // https://github.com/Z3Prover/z3/releases/tag/z3-5.1.0
+    // The digest of the bytes of the solver image this run loads; it stays in the manifest, and so in every key.
     if (!manifest.TryGetValue(roots.Relocate(Path.GetFullPath(solver.ExecutablePath())), out var solverHash) ||
-        solverHash is not ("164c85de5f5dcb7d57cbab64b1a11580a982c1658384120b2b65358f41847418" or
-                          "b4e0b3483ce37817230b20d6cad48390eb6a3aefde1d93342ad6dc763f24bc23")) {
-      throw new NotSupportedException("unaudited native solver execution profile");
+        !IsAuditedSolver(solverHash, DeclaredSolverDigests)) {
+      if (DeclaredSolverDigests.Count == 0) { throw new NotSupportedException("unaudited native solver execution profile"); }
+      var reason = $"unaudited native solver execution profile: the solver's SHA-256 digest {solverHash ?? "(unknown)"} " +
+                   "is neither built in nor declared by --verification-cache-solver-digest";
+      if (Interlocked.Exchange(ref warnedUndeclaredSolver, 1) == 0) {
+        options.ErrorWriter?.WriteLine("Warning: " + reason + "; verification results are neither stored nor replayed.");
+      }
+      throw new NotSupportedException(reason);
     }
     manifest["solver-version"] = options.SolverVersion?.ToString() ?? throw new NotSupportedException("unvalidated solver version");
     // The audited solver image fixes the platform it runs on; its version string does not.
@@ -152,6 +156,30 @@ internal sealed class TaskExecutionEnvironment(DafnyOptions options) {
     }
     return JsonSerializer.SerializeToUtf8Bytes(manifest);
   }
+
+  /// <summary>
+  /// Public Z3 5.1.0 release profiles used by this fork's CI. Native executable magic
+  /// and a version string cannot establish that an arbitrary launcher reads no files.
+  /// https://github.com/Z3Prover/z3/releases/tag/z3-5.1.0
+  /// </summary>
+  internal static readonly IReadOnlySet<string> BuiltInSolverDigests = new HashSet<string>(StringComparer.Ordinal) {
+    "164c85de5f5dcb7d57cbab64b1a11580a982c1658384120b2b65358f41847418",
+    "b4e0b3483ce37817230b20d6cad48390eb6a3aefde1d93342ad6dc763f24bc23"
+  };
+
+  /// <summary>The digests a user declared audited with --verification-cache-solver-digest, in lower case.</summary>
+  private IReadOnlySet<string> DeclaredSolverDigests => declaredSolverDigests ??=
+    (options.Get(CommonOptionBag.VerificationCacheSolverDigest) ?? new List<string>())
+    .Select(digest => digest.ToLowerInvariant()).ToHashSet(StringComparer.Ordinal);
+  private IReadOnlySet<string>? declaredSolverDigests;
+  private int warnedUndeclaredSolver;
+
+  /// <summary>
+  /// Whether the actual digest <paramref name="solverHash"/> of the solver image is built in or declared.
+  /// A declaration only adds to the accepted digests; it is never a substitute for hashing the image.
+  /// </summary>
+  internal static bool IsAuditedSolver(string? solverHash, IReadOnlySet<string> declared) =>
+    solverHash != null && (BuiltInSolverDigests.Contains(solverHash) || declared.Contains(solverHash));
 
   /// <summary>The operating system family, and not its release, which changes no result of a solver image.</summary>
   internal static string OperatingSystemFamily =>
