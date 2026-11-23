@@ -20,12 +20,14 @@
 // imports S translates that constraint, and under --translation-workers it did so while S's
 // translation could still be changing it: the tokens of U1..U4's Boogie graphs, which the printed
 // Boogie text omits, depended on whether S's witness check had run. The check now clones a shared
-// constraint first.
+// constraint first. A second instance of the same race: the termination check of a decreases
+// clause over an iset compares it by "false", the shared Boogie literal, and used to set that
+// literal's token, which every later module's graph shares; D's check now uses a fresh literal.
 //
 // The profile of a run under --translation-workers-stress records a digest of each module's tokens.
 // Those digests are the same at N = 1, 2 and 4 and under the reverse-order (-1) and seeded (7)
 // schedules, which delay S, the first ticket, so that its importers translate before it. Removing
-// the clone makes the importers' digests differ between N = 1 and N = 4. The digests of a copy one
+// either fix makes some digests differ between N = 1 and N = 4. The digests of a copy one
 // line further down all differ (the digest sees source positions), and the reverse-order profile
 // must show that translations overlapped.
 
@@ -33,6 +35,12 @@ module S {
   type T = v: int | true witness 1
   type Z = v: int | true
   newtype N = x: int | true witness 2
+}
+
+module D {
+  method Loop(s: iset<int>, n: nat) decreases s, n {
+    if n > 0 { Loop(s, n - 1); }
+  }
 }
 
 module U1 {
