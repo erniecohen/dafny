@@ -363,7 +363,11 @@ public sealed class VerificationPreparationPipeline : IDisposable {
         ["module"] = moduleName,
         ["threadAllocBytes"] = GC.GetAllocatedBytesForCurrentThread() - threadAllocated,
         ["declarations"] = translated.TopLevelDeclarations.Count(),
-        ["implementations"] = translated.Implementations.Count()
+        ["implementations"] = translated.Implementations.Count(),
+        // Under the stress schedule, the source locations of the module's Boogie graph, which its
+        // printed text omits, so that a test can compare them across worker counts (issue 569).
+        ["tokens"] = program.Options.Get(CommonOptionBag.TranslationWorkersStress) != 0
+          ? TokenFingerprint.Of(translated) : null
       });
     }
     return (translated, dependencies, GC.GetAllocatedBytesForCurrentThread() - started);
@@ -386,5 +390,61 @@ public sealed class VerificationPreparationPipeline : IDisposable {
 
   public void Dispose() {
     mutex.Dispose();
+  }
+
+  /// <summary>
+  /// A digest of the Dafny source location of every node of a translated Boogie graph, in visiting
+  /// order: the line and column of each token, and of both parts of a nested origin. Error locations come
+  /// from these tokens, so two translations with equal text but different tokens can still report
+  /// differently.
+  /// </summary>
+  private sealed class TokenFingerprint : Bpl.ReadOnlyVisitor {
+    private readonly System.Text.StringBuilder locations = new();
+
+    public static string Of(Bpl.Program program) {
+      var visitor = new TokenFingerprint();
+      visitor.Visit(program);
+      var digest = System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(visitor.locations.ToString()));
+      return Convert.ToHexString(digest)[..16].ToLowerInvariant();
+    }
+
+    public override Bpl.Absy Visit(Bpl.Absy node) {
+      Append(node.tok);
+      locations.Append(';');
+      return base.Visit(node);
+    }
+
+    // The base visit of an implementation expects a resolved graph; this one is not yet resolved.
+    public override Bpl.Implementation VisitImplementation(Bpl.Implementation node) {
+      foreach (var block in node.Blocks ?? new List<Bpl.Block>()) {
+        Append(block.tok);
+        locations.Append(';');
+        foreach (var command in block.Cmds) {
+          Visit(command);
+        }
+        if (block.TransferCmd != null) {
+          Append(block.TransferCmd.tok);
+          locations.Append(';');
+        }
+      }
+      return node;
+    }
+
+    // Only Dafny source locations count. Boogie's printer, by default, replaces the token of every
+    // node it prints with one for its output position, and some nodes (Expr.True, Type.Bool, ...)
+    // are process-wide singletons, so the preparation of another module, printing them, changes
+    // those tokens; they never report a Dafny location.
+    private void Append(Bpl.IToken? token) {
+      if (token is not IOrigin) {
+        locations.Append('-');
+        return;
+      }
+      locations.Append(token.line).Append(':').Append(token.col);
+      if (token is NestedOrigin nested) {
+        locations.Append('(');
+        Append(nested.Inner);
+        locations.Append(')');
+      }
+    }
   }
 }

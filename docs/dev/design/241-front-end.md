@@ -448,6 +448,16 @@ the profile: a translation finished before an earlier one, so translations overl
 commits appear in ticket order. Its negative controls cover the fallback (`/typeEncoding:m`) and
 the rejected configurations.
 
+Printed Boogie text omits tokens, and error locations come from them. Under the stress option,
+the profile's `translate` span also records a digest of the Dafny source location of every node
+of the module's Boogie graph. Tokens that are not Dafny origins are left out: Boogie's printer
+resets the token of every node it prints, including singletons such as `Expr.True` and
+`Type.Bool` (T20), so another module's preparation changes them. The digests found one more
+shared-AST write, issue 569: the witness check of a constraint that does not mention its bound
+variable set the origin of the declaration's own constraint, which its importers translate. The
+check now clones such a constraint, and `git-issues/github-issue-569-witness-race.dfy` compares
+the digests at N = 1, 2 and 4 under both kinds of schedule.
+
 ---
 
 ## 3. F2 — Parallel module resolution (D8)
