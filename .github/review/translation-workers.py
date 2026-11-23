@@ -9,6 +9,9 @@
     translation-workers.py tokens <profile.jsonl>...   every run's translation of each module has the
                                                        same token digest (issue 569)
     translation-workers.py tokens-moved <a> <b>        no module's token digest is the same in a and b
+    translation-workers.py persistent <profile.jsonl>...  every module of every run was translated for
+                                                       the persistent tables (--persistent-translation)
+                                                       and recorded
     translation-workers.py shifted <source> <copy>     a copy of the source one line further down
 
 `parallel` is the vacuity control of the identity checks: it requires a translation that
@@ -89,6 +92,16 @@ def main(argv):
         same = sorted(m for m in first if first[m] == other[m])
         assert not same, ('token digest blind to a moved source', same)
         print('Boogie tokens follow the source: %d modules moved' % len(first))
+    elif command == 'persistent':
+        counts = set()
+        for path in argv[2:]:
+            translations = spans(path, 'translate')
+            assert translations, ('no translation in the profile', os.path.basename(path))
+            unrecorded = sorted(t['module'] for t in translations if t.get('persistent') is not True)
+            assert not unrecorded, ('not on the persistent path', os.path.basename(path), unrecorded)
+            counts.add(len(translations))
+        assert len(counts) == 1, counts
+        print('persistent translations recorded: %d modules, %d runs' % (counts.pop(), len(argv) - 2))
     elif command == 'shifted':
         with open(argv[2]) as f:
             text = f.read()

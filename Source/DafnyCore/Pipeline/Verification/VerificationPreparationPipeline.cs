@@ -526,7 +526,9 @@ public sealed class VerificationPreparationPipeline : IDisposable {
       profile.Span("translate", profileStart!.Value, new Dictionary<string, object?> {
         ["module"] = moduleName, ["cached"] = reused, ["persistent"] = identity.Text != null, ["unrecorded"] = unrecorded,
         ["threadAllocBytes"] = GC.GetAllocatedBytesForCurrentThread() - persistentAllocated,
-        ["declarations"] = graph.TopLevelDeclarations.Count(), ["implementations"] = graph.Implementations.Count()
+        ["declarations"] = graph.TopLevelDeclarations.Count(), ["implementations"] = graph.Implementations.Count(),
+        // As in Translate: the stress schedule's token digest of the graph (issue 569).
+        ["tokens"] = program.Options.Get(CommonOptionBag.TranslationWorkersStress) != 0 ? TokenFingerprint.Of(graph) : null
       });
     }
     return (graph, identity, dependencies);

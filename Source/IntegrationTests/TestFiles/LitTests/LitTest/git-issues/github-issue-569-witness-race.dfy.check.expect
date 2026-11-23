@@ -1,3 +1,4 @@
-Boogie tokens identical: 6 modules, 4 runs
+Boogie tokens identical: 6 modules, 6 runs
+persistent translations recorded: 6 modules, 2 runs
 Boogie tokens follow the source: 6 modules moved
 translations overlapped; 6 commits in arrival order
