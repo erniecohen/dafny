@@ -1232,6 +1232,15 @@ jobs:
       - name: JavaScript runtime dependency
         timeout-minutes: 90
         run: npm install --no-save --package-lock=false bignumber.js@9.1.2
+      # Rust-target lit tests (466) build with cargo; pin the toolchain for this job only,
+      # without changing the runner's default toolchain.
+      - name: Rust toolchain
+        timeout-minutes: 90
+        run: |
+          rustup toolchain install 1.98.1 --profile minimal --no-self-update
+          echo "RUSTUP_TOOLCHAIN=1.98.1" >> "$GITHUB_ENV"
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+          RUSTUP_TOOLCHAIN=1.98.1 cargo --version
       - name: Worker resolution and front-end profile integration
         timeout-minutes: 90
         run: |
