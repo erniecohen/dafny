@@ -1,0 +1,1 @@
+The opt-in `--function-extensionality-axiom` now supports total arrows of every arity, including nullary functions. It preserves exact domains and Leibniz equality; partial and heap-reading arrows remain outside its scope. `Restrict` and `ExactDom` remain unary.

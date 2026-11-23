@@ -75,6 +75,8 @@ public static class VerifyCommand {
     new Option[] {
         PerformanceStatisticsOption,
         CommonOptionBag.TranslationCache,
+        CommonOptionBag.PersistentTranslation,
+        CommonOptionBag.PersistentTranslationAudit,
         CommonOptionBag.TranslationWorkers,
         CommonOptionBag.TranslationWorkersStress,
         FilterSymbol,
@@ -106,6 +108,12 @@ public static class VerifyCommand {
       };
       reporter.Error(MessageSource.Project, Token.Cli, conflict);
       return (int)ExitValue.PREPROCESSING_ERROR;
+    }
+
+    if (options.Get(CommonOptionBag.PersistentTranslation)) {
+      // The options each persistent table keys, for the option classification test.
+      PipelineProfile.For(options)?.Point("persistent-options",
+        Caching.PersistentCacheOptions.StageDigests(options).ToDictionary(p => p.Key, p => (object?)p.Value));
     }
 
     if (options.Get(CommonOptionBag.VerificationCoverageReport) != null) {
@@ -153,6 +161,14 @@ public static class VerifyCommand {
         ["publications"] = cache.Publications, ["fallbacks"] = cache.Fallbacks, ["conflicts"] = cache.Conflicts,
         ["bypassReason"] = cache.LastBypassReason, ["imagesHashed"] = Caching.TaskCacheSession.ImagesHashed,
         ["imageDigestsRemembered"] = Caching.TaskCacheSession.ImageDigestsRemembered
+      });
+    }
+    if (Caching.PersistentModuleCache.TryFor(options) is { } persistent) {
+      PipelineProfile.For(options)?.Point("persistent-translation", new Dictionary<string, object?> {
+        ["keyHits"] = persistent.KeyHits, ["graphHits"] = persistent.GraphHits, ["misses"] = persistent.Misses,
+        ["translationPublications"] = persistent.TranslationPublications, ["manifestPublications"] = persistent.ManifestPublications,
+        ["bypasses"] = persistent.Bypasses, ["auditChecks"] = persistent.AuditChecks, ["auditMismatches"] = persistent.AuditMismatches,
+        ["bypassReason"] = persistent.LastBypassReason, ["unrecorded"] = persistent.UnrecordedReasons
       });
     }
     PipelineProfile.For(options)?.Finish("verify");

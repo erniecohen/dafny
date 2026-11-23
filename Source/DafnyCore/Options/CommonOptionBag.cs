@@ -42,7 +42,7 @@ public class CommonOptionBag {
     };
 
   public static readonly Option<string> VerificationCache = new("--verification-cache",
-    "Use the cache store in DIR (also --cache-dir; or DAFNY_CACHE_DIR): reuse per-module resolution results and complete verification-task solver exchanges. " +
+    "Use the cache store in DIR (also --cache-dir; or DAFNY_CACHE_DIR): reuse per-module resolution results, complete verification-task solver exchanges and, with --persistent-translation, module translations and results. " +
     "Requires --type-system-refresh. Opt-in; uses a fresh solver history and stable numeric declaration order for each task. " +
     "Replayed timing fields are identified in CSV/JSON logs. Unsupported modules and tasks run normally.") { ArgumentHelpName = "DIR" };
   public static readonly Option<string> CachePartition = new("--cache-partition",
@@ -74,6 +74,14 @@ public class CommonOptionBag {
   public static readonly Option<bool> TranslationCache = new("--translation-cache",
     "Reuse module translations in this process using semantic resolution keys. " +
     "Requires --type-system-refresh. Uses the default module-scoped translator. Stores no files or verification results.");
+  public static readonly Option<bool> PersistentTranslation = new("--persistent-translation",
+    "Also keep module translations and whole-module results in the --verification-cache directory, across processes. " +
+    "Requires --verification-cache and --type-system-refresh. A module whose translation key is unchanged is not translated again, " +
+    "and a module whose regenerated Boogie program is unchanged is not prepared or solved again, when every one of its tasks " +
+    "was verified through the result cache. Unsupported modules and reporting options run normally.");
+  public static readonly Option<bool> PersistentTranslationAudit = new("--persistent-translation-audit",
+    "With --persistent-translation, translate, prepare and verify every module as if nothing were stored, and report an error " +
+    "when a stored translation or module result differs from the fresh one.") { IsHidden = true };
 
   public static readonly Option<int> ResolutionThreads = new("--resolution-threads", () => 0,
     "Resolve independent modules with N workers. Requires --type-system-refresh. Scheduling is opt-in; generated names are module-scoped in every mode.") {
@@ -333,11 +341,14 @@ true - All class instances are raw pointers and need to be manually deallocated"
     IsHidden = true
   };
 
+  public static readonly Option<bool> IntegerBitwise = new("--integer-bitwise", () => false,
+    "Enable the compiler-owned ghost integer bitwise reference functions and explicit one-step unfolding lemmas. Integer-newtype operators are not yet implemented.");
+
   public static readonly Option<bool> AdditionalAxioms = new("--additional-axioms", () => false,
     "Enable additional verifier axioms. May change verification performance and proof stability. Disabled by default.");
 
   public static readonly Option<bool> FunctionExtensionalityAxiom = new("--function-extensionality-axiom", () => false,
-    "Give function values domain tags, as --additional-axioms does, and make two total functions of one argument with the same exact domain equal when they agree on it, at each equality between them. May change verification performance. Disabled by default.");
+    "Give function values domain tags, as --additional-axioms does, and make two total functions of the same arity and exact domain equal when they agree on it, at each equality between them. May change verification performance. Disabled by default.");
 
   public static readonly Option<bool> HeapFreeLambdaFacts = new("--heap-free-lambda-facts", () => false,
     "Check a lambda without a reads clause, whose body observes neither the heap nor allocation, in every heap and without assuming its parameters allocated, and let the calls in its body unfold wherever it is applied. May change verification performance. Disabled by default.");
@@ -434,6 +445,8 @@ true - All class instances are raw pointers and need to be manually deallocated"
     "Use the legacy, unsound check of the types of iterator yield parameters, made before the resolver knows how each datatype is constructed, for migration and comparison only.") { IsHidden = true };
   public static readonly Option<bool> LegacyMemberInvariantDependence = new("--legacy-member-invariant-dependence", () => false,
     "Use the legacy, unsound cache of provisional negative type-dependence results in the member-invariant extension condition, for migration and comparison only.") { IsHidden = true };
+  public static readonly Option<bool> LegacyUncheckedMemberInvariantProofs = new("--legacy-unchecked-member-invariant-proofs", () => false,
+    "Use the legacy, unsound member-invariant extension condition that does not check the proofs in an invariant's cone (proof hints, and the bodies of bound lemmas), for migration and comparison only.") { IsHidden = true };
 
   public static readonly Option<bool> LegacyUncheckedTypeVariance = new("--legacy-unchecked-type-variance", () => false,
     "Use the legacy, unsound rule that ignores subset-type and newtype constraints when checking declared variance, for migration and comparison only.") { IsHidden = true };
@@ -517,7 +530,7 @@ Value implementations must retain their type parameters in compatible parent pos
   };
 
   public static readonly Option<bool> RecursiveModules = new("--recursive-modules", () => false,
-    "(experimental, incomplete) Allow modules to import each other. The modules of an import cycle form a recursive module group, which means what one module with all their declarations would mean. Only imports may form a cycle. Requires --member-invariants. A program that has a recursive module group may not declare a codatatype. A group is all concrete or all abstract. Refinement and abstract imports must point to strictly lower groups. A .doo library retains and records complete groups; its client needs the same option. Executable compilation supports the C# target only. Replacement in a group is not yet supported.") {
+    "(experimental, incomplete) Allow modules to import each other. The modules of an import cycle form a recursive module group, which means what one module with all their declarations would mean. Only imports may form a cycle. Requires --member-invariants. A program that has a recursive module group may not declare a codatatype. A group is all concrete or all abstract. Refinement and abstract imports must point to strictly lower groups. A .doo library retains and records complete groups; its client needs the same option. Executable compilation supports the C#, Java and Go targets; Go groups may not contain extern declarations. Replacement in a group is not yet supported.") {
     IsHidden = true
   };
 
@@ -716,6 +729,7 @@ If verification fails, report a detailed counterexample for the first failing as
     });
 
     DafnyOptions.RegisterLegacyUi(AdditionalAxioms, DafnyOptions.ParseBoolean, "Verification options", legacyName: "additionalAxioms");
+    DafnyOptions.RegisterLegacyUi(IntegerBitwise, DafnyOptions.ParseBoolean, "Language feature selection", legacyName: "integerBitwise");
     DafnyOptions.RegisterLegacyUi(AllowAxioms, DafnyOptions.ParseBoolean, "Verification options", legacyName: "allowAxioms", defaultValue: true);
     DafnyOptions.RegisterLegacyUi(LegacyNoModularTermination, DafnyOptions.ParseBoolean, "Verification options", legacyName: "legacyNoModularTermination");
     DafnyOptions.RegisterLegacyBinding(ShowHints, (options, value) => {
@@ -978,6 +992,8 @@ NoGhost - disable printing of functions, ghost methods, and proof
     });
     OptionRegistry.RegisterOption(ResolutionThreads, OptionScope.Cli);
     OptionRegistry.RegisterOption(TranslationCache, OptionScope.Cli);
+    OptionRegistry.RegisterOption(PersistentTranslation, OptionScope.Cli);
+    OptionRegistry.RegisterOption(PersistentTranslationAudit, OptionScope.Cli);
     TranslationWorkers.AddValidator(result => {
       if (result.Tokens.Count != 0 && result.GetValueOrDefault<int>() < 1) {
         result.ErrorMessage = "--translation-workers must be a positive integer.";
@@ -993,6 +1009,9 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(ManualTriggerOption, OptionScope.Module);
     OptionRegistry.RegisterOption(UserDefinedOperators, OptionScope.Cli);
     OptionRegistry.RegisterOption(AdditionalAxioms, OptionScope.Cli);
+    OptionRegistry.RegisterGlobalOption(IntegerBitwise,
+      (reporter, origin, prefix, option, localValue, libraryValue) =>
+        OptionCompatibility.OptionLibraryImpliesLocalError(reporter, origin, prefix, option, localValue, libraryValue ?? false));
     OptionRegistry.RegisterOption(MapComprehensionDomainTriggers, OptionScope.Cli);
     OptionRegistry.RegisterOption(HeapFreeLambdaFacts, OptionScope.Cli);
     OptionRegistry.RegisterOption(FunctionExtensionalityAxiom, OptionScope.Cli);
@@ -1074,6 +1093,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(LegacyGenericFunctionStores, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacyInheritedTerminationChecks, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacyMemberInvariantDependence, OptionScope.Cli);
+    OptionRegistry.RegisterOption(LegacyUncheckedMemberInvariantProofs, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacyUncheckedTypeVariance, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacyUncheckedImportBinding, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacyStoredFunctionCallbacks, OptionScope.Cli);

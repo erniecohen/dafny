@@ -76,13 +76,12 @@ public sealed class BoogieVerificationWork(IVerificationTask nativeTask) : IVeri
   public IVerificationTask NativeTask { get; } = nativeTask;
   public IVerificationPayload Payload => new BoogieVerificationTask(NativeTask);
   public VerificationSource Source => new(
-    new VerificationWorkId(NativeTask.ScopeId, NativeTask.Split.SplitIndex),
+    new VerificationWorkId(NativeTask.ScopeId, VerificationTaskFacts.SplitIndex(NativeTask)),
     BoogieGenerator.ToDafnyToken(NativeTask.Token), BoogieGenerator.ToDafnyToken(NativeTask.ScopeToken)) {
     CanVerify = (NativeTask.ScopeToken as CanVerifyOrigin)?.CanVerify,
     IsReverifiedInheritedCheck = (NativeTask.ScopeToken as CanVerifyOrigin)?.IsReverifiedInheritedCheck ?? false
   };
-  public IReadOnlyList<Function> HiddenFunctions => NativeTask.Split.HiddenFunctions.Select(f => f.tok).
-    OfType<FromDafnyNode>().Select(n => n.Node).OfType<Function>().ToList();
+  public IReadOnlyList<Function> HiddenFunctions => VerificationTaskFacts.HiddenFunctions(NativeTask).ToList();
   public VerificationWorkStatus CacheStatus => ConvertStatus(NativeTask.CacheStatus);
   public bool IsIdle => NativeTask.IsIdle;
   public IVerificationWork FromSeed(int seed) => new BoogieVerificationWork(NativeTask.FromSeed(seed));

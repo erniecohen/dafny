@@ -382,6 +382,47 @@ Various options control the verification process, in addition to all those descr
   Modular termination, counterexample extraction and unsupported graph metadata
   recompute through the default materialization path.
 
+- `--persistent-translation` ([#261](https://github.com/erniecohen/dafny/issues/261))
+  keeps two more tables in the `--verification-cache` directory, across processes,
+  and requires both `--verification-cache` and `--type-system-refresh`. The
+  translation table maps a module's translation key (the persistent form of the
+  `--translation-cache` key: the resolution identities of the module and of its
+  dependency closure, the prelude, the effective options, and the Dafny and Boogie
+  builds) to the hash of its printed Boogie program and the structural fingerprint
+  of its Boogie graph. Neither records where the source is: a resolution identity
+  leaves out its file and position, and the fingerprint records files by content
+  and positions relative to their declarations, so another checkout, or lines
+  inserted above a module, reuse its translation and results.
+  The module-result table maps a fingerprint, under one verification
+  environment (the options, the audited solver and its environment, and the Dafny
+  and Boogie builds), to the results of the module's tasks. A module's results are
+  recorded only when its translation reported nothing and every task it schedules
+  completed valid through the task-result cache. When a module's translation key is
+  unchanged, the module is neither translated, prepared nor solved again; when a
+  dependency changed but the module's regenerated Boogie graph is unchanged, it is
+  neither prepared nor solved again (early cutoff). Replayed results are reported
+  exactly as the result cache reports them. Stored Boogie text is a record, never
+  an input. Options that need a fresh translation or preparation (counterexample
+  extraction, printing Boogie, proof-dependency reports, and the like) and graphs
+  the snapshot copier does not support run normally. The hidden option
+  `--persistent-translation-audit` replays nothing: it translates, prepares and
+  verifies every module afresh, and reports an error when a stored translation or
+  module result differs from the fresh one.
+
+  The cache directory is named by `--verification-cache`, then by the
+  `verification-cache` value of the project file, then by the `DAFNY_CACHE_DIR`
+  environment variable; with none of them, nothing is cached. One directory can be
+  shared by every project and checkout on a machine: keys depend only on content,
+  options, the Dafny and Boogie builds and the solver, and concurrent runs publish
+  each item by an atomic rename. Its small tier (verdicts, resource counts and
+  module results) is kept indefinitely. The translation records and the Boogie
+  texts they name are entries of the large tier's translation table, which can be
+  regenerated and is bounded by partition, budget and cap like the resolution
+  table (see "The shared cache store" above). A partition is never part of a key: a
+  run finds what any partition stored, and an evicted entry is only a miss. A
+  module whose translation was evicted is translated again and, when its Boogie
+  graph is unchanged, replays its stored results (early cutoff).
+
 - `--boogie /cacheBackground` is an opt-in Boogie option
   ([#241](https://github.com/erniecohen/dafny/issues/241)). When a split has the
   same pruned declarations, in the same order, and the same random seed, type
@@ -2803,6 +2844,19 @@ and what information it produces about the verification process.
   so it also takes precedence over `--solver-option O:smt.arith.solver=N` or the
   corresponding `--boogie /proverOpt:O:smt.arith.solver=N` option.
 
+* `--integer-bitwise` - enable the compiler-owned ghost class
+  `IntegerBitwiseModel` and its explicit one-step definition-unfold lemmas for
+  powers, normalization, Boolean operations, shifts, rotations and population
+  count. Disabled by default. This reference-only milestone does not enable
+  integer-newtype operators or native bitvector bridges. Include the optional
+  `IntegerBitwiseCompiler.dfy` companion for checked range and algebra contracts.
+  Set `integer-bitwise = true` in the project file's `[options]` section;
+  an enabled `.doo` library requires enabled clients. Declarations in an off-built
+  library cannot use this compiler interface merely because the client enables
+  it. Ordinary declarations with the same spelling keep their own meaning,
+  including local names and opened imports. This option is independent of
+  `--additional-axioms`. See [the interface and model argument](../dev/integer-bitwise-references.md).
+
 * `--additional-axioms` - enable the fork's additional verifier axioms. This
   shared option is disabled by default. It currently supplies the bounded
   integer/bitvector round trip: for `0 <= a < 2^N`, `(a as bvN) as int == a`.
@@ -2843,9 +2897,12 @@ and what information it produces about the verification process.
   See [the soundness, trigger and solver-limit note](../dev/additional-axioms.md).
 
 * `--function-extensionality-axiom` - give function values domain tags, as
-  `--additional-axioms` does, and make two total functions of one argument with
-  the same exact domain equal when they agree on it, at each equality between
-  them. Disabled by default. It can change proof costs. See
+  `--additional-axioms` does, and make two total functions of the same arity and
+  exact domain equal when they agree on it, at each equality between
+  them, including nullary functions. Products of `int`, `real`, `bool` and
+  `ORDINAL` have exact domains; for other types the functions must have been
+  built with that exact domain. `Restrict` and `ExactDom` currently support
+  unary functions only. Disabled by default. It can change proof costs. See
   [the soundness note](../dev/additional-axioms.md).
 
 * `--heap-free-lambda-facts` - check a lambda without a reads clause, whose
