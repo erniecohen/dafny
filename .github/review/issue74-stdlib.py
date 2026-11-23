@@ -20,7 +20,7 @@ for mode,binary,flag in [('B',a.baseline,[]),('O',a.candidate,[]),('B2',a.baseli
     std.part = measured_part
     std.FIXED=['--verification-time-limit','0']+flag
     path=out/(mode+'.tsv')
-    std.run(str(Path('Source/DafnyStandardLibraries').resolve()),binary,a.z3,str(path),cores=4)
+    std.run(str(Path('Source/DafnyStandardLibraries').resolve()),binary,a.z3,str(path),cores=2)
     files[mode]=std.load(str(path))
     print(mode,'rows',len(files[mode]),flush=True)
 # Separate outcomes from proof cost. Run rows include nondeterministic times.

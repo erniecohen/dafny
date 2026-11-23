@@ -1,0 +1,1 @@
+The shared verification pipeline schedules source-owned backend-neutral work and events. Native preparation, result evidence, CLI output and IDE reporting retain the Boogie adapter; alternative reporting capabilities remain under development.

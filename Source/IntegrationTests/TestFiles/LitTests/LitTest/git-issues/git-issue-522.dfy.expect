@@ -1,0 +1,11 @@
+git-issue-522.dfy(12,21): Error: 'Decide' is used by the invariant of 'T' and tests a raw value against 'T'
+git-issue-522.dfy(14,13): Error: 'Decide' is used by the invariant of 'T' and tests a raw value against 'T'
+git-issue-522.dfy(29,44): Error: 'Pick' is used by the invariant of 'T' and tests a raw value against 'T'
+git-issue-522.dfy(38,21): Error: 'Decide' is used by the invariant of 'T' and tests a raw value against 'T'
+git-issue-522.dfy(39,13): Error: 'Decide' is used by the invariant of 'T' and tests a raw value against 'T'
+git-issue-522.dfy(48,17): Error: 'Decide' is used by the invariant of 'T' and tests a raw value against 'T'
+git-issue-522.dfy(61,44): Error: 'Test' is used by the invariant of 'T' and tests a raw value against 'T'
+git-issue-522.dfy(73,21): Error: 'Test' is used by the invariant of 'T' and tests a raw value against 'T'
+git-issue-522.dfy(74,13): Error: 'Test' is used by the invariant of 'T' and tests a raw value against 'T'
+git-issue-522.dfy(86,25): Error: 'Exists' is used by the invariant of 'T' and refers to the set of values of 'X', which depends on 'T'
+10 resolution/type errors detected in git-issue-522.dfy
