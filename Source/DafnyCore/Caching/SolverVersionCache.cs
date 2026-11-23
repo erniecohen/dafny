@@ -16,11 +16,12 @@ internal static class SolverVersionCache {
       var digest = Convert.ToHexStringLower(SHA256.HashData(stream));
       var roots = ImageRoots.For(executable);
       var environment = new System.Collections.Generic.SortedDictionary<string, string>(StringComparer.Ordinal);
-      foreach (System.Collections.DictionaryEntry entry in System.Environment.GetEnvironmentVariables()) {
-        environment[(string)entry.Key] = CacheDigest.Blob(Encoding.UTF8.GetBytes(roots.Relocate((string)entry.Value!)));
+      // Only the variables that can change what the solver image runs, as for a task's results.
+      foreach (var (name, value) in TaskExecutionEnvironment.VariableParts(System.Environment.GetEnvironmentVariables(), roots.Relocate)) {
+        environment[name] = value;
       }
-      var key = CacheDigest.Compute("validated-solver-version/v1", Encoding.UTF8.GetBytes(digest),
-        Encoding.UTF8.GetBytes(System.Runtime.InteropServices.RuntimeInformation.OSDescription),
+      var key = CacheDigest.Compute("validated-solver-version/v2", Encoding.UTF8.GetBytes(digest),
+        Encoding.UTF8.GetBytes(TaskExecutionEnvironment.OperatingSystemFamily),
         JsonSerializer.SerializeToUtf8Bytes(environment),
         JsonSerializer.SerializeToUtf8Bytes(ExecutionImageIdentity.Read(executable, directory)));
       var store = new ContentAddressedCache(directory);

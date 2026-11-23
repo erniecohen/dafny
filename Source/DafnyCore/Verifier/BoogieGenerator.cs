@@ -763,9 +763,17 @@ namespace Microsoft.Dafny {
         : BplParser.Parse(new System.IO.StringReader(flags.PreludeText), preludePath, defines, out prelude);
       if (prelude == null || errorCount > 0) {
         return null;
-      } else {
-        return prelude;
       }
+      if (options.Get(CommonOptionBag.IntegerBitwise)) {
+        var reserved = prelude.TopLevelDeclarations.OfType<Bpl.NamedDeclaration>()
+          .FirstOrDefault(declaration => declaration.Name.Contains("_System.IntegerBitwiseModel", StringComparison.Ordinal));
+        if (reserved != null) {
+          reporter.Error(MessageSource.Translator, Token.NoToken,
+            "custom prelude declares reserved integer-bitwise symbol '{0}'", reserved.Name);
+          return null;
+        }
+      }
+      return prelude;
     }
 
     public Bpl.IdentifierExpr TrVar(IOrigin tok, IVariable var) {

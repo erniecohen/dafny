@@ -13,6 +13,10 @@ cli	boogie	--boogie	System.CommandLine.Option`1[System.Collections.Generic.IEnum
 cli	bootstrapping	--bootstrapping	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	bprint	--bprint	System.CommandLine.Option`1[System.String]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
 cli	build	--build,-b	System.CommandLine.Option`1[System.IO.FileInfo]	command-setup	setup or another command; executes before/outside proof transport
+cli	cache-orphan-days	--cache-orphan-days	System.CommandLine.Option`1[System.Int32]	profile	cache store accounting and retention only; never in a key; selects which entries are kept, not what a hit returns
+cli	cache-partition	--cache-partition	System.CommandLine.Option`1[System.String]	profile	cache store accounting and retention only; never in a key; selects which entries are kept, not what a hit returns
+cli	cache-partition-budget	--cache-partition-budget	System.CommandLine.Option`1[System.Int32]	profile	cache store accounting and retention only; never in a key; selects which entries are kept, not what a hit returns
+cli	cache-size-cap	--cache-size-cap	System.CommandLine.Option`1[System.Int32]	profile	cache store accounting and retention only; never in a key; selects which entries are kept, not what a hit returns
 cli	cache-verification	--cache-verification	System.CommandLine.Option`1[System.UInt32]	command-setup	setup or another command; executes before/outside proof transport
 cli	check	--check	System.CommandLine.Option`1[System.Boolean]	command-setup	setup or another command; executes before/outside proof transport
 cli	check-source-location-consistency	--check-source-location-consistency	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
@@ -71,6 +75,7 @@ cli	legacy-auto-generated-attributes	--legacy-auto-generated-attributes	System.C
 cli	legacy-boogie-library-check	--legacy-boogie-library-check	System.CommandLine.Option`1[System.Boolean]	command-setup	checked when a library is loaded, before proof transport; no effect on the proof task
 cli	legacy-cs-datatype-equality	--legacy-cs-datatype-equality	System.CommandLine.Option`1[System.Boolean]	command-setup	setup or another command; executes before/outside proof transport
 cli	legacy-data-constructors	--legacy-data-constructors	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
+cli	legacy-boxed-newtype-obligations	--legacy-boxed-newtype-obligations	System.CommandLine.Option`1[System.Boolean]	input	visible newtype membership and representation are lowered before task lookup; exact SMT and current assertion map
 cli	legacy-decreases-order	--legacy-decreases-order	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	legacy-early-yield-parameter-check	--legacy-early-yield-parameter-check	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	legacy-elided-override-checks	--legacy-elided-override-checks	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
@@ -94,6 +99,7 @@ cli	legacy-inferred-newtype-base-conversions	--legacy-inferred-newtype-base-conv
 cli	legacy-replacement-cycles	--legacy-replacement-cycles	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	legacy-unchecked-import-binding	--legacy-unchecked-import-binding	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	legacy-member-invariant-dependence	--legacy-member-invariant-dependence	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
+cli	legacy-unchecked-member-invariant-proofs	--legacy-unchecked-member-invariant-proofs	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	legacy-unchecked-type-variance	--legacy-unchecked-type-variance	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	legacy-stored-function-callbacks	--legacy-stored-function-callbacks	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	legacy-unguarded-char	--legacy-unguarded-char	System.CommandLine.Option`1[System.Boolean]	input	character encoding is lowered before task lookup; exact SMT and current assertion map
@@ -123,6 +129,8 @@ cli	optimize-erasable-datatype-wrapper	--optimize-erasable-datatype-wrapper	Syst
 cli	outer-module	--outer-module	System.CommandLine.Option`1[System.String]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	output	--output,-o	System.CommandLine.Option`1[System.IO.FileInfo]	command-setup	setup or another command; executes before/outside proof transport
 cli	performance-stats	--performance-stats	System.CommandLine.Option`1[System.Int32]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
+cli	persistent-translation	--persistent-translation	System.CommandLine.Option`1[System.Boolean]	profile	explicit opt-in module tables beside the task results; keyed by translation descriptor, Boogie graph and verification environment; unsupported modules and reporting options bypass
+cli	persistent-translation-audit	--persistent-translation-audit	System.CommandLine.Option`1[System.Boolean]	profile	never replays a module; compares stored translations and module results with fresh ones and reports differences
 cli	pipeline-profile	--pipeline-profile	System.CommandLine.Option`1[System.String]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
 cli	pipeline-profile-gc-events	--pipeline-profile-gc-events	System.CommandLine.Option`1[System.Boolean]	current-report	measurement side effects only; diagnostics/reporting and solver input unchanged
 cli	pipeline-profile-heap	--pipeline-profile-heap	System.CommandLine.Option`1[System.Boolean]	current-report	measurement side effects only; diagnostics/reporting and solver input unchanged
@@ -153,6 +161,8 @@ cli	refinement-extends	--refinement-extends	System.CommandLine.Option`1[System.B
 cli	relax-definite-assignment	--relax-definite-assignment	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	report-file	--report-file	System.CommandLine.Option`1[System.String]	command-setup	setup or another command; executes before/outside proof transport
 cli	report-format	--report-format	System.CommandLine.Option`1[System.Nullable`1[Microsoft.Dafny.Auditor.Auditor+ReportFormat]]	command-setup	setup or another command; executes before/outside proof transport
+cli	resolution-cache	--resolution-cache	System.CommandLine.Option`1[System.Boolean]	input	per-module resolution snapshots precede task lookup; current global admission and exact prepared SMT
+cli	resolution-cache-check	--resolution-cache-check	System.CommandLine.Option`1[System.Boolean]	input	test-only oracle: each reused module is also resolved and the two graphs compared
 cli	resolution-threads	--resolution-threads	System.CommandLine.Option`1[System.Int32]	input	resolution scheduling precedes task lookup; exact prepared SMT and current assertion map
 cli	resource-limit	--resource-limit	System.CommandLine.Option`1[System.UInt32]	execution	effective prover interfaces/options plus exact SMT command stream; overrides retained
 cli	rprint	--rprint	System.CommandLine.Option`1[System.String]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
@@ -174,6 +184,7 @@ cli	stdin	--stdin	System.CommandLine.Option`1[System.Boolean]	command-setup	setu
 cli	suggest-proof-refactoring	--suggest-proof-refactoring	System.CommandLine.Option`1[System.Boolean]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
 cli	synonym-refines-abstract-type	--synonym-refines-abstract-type	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	system-module	--system-module	System.CommandLine.Option`1[Microsoft.Dafny.CommonOptionBag+SystemModuleMode]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
+cli	tag	--tag	System.CommandLine.Option`1[System.String]	command-setup	dafny cache keep/release only; names a retention tag; no verification run
 cli	target	--target,-t	System.CommandLine.Option`1[System.String]	command-setup	setup or another command; executes before/outside proof transport
 cli	test-assumptions	--test-assumptions	System.CommandLine.Option`1[Microsoft.Dafny.CommonOptionBag+TestAssumptionsMode]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	track-print-effects	--track-print-effects	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
@@ -181,6 +192,8 @@ cli	trait-rank-decreases	--trait-rank-decreases	System.CommandLine.Option`1[Syst
 cli	translate-standard-library	--translate-standard-library	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	translation-record	--translation-record	System.CommandLine.Option`1[System.Collections.Generic.IList`1[System.IO.FileInfo]]	command-setup	setup or another command; executes before/outside proof transport
 cli	translation-record-output	--translation-record-output	System.CommandLine.Option`1[System.IO.FileInfo]	command-setup	setup or another command; executes before/outside proof transport
+cli	translation-workers	--translation-workers	System.CommandLine.Option`1[System.Int32]	input	translation scheduling precedes task lookup; commits in serial order, so exact prepared SMT and current assertion map equal N = 1
+cli	translation-workers-stress	--translation-workers-stress	System.CommandLine.Option`1[System.Int32]	input	test-only translation finish-order delays precede task lookup; exact prepared SMT and current assertion map
 cli	type-inference-trace	--type-inference-trace	System.CommandLine.Option`1[System.Boolean]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
 cli	type-system-debug	--type-system-debug	System.CommandLine.Option`1[System.Boolean]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
 cli	translation-cache	--translation-cache	System.CommandLine.Option`1[System.Boolean]	input	process-local translation snapshots precede task lookup; exact prepared SMT and current assertion map
@@ -192,7 +205,7 @@ cli	use-basename-for-filename	--use-basename-for-filename	System.CommandLine.Opt
 cli	use-caching	--use-caching	System.CommandLine.Option`1[System.Boolean]	command-setup	setup or another command; executes before/outside proof transport
 cli	user-defined-operators	--user-defined-operators	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	verbose	--verbose	System.CommandLine.Option`1[System.Boolean]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
-cli	verification-cache	--verification-cache	System.CommandLine.Option`1[System.String]	profile	explicit opt-in lifecycle/naming/history; unknown profile bypasses
+cli	verification-cache	--cache-dir,--verification-cache	System.CommandLine.Option`1[System.String]	profile	explicit opt-in lifecycle/naming/history; unknown profile bypasses
 cli	verification-coverage-report	--verification-coverage-report	System.CommandLine.Option`1[System.String]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
 cli	verification-module-window	--verification-module-window	System.CommandLine.Option`1[System.UInt32]	profile	explicit opt-in lifecycle/naming/history; unknown profile bypasses
 cli	verification-module-window-memory	--verification-module-window-memory	System.CommandLine.Option`1[System.UInt32]	profile	explicit opt-in lifecycle/naming/history; unknown profile bypasses
@@ -229,6 +242,7 @@ prover	Microsoft.Boogie.CoreOptions.LockFreeExpansion		System.Boolean	execution	
 prover	Microsoft.Boogie.CoreOptions.LoopUnrollCount		System.Int32	execution	complete inherited prover interface enumerated and encoded before first query
 prover	Microsoft.Boogie.CoreOptions.ModelViewFile		System.String	execution	complete inherited prover interface enumerated and encoded before first query
 prover	Microsoft.Boogie.CoreOptions.ModifyTopologicalSorting		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.CoreOptions.MonomorphicSharedLiterals		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
 prover	Microsoft.Boogie.CoreOptions.NormalizeDeclarationOrder		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
 prover	Microsoft.Boogie.CoreOptions.OutputWriter		System.IO.TextWriter	current-report	current output binding
 prover	Microsoft.Boogie.CoreOptions.OverlookBoogieTypeErrors		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
@@ -328,3 +342,4 @@ solver-field	Verbosity		System.Int32	bypass	observable warning or native transpo
 solver-property	Help		System.String	command-setup	static option documentation; no execution read
 solver-property	LibOptions		Microsoft.Boogie.SMTLibOptions	execution	covered by complete inherited prover interfaces; never serialized as an opaque object
 solver-property	UseTickleBool		System.Boolean	execution	all public solver fields/properties enumerated and encoded
+cli	integer-bitwise	--integer-bitwise	System.CommandLine.Option`1[System.Boolean]	input	compiler-owned resolved signatures and local defining equations before task lookup

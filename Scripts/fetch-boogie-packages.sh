@@ -6,12 +6,13 @@
 #
 # The packages are Boogie 3.5.5 with the fix for boogie-org/boogie#1168, fixes to its
 # printer, opt-in split-setup options, repairs to /typeEncoding:m monomorphization and the
-# opt-in /cacheBackground and /scheduleByImplementation, the 14 packages of the release
-# v3.5.5+review.dcd726f6 of
+# opt-in /cacheBackground, /scheduleByImplementation and /monomorphicSharedLiterals,
+# the 14 packages of the release
+# v3.5.5+review.a38b89f9 of
 # https://github.com/erniecohen/boogie, which builds them in CI from the tag.  The release's
 # SHA256SUMS is Scripts/boogie-packages.sha256.
 set -eu
-release=https://github.com/erniecohen/boogie/releases/download/v3.5.5%2Breview.dcd726f6
+release=https://github.com/erniecohen/boogie/releases/download/v3.5.5%2Breview.a38b89f9
 root=$(cd "$(dirname "$0")/.." && pwd)
 sums="$root/Scripts/boogie-packages.sha256"
 feed="$root/Binaries/boogie-packages"

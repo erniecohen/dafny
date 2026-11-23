@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 
@@ -8,11 +9,25 @@ namespace Microsoft.Dafny;
 /// declared types. Note that equality-support is checked only in compiled contexts.
 /// In addition, this visitor checks that operations that require equality are applied to
 /// types that really do support equality; this, too, is checked only in compiled contexts.
+/// Types and static receivers also enforce the recorded language mode of optional
+/// compiler-owned integer bitwise references, including in library declarations.
 /// </summary>
 class CheckTypeCharacteristicsVisitor : ResolverTopDownVisitor<bool> {
-  public CheckTypeCharacteristicsVisitor(ErrorReporter reporter)
+  public CheckTypeCharacteristicsVisitor(ErrorReporter reporter, Func<IOrigin, bool> integerBitwiseEnabled = null)
     : base(reporter) {
     Contract.Requires(reporter != null);
+    this.integerBitwiseEnabled = integerBitwiseEnabled;
+  }
+
+  private readonly Func<IOrigin, bool> integerBitwiseEnabled;
+  private HashSet<IOrigin> integerBitwiseReferencesChecked;
+
+  private void CheckIntegerBitwiseReference(IOrigin origin) {
+    if (integerBitwiseEnabled != null && !integerBitwiseEnabled(origin) &&
+        (integerBitwiseReferencesChecked ??= new HashSet<IOrigin>()).Add(origin)) {
+      reporter.Error(MessageSource.Resolver, origin,
+        "The compiler-owned integer bitwise references require --integer-bitwise in the declaring source or library");
+    }
   }
 
   // The bounded types (issue 266) already checked, by the origin of the type, so that each is reported once.
@@ -321,6 +336,9 @@ class CheckTypeCharacteristicsVisitor : ResolverTopDownVisitor<bool> {
     } else if (type is UserDefinedType) {
       var udt = (UserDefinedType)type;
       Contract.Assert(udt.ResolvedClass != null);
+      if (IntegerBitwiseReferences.IsReferenceDecl(udt.ResolvedClass)) {
+        CheckIntegerBitwiseReference(tok);
+      }
       if (BoundedCallables.IsBoundedDecl(udt.ResolvedClass)) {
         BoundedCallables.CheckInstantiation(reporter, tok, udt, boundedTypesChecked);
       }
