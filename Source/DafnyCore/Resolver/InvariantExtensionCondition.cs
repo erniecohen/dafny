@@ -75,10 +75,18 @@ public class InvariantExtensionCondition {
   /// </summary>
   private readonly HashSet<(string?, int)> reported;
 
+  /// <summary>
+  /// Whether the proofs that justify the cone's axioms are in the cone (issues 199 and 549).  The hidden
+  /// --legacy-unchecked-member-invariant-proofs restores the former, unsound condition, for migration and comparison
+  /// only: it follows only the specifications of bound lemmas, and applies none of clauses 6 to 8.
+  /// </summary>
+  private readonly bool checkProofs;
+
   private InvariantExtensionCondition(TopLevelDeclWithMembers owner, ErrorReporter reporter, HashSet<(string?, int)> reported) {
     this.owner = owner;
     this.reporter = reporter;
     this.reported = reported;
+    checkProofs = !reporter.Options.Get(CommonOptionBag.LegacyUncheckedMemberInvariantProofs);
   }
 
   /// <summary>
@@ -136,6 +144,10 @@ public class InvariantExtensionCondition {
           CheckSlot(function.Body, function.ResultType);
           Visit(function.Body);
         }
+      } else if (current.Member is Method legacyLemma && !checkProofs) {
+        // A bound lemma, of which the legacy condition follows only the specification.
+        legacyLemma.Req.ForEach(req => Visit(req.E));
+        legacyLemma.Ens.ForEach(ens => Visit(ens.E));
       } else if (current.Member is Method method) {
         // A bound lemma, or a lemma called by a proof in the cone.
         foreach (var formal in method.Ins) {
@@ -543,13 +555,21 @@ public class InvariantExtensionCondition {
   /// Clause 7: a read of a field or an array element of a T-dependent type.
   /// </summary>
   private void CheckHeapRead(Expression read) {
-    if (read.Type != null && DependsOnOwner(read.Type)) {
+    if (checkProofs && read.Type != null && DependsOnOwner(read.Type)) {
       Error(read.Origin, $"reads a location of type '{read.Type}'{DependsOnOwnerNote(read.Type)} from the heap");
     }
   }
 
   private void Visit(Expression expr) {
     switch (expr) {
+      case StmtExpr stmtExpr when !checkProofs:
+        if (stmtExpr.LemmaBindingCall is { Method: Lemma legacyBound } legacyCall) {
+          // The legacy condition: the binding contributes the lemma's specification, and the proof hints are skipped.
+          var legacyDependent = DependentFormals(legacyBound.EnclosingClass.TypeArgs, legacyCall.MethodSelect.TypeApplicationAtEnclosingClass);
+          legacyDependent.UnionWith(DependentFormals(legacyBound.TypeArgs, legacyCall.MethodSelect.TypeApplicationJustMember));
+          Enqueue(legacyBound, legacyDependent);
+        }
+        break;
       case StmtExpr stmtExpr:
         if (stmtExpr.LemmaBindingCall is { Method: Lemma } bindingCall) {
           // Unlike a proof hint, a binding contributes the lemma's specification to the expression's meaning.
