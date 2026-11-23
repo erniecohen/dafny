@@ -1,0 +1,9 @@
+
+Dafny program verifier did not attempt verification
+Error: module 'A' is in a recursive module group; Go compilation of recursive module groups with extern declarations is not yet supported
+
+Dafny program verifier did not attempt verification
+Error: module 'A' is in a recursive module group; Go compilation of recursive module groups with extern declarations is not yet supported
+
+Dafny program verifier did not attempt verification
+Error: module 'A' is in a recursive module group; Go compilation of recursive module groups with extern declarations is not yet supported

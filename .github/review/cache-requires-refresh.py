@@ -7,7 +7,7 @@ import sys
 
 exe, solver, source, destination = (Path(s).resolve() for s in sys.argv[1:5])
 option = sys.argv[5]
-assert option in ("--translation-cache", "--verification-cache", "--cache-dir")
+assert option in ("--translation-cache", "--verification-cache", "--cache-dir", "--persistent-translation")
 # --cache-dir is an alias of --verification-cache, the cache store's root.
 named = "--verification-cache" if option == "--cache-dir" else option
 # A rerun reuses the test's output directory: start from an empty one.
@@ -48,6 +48,20 @@ if option == "--cache-dir":
                             capture_output=True, timeout=60, env=environment)
     assert result.returncode == 0, (result.returncode, result.stdout, result.stderr)
     assert not store.exists(), "the legacy type system must not use the cache store"
+
+if option == "--persistent-translation":
+    # The persistent tables live in the result cache's directory, and audit is a mode of them.
+    for name, args, required in [
+        ("no-results", ["--type-system-refresh", "--persistent-translation"], "--persistent-translation requires --verification-cache"),
+        ("audit-alone", ["--type-system-refresh", "--verification-cache", str(destination / "audit-cache"),
+                         "--persistent-translation-audit"], "--persistent-translation-audit requires --persistent-translation"),
+    ]:
+        profile = destination / (name + ".jsonl")
+        result = subprocess.run(["dotnet", str(exe), "verify", str(invalid)] + args + ["--pipeline-profile", str(profile)],
+                                capture_output=True, timeout=60)
+        assert result.returncode == 2, (name, result.returncode, result.stdout, result.stderr)
+        assert result.stdout.decode().strip() == "Error: " + required, result.stdout
+        assert not profile.exists() and not (destination / "audit-cache").exists()
 
 # The owner restriction changes cache admission, not ordinary legacy verification.
 result = subprocess.run(["dotnet", str(exe), "verify", str(source), "--type-system-refresh:false",

@@ -1815,9 +1815,10 @@ public partial class BoogieGenerator {
   /// The witness check sets the origin of its substituted constraint, and Substitute returns the
   /// constraint itself when the bound variable does not occur in it (as in "v: T | true"). Setting
   /// the origin of the declaration's own constraint would change the tokens of every later
-  /// translation of that constraint in this process, in other modules too, and under
-  /// --translation-workers it would race with those translations. The shared constraint is
-  /// cloned first (issue 569).
+  /// translation of that constraint in this process, in other modules too. Under
+  /// --translation-workers it would race with those translations (issue 569), and under
+  /// --persistent-translation a module's translation would depend on which other modules this
+  /// process translated (issue 261). The shared constraint is cloned first, on every path.
   /// </summary>
   private static Expression Unshared(Expression substituted, Expression constraint) =>
     ReferenceEquals(substituted, constraint) ? new Cloner(false, true).CloneExpr(substituted) : substituted;

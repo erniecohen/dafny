@@ -144,14 +144,21 @@ public sealed class VerificationPreparationPipeline : IDisposable {
 
       cancellationToken.ThrowIfCancellationRequested();
 
-      var (boogieProgram, dependencies, _) = await DafnyMain.LargeStackFactory.StartNew(
-        () => Translate(resolution, moduleDefinition, insertChecksums, profile, moduleName, cancellationToken),
+      var program = resolution.ResolvedProgram;
+      if (LookUpPersistent(program, moduleDefinition, insertChecksums, profile, moduleName, out var identity) is { } stored) {
+        return stored;
+      }
+      var (boogieProgram, dependencies, _, translated) = await DafnyMain.LargeStackFactory.StartNew(
+        () => Translate(resolution, moduleDefinition, insertChecksums, profile, moduleName, identity, cancellationToken),
         cancellationToken);
       cancellationToken.ThrowIfCancellationRequested();
       capture?.Invoke(boogieProgram);
 
+      if (PublishPersistent(program, moduleDefinition, translated, dependencies, profile, moduleName) is { } replayed) {
+        return replayed;
+      }
       var preparation = await Prepare(boogieProgram, createBackend, profile, moduleName, cancellationToken);
-      return new ModuleVerificationPreparation(preparation, dependencies);
+      return new ModuleVerificationPreparation(RecordPersistent(program, moduleDefinition, translated, preparation), dependencies);
     }
     finally {
       mutex.Release();
@@ -189,9 +196,16 @@ public sealed class VerificationPreparationPipeline : IDisposable {
     }
     var stressDelay = StressDelay(options, ticket);
     var previousAwaited = false;
+    var program = resolution.ResolvedProgram;
     Bpl.Program boogieProgram;
     ProofDependencyManager dependencies;
+    Caching.PersistentModuleCache.ModuleIdentity? translated;
     try {
+      // A translation-key hit needs no translation slot. It commits nothing, but its ticket still
+      // completes only after its predecessor's (the finally below), so the cursor's order holds.
+      if (LookUpPersistent(program, moduleDefinition, insertChecksums, profile, moduleName, out var identity) is { } stored) {
+        return stored;
+      }
       var profileStart = profile?.Begin();
       await AdmitTranslation(workers, MemoryBudget(options), cancellationToken);
       long allocated = -1;
@@ -203,8 +217,8 @@ public sealed class VerificationPreparationPipeline : IDisposable {
           await Task.Delay(stressDelay, cancellationToken);
         }
         cancellationToken.ThrowIfCancellationRequested();
-        (boogieProgram, dependencies, allocated) = await DafnyMain.LargeStackFactory.StartNew(
-          () => Translate(resolution, moduleDefinition, insertChecksums, profile, moduleName, cancellationToken),
+        (boogieProgram, dependencies, allocated, translated) = await DafnyMain.LargeStackFactory.StartNew(
+          () => Translate(resolution, moduleDefinition, insertChecksums, profile, moduleName, identity, cancellationToken),
           cancellationToken);
       }
       finally {
@@ -230,10 +244,13 @@ public sealed class VerificationPreparationPipeline : IDisposable {
       committed.SetResult();
     }
 
+    if (PublishPersistent(program, moduleDefinition, translated, dependencies, profile, moduleName) is { } replayed) {
+      return replayed;
+    }
     await AdmitPreparation(workers, cancellationToken);
     try {
       var preparation = await Prepare(boogieProgram, createBackend, profile, moduleName, cancellationToken);
-      return new ModuleVerificationPreparation(preparation, dependencies);
+      return new ModuleVerificationPreparation(RecordPersistent(program, moduleDefinition, translated, preparation), dependencies);
     }
     finally {
       FinishPreparation();
@@ -314,19 +331,101 @@ public sealed class VerificationPreparationPipeline : IDisposable {
     };
   }
 
-  private static (Bpl.Program Program, ProofDependencyManager Dependencies, long Allocated) Translate(
+  private static BoogieGenerator.TranslatorFlags TranslatorFlags(Program program, bool insertChecksums) =>
+    new(program.Reporter.Options) {
+      InsertChecksums = insertChecksums,
+      ReportRanges = program.Options.Get(Snippets.ShowSnippets),
+      PreludeText = program.PreludeText
+    };
+
+  /// <summary>
+  /// --persistent-translation: a module whose translation key has stored results is replayed
+  /// without translation. Otherwise <paramref name="identity"/> is the key its fresh translation is
+  /// recorded under, or null when the module is translated afresh without the persistent tables.
+  /// </summary>
+  private static ModuleVerificationPreparation? LookUpPersistent(Program program, ModuleDefinition moduleDefinition,
+    bool insertChecksums, PipelineProfile? profile, string? moduleName,
+    out Caching.PersistentModuleCache.ModuleIdentity? identity) {
+    identity = null;
+    var persistent = Caching.PersistentModuleCache.For(program.Options);
+    if (persistent == null) {
+      return null;
+    }
+    // As for an in-process hit, a replay must not bypass the global soundness admission.
+    BoogieGenerator.RequireCardinalityValidation(program);
+    if (persistent.Key(program, moduleDefinition, TranslatorFlags(program, insertChecksums)) is not { } key) {
+      return null;
+    }
+    // The keys this module is looked up under, for the option classification test.
+    profile?.Point("persistent-keys", new Dictionary<string, object?> {
+      ["module"] = moduleDefinition.FullName, ["resolution"] = moduleDefinition.ResolutionIdentity,
+      ["translation"] = key, ["results"] = persistent.EnvironmentDigest
+    });
+    identity = new Caching.PersistentModuleCache.ModuleIdentity(key, null, null, null);
+    if (!persistent.Audit && persistent.ReadTranslation(key) is { } stored &&
+        persistent.TryReplay(program, moduleDefinition, stored.Fingerprint, true, out _) is { } replayed) {
+      profile?.Point("persistent-module", new Dictionary<string, object?> {
+        ["module"] = moduleName, ["hit"] = "translation-key", ["tasks"] = replayed.Count
+      });
+      return new ModuleVerificationPreparation(
+        VerificationPreparation.Ready(replayed.Select(task => new BoogieVerificationWork(task))), new ProofDependencyManager());
+    }
+    return null;
+  }
+
+  /// <summary>
+  /// Publishes a fresh translation that can be recorded, and replays the module when its
+  /// regenerated Boogie program has stored results (early cutoff).
+  /// </summary>
+  private static ModuleVerificationPreparation? PublishPersistent(Program program, ModuleDefinition moduleDefinition,
+    Caching.PersistentModuleCache.ModuleIdentity? identity, ProofDependencyManager dependencies,
+    PipelineProfile? profile, string? moduleName) {
+    if (identity is not { Text: not null } || Caching.PersistentModuleCache.For(program.Options) is not { } persistent) {
+      return null;
+    }
+    persistent.PublishTranslation(identity, program.Reporter, moduleDefinition.Origin);
+    string? missReason = "audit";
+    if (!persistent.Audit &&
+        persistent.TryReplay(program, moduleDefinition, identity.Fingerprint!, false, out missReason) is { } replayed) {
+      profile?.Point("persistent-module", new Dictionary<string, object?> {
+        ["module"] = moduleName, ["hit"] = "boogie-graph", ["tasks"] = replayed.Count
+      });
+      return new ModuleVerificationPreparation(
+        VerificationPreparation.Ready(replayed.Select(task => new BoogieVerificationWork(task))), dependencies);
+    }
+    profile?.Point("persistent-module", new Dictionary<string, object?> {
+      ["module"] = moduleName, ["hit"] = null, ["reason"] = missReason
+    });
+    return null;
+  }
+
+  /// <summary>Observes a fresh module's prepared tasks, so that their results are recorded.</summary>
+  private static VerificationPreparation RecordPersistent(Program program, ModuleDefinition moduleDefinition,
+    Caching.PersistentModuleCache.ModuleIdentity? identity, VerificationPreparation preparation) {
+    if (identity is not { Text: not null } || Caching.PersistentModuleCache.For(program.Options) is not { } persistent ||
+        !preparation.IsReady || !preparation.GetWorkOrThrow().All(work => work is BoogieVerificationWork)) {
+      return preparation;
+    }
+    var recorded = persistent.Record(program, moduleDefinition, identity, BoogieVerificationBackend.GetNativeTasks(preparation));
+    return VerificationPreparation.Ready(recorded.Select(task => new BoogieVerificationWork(task)));
+  }
+
+  private static (Bpl.Program Program, ProofDependencyManager Dependencies, long Allocated,
+    Caching.PersistentModuleCache.ModuleIdentity? Identity) Translate(
     ResolutionResult resolution, ModuleDefinition moduleDefinition, bool insertChecksums,
-    PipelineProfile? profile, string? moduleName, CancellationToken cancellationToken) {
+    PipelineProfile? profile, string? moduleName, Caching.PersistentModuleCache.ModuleIdentity? identity,
+    CancellationToken cancellationToken) {
     var program = resolution.ResolvedProgram;
     var errorReporter = program.Reporter;
     var profileStart = profile?.Begin();
     var started = GC.GetAllocatedBytesForCurrentThread();
     Type.ResetScopes();
-    var translatorFlags = new BoogieGenerator.TranslatorFlags(errorReporter.Options) {
-      InsertChecksums = insertChecksums,
-      ReportRanges = program.Options.Get(Snippets.ShowSnippets),
-      PreludeText = program.PreludeText
-    };
+    var translatorFlags = TranslatorFlags(program, insertChecksums);
+    if (identity != null) {
+      var (graph, recorded, persistentDependencies) = TranslatePersistent(program, moduleDefinition, translatorFlags,
+        identity, profile, moduleName, profileStart, cancellationToken);
+      return (graph, persistentDependencies, GC.GetAllocatedBytesForCurrentThread() - started, recorded);
+    }
     if (program.Options.Get(CommonOptionBag.TranslationCache)) {
       var cache = ModuleTranslationCache.ProcessCache;
       var module = cache.TranslateModule(program, moduleDefinition, translatorFlags, cancellationToken, out var reused);
@@ -339,7 +438,7 @@ public sealed class VerificationPreparationPipeline : IDisposable {
           ["implementations"] = cached.Implementations.Count()
         });
       }
-      return (cached, module.ProofDependencies, GC.GetAllocatedBytesForCurrentThread() - started);
+      return (cached, module.ProofDependencies, GC.GetAllocatedBytesForCurrentThread() - started, null);
     }
     var dependencies = new ProofDependencyManager();
     var threadAllocated = profile != null ? GC.GetAllocatedBytesForCurrentThread() : 0;
@@ -370,7 +469,67 @@ public sealed class VerificationPreparationPipeline : IDisposable {
           ? TokenFingerprint.Of(translated) : null
       });
     }
-    return (translated, dependencies, GC.GetAllocatedBytesForCurrentThread() - started);
+    return (translated, dependencies, GC.GetAllocatedBytesForCurrentThread() - started, null);
+  }
+
+  /// <summary>
+  /// A translation that the persistent tables can record: its Boogie text, under source labels
+  /// that name files by content, and the structural fingerprint of its unprepared graph.
+  /// </summary>
+  private static (Bpl.Program Graph, Caching.PersistentModuleCache.ModuleIdentity Identity, ProofDependencyManager Dependencies)
+    TranslatePersistent(Program program, ModuleDefinition moduleDefinition, BoogieGenerator.TranslatorFlags translatorFlags,
+      Caching.PersistentModuleCache.ModuleIdentity identity, PipelineProfile? profile, string? moduleName,
+      PipelineProfile.Mark? profileStart, CancellationToken cancellationToken) {
+    var errorReporter = program.Reporter;
+    var persistentAllocated = profile != null ? GC.GetAllocatedBytesForCurrentThread() : 0;
+    var dependencies = new ProofDependencyManager();
+    Bpl.Program graph;
+    string? text;
+    string? unrecorded = null;
+    var reused = false;
+    if (program.Options.Get(CommonOptionBag.TranslationCache)) {
+      var module = ModuleTranslationCache.ProcessCache.TranslateModule(program, moduleDefinition, translatorFlags,
+        cancellationToken, out reused);
+      graph = module.Program;
+      text = module.Text;
+      dependencies = module.ProofDependencies;
+      if (text == null) { unrecorded = "translation not snapshotted or reported diagnostics"; }
+    } else {
+      // The translator's reports are batched, as for an in-process cache miss, to learn
+      // whether this translation reported anything; only a silent one is recorded.
+      var reporter = new BatchErrorReporter(program.Options);
+      var snapshot = new BoogieGenerator(reporter, dependencies, translatorFlags).DoTranslationForSnapshot(program, moduleDefinition);
+      foreach (var diagnostic in reporter.AllMessages) { errorReporter.MessageCore(diagnostic); }
+      var copied = BoogieSnapshotCloner.TryClone(snapshot, out var consumer, out var cloneFailure);
+      graph = copied ? consumer! : snapshot;
+      // Translator hints (Info) are printed only with tooltips, which every key includes; a
+      // translation whose only reports are hints that this run does not print is silent.
+      var reported = reporter.AllMessages.Where(m => m.Level != ErrorLevel.Info || program.Options.PrintTooltips).ToList();
+      text = copied && reported.Count == 0 ? ModuleTranslationCache.Emit(snapshot, program.Options) : null;
+      unrecorded = !copied ? "unsupported graph: " + cloneFailure
+        : reported.Count != 0 ? "translation diagnostics (" + reported[0].Level + ")" : null;
+    }
+    // The unprepared graph: preparation mutates it.
+    string? unfingerprinted = null;
+    var locations = Caching.SourceLocations.For(program);
+    var fingerprint = text != null
+      ? Caching.BoogieGraphFingerprint.TryCompute(graph, program.Options.EmitDebugInformation, locations, out unfingerprinted) : null;
+    // The stored text names source files by their content, as the fingerprint does.
+    text = text != null ? locations.Relabel(text) : null;
+    unrecorded ??= unfingerprinted != null ? "unsupported graph: " + unfingerprinted : null;
+    if (unrecorded != null) { Caching.PersistentModuleCache.For(program.Options)!.Unrecorded(unrecorded); }
+    identity = identity with {
+      BoogieHash = text != null ? Caching.CacheDigest.Blob(System.Text.Encoding.UTF8.GetBytes(text)) : null,
+      Fingerprint = fingerprint, Text = fingerprint != null ? text : null
+    };
+    if (profile != null) {
+      profile.Span("translate", profileStart!.Value, new Dictionary<string, object?> {
+        ["module"] = moduleName, ["cached"] = reused, ["persistent"] = identity.Text != null, ["unrecorded"] = unrecorded,
+        ["threadAllocBytes"] = GC.GetAllocatedBytesForCurrentThread() - persistentAllocated,
+        ["declarations"] = graph.TopLevelDeclarations.Count(), ["implementations"] = graph.Implementations.Count()
+      });
+    }
+    return (graph, identity, dependencies);
   }
 
   private static async Task<VerificationPreparation> Prepare(Bpl.Program boogieProgram,
