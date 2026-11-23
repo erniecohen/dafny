@@ -1,0 +1,14 @@
+git-issue-549-legacy.dfy(23,52): Error: 'Inv' is used by the invariant of 'T' and converts a raw value to 'T'
+git-issue-549-legacy.dfy(33,38): Error: 'F' is used by the invariant of 'T' and converts a raw value to 'T'
+git-issue-549-legacy.dfy(43,34): Error: 'P' is used by the invariant of 'T' and converts a raw value to 'T'
+git-issue-549-legacy.dfy(56,26): Error: 'Inv' is used by the invariant of 'T' and refers to the set of values of 'T'
+git-issue-549-legacy.dfy(67,52): Error: 'Inv' is used by the invariant of 'N' and converts a raw value to 'N'
+5 resolution/type errors detected in git-issue-549-legacy.dfy
+
+Dafny program verifier finished with 17 verified, 0 errors
+git-issue-549-invariant-hints.dfy(90,29): Error: a postcondition could not be proved on this return path
+git-issue-549-invariant-hints.dfy(90,23): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 24 verified, 1 error
+git-issue-199-invariant-proofs.dfy(121,52): Error: 'Ok' is used by the invariant of 'T' and refers to the set of values of 'T', in the constraint of the arrow type 'T -> bool'
+1 resolution/type errors detected in git-issue-199-invariant-proofs.dfy

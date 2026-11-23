@@ -708,9 +708,18 @@ namespace Microsoft.Dafny {
       var oldErrorCount = dafnyProgram.Reporter.Count(ErrorLevel.Error);
       var options = dafnyProgram.Options;
 
-      if (options.Backend is not (LibraryBackend or CsharpBackend) &&
+      if (options.Backend is GoBackend && dafnyProgram.Modules().FirstOrDefault(module =>
+            module.RecursiveGroup != null && (module.IsExtern(options, out _, out _) || module.TopLevelDecls.Any(declaration =>
+              declaration.IsExtern(options, out _, out _) || declaration is TopLevelDeclWithMembers type &&
+              type.Members.Any(member => member.IsExtern(options, out _, out _))))) is { } externGroupMember) {
+        await outputWriter.Status($"Error: module '{externGroupMember.FullDafnyName}' is in a recursive module group; " +
+                                  "Go compilation of recursive module groups with extern declarations is not yet supported");
+        return false;
+      }
+
+      if (options.Backend is not (LibraryBackend or CsharpBackend or JavaBackend or GoBackend) &&
           dafnyProgram.Modules().FirstOrDefault(module => module.RecursiveGroup != null) is { } groupMember) {
-        // C# namespaces can refer to each other, and constant getters evaluate dependencies on use.
+        // C# namespaces and Java packages can refer to each other; Go emits one package per group.
         // Other executable targets still need their own module and initialization-order checks.
         // The library backend retains and records the complete group instead.
         await outputWriter.Status($"Error: module '{groupMember.FullDafnyName}' is in a recursive module group; " +
