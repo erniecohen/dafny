@@ -4,15 +4,44 @@ on:
     branches: ['codex/194-operators-m1']
   workflow_dispatch:
 concurrency:
-  group: operators-m1-probe-${{ github.ref }}-${{ contains(github.event.head_commit.message, '[off-gates]') && 'off' || 'focused' }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 permissions:
   contents: read
+env:
+  DOTNET_PROCESSOR_COUNT: '2'
+  MSBUILDDISABLENODEREUSE: '1'
+  GRADLE_OPTS: -Dorg.gradle.daemon=false
+
 jobs:
   probe:
-    runs-on: ubuntu-24.04
-    timeout-minutes: 60
+    if: ${{ github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request') && (github.event_name != 'pull_request' || (!github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository)) }}
+    runs-on: [self-hosted, macOS, ARM64, fork-ci]
+    timeout-minutes: 1440 # Includes waiting for the shared admission slot.
     steps:
+      - name: Yield to interactive work
+        if: runner.os == 'macOS'
+        shell: bash
+        timeout-minutes: 60
+        run: |
+          case "$(ps -o comm= -p "$PPID")" in
+            */Runner.Worker|Runner.Worker) ;;
+            *) echo "::error::Expected this job's Runner.Worker parent"; exit 1 ;;
+          esac
+          renice 10 -p "$PPID" "$$" >/dev/null
+          test "$(ps -o nice= -p "$PPID" | tr -d ' ')" = 10
+          test "$(ps -o nice= -p "$$" | tr -d ' ')" = 10
+      - name: Create job temporary directory
+        shell: bash
+        timeout-minutes: 60
+        run: |
+          job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
+          echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@a8ef9c0acd833e35e6a13f798ac4c17dad9a64e1
+        with:
+          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
+          min-free-percent: ${{ vars.SELF_HOSTED_JOB_MIN_FREE_PERCENT || '' }}
+          max-pressure: ${{ vars.SELF_HOSTED_JOB_MAX_PRESSURE || '' }}
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-dotnet
       - uses: actions/setup-java@v4
@@ -21,32 +50,33 @@ jobs:
           java-version: '17'
       - name: Build and focused checks (record expected development failures)
         shell: bash
+        timeout-minutes: 60
         run: |
           mkdir -p out/operators
-          curl -fsSLo out/operators/z3.zip https://github.com/Z3Prover/z3/releases/download/z3-5.1.0/z3-5.1.0-x64-glibc-2.39.zip
-          echo 'f47be8d27d3230e823bf1eeede2fe0abaca55bb78d0b59974370e6689a92284a  out/operators/z3.zip' | sha256sum -c -
+          curl -fsSLo out/operators/z3.zip https://github.com/Z3Prover/z3/releases/download/z3-5.1.0/z3-5.1.0-arm64-osx-13.3.zip
+          echo '81d29e934fd863079a74af35eecaeaef8047e0e12414d33ca322b358d68383db  out/operators/z3.zip' | shasum -a 256 -c -
           unzip -q out/operators/z3.zip -d out/operators
-          export DAFNY_OPERATORS_Z3="$PWD/out/operators/z3-5.1.0-x64-glibc-2.39/bin/z3"
+          export DAFNY_OPERATORS_Z3="$PWD/out/operators/z3-5.1.0-arm64-osx-13.3/bin/z3"
           chmod +x "$DAFNY_OPERATORS_Z3"
           mkdir -p Binaries/z3/bin
           cp "$DAFNY_OPERATORS_Z3" Binaries/z3/bin/z3-5.1.0
           set +e
           sh Scripts/fetch-boogie-packages.sh > out/operators/packages.log 2>&1
-          dotnet publish Source/Dafny/Dafny.csproj -c Release -o out/dafny -p:GeneratePackageOnBuild=false > out/operators/build.log 2>&1
+          dotnet publish -p:NuGetAudit=false Source/Dafny/Dafny.csproj -c Release -o out/dafny -p:GeneratePackageOnBuild=false > out/operators/build.log 2>&1
           result=$?
           echo "$result" > out/operators/build.exit
-          tail -60 out/operators/build.log
+          grep -E ' error |Error\(s\)|Warning\(s\)|Build succeeded' out/operators/build.log || true
           if [ "$result" = 0 ] && [ -f .github/review/operators-m1.py ]; then
             python3 .github/review/operators-m1.py "$PWD/out/dafny/Dafny" "$PWD/out/operators" > out/operators/checks.log 2>&1
             echo "$?" > out/operators/checks.exit
             tail -60 out/operators/checks.log
-            dotnet test Source/DafnyCore.Test/DafnyCore.Test.csproj -c Release --filter FullyQualifiedName~OperatorSelectionTests --logger "trx;LogFileName=operators.trx" --results-directory "$PWD/out/operators/core-tests" > out/operators/core-tests.log 2>&1
+            dotnet test --settings "$GITHUB_WORKSPACE/.github/review/ci.runsettings" -p:NuGetAudit=false Source/DafnyCore.Test/DafnyCore.Test.csproj -c Release --filter FullyQualifiedName~OperatorSelectionTests --logger "trx;LogFileName=operators.trx" --results-directory "$PWD/out/operators/core-tests" > out/operators/core-tests.log 2>&1
             echo "$?" > out/operators/core-tests.exit
             tail -40 out/operators/core-tests.log
-            dotnet test Source/DafnyLanguageServer.Test/DafnyLanguageServer.Test.csproj -c Release --filter 'FullyQualifiedName~OperatorSymbolsAreReferencesButAreNeverRenamed|FullyQualifiedName~OperatorHoverDistinguishesRankFromAnOrdinaryFallbackCall' --logger "trx;LogFileName=operators.trx" --results-directory "$PWD/out/operators/rename-tests" > out/operators/rename-tests.log 2>&1
+            dotnet test --settings "$GITHUB_WORKSPACE/.github/review/ci.runsettings" -p:NuGetAudit=false Source/DafnyLanguageServer.Test/DafnyLanguageServer.Test.csproj -c Release --filter 'FullyQualifiedName~OperatorSymbolsAreReferencesButAreNeverRenamed|FullyQualifiedName~OperatorHoverDistinguishesRankFromAnOrdinaryFallbackCall' --logger "trx;LogFileName=operators.trx" --results-directory "$PWD/out/operators/rename-tests" > out/operators/rename-tests.log 2>&1
             echo "$?" > out/operators/rename-tests.exit
             tail -40 out/operators/rename-tests.log
-            dotnet test Source/IntegrationTests -c Release --filter 'DisplayName~git-issues/github-issue-194.dfy' --logger "trx;LogFileName=operators.trx" --results-directory "$PWD/out/operators/lit-tests" > out/operators/lit-tests.log 2>&1
+            dotnet test --settings "$GITHUB_WORKSPACE/.github/review/ci.runsettings" -p:NuGetAudit=false Source/IntegrationTests -c Release --filter 'DisplayName~git-issues/github-issue-194.dfy' --logger "trx;LogFileName=operators.trx" --results-directory "$PWD/out/operators/lit-tests" > out/operators/lit-tests.log 2>&1
             echo "$?" > out/operators/lit-tests.exit
             tail -40 out/operators/lit-tests.log
           fi
@@ -69,6 +99,14 @@ jobs:
             out/operators/rename-tests
             out/operators/lit-tests
           retention-days: 14
+      - name: Remove job temporary directory
+        if: always()
+        shell: bash
+        timeout-minutes: 5
+        run: |
+          case "${TMPDIR:-}" in
+            "$RUNNER_TEMP"/fork-job.*) rm -rf "$TMPDIR" ;;
+          esac
 
   disabled-compatibility:
     if: contains(github.event.head_commit.message, '[off-gates]')

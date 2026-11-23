@@ -1,0 +1,28 @@
+git-issue-199-invariant-proofs.dfy(14,24): Error: 'Pick' is used by the invariant of 'T' and has an out-parameter of type 'T', whose value is chosen from the set of values of 'T'
+git-issue-199-invariant-proofs.dfy(14,37): Error: 'Pick' is used by the invariant of 'T' and converts a raw value to 'T'
+git-issue-199-invariant-proofs.dfy(21,56): Error: 'Ok' is used by the invariant of 'T' and converts a raw value to 'T'
+git-issue-199-invariant-proofs.dfy(22,31): Error: 'Pick' is used by the invariant of 'T' and has an out-parameter of type 'X', which depends on 'T', whose value is chosen from the set of values of 'X'
+git-issue-199-invariant-proofs.dfy(29,24): Error: 'Pick' is used by the invariant of 'T' and has an out-parameter of type 'seq<T>', which depends on 'T', whose value is chosen from the set of values of 'seq<T>'
+git-issue-199-invariant-proofs.dfy(29,59): Error: 'Pick' is used by the invariant of 'T' and converts a raw value to 'seq<T>'
+git-issue-199-invariant-proofs.dfy(40,11): Error: 'Pick' is used by the invariant of 'T' and tests a raw value against 'T'
+git-issue-199-invariant-proofs.dfy(49,21): Error: 'Decide' is used by the invariant of 'T' and tests a raw value against 'T'
+git-issue-199-invariant-proofs.dfy(59,60): Error: 'Helper' is used by the invariant of 'T' and tests a raw value against 'T'
+git-issue-199-invariant-proofs.dfy(67,56): Error: 'H' is used by the invariant of 'T' and tests a raw value against 'T'
+git-issue-199-invariant-proofs.dfy(76,60): Error: 'Pick' is used by the invariant of 'T' and reads a location of type 'T' from the heap
+git-issue-199-invariant-proofs.dfy(76,69): Error: 'Pick' is used by the invariant of 'T' and reads a location of type 'T' from the heap
+git-issue-199-invariant-proofs.dfy(84,40): Error: 'G' is used by the invariant of 'T' and reads a location of type 'T' from the heap
+git-issue-199-invariant-proofs.dfy(91,88): Error: 'Pick' is used by the invariant of 'T' and reads a location of type 'T' from the heap
+git-issue-199-invariant-proofs.dfy(91,98): Error: 'Pick' is used by the invariant of 'T' and reads a location of type 'T' from the heap
+git-issue-199-invariant-proofs.dfy(98,10): Error: 'Pick' is used by the invariant of 'T' and reads a location of type 'T' from the heap
+git-issue-199-invariant-proofs.dfy(98,23): Error: 'Pick' is used by the invariant of 'T' and reads a location of type 'T' from the heap
+git-issue-199-invariant-proofs.dfy(111,48): Error: 'Uninitialized' is used by the invariant of 'T' and declares a variable of type 'T' without a value, so its value is chosen from the set of values of 'T'
+git-issue-199-invariant-proofs.dfy(112,43): Error: 'SuchThat' is used by the invariant of 'T' and refers to the set of values of 'T'
+git-issue-199-invariant-proofs.dfy(113,44): Error: 'Forall' is used by the invariant of 'T' and refers to the set of values of 'T'
+git-issue-199-invariant-proofs.dfy(114,51): Error: 'Exists' is used by the invariant of 'T' and refers to the set of values of 'T'
+git-issue-199-invariant-proofs.dfy(121,52): Error: 'Ok' is used by the invariant of 'T' and refers to the set of values of 'T', in the constraint of the arrow type 'T -> bool'
+git-issue-199-invariant-proofs.dfy(123,13): Error: 'Pick' is used by the invariant of 'T' and refers to the set of values of 'T', in the constraint of the arrow type 'T -> bool'
+git-issue-199-invariant-proofs.dfy(132,47): Error: 'Ok' is used by the invariant of 'T' and converts a raw value to 'T', by applying 'Pick', which is not a raw member, to it
+git-issue-199-invariant-proofs.dfy(142,53): Error: 'Pick' is used by the invariant of 'T' and refers to the set of values of 'T'
+git-issue-199-invariant-proofs.dfy(150,55): Error: 'Q2' is used by the invariant of 'T' and tests a raw value against 'T'
+git-issue-199-invariant-proofs.dfy(149,55): Error: 'Q1' is used by the invariant of 'T' and tests a raw value against 'T'
+27 resolution/type errors detected in git-issue-199-invariant-proofs.dfy

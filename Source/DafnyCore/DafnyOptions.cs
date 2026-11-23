@@ -474,6 +474,9 @@ namespace Microsoft.Dafny {
     public Version SolverVersion { get; set; }
     public int VerificationCacheVersionProbes { get; private set; }
 
+    /// <summary>Whether resolution uses the persistent cache of issue 261 (a cache store and --type-system-refresh).</summary>
+    public bool UsesPersistentResolutionCache => PersistentResolutionCache.Enabled(this);
+
     public static readonly ReadOnlyCollection<Plugin> DefaultPlugins =
       new(new[] { SinglePassCodeGenerator.Plugin, InternalDocstringRewritersPluginConfiguration.Plugin });
     private IList<Plugin> cliPluginCache;

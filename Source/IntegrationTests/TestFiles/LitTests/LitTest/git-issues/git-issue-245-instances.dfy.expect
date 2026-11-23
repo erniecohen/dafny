@@ -1,0 +1,37 @@
+git-issue-245-instances.dfy(17,14): Error: a decreases component of the form 'e by O' requires the option --decreases-orders
+git-issue-245-instances.dfy(35,14): Error: a decreases component of the form 'e by O' requires the option --decreases-orders
+git-issue-245-instances.dfy(43,14): Error: a decreases component of the form 'e by O' requires the option --decreases-orders
+git-issue-245-instances.dfy(51,14): Error: a decreases component of the form 'e by O' requires the option --decreases-orders
+4 parse errors detected in git-issue-245-instances.dfy
+
+Dafny program verifier finished with 74 verified, 0 errors
+
+Dafny program verifier finished with 77 verified, 0 errors
+git-issue-245-instances-negative.dfy(8,9): Error: decreases clause might not decrease
+git-issue-245-instances-negative.dfy(12,15): Error: decreases clause might not decrease
+git-issue-245-instances-negative.dfy(16,13): Error: decreases clause might not decrease
+git-issue-245-instances-negative.dfy(20,13): Error: decreases clause might not decrease
+git-issue-245-instances-negative.dfy(23,51): Error: assertion might not hold
+git-issue-245-instances-negative.dfy(24,64): Error: assertion might not hold
+git-issue-245-instances-negative.dfy(25,60): Error: assertion might not hold
+git-issue-245-instances-negative.dfy(26,65): Error: assertion might not hold
+git-issue-245-instances-negative.dfy(30,60): Error: function precondition could not be proved
+DafnyStandardLibraries-orders.dfy(217,24): Related location: this proposition could not be proved
+DafnyStandardLibraries-orders.dfy(13,4): Related location: this proposition could not be proved
+git-issue-245-instances-negative.dfy(31,62): Error: function precondition could not be proved
+DafnyStandardLibraries-orders.dfy(287,24): Related location: this proposition could not be proved
+DafnyStandardLibraries-orders.dfy(13,4): Related location: this proposition could not be proved
+git-issue-245-instances-negative.dfy(32,79): Error: function precondition could not be proved
+DafnyStandardLibraries-orders.dfy(152,42): Related location: this proposition could not be proved
+DafnyStandardLibraries-orders.dfy(13,4): Related location: this proposition could not be proved
+git-issue-245-instances-negative.dfy(33,65): Error: function precondition could not be proved
+DafnyStandardLibraries-orders.dfy(62,24): Related location: this proposition could not be proved
+DafnyStandardLibraries-orders.dfy(13,4): Related location: this proposition could not be proved
+
+Dafny program verifier finished with 62 verified, 12 errors
+git-issue-245-instances-mt-negative.dfy(8,13): Error: decreases clause might not decrease (modular termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+git-issue-245-instances-mt-negative.dfy(12,19): Error: decreases clause might not decrease (modular termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+git-issue-245-instances-mt-negative.dfy(16,17): Error: decreases clause might not decrease (modular termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+git-issue-245-instances-mt-negative.dfy(20,17): Error: decreases clause might not decrease (modular termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+
+Dafny program verifier finished with 62 verified, 4 errors

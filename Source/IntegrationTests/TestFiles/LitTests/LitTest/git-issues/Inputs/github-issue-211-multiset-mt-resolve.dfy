@@ -12,13 +12,17 @@ module Unknown {
     MultisetReplaceOne<nat>(r, bag, L, multiset{});
     0
   }
-  ghost function {:termination_closed} ByRel(r: (nat, nat) -> bool, M: multiset<nat>, N: multiset<nat>): bool {
-    MultisetRel<nat>(r)(M, N)
+  // These ordinary callers cannot hide the unknown actual relation behind a ghost summary.
+  function {:termination_closed} ByRel(r: (nat, nat) -> bool, M: multiset<nat>, N: multiset<nat>): nat {
+    assert MultisetRel<nat>(r)(M, N) == MultisetRel<nat>(r)(M, N);
+    0
   }
-  ghost function {:termination_closed} ByGt(r: (nat, nat) -> bool, M: multiset<nat>, N: multiset<nat>): bool {
-    MultisetGt<nat>(r, M, N)
+  function {:termination_closed} ByGt(r: (nat, nat) -> bool, M: multiset<nat>, N: multiset<nat>): nat {
+    assert MultisetGt<nat>(r, M, N) == MultisetGt<nat>(r, M, N);
+    0
   }
-  ghost function {:termination_closed} ByGe(r: (nat, nat) -> bool, M: multiset<nat>, N: multiset<nat>): bool {
-    MultisetGe<nat>(r, M, N)
+  function {:termination_closed} ByGe(r: (nat, nat) -> bool, M: multiset<nat>, N: multiset<nat>): nat {
+    assert MultisetGe<nat>(r, M, N) == MultisetGe<nat>(r, M, N);
+    0
   }
 }

@@ -412,6 +412,9 @@ git-issues/git-issue-241-verification-cache-cutoff.dfy
 # Default dependency-local translation (https://github.com/erniecohen/dafny/issues/241).
 git-issues/git-issue-241-history-free-translation.dfy
 git-issues/github-issue-241-translation-cache.dfy
+# Persistent module translations and results with early cutoff (https://github.com/erniecohen/dafny/issues/261).
+git-issues/git-issue-261-persistent-translation.dfy
+git-issues/git-issue-261-persistent-translation-requires-refresh.dfy
 
 
 # Source-only opt-in function operators, clone preservation and negative controls (https://github.com/erniecohen/dafny/issues/194).
@@ -1054,6 +1057,10 @@ git-issues/git-issue-494.dfy
 git-issues/git-issue-496.dfy
 git-issues/git-issue-193-bootstrap.dfy
 git-issues/git-issue-193-reference-emission.dfy
+
+# Proved order constructions and checked ghost helper effects (issue 245).
+git-issues/git-issue-245-instances.dfy
+git-issues/git-issue-245-summary.dfy
 git-issues/git-issue-466-stage6.dfy
 
 git-issues/git-issue-471.dfy
@@ -1077,8 +1084,51 @@ git-issues/git-issue-451.dfy
 # User chain-stopping witnesses in modular-termination bounds (issue 245).
 git-issues/github-issue-245-witness.dfy
 
+# Boxed trait receivers in visible newtype checks (issue 516).
+git-issues/git-issue-516.dfy
+git-issues/git-issue-516-controls.dfy
+git-issues/git-issue-516-representation.dfy
+git-issues/git-issue-516-member-invariants.dfy
+
 # Compiled generic parent additions and inherited bounds under default termination (https://github.com/erniecohen/dafny/issues/88).
 git-issues/github-issue-88-runtime.dfy
 git-issues/github-issue-88-inherited-bounds.dfy
 git-issues/git-issue-193-newtype-operators.dfy
 git-issues/git-issue-193-native-bridges.dfy
+
+# Lemma-binding specifications in member-invariant extension checks (issue 522).
+git-issues/git-issue-522.dfy
+git-issues/git-issue-522-controls.dfy
+
+# C# compilation and target admission for recursive module groups (issue 466).
+git-issues/git-issue-466-stage7.dfy
+git-issues/git-issue-466-stage7-targets.dfy
+# The persistent per-module resolution cache (issue 261).
+git-issues/git-issue-261-resolution-cache.dfy
+git-issues/git-issue-241-resolution-cache-requires-refresh.dfy
+git-issues/git-issue-261-cache-command.dfy
+git-issues/git-issue-261-resolution-cache-options.dfy
+
+# Java compilation and runtime comparisons for recursive groups (issue 466).
+git-issues/git-issue-466-java.dfy
+git-issues/git-issue-466-go.dfy
+git-issues/git-issue-466-go-extern.dfy
+
+# Proofs that justify a lemma binding in the cone of a member invariant (https://github.com/erniecohen/dafny/issues/199).
+git-issues/git-issue-199-invariant-proofs.dfy
+git-issues/git-issue-199-invariant-proofs-controls.dfy
+
+# Proof hints in the cone of a member invariant, with or without a lemma binding (https://github.com/erniecohen/dafny/issues/549).
+git-issues/git-issue-549-invariant-hints.dfy
+git-issues/git-issue-549-invariant-hints-controls.dfy
+git-issues/git-issue-549-legacy.dfy
+
+# Base-type values in the cone of a newtype's member invariants (https://github.com/erniecohen/dafny/issues/105).
+git-issues/git-issue-105-newtype-base-values.dfy
+git-issues/git-issue-105-newtype-base-values-controls.dfy
+# A downcast of a general trait's value to a datatype with invariants (https://github.com/erniecohen/dafny/issues/550).
+git-issues/git-issue-550-trait-downcast.dfy
+git-issues/git-issue-550-trait-downcast-controls.dfy
+
+# Total-function extensionality at every arity, including empty products (issue 374).
+git-issues/git-issue-374-arities.dfy
