@@ -1234,9 +1234,10 @@ With `--additional-axioms` (or `--function-extensionality-axiom`), in
   - `ExactDom(A, B, f) <==> $ExactDom1(A, f)`.
   With the option off they are opaque functions, so a program that does not
   declare them is unaffected either way.
-- With `--additional-axioms` alone, extensionality is a lemma the program states
-  and calls (`FunExt` in `git-issues/Inputs/github-issue-374-decls.dfy`): there is
-  no extensionality axiom.
+- With `--additional-axioms` alone, ordinary arrow equality does not trigger
+  extensionality. The original regression's `FunExt` is a trusted lemma in a
+  test input; the checked explicit-call interface described below replaces
+  that pattern for new library clients.
 - With `--function-extensionality-axiom`, which also turns the tags on, `==` and
   `!=` between total arrows of one argument translate to `$FunEq1(a, b, f, g)`
   instead of Boogie's `==`, with `$FunEq1(a, b, f, g) <==> f == g` and, triggered
@@ -1337,11 +1338,61 @@ This argument retains the existing restriction to translator-emitted handles.
 The allocation-dependent lambda issue mentioned above was subsequently fixed
 by the default checks described in `REVIEW.md`, "allocated in lambda expressions".
 
-Only `--function-extensionality-axiom` emits the new non-unary declarations and
-axioms. With it off, `--additional-axioms` retains its unary exact-domain API.
-`Restrict` and `ExactDom` themselves remain unary. Providing a library interface
-without new trusted source declarations, and the complete M1/M2 trial over the
-suite, standard library and documentation, remain follow-up work for issue 374.
+Both domain-tag options now emit exact-domain declarations at every arity.
+`Restrict` and `ExactDom` annotations accept a total arrow with any number of
+arguments, with type parameters `<A1, ..., An, B>` in that order. Restriction
+uses the product of those argument types, not a tuple's datatype encoding.
+The nullary domain is the singleton empty tuple; empty products compare as
+sets of tuples.
+
+### Checked explicit calls and the source library
+
+`Source/DafnyStandardLibraries/function-domains/Functions.dfy` provides
+`Std.FunctionDomains.Arity0` through `Arity4`. Each module exports `Restrict`,
+`ExactDom`, `Restriction` and `Extensionality`. It is a separate, opt-in source
+library: its own project enables `--additional-axioms`; it is not embedded in
+the default standard-library binary. Verify it together with clients, as its
+[README](../../Source/DafnyStandardLibraries/function-domains/README.md) describes.
+No `assume`, `{:axiom}`, `{:verify false}` or unchecked lemma is added.
+
+The library's `Restrict` has the checked body
+`(x1: A1, ..., xn: An) => f(x1, ..., xn)`. The intrinsic accepts a body only
+if it is exactly that resolved eta expansion: no precondition or reads
+expression, the declared domain types in order, and exactly the corresponding
+bound variables as arguments to the input function. The old body-less intrinsic
+form remains supported. `ExactDom` is a compiler-defined, body-less predicate
+with no source contract, interpreted by the existing exact-domain definition.
+It is not a trusted source postcondition. The auditor reports zero findings for
+this source library.
+
+The new `{:functionDomain "equal"}` annotation accepts only a static ghost
+predicate of two total arrows with those same type parameters, no other
+specification, and the checked ordinary body `f == g`. It is not an assertion
+of arbitrary source code. At a call of that predicate, an axiom derives its
+truth from the same totality, exact-domain and pointwise premises used by the
+automatic rule. Its checked definition then gives Leibniz equality. The
+library uses `{:no_inline}` to keep the explicit predicate application in the
+checked assertion, and a lemma body `assert Equal(f, g);` verifies the exported
+`Extensionality` contract. With `--additional-axioms` alone, ordinary `f == g`
+still has no extensionality trigger. No call of `Equal` means no instance of
+this additional rule.
+
+The model is the arity-general model above. A restriction's eta expansion
+represents the original maps restricted to the requested product, so the
+identity axiom for exact domains holds together with its checked definition.
+The explicit-call axiom asserts only extensionality for those same values;
+changing its trigger does not change the model. Its argument covers the earlier
+axioms enabled by the shared option as well. The source `Extensionality` lemmas
+require `(!new)` on domain type parameters: their pointwise quantifiers must
+range over the full domain, independently of allocation. Result types remain
+unrestricted. The intrinsic rule itself still checks boxed membership over the
+whole product, not only currently allocated arguments.
+
+The compiler hooks support arbitrary arities; the convenience source modules
+cover zero through four. The full M1/M2 trial over the suite, standard library
+and documentation, including resource-unit comparisons, remains open. Partial
+and heap-reading extensionality remain separate work. This stage does not
+establish default-on readiness.
 
 `git-issues/git-issue-374-arities.dfy` covers arbitrary nullary and binary
 values, a four-argument function using every basic type, subset lambdas,
@@ -1350,3 +1401,13 @@ It verifies only with the extensionality option. The negative input rejects
 distinct functions, proper-subdomain and generic extensionality, partial and
 heap-reading extensionality, and `assert false` after each live positive fact.
 Both resolvers run these controls. No test adds a trusted lemma.
+
+`git-issues/git-issue-374-domains.dfy` checks restriction, exactness and explicit
+extensionality at arities zero, two and five, proper-subdomain restrictions,
+empty products and basic-domain exactness. Its negative inputs retain the
+wider-domain counterexample, distinguish ordinary equality from an explicit
+call, and reject malformed signatures and bodies. Live nullary, binary,
+five-argument, datatype and empty-domain contexts retain failing `assert false`
+controls. `git-issue-374-library.dfy` verifies the source library and clients
+under both options and both resolvers, audits it, and retains vacuity controls
+for every convenience module.
