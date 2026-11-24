@@ -1,4 +1,4 @@
-includes = ["Functions.dfy"]
+includes = ["Functions.dfy", "Pointwise.dfy"]
 
 [options]
 additional-axioms = true
