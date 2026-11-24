@@ -1,0 +1,3 @@
+
+# Verify the actual bounded quotient proof at the library project budget.
+git-issues/github-issue-51-library-quotients.dfy

@@ -506,7 +506,7 @@ eight Dafny fixes for every test under `dafny0` to `dafny4`, `git-issues` and
 `logger` (run with the C# backend only).
 
 The Boogie fix changes how much work some proofs take.  Upstream's harness was
-run for it on the tests named in `.github/review/regressions` only, not on every
+run for it on the tests named in `.github/review/regressions.d/` only, not on every
 test.  There it cost one proof in `dafny4/GHC-MergeSort.dfy`, which was already
 dear, and `cf5c56e` repairs it with one assertion, as upstream's own fix for #6366
 added hints to that file.  In the suite, at its resource limit, it moves the
@@ -623,7 +623,7 @@ of 16,000,000 with Z3 5.1.0, taken from Z3's public GitHub release by checksum,
 and reports each program's verdict.  It verifies Dafny's standard library,
 `Source/DafnyStandardLibraries`, as the library's Makefile's `verify` target does,
 once with Z3 5.1.0 and once with the Z3 that the tree's own tests expect (4.12.1 on
-this branch), and reports each declaration's verdict.  It also runs the tests named in `.github/review/regressions` in
+this branch), and reports each declaration's verdict.  It also runs the tests named in `.github/review/regressions.d/` in
 upstream's own harness.  On a tag it attaches self-contained binaries for `linux-x64` and `osx-arm64`
 to a GitHub release, with their sha256 sums.  The `osx-arm64` binary and the release
 itself are built on the self-hosted Apple-silicon pool (label `fork-ci`); Linux x64
@@ -634,7 +634,14 @@ finite-support controls, statement-expression controls and verification-batch co
 unsupported because its expected resource counts differ, so it stays in a
 separate Linux job that is explicitly skipped until a Linux self-hosted runner is
 available. `.github/review/regression-filter.py` partitions the
-standing manifest without dropping or duplicating entries. Every
+standing manifest without dropping or duplicating entries. Each test has its own
+fragment under `.github/review/regressions.d/`, mirroring its path relative to
+`TestFiles/LitTests/LitTest` with `.txt` appended. The fragment contains that one
+test path (or harness class selector), optionally with comments and blank lines.
+Independent test additions therefore do not edit a shared list or allocate sequence numbers. Fragments are
+read in sorted path order for deterministic filters; the harness receives an OR
+filter, so manifest order does not prescribe test execution order. The separate
+`regressions-linux` list still selects the Linux partition. Every
 self-hosted job has an explicit repository/event guard: only pushes, manual
 runs, or pull requests whose head repository is `erniecohen/dafny` are admitted.
 
@@ -1231,7 +1238,7 @@ had been rewritten to the broken output when dependency-local translation became
 now lists the declarations again, as 4.11.0 did.  Its kind is **no effect on
 verification**: the translator does nothing for these declarations, the solver input of each of the
 four tests is byte-identical with and without the change, under both resolvers, and so is compiled
-output.  The four tests are now in `.github/review/regressions`; the release note is
+output.  The four tests are now in `.github/review/regressions.d/`; the release note is
 `docs/dev/news/441.fix`.  The fifth test of the issue, `dafny0/Superposition.legacy.dfy`, is left
 to [issue 436](https://github.com/erniecohen/dafny/issues/436).
 

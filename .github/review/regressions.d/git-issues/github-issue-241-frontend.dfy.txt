@@ -1,0 +1,3 @@
+
+# Opt-in --pipeline-profile front-end events: byte-identical output, worker/cache events, real signature/body and export-view boundaries (#241, D1).
+git-issues/github-issue-241-frontend.dfy

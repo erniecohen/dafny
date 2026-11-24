@@ -1,0 +1,2 @@
+# Allocation of function values from what they capture (#132 here).
+git-issues/github-issue-132.dfy

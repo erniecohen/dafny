@@ -1,0 +1,6 @@
+# The already registered SubsetTypes, SchorrWaite-stages and issue-82 maps/reads
+# cases also cover the proof and expected-statistics repairs for this encoding.
+# DivMod.LemmaMultiplyDivideLe is checked by the complete standard-library gate.
+
+# Library serialization preserves refinement syntax (https://github.com/erniecohen/dafny/issues/280).
+git-issues/git-issue-280.dfy
