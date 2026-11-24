@@ -207,6 +207,7 @@ cli	use-caching	--use-caching	System.CommandLine.Option`1[System.Boolean]	comman
 cli	user-defined-operators	--user-defined-operators	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	verbose	--verbose	System.CommandLine.Option`1[System.Boolean]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
 cli	verification-cache	--cache-dir,--verification-cache	System.CommandLine.Option`1[System.String]	profile	explicit opt-in lifecycle/naming/history; unknown profile bypasses
+cli	verification-cache-solver-digest	--verification-cache-solver-digest	System.CommandLine.Option`1[System.Collections.Generic.IList`1[System.String]]	profile	admits a declared solver image digest besides the built-in ones; the actual image is still hashed at run time and its digest is keyed, so the declaration itself is never in a key
 cli	verification-coverage-report	--verification-coverage-report	System.CommandLine.Option`1[System.String]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
 cli	verification-module-window	--verification-module-window	System.CommandLine.Option`1[System.UInt32]	profile	explicit opt-in lifecycle/naming/history; unknown profile bypasses
 cli	verification-module-window-memory	--verification-module-window-memory	System.CommandLine.Option`1[System.UInt32]	profile	explicit opt-in lifecycle/naming/history; unknown profile bypasses

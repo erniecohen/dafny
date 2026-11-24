@@ -1,0 +1,31 @@
+
+Dafny program verifier finished with 15 verified, 0 errors
+
+Dafny program verifier finished with 15 verified, 0 errors
+
+Dafny program verifier finished with 15 verified, 0 errors
+git-issue-374-library-negative.dfy(7,2): Error: assertion might not hold
+git-issue-374-library-negative.dfy(14,2): Error: assertion might not hold
+git-issue-374-library-negative.dfy(21,2): Error: assertion might not hold
+git-issue-374-library-negative.dfy(28,2): Error: assertion might not hold
+git-issue-374-library-negative.dfy(35,2): Error: assertion might not hold
+git-issue-374-library-negative.dfy(41,42): Error: a precondition for this call could not be proved
+Functions.dfy(96,23): Related location: this is the precondition that could not be proved
+git-issue-374-library-negative.dfy(46,26): Error: a precondition for this call could not be proved
+Functions.dfy(66,15): Related location: this is the precondition that could not be proved
+
+Dafny program verifier finished with 10 verified, 7 errors
+git-issue-374-library-negative.dfy(7,2): Error: assertion might not hold
+git-issue-374-library-negative.dfy(14,2): Error: assertion might not hold
+git-issue-374-library-negative.dfy(21,2): Error: assertion might not hold
+git-issue-374-library-negative.dfy(28,2): Error: assertion might not hold
+git-issue-374-library-negative.dfy(35,2): Error: assertion might not hold
+git-issue-374-library-negative.dfy(41,42): Error: a precondition for this call could not be proved
+Functions.dfy(96,23): Related location: this is the precondition that could not be proved
+git-issue-374-library-negative.dfy(46,26): Error: a precondition for this call could not be proved
+Functions.dfy(66,15): Related location: this is the precondition that could not be proved
+
+Dafny program verifier finished with 10 verified, 7 errors
+Dafny auditor completed with 0 findings
+
+Dafny program verifier did not attempt verification
