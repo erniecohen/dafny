@@ -53,7 +53,7 @@ class AdmissionFixture(unittest.TestCase):
         (self.projects / 'example.json').write_text(json.dumps(self.entry))
 
     def attempt(self, kind='ci:small', repository='example/repo', slots=6, policy=None, caller=None):
-        return admission.try_admit(self.locks / 'active.lock', slots, repository, kind, policy or POLICY, caller)
+        return admission.try_admit(self.locks / 'active.lock', slots, repository, kind, policy or POLICY, caller, owner_pid=os.getpid())
 
     def take(self, kind='ci:small', **kwargs):
         stream, reason = self.attempt(kind, **kwargs)
@@ -400,7 +400,7 @@ class BudgetTests(AdmissionFixture):
 
 
 class ProcessTests(AdmissionFixture):
-    def spawn(self, number, owner=None, kind='ci:small', pause_publish=False, physical_mb=1000000):
+    def spawn(self, number, owner=None, kind='ci:small', pause_publish=False, physical_mb=1000000, orphan=False):
         ready = self.root / f'ready{number}'
         gate = self.root / 'publish-gate'
         script = '''
@@ -426,9 +426,26 @@ a.hold(sys.argv[2] + '/active.lock', sys.argv[4], pid, a.identity(pid), 6,
             probe_timeout_s=2, slot_poll_s=.05, memory_backoff_s=[.05, .1, .2]),
        kind=sys.argv[5], repository='example/repo')
 '''
-        child = subprocess.Popen([sys.executable, '-c', script, str(ACTION), str(self.locks),
-                                  str(owner or os.getpid()), str(ready), kind,
-                                  'pause' if pause_publish else '', str(gate), str(physical_mb)], stdout=subprocess.DEVNULL)
+        command = [sys.executable, '-c', script, str(ACTION), str(self.locks),
+                   str(owner or os.getpid()), str(ready), kind,
+                   'pause' if pause_publish else '', str(gate), str(physical_mb)]
+        if orphan:
+            launcher = ('import json, subprocess, sys; '
+                        'p = subprocess.Popen(json.loads(sys.argv[1]), stdin=subprocess.DEVNULL, '
+                        'stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True); '
+                        'print(p.pid)')
+            result = subprocess.run([sys.executable, '-c', launcher, json.dumps(command)],
+                                    capture_output=True, text=True, check=True, timeout=5)
+            child_pid = int(result.stdout)
+            def cleanup_orphan():
+                try:
+                    os.kill(child_pid, signal.SIGTERM)
+                except ProcessLookupError:
+                    return
+                self.until(lambda: not admission.identity(child_pid))
+            self.addCleanup(cleanup_orphan)
+            return child_pid, ready
+        child = subprocess.Popen(command, stdout=subprocess.DEVNULL)
         def cleanup():
             if child.poll() is None:
                 child.terminate()
@@ -448,6 +465,21 @@ a.hold(sys.argv[2] + '/active.lock', sys.argv[4], pid, a.identity(pid), 6,
             time.sleep(.02)
         self.fail('Timed out waiting for keeper state')
 
+    def test_orphaned_keeper_records_worker_and_credits_worker_tree(self):
+        keeper_pid, ready = self.spawn(1, orphan=True)
+        self.until(ready.exists)
+        parent = subprocess.run(['ps', '-p', str(keeper_pid), '-o', 'ppid='],
+                                capture_output=True, text=True, check=True, timeout=2)
+        self.assertEqual(int(parent.stdout), 1)  # The main action process has exited.
+        data = json.loads((self.locks / 'active.lock.0.json').read_text())
+        self.assertEqual(data['pid'], os.getpid())  # The owning worker outlives the step.
+        build_pid = max(os.getpid(), keeper_pid) + 10000
+        table = (f'1 0 100 init\n{os.getpid()} 1 819200 /bin/Runner.Worker\n'
+                 f'{build_pid} {os.getpid()} 614400 build\n{keeper_pid} 1 1024 python')
+        with patch.object(admission, 'probe', return_value=table):
+            total, outstanding, unknown = admission.pool_usage(self.locks, 'unused', 2)
+        self.assertEqual((total, outstanding, unknown), (3400, 0, []))
+
     def test_concurrent_processes_cannot_spend_same_remainder(self):
         self.write_config(13000)
         first, ready1 = self.spawn(1, kind='ci:large')
@@ -462,11 +494,11 @@ a.hold(sys.argv[2] + '/active.lock', sys.argv[4], pid, a.identity(pid), 6,
 
     def test_concurrent_growth_cannot_spend_same_headroom(self):
         self.write_config(50000)
-        first, ready1 = self.spawn(1, physical_mb=7500)
+        first, ready1 = self.spawn(1, physical_mb=2800)
         self.until(ready1.exists)
-        second, ready2 = self.spawn(2, physical_mb=7500)
+        second, ready2 = self.spawn(2, physical_mb=2800)
         self.until(ready2.exists)
-        third, ready3 = self.spawn(3, physical_mb=7500)
+        third, ready3 = self.spawn(3, physical_mb=2800)
         time.sleep(.3)
         self.assertFalse(ready3.exists())
         self.assertIsNone(third.poll())
@@ -484,7 +516,7 @@ a.hold(sys.argv[2] + '/active.lock', sys.argv[4], pid, a.identity(pid), 6,
         (self.root / 'publish-gate').touch()
         self.until(ready.exists)
         data = json.loads((self.locks / 'active.lock.0.json').read_text())
-        self.assertEqual(data['pid'], child.pid)
+        self.assertEqual(data['pid'], os.getpid())
         self.assert_free('budget.lock')
 
     def test_signals_cleanup_while_holding_and_waiting(self):

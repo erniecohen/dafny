@@ -39,9 +39,12 @@ MUTATIONS = [
     ('history dedup', 'admit.py', "ended[row['key']] = row", "ended[str(len(ended))] = row", 'PeakTests.test_dedup_rotations_and_round_to_even_quantile'),
     ('history rotation order', 'admit.py', 'rotations + [path]', '[path] + rotations', 'PeakTests.test_current_file_wins_over_rotated_duplicate'),
     ('growth predicate', 'admit.py', 'available - expected_mb - outstanding_mb', 'available - expected_mb', 'HeadroomTests.test_two_low_rss_holders_refuse_third_despite_incoming_headroom'),
-    ('growth larger peak', 'admit.py', 'peak = max(amount, expected)', 'peak = expected', 'HeadroomTests.test_growth_uses_larger_peak_unknown_tree_and_nonnegative_difference'),
-    ('unknown RSS', 'admit.py', 'peak if actual is None', '0 if actual is None', 'HeadroomTests.test_growth_uses_larger_peak_unknown_tree_and_nonnegative_difference'),
-    ('growth clamp', 'admit.py', 'max(0, peak - actual)', 'peak - actual', 'HeadroomTests.test_growth_uses_larger_peak_unknown_tree_and_nonnegative_difference'),
+    ('growth admission consistency', 'admit.py', 'peak = expected', 'peak = max(amount, expected)', 'HeadroomTests.test_growth_charges_the_same_peak_used_at_admission'),
+    ('orphaned keeper owner', 'admit.py', "data = {'pid': owner_pid,", "data = {'pid': os.getpid(),", 'test_admission_budget.ProcessTests.test_orphaned_keeper_records_worker_and_credits_worker_tree'),
+    ('reserve never acquired', 'admit.py', 'if not reserve:\n            probe = try_lock(path)', 'if True:\n            probe = try_lock(path)', 'HeadroomTests.test_scanning_reserve_never_acquires_it'),
+    ('release gap polling', 'admit.py', "in ('slots', 'mutex', 'unaccounted'):", "in ('slots', 'mutex'):", 'HeadroomTests.test_release_gap_uses_slot_poll_instead_of_memory_backoff'),
+    ('unknown RSS', 'admit.py', 'peak if actual is None', '0 if actual is None', 'HeadroomTests.test_growth_uses_expected_peak_unknown_tree_and_nonnegative_difference'),
+    ('growth clamp', 'admit.py', 'max(0, peak - actual)', 'peak - actual', 'HeadroomTests.test_growth_uses_expected_peak_unknown_tree_and_nonnegative_difference'),
     ('expected sidecar', 'admit.py', "'expected_mb': expected_mb", "'expected_mb': amount", 'HeadroomTests.test_publishes_selected_peak_and_uses_runner_project'),
     ('RSS sibling tree', 'admit.py', 'root = ancestor', 'root = pid', 'ProbeTests.test_process_tree_includes_worker_siblings_but_excludes_unrelated'),
     ('RSS descendants', 'admit.py', 'descendants.update(added)', 'break', 'ProbeTests.test_process_tree_includes_worker_siblings_but_excludes_unrelated'),
@@ -59,6 +62,9 @@ MUTATIONS = [
 
 
 def main():
+    if shutil.which('node') is None:
+        print('Node is required for admission mutation controls', file=sys.stderr)
+        return 2
     with tempfile.TemporaryDirectory(prefix='admission-mutations.') as directory:
         root = Path(directory)
         action = root / '.github/actions/self-hosted-job'
@@ -74,7 +80,7 @@ def main():
                 raise AssertionError(f'Mutation site missing: {label}')
             path.write_text(original.replace(old, new, 1))
             selector = ('test_self_hosted_job.CapacityInputTests' if test == 'js'
-                        else 'test_admission_headroom.' + test)
+                        else test if test.startswith('test_') else 'test_admission_headroom.' + test)
             try:
                 result = subprocess.run([sys.executable, '-m', 'unittest', selector], cwd=tests,
                                         capture_output=True, text=True, timeout=15)
