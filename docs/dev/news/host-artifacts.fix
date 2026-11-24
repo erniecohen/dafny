@@ -1,0 +1,4 @@
+CI can transfer internal build outputs through a shared runner directory configured
+by HOST_ARTIFACT_DIR, with atomic publication, earlier-attempt lookup and locked
+three-day pruning. Unconfigured runners continue to use GitHub artifacts. Review
+evidence, releases and cross-workflow artifacts remain available on GitHub.
