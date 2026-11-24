@@ -2903,6 +2903,16 @@ and what information it produces about the verification process.
   without other specifications. The opt-in source library `Std.FunctionDomains`
   supplies checked explicit-call lemmas and wrappers for arities zero through
   four; see its [usage guide](../../Source/DafnyStandardLibraries/function-domains/README.md).
+  A static body-less ghost predicate annotated `{:functionDomain "pointwise"}`,
+  with the same type parameters and two total-arrow arguments as `Equal`, defines
+  agreement over every correctly typed argument tuple, including unallocated
+  references. It takes no other specification and has no current-heap parameter.
+  Unlike an ordinary `forall` over a reference-containing type, it does not
+  implicitly restrict the domain to allocated values. The companion source
+  `Pointwise.dfy` supplies `Std.FunctionPointwise.Arity1` through `Arity4`, with
+  this predicate and checked explicit-call extensionality lemmas whose domain
+  type parameters need no `(!new)` characteristic. Partial and heap-reading
+  arrows are excluded.
   See [the soundness, trigger and solver-limit note](../dev/additional-axioms.md).
 
 * `--function-extensionality-axiom` - give function values domain tags, as
