@@ -17,6 +17,8 @@ ACTION = Path(__file__).resolve().parents[1] / 'actions/self-hosted-job'
 spec = importlib.util.spec_from_file_location('budget_admission', ACTION / 'admit.py')
 admission = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(admission)
+POLICY = dict(reserve_mb=100, default_peak_mb=1000, peak_min_samples=3, peak_history_days=30,
+              probe_timeout_s=2, slot_poll_s=.05, memory_backoff_s=[.05, .1, .2])
 FREE_PROBE = admission.free_percent
 PRESSURE_PROBE = admission.pressure_level
 
@@ -35,8 +37,9 @@ class AdmissionFixture(unittest.TestCase):
         env.update(ADMISSION_RUNNERS_JSON=str(self.runners), ADMISSION_PROJECTS_DIR=str(self.projects),
                    ADMISSION_LOCK_DIR=str(self.locks))
         self.stack.enter_context(patch.dict(os.environ, env, clear=True))
-        self.stack.enter_context(patch.object(admission, 'free_percent', return_value=40))
+        self.stack.enter_context(patch.object(admission, 'free_percent', return_value=100))
         self.stack.enter_context(patch.object(admission, 'pressure_level', return_value=1))
+        self.stack.enter_context(patch.object(admission, 'physical_mb', return_value=1000000))
         self.write_config()
         self.entry = {'name': 'example', 'repos': ['example/repo'],
                       'peak_mb': {'ci:large': 13000, 'ci:proof': 3500, 'ci:small': 3400,
@@ -49,8 +52,8 @@ class AdmissionFixture(unittest.TestCase):
     def write_project(self):
         (self.projects / 'example.json').write_text(json.dumps(self.entry))
 
-    def attempt(self, kind='ci:small', repository='example/repo', slots=6, floor=None, ceiling=None):
-        return admission.try_admit(self.locks / 'active.lock', slots, repository, kind, floor, ceiling)
+    def attempt(self, kind='ci:small', repository='example/repo', slots=6, policy=None, caller=None):
+        return admission.try_admit(self.locks / 'active.lock', slots, repository, kind, policy or POLICY, caller)
 
     def take(self, kind='ci:small', **kwargs):
         stream, reason = self.attempt(kind, **kwargs)
@@ -193,24 +196,12 @@ class BudgetTests(AdmissionFixture):
             self.attempt('ci:large')
         self.assertEqual(list(self.locks.iterdir()), [])
 
-    def test_configured_thresholds_override_stale_action_inputs(self):
-        with patch.object(admission, 'free_percent', return_value=39):
-            self.denied('memory', floor=0, ceiling=4)
-        stream = self.take(floor=100, ceiling=1)
-        admission.release(stream)
-        for free, pressure in ((None, 1), (80, None), (80, 2), (80, 4)):
+    def test_missing_probes_release_candidate(self):
+        for free, pressure in ((None, 1), (80, None), (80, 4), (80, 3)):
             with self.subTest(free=free, pressure=pressure), patch.object(admission, 'free_percent', return_value=free), patch.object(admission, 'pressure_level', return_value=pressure):
                 self.denied('memory')
                 self.assertFalse((self.locks / 'active.lock.0.json').exists())
                 self.assert_free('active.lock.0')
-
-    def test_threshold_configuration_validation(self):
-        for memory in (None, [], {'min_free_percent': True}, {'min_free_percent': -1},
-                       {'min_free_percent': 101}, {'min_free_percent': '40'}, {'max_pressure': []},
-                       {'max_pressure': 'missing'}):
-            self.write_config(admission_memory=memory)
-            with self.subTest(memory=memory), self.assertRaises(ValueError):
-                self.attempt()
 
     def test_free_sidecars_ignored_even_with_live_or_dead_pid(self):
         for pid in (os.getpid(), 99999999):
@@ -283,7 +274,7 @@ class BudgetTests(AdmissionFixture):
             stream = self.take()
         self.assert_free('budget.lock')
         data = json.loads(admission.sidecar_path(stream).read_text())
-        self.assertEqual(set(data), {'pid', 'project', 'kind', 'declared_mb', 'started'})
+        self.assertEqual(set(data), {'pid', 'project', 'kind', 'declared_mb', 'expected_mb', 'started'})
         self.assertEqual(data['pid'], os.getpid())
         self.assertGreater(data['started'], 0)
         unlink = Path.unlink
@@ -308,21 +299,21 @@ class BudgetTests(AdmissionFixture):
     def test_ready_failure_cleans_reservation(self):
         with patch.object(admission, 'identity', return_value='owner'), patch.object(Path, 'touch', side_effect=OSError):
             with self.assertRaises(OSError):
-                admission.hold(self.locks / 'active.lock', self.root / 'ready', 1, 'owner', kind='ci:small', repository='example/repo')
+                admission.hold(self.locks / 'active.lock', self.root / 'ready', 1, 'owner', 2, POLICY, kind='ci:small', repository='example/repo')
         self.assertEqual(list(self.locks.glob('*.json')), [])
         self.assert_free('active.lock.0')
 
     def test_owner_lost_between_publication_and_ready_releases_reservation(self):
         stream = self.take()
         with patch.object(admission, 'identity', side_effect=['owner', 'gone', 'gone', 'gone']), patch.object(admission, 'try_admit', return_value=(stream, None)):
-            admission.hold(self.locks / 'active.lock', self.root / 'ready', 1, 'owner')
+            admission.hold(self.locks / 'active.lock', self.root / 'ready', 1, 'owner', 2, POLICY)
         self.assertFalse((self.root / 'ready').exists())
         self.assertFalse(admission.sidecar_path(stream).exists())
         self.assert_free('active.lock.0')
 
     def test_wait_checks_cancellation_before_sleeping(self):
         with patch.object(admission, 'identity', side_effect=['owner', 'gone']), patch.object(admission, 'try_admit', return_value=(None, 'budget')), patch.object(time, 'sleep', side_effect=AssertionError('slept after cancellation')):
-            admission.hold(self.locks / 'active.lock', self.root / 'ready', 1, 'owner')
+            admission.hold(self.locks / 'active.lock', self.root / 'ready', 1, 'owner', 2, POLICY)
         self.assertFalse((self.root / 'ready').exists())
 
     def test_probe_exception_releases_both_locks(self):
@@ -361,11 +352,11 @@ class BudgetTests(AdmissionFixture):
 
     def test_lock_fds_do_not_survive_exec_even_when_close_fds_false(self):
         children = []
-        def probe(floor, ceiling):
+        def probe(*args):
             # The probe runs while both reservation and transaction locks are held.
             child = subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(30)'], close_fds=False)
             children.append(child)
-            return True
+            return True, 'synthetic'
         with patch.object(admission, 'memory_healthy', side_effect=probe):
             stream = self.take()
         self.assertFalse(os.get_inheritable(stream.fileno()))
@@ -379,29 +370,19 @@ class BudgetTests(AdmissionFixture):
                 process.terminate()
                 process.wait(timeout=5)
 
-    def test_legacy_mode_without_host_config_and_custom_lock_directory(self):
+    def test_no_host_budget_still_enforces_headroom_and_growth(self):
         with patch.dict(os.environ):
             del os.environ['ADMISSION_RUNNERS_JSON']
             del os.environ['ADMISSION_PROJECTS_DIR']
             stream = self.take(repository='unregistered')
-            self.assertFalse(admission.sidecar_path(stream).exists())
-            self.assertFalse((self.locks / 'budget.lock').exists())
-
-    def test_slots_only_fallback_is_logged_once_per_keeper(self):
-        from io import StringIO
-        with patch.dict(os.environ):
-            del os.environ['ADMISSION_RUNNERS_JSON']
-            del os.environ['ADMISSION_PROJECTS_DIR']
-            output = StringIO()
-            stream = admission.try_lock(self.locks / 'active.lock.0')
-            with patch.object(admission, 'identity', side_effect=['owner', 'owner', 'owner', 'owner', 'owner', 'gone']), patch.object(admission, 'try_admit', side_effect=[(None, 'slots'), (None, 'slots'), (stream, None)]), patch.object(time, 'sleep'), patch('sys.stdout', output):
-                admission.hold(self.locks / 'active.lock', self.root / 'ready', 1, 'owner')
-            self.assertEqual(output.getvalue().count('configuration unset; using slots-only'), 1)
-            self.assertTrue(stream.closed)
+            self.assertTrue(admission.sidecar_path(stream).exists())
+            self.assertTrue((self.locks / 'budget.lock').exists())
+            with patch.object(admission, 'free_percent', return_value=0):
+                self.denied('memory')
 
     def test_invalid_budget_fails_cli_with_exit_two_and_no_ready(self):
         self.write_config(budget=True)
-        result = subprocess.run([sys.executable, str(ACTION / 'admit.py'), str(self.locks / 'active.lock'), str(self.root / 'ready'), str(os.getpid()), admission.identity(os.getpid()), '6', '', '', 'ci:small', 'example/repo'], capture_output=True, text=True, timeout=5)
+        result = subprocess.run([sys.executable, str(ACTION / 'admit.py'), str(self.locks / 'active.lock'), str(self.root / 'ready'), str(os.getpid()), admission.identity(os.getpid()), '6', json.dumps(POLICY), 'ci:small', 'example/repo'], capture_output=True, text=True, timeout=5)
         self.assertEqual(result.returncode, 2)
         self.assertIn('positive integer', result.stderr)
         self.assertFalse((self.root / 'ready').exists())
@@ -410,24 +391,26 @@ class BudgetTests(AdmissionFixture):
     def test_bounded_missing_failed_and_malformed_probes(self):
         for error in (FileNotFoundError(), subprocess.TimeoutExpired('probe', 5)):
             with patch.object(subprocess, 'run', side_effect=error):
-                self.assertIsNone(FREE_PROBE())
-                self.assertIsNone(PRESSURE_PROBE())
+                self.assertIsNone(FREE_PROBE(2))
+                self.assertIsNone(PRESSURE_PROBE(2))
         for stdout, code in (('invalid', 0), ('0', 0), ('3', 0), ('1', 1)):
             with patch.object(subprocess, 'run', return_value=subprocess.CompletedProcess([], code, stdout)) as run:
-                self.assertIsNone(PRESSURE_PROBE())
-                self.assertEqual(run.call_args.kwargs['timeout'], admission.PROBE_TIMEOUT_SECONDS)
+                self.assertIsNone(PRESSURE_PROBE(2))
+                self.assertEqual(run.call_args.kwargs['timeout'], 2)
 
 
 class ProcessTests(AdmissionFixture):
-    def spawn(self, number, owner=None, kind='ci:small', pause_publish=False):
+    def spawn(self, number, owner=None, kind='ci:small', pause_publish=False, physical_mb=1000000):
         ready = self.root / f'ready{number}'
         gate = self.root / 'publish-gate'
         script = '''
 import os, signal, sys, time
 sys.path.insert(0, sys.argv[1])
 import admit as a
-a.free_percent = lambda: 40
-a.pressure_level = lambda: 1
+a.free_percent = lambda timeout: 100
+a.physical_mb = lambda timeout: float(sys.argv[8])
+a.process_tree_mb = lambda pid, timeout: 100
+a.pressure_level = lambda timeout: 1
 signal.signal(signal.SIGTERM, a.stop)
 signal.signal(signal.SIGINT, a.stop)
 if sys.argv[6] == 'pause':
@@ -439,11 +422,13 @@ if sys.argv[6] == 'pause':
     a.publish = paused
 pid = int(sys.argv[3])
 a.hold(sys.argv[2] + '/active.lock', sys.argv[4], pid, a.identity(pid), 6,
+       dict(reserve_mb=100, default_peak_mb=1000, peak_min_samples=3, peak_history_days=30,
+            probe_timeout_s=2, slot_poll_s=.05, memory_backoff_s=[.05, .1, .2]),
        kind=sys.argv[5], repository='example/repo')
 '''
         child = subprocess.Popen([sys.executable, '-c', script, str(ACTION), str(self.locks),
                                   str(owner or os.getpid()), str(ready), kind,
-                                  'pause' if pause_publish else '', str(gate)], stdout=subprocess.DEVNULL)
+                                  'pause' if pause_publish else '', str(gate), str(physical_mb)], stdout=subprocess.DEVNULL)
         def cleanup():
             if child.poll() is None:
                 child.terminate()
@@ -474,6 +459,21 @@ a.hold(sys.argv[2] + '/active.lock', sys.argv[4], pid, a.identity(pid), 6,
         winner.terminate()
         winner.wait(timeout=5)
         self.until(loser_ready.exists)
+
+    def test_concurrent_growth_cannot_spend_same_headroom(self):
+        self.write_config(50000)
+        first, ready1 = self.spawn(1, physical_mb=7500)
+        self.until(ready1.exists)
+        second, ready2 = self.spawn(2, physical_mb=7500)
+        self.until(ready2.exists)
+        third, ready3 = self.spawn(3, physical_mb=7500)
+        time.sleep(.3)
+        self.assertFalse(ready3.exists())
+        self.assertIsNone(third.poll())
+        self.assert_free('active.lock.2')
+        first.terminate()
+        first.wait(timeout=5)
+        self.until(ready3.exists)
 
     def test_ready_only_after_publication_and_no_lock_fds_in_probe_children(self):
         child, ready = self.spawn(1, pause_publish=True)

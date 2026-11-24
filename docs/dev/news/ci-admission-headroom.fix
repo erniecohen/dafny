@@ -1,0 +1,4 @@
+Self-hosted CI admission now requires explicit headroom policy, estimates incoming
+peaks from completed local RSS history, and reserves outstanding growth of admitted
+jobs alongside the existing declared-memory budget. Unknown probes refuse admission.
+This replaces percentage-floor inputs and requires a coordinated runner rollout.

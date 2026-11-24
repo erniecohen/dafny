@@ -17,15 +17,37 @@ function worker() {
   }
   throw new Error('Expected a Runner.Worker ancestor');
 }
-function slots(value = process.env.INPUT_SLOTS || '2') {
+function slots(value = process.env.INPUT_SLOTS) {
   if (!/^[1-9][0-9]*$/.test(value) || !Number.isSafeInteger(Number(value))) {
     throw new Error('Admission slots must be a positive safe integer');
   }
   return Number(value);
 }
-// Empty when unset: admit.py then drops that condition. admit.py validates the values.
-function memoryThresholds(env = process.env) {
-  return [(env['INPUT_MIN-FREE-PERCENT'] || '').trim(), (env['INPUT_MAX-PRESSURE'] || '').trim()];
+function memoryPolicy(env = process.env) {
+  const policy = {};
+  for (const name of ['reserve_mb', 'default_peak_mb', 'peak_min_samples', 'peak_history_days',
+    'probe_timeout_s', 'slot_poll_s', 'memory_backoff_s']) {
+    const input = env[`INPUT_${name.toUpperCase().replaceAll('_', '-')}`];
+    let value;
+    try { value = JSON.parse(input); } catch { throw new Error(`${name} is required and must be valid JSON`); }
+    const positive = v => typeof v === 'number' && Number.isFinite(v) && v > 0;
+    if (name === 'memory_backoff_s' ? !Array.isArray(value) || !value.length || !value.every(positive)
+      : !positive(value) || (name === 'peak_min_samples' && !Number.isSafeInteger(value))) {
+      throw new Error(`${name} must contain positive finite values (integer sample count)`);
+    }
+    policy[name] = value;
+  }
+  return policy;
+}
+function callerPeak(env = process.env) {
+  const input = env['INPUT_EXPECTED-PEAK-MB'];
+  if (input === undefined || input.trim() === '') return '';
+  let value;
+  try { value = JSON.parse(input); } catch { throw new Error('expected-peak-mb must be positive and finite'); }
+  if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) {
+    throw new Error('expected-peak-mb must be positive and finite');
+  }
+  return JSON.stringify(value);
 }
 function prepareWorkspace(workspace, runnerWorkspace) {
   // Only this runner's repository directory may be cleared. The cached action and
@@ -41,8 +63,8 @@ function prepareWorkspace(workspace, runnerWorkspace) {
 }
 function admissionArgs(cache, ready, owner, capacity, env = process.env) {
   return [path.join(__dirname, 'admit.py'), path.join(cache, 'active.lock'), ready,
-    String(owner.pid), owner.identity, String(capacity), ...memoryThresholds(env),
-    env.INPUT_KIND || '', env.GITHUB_REPOSITORY || ''];
+    String(owner.pid), owner.identity, String(capacity), JSON.stringify(memoryPolicy(env)),
+    env.INPUT_KIND || `ci:${env.GITHUB_WORKFLOW || ''}`, env.GITHUB_REPOSITORY || '', callerPeak(env)];
 }
 async function main() {
   if (process.env.STATE_keeper) {
@@ -66,8 +88,10 @@ async function main() {
     return;
   }
   if (process.platform !== 'darwin' || process.arch !== 'arm64') throw new Error('Requires macOS ARM64');
-  const owner = worker();
   const capacity = slots();
+  memoryPolicy();
+  callerPeak();
+  const owner = worker();
   // Numbered advisory locks shared by all runners and both forks. The OS releases them even
   // after a hard cancellation. Waiting jobs are never discarded as concurrency-group
   // pending jobs would be. The keeper also exits when its Runner.Worker disappears.
@@ -100,4 +124,4 @@ async function main() {
   }
 }
 if (require.main === module) main().catch(e => { console.error(e.message); process.exitCode = 1; });
-module.exports = {identity, worker, slots, memoryThresholds, prepareWorkspace, admissionArgs, main};
+module.exports = {identity, worker, slots, memoryPolicy, callerPeak, prepareWorkspace, admissionArgs, main};

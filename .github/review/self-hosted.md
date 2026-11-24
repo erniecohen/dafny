@@ -11,8 +11,16 @@ Each workflow cancels superseded branch/PR runs. Tag and maintenance operations
 retain their existing serialization rules. Matrix variations of the review and
 obligation-proofs workflows run in parallel, bounded by the shared admission below. A repository action pinned by commit additionally holds numbered OS advisory locks
 across runner services. The repository variable `SELF_HOSTED_JOB_SLOTS` sets the
-number of admitted jobs, defaulting to **2** when unset; excess waiters are not
-discarded. Configure the same capacity in every participating repository. The action also takes optional `min-free-percent` and `max-pressure` inputs, which workflows pass from `SELF_HOSTED_JOB_MIN_FREE_PERCENT` and `SELF_HOSTED_JOB_MAX_PRESSURE`. When set, a job that has taken a free slot is admitted only while the system-wide free memory percentage (`memory_pressure -Q`) is at least the floor and the kernel pressure level (`kern.memorystatus_vm_pressure_level`) is no higher than the ceiling; otherwise it releases the slot and retries every 10 seconds. Memory is checked only at admission, so an admitted job is never stopped, and an unset variable drops its condition. The keeper checks the job worker's process identity and releases
+number of admitted jobs; it and all memory policy variables are required, with no
+workflow defaults. Excess waiters are not discarded. Configure the same policy
+in every participating repository. The action checks normal or warn pressure,
+headroom after the incoming expected peak, and outstanding growth of occupied
+holders, while retaining the separate declared-memory budget. Missing probes
+release the slot and wait; invalid policy fails at startup. The exact inputs,
+history selection, runner environment variables and rollout protocol are in the
+[action README](../actions/self-hosted-job/README.md). Memory is checked only at
+admission, so an admitted job is never stopped by later pressure. The keeper
+checks the job worker's process identity and releases
 its slot if the worker disappears. Its post action cleans checkout outputs and
 job temporary files before stopping the keeper. An unconditional shell cleanup
 also removes temporary files if checkout or admission fails. The action is pinned
@@ -42,13 +50,10 @@ self-hosted setup. Frozen comparison SDK/runtime versions stay pinned. Ordinary
 verifier/corpus drivers use two workers, lit/xunit uses the existing two-thread
 settings, and release/certified-library jobs retain their three-core cap.
 
-Capacity planning retains a 12 GiB allowance per active build/verifier job and
-2 GiB for runner services and waiting action processes. The default two slots
-therefore allow **2 × 12 + 2 = 26 GiB** of concurrent Actions memory; a configured
-capacity of N slots allows 12N + 2 GiB.
-This is a conservative planning allowance, not an enforced RSS limit or a measured
-peak. Jobs from older workflow revisions do not participate in this admission
-protocol.
+Slot capacity alone does not reserve future growth. Admission uses the shared
+budget and headroom checks documented above. Sampled RSS peaks and p95 estimates
+are not RSS limits or guarantees against unmanaged memory growth. Older workflow
+revisions require a coordinated drain before compatible admission is enabled.
 
 ## Unavailable Linux coverage
 
