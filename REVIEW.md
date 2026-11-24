@@ -638,7 +638,7 @@ requests to upstream, which branch from `master`, never carry it.
 `.github/workflows/review.yml` replaces upstream's workflows on this branch and
 on `dev`, which exercise every compiler backend.  On this branch it fetches the
 Boogie packages, builds Dafny, runs the programs of Dafny's own test suite that
-verify (under `LitTest/dafny0` to `dafny4` and `git-issues`) at a resource limit
+verify (under `LitTest/dafny0` to `dafny4`, `git-issues` and `hofs`) at a resource limit
 of 16,000,000 with Z3 5.1.0, taken from Z3's public GitHub release by checksum,
 and reports each program's verdict.  It verifies Dafny's standard library,
 `Source/DafnyStandardLibraries`, as the library's Makefile's `verify` target does,
