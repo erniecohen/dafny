@@ -102,9 +102,10 @@ jobs:
         with:
           name: operators-off-builds
           path: out/evidence
-      - uses: actions/upload-artifact@v4
+      - uses: ./.github/actions/host-artifact
         if: steps.build.outputs.built == 'true'
         with:
+          mode: put
           name: operators-off-binaries
           path: operators-off-binaries.tar.gz
       - name: Remove job temporary directory
@@ -165,8 +166,9 @@ jobs:
           memory-backoff-s: ${{ vars.SELF_HOSTED_JOB_MEMORY_BACKOFF_S }}
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-dotnet
-      - uses: actions/download-artifact@v4
+      - uses: ./.github/actions/host-artifact
         with:
+          mode: get
           name: operators-off-binaries
       - name: Unpack binaries and checksum-pinned solver
         timeout-minutes: 240

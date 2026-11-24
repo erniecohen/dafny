@@ -78,8 +78,9 @@ jobs:
           . ./version.txt
           dotnet publish -p:NuGetAudit=false Source/Dafny/Dafny.csproj -c Release -o out/dafny -p:GeneratePackageOnBuild=false -p:SourceRevisionId="$revision"
           tar -C out -czf dafny.tar.gz dafny
-      - uses: actions/upload-artifact@v4
+      - uses: ./.github/actions/host-artifact
         with:
+          mode: put
           name: issue193-dafny
           path: dafny.tar.gz
       - name: Remove job temporary directory
@@ -137,8 +138,9 @@ jobs:
         with:
           ref: ${{ inputs.revision || github.sha }}
       - uses: ./.github/actions/setup-dotnet
-      - uses: actions/download-artifact@v4
+      - uses: ./.github/actions/host-artifact
         with:
+          mode: get
           name: issue193-dafny
       - name: Unpack Dafny
         timeout-minutes: 30

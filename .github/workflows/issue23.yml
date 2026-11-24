@@ -67,8 +67,9 @@ jobs:
             (cd "$source" && sh Scripts/fetch-boogie-packages.sh && dotnet publish -p:NuGetAudit=false Source/Dafny/Dafny.csproj -c Release -o "$GITHUB_WORKSPACE/out/$variant" -p:GeneratePackageOnBuild=false -p:SourceRevisionId=review-followup)
           done
           tar -czf builds.tar.gz out
-      - uses: actions/upload-artifact@v4
+      - uses: ./.github/actions/host-artifact
         with:
+          mode: put
           name: issue23-builds
           path: builds.tar.gz
       - name: Remove job temporary directory
@@ -123,8 +124,9 @@ jobs:
           memory-backoff-s: ${{ vars.SELF_HOSTED_JOB_MEMORY_BACKOFF_S }}
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-dotnet
-      - uses: actions/download-artifact@v4
+      - uses: ./.github/actions/host-artifact
         with:
+          mode: get
           name: issue23-builds
       - name: Unpack and pin Z3
         timeout-minutes: 100

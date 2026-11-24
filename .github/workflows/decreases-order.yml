@@ -94,8 +94,9 @@ jobs:
           # mistaken for acceptance, and do not send failure notifications.
           exit 0
       - run: tar -C out -czf candidate.tar.gz candidate
-      - uses: actions/upload-artifact@v4
+      - uses: ./.github/actions/host-artifact
         with:
+          mode: put
           name: decreases-candidate
           path: candidate.tar.gz
       - uses: actions/upload-artifact@v4
@@ -155,8 +156,9 @@ jobs:
           memory-backoff-s: ${{ vars.SELF_HOSTED_JOB_MEMORY_BACKOFF_S }}
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-dotnet
-      - uses: actions/download-artifact@v4
+      - uses: ./.github/actions/host-artifact
         with:
+          mode: get
           name: decreases-candidate
       - run: mkdir -p out && tar -C out -xzf candidate.tar.gz
       - name: Pin solver
@@ -239,8 +241,9 @@ jobs:
           memory-backoff-s: ${{ vars.SELF_HOSTED_JOB_MEMORY_BACKOFF_S }}
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-dotnet
-      - uses: actions/download-artifact@v4
+      - uses: ./.github/actions/host-artifact
         with:
+          mode: get
           name: decreases-candidate
       - run: mkdir -p out && tar -C out -xzf candidate.tar.gz
       - name: Pin both solvers

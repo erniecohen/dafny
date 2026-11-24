@@ -100,8 +100,9 @@ jobs:
           python3 .github/review/typeencoding-map.py negative --dafny out/candidate/Dafny \
             --z3 "$Z3_ARCHIVE/bin/z3" --output controls/negative
       - run: tar -C out -czf candidate.tar.gz candidate
-      - uses: actions/upload-artifact@v4
+      - uses: ./.github/actions/host-artifact
         with:
+          mode: put
           name: map-candidate
           path: candidate.tar.gz
       - uses: actions/upload-artifact@v4
@@ -164,8 +165,9 @@ jobs:
           memory-backoff-s: ${{ vars.SELF_HOSTED_JOB_MEMORY_BACKOFF_S }}
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-dotnet
-      - uses: actions/download-artifact@v4
+      - uses: ./.github/actions/host-artifact
         with:
+          mode: get
           name: map-candidate
       - run: mkdir -p out && tar -C out -xzf candidate.tar.gz
       - name: Pin solver
@@ -248,8 +250,9 @@ jobs:
           memory-backoff-s: ${{ vars.SELF_HOSTED_JOB_MEMORY_BACKOFF_S }}
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-dotnet
-      - uses: actions/download-artifact@v4
+      - uses: ./.github/actions/host-artifact
         with:
+          mode: get
           name: map-candidate
       - run: mkdir -p out && tar -C out -xzf candidate.tar.gz
       - name: Pin solver
