@@ -1,0 +1,6 @@
+git-issue-569.dfy(33,51): Error: assertion might not hold
+git-issue-569.dfy(36,41): Error: the given witness expression might not satisfy constraint
+git-issue-569.dfy(37,7): Error: cannot find witness that shows type is inhabited (only tried 0); try giving a hint through a 'witness' or 'ghost witness' clause, or use 'witness *' to treat as a possibly empty type
+git-issue-569.dfy(38,42): Error: the given witness expression might not satisfy constraint
+
+Dafny program verifier finished with 5 verified, 4 errors

@@ -1,0 +1,1 @@
+Subset-type witness checks no longer change shared constraint expressions during translation, including without --persistent-translation. Parallel module translations now retain the same constraint locations as a single translation worker.

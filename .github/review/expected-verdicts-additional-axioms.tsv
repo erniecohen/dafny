@@ -1437,3 +1437,4 @@ hofs/Types.dfy	2		9,14,18,26
 hofs/Underspecified.dfy	2		6,7,8
 hofs/VectorUpdate.dfy	0	8 verified, 0 errors	
 hofs/WhileLoop.dfy	0	4 verified, 0 errors	
+git-issues/git-issue-569.dfy	4	5 verified, 4 errors	33,36,37,38
