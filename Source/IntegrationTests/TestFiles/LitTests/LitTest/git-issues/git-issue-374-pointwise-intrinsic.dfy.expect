@@ -1,0 +1,70 @@
+git-issue-374-pointwise-intrinsic.dfy(20,0): Error: a postcondition could not be proved on this return path
+git-issue-374-pointwise-intrinsic.dfy(19,24): Related location: this is the postcondition that could not be proved
+git-issue-374-pointwise-intrinsic.dfy(24,0): Error: a postcondition could not be proved on this return path
+git-issue-374-pointwise-intrinsic.dfy(23,24): Related location: this is the postcondition that could not be proved
+git-issue-374-pointwise-intrinsic.dfy(28,0): Error: a postcondition could not be proved on this return path
+git-issue-374-pointwise-intrinsic.dfy(27,27): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 0 verified, 3 errors
+
+Dafny program verifier finished with 3 verified, 0 errors
+
+Dafny program verifier finished with 3 verified, 0 errors
+
+Dafny program verifier finished with 3 verified, 0 errors
+git-issue-374-pointwise-malformed.dfy(18,45): Error: {:functionDomain "pointwise"} expects a static body-less ghost predicate with type parameters <A1, ..., An, B>, arguments (f: (A1, ..., An) -> B, g: (A1, ..., An) -> B), and no other specification
+git-issue-374-pointwise-malformed.dfy(15,48): Error: {:functionDomain "pointwise"} expects a static body-less ghost predicate with type parameters <A1, ..., An, B>, arguments (f: (A1, ..., An) -> B, g: (A1, ..., An) -> B), and no other specification
+git-issue-374-pointwise-malformed.dfy(2,48): Error: {:functionDomain "pointwise"} expects a static body-less ghost predicate with type parameters <A1, ..., An, B>, arguments (f: (A1, ..., An) -> B, g: (A1, ..., An) -> B), and no other specification
+git-issue-374-pointwise-malformed.dfy(3,48): Error: {:functionDomain "pointwise"} expects a static body-less ghost predicate with type parameters <A1, ..., An, B>, arguments (f: (A1, ..., An) -> B, g: (A1, ..., An) -> B), and no other specification
+git-issue-374-pointwise-malformed.dfy(4,48): Error: {:functionDomain "pointwise"} expects a static body-less ghost predicate with type parameters <A1, ..., An, B>, arguments (f: (A1, ..., An) -> B, g: (A1, ..., An) -> B), and no other specification
+git-issue-374-pointwise-malformed.dfy(5,48): Error: {:functionDomain "pointwise"} expects a static body-less ghost predicate with type parameters <A1, ..., An, B>, arguments (f: (A1, ..., An) -> B, g: (A1, ..., An) -> B), and no other specification
+git-issue-374-pointwise-malformed.dfy(6,48): Error: {:functionDomain "pointwise"} expects a static body-less ghost predicate with type parameters <A1, ..., An, B>, arguments (f: (A1, ..., An) -> B, g: (A1, ..., An) -> B), and no other specification
+git-issue-374-pointwise-malformed.dfy(7,48): Error: {:functionDomain "pointwise"} expects a static body-less ghost predicate with type parameters <A1, ..., An, B>, arguments (f: (A1, ..., An) -> B, g: (A1, ..., An) -> B), and no other specification
+git-issue-374-pointwise-malformed.dfy(8,48): Error: {:functionDomain "pointwise"} expects a static body-less ghost predicate with type parameters <A1, ..., An, B>, arguments (f: (A1, ..., An) -> B, g: (A1, ..., An) -> B), and no other specification
+git-issue-374-pointwise-malformed.dfy(10,47): Error: {:functionDomain "pointwise"} expects a static body-less ghost predicate with type parameters <A1, ..., An, B>, arguments (f: (A1, ..., An) -> B, g: (A1, ..., An) -> B), and no other specification
+git-issue-374-pointwise-malformed.dfy(11,42): Error: {:functionDomain "pointwise"} expects a static body-less ghost predicate with type parameters <A1, ..., An, B>, arguments (f: (A1, ..., An) -> B, g: (A1, ..., An) -> B), and no other specification
+git-issue-374-pointwise-malformed.dfy(12,55): Error: {:functionDomain "pointwise"} expects a static body-less ghost predicate with type parameters <A1, ..., An, B>, arguments (f: (A1, ..., An) -> B, g: (A1, ..., An) -> B), and no other specification
+git-issue-374-pointwise-malformed.dfy(2,48): Error: {:functionDomain "pointwise"} expects a static body-less ghost predicate with type parameters <A1, ..., An, B>, arguments (f: (A1, ..., An) -> B, g: (A1, ..., An) -> B), and no other specification
+git-issue-374-pointwise-malformed.dfy(3,48): Error: {:functionDomain "pointwise"} expects a static body-less ghost predicate with type parameters <A1, ..., An, B>, arguments (f: (A1, ..., An) -> B, g: (A1, ..., An) -> B), and no other specification
+git-issue-374-pointwise-malformed.dfy(4,48): Error: {:functionDomain "pointwise"} expects a static body-less ghost predicate with type parameters <A1, ..., An, B>, arguments (f: (A1, ..., An) -> B, g: (A1, ..., An) -> B), and no other specification
+git-issue-374-pointwise-malformed.dfy(5,48): Error: {:functionDomain "pointwise"} expects a static body-less ghost predicate with type parameters <A1, ..., An, B>, arguments (f: (A1, ..., An) -> B, g: (A1, ..., An) -> B), and no other specification
+git-issue-374-pointwise-malformed.dfy(6,48): Error: {:functionDomain "pointwise"} expects a static body-less ghost predicate with type parameters <A1, ..., An, B>, arguments (f: (A1, ..., An) -> B, g: (A1, ..., An) -> B), and no other specification
+git-issue-374-pointwise-malformed.dfy(7,48): Error: {:functionDomain "pointwise"} expects a static body-less ghost predicate with type parameters <A1, ..., An, B>, arguments (f: (A1, ..., An) -> B, g: (A1, ..., An) -> B), and no other specification
+git-issue-374-pointwise-malformed.dfy(8,48): Error: {:functionDomain "pointwise"} expects a static body-less ghost predicate with type parameters <A1, ..., An, B>, arguments (f: (A1, ..., An) -> B, g: (A1, ..., An) -> B), and no other specification
+git-issue-374-pointwise-malformed.dfy(10,47): Error: {:functionDomain "pointwise"} expects a static body-less ghost predicate with type parameters <A1, ..., An, B>, arguments (f: (A1, ..., An) -> B, g: (A1, ..., An) -> B), and no other specification
+git-issue-374-pointwise-malformed.dfy(11,42): Error: {:functionDomain "pointwise"} expects a static body-less ghost predicate with type parameters <A1, ..., An, B>, arguments (f: (A1, ..., An) -> B, g: (A1, ..., An) -> B), and no other specification
+git-issue-374-pointwise-malformed.dfy(12,55): Error: {:functionDomain "pointwise"} expects a static body-less ghost predicate with type parameters <A1, ..., An, B>, arguments (f: (A1, ..., An) -> B, g: (A1, ..., An) -> B), and no other specification
+
+Dafny program verifier finished with 1 verified, 0 errors
+git-issue-374-pointwise-malformed.dfy(18,45): Error: {:functionDomain "pointwise"} expects a static body-less ghost predicate with type parameters <A1, ..., An, B>, arguments (f: (A1, ..., An) -> B, g: (A1, ..., An) -> B), and no other specification
+git-issue-374-pointwise-malformed.dfy(15,48): Error: {:functionDomain "pointwise"} expects a static body-less ghost predicate with type parameters <A1, ..., An, B>, arguments (f: (A1, ..., An) -> B, g: (A1, ..., An) -> B), and no other specification
+git-issue-374-pointwise-malformed.dfy(2,48): Error: {:functionDomain "pointwise"} expects a static body-less ghost predicate with type parameters <A1, ..., An, B>, arguments (f: (A1, ..., An) -> B, g: (A1, ..., An) -> B), and no other specification
+git-issue-374-pointwise-malformed.dfy(3,48): Error: {:functionDomain "pointwise"} expects a static body-less ghost predicate with type parameters <A1, ..., An, B>, arguments (f: (A1, ..., An) -> B, g: (A1, ..., An) -> B), and no other specification
+git-issue-374-pointwise-malformed.dfy(4,48): Error: {:functionDomain "pointwise"} expects a static body-less ghost predicate with type parameters <A1, ..., An, B>, arguments (f: (A1, ..., An) -> B, g: (A1, ..., An) -> B), and no other specification
+git-issue-374-pointwise-malformed.dfy(5,48): Error: {:functionDomain "pointwise"} expects a static body-less ghost predicate with type parameters <A1, ..., An, B>, arguments (f: (A1, ..., An) -> B, g: (A1, ..., An) -> B), and no other specification
+git-issue-374-pointwise-malformed.dfy(6,48): Error: {:functionDomain "pointwise"} expects a static body-less ghost predicate with type parameters <A1, ..., An, B>, arguments (f: (A1, ..., An) -> B, g: (A1, ..., An) -> B), and no other specification
+git-issue-374-pointwise-malformed.dfy(7,48): Error: {:functionDomain "pointwise"} expects a static body-less ghost predicate with type parameters <A1, ..., An, B>, arguments (f: (A1, ..., An) -> B, g: (A1, ..., An) -> B), and no other specification
+git-issue-374-pointwise-malformed.dfy(8,48): Error: {:functionDomain "pointwise"} expects a static body-less ghost predicate with type parameters <A1, ..., An, B>, arguments (f: (A1, ..., An) -> B, g: (A1, ..., An) -> B), and no other specification
+git-issue-374-pointwise-malformed.dfy(10,47): Error: {:functionDomain "pointwise"} expects a static body-less ghost predicate with type parameters <A1, ..., An, B>, arguments (f: (A1, ..., An) -> B, g: (A1, ..., An) -> B), and no other specification
+git-issue-374-pointwise-malformed.dfy(11,42): Error: {:functionDomain "pointwise"} expects a static body-less ghost predicate with type parameters <A1, ..., An, B>, arguments (f: (A1, ..., An) -> B, g: (A1, ..., An) -> B), and no other specification
+git-issue-374-pointwise-malformed.dfy(12,55): Error: {:functionDomain "pointwise"} expects a static body-less ghost predicate with type parameters <A1, ..., An, B>, arguments (f: (A1, ..., An) -> B, g: (A1, ..., An) -> B), and no other specification
+git-issue-374-pointwise-malformed.dfy(2,48): Error: {:functionDomain "pointwise"} expects a static body-less ghost predicate with type parameters <A1, ..., An, B>, arguments (f: (A1, ..., An) -> B, g: (A1, ..., An) -> B), and no other specification
+git-issue-374-pointwise-malformed.dfy(3,48): Error: {:functionDomain "pointwise"} expects a static body-less ghost predicate with type parameters <A1, ..., An, B>, arguments (f: (A1, ..., An) -> B, g: (A1, ..., An) -> B), and no other specification
+git-issue-374-pointwise-malformed.dfy(4,48): Error: {:functionDomain "pointwise"} expects a static body-less ghost predicate with type parameters <A1, ..., An, B>, arguments (f: (A1, ..., An) -> B, g: (A1, ..., An) -> B), and no other specification
+git-issue-374-pointwise-malformed.dfy(5,48): Error: {:functionDomain "pointwise"} expects a static body-less ghost predicate with type parameters <A1, ..., An, B>, arguments (f: (A1, ..., An) -> B, g: (A1, ..., An) -> B), and no other specification
+git-issue-374-pointwise-malformed.dfy(6,48): Error: {:functionDomain "pointwise"} expects a static body-less ghost predicate with type parameters <A1, ..., An, B>, arguments (f: (A1, ..., An) -> B, g: (A1, ..., An) -> B), and no other specification
+git-issue-374-pointwise-malformed.dfy(7,48): Error: {:functionDomain "pointwise"} expects a static body-less ghost predicate with type parameters <A1, ..., An, B>, arguments (f: (A1, ..., An) -> B, g: (A1, ..., An) -> B), and no other specification
+git-issue-374-pointwise-malformed.dfy(8,48): Error: {:functionDomain "pointwise"} expects a static body-less ghost predicate with type parameters <A1, ..., An, B>, arguments (f: (A1, ..., An) -> B, g: (A1, ..., An) -> B), and no other specification
+git-issue-374-pointwise-malformed.dfy(10,47): Error: {:functionDomain "pointwise"} expects a static body-less ghost predicate with type parameters <A1, ..., An, B>, arguments (f: (A1, ..., An) -> B, g: (A1, ..., An) -> B), and no other specification
+git-issue-374-pointwise-malformed.dfy(11,42): Error: {:functionDomain "pointwise"} expects a static body-less ghost predicate with type parameters <A1, ..., An, B>, arguments (f: (A1, ..., An) -> B, g: (A1, ..., An) -> B), and no other specification
+git-issue-374-pointwise-malformed.dfy(12,55): Error: {:functionDomain "pointwise"} expects a static body-less ghost predicate with type parameters <A1, ..., An, B>, arguments (f: (A1, ..., An) -> B, g: (A1, ..., An) -> B), and no other specification
+
+Dafny program verifier finished with 1 verified, 0 errors
+git-issue-374-pointwise-intrinsic-negative.dfy(7,2): Error: assertion might not hold
+git-issue-374-pointwise-intrinsic-negative.dfy(14,2): Error: assertion might not hold
+
+Dafny program verifier finished with 0 verified, 2 errors
+git-issue-374-pointwise-intrinsic-negative.dfy(7,2): Error: assertion might not hold
+git-issue-374-pointwise-intrinsic-negative.dfy(14,2): Error: assertion might not hold
+
+Dafny program verifier finished with 0 verified, 2 errors

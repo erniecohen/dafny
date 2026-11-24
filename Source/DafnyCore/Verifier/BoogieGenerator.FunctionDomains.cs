@@ -283,6 +283,7 @@ public partial class BoogieGenerator {
   /// the checked eta-expansion body (x_1, ..., x_N) => f(x_1, ..., x_N).
   /// The explicit-call equality predicate must have the ordinary body f == g;
   /// its extensionality instance is triggered only by a call of that predicate.
+  /// Pointwise exposes agreement over the full product without allocation guards.
   /// </summary>
   private string FunctionDomainKind(Function f) {
     var args = Attributes.FindExpressions(f.Attributes, FunctionDomainAttributeName);
@@ -290,25 +291,30 @@ public partial class BoogieGenerator {
       return null;
     }
     string kind = args.Count == 1 && args[0] is StringLiteralExpr { Value: string s } ? s : null;
-    var equality = kind == "equal";
-    var signature = (kind is "restrict" or "exactDom" or "equal") &&
+    var pair = kind is "equal" or "pointwise";
+    var signature = (kind is "restrict" or "exactDom" or "equal" or "pointwise") &&
                     f.Req.Count == 0 && f.Ens.Count == 0 && f.Reads.Expressions.Count == 0 &&
                     f.IsGhost && f.IsStatic && f.EnclosingClass is DefaultClassDecl &&
-                    f.TypeArgs.Count >= 1 && f.Ins.Count == (equality ? 2 : 1) &&
+                    f.TypeArgs.Count >= 1 && f.Ins.Count == (pair ? 2 : 1) &&
+                    (kind != "pointwise" || f.Ins.All(p => !p.IsOlder)) &&
+                    (kind != "pointwise" || f.ResultType.NormalizeExpandKeepConstraints() is BoolType) &&
                     !f.IsFuelAware() && !f.IsOpaque && !f.IsMadeImplicitlyOpaque(options) &&
                     f is not TwoStateFunction &&
                     f.Ins.All(p => IsTotalArrowOver(p.Type, f.TypeArgs)) &&
                     (kind == "restrict" ? IsTotalArrowOver(f.ResultType, f.TypeArgs) : f.ResultType.IsBoolType);
     var body = signature && (kind switch {
       "restrict" => f.Body == null || IsRestrictionBody(f),
-      "exactDom" => f.Body == null,
+      "exactDom" or "pointwise" => f.Body == null,
       "equal" => f.Body?.Resolved is BinaryExpr { Op: BinaryExpr.Opcode.Eq } eq &&
                  IsParameter(eq.E0, f.Ins[0]) && IsParameter(eq.E1, f.Ins[1]),
       _ => false
     });
     if (!body) {
       reporter.Error(MessageSource.Verifier, f.Origin,
-        "{:" + FunctionDomainAttributeName + "} expects a static ghost function with type parameters <A1, ..., An, B> " +
+        kind == "pointwise"
+          ? "{:functionDomain \"pointwise\"} expects a static body-less ghost predicate with type parameters " +
+            "<A1, ..., An, B>, arguments (f: (A1, ..., An) -> B, g: (A1, ..., An) -> B), and no other specification"
+          : "{:" + FunctionDomainAttributeName + "} expects a static ghost function with type parameters <A1, ..., An, B> " +
         "and no other specification: \"restrict\" on (f: (A1, ..., An) -> B): (A1, ..., An) -> B, " +
         "body-less or with body (x1: A1, ..., xn: An) => f(x1, ..., xn); \"exactDom\" on a body-less " +
         "predicate (f: (A1, ..., An) -> B); or \"equal\" on a predicate (f: (A1, ..., An) -> B, " +
@@ -400,6 +406,15 @@ public partial class BoogieGenerator {
       var inDomain = BplAnd(boxes.Zip(domains, (bx, a) => MkIs(bx, a, true)));
       var pointwise = BplForall(boxVars, new Bpl.Trigger(tok, true, [fx], new Bpl.Trigger(tok, true, [gx])),
         BplImp(inDomain, Bpl.Expr.Eq(fx, gx)));
+      if (kind == "pointwise") {
+        // Deliberately no allocation antecedent: this is agreement on the whole
+        // mathematical product, including arguments not allocated in any current heap.
+        AddOtherDefinition(GetOrCreateFunction(f), new Axiom(tok,
+          BplForall(bvars, BplTrigger(call),
+            BplImp(BplAnd(MkIs(fn, arrow), MkIs(g, arrow)), BplIff(call, pointwise))),
+          "allocation-independent pointwise agreement of " + name));
+        return;
+      }
       var premises = BplAnd(BplAnd(MkIs(fn, arrow), MkIs(g, arrow)),
         BplAnd(exact, FunctionCall(tok, ExactDom(arity), Bpl.Type.Bool, Snoc(domains, g))));
       AddOtherDefinition(GetOrCreateFunction(f), new Axiom(tok,
