@@ -7,7 +7,7 @@
     lit-verdicts.py expected <verdicts.tsv>...                 the verdicts alone, for expected-verdicts.tsv
     lit-verdicts.py compare  <expected.tsv> <actual.tsv>       programs whose verdict differs
 
-The programs are the `.dfy` files under dafny0 to dafny4 and git-issues whose first
+The programs are the `.dfy` files under dafny0 to dafny4, git-issues and hofs whose first
 RUN line verifies them (%verify, %testDafnyForEach*, %build or %run, without
 --no-verify).  Each is verified once, with the options its RUN line passes, minus
 options about compilation and output, plus these, unless the program sets them
@@ -63,7 +63,7 @@ import subprocess
 import sys
 import time
 
-DIRS = ['dafny0', 'dafny1', 'dafny2', 'dafny3', 'dafny4', 'git-issues']
+DIRS = ['dafny0', 'dafny1', 'dafny2', 'dafny3', 'dafny4', 'git-issues', 'hofs']
 FIXED = ['--resource-limit', '16000000', '--verification-time-limit', '0',
          '--boogie', '/normalizeDeclarationOrder:0', '--cores', '1', '--allow-warnings']
 TIMEOUT = 900  # seconds, per program; a program that takes longer is reported as TIMEOUT

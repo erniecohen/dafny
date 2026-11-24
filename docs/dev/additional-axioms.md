@@ -1411,3 +1411,84 @@ five-argument, datatype and empty-domain contexts retain failing `assert false`
 controls. `git-issue-374-library.dfy` verifies the source library and clients
 under both options and both resolvers, audits it, and retains vacuity controls
 for every convenience module.
+
+### Pointwise agreement over domains containing references
+
+`{:functionDomain "pointwise"}` defines a static, body-less ghost predicate
+`Pointwise<A1, ..., An, B>(f: (A1, ..., An) -> B,
+g: (A1, ..., An) -> B)`. It accepts no other specification, and neither a
+source body, an `older` parameter, a partial arrow nor a heap-reading arrow is
+allowed.
+Rejecting `older` prevents an unchecked implicit allocation postcondition. The
+predicate's own result must be plain `bool`, not a constrained Boolean type
+that would add an implicit result postcondition. Like `ExactDom`, this is a compiler-defined predicate without a trusted source
+postcondition. Its definition, triggered only by its application, is:
+
+```
+Pointwise(A1, ..., An, B, f, g) <==>
+  (forall bx1, ..., bxn ::
+    $IsBox(bx1, A1) && ... && $IsBox(bxn, An) ==>
+      ApplyN(A1, ..., An, B, $OneHeap, f, bx1, ..., bxn) ==
+      ApplyN(A1, ..., An, B, $OneHeap, g, bx1, ..., bxn))
+```
+
+There is **no allocation antecedent and no current-heap parameter**. The
+quantifier covers every tuple in the mathematical product, including tuples
+containing unallocated references. At arity zero it is equality of the two
+nullary applications; an empty component makes it vacuously true. It does not
+assert equality of function values or exactness of their domains.
+
+The axiom has the additional antecedent `$Is(f, (A1, ..., An) -> B) &&
+$Is(g, (A1, ..., An) -> B)`. This is a type condition, not an allocation
+condition. In the arity-general function-value model above, interpret the
+predicate at each correctly typed pair of total function values by the
+formula. Its ordinary first-class function handle has that product as its
+domain, true preconditions and empty reads. Outside that domain the axiom
+imposes no definition, so the existing fixed extension of a handle still
+supplies its selectors. In particular, quoting this predicate as a function
+value does not constrain its application at ill-typed handles.
+
+This supplies a definition in the existing model, without a new relation on
+old function values or an extensionality rule. For total arrows, application
+is heap-independent and total at every correctly typed tuple, so the formula
+is precisely mathematical pointwise agreement. It does not extrapolate from
+agreement on the currently allocated portion of a reference-containing domain.
+The inner type guards are essential: application outside the argument product
+remains unspecified. The arrows' result type is unrestricted; application equality is
+ordinary boxed equality, with the existing typing and boxing axioms. This
+argument retains the existing model's limits on translator-emitted handles
+and heap-independent total arrows, and is compatible with the other families
+enabled by the shared option.
+
+`function-domains/Pointwise.dfy` supplies
+`Std.FunctionPointwise.Arity1` through `Arity4`. Their `Extensionality` lemmas
+require this predicate and exact domains, then prove equality by the existing
+checked `Equal` call. Their conclusions follow from the previously documented
+total-arrow extensionality rule with exactly its existing premises. No new
+extensionality axiom or trusted source declaration is added. With both domain
+options off, this definition is not emitted; the default library and programs
+that do not supply this opt-in source API are unchanged.
+
+The original `(!new)` pointwise lemmas remain useful: their ordinary `forall`
+premise covers the full domain because that domain contains no references.
+Dropping `(!new)` while keeping that premise would be unjustified. The new API
+makes the stronger premise explicit instead.
+
+Positive controls cover generic arguments and results, first-class predicate
+values, named functions,
+reference identity, datatypes and sequences containing references, mixed
+products, restriction of a wider domain, empty products and allocation after
+the premise is established. The intrinsic is also checked at arities zero and
+five. Negative controls reject agreement only on allocated arguments, distinct
+results, missing exactness, malformed intrinsic declarations, partial arrows
+and heap-reading arrows. A heap-reading closure agrees with a captured snapshot
+before a field update and differs afterward; their equality must fail. Live
+calls in every new convenience module and an empty reference-domain product
+retain failing `assert false` controls. Reference-domain vacuity controls take an
+allocated reference witness, so their live contexts also cover inhabited
+domains.
+
+Partial arrows need a separate model of precondition agreement and application
+outside that precondition; this total-arrow definition does not supply it.
+Heap-reading arrows additionally need agreement across heaps and reads sets.
+The M1/M2 resource-unit trial and precompiled-library packaging remain open.
