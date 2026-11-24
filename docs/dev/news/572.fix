@@ -1,0 +1,1 @@
+Restore the default verdict that `f.requires.reads(x) == f.reads(x)` verifies, lost since the finite-support repair of function reads footprints: a member of an actual finite set in a reads clause is now in the handle's footprint exactly, while every component selected through unboxing keeps its canonical-box guard.
