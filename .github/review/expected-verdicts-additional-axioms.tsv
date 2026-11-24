@@ -1036,6 +1036,7 @@ git-issues/git-issue-3719a.dfy	0	1 verified, 0 errors
 git-issues/git-issue-3719b.dfy	0	1 verified, 0 errors	
 git-issues/git-issue-374-arities.dfy	4	0 verified, 9 errors	13,18,25,30,39,48,54,63,72
 git-issues/git-issue-374-domains.dfy	0	9 verified, 0 errors
+git-issues/git-issue-374-pointwise-intrinsic.dfy	0	3 verified, 0 errors	
 git-issues/git-issue-374.dfy	0	1 verified, 0 errors	
 git-issues/git-issue-3792.dfy	0	2 verified, 0 errors	
 git-issues/git-issue-3804.dfy	4	2 verified, 6 errors	9,20,22,31,48,69
