@@ -1,5 +1,7 @@
 """Exercise admission with real advisory locks, including owner loss and termination."""
 import importlib.util
+import os
+from unittest.mock import patch
 from pathlib import Path
 import subprocess
 import sys
@@ -11,6 +13,17 @@ ACTION = Path(__file__).resolve().parents[1] / 'actions/self-hosted-job'
 spec = importlib.util.spec_from_file_location('admission', ACTION / 'admit.py')
 admission = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(admission)
+
+
+def setUpModule():
+    global environment
+    environment = patch.dict(os.environ, {k: v for k, v in os.environ.items()
+                                         if not k.startswith('ADMISSION_')}, clear=True)
+    environment.start()
+
+
+def tearDownModule():
+    environment.stop()
 
 
 class AdmissionTests(unittest.TestCase):
@@ -208,7 +221,10 @@ for (const bad of ['0', '-1', '2.5', 'NaN', '3garbage', '9007199254740992']) {
             self.skipTest('Node is provided by the Actions runner')
         script = """
 const assert = require('node:assert/strict');
-const {memoryThresholds} = require(process.argv[1]);
+const {memoryThresholds, admissionArgs} = require(process.argv[1]);
+const args = admissionArgs('/cache', '/ready', {pid: 123, identity: 'worker'}, 3,
+  {INPUT_KIND: 'ci:Exact key', GITHUB_REPOSITORY: 'example/repo'});
+assert.deepEqual(args.slice(1), ['/cache/active.lock', '/ready', '123', 'worker', '3', '', '', 'ci:Exact key', 'example/repo']);
 assert.deepEqual(memoryThresholds({}), ['', '']);
 assert.deepEqual(memoryThresholds({'INPUT_MIN-FREE-PERCENT': '40', 'INPUT_MAX-PRESSURE': 'normal'}), ['40', 'normal']);
 assert.deepEqual(memoryThresholds({'INPUT_MIN-FREE-PERCENT': ' 40 ', 'INPUT_MAX-PRESSURE': ''}), ['40', '']);
@@ -247,6 +263,67 @@ class CleanupTests(unittest.TestCase):
                 if keeper.poll() is None:
                     keeper.terminate()
                 keeper.wait(timeout=5)
+
+
+    def test_start_failure_and_workspace_failure_stop_only_own_keeper(self):
+        import shutil
+        node = shutil.which('node')
+        if not node:
+            self.skipTest('Node is provided by the Actions runner')
+        script = r"""
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const vm = require('node:vm');
+const {EventEmitter} = require('node:events');
+const root = process.argv[2];
+const source = fs.readFileSync(process.argv[1], 'utf8');
+(async () => {
+  for (const failure of ['start', 'workspace', 'state']) {
+    const ready = path.join(root, 'admitted');
+    fs.writeFileSync(ready, 'stale');
+    let killed = 0;
+    const child = new EventEmitter();
+    child.pid = 456;
+    child.kill = sig => { assert.equal(sig, 'SIGTERM'); killed++; };
+    child.unref = () => {};
+    const cp = {
+      spawnSync: () => ({status: 0, stdout: 'Runner.Worker'}),
+      spawn: (command, args, options) => {
+        assert.equal(command, 'python3');
+        assert.deepEqual(Array.from(options.stdio), ['ignore', 'inherit', 'inherit']);
+        assert.equal(args[1], path.join(root, 'locks', 'active.lock'));
+        assert.equal(fs.existsSync(ready), false);
+        assert.deepEqual(Array.from(args.slice(-2)), ['ci:Exact key', 'example/repo']);
+        if (failure === 'start') setImmediate(() => child.emit('error', new Error('cannot start')));
+        else fs.writeFileSync(ready, 'published');
+        return child;
+      }
+    };
+    const sandbox = {
+      module: {exports: {}}, __dirname: path.dirname(process.argv[1]),
+      console: {log() {}, error() {}},
+      setTimeout: callback => setImmediate(callback),
+      process: {platform: 'darwin', arch: 'arm64', ppid: 123, env: {
+        INPUT_KIND: 'ci:Exact key', GITHUB_REPOSITORY: 'example/repo',
+        ADMISSION_LOCK_DIR: path.join(root, 'locks'), TMPDIR: root,
+        GITHUB_STATE: failure === 'state' ? path.join(root, 'missing', 'state') : path.join(root, 'state'),
+        GITHUB_WORKSPACE: path.join(root, 'repo'), RUNNER_WORKSPACE: path.join(root, 'wrong-parent')
+      }},
+      require: name => name === 'node:child_process' ? cp : require(name)
+    };
+    vm.runInNewContext(source, sandbox);
+    const pattern = failure === 'start' ? /keeper exited/ : failure === 'state' ? /ENOENT/ : /immediate child/;
+    await assert.rejects(sandbox.module.exports.main(), pattern);
+    assert.equal(killed, 1);
+  }
+})().catch(error => { console.error(error); process.exitCode = 1; });
+"""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / 'repo').mkdir()
+            (root / 'wrong-parent').mkdir()
+            subprocess.run([node, '-e', script, str(ACTION / 'index.cjs'), str(root)], check=True, timeout=5)
 
 
 class WaitingCancellationTests(unittest.TestCase):

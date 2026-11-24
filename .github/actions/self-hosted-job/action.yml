@@ -1,8 +1,11 @@
 name: Admit and clean a self-hosted job
 description: Bound concurrent fork jobs and remove job-owned temporary and checkout outputs
 inputs:
+  kind:
+    description: Exact registered admission kind; absent or unknown uses the project's largest declared peak
+    required: false
   slots:
-    description: Number of admitted jobs across runner services; configure consistently across repositories
+    description: Maximum admitted jobs across runner services; clamped to the host-level admission configuration
     default: '2'
   min-free-percent:
     description: Admit only while the system-wide free memory percentage is at least this; empty drops the condition

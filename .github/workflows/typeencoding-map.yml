@@ -44,6 +44,7 @@ jobs:
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
       - uses: erniecohen/dafny/.github/actions/self-hosted-job@a8ef9c0acd833e35e6a13f798ac4c17dad9a64e1
         with:
+          kind: ci:${{ github.workflow }}
           slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
           min-free-percent: ${{ vars.SELF_HOSTED_JOB_MIN_FREE_PERCENT || '' }}
           max-pressure: ${{ vars.SELF_HOSTED_JOB_MAX_PRESSURE || '' }}
@@ -147,6 +148,7 @@ jobs:
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
       - uses: erniecohen/dafny/.github/actions/self-hosted-job@a8ef9c0acd833e35e6a13f798ac4c17dad9a64e1
         with:
+          kind: ci:${{ github.workflow }}
           slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
           min-free-percent: ${{ vars.SELF_HOSTED_JOB_MIN_FREE_PERCENT || '' }}
           max-pressure: ${{ vars.SELF_HOSTED_JOB_MAX_PRESSURE || '' }}
@@ -225,6 +227,7 @@ jobs:
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
       - uses: erniecohen/dafny/.github/actions/self-hosted-job@a8ef9c0acd833e35e6a13f798ac4c17dad9a64e1
         with:
+          kind: ci:${{ github.workflow }}
           slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
           min-free-percent: ${{ vars.SELF_HOSTED_JOB_MIN_FREE_PERCENT || '' }}
           max-pressure: ${{ vars.SELF_HOSTED_JOB_MAX_PRESSURE || '' }}
@@ -295,6 +298,7 @@ jobs:
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
       - uses: erniecohen/dafny/.github/actions/self-hosted-job@a8ef9c0acd833e35e6a13f798ac4c17dad9a64e1
         with:
+          kind: ci:${{ github.workflow }}
           slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
           min-free-percent: ${{ vars.SELF_HOSTED_JOB_MIN_FREE_PERCENT || '' }}
           max-pressure: ${{ vars.SELF_HOSTED_JOB_MAX_PRESSURE || '' }}

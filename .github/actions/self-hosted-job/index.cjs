@@ -39,6 +39,11 @@ function prepareWorkspace(workspace, runnerWorkspace) {
     fs.rmSync(path.join(root, entry), {recursive: true, force: true});
   }
 }
+function admissionArgs(cache, ready, owner, capacity, env = process.env) {
+  return [path.join(__dirname, 'admit.py'), path.join(cache, 'active.lock'), ready,
+    String(owner.pid), owner.identity, String(capacity), ...memoryThresholds(env),
+    env.INPUT_KIND || '', env.GITHUB_REPOSITORY || ''];
+}
 async function main() {
   if (process.env.STATE_keeper) {
     // The action is cached outside the checkout by Actions, so cleaning untracked outputs
@@ -66,30 +71,33 @@ async function main() {
   // Numbered advisory locks shared by all runners and both forks. The OS releases them even
   // after a hard cancellation. Waiting jobs are never discarded as concurrency-group
   // pending jobs would be. The keeper also exits when its Runner.Worker disappears.
-  const cache = path.join(os.homedir(), 'Library', 'Caches', 'fork-actions-admission');
+  const cache = process.env.ADMISSION_LOCK_DIR ?? path.join(os.homedir(), 'Library', 'Caches', 'fork-actions-admission');
   fs.mkdirSync(cache, {recursive: true});
   const ready = path.join(process.env.TMPDIR, 'admitted');
-  const keeper = cp.spawn('python3', [path.join(__dirname, 'admit.py'),
-    path.join(cache, 'active.lock'), ready, String(owner.pid), owner.identity, String(capacity),
-    ...memoryThresholds()],
-    {stdio: 'ignore'});
-  for (const [key, value] of Object.entries({keeper: keeper.pid,
-    keeperIdentity: identity(keeper.pid), tmp: process.env.TMPDIR})) {
-    fs.appendFileSync(process.env.GITHUB_STATE, `${key}=${value}\n`);
-  }
+  fs.rmSync(ready, {force: true});
+  const keeper = cp.spawn('python3', admissionArgs(cache, ready, owner, capacity),
+    {stdio: ['ignore', 'inherit', 'inherit']});
   let exited = false;
   keeper.on('exit', () => { exited = true; });
   keeper.on('error', e => { console.error(e.message); exited = true; });
-  while (!fs.existsSync(ready)) {
-    if (exited) throw new Error('Admission keeper exited before acquiring the job slot');
-    console.log('Waiting for the shared self-hosted job slot');
-    await new Promise(resolve => setTimeout(resolve, 1000));
+  try {
+    for (const [key, value] of Object.entries({keeper: keeper.pid,
+      keeperIdentity: identity(keeper.pid), tmp: process.env.TMPDIR})) {
+      fs.appendFileSync(process.env.GITHUB_STATE, `${key}=${value}\n`);
+    }
+    console.log('Waiting for host admission');
+    while (!fs.existsSync(ready)) {
+      if (exited) throw new Error('Admission keeper exited before acquiring the job slot');
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+    fs.appendFileSync(process.env.GITHUB_STATE, `keeperIdentity=${identity(keeper.pid)}\n`);
+    keeper.unref();
+    prepareWorkspace(process.env.GITHUB_WORKSPACE, process.env.RUNNER_WORKSPACE);
+    console.log('Admitted self-hosted job; reservation held until post cleanup');
+  } catch (error) {
+    keeper.kill('SIGTERM');
+    throw error;
   }
-  fs.appendFileSync(process.env.GITHUB_STATE, `keeperIdentity=${identity(keeper.pid)}\n`);
-  keeper.unref();
-  prepareWorkspace(process.env.GITHUB_WORKSPACE, process.env.RUNNER_WORKSPACE);
-  const [minFree, maxPressure] = memoryThresholds();
-  console.log(`Admitted one of ${capacity} jobs (memory floor ${minFree || 'none'}%, pressure ceiling ${maxPressure || 'none'}); excess fork jobs wait until post cleanup`);
 }
 if (require.main === module) main().catch(e => { console.error(e.message); process.exitCode = 1; });
-module.exports = {identity, worker, slots, memoryThresholds, prepareWorkspace};
+module.exports = {identity, worker, slots, memoryThresholds, prepareWorkspace, admissionArgs, main};

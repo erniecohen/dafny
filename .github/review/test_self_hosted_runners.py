@@ -22,6 +22,7 @@ class RunnerPolicyTests(unittest.TestCase):
             calls = re.findall(r'      - uses: erniecohen/dafny/\.github/actions/self-hosted-job@[^\n]+(?:\n        [^\n]*)*', text)
             for call in calls:
                 self.assertIn("slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}", call, workflow.name)
+                self.assertIn("kind: ci:${{ github.workflow }}", call, workflow.name)
             count += len(calls)
         self.assertEqual(count, 85)
 
