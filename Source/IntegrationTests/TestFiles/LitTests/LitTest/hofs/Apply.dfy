@@ -45,7 +45,7 @@ method AllocationTest(oldcell: Cell)
   if * {
     ghost var d := old(f());  // error: f, which has a reads clause, is not available in old
   } else {
-    ghost var e := old(g());  // fine, since g has no reads clause, it is known to produce the same value in any state
+    ghost var e := old(g());  // error: g captures y and z, which are not allocated in the old state; an empty reads clause does not show what a function value captures (https://github.com/erniecohen/dafny/pull/137)
     assert e == g();
   }
 
@@ -90,7 +90,7 @@ module TwoStateFunctions {
 
     assert c.F@L(11) == 21;
     y := Apply(u => c.F@L(u), 11);
-    assert y == 21;
+    assert y == 21;  // error: Apply sees f only at $OneHeap, which is not a successor of L (https://github.com/erniecohen/dafny/pull/160)
 
     assert c.F(100) == 0; // error
   }

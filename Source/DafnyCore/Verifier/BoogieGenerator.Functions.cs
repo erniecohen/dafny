@@ -766,10 +766,11 @@ public partial class BoogieGenerator {
           ? new ExpressionTranslator(this, Predef, h, f)
           : new ExpressionTranslator(this, Predef, h, handlePrevHeap, f);
         // A finite footprint contains the canonical box of each selected reference, not every box
-        // whose reference unboxing happens to select it.
-        var rhs = BplAnd(MkIsBox(bx, program.SystemModuleManager.ObjectQ()),
-          InRWClause_Aux(f.Origin, unboxBx, bx, null, f.Reads.Expressions, false, et, selfExpr, rhs_dict,
-            materializeFiniteSets: true));
+        // whose reference unboxing happens to select it.  The guard applies to each frame component
+        // that selects through unboxing; a component that is an actual finite set contributes exactly
+        // its own members (issue 572: f.requires reads exactly what f reads).
+        var rhs = InRWClause_Aux(f.Origin, unboxBx, bx, null, f.Reads.Expressions, false, et, selfExpr, rhs_dict,
+            materializeFiniteSets: true, canonicalBoxGuard: MkIsBox(bx, program.SystemModuleManager.ObjectQ()));
 
         Bpl.Expr available = FunctionCall(f.Origin, BuiltinFunction.IsGoodHeap, null, h);
         if (handlePrevHeap != null) {

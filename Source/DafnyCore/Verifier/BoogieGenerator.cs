@@ -2733,7 +2733,7 @@ namespace Microsoft.Dafny {
     Bpl.Expr InRWClause_Aux(IOrigin tok, Bpl.Expr o, Bpl.Expr boxO, Bpl.Expr f, List<FrameExpression> rw, bool usedInUnchanged,
                         ExpressionTranslator etran,
                         Expression receiverReplacement, Dictionary<IVariable, Expression> substMap,
-                        bool materializeFiniteSets = false) {
+                        bool materializeFiniteSets = false, Bpl.Expr canonicalBoxGuard = null) {
       Contract.Requires(tok != null);
       Contract.Requires(o != null);
       Contract.Requires(boxO != null);
@@ -2766,6 +2766,7 @@ namespace Microsoft.Dafny {
         }
 
         Bpl.Expr disjunct;
+        var exactMembership = false;
         // We revert back to the previous handling for backward compatibility and avoiding triggers
         if (e is FieldLocationExpression fle && f != null) {
           Contract.Assert(rwComponent.Field == null);
@@ -2806,7 +2807,10 @@ namespace Microsoft.Dafny {
               disjunct = new Bpl.ExistsExpr(tok, [memberVar],
                 BplAnd(selected, Bpl.Expr.Eq(o, reference)));
             } else {
+              // Exact membership of boxO in an actual finite set: no box is selected through
+              // unboxing, so a canonical-box guard would only restrict the set's own members.
               disjunct = IsSetMember(tok, set, boxO, true);
+              exactMembership = true;
             }
           } else {
             disjunct = etran.TrInSet_Aux(tok, o, boxO, e, setType.Finite, true, out pr,
@@ -2838,6 +2842,9 @@ namespace Microsoft.Dafny {
               Bpl.Expr.Eq(f, new Bpl.IdentifierExpr(rwComponent.E.Origin, Predef.AllocField)));
           }
           disjunct = BplAnd(disjunct, q);
+        }
+        if (canonicalBoxGuard != null && !exactMembership) {
+          disjunct = BplAnd(canonicalBoxGuard, disjunct);
         }
         disjunction = BplOr(disjunction, disjunct);
       }

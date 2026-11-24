@@ -36,6 +36,45 @@ have any type. Partial (`-->`) and heap-reading (`~>`) values are excluded. `ORD
 instantiated as a generic type argument in Dafny; monomorphic explicit-call
 helpers for that type are not supplied by this source API.
 
+For domains that may contain references, supply `Pointwise.dfy` instead (it
+includes `Functions.dfy`) and import `Std.FunctionPointwise`. `Arity1` through
+`Arity4` each supply:
+
+- `Pointwise(f, g)`: agreement at **every** correctly typed argument tuple,
+  including values containing references that have not been allocated. This
+  compiler-defined predicate has no heap argument. It is stronger than an
+  ordinary `forall x: A :: f(x) == g(x)` when `A` may contain references:
+  that source quantifier implicitly ranges over currently allocated values.
+- `Extensionality(f, g)`: a checked lemma requiring `Pointwise(f, g)` and exact
+  domains, and proving Leibniz equality. Neither domain nor result types require
+  `(!new)`. Agreement on allocated values alone cannot establish its premise.
+
+```dafny
+import P = Std.FunctionPointwise
+
+class Cell { var value: int }
+
+lemma IdentityOnReferences() {
+  var f := (c: Cell) => c;
+  var g := (c: Cell) => if true then c else c;
+  assert P.Arity1.Pointwise<Cell, Cell>(f, g);
+  P.Arity1.Extensionality<Cell, Cell>(f, g);
+  assert f == g;
+}
+```
+
+Verify this example with `function-domains/Pointwise.dfy` and
+`--additional-axioms --verify-included-files`. Explicit type arguments keep
+reference domains precise when inference could choose a nullable supertype.
+Pure closures may capture references or snapshots of field values; a function
+that reads a field on each application has type `~>` and fails the total-arrow
+argument check. Partial (`-->`) arrows are also excluded. Exactness and
+restriction still come from `Std.FunctionDomains`.
+
+The compiler's `{:functionDomain "pointwise"}` intrinsic supports every arity,
+including zero; the companion convenience modules cover one through four
+because nullary arrows already have an allocation-independent interface.
+
 For example, two functions on all integers may agree only on natural numbers.
 Narrowing their static type does not change their values or domains. Restrict
 both to `nat` before calling extensionality:
