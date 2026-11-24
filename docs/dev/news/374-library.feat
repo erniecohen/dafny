@@ -1,0 +1,4 @@
+Extend the opt-in total-function domain operations to every arity and add
+checked explicit-call extensionality. The separate `Std.FunctionDomains` source
+library provides restriction, exact domains and checked lemmas for arities
+zero through four, without new trusted source assumptions.
