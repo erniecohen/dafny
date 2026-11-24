@@ -55,7 +55,7 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@f2dcac30ae508f3f8db10996173144a4161dcdf8
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@6ad8147ae6d2f8dbab0db951e461d649a0997cd9
         with:
           kind: ci:${{ github.workflow }}
           slots: ${{ vars.SELF_HOSTED_JOB_SLOTS }}
@@ -119,7 +119,7 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@f2dcac30ae508f3f8db10996173144a4161dcdf8
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@6ad8147ae6d2f8dbab0db951e461d649a0997cd9
         with:
           kind: ci:${{ github.workflow }}
           slots: ${{ vars.SELF_HOSTED_JOB_SLOTS }}
@@ -182,7 +182,7 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@f2dcac30ae508f3f8db10996173144a4161dcdf8
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@6ad8147ae6d2f8dbab0db951e461d649a0997cd9
         with:
           kind: ci:${{ github.workflow }}
           slots: ${{ vars.SELF_HOSTED_JOB_SLOTS }}
@@ -294,7 +294,7 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@f2dcac30ae508f3f8db10996173144a4161dcdf8
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@6ad8147ae6d2f8dbab0db951e461d649a0997cd9
         with:
           kind: ci:${{ github.workflow }}
           slots: ${{ vars.SELF_HOSTED_JOB_SLOTS }}
@@ -376,7 +376,7 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@f2dcac30ae508f3f8db10996173144a4161dcdf8
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@6ad8147ae6d2f8dbab0db951e461d649a0997cd9
         with:
           kind: ci:${{ github.workflow }}
           slots: ${{ vars.SELF_HOSTED_JOB_SLOTS }}
@@ -458,7 +458,7 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@f2dcac30ae508f3f8db10996173144a4161dcdf8
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@6ad8147ae6d2f8dbab0db951e461d649a0997cd9
         with:
           kind: ci:${{ github.workflow }}
           slots: ${{ vars.SELF_HOSTED_JOB_SLOTS }}

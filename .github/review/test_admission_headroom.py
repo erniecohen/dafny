@@ -40,7 +40,7 @@ class PolicyTests(unittest.TestCase):
         for reason in ('slots', 'mutex'):
             self.assertEqual(backoff.delay(reason), .05)
             self.assertEqual(backoff.delay('budget'), .05)
-            self.assertEqual(backoff.delay('unaccounted: lock'), .1)
+            self.assertEqual(backoff.delay('unaccounted: lock'), .05)
 
     def test_missing_or_invalid_policy_fails_cli_without_ready(self):
         import sys
@@ -104,9 +104,9 @@ class HeadroomTests(AdmissionFixture):
         with patch.object(admission, 'physical_mb', return_value=3300), patch.object(admission, 'process_tree_mb', return_value=100):
             self.take()  # Equality, including outstanding growth, admits.
 
-    def test_growth_uses_larger_peak_unknown_tree_and_nonnegative_difference(self):
+    def test_growth_uses_expected_peak_unknown_tree_and_nonnegative_difference(self):
         self.occupy('agent-reserve.lock', 2000, expected_mb=1000)
-        for rss, growth in ((None, 2000), (100, 1900), (2000, 0), (3000, 0)):
+        for rss, growth in ((None, 1000), (100, 900), (1000, 0), (2000, 0)):
             with patch.object(admission, 'process_tree_mb', return_value=rss) as tree:
                 total, outstanding, unknown = admission.pool_usage(self.locks, 'unused', 7)
                 self.assertEqual((total, outstanding, unknown), (2000, growth, []))
@@ -138,6 +138,49 @@ class HeadroomTests(AdmissionFixture):
         with patch.object(admission, 'memory_healthy', side_effect=AssertionError('probed before slot')):
             self.denied('slots')
         self.assert_free('agent-reserve.lock')
+
+    def test_scanning_reserve_never_acquires_it(self):
+        (self.locks / 'agent-reserve.lock').touch()
+        original = admission.try_lock
+        calls = []
+        def tracked(path):
+            calls.append(Path(path).name)
+            return original(path)
+        with patch.object(admission, 'try_lock', side_effect=tracked):
+            stream = self.take()
+        self.assertNotIn('agent-reserve.lock', calls)
+        admission.release(stream)
+
+    def test_release_gap_uses_slot_poll_instead_of_memory_backoff(self):
+        stream = self.take()
+        backoff = admission.Backoff(dict(POLICY, slot_poll_s=.03))
+        backoff.delay('memory: deficit')
+        backoff.delay('memory: deficit')
+        original = Path.unlink
+        observed = []
+        def unlink(path, *args, **kwargs):
+            original(path, *args, **kwargs)
+            if path == admission.sidecar_path(stream):
+                # Pause release after unlink, while the holder is still locked.
+                self.assertIsNone(admission.try_lock(stream.name))
+                other, reason = self.attempt()
+                self.assertIsNone(other)
+                observed.append(reason)
+                self.assertEqual(backoff.delay(reason), .03)
+        with patch.object(Path, 'unlink', unlink):
+            admission.release(stream)
+        self.assertEqual(len(observed), 1)
+        self.assertEqual(backoff.delay('memory: deficit'), .05)
+
+    def test_growth_charges_the_same_peak_used_at_admission(self):
+        with patch.object(admission, 'physical_mb', return_value=1100):
+            stream = self.take(caller=1000)
+        data = json.loads(admission.sidecar_path(stream).read_text())
+        self.assertEqual(data['declared_mb'], 3400)
+        self.assertEqual(data['expected_mb'], 1000)
+        with patch.object(admission, 'process_tree_mb', return_value=0):
+            total, outstanding, unknown = admission.pool_usage(self.locks, 'unused', 2)
+        self.assertEqual((total, outstanding, unknown), (3400, 1000, []))
 
     def test_repeated_reason_is_logged_again_after_it_changes(self):
         output = StringIO()

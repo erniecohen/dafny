@@ -56,7 +56,7 @@ Admission requires known normal or warn pressure (1 or 2), and:
 
 ```
 available_mb = free_percent / 100 * physical_bytes / 1048576
-outstanding_j = max(0, max(declared_mb_j, expected_mb_j) - current_tree_rss_mb_j)
+outstanding_j = max(0, expected_mb_j - current_tree_rss_mb_j)
 available_mb - expected_peak_mb - sum(outstanding_j) >= reserve_mb
 ```
 
@@ -64,9 +64,12 @@ Equality admits; critical (4), unknown pressure and unreadable probes refuse.
 Free memory already accounts for current RSS. Charging only outstanding growth
 avoids counting that RSS twice, while preventing several newly admitted jobs
 from spending the same apparent headroom before they allocate their peaks.
-The holder PID identifies its process tree; for CI, its `Runner.Worker` ancestor
-is the root, since job steps can be siblings of the keeper. An unreadable tree
-charges its full peak. Holders without `expected_mb` use their declaration.
+The sidecar records the owning `Runner.Worker` PID passed to the keeper, so its
+whole job tree is measured even after the keeper is orphaned when the main
+action exits. Job steps can be siblings of the keeper. An unreadable tree
+charges its full expected peak. Growth uses the same expected peak checked at
+admission, even when the independent registered declaration is larger. Holders
+without `expected_mb` use their declaration.
 This rule does not limit RSS or guarantee against unsampled spikes, reparented
 processes, unmanaged work or background system growth.
 
@@ -99,21 +102,26 @@ registered declaration must fit the budget independently of the headroom rule.
 
 Every attempt exclusively locks `budget.lock` nonblocking, then one
 `active.lock.N`. CI never takes `agent-reserve.lock`. Accounting includes every
-occupied numbered lock, including old high indices, and the agent reserve.
-Free locks' sidecars are ignored. Occupied locks with missing, malformed or
-dead-PID metadata refuse admission; their size is never guessed.
+occupied numbered lock, including old high indices. Free numbered locks' sidecars
+are ignored. The agent reserve is never acquired, even to probe it: its sidecar
+is read without locking. Live reserve metadata is counted conservatively until
+removed, even if its lock is already free; missing or dead reserve metadata is
+ignored. Malformed reserve metadata and occupied numbered locks with missing,
+malformed or dead-PID metadata refuse admission; their size is never guessed.
 
 Before releasing the mutex, admission atomically replaces `<holder-lock>.json`
-from a same-directory temporary file. Its object contains `pid` (the keeper's
-positive PID), `project`, `kind`, `declared_mb` (positive integer), `expected_mb`
+from a same-directory temporary file. Its object contains `pid` (the owning
+worker's positive PID), `project`, `kind`, `declared_mb` (positive integer), `expected_mb`
 (positive finite number), and `started` (positive Unix timestamp in seconds).
 Only after publication may the ready marker appear. The holder lock remains
 held until job completion; metadata is unlinked before unlocking. Lock files
 are never removed, and neither lock descriptor survives exec.
 
 Refused attempts release both locks before waiting. Slot/mutex waits use
-`slot-poll-s` and reset memory backoff. Budget, memory and unaccounted-holder waits
-use `memory-backoff-s`, capped at its last element. Waits check cancellation
+`slot-poll-s` and reset memory backoff. Unaccounted-holder waits use the same
+slot interval, including the transient unlink-before-unlock release gap. Cleanup
+keeps that order so an old holder cannot delete a successor's sidecar. Budget
+and memory refusals use `memory-backoff-s`, capped at its last element. Waits check cancellation
 and owner identity at least each second and remain within the job timeout.
 Reasons are logged when they change; memory diagnostics include available,
 expected, outstanding, reserve and pressure. Admitted jobs are never stopped

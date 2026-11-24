@@ -79,7 +79,7 @@ def memory_healthy(policy, expected_mb, outstanding_mb):
     available = free * total / 100 if free is not None and total is not None else None
     # Free memory already excludes current RSS. Reserve only future growth, otherwise
     # jobs admitted before allocating their peak can spend the same free memory twice:
-    # available_mb - expected_mb - sum(max(0, max(declared, expected)_j - RSS_j)) >= reserve_mb.
+    # available_mb - expected_mb - sum(max(0, expected_j - RSS_j)) >= reserve_mb.
     # Unknown RSS charges the full peak. The declared budget remains a separate cap.
     healthy = (available is not None and level in (1, 2)
                and available - expected_mb - outstanding_mb >= policy['reserve_mb'])
@@ -144,7 +144,7 @@ def expected_peak(project, kind, policy, caller=None, now=None):
 
 
 def process_tree_mb(pid, timeout):
-    """Resolve the holder PID to its CI worker so sibling steps count too."""
+    """Measure the recorded owner tree, accepting older descendant roots too."""
     text = probe(['ps', '-axo', 'pid=,ppid=,rss=,comm='], timeout)
     if text is None:
         return None
@@ -181,7 +181,7 @@ class Backoff:
         self.policy, self.index = policy, 0
 
     def delay(self, reason):
-        if reason.split(':', 1)[0] in ('slots', 'mutex'):
+        if reason.split(':', 1)[0] in ('slots', 'mutex', 'unaccounted'):
             self.index = 0
             return self.policy['slot_poll_s']
         delays = self.policy['memory_backoff_s']
@@ -258,8 +258,8 @@ def sidecar_path(stream):
     return Path(str(stream.name) + '.json')
 
 
-def publish(stream, project, kind, amount, expected_mb):
-    data = {'pid': os.getpid(), 'project': project, 'kind': kind or 'unknown',
+def publish(stream, project, kind, amount, expected_mb, owner_pid):
+    data = {'pid': owner_pid, 'project': project, 'kind': kind or 'unknown',
             'declared_mb': amount, 'expected_mb': expected_mb, 'started': time.time()}
     path = sidecar_path(stream)
     temporary = path.with_name(f'{path.name}.{os.getpid()}.tmp')
@@ -271,6 +271,8 @@ def publish(stream, project, kind, amount, expected_mb):
 
 
 def release(stream):
+    # Keep unlink-before-unlock: deleting after unlock could erase a successor's
+    # sidecar. Scanners treat the brief unaccounted interval as a slot wait.
     try:
         sidecar_path(stream).unlink(missing_ok=True)
     finally:
@@ -293,10 +295,14 @@ def pool_usage(directory, candidate, timeout):
         if path == Path(candidate) or not (re.fullmatch(r'active\.lock\.[0-9]+', path.name)
                                           or path.name == 'agent-reserve.lock'):
             continue
-        probe = try_lock(path)
-        if probe is not None:
-            probe.close()
-            continue  # Free locks' stale metadata never reserves memory.
+        reserve = path.name == 'agent-reserve.lock'
+        if not reserve:
+            probe = try_lock(path)
+            if probe is not None:
+                probe.close()
+                continue  # Free numbered locks' stale metadata never reserves memory.
+        # Never acquire the agent reserve, even to test it. Read its metadata
+        # without locking; a live sidecar conservatively counts until removed.
         try:
             data = json.loads(Path(str(path) + '.json').read_text())
             if not isinstance(data, dict):
@@ -307,23 +313,34 @@ def pool_usage(directory, candidate, timeout):
             if (not isinstance(data.get('project'), str) or not data['project']
                     or not isinstance(data.get('kind'), str) or not data['kind']
                     or type(data.get('started')) not in (int, float)
-                    or not math.isfinite(data['started']) or data['started'] <= 0
-                    or not pid_alive(data['pid'])):
+                    or not math.isfinite(data['started']) or data['started'] <= 0):
                 raise ValueError('Metadata must describe a live holder')
+            if not pid_alive(data['pid']):
+                if reserve:
+                    continue  # Dead reserve metadata has no live reservation.
+                raise ValueError('Metadata must describe a live holder')
+        except FileNotFoundError:
+            if not reserve:
+                unaccounted.append(str(path))
+            continue
         except (OSError, ValueError, TypeError, OverflowError):
             unaccounted.append(str(path))
             continue
         total += amount
         expected = positive_number(data.get('expected_mb', amount), 'expected_mb')
-        peak = max(amount, expected)
+        # Growth uses exactly the expected peak checked for this job at admission.
+        # Registered declarations continue to count separately against the budget;
+        # older sidecars without expected_mb use their declaration consistently.
+        peak = expected
         actual = process_tree_mb(data['pid'], timeout)
         outstanding += peak if actual is None else max(0, peak - actual)
     return total, outstanding, unaccounted
 
 
-def try_admit(lock, slots, repository, kind, policy, caller=None, report_peak=print):
+def try_admit(lock, slots, repository, kind, policy, caller=None, report_peak=print, *, owner_pid):
     validate_policy(policy)
     positive_integer(slots, 'Admission slots')
+    positive_integer(owner_pid, 'Owner PID')
     # Configuration and paths are deliberately read on every attempt, before locking.
     settings = configuration(repository, kind)
     if 'ADMISSION_LOCK_DIR' in os.environ and not os.environ['ADMISSION_LOCK_DIR']:
@@ -358,7 +375,7 @@ def try_admit(lock, slots, repository, kind, policy, caller=None, report_peak=pr
         healthy, detail = memory_healthy(policy, peak['mb'], outstanding)
         if not healthy:
             return None, 'memory: ' + detail
-        publish(stream, project, kind, amount, peak['mb'])
+        publish(stream, project, kind, amount, peak['mb'], owner_pid)
         admitted = True
         return stream, None
     finally:
@@ -387,7 +404,7 @@ def hold(lock, ready, pid, expected, slots, policy, kind='', repository='', call
 
     backoff = Backoff(policy)
     while not STOPPED and identity(pid) == expected:
-        stream, reason = try_admit(lock, slots, repository, kind, policy, caller, report_peak)
+        stream, reason = try_admit(lock, slots, repository, kind, policy, caller, report_peak, owner_pid=pid)
         if stream is not None:
             try:
                 if STOPPED or identity(pid) != expected:
