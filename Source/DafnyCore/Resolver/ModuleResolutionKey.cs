@@ -64,6 +64,7 @@ public static class ModuleResolutionKey {
     ["persistent-translation"] = "a later stage's cache",
     ["persistent-translation-audit"] = "checks a later stage's cache; changes no result",
     ["verification-cache"] = "the store's root, not an input; keys never name a location",
+    ["verification-cache-solver-digest"] = "declares which solver images the result cache accepts; the digest of the image run is in its keys",
     ["cache-partition"] = "store accounting only",
     ["cache-partition-budget"] = "store retention only",
     ["cache-size-cap"] = "store retention only",

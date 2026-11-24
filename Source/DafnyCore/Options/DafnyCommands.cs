@@ -122,6 +122,7 @@ public static class DafnyCommands {
     CommonOptionBag.TypeSystemRefresh,
     CommonOptionBag.ResolutionThreads,
     CommonOptionBag.VerificationCache,
+    CommonOptionBag.VerificationCacheSolverDigest,
     CommonOptionBag.CachePartition,
     CommonOptionBag.CachePartitionBudget,
     CommonOptionBag.CacheSizeCap,
