@@ -321,6 +321,17 @@ Various options control the verification process, in addition to all those descr
   describe the current invocation, not a new solver measurement. Unsupported
   execution profiles run normally. The initial native profile supports macOS
   and Linux; custom loading environments and solver launcher scripts bypass.
+  Results are stored and replayed only for an audited solver binary: one of the
+  Z3 5.1.0 release binaries, identified by the SHA-256 digest of their bytes, or
+  one declared by `--verification-cache-solver-digest SHA256`
+  ([#574](https://github.com/erniecohen/dafny/issues/574)). The option is
+  repeatable, and `verification-cache-solver-digest = ["..."]` in `dfyconfig.toml`
+  declares digests too; declare only a build you have audited, such as a
+  reproducible source build of the same Z3 release. A declaration adds to the
+  built-in list and replaces no check: the binary is still hashed, its digest must
+  be built in or declared, and the digest stays in every key, so results from
+  different binaries never mix. When digests are declared and the binary matches
+  none of them, the run verifies without the cache and prints a warning.
   Both a framework-dependent build, whose .NET host is identified by the
   installation's `host/fxr`, and a self-contained build, whose bundled
   `libhostfxr` and `libhostpolicy` identify its host, are supported. Each request of
@@ -2874,11 +2885,19 @@ and what information it produces about the verification process.
   strictly below that value in the termination order.
   A lambda's value is tagged with its parameter types, and two ghost functions
   marked `{:functionDomain "restrict"}` and `{:functionDomain "exactDom"}`, of
-  signatures `Restrict<A, B>(f: A -> B): A -> B` and `ExactDom<A, B>(f: A -> B):
-  bool`, give the restriction of a function to `A` and whether `A` is exactly its
-  domain; every total arrow on `int`, `real`, `bool` or `ORDINAL` has an exact
-  domain. Function extensionality for functions with exact domains can then be
-  stated as a lemma without a body.
+  signatures `Restrict<A1, ..., An, B>(f: (A1, ..., An) -> B): (A1, ..., An) -> B`
+  and `ExactDom<A1, ..., An, B>(f: (A1, ..., An) -> B): bool`, give the restriction
+  to that product domain and whether it is exactly the value's domain, including
+  nullary functions. Products of `int`, `real`, `bool` and `ORDINAL` are exact.
+  `Restrict` may have the checked eta-expansion body
+  `(x1: A1, ..., xn: An) => f(x1, ..., xn)`. An annotated ghost predicate
+  `{:functionDomain "equal"} Equal<A1, ..., An, B>(f: (A1, ..., An) -> B,
+  g: (A1, ..., An) -> B)` must have the checked body `f == g`; its application
+  supplies an explicit extensionality instance when both domains are exact and
+  the values agree pointwise. These annotations require static declarations
+  without other specifications. The opt-in source library `Std.FunctionDomains`
+  supplies checked explicit-call lemmas and wrappers for arities zero through
+  four; see its [usage guide](../../Source/DafnyStandardLibraries/function-domains/README.md).
   See [the soundness, trigger and solver-limit note](../dev/additional-axioms.md).
 
 * `--function-extensionality-axiom` - give function values domain tags, as
@@ -2886,8 +2905,8 @@ and what information it produces about the verification process.
   exact domain equal when they agree on it, at each equality between
   them, including nullary functions. Products of `int`, `real`, `bool` and
   `ORDINAL` have exact domains; for other types the functions must have been
-  built with that exact domain. `Restrict` and `ExactDom` currently support
-  unary functions only. Disabled by default. It can change proof costs. See
+  built with that exact domain. `Restrict`, `ExactDom` and explicit-call
+  extensionality support every arity. Disabled by default. It can change proof costs. See
   [the soundness note](../dev/additional-axioms.md).
 
 * `--heap-free-lambda-facts` - check a lambda without a reads clause, whose

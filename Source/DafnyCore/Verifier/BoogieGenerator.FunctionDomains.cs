@@ -148,9 +148,7 @@ public partial class BoogieGenerator {
       AddOtherDefinition(GetOrCreateTypeConstructor(ad), new Axiom(tok,
         BplForall(bvars, BplTrigger(dom), BplIff(dom, guard))));
     }
-    if (arity == 1 || FunctionExtensionalityAxiom) {
-      AddExactDomainAxioms(ad);
-    }
+    AddExactDomainAxioms(ad);
   }
 
   /// <summary>
@@ -281,11 +279,10 @@ public partial class BoogieGenerator {
   }
 
   /// <summary>
-  /// Returns "restrict" or "exactDom" when f is a well-formed {:functionDomain} declaration:
-  ///   ghost function {:axiom} {:functionDomain "restrict"} Restrict<A, B>(f: A -> B): A -> B
-  ///   ghost predicate {:axiom} {:functionDomain "exactDom"} ExactDom<A, B>(f: A -> B)
-  /// with no body, precondition, postcondition or reads clause.  Otherwise reports an error
-  /// for a malformed one and returns null.
+  /// Recognizes the intrinsic domain operations at any arity. Restrict may also have
+  /// the checked eta-expansion body (x_1, ..., x_N) => f(x_1, ..., x_N).
+  /// The explicit-call equality predicate must have the ordinary body f == g;
+  /// its extensionality instance is triggered only by a call of that predicate.
   /// </summary>
   private string FunctionDomainKind(Function f) {
     var args = Attributes.FindExpressions(f.Attributes, FunctionDomainAttributeName);
@@ -293,36 +290,61 @@ public partial class BoogieGenerator {
       return null;
     }
     string kind = args.Count == 1 && args[0] is StringLiteralExpr { Value: string s } ? s : null;
-    var ok = (kind == "restrict" || kind == "exactDom") &&
-             f.Body == null && f.Req.Count == 0 && f.Ens.Count == 0 && f.Reads.Expressions.Count == 0 &&
-             f.IsStatic && f.EnclosingClass is DefaultClassDecl && f.TypeArgs.Count == 2 && f.Ins.Count == 1 &&
-             !f.IsFuelAware() && !f.IsOpaque && !f.IsMadeImplicitlyOpaque(options) && f is not TwoStateFunction &&
-             IsTotalArrowOver(f.Ins[0].Type, f.TypeArgs[0], f.TypeArgs[1]) &&
-             (kind == "restrict" ? IsTotalArrowOver(f.ResultType, f.TypeArgs[0], f.TypeArgs[1]) : f.ResultType.IsBoolType);
-    if (!ok) {
+    var equality = kind == "equal";
+    var signature = (kind is "restrict" or "exactDom" or "equal") &&
+                    f.Req.Count == 0 && f.Ens.Count == 0 && f.Reads.Expressions.Count == 0 &&
+                    f.IsGhost && f.IsStatic && f.EnclosingClass is DefaultClassDecl &&
+                    f.TypeArgs.Count >= 1 && f.Ins.Count == (equality ? 2 : 1) &&
+                    !f.IsFuelAware() && !f.IsOpaque && !f.IsMadeImplicitlyOpaque(options) &&
+                    f is not TwoStateFunction &&
+                    f.Ins.All(p => IsTotalArrowOver(p.Type, f.TypeArgs)) &&
+                    (kind == "restrict" ? IsTotalArrowOver(f.ResultType, f.TypeArgs) : f.ResultType.IsBoolType);
+    var body = signature && (kind switch {
+      "restrict" => f.Body == null || IsRestrictionBody(f),
+      "exactDom" => f.Body == null,
+      "equal" => f.Body?.Resolved is BinaryExpr { Op: BinaryExpr.Opcode.Eq } eq &&
+                 IsParameter(eq.E0, f.Ins[0]) && IsParameter(eq.E1, f.Ins[1]),
+      _ => false
+    });
+    if (!body) {
       reporter.Error(MessageSource.Verifier, f.Origin,
-        "{:" + FunctionDomainAttributeName + "} expects \"restrict\" on a body-less ghost function <A, B>(f: A -> B): A -> B, " +
-        "or \"exactDom\" on a body-less ghost predicate <A, B>(f: A -> B), with no other specification");
+        "{:" + FunctionDomainAttributeName + "} expects a static ghost function with type parameters <A1, ..., An, B> " +
+        "and no other specification: \"restrict\" on (f: (A1, ..., An) -> B): (A1, ..., An) -> B, " +
+        "body-less or with body (x1: A1, ..., xn: An) => f(x1, ..., xn); \"exactDom\" on a body-less " +
+        "predicate (f: (A1, ..., An) -> B); or \"equal\" on a predicate (f: (A1, ..., An) -> B, " +
+        "g: (A1, ..., An) -> B) with body f == g");
       return null;
     }
     return kind;
   }
 
-  private bool IsTotalArrowOver(Type t, TypeParameter a, TypeParameter b) {
-    return program.SystemModuleManager.TotalArrowTypeDecls.TryGetValue(1, out var total) &&
-           t is UserDefinedType { ResolvedClass: var cl } udt && cl == total && udt.TypeArgs.Count == 2 &&
-           udt.TypeArgs[0].AsTypeParameter == a && udt.TypeArgs[1].AsTypeParameter == b;
+  private static bool IsParameter(Expression e, IVariable parameter) {
+    return e.Resolved is IdentifierExpr id && id.Var == parameter;
+  }
+
+  private bool IsTotalArrowOver(Type t, List<TypeParameter> parameters) {
+    var arity = parameters.Count - 1;
+    return program.SystemModuleManager.TotalArrowTypeDecls.TryGetValue(arity, out var total) &&
+           t is UserDefinedType { ResolvedClass: var cl } udt && cl == total &&
+           udt.TypeArgs.Count == parameters.Count &&
+           udt.TypeArgs.Zip(parameters, (actual, formal) => actual.AsTypeParameter == formal).All(x => x);
+  }
+
+  private static bool IsRestrictionBody(Function f) {
+    return f.Body.Resolved is LambdaExpr lambda && lambda.Range == null &&
+           lambda.Reads.Expressions.Count == 0 && lambda.BoundVars.Count == f.TypeArgs.Count - 1 &&
+           lambda.BoundVars.Zip(f.TypeArgs, (v, t) => v.Type.AsTypeParameter == t).All(x => x) &&
+           lambda.Body.Resolved is ApplyExpr apply && IsParameter(apply.Function, f.Ins[0]) &&
+           apply.Args.Count == lambda.BoundVars.Count &&
+           apply.Args.Zip(lambda.BoundVars, (e, v) => IsParameter(e, v)).All(x => x);
   }
 
   /// <summary>
-  /// For Restrict(A, B, f):
-  ///   $FunDom1(Restrict(A, B, f), bx) <==> $IsBox(bx, A)
-  ///   $IsBox(bx, A) ==> Apply1(t0, t1, heap, Restrict(A, B, f), bx) == Apply1(t0, t1, heap, f, bx)
-  /// Requires1 and Reads1 of Restrict(A, B, f) on A need no axiom: its result type A -> B
-  /// already makes them true and empty there, as they are for f.
-  ///   $ExactDom1(A, f) ==> Restrict(A, B, f) == f
-  /// For ExactDom(A, B, f):
-  ///   ExactDom(A, B, f) <==> $ExactDom1(A, f)
+  /// Restrict's domain is the product of its argument types. Its application agrees
+  /// with f on that product, and restriction is the identity exactly on exact domains.
+  /// ExactDom compares sets of argument tuples, including the singleton empty tuple.
+  /// Equal adds the existing extensionality rule at an explicit predicate call; its
+  /// checked source body supplies the implication from the predicate to Leibniz equality.
   /// </summary>
   private void AddFunctionDomainAxioms(Function f) {
     var kind = FunctionDomainKind(f);
@@ -331,52 +353,58 @@ public partial class BoogieGenerator {
     }
     var tok = f.Origin;
     var name = f.FullSanitizedName;
+    var arity = f.TypeArgs.Count - 1;
+    var bvars = new List<Bpl.Variable>();
+    var domains = Map(Enumerable.Range(0, arity), i => BplBoundVar("A" + i, Predef.Ty, bvars));
+    var b = BplBoundVar("B", Predef.Ty, bvars);
+    var types = Snoc(domains, b);
+    var fn = BplBoundVar("f", Predef.HandleType, bvars);
+    var callArgs = Snoc(types, fn);
+    var exact = FunctionCall(tok, ExactDom(arity), Bpl.Type.Bool, Snoc(domains, fn));
     if (kind == "restrict") {
+      var restricted = FunctionCall(tok, name, Predef.HandleType, callArgs);
       {
-        var bvars = new List<Bpl.Variable>();
-        var a = BplBoundVar("A", Predef.Ty, bvars);
-        var b = BplBoundVar("B", Predef.Ty, bvars);
-        var fn = BplBoundVar("f", Predef.HandleType, bvars);
-        var bx = BplBoundVar("bx", Predef.BoxType, bvars);
-        var restricted = FunctionCall(tok, name, Predef.HandleType, a, b, fn);
-        var dom = FunctionCall(tok, FunDom(1), Bpl.Type.Bool, restricted, bx);
+        var vars = new List<Bpl.Variable>(bvars);
+        var boxes = Map(Enumerable.Range(0, arity), i => BplBoundVar("bx" + i, Predef.BoxType, vars));
+        var dom = FunctionCall(tok, FunDom(arity), Bpl.Type.Bool, Cons(restricted, boxes));
+        var inDomain = BplAnd(boxes.Zip(domains, (bx, a) => MkIs(bx, a, true)));
         AddOtherDefinition(GetOrCreateFunction(f), new Axiom(tok,
-          BplForall(bvars, BplTrigger(dom), BplIff(dom, MkIs(bx, a, true))), "domain of " + name));
+          BplForall(vars, BplTrigger(dom), BplIff(dom, inDomain)), "domain of " + name));
       }
       {
-        var bvars = new List<Bpl.Variable>();
-        var a = BplBoundVar("A", Predef.Ty, bvars);
-        var b = BplBoundVar("B", Predef.Ty, bvars);
-        var fn = BplBoundVar("f", Predef.HandleType, bvars);
-        var t0 = BplBoundVar("t0", Predef.Ty, bvars);
-        var t1 = BplBoundVar("t1", Predef.Ty, bvars);
-        var heap = BplBoundVar("heap", Predef.HeapType, bvars);
-        var bx = BplBoundVar("bx", Predef.BoxType, bvars);
-        var restricted = FunctionCall(tok, name, Predef.HandleType, a, b, fn);
-        var lhs = FunctionCall(tok, Apply(1), Predef.BoxType, t0, t1, heap, restricted, bx);
-        var rhs = FunctionCall(tok, Apply(1), Predef.BoxType, t0, t1, heap, fn, bx);
+        var vars = new List<Bpl.Variable>(bvars);
+        var applyTypes = Map(Enumerable.Range(0, arity + 1), i => BplBoundVar("t" + i, Predef.Ty, vars));
+        var heap = BplBoundVar("heap", Predef.HeapType, vars);
+        var boxes = Map(Enumerable.Range(0, arity), i => BplBoundVar("bx" + i, Predef.BoxType, vars));
+        var lhs = FunctionCall(tok, Apply(arity), Predef.BoxType, Concat(applyTypes, Cons(heap, Cons(restricted, boxes))));
+        var rhs = FunctionCall(tok, Apply(arity), Predef.BoxType, Concat(applyTypes, Cons(heap, Cons(fn, boxes))));
+        var inDomain = BplAnd(boxes.Zip(domains, (bx, a) => MkIs(bx, a, true)));
         AddOtherDefinition(GetOrCreateFunction(f), new Axiom(tok,
-          BplForall(bvars, BplTrigger(lhs), BplImp(MkIs(bx, a, true), Bpl.Expr.Eq(lhs, rhs))), Apply(1) + " of " + name));
+          BplForall(vars, BplTrigger(lhs), BplImp(inDomain, Bpl.Expr.Eq(lhs, rhs))), Apply(arity) + " of " + name));
       }
-      {
-        var bvars = new List<Bpl.Variable>();
-        var a = BplBoundVar("A", Predef.Ty, bvars);
-        var b = BplBoundVar("B", Predef.Ty, bvars);
-        var fn = BplBoundVar("f", Predef.HandleType, bvars);
-        var restricted = FunctionCall(tok, name, Predef.HandleType, a, b, fn);
-        var exact = FunctionCall(tok, ExactDom(1), Bpl.Type.Bool, a, fn);
-        AddOtherDefinition(GetOrCreateFunction(f), new Axiom(tok,
-          BplForall(bvars, BplTrigger(restricted), BplImp(exact, Bpl.Expr.Eq(restricted, fn))), "exact domain of " + name));
-      }
-    } else {
-      var bvars = new List<Bpl.Variable>();
-      var a = BplBoundVar("A", Predef.Ty, bvars);
-      var b = BplBoundVar("B", Predef.Ty, bvars);
-      var fn = BplBoundVar("f", Predef.HandleType, bvars);
-      var exact = FunctionCall(tok, name, Bpl.Type.Bool, a, b, fn);
       AddOtherDefinition(GetOrCreateFunction(f), new Axiom(tok,
-        BplForall(bvars, BplTrigger(exact), BplIff(exact, FunctionCall(tok, ExactDom(1), Bpl.Type.Bool, a, fn))),
-        "definition of " + name));
+        BplForall(bvars, BplTrigger(restricted), BplImp(exact, Bpl.Expr.Eq(restricted, fn))), "exact domain of " + name));
+    } else if (kind == "exactDom") {
+      var call = FunctionCall(tok, name, Bpl.Type.Bool, callArgs);
+      AddOtherDefinition(GetOrCreateFunction(f), new Axiom(tok,
+        BplForall(bvars, BplTrigger(call), BplIff(call, exact)), "definition of " + name));
+    } else {
+      var g = BplBoundVar("g", Predef.HandleType, bvars);
+      var call = FunctionCall(tok, name, Bpl.Type.Bool, Snoc(callArgs, g));
+      var arrow = ClassTyCon(program.SystemModuleManager.TotalArrowTypeDecls[arity], types);
+      var boxVars = new List<Bpl.Variable>();
+      var boxes = Map(Enumerable.Range(0, arity), i => BplBoundVar("bx" + i, Predef.BoxType, boxVars));
+      var heap = NewOneHeapExpr(tok);
+      var fx = FunctionCall(tok, Apply(arity), Predef.BoxType, Concat(types, Cons(heap, Cons(fn, boxes))));
+      var gx = FunctionCall(tok, Apply(arity), Predef.BoxType, Concat(types, Cons(heap, Cons(g, boxes))));
+      var inDomain = BplAnd(boxes.Zip(domains, (bx, a) => MkIs(bx, a, true)));
+      var pointwise = BplForall(boxVars, new Bpl.Trigger(tok, true, [fx], new Bpl.Trigger(tok, true, [gx])),
+        BplImp(inDomain, Bpl.Expr.Eq(fx, gx)));
+      var premises = BplAnd(BplAnd(MkIs(fn, arrow), MkIs(g, arrow)),
+        BplAnd(exact, FunctionCall(tok, ExactDom(arity), Bpl.Type.Bool, Snoc(domains, g))));
+      AddOtherDefinition(GetOrCreateFunction(f), new Axiom(tok,
+        BplForall(bvars, BplTrigger(call), BplImp(BplAnd(premises, pointwise), call)),
+        "explicit extensionality of " + name));
     }
   }
 }
