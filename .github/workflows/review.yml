@@ -1316,7 +1316,7 @@ jobs:
           dotnet test -p:NuGetAudit=false --settings .github/review/ci.runsettings Source/DafnyDriver.Test -c Release --filter FullyQualifiedName~VerificationCacheOptionAuditTest --logger "console;verbosity=normal"
       - name: Translation snapshots match default Boogie and raw solver commands
         timeout-minutes: 90
-        run: dotnet test -p:NuGetAudit=false --settings .github/review/ci.runsettings Source/DafnyCore.Test -c Release --filter FullyQualifiedName~ModuleTranslationCacheTests --logger "console;verbosity=normal"
+        run: dotnet test -p:NuGetAudit=false --settings .github/review/ci.runsettings Source/DafnyCore.Test -c Release --filter 'FullyQualifiedName~ModuleTranslationCacheTests|FullyQualifiedName~WitnessTranslationTests' --logger "console;verbosity=normal"
       - name: Translation snapshots preserve reports, coverage and resource counts
         env:
           Z3: ${{ github.workspace }}/Binaries/z3/bin/z3-5.1.0
