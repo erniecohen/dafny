@@ -1,0 +1,82 @@
+
+Dafny program verifier finished with 27 verified, 0 errors
+
+Dafny program verifier finished with 27 verified, 0 errors
+
+Dafny program verifier finished with 27 verified, 0 errors
+git-issue-374-pointwise-negative.dfy(11,2): Error: assertion might not hold
+git-issue-374-pointwise-negative.dfy(17,2): Error: assertion might not hold
+git-issue-374-pointwise-negative.dfy(26,2): Error: assertion might not hold
+git-issue-374-pointwise-negative.dfy(32,2): Error: assertion might not hold
+git-issue-374-pointwise-negative.dfy(41,2): Error: assertion might not hold
+git-issue-374-pointwise-negative.dfy(47,2): Error: assertion might not hold
+git-issue-374-pointwise-negative.dfy(56,2): Error: assertion might not hold
+git-issue-374-pointwise-negative.dfy(62,2): Error: assertion might not hold
+git-issue-374-pointwise-negative.dfy(68,0): Error: a postcondition could not be proved on this return path
+git-issue-374-pointwise-negative.dfy(67,36): Related location: this is the postcondition that could not be proved
+git-issue-374-pointwise-negative.dfy(73,33): Error: a precondition for this call could not be proved
+Pointwise.dfy(21,25): Related location: this is the precondition that could not be proved
+git-issue-374-pointwise-negative.dfy(81,2): Error: assertion might not hold
+git-issue-374-pointwise-negative.dfy(92,2): Error: assertion might not hold
+git-issue-374-pointwise-negative.dfy(102,2): Error: assertion might not hold
+
+Dafny program verifier finished with 14 verified, 13 errors
+git-issue-374-pointwise-negative.dfy(11,2): Error: assertion might not hold
+git-issue-374-pointwise-negative.dfy(17,2): Error: assertion might not hold
+git-issue-374-pointwise-negative.dfy(26,2): Error: assertion might not hold
+git-issue-374-pointwise-negative.dfy(32,2): Error: assertion might not hold
+git-issue-374-pointwise-negative.dfy(41,2): Error: assertion might not hold
+git-issue-374-pointwise-negative.dfy(47,2): Error: assertion might not hold
+git-issue-374-pointwise-negative.dfy(56,2): Error: assertion might not hold
+git-issue-374-pointwise-negative.dfy(62,2): Error: assertion might not hold
+git-issue-374-pointwise-negative.dfy(68,0): Error: a postcondition could not be proved on this return path
+git-issue-374-pointwise-negative.dfy(67,36): Related location: this is the postcondition that could not be proved
+git-issue-374-pointwise-negative.dfy(73,33): Error: a precondition for this call could not be proved
+Pointwise.dfy(21,25): Related location: this is the precondition that could not be proved
+git-issue-374-pointwise-negative.dfy(81,2): Error: assertion might not hold
+git-issue-374-pointwise-negative.dfy(92,2): Error: assertion might not hold
+git-issue-374-pointwise-negative.dfy(102,2): Error: assertion might not hold
+
+Dafny program verifier finished with 14 verified, 13 errors
+git-issue-374-pointwise-negative.dfy(11,2): Error: assertion might not hold
+git-issue-374-pointwise-negative.dfy(17,2): Error: assertion might not hold
+git-issue-374-pointwise-negative.dfy(26,2): Error: assertion might not hold
+git-issue-374-pointwise-negative.dfy(32,2): Error: assertion might not hold
+git-issue-374-pointwise-negative.dfy(41,2): Error: assertion might not hold
+git-issue-374-pointwise-negative.dfy(47,2): Error: assertion might not hold
+git-issue-374-pointwise-negative.dfy(56,2): Error: assertion might not hold
+git-issue-374-pointwise-negative.dfy(62,2): Error: assertion might not hold
+git-issue-374-pointwise-negative.dfy(68,0): Error: a postcondition could not be proved on this return path
+git-issue-374-pointwise-negative.dfy(67,36): Related location: this is the postcondition that could not be proved
+git-issue-374-pointwise-negative.dfy(73,33): Error: a precondition for this call could not be proved
+Pointwise.dfy(21,25): Related location: this is the precondition that could not be proved
+git-issue-374-pointwise-negative.dfy(81,2): Error: assertion might not hold
+git-issue-374-pointwise-negative.dfy(92,2): Error: assertion might not hold
+git-issue-374-pointwise-negative.dfy(102,2): Error: assertion might not hold
+
+Dafny program verifier finished with 14 verified, 13 errors
+git-issue-374-pointwise-effects.dfy(6,2): Error: assertion might not hold
+git-issue-374-pointwise-effects.dfy(6,36): Error: value does not satisfy the subset constraints of 'C -> int' (possible cause: it may be partial or have read effects)
+git-issue-374-pointwise-effects.dfy(10,2): Error: assertion might not hold
+git-issue-374-pointwise-effects.dfy(10,36): Error: value does not satisfy the subset constraints of 'C -> int' (possible cause: it may be partial or have read effects)
+git-issue-374-pointwise-effects.dfy(10,39): Error: value does not satisfy the subset constraints of 'C -> int' (possible cause: it may be partial or have read effects)
+git-issue-374-pointwise-effects.dfy(11,33): Error: a precondition for this call could not be proved
+Pointwise.dfy(21,25): Related location: this is the precondition that could not be proved
+git-issue-374-pointwise-effects.dfy(11,33): Error: a precondition for this call could not be proved
+Pointwise.dfy(21,42): Related location: this is the precondition that could not be proved
+
+Dafny program verifier finished with 4 verified, 7 errors
+git-issue-374-pointwise-effects.dfy(6,2): Error: assertion might not hold
+git-issue-374-pointwise-effects.dfy(6,36): Error: value does not satisfy the subset constraints of 'C -> int' (possible cause: it may be partial or have read effects)
+git-issue-374-pointwise-effects.dfy(10,2): Error: assertion might not hold
+git-issue-374-pointwise-effects.dfy(10,36): Error: value does not satisfy the subset constraints of 'C -> int' (possible cause: it may be partial or have read effects)
+git-issue-374-pointwise-effects.dfy(10,39): Error: value does not satisfy the subset constraints of 'C -> int' (possible cause: it may be partial or have read effects)
+git-issue-374-pointwise-effects.dfy(11,33): Error: a precondition for this call could not be proved
+Pointwise.dfy(21,25): Related location: this is the precondition that could not be proved
+git-issue-374-pointwise-effects.dfy(11,33): Error: a precondition for this call could not be proved
+Pointwise.dfy(21,42): Related location: this is the precondition that could not be proved
+
+Dafny program verifier finished with 4 verified, 7 errors
+Dafny auditor completed with 0 findings
+
+Dafny program verifier did not attempt verification

@@ -153,8 +153,8 @@ namespace Microsoft.Dafny {
           testResult.SetPropertyValue(TimingReplayedProperty, true);
         }
         testResult.SetPropertyValue(ResourceCountProperty, vcResult.ResourceCount);
-        if (task != null && task.Split.RandomSeed != 0) {
-          testResult.SetPropertyValue(RandomSeedProperty, task.Split.RandomSeed);
+        if (task != null && Caching.VerificationTaskFacts.RandomSeed(task) != 0) {
+          testResult.SetPropertyValue(RandomSeedProperty, Caching.VerificationTaskFacts.RandomSeed(task));
         }
         if (vcResult.Outcome == SolverOutcome.Valid) {
           testResult.Outcome = TestOutcome.Passed;

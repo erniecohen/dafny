@@ -1,16 +1,26 @@
 #!/usr/bin/env python3
 """Check embedded checked-Std selection and erasure after producing and embedding its catalog.
 
-Usage: modular-termination-catalog.py DAFNY Z3 OUT
+Usage: modular-termination-catalog.py DAFNY Z3 OUT [--cores N]
 Proofs use the complete certificates. Backend-only runs skip re-verification of the
 already checked five-family control; they do not produce certificates.
 """
+import argparse
 import json
 from pathlib import Path
 import subprocess
-import sys
 
-binary, solver, directory = [str(Path(p).resolve()) for p in sys.argv[1:]]
+from catalog_erasure import check_ghost_erasure
+
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument('dafny')
+parser.add_argument('solver')
+parser.add_argument('output')
+parser.add_argument('--cores', type=int, default=3)
+args = parser.parse_args()
+if args.cores < 1:
+    parser.error('--cores must be positive')
+binary, solver, directory = [str(Path(p).resolve()) for p in [args.dafny, args.solver, args.output]]
 root = Path(__file__).resolve().parents[2]
 out = Path(directory)
 out.mkdir(parents=True, exist_ok=True)
@@ -18,7 +28,7 @@ launcher = ['dotnet', binary] if binary.endswith('.dll') else [binary]
 options = ['--standard-libraries:true', '--solver-path', solver,
     '--type-system-refresh', '--general-traits=datatype', '--general-newtypes',
     '--reads-clauses-on-methods', '--enforce-determinism', '--track-print-effects',
-    '--cores', '3', '--resource-limit', '16000000', '--use-basename-for-filename']
+    '--cores', str(args.cores), '--resource-limit', '16000000', '--use-basename-for-filename']
 ghost = '--modular-termination-trust:standard-library'
 runtime = '--modular-termination-runtime-trust:standard-library'
 rows = []
@@ -63,9 +73,7 @@ try:
         files = [p for p in destination.rglob('*') if p.is_file()]
         assert files, target + ': no generated files'
         for path in files:
-            text = path.read_text(errors='replace')
-            for field in ['allowance', 'producedAllowanceCeiling', 'maximumProduced']:
-                assert field not in text, str(path) + ': ghost evidence survived compilation'
+            check_ghost_erasure(path, target)
     run('cs-execution', ['run'] + options + [ghost, runtime, '--no-verify',
         '--output:' + str(out / 'execute'), str(families)], contains=['five families exercised'])
 finally:

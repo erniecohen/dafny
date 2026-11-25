@@ -106,10 +106,15 @@ orders their initialization by dependencies within the single package, so a
 sibling's identity is available before a companion that uses it. No static
 initializer needs another package in the same group to have initialized first.
 
-Extern modules, types and members within a Go group are explicitly rejected:
-their foreign-package names need a separate linkage convention before they can
-be combined with the generated package. This restriction does not affect an
-acyclic module or a foreign dependency outside the group.
+Extern linkage preserves two identities: the shared package for generated group
+declarations, and each extern module's foreign package and import path. Extern
+types keep their specified names; references through their non-null types use
+the same identity. Unqualified extern methods in ordinary members complete the
+shared package, including methods of generated partial extern classes. Foreign
+source files are copied to distinct filenames under the existing experimental
+option, preserving generated code and multiple inputs for one package. See
+`docs/Compilation/Go.md`, "Recursive module groups", for the linkage convention
+and Go's remaining foreign-package restrictions.
 
 `git-issue-466-go.dfy` compares Go against C# for every case of the Java fixture,
 with and without wrapper erasure, with scheduled resolution and additional
@@ -122,7 +127,14 @@ outside the groups. A separately emitted producer and a client using
 includes files in an order different from file-name order. The client's verified
 archive is rebuilt from renamed copies of those sources, to check that relocation
 and the archive round trip preserve the package and declaration identities.
-`git-issue-466-go-extern.dfy` checks the foreign-linkage restriction.
+`git-issue-466-go-extern.dfy` compares extern linkage with C#: module-, type-
+and member-level extern names, partial classes, sibling types in foreign method
+signatures, qualified generic functions with result coercions, type descriptors and erased
+ghost arguments, function values, newtype custom receivers, protected aliases for
+foreign dependencies outside the group, built-in type names, multiple foreign
+files, calls within and outside a group, complete `.doo` inputs and separately
+translated producer/client packages. It repeats the foreign-module comparison
+with additional axioms and scheduled resolution.
 
 This is an opt-in compilation feature. It adds no verification condition, axiom,
 trusted assumption or verifier-lowering site. With recursive modules off, the

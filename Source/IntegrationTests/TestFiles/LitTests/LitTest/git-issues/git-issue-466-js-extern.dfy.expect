@@ -4,9 +4,9 @@ git-issue-466-js-extern.dfy(7,17): Error: JavaScript compilation of recursive mo
 Translation was aborted because errors were found
 
 Dafny program verifier did not attempt verification
-git-issue-466-go-extern-type.dfy(1,7): Error: JavaScript compilation of recursive module groups with extern declarations is not yet supported
+git-issue-466-js-extern-type.dfy(1,7): Error: JavaScript compilation of recursive module groups with extern declarations is not yet supported
 Translation was aborted because errors were found
 
 Dafny program verifier did not attempt verification
-git-issue-466-go-extern-member.dfy(1,7): Error: JavaScript compilation of recursive module groups with extern declarations is not yet supported
+git-issue-466-js-extern-member.dfy(1,7): Error: JavaScript compilation of recursive module groups with extern declarations is not yet supported
 Translation was aborted because errors were found

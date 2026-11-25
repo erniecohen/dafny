@@ -18,6 +18,9 @@ resource-limit = 1000000
 warn-redundant-assumptions = false
 warn-contradictory-assumptions = false
 
-library = [
-  "../binaries/DafnyStandardLibraries.doo"
-]
+# Orders uses only built-in types. Keep this independently verified library free of dependencies.
+standard-libraries = false
+
+# Check helper summaries while building this implementation library from source.
+decreases-orders = true
+bootstrapping = true

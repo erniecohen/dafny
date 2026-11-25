@@ -1234,9 +1234,10 @@ With `--additional-axioms` (or `--function-extensionality-axiom`), in
   - `ExactDom(A, B, f) <==> $ExactDom1(A, f)`.
   With the option off they are opaque functions, so a program that does not
   declare them is unaffected either way.
-- With `--additional-axioms` alone, extensionality is a lemma the program states
-  and calls (`FunExt` in `git-issues/Inputs/github-issue-374-decls.dfy`): there is
-  no extensionality axiom.
+- With `--additional-axioms` alone, ordinary arrow equality does not trigger
+  extensionality. The original regression's `FunExt` is a trusted lemma in a
+  test input; the checked explicit-call interface described below replaces
+  that pattern for new library clients.
 - With `--function-extensionality-axiom`, which also turns the tags on, `==` and
   `!=` between total arrows of one argument translate to `$FunEq1(a, b, f, g)`
   instead of Boogie's `==`, with `$FunEq1(a, b, f, g) <==> f == g` and, triggered
@@ -1301,3 +1302,193 @@ are each rejected under both options.
 `git-issues/github-issue-34.dfy` (`Std.Axioms.FunctionExtensionality`) is
 unchanged under both options. Under the axiom, its control that an uncalled
 lemma cannot prove `f == g` becomes provable, as intended.
+
+
+### Extensionality at every arity
+
+The `--function-extensionality-axiom` translation also handles total arrows of
+arity zero and arity greater than one. For arity `N`, `$ExactDomN(a_1, ..., a_N,
+f)` compares `$FunDomN(f, bx_1, ..., bx_N)` with the conjunction of the `N`
+box-membership predicates, universally over the argument tuple. `$FunEqN` is
+Leibniz equality, just as `$FunEq1` is. Its extensionality axiom has the same
+premises: both values have the total arrow type, both domains are exactly the
+product of the operand's argument types, and their applications at `$OneHeap`
+agree throughout that product. The two equality operands supply the trigger.
+No result is asserted for partial or heap-reading arrows.
+
+The product of basic domains (`int`, `real`, `bool`, `ORDINAL`) is exact for
+any value of the corresponding total arrow type. The axiom uses a conjunction
+of four-way tests on the argument types, rather than enumerating every product.
+For nullary arrows the product is the singleton empty tuple, so pointwise
+agreement is simply agreement of the two results. Products with an empty
+component are empty: exactness compares sets of tuples, not separate type tags.
+Two differently spelled products that are both empty can therefore be equal.
+
+The model above extends componentwise. A value of arity `N` contains a domain
+set of box tuples and its three selector maps restricted to that set. Canonical
+extension unboxes and reboxes each component using its representation type.
+`BasicHandleN`'s unguarded selectors are consistent with this extension when
+every component is basic, including the empty tuple. Declared function handles
+and guarded arrow-member handles follow the same rules as at arity one. Total
+arrows have a true precondition and empty reads on their exact domain; pointwise
+equality of results therefore identifies all three maps there. Extensionality
+identifies the values without equating wider domains that merely agree on a
+proper subdomain. The existing framing and variance axioms are unchanged.
+This argument retains the existing restriction to translator-emitted handles.
+The allocation-dependent lambda issue mentioned above was subsequently fixed
+by the default checks described in `REVIEW.md`, "allocated in lambda expressions".
+
+Both domain-tag options now emit exact-domain declarations at every arity.
+`Restrict` and `ExactDom` annotations accept a total arrow with any number of
+arguments, with type parameters `<A1, ..., An, B>` in that order. Restriction
+uses the product of those argument types, not a tuple's datatype encoding.
+The nullary domain is the singleton empty tuple; empty products compare as
+sets of tuples.
+
+### Checked explicit calls and the source library
+
+`Source/DafnyStandardLibraries/function-domains/Functions.dfy` provides
+`Std.FunctionDomains.Arity0` through `Arity4`. Each module exports `Restrict`,
+`ExactDom`, `Restriction` and `Extensionality`. It is a separate, opt-in source
+library: its own project enables `--additional-axioms`; it is not embedded in
+the default standard-library binary. Verify it together with clients, as its
+[README](../../Source/DafnyStandardLibraries/function-domains/README.md) describes.
+No `assume`, `{:axiom}`, `{:verify false}` or unchecked lemma is added.
+
+The library's `Restrict` has the checked body
+`(x1: A1, ..., xn: An) => f(x1, ..., xn)`. The intrinsic accepts a body only
+if it is exactly that resolved eta expansion: no precondition or reads
+expression, the declared domain types in order, and exactly the corresponding
+bound variables as arguments to the input function. The old body-less intrinsic
+form remains supported. `ExactDom` is a compiler-defined, body-less predicate
+with no source contract, interpreted by the existing exact-domain definition.
+It is not a trusted source postcondition. The auditor reports zero findings for
+this source library.
+
+The new `{:functionDomain "equal"}` annotation accepts only a static ghost
+predicate of two total arrows with those same type parameters, no other
+specification, and the checked ordinary body `f == g`. It is not an assertion
+of arbitrary source code. At a call of that predicate, an axiom derives its
+truth from the same totality, exact-domain and pointwise premises used by the
+automatic rule. Its checked definition then gives Leibniz equality. The
+library uses `{:no_inline}` to keep the explicit predicate application in the
+checked assertion, and a lemma body `assert Equal(f, g);` verifies the exported
+`Extensionality` contract. With `--additional-axioms` alone, ordinary `f == g`
+still has no extensionality trigger. No call of `Equal` means no instance of
+this additional rule.
+
+The model is the arity-general model above. A restriction's eta expansion
+represents the original maps restricted to the requested product, so the
+identity axiom for exact domains holds together with its checked definition.
+The explicit-call axiom asserts only extensionality for those same values;
+changing its trigger does not change the model. Its argument covers the earlier
+axioms enabled by the shared option as well. The source `Extensionality` lemmas
+require `(!new)` on domain type parameters: their pointwise quantifiers must
+range over the full domain, independently of allocation. Result types remain
+unrestricted. The intrinsic rule itself still checks boxed membership over the
+whole product, not only currently allocated arguments.
+
+The compiler hooks support arbitrary arities; the convenience source modules
+cover zero through four. The full M1/M2 trial over the suite, standard library
+and documentation, including resource-unit comparisons, remains open. Partial
+and heap-reading extensionality remain separate work. This stage does not
+establish default-on readiness.
+
+`git-issues/git-issue-374-arities.dfy` covers arbitrary nullary and binary
+values, a four-argument function using every basic type, subset lambdas,
+named functions, datatype results, Leibniz substitution and empty products.
+It verifies only with the extensionality option. The negative input rejects
+distinct functions, proper-subdomain and generic extensionality, partial and
+heap-reading extensionality, and `assert false` after each live positive fact.
+Both resolvers run these controls. No test adds a trusted lemma.
+
+`git-issues/git-issue-374-domains.dfy` checks restriction, exactness and explicit
+extensionality at arities zero, two and five, proper-subdomain restrictions,
+empty products and basic-domain exactness. Its negative inputs retain the
+wider-domain counterexample, distinguish ordinary equality from an explicit
+call, and reject malformed signatures and bodies. Live nullary, binary,
+five-argument, datatype and empty-domain contexts retain failing `assert false`
+controls. `git-issue-374-library.dfy` verifies the source library and clients
+under both options and both resolvers, audits it, and retains vacuity controls
+for every convenience module.
+
+### Pointwise agreement over domains containing references
+
+`{:functionDomain "pointwise"}` defines a static, body-less ghost predicate
+`Pointwise<A1, ..., An, B>(f: (A1, ..., An) -> B,
+g: (A1, ..., An) -> B)`. It accepts no other specification, and neither a
+source body, an `older` parameter, a partial arrow nor a heap-reading arrow is
+allowed.
+Rejecting `older` prevents an unchecked implicit allocation postcondition. The
+predicate's own result must be plain `bool`, not a constrained Boolean type
+that would add an implicit result postcondition. Like `ExactDom`, this is a compiler-defined predicate without a trusted source
+postcondition. Its definition, triggered only by its application, is:
+
+```
+Pointwise(A1, ..., An, B, f, g) <==>
+  (forall bx1, ..., bxn ::
+    $IsBox(bx1, A1) && ... && $IsBox(bxn, An) ==>
+      ApplyN(A1, ..., An, B, $OneHeap, f, bx1, ..., bxn) ==
+      ApplyN(A1, ..., An, B, $OneHeap, g, bx1, ..., bxn))
+```
+
+There is **no allocation antecedent and no current-heap parameter**. The
+quantifier covers every tuple in the mathematical product, including tuples
+containing unallocated references. At arity zero it is equality of the two
+nullary applications; an empty component makes it vacuously true. It does not
+assert equality of function values or exactness of their domains.
+
+The axiom has the additional antecedent `$Is(f, (A1, ..., An) -> B) &&
+$Is(g, (A1, ..., An) -> B)`. This is a type condition, not an allocation
+condition. In the arity-general function-value model above, interpret the
+predicate at each correctly typed pair of total function values by the
+formula. Its ordinary first-class function handle has that product as its
+domain, true preconditions and empty reads. Outside that domain the axiom
+imposes no definition, so the existing fixed extension of a handle still
+supplies its selectors. In particular, quoting this predicate as a function
+value does not constrain its application at ill-typed handles.
+
+This supplies a definition in the existing model, without a new relation on
+old function values or an extensionality rule. For total arrows, application
+is heap-independent and total at every correctly typed tuple, so the formula
+is precisely mathematical pointwise agreement. It does not extrapolate from
+agreement on the currently allocated portion of a reference-containing domain.
+The inner type guards are essential: application outside the argument product
+remains unspecified. The arrows' result type is unrestricted; application equality is
+ordinary boxed equality, with the existing typing and boxing axioms. This
+argument retains the existing model's limits on translator-emitted handles
+and heap-independent total arrows, and is compatible with the other families
+enabled by the shared option.
+
+`function-domains/Pointwise.dfy` supplies
+`Std.FunctionPointwise.Arity1` through `Arity4`. Their `Extensionality` lemmas
+require this predicate and exact domains, then prove equality by the existing
+checked `Equal` call. Their conclusions follow from the previously documented
+total-arrow extensionality rule with exactly its existing premises. No new
+extensionality axiom or trusted source declaration is added. With both domain
+options off, this definition is not emitted; the default library and programs
+that do not supply this opt-in source API are unchanged.
+
+The original `(!new)` pointwise lemmas remain useful: their ordinary `forall`
+premise covers the full domain because that domain contains no references.
+Dropping `(!new)` while keeping that premise would be unjustified. The new API
+makes the stronger premise explicit instead.
+
+Positive controls cover generic arguments and results, first-class predicate
+values, named functions,
+reference identity, datatypes and sequences containing references, mixed
+products, restriction of a wider domain, empty products and allocation after
+the premise is established. The intrinsic is also checked at arities zero and
+five. Negative controls reject agreement only on allocated arguments, distinct
+results, missing exactness, malformed intrinsic declarations, partial arrows
+and heap-reading arrows. A heap-reading closure agrees with a captured snapshot
+before a field update and differs afterward; their equality must fail. Live
+calls in every new convenience module and an empty reference-domain product
+retain failing `assert false` controls. Reference-domain vacuity controls take an
+allocated reference witness, so their live contexts also cover inhabited
+domains.
+
+Partial arrows need a separate model of precondition agreement and application
+outside that precondition; this total-arrow definition does not supply it.
+Heap-reading arrows additionally need agreement across heaps and reads sets.
+The M1/M2 resource-unit trial and precompiled-library packaging remain open.

@@ -1,0 +1,5 @@
+github-issue-241-translation-workers.dfy(112,34): Error: a postcondition could not be proved on this return path
+github-issue-241-translation-workers.dfy(112,30): Related location: this is the postcondition that could not be proved
+github-issue-241-translation-workers.dfy(117,43): Error: Fuel can only increase within a given scope.
+
+Dafny program verifier finished with 18 verified, 1 error

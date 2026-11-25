@@ -1,0 +1,1 @@
+The opt-in --integer-bitwise option now supports ghost &, |, ^, !, << and >> on revealed unsigned integer newtypes with an explicit {:bitWidth N}. Results check the full newtype predicate and counts check 0 <= k <= N. Runtime lowering and native bitvector bridges remain later milestones.
