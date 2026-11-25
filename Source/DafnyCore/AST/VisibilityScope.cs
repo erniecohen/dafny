@@ -26,7 +26,12 @@ namespace Microsoft.Dafny {
       }
     }
 
-    private Dictionary<VisibilityScope, Tuple<int, bool>> cached = new();
+    // The results of checks asked of other scopes with this one as the argument, keyed by the scope
+    // asked, with both scopes' token counts when it was computed.  A translator asks the scopes of
+    // every declaration it meets about scopes of its own, made anew for each module and each
+    // request, so the cache lives with the scope asked about: with the declarations' scopes it would
+    // keep every translator's scopes, and an entry for each of them, alive.
+    private readonly Dictionary<VisibilityScope, (int Count, int OtherCount, bool Overlaps)> cached = new();
 
     // By convention, the "null" scope sees all
     private uint[] Tokens() {
@@ -39,25 +44,29 @@ namespace Microsoft.Dafny {
       if (other == null) {
         return true;
       }
-      // A cache hit must not copy the other scope's tokens: this check runs for nearly every
-      // declaration the translator meets. Scopes only grow, and growing this scope clears its
-      // cache, so a cached overlap stays true and a cached non-overlap is still exact while the
-      // other scope's token count is unchanged.
-      int otherCount;
-      lock (other.syncRoot) {
-        otherCount = other.scopeTokens.Count;
-      }
+      // A cache hit must not copy either scope's tokens: this check runs for nearly every
+      // declaration the translator meets. Scopes only grow, so a cached overlap stays true and a
+      // cached non-overlap is still exact while neither scope's token count has changed.
+      int count;
       lock (syncRoot) {
-        if (cached.TryGetValue(other, out var result) && (result.Item2 || result.Item1 == otherCount)) {
-          return result.Item2;
+        count = scopeTokens.Count;
+      }
+      lock (other.syncRoot) {
+        if (other.cached.TryGetValue(this, out var result) &&
+            (result.Overlaps || (result.Count == count && result.OtherCount == other.scopeTokens.Count))) {
+          return result.Overlaps;
         }
       }
       var otherTokens = other.Tokens();
+      bool overlaps;
       lock (syncRoot) {
-        var overlaps = scopeTokens.Overlaps(otherTokens);
-        cached[other] = new Tuple<int, bool>(otherTokens.Length, overlaps);
-        return overlaps;
+        count = scopeTokens.Count;
+        overlaps = scopeTokens.Overlaps(otherTokens);
       }
+      lock (other.syncRoot) {
+        other.cached[this] = (count, otherTokens.Length, overlaps);
+      }
+      return overlaps;
     }
 
     [Pure]
@@ -83,11 +92,7 @@ namespace Microsoft.Dafny {
         var count = scopeTokens.Count;
         scopeTokens.UnionWith(tokens);
         scopeIds.UnionWith(ids);
-        if (scopeTokens.Count == count) {
-          return false;
-        }
-        cached.Clear();
-        return true;
+        return scopeTokens.Count != count;
       }
     }
 

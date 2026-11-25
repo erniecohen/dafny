@@ -1,4 +1,5 @@
 #nullable enable
+using System;
 using System.Collections.Generic;
 using System.CommandLine;
 using System.Diagnostics.Contracts;
@@ -25,7 +26,10 @@ public abstract class MethodOrConstructor : MethodOrFunction, TypeParameter.Pare
     OptionRegistry.RegisterGlobalOption(ReadsClausesOnMethods, OptionCompatibility.CheckOptionLocalImpliesLibrary);
   }
 
-  public override IEnumerable<INode> Children => Util.IgnoreNulls<Node>(Body!, Decreases).
+  public override IEnumerable<INode> Children => Util.IgnoreNulls<Node>(Body!).Concat(ChildrenOtherThanBody);
+
+  /// <summary><see cref="Children"/> without the body, which a member whose body is released no longer has.</summary>
+  public IEnumerable<INode> ChildrenOtherThanBody => Util.IgnoreNulls<Node>(Decreases).
     Concat(Ins).Concat(Outs).Concat<Node>(TypeArgs).
     Concat(Req).Concat(Ens).Concat(Reads.Expressions!).Concat(Mod.Expressions!);
 
@@ -246,6 +250,27 @@ public abstract class MethodOrConstructor : MethodOrFunction, TypeParameter.Pare
 
   public abstract void SetBody(BlockLikeStmt newBody);
 
+  /// <summary>
+  /// Whether <see cref="ReleaseBody"/> has dropped the body.  A later read of <see cref="Body"/>, which
+  /// would see a body that is no longer there, throws.
+  /// </summary>
+  public bool BodyReleased { get; private set; }
+
+  /// <summary>
+  /// Drops the body, for --release-verified-modules, once the member's module is verified and reported
+  /// and nothing will read the body again: translation reads method bodies only for the module it
+  /// translates.
+  /// </summary>
+  public void ReleaseBody() {
+    BodyReleased = true;
+    DropBody();
+  }
+
+  protected abstract void DropBody();
+
+  protected InvalidOperationException ReleasedBodyRead() =>
+    new($"internal error: the body of {FullDafnyName} was read after --release-verified-modules released it");
+
   protected override bool Bodyless => Body == null;
   protected override string TypeName => "method";
 
@@ -423,9 +448,15 @@ public abstract class MethodOrConstructor : MethodOrFunction, TypeParameter.Pare
     return $"{AstExtensions.GetMemberQualification(this)}{Name}";
   }
 
+  /// <summary>
+  /// The out-parameters and the body's local variables.  A body that --release-verified-modules
+  /// released contributes nothing: its locals are not verifiable symbols, and a whole-program symbol
+  /// walk (the persistent module cache's replay, issue 261) must not read it.
+  /// </summary>
   public IEnumerable<ISymbol> ChildSymbols {
     get {
-      IEnumerable<INode> childStatements = Body?.Visit(node => node is Statement) ?? Enumerable.Empty<INode>();
+      IEnumerable<INode> childStatements = BodyReleased ? Enumerable.Empty<INode>()
+        : Body?.Visit(node => node is Statement) ?? Enumerable.Empty<INode>();
       return Outs.Concat(childStatements.OfType<VarDeclStmt>().SelectMany(v => (IEnumerable<ISymbol>)v.Locals));
     }
   }

@@ -1288,6 +1288,11 @@ jobs:
           Z3: ${{ github.workspace }}/Binaries/z3/bin/z3-5.1.0
         timeout-minutes: 90
         run: dotnet test -p:NuGetAudit=false --settings .github/review/ci.runsettings Source/IntegrationTests -c Release --no-build --filter FullyQualifiedName~ModuleWindowTests --logger "console;verbosity=normal"
+      - name: Memory releases of a one-shot run change no result (#241)
+        env:
+          Z3: ${{ github.workspace }}/Binaries/z3/bin/z3-5.1.0
+        timeout-minutes: 90
+        run: dotnet test -p:NuGetAudit=false --settings .github/review/ci.runsettings Source/IntegrationTests -c Release --no-build --filter FullyQualifiedName~MemoryReleaseTests --logger "console;verbosity=normal"
       - name: Stable source contracts preserve exact client translation
         timeout-minutes: 90
         run: dotnet test -p:NuGetAudit=false --settings .github/review/ci.runsettings Source/IntegrationTests -c Release --no-build --filter FullyQualifiedName~ModularTerminationContractTests --logger "console;verbosity=normal"
