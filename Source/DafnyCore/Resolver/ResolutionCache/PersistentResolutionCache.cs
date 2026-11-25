@@ -158,7 +158,6 @@ internal sealed class PersistentResolutionCache {
   private readonly ConcurrentDictionary<uint, ResolutionExternalToken> tokenOwners = new();
   private readonly ConcurrentDictionary<string, Record> records = new(StringComparer.Ordinal);
   private readonly Dictionary<string, HashSet<uint>> ownScopeTokens = new(StringComparer.Ordinal);
-  private readonly Dictionary<ModuleDecl, string> cacheNames = new(ReferenceEqualityComparer.Instance);
   private readonly HashSet<string> ambiguousNames;
   private readonly ResolutionFrames frames;
   private readonly uint lastParseToken;
@@ -208,7 +207,6 @@ internal sealed class PersistentResolutionCache {
     var all = declarations.ToList();
     // Imports and export sets are distinct declarations even when they have the same qualified name.
     // Use the same kind-qualified name for keys, source frames and all prerequisite references.
-    foreach (var declaration in all) { cacheNames.Add(declaration, declaration.GetType().Name + ":" + declaration.FullName); }
     ambiguousNames = all.GroupBy(Name).Where(g => g.Count() > 1).Select(g => g.Key).ToHashSet();
     frames = new ResolutionFrames(all.Select((d, i) => (Name: Name(d), Pieces: pieces[i])).Where(p => !ambiguousNames.Contains(p.Name)));
     foreach (var declaration in all) {
@@ -227,7 +225,8 @@ internal sealed class PersistentResolutionCache {
 
   // ---------------------------------------------------------------- key
 
-  private string Name(ModuleDecl declaration) => cacheNames[declaration];
+  // Prerequisites can also come from outside the constructor's declaration list.
+  private static string Name(ModuleDecl declaration) => declaration.GetType().Name + ":" + declaration.FullName;
 
   public string? Key(ModuleContext context) {
     if (ambiguousNames.Contains(Name(context.Declaration))) { return null; }
