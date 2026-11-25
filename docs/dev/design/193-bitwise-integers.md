@@ -1736,6 +1736,14 @@ separate reported outcomes. Runtime comparisons supplement these logical control
 | **M6b: population count.** `193-popcount-source`: generic reference theorem, zero/all ones/high bit/power-of-two laws, result bounds and target intrinsics/fallbacks. | `193-popcount-live-false`: active correspondence with false and wrong-count assertions; retain V2–V4. Independent execution on every supported target. | B0 including minimum-version/fallback behavior. | S4 plus popcount proof/runtime rows; any proposed accelerator needs its own model/control gate. |
 | **M7: convenience/release.** `193-convenience`: optional `.Bits()`, exact-interval inference, manual/examples and cache behavior. | Retain the complete live-false, emitted-slice SAT/mutation and runtime inventories; inference cannot bypass visibility, predicates or module mode. | Final B0; no unresolved required identity check. | Final S4 with every supported operation/target accounted for and exclusions tested. |
 
+The integer-newtype frontend milestone is implemented independently of the native
+observation bridges: the six ghost operators lower to the M2 compiler-owned
+reference calls, with checked shift counts and ordinary checked conversion to the
+entire result newtype. Its exact rules, model argument and regression controls
+are in [the implementation notes](../integer-bitwise-references.md). This does
+not implement M3a/M3b or any runtime milestone; compiled operators are rejected
+through the reference functions' ghost restriction.
+
 M3a/M3b may proceed independently after M2's identity and definition interface is
 stable, but each must rerun the cumulative shared-option controls. Backend PRs
 may proceed in parallel after M4 fixes the resolved operation representation.

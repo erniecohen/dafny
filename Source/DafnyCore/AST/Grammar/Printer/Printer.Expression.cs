@@ -533,6 +533,7 @@ namespace Microsoft.Dafny {
       while (expr != null) {
         yield return expr;
         expr = expr switch {
+          IntegerBitwiseSyntaxExpr e => e.Syntax,
           OperatorSyntaxExpr e => options.DafnyPrintResolvedFile != null && e.ResolvedExpression != null ? e.ResolvedExpression : e.Syntax,
           ParensExpression e => e.E,
           BinaryExpr e => e.Op == BinaryExpr.Opcode.Exp ? e.E0 : e.E1,
@@ -674,7 +675,10 @@ namespace Microsoft.Dafny {
       }
       */
 
-      if (expr is OperatorSyntaxExpr operatorSyntax) {
+      if (expr is IntegerBitwiseSyntaxExpr bitwiseSyntax) {
+        PrintExpr(bitwiseSyntax.Syntax, contextBindingStrength, fragileContext, isRightmost,
+          isFollowedBySemicolon, indent, keyword, resolv_count);
+      } else if (expr is OperatorSyntaxExpr operatorSyntax) {
         PrintExpr(options.DafnyPrintResolvedFile != null && operatorSyntax.ResolvedExpression != null ? operatorSyntax.ResolvedExpression : operatorSyntax.Syntax,
           contextBindingStrength, fragileContext, isRightmost, isFollowedBySemicolon, indent, keyword, resolv_count);
       } else if (expr is StaticReceiverExpr) {

@@ -25,6 +25,7 @@ public class UnaryOpExpr : UnaryExpr, ICloneable<UnaryOpExpr> {
     Allocated,
     Lit,
     Assigned,
+    IntegerNot, // temporary source operation, lowered before semantic passes
   }
 
   private ResolvedOpcode _ResolvedOp = ResolvedOpcode.YetUndetermined;
@@ -37,6 +38,7 @@ public class UnaryOpExpr : UnaryExpr, ICloneable<UnaryOpExpr> {
       _ResolvedOp = (Op, E.Type.NormalizeToAncestorType()) switch {
         (Opcode.Not, BoolType _) => ResolvedOpcode.BoolNot,
         (Opcode.Not, BitvectorType _) => ResolvedOpcode.BVNot,
+        (Opcode.Not, _) when IntegerBitwiseOperations.DeclaredWidth(E.Type) != null => ResolvedOpcode.IntegerNot,
         (Opcode.Cardinality, SeqType _) => ResolvedOpcode.SeqLength,
         (Opcode.Cardinality, SetType _) => ResolvedOpcode.SetCard,
         (Opcode.Cardinality, MultiSetType _) => ResolvedOpcode.MultiSetCard,

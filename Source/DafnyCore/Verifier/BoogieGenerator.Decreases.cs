@@ -730,8 +730,8 @@ public partial class BoogieGenerator {
         weak = BplOr(Bpl.Expr.Eq(ee0[i], ee1[i]), BplAnd(oldNonnegative, Bpl.Expr.Le(ee0[i], ee1[i])));
         // Splitting a surrounding conjunction can use the component expression's
         // token as its diagnostic origin, just as in ComputeLessEq below.
-        strict.tok = toks[i];
-        weak.tok = toks[i];
+        strict = WithToken(strict, toks[i]);
+        weak = WithToken(weak, toks[i]);
       } else if (ty0.IsCoDatatype || ty0.IsTypeParameter || ty0.IsAbstractType || ty0.IsInternalTypeSynonym) {
         // Coinductive and opaque values have no well-founded structural rank.
         strict = Bpl.Expr.False;
@@ -770,8 +770,8 @@ public partial class BoogieGenerator {
     // verifier unfold the functions that O and O.gt call.
     strict = BplImp(etran.CanCallAssumption(call), etran.TrExpr(call));
     weak = etran.TrExpr(Expression.CreateEq(callee, caller, type));
-    strict.tok = tok;
-    weak.tok = tok;
+    strict = WithToken(strict, tok);
+    weak = WithToken(weak, tok);
   }
 
   static bool CompatibleDecreasesTypes(Type t, Type u) {
@@ -969,7 +969,19 @@ public partial class BoogieGenerator {
       atmost = BplImp(b0, b1);
     }
 
-    less.tok = tok;
-    atmost.tok = tok;
+    less = WithToken(less, tok);
+    atmost = WithToken(atmost, tok);
+  }
+
+  /// <summary>
+  /// Returns e with token tok.  A Boolean literal can be the shared Bpl.Expr.True or Bpl.Expr.False, whose token
+  /// every later use sees, in this module or any other, so it is copied rather than changed (issue 569).
+  /// </summary>
+  static Bpl.Expr WithToken(Bpl.Expr e, Bpl.IToken tok) {
+    if (e is Bpl.LiteralExpr { isBool: true } literal) {
+      return new Bpl.LiteralExpr(tok, literal.asBool);
+    }
+    e.tok = tok;
+    return e;
   }
 }
