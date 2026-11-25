@@ -64,11 +64,12 @@ Equality admits; critical (4), unknown pressure and unreadable probes refuse.
 Free memory already accounts for current RSS. Charging only outstanding growth
 avoids counting that RSS twice, while preventing several newly admitted jobs
 from spending the same apparent headroom before they allocate their peaks.
-The sidecar records the owning `Runner.Worker` PID passed to the keeper, so its
-whole job tree is measured even after the keeper is orphaned when the main
+The sidecar's `owner_pid` records the owning `Runner.Worker` passed to the keeper,
+so its whole job tree is measured even after the keeper is orphaned when the main
 action exits. Job steps can be siblings of the keeper. An unreadable tree
-charges its full expected peak. Growth uses the same expected peak checked at
-admission, even when the independent registered declaration is larger. Holders
+charges its full expected peak. An absent, invalid or dead `owner_pid` also charges
+the full expected peak, without falling back to RSS from the holder PID. Growth
+uses the same expected peak checked at admission, even when the independent registered declaration is larger. Holders
 without `expected_mb` use their declaration.
 This rule does not limit RSS or guarantee against unsampled spikes, reparented
 processes, unmanaged work or background system growth.
@@ -106,13 +107,19 @@ occupied numbered lock, including old high indices. Free numbered locks' sidecar
 are ignored. The agent reserve is never acquired, even to probe it: its sidecar
 is read without locking. Live reserve metadata is counted conservatively until
 removed, even if its lock is already free; missing or dead reserve metadata is
-ignored. Malformed reserve metadata and occupied numbered locks with missing,
-malformed or dead-PID metadata refuse admission; their size is never guessed.
+ignored. A reserve held without a sidecar does not block CI by itself: memguard
+closes CI admission by holding every numbered CI slot as well. Malformed reserve
+metadata and occupied numbered locks with missing, malformed or dead-PID metadata
+refuse admission; their size is never guessed.
 
 Before releasing the mutex, admission atomically replaces `<holder-lock>.json`
-from a same-directory temporary file. Its object contains `pid` (the owning
-worker's positive PID), `project`, `kind`, `declared_mb` (positive integer), `expected_mb`
-(positive finite number), and `started` (positive Unix timestamp in seconds).
+from a same-directory temporary file. Its object contains `pid` (the positive PID
+of the process holding the flock, namely the admission keeper), `project`, `kind`,
+`declared_mb` (positive integer), `expected_mb` (positive finite number), and
+`started` (positive Unix timestamp in seconds). The additive `owner_pid` field
+is the owning `Runner.Worker` PID for CI RSS accounting. Shared protocol readers
+continue using `pid` as the holder; they need not require `owner_pid`. Older
+sidecars lacking it remain budget-accounted and receive no RSS credit.
 Only after publication may the ready marker appear. The holder lock remains
 held until job completion; metadata is unlinked before unlocking. Lock files
 are never removed, and neither lock descriptor survives exec.

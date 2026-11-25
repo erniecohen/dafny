@@ -66,7 +66,7 @@ class AdmissionFixture(unittest.TestCase):
         stream = admission.try_lock(self.locks / name)
         self.assertIsNotNone(stream)
         self.addCleanup(lambda: stream.close() if not stream.closed else None)
-        data = dict(pid=os.getpid(), project='other', kind='heavy_step', declared_mb=amount, started=time.time())
+        data = dict(pid=os.getpid(), owner_pid=os.getpid(), project='other', kind='heavy_step', declared_mb=amount, started=time.time())
         data.update(metadata)
         Path(str(stream.name) + '.json').write_text(json.dumps(data))
         return stream
@@ -274,8 +274,9 @@ class BudgetTests(AdmissionFixture):
             stream = self.take()
         self.assert_free('budget.lock')
         data = json.loads(admission.sidecar_path(stream).read_text())
-        self.assertEqual(set(data), {'pid', 'project', 'kind', 'declared_mb', 'expected_mb', 'started'})
+        self.assertEqual(set(data), {'pid', 'owner_pid', 'project', 'kind', 'declared_mb', 'expected_mb', 'started'})
         self.assertEqual(data['pid'], os.getpid())
+        self.assertEqual(data['owner_pid'], os.getpid())
         self.assertGreater(data['started'], 0)
         unlink = Path.unlink
         def checked_unlink(path, *args, **kwargs):
@@ -472,7 +473,8 @@ a.hold(sys.argv[2] + '/active.lock', sys.argv[4], pid, a.identity(pid), 6,
                                 capture_output=True, text=True, check=True, timeout=2)
         self.assertEqual(int(parent.stdout), 1)  # The main action process has exited.
         data = json.loads((self.locks / 'active.lock.0.json').read_text())
-        self.assertEqual(data['pid'], os.getpid())  # The owning worker outlives the step.
+        self.assertEqual(data['pid'], keeper_pid)  # Shared readers identify the flock holder.
+        self.assertEqual(data['owner_pid'], os.getpid())  # The worker outlives the step.
         build_pid = max(os.getpid(), keeper_pid) + 10000
         table = (f'1 0 100 init\n{os.getpid()} 1 819200 /bin/Runner.Worker\n'
                  f'{build_pid} {os.getpid()} 614400 build\n{keeper_pid} 1 1024 python')
@@ -516,7 +518,8 @@ a.hold(sys.argv[2] + '/active.lock', sys.argv[4], pid, a.identity(pid), 6,
         (self.root / 'publish-gate').touch()
         self.until(ready.exists)
         data = json.loads((self.locks / 'active.lock.0.json').read_text())
-        self.assertEqual(data['pid'], os.getpid())
+        self.assertEqual(data['pid'], child.pid)
+        self.assertEqual(data['owner_pid'], os.getpid())
         self.assert_free('budget.lock')
 
     def test_signals_cleanup_while_holding_and_waiting(self):
