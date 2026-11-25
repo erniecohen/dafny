@@ -25,13 +25,20 @@ namespace Microsoft.Dafny.LanguageServer.Language.Symbols {
     private readonly SemaphoreSlim resolverMutex = new(1);
     private readonly TelemetryPublisherBase telemetryPublisher;
 
-    public DafnyLangSymbolResolver(ILogger<DafnyLangSymbolResolver> logger, ILogger<CachingResolver> innerLogger, TelemetryPublisherBase telemetryPublisher) {
+    /// <param name="oneShot">
+    /// The resolver serves one resolution only, as in a command-line run, so it keeps no resolution
+    /// cache for a later one: each resolution gets an empty cache of its own, which is what the first
+    /// resolution sees anyway, and which is garbage once it is done.
+    /// </param>
+    public DafnyLangSymbolResolver(ILogger<DafnyLangSymbolResolver> logger, ILogger<CachingResolver> innerLogger,
+      TelemetryPublisherBase telemetryPublisher, bool oneShot = false) {
       this.logger = logger;
       this.innerLogger = innerLogger;
       this.telemetryPublisher = telemetryPublisher;
+      resolutionCache = oneShot ? null : new ResolutionCache();
     }
 
-    private readonly ResolutionCache resolutionCache = new();
+    private readonly ResolutionCache? resolutionCache;
     public async Task ResolveSymbols(Compilation compilation, Program program, CancellationToken cancellationToken) {
       // TODO The resolution requires mutual exclusion since it sets static variables of classes like Microsoft.Dafny.Type.
       //      Although, the variables are marked "ThreadStatic" - thus it might not be necessary. But there might be
@@ -49,7 +56,7 @@ namespace Microsoft.Dafny.LanguageServer.Language.Symbols {
       var beforeResolution = DateTime.Now;
       try {
         var resolver = program.Options.Get(UseCaching)
-          ? new CachingResolver(program, innerLogger, telemetryPublisher, resolutionCache)
+          ? new CachingResolver(program, innerLogger, telemetryPublisher, resolutionCache ?? new ResolutionCache())
           : new ProgramResolver(program);
         await resolver.Resolve(cancellationToken);
         if (compilation.HasErrors) {

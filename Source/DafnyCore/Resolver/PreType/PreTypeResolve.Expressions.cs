@@ -28,6 +28,11 @@ namespace Microsoft.Dafny {
       }
 
       switch (expr) {
+        case IntegerBitwiseSyntaxExpr bitwise:
+          ResolveExpression(bitwise.Syntax, resolutionContext);
+          bitwise.ResolvedExpression = bitwise.Syntax;
+          bitwise.PreType = bitwise.Syntax.PreType;
+          break;
         case OperatorSyntaxExpr op:
           ResolveOperator(op, resolutionContext);
           break;
@@ -464,7 +469,7 @@ namespace Microsoft.Dafny {
             ResolveExpression(e.E, resolutionContext);
             switch (e.Op) {
               case UnaryOpExpr.Opcode.Not:
-                AddConfirmation(PreTypeConstraints.CommonConfirmationBag.BooleanBits, e.E.PreType, opExpr.Origin, "logical/bitwise negation expects a boolean or bitvector argument (instead got {0})");
+                AddConfirmation(IntegerBitwiseOperations.Enabled(resolver, opExpr.Origin) ? PreTypeConstraints.CommonConfirmationBag.BooleanIntegerBits : PreTypeConstraints.CommonConfirmationBag.BooleanBits, e.E.PreType, opExpr.Origin, "logical/bitwise negation expects a boolean or bitvector argument (instead got {0})");
                 opExpr.PreType = e.E.PreType;
                 Constraints.AddDefaultAdvice(e.PreType, CommonAdvice.Target.Bool);
                 break;
@@ -1339,14 +1344,14 @@ namespace Microsoft.Dafny {
         case BinaryExpr.Opcode.BitwiseOr:
         case BinaryExpr.Opcode.BitwiseXor:
           resultPreType = CreatePreTypeProxy("result of " + opString + " operation");
-          AddConfirmation(PreTypeConstraints.CommonConfirmationBag.IsBitvector, resultPreType, tok, "type of " + opString + " must be of a bitvector type (instead got {0})");
+          AddConfirmation(IntegerBitwiseOperations.Enabled(resolver, tok) ? PreTypeConstraints.CommonConfirmationBag.IntegerBits : PreTypeConstraints.CommonConfirmationBag.IsBitvector, resultPreType, tok, "type of " + opString + " must be of a bitvector type (instead got {0})");
           ConstrainOperandTypes(tok, opString, e0, e1, resultPreType);
           break;
 
         case BinaryExpr.Opcode.LeftShift:
         case BinaryExpr.Opcode.RightShift: {
             resultPreType = CreatePreTypeProxy("result of " + opString + " operation");
-            AddConfirmation(PreTypeConstraints.CommonConfirmationBag.IsBitvector, resultPreType, tok, "type of " + opString + " must be of a bitvector type (instead got {0})");
+            AddConfirmation(IntegerBitwiseOperations.Enabled(resolver, tok) ? PreTypeConstraints.CommonConfirmationBag.IntegerBits : PreTypeConstraints.CommonConfirmationBag.IsBitvector, resultPreType, tok, "type of " + opString + " must be of a bitvector type (instead got {0})");
             ConstrainOperandTypes(tok, opString, e0, null, resultPreType);
             AddConfirmation(PreTypeConstraints.CommonConfirmationBag.IntLikeOrBitvector, e1.PreType, tok,
               "type of right argument to " + opString + " ({0}) must be an integer-numeric or bitvector type");
