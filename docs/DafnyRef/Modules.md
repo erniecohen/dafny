@@ -1175,7 +1175,10 @@ that a later stage would have to reject:
   and Java packages can refer to each other; Go emits the whole group in one
   package, with distinct names for declarations from each member. Constant getters
   evaluate dependencies on use. Java compiles the generated packages together.
-  Go groups containing extern modules, types or members are not yet supported.
+  Go groups support extern members and types. Extern module names continue to
+  select foreign Go packages; generated declarations of the group share a separate
+  package. See [Go extern linkage](../Compilation/Go.md#recursive-module-groups)
+  for names and foreign source-file conventions.
 
 A `.doo` library built with `--recursive-modules` requires its client to enable
 the option too; one built without it records nothing. A group is retained as a

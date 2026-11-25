@@ -102,13 +102,15 @@ public class GoBackend : ExecutableBackend {
     ReadOnlyCollection<string> otherFileNames,
     IDafnyOutputWriter outputWriter, bool hasMain, bool run) {
 
+    var externIndex = 0;
     foreach (var otherFileName in otherFileNames) {
       if (Path.GetExtension(otherFileName) != ".go") {
         await outputWriter.Status($"Unrecognized file as extra input for Go compilation: {otherFileName}");
         return false;
       }
 
-      if (!await CopyExternLibraryIntoPlace(mainProgram: targetFilename, externFilename: otherFileName, outputWriter: outputWriter)) {
+      if (!await CopyExternLibraryIntoPlace(mainProgram: targetFilename, externFilename: otherFileName,
+            externIndex: externIndex++, outputWriter: outputWriter)) {
         return false;
       }
     }
@@ -187,7 +189,7 @@ public class GoBackend : ExecutableBackend {
     return Path.GetFullPath(dirName);
   }
 
-  async Task<bool> CopyExternLibraryIntoPlace(string externFilename, string mainProgram, IDafnyOutputWriter outputWriter) {
+  async Task<bool> CopyExternLibraryIntoPlace(string externFilename, string mainProgram, int externIndex, IDafnyOutputWriter outputWriter) {
     // Grossly, we need to look in the file to figure out where to put it
     var pkgName = FindPackageName(externFilename);
     if (pkgName == null) {
@@ -205,7 +207,11 @@ public class GoBackend : ExecutableBackend {
     Contract.Assert(mainDir != null);
 
     var tgtDir = Path.Combine(mainDir, pkgName);
-    var tgtFilename = Path.Combine(tgtDir, pkgName + ".go");
+    // Group members can supply methods in the generated package, in several files.
+    // Preserve the historical file layout when the experimental option is off.
+    var targetName = Options.Get(CommonOptionBag.RecursiveModules)
+      ? $"dafny_extern_{externIndex}.go" : pkgName + ".go";
+    var tgtFilename = Path.Combine(tgtDir, targetName);
 
     Directory.CreateDirectory(tgtDir);
     File.Copy(externFilename, tgtFilename, overwrite: true);
