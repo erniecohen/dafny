@@ -668,6 +668,8 @@ namespace Microsoft.Dafny {
       IsCoDatatype,
       IsNewtypeBaseTypeLegacy,
       IsNewtypeBaseTypeGeneral,
+      IntegerBits,
+      BooleanIntegerBits,
     };
 
     internal bool ConfirmConstraint(CommonConfirmationBag check, PreType preType, DPreType auxPreType) {
@@ -708,6 +710,11 @@ namespace Microsoft.Dafny {
           return familyDeclName == PreType.TypeNameImap;
         case CommonConfirmationBag.IsNullableRefType:
           return DPreType.IsReferenceTypeDecl(pt.Decl);
+        case CommonConfirmationBag.IntegerBits:
+          return PreTypeResolver.IsBitvectorName(familyDeclName) || IntegerBitwiseOperations.DeclaredWidth(pt.Decl) != null;
+        case CommonConfirmationBag.BooleanIntegerBits:
+          return familyDeclName == PreType.TypeNameBool || PreTypeResolver.IsBitvectorName(familyDeclName) ||
+                 IntegerBitwiseOperations.DeclaredWidth(pt.Decl) != null;
         case CommonConfirmationBag.IsBitvector:
           return PreTypeResolver.IsBitvectorName(familyDeclName);
         case CommonConfirmationBag.IntLikeOrBitvector:

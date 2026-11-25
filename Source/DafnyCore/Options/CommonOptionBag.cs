@@ -351,7 +351,7 @@ true - All class instances are raw pointers and need to be manually deallocated"
   };
 
   public static readonly Option<bool> IntegerBitwise = new("--integer-bitwise", () => false,
-    "Enable the compiler-owned ghost integer bitwise reference functions and explicit one-step unfolding lemmas. Integer-newtype operators are not yet implemented.");
+    "Enable ghost bitwise operators on unsigned integer newtypes with an explicit {:bitWidth N}, compiler-owned integer references, and explicit one-step unfolding lemmas. Runtime operators and native bitvector bridges are not yet implemented.");
 
   public static readonly Option<bool> AdditionalAxioms = new("--additional-axioms", () => false,
     "Enable additional verifier axioms. May change verification performance and proof stability. Disabled by default.");
@@ -418,7 +418,7 @@ true - All class instances are raw pointers and need to be manually deallocated"
     "In a refining module, let the redeclaration of a function, method, lemma or constructor rename its type parameters, its out-parameters, its result and the local names of its in-parameters, and let the redeclaration of a class, trait, datatype or newtype rename its type parameters. A named argument still uses the name the parameter was first declared with. Inherited specifications and bodies are renamed with the declaration; a renaming that changes what a name in inherited code refers to is an error. The type of a parameter or result may be written differently from the refined declaration if it is the same type, with type synonyms expanded. Disabled by default.");
 
   public static readonly Option<bool> CopyImports = new("--copy-imports", () => false,
-    "Allow the copying import 'import X := Q' (optionally 'opened', optionally with an export set of Q): it declares in the importing module a module X that refines Q and adds nothing. The types of X are new types, different from those of Q and of every other copy of Q; X keeps the export sets of Q, with Q's default export as its own. A module that refines the importing module gets its own copy. Disabled by default.");
+    "Allow the copying import 'import X := Q' (optionally 'opened', optionally with an export set of Q): it declares in the importing module a module X that refines Q and adds nothing. The types of X are new types, different from those of Q and of every other copy of Q; X keeps the export sets of Q, with Q's default export as its own. A module that refines the importing module gets its own copy, and may rebind it with another copying import whose target is the previous target or a refinement of it. Rebinding retains opened status and every named export set. Disabled by default.");
 
   public static readonly Option<bool> DecreasesOrders = new("--decreases-orders", () => false,
     "Allow a decreases-clause component 'e by O', where O is a closed ghost expression of the trait type Std.Termination.Orders.Wfo<T> from the standard library and e has type T; a call or loop iteration must make O.gt(old e, e) true or leave e unchanged. Requires --type-system-refresh and --general-traits=datatype or full. With --modular-termination, such components are also allowed in {:global} and {:callback} bounds, and the orders library is verified with the program. Disabled by default.");
@@ -539,7 +539,7 @@ Value implementations must retain their type parameters in compatible parent pos
   };
 
   public static readonly Option<bool> RecursiveModules = new("--recursive-modules", () => false,
-    "(experimental, incomplete) Allow modules to import each other. The modules of an import cycle form a recursive module group, which means what one module with all their declarations would mean. Only imports may form a cycle. Requires --member-invariants. A program that has a recursive module group may not declare a codatatype. A group is all concrete or all abstract. Refinement and abstract imports must point to strictly lower groups. A .doo library retains and records complete groups; its client needs the same option. Executable compilation supports the C#, Java, Go and Python targets; Go and Python groups may not contain extern declarations. Python groups may not contain declarations marked '{:compile false}'. Replacement in a group is not yet supported.") {
+    "(experimental, incomplete) Allow modules to import each other. The modules of an import cycle form a recursive module group, which means what one module with all their declarations would mean. Only imports may form a cycle. Requires --member-invariants. A program that has a recursive module group may not declare a codatatype. A group is all concrete or all abstract. Refinement and abstract imports must point to strictly lower groups. A .doo library retains and records complete groups; its client needs the same option. Executable compilation supports the C#, Java, Go and Python targets; Python groups may not contain extern declarations. Python groups may not contain declarations marked '{:compile false}'. Replacement in a group is not yet supported.") {
     IsHidden = true
   };
 

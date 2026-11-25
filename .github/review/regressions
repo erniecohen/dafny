@@ -1084,6 +1084,8 @@ git-issues/git-issue-451.dfy
 # User chain-stopping witnesses in modular-termination bounds (issue 245).
 git-issues/github-issue-245-witness.dfy
 
+# Rebinding an inherited copying import preserves freshness and requires a refinement of its previous target; inherited overrides are checked again against the new copy, and with --member-invariants inherited code is checked against the invariants that the new target adds (https://github.com/erniecohen/dafny/issues/107).
+git-issues/git-issue-107-rebind.dfy
 # Boxed trait receivers in visible newtype checks (issue 516).
 git-issues/git-issue-516.dfy
 git-issues/git-issue-516-controls.dfy
@@ -1093,6 +1095,7 @@ git-issues/git-issue-516-member-invariants.dfy
 # Compiled generic parent additions and inherited bounds under default termination (https://github.com/erniecohen/dafny/issues/88).
 git-issues/github-issue-88-runtime.dfy
 git-issues/github-issue-88-inherited-bounds.dfy
+git-issues/git-issue-193-newtype-operators.dfy
 
 # Lemma-binding specifications in member-invariant extension checks (issue 522).
 git-issues/git-issue-522.dfy

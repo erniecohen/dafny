@@ -1,8 +1,25 @@
-// Extern linkage within a group still needs a foreign-package convention.
-// NONUNIFORM: Go group linkage admission.
-// RUN: %exits-with 3 %build --no-verify --target go --member-invariants --recursive-modules "%s" --output "%t" > "%t"
-// RUN: %exits-with 3 %build --no-verify --target go --member-invariants --recursive-modules "%S/Inputs/git-issue-466-go-extern-type.dfy" --output "%t-type" >> "%t"
-// RUN: %exits-with 3 %build --no-verify --target go --member-invariants --recursive-modules "%S/Inputs/git-issue-466-go-extern-member.dfy" --output "%t-member" >> "%t"
+// Go extern linkage in recursive groups, compared at runtime with C#.
+// NONUNIFORM: Runtime comparison between the C# and Go backends.
+// RUN: %run --target cs --member-invariants --recursive-modules --allow-external-contracts --solver-path %review-z3 "%S/Inputs/git-issue-466-go-extern-member.dfy" --input "%S/Inputs/git-issue-466-go-extern-members.cs" --output "%t-members-cs" > "%t-members-cs.out"
+// RUN: %run --target go --member-invariants --recursive-modules --allow-external-contracts --solver-path %review-z3 "%S/Inputs/git-issue-466-go-extern-member.dfy" --input "%S/Inputs/git-issue-466-go-extern-members-a.go" --input "%S/Inputs/git-issue-466-go-extern-members-b.go" --output "%t-members-go" > "%t-members-go.out"
+// RUN: %diff "%t-members-cs.out" "%t-members-go.out"
+// RUN: %run --target cs --main-method Test.Execute --member-invariants --recursive-modules --allow-external-contracts --solver-path %review-z3 "%S/Inputs/git-issue-466-go-extern-type.dfy" --input "%S/Inputs/git-issue-466-go-extern-modules.cs" --output "%t-modules-cs" > "%t-modules-cs.out"
+// RUN: %run --target go --main-method Test.Execute --member-invariants --recursive-modules --allow-external-contracts --solver-path %review-z3 "%S/Inputs/git-issue-466-go-extern-type.dfy" --input "%S/Inputs/git-issue-466-go-extern-foreign-a.go" --input "%S/Inputs/git-issue-466-go-extern-foreign-b.go" --input "%S/Inputs/git-issue-466-go-extern-other.go" --input "%S/Inputs/git-issue-466-go-extern-zero.go" --input "%S/Inputs/git-issue-466-go-extern-keyword.go" --input "%S/Inputs/git-issue-466-go-extern-outside.go" --output "%t-modules-go" > "%t-modules-go.out"
+// RUN: %diff "%t-modules-cs.out" "%t-modules-go.out"
+// RUN: %build -t:lib --member-invariants --recursive-modules --allow-external-contracts --solver-path %review-z3 "%S/Inputs/git-issue-466-go-extern-type.dfy" --output "%t.doo" > "%t-library.out"
+// RUN: %run --target cs --member-invariants --recursive-modules --allow-external-contracts --solver-path %review-z3 --main-method Main "%S/Inputs/git-issue-466-go-extern-client.dfy" --input "%t.doo" --input "%S/Inputs/git-issue-466-go-extern-modules.cs" --output "%t-library-cs" > "%t-library-cs.out"
+// RUN: %run --target go --member-invariants --recursive-modules --allow-external-contracts --solver-path %review-z3 --main-method Main "%S/Inputs/git-issue-466-go-extern-client.dfy" --input "%t.doo" --input "%S/Inputs/git-issue-466-go-extern-foreign-a.go" --input "%S/Inputs/git-issue-466-go-extern-foreign-b.go" --input "%S/Inputs/git-issue-466-go-extern-other.go" --input "%S/Inputs/git-issue-466-go-extern-zero.go" --input "%S/Inputs/git-issue-466-go-extern-keyword.go" --input "%S/Inputs/git-issue-466-go-extern-outside.go" --output "%t-library-go" > "%t-library-go.out"
+// RUN: %diff "%t-library-cs.out" "%t-library-go.out"
+// RUN: %run --target go --main-method Test.Execute --member-invariants --recursive-modules --allow-external-contracts --solver-path %review-z3 --additional-axioms --resolution-threads 3 "%S/Inputs/git-issue-466-go-extern-type.dfy" --input "%S/Inputs/git-issue-466-go-extern-foreign-a.go" --input "%S/Inputs/git-issue-466-go-extern-foreign-b.go" --input "%S/Inputs/git-issue-466-go-extern-other.go" --input "%S/Inputs/git-issue-466-go-extern-zero.go" --input "%S/Inputs/git-issue-466-go-extern-keyword.go" --input "%S/Inputs/git-issue-466-go-extern-outside.go" --output "%t-scheduled" > "%t-scheduled.out"
+// RUN: %diff "%t-modules-cs.out" "%t-scheduled.out"
+// RUN: %build --target go --no-verify --member-invariants --recursive-modules --allow-external-contracts "%S/Inputs/git-issue-466-go-extern-type.dfy" "%S/Inputs/git-issue-466-go-extern-foreign-a.go" "%S/Inputs/git-issue-466-go-extern-foreign-b.go" "%S/Inputs/git-issue-466-go-extern-other.go" "%S/Inputs/git-issue-466-go-extern-zero.go" "%S/Inputs/git-issue-466-go-extern-keyword.go" "%S/Inputs/git-issue-466-go-extern-outside.go" --output "%t-link/producer" > "%t-link-ignored.out"
+// RUN: %translate go %trargs --no-verify --member-invariants --recursive-modules --allow-external-contracts --include-runtime --library "%t.doo" "%S/Inputs/git-issue-466-go-extern-client.dfy" --output "%t-link/consumer" > "%t-link-go.out"
+// RUN: env GO111MODULE=auto GOPATH=%t-link/producer-go%{pathsep}%t-link/consumer-go go run "%t-link/consumer-go/src/consumer.go" >> "%t-link-go.out"
+// RUN: %run --target cs --no-verify --member-invariants --recursive-modules --allow-external-contracts --main-method Main "%S/Inputs/git-issue-466-go-extern-client.dfy" --input "%t.doo" --input "%S/Inputs/git-issue-466-go-extern-modules.cs" --output "%t-link/cs" > "%t-link-cs.out"
+// RUN: %diff "%t-link-cs.out" "%t-link-go.out"
+// RUN: %run --target go --member-invariants --recursive-modules --allow-external-contracts --solver-path %review-z3 "%S/Inputs/git-issue-466-go-extern-builtins.dfy" --output "%t-builtins-go" > "%t-builtins-go.out"
+// RUN: %cp -f "%t-members-go.out" "%t"
+// RUN: cat "%t-modules-go.out" >> "%t"
+// RUN: cat "%t-library-go.out" >> "%t"
+// RUN: cat "%t-builtins-go.out" >> "%t"
 // RUN: %diff "%s.expect" "%t"
-module {:extern} A { import B function F(): int { 1 } }
-module B { import A function G(): int { A.F() } }

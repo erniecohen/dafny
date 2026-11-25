@@ -717,7 +717,7 @@ namespace Microsoft.Dafny {
         return false;
       }
 
-      if (options.Backend is GoBackend or PythonBackend && dafnyProgram.Modules().FirstOrDefault(module =>
+      if (options.Backend is PythonBackend && dafnyProgram.Modules().FirstOrDefault(module =>
             module.RecursiveGroup != null && (module.IsExtern(options, out _, out _) || module.TopLevelDecls.Any(declaration =>
               declaration.IsExtern(options, out _, out _) || declaration is TopLevelDeclWithMembers type &&
               type.Members.Any(member => member.IsExtern(options, out _, out _))))) is { } externGroupMember) {
