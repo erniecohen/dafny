@@ -52,6 +52,213 @@ module Std.Termination.Orders {
     w
   }
 
+  // Pull an order back along a total, heap-independent function. Injectivity is unnecessary.
+  ghost predicate {:termination_closed} InverseImageGt<A(!new), B(!new)>(r: (B, B) -> bool, f: A -> B, x: A, y: A) {
+    r(f(x), f(y))
+  }
+
+  lemma {:termination_closed} InverseImageWellFounded<A(!new), B(!new)>(r: (B, B) -> bool, f: A -> B)
+    requires wellFounded(r)
+    ensures wellFounded((x: A, y: A) => InverseImageGt(r, f, x, y))
+  {
+    var s := (x: A, y: A) => InverseImageGt(r, f, x, y);
+    forall c: Chain<A> ensures stops(s, c) {
+      var d: Chain<B> := (n: nat) => f(c(n));
+      assert stops(r, d);
+      var n: nat :| !r(d(n), d(n + 1));
+      assert d(n) == f(c(n)) && d(n + 1) == f(c(n + 1));
+      assert !s(c(n), c(n + 1));
+    }
+  }
+
+  ghost function {:termination_closed} InverseImageOf<A(!new), B(!new)>(r: (B, B) -> bool, f: A -> B): (o: Wfo<A>)
+    requires wellFounded(r)
+  {
+    InverseImageWellFounded(r, f);
+    Of((x: A, y: A) => InverseImageGt(r, f, x, y))
+  }
+
+  // Equality, rather than the transitive closure of r, is the weak comparison.
+  ghost predicate {:termination_closed} LexicographicPairGt<A(!new), B(!new)>(r: (A, A) -> bool, s: (B, B) -> bool,
+                                                       x: (A, B), y: (A, B)) {
+    r(x.0, y.0) || (x.0 == y.0 && s(x.1, y.1))
+  }
+
+  lemma {:termination_closed} WellFoundedInduct<T(!new)>(r: (T, T) -> bool, P: T -> bool, x: T)
+    requires wellFounded(r) && Progressive(r, P)
+    ensures P(x)
+  {
+    assert AccFrom(r, x) by { reveal AccFrom(); }
+    AccInduct(r, P, x);
+  }
+
+  lemma {:termination_closed} LexicographicPairWellFounded<A(!new), B(!new)>(r: (A, A) -> bool, s: (B, B) -> bool)
+    requires wellFounded(r) && wellFounded(s)
+    ensures wellFounded((x: (A, B), y: (A, B)) => LexicographicPairGt(r, s, x, y))
+  {
+    var t := (x: (A, B), y: (A, B)) => LexicographicPairGt(r, s, x, y);
+    var P := (a: A) => forall b: B :: AccFrom(t, (a, b));
+    assert Progressive(r, P) by {
+      reveal Progressive();
+      forall a: A | forall a': A :: r(a, a') ==> P(a') ensures P(a) {
+        var Q := (b: B) => AccFrom(t, (a, b));
+        assert Progressive(s, Q) by {
+          reveal Progressive();
+          forall b: B | forall b': B :: s(b, b') ==> Q(b') ensures Q(b) {
+            forall y: (A, B) | t((a, b), y) ensures AccFrom(t, y) {
+              if r(a, y.0) { assert P(y.0); } else { assert Q(y.1); }
+            }
+            AccStep(t, (a, b));
+          }
+        }
+        forall b: B ensures AccFrom(t, (a, b)) { WellFoundedInduct(s, Q, b); }
+      }
+    }
+    forall c: Chain<(A, B)> ensures stops(t, c) {
+      WellFoundedInduct(r, P, c(0).0);
+      UseAcc(t, c(0), c);
+    }
+  }
+
+  ghost predicate {:termination_closed} ProductGt<A(!new), B(!new)>(r: (A, A) -> bool, s: (B, B) -> bool,
+                                             x: (A, B), y: (A, B)) {
+    (x.0 == y.0 || r(x.0, y.0)) && (x.1 == y.1 || s(x.1, y.1)) && x != y
+  }
+
+  lemma {:termination_closed} ProductWellFounded<A(!new), B(!new)>(r: (A, A) -> bool, s: (B, B) -> bool)
+    requires wellFounded(r) && wellFounded(s)
+    ensures wellFounded((x: (A, B), y: (A, B)) => ProductGt(r, s, x, y))
+  {
+    LexicographicPairWellFounded(r, s);
+    var lex := (x: (A, B), y: (A, B)) => LexicographicPairGt(r, s, x, y);
+    var product := (x: (A, B), y: (A, B)) => ProductGt(r, s, x, y);
+    forall x: (A, B), y: (A, B) | product(x, y) ensures lex(x, y) {
+      if x.0 == y.0 { assert x.1 != y.1; }
+    }
+    SmallerWellFounded(lex, product);
+  }
+
+  ghost function {:termination_closed} ProductOf<A(!new), B(!new)>(r: (A, A) -> bool, s: (B, B) -> bool): (o: Wfo<(A, B)>)
+    requires wellFounded(r) && wellFounded(s)
+  {
+    ProductWellFounded(r, s);
+    Of((x: (A, B), y: (A, B)) => ProductGt(r, s, x, y))
+  }
+
+  // Usual lexicographic comparison, with a proper prefix below its extension. The fixed bound is essential:
+  // without it, [1], [0, 1], [0, 0, 1], ... would descend for the natural-number order.
+  ghost predicate {:termination_closed} LexicographicGt<T(!new)>(r: (T, T) -> bool, bound: nat, x: seq<T>, y: seq<T>) {
+    |x| <= bound && |y| <= bound && |x| > 0 &&
+      (|y| == 0 || r(x[0], y[0]) || (x[0] == y[0] && LexicographicGt(r, bound - 1, x[1..], y[1..])))
+  }
+
+  lemma {:termination_closed} LexicographicWellFounded<T(!new)>(r: (T, T) -> bool, bound: nat)
+    requires wellFounded(r)
+    ensures wellFounded((x: seq<T>, y: seq<T>) => LexicographicGt(r, bound, x, y))
+    decreases bound
+  {
+    var t := (x: seq<T>, y: seq<T>) => LexicographicGt(r, bound, x, y);
+    if bound > 0 {
+      LexicographicWellFounded(r, bound - 1);
+      var tail := (x: seq<T>, y: seq<T>) => LexicographicGt(r, bound - 1, x, y);
+      LexicographicPairWellFounded(r, tail);
+      var pair := (x: (T, seq<T>), y: (T, seq<T>)) => LexicographicPairGt(r, tail, x, y);
+      assert AccFrom(t, []) by { AccStep(t, []); }
+      var P := (p: (T, seq<T>)) => AccFrom(t, [p.0] + p.1);
+      assert Progressive(pair, P) by {
+        reveal Progressive();
+        forall p: (T, seq<T>) | forall q: (T, seq<T>) :: pair(p, q) ==> P(q) ensures P(p) {
+          var x := [p.0] + p.1;
+          forall y: seq<T> | t(x, y) ensures AccFrom(t, y) {
+            if |y| > 0 {
+              assert pair(p, (y[0], y[1..]));
+              assert [y[0]] + y[1..] == y;
+            }
+          }
+          AccStep(t, x);
+        }
+      }
+      forall c: Chain<seq<T>> ensures stops(t, c) {
+        if |c(0)| > 0 {
+          WellFoundedInduct(pair, P, (c(0)[0], c(0)[1..]));
+          assert [c(0)[0]] + c(0)[1..] == c(0);
+        }
+        UseAcc(t, c(0), c);
+      }
+    } else {
+      forall c: Chain<seq<T>> ensures stops(t, c) { assert !t(c(0), c(1)); }
+    }
+  }
+
+  ghost function {:termination_closed} LexicographicOf<T(!new)>(r: (T, T) -> bool, bound: nat): (o: Wfo<seq<T>>)
+    requires wellFounded(r)
+  {
+    LexicographicWellFounded(r, bound);
+    Of((x: seq<T>, y: seq<T>) => LexicographicGt(r, bound, x, y))
+  }
+
+  // Finite pointwise product: coordinates may stay equal or descend, with at least one strict step.
+  // Sequences of different lengths are incomparable; no uniform bound on all sequences is needed.
+  ghost predicate {:termination_closed} PointwiseGt<T(!new)>(r: (T, T) -> bool, x: seq<T>, y: seq<T>) {
+    |x| == |y| && x != y &&
+      forall i: nat :: i < |x| ==> x[i] == y[i] || r(x[i], y[i])
+  }
+
+  lemma {:termination_closed} PointwiseLexicographic<T(!new)>(r: (T, T) -> bool, bound: nat, x: seq<T>, y: seq<T>)
+    requires PointwiseGt(r, x, y) && |x| <= bound
+    ensures LexicographicGt(r, bound, x, y)
+    decreases bound
+  {
+    if x[0] == y[0] {
+      assert x[1..] != y[1..] by { assert [x[0]] + x[1..] == x && [y[0]] + y[1..] == y; }
+      forall i: nat | i < |x[1..]| ensures x[1..][i] == y[1..][i] || r(x[1..][i], y[1..][i]) {
+        assert x[i + 1] == y[i + 1] || r(x[i + 1], y[i + 1]);
+      }
+      PointwiseLexicographic(r, bound - 1, x[1..], y[1..]);
+    }
+  }
+
+  // Bind chains logically, so the same construction is available to modular termination bounds.
+  lemma {:termination_closed} PointwiseChainLength<T(!new)>(r: (T, T) -> bool, n: nat)
+    ensures forall c: Chain<seq<T>> :: (forall k: nat :: PointwiseGt(r, c(k), c(k + 1))) ==>
+      |c(n)| == |c(0)|
+  {
+    if n > 0 {
+      PointwiseChainLength(r, n - 1);
+      forall c: Chain<seq<T>> | forall k: nat :: PointwiseGt(r, c(k), c(k + 1))
+        ensures |c(n)| == |c(0)|
+      {
+        assert PointwiseGt(r, c(n - 1), c(n));
+      }
+    }
+  }
+
+  lemma {:termination_closed} PointwiseWellFounded<T(!new)>(r: (T, T) -> bool)
+    requires wellFounded(r)
+    ensures wellFounded((x: seq<T>, y: seq<T>) => PointwiseGt(r, x, y))
+  {
+    var p := (x: seq<T>, y: seq<T>) => PointwiseGt(r, x, y);
+    forall c: Chain<seq<T>> ensures stops(p, c) {
+      if forall n: nat :: p(c(n), c(n + 1)) {
+        var bound := |c(0)|;
+        LexicographicWellFounded(r, bound);
+        var lex := (x: seq<T>, y: seq<T>) => LexicographicGt(r, bound, x, y);
+        forall n: nat ensures lex(c(n), c(n + 1)) {
+          PointwiseChainLength(r, n);
+          PointwiseLexicographic(r, bound, c(n), c(n + 1));
+        }
+        assert stops(lex, c);
+      }
+    }
+  }
+
+  ghost function {:termination_closed} PointwiseOf<T(!new)>(r: (T, T) -> bool): (o: Wfo<seq<T>>)
+    requires wellFounded(r)
+  {
+    PointwiseWellFounded(r);
+    Of((x: seq<T>, y: seq<T>) => PointwiseGt(r, x, y))
+  }
+
   // ---------------------------------------------------------------------------------------------------------
   // The multiset order over a relation r, in the form of Huet and Oppen that VeriFast uses for its bags of
   // call-permission levels (https://github.com/erniecohen/dafny/issues/211).
@@ -334,7 +541,7 @@ module Std.Termination.Orders {
   }
 
   // A relation contained in a well-founded one is well-founded
-  lemma SmallerWellFounded<U(!new)>(g: (U, U) -> bool, h: (U, U) -> bool)
+  lemma {:termination_closed} SmallerWellFounded<U(!new)>(g: (U, U) -> bool, h: (U, U) -> bool)
     requires wellFounded(g) && forall a: U, b: U :: h(a, b) ==> g(a, b)
     ensures wellFounded(h)
   {
@@ -379,17 +586,17 @@ module Std.Termination.Orders {
   }
 
   // Every chain of g that starts at x stops descending
-  opaque ghost predicate AccFrom<U(!new)>(g: (U, U) -> bool, x: U) {
+  opaque ghost predicate {:termination_closed} AccFrom<U(!new)>(g: (U, U) -> bool, x: U) {
     forall c: Chain<U> :: c(0) == x ==> stops(g, c)
   }
 
   // P holds of z whenever it holds of everything below z
-  opaque ghost predicate Progressive<U(!new)>(g: (U, U) -> bool, P: U -> bool) {
+  opaque ghost predicate {:termination_closed} Progressive<U(!new)>(g: (U, U) -> bool, P: U -> bool) {
     forall z: U :: (forall w: U :: g(z, w) ==> P(w)) ==> P(z)
   }
 
   // x is accessible if everything below it is
-  lemma AccStep<U(!new)>(g: (U, U) -> bool, x: U)
+  lemma {:termination_closed} AccStep<U(!new)>(g: (U, U) -> bool, x: U)
     requires forall y: U :: g(x, y) ==> AccFrom(g, y)
     ensures AccFrom(g, x)
   {
@@ -407,7 +614,7 @@ module Std.Termination.Orders {
   }
 
   // Everything below an accessible x is accessible
-  lemma AccDown<U(!new)>(g: (U, U) -> bool, x: U, y: U)
+  lemma {:termination_closed} AccDown<U(!new)>(g: (U, U) -> bool, x: U, y: U)
     requires AccFrom(g, x) && g(x, y)
     ensures AccFrom(g, y)
   {
@@ -423,7 +630,7 @@ module Std.Termination.Orders {
   }
 
   // Below a z without P there is a w without P
-  lemma Below<U(!new)>(g: (U, U) -> bool, P: U -> bool, z: U)
+  lemma {:termination_closed} Below<U(!new)>(g: (U, U) -> bool, P: U -> bool, z: U)
     requires Progressive(g, P) && !P(z)
     ensures exists w: U :: g(z, w) && !P(w)
   {
@@ -431,7 +638,7 @@ module Std.Termination.Orders {
   }
 
   // A chain that keeps descending below an x without P
-  ghost function BadChain<U(!new)>(g: (U, U) -> bool, P: U -> bool, x: U, n: nat): (y: U)
+  ghost function {:termination_closed} BadChain<U(!new)>(g: (U, U) -> bool, P: U -> bool, x: U, n: nat): (y: U)
     requires Progressive(g, P) && !P(x)
     ensures !P(y)
   {
@@ -443,7 +650,7 @@ module Std.Termination.Orders {
   }
 
   // Induction along g from an accessible x
-  lemma AccInduct<U(!new)>(g: (U, U) -> bool, P: U -> bool, x: U)
+  lemma {:termination_closed} AccInduct<U(!new)>(g: (U, U) -> bool, P: U -> bool, x: U)
     requires AccFrom(g, x) && Progressive(g, P)
     ensures P(x)
   {
@@ -456,7 +663,7 @@ module Std.Termination.Orders {
     }
   }
 
-  lemma UseAcc<U(!new)>(g: (U, U) -> bool, x: U, c: Chain<U>)
+  lemma {:termination_closed} UseAcc<U(!new)>(g: (U, U) -> bool, x: U, c: Chain<U>)
     requires AccFrom(g, x) && c(0) == x
     ensures stops(g, c)
   {

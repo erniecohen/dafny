@@ -9,8 +9,17 @@ using static Microsoft.Dafny.ParseErrors;
 namespace Microsoft.Dafny;
 
 public partial class Parser {
-  private Expression SourceBinary(IOrigin origin, BinaryExpr.Opcode op, Expression left, Expression right) =>
-    OperatorSyntaxExpr.Binary(theOptions.Get(CommonOptionBag.UserDefinedOperators), origin, op, left, right);
+  private Expression SourceBinary(IOrigin origin, BinaryExpr.Opcode op, Expression left, Expression right) {
+    var expression = OperatorSyntaxExpr.Binary(theOptions.Get(CommonOptionBag.UserDefinedOperators), origin, op, left, right);
+    return theOptions.Get(CommonOptionBag.IntegerBitwise) && IntegerBitwiseSyntaxExpr.IsBitwise(op)
+      ? new IntegerBitwiseSyntaxExpr(origin, expression) : expression;
+  }
+
+  private Expression SourceNot(IOrigin origin, Expression operand) {
+    var expression = new UnaryOpExpr(origin, UnaryOpExpr.Opcode.Not, operand);
+    return theOptions.Get(CommonOptionBag.IntegerBitwise)
+      ? new IntegerBitwiseSyntaxExpr(origin, expression) : expression;
+  }
 
   private Expression SourceNegation(IOrigin origin, Expression operand) {
     var intrinsic = new NegationExpression(origin, operand);
@@ -21,6 +30,9 @@ public partial class Parser {
   // cloner visits lambda attributes, statement expressions and other pre-resolution syntax.
   private sealed class IntrinsicAttributeCloner : Cloner {
     public override Expression CloneExpr(Expression expression) {
+      if (expression is IntegerBitwiseSyntaxExpr bitwise) {
+        return base.CloneExpr(bitwise.Syntax);
+      }
       if (expression is OperatorSyntaxExpr op) {
         return base.CloneExpr(op.Syntax);
       }

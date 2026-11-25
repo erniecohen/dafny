@@ -116,7 +116,7 @@ def main(argv=None):
     parser.add_argument("--dafny", required=True, type=Path)
     parser.add_argument("--expected", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
-    parser.add_argument("--jobs", type=int, default=4)
+    parser.add_argument("--jobs", type=int, default=2)
     parser.add_argument("--probe", action="store_true",
                         help="Record outcomes and differences; never approve or replace the baseline")
     args = parser.parse_args(argv)

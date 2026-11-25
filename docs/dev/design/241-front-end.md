@@ -382,6 +382,85 @@ peak RSS, and must not raise it beyond the K-window baseline by more than `W·B�
 
 F1-2's dry run is the first deliverable. It measures `f` and `c_m` before any concurrency exists.
 
+### 2.7 As implemented
+
+F1 shipped as one change, `--translation-workers N`, after history-free translation (#285, #393) had
+already landed. That change runs each module's translation in its own `ModuleNamingScope`
+(`Resolver/ModuleNamingScope.cs`), opened by `BoogieGenerator.DoTranslation`. The scope is
+thread-static, and every name and counter that §2.2 found shared is routed through it. A
+module's names are then a function of that module alone. Two consequences follow:
+
+- **The relocate-after-the-fact overlay and the journal are not needed.** The scope *is* the
+  overlay. Names are module-scoped from the start, not provisional placeholders patched at
+  commit, so there is nothing to replay. N = 1 and N > 1 produce the same names because they
+  run the same code with the same scope.
+- **What stays ordered is small.** The commit cursor of §2.3 survives as a per-pipeline chain of
+  tickets in `VerificationPreparationPipeline`. A call takes its ticket synchronously, before
+  its first `await`, so tickets follow the caller's order, which is the module window's
+  canonical order. Commit k (the capture callback, that is `--bprint`) runs only after commit
+  k − 1 has completed or failed. Diagnostics need no new buffer: the CLI module window already
+  defers each module's diagnostics and publishes them in canonical order (T14).
+
+Admission follows §2.4. A translation starts when none is running, or when fewer than N are
+running and `GC.GetTotalMemory + (#translating)·B̂ < budget`. Here B̂ is the running mean of the
+bytes a finished translation allocated, and the budget is `--verification-module-window-memory`
+(otherwise half the available memory). Boogie preparation of up to N modules runs after the
+commit. Because the window admits the modules, `--translation-workers` has an effect only with
+`--verification-module-window` ≥ 2. It composes with `--resolution-threads`, which runs
+earlier, and with `--translation-cache`, whose table serializes lookups under its own lock and
+whose results commit through the same cursor.
+
+The rows of §2.2, rechecked on the implementation:
+
+| Row | Disposition |
+|---|---|
+| T1 | Privatized: `NonglobalVariable`/`LocalVariable` unique names go through the scope |
+| T2–T4 | Privatized: `FreshIdGenerator.Scoped` gives each scope its own generator per shared generator, with the module prefix |
+| T5 | Privatized: `Label` ids go through the scope |
+| T6 | Privatized: `LetExpr` desugarings are stored in the scope |
+| T7 | Privatized: `AssertLabel.E` is stored in the scope |
+| T8 | Privatized: each module gets its own `ProofDependencyManager`, and ids are `id{prefix}{n}` with the scope's counter |
+| T9 | Privatized with T8: the manager is per module |
+| T10 | Locked: `VisibilityScope.VisibleInScope` reads and writes its memo under the scope's lock |
+| T11 | Thread-local: `Type.ResetScopes()` runs first in every translation, on its own large-stack thread |
+| T12 | Privatized: `FuelSetting` saved contexts are stored in the scope |
+| T13 | Read only: translation reads each module's own `TranslationInputs.Bitwidths` |
+| T14 | Ordered by the module window's per-module deferral |
+| T15 | Eligibility: a verbose log level falls back to one worker |
+| T16 | Eligibility: any non-default plugin falls back to one worker |
+| T17 | Benign idempotent caches; scoped names (`SanitizedName`, compile names) go through the scope. Exercised by the stress schedules |
+| T18, T19, T21 | Read only, or per translator |
+| T20 | Benign; exercised by the stress schedules |
+| T22, B2 | Eligibility: debug information falls back to one worker |
+| B1 | Eligibility: a type encoding other than `Arguments`, or printed AST ids, falls back |
+| B3 | Proxy names reach only type-error messages, which a verified Dafny translation never produces |
+| B4 | Boogie caches widths 0–127 only; the pipeline fills that cache once, under its lock, before the first parallel translation. Wider widths get a new object on every call, serial or not |
+| B6 | Not reachable: Dafny never emits `{:pool}` |
+| B7 | Eligibility: Boogie print and trace options fall back; `--bprint` is the ordered commit |
+| B5, B8–B12 | None needed |
+| `/verifySnapshots` | Eligibility: falls back (checksums and snapshot state are process history) |
+
+The hidden option `--translation-workers-stress S` delays each translation's start: S = −1 makes
+each group of four admitted translations finish in reverse order, and a positive S draws random
+delays. `git-issues/github-issue-241-translation-workers.dfy` compares the output and every
+module's Boogie text at N = 1, 2 and 4 under both kinds of schedule. Its vacuity control reads
+the profile: a translation finished before an earlier one, so translations overlapped, and the
+commits appear in ticket order. Its negative controls cover the fallback (`/typeEncoding:m`) and
+the rejected configurations.
+
+Printed Boogie text omits tokens, and error locations come from them. Under the stress option,
+the profile's `translate` span also records a digest of the Dafny source location of every node
+of the module's Boogie graph. Tokens that are not Dafny origins are left out: Boogie's printer
+resets the token of every node it prints, including singletons such as `Expr.True` and
+`Type.Bool` (T20), so another module's preparation changes them. The digests found two more
+shared writes, issue 569. The witness check of a constraint that does not mention its bound
+variable set the origin of the declaration's own constraint, which its importers translate; the
+check now clones such a constraint. The termination check of an `iset` component set the Dafny
+origin of the shared literal `Expr.False`; it now makes a fresh literal. Over the 452
+multi-module lit programs, the digests at N = 1 and N = 4 then agree, and
+`git-issues/github-issue-569-witness-race.dfy` compares them at N = 1, 2 and 4 under both kinds
+of schedule.
+
 ---
 
 ## 3. F2 — Parallel module resolution (D8)

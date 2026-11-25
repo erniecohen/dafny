@@ -245,7 +245,7 @@ if __name__ == '__main__':
     p.add_argument('--mode', choices=['default', 'legacy'], required=True)
     p.add_argument('--axioms', choices=['off', 'on'], default='off')
     p.add_argument('--shard', default='0/1')
-    p.add_argument('--jobs', type=int, default=4)
+    p.add_argument('--jobs', type=int, default=2)
     p.add_argument('--dafny', required=True)
     p.add_argument('--z3', required=True)
     p.add_argument('--output', required=True)

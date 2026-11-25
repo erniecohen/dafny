@@ -113,6 +113,12 @@ Generate module names in the older A_mB_mC style instead of the current A.B.C sc
 
   [FilledInDuringResolution]
   internal string? ResolutionKey { get; set; }
+  /// <summary>
+  /// The <see cref="ModuleResolutionIdentity"/> of the resolution result that produced this
+  /// definition: a stable key for the result, generated names and source coordinates included.
+  /// </summary>
+  [FilledInDuringResolution]
+  public string? ResolutionIdentity { get; internal set; }
   internal ModuleTranslationInputs? TranslationInputs { get; set; }
 
   public int Height;  // height in the topological sorting of modules;

@@ -12,6 +12,8 @@ namespace Microsoft.Dafny;
 internal sealed class ResolutionBuiltinCatalog {
   private readonly object gate = new();
   private readonly SystemModuleManager factory;
+  /// <summary>The manager that owns the interned definitions (issue 261: a cached module refers to them).</summary>
+  internal SystemModuleManager Factory => factory;
   private readonly Dictionary<int, ValuetypeDecl> bitvectors = new();
   private readonly Dictionary<string, TopLevelDecl> pretypes;
 

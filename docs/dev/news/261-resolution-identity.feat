@@ -1,0 +1,1 @@
+Each resolved module now has a resolution identity, which adds its generated-name prefix and the identities of its prerequisites to its semantic resolution key; it does not depend on the path or position of the module source, caches of later phases key on it, and nothing Dafny prints changes

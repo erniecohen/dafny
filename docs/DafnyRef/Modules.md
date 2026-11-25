@@ -302,8 +302,28 @@ is called `X`.
 **Refinement.** A module that refines the importing module gets a new copy at each copying import
 that it inherits. With `module Client' refines Client { }`, the module `Client'.Requests` is a
 copy of `Counters` that is different from `Client.Requests`, and the inherited declarations of
-`Client'` are about the copies of `Client'`. A refining module cannot declare a module or import
-with the name of a copying import that it inherits. Through an abstract import `import I : Client`,
+`Client'` are about the copies of `Client'`. A refining module may rebind an inherited copying
+import with another copying import of the same name:
+
+<!-- %no-check -->
+```dafny
+module ConcreteClient refines Client {
+  import Requests := ConcreteCounters
+}
+```
+
+Here `ConcreteCounters` must be `Counters` or refine it, directly or through further refinements.
+The new copy still has its own types: it is distinct from `ConcreteCounters`, from the inherited
+copy and from other copies. Each subsequent rebinding must refine the target of the preceding
+step. This lets a refinement implement abstract declarations in a copied module.
+
+The rebinding must keep the import's `opened` status and explicitly name every export set that the
+inherited import explicitly named; it may name additional sets. Inherited code must still resolve
+to the counterparts of the declarations it used before, including pattern variables that a new
+datatype constructor could capture. An alias import, abstract import, literal module or other
+declaration cannot replace an inherited copy.
+
+Through an abstract import `import I : Client`,
 the types of `I.Requests` are known neither to be the types of `Client.Requests` nor to differ
 from them.
 
@@ -1156,10 +1176,14 @@ that a later stage would have to reject:
   package, with distinct names for declarations from each member. Constant getters
   evaluate dependencies on use. Java compiles the generated packages together.
   Rust emits one container per group, with public facades preserving the member namespaces.
-  Go and Rust groups containing extern modules, types or members are not yet supported.
+  Rust groups containing extern modules, types or members are not yet supported.
   Rust group programs require explicit array initialization; implicit datatype defaults
   remain unsupported. The Rust backend's existing `--enforce-determinism` requirement
   and trait restrictions still apply.
+  Go groups support extern members and types. Extern module names continue to
+  select foreign Go packages; generated declarations of the group share a separate
+  package. See [Go extern linkage](../Compilation/Go.md#recursive-module-groups)
+  for names and foreign source-file conventions.
 
 A `.doo` library built with `--recursive-modules` requires its client to enable
 the option too; one built without it records nothing. A group is retained as a
