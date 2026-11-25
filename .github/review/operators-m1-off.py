@@ -129,7 +129,7 @@ def stdlib(args, output):
         folder = output / mode
         folder.mkdir()
         measurements = folder / 'measurements'
-        std.run(str(library), binary, args.z3, str(folder / 'verdicts.tsv'), cores=4,
+        std.run(str(library), binary, args.z3, str(folder / 'verdicts.tsv'), cores=2,
                 boogie='/deterministicLiteralHashes:1 /restartProver', measurements=str(measurements))
         rows = std.load(str(folder / 'verdicts.tsv'))
         results[mode] = {
@@ -212,7 +212,7 @@ def main():
         parser.add_argument('--' + name, required=True)
     parser.add_argument('--scope', choices=['suite', 'stdlib', 'text'], required=True)
     parser.add_argument('--shard', default='0/1')
-    parser.add_argument('--jobs', type=int, default=4)
+    parser.add_argument('--jobs', type=int, default=2)
     args = parser.parse_args()
     output = Path(args.output).resolve()
     output.mkdir(parents=True, exist_ok=True)

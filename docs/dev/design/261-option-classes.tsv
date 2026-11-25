@@ -1,0 +1,229 @@
+# Default-deny flag sensitivity of the persistent tables of --persistent-translation (issue 261).
+# Columns: option, then per stage (resolution, translation, results) whether its key must distinguish
+# the option (miss) or must not (hit), or n/a when verify does not accept it; two sample values, or
+# fixed when only one is observable; the reason a stage ignores it. PersistentTranslationOptionClassesTest
+# fails when an option has no row, and runs verify with both samples to check every stage.
+# The preparation stage is not persisted: it is keyed as the results stage is.
+additional-axioms	miss	miss	miss	false | true	
+allow-axioms	miss	miss	miss	false | true	
+allow-deprecation	miss	miss	miss	false | true	
+allow-external-contracts	miss	miss	miss	false | true	
+allow-warnings	miss	miss	miss	false | true	
+analyze-proofs	miss	miss	miss	false | true	
+ancestor-qualified-module-ids	miss	miss	miss	false | true	
+arithmetic-solver	miss	miss	miss	1 | 2	
+bitvector-map-keys	miss	miss	miss	false | true	
+boogie	miss	miss	miss	(none) | /vcsSplitOnEveryAssert	
+bootstrapping	miss	miss	miss	false | true	
+bprint	hit	hit	hit	{dir}/a.dfy | {dir}/b.dfy	prints the Boogie program; replay is bypassed while it is set (Boogie printing)
+build	n/a	n/a	n/a	-	not an option of verify
+cache-orphan-days	hit	hit	hit	1 | 2	when an unused partition's holds expire; it bounds what the artifact store keeps, which changes no translation, verdict or resource count
+cache-partition	hit	hit	hit	one | two	names the partition whose size is bounded, which is never part of a key
+cache-partition-budget	hit	hit	hit	1 | 2	bounds what the artifact store keeps, which changes no translation, verdict or resource count
+cache-size-cap	hit	hit	hit	1 | 2	bounds what the artifact store keeps, which changes no translation, verdict or resource count
+cache-verification	n/a	n/a	n/a	-	not an option of verify
+check	n/a	n/a	n/a	-	not an option of verify
+check-source-location-consistency	miss	miss	miss	false | true	
+compare-report	n/a	n/a	n/a	-	not an option of verify
+compile-suffix	n/a	n/a	n/a	-	not an option of verify
+conservative-match-inference	miss	miss	miss	false | true	
+consistent-obligation-checks	miss	miss	miss	false | true	
+contextual-lambda-domains	miss	miss	miss	false | true	
+contextual-quantifier-domains	miss	miss	miss	false | true	
+copy-imports	miss	miss	miss	false | true	
+cores	hit	hit	miss	1 | 2	resolution, translation: how many solver processes run at once changes no translation; results: the task-result cache's frozen solver options include the core count, so module results recorded under another count are not replayed
+coverage-report	n/a	n/a	n/a	-	not an option of verify
+cs-replacement-types	n/a	n/a	n/a	-	not an option of verify
+datatype-subset-conversions	miss	miss	miss	false | true	
+decreases-orders	miss	miss	miss	false | true	
+default-function-opacity	miss	miss	miss	Transparent | AutoRevealDependencies	
+detect-witness-matching-loops	miss	miss	miss	false | true	
+disable-nonlinear-arithmetic	miss	miss	miss	false | true	
+dont-verify-dependencies	miss	miss	miss	false | true	
+emit-uncompilable-code	miss	miss	miss	false | true	
+enforce-determinism	miss	miss	miss	false | true	
+error-limit	miss	miss	miss	1 | 2	
+expected-coverage-report	n/a	n/a	n/a	-	not an option of verify
+extended-newtype-bases	miss	miss	miss	false | true	
+extract-counterexample	miss	miss	miss	false | true	
+file-name	n/a	n/a	n/a	-	not an option of verify
+filter-position	miss	miss	miss	{dir}/a.dfy | {dir}/b.dfy	
+filter-position-batch	miss	miss	miss	{dir}/a.dfy | {dir}/b.dfy	
+filter-symbol	miss	miss	miss	{dir}/a.dfy | {dir}/b.dfy	
+find-project	miss	miss	miss	false | true	
+force-prune	n/a	n/a	n/a	-	not an option of verify
+function-extensionality-axiom	miss	miss	miss	false | true	
+function-syntax	miss	miss	miss	3 | 4	
+general-newtypes	miss	miss	miss	false | true	
+general-traits	miss	miss	miss	Legacy | Datatype	
+go-module-name	n/a	n/a	n/a	-	not an option of verify
+heap-free-lambda-facts	miss	miss	miss	false | true	
+help	n/a	n/a	n/a	-	not an option of verify
+help-internal	n/a	n/a	n/a	-	not an option of verify
+hidden-no-verify	n/a	n/a	n/a	-	not an option of verify
+ignore-indentation	miss	miss	miss	false | true	
+ignore-warnings	n/a	n/a	n/a	-	not an option of verify
+include-runtime	n/a	n/a	n/a	-	not an option of verify
+include-test-runner	n/a	n/a	n/a	-	not an option of verify
+inherited-trait-axioms	miss	miss	miss	false | true	
+inlined-body-call-permissions	miss	miss	miss	false | true	
+input	n/a	n/a	n/a	-	not an option of verify
+input-format	miss	miss	miss	Source | Binary	
+integer-bitwise	miss	miss	miss	false | true	
+invariant-constructor-inference	miss	miss	miss	false | true	
+isolate-assertions	miss	miss	miss	false | true	
+javadoclike-docstring-plugin	n/a	n/a	n/a	-	not an option of verify
+json-diagnostics	miss	miss	miss	false | true	
+json-output	miss	miss	miss	false | true	
+legacy-allocated-in-lambdas	miss	miss	miss	false | true	
+legacy-auto-generated-attributes	miss	miss	miss	false | true	
+legacy-boogie-library-check	miss	miss	miss	false | true	
+legacy-boxed-newtype-obligations	miss	miss	miss	false | true	
+legacy-cs-datatype-equality	n/a	n/a	n/a	-	not an option of verify
+legacy-data-constructors	n/a	n/a	n/a	-	not an option of verify
+legacy-decreases-order	miss	miss	miss	false | true	
+legacy-early-yield-parameter-check	miss	miss	miss	false | true	
+legacy-elided-override-checks	miss	miss	miss	false | true	
+legacy-first-phase-const-reads	miss	miss	miss	false | true	
+legacy-function-store-locations	miss	miss	miss	false | true	
+legacy-generic-function-stores	miss	miss	miss	false | true	
+legacy-inferred-newtype-base-conversions	miss	miss	miss	false | true	
+legacy-inherited-constructor-fields	miss	miss	miss	false | true	
+legacy-inherited-name-capture	miss	miss	miss	false | true	
+legacy-inherited-termination-checks	miss	miss	miss	false | true	
+legacy-member-invariant-dependence	miss	miss	miss	false | true	
+legacy-module-names	n/a	n/a	n/a	-	not an option of verify
+legacy-no-modular-termination	miss	miss	miss	false | true	
+legacy-no-unchecked-termination-warning	miss	miss	miss	false | true	
+legacy-noncanonical-map-payloads	miss	miss	miss	false | true	
+legacy-reading-functions-in-datatypes	miss	miss	miss	false | true	
+legacy-recursive-module-invariants	miss	miss	miss	false | true	
+legacy-replacement-cycles	miss	miss	miss	false | true	
+legacy-skeleton-modifying-calls	miss	miss	miss	false | true	
+legacy-stored-function-callbacks	miss	miss	miss	false | true	
+legacy-unchecked-import-binding	miss	miss	miss	false | true	
+legacy-unchecked-type-variance	miss	miss	miss	false | true	
+legacy-unguarded-char	miss	miss	miss	false | true	
+lemma-bindings	miss	miss	miss	false | true	
+length-limit	n/a	n/a	n/a	-	not an option of verify
+library	hit	miss	miss	{dir}/a.dfy | {dir}/b.dfy	resolution: library files are program inputs, whose content each module's resolution identity covers
+log-format	hit	hit	hit	{dir}/a.dfy | {dir}/b.dfy	verification logs; replay is bypassed while it is set (verification logs)
+log-level	hit	hit	hit	Verbose | Debug	how much the driver logs
+log-location	hit	hit	hit	{dir}/a.dfy | {dir}/b.dfy	where the driver logs
+loop-unroll	n/a	n/a	n/a	-	not an option of verify
+main-method	n/a	n/a	n/a	-	not an option of verify
+manual-lemma-induction	miss	miss	miss	false | true	
+manual-triggers	miss	miss	miss	false | true	
+map-comprehension-domain-triggers	miss	miss	miss	false | true	
+member-invariants	miss	miss	miss	false | true	
+methods-to-test	n/a	n/a	n/a	-	not an option of verify
+migrate-signature-and-completion-table	n/a	n/a	n/a	-	not an option of verify
+modify-time	n/a	n/a	n/a	-	not an option of verify
+modular-termination	miss	miss	miss	false | true	
+modular-termination-runtime-trust	miss	miss	miss	none | standard-library	
+modular-termination-trust	miss	miss	miss	none | standard-library	
+mutations	n/a	n/a	n/a	-	not an option of verify
+no-timestamp-for-coverage-report	miss	miss	miss	false | true	
+no-verify	n/a	n/a	n/a	-	not an option of verify
+notify-ghostness	n/a	n/a	n/a	-	not an option of verify
+notify-line-verification-status	n/a	n/a	n/a	-	not an option of verify
+only-label	n/a	n/a	n/a	-	not an option of verify
+optimize-erasable-datatype-wrapper	n/a	n/a	n/a	-	not an option of verify
+outer-module	n/a	n/a	n/a	-	not an option of verify
+output	n/a	n/a	n/a	-	not an option of verify
+performance-stats	miss	miss	miss	1 | 2	
+persistent-translation	hit	hit	hit	fixed	enables the persistent tables, which are neither read nor written without it
+persistent-translation-audit	hit	hit	hit	false | true	translates and verifies afresh, compares with what is stored and publishes nothing
+pipeline-profile	hit	hit	hit	fixed	what the pipeline profile records; this test reads the stage digests from it
+pipeline-profile-gc-events	hit	hit	hit	false | true	what the pipeline profile records
+pipeline-profile-heap	hit	hit	hit	false | true	what the pipeline profile records
+pipeline-profile-hold	hit	hit	hit	fixed	waits for a driver at each heap point of the pipeline profile
+plugin	miss	miss	miss	{dir}/a.dfy | {dir}/b.dfy	
+pprint	hit	hit	miss	{dir}/a.dfy | {dir}/b.dfy	resolution, translation: prints passive Boogie programs; results: the frozen solver options name the file, and replay is bypassed while it is set (Boogie printing)
+prelude	miss	miss	miss	{dir}/prelude-a.bpl | {dir}/prelude-b.bpl	
+print	hit	hit	hit	{dir}/a.dfy | {dir}/b.dfy	prints the parsed Dafny program, which no stage reads
+print-bpl	n/a	n/a	n/a	-	not an option of verify
+print-mode	miss	miss	miss	Everything | Serialization	
+print-ranges	miss	miss	miss	false | true	
+program-name	n/a	n/a	n/a	-	not an option of verify
+progress	hit	hit	hit	None | Symbol	how progress is reported; per-task (Batch) progress bypasses replay
+project-file-cache-expiry	n/a	n/a	n/a	-	not an option of verify
+project-output	n/a	n/a	n/a	-	not an option of verify
+python-module-name	n/a	n/a	n/a	-	not an option of verify
+python-reorder-replacements	n/a	n/a	n/a	-	not an option of verify
+quantified-check-call-facts	miss	miss	miss	false | true	
+quantifier-syntax	miss	miss	miss	3 | 4	
+random-seed	n/a	n/a	n/a	-	not an option of verify
+raw-pointers	miss	miss	miss	fixed	exits unless --target:rs, which verify does not accept
+reads-clauses-on-methods	miss	miss	miss	false | true	
+recursive-modules	miss	miss	miss	--member-invariants | --member-invariants --recursive-modules	
+referrers	miss	miss	miss	false | true	
+refinement-extends	miss	miss	miss	false | true	
+refinement-renaming	miss	miss	miss	false | true	
+relax-definite-assignment	miss	miss	miss	false | true	
+report-file	n/a	n/a	n/a	-	not an option of verify
+report-format	n/a	n/a	n/a	-	not an option of verify
+resolution-cache	hit	hit	hit	false | true	whether resolution results are reused; a reused result is the one a fresh resolution produces
+resolution-cache-check	hit	hit	hit	false | true	resolves afresh and compares with what is stored; changes no result
+resolution-threads	hit	hit	hit	1 | 2	how many threads resolve; resolution does not depend on it
+resource-limit	miss	miss	miss	1 | 2	
+rprint	hit	hit	hit	{dir}/a.dfy | {dir}/b.dfy	prints the resolved Dafny program, which no stage reads
+rust-module-name	n/a	n/a	n/a	-	not an option of verify
+rust-sync	n/a	n/a	n/a	-	not an option of verify
+show-hints	miss	miss	miss	false | true	
+show-proof-obligation-expressions	miss	miss	miss	false | true	
+show-snippets	hit	miss	hit	false | true	resolution: how diagnostics are printed; translation: it sets the reported ranges of the Boogie tokens; results: no solver option depends on it
+solver-log	hit	hit	miss	{dir}/a.dfy | {dir}/b.dfy	resolution, translation: logs the solver input; results: the frozen solver options name the file, and replay is bypassed while it is set (solver logs)
+solver-option	miss	miss	miss	{dir}/a.dfy | {dir}/b.dfy	
+solver-option-help	miss	miss	miss	false | true	
+solver-path	miss	miss	miss	{dir}/a.dfy | {dir}/b.dfy	
+solver-plugin	miss	miss	miss	fixed	names a solver plugin assembly, without which verify fails
+spill-translation	n/a	n/a	n/a	-	not an option of verify
+sprint	hit	hit	miss	{dir}/a.dfy | {dir}/b.dfy	resolution, translation: prints split Boogie programs; results: the frozen solver options name the file, and replay is bypassed while it is set (Boogie printing)
+standard-libraries	miss	miss	miss	false | true	
+statement-expression-conclusions	miss	miss	miss	false | true	
+stdin	miss	miss	miss	false | true	
+suggest-proof-refactoring	miss	miss	miss	false | true	
+synonym-refines-abstract-type	miss	miss	miss	false | true	
+system-module	n/a	n/a	n/a	-	not an option of verify
+tag	n/a	n/a	n/a	-	not an option of verify
+target	n/a	n/a	n/a	-	not an option of verify
+test-assumptions	n/a	n/a	n/a	-	not an option of verify
+track-print-effects	miss	miss	miss	false | true	
+trait-rank-decreases	miss	miss	miss	false | true	
+translate-standard-library	n/a	n/a	n/a	-	not an option of verify
+translation-cache	hit	hit	hit	false | true	in-process reuse of translations, which yields the same Boogie programs
+translation-workers	hit	hit	hit	1 | 2	scheduling only: translations commit in arrival order, and one and many workers yield the same Boogie programs and solver input
+translation-workers-stress	hit	hit	hit	0 | 5	test-only delays of translation scheduling, which change no translation
+translation-record	n/a	n/a	n/a	-	not an option of verify
+translation-record-output	n/a	n/a	n/a	-	not an option of verify
+type-inference-trace	miss	miss	miss	false | true	
+type-system-debug	miss	miss	miss	false | true	
+type-system-refresh	miss	miss	miss	fixed	required by --persistent-translation, so only one value is observable
+unchecked-invariant-extension	miss	miss	miss	false | true	
+unicode-char	miss	miss	miss	false | true	
+update-throttling	n/a	n/a	n/a	-	not an option of verify
+use-basename-for-filename	hit	miss	miss	false | true	resolution: changes only how paths are printed; the later stages key it, since Boogie tokens carry file names
+use-caching	n/a	n/a	n/a	-	not an option of verify
+user-defined-operators	miss	miss	miss	false | true	
+verbose	miss	miss	miss	false | true	
+verification-cache	hit	hit	hit	{dir}/a.dfy | {dir}/b.dfy	names the store root, which is never part of a key
+verification-cache-solver-digest	hit	hit	hit	aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa | bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb	declares which solver images are audited; the digest of the image actually run is keyed, never the declaration
+verification-coverage-report	hit	hit	hit	{dir}/a.dfy | {dir}/b.dfy	coverage reports; replay is bypassed while it is set (proof-dependency reporting)
+verification-module-window	miss	miss	miss	1 | 2	
+verification-module-window-memory	miss	miss	miss	1 | 2	
+verification-time-limit	miss	miss	miss	1 | 2	
+verify-included-files	miss	miss	miss	false | true	
+verify-on	n/a	n/a	n/a	-	not an option of verify
+version	n/a	n/a	n/a	-	not an option of verify
+wait-for-debugger	miss	miss	miss	fixed	waits for a debugger to attach
+warn-as-errors	miss	miss	miss	false | true	
+warn-contradictory-assumptions	miss	miss	miss	false | true	
+warn-missing-constructor-parentheses	miss	miss	miss	false | true	
+warn-redundant-assumptions	miss	miss	miss	false | true	
+warn-shadowing	miss	miss	miss	false | true	
+warn-unchecked-termination	miss	miss	miss	false | true	
+worst-amount	n/a	n/a	n/a	-	not an option of verify
+boogie:/cacheUsedTypes	miss	miss	miss	(none) | /cacheUsedTypes	
+boogie:/normalizeDeclarationOrder	miss	miss	miss	(none) | /normalizeDeclarationOrder	
+boogie:/structuralLiterals	miss	miss	miss	(none) | /structuralLiterals	

@@ -1,0 +1,1 @@
+Recursive module groups can compile and run with Go. Each group is emitted as one package with distinct names for its members. Extern declarations inside a Go group remain unsupported. The feature requires the experimental --recursive-modules option.

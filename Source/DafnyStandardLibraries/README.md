@@ -76,3 +76,8 @@ Intentional breaking changes will be minimized and accompanied by clear and dire
 ## Contributing to the libraries
 
 See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+The opt-in [total-function domain source library](function-domains/README.md)
+provides restriction, exact domains and checked explicit-call extensionality.
+It is verified separately with `--additional-axioms` or
+`--function-extensionality-axiom` and is not part of the default precompiled binary.

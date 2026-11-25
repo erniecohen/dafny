@@ -1,0 +1,6 @@
+includes = ["Functions.dfy", "Pointwise.dfy"]
+
+[options]
+additional-axioms = true
+resource-limit = 1000000
+verification-time-limit = 300

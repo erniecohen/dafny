@@ -491,6 +491,36 @@ dispatch, and that includes the code of `O`:
   quantifier binder. A callback bound is not transferred through this call.
   A witness selected as a function value is conservatively unknown code.
 
+**Reusable constructions.** `Std.Termination.Orders` also provides
+`LexicographicOf(r, bound)`, `PointwiseOf(r)`, `ProductOf(r, s)` and
+`InverseImageOf(r, f)`. Each requires proved well-foundedness of its base relations.
+Lexicographic comparison orders sequences whose lengths are at most `bound`, with proper
+prefixes smaller; a strict leading decrease allows the remaining tail to reset.
+Pointwise comparison orders equal-length finite sequences coordinate by coordinate,
+requiring at least one strict step. Product comparison does the same for a pair.
+Inverse image compares `f(x)` with `f(y)`; `f` is total and need not be injective.
+The corresponding `*Gt` predicates and proved `*WellFounded` lemmas are available separately.
+All four constructions support modular bounds.
+
+With `--decreases-orders` and the modular termination rules enabled, a static ghost function
+or lemma marked `{:termination_closed}` can receive a checked application summary. Its
+function-valued parameters may be applied directly or forwarded to `Of`, `wellFounded`,
+`stops` or another summarized helper. The check includes specifications, measures and defaults.
+A local alias or lambda may be consumed immediately in those positions. A function parameter
+cannot escape in a datatype, returned function or captured closure, or be passed to a helper
+without a summary. Hidden function fields and unknown returned functions are conservative
+failures. Summaries propagate from checked helpers to their callers to a least fixpoint;
+a mutually recursive group cannot justify itself. Direct self recursion preserves exactly
+the function parameters and must terminate by an ordinary decreases clause.
+A refinement may retain a summary established by its base, but cannot weaken an inherited
+unconditional closed contract into an argument-dependent summary.
+
+At a summarized call, Dafny checks the effects of the actual function arguments in the
+caller's context. A summary therefore does not make an unknown or dispatched actual argument
+closed. For example, a checked `Forward(r) { Of(r) }` can construct an order used in modular
+bounds when the relation supplied to `Forward` is itself closed. The existing intrinsic
+summaries of the orders library remain available.
+
 **The multiset order.** `Std.Termination.Orders.MultisetOf(r)` is the multiset
 order over a relation `r` proved `wellFounded`, in the form of Huet and Oppen
 that VeriFast uses for its bags of call permission levels.

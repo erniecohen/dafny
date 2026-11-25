@@ -1,0 +1,1 @@
+Fix boxed base membership and receiver unboxing in visible newtype checks under `--consistent-obligation-checks`, including trait-to-newtype casts that inherit constants. Fix the same receiver representation error in member-invariant checks. The hidden `--legacy-boxed-newtype-obligations` option restores the old lowering for migration and comparison.

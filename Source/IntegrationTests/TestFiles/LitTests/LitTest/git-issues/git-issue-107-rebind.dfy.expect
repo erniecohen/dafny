@@ -1,0 +1,109 @@
+
+Dafny program verifier finished with 13 verified, 0 errors
+
+Dafny program verifier finished with 13 verified, 0 errors
+git-issue-107-rebind-rejected.dfy(10,36): Error: the copying import 'X' can only be rebound to a copy of 'Q' or a refinement of it
+git-issue-107-rebind-rejected.dfy(11,39): Error: the copying import 'X' can only be rebound to a copy of 'Q1' or a refinement of it
+git-issue-107-rebind-rejected.dfy(12,38): Error: the copying import 'X' can only be rebound to a copy of 'Q1' or a refinement of it
+git-issue-107-rebind-rejected.dfy(15,32): Error: module 'Alias' cannot redeclare 'X', which is a copying import of the module 'M' that it refines, except by another copying import
+git-issue-107-rebind-rejected.dfy(16,44): Error: module 'Abstract' cannot redeclare 'X', which is a copying import of the module 'M' that it refines, except by another copying import
+git-issue-107-rebind-rejected.dfy(17,34): Error: module 'Literal' cannot redeclare 'X', which is a copying import of the module 'M' that it refines, except by another copying import
+git-issue-107-rebind-rejected.dfy(18,29): Error: module 'Type' cannot redeclare 'X', which is a copying import of the module 'M' that it refines, except by another copying import
+git-issue-107-rebind-rejected.dfy(21,7): Error: X in Opens cannot be imported with "opened" because it does not match the corresponding import in the refinement base M.
+git-issue-107-rebind-rejected.dfy(23,7): Error: X in Closes must be imported with "opened"  to match the corresponding import in its refinement base OpenM.
+git-issue-107-rebind-rejected.dfy(33,33): Error: the copying import 'X' must retain every named export set of the inherited copying import
+git-issue-107-rebind-rejected.dfy(40,8): Error: class 'C' does not implement trait method 'Tr.N'
+git-issue-107-rebind-rejected.dfy(42,7): Related location: refining module
+11 resolution/type errors detected in git-issue-107-rebind-rejected.dfy
+git-issue-107-rebind-rejected.dfy(10,36): Error: the copying import 'X' can only be rebound to a copy of 'Q' or a refinement of it
+git-issue-107-rebind-rejected.dfy(11,39): Error: the copying import 'X' can only be rebound to a copy of 'Q1' or a refinement of it
+git-issue-107-rebind-rejected.dfy(12,38): Error: the copying import 'X' can only be rebound to a copy of 'Q1' or a refinement of it
+git-issue-107-rebind-rejected.dfy(15,32): Error: module 'Alias' cannot redeclare 'X', which is a copying import of the module 'M' that it refines, except by another copying import
+git-issue-107-rebind-rejected.dfy(16,44): Error: module 'Abstract' cannot redeclare 'X', which is a copying import of the module 'M' that it refines, except by another copying import
+git-issue-107-rebind-rejected.dfy(17,34): Error: module 'Literal' cannot redeclare 'X', which is a copying import of the module 'M' that it refines, except by another copying import
+git-issue-107-rebind-rejected.dfy(18,29): Error: module 'Type' cannot redeclare 'X', which is a copying import of the module 'M' that it refines, except by another copying import
+git-issue-107-rebind-rejected.dfy(21,7): Error: X in Opens cannot be imported with "opened" because it does not match the corresponding import in the refinement base M.
+git-issue-107-rebind-rejected.dfy(23,7): Error: X in Closes must be imported with "opened"  to match the corresponding import in its refinement base OpenM.
+git-issue-107-rebind-rejected.dfy(33,33): Error: the copying import 'X' must retain every named export set of the inherited copying import
+git-issue-107-rebind-rejected.dfy(40,8): Error: class 'C' does not implement trait method 'Tr.N'
+git-issue-107-rebind-rejected.dfy(42,7): Related location: refining module
+11 resolution/type errors detected in git-issue-107-rebind-rejected.dfy
+git-issue-107-rebind-capture.dfy(5,50): Warning: this branch is redundant
+git-issue-107-rebind-capture.dfy(5,41): Error: refining module 'Rebound' captures the name 'foo' used in code inherited from module 'M': in 'M' it refers to bound variable 'foo' (declared at git-issue-107-rebind-capture.dfy(5,41)), but in 'Rebound' it would refer to datatype constructor 'Rebound.X.T.foo' (declared at git-issue-107-rebind-capture.dfy(8,40))
+git-issue-107-rebind-capture.dfy(9,7): Related location: refining module
+git-issue-107-rebind-capture.dfy(17,48): Warning: this branch is redundant
+git-issue-107-rebind-capture.dfy(17,39): Error: refining module 'OpenRebound' captures the name 'foo' used in code inherited from module 'OpenM': in 'OpenM' it refers to bound variable 'foo' (declared at git-issue-107-rebind-capture.dfy(17,39)), but in 'OpenRebound' it would refer to datatype constructor 'OpenRebound.X.T.foo' (declared at git-issue-107-rebind-capture.dfy(8,40))
+git-issue-107-rebind-capture.dfy(20,7): Related location: refining module
+2 resolution/type errors detected in git-issue-107-rebind-capture.dfy
+git-issue-107-rebind-capture.dfy(5,50): Warning: this branch is redundant
+git-issue-107-rebind-capture.dfy(5,41): Error: refining module 'Rebound' captures the name 'foo' used in code inherited from module 'M': in 'M' it refers to bound variable 'foo' (declared at git-issue-107-rebind-capture.dfy(5,41)), but in 'Rebound' it would refer to datatype constructor 'Rebound.X.T.foo' (declared at git-issue-107-rebind-capture.dfy(8,40))
+git-issue-107-rebind-capture.dfy(9,7): Related location: refining module
+git-issue-107-rebind-capture.dfy(17,48): Warning: this branch is redundant
+git-issue-107-rebind-capture.dfy(17,39): Error: refining module 'OpenRebound' captures the name 'foo' used in code inherited from module 'OpenM': in 'OpenM' it refers to bound variable 'foo' (declared at git-issue-107-rebind-capture.dfy(17,39)), but in 'OpenRebound' it would refer to datatype constructor 'OpenRebound.X.T.foo' (declared at git-issue-107-rebind-capture.dfy(8,40))
+git-issue-107-rebind-capture.dfy(20,7): Related location: refining module
+2 resolution/type errors detected in git-issue-107-rebind-capture.dfy
+git-issue-107-rebind-controls.dfy(15,63): Error: a postcondition could not be proved on this return path
+git-issue-107-rebind-controls.dfy(15,55): Related location: this is the postcondition that could not be proved
+git-issue-107-rebind-controls.dfy(16,66): Error: a postcondition could not be proved on this return path
+git-issue-107-rebind-controls.dfy(16,57): Related location: this is the postcondition that could not be proved
+git-issue-107-rebind-controls.dfy(17,61): Error: a postcondition could not be proved on this return path
+git-issue-107-rebind-controls.dfy(17,54): Related location: this is the postcondition that could not be proved
+git-issue-107-rebind-controls.dfy(18,33): Error: a postcondition could not be proved on this return path
+git-issue-107-rebind-controls.dfy(18,27): Related location: this is the postcondition that could not be proved
+git-issue-107-rebind-controls.dfy(27,58): Error: a postcondition could not be proved on this return path
+git-issue-107-rebind-controls.dfy(27,49): Related location: this is the postcondition that could not be proved
+git-issue-107-rebind-controls.dfy(28,66): Error: a postcondition could not be proved on this return path
+git-issue-107-rebind-controls.dfy(28,52): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 1 verified, 6 errors
+git-issue-107-rebind-controls.dfy(15,63): Error: a postcondition could not be proved on this return path
+git-issue-107-rebind-controls.dfy(15,55): Related location: this is the postcondition that could not be proved
+git-issue-107-rebind-controls.dfy(16,66): Error: a postcondition could not be proved on this return path
+git-issue-107-rebind-controls.dfy(16,57): Related location: this is the postcondition that could not be proved
+git-issue-107-rebind-controls.dfy(17,61): Error: a postcondition could not be proved on this return path
+git-issue-107-rebind-controls.dfy(17,54): Related location: this is the postcondition that could not be proved
+git-issue-107-rebind-controls.dfy(18,33): Error: a postcondition could not be proved on this return path
+git-issue-107-rebind-controls.dfy(18,27): Related location: this is the postcondition that could not be proved
+git-issue-107-rebind-controls.dfy(27,58): Error: a postcondition could not be proved on this return path
+git-issue-107-rebind-controls.dfy(27,49): Related location: this is the postcondition that could not be proved
+git-issue-107-rebind-controls.dfy(28,66): Error: a postcondition could not be proved on this return path
+git-issue-107-rebind-controls.dfy(28,52): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 1 verified, 6 errors
+git-issue-107-rebind-invariants.dfy(23,27): Error: invariant might not hold
+git-issue-107-rebind-invariants.dfy(15,16): Related location: this is the invariant that might not hold
+git-issue-107-rebind-invariants.dfy(32,7): Related location: refining module
+git-issue-107-rebind-invariants.dfy(26,44): Error: invariant might not hold
+git-issue-107-rebind-invariants.dfy(18,21): Related location: this is the invariant that might not hold
+git-issue-107-rebind-invariants.dfy(32,7): Related location: refining module
+git-issue-107-rebind-invariants.dfy(37,32): Error: a postcondition could not be proved on this return path
+git-issue-107-rebind-invariants.dfy(37,26): Related location: this is the postcondition that could not be proved
+git-issue-107-rebind-invariants.dfy(47,27): Error: invariant might not hold
+git-issue-107-rebind-invariants.dfy(15,16): Related location: this is the invariant that might not hold
+git-issue-107-rebind-invariants.dfy(49,7): Related location: refining module
+git-issue-107-rebind-invariants.dfy(54,32): Error: invariant might not hold
+git-issue-107-rebind-invariants.dfy(15,16): Related location: this is the invariant that might not hold
+git-issue-107-rebind-invariants.dfy(56,7): Related location: refining module
+git-issue-107-rebind-invariants.dfy(77,11): Error: the method must provide an equal or more detailed postcondition than in its parent trait
+git-issue-107-rebind-invariants.dfy(81,7): Related location: refining module
+git-issue-107-rebind-invariants.dfy(78,13): Error: the function must provide an equal or more detailed postcondition than in its parent trait
+git-issue-107-rebind-invariants.dfy(81,7): Related location: refining module
+
+Dafny program verifier finished with 15 verified, 7 errors
+git-issue-107-rebind.dfy(31,11): Error: rbrace expected
+1 parse errors detected in git-issue-107-rebind.dfy
+
+Dafny program verifier finished with 0 verified, 0 errors
+5
+
+Dafny program verifier finished with 0 verified, 0 errors
+5
+
+Dafny program verifier finished with 0 verified, 0 errors
+5
+
+Dafny program verifier finished with 1 verified, 0 errors
+
+Dafny program verifier finished with 1 verified, 0 errors
+
+Dafny program verifier finished with 1 verified, 0 errors
