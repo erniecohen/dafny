@@ -4,11 +4,11 @@ git-issue-466-rust-rejected.dfy(7,17): Error: Rust compilation of recursive modu
 Translation was aborted because errors were found
 
 Dafny program verifier did not attempt verification
-git-issue-466-go-extern-type.dfy(1,7): Error: Rust compilation of recursive module groups with extern declarations is not yet supported
+git-issue-466-rust-extern-type.dfy(1,7): Error: Rust compilation of recursive module groups with extern declarations is not yet supported
 Translation was aborted because errors were found
 
 Dafny program verifier did not attempt verification
-git-issue-466-go-extern-member.dfy(1,7): Error: Rust compilation of recursive module groups with extern declarations is not yet supported
+git-issue-466-rust-extern-member.dfy(1,7): Error: Rust compilation of recursive module groups with extern declarations is not yet supported
 Translation was aborted because errors were found
 
 Dafny program verifier did not attempt verification
