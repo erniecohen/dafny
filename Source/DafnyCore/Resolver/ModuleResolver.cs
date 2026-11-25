@@ -1686,6 +1686,10 @@ namespace Microsoft.Dafny {
         checkTypeInferenceVisitor.VisitDeclarations(declarations);
       }
 
+      if (Options.Get(CommonOptionBag.IntegerBitwise) && reporter.Count(ErrorLevel.Error) == prevErrorCount) {
+        new IntegerBitwiseOperations(this).VisitDeclarations(declarations);
+      }
+
       // Substitute for DefaultValueExpression's
       if (reporter.Count(ErrorLevel.Error) == prevErrorCount) {
         FillInDefaultValueExpressions();
