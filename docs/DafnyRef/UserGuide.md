@@ -2851,8 +2851,10 @@ and what information it produces about the verification process.
   `0 <= value < 2^N`; every result must satisfy the entire newtype predicate.
   Binary operands have the same newtype, and shift counts satisfy `0 <= k <= N`.
   Disabled by default. Runtime operators, rotations, population-count syntax and
-  native bitvector bridges remain later work. Include the optional
-  `IntegerBitwiseCompiler.dfy` companion for checked range and algebra contracts.
+  the remaining native shift/arithmetic/rotation bridges remain later work. Include
+  the optional `IntegerBitwiseCompiler.dfy` companion for checked range and algebra
+  contracts. `IntegerBitwiseNative.dfy` provides checked native conversion and
+  Boolean bridges at widths 8, 16, 32 and 64, independently of additional axioms.
   Set `integer-bitwise = true` in the project file's `[options]` section;
   an enabled `.doo` library requires enabled clients. Declarations in an off-built
   library cannot use this compiler interface merely because the client enables

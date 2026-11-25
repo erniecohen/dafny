@@ -1096,6 +1096,7 @@ git-issues/git-issue-516-member-invariants.dfy
 git-issues/github-issue-88-runtime.dfy
 git-issues/github-issue-88-inherited-bounds.dfy
 git-issues/git-issue-193-newtype-operators.dfy
+git-issues/git-issue-193-native-bridges.dfy
 
 # Lemma-binding specifications in member-invariant extension checks (issue 522).
 git-issues/git-issue-522.dfy
