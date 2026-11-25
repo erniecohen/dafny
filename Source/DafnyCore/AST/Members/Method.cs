@@ -36,8 +36,11 @@ public class Method : MethodOrConstructor {
     HasStaticKeyword = hasStaticKeyword;
   }
 
-  public override BlockStmt? Body => body;
+  public override BlockStmt? Body => BodyReleased ? throw ReleasedBodyRead() : body;
   public override void SetBody(BlockLikeStmt newBody) {
     body = (BlockStmt?)newBody;
+  }
+  protected override void DropBody() {
+    body = null;
   }
 }
