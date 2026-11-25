@@ -351,7 +351,7 @@ true - All class instances are raw pointers and need to be manually deallocated"
   };
 
   public static readonly Option<bool> IntegerBitwise = new("--integer-bitwise", () => false,
-    "Enable the compiler-owned ghost integer bitwise reference functions and explicit one-step unfolding lemmas. Integer-newtype operators are not yet implemented.");
+    "Enable ghost bitwise operators on unsigned integer newtypes with an explicit {:bitWidth N}, compiler-owned integer references, and explicit one-step unfolding lemmas. Runtime operators and native bitvector bridges are not yet implemented.");
 
   public static readonly Option<bool> AdditionalAxioms = new("--additional-axioms", () => false,
     "Enable additional verifier axioms. May change verification performance and proof stability. Disabled by default.");

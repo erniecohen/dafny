@@ -107,6 +107,12 @@ public class XConstraint {
       case "IntegerType":
         satisfied = resolver.IsNumericBasedDuringInference(t, Type.NumericPersuasion.Int);
         break;
+      case "IntegerBits":
+        satisfied = t.IsBitVectorType || IntegerBitwiseOperations.DeclaredWidth(t) != null;
+        break;
+      case "BooleanIntegerBits":
+        satisfied = t.IsBoolType || t.IsBitVectorType || IntegerBitwiseOperations.DeclaredWidth(t) != null;
+        break;
       case "IsBitvector":
         satisfied = t.IsBitVectorType;
         break;

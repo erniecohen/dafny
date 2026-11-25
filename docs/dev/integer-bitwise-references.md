@@ -1,8 +1,9 @@
-# Fixed integer bitwise references (issue 193, M2)
+# Integer bitwise references and newtype frontend (issue 193)
 
 `--integer-bitwise` is disabled by default. It installs the ghost class
-`IntegerBitwiseModel` and its explicit one-step unfold lemmas. It does not yet
-provide integer-newtype operators or native bitvector bridges. The independent
+`IntegerBitwiseModel` and its explicit one-step unfold lemmas. It also enables the six basic bitwise operators in ghost code on
+explicitly width-qualified integer newtypes. Native bitvector bridges and
+runtime operators remain later milestones. The independent
 `--additional-axioms` option does not expose this public interface.
 
 Include `Source/DafnyStandardLibraries/optional/IntegerBitwiseCompiler.dfy` for
@@ -109,8 +110,8 @@ The independent U/I cross-product checks fixed-reference availability alongside
 the existing user-arithmetic option, ordinary functions with misleading bitwise
 names, and existing Boolean/bitvector intrinsics. Neither flag enables the other.
 The user-operator prototype requires the refreshed resolver; its legacy rejection
-is checked explicitly. Integer-newtype capability, count/result and no-fallback
-checks remain M4 work, when those source intrinsics are implemented.
+is checked explicitly. The frontend controls below exercise integer-newtype capability, count/result
+checks and rejection of unsupported uses on actual source operators.
 
 `unfold-slices.py` constructs finite integer-only SMT slices from those actual
 emitted equations and a recursively evaluated M1 interpretation. It checks SAT
@@ -125,3 +126,64 @@ repair and canonical-map-payload repair are present in predecessor
 Boogie `3.5.5-review.dcd726f6`. The wider erased collection/boxing/handle theory
 has no whole-theory closure proof here. This extension argument and the controls
 do not establish unconditional consistency of that underlying theory.
+
+## Integer-newtype frontend
+
+This frontend milestone depends on PR 532. The source operators `&`, `|`, `^`,
+`!`, `<<` and `>>` on a revealed `newtype {:bitWidth N} T` lower respectively to
+`andNat`, `orNat`, `xorNat`, `notNat`, `shlNat` and `shrNat`, with the literal N
+and operands converted to mathematical integers. An ordinary conversion back
+to T checks its entire predicate, including inherited subset/newtype constraints.
+There is no assumed closure or automatic range contract. Clients may call the
+independently checked foundation and M1 range lemmas before an operation.
+An operator in a specification also needs its membership checks justified in
+that specification's well-formedness context.
+
+Both resolvers accept the surface. The source count must satisfy `0 <= k <= N`,
+including for bitvector counts; an ordinary checked assertion precedes the
+shift reference call. Counts zero and N are legal; a shift by N yields zero
+by the existing M2 definition, rather than by host count masking. Binary operands
+and the result have the same nominal newtype. Type synonyms retain that identity;
+distinct nested newtypes need their own annotation. Opaque exports expose no
+capability. Newtypes with member invariants remain excluded from this milestone.
+Malformed width attributes are diagnosed only with the feature enabled.
+
+Width validation uses the existing resolved integer-bound discovery, including
+implied base-type constraints. Its result must establish a nonnegative interval
+below 2^N. It does not select a native carrier or rely on native-type annotations.
+The compiler does not infer width from the interval. Attribute arguments are
+positive integer literals. The interval comparison uses bit lengths so a large
+width annotation does not allocate a correspondingly large power of two.
+
+**Definitional model argument.** Interpret each reference by the M1 function as
+above, and each source operator by that function at its annotation's width.
+For AND, OR and XOR the unsigned operands are their finite N-digit expansions;
+for complement use the N-digit complement. The existing M1 correspondence and
+range lemmas prove those interpretations agree. For left/right shift use the
+M1 shift interpretation at a checked count in [0,N], including the zero-valued
+N endpoint. Each lowered term is exactly its reference application followed
+by an identity conversion on integers. That conversion introduces T only after
+checking its complete predicate. The count assertion introduces its conclusion
+only after proving it. These are source definitions and checks, with no new
+prelude formulas, trusted declarations, global recurrences, assumed range facts,
+or native-BV bridge. They extend the same qualified model described above.
+
+`IntegerBitwiseSyntaxExpr` retains source notation for serialization and formatting.
+After inference, before the call graph and ghost checks, its semantic child is
+an ordinary call/conversion (and a checked count assertion for shifts). Later
+visitors therefore do not receive an integer under a BV opcode. Constant folding
+cannot mistake semantic width for `AsBitVectorType.Width`; the opaque reference
+call remains opaque. Clones use the standard resolved-child/type substitution;
+source and `.doo` reload rebuild the selection from recorded options and visible
+declarations. Off-built files cannot acquire the surface or width capability
+from an enabled client, including in the merged default module. No source name
+or attribute can replace the compiler-owned target. Compiled uses receive the
+ordinary ghost-function diagnostic; backend lowering is explicitly deferred.
+
+`issue193-newtype-operators.py` verifies actual source clients against M1 at widths
+8, 16, 32 and 64, checks live false assertions with every definition active, and
+rejects missing range proofs, strict-predicate violations, invalid counts,
+invalid width declarations, mixed nominal types, opaque capability and compiled
+uses. It preserves existing BV and Boolean intrinsics. Negative controls must
+finish within 200,000 RU; exhaustion is never accepted. The existing M2
+foundation/emission controls remain separate gates.
