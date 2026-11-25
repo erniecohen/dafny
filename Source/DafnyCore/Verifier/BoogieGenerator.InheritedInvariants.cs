@@ -119,10 +119,12 @@ namespace Microsoft.Dafny {
     /// of "module" that converts to that of "owner", or null if there is none:
     ///  - for a declaration of "module", the declaration of the base that it refines or copies;
     ///  - for any other declaration, "owner" itself, since "module" shares it with its base, unless "module" binds an
-    ///    abstract import of its base to a module.  The base then converted to the declarations of the module that
-    ///    the import names, which the bound module refines, so the first declaration that "owner" refines is taken,
-    ///    and with it only the conjuncts of the original.  That is conservative, and the hidden
-    ///    --legacy-unchecked-import-binding, which allows a binding that is not a refinement, takes none.
+    ///    abstract import of its base to a module, or rebinds a copying import of its base to a copy of a refinement
+    ///    of the copied module (https://github.com/erniecohen/dafny/issues/107).  The base then converted to the
+    ///    declarations of the module that the import names, or of its own copy, which the bound module refines, so
+    ///    the first declaration that "owner" refines is taken, and with it only the conjuncts of the original.  That
+    ///    is conservative, and the hidden --legacy-unchecked-import-binding, which allows a binding that is not a
+    ///    refinement, takes none.
     /// </summary>
     private static TopLevelDecl BaseOwner(TopLevelDeclWithMembers owner, ModuleDefinition module, DafnyOptions options) {
       if (owner.EnclosingModuleDefinition == module) {
@@ -143,11 +145,24 @@ namespace Microsoft.Dafny {
     }
 
     /// <summary>
-    /// Whether "module" binds an abstract import of its refinement base to a module.
+    /// Whether "module" binds an abstract import of its refinement base to a module, or rebinds a copying import of
+    /// its refinement base.  A rebinding copies a refinement of the module that the base copied, which may add
+    /// invariants to the types of the copy.
     /// </summary>
     private static bool BindsAbstractImport(ModuleDefinition module) {
       return module.Implements != null && module.TopLevelDecls.OfType<ModuleDecl>().Any(decl =>
-        decl.CardinalityRefinementBase is AbstractModuleDecl && !decl.Origin.IsInherited(module));
+        (decl.CardinalityRefinementBase is AbstractModuleDecl || RebindsCopyingImport(decl, module)) &&
+        !decl.Origin.IsInherited(module));
+    }
+
+    /// <summary>
+    /// Whether "decl", a declaration of "module", is a copying import written in "module" in the place of a copying
+    /// import that "module" inherits.  A copy that "module" makes of an inherited one is marked Inherited.
+    /// </summary>
+    private static bool RebindsCopyingImport(ModuleDecl decl, ModuleDefinition module) {
+      return decl is LiteralModuleDecl { CopyImport: { Inherited: false } } &&
+             module.Implements?.Target.Def?.TopLevelDecls.Any(original =>
+               original.Name == decl.Name && original is LiteralModuleDecl { CopyImport: not null }) == true;
     }
 
     /// <summary>

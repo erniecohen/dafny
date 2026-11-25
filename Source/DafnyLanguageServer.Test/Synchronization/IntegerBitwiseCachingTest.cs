@@ -31,6 +31,8 @@ public class IntegerBitwiseCachingTest {
       Assert.Equal(enabled, result.ErrorReporter.Options.Get(CommonOptionBag.IntegerBitwise));
       var module = Assert.Single(result.Module.SourceDecls.OfType<LiteralModuleDecl>());
       Assert.Equal(enabled, module.Options.Get(CommonOptionBag.IntegerBitwise));
+      var function = Assert.Single(module.ModuleDef.TopLevelDecls.OfType<DefaultClassDecl>()).Members.OfType<Function>().Single();
+      Assert.Equal(enabled, function.Body is IntegerBitwiseSyntaxExpr);
     }
 
     var first = Parse(firstMode);
@@ -54,7 +56,7 @@ public class IntegerBitwiseCachingTest {
   private sealed class ExposedCachingParser() : CachingParser(NullLogger<ProgramParser>.Instance,
     OnDiskFileSystem.Instance, new NoTelemetryPublisher()) {
     internal DfyParseFileResult Parse(DafnyOptions options) => base.ParseFile(options,
-      new FileSnapshot(new StringReader("module Library { lemma L() {} }"), null),
+      new FileSnapshot(new StringReader("module Library { newtype {:bitWidth 8} U = x:nat | x < 256 ghost function F(a:U,b:U):U { a & b } }"), null),
       new Uri("untitled:integer-bitwise-mode.dfy"), CancellationToken.None);
   }
 
