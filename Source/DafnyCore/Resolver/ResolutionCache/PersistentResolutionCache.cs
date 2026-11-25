@@ -42,7 +42,7 @@ namespace Microsoft.Dafny;
 /// A miss resolves the module afresh and writes its entry, replacing one that did not apply.
 /// </summary>
 internal sealed class PersistentResolutionCache {
-  private const string KeyDomain = "dafny-resolution-cache-key-v2";
+  private const string KeyDomain = "dafny-resolution-cache-key-v3";
   private const string Magic = "DRES";
   private const int FormatVersion = 2;
   private const string BuiltinTokenOwner = "builtins";
@@ -158,6 +158,7 @@ internal sealed class PersistentResolutionCache {
   private readonly ConcurrentDictionary<uint, ResolutionExternalToken> tokenOwners = new();
   private readonly ConcurrentDictionary<string, Record> records = new(StringComparer.Ordinal);
   private readonly Dictionary<string, HashSet<uint>> ownScopeTokens = new(StringComparer.Ordinal);
+  private readonly Dictionary<ModuleDecl, string> cacheNames = new(ReferenceEqualityComparer.Instance);
   private readonly HashSet<string> ambiguousNames;
   private readonly ResolutionFrames frames;
   private readonly uint lastParseToken;
@@ -205,8 +206,11 @@ internal sealed class PersistentResolutionCache {
     this.initialMembers = initialMembers.Select(p => (p.Key.FullName, p.Value)).OrderBy(p => p.FullName, StringComparer.Ordinal).ToArray();
     sourceTokens = new(() => ResolutionTokenIndex.For(program, []));
     var all = declarations.ToList();
-    ambiguousNames = all.GroupBy(d => d.FullName).Where(g => g.Count() > 1).Select(g => g.Key).ToHashSet();
-    frames = new ResolutionFrames(all.Select((d, i) => (d.FullName, pieces[i])).Where(p => !ambiguousNames.Contains(p.FullName)));
+    // Imports and export sets are distinct declarations even when they have the same qualified name.
+    // Use the same kind-qualified name for keys, source frames and all prerequisite references.
+    foreach (var declaration in all) { cacheNames.Add(declaration, declaration.GetType().Name + ":" + declaration.FullName); }
+    ambiguousNames = all.GroupBy(Name).Where(g => g.Count() > 1).Select(g => g.Key).ToHashSet();
+    frames = new ResolutionFrames(all.Select((d, i) => (Name: Name(d), Pieces: pieces[i])).Where(p => !ambiguousNames.Contains(p.Name)));
     foreach (var declaration in all) {
       // A module's own scope, and those of its export sets, which its dependents see through its result.
       if (declaration is LiteralModuleDecl literal && ResolutionGraphSchema.Tokens(literal.ModuleDef.VisibilityScope) is { Count: 1 } own) {
@@ -214,7 +218,7 @@ internal sealed class PersistentResolutionCache {
         foreach (var export in literal.ModuleDef.TopLevelDecls.OfType<ModuleExportDecl>()) {
           if (ResolutionGraphSchema.Tokens(export.ThisScope) is { Count: 1 } exportTokens) { tokens.Add(exportTokens.Min); }
         }
-        ownScopeTokens[declaration.FullName] = tokens;
+        ownScopeTokens[Name(declaration)] = tokens;
       }
     }
     // Scope tokens are allocated in increasing order. Those of the parsed program are at most this one.
@@ -223,21 +227,23 @@ internal sealed class PersistentResolutionCache {
 
   // ---------------------------------------------------------------- key
 
+  private string Name(ModuleDecl declaration) => cacheNames[declaration];
+
   public string? Key(ModuleContext context) {
-    if (ambiguousNames.Contains(context.Declaration.FullName)) { return null; }
+    if (ambiguousNames.Contains(Name(context.Declaration))) { return null; }
     var structures = new List<(string, string)>();
     foreach (var prerequisite in context.Closure) {
-      if (!records.TryGetValue(prerequisite.FullName, out var record) || record.Structure == null) { return null; }
-      structures.Add((prerequisite.FullName, record.Structure));
+      if (!records.TryGetValue(Name(prerequisite), out var record) || record.Structure == null) { return null; }
+      structures.Add((Name(prerequisite), record.Structure));
     }
     using var bytes = new MemoryStream();
     using (var writer = new BinaryWriter(bytes, Encoding.UTF8, true)) {
       writer.Write(KeyDomain);
       writer.Write(Producer);
-      writer.Write(context.Declaration.FullName);
+      writer.Write(Name(context.Declaration));
       writer.Write(context.LocalKey);
       writer.Write(context.Prefix);
-      var direct = context.Direct.Select(p => (p.Role, p.Prerequisite.FullName)).Order().ToArray();
+      var direct = context.Direct.Select(p => (p.Role, Name(p.Prerequisite))).Order().ToArray();
       writer.Write(direct.Length);
       foreach (var (role, name) in direct) { writer.Write(role); writer.Write(name); }
       writer.Write(structures.Count);
@@ -266,7 +272,7 @@ internal sealed class PersistentResolutionCache {
   public ModuleResolutionResult Resolve(ModuleContext context, Func<Worker> worker, Action recreate,
     Func<ModuleResolutionResult> resolve, Func<SystemModuleManager, ModuleResolutionResult, IReadOnlyList<ModuleResolutionResult>, bool> cacheable,
     IReadOnlyList<ModuleResolutionResult> closure, out string state, out string? key) {
-    var name = context.Declaration.FullName;
+    var name = Name(context.Declaration);
     key = Key(context);
     PipelineProfile.ModulePhase(program.Options, "cache.key");
     if (key == null) {
@@ -319,7 +325,7 @@ internal sealed class PersistentResolutionCache {
     var fresh = resolve();
     var shared = Named(context, worker()).Where(p => !p.Value.EndsWith(".worker", StringComparison.Ordinal))
       .Select(p => p.Key).ToHashSet(ReferenceEqualityComparer.Instance);
-    var closureNames = context.Closure.Select(d => d.FullName).ToHashSet(StringComparer.Ordinal);
+    var closureNames = context.Closure.Select(Name).ToHashSet(StringComparer.Ordinal);
     var equality = new ResolutionGraphEquality(value => shared.Contains(value) ||
       (TryOwner(value, out var owner) && closureNames.Contains(owner.Name)) ||
       (value is Token token && sourceTokens.Value.TryGet(token, out _)));
@@ -362,7 +368,7 @@ internal sealed class PersistentResolutionCache {
   }
 
   /// <summary>A module that is resolved without the cache, such as a member of a recursive module group.</summary>
-  public void Uncacheable(ModuleDecl declaration) => records[declaration.FullName] = Record.None;
+  public void Uncacheable(ModuleDecl declaration) => records[Name(declaration)] = Record.None;
 
   private ModuleResolutionResult Uncacheable(string name, ModuleResolutionResult output) {
     records[name] = Record.None;
@@ -372,12 +378,12 @@ internal sealed class PersistentResolutionCache {
   // ---------------------------------------------------------------- miss
 
   private CachePublication Store(ModuleContext context, string key, ModuleResolutionResult output, Worker worker, bool replace) {
-    var name = context.Declaration.FullName;
+    var name = Name(context.Declaration);
     var view = worker.Builtins;
     var journal = BuiltinJournal.Of(view);
     var anchors = Anchors(view, journal, worker, true);
     PipelineProfile.ModulePhase(program.Options, "store.anchors");
-    var closureNames = context.Closure.Select(d => d.FullName).ToHashSet(StringComparer.Ordinal);
+    var closureNames = context.Closure.Select(Name).ToHashSet(StringComparer.Ordinal);
     var named = Named(context, worker);
     var ancestorTokens = AncestorTokens(context);
     var ownTokens = ownScopeTokens.GetValueOrDefault(name) ?? [];
@@ -419,7 +425,7 @@ internal sealed class PersistentResolutionCache {
     // A module whose resolution changed a collection of a prerequisite, other than by its effects, would lose that
     // change on a hit.
     foreach (var prerequisite in context.Closure) {
-      if (records.TryGetValue(prerequisite.FullName, out var record) && record.Changed() is { } index) {
+      if (records.TryGetValue(Name(prerequisite), out var record) && record.Changed() is { } index) {
         throw new ResolutionSnapshotUnsupported("changes " + record.Owned[index].GetType().Name + " of " + prerequisite.FullName);
       }
     }
@@ -559,7 +565,7 @@ internal sealed class PersistentResolutionCache {
   private ModuleResolutionResult Hit(ModuleContext context, string key, byte[] file, Worker worker) {
     var (manifest, payload) = Read(file);
     PipelineProfile.ModulePhase(program.Options, "cache.decode");
-    var name = context.Declaration.FullName;
+    var name = Name(context.Declaration);
     if (manifest.Key != key || manifest.Producer != Producer || manifest.Name != name) {
       throw new ResolutionSnapshotInvalid("entry of another module");
     }
@@ -573,7 +579,7 @@ internal sealed class PersistentResolutionCache {
       if (anchors.Guard(anchor) != guard) { throw new ResolutionSnapshotInvalid("builtin " + anchor + " differs"); }
     }
     PipelineProfile.ModulePhase(program.Options, "cache.guards");
-    var closureNames = context.Closure.Select(d => d.FullName).ToHashSet(StringComparer.Ordinal);
+    var closureNames = context.Closure.Select(Name).ToHashSet(StringComparer.Ordinal);
     var named = Named(context, worker).ToDictionary(p => p.Value, p => p.Key, StringComparer.Ordinal);
     var ancestorTokens = AncestorTokens(context).ToDictionary(p => p.Value, p => p.Key);
     PipelineProfile.ModulePhase(program.Options, "cache.named");
@@ -666,8 +672,8 @@ internal sealed class PersistentResolutionCache {
     Add(context.Declaration.Options, "options.module");
     Add(program.Options, "options.program");
     // A refinement or an export copies a prerequisite's declarations with the options of that prerequisite's file.
-    foreach (var prerequisite in context.Closure.OrderBy(d => d.FullName, StringComparer.Ordinal)) {
-      Add(prerequisite.Options, "options.prerequisite:" + prerequisite.FullName);
+    foreach (var prerequisite in context.Closure.OrderBy(Name, StringComparer.Ordinal)) {
+      Add(prerequisite.Options, "options.prerequisite:" + Name(prerequisite));
     }
     Add(program.Compilation, "compilation");
     Add(program, "program");

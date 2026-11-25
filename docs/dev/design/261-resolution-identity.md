@@ -77,6 +77,19 @@ Three cases refine this:
   token's rank, when the prerequisite's result refers to it; otherwise the module
   is not cached.
 
+The persistent cache qualifies each declaration name by its runtime declaration
+kind. An import alias and an export set can legally share a qualified display
+name (`import Lib` beside `export Lib`); they are distinct cache entries, owners
+of prerequisite objects and tokens, and source frames. Collapsing them disables
+their dependents or binds a reference to the wrong declaration. The kind-qualified
+names are included in the versioned cache key, while profile events retain the
+source-level names and report each declaration's kind separately. The bounded
+snapshot graph limit admits the expanded compiler match trees, whose ordinary
+resolved graph exceeds ten million objects; materialization still bounds every
+count against the remaining payload before allocating. The equality oracle keeps
+its two-way identity maps and all field comparisons, and renders diagnostic path
+strings only when it finds a difference.
+
 The persistent resolution cache of issue 261 does all of these. A consumer of the
 identity that keeps absolute coordinates, such as Boogie text with source
 positions, must rebase them the same way or add where the module's text starts

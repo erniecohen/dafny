@@ -143,7 +143,9 @@ internal sealed class ResolutionFrames {
 /// structure digest differ at most in where their tokens are.
 /// </summary>
 internal static class ResolutionSnapshot {
-  public const int MaxObjects = 4_000_000;
+  // Resolved compiler modules include the expanded match trees, which can exceed four million objects.
+  // Counts are also bounded by the remaining payload bytes before any materialization array is allocated.
+  public const int MaxObjects = 16_000_000;
   private const string StructureDomain = "dafny-resolution-structure-v1";
 
   private enum EntryKind : byte { Fields = 1, Array = 2, Collection = 3, Scope = 4, Lock = 5 }
