@@ -578,6 +578,7 @@ internal sealed class PersistentResolutionCache {
     var ancestorTokens = AncestorTokens(context).ToDictionary(p => p.Value, p => p.Key);
     PipelineProfile.ModulePhase(program.Options, "cache.named");
     var world = new ResolutionSnapshot.MaterializeWorld {
+      Options = program.Options,
       Object = external => external.Kind switch {
         ResolutionExternal.Kinds.Static => ResolutionGraphSchema.StaticsByName.GetValueOrDefault(external.Name) ??
                                            ResolutionGraphSchema.Singleton(external.Name) ??

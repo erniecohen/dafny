@@ -168,18 +168,24 @@ kept from doing:
 - **Materialization.** Reading an entry fills its objects from one pooled array of
   entries and one of values per thread, with no record per object. Collections are
   created and filled through delegates made once per collection type, not by
-  reflection per element, and a field's name is computed once.
+  reflection per element, and a field's name is computed once. Fields are restored
+  through cached typed writers for each runtime type. These use the same ordered
+  field schema that every entry validates before restoring any object. Value-type
+  targets are unboxed by address, preserving writes into the original box; private,
+  inherited, readonly and nullable fields retain their values. Runtimes without
+  dynamic code use reflection instead.
 - **Capture.** A store asks where an object outside its module is (a builtin, a
   named context object, an anchor or a prerequisite's) once per object, not once
   per reference, and an object already in the snapshot is recognized before that
   question is asked.
 
-Fields are still read and written by reflection, in a capture and in a
-materialization; accessors compiled per type would cut that, at the price of
-compiling them in every process.
+Capture still reads fields by reflection. Materialization includes the cost of
+compiling its writers in each process; no generated code is stored in a snapshot.
+The snapshot format, token rebinding, prerequisite bindings and guards are unchanged.
 
 Each phase of a module's hit or store is reported in the `resolve.module` events
 of `--pipeline-profile`, among them `cache.read`, `cache.decode`,
-`cache.anchors`, `cache.guards`, `cache.materialize` and `cache.register` for a
+`cache.anchors`, `cache.guards`, `cache.materialize.schema`,
+`cache.materialize.read`, `cache.materialize.fill`, `cache.materialize` and `cache.register` for a
 hit; `store.anchors`, `store.capture`, `store.ownership` and `store.publish` for
 a store.
