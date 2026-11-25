@@ -161,6 +161,7 @@ referrers	miss	miss	miss	false | true
 refinement-extends	miss	miss	miss	false | true	
 refinement-renaming	miss	miss	miss	false | true	
 relax-definite-assignment	miss	miss	miss	false | true	
+release-verified-modules	miss	miss	miss	false | true	keyed by default: it changes no report, but it is not on the list of options that change no result, so records made with and without it are kept apart
 report-file	n/a	n/a	n/a	-	not an option of verify
 report-format	n/a	n/a	n/a	-	not an option of verify
 resolution-cache	hit	hit	hit	false | true	whether resolution results are reused; a reused result is the one a fresh resolution produces

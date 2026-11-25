@@ -1,0 +1,4 @@
+cold exit 0 hits Impl=None, Late1=None, Late2=None, Late3=None, Late4=None, Library=None
+warm exit 0 hits Impl=translation-key, Late1=translation-key, Late2=translation-key, Late3=translation-key, Late4=translation-key, Library=translation-key
+edited exit 0 hits Impl=boogie-graph, Late1=boogie-graph, Late2=boogie-graph, Late3=boogie-graph, Late4=boogie-graph, Library=None
+edited-warm exit 0 hits Impl=translation-key, Late1=translation-key, Late2=translation-key, Late3=translation-key, Late4=translation-key, Library=translation-key

@@ -1169,12 +1169,16 @@ that a later stage would have to reject:
   other (such as `import X = B.Y` in `A` beside `import Y = A.X` in `B`);
 * a group supplied as unverified library source rather than a `.doo` archive;
 * executable compilation of a program that has a group for a target other than
-  C#, Java, Go or Rust: `dafny build` (except `--target lib`), `dafny run` and `dafny translate`
-  stop with an error naming that target after verification. C#, Java, Go and Rust compilation
+  C#, Java, Go, Python or Rust: `dafny build` (except `--target lib`), `dafny run` and `dafny translate`
+  stop with an error naming that target after verification. C#, Java, Go, Python and Rust compilation
   are supported, including groups loaded from `.doo` libraries. C# namespaces
   and Java packages can refer to each other; Go emits the whole group in one
   package, with distinct names for declarations from each member. Constant getters
   evaluate dependencies on use. Java compiles the generated packages together.
+  Python emits a group in one file, orders class definitions after their trait bases,
+  and preserves module-qualified imports through wrapper files.
+  Python groups containing extern modules, types or members are not yet supported.
+  Python groups also reject declarations marked `{:compile false}` pending a foreign-linkage convention.
   Rust emits one container per group, with public facades preserving the member namespaces.
   Rust groups containing extern modules, types or members are not yet supported.
   Rust group programs require explicit array initialization; implicit datatype defaults

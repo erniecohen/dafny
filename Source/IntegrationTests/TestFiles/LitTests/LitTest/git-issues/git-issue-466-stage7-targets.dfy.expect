@@ -3,9 +3,6 @@ Dafny program verifier did not attempt verification
 Error: module 'A' is in a recursive module group; compiling a program that has a recursive module group is not yet supported for target 'js'
 
 Dafny program verifier did not attempt verification
-Error: module 'A' is in a recursive module group; compiling a program that has a recursive module group is not yet supported for target 'py'
-
-Dafny program verifier did not attempt verification
 Error: module 'A' is in a recursive module group; compiling a program that has a recursive module group is not yet supported for target 'cpp'
 
 Dafny program verifier did not attempt verification

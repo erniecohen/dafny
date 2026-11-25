@@ -1,0 +1,1 @@
+Add an explicitly included, checked proof companion for native bitvector conversions and Boolean operations at widths 8, 16, 32 and 64. It connects native AND, complement, OR, XOR and ANDNOT with the opt-in integer bitwise references, independently of additional axioms.

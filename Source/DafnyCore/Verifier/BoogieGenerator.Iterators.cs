@@ -40,8 +40,9 @@ namespace Microsoft.Dafny {
         return true;
       }
       var module = iter.EnclosingModuleDefinition;
-      return MustCheckInheritedTermination(iter, options) && !module.IsFacade &&
-             module.ShouldVerify(program.Compilation) && iter.IsVisibleInScope(verificationScope);
+      // The visibility is tested first; see BodyInVerificationScope.
+      return iter.IsVisibleInScope(verificationScope) && !module.IsFacade &&
+             module.ShouldVerify(program.Compilation) && MustCheckInheritedTermination(iter, options);
     }
 
     /// <summary>
@@ -70,7 +71,8 @@ namespace Microsoft.Dafny {
         AddIteratorWellformednessCheck(iter, proc);
       }
       // the method itself
-      if (iter.Body != null && IteratorBodyInVerificationScope(iter)) {
+      // The scope is checked first; see AddMethod_Top.
+      if (IteratorBodyInVerificationScope(iter) && iter.Body != null) {
         proc = AddIteratorProc(iter, MethodTranslationKind.Implementation);
         sink.AddTopLevelDeclaration(proc);
         // ...and its implementation
