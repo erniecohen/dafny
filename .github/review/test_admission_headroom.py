@@ -112,10 +112,14 @@ class HeadroomTests(AdmissionFixture):
                 self.assertEqual((total, outstanding, unknown), (2000, growth, []))
                 tree.assert_called_once_with(os.getpid(), 7)
 
-    def test_legacy_sidecar_uses_full_declaration_on_unreadable_tree(self):
-        self.occupy('active.lock.90', 2000)
-        with patch.object(admission, 'process_tree_mb', return_value=None):
+    def test_legacy_sidecar_without_owner_uses_full_declaration(self):
+        stream = self.occupy('active.lock.90', 2000)
+        data = json.loads(admission.sidecar_path(stream).read_text())
+        del data['owner_pid']
+        admission.sidecar_path(stream).write_text(json.dumps(data))
+        with patch.object(admission, 'process_tree_mb', return_value=9999) as tree:
             self.assertEqual(admission.pool_usage(self.locks, 'unused', 2), (2000, 2000, []))
+        tree.assert_not_called()
 
     def test_invalid_expected_metadata_refuses(self):
         for peak in (0, True, '1', float('nan')):
@@ -138,6 +142,36 @@ class HeadroomTests(AdmissionFixture):
         with patch.object(admission, 'memory_healthy', side_effect=AssertionError('probed before slot')):
             self.denied('slots')
         self.assert_free('agent-reserve.lock')
+
+    def test_sidecar_keeps_holder_pid_and_uses_owner_for_rss(self):
+        owner = os.getpid() + 100000
+        stream, reason = admission.try_admit(self.locks / 'active.lock', 6, 'example/repo',
+                                             'ci:small', POLICY, owner_pid=owner)
+        self.assertIsNone(reason)
+        self.addCleanup(lambda: admission.release(stream) if not stream.closed else None)
+        data = json.loads(admission.sidecar_path(stream).read_text())
+        self.assertEqual(data['pid'], os.getpid())
+        self.assertEqual(data['owner_pid'], owner)
+        with patch.object(admission, 'pid_alive', side_effect=lambda pid: pid in (os.getpid(), owner)), patch.object(admission, 'process_tree_mb', return_value=250) as tree:
+            total, outstanding, unknown = admission.pool_usage(self.locks, 'unused', 2)
+        tree.assert_called_once_with(owner, 2)
+        self.assertEqual((total, outstanding, unknown), (3400, 750, []))
+
+    def test_missing_dead_or_invalid_owner_charges_full_expected_peak(self):
+        for owner in (None, 99999999, 0, -1, True, '123'):
+            with self.subTest(owner=owner):
+                stream = self.occupy('active.lock.90', 2000, expected_mb=1200, owner_pid=owner)
+                try:
+                    if owner is None:
+                        data = json.loads(admission.sidecar_path(stream).read_text())
+                        del data['owner_pid']  # An older producer did not publish an owner.
+                        admission.sidecar_path(stream).write_text(json.dumps(data))
+                    with patch.object(admission, 'pid_alive', side_effect=lambda pid: pid == os.getpid()), patch.object(admission, 'process_tree_mb', return_value=9999) as tree:
+                        usage = admission.pool_usage(self.locks, 'unused', 2)
+                    self.assertEqual(usage, (2000, 1200, []))
+                    tree.assert_not_called()  # Never credit the holder or an unavailable owner.
+                finally:
+                    admission.release(stream)
 
     def test_scanning_reserve_never_acquires_it(self):
         (self.locks / 'agent-reserve.lock').touch()

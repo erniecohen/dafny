@@ -259,7 +259,7 @@ def sidecar_path(stream):
 
 
 def publish(stream, project, kind, amount, expected_mb, owner_pid):
-    data = {'pid': owner_pid, 'project': project, 'kind': kind or 'unknown',
+    data = {'pid': os.getpid(), 'owner_pid': owner_pid, 'project': project, 'kind': kind or 'unknown',
             'declared_mb': amount, 'expected_mb': expected_mb, 'started': time.time()}
     path = sidecar_path(stream)
     temporary = path.with_name(f'{path.name}.{os.getpid()}.tmp')
@@ -303,6 +303,8 @@ def pool_usage(directory, candidate, timeout):
                 continue  # Free numbered locks' stale metadata never reserves memory.
         # Never acquire the agent reserve, even to test it. Read its metadata
         # without locking; a live sidecar conservatively counts until removed.
+        # A reserve held without a sidecar does not itself block CI: memguard
+        # closes CI admission by holding every numbered CI slot as well.
         try:
             data = json.loads(Path(str(path) + '.json').read_text())
             if not isinstance(data, dict):
@@ -332,7 +334,12 @@ def pool_usage(directory, candidate, timeout):
         # Registered declarations continue to count separately against the budget;
         # older sidecars without expected_mb use their declaration consistently.
         peak = expected
-        actual = process_tree_mb(data['pid'], timeout)
+        # pid remains the flock holder for shared protocol readers. Only a live,
+        # explicit owner_pid may earn RSS credit. Missing, invalid or dead owners
+        # reserve the full expected peak rather than measuring the keeper tree.
+        owner = data.get('owner_pid')
+        actual = (process_tree_mb(owner, timeout)
+                  if type(owner) is int and owner > 0 and pid_alive(owner) else None)
         outstanding += peak if actual is None else max(0, peak - actual)
     return total, outstanding, unaccounted
 
