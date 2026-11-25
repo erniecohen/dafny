@@ -1115,6 +1115,10 @@ git-issues/git-issue-261-resolution-cache-options.dfy
 git-issues/git-issue-466-java.dfy
 git-issues/git-issue-466-go.dfy
 git-issues/git-issue-466-go-extern.dfy
+git-issues/git-issue-466-python.dfy
+git-issues/git-issue-466-python-extern.dfy
+git-issues/git-issue-466-python-link.dfy
+cli/help.dfy
 
 # Proofs that justify a lemma binding in the cone of a member invariant (https://github.com/erniecohen/dafny/issues/199).
 git-issues/git-issue-199-invariant-proofs.dfy

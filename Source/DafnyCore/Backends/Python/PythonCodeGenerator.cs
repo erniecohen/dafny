@@ -14,6 +14,7 @@ namespace Microsoft.Dafny.Compilers {
 
     private bool PythonModuleMode;
     private string PythonModuleName;
+    private bool HasRecursiveGroups;
 
     public PythonCodeGenerator(DafnyOptions options, ErrorReporter reporter) : base(options, reporter) {
       var pythonModuleName = Options.Get(PythonBackend.PythonModuleNameCliOption);
@@ -32,6 +33,74 @@ namespace Microsoft.Dafny.Compilers {
     // This separation is used to identify nested extern modules,
     //   which currently cannot be used with python-module-name/outer-module.
     private readonly Dictionary<string, string> Imports = new Dictionary<string, string>();
+
+    private sealed class GroupEmission {
+      public ConcreteSyntaxTree File;
+      public readonly Dictionary<TopLevelDecl, ConcreteSyntaxTree> Declarations = new();
+      public readonly Dictionary<ModuleDefinition, ConcreteSyntaxTree> Modules = new();
+    }
+
+    private readonly Dictionary<RecursiveModuleGroup, GroupEmission> Groups = new();
+
+    // These identities depend on module names, not source-file positions or archive layout.
+    private static List<ModuleDefinition> GroupMembers(RecursiveModuleGroup group) =>
+      group.Members.Select(member => member.ModuleDef).OrderBy(member => member.FullDafnyName, StringComparer.Ordinal).ToList();
+
+    private string GroupFileName(RecursiveModuleGroup group) =>
+      "_dafny_group_" + PublicModuleIdProtect(GroupMembers(group).First().GetCompileName(Options));
+
+    protected override string IdName(TopLevelDecl declaration) {
+      var name = base.IdName(declaration);
+      return declaration.EnclosingModuleDefinition.RecursiveGroup is { } group
+        ? $"_module{GroupMembers(group).IndexOf(declaration.EnclosingModuleDefinition)}_{name}"
+        : name;
+    }
+
+    private ConcreteSyntaxTree DeclarationWriter(TopLevelDecl declaration, ConcreteSyntaxTree writer) {
+      if (declaration.EnclosingModuleDefinition.RecursiveGroup is not { } group) {
+        return writer;
+      }
+      var declarations = Groups[group].Declarations;
+      if (!declarations.TryGetValue(declaration, out var result)) {
+        result = new ConcreteSyntaxTree();
+        declarations.Add(declaration, result);
+      }
+      return result;
+    }
+
+    protected override void EmitFooter(Program program, ConcreteSyntaxTree wr) {
+      foreach (var (group, emission) in Groups) {
+        var emitted = new HashSet<TopLevelDecl>();
+        void Emit(TopLevelDecl declaration) {
+          if (!emission.Declarations.ContainsKey(declaration) || !emitted.Add(declaration)) {
+            return;
+          }
+          if (declaration is TopLevelDeclWithMembers type) {
+            foreach (var parent in type.ParentTraitHeads) {
+              Emit(parent);
+            }
+          }
+          emission.File.Append(emission.Declarations[declaration]);
+          emission.File.WriteLine();
+
+          // Keep ordinary module-qualified names available to clients and separate compilation.
+          var wrapper = emission.Modules[declaration.EnclosingModuleDefinition];
+          var modulePrefix = PythonModuleMode ? PythonModuleName + "." : "";
+          var import = $"from {modulePrefix}{GroupFileName(group)} import ";
+          wrapper.WriteLine($"{import}{IdName(declaration)} as {base.IdName(declaration)}");
+          if (declaration is DatatypeDecl datatype) {
+            foreach (var ctor in datatype.Ctors.Where(ctor => !ctor.IsGhost)) {
+              wrapper.WriteLine($"{import}{IdName(datatype)}_{ctor.GetCompileName(Options)} as {base.IdName(datatype)}_{ctor.GetCompileName(Options)}");
+            }
+          }
+        }
+        foreach (var declaration in emission.Declarations.Keys
+                   .OrderBy(declaration => declaration.EnclosingModuleDefinition.FullDafnyName, StringComparer.Ordinal)
+                   .ThenBy(declaration => declaration.GetCompileName(Options), StringComparer.Ordinal)) {
+          Emit(declaration);
+        }
+      }
+    }
 
     public override IReadOnlySet<Feature> UnsupportedFeatures => new HashSet<Feature> {
       Feature.SubsetTypeTests,
@@ -90,6 +159,7 @@ namespace Microsoft.Dafny.Compilers {
       , "zip"
     };
     protected override void EmitHeader(Program program, ConcreteSyntaxTree wr) {
+      HasRecursiveGroups = program.RawModules().Any(module => module.RecursiveGroup != null);
       wr.WriteLine($"# Dafny program {program.Name} compiled into Python");
       if (Options.IncludeRuntime) {
         EmitRuntimeSource("DafnyRuntimePython", wr);
@@ -145,33 +215,46 @@ namespace Microsoft.Dafny.Compilers {
         if (!module.CanCompile() || !available.Contains(module) || visited.Contains(module)) {
           return;
         }
-        if (!active.Add(module)) {
+        var unit = module.RecursiveGroup is { } group
+          ? GroupMembers(group).Where(available.Contains).ToList()
+          : new List<ModuleDefinition> { module };
+        if (unit.Any(active.Contains)) {
           Reporter.Error(MessageSource.Compiler, module.Origin,
             "Python compilation dependencies contain a cycle through module '{0}' after applying replacements", module.Name);
           cyclic = true;
           return;
         }
+        foreach (var member in unit) {
+          active.Add(member);
+        }
 
         void VisitDependency(ModuleDefinition dependency) {
           if (dependency != null) {
-            Visit(program.Replacements.GetValueOrDefault(dependency, dependency));
+            dependency = program.Replacements.GetValueOrDefault(dependency, dependency);
+            if (module.RecursiveGroup == null || module.RecursiveGroup != dependency.RecursiveGroup) {
+              Visit(dependency);
+            }
           }
         }
 
-        foreach (var declaration in module.TopLevelDecls) {
-          if (declaration is AliasModuleDecl alias) {
-            VisitDependency(alias.Dereference());
-          } else if (declaration is LiteralModuleDecl literal) {
-            VisitDependency(literal.ModuleDef);
+        foreach (var member in unit) {
+          foreach (var declaration in member.TopLevelDecls) {
+            if (declaration is AliasModuleDecl alias) {
+              VisitDependency(alias.Dereference());
+            } else if (declaration is LiteralModuleDecl literal) {
+              VisitDependency(literal.ModuleDef);
+            }
+          }
+          // A replacement's implementation edge points back to its own compiled module.
+          if (member.Implements is { Kind: ImplementationKind.Refinement } refinement) {
+            VisitDependency(refinement.Target.Def);
           }
         }
-        // A replacement's implementation edge points back to its own compiled module.
-        if (module.Implements is { Kind: ImplementationKind.Refinement } refinement) {
-          VisitDependency(refinement.Target.Def);
+        foreach (var member in unit) {
+          active.Remove(member);
+          visited.Add(member);
+          ordered.Add(member);
         }
-        active.Remove(module);
-        visited.Add(module);
-        ordered.Add(module);
       }
 
       foreach (var module in modules) {
@@ -186,9 +269,25 @@ namespace Microsoft.Dafny.Compilers {
       var pythonModuleName = PythonModuleMode ? PythonModuleName + "." : "";
 
       moduleName = PublicModuleIdProtect(moduleName);
+      if (module.RecursiveGroup is { } group) {
+        if (!Groups.TryGetValue(group, out var emission)) {
+          emission = new GroupEmission { File = wr.NewFile($"{GroupFileName(group)}.py") };
+          Groups.Add(group, emission);
+          // Import dependencies below the group, before registering its members. Siblings
+          // share this file and use its local names, so they never import each other.
+          EmitImports(null, null, emission.File, includeDefaultModule: false);
+          foreach (var sibling in GroupMembers(group)) {
+            var siblingName = PublicModuleIdProtect(sibling.GetCompileName(Options));
+            Imports.Add(pythonModuleName + siblingName, siblingName);
+          }
+        }
+        emission.Modules.Add(module, wr.NewFile($"{moduleName}.py"));
+        // Declarations are collected separately and emitted in parent-before-child order.
+        return new ConcreteSyntaxTree();
+      }
       // Nested extern modules should be written inside a folder
       var file = wr.NewFile($"{moduleName.Replace(".", "/")}.py");
-      EmitImports(moduleName, pythonModuleName, file);
+      EmitImports(moduleName, pythonModuleName, file, includeDefaultModule: !HasRecursiveGroups);
       return file;
     }
 
@@ -219,7 +318,7 @@ namespace Microsoft.Dafny.Compilers {
       }
     }
 
-    private void EmitImports(string moduleName, string pythonModuleName, ConcreteSyntaxTree wr) {
+    private void EmitImports(string moduleName, string pythonModuleName, ConcreteSyntaxTree wr, bool includeDefaultModule = true) {
       wr.WriteLine("import sys");
       wr.WriteLine("from typing import Callable, Any, TypeVar, NamedTuple");
       wr.WriteLine("from math import floor");
@@ -227,7 +326,10 @@ namespace Microsoft.Dafny.Compilers {
       wr.WriteLine();
       // Don't emit `import module_` for generated modules in the DafnyRuntimePython.
       // The DafnyRuntimePython doesn't have a module.py file, so the import isn't valid.
-      if (!(DafnyRuntimeGeneratedModuleNames.Contains(moduleName))) {
+      // In a program with groups the default module can import the group's wrappers.
+      // Import it only in the entry point, so dependencies cannot re-enter those wrappers
+      // before the implementation file has defined their exported classes.
+      if (includeDefaultModule && !(DafnyRuntimeGeneratedModuleNames.Contains(moduleName))) {
         wr.WriteLine($"import {(PythonModuleMode ? PythonModuleName + "." + DafnyDefaultModule : DafnyDefaultModule)} as {DafnyDefaultModule}");
       }
       foreach (var module in Imports) {
@@ -309,12 +411,13 @@ namespace Microsoft.Dafny.Compilers {
 
     protected override IClassWriter CreateClass(string moduleName, bool isExtern, string/*?*/ fullPrintName,
       List<TypeParameter> typeParameters, TopLevelDecl cls, List<Type> superClasses, IOrigin tok, ConcreteSyntaxTree wr) {
+      wr = DeclarationWriter(cls, wr);
       var realSuperClasses = superClasses?.Where(trait => !trait.IsObject).ToList() ?? [];
       var baseClasses = realSuperClasses.Any()
         ? $"({realSuperClasses.Comma(trait => TypeName(trait, wr, tok))})"
         : "";
       var name = IdName(cls);
-      var methodWriter = wr.NewBlockPy(header: $"class {IdProtect(name)}{baseClasses}:");
+      var methodWriter = wr.NewBlockPy(header: $"class {name}{baseClasses}:");
 
       var relevantTypeParameters = typeParameters.Where(NeedsTypeDescriptor).ToList();
       var args = relevantTypeParameters.Comma(tp => tp.GetCompileName(Options));
@@ -344,7 +447,8 @@ namespace Microsoft.Dafny.Compilers {
 
     protected override IClassWriter CreateTrait(string name, bool isExtern, List<TypeParameter> typeParameters,
       TraitDecl trait, List<Type> superClasses, IOrigin tok, ConcreteSyntaxTree wr) {
-      var methodWriter = wr.NewBlockPy(header: $"class {IdProtect(name)}:");
+      wr = DeclarationWriter(trait, wr);
+      var methodWriter = wr.NewBlockPy(header: $"class {IdName(trait)}:");
       // Avoids problems with member-less traits 
       if (trait is TraitDecl tr && tr.Members.All(m => m.IsGhost || !m.IsStatic)) {
         methodWriter.WriteLine("pass");
@@ -397,7 +501,8 @@ namespace Microsoft.Dafny.Compilers {
         return null;
       }
 
-      var DtT = IdProtect(dt.GetCompileName(Options));
+      wr = DeclarationWriter(dt, wr);
+      var DtT = IdName(dt);
 
       var baseClasses = dt.ParentTypeInformation.UniqueParentTraits().Any()
         ? $"({dt.ParentTypeInformation.UniqueParentTraits().Comma(trait => TypeName(trait, wr, dt.Origin))})"
@@ -529,7 +634,8 @@ namespace Microsoft.Dafny.Compilers {
 
     private string DtCtorDeclarationName(DatatypeCtor ctor, bool full = false) {
       var dt = ctor.EnclosingDatatype;
-      return $"{(full ? dt.GetFullCompileName(Options) : IdProtect(dt.GetCompileName(Options)))}_{ctor.GetCompileName(Options)}";
+      var local = !full || dt.EnclosingModuleDefinition.RecursiveGroup is { } group && group == enclosingModule?.RecursiveGroup;
+      return $"{(local ? IdName(dt) : dt.GetFullCompileName(Options))}_{ctor.GetCompileName(Options)}";
     }
 
     protected IClassWriter DeclareType(TopLevelDecl d, SubsetTypeDecl.WKind witnessKind, Expression witness, ConcreteSyntaxTree wr) {
@@ -878,6 +984,9 @@ namespace Microsoft.Dafny.Compilers {
     }
 
     private string FullName(TopLevelDecl decl) {
+      if (decl.EnclosingModuleDefinition.RecursiveGroup is { } group && group == enclosingModule?.RecursiveGroup) {
+        return IdName(decl);
+      }
       var segments = new List<string> { IdProtect(decl.GetCompileName(Options)) };
       if (decl.EnclosingModuleDefinition != enclosingModule) {
         segments = decl.EnclosingModuleDefinition.GetCompileName(Options).Split('.').Select(PublicModuleIdProtect).Concat(segments).ToList();
