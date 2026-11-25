@@ -415,6 +415,9 @@ git-issues/github-issue-241-translation-cache.dfy
 # Persistent module translations and results with early cutoff (https://github.com/erniecohen/dafny/issues/261).
 git-issues/git-issue-261-persistent-translation.dfy
 git-issues/git-issue-261-persistent-translation-requires-refresh.dfy
+# Opt-in --release-verified-modules with persistent translation and translation workers: the same report,
+# bodies released, translation-key and Boogie-graph replay (https://github.com/erniecohen/dafny/issues/241).
+git-issues/github-issue-241-release-persistent.dfy
 
 
 # Source-only opt-in function operators, clone preservation and negative controls (https://github.com/erniecohen/dafny/issues/194).
@@ -1116,6 +1119,10 @@ git-issues/git-issue-261-resolution-cache-options.dfy
 git-issues/git-issue-466-java.dfy
 git-issues/git-issue-466-go.dfy
 git-issues/git-issue-466-go-extern.dfy
+git-issues/git-issue-466-python.dfy
+git-issues/git-issue-466-python-extern.dfy
+git-issues/git-issue-466-python-link.dfy
+cli/help.dfy
 
 # Proofs that justify a lemma binding in the cone of a member invariant (https://github.com/erniecohen/dafny/issues/199).
 git-issues/git-issue-199-invariant-proofs.dfy
@@ -1150,3 +1157,4 @@ git-issues/git-issue-574.dfy
 git-issues/git-issue-572.dfy
 hofs/ReadsReads.dfy
 hofs/Apply.dfy
+git-issues/git-issue-569.dfy

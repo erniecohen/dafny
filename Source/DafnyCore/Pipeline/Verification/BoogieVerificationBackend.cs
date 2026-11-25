@@ -45,6 +45,16 @@ public sealed class BoogieVerificationBackend(ExecutionEngine engine, TaskCacheS
   }
 
   /// <summary>
+  /// Makes the engine's idle solver checkers forget the Boogie programs of this work, which will
+  /// not be verified again (issue 241, F4 change 3). Sends the solvers nothing. Returns the
+  /// number of checkers released.
+  /// </summary>
+  public static int ReleasePrograms(ExecutionEngine engine, IEnumerable<IVerificationWork> work) =>
+    work.OfType<BoogieVerificationWork>().Select(w => w.NativeTask).OfType<VerificationTask>()
+      .Select(task => task.ProcessedProgram.Program).Distinct(ReferenceEqualityComparer.Instance)
+      .Sum(program => engine.CheckerPool.Release((Boogie.Program)program!));
+
+  /// <summary>
   /// Temporary bridge for native CLI/IDE consumers. Never fabricate native objects for other
   /// backends: a failed preparation throws, and a foreign work item is rejected.
   /// </summary>
