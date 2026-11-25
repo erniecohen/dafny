@@ -1100,6 +1100,7 @@ git-issues/github-issue-88-runtime.dfy
 git-issues/github-issue-88-inherited-bounds.dfy
 git-issues/git-issue-193-newtype-operators.dfy
 git-issues/git-issue-193-native-bridges.dfy
+git-issues/git-issue-193-native-shifts.dfy
 
 # Lemma-binding specifications in member-invariant extension checks (issue 522).
 git-issues/git-issue-522.dfy
@@ -1120,6 +1121,8 @@ git-issues/git-issue-466-go.dfy
 git-issues/git-issue-466-go-extern.dfy
 git-issues/git-issue-466-rust.dfy
 git-issues/git-issue-466-rust-rejected.dfy
+git-issues/git-issue-466-js.dfy
+git-issues/git-issue-466-js-extern.dfy
 git-issues/git-issue-466-python.dfy
 git-issues/git-issue-466-python-extern.dfy
 git-issues/git-issue-466-python-link.dfy

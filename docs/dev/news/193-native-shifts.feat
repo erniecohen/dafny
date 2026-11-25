@@ -1,0 +1,5 @@
+The optional integer-bitwise proof library now provides checked native left/right
+shift and modular-addition equations at widths 8, 16, 32 and 64. Shift counts
+include zero and the word width. The library requires `--integer-bitwise` and
+works independently of `--additional-axioms`; every new rule has a checked ghost
+body. Runtime lowering and the remaining arithmetic bridges are deferred.
