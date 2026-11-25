@@ -1,0 +1,3 @@
+The experimental `--recursive-modules` option now supports Java compilation,
+including groups loaded from `.doo` libraries. Other executable targets besides
+C# and Java remain explicitly rejected.

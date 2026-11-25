@@ -261,9 +261,13 @@ namespace Microsoft.Dafny {
           module.SourceDecls.Add(clone);
         } else {
           var newDeclaration = newPointer.Get();
-          if (originalDeclaration is LiteralModuleDecl { CopyImport: not null }) {
-            Reporter.Error(MessageSource.RefinementTransformer, "ref_copying_import_redeclared", newDeclaration.Origin,
-              $"module '{module.Name}' cannot redeclare '{originalDeclaration.Name}', which is a copying import of the module '{module.Implements.Target}' that it refines");
+          if (originalDeclaration is LiteralModuleDecl { CopyImport: not null } originalCopy) {
+            if (newDeclaration is LiteralModuleDecl { CopyImport: not null } newCopy) {
+              CheckCopyRebinding(newCopy, originalCopy);
+            } else {
+              Reporter.Error(MessageSource.RefinementTransformer, "ref_copying_import_redeclared", newDeclaration.Origin,
+                $"module '{module.Name}' cannot redeclare '{originalDeclaration.Name}', which is a copying import of the module '{module.Implements.Target}' that it refines, except by another copying import");
+            }
           } else if (originalDeclaration.Name == "_default" || newDeclaration.IsRefining || originalDeclaration is AbstractTypeDecl) {
             MergeTopLevelDecls(module, newPointer, originalDeclaration);
           } else if (newDeclaration is TypeSynonymDecl) {
@@ -310,6 +314,33 @@ namespace Microsoft.Dafny {
       }
 
       Contract.Assert(moduleUnderConstruction == module);  // this should be as it was set earlier in this method
+    }
+
+    /// <summary>
+    /// Rebinding keeps the copy fresh, but may fill in the copied module's abstract declarations.
+    /// The target must refine the previous target, not merely an earlier target in the chain of
+    /// importing modules. The ordinary inherited-name check then checks the importing module's
+    /// inherited text against the new copy, including patterns that could become constructors.
+    /// </summary>
+    private void CheckCopyRebinding(LiteralModuleDecl binding, LiteralModuleDecl original) {
+      var target = original.ModuleDef.Implements.Target.Def;
+      var current = binding.ModuleDef.Implements.Target.Def;
+      if (target == null || current == null) {
+        return; // Target resolution has already reported an error.
+      }
+      var visited = new HashSet<ModuleDefinition>();
+      while (current != null && current != target && visited.Add(current)) {
+        current = current.Implements?.Target.Def;
+      }
+      if (current != target) {
+        Reporter.Error(MessageSource.RefinementTransformer, "ref_copying_import_target", binding.Origin,
+          $"the copying import '{binding.Name}' can only be rebound to a copy of '{original.ModuleDef.Implements.Target}' or a refinement of it");
+      }
+      var exports = new HashSet<string>(binding.CopyImport.Exports.Select(e => e.val));
+      if (original.CopyImport.Exports.Any(e => !exports.Contains(e.val))) {
+        Reporter.Error(MessageSource.RefinementTransformer, "ref_copying_import_exports", binding.Origin,
+          $"the copying import '{binding.Name}' must retain every named export set of the inherited copying import");
+      }
     }
 
     private void CheckSuperfluousRefiningMarks(IEnumerable<TopLevelDecl> topLevelDecls, List<string> excludeList) {

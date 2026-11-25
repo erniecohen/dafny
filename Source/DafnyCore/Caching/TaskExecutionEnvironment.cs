@@ -11,6 +11,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Threading;
 using Microsoft.Boogie;
 using Microsoft.Boogie.SMTLib;
 using BplType = Microsoft.Boogie.Type;
@@ -48,7 +49,8 @@ internal sealed class TaskExecutionEnvironment(DafnyOptions options) {
       var identity = ToolchainIdentity(solver, roots);
       var manifest = new SortedDictionary<string, object?>(StringComparer.Ordinal) {
         // v2: paths under the Dafny, .NET and solver installations are named by placeholder.
-        ["abi"] = "dafny-task-transport-v2",
+        // v3: only the environment variables that can change a result are keyed.
+        ["abi"] = "dafny-task-transport-v3",
         ["toolchain"] = JsonSerializer.Deserialize<SortedDictionary<string, string>>(identity)
       };
       // Enumerate the complete interfaces used by the pinned Boogie prover, including inherited
@@ -134,23 +136,73 @@ internal sealed class TaskExecutionEnvironment(DafnyOptions options) {
       }
     }
     var manifest = ExecutionImageIdentity.Read(solver.ExecutablePath(), options.Get(CommonOptionBag.VerificationCache));
-    // Public Z3 5.1.0 release profiles used by this fork's CI. Native executable magic
-    // and a version string cannot establish that an arbitrary launcher reads no files.
-    // https://github.com/Z3Prover/z3/releases/tag/z3-5.1.0
+    // The digest of the bytes of the solver image this run loads; it stays in the manifest, and so in every key.
     if (!manifest.TryGetValue(roots.Relocate(Path.GetFullPath(solver.ExecutablePath())), out var solverHash) ||
-        solverHash is not ("164c85de5f5dcb7d57cbab64b1a11580a982c1658384120b2b65358f41847418" or
-                          "b4e0b3483ce37817230b20d6cad48390eb6a3aefde1d93342ad6dc763f24bc23")) {
-      throw new NotSupportedException("unaudited native solver execution profile");
+        !IsAuditedSolver(solverHash, DeclaredSolverDigests)) {
+      if (DeclaredSolverDigests.Count == 0) { throw new NotSupportedException("unaudited native solver execution profile"); }
+      var reason = $"unaudited native solver execution profile: the solver's SHA-256 digest {solverHash ?? "(unknown)"} " +
+                   "is neither built in nor declared by --verification-cache-solver-digest";
+      if (Interlocked.Exchange(ref warnedUndeclaredSolver, 1) == 0) {
+        options.ErrorWriter?.WriteLine("Warning: " + reason + "; verification results are neither stored nor replayed.");
+      }
+      throw new NotSupportedException(reason);
     }
     manifest["solver-version"] = options.SolverVersion?.ToString() ?? throw new NotSupportedException("unvalidated solver version");
-    manifest["os"] = RuntimeInformation.OSDescription;
+    // The audited solver image fixes the platform it runs on; its version string does not.
+    manifest["os"] = OperatingSystemFamily;
     manifest["architecture"] = RuntimeInformation.ProcessArchitecture.ToString();
-    foreach (DictionaryEntry entry in System.Environment.GetEnvironmentVariables()) {
-      // Solver environment is part of identity; retain only digests, never secret values.
-      // A path under the Dafny, .NET or solver installation, as in PATH or DOTNET_ROOT, is
-      // named by its placeholder before it is digested.
-      manifest["env:" + (string)entry.Key] = CacheDigest.Blob(Encoding.UTF8.GetBytes(roots.Relocate((string)entry.Value!)));
+    foreach (var (name, digest) in VariableParts(System.Environment.GetEnvironmentVariables(), roots.Relocate)) {
+      manifest["env:" + name] = digest;
     }
     return JsonSerializer.SerializeToUtf8Bytes(manifest);
   }
+
+  /// <summary>
+  /// Public Z3 5.1.0 release profiles used by this fork's CI. Native executable magic
+  /// and a version string cannot establish that an arbitrary launcher reads no files.
+  /// https://github.com/Z3Prover/z3/releases/tag/z3-5.1.0
+  /// </summary>
+  internal static readonly IReadOnlySet<string> BuiltInSolverDigests = new HashSet<string>(StringComparer.Ordinal) {
+    "164c85de5f5dcb7d57cbab64b1a11580a982c1658384120b2b65358f41847418",
+    "b4e0b3483ce37817230b20d6cad48390eb6a3aefde1d93342ad6dc763f24bc23"
+  };
+
+  /// <summary>The digests a user declared audited with --verification-cache-solver-digest, in lower case.</summary>
+  private IReadOnlySet<string> DeclaredSolverDigests => declaredSolverDigests ??=
+    (options.Get(CommonOptionBag.VerificationCacheSolverDigest) ?? new List<string>())
+    .Select(digest => digest.ToLowerInvariant()).ToHashSet(StringComparer.Ordinal);
+  private IReadOnlySet<string>? declaredSolverDigests;
+  private int warnedUndeclaredSolver;
+
+  /// <summary>
+  /// Whether the actual digest <paramref name="solverHash"/> of the solver image is built in or declared.
+  /// A declaration only adds to the accepted digests; it is never a substitute for hashing the image.
+  /// </summary>
+  internal static bool IsAuditedSolver(string? solverHash, IReadOnlySet<string> declared) =>
+    solverHash != null && (BuiltInSolverDigests.Contains(solverHash) || declared.Contains(solverHash));
+
+  /// <summary>The operating system family, and not its release, which changes no result of a solver image.</summary>
+  internal static string OperatingSystemFamily =>
+    OperatingSystem.IsMacOS() ? "macos" : OperatingSystem.IsLinux() ? "linux" : OperatingSystem.IsWindows() ? "windows" : "other";
+
+  /// <summary>
+  /// The environment variables that can change a task's verdict or resource count, by name. The
+  /// solver is a child process that inherits the environment; the audited Z3 release reads no
+  /// variable of its own, but the dynamic loader's variables can change which code it runs. Every
+  /// other variable (PATH, HOME, the cache's own variables, a shell's or CI runner's) changes no
+  /// result and is not keyed, so that one cache is shared across shells, checkouts and machines.
+  /// </summary>
+  internal static readonly IReadOnlyList<string> ResultVariables = [
+    "DYLD_FALLBACK_FRAMEWORK_PATH", "DYLD_FALLBACK_LIBRARY_PATH", "DYLD_FRAMEWORK_PATH", "DYLD_IMAGE_SUFFIX",
+    "DYLD_INSERT_LIBRARIES", "DYLD_LIBRARY_PATH", "DYLD_VERSIONED_FRAMEWORK_PATH", "DYLD_VERSIONED_LIBRARY_PATH",
+    "LD_AUDIT", "LD_LIBRARY_PATH", "LD_PRELOAD"
+  ];
+
+  /// <summary>
+  /// The digests of the set variables of <see cref="ResultVariables"/>, by name; values are never
+  /// kept. A path under the Dafny, .NET or solver installation is named by its placeholder first.
+  /// </summary>
+  internal static IEnumerable<(string Name, string Digest)> VariableParts(IDictionary environment, Func<string, string> relocate) =>
+    ResultVariables.Where(environment.Contains).Select(name =>
+      (name, CacheDigest.Blob(Encoding.UTF8.GetBytes(relocate((string?)environment[name] ?? "")))));
 }

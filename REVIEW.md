@@ -618,7 +618,7 @@ requests to upstream, which branch from `master`, never carry it.
 `.github/workflows/review.yml` replaces upstream's workflows on this branch and
 on `dev`, which exercise every compiler backend.  On this branch it fetches the
 Boogie packages, builds Dafny, runs the programs of Dafny's own test suite that
-verify (under `LitTest/dafny0` to `dafny4` and `git-issues`) at a resource limit
+verify (under `LitTest/dafny0` to `dafny4`, `git-issues` and `hofs`) at a resource limit
 of 16,000,000 with Z3 5.1.0, taken from Z3's public GitHub release by checksum,
 and reports each program's verdict.  It verifies Dafny's standard library,
 `Source/DafnyStandardLibraries`, as the library's Makefile's `verify` target does,
@@ -626,12 +626,14 @@ once with Z3 5.1.0 and once with the Z3 that the tree's own tests expect (4.12.1
 this branch), and reports each declaration's verdict.  It also runs the tests named in `.github/review/regressions` in
 upstream's own harness.  On a tag it attaches self-contained binaries for `linux-x64` and `osx-arm64`
 to a GitHub release, with their sha256 sums.  The `osx-arm64` binary and the release
-itself are built on the self-hosted Apple-silicon pool (label `mac-studio`).
+itself are built on the self-hosted Apple-silicon pool (label `fork-ci`); Linux x64
+is cross-published there, with Linux execution qualified downstream.
 The framework-dependent build, artifact reports and portable regression tests
 also use this pool, together with JavaScript runtime tests, resolver matrix and unit tests,
 finite-support controls, statement-expression controls and verification-batch controls. The test `dafny0/CoinductiveProofs.dfy` declares macOS
 unsupported because its expected resource counts differ, so it stays in a
-separate hosted Linux job. `.github/review/regression-filter.py` partitions the
+separate Linux job that is explicitly skipped until a Linux self-hosted runner is
+available. `.github/review/regression-filter.py` partitions the
 standing manifest without dropping or duplicating entries. Every
 self-hosted job has an explicit repository/event guard: only pushes, manual
 runs, or pull requests whose head repository is `erniecohen/dafny` are admitted.
@@ -1413,8 +1415,8 @@ The regression is `git-issues/github-issue-106.dfy` with its inputs; the release
 
 ## Copying imports ([issue 107](https://github.com/erniecohen/dafny/issues/107))
 
-`--copy-imports` is an opt-in feature: stage 4 of the refinement design draft
-([pull request 401](https://github.com/erniecohen/dafny/pull/401), sections 3.2, 3.3 and 3.5).  It adds one
+`--copy-imports` is an opt-in feature: stages 4 and 5 of the refinement design draft
+([pull request 401](https://github.com/erniecohen/dafny/pull/401), sections 3.2 to 3.5).  It adds one
 declaration, `import [opened] X := Q` with an optional export suffix, which gives the importing
 module `M` a copy of `Q` named `X`.  With the option off, the parser does not accept the
 declaration, and nothing else in this change is reached.
@@ -1443,8 +1445,34 @@ error for a written-out refinement.
 `X` (which would give `M'` the types of `M.X`) but declares a new copying import of the same
 module, with the same export suffix.  That module is not a declaration of the program's module
 graph, so `M'` resolves it itself, before its own declarations, and hands its signature to the
-program with its own.  A redeclaration of `X` in `M'` is an error.  The same holds for each
-further refinement.
+program with its own. `M'` may instead rebind `X` with `import X := Q2`, where `Q2` is the
+previous copied target or refines it transitively. The test is against the preceding step, so a
+later rebinding cannot go backwards or sideways in the target's refinement chain. An alias,
+abstract import, literal module or other declaration is rejected: it would lose the freshness
+that inherited distinctness proofs require. The new import must keep `opened` and every
+explicitly named export set, and may add export sets.
+
+The inherited code of the importing module is not verified again, so what the rebound copy may
+change must be checked.  The inherited-name check of issue 410 checks the inherited text against
+the rebound copy; in particular, an abstract type made into a datatype cannot turn an inherited
+pattern variable into a constructor.  The override check of issue 404 is made again for each
+inherited class that extends a trait of the copy, so a specification that the new target
+strengthens is checked, and a trait member that it adds must be implemented.  Under
+`--member-invariants` (issue 105), the new target may add invariants to a type of the copy.  The
+verifier treats a rebinding as it treats an abstract import bound to a refinement
+(`BindsAbstractImport` in `BoogieGenerator.InheritedInvariants.cs`): at an inherited site that
+converts to a type of the copy, only the conjuncts of the first declaration that the type refines
+are taken as checked, and the others are checked.  That is conservative.  It is the only verifier
+change; no axiom or assumption is added.  With the option off the parser still rejects copying
+imports, so none of this is reached.
+
+The rebinding regression is `git-issues/git-issue-107-rebind.dfy`, with accepted chains, fresh
+identities, nested and opened copies, export sets, generic declarations, an implemented inner
+abstract import, rejected bindings and captures, a trait member that the new target adds, and
+failing identity and vacuity controls under both resolvers.  Its input
+`git-issue-107-rebind-invariants.dfy` has counterexamples for invariants that the new target adds
+(also through a nested rebound copy) and for strengthened trait specifications, with positive and
+vacuity controls.  Its release note is `docs/dev/news/107-rebind.feat`.
 
 *What is deliberately unknown.*  An abstract import `import A : B` inside `Q` stands for an
 unknown refinement of `B`.  Each copy gets a signature of its own for it, so nothing relates
@@ -1545,3 +1573,34 @@ and failed downcast, newtype-constraint and argument-constraint checks. It runs
 with and without additional axioms and member invariants.
 These are regression additions only: the verifier implementation, axioms and
 options are unchanged. The release note is `docs/dev/news/472.fix`.
+
+## Trait receivers in visible newtype checks (https://github.com/erniecohen/dafny/issues/516)
+
+Under `--consistent-obligation-checks`, the visible newtype-constraint check
+adapted a boxed trait receiver as if only a type parameter could need unboxing.
+Substituting that receiver into an integer constraint then produced a Boogie
+type error. Visible constraints and member invariants now share a representation
+adapter that unboxes any source modeled as a box before substituting the value
+into the base constraint. This also repairs trait-to-newtype casts with actual
+member invariants. A boxed source must satisfy base membership before
+the numeric constraint is checked; a true constraint alone cannot establish that
+the box contains an integer. Its kind is **weakens only**: it retains the
+constraint checks and adds the required base check, with no new fact, axiom or
+trusted assumption. With consistent obligation checks and member invariants
+off, translation is unchanged. The hidden `--legacy-boxed-newtype-obligations`
+option restores the old lowering, including its missing base check, for migration
+and comparison. This option is necessary for the membership repair: even when
+the constraint is `true`, the old lowering accepts a trait value without evidence
+that its representation belongs to the newtype's base type.
+
+`git-issues/git-issue-516.dfy` covers the reported program, inhabited round trips,
+constants with several result types, and real and bitvector bases.
+`git-issue-516-controls.dfy` retains failing constraints, downcasts without
+membership, and reachable false assertions. The legacy resolver's existing
+rejection of these general-newtype conversions is retained too.
+`git-issue-516-representation.dfy` checks a datatype behind the same trait as an
+unconstrained integer newtype; its downcasts must fail even though the newtype
+constraint is true. The release
+note is `docs/dev/news/516.fix`. `git-issue-516-member-invariants.dfy` covers
+inherited and local member invariants, a round-trip witness, and failing
+downcasts, constraints, invariants and a reachable false assertion.

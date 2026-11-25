@@ -85,9 +85,9 @@ github-issue-107-rejected.dfy(102,24): Error: RHS (of type Colour) not assignabl
 github-issue-107-rejected.dfy(114,28): Error: RHS (of type Colour) not assignable to LHS (of type Colour)
 github-issue-107-rejected.dfy(132,21): Error: RHS (of type Shape) not assignable to LHS (of type Shape)
 github-issue-107-rejected.dfy(133,37): Error: RHS (of type Shape) not assignable to LHS (of type Shape)
-github-issue-107-rejected.dfy(144,9): Error: module 'RedeclaresAsCopy' cannot redeclare 'X', which is a copying import of the module 'Original' that it refines
-github-issue-107-rejected.dfy(148,9): Error: module 'RedeclaresAsImport' cannot redeclare 'X', which is a copying import of the module 'Original' that it refines
-github-issue-107-rejected.dfy(152,9): Error: module 'RedeclaresAsModule' cannot redeclare 'X', which is a copying import of the module 'Original' that it refines
+github-issue-107-rejected.dfy(144,9): Error: the copying import 'X' can only be rebound to a copy of 'Plain' or a refinement of it
+github-issue-107-rejected.dfy(148,9): Error: module 'RedeclaresAsImport' cannot redeclare 'X', which is a copying import of the module 'Original' that it refines, except by another copying import
+github-issue-107-rejected.dfy(152,9): Error: module 'RedeclaresAsModule' cannot redeclare 'X', which is a copying import of the module 'Original' that it refines, except by another copying import
 github-issue-107-rejected.dfy(157,7): Error: duplicate name of top-level declaration: X
 github-issue-107-rejected.dfy(156,9): Related location
 21 resolution/type errors detected in github-issue-107-rejected.dfy
@@ -110,9 +110,9 @@ github-issue-107-rejected.dfy(102,24): Error: RHS (of type X.Colour) not assigna
 github-issue-107-rejected.dfy(114,28): Error: RHS (of type X.Colour) not assignable to LHS (of type OneCopy.X.Colour)
 github-issue-107-rejected.dfy(132,21): Error: RHS (of type X.A.Shape) not assignable to LHS (of type Z.A.Shape)
 github-issue-107-rejected.dfy(133,37): Error: RHS (of type X.A.Shape) not assignable to LHS (of type HasAbstractImport.A.Shape)
-github-issue-107-rejected.dfy(144,9): Error: module 'RedeclaresAsCopy' cannot redeclare 'X', which is a copying import of the module 'Original' that it refines
-github-issue-107-rejected.dfy(148,9): Error: module 'RedeclaresAsImport' cannot redeclare 'X', which is a copying import of the module 'Original' that it refines
-github-issue-107-rejected.dfy(152,9): Error: module 'RedeclaresAsModule' cannot redeclare 'X', which is a copying import of the module 'Original' that it refines
+github-issue-107-rejected.dfy(144,9): Error: the copying import 'X' can only be rebound to a copy of 'Plain' or a refinement of it
+github-issue-107-rejected.dfy(148,9): Error: module 'RedeclaresAsImport' cannot redeclare 'X', which is a copying import of the module 'Original' that it refines, except by another copying import
+github-issue-107-rejected.dfy(152,9): Error: module 'RedeclaresAsModule' cannot redeclare 'X', which is a copying import of the module 'Original' that it refines, except by another copying import
 github-issue-107-rejected.dfy(157,7): Error: duplicate name of top-level declaration: X
 github-issue-107-rejected.dfy(156,9): Related location
 21 resolution/type errors detected in github-issue-107-rejected.dfy

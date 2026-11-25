@@ -5,19 +5,48 @@ on:
 permissions:
   contents: read
 env:
+  DOTNET_PROCESSOR_COUNT: '2'
   DOTNET_NOLOGO: 'true'
   # Self-hosted runners: no build process outlives the job (MSBuild nodes, Gradle daemons).
   MSBUILDDISABLENODEREUSE: '1'
   GRADLE_OPTS: -Dorg.gradle.daemon=false
   DOTNET_CLI_TELEMETRY_OPTOUT: 'true'
   Z3_RELEASE: https://github.com/Z3Prover/z3/releases/download/z3-5.1.0
-  Z3_ARCHIVE: z3-5.1.0-x64-glibc-2.39
-  Z3_SHA256: f47be8d27d3230e823bf1eeede2fe0abaca55bb78d0b59974370e6689a92284a
+  Z3_ARCHIVE: z3-5.1.0-arm64-osx-13.3
+  Z3_SHA256: 81d29e934fd863079a74af35eecaeaef8047e0e12414d33ca322b358d68383db
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref_type != 'tag' }}
+
 jobs:
   build:
-    runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    if: ${{ github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request') && (github.event_name != 'pull_request' || (!github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository)) }}
+    runs-on: [self-hosted, macOS, ARM64, fork-ci]
+    timeout-minutes: 1440 # Includes waiting for the shared admission slot.
     steps:
+      - name: Yield to interactive work
+        if: runner.os == 'macOS'
+        shell: bash
+        timeout-minutes: 45
+        run: |
+          case "$(ps -o comm= -p "$PPID")" in
+            */Runner.Worker|Runner.Worker) ;;
+            *) echo "::error::Expected this job's Runner.Worker parent"; exit 1 ;;
+          esac
+          renice 10 -p "$PPID" "$$" >/dev/null
+          test "$(ps -o nice= -p "$PPID" | tr -d ' ')" = 10
+          test "$(ps -o nice= -p "$$" | tr -d ' ')" = 10
+      - name: Create job temporary directory
+        shell: bash
+        timeout-minutes: 45
+        run: |
+          job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
+          echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@a8ef9c0acd833e35e6a13f798ac4c17dad9a64e1
+        with:
+          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
+          min-free-percent: ${{ vars.SELF_HOSTED_JOB_MIN_FREE_PERCENT || '' }}
+          max-pressure: ${{ vars.SELF_HOSTED_JOB_MAX_PRESSURE || '' }}
       - uses: actions/checkout@v4
       - uses: actions/checkout@v4
         with:
@@ -29,20 +58,24 @@ jobs:
           distribution: temurin
           java-version: '17'
       - name: Check comparison bookkeeping
+        timeout-minutes: 45
         run: python3 -m unittest discover -s .github/review -p test_decreases_order.py
       - name: Build candidate and pre-fix product with identical version metadata
+        timeout-minutes: 45
         run: |
           sh Scripts/fetch-boogie-packages.sh
-          dotnet publish Source/Dafny/Dafny.csproj -c Release -o out/candidate -p:GeneratePackageOnBuild=false -p:SourceRevisionId=decreases-order-comparison
+          dotnet publish -p:NuGetAudit=false Source/Dafny/Dafny.csproj -c Release -o out/candidate -p:GeneratePackageOnBuild=false -p:SourceRevisionId=decreases-order-comparison
           cd baseline
           sh Scripts/fetch-boogie-packages.sh
-          dotnet publish Source/Dafny/Dafny.csproj -c Release -o ../out/baseline -p:GeneratePackageOnBuild=false -p:SourceRevisionId=decreases-order-comparison
+          dotnet publish -p:NuGetAudit=false Source/Dafny/Dafny.csproj -c Release -o ../out/baseline -p:GeneratePackageOnBuild=false -p:SourceRevisionId=decreases-order-comparison
       - name: Pin solver
+        timeout-minutes: 45
         run: |
           curl -fsSLo z3.zip "$Z3_RELEASE/$Z3_ARCHIVE.zip"
-          echo "$Z3_SHA256  z3.zip" | sha256sum -c -
+          echo "$Z3_SHA256  z3.zip" | shasum -a 256 -c -
           unzip -q z3.zip
       - name: Check old-source versus legacy byte identity
+        timeout-minutes: 45
         run: |
           set +e
           python3 .github/review/decreases-order.py identity --baseline out/baseline/Dafny --dafny out/candidate/Dafny \
@@ -65,15 +98,49 @@ jobs:
           name: decreases-identity
           path: identity
           retention-days: 90
+      - name: Remove job temporary directory
+        if: always()
+        shell: bash
+        timeout-minutes: 5
+        run: |
+          case "${TMPDIR:-}" in
+            "$RUNNER_TEMP"/fork-job.*) rm -rf "$TMPDIR" ;;
+          esac
+
   suite:
+    if: ${{ github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request') && (github.event_name != 'pull_request' || (!github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository)) }}
     needs: build
-    runs-on: ubuntu-24.04
-    timeout-minutes: 240
+    runs-on: [self-hosted, macOS, ARM64, fork-ci]
+    timeout-minutes: 1440 # Includes waiting for the shared admission slot.
     strategy:
       fail-fast: false
+      max-parallel: 1
       matrix:
         axioms: ['off', 'on']
     steps:
+      - name: Yield to interactive work
+        if: runner.os == 'macOS'
+        shell: bash
+        timeout-minutes: 240
+        run: |
+          case "$(ps -o comm= -p "$PPID")" in
+            */Runner.Worker|Runner.Worker) ;;
+            *) echo "::error::Expected this job's Runner.Worker parent"; exit 1 ;;
+          esac
+          renice 10 -p "$PPID" "$$" >/dev/null
+          test "$(ps -o nice= -p "$PPID" | tr -d ' ')" = 10
+          test "$(ps -o nice= -p "$$" | tr -d ' ')" = 10
+      - name: Create job temporary directory
+        shell: bash
+        timeout-minutes: 240
+        run: |
+          job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
+          echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@a8ef9c0acd833e35e6a13f798ac4c17dad9a64e1
+        with:
+          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
+          min-free-percent: ${{ vars.SELF_HOSTED_JOB_MIN_FREE_PERCENT || '' }}
+          max-pressure: ${{ vars.SELF_HOSTED_JOB_MAX_PRESSURE || '' }}
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-dotnet
       - uses: actions/download-artifact@v4
@@ -81,13 +148,15 @@ jobs:
           name: decreases-candidate
       - run: mkdir -p out && tar -C out -xzf candidate.tar.gz
       - name: Pin solver
+        timeout-minutes: 240
         run: |
           curl -fsSLo z3.zip "$Z3_RELEASE/$Z3_ARCHIVE.zip"
-          echo "$Z3_SHA256  z3.zip" | sha256sum -c -
+          echo "$Z3_SHA256  z3.zip" | shasum -a 256 -c -
           unzip -q z3.zip
       - name: Record suite verdicts, proof outcomes and resources
+        timeout-minutes: 240
         run: |
-          # Each invocation is unchanged; grouping reduces hosted-runner requests.
+          # Each invocation is unchanged; grouping retains the artifact layout.
           for comparison_mode in default legacy; do
             for comparison_shard in 0 1 2 3; do
               python3 .github/review/decreases-order.py record suite --mode "$comparison_mode" --axioms '${{ matrix.axioms }}' \
@@ -112,11 +181,44 @@ jobs:
           path: results/*/measurements
           compression-level: 9
           retention-days: 90
+      - name: Remove job temporary directory
+        if: always()
+        shell: bash
+        timeout-minutes: 5
+        run: |
+          case "${TMPDIR:-}" in
+            "$RUNNER_TEMP"/fork-job.*) rm -rf "$TMPDIR" ;;
+          esac
+
   std:
+    if: ${{ github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request') && (github.event_name != 'pull_request' || (!github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository)) }}
     needs: build
-    runs-on: ubuntu-24.04
-    timeout-minutes: 180
+    runs-on: [self-hosted, macOS, ARM64, fork-ci]
+    timeout-minutes: 1440 # Includes waiting for the shared admission slot.
     steps:
+      - name: Yield to interactive work
+        if: runner.os == 'macOS'
+        shell: bash
+        timeout-minutes: 180
+        run: |
+          case "$(ps -o comm= -p "$PPID")" in
+            */Runner.Worker|Runner.Worker) ;;
+            *) echo "::error::Expected this job's Runner.Worker parent"; exit 1 ;;
+          esac
+          renice 10 -p "$PPID" "$$" >/dev/null
+          test "$(ps -o nice= -p "$PPID" | tr -d ' ')" = 10
+          test "$(ps -o nice= -p "$$" | tr -d ' ')" = 10
+      - name: Create job temporary directory
+        shell: bash
+        timeout-minutes: 180
+        run: |
+          job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
+          echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@a8ef9c0acd833e35e6a13f798ac4c17dad9a64e1
+        with:
+          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
+          min-free-percent: ${{ vars.SELF_HOSTED_JOB_MIN_FREE_PERCENT || '' }}
+          max-pressure: ${{ vars.SELF_HOSTED_JOB_MAX_PRESSURE || '' }}
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-dotnet
       - uses: actions/download-artifact@v4
@@ -124,15 +226,17 @@ jobs:
           name: decreases-candidate
       - run: mkdir -p out && tar -C out -xzf candidate.tar.gz
       - name: Pin both solvers
+        timeout-minutes: 180
         run: |
           curl -fsSLo z3.zip "$Z3_RELEASE/$Z3_ARCHIVE.zip"
-          echo "$Z3_SHA256  z3.zip" | sha256sum -c -
+          echo "$Z3_SHA256  z3.zip" | shasum -a 256 -c -
           unzip -q z3.zip
-          curl -fsSLo z3h.zip https://github.com/dafny-lang/solver-builds/releases/download/snapshot-2026-04-03/z3-4.12.1-x64-ubuntu-24.04-bin.zip
-          echo 'e07d4193d8e1851114fe4d507332a43576639f4aeaa33c7df15c36426d3cbf3b  z3h.zip' | sha256sum -c -
+          curl -fsSLo z3h.zip https://github.com/dafny-lang/solver-builds/releases/download/snapshot-2026-04-03/z3-4.12.1-arm64-macos-15-bin.zip
+          echo '5941a521e8868db9b57ed81d1cc0cc408b37e55443087bcb6eb207583b47183f  z3h.zip' | shasum -a 256 -c -
           mkdir z3h && unzip -q z3h.zip -d z3h
           chmod +x z3h/z3-4.12.1
       - name: Record standard-library verdicts and resources
+        timeout-minutes: 180
         run: |
           for comparison_solver in 5.1.0 4.12.1; do
             if [ "$comparison_solver" = 5.1.0 ]; then
@@ -155,11 +259,44 @@ jobs:
           path: results
           compression-level: 9
           retention-days: 90
+      - name: Remove job temporary directory
+        if: always()
+        shell: bash
+        timeout-minutes: 5
+        run: |
+          case "${TMPDIR:-}" in
+            "$RUNNER_TEMP"/fork-job.*) rm -rf "$TMPDIR" ;;
+          esac
+
   report:
+    if: ${{ github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request') && (github.event_name != 'pull_request' || (!github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository)) }}
     needs: [suite, std]
-    runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    runs-on: [self-hosted, macOS, ARM64, fork-ci]
+    timeout-minutes: 1440 # Includes waiting for the shared admission slot.
     steps:
+      - name: Yield to interactive work
+        if: runner.os == 'macOS'
+        shell: bash
+        timeout-minutes: 15
+        run: |
+          case "$(ps -o comm= -p "$PPID")" in
+            */Runner.Worker|Runner.Worker) ;;
+            *) echo "::error::Expected this job's Runner.Worker parent"; exit 1 ;;
+          esac
+          renice 10 -p "$PPID" "$$" >/dev/null
+          test "$(ps -o nice= -p "$PPID" | tr -d ' ')" = 10
+          test "$(ps -o nice= -p "$$" | tr -d ' ')" = 10
+      - name: Create job temporary directory
+        shell: bash
+        timeout-minutes: 15
+        run: |
+          job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
+          echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@a8ef9c0acd833e35e6a13f798ac4c17dad9a64e1
+        with:
+          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
+          min-free-percent: ${{ vars.SELF_HOSTED_JOB_MIN_FREE_PERCENT || '' }}
+          max-pressure: ${{ vars.SELF_HOSTED_JOB_MAX_PRESSURE || '' }}
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
@@ -172,6 +309,7 @@ jobs:
           path: measurements
           merge-multiple: true
       - name: List every changed verdict and resource totals
+        timeout-minutes: 15
         run: |
           python3 .github/review/decreases-order.py compare --input measurements --output comparison
           cat comparison/summary.md >> "$GITHUB_STEP_SUMMARY"
@@ -181,3 +319,11 @@ jobs:
           name: decreases-comparison
           path: comparison
           retention-days: 90
+      - name: Remove job temporary directory
+        if: always()
+        shell: bash
+        timeout-minutes: 5
+        run: |
+          case "${TMPDIR:-}" in
+            "$RUNNER_TEMP"/fork-job.*) rm -rf "$TMPDIR" ;;
+          esac
