@@ -118,6 +118,7 @@ jobs:
       - uses: ./.github/actions/host-artifact
         with:
           mode: put
+          retention-days: 14
           name: parity-${{ inputs.platform }}-dafny
           path: dafny.tar.gz
       - name: Remove job temporary directory

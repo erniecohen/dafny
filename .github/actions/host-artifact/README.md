@@ -9,8 +9,10 @@ For a get, the path is the destination directory (default `.`).
 Set **`HOST_ARTIFACT_DIR`** in the runner service environment to the same absolute,
 persistent, writable directory for every runner participating in these handoffs.
 The runners must share a filesystem with working POSIX advisory locks and atomic
-rename. Python 3 and `tar` must be available. Configure this consistently across
-the pool; a configured reader does not fall back when a host artifact is missing.
+rename. Python 3 and `tar` must be available. Set `HOST_ARTIFACT_DIR` on every
+runner in the same apply. A mixed pool fails a consumer with "missing" when its
+producer used GitHub and its reader expects host storage; there is no fallback
+for a missing host artifact. Drain participating jobs before the coordinated apply.
 This action does not change runner configuration.
 
 The archive key is
@@ -21,18 +23,26 @@ attempts, newest first, independently for each name. It never reads another run
 or a future attempt. Missing names fail with an explicit error.
 
 Puts pack to a temporary file alongside the destination and publish by atomic
-rename; an unsuccessful pack leaves any previous archive intact. Each repository
-has a permanent `.lock` file. Puts, gets (including extraction), and pruning all
-hold its exclusive advisory lock. A put refreshes its run directory's modification
-time and deletes other numeric run directories in that repository whose last put
-was more than three days ago. It leaves the current run and other repositories
+rename with archive permissions `0644`; an unsuccessful pack leaves any previous
+archive intact. Each repository has a permanent `.lock` file. Gets hold its shared
+advisory lock throughout extraction. Packing runs without a lock; put publication,
+retention recording and pruning take its exclusive lock. Each put records the
+largest requested `retention-days` for the run in `.retention-days`, across names
+and attempts, and refreshes the run directory's modification time. Host retention
+defaults to three days when the input is omitted. A put deletes other numeric run
+directories only after their own recorded retention has elapsed since their last
+put (three days for older unrecorded runs). It leaves the current run and other repositories
 alone. Concurrent readers cannot observe a partially deleted run. A reader that
 starts after an expired run has been removed fails normally. Long-running or old
 reruns may therefore require rebuilding their expired inputs.
+Pruning failures log a warning after publication and do not fail the successful put.
 
 With `HOST_ARTIFACT_DIR` unset or empty, the shell entry point selects the GitHub
-backend and the composite uses `actions/upload-artifact@v4` (three-day retention,
-missing input is an error) or `actions/download-artifact@v4`. The log identifies
+backend and the composite uses `actions/upload-artifact@v4` (missing input is an
+error) or `actions/download-artifact@v4`. Its optional `retention-days` is forwarded
+unchanged; omitting it uses the repository default on GitHub. `include-hidden-files`
+defaults to false and is forwarded to both backends, matching the previous v4
+upload steps; explicit true includes hidden files. The log identifies
 the backend. Local archives preserve executable modes; GitHub's fallback has the
 standard artifact permission behavior. Keep permission-sensitive builds in their
 existing tar bundles. Host storage is a trusted runner cache, not an isolation

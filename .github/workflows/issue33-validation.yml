@@ -85,6 +85,7 @@ jobs:
       - uses: ./.github/actions/host-artifact
         with:
           mode: put
+          retention-days: 14
           name: issue33-baseline
           path: dafny.tar.gz
       - name: Remove job temporary directory
@@ -147,6 +148,7 @@ jobs:
       - uses: ./.github/actions/host-artifact
         with:
           mode: put
+          retention-days: 14
           name: issue33-candidate
           path: dafny.tar.gz
       - name: Remove job temporary directory

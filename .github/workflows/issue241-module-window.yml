@@ -77,6 +77,7 @@ jobs:
       - uses: ./.github/actions/host-artifact
         with:
           mode: put
+          retention-days: 14
           name: issue241-dafny
           path: dafny.tar.gz
       - name: Remove job temporary directory

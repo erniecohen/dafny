@@ -1,5 +1,7 @@
 """Local action runner and real filesystem/process controls; no Actions service needed."""
 import importlib.util
+from contextlib import redirect_stdout
+import io
 import os
 from pathlib import Path
 import re
@@ -53,19 +55,111 @@ class HostArtifactTests(unittest.TestCase):
         self.assertTrue((self.run / '1/build.tar').is_file())
         self.assertIn('backend=host', self.output.read_text())
 
+    def test_run_retention_records_maximum_across_attempts(self):
+        self.ok(self.invoke('put', ARTIFACT_RETENTION_DAYS='14'))
+        record = self.run / '.retention-days'
+        self.assertTrue(record.is_file())
+        self.assertEqual(record.read_text().strip(), '14')
+        self.ok(self.invoke('put', GITHUB_RUN_ATTEMPT='2', ARTIFACT_RETENTION_DAYS='7'))
+        self.ok(self.invoke('put', GITHUB_RUN_ATTEMPT='3', ARTIFACT_RETENTION_DAYS=''))
+        self.assertEqual(record.read_text().strip(), '14')
+        old = time.time() - 8 * 86400
+        os.utime(self.run, (old, old))
+        self.ok(self.invoke('put', GITHUB_RUN_ID='200', ARTIFACT_RETENTION_DAYS='1'))
+        self.assertTrue(self.run.exists())
+        expired = time.time() - 15 * 86400
+        os.utime(self.run, (expired, expired))
+        self.ok(self.invoke('put', GITHUB_RUN_ID='200'))
+        self.assertFalse(self.run.exists())
+
+    def test_archive_is_published_readable_with_restrictive_umask(self):
+        previous = os.umask(0o077)
+        try:
+            self.ok(self.invoke('put'))
+        finally:
+            os.umask(previous)
+        self.assertEqual((self.run / '1/build.tar').stat().st_mode & 0o777, 0o644)
+
+    def test_prune_failure_warns_after_successful_publish(self):
+        for failure in (OSError('cannot prune'), ValueError('invalid retention metadata')):
+            with self.subTest(failure=failure), patch.dict(os.environ, self.env):
+                output = io.StringIO()
+                error = None
+                with redirect_stdout(output), patch.object(transport, 'prune', side_effect=failure):
+                    try:
+                        transport.transfer('put', 'build', str(self.source), str(self.cache))
+                    except (OSError, ValueError) as exception:
+                        error = exception
+                self.assertIsNone(error, 'Pruning must not fail a published put')
+                self.assertIn('::warning::', output.getvalue())
+                self.ok(self.invoke('get'))
+
+    def test_mixed_pool_error_and_rollout_note(self):
+        result = self.invoke('get')
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('mixed pool', result.stderr)
+        readme = (ACTION / 'README.md').read_text()
+        self.assertIn('same apply', readme)
+        self.assertIn('every runner', readme)
+
+    def test_pack_does_not_hold_repository_lock(self):
+        actual = transport.subprocess.run
+
+        def inspect(*args, **kwargs):
+            with (self.run.parent / '.lock').open('a') as lock:
+                try:
+                    transport.fcntl.flock(lock, transport.fcntl.LOCK_EX | transport.fcntl.LOCK_NB)
+                except BlockingIOError:
+                    self.fail('Packing held the repository lock')
+            return actual(*args, **kwargs)
+
+        with patch.dict(os.environ, self.env), patch.object(transport.subprocess, 'run', side_effect=inspect):
+            transport.transfer('put', 'build', str(self.source), str(self.cache))
+
     def test_directory_layout_modes_and_hidden_files(self):
         source = self.root / 'directory'
         (source / 'nested').mkdir(parents=True)
         (source / 'nested/tool').write_text('binary')
         (source / 'nested/tool').chmod(0o755)
         (source / '.metadata').write_text('metadata')
-        self.ok(self.invoke('put', path=source))
+        self.ok(self.invoke('put', path=source, ARTIFACT_INCLUDE_HIDDEN_FILES='true'))
         self.ok(self.invoke('get'))
         self.assertTrue((self.root / 'restored/nested/tool').is_file())
         self.assertEqual((self.root / 'restored/nested/tool').read_text(), 'binary')
         self.assertEqual((self.root / 'restored/nested/tool').stat().st_mode & 0o777, 0o755)
         self.assertEqual((self.root / 'restored/.metadata').read_text(), 'metadata')
         self.assertFalse((self.root / 'restored/directory').exists())
+
+    def test_hidden_files_are_excluded_by_default(self):
+        source = self.root / 'directory'
+        (source / 'nested/.hidden').mkdir(parents=True)
+        (source / 'nested/visible').write_text('visible')
+        (source / 'nested/.hidden/inside').write_text('hidden')
+        (source / '.metadata').write_text('hidden')
+        self.ok(self.invoke('put', path=source))
+        self.ok(self.invoke('get'))
+        self.assertTrue((self.root / 'restored/nested/visible').is_file())
+        self.assertFalse((self.root / 'restored/.metadata').exists())
+        self.assertFalse((self.root / 'restored/nested/.hidden').exists())
+
+    def test_get_can_share_a_read_lock(self):
+        self.ok(self.invoke('put'))
+        driver = '''
+import importlib.util, os, sys
+spec = importlib.util.spec_from_file_location('transfer', sys.argv[1])
+t = importlib.util.module_from_spec(spec); spec.loader.exec_module(t)
+t.transfer('get', 'build', sys.argv[2], os.environ['HOST_ARTIFACT_DIR'])
+'''
+        with (self.run.parent / '.lock').open('a') as lock:
+            transport.fcntl.flock(lock, transport.fcntl.LOCK_SH)
+            try:
+                result = subprocess.run([sys.executable, '-c', driver, str(ACTION / 'host-artifact.py'),
+                                         str(self.root / 'restored')], env=self.env,
+                                        capture_output=True, text=True, timeout=2)
+            except subprocess.TimeoutExpired:
+                self.fail('Get blocked behind a shared reader lock')
+            self.ok(result)
+        self.assertTrue((self.root / 'restored/payload.txt').is_file())
 
     def test_get_searches_earlier_attempts_per_name(self):
         self.ok(self.invoke('put'))
@@ -136,6 +230,7 @@ class HostArtifactTests(unittest.TestCase):
                 transport.transfer('put', 'build', str(self.source), str(self.cache))
         self.assertEqual((self.run / '1/build.tar').read_bytes(), original)
         self.assertEqual(sorted(p.name for p in (self.run / '1').iterdir()), ['build.tar'])
+        self.assertEqual(list(self.run.parent.glob('.put-*')), [])
 
     def test_pruning_respects_age_current_run_and_repository(self):
         self.ok(self.invoke('put'))
@@ -235,6 +330,10 @@ t.transfer(mode, 'build', path, os.environ['HOST_ARTIFACT_DIR'])
         self.assertEqual(action.count('        name: ${{ inputs.name }}'), 2)
         self.assertEqual(action.count('        path: ${{ inputs.path }}'), 2)
         self.assertIn('        if-no-files-found: error', action)
+        self.assertIn('        retention-days: ${{ inputs.retention-days }}', action)
+        self.assertIn('        include-hidden-files: ${{ inputs.include-hidden-files }}', action)
+        self.assertRegex(action, r"include-hidden-files:\n    description: [^\n]+\n    default: 'false'")
+        self.assertRegex(action, r'retention-days:\n    description: [^\n]+\n  include-hidden-files:')
 
 
 if __name__ == '__main__':

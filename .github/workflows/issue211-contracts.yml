@@ -149,6 +149,7 @@ jobs:
       - uses: ./.github/actions/host-artifact
         with:
           mode: put
+          retention-days: 14
           name: identity-${{ matrix.product }}
           path: out
       - name: Remove job temporary directory

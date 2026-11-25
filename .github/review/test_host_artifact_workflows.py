@@ -68,6 +68,25 @@ def handoffs(text):
 
 
 class HostArtifactWorkflowTests(unittest.TestCase):
+    def test_upload_retention_and_hidden_policy(self):
+        retained = {'issue211-contracts.yml': '14', 'issue241-module-window.yml': '14',
+                    'issue33-validation.yml': '14', 'platform-parity.yml': '14',
+                    'process-history.yml': '7'}
+        count = 0
+        for name in EXPECTED:
+            text = (WORKFLOWS / name).read_text()
+            for match in re.finditer(r'^      - uses: \./\.github/actions/host-artifact\n(.*?)(?=^      - |\Z)',
+                                     text, re.M | re.S):
+                block = match.group(1)
+                inputs = dict(re.findall(r'^          ([\w-]+): (.+)$', block, re.M))
+                with self.subTest(workflow=name, name=inputs['name']):
+                    expected = retained.get(name) if inputs['mode'] == 'put' else None
+                    self.assertEqual(inputs.get('retention-days'), expected)
+                    self.assertNotIn('include-hidden-files', inputs)
+                if inputs['mode'] == 'put':
+                    count += 1
+        self.assertEqual(count, 15)
+
     def test_exact_build_handoffs(self):
         actual = {path.name: handoffs(path.read_text()) for path in WORKFLOWS.glob('*.yml')}
         actual = {name: rows for name, rows in actual.items() if rows}
