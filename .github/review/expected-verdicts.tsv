@@ -1402,6 +1402,7 @@ git-issues/github-issue-493.dfy	4	9 verified, 1 error	18
 git-issues/github-issue-495.dfy	4	4 verified, 8 errors	22,31,35,39,43,47,55
 git-issues/github-issue-492.dfy	0	0 verified, 0 errors	
 git-issues/github-issue-5029.dfy	0	3 verified, 0 errors	
+git-issues/github-issue-569-witness-race.dfy	0	7 verified, 0 errors	
 git-issues/github-issue-5814.dfy	0	3 verified, 0 errors	
 git-issues/github-issue-88-89-interactions.dfy	4	5 verified, 3 errors	32,51,58
 git-issues/github-issue-88-inherited-bounds.dfy	4	9 verified, 1 error	27
