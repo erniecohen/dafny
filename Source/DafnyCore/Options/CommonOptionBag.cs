@@ -42,15 +42,75 @@ public class CommonOptionBag {
     };
 
   public static readonly Option<string> VerificationCache = new("--verification-cache",
-    "Reuse complete verification-task solver exchanges in DIR. Requires --type-system-refresh. Opt-in; uses a fresh solver history and stable numeric declaration order for each task. " +
-    "Replayed timing fields are identified in CSV/JSON logs. Unsupported tasks run normally.") { ArgumentHelpName = "DIR" };
+    "Use the cache store in DIR (also --cache-dir; or DAFNY_CACHE_DIR): reuse per-module resolution results, complete verification-task solver exchanges and, with --persistent-translation, module translations and results. " +
+    "Requires --type-system-refresh. Opt-in; uses a fresh solver history and stable numeric declaration order for each task. " +
+    "Replayed timing fields are identified in CSV/JSON logs. Unsupported modules and tasks run normally.") { ArgumentHelpName = "DIR" };
+  public static readonly Option<IList<string>> VerificationCacheSolverDigest = new("--verification-cache-solver-digest",
+    () => new List<string>(),
+    "With --verification-cache, also accept a solver binary whose SHA-256 digest is SHA256 (64 hexadecimal digits), in addition to " +
+    "the built-in list of audited Z3 5.1.0 release binaries. Repeatable; also verification-cache-solver-digest in dfyconfig.toml. " +
+    "Declare only a build you have audited, such as a reproducible source build of the same Z3 release. The binary's digest is still " +
+    "computed on every run and is part of every cache key: a binary whose digest is neither built-in nor declared is not cached, " +
+    "with a warning, and results from different binaries never mix.") {
+    ArgumentHelpName = "SHA256"
+  };
+  public static readonly Option<string> CachePartition = new("--cache-partition",
+    "The partition of the cache store whose budget this run's large cache entries (resolution snapshots, Boogie text) count against. " +
+    "Defaults to DAFNY_CACHE_PARTITION, or else a name derived from the project's directory. It never changes what is reused.") {
+    ArgumentHelpName = "NAME"
+  };
+  public static readonly Option<int> CachePartitionBudget = new("--cache-partition-budget",
+    () => (int)Caching.ArtifactLimits.DefaultPartitionBudgetMegabytes,
+    "The size in megabytes of the large cache entries one partition may hold; its least recently used entries are dropped beyond it.") {
+    ArgumentHelpName = "MB"
+  };
+  public static readonly Option<int> CacheSizeCap = new("--cache-size-cap", () => (int)Caching.ArtifactLimits.DefaultStoreCapMegabytes,
+    "The size in megabytes of all large cache entries in the store; beyond it the least recently used entries are deleted, untagged ones first.") {
+    ArgumentHelpName = "MB"
+  };
+  public static readonly Option<int> CacheOrphanDays = new("--cache-orphan-days", () => Caching.ArtifactLimits.DefaultOrphanDays,
+    "Drop the large cache entries of a partition that has not been used for this many days.") {
+    ArgumentHelpName = "DAYS"
+  };
+  public static readonly Option<bool> ResolutionCache = new("--resolution-cache", () => true,
+    "With a cache store (--cache-dir), reuse per-module resolution results from it. Set to false to leave resolution out. Requires --type-system-refresh.") {
+    IsHidden = true
+  };
+  public static readonly Option<bool> ResolutionCacheCheck = new("--resolution-cache-check",
+    "With --resolution-cache, also resolve each module whose result is reused, and report an error if the two results differ. For testing the cache.") {
+    IsHidden = true
+  };
   public static readonly Option<bool> TranslationCache = new("--translation-cache",
     "Reuse module translations in this process using semantic resolution keys. " +
     "Requires --type-system-refresh. Uses the default module-scoped translator. Stores no files or verification results.");
+  public static readonly Option<bool> PersistentTranslation = new("--persistent-translation",
+    "Also keep module translations and whole-module results in the --verification-cache directory, across processes. " +
+    "Requires --verification-cache and --type-system-refresh. A module whose translation key is unchanged is not translated again, " +
+    "and a module whose regenerated Boogie program is unchanged is not prepared or solved again, when every one of its tasks " +
+    "was verified through the result cache. Unsupported modules and reporting options run normally.");
+  public static readonly Option<bool> PersistentTranslationAudit = new("--persistent-translation-audit",
+    "With --persistent-translation, translate, prepare and verify every module as if nothing were stored, and report an error " +
+    "when a stored translation or module result differs from the fresh one.") { IsHidden = true };
 
   public static readonly Option<int> ResolutionThreads = new("--resolution-threads", () => 0,
     "Resolve independent modules with N workers. Requires --type-system-refresh. Scheduling is opt-in; generated names are module-scoped in every mode.") {
     ArgumentHelpName = "N"
+  };
+
+  public static readonly Option<int> TranslationWorkers = new("--translation-workers", () => 1,
+    "Translate to Boogie, and prepare for verification, up to N modules at once. Requires --type-system-refresh, " +
+    "and has an effect only with --verification-module-window greater than 1, which admits the modules. " +
+    "Generated names, Boogie text, diagnostics, logs and resource counts are the same as with 1, the default. " +
+    "A translation starts only while the managed heap, plus the mean allocation of a translation for each one " +
+    "in progress, is below --verification-module-window-memory. Falls back to 1 with a plugin, a verbose log " +
+    "level, or a Boogie print, trace, debug-information, snapshot or non-default type-encoding option.") {
+    ArgumentHelpName = "N"
+  };
+
+  public static readonly Option<int> TranslationWorkersStress = new("--translation-workers-stress", () => 0,
+    "(testing) With --translation-workers, delay each translation's start: a positive seed draws a delay of up to " +
+    "40 ms per module, -1 delays the k-th module by 100·(3 - k mod 4) ms, so that translations finish in reverse order.") {
+    IsHidden = true
   };
 
   public static readonly Option<string> PipelineProfile =
@@ -290,11 +350,14 @@ true - All class instances are raw pointers and need to be manually deallocated"
     IsHidden = true
   };
 
+  public static readonly Option<bool> IntegerBitwise = new("--integer-bitwise", () => false,
+    "Enable ghost bitwise operators on unsigned integer newtypes with an explicit {:bitWidth N}, compiler-owned integer references, and explicit one-step unfolding lemmas. Runtime operators and native bitvector bridges are not yet implemented.");
+
   public static readonly Option<bool> AdditionalAxioms = new("--additional-axioms", () => false,
     "Enable additional verifier axioms. May change verification performance and proof stability. Disabled by default.");
 
   public static readonly Option<bool> FunctionExtensionalityAxiom = new("--function-extensionality-axiom", () => false,
-    "Give function values domain tags, as --additional-axioms does, and make two total functions of one argument with the same exact domain equal when they agree on it, at each equality between them. May change verification performance. Disabled by default.");
+    "Give function values domain tags, as --additional-axioms does, and make two total functions of the same arity and exact domain equal when they agree on it, at each equality between them. May change verification performance. Disabled by default.");
 
   public static readonly Option<bool> HeapFreeLambdaFacts = new("--heap-free-lambda-facts", () => false,
     "Check a lambda without a reads clause, whose body observes neither the heap nor allocation, in every heap and without assuming its parameters allocated, and let the calls in its body unfold wherever it is applied. May change verification performance. Disabled by default.");
@@ -355,7 +418,7 @@ true - All class instances are raw pointers and need to be manually deallocated"
     "In a refining module, let the redeclaration of a function, method, lemma or constructor rename its type parameters, its out-parameters, its result and the local names of its in-parameters, and let the redeclaration of a class, trait, datatype or newtype rename its type parameters. A named argument still uses the name the parameter was first declared with. Inherited specifications and bodies are renamed with the declaration; a renaming that changes what a name in inherited code refers to is an error. The type of a parameter or result may be written differently from the refined declaration if it is the same type, with type synonyms expanded. Disabled by default.");
 
   public static readonly Option<bool> CopyImports = new("--copy-imports", () => false,
-    "Allow the copying import 'import X := Q' (optionally 'opened', optionally with an export set of Q): it declares in the importing module a module X that refines Q and adds nothing. The types of X are new types, different from those of Q and of every other copy of Q; X keeps the export sets of Q, with Q's default export as its own. A module that refines the importing module gets its own copy. Disabled by default.");
+    "Allow the copying import 'import X := Q' (optionally 'opened', optionally with an export set of Q): it declares in the importing module a module X that refines Q and adds nothing. The types of X are new types, different from those of Q and of every other copy of Q; X keeps the export sets of Q, with Q's default export as its own. A module that refines the importing module gets its own copy, and may rebind it with another copying import whose target is the previous target or a refinement of it. Rebinding retains opened status and every named export set. Disabled by default.");
 
   public static readonly Option<bool> DecreasesOrders = new("--decreases-orders", () => false,
     "Allow a decreases-clause component 'e by O', where O is a closed ghost expression of the trait type Std.Termination.Orders.Wfo<T> from the standard library and e has type T; a call or loop iteration must make O.gt(old e, e) true or leave e unchanged. Requires --type-system-refresh and --general-traits=datatype or full. With --modular-termination, such components are also allowed in {:global} and {:callback} bounds, and the orders library is verified with the program. Disabled by default.");
@@ -381,6 +444,9 @@ true - All class instances are raw pointers and need to be manually deallocated"
   public static readonly Option<bool> LegacyInferredNewtypeBaseConversions = new("--legacy-inferred-newtype-base-conversions", () => false,
     "Use the legacy, unsound check of a conversion to a newtype whose base type is inferred, which skips the constraints of that base type, for migration and comparison only.") { IsHidden = true };
 
+  public static readonly Option<bool> LegacyBoxedNewtypeObligations = new("--legacy-boxed-newtype-obligations", () => false,
+    "Use the legacy type obligation lowering that omits boxed base membership and does not unbox trait receivers in constraints or member invariants, for migration and comparison only.") { IsHidden = true };
+
   public static readonly Option<bool> LegacySkeletonModifyingCalls = new("--legacy-skeleton-modifying-calls", () => false,
     "Use the legacy, unsound rule that lets a statement a refinement skeleton adds call a method with a nonempty modifies clause, for migration and comparison only.") { IsHidden = true };
 
@@ -388,6 +454,8 @@ true - All class instances are raw pointers and need to be manually deallocated"
     "Use the legacy, unsound check of the types of iterator yield parameters, made before the resolver knows how each datatype is constructed, for migration and comparison only.") { IsHidden = true };
   public static readonly Option<bool> LegacyMemberInvariantDependence = new("--legacy-member-invariant-dependence", () => false,
     "Use the legacy, unsound cache of provisional negative type-dependence results in the member-invariant extension condition, for migration and comparison only.") { IsHidden = true };
+  public static readonly Option<bool> LegacyUncheckedMemberInvariantProofs = new("--legacy-unchecked-member-invariant-proofs", () => false,
+    "Use the legacy, unsound member-invariant extension condition that does not check the proofs in an invariant's cone (proof hints, and the bodies of bound lemmas), for migration and comparison only.") { IsHidden = true };
 
   public static readonly Option<bool> LegacyUncheckedTypeVariance = new("--legacy-unchecked-type-variance", () => false,
     "Use the legacy, unsound rule that ignores subset-type and newtype constraints when checking declared variance, for migration and comparison only.") { IsHidden = true };
@@ -471,7 +539,7 @@ Value implementations must retain their type parameters in compatible parent pos
   };
 
   public static readonly Option<bool> RecursiveModules = new("--recursive-modules", () => false,
-    "(experimental, incomplete) Allow modules to import each other. The modules of an import cycle form a recursive module group, which means what one module with all their declarations would mean. Only imports may form a cycle. Requires --member-invariants. A program that has a recursive module group may not declare a codatatype. A group is all concrete or all abstract. Refinement and abstract imports must point to strictly lower groups. A .doo library retains and records complete groups; its client needs the same option. Executable compilation supports the C#, Java, Go and Python targets; Go groups may not contain extern declarations. Python group members containing extern or omitted declarations require complete foreign Python modules; a Python package group must retain a compiled member. Replacement in a group is not yet supported.") {
+    "(experimental, incomplete) Allow modules to import each other. The modules of an import cycle form a recursive module group, which means what one module with all their declarations would mean. Only imports may form a cycle. Requires --member-invariants. A program that has a recursive module group may not declare a codatatype. A group is all concrete or all abstract. Refinement and abstract imports must point to strictly lower groups. A .doo library retains and records complete groups; its client needs the same option. Executable compilation supports the C#, Java, Go and Python targets; Python group members containing extern or omitted declarations require complete foreign Python modules; a Python package group must retain a compiled member. Replacement in a group is not yet supported.") {
     IsHidden = true
   };
 
@@ -670,6 +738,7 @@ If verification fails, report a detailed counterexample for the first failing as
     });
 
     DafnyOptions.RegisterLegacyUi(AdditionalAxioms, DafnyOptions.ParseBoolean, "Verification options", legacyName: "additionalAxioms");
+    DafnyOptions.RegisterLegacyUi(IntegerBitwise, DafnyOptions.ParseBoolean, "Language feature selection", legacyName: "integerBitwise");
     DafnyOptions.RegisterLegacyUi(AllowAxioms, DafnyOptions.ParseBoolean, "Verification options", legacyName: "allowAxioms", defaultValue: true);
     DafnyOptions.RegisterLegacyUi(LegacyNoModularTermination, DafnyOptions.ParseBoolean, "Verification options", legacyName: "legacyNoModularTermination");
     DafnyOptions.RegisterLegacyBinding(ShowHints, (options, value) => {
@@ -907,7 +976,30 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(WarnAsErrors, OptionScope.Cli);
     OptionRegistry.RegisterOption(ProgressOption, OptionScope.Cli);
     OptionRegistry.RegisterOption(LogLocation, OptionScope.Cli);
+    VerificationCache.AddAlias("--cache-dir");
     OptionRegistry.RegisterOption(VerificationCache, OptionScope.Cli);
+    VerificationCacheSolverDigest.AddValidator(result => {
+      if (result.GetValueOrDefault<IList<string>>()?.FirstOrDefault(digest => !Caching.CacheDigest.IsSolverDigest(digest)) is { } bad) {
+        result.ErrorMessage = $"--verification-cache-solver-digest must be a SHA-256 digest of 64 hexadecimal digits, not '{bad}'.";
+      }
+    });
+    OptionRegistry.RegisterOption(VerificationCacheSolverDigest, OptionScope.Cli);
+    CachePartition.AddValidator(result => {
+      if (result.Tokens.Count != 0 && !Caching.ArtifactStore.IsValidName(result.GetValueOrDefault<string>())) {
+        result.ErrorMessage = "--cache-partition must be 1 to 100 letters, digits, '-', '_' or '.', not starting with '.'.";
+      }
+    });
+    foreach (var limit in new[] { CachePartitionBudget, CacheSizeCap, CacheOrphanDays }) {
+      limit.AddValidator(result => {
+        if (result.Tokens.Count != 0 && result.GetValueOrDefault<int>() < 1) { result.ErrorMessage = limit.Name + " must be a positive integer."; }
+      });
+    }
+    OptionRegistry.RegisterOption(CachePartition, OptionScope.Cli);
+    OptionRegistry.RegisterOption(CachePartitionBudget, OptionScope.Cli);
+    OptionRegistry.RegisterOption(CacheSizeCap, OptionScope.Cli);
+    OptionRegistry.RegisterOption(CacheOrphanDays, OptionScope.Cli);
+    OptionRegistry.RegisterOption(ResolutionCache, OptionScope.Cli);
+    OptionRegistry.RegisterOption(ResolutionCacheCheck, OptionScope.Cli);
     ResolutionThreads.AddValidator(result => {
       if (result.Tokens.Count != 0 && result.GetValueOrDefault<int>() < 1) {
         result.ErrorMessage = "--resolution-threads must be a positive integer.";
@@ -915,6 +1007,15 @@ NoGhost - disable printing of functions, ghost methods, and proof
     });
     OptionRegistry.RegisterOption(ResolutionThreads, OptionScope.Cli);
     OptionRegistry.RegisterOption(TranslationCache, OptionScope.Cli);
+    OptionRegistry.RegisterOption(PersistentTranslation, OptionScope.Cli);
+    OptionRegistry.RegisterOption(PersistentTranslationAudit, OptionScope.Cli);
+    TranslationWorkers.AddValidator(result => {
+      if (result.Tokens.Count != 0 && result.GetValueOrDefault<int>() < 1) {
+        result.ErrorMessage = "--translation-workers must be a positive integer.";
+      }
+    });
+    OptionRegistry.RegisterOption(TranslationWorkers, OptionScope.Cli);
+    OptionRegistry.RegisterOption(TranslationWorkersStress, OptionScope.Cli);
     OptionRegistry.RegisterOption(PipelineProfile, OptionScope.Cli);
     OptionRegistry.RegisterOption(PipelineProfileHeap, OptionScope.Cli);
     OptionRegistry.RegisterOption(PipelineProfileGcEvents, OptionScope.Cli);
@@ -923,6 +1024,9 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(ManualTriggerOption, OptionScope.Module);
     OptionRegistry.RegisterOption(UserDefinedOperators, OptionScope.Cli);
     OptionRegistry.RegisterOption(AdditionalAxioms, OptionScope.Cli);
+    OptionRegistry.RegisterGlobalOption(IntegerBitwise,
+      (reporter, origin, prefix, option, localValue, libraryValue) =>
+        OptionCompatibility.OptionLibraryImpliesLocalError(reporter, origin, prefix, option, localValue, libraryValue ?? false));
     OptionRegistry.RegisterOption(MapComprehensionDomainTriggers, OptionScope.Cli);
     OptionRegistry.RegisterOption(HeapFreeLambdaFacts, OptionScope.Cli);
     OptionRegistry.RegisterOption(FunctionExtensionalityAxiom, OptionScope.Cli);
@@ -995,6 +1099,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(LegacyAllocatedInLambdas, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacyElidedOverrideChecks, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacyInferredNewtypeBaseConversions, OptionScope.Cli);
+    OptionRegistry.RegisterOption(LegacyBoxedNewtypeObligations, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacySkeletonModifyingCalls, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacyInheritedConstructorFields, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacyFunctionStoreLocations, OptionScope.Cli);
@@ -1003,6 +1108,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(LegacyGenericFunctionStores, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacyInheritedTerminationChecks, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacyMemberInvariantDependence, OptionScope.Cli);
+    OptionRegistry.RegisterOption(LegacyUncheckedMemberInvariantProofs, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacyUncheckedTypeVariance, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacyUncheckedImportBinding, OptionScope.Cli);
     OptionRegistry.RegisterOption(LegacyStoredFunctionCallbacks, OptionScope.Cli);

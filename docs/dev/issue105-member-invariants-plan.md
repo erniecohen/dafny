@@ -2138,62 +2138,80 @@ section 7.2).**
     could test a lambda that requires something of every `D` against
     `D -> bool`, and `assert false` verified.
   - Statements inside expressions (`assert`, `assume`, `calc`, `reveal`, a
-    lemma call or a `forall` statement, in a statement expression `S; E`) are
-    proof hints and give no meaning, so they are not in the cone.  The
-    argument has three parts.
-    1. *They are not in the axioms.*  The condition exists so that the axioms
-       of section 5.1 have a model (section 5.2).  Every axiom that mentions
-       the extension of `T` (the definition and consequence axioms of the
-       functions, constants and constraints in the cone, and the `$Is`
-       equivalence of `T`) is built by the expression translator, which
-       translates `S; E` as `E` alone.  A lemma that `S` calls contributes no
-       axiom: its postcondition is used only at a call, after its
-       precondition is checked.  So the axioms are exactly those of the
-       program with every statement inside an expression erased.  That
-       program satisfies the condition, since the analysis looks at nothing
-       the erasure removes, so section 5.2 gives it a model, and that is a
-       model of the axioms.
-    2. *They are used only in proofs.*  In the well-formedness check of the
-       enclosing function, `S` is proved (an `assert` or a `calc` step is
-       checked; a lemma's precondition is checked, and the lemma is verified
-       on its own; a `forall` statement's body proves its conclusion) and its
-       conclusion is assumed after it.  That includes a lemma whose
-       postcondition mentions the membership of `T` (`ensures f is F ==> ...`,
-       or `ensures !(Liar3(n, this) is Liar3)`, as in the controls below): the
-       postcondition is proved when the lemma is verified, from the same
-       axioms, and is assumed only after a call.  Such a lemma cannot make the
-       invariant mean something else, since the invariant's meaning is `E`; a
-       false postcondition about `T` fails where the lemma is verified, as
-       `Teller.Ok`'s does.  Where the enclosing function's body
-       is inlined into a proof obligation (`TrSplitExpr`), `S; E` is proved as
-       `C ==> E`, with `C` the conclusion of `S`, and the call itself is then
-       assumed.  Each use rests on a fact proved from the axioms, or, for
-       `assume`, on the program's own unchecked assumption, as anywhere else.
-       The axioms have a model, so a statement may refer to the extension of
-       `T` freely (`assert forall e: T :: P(e)`, a test `this is T` of a raw
-       `this`, a dynamically bound lemma call): it can only be an obligation
-       that fails, never a source of inconsistency.
-    3. *A caution particular to invariants.*  The inlining rule of part 2
-       relies on `C` holding wherever the call is made, which Dafny ensures
-       by checking `S` under the function's preconditions.  The
-       well-formedness check of `invariant#k` also assumes the earlier
-       invariants, which are not its preconditions.  So an invariant's body
-       must never be inlined where the earlier invariants are not known.  It
-       never is: `invariant#k` cannot be named in source, and the translator
-       asserts each invariant whole, as a call, at a conversion
-       (`CheckInvariantConjuncts`), at `new;` and for a witness, while
-       `TrSplitExpr` sees only source expressions.  A change that inlines an
-       invariant's body must guard it with the earlier invariants.
+    lemma call, a `:|` or a `forall` statement, in a statement expression
+    `S; E`) are proof hints.  They give no meaning, but they are in the cone
+    (issue 549).  An earlier form of this step left them out, on the argument
+    that they are not in the axioms and are used only in proofs.  The first
+    part holds for the definition axioms, since the expression translator
+    translates `S; E` as `E` alone.  The second does not: the
+    well-formedness proof of a function in the cone, hints included, is what
+    justifies its consequence axiom (its postcondition), its termination, and
+    the preconditions of the functions it calls, and the axioms assume all
+    three.  A hint that learns that some value has type `T` learns `T`'s
+    invariants, and with them those very axioms, so it can assume what it is
+    meant to prove.  Each of these verified `ensures false`:
+    - `ghost predicate Inv(t: raw T) ensures !Inv(t) { G(T(0)); true }`,
+      with `lemma G(x: T) ensures false {}`: the call converts the raw
+      `T(0)` to `T`, which assumes `Inv(T(0))`, and `G`'s body learns the
+      same from its parameter.  The same hint proves the termination of a
+      recursive `F(t) + 1`, or the precondition `false` of a function called
+      from the invariant;
+    - a `var x: T :| true;` inside `assert false by { ... }`, where `T` has a
+      `ghost witness`;
+    - the newtype form `G(0)`, where the literal `0` of the base type is
+      converted to the newtype (it also needs the rule that a value of the
+      base type is raw, from https://github.com/erniecohen/dafny/pull/548).
 
-    `git-issue-105-statements.dfy` holds the controls: invariants whose
-    statements quantify over the type without a bound, test a raw `this`
-    against it and call a lemma that does both are accepted; such a statement
-    that is true is proved from the axioms, one that is false fails as an
-    obligation, and `false` is not provable after either.  The adversarial
-    review at the end of the feature, after its last step and before its
-    single CI run, targets this decision first: a lemma or `forall` statement
-    inside an invariant whose conclusion mentions `T`, an inlined invariant
-    body, and a statement reached through a function in the cone.
+    So the cone contains the statements inside its expressions, and the
+    specifications and bodies of the lemmas they call, transitively, with the
+    rules that docs/dev/issue199-lemma-results-plan.md (section 6.3) gives
+    for the proofs that justify a lemma binding:
+    - clauses 1 to 5 apply to their expressions, the arguments of a call
+      included (a raw argument for a parameter of a `T`-dependent type is a
+      conversion);
+    - a local of a `T`-dependent type has an initial value, a `:|` statement
+      does not choose a value of such a type, and a lemma in the cone has no
+      out-parameter of such a type;
+    - no field or array element of such a type is read from the heap;
+    - no dynamically bound lemma is called, as for functions (clause 4).
+
+    The heap rule (clause 7) applies to the expressions of the cone as well,
+    not only to its proofs.  A function of the cone that reads a field of type
+    `C` from the heap may pass it to another function whose well-formedness
+    proof learns `C`'s invariant from its parameter's type
+    (`HeapReadInBody`, which proved `false` before this change).  So a class
+    invariant may not read a field of type `C?`; it may still compare `null`
+    with such a value (the `ClassFields` control).
+
+    `git-issue-105-statements.dfy` now shows that each statement of the earlier
+    controls (a quantifier over the type without a bound, a test of a raw
+    `this`, a lemma that does both, a dynamically bound lemma call) is
+    rejected.  `git-issue-549-invariant-hints.dfy` holds the reproducers, and
+    `git-issue-549-invariant-hints-controls.dfy` the hints that stay allowed:
+    those that use only types that do not depend on `T`, and any hint in a
+    function outside the cone.
+
+    This is a soundness fix, so it is on whenever `--member-invariants` is.
+    The hidden `--legacy-unchecked-member-invariant-proofs` restores the
+    earlier form of this step, byte for byte, for migration and comparison
+    only: the cone then contains the specifications of bound lemmas but no
+    proof, and clauses 6 to 8 (the initial-value, out-parameter, heap and
+    dynamically-bound-lemma rules above) do not apply.
+    `git-issue-549-legacy.dfy` is its vacuity control: the issue's
+    reproducers are rejected by default, and with the legacy option every one
+    of them verifies a lemma `ensures false`.
+
+    The caution about inlining an invariant's body still applies.  The
+    inlining rule relies on `C`, the conclusion of `S`, holding wherever the
+    call is made, which Dafny ensures by checking `S` under the function's
+    preconditions.  The well-formedness check of `invariant#k` also assumes
+    the earlier invariants, which are not its preconditions.  So an
+    invariant's body must never be inlined where the earlier invariants are
+    not known.  It never is: `invariant#k` cannot be named in source, and the
+    translator asserts each invariant whole, as a call, at a conversion
+    (`CheckInvariantConjuncts`), at `new;` and for a witness, while
+    `TrSplitExpr` sees only source expressions.  A change that inlines an
+    invariant's body must guard it with the earlier invariants.
   - The hidden option `--unchecked-invariant-extension` turns the check off.  It
     exists for the vacuity controls V5 and V5b (section 6.4), which must show
     that the axioms of `Liar` and `Liar2` are inconsistent without it.  It is

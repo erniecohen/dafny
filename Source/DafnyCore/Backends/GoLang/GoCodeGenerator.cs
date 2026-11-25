@@ -21,9 +21,65 @@ namespace Microsoft.Dafny.Compilers {
   class GoCodeGenerator : SinglePassCodeGenerator {
     protected override void EmitStaticExternMethodQualifier(string qual, ConcreteSyntaxTree wr) {
       if (qual != null) {
-        qual = ImportPrefix + qual;
+        qual = ExternQualifier(qual);
       }
       base.EmitStaticExternMethodQualifier(qual, wr);
+    }
+
+    private string ExternQualifier(string qualifier) {
+      var imports = ExternModuleImports.AsEnumerable();
+      if (Options.Get(CommonOptionBag.RecursiveModules)) {
+        imports = imports.Concat(ModuleImports.Where(entry => entry.Key.RecursiveGroup == null &&
+          entry.Key.IsExtern(Options, out _, out _)));
+      }
+      foreach (var (module, import) in imports) {
+        var name = module.GetCompileName(Options);
+        if (qualifier == name || qualifier.StartsWith(name + ".", StringComparison.Ordinal)) {
+          return import.Name + qualifier.Substring(name.Length);
+        }
+      }
+      return ImportPrefix + qualifier;
+    }
+
+    protected override void CompileFunctionCallExpr(FunctionCallExpr e, ConcreteSyntaxTree wr, bool inLetExprBody,
+      ConcreteSyntaxTree wStmts, FCE_Arg_Translator tr, bool alreadyCoerced = false) {
+      var function = e.Function;
+      if (function.EnclosingClass.EnclosingModuleDefinition.RecursiveGroup == null || function.Body != null ||
+          !function.IsExtern(Options, out var qualifier, out var name) || qualifier == null) {
+        base.CompileFunctionCallExpr(e, wr, inLetExprBody, wStmts, tr, alreadyCoerced);
+        return;
+      }
+
+      // The base generator separates a qualified function with ModuleSeparator ("_").
+      // Foreign Go selectors use a dot, just as qualified extern methods do.
+      if (!alreadyCoerced) {
+        var toType = thisContext == null ? e.Type : e.Type.Subst(thisContext.ParentFormalTypeParametersToActuals);
+        wr = EmitCoercionIfNecessary(function.Original.ResultType, toType, e.Origin, wr);
+      }
+      EmitStaticExternMethodQualifier(qualifier, wr);
+      wr.Write(".{0}(", name);
+      var typeArgs = CombineAllTypeArguments(function, e.TypeApplication_AtEnclosingClass, e.TypeApplication_JustFunction);
+      var separator = "";
+      EmitTypeDescriptorsActuals(ForTypeDescriptors(typeArgs, function.EnclosingClass, function, false), e.Origin, wr, ref separator);
+      if (NeedsCustomReceiverNotTrait(function)) {
+        wr.Write(separator);
+        var receiver = EmitCoercionIfNecessary(e.Receiver.Type,
+          UserDefinedType.UpcastToMemberEnclosingType(e.Receiver.Type, function), e.Origin, wr);
+        EmitExpr(e.Receiver, inLetExprBody, receiver, wStmts);
+        separator = ", ";
+      }
+      for (var i = 0; i < e.Args.Count; i++) {
+        if (!function.Ins[i].IsGhost) {
+          wr.Write(separator);
+          var fromType = e.Args[i].Type;
+          var toType = function.Ins[i].Type.Subst(e.TypeArgumentSubstitutionsWithParents());
+          var argument = EmitCoercionIfNecessary(fromType, toType, e.Origin, wr, function.Original.Ins[i].Type);
+          argument = EmitDowncastIfNecessary(fromType, toType, e.Origin, argument);
+          tr(e.Args[i], argument, inLetExprBody, wStmts);
+          separator = ", ";
+        }
+      }
+      wr.Write(")");
     }
 
     protected override bool RequiresAllVariablesToBeUsed => true;
@@ -61,6 +117,7 @@ namespace Microsoft.Dafny.Compilers {
     }
 
     private readonly Dictionary<ModuleDefinition, Import> ModuleImports = new();
+    private readonly Dictionary<ModuleDefinition, Import> ExternModuleImports = new();
     private readonly Dictionary<RecursiveModuleGroup, ConcreteSyntaxTree> GroupWriters = new();
 
     // Package and declaration identities must survive source-file relocation.
@@ -68,8 +125,30 @@ namespace Microsoft.Dafny.Compilers {
     private static IEnumerable<ModuleDefinition> GroupMembers(RecursiveModuleGroup group) =>
       group.Members.Select(member => member.ModuleDef).OrderBy(member => member.FullDafnyName, StringComparer.Ordinal);
 
-    private string GroupPackage(ModuleDefinition module) =>
-      PublicModuleIdProtect(GroupMembers(module.RecursiveGroup).First().GetCompileName(Options));
+    private string GroupPackage(ModuleDefinition module) {
+      var members = GroupMembers(module.RecursiveGroup).ToList();
+      var first = members[0];
+      // An extern module's package is foreign code, not the generated group's package.
+      return members.Any(member => member.IsExtern(Options, out _, out _))
+        ? "DafnyGroup_" + PublicModuleIdProtect(first.GetCompileName(Options))
+        : PublicModuleIdProtect(first.GetCompileName(Options));
+    }
+
+    private void RegisterGroupExterns(RecursiveModuleGroup group) {
+      foreach (var member in GroupMembers(group)) {
+        if (!ExternModuleImports.ContainsKey(member) && member.IsExtern(Options, out _, out _)) {
+          var args = Attributes.FindExpressions(member.Attributes, "extern");
+          var library = args.Count == 2 ? (args[1] as StringLiteralExpr)?.Value as string : null;
+          var import = CreateImport(PublicModuleIdProtect(member.GetCompileName(Options)), member, library);
+          if (import.Path == "") {
+            // An empty extern module names Go's built-in scope.
+            import.Name = "";
+          }
+          ExternModuleImports.Add(member, import);
+          EmitImport(import, RootImportWriter, RootImportDummyWriter);
+        }
+      }
+    }
 
     private readonly List<Import> ImportsNotFromDafnyModules = [.. StandardImports];
     private string ModuleName;
@@ -144,7 +223,7 @@ namespace Microsoft.Dafny.Compilers {
       wr.WriteLine(")");
       importDummyWriter = wr.Fork();
       if (ModuleName != "dafny") {
-        foreach (var import in ImportsNotFromDafnyModules.Concat(ModuleImports.Values)) {
+        foreach (var import in ImportsNotFromDafnyModules.Concat(ModuleImports.Values).Concat(ExternModuleImports.Values)) {
           EmitImport(import, importWriter, importDummyWriter);
         }
       }
@@ -237,7 +316,8 @@ namespace Microsoft.Dafny.Compilers {
         if (GroupWriters.TryGetValue(group, out var groupWriter)) {
           return groupWriter;
         }
-        var groupImport = CreateImport(ModuleName, externModule, libraryName);
+        RegisterGroupExterns(group);
+        var groupImport = CreateImport(ModuleName, null, null);
         groupWriter = wr.NewFile($"{groupImport.Path}/{groupImport.Path}.go");
         EmitModuleHeader(groupWriter);
         GroupWriters.Add(group, groupWriter);
@@ -294,6 +374,11 @@ namespace Microsoft.Dafny.Compilers {
 
       var publicModuleName = module.RecursiveGroup == null
         ? PublicModuleIdProtect(module.GetCompileName(Options)) : GroupPackage(module);
+      if (module.RecursiveGroup is { } group) {
+        RegisterGroupExterns(group);
+        externModule = null;
+        libraryName = null;
+      }
       var import = CreateImport(publicModuleName, externModule, libraryName);
       import.Path = goModuleName + import.Path;
       AddImport(module, import);
@@ -1901,6 +1986,11 @@ namespace Microsoft.Dafny.Compilers {
     }
 
     internal override string TypeName_Companion(Type type, ConcreteSyntaxTree wr, IOrigin tok, MemberDecl/*?*/ member) {
+      if (member is Function { Body: null } &&
+          member.EnclosingClass.EnclosingModuleDefinition.RecursiveGroup != null &&
+          member.IsExtern(Options, out var qualifier, out _) && qualifier != null) {
+        return ExternQualifier(qualifier);
+      }
       type = UserDefinedType.UpcastToMemberEnclosingType(type, member);
       // XXX This duplicates some of the logic in UserDefinedTypeName, but if we
       // don't do it here, we end up passing the name of the module to
@@ -1908,7 +1998,8 @@ namespace Microsoft.Dafny.Compilers {
       if (type is UserDefinedType { ResolvedClass: not null } udt && IsExternMemberOfExternModule(member, udt.ResolvedClass)) {
         // omit the default class name ("_default") in extern modules, when the class is used to qualify an extern member
         Contract.Assert(!udt.ResolvedClass.EnclosingModuleDefinition.IsDefaultModule);  // default module is not marked ":extern"
-        return IdProtect(ModuleImports[udt.ResolvedClass.EnclosingModuleDefinition].Name);
+        var module = udt.ResolvedClass.EnclosingModuleDefinition;
+        return IdProtect((ExternModuleImports.GetValueOrDefault(module, ModuleImports[module])).Name);
       }
       return TypeName_Related(FormatCompanionName, type, wr, tok, member);
     }
@@ -2565,7 +2656,8 @@ namespace Microsoft.Dafny.Compilers {
     }
 
     private string IdName(Declaration decl) {
-      if (decl is TopLevelDecl top && top.EnclosingModuleDefinition.RecursiveGroup is { } group) {
+      if (decl is TopLevelDecl top && top.EnclosingModuleDefinition.RecursiveGroup is { } group &&
+          !top.IsExtern(Options, out _, out _)) {
         // A package contains several Dafny namespaces, including their default classes.
         // Prefix every top-level name; helpers derive their names from this same identity.
         var index = GroupMembers(group).ToList().IndexOf(top.EnclosingModuleDefinition);
@@ -2765,8 +2857,15 @@ namespace Microsoft.Dafny.Compilers {
     }
 
     private string UserDefinedTypeName(TopLevelDecl cl, bool full, MemberDecl/*?*/ member = null) {
+      if (cl is NonNullTypeDecl nonNull && cl.EnclosingModuleDefinition.RecursiveGroup != null &&
+          nonNull.Class.IsExtern(Options, out _, out _)) {
+        cl = nonNull.Class;
+      }
       string enclosingModuleDefinitionId;
-      if (CurrentModule?.RecursiveGroup != null &&
+      if ((cl.IsExtern(Options, out _, out _) || IsExternMemberOfExternModule(member, cl)) &&
+          ExternModuleImports.TryGetValue(cl.EnclosingModuleDefinition, out var externImport)) {
+        enclosingModuleDefinitionId = externImport.Name;
+      } else if (CurrentModule?.RecursiveGroup != null &&
           ModuleDefinition.InSameRecursiveGroup(CurrentModule, cl.EnclosingModuleDefinition)) {
         enclosingModuleDefinitionId = ModuleName;
       } else if (CurrentModule == cl.EnclosingModuleDefinition || cl.EnclosingModuleDefinition.IsDefaultModule) {
@@ -2782,7 +2881,9 @@ namespace Microsoft.Dafny.Compilers {
         if (cl.IsExtern(Options, out var qual, out _)) {
           // No need to take into account the second argument to extern, since
           // it'll already be cl.CompileName
-          if (qual == null) {
+          if (qual != null && cl.EnclosingModuleDefinition.RecursiveGroup != null && qual != "") {
+            qual = ExternQualifier(qual);
+          } else if (qual == null) {
             if (this.ModuleName == enclosingModuleDefinitionId) {
               qual = "";
             } else {

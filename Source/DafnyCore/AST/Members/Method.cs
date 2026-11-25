@@ -10,6 +10,13 @@ public class Method : MethodOrConstructor {
   public override bool HasStaticKeyword { get; }
   public bool IsByMethod { get; }
 
+  /// <summary>
+  /// For a reveal lemma that <see cref="OpaqueMemberRewriter"/> generated, or a copy of one, the member it reveals;
+  /// otherwise null.  It is held on the lemma, not in a table beside the program, so that a lemma reused from the
+  /// persistent resolution cache keeps it.
+  /// </summary>
+  internal MemberDecl? GeneratedRevealOf;
+
   public Method(Cloner cloner, Method original) : base(cloner, original) {
     body = cloner.CloneBlockStmt(original.Body);
     Outs = original.Outs.ConvertAll(p => cloner.CloneFormal(p, false));
@@ -29,8 +36,11 @@ public class Method : MethodOrConstructor {
     HasStaticKeyword = hasStaticKeyword;
   }
 
-  public override BlockStmt? Body => body;
+  public override BlockStmt? Body => BodyReleased ? throw ReleasedBodyRead() : body;
   public override void SetBody(BlockLikeStmt newBody) {
     body = (BlockStmt?)newBody;
+  }
+  protected override void DropBody() {
+    body = null;
   }
 }

@@ -124,7 +124,7 @@ def part(label, cwd, args, dafny, z3, cores, fixed, measurements=None):
     return rows + sorted(decls)
 
 
-def run(libdir, dafny, z3, out, cores=4, boogie=None, additional_axioms=False, measurements=None):
+def run(libdir, dafny, z3, out, cores=2, boogie=None, additional_axioms=False, measurements=None):
     if measurements is not None:
         os.makedirs(measurements, exist_ok=False)
     fixed = FIXED + (['--additional-axioms'] if additional_axioms else [])
@@ -212,7 +212,7 @@ if __name__ == '__main__':
     cmd, args = sys.argv[1], sys.argv[2:]
     if cmd == 'run':
         opts = dict(zip(args[4::2], args[5::2]))
-        run(*args[:4], cores=int(opts.get('--cores', '4')), boogie=opts.get('--boogie'),
+        run(*args[:4], cores=int(opts.get('--cores', '2')), boogie=opts.get('--boogie'),
             additional_axioms=opts.get('--additional-axioms', 'false') == 'true',
             measurements=opts.get('--measurements'))
     elif cmd == 'summary':

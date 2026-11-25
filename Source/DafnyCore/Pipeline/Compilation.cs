@@ -49,17 +49,19 @@ public class Compilation : IDisposable {
   /// FilePosition is required because the default module lives in multiple files
   /// </summary>
   private readonly LazyConcurrentDictionary<ModuleDefinition,
-    Task<IReadOnlyDictionary<ICanVerify, IReadOnlyList<IVerificationTask>>>> translatedModules = new();
+    Task<IReadOnlyDictionary<ICanVerify, IReadOnlyList<IVerificationWork>>>> translatedModules = new();
 
   private readonly ConcurrentDictionary<ModuleDefinition, ProofDependencyManager> moduleProofDependencies = new();
 
   private readonly ConcurrentDictionary<ICanVerify, Unit> verifyingOrVerifiedSymbols = new();
-  private readonly LazyConcurrentDictionary<ICanVerify, IReadOnlyList<IVerificationTask>> tasksPerVerifiable = new();
+  private readonly LazyConcurrentDictionary<ICanVerify, IReadOnlyList<IVerificationWork>> tasksPerVerifiable = new();
 
   public DafnyOptions Options => Input.Options;
   public CompilationInput Input { get; }
   public DafnyProject Project => Input.Project;
-  private readonly ExecutionEngine boogieEngine;
+  private readonly Func<ResolutionResult, ModuleDefinition, VerificationPreparationRequest> createPreparationRequest;
+  /// <summary>Lets the backend forget a reported module's work (F4 change 3); null releases nothing.</summary>
+  private readonly Func<IEnumerable<IVerificationWork>, int>? releaseWork;
 
   private readonly Subject<ICompilationEvent> updates = new();
   public IObservable<ICompilationEvent> Updates => updates;
@@ -88,9 +90,22 @@ public class Compilation : IDisposable {
     IProgramVerifier verifier,
     ExecutionEngine boogieEngine,
     CompilationInput input
-    ) {
+    ) : this(logger, fileSystem, documentLoader, verifier, input,
+      (resolution, module) => BoogieVerificationBackend.CreateRequest(boogieEngine, resolution, module),
+      work => BoogieVerificationBackend.ReleasePrograms(boogieEngine, work)) { }
+
+  /// <summary>The common scheduling path requires a backend request factory, not a Boogie engine.</summary>
+  public Compilation(
+    ILogger<Compilation> logger,
+    IFileSystem fileSystem,
+    ITextDocumentLoader documentLoader,
+    IProgramVerifier verifier,
+    CompilationInput input,
+    Func<ResolutionResult, ModuleDefinition, VerificationPreparationRequest> createPreparationRequest,
+    Func<IEnumerable<IVerificationWork>, int>? releaseWork = null) {
     Input = input;
-    this.boogieEngine = boogieEngine;
+    this.createPreparationRequest = createPreparationRequest;
+    this.releaseWork = releaseWork;
     profile = PipelineProfile.For(input.Options);
 
     this.documentLoader = documentLoader;
@@ -278,6 +293,13 @@ public class Compilation : IDisposable {
     updates.OnNext(new FinishedParsing(parseResult with { Program = programAfterParsing }));
     logger.LogDebug(
       $"Passed parsedCompilation to documentUpdates.OnNext, resolving ParsedCompilation task for version {Input.Version}.");
+    if (Input.OneShot) {
+      // Only formatting and the IDE read the parsed program after FinishedParsing; a one-shot run has
+      // neither, so the clone, about a whole AST, need not live while the program is resolved and
+      // verified.  It is still made, so that the run is otherwise the same.
+      programAfterParsing = null;
+      return null;
+    }
     return programAfterParsing;
   }
 
@@ -330,16 +352,16 @@ public class Compilation : IDisposable {
   /// <summary>
   /// The ICanVerify that a verification task was translated from.
   /// </summary>
-  public static ICanVerify GetCanVerify(IVerificationTask task) {
-    return ((CanVerifyOrigin)task.ScopeToken).CanVerify;
+  public static ICanVerify GetCanVerify(IVerificationWork task) {
+    return task.Source.CanVerify ?? throw new InvalidOperationException("Verification work has no source owner");
   }
 
-  public static string GetTaskName(IVerificationTask task) {
-    var prefix = task.ScopeId + task.Split.SplitIndex;
+  public static string GetTaskName(IVerificationWork task) {
+    var prefix = task.Source.Id.Scope + task.Source.Id.Part;
 
     // Refining declarations get the token of what they're refining, so to distinguish them we need to
     // add the refining module name to the prefix.
-    if (task.ScopeToken is RefinementOrigin refinementToken) {
+    if (task.Source.ScopeOrigin is RefinementOrigin refinementToken) {
       prefix += "." + refinementToken.InheritingModule.Name;
     }
 
@@ -348,7 +370,7 @@ public class Compilation : IDisposable {
 
   // When verifying a symbol, a ticket must be acquired before the SMT part of verification may start.
   private readonly AsyncQueue<Unit> verificationTickets = new();
-  public async Task<bool> VerifyLocation(FilePosition verifiableLocation, Func<IVerificationTask, bool>? taskFilter = null,
+  public async Task<bool> VerifyLocation(FilePosition verifiableLocation, Func<IVerificationWork, bool>? taskFilter = null,
     int? randomSeed = null,
     bool onlyPrepareVerificationForGutterTests = false) {
     cancellationSource.Token.ThrowIfCancellationRequested();
@@ -379,7 +401,7 @@ public class Compilation : IDisposable {
     return [];
   }
 
-  public async Task<bool> VerifyCanVerify(ICanVerify canVerify, Func<IVerificationTask, bool> taskFilter,
+  public async Task<bool> VerifyCanVerify(ICanVerify canVerify, Func<IVerificationWork, bool> taskFilter,
     int? randomSeed = 0,
     bool onlyPrepareVerificationForGutterTests = false) {
 
@@ -409,25 +431,26 @@ public class Compilation : IDisposable {
   }
 
   private async Task VerifyUnverifiedSymbol(bool onlyPrepareVerificationForGutterTests, ICanVerify canVerify,
-    ResolutionResult resolution, Func<IVerificationTask, bool> taskFilter, int? randomSeed) {
+    ResolutionResult resolution, Func<IVerificationWork, bool> taskFilter, int? randomSeed) {
     try {
 
       var ticket = verificationTickets.Dequeue();
       var containingModule = canVerify.ContainingModule;
 
-      IReadOnlyDictionary<ICanVerify, IReadOnlyList<IVerificationTask>> tasksForModule;
+      IReadOnlyDictionary<ICanVerify, IReadOnlyList<IVerificationWork>> tasksForModule;
       try {
         tasksForModule = await translatedModules.GetOrAdd(containingModule, async () => {
-          var result = await verifier.GetVerificationTasksAsync(boogieEngine, resolution, containingModule,
+          var result = await verifier.GetVerificationTasksAsync(
+            createPreparationRequest(resolution, containingModule), resolution, containingModule,
             cancellationSource.Token);
 
           moduleProofDependencies[containingModule] = result.ProofDependencies;
-          return result.Tasks.GroupBy(GetCanVerify).ToDictionary(
+          return result.Preparation.GetWorkOrThrow().GroupBy(GetCanVerify).ToDictionary(
             g => g.Key,
             // A copy from a refinement base is scheduled only for the checks its module must make itself;
             // its other tasks assert nothing new.
-            g => (IReadOnlyList<IVerificationTask>)g.Where(t =>
-              !g.Key.Origin.IsCopy || ((CanVerifyOrigin)t.ScopeToken).IsReverifiedInheritedCheck).ToList());
+            g => (IReadOnlyList<IVerificationWork>)g.Where(t =>
+              !g.Key.Origin.IsCopy || t.Source.IsReverifiedInheritedCheck).ToList());
         });
       } catch (OperationCanceledException) {
         throw;
@@ -441,7 +464,7 @@ public class Compilation : IDisposable {
       var tasks = tasksPerVerifiable.GetOrAdd(canVerify, () => {
         var result =
           tasksForModule.GetValueOrDefault(canVerify) ??
-          new List<IVerificationTask>(0);
+          new List<IVerificationWork>(0);
 
         updated = true;
         return result;
@@ -457,9 +480,7 @@ public class Compilation : IDisposable {
         var groups = GroupOverlappingRanges(tasks).
           OrderBy(g => g.Group.StartToken);
         foreach (var tokenTasks in groups) {
-          var functions = tokenTasks.Tasks.SelectMany(t => t.Split.HiddenFunctions.Select(f => f.tok).
-            OfType<FromDafnyNode>().Select(n => n.Node).
-            OfType<Function>()).Distinct().OrderBy(f => f.Origin.Center);
+          var functions = tokenTasks.Tasks.SelectMany(t => t.HiddenFunctions).Distinct().OrderBy(f => f.Origin.Center);
           var hiddenFunctions = string.Join(", ", functions.Select(f => f.FullDafnyName));
           if (!string.IsNullOrEmpty(hiddenFunctions)) {
             Reporter.Info(MessageSource.Verifier,
@@ -482,19 +503,19 @@ public class Compilation : IDisposable {
   }
 
 
-  public static IEnumerable<(TokenRange Group, List<IVerificationTask> Tasks)> GroupOverlappingRanges(IReadOnlyList<IVerificationTask> ranges) {
+  public static IEnumerable<(TokenRange Group, List<IVerificationWork> Tasks)> GroupOverlappingRanges(IReadOnlyList<IVerificationWork> ranges) {
     if (!ranges.Any()) {
       return [];
     }
     var sortedTasks = ranges.OrderBy(r =>
-      BoogieGenerator.ToDafnyToken(r.Token).ReportingRange.StartToken).ToList();
-    var groups = new List<(TokenRange Group, List<IVerificationTask> Tasks)>();
-    var currentGroup = new List<IVerificationTask> { sortedTasks[0] };
-    var currentGroupRange = BoogieGenerator.ToDafnyToken(currentGroup[0].Token).ReportingRange;
+      r.Source.Origin.ReportingRange.StartToken).ToList();
+    var groups = new List<(TokenRange Group, List<IVerificationWork> Tasks)>();
+    var currentGroup = new List<IVerificationWork> { sortedTasks[0] };
+    var currentGroupRange = currentGroup[0].Source.Origin.ReportingRange;
 
     for (int i = 1; i < sortedTasks.Count; i++) {
       var currentTask = sortedTasks[i];
-      var currentTaskRange = BoogieGenerator.ToDafnyToken(currentTask.Token).ReportingRange;
+      var currentTaskRange = currentTask.Source.Origin.ReportingRange;
       bool overlapsWithGroup = currentGroupRange.Intersects(currentTaskRange);
 
       if (overlapsWithGroup) {
@@ -513,11 +534,11 @@ public class Compilation : IDisposable {
     return groups;
   }
 
-  private void VerifyTask(ICanVerify canVerify, IVerificationTask task) {
+  private void VerifyTask(ICanVerify canVerify, IVerificationWork task) {
     profile?.TaskSubmitted(task);
     var statusUpdates = task.TryRun();
     if (statusUpdates == null) {
-      if (task.CacheStatus is Completed completedCache) {
+      if (task.CacheStatus is VerificationWorkCompleted completedCache) {
         profile?.TaskStatus(PipelineProfile.ModuleName(canVerify.ContainingModule), canVerify.FullDafnyName, task, completedCache, true);
         HandleStatusUpdate(canVerify, task, completedCache);
       }
@@ -535,7 +556,7 @@ public class Compilation : IDisposable {
         }
       },
       e => {
-        updates.OnNext(new BoogieException(canVerify, task, e));
+        updates.OnNext(new VerificationException(canVerify, task, e));
         if (e is not OperationCanceledException) {
           logger.LogError(e, $"Caught error in statusUpdates observable.");
         }
@@ -552,7 +573,7 @@ public class Compilation : IDisposable {
     var canVerifies = GetCanVerify(filePosition, resolution);
     foreach (var canVerify in canVerifies) {
       var implementations = tasksPerVerifiable.TryGetValue(canVerify, out var implementationsPerName)
-        ? implementationsPerName! : Enumerable.Empty<IVerificationTask>();
+        ? implementationsPerName! : Enumerable.Empty<IVerificationWork>();
       foreach (var view in implementations) {
         view.Cancel();
       }
@@ -560,13 +581,13 @@ public class Compilation : IDisposable {
     }
   }
 
-  private void HandleStatusUpdate(ICanVerify canVerify, IVerificationTask verificationTask, IVerificationStatus boogieStatus) {
-    var tokenString = BoogieGenerator.ToDafnyToken(verificationTask.Split.Token).OriginToString(Options);
-    logger.LogDebug($"Received Boogie status {boogieStatus} for {tokenString}, version {Input.Version}");
+  private void HandleStatusUpdate(ICanVerify canVerify, IVerificationWork verificationTask, VerificationWorkStatus status) {
+    var tokenString = verificationTask.Source.Origin.OriginToString(Options);
+    logger.LogDebug($"Received verification status {status} for {tokenString}, version {Input.Version}");
 
-    updates.OnNext(new BoogieUpdate(moduleProofDependencies[canVerify.ContainingModule], canVerify,
+    updates.OnNext(new VerificationUpdate(moduleProofDependencies[canVerify.ContainingModule], canVerify,
       verificationTask,
-      boogieStatus));
+      status));
   }
 
   public void CancelPendingUpdates() {
@@ -579,6 +600,9 @@ public class Compilation : IDisposable {
   }
 
   public async Task<TextEditContainer?> GetTextEditToFormatCode(Uri uri) {
+    if (Input.OneShot) {
+      throw new InvalidOperationException("A one-shot compilation does not keep the parsed program that formatting reads");
+    }
     var program = await ParsedProgram;
     if (program == null) {
       return null;
@@ -818,9 +842,76 @@ public class Compilation : IDisposable {
     }
   }
 
+  /// <summary>
+  /// Forgets the module's translation, after its symbols are reported.  Its Boogie programs will not
+  /// be verified again (a later request translates the module again), so the idle solver checkers
+  /// last set up for them forget them too; otherwise each keeps its last program, and that program's
+  /// prover context, alive until it is set up for another (issue 241, F4 change 3).  That sends the
+  /// solvers nothing and changes nothing they receive.
+  /// </summary>
   public void ClearModuleCache(ModuleDefinition moduleDefinition) {
+    translatedModules.TryGetValue(moduleDefinition, out var translation);
     translatedModules.Remove(moduleDefinition);
     moduleProofDependencies.TryRemove(moduleDefinition, out _);
+    if (translation is { IsCompletedSuccessfully: true }) {
+      ReleaseBoogiePrograms(translation.Result.Values.SelectMany(tasks => tasks));
+    }
+  }
+
+  /// <summary>
+  /// For --release-verified-modules: drops the bodies of the module's methods, lemmas, constructors
+  /// and iterators once the module is verified and reported.  Translating another module reads only
+  /// their signatures and specifications, so nothing reads the bodies again; a read that does throws
+  /// (see <see cref="MethodOrConstructor.ReleaseBody"/>) rather than see a body that is gone.  Returns
+  /// the number of bodies released.
+  /// </summary>
+  public int ReleaseModuleBodies(ModuleDefinition moduleDefinition) {
+    var released = 0;
+    foreach (var decl in moduleDefinition.TopLevelDecls) {
+      if (decl is IteratorDecl iterator) {
+        iterator.ReleaseBody();
+        released++;
+      }
+      if (decl is TopLevelDeclWithMembers withMembers) {
+        // The translation of every module visits each member for {:only} assertions; a body that
+        // holds one is kept, so that the visit of the member without its body finds the same ones.
+        foreach (var member in withMembers.Members.OfType<MethodOrConstructor>()) {
+          if (member.Body == null || !HoldsAssertOnly(member.Body)) {
+            member.ReleaseBody();
+            released++;
+          }
+        }
+      }
+    }
+    Interlocked.Add(ref releasedBodies, released);
+    profile?.Point("release", new Dictionary<string, object?> {
+      ["module"] = PipelineProfile.ModuleName(moduleDefinition),
+      ["bodies"] = released
+    });
+    return released;
+  }
+
+  private static bool HoldsAssertOnly(Node body) {
+    var holds = false;
+    body.Visit(node => {
+      holds |= node is AssertStmt assertStmt && assertStmt.HasAssertOnlyAttribute(out _);
+      return !holds;
+    });
+    return holds;
+  }
+
+  /// <summary>The number of bodies released by <see cref="ReleaseModuleBodies"/>, for tests.</summary>
+  public int ReleasedBodies => releasedBodies;
+  private int releasedBodies;
+
+  /// <summary>The number of solver checkers released by <see cref="ClearModuleCache"/>, for tests.</summary>
+  public int ReleasedCheckers => releasedCheckers;
+  private int releasedCheckers;
+
+  private void ReleaseBoogiePrograms(IEnumerable<IVerificationWork> work) {
+    if (releaseWork != null) {
+      Interlocked.Add(ref releasedCheckers, releaseWork(work));
+    }
   }
 
   public void ClearCanVerifyCache(ICanVerify canVerify, bool allowRepeat = false) {

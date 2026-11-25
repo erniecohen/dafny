@@ -65,7 +65,7 @@ public class CliCompilation {
 
     options.RunningBoogieFromCommandLine = true;
 
-    var input = new CompilationInput(options, 0, options.DafnyProject);
+    var input = new CompilationInput(options, 0, options.DafnyProject) { OneShot = true };
     var executionEngine = new ExecutionEngine(options, new EmptyVerificationResultCache(), DafnyMain.LargeThreadScheduler);
     Compilation = createCompilation(executionEngine, input);
   }
@@ -113,8 +113,9 @@ public class CliCompilation {
         new TextDocumentLoader(factory.CreateLogger<ITextDocumentLoader>(),
           new DafnyLangParser(options, fileSystem, telemetryPublisher,
             factory.CreateLogger<DafnyLangParser>(),
-            factory.CreateLogger<CachingParser>()),
-          new DafnyLangSymbolResolver(factory.CreateLogger<DafnyLangSymbolResolver>(), factory.CreateLogger<CachingResolver>(), telemetryPublisher)),
+            factory.CreateLogger<CachingParser>(), oneShot: input.OneShot),
+          new DafnyLangSymbolResolver(factory.CreateLogger<DafnyLangSymbolResolver>(), factory.CreateLogger<CachingResolver>(),
+            telemetryPublisher, oneShot: input.OneShot)),
         programVerifier ?? new DafnyProgramVerifier(factory.CreateLogger<DafnyProgramVerifier>()), engine, input);
   }
 
@@ -206,21 +207,21 @@ public class CliCompilation {
         }
       }
 
-      if (ev is BoogieException boogieException) {
-        var canVerifyResult = canVerifyResults[boogieException.CanVerify];
-        canVerifyResult.Finished.SetException(boogieException.Exception);
+      if (ev is VerificationException verificationException) {
+        var canVerifyResult = canVerifyResults[verificationException.CanVerify];
+        canVerifyResult.Finished.SetException(verificationException.Exception);
       }
 
-      if (ev is BoogieUpdate { BoogieStatus: Completed completed } boogieUpdate) {
-        var canVerifyResult = canVerifyResults[boogieUpdate.CanVerify];
-        canVerifyResult.ProofDependencies = boogieUpdate.ProofDependencyManager;
-        canVerifyResult.CompletedParts.Enqueue((boogieUpdate.VerificationTask, completed));
+      if (ev is VerificationUpdate { Status: VerificationWorkCompleted completed } verificationUpdate) {
+        var canVerifyResult = canVerifyResults[verificationUpdate.CanVerify];
+        canVerifyResult.ProofDependencies = verificationUpdate.ProofDependencyManager;
+        canVerifyResult.CompletedParts.Enqueue((verificationUpdate.VerificationTask, completed));
         var completedPartsCount = Interlocked.Increment(ref canVerifyResult.CompletedCount);
 
         if (Options.Get(CommonOptionBag.ProgressOption) == CommonOptionBag.ProgressLevel.Batch) {
-          var partOrigin = boogieUpdate.VerificationTask.Split.Token;
+          var partOrigin = BoogieVerificationReporting.GetTask(verificationUpdate.VerificationTask).Split.Token;
 
-          var wellFormedness = boogieUpdate.VerificationTask.Split.Implementation.Name.Contains("CheckWellFormed$");
+          var wellFormedness = BoogieVerificationReporting.GetTask(verificationUpdate.VerificationTask).Split.Implementation.Name.Contains("CheckWellFormed$");
 
           string OriginDescription(IImplementationPartOrigin origin, bool outer) {
             if (outer && origin is ImplementationRootOrigin) {
@@ -246,10 +247,10 @@ public class CliCompilation {
             return result;
           }
 
-          var runResult = completed.Result;
+          var runResult = BoogieVerificationReporting.GetResult(completed.Result);
           var timeString = runResult.RunTime.ToString("g");
           _ = Options.OutputWriter.Status(
-            $"Verified {completedPartsCount}/{canVerifyResult.TaskCount} of {boogieUpdate.CanVerify.FullDafnyName}: " +
+            $"Verified {completedPartsCount}/{canVerifyResult.TaskCount} of {verificationUpdate.CanVerify.FullDafnyName}: " +
             $"{OriginDescription(partOrigin, true)} - " +
             $"{DescribeOutcome(Compilation.GetOutcome(runResult.Outcome))}" +
             $" (time: {timeString}, resource count: {runResult.ResourceCount})");
@@ -299,10 +300,13 @@ public class CliCompilation {
 
     int done = 0;
 
+    // A batch verifies the program again for each request, so it never releases bodies; the command
+    // rejects --release-verified-modules with --filter-position-batch.
+    var releaseVerifiedModules = !repeatVerification && Options.Get(VerifyCommand.ReleaseVerifiedModules);
     var window = Options.Get(VerifyCommand.VerificationModuleWindow);
     if (window > 1) {
       await foreach (var result in VerifyModuleWindow((int)Math.Min(window, int.MaxValue), canVerifies, canVerifyResults,
-                       filterRange, randomSeed, repeatVerification, requestDependencies)) {
+                       filterRange, randomSeed, repeatVerification, requestDependencies, releaseVerifiedModules)) {
         yield return result;
       }
       yield break;
@@ -369,7 +373,7 @@ public class CliCompilation {
         }
 
         yield return new CanVerifyResult(canVerify,
-          results.CompletedParts.Select(c => new VerificationTaskResult(c.Task, c.Result.Result)).ToList()) {
+          results.CompletedParts.Select(c => BoogieVerificationReporting.GetTaskResult(c.Task, c.Result.Result)).ToList()) {
           ProofDependencies = results.ProofDependencies
         };
 
@@ -378,6 +382,9 @@ public class CliCompilation {
       }
       var moduleCompleted = profile?.Now;
       Compilation.ClearModuleCache(canVerifiesForModule.Key);
+      if (releaseVerifiedModules) {
+        Compilation.ReleaseModuleBodies(canVerifiesForModule.Key);
+      }
       // admitted: the CLI started this module's symbols; scheduled: all of them were handed to the
       // compilation; completed: the last of them finished; released: its cache was cleared and
       // the next module may start (the per-module barrier).
@@ -408,7 +415,7 @@ public class CliCompilation {
     IReadOnlyList<ICanVerify> canVerifies,
     ConcurrentDictionary<ICanVerify, CliCanVerifyState> canVerifyResults,
     LineRange filterRange, int? randomSeed, bool repeatVerification,
-    ProofDependencyManager requestDependencies) {
+    ProofDependencyManager requestDependencies, bool releaseVerifiedModules) {
     var modules = canVerifies.GroupBy(c => c.ContainingModule).
       OrderBy(v => v.Key.Origin.pos).
       Select(g => new ModuleWindowSlot(g.Key, g.OrderBy(v => v.Origin.pos).ToList())).
@@ -531,14 +538,20 @@ public class CliCompilation {
           }
 
           yield return new CanVerifyResult(canVerify,
-            results.CompletedParts.Select(c => new VerificationTaskResult(c.Task, c.Result.Result)).ToList()) {
+            results.CompletedParts.Select(c => BoogieVerificationReporting.GetTaskResult(c.Task, c.Result.Result)).ToList()) {
             ProofDependencies = results.ProofDependencies
           };
 
           canVerifyResults.TryRemove(canVerify, out _); // Free memory
           Compilation.ClearCanVerifyCache(canVerify, repeatVerification);
         }
+        // The slot stays in the window's list until the run ends; it must not keep the states, and
+        // through them the verification tasks and results, of a module already reported.
+        slot.Reported();
         Compilation.ClearModuleCache(slot.Module);
+        if (releaseVerifiedModules) {
+          Compilation.ReleaseModuleBodies(slot.Module);
+        }
         // The live heap once this module is reported and released, with later modules in flight.
         windowProfile?.HeapPoint("module", new Dictionary<string, object?> {
           ["module"] = PipelineProfile.ModuleName(slot.Module),
@@ -595,6 +608,11 @@ public class CliCompilation {
         deferred.Clear();
         released = true;
       }
+    }
+
+    public void Reported() {
+      States.Clear();
+      ToAwait.Clear();
     }
 
     public void Abandon() {
@@ -687,8 +705,8 @@ public class CliCompilation {
 
   }
 
-  private bool KeepVerificationTask(IVerificationTask task, LineRange range) {
-    return range.Contains(task.ScopeToken.line) || range.Contains(task.Token.line);
+  private bool KeepVerificationTask(IVerificationWork task, LineRange range) {
+    return range.Contains(task.Source.ScopeOrigin.line) || range.Contains(task.Source.Origin.line);
   }
 }
 

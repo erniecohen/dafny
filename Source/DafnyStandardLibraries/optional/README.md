@@ -1,14 +1,20 @@
 # Bounded-integer bitwise reference model
 
-This source-only companion implements the mathematical milestone of
+`IntegerBitwise.dfy` implements the mathematical milestone of
 https://github.com/erniecohen/dafny/issues/193 and the design in
 https://github.com/erniecohen/dafny/pull/247. Include `IntegerBitwise.dfy`
 explicitly to use `Std.Arithmetic.IntegerBitwise`.
 
-The optional directory is outside the existing `src/Std` project. No packaged
-`.doo` changes, implicit imports, new options, compiler intrinsics, or solver
-facts are introduced. This placement is proposed for the reference-only stage;
-the compiler-owned definitions and unfolding mechanism belong to a later stage.
+The optional directory is outside the existing `src/Std` project. The original
+M1 sources need no feature option and change no packaged `.doo`.
+
+For the M2 compiler-owned interface, include `IntegerBitwiseCompiler.dfy` and
+enable `--integer-bitwise`. It proves agreement between all twelve raw references
+and M1 in the separate `IntegerBitwiseCompilerFoundation.dfy` verification
+input, then exposes checked range contracts and transports the existing laws.
+Its module is `Std.Arithmetic.IntegerBitwiseCompiler`. See
+[the interface, mapping and model argument](../../../docs/dev/integer-bitwise-references.md).
+The separate digit adapter continues to use the original ordinary model.
 
 `P(n)` is the exact power of two. All integer reference functions are total,
 including negative arguments and width zero. `norm(n,a)` is Euclidean remainder.
@@ -68,9 +74,15 @@ This is operational non-vacuity evidence, not a claim of SAT for the entire
 unsliced solver prelude. The independent generic proofs remain the mathematical
 justification. Ordinary proof bodies have a separate 2-million-RU per-scope cap.
 
-Both-off compatibility is structural: all pre-existing compiler, runtime,
-build, source-library and embedded-library inputs remain byte-identical to the
-recorded predecessor. CI enforces that boundary and runs the existing full
-suite/source-Std verdict gates; the new fixture has its own added verdict row.
-The unavailable integer-bitwise/user-operator flag combinations remain later
-implementation gates, as specified in the coordinated design.
+M1's historical both-off compatibility claim and unavailable flag modes remain
+scoped to its introducing revision, as recorded in the design. M2 has separate
+compiler identity, emission, bootstrap, control and comparison gates; the original
+historical audit does not establish compatibility for a later product change.
+
+`IntegerBitwiseNative.dfy` is the explicitly included checked native Boolean
+companion. With `--integer-bitwise`, its width-specific modules prove conversion
+round trips and AND/complement/OR/XOR/ANDNOT equations at 8, 16, 32 and 64 bits.
+It works independently of `--additional-axioms`; all helper and bridge bodies
+are verification inputs. See the model arguments and API in the implementation
+notes linked above. Shift/arithmetic/rotation bridges and runtime lowering remain
+later milestones.
