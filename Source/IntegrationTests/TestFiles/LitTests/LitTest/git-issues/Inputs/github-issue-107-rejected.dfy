@@ -141,7 +141,7 @@ module Original {
 }
 
 module RedeclaresAsCopy refines Original {
-  import X := Plain  // error: X is inherited
+  import X := Shapes  // error: Shapes does not refine Plain
 }
 
 module RedeclaresAsImport refines Original {

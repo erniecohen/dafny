@@ -563,6 +563,7 @@ git-issues/git-issue-105-traits.dfy	4	21 verified, 22 errors	25,30,55,58,64,89,1
 git-issues/git-issue-105-vacuity.dfy	0	5 verified, 0 errors	
 git-issues/git-issue-105-verify.dfy	4	5 verified, 4 errors	13,20,26,34
 git-issues/git-issue-105-wellformedness.dfy	4	12 verified, 2 errors	52,57
+git-issues/git-issue-107-rebind.dfy	0	13 verified, 0 errors
 git-issues/git-issue-1074.dfy	0	3 verified, 0 errors	
 git-issues/git-issue-1093.dfy	0	2 verified, 0 errors	
 git-issues/git-issue-1094.dfy	0	12 verified, 0 errors	

@@ -2605,7 +2605,9 @@ or the Dafny 4 syntax (`ghost function` and `function`)
 * `--copy-imports` - accept the copying import `import X := Q`, which gives the importing
   module a copy of the module `Q`, named `X`. The types of the copy are different from those
   of `Q` and of every other copy of `Q`; its functions and constants have the definitions of
-  `Q`. A module that refines the importing module gets copies of its own. Without the option,
+  `Q`. A module that refines the importing module gets copies of its own and may rebind an
+  inherited copy by another copying import whose target is the previous target or refines it.
+  The rebinding keeps `opened` and every explicitly named export set. Without the option,
   the syntax is a parse error. A library built with the option can be used only with the
   option. Disabled by default. Use `copy-imports = true` in a project file's `[options]`
   section. See [copying imports](#sec-copying-imports).
