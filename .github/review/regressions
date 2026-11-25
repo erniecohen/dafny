@@ -1119,6 +1119,8 @@ git-issues/git-issue-261-resolution-cache-options.dfy
 git-issues/git-issue-466-java.dfy
 git-issues/git-issue-466-go.dfy
 git-issues/git-issue-466-go-extern.dfy
+git-issues/git-issue-466-js.dfy
+git-issues/git-issue-466-js-extern.dfy
 git-issues/git-issue-466-python.dfy
 git-issues/git-issue-466-python-extern.dfy
 git-issues/git-issue-466-python-link.dfy
