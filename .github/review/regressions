@@ -1147,3 +1147,4 @@ git-issues/git-issue-574.dfy
 git-issues/git-issue-572.dfy
 hofs/ReadsReads.dfy
 hofs/Apply.dfy
+git-issues/git-issue-374-partial-stdlib.dfy
