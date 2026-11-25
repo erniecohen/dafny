@@ -20,7 +20,24 @@ public class IteratorDecl : ClassDecl, IMethodCodeContext, ICanVerify, ICodeCont
   public List<AttributedExpression> Ensures;
   public List<AttributedExpression> YieldRequires;
   public List<AttributedExpression> YieldEnsures;
-  public BlockStmt Body;
+  private BlockStmt body;
+  public BlockStmt Body {
+    get => BodyReleased ? throw new System.InvalidOperationException(
+      $"internal error: the body of {FullDafnyName} was read after --release-verified-modules released it") : body;
+    set => body = value;
+  }
+
+  /// <summary>
+  /// Whether <see cref="ReleaseBody"/> has dropped the body; a later read of <see cref="Body"/> throws.
+  /// </summary>
+  public bool BodyReleased { get; private set; }
+
+  /// <summary>Drops the body; see <see cref="MethodOrConstructor.ReleaseBody"/>.</summary>
+  public void ReleaseBody() {
+    BodyReleased = true;
+    body = null!;
+  }
+
   public bool SignatureIsOmitted => SignatureEllipsis != null;
   public IOrigin? SignatureEllipsis;
   public List<Field> OutsFields;

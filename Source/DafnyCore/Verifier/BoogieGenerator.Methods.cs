@@ -218,7 +218,9 @@ namespace Microsoft.Dafny {
         }
 
       }
-      if (!m.HasVerifyFalseAttribute && m.Body != null && BodyInVerificationScope(m)) {
+      // The scope is checked first: a member of another module, whose body --release-verified-modules
+      // may have released, is not in it.
+      if (!m.HasVerifyFalseAttribute && BodyInVerificationScope(m) && m.Body != null) {
         // ...and its implementation
         assertionCount = 0;
         var proc = AddMethod(m, MethodTranslationKind.Implementation);
@@ -1053,8 +1055,10 @@ namespace Microsoft.Dafny {
         return true;
       }
       var module = member.EnclosingClass.EnclosingModuleDefinition;
-      return MustVerifyCopiedBody(member) && !module.IsFacade &&
-             module.ShouldVerify(program.Compilation) && member.IsVisibleInScope(verificationScope);
+      // The visibility, which a member of another module lacks, is tested before anything that reads the
+      // body, which --release-verified-modules may have released.
+      return member.IsVisibleInScope(verificationScope) && !module.IsFacade &&
+             module.ShouldVerify(program.Compilation) && MustVerifyCopiedBody(member);
     }
 
     /// <summary>
@@ -1930,7 +1934,15 @@ namespace Microsoft.Dafny {
     // Return a way to know if an assertion should be converted to an assumption
     private void SetAssertionOnlyFilter(Node m) {
       List<TokenRange> rangesOnly = [];
-      m.Visit(node => {
+      // A member of another module whose body --release-verified-modules released: the body held no
+      // {:only} assertion (Compilation.ReleaseModuleBodies keeps a body that does), so the rest of the
+      // member, visited in the same order and each node once, gives the same ranges.
+      var released = m is MethodOrConstructor { BodyReleased: true } member ? member : null;
+      var seen = released == null ? null : new HashSet<INode>(ReferenceEqualityComparer.Instance);
+      bool Visitor(INode node) {
+        if (seen != null && !seen.Add(node)) {
+          return false;
+        }
         if (node is AssertStmt assertStmt &&
             assertStmt.HasAssertOnlyAttribute(out var assertOnlyKind)) {
           var ifAfterLastToken = m.EndToken;
@@ -1957,7 +1969,14 @@ namespace Microsoft.Dafny {
           rangesOnly.Add(rangeToAdd);
         }
         return true;
-      });
+      }
+      if (released == null) {
+        m.Visit(Visitor);
+      } else {
+        foreach (var child in released.ChildrenOtherThanBody) {
+          ((Node)child).Visit(Visitor);
+        }
+      }
       if (rangesOnly.Any()) {
         // TODO: What to do with refined postconditions?
         assertionOnlyFilter = token => rangesOnly.Any(range => range.Contains(token));

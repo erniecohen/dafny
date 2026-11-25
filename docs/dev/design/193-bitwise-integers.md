@@ -1744,6 +1744,16 @@ are in [the implementation notes](../integer-bitwise-references.md). This does
 not implement M3a/M3b or any runtime milestone; compiled operators are rejected
 through the reference functions' ghost restriction.
 
+The next implementation uses checked optional-source bridge proofs instead of
+adding the design's proposed trusted bridge instances. Its Boolean/conversion
+sub-milestone provides native width-8/16/32/64 round trips and
+AND/complement/OR/XOR/ANDNOT equations, with every helper body checked and no
+new assumptions. It requires explicit inclusion and `--integer-bitwise`,
+independently of `--additional-axioms`. The per-rule model arguments, live
+controls, mutation gate and remaining bridge families are recorded in
+[the implementation notes](../integer-bitwise-references.md#checked-native-boolean-bridges).
+The proposed arithmetic/shift emitter is not attributed to these checked proofs.
+
 M3a/M3b may proceed independently after M2's identity and definition interface is
 stable, but each must rerun the cumulative shared-option controls. Backend PRs
 may proceed in parallel after M4 fixes the resolved operation representation.

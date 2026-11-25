@@ -1354,6 +1354,7 @@ git-issues/github-issue-23-lambda.dfy	4	1 verified, 1 error	11
 git-issues/github-issue-23-ordinal-subset.dfy	0	1 verified, 0 errors	
 git-issues/github-issue-23-ordinal-undefined.dfy	4	0 verified, 2 errors	8,9
 git-issues/github-issue-241-cache-background.dfy	4	29 verified, 4 errors	39,57,75,80
+git-issues/github-issue-241-release-verified-modules.dfy	4	24 verified, 1 error	69
 git-issues/github-issue-241-translation-workers.dfy	4	18 verified, 1 error	112,117
 git-issues/github-issue-2563.dfy	4	0 verified, 0 errors	
 git-issues/github-issue-26-ten.dfy	0	0 verified, 0 errors	
@@ -1439,3 +1440,4 @@ hofs/Types.dfy	2		9,14,18,26
 hofs/Underspecified.dfy	2		6,7,8
 hofs/VectorUpdate.dfy	0	8 verified, 0 errors	
 hofs/WhileLoop.dfy	0	4 verified, 0 errors	
+git-issues/git-issue-569.dfy	4	5 verified, 4 errors	33,36,37,38
