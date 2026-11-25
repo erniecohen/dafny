@@ -509,6 +509,7 @@ proofs and does not establish that the whole project is verified.
 - Scheduling
    - `--verification-module-window`
    - `--verification-module-window-memory`
+   - `--release-verified-modules`
    - `--translation-workers`
 
 By default `dafny verify` verifies one module at a time: it starts every symbol of a
@@ -539,6 +540,20 @@ A proof's verdict and resource count do not depend on K: each proof sends the so
 the same commands. A proof limited by `--verification-time-limit`, though, can
 finish just before or just after its limit depending on how busy the machine is, as
 it can with a different `--cores`.
+
+A one-shot `dafny verify` keeps, after each module is reported, neither that module's
+translation nor the solver state set up for it. The opt-in `--release-verified-modules`
+also drops the bodies of the module's methods, lemmas, constructors and iterators once
+the module is reported, so that a large program's memory does not grow with every
+module verified. The translation of a later module reads only the signatures and
+specifications of earlier modules' members, so the output is the same as without the
+option; any later read of a dropped body stops the run with an internal error rather
+than see a body that is gone. A body that holds an `{:only}` assertion is kept. The
+option cannot be combined with `--filter-position-batch`, which verifies the program
+again for each request, or with `--verification-coverage-report`, which reads the
+program after every module is reported. With `--cores` and
+`--verification-module-window`, one such process can verify a program that would
+otherwise be split across several processes to bound their memory.
 
 The opt-in `--translation-workers N` ([#241](https://github.com/erniecohen/dafny/issues/241)),
 for N greater than 1, translates to Boogie and prepares for verification up to N of
@@ -2605,7 +2620,9 @@ or the Dafny 4 syntax (`ghost function` and `function`)
 * `--copy-imports` - accept the copying import `import X := Q`, which gives the importing
   module a copy of the module `Q`, named `X`. The types of the copy are different from those
   of `Q` and of every other copy of `Q`; its functions and constants have the definitions of
-  `Q`. A module that refines the importing module gets copies of its own. Without the option,
+  `Q`. A module that refines the importing module gets copies of its own and may rebind an
+  inherited copy by another copying import whose target is the previous target or refines it.
+  The rebinding keeps `opened` and every explicitly named export set. Without the option,
   the syntax is a parse error. A library built with the option can be used only with the
   option. Disabled by default. Use `copy-imports = true` in a project file's `[options]`
   section. See [copying imports](#sec-copying-imports).
@@ -2843,9 +2860,16 @@ and what information it produces about the verification process.
 * `--integer-bitwise` - enable the compiler-owned ghost class
   `IntegerBitwiseModel` and its explicit one-step definition-unfold lemmas for
   powers, normalization, Boolean operations, shifts, rotations and population
-  count. Disabled by default. This reference-only milestone does not enable
-  integer-newtype operators or native bitvector bridges. Include the optional
-  `IntegerBitwiseCompiler.dfy` companion for checked range and algebra contracts.
+  count. It also enables `&`, `|`, `^`, `!`, `<<` and `>>` in ghost code on
+  revealed integer newtypes annotated with `{:bitWidth N}`. The positive literal
+  width is independent of native storage. Recognizable bounds must establish
+  `0 <= value < 2^N`; every result must satisfy the entire newtype predicate.
+  Binary operands have the same newtype, and shift counts satisfy `0 <= k <= N`.
+  Disabled by default. Runtime operators, rotations, population-count syntax and
+  the remaining native shift/arithmetic/rotation bridges remain later work. Include
+  the optional `IntegerBitwiseCompiler.dfy` companion for checked range and algebra
+  contracts. `IntegerBitwiseNative.dfy` provides checked native conversion and
+  Boolean bridges at widths 8, 16, 32 and 64, independently of additional axioms.
   Set `integer-bitwise = true` in the project file's `[options]` section;
   an enabled `.doo` library requires enabled clients. Declarations in an off-built
   library cannot use this compiler interface merely because the client enables

@@ -69,7 +69,10 @@ public class Constructor : MethodOrConstructor {
     }
   }
 
-  public override DividedBlockStmt? Body => body;
+  public override DividedBlockStmt? Body => BodyReleased ? throw ReleasedBodyRead() : body;
+  protected override void DropBody() {
+    body = null;
+  }
   public override void SetBody(BlockLikeStmt newBody) {
     body = newBody is BlockStmt blockStmt
       ? new DividedBlockStmt(blockStmt.Origin, blockStmt.Body, null, [], []) : (DividedBlockStmt)newBody;

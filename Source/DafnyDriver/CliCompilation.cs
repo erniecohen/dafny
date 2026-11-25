@@ -65,7 +65,7 @@ public class CliCompilation {
 
     options.RunningBoogieFromCommandLine = true;
 
-    var input = new CompilationInput(options, 0, options.DafnyProject);
+    var input = new CompilationInput(options, 0, options.DafnyProject) { OneShot = true };
     var executionEngine = new ExecutionEngine(options, new EmptyVerificationResultCache(), DafnyMain.LargeThreadScheduler);
     Compilation = createCompilation(executionEngine, input);
   }
@@ -113,8 +113,9 @@ public class CliCompilation {
         new TextDocumentLoader(factory.CreateLogger<ITextDocumentLoader>(),
           new DafnyLangParser(options, fileSystem, telemetryPublisher,
             factory.CreateLogger<DafnyLangParser>(),
-            factory.CreateLogger<CachingParser>()),
-          new DafnyLangSymbolResolver(factory.CreateLogger<DafnyLangSymbolResolver>(), factory.CreateLogger<CachingResolver>(), telemetryPublisher)),
+            factory.CreateLogger<CachingParser>(), oneShot: input.OneShot),
+          new DafnyLangSymbolResolver(factory.CreateLogger<DafnyLangSymbolResolver>(), factory.CreateLogger<CachingResolver>(),
+            telemetryPublisher, oneShot: input.OneShot)),
         programVerifier ?? new DafnyProgramVerifier(factory.CreateLogger<DafnyProgramVerifier>()), engine, input);
   }
 
@@ -299,10 +300,13 @@ public class CliCompilation {
 
     int done = 0;
 
+    // A batch verifies the program again for each request, so it never releases bodies; the command
+    // rejects --release-verified-modules with --filter-position-batch.
+    var releaseVerifiedModules = !repeatVerification && Options.Get(VerifyCommand.ReleaseVerifiedModules);
     var window = Options.Get(VerifyCommand.VerificationModuleWindow);
     if (window > 1) {
       await foreach (var result in VerifyModuleWindow((int)Math.Min(window, int.MaxValue), canVerifies, canVerifyResults,
-                       filterRange, randomSeed, repeatVerification, requestDependencies)) {
+                       filterRange, randomSeed, repeatVerification, requestDependencies, releaseVerifiedModules)) {
         yield return result;
       }
       yield break;
@@ -378,6 +382,9 @@ public class CliCompilation {
       }
       var moduleCompleted = profile?.Now;
       Compilation.ClearModuleCache(canVerifiesForModule.Key);
+      if (releaseVerifiedModules) {
+        Compilation.ReleaseModuleBodies(canVerifiesForModule.Key);
+      }
       // admitted: the CLI started this module's symbols; scheduled: all of them were handed to the
       // compilation; completed: the last of them finished; released: its cache was cleared and
       // the next module may start (the per-module barrier).
@@ -408,7 +415,7 @@ public class CliCompilation {
     IReadOnlyList<ICanVerify> canVerifies,
     ConcurrentDictionary<ICanVerify, CliCanVerifyState> canVerifyResults,
     LineRange filterRange, int? randomSeed, bool repeatVerification,
-    ProofDependencyManager requestDependencies) {
+    ProofDependencyManager requestDependencies, bool releaseVerifiedModules) {
     var modules = canVerifies.GroupBy(c => c.ContainingModule).
       OrderBy(v => v.Key.Origin.pos).
       Select(g => new ModuleWindowSlot(g.Key, g.OrderBy(v => v.Origin.pos).ToList())).
@@ -538,7 +545,13 @@ public class CliCompilation {
           canVerifyResults.TryRemove(canVerify, out _); // Free memory
           Compilation.ClearCanVerifyCache(canVerify, repeatVerification);
         }
+        // The slot stays in the window's list until the run ends; it must not keep the states, and
+        // through them the verification tasks and results, of a module already reported.
+        slot.Reported();
         Compilation.ClearModuleCache(slot.Module);
+        if (releaseVerifiedModules) {
+          Compilation.ReleaseModuleBodies(slot.Module);
+        }
         // The live heap once this module is reported and released, with later modules in flight.
         windowProfile?.HeapPoint("module", new Dictionary<string, object?> {
           ["module"] = PipelineProfile.ModuleName(slot.Module),
@@ -595,6 +608,11 @@ public class CliCompilation {
         deferred.Clear();
         released = true;
       }
+    }
+
+    public void Reported() {
+      States.Clear();
+      ToAwait.Clear();
     }
 
     public void Abandon() {

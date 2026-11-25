@@ -322,8 +322,8 @@ that runs Boogie's own test jobs and packs Boogie's NuGet packages.  The same fi
 is offered to Boogie's master as
 [boogie-org/boogie#1169](https://github.com/boogie-org/boogie/pull/1169).
 
-This branch builds against that fork's release `v3.5.5+review.a38b89f9`, whose
-packages have the version `3.5.5-review.a38b89f9`.  The release carries them with
+This branch builds against that fork's release `v3.5.5+review.76ad65b4`, whose
+packages have the version `3.5.5-review.76ad65b4`.  The release carries them with
 their sha256 sums, and its `REVIEW.md` says what the fork changes and how its
 version is computed.  Besides that fix, it brings:
 
@@ -384,10 +384,10 @@ version is computed.  Besides that fix, it brings:
   restores the old deadline for comparison, passed through Dafny's `--boogie`.
 
 `a48933e` made this branch build against the fork's packages, at
-`3.5.5-review.37e4435d`.  It now builds against `3.5.5-review.a38b89f9`:
+`3.5.5-review.37e4435d`.  It now builds against `3.5.5-review.76ad65b4`:
 
 - `Source/DafnyCore/DafnyCore.csproj` names `Boogie.ExecutionEngine`
-  `3.5.5-review.a38b89f9`, and `dotnet-tools.json` names the `boogie` tool at the
+  `3.5.5-review.76ad65b4`, and `dotnet-tools.json` names the `boogie` tool at the
   same version;
 - `nuget.config` adds a local package source, `Binaries/boogie-packages`, and maps
   every Boogie package to it and to nothing else, so a missing package stops the
@@ -463,6 +463,26 @@ source is identical to `dcd726f6`. The shared-Boolean policy changes only the
 monomorphizer and its option interface; it does not reintroduce the map-row split.
 The regression is `git-issues/git-issue-281-shared-literals.dfy`; the release note
 is `docs/dev/news/281-shared-literals.feat`.
+
+The move from `a38b89f9` to `76ad65b4` adopts
+[erniecohen/boogie#16](https://github.com/erniecohen/boogie/pull/16):
+`CheckerPool.Release(Program)`, which makes the idle checkers last set up for a program
+forget it and drop their prover's managed context, including the VC variables the
+translator keeps for every program it has translated.  The solver process is sent nothing
+and gets the same commands with or without a release.  It adds no option and changes no
+output.  `Compilation.ClearModuleCache` calls it once a module is reported, so that a
+one-shot run does not keep every finished module alive through the checkers
+([#241](https://github.com/erniecohen/dafny/issues/241), F4).  The complete commit range
+between those release tags is:
+
+- `6a393d66`: CI on self-hosted runners, skipping draft pull requests
+  ([erniecohen/boogie#15](https://github.com/erniecohen/boogie/pull/15)); no product file;
+- `a93a02c8`: `CheckerPool.Release(Program)`, its tests and documentation
+  ([erniecohen/boogie#16](https://github.com/erniecohen/boogie/pull/16)).
+
+The regressions are `MemoryReleaseTests` and
+`git-issues/github-issue-241-release-verified-modules.dfy`; the release note is
+`docs/dev/news/241-memory-release.fix`.
 
 ## Tests, release notes and the manual
 
@@ -1415,8 +1435,8 @@ The regression is `git-issues/github-issue-106.dfy` with its inputs; the release
 
 ## Copying imports ([issue 107](https://github.com/erniecohen/dafny/issues/107))
 
-`--copy-imports` is an opt-in feature: stage 4 of the refinement design draft
-([pull request 401](https://github.com/erniecohen/dafny/pull/401), sections 3.2, 3.3 and 3.5).  It adds one
+`--copy-imports` is an opt-in feature: stages 4 and 5 of the refinement design draft
+([pull request 401](https://github.com/erniecohen/dafny/pull/401), sections 3.2 to 3.5).  It adds one
 declaration, `import [opened] X := Q` with an optional export suffix, which gives the importing
 module `M` a copy of `Q` named `X`.  With the option off, the parser does not accept the
 declaration, and nothing else in this change is reached.
@@ -1445,8 +1465,34 @@ error for a written-out refinement.
 `X` (which would give `M'` the types of `M.X`) but declares a new copying import of the same
 module, with the same export suffix.  That module is not a declaration of the program's module
 graph, so `M'` resolves it itself, before its own declarations, and hands its signature to the
-program with its own.  A redeclaration of `X` in `M'` is an error.  The same holds for each
-further refinement.
+program with its own. `M'` may instead rebind `X` with `import X := Q2`, where `Q2` is the
+previous copied target or refines it transitively. The test is against the preceding step, so a
+later rebinding cannot go backwards or sideways in the target's refinement chain. An alias,
+abstract import, literal module or other declaration is rejected: it would lose the freshness
+that inherited distinctness proofs require. The new import must keep `opened` and every
+explicitly named export set, and may add export sets.
+
+The inherited code of the importing module is not verified again, so what the rebound copy may
+change must be checked.  The inherited-name check of issue 410 checks the inherited text against
+the rebound copy; in particular, an abstract type made into a datatype cannot turn an inherited
+pattern variable into a constructor.  The override check of issue 404 is made again for each
+inherited class that extends a trait of the copy, so a specification that the new target
+strengthens is checked, and a trait member that it adds must be implemented.  Under
+`--member-invariants` (issue 105), the new target may add invariants to a type of the copy.  The
+verifier treats a rebinding as it treats an abstract import bound to a refinement
+(`BindsAbstractImport` in `BoogieGenerator.InheritedInvariants.cs`): at an inherited site that
+converts to a type of the copy, only the conjuncts of the first declaration that the type refines
+are taken as checked, and the others are checked.  That is conservative.  It is the only verifier
+change; no axiom or assumption is added.  With the option off the parser still rejects copying
+imports, so none of this is reached.
+
+The rebinding regression is `git-issues/git-issue-107-rebind.dfy`, with accepted chains, fresh
+identities, nested and opened copies, export sets, generic declarations, an implemented inner
+abstract import, rejected bindings and captures, a trait member that the new target adds, and
+failing identity and vacuity controls under both resolvers.  Its input
+`git-issue-107-rebind-invariants.dfy` has counterexamples for invariants that the new target adds
+(also through a nested rebound copy) and for strengthened trait specifications, with positive and
+vacuity controls.  Its release note is `docs/dev/news/107-rebind.feat`.
 
 *What is deliberately unknown.*  An abstract import `import A : B` inside `Q` stands for an
 unknown refinement of `B`.  Each copy gets a signature of its own for it, so nothing relates
