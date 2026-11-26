@@ -49,6 +49,29 @@ matching the completed-history sampler's workflow convention. For workflows
 with substantially different job sizes, declare the heavier job's expected peak
 or coordinate a matching sampler kind change rather than silently pooling kinds.
 
+## Waiting local admission clients
+
+A waiting local admission client may atomically publish `heavy-waiting.<pid>.json`
+in the shared admission lock directory. Its JSON object contains `pid`,
+`declared_mb` (a positive integer), `expected_mb`, `source`, `project`, `kind`,
+`started` and `waiting_since` (epoch seconds). The client removes its announcement
+when admitted or when it gives up.
+
+Before taking a CI slot, admission checks these announcements under the budget
+mutex. Any live, unexpired client pauses new CI admission; existing jobs keep
+running. The wait reason logs its PID, declared MiB and elapsed waiting seconds.
+Waiting releases the mutex, takes no slot, and retries at `slot-poll-s`.
+
+The optional `heavy-wait-max-s` input reads repository variable
+`SELF_HOSTED_JOB_HEAVY_WAIT_MAX_S`. An omitted or blank input defaults to 14400
+seconds (four hours); a supplied value must be positive and finite. At that age
+from `waiting_since`, an announcement is ignored, with an expiration notice
+logged once per waiting announcement by each CI admission process. This bounds
+priority for a live but stuck client. Dead PIDs, malformed announcements,
+non-positive declared memory and invalid or future waiting timestamps are ignored.
+No announcement is deleted by CI. Holder-sidecar accounting is unchanged, and
+without waiting announcements the admission decisions and logs are unchanged.
+
 ## Peak selection and headroom
 
 Configure these environment variables on the runner service:

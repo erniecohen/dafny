@@ -93,6 +93,7 @@ jobs:
           probe-timeout-s: ${{ vars.SELF_HOSTED_JOB_PROBE_TIMEOUT_S }}
           slot-poll-s: ${{ vars.SELF_HOSTED_JOB_SLOT_POLL_S }}
           memory-backoff-s: ${{ vars.SELF_HOSTED_JOB_MEMORY_BACKOFF_S }}
+          heavy-wait-max-s: ${{ vars.SELF_HOSTED_JOB_HEAVY_WAIT_MAX_S }}
       - uses: actions/checkout@v4
         with:
           clean: false
@@ -268,6 +269,7 @@ jobs:
           probe-timeout-s: ${{ vars.SELF_HOSTED_JOB_PROBE_TIMEOUT_S }}
           slot-poll-s: ${{ vars.SELF_HOSTED_JOB_SLOT_POLL_S }}
           memory-backoff-s: ${{ vars.SELF_HOSTED_JOB_MEMORY_BACKOFF_S }}
+          heavy-wait-max-s: ${{ vars.SELF_HOSTED_JOB_HEAVY_WAIT_MAX_S }}
       - uses: actions/checkout@v4
         with:
           clean: false
