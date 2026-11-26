@@ -291,15 +291,20 @@ qualifiers are supported only for functions and static methods; instance methods
 and fields retain receiver-based linkage. Concrete refinements of group members
 may contain fully imported or partial extern classes, including through abstract
 refinements. Each concrete refinement must name its own preloaded extern module
-object; inherited
-classes use that object's public type names. Fully imported classes emit no
+object; inherited classes use that object's public type names. Fully imported
+classes emit no
 generated class layout. Partial classes use the ordinary JavaScript lowering: a
 generated subclass extends the concrete module's foreign class, forwards its type
 descriptors to `super`, initializes generated fields, and supplies Dafny constructor
 bodies and members. Imported fields and members retain receiver-based linkage.
-Abstract refinements emit nothing. Extern type kinds other than classes in
-refinements remain rejected; their generated representation needs separate
-qualification. Fully imported foreign classes declared in a group or its concrete
+Abstract refinements emit nothing. Fully imported extern traits without parent
+traits also preserve their preloaded objects, including through abstract
+refinements. These objects are runtime identities: native implementations may
+capture them before generated code runs. Ghost members do not require generated
+trait material. Generated implementations use the same concrete namespace's trait
+object. Traits requiring generated members or parent traits, and other extern type
+kinds in refinements, remain rejected with an explicit diagnostic. Fully imported
+foreign classes declared in a group or its concrete
 refinements support bodiless extern constructors. Allocation passes the ordinary
 type-descriptor prefix followed by
 non-ghost constructor arguments, evaluated once in order. Constructor extern
@@ -334,8 +339,8 @@ so aliasing an ancestor or dropping native arguments changes the result. Source
 builds, both wrapper-erasure settings, relocated archives and separately translated
 clients agree with independently emitted C#. Wrong constructor results and a
 reachable false assertion remain errors. Bodiless native constructors on partial
-classes, extern traits and refinements without their own preloaded extern owner
-retain tested rejections.
+classes, traits requiring generated members and refinements without their own
+preloaded extern owner retain tested rejections.
 `git-issue-466-js-partial-refinement.dfy` repeats the matrix with partial classes in
 the group and both refining namespaces. Generic fields, generated constructors,
 updates, descriptor-backed defaults and generated members calling recursive
@@ -343,6 +348,16 @@ siblings agree with independently emitted C#. Distinct foreign fields and method
 check each concrete namespace. Both wrapper-erasure modes, relocated archives and
 separately translated clients are covered. Wrong constructor results, wrong field
 and update results, and a reachable false assertion remain verification errors.
+`git-issue-466-js-trait-refinement.dfy` repeats the matrix with imported ordinary
+and generic traits in the group and both concrete refinements. Native factories,
+generated implementations, ghost members and cross-namespace runtime type tests
+agree with independently emitted C#. Native implementations capture the original
+trait identities before generated initialization, so replacement is observable.
+Two ordinary empty traits check that generated identities remain distinct. Both
+wrapper-erasure modes, relocated archives and separately translated clients are
+covered. Wrong reads, wrong generated fields and a reachable false assertion
+remain verification errors. Generated extern traits and extern traits with parents
+in refinements retain tested rejections; option-off trait emission is unchanged.
 `git-issue-466-js-extern.dfy` checks each group-specific foreign linkage rejection.
 Archives with arbitrary extern contracts still cannot provide the modular
 termination certificate required by cross-module trait implementations; the

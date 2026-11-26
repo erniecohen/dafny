@@ -36,6 +36,10 @@ namespace Microsoft.Dafny.Compilers {
       return false;
     }
 
+    internal static bool CanImportTrait(TraitDecl trait, SinglePassCodeGenerator generator) =>
+      trait.Traits.All(parent => parent.IsObject) &&
+      trait.Members.All(member => member.IsGhost || generator.IsExternallyImported(member));
+
     private bool UsesForeignModuleObjects(ModuleDefinition module) =>
       module.RecursiveGroup is { } group && GroupMembers(group).Any(member =>
         member.IsExtern(Options, out _, out _) || member.TopLevelDecls.Any(declaration =>
@@ -191,6 +195,10 @@ namespace Microsoft.Dafny.Compilers {
 
     protected override IClassWriter CreateTrait(string name, bool isExtern, List<TypeParameter> typeParameters /*?*/,
       TraitDecl trait, List<Type> superClasses /*?*/, IOrigin tok, ConcreteSyntaxTree wr) {
+      if (isExtern && IsRecursiveGroupContext(trait.EnclosingModuleDefinition) && CanImportTrait(trait, this)) {
+        // Foreign implementations may retain this object as their runtime trait identity.
+        return new NullClassWriter(this);
+      }
       var w = wr.NewBlock(string.Format("$module.{0} = class {0}", trait.EnclosingModuleDefinition.RecursiveGroup == null ? IdProtect(name) : IdName(trait)), ";");
       var fieldWriter = w;  // not used for traits, but we need a value to give to the ClassWriter
       var methodWriter = w;

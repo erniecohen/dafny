@@ -1,1 +1,1 @@
-// CHECK: JavaScript refinements of recursive module groups support extern classes only
+// CHECK: JavaScript refinements of recursive module groups require extern classes or fully imported extern traits without parent traits
