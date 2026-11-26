@@ -1,0 +1,5 @@
+# The lit tests that the regressions job runs in upstream's own harness
+# (Source/IntegrationTests), by path under TestFiles/LitTests/LitTest.
+#
+# The regression tests of this line's fixes (boogie-issue-1168 for the Boogie it builds against):
+git-issues/git-issue-6366.dfy

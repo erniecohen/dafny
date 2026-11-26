@@ -1,0 +1,4 @@
+
+# Monomorphization repairs for /typeEncoding:m (https://github.com/erniecohen/dafny/issues/281):
+# a quantifier that binds nothing, and hideable definition axioms of generic functions.
+git-issues/github-issue-281-empty-quantifier.dfy

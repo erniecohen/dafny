@@ -52,7 +52,7 @@ The input-validation estimate is shared by `ProgramParser.cs` and `DafnyFile.cs`
 | `.github/review/operators-m1-off.py` | 232 | 0 | 232 |
 | `.github/review/operators-m1-parser.py` | 27 | 0 | 27 |
 | `.github/review/operators-m1.py` | 7 | 0 | 7 |
-| `.github/review/regressions` | 3 | 0 | 3 |
+| `.github/review/regressions.d/` | 3 | 0 | 3 |
 | `.github/workflows/operators-m1-off.yml` | 113 | 0 | 113 |
 | `.github/workflows/operators-m1-probe.yml` | 77 | 0 | 77 |
 | `.github/workflows/review.yml` | 8 | 0 | 8 |

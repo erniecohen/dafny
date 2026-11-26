@@ -1,0 +1,1 @@
+git-issues/git-issue-132-newtype-provided-characteristic-positive.dfy

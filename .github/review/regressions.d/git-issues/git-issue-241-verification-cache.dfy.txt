@@ -1,0 +1,5 @@
+
+# Persistent per-task solver replay (https://github.com/erniecohen/dafny/issues/241), with
+# the resource limit compared with each result's resource use rather than keyed
+# (https://github.com/erniecohen/dafny/issues/261).
+git-issues/git-issue-241-verification-cache.dfy

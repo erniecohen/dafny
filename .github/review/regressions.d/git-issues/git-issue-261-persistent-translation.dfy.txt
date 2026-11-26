@@ -1,0 +1,2 @@
+# Persistent module translations and results with early cutoff (https://github.com/erniecohen/dafny/issues/261).
+git-issues/git-issue-261-persistent-translation.dfy

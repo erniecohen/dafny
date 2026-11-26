@@ -1,0 +1,5 @@
+
+# Std.Axioms: function extensionality for total arrows on int, real, bool, ORDINAL, (int, int)
+# and the empty domain, and the completeness of real, moved there from Std.RealCompleteness
+# (https://github.com/erniecohen/dafny/issues/34).
+git-issues/github-issue-34.dfy
