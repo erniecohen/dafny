@@ -60,14 +60,14 @@ public class PersistentFailureReportTests {
   }
 
   [Fact]
-  public async Task ModelRequestsBypassCaptureBeforeAccessingNativeTaskState() {
+  public async Task ModelCaptureRequiresNativeTaskState() {
     var (program, _) = await Parse();
     program.Options.ExtractCounterexample = true;
     var task = new TaskProbe();
     var result = new VerificationRunResult(1, 0, DateTime.MinValue, SolverOutcome.Invalid, TimeSpan.Zero, 1,
       [], [], [], 1, Microsoft.Boogie.SMTLib.SolverKind.Z3, []);
     Assert.Null(PersistentFailureReports.Capture(program, task, result));
-    Assert.False(task.Accessed);
+    Assert.True(task.Accessed);
     program.Options.ExtractCounterexample = false;
     Assert.Null(PersistentFailureReports.Capture(program, task, result));
     Assert.True(task.Accessed);
@@ -76,6 +76,7 @@ public class PersistentFailureReportTests {
   [Theory]
   [InlineData("report", "Counterexamples")]
   [InlineData("report", "Diagnostics")]
+  [InlineData("report", "Models")]
   [InlineData("diagnostic", "Source")]
   [InlineData("diagnostic", "Level")]
   [InlineData("diagnostic", "Range")]

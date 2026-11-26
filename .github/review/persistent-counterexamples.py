@@ -163,143 +163,148 @@ def replace(directory, index, entry, record):
     index.write_text(json.dumps(entry))
 
 
-# Independent cache-off and cold solvers establish every diagnostic and per-VC resource fact.
-fresh = run("fresh", destination / "fresh-cache", False)
-uncached = run("uncached", None, False)
-same(fresh, uncached)
-assert fresh["solver"] > 0 and b"3 errors" in fresh["output"][1], fresh["output"]
-cold = run("cold")
-same(fresh, cold)
-assert cold["stats"]["manifestPublications"] == 5, cold["stats"]
-warm = run("warm")
-same(fresh, warm)
-hit(warm)
-if len(sys.argv) == 6 and sys.argv[5] == "--smoke":
-    print("persistent counterexamples smoke: PASS")
-    sys.exit(0)
-audit = run("audit", extra=("--persistent-translation-audit",))
-same(fresh, audit)
-assert audit["stats"]["auditChecks"] > 0 and audit["stats"]["auditMismatches"] == 0, audit["stats"]
+def main():
+    # Independent cache-off and cold solvers establish every diagnostic and per-VC resource fact.
+    fresh = run("fresh", destination / "fresh-cache", False)
+    uncached = run("uncached", None, False)
+    same(fresh, uncached)
+    assert fresh["solver"] > 0 and b"3 errors" in fresh["output"][1], fresh["output"]
+    cold = run("cold")
+    same(fresh, cold)
+    assert cold["stats"]["manifestPublications"] == 5, cold["stats"]
+    warm = run("warm")
+    same(fresh, warm)
+    hit(warm)
+    if len(sys.argv) == 6 and sys.argv[5] == "--smoke":
+        print("persistent counterexamples smoke: PASS")
+        sys.exit(0)
+    audit = run("audit", extra=("--persistent-translation-audit",))
+    same(fresh, audit)
+    assert audit["stats"]["auditChecks"] > 0 and audit["stats"]["auditMismatches"] == 0, audit["stats"]
 
-# Turning the new opt-in off retains the previous failed-module path, even with its records present.
-off = run("opt-out", extra=("--persistent-counterexamples:false",))
-same(fresh, off)
-assert off["stats"]["keyHits"] == 4 and off["prepared"] == ["Witness"], off["stats"]
+    # Turning the new opt-in off retains the previous failed-module path, even with its records present.
+    off = run("opt-out", extra=("--persistent-counterexamples:false",))
+    same(fresh, off)
+    assert off["stats"]["keyHits"] == 4 and off["prepared"] == ["Witness"], off["stats"]
 
-# Rebuilt equal graphs can also restore the terminal diagnostics.
-graph_cache = destination / "graph-cache"
-shutil.copytree(cache, graph_cache)
-for entry in (graph_cache / "v1/artifacts/translations").glob("*/*"):
-    if entry.is_file(): entry.unlink()
-graph = run("graph-replay", graph_cache)
-same(fresh, graph)
-assert graph["stats"]["graphHits"] == 5 and graph["prepared"] == [] and graph["solver"] == 0, graph
+    # Rebuilt equal graphs can also restore the terminal diagnostics.
+    graph_cache = destination / "graph-cache"
+    shutil.copytree(cache, graph_cache)
+    for entry in (graph_cache / "v1/artifacts/translations").glob("*/*"):
+        if entry.is_file(): entry.unlink()
+    graph = run("graph-replay", graph_cache)
+    same(fresh, graph)
+    assert graph["stats"]["graphHits"] == 5 and graph["prepared"] == [] and graph["solver"] == 0, graph
 
-# Both primary and related ranges must bind to the current file and line positions.
-moved = destination / "renamed.dfy"
-(destination / "renamed-contract.dfy").write_text("\n\n\n" + contract, encoding="utf-8")
-moved.write_text("\n\n" + original.replace('include "contract.dfy"', 'include "renamed-contract.dfy"'), encoding="utf-8")
-relocated_fresh = run("relocated-fresh", destination / "relocated-fresh-cache", False, input_file=moved)
-relocated = run("relocated-warm", input_file=moved)
-same(relocated_fresh, relocated)
-hit(relocated)
-assert b"renamed.dfy" in relocated["output"][1], relocated["output"]
+    # Both primary and related ranges must bind to the current file and line positions.
+    moved = destination / "renamed.dfy"
+    (destination / "renamed-contract.dfy").write_text("\n\n\n" + contract, encoding="utf-8")
+    moved.write_text("\n\n" + original.replace('include "contract.dfy"', 'include "renamed-contract.dfy"'), encoding="utf-8")
+    relocated_fresh = run("relocated-fresh", destination / "relocated-fresh-cache", False, input_file=moved)
+    relocated = run("relocated-warm", input_file=moved)
+    same(relocated_fresh, relocated)
+    hit(relocated)
+    assert b"renamed.dfy" in relocated["output"][1], relocated["output"]
 
-# A semantically changed failing module must not replay its old diagnostics or error count.
-edited = destination / "edited.dfy"
-edited.write_text(original.replace("assert false;", "assert true;"), encoding="utf-8")
-edited_cache = destination / "edited-cache"
-shutil.copytree(cache, edited_cache)
-edited_fresh = run("edited-fresh", destination / "edited-fresh-cache", False, input_file=edited)
-edited_cold = run("edited-cold", edited_cache, input_file=edited)
-same(edited_fresh, edited_cold)
-assert edited_cold["stats"]["keyHits"] == 4 and edited_cold["prepared"] == ["Witness"], edited_cold["stats"]
-edited_warm = run("edited-warm", edited_cache, input_file=edited)
-same(edited_fresh, edited_warm)
-hit(edited_warm)
+    # A semantically changed failing module must not replay its old diagnostics or error count.
+    edited = destination / "edited.dfy"
+    edited.write_text(original.replace("assert false;", "assert true;"), encoding="utf-8")
+    edited_cache = destination / "edited-cache"
+    shutil.copytree(cache, edited_cache)
+    edited_fresh = run("edited-fresh", destination / "edited-fresh-cache", False, input_file=edited)
+    edited_cold = run("edited-cold", edited_cache, input_file=edited)
+    same(edited_fresh, edited_cold)
+    assert edited_cold["stats"]["keyHits"] == 4 and edited_cold["prepared"] == ["Witness"], edited_cold["stats"]
+    edited_warm = run("edited-warm", edited_cache, input_file=edited)
+    same(edited_fresh, edited_warm)
+    hit(edited_warm)
 
-# The full solver-model payload has no detached representation: failed modules remain native.
-model_fresh = run("model-fresh", destination / "model-fresh-cache", False, extra=("--extract-counterexample",))
-model_cold = run("model-cold", destination / "model-cache", extra=("--extract-counterexample",))
-same(model_fresh, model_cold)
-model_warm = run("model-warm", destination / "model-cache", extra=("--extract-counterexample",))
-same(model_fresh, model_warm)
-assert model_warm["stats"]["keyHits"] == 4 and model_warm["prepared"] == ["Witness"], model_warm["stats"]
+    # Model payloads restore without translating or preparing the failing module.
+    model_fresh = run("model-fresh", destination / "model-fresh-cache", False, extra=("--extract-counterexample",))
+    model_cold = run("model-cold", destination / "model-cache", extra=("--extract-counterexample",))
+    same(model_fresh, model_cold)
+    model_warm = run("model-warm", destination / "model-cache", extra=("--extract-counterexample",))
+    same(model_fresh, model_warm)
+    hit(model_warm)
 
-# A timer-bounded failing task is not made replayable by its diagnostic packet.
-timed_cache = destination / "timed-cache"
-timed_fresh = run("timed-fresh", destination / "timed-fresh-cache", False, extra=("--verification-time-limit", "20"))
-timed_cold = run("timed-cold", timed_cache, extra=("--verification-time-limit", "20"))
-same(timed_fresh, timed_cold)
-timed_warm = run("timed-warm", timed_cache, extra=("--verification-time-limit", "20"))
-same(timed_fresh, timed_warm)
-assert "Witness" in timed_warm["prepared"], timed_warm["stats"]
+    # A timer-bounded failing task is not made replayable by its diagnostic packet.
+    timed_cache = destination / "timed-cache"
+    timed_fresh = run("timed-fresh", destination / "timed-fresh-cache", False, extra=("--verification-time-limit", "20"))
+    timed_cold = run("timed-cold", timed_cache, extra=("--verification-time-limit", "20"))
+    same(timed_fresh, timed_cold)
+    timed_warm = run("timed-warm", timed_cache, extra=("--verification-time-limit", "20"))
+    same(timed_fresh, timed_warm)
+    assert "Witness" in timed_warm["prepared"], timed_warm["stats"]
 
-# Rendering choices and multiple counterexamples in one VC use the same complete packet.
-multi = destination / "multiple.dfy"
-multi.write_text(original.replace("lemma Bad() { assert false; }",
-  "lemma Bad(x: int, y: int) { assert x > 0; assert y > 0; }"), encoding="utf-8")
-for name, extra, input_file in (
-    ("snippets", ("--show-snippets", "--show-proof-obligation-expressions"), program),
-    ("json-diagnostics", ("--json-diagnostics",), program),
-    ("multiple", ("--isolate-assertions:false", "--error-limit", "3"), multi)):
-    directory = destination / (name + "-cache")
-    control = run(name + "-fresh", destination / (name + "-fresh-cache"), False, extra=extra, input_file=input_file)
-    for mode in ("cold", "warm", "audit"):
-        actual = run(name + "-" + mode, directory,
-          extra=extra + (("--persistent-translation-audit",) if mode == "audit" else ()), input_file=input_file)
-        same(control, actual)
-        if mode == "warm": hit(actual)
-        if mode == "audit": assert actual["stats"]["auditMismatches"] == 0, actual["stats"]
-    if name == "multiple":
-        assert max(t.get("Failure", {}).get("Counterexamples", 0) if t.get("Failure") else 0
-          for _, _, record in records(directory) for t in record["Tasks"]) >= 2
+    # Rendering choices and multiple counterexamples in one VC use the same complete packet.
+    multi = destination / "multiple.dfy"
+    multi.write_text(original.replace("lemma Bad() { assert false; }",
+      "lemma Bad(x: int, y: int) { assert x > 0; assert y > 0; }"), encoding="utf-8")
+    for name, extra, input_file in (
+        ("snippets", ("--show-snippets", "--show-proof-obligation-expressions"), program),
+        ("json-diagnostics", ("--json-diagnostics",), program),
+        ("multiple", ("--isolate-assertions:false", "--error-limit", "3"), multi)):
+        directory = destination / (name + "-cache")
+        control = run(name + "-fresh", destination / (name + "-fresh-cache"), False, extra=extra, input_file=input_file)
+        for mode in ("cold", "warm", "audit"):
+            actual = run(name + "-" + mode, directory,
+              extra=extra + (("--persistent-translation-audit",) if mode == "audit" else ()), input_file=input_file)
+            same(control, actual)
+            if mode == "warm": hit(actual)
+            if mode == "audit": assert actual["stats"]["auditMismatches"] == 0, actual["stats"]
+        if name == "multiple":
+            assert max(t.get("Failure", {}).get("Counterexamples", 0) if t.get("Failure") else 0
+              for _, _, record in records(directory) for t in record["Tasks"]) >= 2
 
-# Coherent content-addressed corruptions must miss, rather than manufacture a hit.
-import copy
-base = next((i, e, r) for i, e, r in records(cache) if any(t.get("Failure") for t in r["Tasks"]))
-for name in ("missing-packet", "missing-count", "wrong-count", "unknown-level", "wrong-source", "empty-message", "bad-excerpt", "bad-related", "missing-related"):
-    directory = destination / ("bad-" + name)
-    shutil.copytree(cache, directory)
-    index, entry, record = base[0], copy.deepcopy(base[1]), copy.deepcopy(base[2])
-    task = next(t for t in record["Tasks"] if t.get("Failure"))
-    failure = task["Failure"]
-    diagnostic = failure["Diagnostics"][0]
-    if name == "missing-packet": task["Failure"] = None
-    elif name == "missing-count": failure.pop("Counterexamples")
-    elif name == "wrong-count": failure["Counterexamples"] += 1
-    elif name == "unknown-level": diagnostic["Level"] = 99
-    elif name == "wrong-source": diagnostic["Source"] = 0
-    elif name == "empty-message": diagnostic["MessageParts"] = []
-    elif name == "bad-excerpt": diagnostic["Range"]["SourceOriginal"] = "changed"
-    elif name == "bad-related":
-        diagnostic = next(d for t in record["Tasks"] if t.get("Failure") for d in t["Failure"]["Diagnostics"] if d["Related"])
-        diagnostic["Related"][0]["Range"]["SourceOriginal"] = "changed"
-    elif name == "missing-related": diagnostic.pop("Related")
-    replace(directory, directory / index.relative_to(cache), entry, record)
-    actual = run(name, directory)
-    same(fresh, actual)
-    assert "Witness" in actual["prepared"], actual["stats"]
+    # Coherent content-addressed corruptions must miss, rather than manufacture a hit.
+    import copy
+    base = next((i, e, r) for i, e, r in records(cache) if any(t.get("Failure") for t in r["Tasks"]))
+    for name in ("missing-packet", "missing-count", "wrong-count", "unknown-level", "wrong-source", "empty-message", "bad-excerpt", "bad-related", "missing-related"):
+        directory = destination / ("bad-" + name)
+        shutil.copytree(cache, directory)
+        index, entry, record = base[0], copy.deepcopy(base[1]), copy.deepcopy(base[2])
+        task = next(t for t in record["Tasks"] if t.get("Failure"))
+        failure = task["Failure"]
+        diagnostic = failure["Diagnostics"][0]
+        if name == "missing-packet": task["Failure"] = None
+        elif name == "missing-count": failure.pop("Counterexamples")
+        elif name == "wrong-count": failure["Counterexamples"] += 1
+        elif name == "unknown-level": diagnostic["Level"] = 99
+        elif name == "wrong-source": diagnostic["Source"] = 0
+        elif name == "empty-message": diagnostic["MessageParts"] = []
+        elif name == "bad-excerpt": diagnostic["Range"]["SourceOriginal"] = "changed"
+        elif name == "bad-related":
+            diagnostic = next(d for t in record["Tasks"] if t.get("Failure") for d in t["Failure"]["Diagnostics"] if d["Related"])
+            diagnostic["Related"][0]["Range"]["SourceOriginal"] = "changed"
+        elif name == "missing-related": diagnostic.pop("Related")
+        replace(directory, directory / index.relative_to(cache), entry, record)
+        actual = run(name, directory)
+        same(fresh, actual)
+        assert "Witness" in actual["prepared"], actual["stats"]
 
-# The equality oracle includes prose and nested related information, not just verdicts.
-for name in ("message", "related-message"):
-    directory = destination / ("audit-" + name)
-    shutil.copytree(cache, directory)
-    index, entry, record = base[0], copy.deepcopy(base[1]), copy.deepcopy(base[2])
-    failure = next(t["Failure"] for t in record["Tasks"] if t.get("Failure"))
-    if name == "message": failure["Diagnostics"][0]["MessageParts"][0] = "changed assertion message"
-    else:
-        diagnostic = next(d for t in record["Tasks"] if t.get("Failure") for d in t["Failure"]["Diagnostics"] if d["Related"])
-        diagnostic["Related"][0]["MessageParts"][0] = "changed related message"
-    replace(directory, directory / index.relative_to(cache), entry, record)
-    actual = run("audit-" + name, directory, extra=("--persistent-translation-audit",))
-    assert actual["stats"]["auditMismatches"] > 0, actual["stats"]
-    code, stdout, stderr = actual["output"]
-    assert b"persistent translation audit:" in stdout
-    actual["output"] = (code, b"\n".join(line for line in stdout.split(b"\n")
-      if b"persistent translation audit:" not in line), stderr)
-    same(fresh, actual)
+    # The equality oracle includes prose and nested related information, not just verdicts.
+    for name in ("message", "related-message"):
+        directory = destination / ("audit-" + name)
+        shutil.copytree(cache, directory)
+        index, entry, record = base[0], copy.deepcopy(base[1]), copy.deepcopy(base[2])
+        failure = next(t["Failure"] for t in record["Tasks"] if t.get("Failure"))
+        if name == "message": failure["Diagnostics"][0]["MessageParts"][0] = "changed assertion message"
+        else:
+            diagnostic = next(d for t in record["Tasks"] if t.get("Failure") for d in t["Failure"]["Diagnostics"] if d["Related"])
+            diagnostic["Related"][0]["MessageParts"][0] = "changed related message"
+        replace(directory, directory / index.relative_to(cache), entry, record)
+        actual = run("audit-" + name, directory, extra=("--persistent-translation-audit",))
+        assert actual["stats"]["auditMismatches"] > 0, actual["stats"]
+        code, stdout, stderr = actual["output"]
+        assert b"persistent translation audit:" in stdout
+        actual["output"] = (code, b"\n".join(line for line in stdout.split(b"\n")
+          if b"persistent translation audit:" not in line), stderr)
+        same(fresh, actual)
 
-invalid = subprocess.run([shutil.which("dotnet"), str(exe), "verify", str(program), "--persistent-counterexamples"], capture_output=True)
-assert invalid.returncode != 0 and b"requires --persistent-translation" in invalid.stdout + invalid.stderr, invalid
-print("persistent counterexamples: PASS")
+    invalid = subprocess.run([shutil.which("dotnet"), str(exe), "verify", str(program), "--persistent-counterexamples"], capture_output=True)
+    assert invalid.returncode != 0 and b"requires --persistent-translation" in invalid.stdout + invalid.stderr, invalid
+    print("persistent counterexamples: PASS")
+
+
+if __name__ == "__main__":
+    main()

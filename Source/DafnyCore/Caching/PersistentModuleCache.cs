@@ -301,13 +301,14 @@ public sealed class PersistentModuleCache {
         Interlocked.Increment(ref misses); LastBypassReason = missReason = "a stored task has no current proof dependencies";
         return null;
       }
-      var failures = entry.Outcome == SolverOutcome.Invalid && !options.ExtractCounterexample
-        ? PersistentFailureReports.Restore(locations, entry.Failure) : null;
+      IReadOnlyList<DafnyModel>? models = null;
+      var failures = entry.Outcome == SolverOutcome.Invalid
+        ? PersistentFailureReports.Restore(locations, entry.Failure, options, out models) : null;
       if (entry.Outcome == SolverOutcome.Invalid && failures == null) {
         Interlocked.Increment(ref misses); LastBypassReason = missReason = "a stored task has no current failure report";
         return null;
       }
-      tasks.Add(new PersistedTask(canVerify, scopeToken, entry, hidden, token, assertions, covered, failures));
+      tasks.Add(new PersistedTask(canVerify, scopeToken, entry, hidden, token, assertions, covered, failures, models));
     }
     Interlocked.Increment(ref byKey ? ref keyHits : ref graphHits);
     return new ModuleReplay(tasks, proof?.Manager ?? new ProofDependencyManager());
@@ -512,9 +513,11 @@ public sealed class PersistentModuleCache {
 
     public PersistedTask(ICanVerify canVerify, CanVerifyOrigin scopeToken, TaskEntry entry, IReadOnlyList<Function> hiddenFunctions,
       IToken? token = null, IReadOnlyList<VerificationAssertionReport>? reportAssertions = null,
-      IReadOnlyList<TrackedNodeComponent>? covered = null, IReadOnlyList<DafnyDiagnostic>? failureDiagnostics = null) {
+      IReadOnlyList<TrackedNodeComponent>? covered = null, IReadOnlyList<DafnyDiagnostic>? failureDiagnostics = null,
+      IReadOnlyList<DafnyModel>? models = null) {
       this.entry = entry;
       FailureDiagnostics = failureDiagnostics;
+      Models = models;
       HiddenFunctions = hiddenFunctions;
       ScopeToken = scopeToken;
       Token = token ?? canVerify.Origin;
@@ -532,6 +535,7 @@ public sealed class PersistentModuleCache {
     public bool IsReplayed => true;
     public string? ExecutionKey => entry.ExecutionKey;
     public IReadOnlyList<DafnyDiagnostic>? FailureDiagnostics { get; }
+    public IReadOnlyList<DafnyModel>? Models { get; }
     public int Counterexamples => entry.Failure?.Counterexamples ?? 0;
     public int SplitIndex => entry.Split;
     public int RandomSeed => entry.Seed;

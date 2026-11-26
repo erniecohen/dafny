@@ -90,7 +90,7 @@ public class CommonOptionBag {
     "had a valid or resource-bounded resource-exhausted result through the result cache. CSV, TRX and ordinary JSON/text logs support replay and mark replayed timing. JSON/text retain current assertion and dependency locations and descriptions. Verification coverage and contradictory/redundant-assumption warnings support replay; proof-refactoring analysis and unsupported reporting options run normally.");
   public static readonly Option<bool> PersistentCounterexamples = new("--persistent-counterexamples",
     "With --persistent-translation, also reuse resource-bounded failed module results with complete current-source diagnostics. " +
-    "Requires no time limit. Successful and resource-exhausted modules may also replay when model extraction is requested; failed modules with model extraction use the native task path.");
+    "Requires no time limit. Model extraction also supports complete native model payloads with current-source state descriptions; unsupported model shapes use the native task path.");
   public static readonly Option<bool> PersistentTranslationAudit = new("--persistent-translation-audit",
     "With --persistent-translation, translate, prepare and verify every module as if nothing were stored, and report an error " +
     "when a stored translation or module result differs from the fresh one.") { IsHidden = true };

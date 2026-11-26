@@ -456,8 +456,10 @@ Various options control the verification process, in addition to all those descr
   diagnostics. It preserves the error count, main and related messages and current-source
   ranges. Missing or unbindable metadata falls back for the whole module. Failed tasks
   require a positive resource limit and no time limit. With `--extract-counterexample`,
-  successful and resource-exhausted modules may replay; failed modules use the ordinary
-  task path to retain their solver models. `--persistent-translation-audit` also checks
+  failed modules may also replay complete native model payloads, preserving values,
+  function interpretations, aliases and captured-state order. State descriptions use
+  current source ranges. Unsupported native model shapes or unbindable state locations retain the
+  ordinary task path. `--persistent-translation-audit` also checks
   every stored failure-report field. This option is off by default.
 
 - `--boogie /cacheBackground` is an opt-in Boogie option

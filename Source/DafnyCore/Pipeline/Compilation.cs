@@ -659,7 +659,7 @@ public class Compilation : IDisposable {
   public static void ReportDiagnosticsInResult(DafnyOptions options, string name, IOrigin token,
     uint timeLimit,
     VerificationRunResult result,
-    ErrorReporter errorReporter, IVerificationTask? task = null) {
+    ErrorReporter errorReporter, IVerificationTask? task = null, bool includeModels = true) {
     if (Caching.VerificationTaskFacts.FailureDiagnostics(task) is { } cached) {
       foreach (var diagnostic in cached) { errorReporter.MessageCore(diagnostic); }
       return;
@@ -677,7 +677,7 @@ public class Compilation : IDisposable {
         if (options.ShowProofObligationExpressions) {
           AddAssertedExprToCounterExampleErrorInfo(options, counterExample, errorInformation);
         }
-        var dafnyCounterExampleModel = options.ExtractCounterexample ? new DafnyModel(counterExample.Model, options) : null;
+        var dafnyCounterExampleModel = options.ExtractCounterexample && includeModels ? new DafnyModel(counterExample.Model, options) : null;
         errorReporter.ReportBoogieError(errorInformation, dafnyCounterExampleModel);
       }
     }
