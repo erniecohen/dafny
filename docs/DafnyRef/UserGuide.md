@@ -412,7 +412,11 @@ Various options control the verification process, in addition to all those descr
   unchanged, the module is neither translated, prepared nor solved again; when a
   dependency changed but the module's regenerated Boogie graph is unchanged, it is
   neither prepared nor solved again (early cutoff). Replayed results are reported
-  exactly as the result cache reports them. Stored Boogie text is a record, never
+  exactly as the result cache reports them. CSV verification logs also support
+  module replay: names, verdicts, resource counts and seeds are preserved, while
+  durations are marked with `TimingReplayed`. Multiple CSV loggers may be used.
+  JSON, text and TRX logs require the normal translation/preparation path; requesting
+  one alongside CSV also disables module replay. Stored Boogie text is a record, never
   an input. Options that need a fresh translation or preparation (counterexample
   extraction, printing Boogie, proof-dependency reports, and the like) and graphs
   the snapshot copier does not support run normally. The hidden option

@@ -21,10 +21,20 @@ internal sealed class ResolutionGraphEquality(Func<object, bool> boundary) {
   private readonly Dictionary<object, object> forward = new(ReferenceEqualityComparer.Instance);
   private readonly Dictionary<object, object> reverse = new(ReferenceEqualityComparer.Instance);
   private readonly List<(VisibilityScope Expected, VisibilityScope Actual)> scopes = [];
-  private readonly Queue<(object? Expected, object? Actual, string Path)> pending = new();
+  private readonly Queue<(object? Expected, object? Actual, GraphPath Path)> pending = new();
   private readonly Dictionary<object, object> pairs = new(ReferenceEqualityComparer.Instance);
   private readonly Dictionary<object, object> names = new();
   private readonly Dictionary<object, object> reverseNames = new();
+
+  // Keep one edge of a diagnostic path, not a copy of its entire ancestry for every queued field.
+  // Large expanded match trees need millions of comparisons even when the graphs are equal.
+  private sealed record GraphPath(GraphPath? Parent, string Segment) {
+    public override string ToString() {
+      var parts = new Stack<string>();
+      for (GraphPath? path = this; path != null; path = path.Parent) { parts.Push(path.Segment); }
+      return string.Join("/", parts);
+    }
+  }
 
   /// <summary>
   /// Counters that only label an object when it is printed, and are not unique (each pre-type resolver counts
@@ -46,7 +56,7 @@ internal sealed class ResolutionGraphEquality(Func<object, bool> boundary) {
 
   /// <summary>The first difference between the graphs, as a path from the root, or null if they are equal.</summary>
   public string? Difference(object? expected, object? actual) {
-    pending.Enqueue((expected, actual, "root"));
+    pending.Enqueue((expected, actual, new GraphPath(null, "root")));
     while (pending.TryDequeue(out var pair)) {
       if (Compare(pair.Expected, pair.Actual, pair.Path) is { } difference) {
         pending.Clear();
@@ -68,8 +78,8 @@ internal sealed class ResolutionGraphEquality(Func<object, bool> boundary) {
     return Incidence(false).SequenceEqual(Incidence(true)) ? null : "root: scope token incidence";
   }
 
-  private string? Compare(object? expected, object? actual, string path) {
-    string Fail(string reason) => path + ": " + reason;
+  private string? Compare(object? expected, object? actual, GraphPath path) {
+    string Fail(string reason) => path.ToString() + ": " + reason;
     if (expected == null || actual == null) { return expected == actual ? null : Fail("null edge"); }
     var type = expected.GetType();
     if (type != actual.GetType()) { return Fail("type " + type.Name + " != " + actual.GetType().Name); }
@@ -118,8 +128,8 @@ internal sealed class ResolutionGraphEquality(Func<object, bool> boundary) {
         var a = dictionary.GetEnumerator();
         var b = otherDictionary.GetEnumerator();
         for (var i = 0; a.MoveNext() && b.MoveNext(); i++) {
-          pending.Enqueue((a.Key, b.Key, path + "/key" + i));
-          pending.Enqueue((a.Value, b.Value, path + "/value" + i));
+          pending.Enqueue((a.Key, b.Key, new GraphPath(path, "key" + i)));
+          pending.Enqueue((a.Value, b.Value, new GraphPath(path, "value" + i)));
         }
         return null;
       }
@@ -138,7 +148,7 @@ internal sealed class ResolutionGraphEquality(Func<object, bool> boundary) {
     Compared++;
     foreach (var field in ResolutionGraphSchema.Fields(type)) {
       if (NamingFields.Contains(field)) { continue; }
-      pending.Enqueue((field.GetValue(expected), field.GetValue(actual), path + "/" + field.Name));
+      pending.Enqueue((field.GetValue(expected), field.GetValue(actual), new GraphPath(path, field.Name)));
     }
     return null;
   }
@@ -152,14 +162,14 @@ internal sealed class ResolutionGraphEquality(Func<object, bool> boundary) {
     return null;
   }
 
-  private string? Sequence(IEnumerable expected, IEnumerable actual, string path, Func<string, string> fail) {
+  private string? Sequence(IEnumerable expected, IEnumerable actual, GraphPath path, Func<string, string> fail) {
     var a = expected.GetEnumerator();
     var b = actual.GetEnumerator();
     for (var i = 0; ; i++) {
       var nextA = a.MoveNext();
       if (nextA != b.MoveNext()) { return fail("length"); }
       if (!nextA) { return null; }
-      pending.Enqueue((a.Current, b.Current, path + "/" + i));
+      pending.Enqueue((a.Current, b.Current, new GraphPath(path, i.ToString())));
     }
   }
 }
