@@ -11,3 +11,5 @@ Restoration preserves the resource-exhausted outcome, resource count, batch numb
 `--persistent-translation-audit` regenerates the translation and prepared tasks and compares all recorded fields except duration. The regression also uses independently populated fresh solver results, requires true module hits and no warm solver starts, retains a failing assertion, checks effective method limits, moves source locations, rejects malformed/older records and deliberately tampers with an outcome to require an audit failure. Unit tests cover the outcome/limit admission matrix and IDE diagnostics without a split. Serial mutations must fail these controls.
 
 For the later extensions, see [ordinary JSON replay](261-persistent-json.md) and [text/TRX replay](261-persistent-reports.md). Dependency-aware reports still use fresh preparation.
+
+For the subsequent dependency-aware report, warning and coverage extension, see [proof-dependency sidecars](261-persistent-dependencies.md).

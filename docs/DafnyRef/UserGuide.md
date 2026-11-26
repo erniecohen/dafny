@@ -425,10 +425,12 @@ Various options control the verification process, in addition to all those descr
   current filename, line, column and success description. These loggers may be
   combined or repeated. A module lacking complete, portable assertion metadata falls
   back for JSON or text; CSV and TRX need only the stored task facts. Dependency-aware
-  reports require the normal translation/preparation path, including when requested
-  alongside another logger. Stored Boogie text is a record, never
+  JSON/text, verification coverage and contradictory/redundant-assumption warnings also
+  support replay when the complete dependency inventory, covered membership and current
+  source ranges are available. Missing or unsupported sidecars use fresh preparation.
+  Stored Boogie text is a record, never
   an input. Options that need a fresh translation or preparation (counterexample
-  extraction, printing Boogie, proof-dependency reports, and the like) and graphs
+  extraction, printing Boogie, proof-refactoring analysis, and the like) and graphs
   the snapshot copier does not support run normally. The hidden option
   `--persistent-translation-audit` replays nothing: it translates, prepares and
   verifies every module afresh, and reports an error when a stored translation or

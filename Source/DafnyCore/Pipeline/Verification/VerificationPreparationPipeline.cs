@@ -158,7 +158,7 @@ public sealed class VerificationPreparationPipeline : IDisposable {
         return replayed;
       }
       var preparation = await Prepare(boogieProgram, createBackend, profile, moduleName, cancellationToken);
-      return new ModuleVerificationPreparation(RecordPersistent(program, moduleDefinition, translated, preparation), dependencies);
+      return new ModuleVerificationPreparation(RecordPersistent(program, moduleDefinition, translated, preparation, dependencies), dependencies);
     }
     finally {
       mutex.Release();
@@ -250,7 +250,7 @@ public sealed class VerificationPreparationPipeline : IDisposable {
     await AdmitPreparation(workers, cancellationToken);
     try {
       var preparation = await Prepare(boogieProgram, createBackend, profile, moduleName, cancellationToken);
-      return new ModuleVerificationPreparation(RecordPersistent(program, moduleDefinition, translated, preparation), dependencies);
+      return new ModuleVerificationPreparation(RecordPersistent(program, moduleDefinition, translated, preparation, dependencies), dependencies);
     }
     finally {
       FinishPreparation();
@@ -365,10 +365,10 @@ public sealed class VerificationPreparationPipeline : IDisposable {
     if (!persistent.Audit && persistent.ReadTranslation(key) is { } stored &&
         persistent.TryReplay(program, moduleDefinition, stored.Fingerprint, true, out _) is { } replayed) {
       profile?.Point("persistent-module", new Dictionary<string, object?> {
-        ["module"] = moduleName, ["hit"] = "translation-key", ["tasks"] = replayed.Count
+        ["module"] = moduleName, ["hit"] = "translation-key", ["tasks"] = replayed.Tasks.Count
       });
       return new ModuleVerificationPreparation(
-        VerificationPreparation.Ready(replayed.Select(task => new BoogieVerificationWork(task))), new ProofDependencyManager());
+        VerificationPreparation.Ready(replayed.Tasks.Select(task => new BoogieVerificationWork(task))), replayed.Dependencies);
     }
     return null;
   }
@@ -388,10 +388,10 @@ public sealed class VerificationPreparationPipeline : IDisposable {
     if (!persistent.Audit &&
         persistent.TryReplay(program, moduleDefinition, identity.Fingerprint!, false, out missReason) is { } replayed) {
       profile?.Point("persistent-module", new Dictionary<string, object?> {
-        ["module"] = moduleName, ["hit"] = "boogie-graph", ["tasks"] = replayed.Count
+        ["module"] = moduleName, ["hit"] = "boogie-graph", ["tasks"] = replayed.Tasks.Count
       });
       return new ModuleVerificationPreparation(
-        VerificationPreparation.Ready(replayed.Select(task => new BoogieVerificationWork(task))), dependencies);
+        VerificationPreparation.Ready(replayed.Tasks.Select(task => new BoogieVerificationWork(task))), replayed.Dependencies);
     }
     profile?.Point("persistent-module", new Dictionary<string, object?> {
       ["module"] = moduleName, ["hit"] = null, ["reason"] = missReason
@@ -401,12 +401,12 @@ public sealed class VerificationPreparationPipeline : IDisposable {
 
   /// <summary>Observes a fresh module's prepared tasks, so that their results are recorded.</summary>
   private static VerificationPreparation RecordPersistent(Program program, ModuleDefinition moduleDefinition,
-    Caching.PersistentModuleCache.ModuleIdentity? identity, VerificationPreparation preparation) {
+    Caching.PersistentModuleCache.ModuleIdentity? identity, VerificationPreparation preparation, ProofDependencyManager dependencies) {
     if (identity is not { Text: not null } || Caching.PersistentModuleCache.For(program.Options) is not { } persistent ||
         !preparation.IsReady || !preparation.GetWorkOrThrow().All(work => work is BoogieVerificationWork)) {
       return preparation;
     }
-    var recorded = persistent.Record(program, moduleDefinition, identity, BoogieVerificationBackend.GetNativeTasks(preparation));
+    var recorded = persistent.Record(program, moduleDefinition, identity, BoogieVerificationBackend.GetNativeTasks(preparation), dependencies);
     return VerificationPreparation.Ready(recorded.Select(task => new BoogieVerificationWork(task)));
   }
 

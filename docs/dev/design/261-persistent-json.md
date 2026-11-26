@@ -11,3 +11,5 @@ A new module-result schema and key domain reject older manifests. Every position
 The regression requires actual module hits and no warm solver starts, keeps a failing assertion and a resource-exhausted task, compares fresh/cold/warm/audit reports, moves and renames included sources, and composes module replay with checked resolution snapshots. It also checks changed effective limits, older/malformed records, missing assertion metadata, invalid anchors and filename kinds, coherent description tampering caught by the audit, and complete dependency-aware fallback. Unit tests exercise position bounds, unknown bindings, nullable fields, source-dependent prose and optional capture failures. Serial mutations of the report codec, eligibility, restoration, audit and logger selection must fail these controls.
 
 The later [text/TRX extension](261-persistent-reports.md) uses these same assertion records for text and the existing test-result adapter for TRX. Dependency-aware reports and counterexamples retain their exclusions.
+
+For the subsequent dependency-aware report, warning and coverage extension, see [proof-dependency sidecars](261-persistent-dependencies.md).

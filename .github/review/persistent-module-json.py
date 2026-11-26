@@ -332,12 +332,12 @@ assert any(v.get("timingReplayed") for v in vc_results)
 assert all(set(a) == {"filename", "line", "col", "description"} for v in vc_results for a in v["assertions"])
 assert any(a["filename"] == "contract.dfy" for v in vc_results for a in v["assertions"])
 
-# Dependency-aware JSON retains every dependency field through the ordinary path.
-coverage = run("coverage-cold", destination / "coverage-cache", extra=("--warn-redundant-assumptions", "--allow-warnings"))
-coverage_warm = run("coverage-warm", destination / "coverage-cache", extra=("--warn-redundant-assumptions", "--allow-warnings"))
+# Refactoring-aware JSON retains every dependency field through the ordinary path.
+coverage = run("coverage-cold", destination / "coverage-cache", extra=("--suggest-proof-refactoring", "--allow-warnings"))
+coverage_warm = run("coverage-warm", destination / "coverage-cache", extra=("--suggest-proof-refactoring", "--allow-warnings"))
 same(coverage, coverage_warm)
 assert coverage_warm["stats"]["keyHits"] == 0 and coverage_warm["translated"] == modules, coverage_warm["stats"]
-assert coverage_warm["stats"]["bypassReason"] == "proof-dependency reporting", coverage_warm["stats"]
+assert coverage_warm["stats"]["bypassReason"] == "proof-refactoring reporting", coverage_warm["stats"]
 assert any("programElements" in scope for scope in coverage_warm["json"]["verificationResults"])
 print("persistent text/TRX: complete reports, timing markers, hits, current locations, malformed records and dependency fallback: PASS" if all_reports else
       "persistent JSON: complete fresh/cold/warm/audit reports, hits, current locations, limits, malformed records and dependency fallback: PASS")

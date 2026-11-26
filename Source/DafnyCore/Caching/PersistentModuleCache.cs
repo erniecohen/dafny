@@ -82,8 +82,10 @@ public sealed class PersistentModuleCache {
   internal sealed record TaskEntry(SymbolEntry Symbol, bool Reverified, string ScopeId, int Split, int Seed, bool Scheduled,
     int VcNum, int MaxCounterExamples, int ResourceCount, int Asserts, long RunTimeTicks, string? ExecutionKey,
     List<string>? Hidden = null, SolverOutcome Outcome = SolverOutcome.Valid, uint TimeLimit = 0, uint ResourceLimit = 0,
-    TaskLocation? Diagnostic = null, List<StoredAssertionReport>? ReportAssertions = null);
-  internal sealed record ModuleManifest(int Schema, string Module, string BoogieHash, string Fingerprint, List<TaskEntry> Tasks);
+    TaskLocation? Diagnostic = null, List<StoredAssertionReport>? ReportAssertions = null, StoredTaskProof? Proof = null);
+  internal sealed record ModuleManifest(int Schema, string Module, string BoogieHash, string Fingerprint, List<TaskEntry> Tasks,
+    StoredProofInventory? Proof = null);
+  internal sealed record ModuleReplay(IReadOnlyList<IVerificationTask> Tasks, ProofDependencyManager Dependencies);
 
   /// <summary>A module's translation as the persistent tables see it, or why they cannot record it.</summary>
   internal sealed record ModuleIdentity(string Key, string? BoogieHash, string? Fingerprint, string? Text);
@@ -94,16 +96,16 @@ public sealed class PersistentModuleCache {
   /// </summary>
   internal string? ReplayBypass() {
     // Ordinary JSON and text consume assertion locations/descriptions in addition to the CSV fields.
-    // TRX uses the CSV task facts. Dependency reporting still requires fresh preparation.
+    // TRX uses the CSV task facts. Dependency reporting requires complete sidecars.
     if (options.Get(CommonOptionBag.VerificationLogFormat).Any(format =>
           format != "csv" && !format.StartsWith("csv;", StringComparison.Ordinal) &&
           format != "json" && !format.StartsWith("json;", StringComparison.Ordinal) &&
           format != "text" && !format.StartsWith("text;", StringComparison.Ordinal) &&
           format != "trx" && !format.StartsWith("trx;", StringComparison.Ordinal))) { return "verification logs"; }
     if (options.Get(CommonOptionBag.ProgressOption) == CommonOptionBag.ProgressLevel.Batch) { return "per-task progress"; }
-    if (options.TrackVerificationCoverage || options.Get(CommonOptionBag.VerificationCoverageReport) != null ||
-        options.Get(CommonOptionBag.WarnContradictoryAssumptions) || options.Get(CommonOptionBag.WarnRedundantAssumptions) ||
-        options.Get(CommonOptionBag.SuggestProofRefactoring)) { return "proof-dependency reporting"; }
+    if (options.Get(CommonOptionBag.SuggestProofRefactoring) || options.Get(CommonOptionBag.AnalyzeProofs)) {
+      return "proof-refactoring reporting";
+    }
     if (options.ExtractCounterexample) { return "counterexample extraction"; }
     if (options.PrintFile != null || options.PrintPassiveFile != null || options.PrintSplitFile != null) { return "Boogie printing"; }
     if (options.ProverLogFilePath != null) { return "solver logs"; }
@@ -241,7 +243,7 @@ public sealed class PersistentModuleCache {
   /// The tasks of <paramref name="module"/> replayed from the results stored for its translation
   /// <paramref name="boogieHash"/>/<paramref name="fingerprint"/>, or null.
   /// </summary>
-  internal IReadOnlyList<IVerificationTask>? TryReplay(Program program, ModuleDefinition module, string fingerprint,
+  internal ModuleReplay? TryReplay(Program program, ModuleDefinition module, string fingerprint,
     bool byKey, out string? missReason) {
     missReason = null;
     if (ReplayBypass() is { } bypass) { Bypass(bypass); missReason = bypass; return null; }
@@ -253,6 +255,12 @@ public sealed class PersistentModuleCache {
       format == "text" || format.StartsWith("text;", StringComparison.Ordinal));
     var symbols = SymbolExtensions.GetSymbolDescendants(program.DefaultModule).OfType<ICanVerify>()
       .GroupBy(locations.Symbol).Where(g => g.Count() == 1).ToDictionary(g => g.Key, g => g.Single());
+    var proofReason = "a stored module has no current proof inventory";
+    var proof = options.TrackVerificationCoverage ? PersistentProofReports.Restorer.Create(locations, manifest.Proof, out proofReason) : null;
+    if (options.TrackVerificationCoverage && proof == null) {
+      Interlocked.Increment(ref misses); LastBypassReason = missReason = proofReason;
+      return null;
+    }
     var functions = symbols.Values.OfType<Function>().GroupBy(f => f.FullDafnyName).Where(g => g.Count() == 1)
       .ToDictionary(g => g.Key, g => g.Single());
     var tasks = new List<IVerificationTask>(manifest.Tasks.Count);
@@ -286,10 +294,15 @@ public sealed class PersistentModuleCache {
         Interlocked.Increment(ref misses); LastBypassReason = missReason = "a stored task has no current assertion report";
         return null;
       }
-      tasks.Add(new PersistedTask(canVerify, scopeToken, entry, hidden, token, assertions));
+      var covered = proof?.Task(entry.Proof, tasks.Count, entry.ScopeId);
+      if (proof != null && covered == null) {
+        Interlocked.Increment(ref misses); LastBypassReason = missReason = "a stored task has no current proof dependencies";
+        return null;
+      }
+      tasks.Add(new PersistedTask(canVerify, scopeToken, entry, hidden, token, assertions, covered));
     }
     Interlocked.Increment(ref byKey ? ref keyHits : ref graphHits);
-    return tasks;
+    return new ModuleReplay(tasks, proof?.Manager ?? new ProofDependencyManager());
   }
 
   /// <summary>
@@ -298,10 +311,10 @@ public sealed class PersistentModuleCache {
   /// those results are compared with any stored ones.
   /// </summary>
   internal IReadOnlyList<IVerificationTask> Record(Program program, ModuleDefinition module, ModuleIdentity identity,
-    IReadOnlyList<IVerificationTask> tasks) {
+    IReadOnlyList<IVerificationTask> tasks, ProofDependencyManager dependencies) {
     if (identity.Text == null || identity.Fingerprint == null || identity.BoogieHash == null) { return tasks; }
     if (EnvironmentKey(out var reason) is not { } environmentKey) { Bypass(reason ?? "unsupported execution environment"); return tasks; }
-    var recorder = new ModuleRecorder(this, program, module, identity, environmentKey, tasks.Count);
+    var recorder = new ModuleRecorder(this, program, module, identity, environmentKey, tasks.Count, dependencies);
     var recording = tasks.Select((task, index) => (IVerificationTask)new RecordingTask(task, recorder, index)).ToList();
     recorder.Start(); // A module of no scheduled tasks is complete now.
     return recording;
@@ -331,11 +344,12 @@ public sealed class PersistentModuleCache {
   }
 
   private sealed class ModuleRecorder(PersistentModuleCache cache, Program program, ModuleDefinition module,
-    ModuleIdentity identity, string environmentKey, int count) {
+    ModuleIdentity identity, string environmentKey, int count, ProofDependencyManager dependencies) {
     private readonly object gate = new();
     private readonly TaskEntry?[] entries = new TaskEntry?[count];
     private int recorded;
     private bool failed;
+    private readonly PersistentProofReports.Recorder proof = new(program, dependencies);
 
     public void Complete(int index, IVerificationTask task, Completed completed) {
       TaskEntry? entry = null;
@@ -361,7 +375,7 @@ public sealed class PersistentModuleCache {
           task.Split.RandomSeed, true, result.VcNum, result.MaxCounterExamples, result.ResourceCount, result.Asserts.Count,
           result.RunTime.Ticks, executionKey, hidden.Count == 0 ? null : hidden.Select(f => f.FullDafnyName).Distinct().Order(StringComparer.Ordinal).ToList(),
           result.Outcome, timeLimit, resourceLimit, diagnostic,
-          PersistentAssertionReports.Capture(SourceLocations.For(program), result));
+          PersistentAssertionReports.Capture(SourceLocations.For(program), result), proof.CaptureTask(result.CoveredElements, task.ScopeId));
       }
       string? reason = entry != null ? null
         : result.Outcome != SolverOutcome.Valid ? "a task that was not valid"
@@ -378,7 +392,7 @@ public sealed class PersistentModuleCache {
     public void Unscheduled(int index, IVerificationTask task) {
       var origin = (CanVerifyOrigin)task.ScopeToken;
       var entry = new TaskEntry(SourceLocations.For(program).Symbol(origin.CanVerify), origin.IsReverifiedInheritedCheck, task.ScopeId, task.Split.SplitIndex,
-        task.Split.RandomSeed, false, 0, 0, 0, 0, 0, null);
+        task.Split.RandomSeed, false, 0, 0, 0, 0, 0, null, Proof: proof.CaptureTask(Array.Empty<TrackedNodeComponent>(), task.ScopeId));
       lock (gate) {
         if (entries[index] != null) { return; }
         entries[index] = entry;
@@ -404,7 +418,7 @@ public sealed class PersistentModuleCache {
         failed = true; // Publish once.
         tasks = entries.Select(e => e!).ToList();
       }
-      var manifest = new ModuleManifest(ModuleResultSchema, module.FullName, identity.BoogieHash!, identity.Fingerprint!, tasks);
+      var manifest = new ModuleManifest(ModuleResultSchema, module.FullName, identity.BoogieHash!, identity.Fingerprint!, tasks, proof.Inventory);
       var key = ManifestKey(identity.Fingerprint!, environmentKey);
       if (cache.Store.TryRead(CacheTable.ModuleResult, key) is { } storedBytes) {
         // Stored results differ from fresh ones at least in their wall-clock time, and a second,
@@ -427,10 +441,12 @@ public sealed class PersistentModuleCache {
     // Wall-clock time is not reproducible; every other recorded field is.
     private static bool Same(ModuleManifest stored, ModuleManifest fresh) =>
       stored.Schema == fresh.Schema && stored.Fingerprint == fresh.Fingerprint &&
+      JsonSerializer.Serialize(stored.Proof) == JsonSerializer.Serialize(fresh.Proof) &&
       stored.Tasks.Count == fresh.Tasks.Count &&
       stored.Tasks.Zip(fresh.Tasks).All(p =>
         // Record equality compares lists by reference; compare hidden functions and report assertions by content.
-        p.First with { RunTimeTicks = 0, Hidden = null, ReportAssertions = null } == p.Second with { RunTimeTicks = 0, Hidden = null, ReportAssertions = null } &&
+        p.First with { RunTimeTicks = 0, Hidden = null, ReportAssertions = null, Proof = null } == p.Second with { RunTimeTicks = 0, Hidden = null, ReportAssertions = null, Proof = null } &&
+        JsonSerializer.Serialize(p.First.Proof) == JsonSerializer.Serialize(p.Second.Proof) &&
         (p.First.Hidden ?? []).SequenceEqual(p.Second.Hidden ?? [], StringComparer.Ordinal) &&
         ((p.First.ReportAssertions == null && p.Second.ReportAssertions == null) ||
           (p.First.ReportAssertions != null && p.Second.ReportAssertions != null && p.First.ReportAssertions.SequenceEqual(p.Second.ReportAssertions))));
@@ -483,7 +499,8 @@ public sealed class PersistentModuleCache {
     private readonly Completed? completed;
 
     public PersistedTask(ICanVerify canVerify, CanVerifyOrigin scopeToken, TaskEntry entry, IReadOnlyList<Function> hiddenFunctions,
-      IToken? token = null, IReadOnlyList<VerificationAssertionReport>? reportAssertions = null) {
+      IToken? token = null, IReadOnlyList<VerificationAssertionReport>? reportAssertions = null,
+      IReadOnlyList<TrackedNodeComponent>? covered = null) {
       this.entry = entry;
       HiddenFunctions = hiddenFunctions;
       ScopeToken = scopeToken;
@@ -495,7 +512,7 @@ public sealed class PersistentModuleCache {
         var asserts = entry.Asserts == 0 ? NoAsserts : Enumerable.Repeat(placeholder, entry.Asserts).ToList();
         completed = new Completed(new VerificationRunResult(entry.VcNum, 0, DateTime.MinValue, entry.Outcome,
           TimeSpan.FromTicks(entry.RunTimeTicks), entry.MaxCounterExamples, new List<Counterexample>(), asserts,
-          Array.Empty<TrackedNodeComponent>(), entry.ResourceCount, Microsoft.Boogie.SMTLib.SolverKind.Z3, Array.Empty<Bpl.Declaration>()));
+          covered ?? Array.Empty<TrackedNodeComponent>(), entry.ResourceCount, Microsoft.Boogie.SMTLib.SolverKind.Z3, Array.Empty<Bpl.Declaration>()));
       }
     }
 

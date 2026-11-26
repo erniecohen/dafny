@@ -320,9 +320,9 @@ def replace(directory, index, entry, record):
 
 
 # Reports that only a fresh run produces replay nothing, and record as usual.
-logged = run("logged", extra=("--warn-redundant-assumptions", "--allow-warnings", "--log-format", "json;LogFileName=" + str(destination / "logged.json")))
+logged = run("logged", extra=("--suggest-proof-refactoring", "--allow-warnings", "--log-format", "json;LogFileName=" + str(destination / "logged.json")))
 assert logged["output"][0] == cold["output"][0] and logged["translated"] == MODULES
-assert logged["stats"]["keyHits"] == 0 and logged["stats"]["bypassReason"] == "proof-dependency reporting", logged["stats"]
+assert logged["stats"]["keyHits"] == 0 and logged["stats"]["bypassReason"] == "proof-refactoring reporting", logged["stats"]
 
 # Negative control: audit reports a stored module result that differs from a fresh one.
 tampered = destination / "tampered-cache"

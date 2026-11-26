@@ -22,14 +22,12 @@ internal sealed record StoredAssertionReport(
   [property: JsonRequired] ReportPosition Position, [property: JsonRequired] string? Description);
 
 internal static class PersistentAssertionReports {
-  // Dependency-aware reports still need the fresh proof-dependency manager and are excluded.
   public static List<StoredAssertionReport>? Capture(SourceLocations locations, VerificationRunResult result) {
     try { return CaptureCore(locations, result); }
     catch (Exception error) when (error is not OutOfMemoryException) { return null; }
   }
 
   private static List<StoredAssertionReport>? CaptureCore(SourceLocations locations, VerificationRunResult result) {
-    if (result.CoveredElements.Any()) { return null; }
     var assertions = new List<StoredAssertionReport>(result.Asserts.Count);
     foreach (var assertion in result.Asserts) {
       if (assertion.tok == null || assertion.Description == null || !locations.PortableReportText(assertion.Description.SuccessDescription) ||

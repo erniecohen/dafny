@@ -11,3 +11,5 @@ The equality contract excludes runtime and replay-marker fields. With the result
 The regression compares cold and warm reports with an independent nonpersistent oracle, requires actual module hits and zero solver starts on warm runs, retains an unsoundness witness, and exercises audit, source rebinding, stale/corrupt entries and mixed logger fallback. Mutations that disable CSV replay or admit unsupported loggers must fail those checks.
 
 For the later extensions, see [ordinary JSON replay](261-persistent-json.md) and [text/TRX replay](261-persistent-reports.md). Together they admit all ordinary verification loggers. Dependency-aware reports still use fresh preparation.
+
+For the subsequent dependency-aware report, warning and coverage extension, see [proof-dependency sidecars](261-persistent-dependencies.md).
