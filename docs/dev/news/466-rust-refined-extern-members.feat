@@ -1,8 +1,10 @@
 With `--recursive-modules`, Rust refinements may extend extern classes with foreign
 members and generated functions, methods and constructors, including function-by-method
-bodies, and introduce generic foreign classes. Trait parents use the ordinary Rust
-implementation and upcast conventions, including inherited default methods and erased
-ghost fields. Each class uses the refining module's foreign namespace. Generated
-constructors execute after allocation through the foreign type's zero-argument hook.
-Own and inherited compiled fields and foreign members with bodies retain explicit
-rejections; a trait's proper methods must be wholly generated or wholly foreign.
+bodies and locally named extern members with bodies, and introduce generic foreign
+classes. Trait parents use the ordinary Rust implementation and upcast conventions,
+including inherited default methods and erased ghost fields. Each class uses the refining module's foreign namespace. Generated
+constructors, including those marked extern, execute after allocation through the
+foreign type's zero-argument hook and receive their arguments once.
+Own and inherited compiled fields and implemented members naming a foreign enclosing
+path retain explicit rejections; a trait's proper methods must be wholly generated
+or wholly foreign.

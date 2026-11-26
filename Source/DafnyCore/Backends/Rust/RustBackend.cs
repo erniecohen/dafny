@@ -61,6 +61,11 @@ public class RustBackend : DafnyExecutableBackend {
       bool preventShadowing, bool canEmitUncompilableCode)
       : base(options, reporter, fieldPrefix, preventShadowing, canEmitUncompilableCode) { }
 
+    protected override bool UseExternalConstructorArguments(Constructor constructor) =>
+      // A constructor body runs after allocation and receives its arguments then.
+      // Only a bodiless foreign constructor passes arguments to the allocation hook.
+      (!HasRecursiveGroups || constructor.Body == null) && base.UseExternalConstructorArguments(constructor);
+
     protected override void EmitNewArray(Type elementType, IOrigin tok, List<Expression> dimensions,
       bool mustInitialize, string exampleElement, ConcreteSyntaxTree wr, ConcreteSyntaxTree wStmts) {
       if (HasRecursiveGroups && mustInitialize) {
@@ -100,7 +105,7 @@ public class RustBackend : DafnyExecutableBackend {
             !IsImportedRefinementClass(declaration, Options)) is { } externType) {
         Reporter.Error(MessageSource.Compiler, externType.Origin,
           $"Rust cannot compile extern type '{externType.Name}' in refining module '{module.FullDafnyName}' above a recursive module group: " +
-          "supported extern classes have no compiled fields (including inherited fields), at most one extern argument, and either bodiless foreign members or implemented non-extern functions, methods or constructors");
+          "supported extern classes have no compiled fields (including inherited fields), at most one extern argument, and either bodiless foreign members or implemented functions, methods or constructors without a foreign enclosing path");
         return;
       }
     }
@@ -123,8 +128,8 @@ public class RustBackend : DafnyExecutableBackend {
       cl.Members.All(member => member.IsGhost ||
         (member.IsExtern(options, out _, out _) &&
          member is Function { Body: null } or MethodOrConstructor { Body: null }) ||
-        (!member.IsExtern(options, out _, out _) &&
-         member is Function { Body: not null } or MethodOrConstructor { Body: not null }));
+        (member is Function { Body: not null } or MethodOrConstructor { Body: not null } &&
+         (!member.IsExtern(options, out var memberEnclosing, out _) || memberEnclosing == null)));
   }
 
   // Knowing that the result of the compilation will be placed in a dafnyProgramName.rs,

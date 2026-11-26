@@ -3,7 +3,7 @@ module {:extern "Imported"} Base {
   trait Marker { }
   class {:extern "Native"} Native  {
     constructor {:extern} ()
-    function {:extern} Read(): int { 31 }
+    function {:extern "Elsewhere", "Read"} Read(): int { 31 }
   }
 }
 module Peer { import Base }
