@@ -1,0 +1,1 @@
+JavaScript recursive module groups now support preloaded extern modules, foreign classes and extern members while preserving ordinary foreign linkage names. Require-based modules, unsupported type and member qualifiers, imported members without foreign owners, extern constructors and refinements containing extern types receive explicit diagnostics.

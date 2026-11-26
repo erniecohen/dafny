@@ -1187,7 +1187,14 @@ that a later stage would have to reject:
   select foreign Go packages; generated declarations of the group share a separate
   package. See [Go extern linkage](../Compilation/Go.md#recursive-module-groups)
   for names and foreign source-file conventions.
-  JavaScript groups containing extern modules, types or members are not yet supported.
+  JavaScript groups support preloaded extern module objects, extern types in those
+  modules, and qualified extern members. They retain ordinary module and type names
+  inside a shared initialization closure. Require-based extern modules, two-argument
+  extern type qualifiers, unqualified imported members without an extern owner,
+  qualified instance methods or fields, extern constructors, and refinements containing extern types
+  remain unsupported. See the
+  [compilation design](../dev/recursive-module-compilation.md#javascript-group-emission)
+  for the linkage restrictions and qualification tests.
   C++ groups remain rejected: the backend does not emit the indirection needed for
   mutually recursive datatype layouts across modules and does not support traits.
   The internal resolved-Dafny target (`dfy`) remains rejected because its DAST

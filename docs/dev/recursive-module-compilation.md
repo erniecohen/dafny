@@ -232,29 +232,60 @@ their existing paths.
 
 ## JavaScript group emission
 
-JavaScript emits one closure and module object per recursive group. Names of
+Groups without extern declarations emit one closure and module object. Names of
 classes, traits, datatypes, iterators and default classes carry a member prefix;
 qualified type, constructor, conversion and entry-point references use the same
 identity. Both the group name and member order depend on full module names,
 so separately translated clients reconstruct them after source relocation.
 The generated constructor strings retain their Dafny names.
 
+A group containing extern declarations instead initializes its ordinary module
+objects inside one shared group closure. Generated objects are declared outside
+that closure; preloaded extern module objects are extended in place. Classes and
+members retain the ordinary JavaScript backend's public names. This preserves
+foreign object identity and the paths used by separately translated clients,
+including fully foreign classes and partial classes with generated members.
+Qualified extern functions and methods use the existing foreign calling convention;
+extern attributes on members with bodies continue to compile those bodies.
+
 Declarations initialize only class objects: sibling type descriptors, constants,
-trait identities and datatype defaults are evaluated when used, after all module
+trait identities and datatype defaults are evaluated when used, after all member
 closures have initialized. No ordering of the members is needed. Abstract groups
 emit nothing, and refinement retains its original sibling references.
+
+Supported foreign modules are preloaded objects (`{:extern}` or a single name).
+Require-based, two-argument extern modules remain rejected: their loading and cycle
+semantics have not been qualified. Extern types must belong to a preloaded extern
+module and have no two-argument qualifier. Unqualified imported members require an
+extern type or, for module-level members, an extern module. Two-argument member
+qualifiers are supported only for functions and static methods; instance methods
+and fields retain receiver-based linkage. Refinements of group
+members containing extern types remain rejected because inherited foreign owners
+are not preserved. Extern constructors are explicitly rejected in groups: the
+ordinary JavaScript allocation path does not forward their arguments. Partial
+foreign classes can use a Dafny constructor body; their generated class extends
+the foreign class. Fully foreign classes can expose a factory member.
 
 `git-issue-466-js.dfy` compares the existing group fixtures against C#, including
 wrapper-erasure settings, scheduled resolution, additional axioms, complete
 archives, repeated names, nested groups, constrained defaults, value-type trait
 conversions and a group entry point. It links a separately translated client to
 a producer using an archive rebuilt from relocated source files. The invalid
-invariant and reachable false assertion remain errors. Module, type and member
-extern controls reject unsupported foreign linkage explicitly.
+invariant and reachable false assertion remain errors.
+`git-issue-466-js-extern-runtime.dfy` repeats the three-member recursion, unordered
+constants, mutual datatypes, implicit defaults and extern-backed witnesses, traits,
+refinement and library comparisons with extern members. It exercises foreign
+classes, instance functions, methods and fields, both wrapper-erasure settings,
+additional axioms, source relocation and separately translated clients.
+`git-issue-466-js-extern.dfy` checks each group-specific foreign linkage rejection.
+Archives with arbitrary extern contracts still cannot provide the modular
+termination certificate required by cross-module trait implementations; the
+library comparison uses a concrete-counter variant and retains that rejection as
+a negative control.
 
 This milestone depends on https://github.com/erniecohen/dafny/pull/535. It adds
 no verifier rule, axiom or trusted assumption. Programs without a recursive
-group use their existing emission paths.
+group and groups without extern declarations use their existing emission paths.
 
 ## Remaining compilation work
 
