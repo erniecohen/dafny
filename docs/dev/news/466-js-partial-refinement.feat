@@ -1,0 +1,6 @@
+With `--recursive-modules`, JavaScript compilation supports partial extern classes
+in concrete refinements of recursive group members, including descendants of
+abstract refinements. Generated subclasses use the concrete module's preloaded
+foreign classes, initialize Dafny fields, and provide generated constructors and
+members. Bodiless native constructors on partial classes and other extern type
+kinds in refinements retain explicit diagnostics.

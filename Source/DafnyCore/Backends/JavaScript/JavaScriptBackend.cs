@@ -35,10 +35,9 @@ public class JavaScriptBackend : ExecutableBackend {
       }
       if (refinesGroup && module.TopLevelDecls.FirstOrDefault(declaration =>
             declaration is not ModuleDecl and not DefaultClassDecl && declaration.IsExtern(Options, out _, out _) &&
-            (declaration is not ClassDecl type || type.Members.Any(member =>
-              !member.IsGhost && !codeGenerator.IsExternallyImported(member)))) is { } externType) {
+            declaration is not ClassDecl) is { } externType) {
         Reporter.Error(MessageSource.Compiler, externType.Origin,
-          "JavaScript refinements of recursive module groups require fully imported extern classes; partial classes and other extern type kinds are not yet supported");
+          "JavaScript refinements of recursive module groups support extern classes only; other extern type kinds are not yet supported");
         return;
       }
     }

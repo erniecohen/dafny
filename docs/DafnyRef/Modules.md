@@ -1218,13 +1218,15 @@ that a later stage would have to reject:
   JavaScript groups support preloaded extern module objects, extern types in those
   modules, and qualified extern members. They retain ordinary module and type names
   inside a shared initialization closure. Concrete refinements, including descendants
-  of abstract refinements, support fully imported extern classes when each concrete
-  module supplies its own preloaded extern object. Fully imported extern classes
+  of abstract refinements, support fully imported and partial extern classes when
+  each concrete module supplies its own preloaded extern object. Fully imported extern classes
   in a group or its concrete refinements support native constructors: generated
-  calls pass type descriptors followed by non-ghost arguments. Partial extern classes require a Dafny constructor body. Require-based
+  calls pass type descriptors followed by non-ghost arguments. Partial extern classes
+  use generated subclasses for Dafny fields and members, and require a Dafny
+  constructor body. Require-based
   extern modules, two-argument extern type qualifiers, unqualified imported members
   without an extern owner, qualified instance methods or fields, and refinements
-  containing partial extern classes or other extern type kinds remain unsupported.
+  containing extern type kinds other than classes remain unsupported.
   See the
   [compilation design](../dev/recursive-module-compilation.md#javascript-group-emission)
   for the linkage restrictions and qualification tests.

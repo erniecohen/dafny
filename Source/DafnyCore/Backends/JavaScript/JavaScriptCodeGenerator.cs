@@ -164,7 +164,9 @@ namespace Microsoft.Dafny.Compilers {
       if (isExtern) {
         fieldWriter.Write("super(");
         if (typeParameters != null) {
-          WriteRuntimeTypeDescriptorsFormals(typeParameters, false, w);
+          // Group refinements use the same native base class convention as their members.
+          var descriptorWriter = IsRecursiveGroupContext(cls.EnclosingModuleDefinition) ? fieldWriter : w;
+          WriteRuntimeTypeDescriptorsFormals(typeParameters, false, descriptorWriter);
         }
         fieldWriter.WriteLine(");");
       }

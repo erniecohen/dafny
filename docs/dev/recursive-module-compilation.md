@@ -289,15 +289,19 @@ module and have no two-argument qualifier. Unqualified imported members require 
 extern type or, for module-level members, an extern module. Two-argument member
 qualifiers are supported only for functions and static methods; instance methods
 and fields retain receiver-based linkage. Concrete refinements of group members
-may contain fully imported extern classes, including through abstract refinements.
-Each concrete refinement must name its own preloaded extern module object; inherited
+may contain fully imported or partial extern classes, including through abstract
+refinements. Each concrete refinement must name its own preloaded extern module
+object; inherited
 classes use that object's public type names. Fully imported classes emit no
-generated class layout, so these references preserve the ordinary foreign
-identity. Abstract refinements emit nothing.
-Partial extern classes and other extern type kinds in refinements remain rejected:
-their generated layout and inheritance need separate qualification. Fully imported
-foreign classes declared in a group or its concrete refinements support
-bodiless extern constructors. Allocation passes the ordinary type-descriptor prefix followed by
+generated class layout. Partial classes use the ordinary JavaScript lowering: a
+generated subclass extends the concrete module's foreign class, forwards its type
+descriptors to `super`, initializes generated fields, and supplies Dafny constructor
+bodies and members. Imported fields and members retain receiver-based linkage.
+Abstract refinements emit nothing. Extern type kinds other than classes in
+refinements remain rejected; their generated representation needs separate
+qualification. Fully imported foreign classes declared in a group or its concrete
+refinements support bodiless extern constructors. Allocation passes the ordinary
+type-descriptor prefix followed by
 non-ghost constructor arguments, evaluated once in order. Constructor extern
 names do not select a separate JavaScript member: allocation invokes the class
 itself with `new`. Partial foreign classes still require a Dafny constructor body;
@@ -329,8 +333,16 @@ Distinct foreign namespaces return different values and print constructor traces
 so aliasing an ancestor or dropping native arguments changes the result. Source
 builds, both wrapper-erasure settings, relocated archives and separately translated
 clients agree with independently emitted C#. Wrong constructor results and a
-reachable false assertion remain errors. Partial classes, extern traits and
-refinements without their own preloaded extern owner retain tested rejections.
+reachable false assertion remain errors. Bodiless native constructors on partial
+classes, extern traits and refinements without their own preloaded extern owner
+retain tested rejections.
+`git-issue-466-js-partial-refinement.dfy` repeats the matrix with partial classes in
+the group and both refining namespaces. Generic fields, generated constructors,
+updates, descriptor-backed defaults and generated members calling recursive
+siblings agree with independently emitted C#. Distinct foreign fields and methods
+check each concrete namespace. Both wrapper-erasure modes, relocated archives and
+separately translated clients are covered. Wrong constructor results, wrong field
+and update results, and a reachable false assertion remain verification errors.
 `git-issue-466-js-extern.dfy` checks each group-specific foreign linkage rejection.
 Archives with arbitrary extern contracts still cannot provide the modular
 termination certificate required by cross-module trait implementations; the
