@@ -1165,3 +1165,4 @@ hofs/ReadsReads.dfy
 hofs/Apply.dfy
 git-issues/git-issue-569.dfy
 git-issues/git-issue-374-partial-stdlib.dfy
+git-issues/git-issue-466-rust-extern.dfy

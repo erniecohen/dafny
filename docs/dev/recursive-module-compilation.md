@@ -251,9 +251,24 @@ modules at the same enclosing path.
 
 The Rust milestone depends on https://github.com/erniecohen/dafny/pull/535.
 It extends only the existing experimental option and changes no verifier rule.
-Extern modules, types and members inside a group are explicitly rejected pending
-a linkage convention. Rust's existing implicit datatype-default and general-trait
-limitations remain: the runtime comparisons use the existing three-member producer
+Extern modules, types and members retain the ordinary Rust linkage convention.
+Each member keeps its extern attributes and `requiresExterns` flag when moved into
+the container. Imports still start at the translation root's `_dafny_externs`,
+not at the container; two-argument member externs still name their foreign path
+directly. The public facades re-export imported types and default classes as well
+as generated declarations. Foreign implementations can therefore name sibling
+types and complete generated classes through the same public paths as in an
+acyclic program; they never name the group container.
+
+The ordinary Rust diagnostics still reject two-argument module and class externs
+and a class that mixes foreign and generated implementations of one trait.
+These forms have rejection controls. Refinement of a group member containing
+extern types is also rejected: copying a partial foreign class can lose its import
+or duplicate its generated implementations. Inherited extern members with explicit
+foreign paths remain supported. No new verifier fact or check is involved,
+and compilation without `--recursive-modules` is unchanged.
+
+Rust's existing implicit datatype-default and general-trait limitations remain: the runtime comparisons use the existing three-member producer
 with explicit array initializers and reference traits (`--general-traits=legacy`).
 C# comparisons disable wrapper erasure, which Rust already disables. Group programs
 that require implicit array initialization are rejected rather than emitted with
@@ -265,4 +280,20 @@ It also tests repeated declaration names, nested groups, Rust keywords, entry-po
 arguments and a separately translated producer/client pair compiled into one crate.
 The facades export constructors through their types; clients do not need the
 private layout of a group container. `git-issue-466-rust-rejected.dfy` supplies
-module, type and member extern controls and an implicit-array-initialization control.
+two-argument module and class extern controls, a mixed trait-implementation control,
+a refinement-with-extern-types control and an implicit-array-initialization control.
+
+`git-issue-466-rust-extern.dfy` compares foreign linkage with C#'s independent
+module emission for three-member recursion, constants without a module order,
+mutually recursive datatypes, explicit defaults, member-invariant witnesses,
+reference traits, refinement and complete library archives. A separately translated
+producer/client pair also links through the public facades with the same foreign
+source. The archive variant uses a concrete counter: arbitrary extern contracts
+cannot receive a modular termination certificate; the source comparison separately
+checks the cross-module trait implementation. No certificate or runtime-trust rule
+is changed. It covers zero- and one-argument module externs, nested foreign names,
+renamed instance members,
+two-argument static members, partial foreign classes and foreign implementations
+of generated class methods. An extern round trip of a mutually recursive datatype
+checks sibling type identity across the foreign boundary. The ordinary Rust extern
+tests are option-off controls.
