@@ -296,29 +296,32 @@ containing extern types are allowed: they emit no imports or implementations.
 The complete extern runtime matrix includes such an abstract refinement of the
 member containing a fully imported foreign class.
 
-Concrete refinements may inherit, extend or introduce fully imported extern
-classes: all executable members must be foreign methods or constructors without
-bodies, the class must have at most one extern argument, and it must have no
-compiled fields or trait parents. A refinement can add or rename foreign members
-and introduce generic foreign classes. Ghost declarations remain erased; their
-presence does not require generating a Rust implementation. The refining module
-imports each class by its compiled name from its own foreign namespace beneath
-the translation root's `_dafny_externs`. Each refinement
-therefore has its own foreign identity, as in independent C# emission; it does not
-alias the ancestor's foreign type. Foreign source must supply the refined types
-as well as the original ones. This also works through abstract intermediate
-refinements, with renamed generic classes, nested namespaces and separate
-producer/client translation.
+Concrete refinements may inherit, extend or introduce extern classes with at
+most one extern argument and no compiled fields or trait parents. Constructors
+must be foreign and have no body. Other executable members may be bodiless foreign
+members or implemented non-extern functions and methods, including functions with
+method bodies. A refinement can add or rename foreign members, introduce generic
+foreign classes, and generate inherent implementations on those classes. Ghost
+declarations remain erased.
+
+The refining module imports each class by its compiled name from its own foreign
+namespace beneath the translation root's `_dafny_externs`. Ordinary class lowering
+then emits inherent implementations on that imported type, including generated
+members inherited through an abstract refinement. Each refinement therefore has
+its own foreign identity, as in independent C# emission; it does not alias the
+ancestor's foreign type or attach generated methods to that ancestor type. Foreign
+source must supply each refined type and its foreign constructors and members. This also
+works with renamed generic classes, nested namespaces and separate producer/client
+translation.
 
 Other concrete refinements containing extern types remain rejected, with the type,
-refining module and supported class shape named in the diagnostic. Partial classes,
-compiled fields, trait parents, generated member bodies and two-argument class
-externs still require additional implementation or import remapping.
-Copying a partial foreign class can lose its import or duplicate its generated
-implementations. A refinement chain through an abstract intermediate module still
-checks its concrete descendant. Inherited extern members with explicit foreign
-paths remain supported. No new verifier fact or check is involved,
-and compilation without `--recursive-modules` is unchanged.
+refining module and supported class shape named in the diagnostic. Compiled fields,
+trait parents and generated constructors require layout, trait or allocation rules;
+foreign members with bodies and two-argument class externs remain unsupported.
+A refinement chain through an abstract intermediate module still checks its
+concrete descendant. Inherited extern members with explicit foreign paths remain
+supported. No new verifier fact or check is involved, and compilation without
+`--recursive-modules` is unchanged.
 
 Rust's existing implicit datatype-default and general-trait limitations remain:
 the runtime comparisons use the existing three-member producer with explicit
@@ -380,9 +383,9 @@ explicit defaults, invariant witnesses, traits, refinement and complete archives
 Distinct foreign return values check the identity of each refining namespace;
 a renamed generic foreign class transports a recursive datatype. A separately
 translated client exercises the producer's foreign imports through the translation
-root. Negative controls retain the rejection of fields, trait parents, class
-extensions with generated members and foreign members with generated bodies. A reachable false
-assertion after foreign construction and a call remains rejected. This milestone
+root. Negative controls retain the rejection of fields, trait parents and
+foreign members with generated bodies, including fields added by a refinement.
+A reachable false assertion after foreign construction and a call remains rejected. This milestone
 adds no verifier fact, axiom or assumption, and changes no emission with
 `--recursive-modules` disabled.
 
@@ -394,6 +397,17 @@ function used by a proof, and another foreign member above an abstract refinemen
 Distinct foreign return values check the refining namespaces, and foreign generic
 round trips preserve recursive datatype values. Both an incorrect result assertion
 and a reachable false assertion after a new foreign call remain rejected.
-The eligibility check depends on whether a class needs generated code, rather
-than whether its declarations were copied by refinement. Compilation with the
-option disabled and all verifier rules remain unchanged.
+The eligibility check depends on the kinds of compiled members and the class
+layout, rather than whether declarations were copied by refinement. Compilation
+with the option disabled and all verifier rules remain unchanged.
+
+`git-issue-466-rust-partial-refinement.dfy` extends the same runtime matrix with
+generated functions, methods and function-by-method bodies on foreign classes,
+including a renamed generic class transporting values through a foreign member.
+It compares independent C# and Rust source runs, complete archives and separately
+translated producer/client outputs. A concrete descendant above an abstract
+refinement exercises inherited implementations and another generated method;
+distinct foreign return values distinguish the refining namespaces. Incorrect
+result and reachable false assertions remain rejected after a generated method
+calls a foreign member. A negative control retains the generated-constructor
+rejection, alongside the existing fields, trait parents and foreign-body controls.

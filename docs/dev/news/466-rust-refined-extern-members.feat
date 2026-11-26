@@ -1,4 +1,5 @@
-With `--recursive-modules`, Rust refinements may extend fully imported extern
-classes with foreign members and introduce new generic foreign classes. Each
-class uses the refining module's foreign namespace. Ghost declarations are erased;
-compiled fields, trait parents and generated members retain explicit rejections.
+With `--recursive-modules`, Rust refinements may extend extern classes with foreign
+members and generated functions and methods, including function-by-method bodies,
+and introduce generic foreign classes. Each class uses the refining module's foreign
+namespace. Ghost declarations are erased; compiled fields, trait parents, generated
+constructors and foreign members with bodies retain explicit rejections.

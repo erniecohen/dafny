@@ -1,1 +1,1 @@
-// CHECK: Rust cannot compile extern type 'Native' in refining module 'Final' above a recursive module group: only fully imported classes with at most one extern argument, foreign methods or constructors without bodies, and no fields or trait parents are supported
+// CHECK: Rust cannot compile extern type 'Native' in refining module 'Final' above a recursive module group: supported extern classes have no compiled fields or trait parents, at most one extern argument, foreign constructors, and either bodiless foreign members or implemented non-extern functions and methods

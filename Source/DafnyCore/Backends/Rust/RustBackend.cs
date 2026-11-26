@@ -100,7 +100,7 @@ public class RustBackend : DafnyExecutableBackend {
             !IsImportedRefinementClass(declaration, Options)) is { } externType) {
         Reporter.Error(MessageSource.Compiler, externType.Origin,
           $"Rust cannot compile extern type '{externType.Name}' in refining module '{module.FullDafnyName}' above a recursive module group: " +
-          "only fully imported classes with at most one extern argument, foreign methods or constructors without bodies, and no fields or trait parents are supported");
+          "supported extern classes have no compiled fields or trait parents, at most one extern argument, foreign constructors, and either bodiless foreign members or implemented non-extern functions and methods");
         return;
       }
     }
@@ -113,16 +113,17 @@ public class RustBackend : DafnyExecutableBackend {
     base.Compile(dafnyProgram, dafnyProgramName, output);
   }
 
-  // Fully imported classes need only an import from the refining foreign module,
-  // whether inherited, extended with foreign members or introduced there.
-  // Partial classes, fields and trait implementations still need remapping of
-  // generated implementations and retain the explicit rejection above.
+  // Import the refining foreign type once, then let ordinary class lowering
+  // generate its inherent functions and methods. Fields, trait implementations
+  // and generated constructors still require a separate layout/allocation rule.
   internal static bool IsImportedRefinementClass(TopLevelDecl declaration, DafnyOptions options) {
     return declaration is ClassDecl cl && cl.Traits.Count == 0 &&
       cl.IsExtern(options, out var enclosing, out _) && enclosing == null &&
       cl.Members.All(member => member.IsGhost ||
         (member.IsExtern(options, out _, out _) &&
-         member is Function { Body: null } or MethodOrConstructor { Body: null }));
+         member is Function { Body: null } or MethodOrConstructor { Body: null }) ||
+        (!member.IsExtern(options, out _, out _) &&
+         member is Function { Body: not null } or Method { Body: not null }));
   }
 
   // Knowing that the result of the compilation will be placed in a dafnyProgramName.rs,
