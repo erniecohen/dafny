@@ -411,7 +411,8 @@ Various options control the verification process, in addition to all those descr
   completed valid, or ran out of resources under a positive resource limit and no
   time limit, through the task-result cache. Resource-exhausted results retain their
   outcome and current-source diagnostic; the module identity and environment must
-  still match, including the effective limits. Counterexample errors, timed failures
+  still match, including the effective limits. Counterexample errors retain the normal task path unless
+  `--persistent-counterexamples` is also enabled (see below). Timed failures
   and unsupported outcomes retain the normal task path. When a module's translation key is
   unchanged, the module is neither translated, prepared nor solved again; when a
   dependency changed but the module's regenerated Boogie graph is unchanged, it is
@@ -449,6 +450,15 @@ Various options control the verification process, in addition to all those descr
   run finds what any partition stored, and an evicted entry is only a miss. A
   module whose translation was evicted is translated again and, when its Boogie
   graph is unchanged, replays its stored results (early cutoff).
+
+- `--persistent-counterexamples` requires `--persistent-translation` and additionally
+  allows whole-module reuse of resource-bounded failed results with complete terminal
+  diagnostics. It preserves the error count, main and related messages and current-source
+  ranges. Missing or unbindable metadata falls back for the whole module. Failed tasks
+  require a positive resource limit and no time limit. With `--extract-counterexample`,
+  successful and resource-exhausted modules may replay; failed modules use the ordinary
+  task path to retain their solver models. `--persistent-translation-audit` also checks
+  every stored failure-report field. This option is off by default.
 
 - `--boogie /cacheBackground` is an opt-in Boogie option
   ([#241](https://github.com/erniecohen/dafny/issues/241)). When a split has the

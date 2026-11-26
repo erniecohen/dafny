@@ -27,7 +27,8 @@ namespace Microsoft.Dafny.Caching;
 /// The module-result table maps a fingerprint, under one verification environment (the options,
 /// the audited solver and toolchain, and the Dafny and Boogie builds), to the result of each of the
 /// module's tasks. A manifest is published only when every task the module schedules completed
-/// Valid or resource-bounded OutOfResource through the task-result cache, and the module's translation reported nothing. Its tasks are
+/// Valid, resource-bounded OutOfResource, or explicitly enabled resource-bounded Invalid with a
+/// complete terminal failure report through the task-result cache, and translation reported nothing. Its tasks are
 /// then replayed, flagged as replayed, without translation, preparation, VC generation or a solver.
 ///
 /// Translation is never reloaded from disk: a stored Boogie text is a record of what was
@@ -82,7 +83,7 @@ public sealed class PersistentModuleCache {
   internal sealed record TaskEntry(SymbolEntry Symbol, bool Reverified, string ScopeId, int Split, int Seed, bool Scheduled,
     int VcNum, int MaxCounterExamples, int ResourceCount, int Asserts, long RunTimeTicks, string? ExecutionKey,
     List<string>? Hidden = null, SolverOutcome Outcome = SolverOutcome.Valid, uint TimeLimit = 0, uint ResourceLimit = 0,
-    TaskLocation? Diagnostic = null, List<StoredAssertionReport>? ReportAssertions = null, StoredTaskProof? Proof = null);
+    TaskLocation? Diagnostic = null, List<StoredAssertionReport>? ReportAssertions = null, StoredTaskProof? Proof = null, StoredFailureReport? Failure = null);
   internal sealed record ModuleManifest(int Schema, string Module, string BoogieHash, string Fingerprint, List<TaskEntry> Tasks,
     StoredProofInventory? Proof = null);
   internal sealed record ModuleReplay(IReadOnlyList<IVerificationTask> Tasks, ProofDependencyManager Dependencies);
@@ -106,7 +107,7 @@ public sealed class PersistentModuleCache {
     if (options.Get(CommonOptionBag.SuggestProofRefactoring) || options.Get(CommonOptionBag.AnalyzeProofs)) {
       return "proof-refactoring reporting";
     }
-    if (options.ExtractCounterexample) { return "counterexample extraction"; }
+    if (options.ExtractCounterexample && !options.Get(CommonOptionBag.PersistentCounterexamples)) { return "counterexample extraction"; }
     if (options.PrintFile != null || options.PrintPassiveFile != null || options.PrintSplitFile != null) { return "Boogie printing"; }
     if (options.ProverLogFilePath != null) { return "solver logs"; }
     if (options.VerifySnapshots > 0) { return "Boogie snapshots"; }
@@ -119,7 +120,7 @@ public sealed class PersistentModuleCache {
 
   /// <summary>The module's translation key, or null with a reason when the module is translated afresh.</summary>
   internal string? Key(Program program, ModuleDefinition module, BoogieGenerator.TranslatorFlags flags) {
-    if (ModuleTranslationCache.BypassReason(program, module, flags) is { } reason) {
+    if (ModuleTranslationCache.BypassReason(program, module, flags, persistentResults: options.Get(CommonOptionBag.PersistentCounterexamples)) is { } reason) {
       Bypass(reason);
       return null;
     }
@@ -230,8 +231,9 @@ public sealed class PersistentModuleCache {
     try {
       var manifest = JsonSerializer.Deserialize<ModuleManifest>(bytes);
       if (manifest is { Schema: ModuleResultSchema } && manifest.Fingerprint == fingerprint && manifest.Tasks != null &&
-          manifest.Tasks.All(entry => ReplayableOutcome(entry.Outcome, entry.TimeLimit, entry.ResourceLimit) &&
-            (entry.Outcome == SolverOutcome.Valid || entry.Diagnostic != null))) {
+          manifest.Tasks.All(entry => entry != null && ReplayableOutcome(entry.Outcome, entry.TimeLimit, entry.ResourceLimit, entry.Failure?.Counterexamples ?? 0, options.Get(CommonOptionBag.PersistentCounterexamples)) &&
+            (entry.Outcome == SolverOutcome.Invalid ? entry.Failure != null : entry.Failure == null) &&
+            (entry.Outcome != SolverOutcome.OutOfResource || entry.Diagnostic != null))) {
         return manifest;
       }
     } catch (JsonException) { }
@@ -299,7 +301,13 @@ public sealed class PersistentModuleCache {
         Interlocked.Increment(ref misses); LastBypassReason = missReason = "a stored task has no current proof dependencies";
         return null;
       }
-      tasks.Add(new PersistedTask(canVerify, scopeToken, entry, hidden, token, assertions, covered));
+      var failures = entry.Outcome == SolverOutcome.Invalid && !options.ExtractCounterexample
+        ? PersistentFailureReports.Restore(locations, entry.Failure) : null;
+      if (entry.Outcome == SolverOutcome.Invalid && failures == null) {
+        Interlocked.Increment(ref misses); LastBypassReason = missReason = "a stored task has no current failure report";
+        return null;
+      }
+      tasks.Add(new PersistedTask(canVerify, scopeToken, entry, hidden, token, assertions, covered, failures));
     }
     Interlocked.Increment(ref byKey ? ref keyHits : ref graphHits);
     return new ModuleReplay(tasks, proof?.Manager ?? new ProofDependencyManager());
@@ -332,10 +340,11 @@ public sealed class PersistentModuleCache {
 
 
   // Failed interactions are deterministic only under a resource bound, without a time bound.
-  // Counterexamples require a richer current-report snapshot and remain on the task path.
-  internal static bool ReplayableOutcome(SolverOutcome outcome, uint timeLimit, uint resourceLimit, int counterexamples = 0) =>
-    counterexamples == 0 && (outcome == SolverOutcome.Valid ||
-    outcome == SolverOutcome.OutOfResource && timeLimit == 0 && resourceLimit > 0);
+  // Invalid results additionally require a complete current-source diagnostic snapshot.
+  internal static bool ReplayableOutcome(SolverOutcome outcome, uint timeLimit, uint resourceLimit, int counterexamples = 0, bool failures = false) =>
+    counterexamples >= 0 && (counterexamples == 0 && (outcome == SolverOutcome.Valid ||
+      outcome == SolverOutcome.OutOfResource && timeLimit == 0 && resourceLimit > 0) ||
+      failures && outcome == SolverOutcome.Invalid && counterexamples > 0 && timeLimit == 0 && resourceLimit > 0);
 
   /// <summary>Whether Compilation runs this task: a copy from a refinement base runs only its own checks.</summary>
   internal static bool Scheduled(IVerificationTask task) {
@@ -368,14 +377,16 @@ public sealed class PersistentModuleCache {
           diagnostic = new TaskLocation(token.line - start.line, token.col, token.pos - start.pos);
         }
       }
-      if (ReplayableOutcome(result.Outcome, timeLimit, resourceLimit, result.CounterExamples.Count) &&
-          (result.Outcome == SolverOutcome.Valid || diagnostic != null) &&
+      var failure = cache.options.Get(CommonOptionBag.PersistentCounterexamples) && result.Outcome == SolverOutcome.Invalid
+        ? PersistentFailureReports.Capture(program, task, result) : null;
+      if (ReplayableOutcome(result.Outcome, timeLimit, resourceLimit, result.CounterExamples.Count, cache.options.Get(CommonOptionBag.PersistentCounterexamples)) &&
+          (result.Outcome == SolverOutcome.Valid || result.Outcome == SolverOutcome.OutOfResource && diagnostic != null || failure != null) &&
           task is IReplayedVerificationTask { ExecutionKey: { } executionKey }) {
         entry = new TaskEntry(SourceLocations.For(program).Symbol(origin.CanVerify), origin.IsReverifiedInheritedCheck, task.ScopeId, task.Split.SplitIndex,
           task.Split.RandomSeed, true, result.VcNum, result.MaxCounterExamples, result.ResourceCount, result.Asserts.Count,
           result.RunTime.Ticks, executionKey, hidden.Count == 0 ? null : hidden.Select(f => f.FullDafnyName).Distinct().Order(StringComparer.Ordinal).ToList(),
           result.Outcome, timeLimit, resourceLimit, diagnostic,
-          PersistentAssertionReports.Capture(SourceLocations.For(program), result), proof.CaptureTask(result.CoveredElements, task.ScopeId));
+          PersistentAssertionReports.Capture(SourceLocations.For(program), result), proof.CaptureTask(result.CoveredElements, task.ScopeId), failure);
       }
       string? reason = entry != null ? null
         : result.Outcome != SolverOutcome.Valid ? "a task that was not valid"
@@ -445,8 +456,9 @@ public sealed class PersistentModuleCache {
       stored.Tasks.Count == fresh.Tasks.Count &&
       stored.Tasks.Zip(fresh.Tasks).All(p =>
         // Record equality compares lists by reference; compare hidden functions and report assertions by content.
-        p.First with { RunTimeTicks = 0, Hidden = null, ReportAssertions = null, Proof = null } == p.Second with { RunTimeTicks = 0, Hidden = null, ReportAssertions = null, Proof = null } &&
+        p.First with { RunTimeTicks = 0, Hidden = null, ReportAssertions = null, Proof = null, Failure = null } == p.Second with { RunTimeTicks = 0, Hidden = null, ReportAssertions = null, Proof = null, Failure = null } &&
         JsonSerializer.Serialize(p.First.Proof) == JsonSerializer.Serialize(p.Second.Proof) &&
+        JsonSerializer.Serialize(p.First.Failure) == JsonSerializer.Serialize(p.Second.Failure) &&
         (p.First.Hidden ?? []).SequenceEqual(p.Second.Hidden ?? [], StringComparer.Ordinal) &&
         ((p.First.ReportAssertions == null && p.Second.ReportAssertions == null) ||
           (p.First.ReportAssertions != null && p.Second.ReportAssertions != null && p.First.ReportAssertions.SequenceEqual(p.Second.ReportAssertions))));
@@ -500,8 +512,9 @@ public sealed class PersistentModuleCache {
 
     public PersistedTask(ICanVerify canVerify, CanVerifyOrigin scopeToken, TaskEntry entry, IReadOnlyList<Function> hiddenFunctions,
       IToken? token = null, IReadOnlyList<VerificationAssertionReport>? reportAssertions = null,
-      IReadOnlyList<TrackedNodeComponent>? covered = null) {
+      IReadOnlyList<TrackedNodeComponent>? covered = null, IReadOnlyList<DafnyDiagnostic>? failureDiagnostics = null) {
       this.entry = entry;
+      FailureDiagnostics = failureDiagnostics;
       HiddenFunctions = hiddenFunctions;
       ScopeToken = scopeToken;
       Token = token ?? canVerify.Origin;
@@ -518,6 +531,8 @@ public sealed class PersistentModuleCache {
 
     public bool IsReplayed => true;
     public string? ExecutionKey => entry.ExecutionKey;
+    public IReadOnlyList<DafnyDiagnostic>? FailureDiagnostics { get; }
+    public int Counterexamples => entry.Failure?.Counterexamples ?? 0;
     public int SplitIndex => entry.Split;
     public int RandomSeed => entry.Seed;
     public uint TimeLimit => entry.TimeLimit;
@@ -540,6 +555,12 @@ public sealed class PersistentModuleCache {
 
 /// <summary>Task facts that a task replayed from a stored module result supplies without a Boogie split.</summary>
 public static class VerificationTaskFacts {
+  public static int Counterexamples(IVerificationTask task, VerificationRunResult result) =>
+    task is PersistentModuleCache.PersistedTask persisted ? persisted.Counterexamples : result.CounterExamples.Count;
+
+  public static IReadOnlyList<DafnyDiagnostic>? FailureDiagnostics(IVerificationTask? task) =>
+    task is PersistentModuleCache.PersistedTask persisted ? persisted.FailureDiagnostics : null;
+
   public static IReadOnlyList<VerificationAssertionReport>? AssertionReport(IVerificationTask? task) =>
     task is PersistentModuleCache.PersistedTask persisted ? persisted.ReportAssertions : null;
 
