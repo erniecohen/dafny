@@ -296,11 +296,14 @@ containing extern types are allowed: they emit no imports or implementations.
 The complete extern runtime matrix includes such an abstract refinement of the
 member containing a fully imported foreign class.
 
-Concrete refinements may inherit fully imported extern classes: all executable
-members must be inherited foreign methods or constructors without bodies, the
-class must have at most one extern argument, and it must have no fields or trait
-parents. The refining module imports each class by its compiled name from its own
-foreign namespace beneath the translation root's `_dafny_externs`. Each refinement
+Concrete refinements may inherit, extend or introduce fully imported extern
+classes: all executable members must be foreign methods or constructors without
+bodies, the class must have at most one extern argument, and it must have no
+compiled fields or trait parents. A refinement can add or rename foreign members
+and introduce generic foreign classes. Ghost declarations remain erased; their
+presence does not require generating a Rust implementation. The refining module
+imports each class by its compiled name from its own foreign namespace beneath
+the translation root's `_dafny_externs`. Each refinement
 therefore has its own foreign identity, as in independent C# emission; it does not
 alias the ancestor's foreign type. Foreign source must supply the refined types
 as well as the original ones. This also works through abstract intermediate
@@ -309,8 +312,8 @@ producer/client translation.
 
 Other concrete refinements containing extern types remain rejected, with the type,
 refining module and supported class shape named in the diagnostic. Partial classes,
-fields, trait parents, changed declarations and two-argument class externs still
-require additional implementation or import remapping.
+compiled fields, trait parents, generated member bodies and two-argument class
+externs still require additional implementation or import remapping.
 Copying a partial foreign class can lose its import or duplicate its generated
 implementations. A refinement chain through an abstract intermediate module still
 checks its concrete descendant. Inherited extern members with explicit foreign
@@ -377,8 +380,20 @@ explicit defaults, invariant witnesses, traits, refinement and complete archives
 Distinct foreign return values check the identity of each refining namespace;
 a renamed generic foreign class transports a recursive datatype. A separately
 translated client exercises the producer's foreign imports through the translation
-root. Negative controls retain the rejection of fields, trait parents, changed
-class declarations and foreign members with generated bodies. A reachable false
+root. Negative controls retain the rejection of fields, trait parents, class
+extensions with generated members and foreign members with generated bodies. A reachable false
 assertion after foreign construction and a call remains rejected. This milestone
 adds no verifier fact, axiom or assumption, and changes no emission with
 `--recursive-modules` disabled.
+
+`git-issue-466-rust-extended-refinement.dfy` qualifies extensions and newly declared
+foreign classes against independent C# emission using the same full runtime matrix,
+complete archives and separately translated producer/client pair. It adds a
+renamed foreign member and a generic foreign class in a refinement, a ghost
+function used by a proof, and another foreign member above an abstract refinement.
+Distinct foreign return values check the refining namespaces, and foreign generic
+round trips preserve recursive datatype values. Both an incorrect result assertion
+and a reachable false assertion after a new foreign call remain rejected.
+The eligibility check depends on whether a class needs generated code, rather
+than whether its declarations were copied by refinement. Compilation with the
+option disabled and all verifier rules remain unchanged.

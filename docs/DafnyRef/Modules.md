@@ -1187,9 +1187,11 @@ that a later stage would have to reject:
   The existing Rust restrictions on two-argument module and class externs and
   mixed foreign/generated implementations of a trait still apply. Abstract
   refinements with extern types emit no code and are allowed. Concrete refinements
-  may inherit fully imported extern classes with at most one extern argument,
-  inherited foreign methods or constructors without bodies, and no fields or trait
-  parents. Supply each refined class in the refining module's foreign namespace;
+  may inherit, extend or introduce fully imported extern classes with at most one
+  extern argument, foreign methods or constructors without bodies, and no compiled
+  fields or trait parents. New foreign members, generic foreign classes and ghost
+  declarations are supported. Supply each refined class in the refining module's
+  foreign namespace;
   it has its own foreign identity. Other extern types in concrete refinements
   remain rejected. Inherited extern members with explicit foreign paths are supported.
   Rust group programs may omit an array initializer when some dimension is zero,

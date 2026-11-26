@@ -7,4 +7,4 @@ module {:extern "Imported"} Base {
   }
 }
 module Peer { import Base }
-module Refined refines Base { class Native ... { function {:extern} Added(): int } }
+module Refined refines Base { class Native ... { function Added(): int { 0 } } }

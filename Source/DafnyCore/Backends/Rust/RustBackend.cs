@@ -100,7 +100,7 @@ public class RustBackend : DafnyExecutableBackend {
             !IsImportedRefinementClass(declaration, Options)) is { } externType) {
         Reporter.Error(MessageSource.Compiler, externType.Origin,
           $"Rust cannot compile extern type '{externType.Name}' in refining module '{module.FullDafnyName}' above a recursive module group: " +
-          "only wholly inherited classes with at most one extern argument, foreign methods or constructors, and no fields or trait parents are supported");
+          "only fully imported classes with at most one extern argument, foreign methods or constructors without bodies, and no fields or trait parents are supported");
         return;
       }
     }
@@ -113,15 +113,15 @@ public class RustBackend : DafnyExecutableBackend {
     base.Compile(dafnyProgram, dafnyProgramName, output);
   }
 
-  // Fully imported classes need only an import from the refining foreign module.
+  // Fully imported classes need only an import from the refining foreign module,
+  // whether inherited, extended with foreign members or introduced there.
   // Partial classes, fields and trait implementations still need remapping of
   // generated implementations and retain the explicit rejection above.
   internal static bool IsImportedRefinementClass(TopLevelDecl declaration, DafnyOptions options) {
-    var module = declaration.EnclosingModuleDefinition;
-    return declaration is ClassDecl cl && cl.Origin.IsInherited(module) && cl.Traits.Count == 0 &&
+    return declaration is ClassDecl cl && cl.Traits.Count == 0 &&
       cl.IsExtern(options, out var enclosing, out _) && enclosing == null &&
       cl.Members.All(member => member.IsGhost ||
-        (member.Origin.IsInherited(module) && member.IsExtern(options, out _, out _) &&
+        (member.IsExtern(options, out _, out _) &&
          member is Function { Body: null } or MethodOrConstructor { Body: null }));
   }
 
