@@ -82,6 +82,19 @@ jobs:
             fi
           fi
           exit 0
+      - name: Select host build handoff
+        id: host-handoff
+        shell: bash
+        run: |
+          enabled=false
+          if test -n "${HOST_ARTIFACT_DIR:-}"; then enabled=true; fi
+          echo "enabled=$enabled" >> "$GITHUB_OUTPUT"
+      - uses: ./.github/actions/host-artifact
+        if: steps.host-handoff.outputs.enabled == 'true' && steps.build.outputs.ready == 'true'
+        with:
+          mode: put
+          name: issue74-builds
+          path: builds.tar.gz
       - uses: actions/upload-artifact@v4
         with:
           name: issue74-builds
@@ -141,8 +154,9 @@ jobs:
           memory-backoff-s: ${{ vars.SELF_HOSTED_JOB_MEMORY_BACKOFF_S }}
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-dotnet
-      - uses: actions/download-artifact@v4
+      - uses: ./.github/actions/host-artifact
         with:
+          mode: get
           name: issue74-builds
           path: build-artifact
       - name: Unpack and pin solver
@@ -228,8 +242,9 @@ jobs:
           memory-backoff-s: ${{ vars.SELF_HOSTED_JOB_MEMORY_BACKOFF_S }}
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-dotnet
-      - uses: actions/download-artifact@v4
+      - uses: ./.github/actions/host-artifact
         with:
+          mode: get
           name: issue74-builds
           path: build-artifact
       - name: Unpack and pin solver
@@ -299,8 +314,9 @@ jobs:
           memory-backoff-s: ${{ vars.SELF_HOSTED_JOB_MEMORY_BACKOFF_S }}
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-dotnet
-      - uses: actions/download-artifact@v4
+      - uses: ./.github/actions/host-artifact
         with:
+          mode: get
           name: issue74-builds
           path: build-artifact
       - name: Unpack and pin solver

@@ -146,11 +146,12 @@ jobs:
           dotnet publish -p:NuGetAudit=false Source/Dafny/Dafny.csproj -c Release -o ../out/dafny \
             -p:GeneratePackageOnBuild=false -p:SourceRevisionId=fcb2042d.review.identity
           git rev-parse HEAD > ../out/source.txt
-      - uses: actions/upload-artifact@v4
+      - uses: ./.github/actions/host-artifact
         with:
+          mode: put
+          retention-days: 14
           name: identity-${{ matrix.product }}
           path: out
-          retention-days: 14
       - name: Remove job temporary directory
         if: always()
         shell: bash
@@ -211,12 +212,14 @@ jobs:
           ref: ${{ needs.milestone-scope.outputs.candidate }}
           path: sources
       - uses: ./.github/actions/setup-dotnet
-      - uses: actions/download-artifact@v4
+      - uses: ./.github/actions/host-artifact
         with:
+          mode: get
           name: identity-base
           path: products/base
-      - uses: actions/download-artifact@v4
+      - uses: ./.github/actions/host-artifact
         with:
+          mode: get
           name: identity-candidate
           path: products/candidate
       - name: Pin solver and prepare executables

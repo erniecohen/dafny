@@ -74,11 +74,12 @@ jobs:
           sh Scripts/fetch-boogie-packages.sh
           dotnet publish -p:NuGetAudit=false Source/Dafny/Dafny.csproj -c Release -o out/dafny -p:GeneratePackageOnBuild=false
           tar -C out -czf dafny.tar.gz dafny
-      - uses: actions/upload-artifact@v4
+      - uses: ./.github/actions/host-artifact
         with:
+          mode: put
+          retention-days: 14
           name: issue241-dafny
           path: dafny.tar.gz
-          retention-days: 14
       - name: Remove job temporary directory
         if: always()
         shell: bash
@@ -131,8 +132,9 @@ jobs:
           memory-backoff-s: ${{ vars.SELF_HOSTED_JOB_MEMORY_BACKOFF_S }}
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-dotnet
-      - uses: actions/download-artifact@v4
+      - uses: ./.github/actions/host-artifact
         with:
+          mode: get
           name: issue241-dafny
       - name: Dafny and Z3
         timeout-minutes: 360
@@ -213,8 +215,9 @@ jobs:
           memory-backoff-s: ${{ vars.SELF_HOSTED_JOB_MEMORY_BACKOFF_S }}
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-dotnet
-      - uses: actions/download-artifact@v4
+      - uses: ./.github/actions/host-artifact
         with:
+          mode: get
           name: issue241-dafny
       - name: Dafny and Z3
         timeout-minutes: 360
@@ -290,8 +293,9 @@ jobs:
           memory-backoff-s: ${{ vars.SELF_HOSTED_JOB_MEMORY_BACKOFF_S }}
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-dotnet
-      - uses: actions/download-artifact@v4
+      - uses: ./.github/actions/host-artifact
         with:
+          mode: get
           name: issue241-dafny
       - name: Dafny and Z3
         timeout-minutes: 360

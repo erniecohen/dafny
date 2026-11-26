@@ -86,11 +86,11 @@ jobs:
       - name: Build
         timeout-minutes: 360
         run: dotnet publish -p:NuGetAudit=false Source/Dafny/Dafny.csproj -c Release -o out/dafny -p:GeneratePackageOnBuild=false
-      - uses: actions/upload-artifact@v4
+      - uses: ./.github/actions/host-artifact
         with:
+          mode: put
           name: dafny
           path: out/dafny
-          retention-days: 3
       - name: Remove job temporary directory
         if: always()
         shell: bash
@@ -172,8 +172,9 @@ jobs:
           memory-backoff-s: ${{ vars.SELF_HOSTED_JOB_MEMORY_BACKOFF_S }}
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-dotnet
-      - uses: actions/download-artifact@v4
+      - uses: ./.github/actions/host-artifact
         with:
+          mode: get
           name: dafny
           path: out/dafny
       - name: Measure
