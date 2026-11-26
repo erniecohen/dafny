@@ -1,0 +1,9 @@
+[package]
+name = "recursive_client"
+version = "0.1.0"
+edition = "2021"
+[dependencies]
+dafny_runtime = { path = "producer-rust/runtime" }
+[[bin]]
+name = "recursive_client"
+path = "link.rs"

@@ -51,6 +51,40 @@ public class RustBackend : DafnyExecutableBackend {
     return new RustCodeGenerator(Options);
   }
 
+  protected override SinglePassCodeGenerator CreateCodeGenerator() =>
+    new GroupCodeGenerator(Options, Reporter, InternalFieldPrefix, PreventShadowing, CanEmitUncompilableCode);
+
+  private class GroupCodeGenerator : DafnyCodeGenerator {
+    public bool HasRecursiveGroups;
+
+    public GroupCodeGenerator(DafnyOptions options, ErrorReporter reporter, string fieldPrefix,
+      bool preventShadowing, bool canEmitUncompilableCode)
+      : base(options, reporter, fieldPrefix, preventShadowing, canEmitUncompilableCode) { }
+
+    protected override void EmitNewArray(Type elementType, IOrigin tok, List<Expression> dimensions,
+      bool mustInitialize, string exampleElement, ConcreteSyntaxTree wr, ConcreteSyntaxTree wStmts) {
+      if (HasRecursiveGroups && mustInitialize) {
+        AddUnsupported(tok, "Rust compilation of recursive module groups requires explicit array initialization");
+        return;
+      }
+      base.EmitNewArray(elementType, tok, dimensions, mustInitialize, exampleElement, wr, wStmts);
+    }
+  }
+
+  public override void Compile(Program dafnyProgram, string dafnyProgramName, ConcreteSyntaxTree output) {
+    if (dafnyProgram.Modules().FirstOrDefault(module => module.RecursiveGroup != null &&
+          (module.IsExtern(Options, out _, out _) || module.TopLevelDecls.Any(declaration =>
+            declaration.IsExtern(Options, out _, out _) || declaration is TopLevelDeclWithMembers type &&
+            type.Members.Any(member => member.IsExtern(Options, out _, out _))))) is { } externMember) {
+      Reporter.Error(MessageSource.Compiler, externMember.Origin,
+        "Rust compilation of recursive module groups with extern declarations is not yet supported");
+      return;
+    }
+    ((GroupCodeGenerator)codeGenerator).HasRecursiveGroups = dafnyProgram.CompileModules.Any(module => module.RecursiveGroup != null);
+    ((RustCodeGenerator)DafnyCodeGenerator).Program = dafnyProgram;
+    base.Compile(dafnyProgram, dafnyProgramName, output);
+  }
+
   // Knowing that the result of the compilation will be placed in a dafnyProgramName.rs,
   // and that Dafny needs to import all the OtherFileNames into the same folder, but does not really care about their names,
   // this function returns a mapping from full paths of Rust files to a unique resulting name.
