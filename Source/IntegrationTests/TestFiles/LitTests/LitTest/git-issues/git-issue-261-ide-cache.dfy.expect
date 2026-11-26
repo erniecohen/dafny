@@ -1,1 +1,2 @@
 IDE restart, overlays, stale/corrupt fallback and per-VC equality pass
+CLI/IDE task reuse, legacy levels and seed isolation pass

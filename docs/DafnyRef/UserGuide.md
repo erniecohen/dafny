@@ -440,7 +440,10 @@ Various options control the verification process, in addition to all those descr
   The language server requires native assertion and split graphs for its reports.
   It therefore translates and prepares current native tasks even when a whole-module
   result is stored. Eligible solver responses can still be reused by the shared
-  task cache; the CLI's whole-module fast path is unaffected.
+  task cache; the CLI's whole-module fast path is unaffected. The CLI and language
+  server share task results when their complete solver inputs and execution
+  settings agree; front-end cancellation bindings and inactive legacy-cache
+  sentinels do not prevent reuse.
 
   The cache directory is named by `--verification-cache`, then by the
   `verification-cache` value of the project file, then by the `DAFNY_CACHE_DIR`

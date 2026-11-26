@@ -199,4 +199,67 @@ public class PersistentCacheLifecycleTest : ClientBasedLanguageServerTest {
     Assert.Equal(0, cache.GraphHits);
   }
 
+  [Theory]
+  [InlineData(1)]
+  [InlineData(2)]
+  public async Task SeparateProjectRootsKeepCurrentEvidence(int workers) {
+    var directory = GetFreshTempPath();
+    var goodFile = Path.Combine(directory, "good", "input.dfy");
+    var badFile = Path.Combine(directory, "bad", "input.dfy");
+    foreach (var file in new[] { goodFile, badFile }) {
+      Directory.CreateDirectory(Path.GetDirectoryName(file)!);
+      await File.WriteAllTextAsync(Path.Combine(Path.GetDirectoryName(file)!, DafnyProject.FileName),
+        "includes = [\"input.dfy\"]\n");
+    }
+    // Matching declaration/file names in independent projects must not identify a proof.
+    var badSource = Source.Replace("x + 1 > x", "x + 1 < x");
+    await Start("", workers);
+    var good = await CreateOpenAndWaitForResolve(Source, goodFile);
+    var bad = await CreateOpenAndWaitForResolve(badSource, badFile);
+    var goodOracle = Facts(await Complete(good));
+    var badOracle = Facts(await Complete(bad));
+    Assert.NotEqual(goodOracle, badOracle);
+    Projects.Dispose();
+    await client.Shutdown();
+
+    var cache = Path.Combine(directory, "shared-cache");
+    for (var restart = 0; restart != 2; restart++) {
+      await Start(cache, workers);
+      good = await CreateOpenAndWaitForResolve(Source, goodFile);
+      bad = await CreateOpenAndWaitForResolve(badSource, badFile);
+      var goodState = await Complete(good);
+      var badState = await Complete(bad);
+      Assert.Equal(goodOracle, Facts(goodState));
+      Assert.Equal(badOracle, Facts(badState));
+      Assert.NotSame(await Projects.GetProjectManager(good.Uri), await Projects.GetProjectManager(bad.Uri));
+      Assert.NotSame(goodState.ResolvedProgram, badState.ResolvedProgram);
+      Assert.DoesNotContain(bad.Uri.ToUri(), goodState.CanVerifyStates.Keys);
+      Assert.DoesNotContain(good.Uri.ToUri(), badState.CanVerifyStates.Keys);
+      Assert.Empty(goodState.Counterexamples);
+      Assert.NotEmpty(badState.Counterexamples);
+      Assert.All(badState.Counterexamples, counterexample => Assert.NotNull(counterexample.Model));
+      foreach (var (state, document) in new[] { (goodState, good), (badState, bad) }) {
+        var session = Session(state);
+        Assert.True(restart == 0 ? session.SolverStarts > 0 : session.Hits > 0, session.LastBypassReason);
+        if (restart != 0) { Assert.Equal(0, session.SolverStarts); }
+        foreach (var task in state.CanVerifyStates.Values.SelectMany(f => f.Values).SelectMany(s => s.VerificationTasks.Values)) {
+          var native = BoogieVerificationReporting.GetTask(task.Task);
+          var origin = Assert.IsAssignableFrom<IOrigin>(native.Split.Implementation.tok);
+          Assert.Equal(document.Uri.ToUri(), origin.Uri);
+        }
+      }
+      // Editing one project's overlay must not clear the other project's failure or reuse its graph.
+      ApplyChange(ref good, new Range(0, 0, 0, Source.Length), badSource);
+      var changed = await Complete(good);
+      Assert.Equal(badOracle, Facts(changed));
+      Assert.NotEmpty(changed.Counterexamples);
+      var other = await Complete(bad);
+      Assert.Equal(badOracle, Facts(other));
+      ApplyChange(ref good, new Range(0, 0, 0, badSource.Length), Source);
+      Assert.Equal(goodOracle, Facts(await Complete(good)));
+      Projects.Dispose();
+      await client.Shutdown();
+    }
+  }
+
 }

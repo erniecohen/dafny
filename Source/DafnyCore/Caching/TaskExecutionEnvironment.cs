@@ -50,7 +50,8 @@ internal sealed class TaskExecutionEnvironment(DafnyOptions options) {
       var manifest = new SortedDictionary<string, object?>(StringComparer.Ordinal) {
         // v2: paths under the Dafny, .NET and solver installations are named by placeholder.
         // v3: only the environment variables that can change a result are keyed.
-        ["abi"] = "dafny-task-transport-v3",
+        // v4: front-end cancellation binding and inactive legacy-cache sentinels are normalized.
+        ["abi"] = "dafny-task-transport-v4",
         ["toolchain"] = JsonSerializer.Deserialize<SortedDictionary<string, string>>(identity)
       };
       // Enumerate the complete interfaces used by the pinned Boogie prover, including inherited
@@ -61,7 +62,21 @@ internal sealed class TaskExecutionEnvironment(DafnyOptions options) {
         if (ReportBindings.Contains(property.Name)) { manifest[name] = "current-report-binding"; continue; }
         if (VerifiedTransport.Contains(property.Name)) { manifest[name] = "verified-transport"; continue; }
         if (property.Name == ResourceLimit) { manifest[name] = TaskResourceLimit; continue; }
-        manifest[name] = Encode(property.GetValue(library));
+        // The pinned SMTLibProcess uses this only to subscribe to the current console's
+        // cancellation event. No solver command or response depends on that subscription.
+        if (property.DeclaringType == typeof(SMTLibOptions) &&
+            property.Name == nameof(SMTLibOptions.RunningBoogieFromCommandLine)) {
+          manifest[name] = "current-cancellation-binding";
+          continue;
+        }
+        var value = property.GetValue(library);
+        // Both sentinels disable legacy result lookup/insertion on the modern task route.
+        // Positive levels remain distinct; all lowered solver input is still keyed verbatim.
+        if (property.DeclaringType == typeof(CoreOptions) &&
+            property.Name == nameof(CoreOptions.VerifySnapshots) && value is int snapshots && snapshots < 0) {
+          value = 0;
+        }
+        manifest[name] = Encode(value);
       }
       foreach (var field in solver.GetType().GetFields(BindingFlags.Instance | BindingFlags.Public).OrderBy(f => f.Name)) {
         if (field.Name == "UsedTypes") { continue; }

@@ -22,7 +22,8 @@ text = source.read_text()
 uri = program.as_uri()
 
 
-def run(name, overlay=text, directory=cache, extra=()):
+def run(name, overlay=text, directory=cache, extra=(), workspace=destination, document=program):
+    uri = document.as_uri()
     profile = destination / (name + ".jsonl")
     environment = {k: v for k, v in os.environ.items()
                    if k not in ("DAFNY_CACHE_DIR", "DAFNY_CACHE_PARTITION")}
@@ -33,7 +34,7 @@ def run(name, overlay=text, directory=cache, extra=()):
             "--solver-path", str(solver), "--cores", "2", "--translation-workers", "2", "--verification-time-limit", "0",
             "--resource-limit", "1000000", "--pipeline-profile", str(profile), *extra],
             stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=errors, env=environment,
-            cwd=destination, start_new_session=os.name != "nt")
+            cwd=workspace, start_new_session=os.name != "nt")
         messages = queue.Queue()
 
         def read():
@@ -87,7 +88,7 @@ def run(name, overlay=text, directory=cache, extra=()):
             raise TimeoutError("language server made no matching progress")
 
         try:
-            send("initialize", {"processId": None, "rootUri": destination.as_uri(),
+            send("initialize", {"processId": None, "rootUri": workspace.as_uri(),
                                "capabilities": {}}, 1)
             assert "error" not in wait(lambda m: m.get("id") == 1)
             send("initialized", {})
@@ -141,3 +142,56 @@ corrupt = run("corrupt")
 assert corrupt[:2] == cold[:2], "corrupted entry changed an IDE result"
 assert all(not e["replayed"] for e in corrupt[2]), "corrupted results did not fall back"
 print("IDE restart, overlays, stale/corrupt fallback and per-VC equality pass")
+
+
+def cli(name, directory):
+    # Use the late task transport, so a whole-module hit cannot hide missing interoperability.
+    profile = destination / (name + ".jsonl")
+    with (destination / (name + ".stdout")).open("wb") as output:
+        result = subprocess.run([shutil.which("dotnet"), str(exe), "verify", str(program),
+            "--type-system-refresh", "--verification-cache", str(directory),
+            "--solver-path", str(solver), "--cores", "2", "--verification-time-limit", "0",
+            "--resource-limit", "1000000", "--pipeline-profile", str(profile)],
+            stdout=output, stderr=subprocess.STDOUT, timeout=90)
+    assert result.returncode == 0, name
+    tasks = [e for e in map(json.loads, profile.read_text().splitlines()) if e.get("ev") == "result-task"]
+    assert tasks, (name, "no completed CLI tasks")
+    return sorted((e["task"], e["split"], e["seed"], e["outcome"], e["resourceCount"]) for e in tasks), tasks
+
+
+def keys(tasks):
+    return sorted(e["executionKey"] for e in tasks)
+
+
+program.write_text(text)
+fresh_cli = cli("cli-fresh", destination / "cli-fresh-cache")
+shared = destination / "cli-to-ide-cache"
+cli_cold = cli("cli-cold", shared)
+assert cli_cold[0] == fresh_cli[0] == cold[1]
+assert all(not e["replayed"] for e in cli_cold[1])
+from_cli = run("cli-to-ide", directory=shared)
+assert from_cli[1] == fresh_cli[0] and keys(from_cli[2]) == keys(cli_cold[1])
+assert all(e["replayed"] for e in from_cli[2]), "CLI-populated tasks did not hit in the IDE"
+reverse = destination / "ide-to-cli-cache"
+ide_cold = run("ide-cold", directory=reverse)
+assert all(not e["replayed"] for e in ide_cold[2])
+from_ide = cli("ide-to-cli", reverse)
+assert from_ide[0] == fresh_cli[0] and keys(from_ide[1]) == keys(ide_cold[2])
+assert all(e["replayed"] for e in from_ide[1]), "IDE-populated tasks did not hit in the CLI"
+
+# Inactive legacy-cache sentinels can agree; positive levels must retain their identity.
+levels = []
+for level in (1, 2):
+    extra = ("--cache-verification", str(level))
+    checked = run("level-" + str(level), directory=shared, extra=extra)
+    oracle = run("level-oracle-" + str(level), directory=destination / ("level-cache-" + str(level)), extra=extra)
+    assert checked[:2] == oracle[:2]
+    assert all(not e["replayed"] for e in checked[2]), "positive legacy-cache level lost its identity"
+    assert keys(checked[2]) != keys(from_cli[2])
+    levels.append(keys(checked[2]))
+assert levels[0] != levels[1], "distinct positive legacy-cache levels were merged"
+seeded = run("seeded", directory=shared, extra=("--boogie", "/randomSeed:17"))
+seed_oracle = run("seed-oracle", directory=destination / "seed-cache", extra=("--boogie", "/randomSeed:17"))
+assert seeded[:2] == seed_oracle[:2]
+assert all(not e["replayed"] for e in seeded[2]) and keys(seeded[2]) != keys(from_cli[2])
+print("CLI/IDE task reuse, legacy levels and seed isolation pass")
