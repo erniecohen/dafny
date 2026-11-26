@@ -56,7 +56,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 1
-          clean: true
+          clean: false
+      - name: Remove untracked checkout state
+        shell: bash
+        timeout-minutes: 10
+        run: git clean -ffdx
       - uses: ./.github/actions/fetch-refs
         with:
           refs: 7dc1d91b1159bafb2d75dfb092930112528e6c18
@@ -164,6 +168,12 @@ jobs:
           slot-poll-s: ${{ vars.SELF_HOSTED_JOB_SLOT_POLL_S }}
           memory-backoff-s: ${{ vars.SELF_HOSTED_JOB_MEMORY_BACKOFF_S }}
       - uses: actions/checkout@v4
+        with:
+          clean: false
+      - name: Remove untracked checkout state
+        shell: bash
+        timeout-minutes: 10
+        run: git clean -ffdx
       - uses: ./.github/actions/setup-dotnet
       - uses: actions/download-artifact@v4
         with:

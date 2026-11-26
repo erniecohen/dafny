@@ -4,6 +4,19 @@ The action holds a numbered advisory lock for the entire job, including post
 cleanup. It checks the owning job's process identity while waiting and holding.
 Admitted work keeps its reservation until completion or cancellation.
 
+Workspace preparation preserves a usable checkout's tracked files, object store,
+index and shallow boundaries. It restores tracked edits, removes all untracked
+and ignored outputs with `git clean -ffdx`, and drops old ref names to prevent
+case-colliding refs from leaking across jobs. An unusable checkout is recreated.
+Only the runner's repository directory is prepared; linked Git metadata is not
+reused.
+
+Workflow checkouts use `clean: false`, retaining checkout's incremental targeted
+fetch and existing depth/ref settings. Each checkout is immediately followed by
+`git clean -ffdx` in its own target directory, with the same condition when
+conditional. This includes nested and historical comparison checkouts. Required
+ancestry remains the responsibility of the targeted `fetch-refs` action.
+
 ## Required policy
 
 Every workflow passes these inputs from the corresponding repository variables,
