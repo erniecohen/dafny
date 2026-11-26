@@ -1,15 +1,36 @@
 name: Admit and clean a self-hosted job
 description: Bound concurrent fork jobs and remove job-owned temporary and checkout outputs
 inputs:
+  kind:
+    description: Exact registered admission kind; absent or unknown uses the project's largest declared peak
+    required: false
   slots:
-    description: Number of admitted jobs across runner services; configure consistently across repositories
-    default: '2'
-  min-free-percent:
-    description: Admit only while the system-wide free memory percentage is at least this; empty drops the condition
-    default: ''
-  max-pressure:
-    description: Admit only while the kernel memory pressure is no higher than this (normal, warn or critical); empty drops the condition
-    default: ''
+    description: Positive maximum admitted jobs; clamped to the host-level cap
+    required: true
+  reserve-mb:
+    description: Positive headroom to retain after incoming peak and concurrent growth, in MiB
+    required: true
+  default-peak-mb:
+    description: Positive expected peak in MiB when completed history is insufficient
+    required: true
+  peak-min-samples:
+    description: Positive integer minimum completed peaks for a p95 estimate
+    required: true
+  peak-history-days:
+    description: Positive lookback window for completed RSS peaks
+    required: true
+  probe-timeout-s:
+    description: Positive timeout for each local system probe in seconds
+    required: true
+  slot-poll-s:
+    description: Positive slot and mutex polling interval in seconds
+    required: true
+  memory-backoff-s:
+    description: Nonempty JSON array of positive finite memory retry intervals in seconds
+    required: true
+  expected-peak-mb:
+    description: Optional positive expected peak in MiB overriding completed history
+    required: false
 runs:
   using: node24
   main: index.cjs
