@@ -83,11 +83,12 @@ jobs:
           dotnet publish -p:NuGetAudit=false Source/Dafny/Dafny.csproj -c Release -o out/dafny \
             -p:GeneratePackageOnBuild=false -p:SourceRevisionId="$(git rev-parse --short=8 HEAD)"
           tar -C out -czf dafny.tar.gz dafny
-      - uses: actions/upload-artifact@v4
+      - uses: ./.github/actions/host-artifact
         with:
+          mode: put
+          retention-days: 7
           name: dafny
           path: dafny.tar.gz
-          retention-days: 7
       - name: Remove job temporary directory
         if: always()
         shell: bash
@@ -140,8 +141,9 @@ jobs:
           memory-backoff-s: ${{ vars.SELF_HOSTED_JOB_MEMORY_BACKOFF_S }}
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-dotnet
-      - uses: actions/download-artifact@v4
+      - uses: ./.github/actions/host-artifact
         with:
+          mode: get
           name: dafny
       - name: Unpack Dafny and Z3
         timeout-minutes: 180

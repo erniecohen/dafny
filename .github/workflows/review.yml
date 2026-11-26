@@ -354,6 +354,20 @@ jobs:
           sh .github/review/portable-dafny.sh out/dafny
           tar -C out -czf dafny.tar.gz dafny
           python3 .github/review/check-distribution.py out/dafny --archive dafny.tar.gz
+      - name: Select host build handoff
+        id: host-handoff
+        if: ${{ needs.tree.outputs.reuse != 'true' }}
+        shell: bash
+        run: |
+          enabled=false
+          if test -n "${HOST_ARTIFACT_DIR:-}"; then enabled=true; fi
+          echo "enabled=$enabled" >> "$GITHUB_OUTPUT"
+      - uses: ./.github/actions/host-artifact
+        if: steps.host-handoff.outputs.enabled == 'true'
+        with:
+          mode: put
+          name: dafny
+          path: dafny.tar.gz
       - uses: actions/upload-artifact@v4
         if: ${{ needs.tree.outputs.reuse != 'true' }}
         with:
@@ -412,8 +426,9 @@ jobs:
           memory-backoff-s: ${{ vars.SELF_HOSTED_JOB_MEMORY_BACKOFF_S }}
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-dotnet
-      - uses: actions/download-artifact@v4
+      - uses: ./.github/actions/host-artifact
         with:
+          mode: get
           name: dafny
       - name: Unpack Dafny
         timeout-minutes: 240
@@ -669,8 +684,9 @@ jobs:
           memory-backoff-s: ${{ vars.SELF_HOSTED_JOB_MEMORY_BACKOFF_S }}
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-dotnet
-      - uses: actions/download-artifact@v4
+      - uses: ./.github/actions/host-artifact
         with:
+          mode: get
           name: dafny
       - name: Unpack Dafny
         timeout-minutes: 15
@@ -893,8 +909,9 @@ jobs:
           memory-backoff-s: ${{ vars.SELF_HOSTED_JOB_MEMORY_BACKOFF_S }}
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-dotnet
-      - uses: actions/download-artifact@v4
+      - uses: ./.github/actions/host-artifact
         with:
+          mode: get
           name: dafny
       - name: Unpack Dafny
         timeout-minutes: 45
@@ -997,8 +1014,9 @@ jobs:
           memory-backoff-s: ${{ vars.SELF_HOSTED_JOB_MEMORY_BACKOFF_S }}
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-dotnet
-      - uses: actions/download-artifact@v4
+      - uses: ./.github/actions/host-artifact
         with:
+          mode: get
           name: dafny
       - name: Unpack Dafny
         timeout-minutes: 180
@@ -1653,8 +1671,9 @@ jobs:
           memory-backoff-s: ${{ vars.SELF_HOSTED_JOB_MEMORY_BACKOFF_S }}
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-dotnet
-      - uses: actions/download-artifact@v4
+      - uses: ./.github/actions/host-artifact
         with:
+          mode: get
           name: dafny
       - name: Unpack Dafny
         timeout-minutes: 20
@@ -1724,8 +1743,9 @@ jobs:
           memory-backoff-s: ${{ vars.SELF_HOSTED_JOB_MEMORY_BACKOFF_S }}
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-dotnet
-      - uses: actions/download-artifact@v4
+      - uses: ./.github/actions/host-artifact
         with:
+          mode: get
           name: dafny
       - name: Unpack Dafny
         timeout-minutes: 20
@@ -1803,8 +1823,9 @@ jobs:
           memory-backoff-s: ${{ vars.SELF_HOSTED_JOB_MEMORY_BACKOFF_S }}
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-dotnet
-      - uses: actions/download-artifact@v4
+      - uses: ./.github/actions/host-artifact
         with:
+          mode: get
           name: dafny
       - name: Unpack Dafny
         timeout-minutes: 30
