@@ -33,6 +33,6 @@
 // Verification still rejects a reachable false assertion after using the imported class.
 // RUN: %exits-with 4 %verify --verify-included-files --enforce-determinism --general-traits=legacy --member-invariants --recursive-modules --allow-external-contracts --solver-path %review-z3 "%S/Inputs/git-issue-466-rust-partial-false.dfy" > "%t-false.out"
 // RUN: %OutputCheck --file-to-check "%t-false.out" "%S/Inputs/issue466_rust_partial_false.check"
-// Generated constructors still require a separately qualified allocation convention.
+// Constructors with compiled fields still require a separately qualified layout convention.
 // RUN: %exits-with 3 %build --target rs --no-verify --enforce-determinism --member-invariants --recursive-modules --general-traits=legacy "%S/Inputs/git-issue-466-rust-partial-constructor.dfy" --output "%t-constructor" > "%t-constructor.out"
 // RUN: %OutputCheck --file-to-check "%t-constructor.out" "%S/Inputs/issue466_rust_imported_rejected.check"

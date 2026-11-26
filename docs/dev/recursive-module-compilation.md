@@ -297,12 +297,11 @@ The complete extern runtime matrix includes such an abstract refinement of the
 member containing a fully imported foreign class.
 
 Concrete refinements may inherit, extend or introduce extern classes with at
-most one extern argument and no compiled fields or trait parents. Constructors
-must be foreign and have no body. Other executable members may be bodiless foreign
-members or implemented non-extern functions and methods, including functions with
-method bodies. A refinement can add or rename foreign members, introduce generic
-foreign classes, and generate inherent implementations on those classes. Ghost
-declarations remain erased.
+most one extern argument and no compiled fields or trait parents. Executable
+members may be bodiless foreign members or implemented non-extern functions,
+methods and constructors, including functions with method bodies. A refinement
+can add or rename foreign members, introduce generic foreign classes, and generate
+inherent implementations on those classes. Ghost declarations remain erased.
 
 The refining module imports each class by its compiled name from its own foreign
 namespace beneath the translation root's `_dafny_externs`. Ordinary class lowering
@@ -310,14 +309,17 @@ then emits inherent implementations on that imported type, including generated
 members inherited through an abstract refinement. Each refinement therefore has
 its own foreign identity, as in independent C# emission; it does not alias the
 ancestor's foreign type or attach generated methods to that ancestor type. Foreign
-source must supply each refined type and its foreign constructors and members. This also
-works with renamed generic classes, nested namespaces and separate producer/client
-translation.
+source must supply each refined type and its foreign members. Generated constructors
+use the type's ordinary zero-argument Rust `_allocate_object()` hook, then execute
+the Dafny constructor body. Bodiless foreign constructors continue to pass their
+arguments directly to the allocation hook. No layout is inferred for the foreign
+type. This also works with renamed generic classes, nested namespaces and separate
+producer/client translation.
 
 Other concrete refinements containing extern types remain rejected, with the type,
-refining module and supported class shape named in the diagnostic. Compiled fields,
-trait parents and generated constructors require layout, trait or allocation rules;
-foreign members with bodies and two-argument class externs remain unsupported.
+refining module and supported class shape named in the diagnostic. Compiled fields
+and trait parents require additional layout or trait rules; foreign members with
+bodies (including constructors) and two-argument class externs remain unsupported.
 A refinement chain through an abstract intermediate module still checks its
 concrete descendant. Inherited extern members with explicit foreign paths remain
 supported. No new verifier fact or check is involved, and compilation without
@@ -409,5 +411,17 @@ translated producer/client outputs. A concrete descendant above an abstract
 refinement exercises inherited implementations and another generated method;
 distinct foreign return values distinguish the refining namespaces. Incorrect
 result and reachable false assertions remain rejected after a generated method
-calls a foreign member. A negative control retains the generated-constructor
+calls a foreign member. A constructor with a compiled field retains its layout
 rejection, alongside the existing fields, trait parents and foreign-body controls.
+
+`git-issue-466-rust-constructor-refinement.dfy` qualifies generated constructors
+using the same independent C#/Rust runtime matrix, complete archives and separate
+producer/client translation. An unnamed constructor calls foreign setters in order;
+a named generic constructor transports a recursive datatype. Both are inherited
+through an abstract refinement, with distinct foreign namespaces for the concrete
+types. Foreign setter traces detect skipped, duplicated or reordered execution.
+Incorrect-result assertions for both classes and a reachable false assertion remain
+rejected after construction. A foreign constructor with a body has its own explicit
+rejection control. Allocation remains supplied by foreign source, and generated
+constructors on classes with compiled fields remain rejected. No verifier rule,
+fact or assumption changes.

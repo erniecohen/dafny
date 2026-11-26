@@ -100,7 +100,7 @@ public class RustBackend : DafnyExecutableBackend {
             !IsImportedRefinementClass(declaration, Options)) is { } externType) {
         Reporter.Error(MessageSource.Compiler, externType.Origin,
           $"Rust cannot compile extern type '{externType.Name}' in refining module '{module.FullDafnyName}' above a recursive module group: " +
-          "supported extern classes have no compiled fields or trait parents, at most one extern argument, foreign constructors, and either bodiless foreign members or implemented non-extern functions and methods");
+          "supported extern classes have no compiled fields or trait parents, at most one extern argument, and either bodiless foreign members or implemented non-extern functions, methods or constructors");
         return;
       }
     }
@@ -114,8 +114,8 @@ public class RustBackend : DafnyExecutableBackend {
   }
 
   // Import the refining foreign type once, then let ordinary class lowering
-  // generate its inherent functions and methods. Fields, trait implementations
-  // and generated constructors still require a separate layout/allocation rule.
+  // generate its inherent members, including constructor bodies. Foreign types
+  // still supply allocation; fields and trait implementations need separate rules.
   internal static bool IsImportedRefinementClass(TopLevelDecl declaration, DafnyOptions options) {
     return declaration is ClassDecl cl && cl.Traits.Count == 0 &&
       cl.IsExtern(options, out var enclosing, out _) && enclosing == null &&
@@ -123,7 +123,7 @@ public class RustBackend : DafnyExecutableBackend {
         (member.IsExtern(options, out _, out _) &&
          member is Function { Body: null } or MethodOrConstructor { Body: null }) ||
         (!member.IsExtern(options, out _, out _) &&
-         member is Function { Body: not null } or Method { Body: not null }));
+         member is Function { Body: not null } or MethodOrConstructor { Body: not null }));
   }
 
   // Knowing that the result of the compilation will be placed in a dafnyProgramName.rs,

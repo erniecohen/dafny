@@ -1,7 +1,8 @@
 module {:extern "Imported"} Base {
   import Peer
   class {:extern "Native"} Native {
-    constructor () { }
+    constructor () { value := 0; }
+    var value: int
   }
 }
 module Peer { import Base }
