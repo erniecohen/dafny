@@ -143,9 +143,12 @@ class CheckoutRefsTests(unittest.TestCase):
         # If checkout never initialized a repository, the post action still cleans
         # this job's scratch without trying git clean in an empty directory.
         scratch = self.root / 'fork-job.failed-checkout'; scratch.mkdir()
+        (self.root / 'dotnet').write_text('#!/bin/sh\nexit 0\n')
+        (self.root / 'dotnet').chmod(0o755)
         subprocess.run([node, str(ACTIONS / 'self-hosted-job/index.cjs')], check=True,
             env=dict(os.environ, GITHUB_WORKSPACE=str(self.workspace), RUNNER_TEMP=str(self.root),
-                STATE_tmp=str(scratch), STATE_keeper=str(os.getpid()), STATE_keeperIdentity='different identity'))
+                STATE_tmp=str(scratch), STATE_keeper=str(os.getpid()), STATE_keeperIdentity='different identity',
+                PATH=str(self.root) + os.pathsep + os.environ['PATH']))
         self.assertFalse(scratch.exists())
         self.initialize_checkout()
         self.fetch([self.base, self.head], 'true')
