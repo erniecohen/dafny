@@ -1217,20 +1217,20 @@ that a later stage would have to reject:
   for names and foreign source-file conventions.
   JavaScript groups support preloaded extern module objects, extern types in those
   modules, and qualified extern members. They retain ordinary module and type names
-  inside a shared initialization closure. Concrete refinements, including descendants
-  of abstract refinements, support fully imported and partial extern classes when
-  each concrete module supplies its own preloaded extern object. Fully imported
-  extern traits without parent traits retain their preloaded runtime identities in
-  groups and concrete refinements. Ghost members remain erased. Fully imported extern
-  classes
+  inside a shared initialization closure. Concrete refinements, including
+  descendants of abstract refinements, support fully imported and partial extern
+  classes when each concrete module supplies its own preloaded extern object. Fully
+  imported extern traits whose ancestors are also fully imported extern traits in
+  recursive-group contexts retain their preloaded runtime identities in groups and
+  concrete refinements. Ghost members remain erased. Fully imported extern classes
   in a group or its concrete refinements support native constructors: generated
-  calls pass type descriptors followed by non-ghost arguments. Partial extern classes
-  use generated subclasses for Dafny fields and members, and require a Dafny
-  constructor body. Require-based
-  extern modules, two-argument extern type qualifiers, unqualified imported members
-  without an extern owner, qualified instance methods or fields, and refinements
-  containing extern traits with generated members or parent traits, or other extern
-  type kinds, remain unsupported.
+  calls pass type descriptors followed by non-ghost arguments. Partial extern
+  classes use generated subclasses for Dafny fields and members, and require a
+  Dafny constructor body. Require-based extern modules, two-argument extern type
+  qualifiers, unqualified imported members without an extern owner, qualified
+  instance methods or fields, and refinements containing extern traits with
+  generated members, generated ancestors or ancestors outside recursive-group
+  contexts, or other extern type kinds, remain unsupported.
   See the
   [compilation design](../dev/recursive-module-compilation.md#javascript-group-emission)
   for the linkage restrictions and qualification tests.

@@ -37,7 +37,10 @@ namespace Microsoft.Dafny.Compilers {
     }
 
     internal static bool CanImportTrait(TraitDecl trait, SinglePassCodeGenerator generator) =>
-      trait.Traits.All(parent => parent.IsObject) &&
+      // Imported implementations supply the complete ancestor identity list. Every ancestor
+      // must also preserve its imported identity, with no generated trait material to lose.
+      trait.Traits.All(parent => parent.IsObject || parent.AsTraitType is { } ancestor &&
+        IsRecursiveGroupContext(ancestor.EnclosingModuleDefinition) && generator.IsExternallyImported(ancestor) && CanImportTrait(ancestor, generator)) &&
       trait.Members.All(member => member.IsGhost || generator.IsExternallyImported(member));
 
     private bool UsesForeignModuleObjects(ModuleDefinition module) =>

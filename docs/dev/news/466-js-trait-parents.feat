@@ -1,0 +1,7 @@
+With `--recursive-modules`, JavaScript preserves imported extern trait
+hierarchies in recursive groups and their concrete refinements, including
+generic and diamond inheritance through abstract refinements. Every non-object
+ancestor must be fully imported and extern in a recursive-group context;
+generated or non-group ancestors retain a diagnostic. Native and generated
+implementations use the concrete module's ancestor identities. Option-off
+emission is unchanged.

@@ -21,13 +21,19 @@ module A {
   function Count(n: nat): nat { if n == 0 then 0 else Identity(1) + NativeOnly.Zero() + B.Count(n - 1) }
 }
 module {:extern "ForeignB"} B {
-  trait {:extern "NativeView"} View extends object {
+  trait {:extern "NativeRoot"} Root extends object {
+    function {:extern} RootValue(): int
+  }
+  trait {:extern "NativeLeft"} Left extends Root { }
+  trait {:extern "NativeRight"} Right extends Root { }
+  trait {:extern "NativeView"} View extends Left, Right {
     function {:extern} Value(): int
   }
-  trait {:extern "NativeGenericView"} GenericView<T> extends object {
+  trait {:extern "NativeGenericRoot"} GenericRoot<T> extends object {
     function {:extern} Read(): T reads this
     ghost function GhostValue(): int { 1 }
   }
+  trait {:extern "NativeGenericView"} GenericView<T> extends GenericRoot<T> { }
   class {:extern "NativeViewer"} Viewer<T> extends View, GenericView<T> {
     static method {:extern "Make"} Create(value: T) returns (result: Viewer<T>)
       ensures result.Read() == value
@@ -37,6 +43,7 @@ module {:extern "ForeignB"} B {
     constructor (value: T) ensures Stored == value { Stored := value; }
     function Read(): T reads this { Stored }
     function Value(): int { C.Count(3) }
+    function RootValue(): int { C.Count(4) }
   }
   trait LocalTag extends object { }
   trait OtherTag extends object { }

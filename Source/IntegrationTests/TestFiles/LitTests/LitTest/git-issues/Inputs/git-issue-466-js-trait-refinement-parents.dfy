@@ -1,6 +1,6 @@
 module {:extern} A {
   import B
-  trait {:extern} Parent { }
+  trait Parent extends object { }
   trait {:extern} Child extends Parent { }
   function F(): int { 1 }
 }

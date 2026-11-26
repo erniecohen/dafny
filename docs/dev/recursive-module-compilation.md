@@ -297,13 +297,19 @@ generated class layout. Partial classes use the ordinary JavaScript lowering: a
 generated subclass extends the concrete module's foreign class, forwards its type
 descriptors to `super`, initializes generated fields, and supplies Dafny constructor
 bodies and members. Imported fields and members retain receiver-based linkage.
-Abstract refinements emit nothing. Fully imported extern traits without parent
-traits also preserve their preloaded objects, including through abstract
-refinements. These objects are runtime identities: native implementations may
-capture them before generated code runs. Ghost members do not require generated
-trait material. Generated implementations use the same concrete namespace's trait
-object. Traits requiring generated members or parent traits, and other extern type
-kinds in refinements, remain rejected with an explicit diagnostic. Fully imported
+Abstract refinements emit nothing. Fully imported extern traits whose ancestors are
+also fully imported extern traits preserve their preloaded objects, including
+through abstract refinements. These objects are runtime identities: native
+implementations may capture them before generated code runs. Ghost members do not
+require generated trait material. Generated implementations use the same concrete
+namespace's trait object. The native implementation supplies the complete ancestor
+identity list, including generic and diamond-shaped inheritance. Every non-object
+ancestor must also be extern, contain no generated members and belong to a
+recursive-group context. An ancestor outside those contexts still uses ordinary
+trait emission, which creates a new identity; preserving only its child would leave
+a captured native ancestor stale. Such ancestors retain a diagnostic. Traits
+requiring generated members or generated ancestors, and other extern type kinds in
+refinements, remain rejected with an explicit diagnostic. Fully imported
 foreign classes declared in a group or its concrete
 refinements support bodiless extern constructors. Allocation passes the ordinary
 type-descriptor prefix followed by
@@ -356,8 +362,13 @@ trait identities before generated initialization, so replacement is observable.
 Two ordinary empty traits check that generated identities remain distinct. Both
 wrapper-erasure modes, relocated archives and separately translated clients are
 covered. Wrong reads, wrong generated fields and a reachable false assertion
-remain verification errors. Generated extern traits and extern traits with parents
-in refinements retain tested rejections; option-off trait emission is unchanged.
+remain verification errors. The same matrix covers generic ancestors and diamond
+inheritance: native implementations retain every captured ancestor, generated
+implementations list the same concrete namespace's ancestors, and cross-namespace
+casts remain distinct. An ordinary generated parent and a transitive imported
+ancestor with a generated body retain tested rejections in refinements. A fully
+imported ancestor outside a recursive-group context has a separate rejection
+control; option-off trait emission is unchanged.
 `git-issue-466-js-extern.dfy` checks each group-specific foreign linkage rejection.
 Archives with arbitrary extern contracts still cannot provide the modular
 termination certificate required by cross-module trait implementations; the

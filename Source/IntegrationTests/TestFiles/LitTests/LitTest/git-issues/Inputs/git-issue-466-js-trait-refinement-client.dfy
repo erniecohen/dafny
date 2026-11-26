@@ -31,6 +31,20 @@ module TraitChecks {
     print mirrorView.Value(), " ", mirrorGeneric.Read(), "\n";
     var mo: object := mirror;
     print mo is Final.View, " ", mo is B.View, "\n";
+    var root: Final.Root := f;
+    var left: Final.Left := f;
+    var right: Final.Right := f;
+    var genericRoot: Final.GenericRoot<int> := f;
+    assert genericRoot.GhostValue() == 1 && genericRoot.Read() == 163;
+    print root.RootValue(), " ", left.RootValue(), " ", right.RootValue(), " ", genericRoot.Read(), "\n";
+    print bo is B.Root, " ", bo is B.Left, " ", bo is B.Right, " ", bo is B.View, "\n";
+    print ro is RefinedB.Root, " ", ro is RefinedB.Left, " ", ro is RefinedB.Right, " ", ro is RefinedB.View, "\n";
+    print fo is Final.Root, " ", fo is Final.Left, " ", fo is Final.Right, " ", fo is Final.View, "\n";
+    print fo is B.Root, " ", fo is RefinedB.Root, "\n";
+    print mo is Final.Root, " ", mo is Final.Left, " ", mo is Final.Right, " ", mo is Final.View, "\n";
+    var mirrorRoot: Final.Root := mirror;
+    var mirrorGenericRoot: Final.GenericRoot<int> := mirror;
+    print mirrorRoot.RootValue(), " ", mirrorGenericRoot.Read(), "\n";
     var tagged: object := new Final.Tagged();
     print tagged is Final.LocalTag, " ", tagged is Final.OtherTag, "\n";
   }

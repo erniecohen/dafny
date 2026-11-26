@@ -38,7 +38,7 @@ public class JavaScriptBackend : ExecutableBackend {
             (declaration is not ClassDecl &&
              (declaration is not TraitDecl trait || !JavaScriptCodeGenerator.CanImportTrait(trait, codeGenerator)))) is { } externType) {
         Reporter.Error(MessageSource.Compiler, externType.Origin,
-          "JavaScript refinements of recursive module groups require extern classes or fully imported extern traits without parent traits; generated traits, trait parents and other extern type kinds are not yet supported");
+          "JavaScript refinements of recursive module groups require extern classes or fully imported extern traits with fully imported extern ancestors in recursive-group contexts; generated traits, generated or non-group ancestors and other extern type kinds are not yet supported");
         return;
       }
     }

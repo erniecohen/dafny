@@ -1,6 +1,7 @@
-With `--recursive-modules`, JavaScript compilation preserves preloaded identities
-for fully imported extern traits without parent traits, including in concrete
+With `--recursive-modules`, JavaScript compilation preserves preloaded
+identities for fully imported extern traits whose ancestors are also fully
+imported extern traits in recursive-group contexts, including in concrete
 refinements of recursive groups and descendants of abstract refinements. Native
 and generated implementations use the concrete module's trait identity. Traits
-requiring generated members or parent traits in refinements retain an explicit
-diagnostic. Option-off emission is unchanged.
+requiring generated members, generated ancestors or non-group ancestors in
+refinements retain an explicit diagnostic. Option-off emission is unchanged.
