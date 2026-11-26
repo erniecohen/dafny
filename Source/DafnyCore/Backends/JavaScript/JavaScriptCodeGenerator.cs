@@ -20,16 +20,24 @@ using JetBrains.Annotations;
 namespace Microsoft.Dafny.Compilers {
   class JavaScriptCodeGenerator : SinglePassCodeGenerator {
     private readonly Dictionary<RecursiveModuleGroup, ConcreteSyntaxTree> groupWriters = new();
+    private readonly Dictionary<RecursiveModuleGroup, ConcreteSyntaxTree> foreignGroupWriters = new();
 
     // Source positions and archive layout must not affect separately translated references.
     private static List<ModuleDefinition> GroupMembers(RecursiveModuleGroup group) =>
       group.Members.Select(member => member.ModuleDef).OrderBy(member => member.FullDafnyName, StringComparer.Ordinal).ToList();
 
+    private bool UsesForeignModuleObjects(ModuleDefinition module) =>
+      module.RecursiveGroup is { } group && GroupMembers(group).Any(member =>
+        member.IsExtern(Options, out _, out _) || member.TopLevelDecls.Any(declaration =>
+          declaration.IsExtern(Options, out _, out _) || declaration is TopLevelDeclWithMembers type &&
+          type.Members.Any(m => m.IsExtern(Options, out _, out _))));
+
     private string ModuleName(ModuleDefinition module) =>
-      IdProtect((module.RecursiveGroup == null ? module : GroupMembers(module.RecursiveGroup).First()).GetCompileName(Options));
+      IdProtect((module.RecursiveGroup == null || UsesForeignModuleObjects(module)
+        ? module : GroupMembers(module.RecursiveGroup).First()).GetCompileName(Options));
 
     protected override string IdName(TopLevelDecl declaration) =>
-      declaration.EnclosingModuleDefinition.RecursiveGroup is { } group
+      declaration.EnclosingModuleDefinition.RecursiveGroup is { } group && !UsesForeignModuleObjects(declaration.EnclosingModuleDefinition)
         ? $"G{GroupMembers(group).IndexOf(declaration.EnclosingModuleDefinition)}_{base.IdName(declaration)}"
         : base.IdName(declaration);
 
@@ -86,12 +94,26 @@ namespace Microsoft.Dafny.Compilers {
     protected override ConcreteSyntaxTree CreateModule(ModuleDefinition module, string moduleName, bool isDefault,
       ModuleDefinition externModule,
       string libraryName /*?*/, Attributes moduleAttributes, ConcreteSyntaxTree wr) {
-      if (module.RecursiveGroup is { } existingGroup && groupWriters.TryGetValue(existingGroup, out var groupWriter)) {
+      var foreignGroup = UsesForeignModuleObjects(module);
+      if (foreignGroup) {
+        var foreignModuleGroup = module.RecursiveGroup;
+        if (!foreignGroupWriters.TryGetValue(foreignModuleGroup, out var outer)) {
+          // Foreign code keeps the ordinary public module/type paths. Declare
+          // generated module objects outside the shared initialization closure;
+          // preloaded extern objects retain their identity and are extended there.
+          foreach (var member in GroupMembers(foreignModuleGroup).Where(member => !member.IsExtern(Options, out _, out _))) {
+            wr.WriteLine("let {0};", ModuleName(member));
+          }
+          outer = wr.NewBlock("(function()", ")(); // end of recursive group");
+          foreignGroupWriters.Add(foreignModuleGroup, outer);
+        }
+        wr = outer;
+      } else if (module.RecursiveGroup is { } existingGroup && groupWriters.TryGetValue(existingGroup, out var groupWriter)) {
         return groupWriter;
       }
       moduleName = ModuleName(module);
       if (externModule == null || libraryName != null) {
-        wr.Write("let {0} = ", moduleName);
+        wr.Write("{0}{1} = ", foreignGroup ? "" : "let ", moduleName);
       }
 
       string footer = ")(); // end of module " + moduleName;
@@ -108,7 +130,7 @@ namespace Microsoft.Dafny.Compilers {
         beforeReturnBody.WriteLine("let $module = require(\"{0}\");", libraryName);
       }
       block.WriteLine("return $module;");
-      if (module.RecursiveGroup is { } group) {
+      if (!foreignGroup && module.RecursiveGroup is { } group) {
         groupWriters.Add(group, beforeReturnBody);
       }
       return beforeReturnBody;

@@ -329,8 +329,59 @@ termination = ["--general-traits=datatype", "--decreases-orders", "--modular-ter
 cold, _ = control("reveal-cold", *termination, expect_reused=[])
 control("reveal-warm", *termination, expect_reused=sorted(cold))
 control("reveal-checked", *termination, expect_reused=sorted(cold), check=True)
+# Import aliases and export sets occupy different namespaces. An empty export named Lib is legal
+# beside `import Lib`; their qualified display names coincide, but their entries and source frames must not.
+tree = destination / "tree7"
+tree.mkdir()
+cache = destination / "cache7"
+main = tree / "Collisions.dfy"
+collision = """module Lib {
+  function F(x: int): int { x + 1 }
+}
+module M {
+  import Lib
+  export provides L, Lib
+  export Lib
+  lemma L(x: int) ensures Lib.F(x) == x + 1 {}
+}
+module C {
+  import M
+  lemma Uses(x: int) { M.L(x); }
+  method Bad() { assert false; }
+}
+"""
+main.write_text(collision)
+
+def collision_events(name, checked=False, cold=False):
+    events = [json.loads(line) for line in (destination / (name + ".jsonl")).read_text().splitlines()]
+    snapshots = [e for e in events if e.get("stage") == "resolve.snapshot"]
+    assert len(snapshots) == 8, (name, snapshots)
+    assert len({(e["kind"], e["module"]) for e in snapshots}) == 8, (name, snapshots)
+    same_name = [e for e in snapshots if e["module"] == "M.Lib"]
+    assert {e["kind"] for e in same_name} == {"import", "export"}, (name, same_name)
+    assert len({e["key"] for e in same_name}) == 2, (name, "import and export need distinct keys")
+    for e in snapshots:
+        assert e["state"] == "stored" if cold else e["state"].startswith("hit"), (name, e)
+        assert e["resolverCalls"] == (1 if cold or checked else 0), (name, e)
+        if checked:
+            assert int(re.search(r"checked (\d+) objects", e["state"]).group(1)) > 0, (name, e)
+
+off, _ = run("collision-off", False)
+assert off[0] == 4 and any("C.Bad" in name and outcome == "Invalid" for name, _, outcome, _ in off[4]), off[:3]
+for name, checked, cold in [("collision-cold", False, True), ("collision-warm", False, False),
+                            ("collision-checked", True, False)]:
+    on, _ = run(name, True, *(["--resolution-cache-check"] if checked else []))
+    assert on == off, (name, "collision must preserve diagnostics, Boogie and per-VC resource counts", on[:3], off[:3])
+    collision_events(name, checked, cold)
+main.write_text("// moved\n\n" + collision)
+off, _ = run("collision-moved-off", False)
+on, _ = run("collision-moved", True, "--resolution-cache-check")
+assert on == off, ("collision-moved", on[:3], off[:3])
+collision_events("collision-moved", checked=True)
+
 print("resolution cache: %d runs; cold stores, warm reuses all and checks equal; a comment re-resolves one module, "
       "a signature its dependents, an option all; a damaged or corrupt entry is a miss; lines above, a move and another "
       "checkout reuse all; changed text, a rename and a new naming prefix re-resolve the modules they change; the program's widest tuple "
       "leaves other modules cacheable; export sets, datatype updates and refinement copies are cached, and an export edit "
-      "re-resolves its module; a refining module's record on an import binding and a reveal lemma survive a hit" % runs)
+      "re-resolves its module; a refining module's record on an import binding and a reveal lemma survive a hit; "
+      "import/export name collisions are cached separately and rebound after source moves" % runs)
