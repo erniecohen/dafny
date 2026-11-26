@@ -1,0 +1,10 @@
+
+# Terminal method and forall hints retain legacy reveal scopes (#100).
+# Covered by the registered issue 100 gate above.
+
+# Caller preparation uses standard post-WF support construction (#100).
+# Paired quantified caller and false controls are in the registered issue 100 gate.
+# Canonical local-exit support order and paired/negative WF fixtures are covered by git-issue-100 and its shards.
+
+# Resolve once and verify every duplicate, overlapping and failing request (#173).
+git-issues/git-issue-173.dfy

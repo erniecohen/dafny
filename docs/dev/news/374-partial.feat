@@ -1,0 +1,7 @@
+The opt-in source library `function-domains/Partial.dfy` provides checked
+extensionality for heap-independent partial arrows: exact domains and equal
+preconditions, with equal results wherever defined, imply equality. With the
+function-domain options enabled, lambda application equations no longer fix
+results outside the precondition. Default translation is unchanged.
+The standard-library power-of-two induction and concatenated-producer proofs
+make the function precondition and state-transition predicate explicit.

@@ -1,0 +1,1 @@
+The experimental `--recursive-modules` option now supports Rust group containers with public member facades, including separately translated clients. Rust group programs require explicit array initialization; extern linkage within groups remains unsupported.

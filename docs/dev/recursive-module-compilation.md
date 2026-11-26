@@ -1,6 +1,6 @@
 # Recursive module compilation (issue 466, stage 7)
 
-The executable targets admitted for recursive module groups are C#, Java, Go and Python.
+The executable targets admitted for recursive module groups are C#, Java, Go, JavaScript and Python.
 The feature remains behind the hidden, experimental `--recursive-modules`
 option and its existing prerequisites. Other executable targets are rejected
 before code generation, with the target named in the diagnostic. Library
@@ -47,7 +47,7 @@ remain in the issue's regression suite. The original resolver continues to
 reject the feature's member-invariant prerequisite.
 
 `git-issue-466-stage7-targets.dfy` checks the explicit rejection for
-JavaScript, Rust, C++ and resolved Dafny (`dfy`) without needing their
+Rust, C++ and resolved Dafny (`dfy`) without needing their
 compiler toolchains. Restoring the blanket executable rejection must break the C# positive test; admitting
 an unqualified target must break its rejection control. These mutations change only the target
 admission site and are built and run separately.
@@ -196,6 +196,32 @@ verification condition, axiom, trusted assumption or obligation producer.
 With recursive modules off, declaration names, imports and emission stay on
 their existing paths.
 
+## JavaScript group emission
+
+JavaScript emits one closure and module object per recursive group. Names of
+classes, traits, datatypes, iterators and default classes carry a member prefix;
+qualified type, constructor, conversion and entry-point references use the same
+identity. Both the group name and member order depend on full module names,
+so separately translated clients reconstruct them after source relocation.
+The generated constructor strings retain their Dafny names.
+
+Declarations initialize only class objects: sibling type descriptors, constants,
+trait identities and datatype defaults are evaluated when used, after all module
+closures have initialized. No ordering of the members is needed. Abstract groups
+emit nothing, and refinement retains its original sibling references.
+
+`git-issue-466-js.dfy` compares the existing group fixtures against C#, including
+wrapper-erasure settings, scheduled resolution, additional axioms, complete
+archives, repeated names, nested groups, constrained defaults, value-type trait
+conversions and a group entry point. It links a separately translated client to
+a producer using an archive rebuilt from relocated source files. The invalid
+invariant and reachable false assertion remain errors. Module, type and member
+extern controls reject unsupported foreign linkage explicitly.
+
+This milestone depends on https://github.com/erniecohen/dafny/pull/535. It adds
+no verifier rule, axiom or trusted assumption. Programs without a recursive
+group use their existing emission paths.
+
 ## Remaining compilation work
 
 Qualify the other backends one at a time. Each needs runtime comparisons for
@@ -208,5 +234,35 @@ source parses or compiles.
 The Python milestone depends on https://github.com/erniecohen/dafny/pull/535,
 through it https://github.com/erniecohen/dafny/pull/533, and through that
 https://github.com/erniecohen/dafny/pull/529. Python foreign linkage within
-groups remains separate work. JavaScript, Rust, C++ and resolved Dafny remain
+groups remains separate work. C++ and resolved Dafny remain
 unqualified. This milestone does not complete issue 466.
+
+
+## Rust group emission
+
+Rust places each group in one generated container. Member modules remain distinct
+inside it, and public facades at the original module paths re-export their
+contents. This preserves type identity, associated constructors, constants,
+entry-point calls and references from separately translated clients. Rust permits
+forward module references, so no runtime initialization ordering is required.
+Container names are chosen deterministically from member names and checked for
+collisions after Rust identifier escaping. Nested facade modules merge with other
+modules at the same enclosing path.
+
+The Rust milestone depends on https://github.com/erniecohen/dafny/pull/535.
+It extends only the existing experimental option and changes no verifier rule.
+Extern modules, types and members inside a group are explicitly rejected pending
+a linkage convention. Rust's existing implicit datatype-default and general-trait
+limitations remain: the runtime comparisons use the existing three-member producer
+with explicit array initializers and reference traits (`--general-traits=legacy`).
+C# comparisons disable wrapper erasure, which Rust already disables. Group programs
+that require implicit array initialization are rejected rather than emitted with
+placebo elements. Supporting implicit defaults is a separate milestone.
+
+`git-issue-466-rust.dfy` compares the resulting recursion, constants, values,
+witness construction, traits, refinement and complete-archive execution with C#.
+It also tests repeated declaration names, nested groups, Rust keywords, entry-point
+arguments and a separately translated producer/client pair compiled into one crate.
+The facades export constructors through their types; clients do not need the
+private layout of a group container. `git-issue-466-rust-rejected.dfy` supplies
+module, type and member extern controls and an implicit-array-initialization control.

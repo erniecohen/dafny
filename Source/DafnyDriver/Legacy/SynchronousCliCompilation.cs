@@ -726,9 +726,9 @@ namespace Microsoft.Dafny {
         return false;
       }
 
-      if (options.Backend is not (LibraryBackend or CsharpBackend or JavaBackend or GoBackend or PythonBackend) &&
+      if (options.Backend is not (LibraryBackend or CsharpBackend or JavaBackend or GoBackend or JavaScriptBackend or PythonBackend or RustBackend) &&
           dafnyProgram.Modules().FirstOrDefault(module => module.RecursiveGroup != null) is { } groupMember) {
-        // C# namespaces and Java packages can refer to each other; Go and Python emit groups together.
+        // C# namespaces and Java packages can refer to each other; Go, JavaScript, Python and Rust emit groups together.
         // Other executable targets still need their own module and initialization-order checks.
         // The library backend retains and records the complete group instead.
         await outputWriter.Status($"Error: module '{groupMember.FullDafnyName}' is in a recursive module group; " +

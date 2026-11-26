@@ -1,0 +1,121 @@
+
+Dafny program verifier finished with 21 verified, 0 errors
+
+Dafny program verifier finished with 21 verified, 0 errors
+git-issue-374-partial-negative.dfy(5,25): Error: a precondition for this call could not be proved
+Partial.dfy(37,24): Related location: this is the precondition that could not be proved
+git-issue-374-partial-negative.dfy(10,25): Error: a precondition for this call could not be proved
+Partial.dfy(37,24): Related location: this is the precondition that could not be proved
+git-issue-374-partial-negative.dfy(16,25): Error: a precondition for this call could not be proved
+Partial.dfy(37,24): Related location: this is the precondition that could not be proved
+git-issue-374-partial-negative.dfy(21,25): Error: a precondition for this call could not be proved
+Partial.dfy(37,24): Related location: this is the precondition that could not be proved
+git-issue-374-partial-negative.dfy(27,35): Error: a precondition for this call could not be proved
+Partial.dfy(36,23): Related location: this is the precondition that could not be proved
+git-issue-374-partial-negative.dfy(33,2): Error: assertion might not hold
+git-issue-374-partial-negative.dfy(39,2): Error: assertion might not hold
+git-issue-374-partial-negative.dfy(45,0): Error: a postcondition could not be proved on this return path
+git-issue-374-partial-negative.dfy(44,12): Related location: this is the postcondition that could not be proved
+git-issue-374-partial-negative.dfy(51,2): Error: assertion might not hold
+git-issue-374-partial-negative.dfy(58,2): Error: assertion might not hold
+git-issue-374-partial-negative.dfy(65,2): Error: assertion might not hold
+git-issue-374-partial-negative.dfy(71,9): Error: function precondition could not be proved
+git-issue-374-partial-negative.dfy(76,46): Error: value does not satisfy the subset constraints of 'int --> int' (possible cause: it may have read effects)
+git-issue-374-partial-negative.dfy(82,2): Error: assertion might not hold
+git-issue-374-partial-negative.dfy(88,2): Error: assertion might not hold
+git-issue-374-partial-negative.dfy(94,2): Error: assertion might not hold
+git-issue-374-partial-negative.dfy(100,2): Error: assertion might not hold
+git-issue-374-partial-negative.dfy(106,2): Error: assertion might not hold
+git-issue-374-partial-negative.dfy(112,2): Error: assertion might not hold
+
+Dafny program verifier finished with 7 verified, 19 errors
+git-issue-374-partial-negative.dfy(5,25): Error: a precondition for this call could not be proved
+Partial.dfy(37,24): Related location: this is the precondition that could not be proved
+git-issue-374-partial-negative.dfy(10,25): Error: a precondition for this call could not be proved
+Partial.dfy(37,24): Related location: this is the precondition that could not be proved
+git-issue-374-partial-negative.dfy(16,25): Error: a precondition for this call could not be proved
+Partial.dfy(37,24): Related location: this is the precondition that could not be proved
+git-issue-374-partial-negative.dfy(21,25): Error: a precondition for this call could not be proved
+Partial.dfy(37,24): Related location: this is the precondition that could not be proved
+git-issue-374-partial-negative.dfy(27,35): Error: a precondition for this call could not be proved
+Partial.dfy(36,23): Related location: this is the precondition that could not be proved
+git-issue-374-partial-negative.dfy(33,2): Error: assertion might not hold
+git-issue-374-partial-negative.dfy(39,2): Error: assertion might not hold
+git-issue-374-partial-negative.dfy(45,0): Error: a postcondition could not be proved on this return path
+git-issue-374-partial-negative.dfy(44,12): Related location: this is the postcondition that could not be proved
+git-issue-374-partial-negative.dfy(51,2): Error: assertion might not hold
+git-issue-374-partial-negative.dfy(58,2): Error: assertion might not hold
+git-issue-374-partial-negative.dfy(65,2): Error: assertion might not hold
+git-issue-374-partial-negative.dfy(71,9): Error: function precondition could not be proved
+git-issue-374-partial-negative.dfy(76,46): Error: value does not satisfy the subset constraints of 'int --> int' (possible cause: it may have read effects)
+git-issue-374-partial-negative.dfy(82,2): Error: assertion might not hold
+git-issue-374-partial-negative.dfy(88,2): Error: assertion might not hold
+git-issue-374-partial-negative.dfy(94,2): Error: assertion might not hold
+git-issue-374-partial-negative.dfy(100,2): Error: assertion might not hold
+git-issue-374-partial-negative.dfy(106,2): Error: assertion might not hold
+git-issue-374-partial-negative.dfy(112,2): Error: assertion might not hold
+
+Dafny program verifier finished with 7 verified, 19 errors
+git-issue-374-partial-malformed.dfy(17,52): Error: {:functionDomain "partialPointwise"} expects a static ghost predicate with type parameters <A1, ..., An, B>, matching arguments of type (A1, ..., An) --> B, plain bool result, no older parameters or other specification, and no body
+git-issue-374-partial-malformed.dfy(19,51): Error: {:functionDomain "partialEqual"} expects a static ghost predicate with type parameters <A1, ..., An, B>, matching arguments of type (A1, ..., An) --> B, plain bool result, no older parameters or other specification, and body f == g
+git-issue-374-partial-malformed.dfy(2,51): Error: {:functionDomain "partialEqual"} expects a static ghost predicate with type parameters <A1, ..., An, B>, matching arguments of type (A1, ..., An) --> B, plain bool result, no older parameters or other specification, and body f == g
+git-issue-374-partial-malformed.dfy(3,51): Error: {:functionDomain "partialEqual"} expects a static ghost predicate with type parameters <A1, ..., An, B>, matching arguments of type (A1, ..., An) --> B, plain bool result, no older parameters or other specification, and body f == g
+git-issue-374-partial-malformed.dfy(4,51): Error: {:functionDomain "partialEqual"} expects a static ghost predicate with type parameters <A1, ..., An, B>, matching arguments of type (A1, ..., An) --> B, plain bool result, no older parameters or other specification, and body f == g
+git-issue-374-partial-malformed.dfy(5,51): Error: {:functionDomain "partialEqual"} expects a static ghost predicate with type parameters <A1, ..., An, B>, matching arguments of type (A1, ..., An) --> B, plain bool result, no older parameters or other specification, and body f == g
+git-issue-374-partial-malformed.dfy(6,51): Error: {:functionDomain "partialEqual"} expects a static ghost predicate with type parameters <A1, ..., An, B>, matching arguments of type (A1, ..., An) --> B, plain bool result, no older parameters or other specification, and body f == g
+git-issue-374-partial-malformed.dfy(7,51): Error: {:functionDomain "partialEqual"} expects a static ghost predicate with type parameters <A1, ..., An, B>, matching arguments of type (A1, ..., An) --> B, plain bool result, no older parameters or other specification, and body f == g
+git-issue-374-partial-malformed.dfy(8,51): Error: {:functionDomain "partialEqual"} expects a static ghost predicate with type parameters <A1, ..., An, B>, matching arguments of type (A1, ..., An) --> B, plain bool result, no older parameters or other specification, and body f == g
+git-issue-374-partial-malformed.dfy(9,55): Error: {:functionDomain "partialPointwise"} expects a static ghost predicate with type parameters <A1, ..., An, B>, matching arguments of type (A1, ..., An) --> B, plain bool result, no older parameters or other specification, and no body
+git-issue-374-partial-malformed.dfy(10,55): Error: {:functionDomain "partialPointwise"} expects a static ghost predicate with type parameters <A1, ..., An, B>, matching arguments of type (A1, ..., An) --> B, plain bool result, no older parameters or other specification, and no body
+git-issue-374-partial-malformed.dfy(11,55): Error: {:functionDomain "partialPointwise"} expects a static ghost predicate with type parameters <A1, ..., An, B>, matching arguments of type (A1, ..., An) --> B, plain bool result, no older parameters or other specification, and no body
+git-issue-374-partial-malformed.dfy(12,54): Error: {:functionDomain "partialExactDom"} expects a static ghost predicate with type parameters <A1, ..., An, B>, matching arguments of type (A1, ..., An) --> B, plain bool result, no older parameters or other specification, and no body
+git-issue-374-partial-malformed.dfy(13,54): Error: {:functionDomain "partialExactDom"} expects a static ghost predicate with type parameters <A1, ..., An, B>, matching arguments of type (A1, ..., An) --> B, plain bool result, no older parameters or other specification, and no body
+git-issue-374-partial-malformed.dfy(14,58): Error: {:functionDomain "partialEqual"} expects a static ghost predicate with type parameters <A1, ..., An, B>, matching arguments of type (A1, ..., An) --> B, plain bool result, no older parameters or other specification, and body f == g
+git-issue-374-partial-malformed.dfy(2,51): Error: {:functionDomain "partialEqual"} expects a static ghost predicate with type parameters <A1, ..., An, B>, matching arguments of type (A1, ..., An) --> B, plain bool result, no older parameters or other specification, and body f == g
+git-issue-374-partial-malformed.dfy(3,51): Error: {:functionDomain "partialEqual"} expects a static ghost predicate with type parameters <A1, ..., An, B>, matching arguments of type (A1, ..., An) --> B, plain bool result, no older parameters or other specification, and body f == g
+git-issue-374-partial-malformed.dfy(4,51): Error: {:functionDomain "partialEqual"} expects a static ghost predicate with type parameters <A1, ..., An, B>, matching arguments of type (A1, ..., An) --> B, plain bool result, no older parameters or other specification, and body f == g
+git-issue-374-partial-malformed.dfy(5,51): Error: {:functionDomain "partialEqual"} expects a static ghost predicate with type parameters <A1, ..., An, B>, matching arguments of type (A1, ..., An) --> B, plain bool result, no older parameters or other specification, and body f == g
+git-issue-374-partial-malformed.dfy(6,51): Error: {:functionDomain "partialEqual"} expects a static ghost predicate with type parameters <A1, ..., An, B>, matching arguments of type (A1, ..., An) --> B, plain bool result, no older parameters or other specification, and body f == g
+git-issue-374-partial-malformed.dfy(7,51): Error: {:functionDomain "partialEqual"} expects a static ghost predicate with type parameters <A1, ..., An, B>, matching arguments of type (A1, ..., An) --> B, plain bool result, no older parameters or other specification, and body f == g
+git-issue-374-partial-malformed.dfy(8,51): Error: {:functionDomain "partialEqual"} expects a static ghost predicate with type parameters <A1, ..., An, B>, matching arguments of type (A1, ..., An) --> B, plain bool result, no older parameters or other specification, and body f == g
+git-issue-374-partial-malformed.dfy(9,55): Error: {:functionDomain "partialPointwise"} expects a static ghost predicate with type parameters <A1, ..., An, B>, matching arguments of type (A1, ..., An) --> B, plain bool result, no older parameters or other specification, and no body
+git-issue-374-partial-malformed.dfy(10,55): Error: {:functionDomain "partialPointwise"} expects a static ghost predicate with type parameters <A1, ..., An, B>, matching arguments of type (A1, ..., An) --> B, plain bool result, no older parameters or other specification, and no body
+git-issue-374-partial-malformed.dfy(11,55): Error: {:functionDomain "partialPointwise"} expects a static ghost predicate with type parameters <A1, ..., An, B>, matching arguments of type (A1, ..., An) --> B, plain bool result, no older parameters or other specification, and no body
+git-issue-374-partial-malformed.dfy(12,54): Error: {:functionDomain "partialExactDom"} expects a static ghost predicate with type parameters <A1, ..., An, B>, matching arguments of type (A1, ..., An) --> B, plain bool result, no older parameters or other specification, and no body
+git-issue-374-partial-malformed.dfy(13,54): Error: {:functionDomain "partialExactDom"} expects a static ghost predicate with type parameters <A1, ..., An, B>, matching arguments of type (A1, ..., An) --> B, plain bool result, no older parameters or other specification, and no body
+git-issue-374-partial-malformed.dfy(14,58): Error: {:functionDomain "partialEqual"} expects a static ghost predicate with type parameters <A1, ..., An, B>, matching arguments of type (A1, ..., An) --> B, plain bool result, no older parameters or other specification, and body f == g
+
+Dafny program verifier finished with 2 verified, 0 errors
+git-issue-374-partial-malformed.dfy(17,52): Error: {:functionDomain "partialPointwise"} expects a static ghost predicate with type parameters <A1, ..., An, B>, matching arguments of type (A1, ..., An) --> B, plain bool result, no older parameters or other specification, and no body
+git-issue-374-partial-malformed.dfy(19,51): Error: {:functionDomain "partialEqual"} expects a static ghost predicate with type parameters <A1, ..., An, B>, matching arguments of type (A1, ..., An) --> B, plain bool result, no older parameters or other specification, and body f == g
+git-issue-374-partial-malformed.dfy(2,51): Error: {:functionDomain "partialEqual"} expects a static ghost predicate with type parameters <A1, ..., An, B>, matching arguments of type (A1, ..., An) --> B, plain bool result, no older parameters or other specification, and body f == g
+git-issue-374-partial-malformed.dfy(3,51): Error: {:functionDomain "partialEqual"} expects a static ghost predicate with type parameters <A1, ..., An, B>, matching arguments of type (A1, ..., An) --> B, plain bool result, no older parameters or other specification, and body f == g
+git-issue-374-partial-malformed.dfy(4,51): Error: {:functionDomain "partialEqual"} expects a static ghost predicate with type parameters <A1, ..., An, B>, matching arguments of type (A1, ..., An) --> B, plain bool result, no older parameters or other specification, and body f == g
+git-issue-374-partial-malformed.dfy(5,51): Error: {:functionDomain "partialEqual"} expects a static ghost predicate with type parameters <A1, ..., An, B>, matching arguments of type (A1, ..., An) --> B, plain bool result, no older parameters or other specification, and body f == g
+git-issue-374-partial-malformed.dfy(6,51): Error: {:functionDomain "partialEqual"} expects a static ghost predicate with type parameters <A1, ..., An, B>, matching arguments of type (A1, ..., An) --> B, plain bool result, no older parameters or other specification, and body f == g
+git-issue-374-partial-malformed.dfy(7,51): Error: {:functionDomain "partialEqual"} expects a static ghost predicate with type parameters <A1, ..., An, B>, matching arguments of type (A1, ..., An) --> B, plain bool result, no older parameters or other specification, and body f == g
+git-issue-374-partial-malformed.dfy(8,51): Error: {:functionDomain "partialEqual"} expects a static ghost predicate with type parameters <A1, ..., An, B>, matching arguments of type (A1, ..., An) --> B, plain bool result, no older parameters or other specification, and body f == g
+git-issue-374-partial-malformed.dfy(9,55): Error: {:functionDomain "partialPointwise"} expects a static ghost predicate with type parameters <A1, ..., An, B>, matching arguments of type (A1, ..., An) --> B, plain bool result, no older parameters or other specification, and no body
+git-issue-374-partial-malformed.dfy(10,55): Error: {:functionDomain "partialPointwise"} expects a static ghost predicate with type parameters <A1, ..., An, B>, matching arguments of type (A1, ..., An) --> B, plain bool result, no older parameters or other specification, and no body
+git-issue-374-partial-malformed.dfy(11,55): Error: {:functionDomain "partialPointwise"} expects a static ghost predicate with type parameters <A1, ..., An, B>, matching arguments of type (A1, ..., An) --> B, plain bool result, no older parameters or other specification, and no body
+git-issue-374-partial-malformed.dfy(12,54): Error: {:functionDomain "partialExactDom"} expects a static ghost predicate with type parameters <A1, ..., An, B>, matching arguments of type (A1, ..., An) --> B, plain bool result, no older parameters or other specification, and no body
+git-issue-374-partial-malformed.dfy(13,54): Error: {:functionDomain "partialExactDom"} expects a static ghost predicate with type parameters <A1, ..., An, B>, matching arguments of type (A1, ..., An) --> B, plain bool result, no older parameters or other specification, and no body
+git-issue-374-partial-malformed.dfy(14,58): Error: {:functionDomain "partialEqual"} expects a static ghost predicate with type parameters <A1, ..., An, B>, matching arguments of type (A1, ..., An) --> B, plain bool result, no older parameters or other specification, and body f == g
+git-issue-374-partial-malformed.dfy(2,51): Error: {:functionDomain "partialEqual"} expects a static ghost predicate with type parameters <A1, ..., An, B>, matching arguments of type (A1, ..., An) --> B, plain bool result, no older parameters or other specification, and body f == g
+git-issue-374-partial-malformed.dfy(3,51): Error: {:functionDomain "partialEqual"} expects a static ghost predicate with type parameters <A1, ..., An, B>, matching arguments of type (A1, ..., An) --> B, plain bool result, no older parameters or other specification, and body f == g
+git-issue-374-partial-malformed.dfy(4,51): Error: {:functionDomain "partialEqual"} expects a static ghost predicate with type parameters <A1, ..., An, B>, matching arguments of type (A1, ..., An) --> B, plain bool result, no older parameters or other specification, and body f == g
+git-issue-374-partial-malformed.dfy(5,51): Error: {:functionDomain "partialEqual"} expects a static ghost predicate with type parameters <A1, ..., An, B>, matching arguments of type (A1, ..., An) --> B, plain bool result, no older parameters or other specification, and body f == g
+git-issue-374-partial-malformed.dfy(6,51): Error: {:functionDomain "partialEqual"} expects a static ghost predicate with type parameters <A1, ..., An, B>, matching arguments of type (A1, ..., An) --> B, plain bool result, no older parameters or other specification, and body f == g
+git-issue-374-partial-malformed.dfy(7,51): Error: {:functionDomain "partialEqual"} expects a static ghost predicate with type parameters <A1, ..., An, B>, matching arguments of type (A1, ..., An) --> B, plain bool result, no older parameters or other specification, and body f == g
+git-issue-374-partial-malformed.dfy(8,51): Error: {:functionDomain "partialEqual"} expects a static ghost predicate with type parameters <A1, ..., An, B>, matching arguments of type (A1, ..., An) --> B, plain bool result, no older parameters or other specification, and body f == g
+git-issue-374-partial-malformed.dfy(9,55): Error: {:functionDomain "partialPointwise"} expects a static ghost predicate with type parameters <A1, ..., An, B>, matching arguments of type (A1, ..., An) --> B, plain bool result, no older parameters or other specification, and no body
+git-issue-374-partial-malformed.dfy(10,55): Error: {:functionDomain "partialPointwise"} expects a static ghost predicate with type parameters <A1, ..., An, B>, matching arguments of type (A1, ..., An) --> B, plain bool result, no older parameters or other specification, and no body
+git-issue-374-partial-malformed.dfy(11,55): Error: {:functionDomain "partialPointwise"} expects a static ghost predicate with type parameters <A1, ..., An, B>, matching arguments of type (A1, ..., An) --> B, plain bool result, no older parameters or other specification, and no body
+git-issue-374-partial-malformed.dfy(12,54): Error: {:functionDomain "partialExactDom"} expects a static ghost predicate with type parameters <A1, ..., An, B>, matching arguments of type (A1, ..., An) --> B, plain bool result, no older parameters or other specification, and no body
+git-issue-374-partial-malformed.dfy(13,54): Error: {:functionDomain "partialExactDom"} expects a static ghost predicate with type parameters <A1, ..., An, B>, matching arguments of type (A1, ..., An) --> B, plain bool result, no older parameters or other specification, and no body
+git-issue-374-partial-malformed.dfy(14,58): Error: {:functionDomain "partialEqual"} expects a static ghost predicate with type parameters <A1, ..., An, B>, matching arguments of type (A1, ..., An) --> B, plain bool result, no older parameters or other specification, and body f == g
+
+Dafny program verifier finished with 2 verified, 0 errors
+Dafny auditor completed with 0 findings
+
+Dafny program verifier did not attempt verification

@@ -1,0 +1,5 @@
+
+# The standard-library trust list under --modular-termination, milestone M5b: a library records only
+# listed premises whose statement and context digests match, a client admits it only when it opted in,
+# and a premise-free library is byte for byte the same as before (https://github.com/erniecohen/dafny/issues/211).
+git-issues/github-issue-211-m5b.dfy

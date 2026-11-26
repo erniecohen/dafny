@@ -1,0 +1,3 @@
+
+# Order types, `type {:order O} L = x: T | C`: funcptr.c in VeriFast's bags of levels, an order type admitted as the order of a bounded value, with controls, two order types of one carrier that do not mix, and order attributes that are not closed orders of the base type (https://github.com/erniecohen/dafny/issues/211).
+git-issues/github-issue-211-order-types.dfy

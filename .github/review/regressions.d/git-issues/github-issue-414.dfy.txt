@@ -1,0 +1,3 @@
+
+# Termination checks on integer measures keep the shape they had before the corrected decreases order (https://github.com/erniecohen/dafny/issues/414)
+git-issues/github-issue-414.dfy

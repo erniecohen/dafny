@@ -146,7 +146,7 @@ order of the declarations is not fixed.  The SMT log of a program with rotations
 no `(_ BitVec 0)`; that of a program with rotations only at widths 1, 32 and 64 has the extended
 rotations.
 
-`.github/review/regressions` names both drivers, and the existing tests with rotations:
+`.github/review/regressions.d/` names both drivers, and the existing tests with rotations:
 `dafny0/Bitvectors.dfy`, `dafny0/BitvectorsMore.dfy`, `dafny0/GeneralNewtypeMemberVerify.dfy`,
 `dafny0/GeneralNewtypeVerify.dfy`, `dafny4/git-issue57.dfy` and the two `proof-obligation-desc`
 rotation-bound tests.

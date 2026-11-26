@@ -14,9 +14,9 @@ namespace Microsoft.Dafny;
 //    its i-th parameter, instead of HandleN(h, r, rd);
 //  - $FunDomN(f, bx1, .., bxN) is membership in f's domain;
 //  - the application, precondition and reads selectors of TagHandleN hold only inside the
-//    domain.  Outside it they are unspecified, so two handles with the same domain that agree
-//    on it can be equal.
-// Two kinds of handle keep unguarded selectors, because their values outside the domain are
+//    domain. Application is additionally guarded by RequiresN: a partial function's
+//    result outside its precondition is unspecified, including inside its declared domain.
+// Two kinds of handle keep selectors without argument-domain guards, because values outside the domain are
 // already determined by their values inside it, or are free:
 //  - a lambda whose parameters all have type int, real, bool or ORDINAL is built by
 //    BasicHandleN, with the same tags.  Its maps read each box only through an unboxing to
@@ -68,11 +68,12 @@ public partial class BoogieGenerator {
 
   /// <summary>
   /// Declares TagHandleN, BasicHandleN and $FunDomN.  TagHandleN's selector axioms are each
-  /// guarded by membership of the arguments in the tags (BasicHandleN's are the same, unguarded):
+  /// guarded by membership of the arguments in the tags (BasicHandleN omits that guard):
   ///   forall t.., d.., h, r, rd, heap, bx.. ::
   ///     $IsBox(bx1, d1) && .. && $IsBox(bxN, dN) ==>
   ///       ApplyN(t.., heap, TagHandleN(d.., h, r, rd), bx..) == h[heap, bx..]
-  ///   (and r[heap, bx..] ==> RequiresN(..), and Reads membership == rd membership)
+  ///   (application also requires RequiresN(..); r[heap, bx..] ==> RequiresN(..),
+  ///    and Reads membership == rd membership)
   ///   forall d.., h, r, rd, bx.. :: $FunDomN(TagHandleN(d.., h, r, rd), bx..) <==> $IsBox(bx1, d1) && ..
   /// </summary>
   private void AddTaggedHandleAxioms(ArrowTypeDecl ad, Bpl.Type applyTy, Bpl.Type requiresTy, Bpl.Type readsTy,
@@ -123,6 +124,11 @@ public partial class BoogieGenerator {
         body = BplImp(rhs, lhs);
       } else {
         body = Bpl.Expr.Eq(lhs, rhs);
+      }
+      if (selectorVar == "h") {
+        var precondition = FunctionCall(tok, Requires(arity), Bpl.Type.Bool,
+          Concat(types, Cons(heap, Cons(handle, boxes))));
+        body = BplImp(precondition, body);
       }
       if (constructor == TagHandle(arity)) {
         body = BplImp(BplAnd(boxes.Zip(tags, (b, d) => MkIs(b, d, true))), body);
@@ -206,6 +212,7 @@ public partial class BoogieGenerator {
         BplForall(bvars, new Bpl.Trigger(tok, true, [exact, isTotal]),
           BplImp(BplAnd(isTotal, basicDomains), exact))));
     }
+    AddPartialExactDomainAxioms(ad);
     if (!FunctionExtensionalityAxiom) {
       return;
     }
@@ -244,6 +251,42 @@ public partial class BoogieGenerator {
       AddOtherDefinition(typeConstructor, new Axiom(tok,
         BplForall(bvars, BplTrigger(eq), BplImp(BplAnd(premises, pointwise), eq))));
     }
+  }
+
+  // As for total arrows, a product of basic types has no proper superdomain.
+  // A partial arrow need not be total for this domain fact to hold.
+  private void AddPartialExactDomainAxioms(ArrowTypeDecl ad) {
+    var arity = ad.Arity;
+    var tok = ad.Origin;
+    var bvars = new List<Bpl.Variable>();
+    var domains = Map(Enumerable.Range(0, arity), i => BplBoundVar("a" + i, Predef.Ty, bvars));
+    var b = BplBoundVar("b", Predef.Ty, bvars);
+    var fn = BplBoundVar("f", Predef.HandleType, bvars);
+    var exact = FunctionCall(tok, ExactDom(arity), Bpl.Type.Bool, Snoc(domains, fn));
+    var partial = ClassTyCon(program.SystemModuleManager.PartialArrowTypeDecls[arity], Snoc(domains, b));
+    var isPartial = MkIs(fn, partial);
+    var basicTypes = new[] { Type.Int, Type.Real, Type.Bool, (Type)new BigOrdinalType() };
+    var basicDomains = BplAnd(domains.Select(a => BplOr(basicTypes.Select(t => Bpl.Expr.Eq(a, TypeToTy(t))))));
+    AddOtherDefinition(GetOrCreateTypeConstructor(ad), new Axiom(tok,
+      BplForall(bvars, new Bpl.Trigger(tok, true, [exact, isPartial]),
+        BplImp(BplAnd(isPartial, basicDomains), exact))));
+  }
+
+  // Compare preconditions everywhere, and applications only where both are defined.
+  // The type guards cover the full mathematical product, without allocation tests.
+  private Bpl.Expr PartialAgreement(IOrigin tok, int arity, List<Bpl.Expr> types,
+    Bpl.Expr f, Bpl.Expr g) {
+    var boxVars = new List<Bpl.Variable>();
+    var boxes = Map(Enumerable.Range(0, arity), i => BplBoundVar("bx" + i, Predef.BoxType, boxVars));
+    var heap = NewOneHeapExpr(tok);
+    var fx = FunctionCall(tok, Apply(arity), Predef.BoxType, Concat(types, Cons(heap, Cons(f, boxes))));
+    var gx = FunctionCall(tok, Apply(arity), Predef.BoxType, Concat(types, Cons(heap, Cons(g, boxes))));
+    var fp = FunctionCall(tok, Requires(arity), Bpl.Type.Bool, Concat(types, Cons(heap, Cons(f, boxes))));
+    var gp = FunctionCall(tok, Requires(arity), Bpl.Type.Bool, Concat(types, Cons(heap, Cons(g, boxes))));
+    var inDomain = BplAnd(boxes.Zip(types.Take(arity), (bx, a) => MkIs(bx, a, true)));
+    var agreement = BplAnd(BplIff(fp, gp), BplImp(fp, Bpl.Expr.Eq(fx, gx)));
+    return BplForall(boxVars, new Bpl.Trigger(tok, true, [fp], new Bpl.Trigger(tok, true, [gp],
+      new Bpl.Trigger(tok, true, [fx], new Bpl.Trigger(tok, true, [gx])))), BplImp(inDomain, agreement));
   }
 
   /// <summary>
@@ -291,18 +334,22 @@ public partial class BoogieGenerator {
       return null;
     }
     string kind = args.Count == 1 && args[0] is StringLiteralExpr { Value: string s } ? s : null;
-    var pair = kind is "equal" or "pointwise";
-    var signature = (kind is "restrict" or "exactDom" or "equal" or "pointwise") &&
+    var partial = kind is "partialExactDom" or "partialEqual" or "partialPointwise";
+    var operation = kind switch {
+      "partialExactDom" => "exactDom", "partialEqual" => "equal", "partialPointwise" => "pointwise", _ => kind
+    };
+    var pair = operation is "equal" or "pointwise";
+    var signature = (operation is "restrict" or "exactDom" or "equal" or "pointwise") &&
                     f.Req.Count == 0 && f.Ens.Count == 0 && f.Reads.Expressions.Count == 0 &&
                     f.IsGhost && f.IsStatic && f.EnclosingClass is DefaultClassDecl &&
                     f.TypeArgs.Count >= 1 && f.Ins.Count == (pair ? 2 : 1) &&
-                    (kind != "pointwise" || f.Ins.All(p => !p.IsOlder)) &&
-                    (kind != "pointwise" || f.ResultType.NormalizeExpandKeepConstraints() is BoolType) &&
+                    (!(partial || kind == "pointwise") || f.Ins.All(p => !p.IsOlder)) &&
+                    (!(partial || kind == "pointwise") || f.ResultType.NormalizeExpandKeepConstraints() is BoolType) &&
                     !f.IsFuelAware() && !f.IsOpaque && !f.IsMadeImplicitlyOpaque(options) &&
                     f is not TwoStateFunction &&
-                    f.Ins.All(p => IsTotalArrowOver(p.Type, f.TypeArgs)) &&
+                    f.Ins.All(p => partial ? IsPartialArrowOver(p.Type, f.TypeArgs) : IsTotalArrowOver(p.Type, f.TypeArgs)) &&
                     (kind == "restrict" ? IsTotalArrowOver(f.ResultType, f.TypeArgs) : f.ResultType.IsBoolType);
-    var body = signature && (kind switch {
+    var body = signature && (operation switch {
       "restrict" => f.Body == null || IsRestrictionBody(f),
       "exactDom" or "pointwise" => f.Body == null,
       "equal" => f.Body?.Resolved is BinaryExpr { Op: BinaryExpr.Opcode.Eq } eq &&
@@ -311,7 +358,12 @@ public partial class BoogieGenerator {
     });
     if (!body) {
       reporter.Error(MessageSource.Verifier, f.Origin,
-        kind == "pointwise"
+        partial
+          ? "{:functionDomain \"" + kind + "\"} expects a static ghost predicate with type parameters " +
+            "<A1, ..., An, B>, matching arguments of type (A1, ..., An) --> B, plain bool result, " +
+            "no older parameters or other specification, and " +
+            (operation == "equal" ? "body f == g" : "no body")
+          : kind == "pointwise"
           ? "{:functionDomain \"pointwise\"} expects a static body-less ghost predicate with type parameters " +
             "<A1, ..., An, B>, arguments (f: (A1, ..., An) -> B, g: (A1, ..., An) -> B), and no other specification"
           : "{:" + FunctionDomainAttributeName + "} expects a static ghost function with type parameters <A1, ..., An, B> " +
@@ -332,6 +384,14 @@ public partial class BoogieGenerator {
     var arity = parameters.Count - 1;
     return program.SystemModuleManager.TotalArrowTypeDecls.TryGetValue(arity, out var total) &&
            t is UserDefinedType { ResolvedClass: var cl } udt && cl == total &&
+           udt.TypeArgs.Count == parameters.Count &&
+           udt.TypeArgs.Zip(parameters, (actual, formal) => actual.AsTypeParameter == formal).All(x => x);
+  }
+
+  private bool IsPartialArrowOver(Type t, List<TypeParameter> parameters) {
+    var arity = parameters.Count - 1;
+    return program.SystemModuleManager.PartialArrowTypeDecls.TryGetValue(arity, out var partial) &&
+           t is UserDefinedType { ResolvedClass: var cl } udt && cl == partial &&
            udt.TypeArgs.Count == parameters.Count &&
            udt.TypeArgs.Zip(parameters, (actual, formal) => actual.AsTypeParameter == formal).All(x => x);
   }
@@ -357,6 +417,10 @@ public partial class BoogieGenerator {
     if (kind == null) {
       return;
     }
+    var partial = kind is "partialExactDom" or "partialEqual" or "partialPointwise";
+    kind = kind switch {
+      "partialExactDom" => "exactDom", "partialEqual" => "equal", "partialPointwise" => "pointwise", _ => kind
+    };
     var tok = f.Origin;
     var name = f.FullSanitizedName;
     var arity = f.TypeArgs.Count - 1;
@@ -397,15 +461,17 @@ public partial class BoogieGenerator {
     } else {
       var g = BplBoundVar("g", Predef.HandleType, bvars);
       var call = FunctionCall(tok, name, Bpl.Type.Bool, Snoc(callArgs, g));
-      var arrow = ClassTyCon(program.SystemModuleManager.TotalArrowTypeDecls[arity], types);
+      var arrow = ClassTyCon(partial ? program.SystemModuleManager.PartialArrowTypeDecls[arity]
+        : program.SystemModuleManager.TotalArrowTypeDecls[arity], types);
       var boxVars = new List<Bpl.Variable>();
       var boxes = Map(Enumerable.Range(0, arity), i => BplBoundVar("bx" + i, Predef.BoxType, boxVars));
       var heap = NewOneHeapExpr(tok);
       var fx = FunctionCall(tok, Apply(arity), Predef.BoxType, Concat(types, Cons(heap, Cons(fn, boxes))));
       var gx = FunctionCall(tok, Apply(arity), Predef.BoxType, Concat(types, Cons(heap, Cons(g, boxes))));
       var inDomain = BplAnd(boxes.Zip(domains, (bx, a) => MkIs(bx, a, true)));
-      var pointwise = BplForall(boxVars, new Bpl.Trigger(tok, true, [fx], new Bpl.Trigger(tok, true, [gx])),
-        BplImp(inDomain, Bpl.Expr.Eq(fx, gx)));
+      var pointwise = partial ? PartialAgreement(tok, arity, types, fn, g)
+        : BplForall(boxVars, new Bpl.Trigger(tok, true, [fx], new Bpl.Trigger(tok, true, [gx])),
+          BplImp(inDomain, Bpl.Expr.Eq(fx, gx)));
       if (kind == "pointwise") {
         // Deliberately no allocation antecedent: this is agreement on the whole
         // mathematical product, including arguments not allocated in any current heap.

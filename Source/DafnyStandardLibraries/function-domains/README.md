@@ -1,4 +1,4 @@
-# Total function domains
+# Function domains
 
 `Functions.dfy` is the opt-in source library `Std.FunctionDomains`. Verify it
 and clients together with `--additional-axioms` (explicit-call extensionality)
@@ -101,3 +101,32 @@ empty. Exactness compares sets of tuples, not identities of type tags.
 The full performance trial and automatic embedding of this opt-in source API
 in a precompiled standard-library interface are not claimed here. See
 https://github.com/erniecohen/dafny/issues/374.
+
+For partial arrows, supply `Partial.dfy` with `--additional-axioms` and import
+`Std.PartialFunctionDomains`. `Arity0` through `Arity4` supply `ExactDom`,
+`Pointwise`, `Equal` and the checked `Extensionality` lemma. `Pointwise` means
+that preconditions agree on every correctly typed tuple, including unallocated
+arguments, and results agree wherever that common precondition holds. Exact
+domains are still required; viewing a wider function at a narrower arrow type
+does not restrict its identity. Differences in body expressions outside the
+precondition do not distinguish partial values.
+
+```dafny
+import P = Std.PartialFunctionDomains
+
+lemma PartialAgreement() {
+  var f: int --> int := (x: int) requires x >= 0 => x;
+  var g: int --> int := (x: int) requires x >= 0 => if x < 0 then 7 else x;
+  P.Arity1.Extensionality(f, g);
+  assert f == g;
+}
+```
+
+The lemma does not grant a call outside the precondition. Agreement only on the
+intersection of two different preconditions does not satisfy `Pointwise`.
+Heap-reading arrows are excluded. For subset-domain lambdas,
+`--heap-free-lambda-facts` can expose their precondition facts at every heap
+and establish the full-domain premise. Ordinary partial-arrow equality still
+needs this explicit call; the automatic equality option continues to cover
+total arrows. Partial restriction helpers and automatic partial equality are
+not provided in this milestone.
