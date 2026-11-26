@@ -1,0 +1,1 @@
+The self-hosted job action can reserve declared peak memory from a shared host-level budget, with per-kind registrations and conservative fallback for unknown kinds. Runner environment configuration enables the protocol; unconfigured runners retain slots-only admission.

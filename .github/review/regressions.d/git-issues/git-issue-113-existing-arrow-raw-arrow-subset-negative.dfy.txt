@@ -1,0 +1,2 @@
+# Extended newtype bases (issue 113): --extended-newtype-bases, its option-off identity, and its nonvacuity controls.
+git-issues/git-issue-113-existing-arrow-raw-arrow-subset-negative.dfy

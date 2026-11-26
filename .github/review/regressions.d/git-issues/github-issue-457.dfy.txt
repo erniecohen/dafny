@@ -1,0 +1,3 @@
+
+# A lambda expression may not mention allocated(...) in its body, precondition or reads clause outside an old within the lambda, under both resolvers; old(...) inside is allowed, the control does not prove false, and --legacy-allocated-in-lambdas restores the old rule (https://github.com/erniecohen/dafny/issues/457).
+git-issues/github-issue-457.dfy

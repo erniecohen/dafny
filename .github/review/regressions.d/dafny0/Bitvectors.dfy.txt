@@ -1,0 +1,2 @@
+# Existing tests with rotations, at widths of both kinds.
+dafny0/Bitvectors.dfy

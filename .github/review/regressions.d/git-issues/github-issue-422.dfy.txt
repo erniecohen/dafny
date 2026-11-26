@@ -1,0 +1,2 @@
+# Under --type-system-refresh, operators in the witness of a newtype without a constraint variable are resolved before TypeRefinementVisitor reads them, and an underspecified witness is reported, as with a constraint variable; a Debug build failed an assertion or a cast (https://github.com/erniecohen/dafny/issues/422).
+git-issues/github-issue-422.dfy

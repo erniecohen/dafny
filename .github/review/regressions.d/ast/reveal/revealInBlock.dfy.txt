@@ -1,0 +1,2 @@
+# With integer termination checks back in the legacy shape, --isolate-assertions splits them into two tasks again, so these two upstream tests read their .expect counts of 20 and 25 verified (https://github.com/erniecohen/dafny/issues/436).
+ast/reveal/revealInBlock.dfy

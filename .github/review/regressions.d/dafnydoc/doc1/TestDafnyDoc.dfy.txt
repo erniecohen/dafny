@@ -1,0 +1,3 @@
+
+# Documentation of an explicitly reference-only trait hierarchy.
+dafnydoc/doc1/TestDafnyDoc.dfy

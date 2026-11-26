@@ -1,0 +1,2 @@
+# Positive and negative ordering expressions, and explicit list induction repaired for the corrected order.
+dafny0/DecreasesTo0.dfy
