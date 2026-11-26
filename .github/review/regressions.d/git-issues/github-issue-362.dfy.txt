@@ -1,0 +1,3 @@
+
+# A let-such-that condition that reads no heap but contains a lambda calling a function no longer crashes the verifier with an undeclared $heap (https://github.com/erniecohen/dafny/issues/362).
+git-issues/github-issue-362.dfy

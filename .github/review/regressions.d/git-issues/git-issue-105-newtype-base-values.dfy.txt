@@ -1,0 +1,3 @@
+
+# Base-type values in the cone of a newtype's member invariants (https://github.com/erniecohen/dafny/issues/105).
+git-issues/git-issue-105-newtype-base-values.dfy

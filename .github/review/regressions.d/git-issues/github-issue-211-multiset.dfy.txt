@@ -1,0 +1,3 @@
+
+# The multiset order of the orders library over any well-founded relation, and global bounds of --modular-termination by multiset orders, where a dispatched call needs a strictly smaller bag (https://github.com/erniecohen/dafny/issues/211).
+git-issues/github-issue-211-multiset.dfy

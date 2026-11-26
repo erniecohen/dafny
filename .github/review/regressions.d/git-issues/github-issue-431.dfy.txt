@@ -1,0 +1,3 @@
+
+# A let-such-that expression whose condition depends on the allocation state (a quantifier or comprehension over the allocated objects or over a type parameter's values, a sequence constructor whose initializer reads the heap, "old" around either, a two-state call) has a choice function that takes that heap: two such expressions around an allocation or a heap update do not prove false, and the verifier does not crash (https://github.com/erniecohen/dafny/issues/431).
+git-issues/github-issue-431.dfy

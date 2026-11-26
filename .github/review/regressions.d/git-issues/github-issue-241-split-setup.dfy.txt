@@ -1,0 +1,3 @@
+
+# Opt-in /cacheUsedTypes and /lockFreeExpansion send the solver the same text (Boogie 3.5.5-review.c5a9f2ef, #241).
+git-issues/github-issue-241-split-setup.dfy

@@ -1,0 +1,3 @@
+
+# Newtype reference characteristics: instantiated visible bases and opaque promises
+git-issues/git-issue-132-newtype-finite-actual-positive-triggered.dfy
