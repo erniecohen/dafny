@@ -121,11 +121,12 @@ jobs:
           sh .github/review/portable-dafny.sh out/dafny
           tar -C out -czf dafny.tar.gz dafny
           python3 .github/review/check-distribution.py out/dafny --archive dafny.tar.gz
-      - uses: actions/upload-artifact@v4
+      - uses: ./.github/actions/host-artifact
         with:
+          mode: put
+          retention-days: 14
           name: parity-${{ inputs.platform }}-dafny
           path: dafny.tar.gz
-          retention-days: 14
       - name: Remove job temporary directory
         if: always()
         shell: bash
@@ -186,8 +187,9 @@ jobs:
         timeout-minutes: 10
         run: git clean -ffdx
       - uses: ./.github/actions/setup-dotnet
-      - uses: actions/download-artifact@v4
+      - uses: ./.github/actions/host-artifact
         with:
+          mode: get
           name: parity-${{ inputs.platform }}-dafny
       - name: Unpack Dafny
         timeout-minutes: 240
@@ -295,8 +297,9 @@ jobs:
         timeout-minutes: 10
         run: git clean -ffdx
       - uses: ./.github/actions/setup-dotnet
-      - uses: actions/download-artifact@v4
+      - uses: ./.github/actions/host-artifact
         with:
+          mode: get
           name: parity-${{ inputs.platform }}-dafny
       - name: Unpack Dafny
         timeout-minutes: 180

@@ -116,8 +116,9 @@ jobs:
           python3 .github/review/typeencoding-a.py negative --dafny out/candidate/Dafny \
             --z3 "$Z3_ARCHIVE/bin/z3" --output controls/negative
       - run: tar -C out -czf candidate.tar.gz candidate
-      - uses: actions/upload-artifact@v4
+      - uses: ./.github/actions/host-artifact
         with:
+          mode: put
           name: character-candidate
           path: candidate.tar.gz
       - uses: actions/upload-artifact@v4
@@ -186,8 +187,9 @@ jobs:
         timeout-minutes: 10
         run: git clean -ffdx
       - uses: ./.github/actions/setup-dotnet
-      - uses: actions/download-artifact@v4
+      - uses: ./.github/actions/host-artifact
         with:
+          mode: get
           name: character-candidate
       - run: mkdir -p out && tar -C out -xzf candidate.tar.gz
       - name: Pin solver
@@ -276,8 +278,9 @@ jobs:
         timeout-minutes: 10
         run: git clean -ffdx
       - uses: ./.github/actions/setup-dotnet
-      - uses: actions/download-artifact@v4
+      - uses: ./.github/actions/host-artifact
         with:
+          mode: get
           name: character-candidate
       - run: mkdir -p out && tar -C out -xzf candidate.tar.gz
       - name: Pin solver

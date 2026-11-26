@@ -87,11 +87,12 @@ jobs:
           eval "$version"
           dotnet publish -p:NuGetAudit=false Source/Dafny/Dafny.csproj -c Release -o out/dafny -p:SourceRevisionId="$revision"
           tar -C out -czf dafny.tar.gz dafny
-      - uses: actions/upload-artifact@v4
+      - uses: ./.github/actions/host-artifact
         with:
+          mode: put
+          retention-days: 14
           name: issue33-baseline
           path: dafny.tar.gz
-          retention-days: 14
       - name: Remove job temporary directory
         if: always()
         shell: bash
@@ -155,11 +156,12 @@ jobs:
           eval "$version"
           dotnet publish -p:NuGetAudit=false Source/Dafny/Dafny.csproj -c Release -o out/dafny -p:SourceRevisionId="$revision"
           tar -C out -czf dafny.tar.gz dafny
-      - uses: actions/upload-artifact@v4
+      - uses: ./.github/actions/host-artifact
         with:
+          mode: put
+          retention-days: 14
           name: issue33-candidate
           path: dafny.tar.gz
-          retention-days: 14
       - name: Remove job temporary directory
         if: always()
         shell: bash
@@ -212,16 +214,18 @@ jobs:
         timeout-minutes: 10
         run: git clean -ffdx
       - uses: ./.github/actions/setup-dotnet
-      - uses: actions/download-artifact@v4
+      - uses: ./.github/actions/host-artifact
         with:
+          mode: get
           name: issue33-baseline
           path: baseline-artifact
       - name: Unpack baseline
         timeout-minutes: 45
         run: mkdir -p out/baseline && tar -C out/baseline -xzf baseline-artifact/dafny.tar.gz
-      - uses: actions/download-artifact@v4
+      - uses: ./.github/actions/host-artifact
         if: github.ref_name != 'scratch/issue33/baseline'
         with:
+          mode: get
           name: issue33-candidate
           path: candidate-artifact
       - name: Unpack candidate
@@ -328,12 +332,14 @@ jobs:
         timeout-minutes: 10
         run: git clean -ffdx
       - uses: ./.github/actions/setup-dotnet
-      - uses: actions/download-artifact@v4
+      - uses: ./.github/actions/host-artifact
         with:
+          mode: get
           name: issue33-baseline
           path: baseline-artifact
-      - uses: actions/download-artifact@v4
+      - uses: ./.github/actions/host-artifact
         with:
+          mode: get
           name: issue33-candidate
           path: candidate-artifact
       - name: Unpack builds and install pinned solver
@@ -414,12 +420,14 @@ jobs:
         timeout-minutes: 10
         run: git clean -ffdx
       - uses: ./.github/actions/setup-dotnet
-      - uses: actions/download-artifact@v4
+      - uses: ./.github/actions/host-artifact
         with:
+          mode: get
           name: issue33-baseline
           path: baseline-artifact
-      - uses: actions/download-artifact@v4
+      - uses: ./.github/actions/host-artifact
         with:
+          mode: get
           name: issue33-candidate
           path: candidate-artifact
       - name: Unpack builds and install pinned solver
@@ -500,12 +508,14 @@ jobs:
         timeout-minutes: 10
         run: git clean -ffdx
       - uses: ./.github/actions/setup-dotnet
-      - uses: actions/download-artifact@v4
+      - uses: ./.github/actions/host-artifact
         with:
+          mode: get
           name: issue33-baseline
           path: baseline-artifact
-      - uses: actions/download-artifact@v4
+      - uses: ./.github/actions/host-artifact
         with:
+          mode: get
           name: issue33-candidate
           path: candidate-artifact
       - name: Unpack

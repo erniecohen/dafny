@@ -42,12 +42,33 @@ namespace Microsoft.Dafny.Compilers {
 
     private readonly Dictionary<RecursiveModuleGroup, GroupEmission> Groups = new();
 
+    // Python foreign inputs replace a complete module, rather than individual members.
+    // Keep that interface outside the group's generated implementation file.
+    private bool IsForeignGroupModule(ModuleDefinition module) =>
+      module.RecursiveGroup != null && (!ProgramResolver.ShouldCompile(module) || module.IsExtern(Options) ||
+        module.TopLevelDecls.Any(declaration => !ProgramResolver.ShouldCompile(declaration) || declaration.IsExtern(Options) ||
+          declaration is TopLevelDeclWithMembers type && type.Members.Any(member =>
+            !ProgramResolver.ShouldCompile(member) || member.IsExtern(Options))));
+
+    protected override bool ShouldCompileModule(Program program, ModuleDefinition module) {
+      var shouldCompile = !IsForeignGroupModule(module) && base.ShouldCompileModule(program, module);
+      if (shouldCompile && module.RecursiveGroup is { } group && !Groups.ContainsKey(group)) {
+        // A foreign sibling can follow the first generated member. Register this group's
+        // foreign interfaces before its import snapshot, after lower dependencies are emitted.
+        foreach (var sibling in GroupMembers(group).Where(IsForeignGroupModule)) {
+          DependOnModule(program, sibling, null, null);
+        }
+      }
+      return shouldCompile;
+    }
+
     // These identities depend on module names, not source-file positions or archive layout.
     private static List<ModuleDefinition> GroupMembers(RecursiveModuleGroup group) =>
       group.Members.Select(member => member.ModuleDef).OrderBy(member => member.FullDafnyName, StringComparer.Ordinal).ToList();
 
+    // Foreign names can be dotted import paths; a generated member names the implementation file.
     private string GroupFileName(RecursiveModuleGroup group) =>
-      "_dafny_group_" + PublicModuleIdProtect(GroupMembers(group).First().GetCompileName(Options));
+      "_dafny_group_" + PublicModuleIdProtect(GroupMembers(group).First(module => !IsForeignGroupModule(module)).GetCompileName(Options));
 
     protected override string IdName(TopLevelDecl declaration) {
       var name = base.IdName(declaration);
@@ -160,6 +181,14 @@ namespace Microsoft.Dafny.Compilers {
     };
     protected override void EmitHeader(Program program, ConcreteSyntaxTree wr) {
       HasRecursiveGroups = program.RawModules().Any(module => module.RecursiveGroup != null);
+      if (PythonModuleMode) {
+        foreach (var group in program.CompileModules.Select(module => module.RecursiveGroup).OfType<RecursiveModuleGroup>().Distinct()) {
+          if (GroupMembers(group).All(module => !ProgramResolver.ShouldCompile(module))) {
+            Reporter.Error(MessageSource.Compiler, GroupMembers(group).First().Origin,
+              "Python package translation of a recursive module group with every member marked '{:compile false}' is not yet supported");
+          }
+        }
+      }
       wr.WriteLine($"# Dafny program {program.Name} compiled into Python");
       if (Options.IncludeRuntime) {
         EmitRuntimeSource("DafnyRuntimePython", wr);
@@ -276,7 +305,7 @@ namespace Microsoft.Dafny.Compilers {
           // Import dependencies below the group, before registering its members. Siblings
           // share this file and use its local names, so they never import each other.
           EmitImports(null, null, emission.File, includeDefaultModule: false);
-          foreach (var sibling in GroupMembers(group)) {
+          foreach (var sibling in GroupMembers(group).Where(sibling => !IsForeignGroupModule(sibling))) {
             var siblingName = PublicModuleIdProtect(sibling.GetCompileName(Options));
             Imports.Add(pythonModuleName + siblingName, siblingName);
           }
@@ -300,6 +329,13 @@ namespace Microsoft.Dafny.Compilers {
       // even if this module is not using module mode
       var translatedRecord = program.Compilation.AlreadyTranslatedRecord;
       translatedRecord.OptionsByModule.TryGetValue(module.FullDafnyName, out var moduleOptions);
+      if (moduleOptions == null && IsForeignGroupModule(module)) {
+        // A wholly omitted module has no translation-record row of its own.
+        // Its complete producer group still records the package at a compiled sibling.
+        moduleOptions = GroupMembers(module.RecursiveGroup)
+          .Select(sibling => translatedRecord.OptionsByModule.GetValueOrDefault(sibling.FullDafnyName))
+          .FirstOrDefault(options => options != null);
+      }
       object dependencyModuleName = null;
       moduleOptions?.TryGetValue(PythonBackend.PythonModuleNameCliOption.Name, out dependencyModuleName);
       if (dependencyModuleName is string && !string.IsNullOrEmpty((string)dependencyModuleName)) {
@@ -311,6 +347,15 @@ namespace Microsoft.Dafny.Compilers {
       }
 
       var dependencyCompileName = IdProtect(module.GetCompileName(Options));
+      if (IsForeignGroupModule(module)) {
+        // Populate UrisToCompile even for a module carrying {:compile false}.
+        base.ShouldCompileModule(program, module);
+        if (program.Compilation.UrisToCompile.Contains(module.Origin.Uri)) {
+          dependencyPythonModuleName = PythonModuleMode ? PythonModuleName + "." : "";
+        }
+        Imports.TryAdd(dependencyPythonModuleName + dependencyCompileName, dependencyCompileName);
+        return;
+      }
       // Don't import an empty module.
       // Empty modules aren't generated, so their imports aren't valid.
       if (!TranslationRecord.ModuleEmptyForCompilation(module)) {
@@ -634,7 +679,8 @@ namespace Microsoft.Dafny.Compilers {
 
     private string DtCtorDeclarationName(DatatypeCtor ctor, bool full = false) {
       var dt = ctor.EnclosingDatatype;
-      var local = !full || dt.EnclosingModuleDefinition.RecursiveGroup is { } group && group == enclosingModule?.RecursiveGroup;
+      var local = !IsForeignGroupModule(dt.EnclosingModuleDefinition) &&
+        (!full || dt.EnclosingModuleDefinition.RecursiveGroup is { } group && group == enclosingModule?.RecursiveGroup);
       return $"{(local ? IdName(dt) : dt.GetFullCompileName(Options))}_{ctor.GetCompileName(Options)}";
     }
 
@@ -984,6 +1030,10 @@ namespace Microsoft.Dafny.Compilers {
     }
 
     private string FullName(TopLevelDecl decl) {
+      if (IsForeignGroupModule(decl.EnclosingModuleDefinition)) {
+        return string.Join('.', decl.EnclosingModuleDefinition.GetCompileName(Options).Split('.').Select(PublicModuleIdProtect)
+          .Append(base.IdName(decl)));
+      }
       if (decl.EnclosingModuleDefinition.RecursiveGroup is { } group && group == enclosingModule?.RecursiveGroup) {
         return IdName(decl);
       }

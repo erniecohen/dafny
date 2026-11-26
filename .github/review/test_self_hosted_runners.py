@@ -1,5 +1,7 @@
 import importlib.util
 import re
+import shutil
+import subprocess
 from pathlib import Path
 import tempfile
 import unittest
@@ -29,6 +31,53 @@ class RunnerPolicyTests(unittest.TestCase):
                         self.assertEqual(actual[1] if actual else None, value[1] if value else None)
             count += len(calls)
         self.assertEqual(count, 94)
+
+    def test_build_server_environment_and_unconditional_post_shutdown(self):
+        node = shutil.which('node')
+        if not node:
+            self.skipTest('Node is provided by the Actions runner')
+        action = Path(__file__).parents[1] / 'actions/self-hosted-job'
+        text = (action / 'index.cjs').read_text()
+        self.assertIn('    configureBuildEnvironment();', text)
+        self.assertIn('post-if: always()', (action / 'action.yml').read_text())
+        script = r"""
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const vm = require('node:vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+(async () => {
+  for (const result of [{status: 0}, {status: 1}, {status: null, error: {code: 'ENOENT'}}]) {
+    const writes = [];
+    const calls = [];
+    const env = {GITHUB_ENV: 'job-env', MSBUILDDISABLENODEREUSE: '0', UseSharedCompilation: 'true'};
+    const sandbox = {module: {exports: {}}, process: {env},
+      require: name => name === 'node:fs' ? {
+        appendFileSync: (file, value) => { assert.equal(file, 'job-env'); writes.push(value); },
+        existsSync: () => false, realpathSync: () => 'temp'
+      } : name === 'node:child_process' ? {
+        spawnSync: (command, args, options) => {
+          if (command === 'ps') return {status: 1, stdout: ''};
+          calls.push([command, Array.from(args)]);
+          assert.equal(options.stdio, 'ignore');
+          assert.equal(options.timeout, 30000);
+          assert.equal(options.cwd, 'runner-temp');
+          return result;
+        }
+      } : require(name)};
+    vm.runInNewContext(source, sandbox);
+    sandbox.module.exports.configureBuildEnvironment();
+    assert.equal(env.MSBUILDDISABLENODEREUSE, '1');
+    assert.equal(env.UseSharedCompilation, 'false');
+    assert.equal(writes.join(''), 'MSBUILDDISABLENODEREUSE=1\nUseSharedCompilation=false\n');
+    // No checkout or temporary directory: shutdown still runs and tolerates failure.
+    Object.assign(env, {STATE_keeper: '123', STATE_keeperIdentity: 'different',
+      GITHUB_WORKSPACE: 'repo', RUNNER_TEMP: 'runner-temp'});
+    await sandbox.module.exports.main();
+    assert.deepEqual(calls, [['dotnet', ['build-server', 'shutdown']]]);
+  }
+})().catch(error => { console.error(error); process.exitCode = 1; });
+"""
+        subprocess.run([node, '-e', script, str(action / 'index.cjs')], check=True, timeout=5)
 
     def test_all_workflows(self):
         count, errors = runners.check(Path(__file__).parents[1] / 'workflows')

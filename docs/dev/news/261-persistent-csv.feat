@@ -1,0 +1,1 @@
+With `--persistent-translation`, CSV verification logs can replay successful modules without translating or preparing them again. Replayed durations remain explicitly marked; JSON, text and TRX reporting retain the normal path.

@@ -17,6 +17,13 @@ fetch and existing depth/ref settings. Each checkout is immediately followed by
 conditional. This includes nested and historical comparison checkouts. Required
 ancestry remains the responsibility of the targeted `fetch-refs` action.
 
+Every admitted job sets `MSBUILDDISABLENODEREUSE=1` and
+`UseSharedCompilation=false` in its environment, overriding runner defaults.
+The always-run post action attempts `dotnet build-server shutdown` before
+removing outputs and releasing admission. Shutdown is bounded and best effort,
+including jobs where no SDK was installed.
+Shutdown runs outside the checkout so `global.json` cannot select an absent SDK.
+
 ## Required policy
 
 Every workflow passes these inputs from the corresponding repository variables,
