@@ -136,6 +136,35 @@ files, calls within and outside a group, complete `.doo` inputs and separately
 translated producer/client packages. It repeats the foreign-module comparison
 with additional axioms and scheduled resolution.
 
+Qualified foreign functions inherited by a refinement above a group use the same
+Go dot selectors as calls within the group. With `--recursive-modules`, non-null
+extern class references also retain their renamed class identity outside the
+group, including allocation in a refinement. These paths previously used a
+Dafny module separator or the source class name in the refining package.
+
+`git-issue-466-go-foreign-matrix.dfy` compares the three-member recursion,
+unordered constants, mutually recursive datatypes, implicit defaults, invariant
+witnesses, trait dispatch, refinement and complete archive inputs with independent
+C# emission. Foreign identity calls occur in the recursion, constants, witness,
+datatype construction and trait implementation. A partial extern class is completed
+in the shared package and, separately, in the refining package. The source run
+also repeats with additional axioms and scheduled resolution. As in the Rust
+extern matrix, the archive uses a concrete counter because arbitrary extern
+contracts cannot form a modular termination certificate.
+
+The remaining foreign-package boundaries are Go language constraints, not an
+ordering restriction that group emission can lift. A foreign package imported by
+the generated shared package cannot import that package back: Go rejects the
+import cycle. A partial extern class owned by a foreign package cannot receive
+generated methods in the shared package. The compiler now diagnoses that ownership
+conflict before emission, including an explicitly qualified foreign class in an
+ordinary group member. A non-extern group member can instead declare a partial
+class completed in the shared package. `git-issue-466-extern-boundaries.dfy` checks
+both ownership errors and the native import-cycle error; the runtime matrix is
+the positive control for the supported ownership arrangement. The source comparison
+also covers disabled datatype-wrapper erasure. No foreign source
+is moved between package identities to circumvent Go's rules.
+
 This is an opt-in compilation feature. It adds no verification condition, axiom,
 trusted assumption or verifier-lowering site. With recursive modules off, the
 existing Go emission paths are unchanged.
@@ -262,10 +291,16 @@ acyclic program; they never name the group container.
 
 The ordinary Rust diagnostics still reject two-argument module and class externs
 and a class that mixes foreign and generated implementations of one trait.
-These forms have rejection controls. Refinement of a group member containing
-extern types is also rejected: copying a partial foreign class can lose its import
-or duplicate its generated implementations. Inherited extern members with explicit
-foreign paths remain supported. No new verifier fact or check is involved,
+These forms have rejection controls. Abstract refinements of a group member
+containing extern types are allowed: they emit no imports or implementations.
+The complete extern runtime matrix includes such an abstract refinement of the
+member containing a fully imported foreign class. Concrete refinements containing
+extern types remain rejected, with the type and refining module named in the diagnostic:
+foreign imports and generated implementations are not remapped for refinement.
+Copying a partial foreign class can lose its import or duplicate its generated
+implementations. A refinement chain through an abstract intermediate module still
+checks its concrete descendant. Inherited extern members with explicit foreign
+paths remain supported. No new verifier fact or check is involved,
 and compilation without `--recursive-modules` is unchanged.
 
 Rust's existing implicit datatype-default and general-trait limitations remain: the runtime comparisons use the existing three-member producer

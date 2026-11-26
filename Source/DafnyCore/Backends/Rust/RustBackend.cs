@@ -72,7 +72,7 @@ public class RustBackend : DafnyExecutableBackend {
   }
 
   public override void Compile(Program dafnyProgram, string dafnyProgramName, ConcreteSyntaxTree output) {
-    foreach (var module in dafnyProgram.CompileModules) {
+    foreach (var module in dafnyProgram.CompileModules.Where(module => module.CanCompile())) {
       var refinesGroup = false;
       for (var ancestor = module.Implements?.Target.Def; ancestor != null; ancestor = ancestor.Implements?.Target.Def) {
         refinesGroup |= ancestor.RecursiveGroup != null;
@@ -80,7 +80,8 @@ public class RustBackend : DafnyExecutableBackend {
       if (refinesGroup && module.TopLevelDecls.FirstOrDefault(declaration =>
             declaration is not ModuleDecl and not DefaultClassDecl && declaration.IsExtern(Options, out _, out _)) is { } externType) {
         Reporter.Error(MessageSource.Compiler, externType.Origin,
-          "Rust refinement of a recursive module group with extern types is not yet supported");
+          $"Rust cannot compile extern type '{externType.Name}' in refining module '{module.FullDafnyName}' above a recursive module group: " +
+          "foreign imports and generated implementations are not remapped for refinement");
         return;
       }
     }

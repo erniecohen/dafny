@@ -12,6 +12,7 @@ namespace Foreign {
   }
 }
 namespace NativeOnly {
+  public class Opaque { }
   public partial class __default {
     public static BigInteger Zero() { return 0; }
   }
