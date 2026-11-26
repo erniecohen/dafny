@@ -1,0 +1,1 @@
+// CHECK: JavaScript refinements of recursive module groups require fully imported extern classes

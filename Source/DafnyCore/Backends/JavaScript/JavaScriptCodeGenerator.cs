@@ -26,6 +26,16 @@ namespace Microsoft.Dafny.Compilers {
     private static List<ModuleDefinition> GroupMembers(RecursiveModuleGroup group) =>
       group.Members.Select(member => member.ModuleDef).OrderBy(member => member.FullDafnyName, StringComparer.Ordinal).ToList();
 
+    // Concrete refinements emit separately but retain the group allocation convention.
+    internal static bool IsRecursiveGroupContext(ModuleDefinition module) {
+      for (var current = module; current != null; current = current.Implements?.Target.Def) {
+        if (current.RecursiveGroup != null) {
+          return true;
+        }
+      }
+      return false;
+    }
+
     private bool UsesForeignModuleObjects(ModuleDefinition module) =>
       module.RecursiveGroup is { } group && GroupMembers(group).Any(member =>
         member.IsExtern(Options, out _, out _) || member.TopLevelDecls.Any(declaration =>
@@ -1445,7 +1455,7 @@ namespace Microsoft.Dafny.Compilers {
         wr.Write("new {0}(", TypeName(type, wr, tok));
         var sep = "";
         EmitTypeDescriptorsActuals(TypeArgumentInstantiation.ListFromClass(cl, type.TypeArgs), tok, wr, ref sep);
-        if (cl.EnclosingModuleDefinition.RecursiveGroup != null &&
+        if (IsRecursiveGroupContext(cl.EnclosingModuleDefinition) &&
             initCall?.Method is Constructor constructor && IsExternallyImported(constructor)) {
           // Fully imported classes use the native constructor. Preserve the
           // descriptor prefix, erase ghost arguments, and evaluate actuals once.

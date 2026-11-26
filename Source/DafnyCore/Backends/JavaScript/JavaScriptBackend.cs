@@ -28,19 +28,21 @@ public class JavaScriptBackend : ExecutableBackend {
   }
 
   public override void Compile(Program dafnyProgram, string dafnyProgramName, ConcreteSyntaxTree output) {
-    foreach (var module in dafnyProgram.CompileModules) {
+    foreach (var module in dafnyProgram.CompileModules.Where(module => module.CanCompile())) {
       var refinesGroup = false;
       for (var ancestor = module.Implements?.Target.Def; ancestor != null; ancestor = ancestor.Implements?.Target.Def) {
         refinesGroup |= ancestor.RecursiveGroup != null;
       }
       if (refinesGroup && module.TopLevelDecls.FirstOrDefault(declaration =>
-            declaration is not ModuleDecl and not DefaultClassDecl && declaration.IsExtern(Options, out _, out _)) is { } externType) {
+            declaration is not ModuleDecl and not DefaultClassDecl && declaration.IsExtern(Options, out _, out _) &&
+            (declaration is not ClassDecl type || type.Members.Any(member =>
+              !member.IsGhost && !codeGenerator.IsExternallyImported(member)))) is { } externType) {
         Reporter.Error(MessageSource.Compiler, externType.Origin,
-          "JavaScript refinement of a recursive module group with extern types is not yet supported");
+          "JavaScript refinements of recursive module groups require fully imported extern classes; partial classes and other extern type kinds are not yet supported");
         return;
       }
     }
-    foreach (var module in dafnyProgram.Modules().Where(module => module.RecursiveGroup != null)) {
+    foreach (var module in dafnyProgram.Modules().Where(module => module.CanCompile() && JavaScriptCodeGenerator.IsRecursiveGroupContext(module))) {
       if (module.IsExtern(Options, out var moduleQualifier, out _) && moduleQualifier != null) {
         Reporter.Error(MessageSource.Compiler, module.Origin,
           "JavaScript recursive groups require preloaded extern module objects; require-based extern modules are not yet supported");

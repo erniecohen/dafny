@@ -1217,12 +1217,15 @@ that a later stage would have to reject:
   for names and foreign source-file conventions.
   JavaScript groups support preloaded extern module objects, extern types in those
   modules, and qualified extern members. They retain ordinary module and type names
-  inside a shared initialization closure. Fully imported extern classes declared
-  in a group support native constructors: generated calls pass type descriptors followed by non-ghost
-  arguments. Partial extern classes require a Dafny constructor body. Require-based
+  inside a shared initialization closure. Concrete refinements, including descendants
+  of abstract refinements, support fully imported extern classes when each concrete
+  module supplies its own preloaded extern object. Fully imported extern classes
+  in a group or its concrete refinements support native constructors: generated
+  calls pass type descriptors followed by non-ghost arguments. Partial extern classes require a Dafny constructor body. Require-based
   extern modules, two-argument extern type qualifiers, unqualified imported members
   without an extern owner, qualified instance methods or fields, and refinements
-  containing extern types remain unsupported. See the
+  containing partial extern classes or other extern type kinds remain unsupported.
+  See the
   [compilation design](../dev/recursive-module-compilation.md#javascript-group-emission)
   for the linkage restrictions and qualification tests.
   C++ groups remain rejected: the backend does not emit the indirection needed for
