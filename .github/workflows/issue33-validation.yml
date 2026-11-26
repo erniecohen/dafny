@@ -55,7 +55,7 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@27608201c3b3c06582a8591fb394035b3e15ed98
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@4793c6ec33216941dc4b6c9352a329cf2536c996
         with:
           kind: ci:${{ github.workflow }}
           slots: ${{ vars.SELF_HOSTED_JOB_SLOTS }}
@@ -66,6 +66,7 @@ jobs:
           probe-timeout-s: ${{ vars.SELF_HOSTED_JOB_PROBE_TIMEOUT_S }}
           slot-poll-s: ${{ vars.SELF_HOSTED_JOB_SLOT_POLL_S }}
           memory-backoff-s: ${{ vars.SELF_HOSTED_JOB_MEMORY_BACKOFF_S }}
+          heavy-wait-max-s: ${{ vars.SELF_HOSTED_JOB_HEAVY_WAIT_MAX_S }}
       - uses: actions/checkout@v4
         with:
           ref: 1d45201a027d46be24988fe0946c0bde80a702c9
@@ -125,7 +126,7 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@27608201c3b3c06582a8591fb394035b3e15ed98
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@4793c6ec33216941dc4b6c9352a329cf2536c996
         with:
           kind: ci:${{ github.workflow }}
           slots: ${{ vars.SELF_HOSTED_JOB_SLOTS }}
@@ -136,6 +137,7 @@ jobs:
           probe-timeout-s: ${{ vars.SELF_HOSTED_JOB_PROBE_TIMEOUT_S }}
           slot-poll-s: ${{ vars.SELF_HOSTED_JOB_SLOT_POLL_S }}
           memory-backoff-s: ${{ vars.SELF_HOSTED_JOB_MEMORY_BACKOFF_S }}
+          heavy-wait-max-s: ${{ vars.SELF_HOSTED_JOB_HEAVY_WAIT_MAX_S }}
       - uses: actions/checkout@v4
         with:
           clean: false
@@ -195,7 +197,7 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@27608201c3b3c06582a8591fb394035b3e15ed98
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@4793c6ec33216941dc4b6c9352a329cf2536c996
         with:
           kind: ci:${{ github.workflow }}
           slots: ${{ vars.SELF_HOSTED_JOB_SLOTS }}
@@ -206,6 +208,7 @@ jobs:
           probe-timeout-s: ${{ vars.SELF_HOSTED_JOB_PROBE_TIMEOUT_S }}
           slot-poll-s: ${{ vars.SELF_HOSTED_JOB_SLOT_POLL_S }}
           memory-backoff-s: ${{ vars.SELF_HOSTED_JOB_MEMORY_BACKOFF_S }}
+          heavy-wait-max-s: ${{ vars.SELF_HOSTED_JOB_HEAVY_WAIT_MAX_S }}
       - uses: actions/checkout@v4
         with:
           clean: false
@@ -313,7 +316,7 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@27608201c3b3c06582a8591fb394035b3e15ed98
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@4793c6ec33216941dc4b6c9352a329cf2536c996
         with:
           kind: ci:${{ github.workflow }}
           slots: ${{ vars.SELF_HOSTED_JOB_SLOTS }}
@@ -324,6 +327,7 @@ jobs:
           probe-timeout-s: ${{ vars.SELF_HOSTED_JOB_PROBE_TIMEOUT_S }}
           slot-poll-s: ${{ vars.SELF_HOSTED_JOB_SLOT_POLL_S }}
           memory-backoff-s: ${{ vars.SELF_HOSTED_JOB_MEMORY_BACKOFF_S }}
+          heavy-wait-max-s: ${{ vars.SELF_HOSTED_JOB_HEAVY_WAIT_MAX_S }}
       - uses: actions/checkout@v4
         with:
           clean: false
@@ -401,7 +405,7 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@27608201c3b3c06582a8591fb394035b3e15ed98
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@4793c6ec33216941dc4b6c9352a329cf2536c996
         with:
           kind: ci:${{ github.workflow }}
           slots: ${{ vars.SELF_HOSTED_JOB_SLOTS }}
@@ -412,6 +416,7 @@ jobs:
           probe-timeout-s: ${{ vars.SELF_HOSTED_JOB_PROBE_TIMEOUT_S }}
           slot-poll-s: ${{ vars.SELF_HOSTED_JOB_SLOT_POLL_S }}
           memory-backoff-s: ${{ vars.SELF_HOSTED_JOB_MEMORY_BACKOFF_S }}
+          heavy-wait-max-s: ${{ vars.SELF_HOSTED_JOB_HEAVY_WAIT_MAX_S }}
       - uses: actions/checkout@v4
         with:
           clean: false
@@ -489,7 +494,7 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@27608201c3b3c06582a8591fb394035b3e15ed98
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@4793c6ec33216941dc4b6c9352a329cf2536c996
         with:
           kind: ci:${{ github.workflow }}
           slots: ${{ vars.SELF_HOSTED_JOB_SLOTS }}
@@ -500,6 +505,7 @@ jobs:
           probe-timeout-s: ${{ vars.SELF_HOSTED_JOB_PROBE_TIMEOUT_S }}
           slot-poll-s: ${{ vars.SELF_HOSTED_JOB_SLOT_POLL_S }}
           memory-backoff-s: ${{ vars.SELF_HOSTED_JOB_MEMORY_BACKOFF_S }}
+          heavy-wait-max-s: ${{ vars.SELF_HOSTED_JOB_HEAVY_WAIT_MAX_S }}
       - uses: actions/checkout@v4
         with:
           clean: false

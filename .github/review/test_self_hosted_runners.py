@@ -92,7 +92,8 @@ const source = fs.readFileSync(process.argv[1], 'utf8');
             calls = re.findall(r'      - uses: erniecohen/dafny/\.github/actions/self-hosted-job@[^\n]+(?:\n        [^\n]*)*', text)
             for call in calls:
                 for name in ('slots', 'reserve-mb', 'default-peak-mb', 'peak-min-samples',
-                             'peak-history-days', 'probe-timeout-s', 'slot-poll-s', 'memory-backoff-s'):
+                             'peak-history-days', 'probe-timeout-s', 'slot-poll-s', 'memory-backoff-s',
+                             'heavy-wait-max-s'):
                     variable = 'SELF_HOSTED_JOB_' + name.upper().replace('-', '_')
                     self.assertIn(name + ': ${{ vars.' + variable + ' }}', call, workflow.name)
                 self.assertNotIn('MIN_FREE_PERCENT', call)
