@@ -7,6 +7,8 @@ using System.Collections.Immutable;
 using System.Linq;
 using System.Numerics;
 using System.Reflection;
+using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
 
 namespace Microsoft.Dafny;
 
@@ -75,6 +77,31 @@ internal static class ResolutionGraphSchema {
   public static string Name(FieldInfo field) => NameCache.GetOrAdd(field, f => f.DeclaringType!.FullName + "." + f.Name);
   public static bool IsContextual(FieldInfo field) => ContextualFields.Contains(Name(field));
   public static bool IsPositional(FieldInfo field) => PositionalFields.Contains(Name(field));
+
+  /// <summary>
+  /// Write a snapshot's fields without reflection on every object. The schema is still checked against
+  /// every entry before these writers are used. Unbox value-type targets by address so a write updates
+  /// the original box, including private and readonly instance fields, just as FieldInfo.SetValue does.
+  /// </summary>
+  public static Action<object, object?>[] FieldWriters(System.Type type) => FieldWriterCache.GetOrAdd(type,
+    static type => Fields(type).Select(FieldWriter).ToArray());
+
+  private static readonly ConcurrentDictionary<System.Type, Action<object, object?>[]> FieldWriterCache = new();
+
+  private static Action<object, object?> FieldWriter(FieldInfo field) {
+    // Keep the existing behavior on runtimes that cannot generate code.
+    if (!RuntimeFeature.IsDynamicCodeSupported) { return field.SetValue; }
+    var method = new DynamicMethod("RestoreResolutionField", typeof(void), [typeof(object), typeof(object)],
+      typeof(ResolutionGraphSchema).Module, true);
+    var il = method.GetILGenerator();
+    il.Emit(OpCodes.Ldarg_0);
+    il.Emit(field.DeclaringType!.IsValueType ? OpCodes.Unbox : OpCodes.Castclass, field.DeclaringType);
+    il.Emit(OpCodes.Ldarg_1);
+    il.Emit(field.FieldType.IsValueType ? OpCodes.Unbox_Any : OpCodes.Castclass, field.FieldType);
+    il.Emit(OpCodes.Stfld, field);
+    il.Emit(OpCodes.Ret);
+    return method.CreateDelegate<Action<object, object?>>();
+  }
 
   /// <summary>Throws when <paramref name="type"/> is not data a snapshot may hold; the verdict is memoized per type.</summary>
   public static void RequireDataType(System.Type type) {
