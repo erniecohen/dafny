@@ -91,11 +91,16 @@ decides otherwise.
 
 ## Merging fix pull requests
 
-Every product change derives its version from HEAD and appends its test to
-`.github/review/regressions`; it does not restamp `.github/review/base`.
+Every product change derives its version from HEAD and registers each test in
+its own file under `.github/review/regressions.d/`; it does not restamp
+`.github/review/base`. Mirror the test's path under `TestFiles/LitTests/LitTest`
+and append `.txt`: for example, `regressions.d/git-issues/git-issue-123.dfy.txt`
+contains the single entry `git-issues/git-issue-123.dfy`. Comments and blank lines
+are allowed. Harness class selectors use the same rule (for example,
+`LitHarnessTimeoutTests.txt` contains `LitHarnessTimeoutTests`). No shared index
+needs updating.
 Fix pull requests are merged one at a time. After one merges, the next is rebased
-onto `review/4.11.0`, any regression-list conflicts are resolved, and its CI is
-run again before it merges.
+onto `review/4.11.0`, and its CI is run again before it merges.
 
 ## New axioms are where soundness is lost
 

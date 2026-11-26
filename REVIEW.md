@@ -322,8 +322,8 @@ that runs Boogie's own test jobs and packs Boogie's NuGet packages.  The same fi
 is offered to Boogie's master as
 [boogie-org/boogie#1169](https://github.com/boogie-org/boogie/pull/1169).
 
-This branch builds against that fork's release `v3.5.5+review.a38b89f9`, whose
-packages have the version `3.5.5-review.a38b89f9`.  The release carries them with
+This branch builds against that fork's release `v3.5.5+review.76ad65b4`, whose
+packages have the version `3.5.5-review.76ad65b4`.  The release carries them with
 their sha256 sums, and its `REVIEW.md` says what the fork changes and how its
 version is computed.  Besides that fix, it brings:
 
@@ -384,10 +384,10 @@ version is computed.  Besides that fix, it brings:
   restores the old deadline for comparison, passed through Dafny's `--boogie`.
 
 `a48933e` made this branch build against the fork's packages, at
-`3.5.5-review.37e4435d`.  It now builds against `3.5.5-review.a38b89f9`:
+`3.5.5-review.37e4435d`.  It now builds against `3.5.5-review.76ad65b4`:
 
 - `Source/DafnyCore/DafnyCore.csproj` names `Boogie.ExecutionEngine`
-  `3.5.5-review.a38b89f9`, and `dotnet-tools.json` names the `boogie` tool at the
+  `3.5.5-review.76ad65b4`, and `dotnet-tools.json` names the `boogie` tool at the
   same version;
 - `nuget.config` adds a local package source, `Binaries/boogie-packages`, and maps
   every Boogie package to it and to nothing else, so a missing package stops the
@@ -464,6 +464,26 @@ monomorphizer and its option interface; it does not reintroduce the map-row spli
 The regression is `git-issues/git-issue-281-shared-literals.dfy`; the release note
 is `docs/dev/news/281-shared-literals.feat`.
 
+The move from `a38b89f9` to `76ad65b4` adopts
+[erniecohen/boogie#16](https://github.com/erniecohen/boogie/pull/16):
+`CheckerPool.Release(Program)`, which makes the idle checkers last set up for a program
+forget it and drop their prover's managed context, including the VC variables the
+translator keeps for every program it has translated.  The solver process is sent nothing
+and gets the same commands with or without a release.  It adds no option and changes no
+output.  `Compilation.ClearModuleCache` calls it once a module is reported, so that a
+one-shot run does not keep every finished module alive through the checkers
+([#241](https://github.com/erniecohen/dafny/issues/241), F4).  The complete commit range
+between those release tags is:
+
+- `6a393d66`: CI on self-hosted runners, skipping draft pull requests
+  ([erniecohen/boogie#15](https://github.com/erniecohen/boogie/pull/15)); no product file;
+- `a93a02c8`: `CheckerPool.Release(Program)`, its tests and documentation
+  ([erniecohen/boogie#16](https://github.com/erniecohen/boogie/pull/16)).
+
+The regressions are `MemoryReleaseTests` and
+`git-issues/github-issue-241-release-verified-modules.dfy`; the release note is
+`docs/dev/news/241-memory-release.fix`.
+
 ## Tests, release notes and the manual
 
 Each fix after the first has a follow-up commit, as in upstream's pull
@@ -506,7 +526,7 @@ eight Dafny fixes for every test under `dafny0` to `dafny4`, `git-issues` and
 `logger` (run with the C# backend only).
 
 The Boogie fix changes how much work some proofs take.  Upstream's harness was
-run for it on the tests named in `.github/review/regressions` only, not on every
+run for it on the tests named in `.github/review/regressions.d/` only, not on every
 test.  There it cost one proof in `dafny4/GHC-MergeSort.dfy`, which was already
 dear, and `cf5c56e` repairs it with one assertion, as upstream's own fix for #6366
 added hints to that file.  In the suite, at its resource limit, it moves the
@@ -623,7 +643,7 @@ of 16,000,000 with Z3 5.1.0, taken from Z3's public GitHub release by checksum,
 and reports each program's verdict.  It verifies Dafny's standard library,
 `Source/DafnyStandardLibraries`, as the library's Makefile's `verify` target does,
 once with Z3 5.1.0 and once with the Z3 that the tree's own tests expect (4.12.1 on
-this branch), and reports each declaration's verdict.  It also runs the tests named in `.github/review/regressions` in
+this branch), and reports each declaration's verdict.  It also runs the tests named in `.github/review/regressions.d/` in
 upstream's own harness.  On a tag it attaches self-contained binaries for `linux-x64` and `osx-arm64`
 to a GitHub release, with their sha256 sums.  The `osx-arm64` binary and the release
 itself are built on the self-hosted Apple-silicon pool (label `fork-ci`); Linux x64
@@ -634,7 +654,14 @@ finite-support controls, statement-expression controls and verification-batch co
 unsupported because its expected resource counts differ, so it stays in a
 separate Linux job that is explicitly skipped until a Linux self-hosted runner is
 available. `.github/review/regression-filter.py` partitions the
-standing manifest without dropping or duplicating entries. Every
+standing manifest without dropping or duplicating entries. Each test has its own
+fragment under `.github/review/regressions.d/`, mirroring its path relative to
+`TestFiles/LitTests/LitTest` with `.txt` appended. The fragment contains that one
+test path (or harness class selector), optionally with comments and blank lines.
+Independent test additions therefore do not edit a shared list or allocate sequence numbers. Fragments are
+read in sorted path order for deterministic filters; the harness receives an OR
+filter, so manifest order does not prescribe test execution order. The separate
+`regressions-linux` list still selects the Linux partition. Every
 self-hosted job has an explicit repository/event guard: only pushes, manual
 runs, or pull requests whose head repository is `erniecohen/dafny` are admitted.
 
@@ -1231,7 +1258,7 @@ had been rewritten to the broken output when dependency-local translation became
 now lists the declarations again, as 4.11.0 did.  Its kind is **no effect on
 verification**: the translator does nothing for these declarations, the solver input of each of the
 four tests is byte-identical with and without the change, under both resolvers, and so is compiled
-output.  The four tests are now in `.github/review/regressions`; the release note is
+output.  The four tests are now in `.github/review/regressions.d/`; the release note is
 `docs/dev/news/441.fix`.  The fifth test of the issue, `dafny0/Superposition.legacy.dfy`, is left
 to [issue 436](https://github.com/erniecohen/dafny/issues/436).
 
@@ -1415,8 +1442,8 @@ The regression is `git-issues/github-issue-106.dfy` with its inputs; the release
 
 ## Copying imports ([issue 107](https://github.com/erniecohen/dafny/issues/107))
 
-`--copy-imports` is an opt-in feature: stage 4 of the refinement design draft
-([pull request 401](https://github.com/erniecohen/dafny/pull/401), sections 3.2, 3.3 and 3.5).  It adds one
+`--copy-imports` is an opt-in feature: stages 4 and 5 of the refinement design draft
+([pull request 401](https://github.com/erniecohen/dafny/pull/401), sections 3.2 to 3.5).  It adds one
 declaration, `import [opened] X := Q` with an optional export suffix, which gives the importing
 module `M` a copy of `Q` named `X`.  With the option off, the parser does not accept the
 declaration, and nothing else in this change is reached.
@@ -1445,8 +1472,34 @@ error for a written-out refinement.
 `X` (which would give `M'` the types of `M.X`) but declares a new copying import of the same
 module, with the same export suffix.  That module is not a declaration of the program's module
 graph, so `M'` resolves it itself, before its own declarations, and hands its signature to the
-program with its own.  A redeclaration of `X` in `M'` is an error.  The same holds for each
-further refinement.
+program with its own. `M'` may instead rebind `X` with `import X := Q2`, where `Q2` is the
+previous copied target or refines it transitively. The test is against the preceding step, so a
+later rebinding cannot go backwards or sideways in the target's refinement chain. An alias,
+abstract import, literal module or other declaration is rejected: it would lose the freshness
+that inherited distinctness proofs require. The new import must keep `opened` and every
+explicitly named export set, and may add export sets.
+
+The inherited code of the importing module is not verified again, so what the rebound copy may
+change must be checked.  The inherited-name check of issue 410 checks the inherited text against
+the rebound copy; in particular, an abstract type made into a datatype cannot turn an inherited
+pattern variable into a constructor.  The override check of issue 404 is made again for each
+inherited class that extends a trait of the copy, so a specification that the new target
+strengthens is checked, and a trait member that it adds must be implemented.  Under
+`--member-invariants` (issue 105), the new target may add invariants to a type of the copy.  The
+verifier treats a rebinding as it treats an abstract import bound to a refinement
+(`BindsAbstractImport` in `BoogieGenerator.InheritedInvariants.cs`): at an inherited site that
+converts to a type of the copy, only the conjuncts of the first declaration that the type refines
+are taken as checked, and the others are checked.  That is conservative.  It is the only verifier
+change; no axiom or assumption is added.  With the option off the parser still rejects copying
+imports, so none of this is reached.
+
+The rebinding regression is `git-issues/git-issue-107-rebind.dfy`, with accepted chains, fresh
+identities, nested and opened copies, export sets, generic declarations, an implemented inner
+abstract import, rejected bindings and captures, a trait member that the new target adds, and
+failing identity and vacuity controls under both resolvers.  Its input
+`git-issue-107-rebind-invariants.dfy` has counterexamples for invariants that the new target adds
+(also through a nested rebound copy) and for strengthened trait specifications, with positive and
+vacuity controls.  Its release note is `docs/dev/news/107-rebind.feat`.
 
 *What is deliberately unknown.*  An abstract import `import A : B` inside `Q` stands for an
 unknown refinement of `B`.  Each copy gets a signature of its own for it, so nothing relates

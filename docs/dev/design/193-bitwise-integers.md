@@ -994,7 +994,7 @@ semantic-width descriptor is permitted; the I-off path remains unchanged.
 | `Source/DafnyRuntime/` C#, Java, Go/gomod, JS and other affected runtimes | Correct masks/count helpers and any popcount fallback; JavaScript wide integer repair or new correct helpers. |
 | `DooFile.cs`; `Backends/Library/LibraryBackend.cs` | Persist source annotation and language mode, rebuild descriptors/canonical bindings, retain exact-version compatibility; never accept a forged intrinsic identity. |
 | `Source/DafnyLanguageServer.Test/Synchronization/IncrementalBitvectorMembersTest.cs` and related option invalidation tests | Rebuild/cancel cached member and type information when widths, constraints or options change. Test both resolver modes. |
-| `docs/DafnyRef/`, `docs/dev/additional-axioms.md`, `docs/dev/news/193.feat`, `.github/review/regressions` | User semantics/options, every bridge model/control, release note and permanent regression registration. Product milestones derive their version from HEAD under the normal policy. |
+| `docs/DafnyRef/`, `docs/dev/additional-axioms.md`, `docs/dev/news/193.feat`, `.github/review/regressions.d/` | User semantics/options, every bridge model/control, release note and permanent regression registration. Product milestones derive their version from HEAD under the normal policy. |
 
 Two traps deserve explicit code-review checks. First,
 `CheckWellformedSpecialFunction` currently checks rotation arguments and count
@@ -1735,6 +1735,24 @@ separate reported outcomes. Runtime comparisons supplement these logical control
 | **M6a: rotation/bit surface.** `193-rotation-bit-source`: both member-resolution paths, clones, final predicates, legal indices, nested rotations, non-power-of-two widths and #147. | `193-rotation-bit-live-false`: actual source operations/adapters, wrong results and invalid membership; retain V2–V4 and #147. Add end-to-end cases to every supported backend fixture. | B0 including member resolution and old BV wrappers. | S4 plus all backend rotation/bit execution rows and current client RU. |
 | **M6b: population count.** `193-popcount-source`: generic reference theorem, zero/all ones/high bit/power-of-two laws, result bounds and target intrinsics/fallbacks. | `193-popcount-live-false`: active correspondence with false and wrong-count assertions; retain V2–V4. Independent execution on every supported target. | B0 including minimum-version/fallback behavior. | S4 plus popcount proof/runtime rows; any proposed accelerator needs its own model/control gate. |
 | **M7: convenience/release.** `193-convenience`: optional `.Bits()`, exact-interval inference, manual/examples and cache behavior. | Retain the complete live-false, emitted-slice SAT/mutation and runtime inventories; inference cannot bypass visibility, predicates or module mode. | Final B0; no unresolved required identity check. | Final S4 with every supported operation/target accounted for and exclusions tested. |
+
+The integer-newtype frontend milestone is implemented independently of the native
+observation bridges: the six ghost operators lower to the M2 compiler-owned
+reference calls, with checked shift counts and ordinary checked conversion to the
+entire result newtype. Its exact rules, model argument and regression controls
+are in [the implementation notes](../integer-bitwise-references.md). This does
+not implement M3a/M3b or any runtime milestone; compiled operators are rejected
+through the reference functions' ghost restriction.
+
+The next implementation uses checked optional-source bridge proofs instead of
+adding the design's proposed trusted bridge instances. Its Boolean/conversion
+sub-milestone provides native width-8/16/32/64 round trips and
+AND/complement/OR/XOR/ANDNOT equations, with every helper body checked and no
+new assumptions. It requires explicit inclusion and `--integer-bitwise`,
+independently of `--additional-axioms`. The per-rule model arguments, live
+controls, mutation gate and remaining bridge families are recorded in
+[the implementation notes](../integer-bitwise-references.md#checked-native-boolean-bridges).
+The proposed arithmetic/shift emitter is not attributed to these checked proofs.
 
 M3a/M3b may proceed independently after M2's identity and definition interface is
 stable, but each must rerun the cumulative shared-option controls. Backend PRs

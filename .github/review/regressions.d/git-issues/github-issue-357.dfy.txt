@@ -1,0 +1,3 @@
+
+# Under --modular-termination, the copies a refinement makes of generated reveal lemmas are generated too, so a library may refine a module with opaque functions; Std.Strings joins the trusted standard-library core (https://github.com/erniecohen/dafny/issues/357).
+git-issues/github-issue-357.dfy

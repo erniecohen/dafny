@@ -1,0 +1,3 @@
+
+# Under --type-system-refresh --contextual-lambda-domains, a function-result lambda whose parameter takes its type from the declared arrow domain and is passed to a formal that names that type through a synonym (generic, of a subset type, or of a newtype) resolves without crashing, and subset constraints of the formal are still checked (https://github.com/erniecohen/dafny/issues/390).
+git-issues/github-issue-390.dfy

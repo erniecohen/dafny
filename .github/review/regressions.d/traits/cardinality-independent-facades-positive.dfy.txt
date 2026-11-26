@@ -1,0 +1,1 @@
+traits/cardinality-independent-facades-positive.dfy

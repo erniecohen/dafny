@@ -1,0 +1,17 @@
+
+Dafny program verifier finished with 5 verified, 0 errors
+
+Dafny program verifier finished with 1 verified, 0 errors
+6 7 8
+10 9 8 7
+true
+42
+A.Tree.Node(A.Tree.Leaf(42))
+true true true
+2
+4 3
+git-issue-466-stage7-negative.dfy(13,27): Error: invariant might not hold
+git-issue-466-stage7-negative.dfy(4,16): Related location
+git-issue-466-stage7-negative.dfy(17,4): Error: assertion might not hold
+
+Dafny program verifier finished with 3 verified, 2 errors

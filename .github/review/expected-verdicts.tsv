@@ -563,6 +563,7 @@ git-issues/git-issue-105-traits.dfy	4	21 verified, 22 errors	25,30,55,58,64,89,1
 git-issues/git-issue-105-vacuity.dfy	0	5 verified, 0 errors	
 git-issues/git-issue-105-verify.dfy	4	5 verified, 4 errors	13,20,26,34
 git-issues/git-issue-105-wellformedness.dfy	4	12 verified, 2 errors	52,57
+git-issues/git-issue-107-rebind.dfy	0	13 verified, 0 errors
 git-issues/git-issue-1074.dfy	0	3 verified, 0 errors	
 git-issues/git-issue-1093.dfy	0	2 verified, 0 errors	
 git-issues/git-issue-1094.dfy	0	12 verified, 0 errors	
@@ -1353,6 +1354,7 @@ git-issues/github-issue-23-lambda.dfy	4	1 verified, 1 error	11
 git-issues/github-issue-23-ordinal-subset.dfy	0	1 verified, 0 errors	
 git-issues/github-issue-23-ordinal-undefined.dfy	4	0 verified, 2 errors	8,9
 git-issues/github-issue-241-cache-background.dfy	4	29 verified, 4 errors	39,57,75,80
+git-issues/github-issue-241-release-verified-modules.dfy	4	24 verified, 1 error	69
 git-issues/github-issue-241-translation-workers.dfy	4	18 verified, 1 error	112,117
 git-issues/github-issue-2563.dfy	4	0 verified, 0 errors	
 git-issues/github-issue-26-ten.dfy	0	0 verified, 0 errors	
@@ -1401,6 +1403,7 @@ git-issues/github-issue-493.dfy	4	9 verified, 1 error	18
 git-issues/github-issue-495.dfy	4	4 verified, 8 errors	22,31,35,39,43,47,55
 git-issues/github-issue-492.dfy	0	0 verified, 0 errors	
 git-issues/github-issue-5029.dfy	0	3 verified, 0 errors	
+git-issues/github-issue-569-witness-race.dfy	0	7 verified, 0 errors	
 git-issues/github-issue-5814.dfy	0	3 verified, 0 errors	
 git-issues/github-issue-88-89-interactions.dfy	4	5 verified, 3 errors	32,51,58
 git-issues/github-issue-88-inherited-bounds.dfy	4	9 verified, 1 error	27
@@ -1437,3 +1440,4 @@ hofs/Types.dfy	2		9,14,18,26
 hofs/Underspecified.dfy	2		6,7,8
 hofs/VectorUpdate.dfy	0	8 verified, 0 errors	
 hofs/WhileLoop.dfy	0	4 verified, 0 errors	
+git-issues/git-issue-569.dfy	4	5 verified, 4 errors	33,36,37,38

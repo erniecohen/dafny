@@ -19,6 +19,25 @@ using JetBrains.Annotations;
 
 namespace Microsoft.Dafny.Compilers {
   class JavaScriptCodeGenerator : SinglePassCodeGenerator {
+    private readonly Dictionary<RecursiveModuleGroup, ConcreteSyntaxTree> groupWriters = new();
+
+    // Source positions and archive layout must not affect separately translated references.
+    private static List<ModuleDefinition> GroupMembers(RecursiveModuleGroup group) =>
+      group.Members.Select(member => member.ModuleDef).OrderBy(member => member.FullDafnyName, StringComparer.Ordinal).ToList();
+
+    private string ModuleName(ModuleDefinition module) =>
+      IdProtect((module.RecursiveGroup == null ? module : GroupMembers(module.RecursiveGroup).First()).GetCompileName(Options));
+
+    protected override string IdName(TopLevelDecl declaration) =>
+      declaration.EnclosingModuleDefinition.RecursiveGroup is { } group
+        ? $"G{GroupMembers(group).IndexOf(declaration.EnclosingModuleDefinition)}_{base.IdName(declaration)}"
+        : base.IdName(declaration);
+
+    private string FullDeclarationName(TopLevelDecl declaration) =>
+      declaration.EnclosingModuleDefinition.RecursiveGroup == null
+        ? declaration.GetFullCompileName(Options)
+        : ModuleName(declaration.EnclosingModuleDefinition) + "." + IdName(declaration);
+
     public JavaScriptCodeGenerator(DafnyOptions options, ErrorReporter reporter) : base(options, reporter) {
     }
 
@@ -55,7 +74,7 @@ namespace Microsoft.Dafny.Compilers {
 
     public override void EmitCallToMain(Method mainMethod, string baseName, ConcreteSyntaxTree wr) {
       Coverage.EmitSetup(wr);
-      wr.WriteLine($"_dafny.HandleHaltExceptions(() => {mainMethod.EnclosingClass.GetFullCompileName(Options)}.{(mainMethod.IsStatic ? IdName(mainMethod) : "Main")}(_dafny.{CharMethodQualifier}FromMainArguments(require('process').argv)));");
+      wr.WriteLine($"_dafny.HandleHaltExceptions(() => {FullDeclarationName(mainMethod.EnclosingClass)}.{(mainMethod.IsStatic ? IdName(mainMethod) : "Main")}(_dafny.{CharMethodQualifier}FromMainArguments(require('process').argv)));");
       Coverage.EmitTearDown(wr);
     }
 
@@ -67,7 +86,10 @@ namespace Microsoft.Dafny.Compilers {
     protected override ConcreteSyntaxTree CreateModule(ModuleDefinition module, string moduleName, bool isDefault,
       ModuleDefinition externModule,
       string libraryName /*?*/, Attributes moduleAttributes, ConcreteSyntaxTree wr) {
-      moduleName = IdProtect(moduleName);
+      if (module.RecursiveGroup is { } existingGroup && groupWriters.TryGetValue(existingGroup, out var groupWriter)) {
+        return groupWriter;
+      }
+      moduleName = ModuleName(module);
       if (externModule == null || libraryName != null) {
         wr.Write("let {0} = ", moduleName);
       }
@@ -86,6 +108,9 @@ namespace Microsoft.Dafny.Compilers {
         beforeReturnBody.WriteLine("let $module = require(\"{0}\");", libraryName);
       }
       block.WriteLine("return $module;");
+      if (module.RecursiveGroup is { } group) {
+        groupWriters.Add(group, beforeReturnBody);
+      }
       return beforeReturnBody;
     }
 
@@ -132,7 +157,7 @@ namespace Microsoft.Dafny.Compilers {
 
     protected override IClassWriter CreateTrait(string name, bool isExtern, List<TypeParameter> typeParameters /*?*/,
       TraitDecl trait, List<Type> superClasses /*?*/, IOrigin tok, ConcreteSyntaxTree wr) {
-      var w = wr.NewBlock(string.Format("$module.{0} = class {0}", IdProtect(name)), ";");
+      var w = wr.NewBlock(string.Format("$module.{0} = class {0}", trait.EnclosingModuleDefinition.RecursiveGroup == null ? IdProtect(name) : IdName(trait)), ";");
       var fieldWriter = w;  // not used for traits, but we need a value to give to the ClassWriter
       var methodWriter = w;
       return new ClassWriter(this, methodWriter, fieldWriter);
@@ -165,6 +190,9 @@ namespace Microsoft.Dafny.Compilers {
       var cw = CreateClass(IdProtect(iter.EnclosingModuleDefinition.GetCompileName(Options)), iter, wr) as JavaScriptCodeGenerator.ClassWriter;
       var w = cw.MethodWriter;
       var instanceFieldsWriter = cw.FieldWriter;
+      if (iter.EnclosingModuleDefinition.RecursiveGroup != null) {
+        instanceFieldsWriter.WriteLine("this._tname = \"{0}\";", iter.FullName);
+      }
       // here come the fields
       Constructor ct = null;
       foreach (var member in iter.Members) {
@@ -328,7 +356,7 @@ namespace Microsoft.Dafny.Compilers {
       }
 
       string DtT = dt.GetCompileName(Options);
-      string DtT_protected = IdProtect(DtT);
+      string DtT_protected = IdName(dt);
       var simplifiedType = DatatypeWrapperEraser.SimplifyType(Options, UserDefinedType.FromTopLevelDecl(dt.Origin, dt));
 
       // from here on, write everything into the new block created here:
@@ -1623,7 +1651,9 @@ namespace Microsoft.Dafny.Compilers {
         Contract.Assert(!cl.EnclosingModuleDefinition.TryToAvoidName); // default module is not marked ":extern"
         return IdProtect(cl.EnclosingModuleDefinition.GetCompileName(Options));
       } else {
-        return IdProtect(cl.EnclosingModuleDefinition.GetCompileName(Options)) + "." + IdProtect(cl.GetCompileName(Options));
+        return cl.EnclosingModuleDefinition.RecursiveGroup == null
+          ? IdProtect(cl.EnclosingModuleDefinition.GetCompileName(Options)) + "." + IdProtect(cl.GetCompileName(Options))
+          : FullDeclarationName(cl);
       }
     }
 
@@ -1641,7 +1671,7 @@ namespace Microsoft.Dafny.Compilers {
     }
 
     void EmitDatatypeValue(DatatypeDecl dt, DatatypeCtor ctor, bool isCoCall, string typeDescriptorArguments, string arguments, ConcreteSyntaxTree wr) {
-      var dtName = dt.GetFullCompileName(Options);
+      var dtName = FullDeclarationName(dt);
       var ctorName = ctor.GetCompileName(Options);
 
       var sep = typeDescriptorArguments.Length != 0 && arguments.Length != 0 ? ", " : "";
@@ -2037,7 +2067,7 @@ namespace Microsoft.Dafny.Compilers {
 
     protected override ConcreteSyntaxTree ToFatPointer(Type type, ConcreteSyntaxTree wr) {
       if (type.HasFatPointer) {
-        wr.Write($"new {type.AsNewtype.GetFullCompileName(Options)}");
+        wr.Write($"new {FullDeclarationName(type.AsNewtype)}");
         return wr.ForkInParens();
       } else {
         return wr;
@@ -2512,7 +2542,7 @@ namespace Microsoft.Dafny.Compilers {
       } else if (toType.IsTraitType) {
         wr.Write($"_dafny.InstanceOfTrait({localName}, {TypeName(toType, wr, tok)})");
       } else if (fromType.IsTraitType && toType.AsNewtype != null) {
-        wr.Write($"{localName} instanceof {toType.AsNewtype.GetFullCompileName(Options)}");
+        wr.Write($"{localName} instanceof {FullDeclarationName(toType.AsNewtype)}");
       } else {
         wr.Write($"{localName} instanceof {TypeName(toType, wr, tok)}");
       }

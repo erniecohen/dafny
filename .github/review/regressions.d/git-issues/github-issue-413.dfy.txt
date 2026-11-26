@@ -1,0 +1,3 @@
+
+# Asking whether a recursive datatype with no values is nonempty (a (00) type argument, a (00) type refined by it, a local of it) reports an error instead of overflowing the stack in Type.GetAutoInit, for direct, mutual, arrow and non-regular recursion, while types with values keep their answers (https://github.com/erniecohen/dafny/issues/413).
+git-issues/github-issue-413.dfy
