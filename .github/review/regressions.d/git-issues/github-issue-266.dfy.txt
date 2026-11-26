@@ -1,0 +1,3 @@
+
+# Bounded callables, milestone 1: the type bounded<O, F> under --modular-termination, its formation and characteristic rules, and its erasure (https://github.com/erniecohen/dafny/issues/266).
+git-issues/github-issue-266.dfy

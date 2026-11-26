@@ -1,0 +1,5 @@
+
+# With --type-system-refresh, == and in accept same-constructor types whose co- and contravariant
+# arguments are comparable component by component, as the legacy resolver does
+# (https://github.com/erniecohen/dafny/issues/47).
+git-issues/github-issue-47.dfy

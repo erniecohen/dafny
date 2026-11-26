@@ -1,0 +1,3 @@
+# Upstream tests whose expected output the fix for #6366 updated, or whose proofs
+# depended on the axioms it and the fix for #6531 changed:
+dafny4/GHC-MergeSort.dfy

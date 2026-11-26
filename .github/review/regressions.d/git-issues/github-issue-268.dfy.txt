@@ -1,0 +1,3 @@
+
+# Distinct opaque nullable and non-null type constructors (https://github.com/erniecohen/dafny/issues/268).
+git-issues/github-issue-268.dfy

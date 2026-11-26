@@ -994,7 +994,7 @@ semantic-width descriptor is permitted; the I-off path remains unchanged.
 | `Source/DafnyRuntime/` C#, Java, Go/gomod, JS and other affected runtimes | Correct masks/count helpers and any popcount fallback; JavaScript wide integer repair or new correct helpers. |
 | `DooFile.cs`; `Backends/Library/LibraryBackend.cs` | Persist source annotation and language mode, rebuild descriptors/canonical bindings, retain exact-version compatibility; never accept a forged intrinsic identity. |
 | `Source/DafnyLanguageServer.Test/Synchronization/IncrementalBitvectorMembersTest.cs` and related option invalidation tests | Rebuild/cancel cached member and type information when widths, constraints or options change. Test both resolver modes. |
-| `docs/DafnyRef/`, `docs/dev/additional-axioms.md`, `docs/dev/news/193.feat`, `.github/review/regressions` | User semantics/options, every bridge model/control, release note and permanent regression registration. Product milestones derive their version from HEAD under the normal policy. |
+| `docs/DafnyRef/`, `docs/dev/additional-axioms.md`, `docs/dev/news/193.feat`, `.github/review/regressions.d/` | User semantics/options, every bridge model/control, release note and permanent regression registration. Product milestones derive their version from HEAD under the normal policy. |
 
 Two traps deserve explicit code-review checks. First,
 `CheckWellformedSpecialFunction` currently checks rotation arguments and count

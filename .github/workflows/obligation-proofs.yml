@@ -3,7 +3,7 @@
 # each one shard of Inputs/obligation-proof-repairs/registered.py.  They test an
 # option that is off by default and take about ten minutes each, so they run here,
 # one job per shard, and not in review.yml's required regression job.  The four
-# ordinary tests whose sources #170 repaired stay in .github/review/regressions.
+# ordinary tests whose sources #170 repaired stay in .github/review/regressions.d/.
 #
 # It runs on demand, weekly, and on pushes and pull requests that change the
 # obligation-checking sources, the repaired proofs, or the matrix itself.
@@ -101,11 +101,17 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@a8ef9c0acd833e35e6a13f798ac4c17dad9a64e1
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@79f4d807c404b0c92adfd76fdbca7f9e8153b460
         with:
-          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
-          min-free-percent: ${{ vars.SELF_HOSTED_JOB_MIN_FREE_PERCENT || '' }}
-          max-pressure: ${{ vars.SELF_HOSTED_JOB_MAX_PRESSURE || '' }}
+          kind: ci:${{ github.workflow }}
+          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS }}
+          reserve-mb: ${{ vars.SELF_HOSTED_JOB_RESERVE_MB }}
+          default-peak-mb: ${{ vars.SELF_HOSTED_JOB_DEFAULT_PEAK_MB }}
+          peak-min-samples: ${{ vars.SELF_HOSTED_JOB_PEAK_MIN_SAMPLES }}
+          peak-history-days: ${{ vars.SELF_HOSTED_JOB_PEAK_HISTORY_DAYS }}
+          probe-timeout-s: ${{ vars.SELF_HOSTED_JOB_PROBE_TIMEOUT_S }}
+          slot-poll-s: ${{ vars.SELF_HOSTED_JOB_SLOT_POLL_S }}
+          memory-backoff-s: ${{ vars.SELF_HOSTED_JOB_MEMORY_BACKOFF_S }}
       - uses: actions/checkout@v4
       - name: Controls for the tree matching
         timeout-minutes: 10
@@ -159,11 +165,17 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@a8ef9c0acd833e35e6a13f798ac4c17dad9a64e1
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@79f4d807c404b0c92adfd76fdbca7f9e8153b460
         with:
-          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
-          min-free-percent: ${{ vars.SELF_HOSTED_JOB_MIN_FREE_PERCENT || '' }}
-          max-pressure: ${{ vars.SELF_HOSTED_JOB_MAX_PRESSURE || '' }}
+          kind: ci:${{ github.workflow }}
+          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS }}
+          reserve-mb: ${{ vars.SELF_HOSTED_JOB_RESERVE_MB }}
+          default-peak-mb: ${{ vars.SELF_HOSTED_JOB_DEFAULT_PEAK_MB }}
+          peak-min-samples: ${{ vars.SELF_HOSTED_JOB_PEAK_MIN_SAMPLES }}
+          peak-history-days: ${{ vars.SELF_HOSTED_JOB_PEAK_HISTORY_DAYS }}
+          probe-timeout-s: ${{ vars.SELF_HOSTED_JOB_PROBE_TIMEOUT_S }}
+          slot-poll-s: ${{ vars.SELF_HOSTED_JOB_SLOT_POLL_S }}
+          memory-backoff-s: ${{ vars.SELF_HOSTED_JOB_MEMORY_BACKOFF_S }}
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-dotnet
       - uses: actions/setup-java@v4
@@ -242,11 +254,17 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@a8ef9c0acd833e35e6a13f798ac4c17dad9a64e1
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@79f4d807c404b0c92adfd76fdbca7f9e8153b460
         with:
-          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
-          min-free-percent: ${{ vars.SELF_HOSTED_JOB_MIN_FREE_PERCENT || '' }}
-          max-pressure: ${{ vars.SELF_HOSTED_JOB_MAX_PRESSURE || '' }}
+          kind: ci:${{ github.workflow }}
+          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS }}
+          reserve-mb: ${{ vars.SELF_HOSTED_JOB_RESERVE_MB }}
+          default-peak-mb: ${{ vars.SELF_HOSTED_JOB_DEFAULT_PEAK_MB }}
+          peak-min-samples: ${{ vars.SELF_HOSTED_JOB_PEAK_MIN_SAMPLES }}
+          peak-history-days: ${{ vars.SELF_HOSTED_JOB_PEAK_HISTORY_DAYS }}
+          probe-timeout-s: ${{ vars.SELF_HOSTED_JOB_PROBE_TIMEOUT_S }}
+          slot-poll-s: ${{ vars.SELF_HOSTED_JOB_SLOT_POLL_S }}
+          memory-backoff-s: ${{ vars.SELF_HOSTED_JOB_MEMORY_BACKOFF_S }}
       - uses: actions/checkout@v4
       - name: Judge the shards
         id: gate
