@@ -1178,8 +1178,6 @@ that a later stage would have to reject:
   JavaScript emits one closure per group, with distinct declaration names.
   Python emits a group in one file, orders class definitions after their trait bases,
   and preserves module-qualified imports through wrapper files.
-  Python groups containing extern modules, types or members are not yet supported.
-  Python groups also reject declarations marked `{:compile false}` pending a foreign-linkage convention.
   Rust emits one container per group, with public facades preserving the member namespaces.
   Rust groups containing extern modules, types or members are not yet supported.
   Rust group programs require explicit array initialization; implicit datatype defaults
@@ -1190,6 +1188,36 @@ that a later stage would have to reject:
   package. See [Go extern linkage](../Compilation/Go.md#recursive-module-groups)
   for names and foreign source-file conventions.
   JavaScript groups containing extern modules, types or members are not yet supported.
+  A Python group member containing any `{:extern}` or `{:compile false}` declaration
+  is supplied as a complete foreign Python module, as described below.
+
+For Python, supply each such member's complete implementation with `--input`.
+The member is excluded from the generated group implementation; its ordinary
+module and declaration names remain the foreign interface, without group prefixes.
+This applies to attributes on the module, a type, or a member. The foreign file
+must implement the whole member module, including declarations with Dafny bodies;
+it is not merged with a generated class or wrapper. Declarations omitted by
+`{:compile false}` can therefore be supplied by that file.
+
+The ordinary Python input conventions apply: `# Module: Name` selects the target
+module, otherwise the `.py` filename does. A dotted module name denotes directories.
+`{:extern}` names retain the ordinary backend's spelling. A renamed type is an
+attribute of its module; a renamed top-level member belongs to `default__`.
+The existing two-argument static method qualifier uses a dot before the member;
+a static function qualifier uses an underscore before the member. For example,
+`{:extern "Members.ForeignOps", "other"}` on a function calls
+`Members.ForeignOps_other(...)`.
+
+Foreign modules may be imported before generated siblings have initialized.
+Callbacks must import those siblings inside the callable, after initialization,
+rather than reading their declarations at foreign-module import time. With
+`--python-module-name`, foreign files reside in that package and callbacks use
+package-relative imports. A separate client uses the complete library archive,
+the producer's translation record, and its Python package. An omitted module
+inherits the package recorded for a compiled sibling. Package translation of a
+group with every module marked `{:compile false}` is rejected because no member
+would record that package. Dotted extern module names retain the existing
+restriction against combining them with `--python-module-name`.
 
 A `.doo` library built with `--recursive-modules` requires its client to enable
 the option too; one built without it records nothing. A group is retained as a
