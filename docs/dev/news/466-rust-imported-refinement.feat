@@ -1,0 +1,5 @@
+With `--recursive-modules`, Rust concrete refinements can inherit fully imported
+extern classes without fields, trait parents or generated members. Each refined
+class is imported from its own foreign namespace, including renamed generic
+classes and refinements through abstract modules. Other extern-type refinements
+retain an explicit diagnostic describing the supported class shape.

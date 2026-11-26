@@ -294,9 +294,23 @@ and a class that mixes foreign and generated implementations of one trait.
 These forms have rejection controls. Abstract refinements of a group member
 containing extern types are allowed: they emit no imports or implementations.
 The complete extern runtime matrix includes such an abstract refinement of the
-member containing a fully imported foreign class. Concrete refinements containing
-extern types remain rejected, with the type and refining module named in the diagnostic:
-foreign imports and generated implementations are not remapped for refinement.
+member containing a fully imported foreign class.
+
+Concrete refinements may inherit fully imported extern classes: all executable
+members must be inherited foreign methods or constructors without bodies, the
+class must have at most one extern argument, and it must have no fields or trait
+parents. The refining module imports each class by its compiled name from its own
+foreign namespace beneath the translation root's `_dafny_externs`. Each refinement
+therefore has its own foreign identity, as in independent C# emission; it does not
+alias the ancestor's foreign type. Foreign source must supply the refined types
+as well as the original ones. This also works through abstract intermediate
+refinements, with renamed generic classes, nested namespaces and separate
+producer/client translation.
+
+Other concrete refinements containing extern types remain rejected, with the type,
+refining module and supported class shape named in the diagnostic. Partial classes,
+fields, trait parents, changed declarations and two-argument class externs still
+require additional implementation or import remapping.
 Copying a partial foreign class can lose its import or duplicate its generated
 implementations. A refinement chain through an abstract intermediate module still
 checks its concrete descendant. Inherited extern members with explicit foreign
@@ -355,3 +369,16 @@ two-argument static members, partial foreign classes and foreign implementations
 of generated class methods. An extern round trip of a mutually recursive datatype
 checks sibling type identity across the foreign boundary. The ordinary Rust extern
 tests are option-off controls.
+
+`git-issue-466-rust-imported-refinement.dfy` extends the complete extern runtime
+matrix with concrete refinements of fully imported classes. Independent C# and
+Rust runs compare three-member recursion, unordered constants, recursive datatypes,
+explicit defaults, invariant witnesses, traits, refinement and complete archives.
+Distinct foreign return values check the identity of each refining namespace;
+a renamed generic foreign class transports a recursive datatype. A separately
+translated client exercises the producer's foreign imports through the translation
+root. Negative controls retain the rejection of fields, trait parents, changed
+class declarations and foreign members with generated bodies. A reachable false
+assertion after foreign construction and a call remains rejected. This milestone
+adds no verifier fact, axiom or assumption, and changes no emission with
+`--recursive-modules` disabled.
