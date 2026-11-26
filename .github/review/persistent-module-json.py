@@ -72,7 +72,7 @@ def trx_facts(path):
             return None
         if tag in ('Results', 'TestDefinitions', 'TestEntries'):
             children.sort(key=repr)
-        return (node.tag, sorted(node.attrib.items()), (node.text or '') if not children else (node.text or '').strip(), children)
+        return (node.tag, sorted(node.attrib.items()), (node.text or '') if len(node) == 0 else (node.text or '').strip(), children)
     return canonical(root)
 
 
