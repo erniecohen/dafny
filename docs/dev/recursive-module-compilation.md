@@ -303,11 +303,34 @@ checks its concrete descendant. Inherited extern members with explicit foreign
 paths remain supported. No new verifier fact or check is involved,
 and compilation without `--recursive-modules` is unchanged.
 
-Rust's existing implicit datatype-default and general-trait limitations remain: the runtime comparisons use the existing three-member producer
-with explicit array initializers and reference traits (`--general-traits=legacy`).
-C# comparisons disable wrapper erasure, which Rust already disables. Group programs
-that require implicit array initialization are rejected rather than emitted with
-placebo elements. Supporting implicit defaults is a separate milestone.
+Rust's existing implicit datatype-default and general-trait limitations remain:
+the runtime comparisons use the existing three-member producer with explicit
+initializers for nonempty arrays and reference traits (`--general-traits=legacy`).
+C# comparisons disable wrapper erasure, which Rust already disables.
+
+Empty arrays may omit their element initializer, including when the zero extent
+is computed at runtime. Rust's required `--enforce-determinism` already makes
+verification prove that an array without an initializer has a zero extent.
+For allocations that would otherwise require default elements, the group lowering
+evaluates every dimension once, in source order, and checks that at least one is
+zero before allocating and finalizing the empty array. The check halts even with
+verification skipped if all extents are nonzero. There are no element slots to
+initialize, so recursive datatype and invariant-bearing element types need no Rust
+`Default` implementation or evaluation of a witness. Generic auto-initializable
+parameters retain the backend's existing Rust `Default` bound. Explicit element
+initializers retain their existing lowering. Nonempty arrays still require an explicit
+initializer under `--enforce-determinism`; this does not add general datatype
+default construction or change verification. Programs without a recursive group
+retain their existing array emission.
+
+`git-issue-466-rust-empty-arrays.dfy` compares source and complete-archive execution
+with independent C# emission for the existing recursion, constants, recursive
+datatypes, witnesses, traits and refinement matrix. It adds dynamic empty arrays
+of different ranks, a zero in each dimension position, generic elements and
+inherited allocation in a refinement. A function-by-method prints the dimension
+evaluation order, including dimensions after a zero extent. Controls retain the
+verifier's nonempty-array and reachable-false failures, exercise the runtime halt
+with verification skipped, and compare emission with the option off.
 
 `git-issue-466-rust.dfy` compares the resulting recursion, constants, values,
 witness construction, traits, refinement and complete-archive execution with C#.
@@ -315,8 +338,8 @@ It also tests repeated declaration names, nested groups, Rust keywords, entry-po
 arguments and a separately translated producer/client pair compiled into one crate.
 The facades export constructors through their types; clients do not need the
 private layout of a group container. `git-issue-466-rust-rejected.dfy` supplies
-two-argument module and class extern controls, a mixed trait-implementation control,
-a refinement-with-extern-types control and an implicit-array-initialization control.
+two-argument module and class extern controls, a mixed trait-implementation control
+and a refinement-with-extern-types control.
 
 `git-issue-466-rust-extern.dfy` compares foreign linkage with C#'s independent
 module emission for three-member recursion, constants without a module order,
