@@ -1,0 +1,3 @@
+
+# With --refinement-extends and --modular-termination, a parent added in a refinement meets the rules a new declaration meets: the bound of an inherited member that becomes an override, an inherited call put on a cycle, and the leaf rule for an inherited member that becomes an implementation of a member of another module without a bound; each case has a one-module control with the same verdict (https://github.com/erniecohen/dafny/issues/88).
+git-issues/github-issue-88-modular-termination.dfy

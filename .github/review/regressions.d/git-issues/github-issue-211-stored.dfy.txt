@@ -1,0 +1,3 @@
+
+# The stored-value forms of funcptr.c and cons.c (contains) of the VeriFast examples: a function object holding a bounded value, certified one level below its creator, with controls (https://github.com/erniecohen/dafny/issues/211).
+git-issues/github-issue-211-stored.dfy

@@ -1,0 +1,1 @@
+dafny0/GeneralNewtypeVerify.dfy

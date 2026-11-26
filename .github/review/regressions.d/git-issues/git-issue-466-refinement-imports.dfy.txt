@@ -1,0 +1,4 @@
+
+# Recursive groups use opened copies and renamed refinements of lower modules; false results fail,
+# and copying a group member is rejected like written refinement (issue 466).
+git-issues/git-issue-466-refinement-imports.dfy

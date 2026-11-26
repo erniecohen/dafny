@@ -1,0 +1,3 @@
+
+# Opt-in --verification-cache stores blobs compressed with zlib under the SHA-256 of their uncompressed bytes; earlier uncompressed and mixed caches still replay, and a truncated or corrupted compressed blob is a miss with the same report (https://github.com/erniecohen/dafny/issues/388).
+git-issues/git-issue-388.dfy

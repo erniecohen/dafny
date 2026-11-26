@@ -1,0 +1,3 @@
+
+# Applications of lambdas and function values over ORDINAL beta-reduce, and forall statements assign ORDINAL fields (https://github.com/erniecohen/dafny/issues/363).
+git-issues/github-issue-363.dfy

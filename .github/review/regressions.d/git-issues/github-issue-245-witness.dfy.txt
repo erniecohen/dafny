@@ -1,0 +1,3 @@
+
+# User chain-stopping witnesses in modular-termination bounds (issue 245).
+git-issues/github-issue-245-witness.dfy
