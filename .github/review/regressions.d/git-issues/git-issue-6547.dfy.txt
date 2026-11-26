@@ -1,0 +1,3 @@
+
+# General-trait cardinality admission and compatibility controls.
+git-issues/git-issue-6547.dfy

@@ -1,0 +1,3 @@
+
+# Pure callback allocation retains current-heap positives and old-heap/false negatives.
+git-issues/github-issue-132-pure-callback.dfy

@@ -1,0 +1,3 @@
+
+# Duplicate-replacement diagnostics use source locations (issue 451).
+comp/replaceables/resolveManyReplacement.dfy

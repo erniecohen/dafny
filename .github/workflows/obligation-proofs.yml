@@ -3,7 +3,7 @@
 # each one shard of Inputs/obligation-proof-repairs/registered.py.  They test an
 # option that is off by default and take about ten minutes each, so they run here,
 # one job per shard, and not in review.yml's required regression job.  The four
-# ordinary tests whose sources #170 repaired stay in .github/review/regressions.
+# ordinary tests whose sources #170 repaired stay in .github/review/regressions.d/.
 #
 # It runs on demand, weekly, and on pushes and pull requests that change the
 # obligation-checking sources, the repaired proofs, or the matrix itself.

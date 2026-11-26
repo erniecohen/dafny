@@ -140,7 +140,7 @@ All identical, apart from crashes that the base has too and whose messages diffe
 
 ## Tests
 
-`git-issues/git-issue-105-*.dfy`, all listed in `.github/review/regressions`.
+`git-issues/git-issue-105-*.dfy`, all listed in `.github/review/regressions.d/`.
 - Step 1: `option`, `syntax`, `raw-identifier`, `control`, `refinement`, `opacity`, `reads`, `two-state`, `modifiers`, `codatatypes`, `not-yet`, `verify`, `libraries`.
 - Step 2: `raw-types`, `raw-errors`, `raw-exports`, `raw-extends`, `raw-refinement`, `raw-library`, `raw-compile`.
 - Step 3:

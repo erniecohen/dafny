@@ -1,0 +1,3 @@
+CI regression registrations now use one fragment per test under
+`.github/review/regressions.d/`, so independent test additions no longer edit a
+shared list. Existing regression selections and platform partitions are unchanged.

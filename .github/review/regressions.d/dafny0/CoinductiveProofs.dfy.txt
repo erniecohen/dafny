@@ -1,0 +1,4 @@
+# Upstream tests that record the verifier's resource counts, which the fixes for
+# #6534 and #6536, and for #132 here, move (their expected outputs are updated on
+# this line):
+dafny0/CoinductiveProofs.dfy
