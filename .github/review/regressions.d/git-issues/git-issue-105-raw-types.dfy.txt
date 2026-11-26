@@ -1,0 +1,3 @@
+# Second stage: raw types (raw T, inferred raw members, the derived subset type), with exports,
+# extends, refinement, libraries and compilation (https://github.com/erniecohen/dafny/issues/105).
+git-issues/git-issue-105-raw-types.dfy

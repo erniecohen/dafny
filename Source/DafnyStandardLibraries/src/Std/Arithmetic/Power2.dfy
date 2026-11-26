@@ -52,6 +52,7 @@ module {:disableNonlinearArithmetic} Std.Arithmetic.Power2 {
     LemmaPow2Auto();
     LemmaPowAuto();
     var f := e => 0 < e ==> (Pow2(e) - 1) / 2 == Pow2(e - 1) - 1;
+    assert f.requires(e);
     assert forall i {:trigger IsLe(0, i)} :: IsLe(0, i) && f(i) ==> f(i + 1);
     assert forall i {:trigger IsLe(i, 0)} :: IsLe(i, 0) && f(i) ==> f(i - 1);
     LemmaMulInductionAuto(e, f);

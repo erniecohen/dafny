@@ -1,0 +1,3 @@
+
+# Generic subset fields must use the supplied C# cloning converter.
+git-issues/git-issue-5881.dfy

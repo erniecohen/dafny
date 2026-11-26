@@ -1,0 +1,3 @@
+
+# Proof locals and statement binders are not lambda captures (#132).
+git-issues/github-issue-132-statement-binders-positive.dfy

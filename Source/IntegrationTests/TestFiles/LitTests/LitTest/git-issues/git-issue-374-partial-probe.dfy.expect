@@ -1,0 +1,54 @@
+git-issue-374-partial-negative.dfy(5,25): Error: a precondition for this call could not be proved
+Partial.dfy(37,24): Related location: this is the precondition that could not be proved
+git-issue-374-partial-negative.dfy(10,25): Error: a precondition for this call could not be proved
+Partial.dfy(37,24): Related location: this is the precondition that could not be proved
+git-issue-374-partial-negative.dfy(16,25): Error: a precondition for this call could not be proved
+Partial.dfy(37,24): Related location: this is the precondition that could not be proved
+git-issue-374-partial-negative.dfy(21,25): Error: a precondition for this call could not be proved
+Partial.dfy(37,24): Related location: this is the precondition that could not be proved
+git-issue-374-partial-negative.dfy(27,35): Error: a precondition for this call could not be proved
+Partial.dfy(36,23): Related location: this is the precondition that could not be proved
+git-issue-374-partial-negative.dfy(33,2): Error: assertion might not hold
+git-issue-374-partial-negative.dfy(39,2): Error: assertion might not hold
+git-issue-374-partial-negative.dfy(45,0): Error: a postcondition could not be proved on this return path
+git-issue-374-partial-negative.dfy(44,12): Related location: this is the postcondition that could not be proved
+git-issue-374-partial-negative.dfy(51,2): Error: assertion might not hold
+git-issue-374-partial-negative.dfy(58,2): Error: assertion might not hold
+git-issue-374-partial-negative.dfy(65,2): Error: assertion might not hold
+git-issue-374-partial-negative.dfy(71,9): Error: function precondition could not be proved
+git-issue-374-partial-negative.dfy(76,46): Error: value does not satisfy the subset constraints of 'int --> int' (possible cause: it may have read effects)
+git-issue-374-partial-negative.dfy(82,2): Error: assertion might not hold
+git-issue-374-partial-negative.dfy(88,2): Error: assertion might not hold
+git-issue-374-partial-negative.dfy(94,2): Error: assertion might not hold
+git-issue-374-partial-negative.dfy(100,2): Error: assertion might not hold
+git-issue-374-partial-negative.dfy(106,2): Error: assertion might not hold
+git-issue-374-partial-negative.dfy(112,2): Error: assertion might not hold
+
+Dafny program verifier finished with 7 verified, 19 errors
+git-issue-374-partial-negative.dfy(5,25): Error: a precondition for this call could not be proved
+Partial.dfy(37,24): Related location: this is the precondition that could not be proved
+git-issue-374-partial-negative.dfy(10,25): Error: a precondition for this call could not be proved
+Partial.dfy(37,24): Related location: this is the precondition that could not be proved
+git-issue-374-partial-negative.dfy(16,25): Error: a precondition for this call could not be proved
+Partial.dfy(37,24): Related location: this is the precondition that could not be proved
+git-issue-374-partial-negative.dfy(21,25): Error: a precondition for this call could not be proved
+Partial.dfy(37,24): Related location: this is the precondition that could not be proved
+git-issue-374-partial-negative.dfy(27,35): Error: a precondition for this call could not be proved
+Partial.dfy(36,23): Related location: this is the precondition that could not be proved
+git-issue-374-partial-negative.dfy(33,2): Error: assertion might not hold
+git-issue-374-partial-negative.dfy(39,2): Error: assertion might not hold
+git-issue-374-partial-negative.dfy(45,0): Error: a postcondition could not be proved on this return path
+git-issue-374-partial-negative.dfy(44,12): Related location: this is the postcondition that could not be proved
+git-issue-374-partial-negative.dfy(51,2): Error: assertion might not hold
+git-issue-374-partial-negative.dfy(58,2): Error: assertion might not hold
+git-issue-374-partial-negative.dfy(65,2): Error: assertion might not hold
+git-issue-374-partial-negative.dfy(71,9): Error: function precondition could not be proved
+git-issue-374-partial-negative.dfy(76,46): Error: value does not satisfy the subset constraints of 'int --> int' (possible cause: it may have read effects)
+git-issue-374-partial-negative.dfy(82,2): Error: assertion might not hold
+git-issue-374-partial-negative.dfy(88,2): Error: assertion might not hold
+git-issue-374-partial-negative.dfy(94,2): Error: assertion might not hold
+git-issue-374-partial-negative.dfy(100,2): Error: assertion might not hold
+git-issue-374-partial-negative.dfy(106,2): Error: assertion might not hold
+git-issue-374-partial-negative.dfy(112,2): Error: assertion might not hold
+
+Dafny program verifier finished with 7 verified, 19 errors

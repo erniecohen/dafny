@@ -1,0 +1,4 @@
+
+# Datatype and trait in one decreases order under --trait-rank-decreases, and the rank of trait-typed datatype
+# fields under --additional-axioms (https://github.com/erniecohen/dafny/issues/317).
+git-issues/github-issue-317.dfy

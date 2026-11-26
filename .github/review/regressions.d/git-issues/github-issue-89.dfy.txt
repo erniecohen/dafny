@@ -1,0 +1,3 @@
+
+# Opt-in --inherited-trait-axioms: a bodiless ghost trait member marked {:axiom} is inherited without an implementation, an override is still checked, 'dafny audit' lists the axiom and its inheritors, and with the option off every such type is rejected as before (https://github.com/erniecohen/dafny/issues/89).
+git-issues/github-issue-89.dfy

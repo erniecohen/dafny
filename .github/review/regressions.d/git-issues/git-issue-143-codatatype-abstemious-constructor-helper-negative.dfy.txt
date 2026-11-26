@@ -1,0 +1,2 @@
+# Suspended co-recursive type-membership boundaries and compatibility controls.
+git-issues/git-issue-143-codatatype-abstemious-constructor-helper-negative.dfy
