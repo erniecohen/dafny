@@ -93,11 +93,13 @@ public sealed class PersistentModuleCache {
   /// translation, preparation or run reproduces. Recording is unaffected.
   /// </summary>
   internal string? ReplayBypass() {
-    // Ordinary JSON consumes assertion locations/descriptions in addition to the CSV fields.
-    // Dependency reporting and the remaining loggers still require fresh preparation.
+    // Ordinary JSON and text consume assertion locations/descriptions in addition to the CSV fields.
+    // TRX uses the CSV task facts. Dependency reporting still requires fresh preparation.
     if (options.Get(CommonOptionBag.VerificationLogFormat).Any(format =>
           format != "csv" && !format.StartsWith("csv;", StringComparison.Ordinal) &&
-          format != "json" && !format.StartsWith("json;", StringComparison.Ordinal))) { return "verification logs"; }
+          format != "json" && !format.StartsWith("json;", StringComparison.Ordinal) &&
+          format != "text" && !format.StartsWith("text;", StringComparison.Ordinal) &&
+          format != "trx" && !format.StartsWith("trx;", StringComparison.Ordinal))) { return "verification logs"; }
     if (options.Get(CommonOptionBag.ProgressOption) == CommonOptionBag.ProgressLevel.Batch) { return "per-task progress"; }
     if (options.TrackVerificationCoverage || options.Get(CommonOptionBag.VerificationCoverageReport) != null ||
         options.Get(CommonOptionBag.WarnContradictoryAssumptions) || options.Get(CommonOptionBag.WarnRedundantAssumptions) ||
@@ -246,8 +248,9 @@ public sealed class PersistentModuleCache {
     var manifest = ReadManifest(fingerprint, out var reason);
     if (manifest == null) { Interlocked.Increment(ref misses); LastBypassReason = missReason = reason; return null; }
     var locations = SourceLocations.For(program);
-    var json = options.Get(CommonOptionBag.VerificationLogFormat).Any(format =>
-      format == "json" || format.StartsWith("json;", StringComparison.Ordinal));
+    var assertionReport = options.Get(CommonOptionBag.VerificationLogFormat).Any(format =>
+      format == "json" || format.StartsWith("json;", StringComparison.Ordinal) ||
+      format == "text" || format.StartsWith("text;", StringComparison.Ordinal));
     var symbols = SymbolExtensions.GetSymbolDescendants(program.DefaultModule).OfType<ICanVerify>()
       .GroupBy(locations.Symbol).Where(g => g.Count() == 1).ToDictionary(g => g.Key, g => g.Single());
     var functions = symbols.Values.OfType<Function>().GroupBy(f => f.FullDafnyName).Where(g => g.Count() == 1)
@@ -278,8 +281,8 @@ public sealed class PersistentModuleCache {
         }
         token = current;
       }
-      var assertions = json && entry.Scheduled ? PersistentAssertionReports.Restore(locations, entry.ReportAssertions, entry.Asserts) : null;
-      if (json && entry.Scheduled && assertions == null) {
+      var assertions = assertionReport && entry.Scheduled ? PersistentAssertionReports.Restore(locations, entry.ReportAssertions, entry.Asserts) : null;
+      if (assertionReport && entry.Scheduled && assertions == null) {
         Interlocked.Increment(ref misses); LastBypassReason = missReason = "a stored task has no current assertion report";
         return null;
       }

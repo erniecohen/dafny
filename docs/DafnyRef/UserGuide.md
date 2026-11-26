@@ -416,14 +416,17 @@ Various options control the verification process, in addition to all those descr
   unchanged, the module is neither translated, prepared nor solved again; when a
   dependency changed but the module's regenerated Boogie graph is unchanged, it is
   neither prepared nor solved again (early cutoff). Replayed results are reported
-  exactly as the result cache reports them. CSV and ordinary JSON verification logs
+  exactly as the result cache reports them. CSV, TRX and ordinary JSON/text verification logs
   also support module replay: names, verdicts, resource counts and seeds are preserved,
   while durations are marked as replayed (`TimingReplayed` in CSV and `timingReplayed`
-  in JSON). JSON also preserves every assertion's current filename, line, column and
-  success description. CSV and JSON loggers may be combined or repeated. A module
-  lacking complete, portable assertion metadata falls back for JSON. Dependency-aware
-  JSON, text and TRX logs require the normal translation/preparation path; requesting
-  one alongside an eligible logger also disables module replay. Stored Boogie text is a record, never
+  in JSON). Text prints `Timing replayed: true` for a batch whose timing is reused,
+  and for a scope containing any such batch; TRX includes the same marker in each
+  reused test result's `Output/StdOut`. JSON and text preserve every assertion's
+  current filename, line, column and success description. These loggers may be
+  combined or repeated. A module lacking complete, portable assertion metadata falls
+  back for JSON or text; CSV and TRX need only the stored task facts. Dependency-aware
+  reports require the normal translation/preparation path, including when requested
+  alongside another logger. Stored Boogie text is a record, never
   an input. Options that need a fresh translation or preparation (counterexample
   extraction, printing Boogie, proof-dependency reports, and the like) and graphs
   the snapshot copier does not support run normally. The hidden option
