@@ -9,6 +9,7 @@ Every admitted job sets `MSBUILDDISABLENODEREUSE=1` and
 The always-run post action attempts `dotnet build-server shutdown` before
 removing outputs and releasing admission. Shutdown is bounded and best effort,
 including jobs where no SDK was installed.
+Shutdown runs outside the checkout so `global.json` cannot select an absent SDK.
 
 ## Required policy
 

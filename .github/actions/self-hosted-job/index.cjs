@@ -79,7 +79,9 @@ async function main() {
     try {
       // Best effort even when setup never installed an SDK. Keep the reservation
       // until shutdown finishes; a missing dotnet or a failed shutdown is harmless.
-      cp.spawnSync('dotnet', ['build-server', 'shutdown'], {stdio: 'ignore', timeout: 30000});
+      // Stay outside the checkout so global.json cannot pin shutdown to an absent SDK.
+      cp.spawnSync('dotnet', ['build-server', 'shutdown'],
+        {cwd: process.env.RUNNER_TEMP, stdio: 'ignore', timeout: 30000});
       if (fs.existsSync(path.join(process.env.GITHUB_WORKSPACE, '.git'))) {
         const r = cp.spawnSync('git', ['clean', '-ffdx'], {cwd: process.env.GITHUB_WORKSPACE, stdio: 'ignore'});
         if (r.status !== 0) throw new Error('Checkout output cleanup failed');

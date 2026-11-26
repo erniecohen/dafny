@@ -39,6 +39,7 @@ const source = fs.readFileSync(process.argv[1], 'utf8');
           calls.push([command, Array.from(args)]);
           assert.equal(options.stdio, 'ignore');
           assert.equal(options.timeout, 30000);
+          assert.equal(options.cwd, 'runner-temp');
           return result;
         }
       } : require(name)};
@@ -48,7 +49,8 @@ const source = fs.readFileSync(process.argv[1], 'utf8');
     assert.equal(env.UseSharedCompilation, 'false');
     assert.equal(writes.join(''), 'MSBUILDDISABLENODEREUSE=1\nUseSharedCompilation=false\n');
     // No checkout or temporary directory: shutdown still runs and tolerates failure.
-    Object.assign(env, {STATE_keeper: '123', STATE_keeperIdentity: 'different', GITHUB_WORKSPACE: 'repo'});
+    Object.assign(env, {STATE_keeper: '123', STATE_keeperIdentity: 'different',
+      GITHUB_WORKSPACE: 'repo', RUNNER_TEMP: 'runner-temp'});
     await sandbox.module.exports.main();
     assert.deepEqual(calls, [['dotnet', ['build-server', 'shutdown']]]);
   }
