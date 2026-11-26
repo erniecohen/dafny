@@ -1,1 +1,1 @@
-// CHECK: JavaScript refinements of recursive module groups require extern classes or fully imported extern traits with fully imported extern ancestors in recursive-group contexts
+// CHECK: JavaScript refinements of recursive module groups require extern classes or fully imported extern traits with fully imported extern ancestors

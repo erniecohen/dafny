@@ -21,6 +21,22 @@ namespace Microsoft.Dafny.Compilers {
   class JavaScriptCodeGenerator : SinglePassCodeGenerator {
     private readonly Dictionary<RecursiveModuleGroup, ConcreteSyntaxTree> groupWriters = new();
     private readonly Dictionary<RecursiveModuleGroup, ConcreteSyntaxTree> foreignGroupWriters = new();
+    internal readonly HashSet<TraitDecl> ImportedTraitAncestors = new();
+
+    // Discover ancestors before any module emits a replacement trait object.
+    // Library consumers must leave preservation to the producer that owns the group.
+    internal void RegisterImportedTraitAncestors(Program program) {
+      ImportedTraitAncestors.Clear();
+      foreach (var module in program.Modules().Where(module => module.CanCompile() &&
+                 module.ShouldCompile(program.Compilation) && IsRecursiveGroupContext(module))) {
+        foreach (var trait in module.TopLevelDecls.OfType<TraitDecl>().Where(trait =>
+                   IsExternallyImported(trait) && CanImportTrait(trait, this))) {
+          foreach (var parent in trait.ParentTypeInformation.UniqueParentTraits().Where(parent => !parent.IsObject)) {
+            ImportedTraitAncestors.Add(parent.AsTraitType);
+          }
+        }
+      }
+    }
 
     // Source positions and archive layout must not affect separately translated references.
     private static List<ModuleDefinition> GroupMembers(RecursiveModuleGroup group) =>
@@ -40,7 +56,7 @@ namespace Microsoft.Dafny.Compilers {
       // Imported implementations supply the complete ancestor identity list. Every ancestor
       // must also preserve its imported identity, with no generated trait material to lose.
       trait.Traits.All(parent => parent.IsObject || parent.AsTraitType is { } ancestor &&
-        IsRecursiveGroupContext(ancestor.EnclosingModuleDefinition) && generator.IsExternallyImported(ancestor) && CanImportTrait(ancestor, generator)) &&
+        generator.IsExternallyImported(ancestor) && CanImportTrait(ancestor, generator)) &&
       trait.Members.All(member => member.IsGhost || generator.IsExternallyImported(member));
 
     private bool UsesForeignModuleObjects(ModuleDefinition module) =>
@@ -198,7 +214,7 @@ namespace Microsoft.Dafny.Compilers {
 
     protected override IClassWriter CreateTrait(string name, bool isExtern, List<TypeParameter> typeParameters /*?*/,
       TraitDecl trait, List<Type> superClasses /*?*/, IOrigin tok, ConcreteSyntaxTree wr) {
-      if (isExtern && IsRecursiveGroupContext(trait.EnclosingModuleDefinition) && CanImportTrait(trait, this)) {
+      if (isExtern && (IsRecursiveGroupContext(trait.EnclosingModuleDefinition) || ImportedTraitAncestors.Contains(trait)) && CanImportTrait(trait, this)) {
         // Foreign implementations may retain this object as their runtime trait identity.
         return new NullClassWriter(this);
       }

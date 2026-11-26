@@ -48,7 +48,6 @@
 // RUN: %OutputCheck --file-to-check "%t-parents.out" "%S/Inputs/issue466_js_refinement_kind.check"
 // RUN: %exits-with 3 %translate js %trargs --no-verify --member-invariants --recursive-modules --allow-external-contracts "%S/Inputs/git-issue-466-js-trait-refinement-transitive-parent.dfy" --output "%t-transitive-parent.js" > "%t-transitive-parent.out"
 // RUN: %OutputCheck --file-to-check "%t-transitive-parent.out" "%S/Inputs/issue466_js_refinement_kind.check"
-// RUN: %exits-with 3 %translate js %trargs --no-verify --member-invariants --recursive-modules --allow-external-contracts "%S/Inputs/git-issue-466-js-trait-refinement-outside-parent.dfy" --output "%t-outside-parent.js" > "%t-outside-parent.out"
-// RUN: %OutputCheck --file-to-check "%t-outside-parent.out" "%S/Inputs/issue466_js_refinement_kind.check"
+// RUN: %translate js %trargs --no-verify --member-invariants --recursive-modules --allow-external-contracts "%S/Inputs/git-issue-466-js-trait-refinement-outside-parent.dfy" --output "%t-outside-parent.js" > "%t-outside-parent.out"
 // RUN: %translate js %trargs --no-verify --member-invariants --allow-external-contracts "%S/Inputs/git-issue-466-js-trait-refinement-acyclic.dfy" --output "%t-off-trait.js" > "%t-off-trait.out"
 // RUN: %OutputCheck --file-to-check "%t-off-trait.js" "%S/Inputs/issue466_js_trait_refinement_off.check"

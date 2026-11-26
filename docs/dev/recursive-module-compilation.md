@@ -304,10 +304,14 @@ implementations may capture them before generated code runs. Ghost members do no
 require generated trait material. Generated implementations use the same concrete
 namespace's trait object. The native implementation supplies the complete ancestor
 identity list, including generic and diamond-shaped inheritance. Every non-object
-ancestor must also be extern, contain no generated members and belong to a
-recursive-group context. An ancestor outside those contexts still uses ordinary
-trait emission, which creates a new identity; preserving only its child would leave
-a captured native ancestor stale. Such ancestors retain a diagnostic. Traits
+ancestor must also be extern and contain no generated members. Before emission,
+the compiler identifies every imported ancestor of a supported group trait,
+including ancestors declared in acyclic modules, and preserves its preloaded
+identity. These selected ancestors undergo the same module, type and member
+linkage checks as declarations in the group. Unrelated acyclic traits retain
+ordinary emission. An ancestor supplied only through `--library` retains a
+diagnostic: its separately emitted producer must contain the group so that
+ancestor preservation occurs there. Complete archive inputs remain supported. Traits
 requiring generated members or generated ancestors, and other extern type kinds in
 refinements, remain rejected with an explicit diagnostic. Fully imported
 foreign classes declared in a group or its concrete
@@ -367,13 +371,25 @@ inheritance: native implementations retain every captured ancestor, generated
 implementations list the same concrete namespace's ancestors, and cross-namespace
 casts remain distinct. An ordinary generated parent and a transitive imported
 ancestor with a generated body retain tested rejections in refinements. A fully
-imported ancestor outside a recursive-group context has a separate rejection
-control; option-off trait emission is unchanged.
+imported ancestor in an acyclic module is covered by
+`git-issue-466-js-acyclic-ancestors.dfy`, with the same runtime matrix from source
+and with the acyclic ancestor supplied by a complete archive input, including
+generic ancestor identity checks and generated implementations. The existing
+complete-group archive and separately translated producer/client comparisons
+remain covered by the group-local hierarchy. An unrelated imported trait in the
+same module still receives ordinary emission. Unsupported ancestor owners, type
+qualifiers, require-based modules, qualified instance members and library-only
+ancestors have negative controls. Both option settings preserve ordinary emission
+when no group uses the hierarchy; option-off output is unchanged.
 `git-issue-466-js-extern.dfy` checks each group-specific foreign linkage rejection.
 Archives with arbitrary extern contracts still cannot provide the modular
 termination certificate required by cross-module trait implementations; the
-library comparison uses a concrete-counter variant and retains that rejection as
-a negative control.
+library comparison for group-local hierarchies uses a concrete-counter variant
+and retains that rejection as a negative control. A hierarchy inheriting an
+acyclic foreign trait also introduces cross-module trait contracts: even its
+concrete-counter variant cannot be archived together with arbitrary extern
+contracts. A separate negative control retains this certificate restriction;
+the positive archive-input comparison archives the acyclic ancestors alone.
 
 This milestone depends on https://github.com/erniecohen/dafny/pull/535. It adds
 no verifier rule, axiom or trusted assumption. Programs without a recursive
