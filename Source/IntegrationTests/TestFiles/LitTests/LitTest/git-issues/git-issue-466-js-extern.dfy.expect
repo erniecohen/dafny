@@ -1,12 +1,33 @@
 
 Dafny program verifier did not attempt verification
-git-issue-466-js-extern.dfy(7,17): Error: JavaScript compilation of recursive module groups with extern declarations is not yet supported
+git-issue-466-js-extern.dfy(12,40): Error: JavaScript recursive groups require preloaded extern module objects; require-based extern modules are not yet supported
 Translation was aborted because errors were found
 
 Dafny program verifier did not attempt verification
-git-issue-466-js-extern-type.dfy(1,7): Error: JavaScript compilation of recursive module groups with extern declarations is not yet supported
+git-issue-466-js-extern-type.dfy(3,18): Error: JavaScript recursive groups require extern types in a preloaded extern module, without a two-argument type qualifier
 Translation was aborted because errors were found
 
 Dafny program verifier did not attempt verification
-git-issue-466-js-extern-member.dfy(1,7): Error: JavaScript compilation of recursive module groups with extern declarations is not yet supported
+git-issue-466-js-extern-member.dfy(3,19): Error: JavaScript recursive groups require unqualified extern members in an extern type or module
+Translation was aborted because errors were found
+
+Dafny program verifier did not attempt verification
+git-issue-466-js-extern-qualified-type.dfy(3,38): Error: JavaScript recursive groups require extern types in a preloaded extern module, without a two-argument type qualifier
+Translation was aborted because errors were found
+
+Dafny program verifier did not attempt verification
+git-issue-466-js-extern-refinement.dfy(3,18): Error: JavaScript refinement of a recursive module group with extern types is not yet supported
+git-issue-466-js-extern-refinement.dfy(7,7): Related location: refining module
+Translation was aborted because errors were found
+
+Dafny program verifier did not attempt verification
+git-issue-466-js-extern-qualified-method.dfy(3,47): Error: JavaScript recursive groups require qualified extern members to be functions or static methods
+Translation was aborted because errors were found
+
+Dafny program verifier did not attempt verification
+git-issue-466-js-extern-qualified-field.dfy(3,56): Error: JavaScript recursive groups require qualified extern members to be functions or static methods
+Translation was aborted because errors were found
+
+Dafny program verifier did not attempt verification
+git-issue-466-js-extern-constructor.dfy(3,22): Error: JavaScript recursive groups do not support extern constructors
 Translation was aborted because errors were found
