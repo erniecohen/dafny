@@ -125,27 +125,79 @@ class CheckoutRefsTests(unittest.TestCase):
         self.assertNotEqual(self.fetch([self.base], full='invalid', check=False).returncode, 0)
         self.assert_no_unrelated_refs()
 
-    def test_stale_workspace_is_cleared_before_shallow_checkout(self):
+    def prepare_workspace(self):
         node = shutil.which('node')
         if not node:
             self.skipTest('Node is provided by the Actions runner')
-        # Simulate a failed prior checkout, including packed case-colliding refs and
-        # an obsolete shallow boundary. Never clean another workspace or follow links.
+        script = "const {prepareWorkspace} = require(process.argv[1]); prepareWorkspace(process.argv[2], process.argv[3]);"
+        subprocess.run([node, '-e', script, str(ACTIONS / 'self-hosted-job/index.cjs'),
+                        str(self.workspace), str(self.root)], check=True)
+
+    def test_stale_refs_and_outputs_are_cleared_without_rewriting_tracked_files(self):
+        # A failed prior fetch may leave packed case collisions. Retain objects and
+        # shallow boundaries, but never old ref names, outputs, or tracked edits.
+        self.git(self.workspace, 'checkout', '-qb', 'previous-job')
+        self.git(self.workspace, 'update-ref', 'refs/ci/old', self.merge)
         shutil.copyfile(self.remote / 'packed-refs', self.workspace / '.git/packed-refs')
         outside = self.root / 'outside'; outside.mkdir()
         (outside / 'keep').touch()
         (self.workspace / 'old-output').symlink_to(outside, target_is_directory=True)
-        script = "const {prepareWorkspace} = require(process.argv[1]); prepareWorkspace(process.argv[2], process.argv[3]);"
-        subprocess.run([node, '-e', script, str(ACTIONS / 'self-hosted-job/index.cjs'),
-                        str(self.workspace), str(self.root)], check=True)
-        self.assertEqual(list(self.workspace.iterdir()), [])
+        output = self.workspace / 'bin/Debug/output'; output.parent.mkdir(parents=True); output.touch()
+        (self.workspace / '.git/info/exclude').write_text('bin/\n')
+        nested = self.workspace / 'old-repo'; nested.mkdir(); self.git(nested, 'init', '-q')
+        (self.workspace / 'base').write_text('stale staged edit')
+        self.git(self.workspace, 'add', 'base')
+        (self.workspace / 'feature').unlink()
+        shared = self.workspace / 'shared'
+        before = shared.stat()
+        objects = (self.workspace / '.git/objects').stat()
+        self.prepare_workspace()
+        self.assertEqual(shared.stat().st_mtime_ns, before.st_mtime_ns)
+        self.assertEqual(shared.stat().st_ino, before.st_ino)
+        self.assertEqual((self.workspace / '.git/objects').stat().st_ino, objects.st_ino)
+        self.assertEqual((self.workspace / 'base').read_text(), 'base update')
+        self.assertEqual((self.workspace / 'feature').read_text(), 'head')
+        self.assertEqual(self.git(self.workspace, 'status', '--porcelain'), '')
+        self.assertFalse((self.workspace / 'old-output').exists())
+        self.assertFalse(output.exists())
+        self.assertFalse(nested.exists())
         self.assertTrue((outside / 'keep').exists())
+        self.assertEqual(self.git(self.workspace, 'for-each-ref'), '')
+        self.assertEqual(self.git(self.workspace, 'rev-parse', '--is-shallow-repository'), 'true')
+        self.fetch([self.base, self.head], 'true')
+        self.assertEqual(self.git(self.workspace, 'merge-base', self.base, self.head), self.common)
+        self.assert_no_unrelated_refs()
+
+    def test_incremental_event_targets_keep_shared_files_and_objects(self):
+        shared = self.workspace / 'shared'
+        before = shared.stat()
+        for event, ref, expected in [('pull_request', 'refs/pull/1/merge', self.merge),
+                ('push', self.base, self.base), ('tag', 'refs/tags/v-control', self.merge),
+                ('workflow_dispatch', 'refs/heads/feature', self.head),
+                ('manual historical revision', self.common, self.common)]:
+            with self.subTest(event=event):
+                self.prepare_workspace()
+                self.fetch([ref])
+                self.git(self.workspace, 'checkout', '-q', '--force', '--detach', 'refs/ci/required/0')
+                self.git(self.workspace, 'clean', '-ffdx')
+                self.assertEqual(self.git(self.workspace, 'rev-parse', 'HEAD'), expected)
+                self.assertEqual(shared.stat().st_mtime_ns, before.st_mtime_ns)
+                self.assertEqual(shared.stat().st_ino, before.st_ino)
+                self.assert_no_unrelated_refs()
+
+    def test_failed_checkout_can_start_fresh_and_post_still_cleans_scratch(self):
+        shutil.rmtree(self.workspace / '.git')
+        self.prepare_workspace()
+        self.assertEqual(list(self.workspace.iterdir()), [])
         # If checkout never initialized a repository, the post action still cleans
         # this job's scratch without trying git clean in an empty directory.
         scratch = self.root / 'fork-job.failed-checkout'; scratch.mkdir()
-        subprocess.run([node, str(ACTIONS / 'self-hosted-job/index.cjs')], check=True,
+        (self.root / 'dotnet').write_text('#!/bin/sh\nexit 0\n')
+        (self.root / 'dotnet').chmod(0o755)
+        subprocess.run([shutil.which('node'), str(ACTIONS / 'self-hosted-job/index.cjs')], check=True,
             env=dict(os.environ, GITHUB_WORKSPACE=str(self.workspace), RUNNER_TEMP=str(self.root),
-                STATE_tmp=str(scratch), STATE_keeper=str(os.getpid()), STATE_keeperIdentity='different identity'))
+                STATE_tmp=str(scratch), STATE_keeper=str(os.getpid()), STATE_keeperIdentity='different identity',
+                PATH=str(self.root) + os.pathsep + os.environ['PATH']))
         self.assertFalse(scratch.exists())
         self.initialize_checkout()
         self.fetch([self.base, self.head], 'true')

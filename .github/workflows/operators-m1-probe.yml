@@ -37,7 +37,7 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@79f4d807c404b0c92adfd76fdbca7f9e8153b460
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@4793c6ec33216941dc4b6c9352a329cf2536c996
         with:
           kind: ci:${{ github.workflow }}
           slots: ${{ vars.SELF_HOSTED_JOB_SLOTS }}
@@ -48,7 +48,14 @@ jobs:
           probe-timeout-s: ${{ vars.SELF_HOSTED_JOB_PROBE_TIMEOUT_S }}
           slot-poll-s: ${{ vars.SELF_HOSTED_JOB_SLOT_POLL_S }}
           memory-backoff-s: ${{ vars.SELF_HOSTED_JOB_MEMORY_BACKOFF_S }}
+          heavy-wait-max-s: ${{ vars.SELF_HOSTED_JOB_HEAVY_WAIT_MAX_S }}
       - uses: actions/checkout@v4
+        with:
+          clean: false
+      - name: Remove untracked checkout state
+        shell: bash
+        timeout-minutes: 10
+        run: git clean -ffdx
       - uses: ./.github/actions/setup-dotnet
       - uses: actions/setup-java@v4
         with:

@@ -18,6 +18,7 @@ PROBE_TIMEOUT_SECONDS = 5  # Owner identity probe; memory probes use the require
 STOPPED = 0
 POLICY_KEYS = ('reserve_mb', 'default_peak_mb', 'peak_min_samples', 'peak_history_days',
                'probe_timeout_s', 'slot_poll_s', 'memory_backoff_s')
+DEFAULT_HEAVY_WAIT_MAX_S = 14400
 
 
 def identity(pid):
@@ -46,6 +47,7 @@ def validate_policy(policy):
             positive_integer(value, name)
         else:
             positive_number(value, name)
+    positive_number(policy.get('heavy_wait_max_s', DEFAULT_HEAVY_WAIT_MAX_S), 'heavy_wait_max_s')
     return policy
 
 
@@ -181,7 +183,7 @@ class Backoff:
         self.policy, self.index = policy, 0
 
     def delay(self, reason):
-        if reason.split(':', 1)[0] in ('slots', 'mutex', 'unaccounted'):
+        if reason.split(':', 1)[0] in ('slots', 'mutex', 'unaccounted', 'local-client'):
             self.index = 0
             return self.policy['slot_poll_s']
         delays = self.policy['memory_backoff_s']
@@ -289,6 +291,33 @@ def pid_alive(pid):
         return True
 
 
+def waiting_local_clients(directory, maximum, now=None):
+    """Read waiting announcements without modifying files owned by another client."""
+    now = time.time() if now is None else now
+    reason, expired = None, []
+    for path in sorted(directory.glob('heavy-waiting.*.json')):
+        if not re.fullmatch(r'heavy-waiting\.[0-9]+\.json', path.name):
+            continue
+        try:
+            data = json.loads(path.read_text())
+            if not isinstance(data, dict):
+                continue
+            pid = positive_integer(data.get('pid'), 'pid')
+            amount = positive_integer(data.get('declared_mb'), 'declared_mb')
+            since = positive_number(data.get('waiting_since'), 'waiting_since')
+            if since > now or not pid_alive(pid):
+                continue
+        except (OSError, ValueError, TypeError, OverflowError):
+            continue
+        waited = now - since
+        if waited >= maximum:
+            expired.append(f'Ignoring expired local admission client: pid={pid} declared_mb={amount} '
+                           f'waiting_since={since} max_wait_s={maximum}')
+        elif reason is None:
+            reason = f'local-client: pid={pid} declared_mb={amount} waited_s={waited:.1f}'
+    return reason, expired
+
+
 def pool_usage(directory, candidate, timeout):
     total, outstanding, unaccounted = 0, 0, []
     for path in sorted(directory.iterdir()):
@@ -344,7 +373,8 @@ def pool_usage(directory, candidate, timeout):
     return total, outstanding, unaccounted
 
 
-def try_admit(lock, slots, repository, kind, policy, caller=None, report_peak=print, *, owner_pid):
+def try_admit(lock, slots, repository, kind, policy, caller=None, report_peak=print, *, owner_pid,
+              report_ignored=print):
     validate_policy(policy)
     positive_integer(slots, 'Admission slots')
     positive_integer(owner_pid, 'Owner PID')
@@ -368,6 +398,12 @@ def try_admit(lock, slots, repository, kind, policy, caller=None, report_peak=pr
     stream = None
     admitted = False
     try:
+        waiting, expired = waiting_local_clients(base.parent,
+            policy.get('heavy_wait_max_s', DEFAULT_HEAVY_WAIT_MAX_S))
+        for message in expired:
+            report_ignored(message, flush=True)
+        if waiting:
+            return None, waiting
         for index in range(slots):
             stream = try_lock(f'{base}.{index}')
             if stream is not None:
@@ -402,6 +438,12 @@ def hold(lock, ready, pid, expected, slots, policy, kind='', repository='', call
         return
     previous = None
     previous_peak = None
+    ignored = set()
+
+    def report_ignored(message, **kwargs):
+        if message not in ignored:
+            print(message, **kwargs)
+            ignored.add(message)
 
     def report_peak(message, **kwargs):
         nonlocal previous_peak
@@ -411,7 +453,8 @@ def hold(lock, ready, pid, expected, slots, policy, kind='', repository='', call
 
     backoff = Backoff(policy)
     while not STOPPED and identity(pid) == expected:
-        stream, reason = try_admit(lock, slots, repository, kind, policy, caller, report_peak, owner_pid=pid)
+        stream, reason = try_admit(lock, slots, repository, kind, policy, caller, report_peak,
+                                   owner_pid=pid, report_ignored=report_ignored)
         if stream is not None:
             try:
                 if STOPPED or identity(pid) != expected:

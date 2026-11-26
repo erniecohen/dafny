@@ -90,7 +90,10 @@ public sealed class PersistentModuleCache {
   /// translation, preparation or run reproduces. Recording is unaffected.
   /// </summary>
   internal string? ReplayBypass() {
-    if (options.Get(CommonOptionBag.VerificationLogFormat) is { Count: > 0 }) { return "verification logs"; }
+    // CSV consumes only the task fields retained in the module manifest. Other loggers
+    // also need assertion/proof metadata that a replayed task does not materialize.
+    if (options.Get(CommonOptionBag.VerificationLogFormat).Any(format =>
+          format != "csv" && !format.StartsWith("csv;", StringComparison.Ordinal))) { return "verification logs"; }
     if (options.Get(CommonOptionBag.ProgressOption) == CommonOptionBag.ProgressLevel.Batch) { return "per-task progress"; }
     if (options.TrackVerificationCoverage || options.Get(CommonOptionBag.VerificationCoverageReport) != null ||
         options.Get(CommonOptionBag.WarnContradictoryAssumptions) || options.Get(CommonOptionBag.WarnRedundantAssumptions) ||
@@ -242,6 +245,8 @@ public sealed class PersistentModuleCache {
     var functions = symbols.Values.OfType<Function>().GroupBy(f => f.FullDafnyName).Where(g => g.Count() == 1)
       .ToDictionary(g => g.Key, g => g.Single());
     var tasks = new List<IVerificationTask>(manifest.Tasks.Count);
+    // Reporting groups assertion batches by scope-token identity, just as fresh tasks do.
+    var scopes = new Dictionary<(SymbolEntry Symbol, bool Reverified), CanVerifyOrigin>();
     foreach (var entry in manifest.Tasks) {
       var hidden = new List<Function>();
       if (!symbols.TryGetValue(entry.Symbol, out var canVerify) ||
@@ -249,7 +254,11 @@ public sealed class PersistentModuleCache {
         Interlocked.Increment(ref misses); LastBypassReason = missReason = "a stored task names no current symbol";
         return null;
       }
-      tasks.Add(new PersistedTask(canVerify, entry, hidden, options));
+      var scope = (entry.Symbol, entry.Reverified);
+      if (!scopes.TryGetValue(scope, out var scopeToken)) {
+        scopes.Add(scope, scopeToken = new CanVerifyOrigin(canVerify) { IsReverifiedInheritedCheck = entry.Reverified });
+      }
+      tasks.Add(new PersistedTask(canVerify, scopeToken, entry, hidden));
     }
     Interlocked.Increment(ref byKey ? ref keyHits : ref graphHits);
     return tasks;
@@ -423,10 +432,10 @@ public sealed class PersistentModuleCache {
     private readonly TaskEntry entry;
     private readonly Completed? completed;
 
-    public PersistedTask(ICanVerify canVerify, TaskEntry entry, IReadOnlyList<Function> hiddenFunctions, DafnyOptions options) {
+    public PersistedTask(ICanVerify canVerify, CanVerifyOrigin scopeToken, TaskEntry entry, IReadOnlyList<Function> hiddenFunctions) {
       this.entry = entry;
       HiddenFunctions = hiddenFunctions;
-      ScopeToken = new CanVerifyOrigin(canVerify) { IsReverifiedInheritedCheck = entry.Reverified };
+      ScopeToken = scopeToken;
       Token = canVerify.Origin;
       if (entry.Scheduled) {
         // Only the number of proved assertions is reported for a valid task.
