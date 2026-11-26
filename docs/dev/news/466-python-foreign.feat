@@ -1,0 +1,6 @@
+Python recursive module groups now support complete foreign member modules.
+A member containing an extern or omitted declaration uses the ordinary Python
+module interface, supplied with `--input`, while generated siblings retain
+shared group emission. Extern names, foreign file naming, callbacks, archive
+inputs and package translation are preserved. Package translation still requires
+at least one member without a module-level `{:compile false}` attribute.

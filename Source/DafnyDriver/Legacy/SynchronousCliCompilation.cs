@@ -708,31 +708,20 @@ namespace Microsoft.Dafny {
       var oldErrorCount = dafnyProgram.Reporter.Count(ErrorLevel.Error);
       var options = dafnyProgram.Options;
 
-      if (options.Backend is PythonBackend && dafnyProgram.Modules().FirstOrDefault(module =>
-            module.RecursiveGroup != null && (!ProgramResolver.ShouldCompile(module) || module.TopLevelDecls.Any(declaration =>
-              !ProgramResolver.ShouldCompile(declaration) || declaration is TopLevelDeclWithMembers type &&
-              type.Members.Any(member => !ProgramResolver.ShouldCompile(member))))) is { } omittedGroupMember) {
-        await outputWriter.Status($"Error: module '{omittedGroupMember.FullDafnyName}' is in a recursive module group; " +
-                                  "Python compilation of recursive module groups with declarations marked '{:compile false}' is not yet supported");
-        return false;
-      }
-
-      if (options.Backend is PythonBackend && dafnyProgram.Modules().FirstOrDefault(module =>
-            module.RecursiveGroup != null && (module.IsExtern(options, out _, out _) || module.TopLevelDecls.Any(declaration =>
-              declaration.IsExtern(options, out _, out _) || declaration is TopLevelDeclWithMembers type &&
-              type.Members.Any(member => member.IsExtern(options, out _, out _))))) is { } externGroupMember) {
-        await outputWriter.Status($"Error: module '{externGroupMember.FullDafnyName}' is in a recursive module group; " +
-                                  $"{options.Backend.TargetName} compilation of recursive module groups with extern declarations is not yet supported");
-        return false;
-      }
-
       if (options.Backend is not (LibraryBackend or CsharpBackend or JavaBackend or GoBackend or JavaScriptBackend or PythonBackend or RustBackend) &&
           dafnyProgram.Modules().FirstOrDefault(module => module.RecursiveGroup != null) is { } groupMember) {
         // C# namespaces and Java packages can refer to each other; Go, JavaScript, Python and Rust emit groups together.
-        // Other executable targets still need their own module and initialization-order checks.
+        // C++ and resolved Dafny cannot yet qualify the runtime matrix; other targets
+        // still need their own module and initialization-order checks.
         // The library backend retains and records the complete group instead.
-        await outputWriter.Status($"Error: module '{groupMember.FullDafnyName}' is in a recursive module group; " +
-                                  $"compiling a program that has a recursive module group is not yet supported for target '{options.Backend.TargetId}'");
+        var reason = options.Backend switch {
+          CppBackend => "recursive module groups are not supported for target 'cpp': " +
+                        "cross-module recursive datatype layouts require indirection that this backend does not emit, and traits are unsupported",
+          ResolvedDesugaredExecutableDafnyBackend => "recursive module groups are not supported for target 'dfy': " +
+                        "the DAST pretty printer is not implemented and the backend has no execution pipeline",
+          _ => $"compiling a program that has a recursive module group is not yet supported for target '{options.Backend.TargetId}'"
+        };
+        await outputWriter.Status($"Error: module '{groupMember.FullDafnyName}' is in a recursive module group; {reason}");
         return false;
       }
 
