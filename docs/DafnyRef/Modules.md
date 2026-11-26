@@ -1190,6 +1190,12 @@ that a later stage would have to reject:
   package. See [Go extern linkage](../Compilation/Go.md#recursive-module-groups)
   for names and foreign source-file conventions.
   JavaScript groups containing extern modules, types or members are not yet supported.
+  C++ groups remain rejected: the backend does not emit the indirection needed for
+  mutually recursive datatype layouts across modules and does not support traits.
+  The internal resolved-Dafny target (`dfy`) remains rejected because its DAST
+  pretty printer is not implemented and it has no execution pipeline. These
+  capability-specific errors apply to source groups and complete `.doo` inputs,
+  including groups containing only functions.
 
 A `.doo` library built with `--recursive-modules` requires its client to enable
 the option too; one built without it records nothing. A group is retained as a

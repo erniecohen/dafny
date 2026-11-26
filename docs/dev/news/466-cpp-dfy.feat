@@ -1,0 +1,1 @@
+C++ and the internal resolved-Dafny target now explain why recursive module groups remain unsupported. C++ lacks cross-module recursive datatype indirection and traits; resolved Dafny has an unimplemented DAST printer and no execution pipeline. Source and archive groups continue to be rejected before target emission.
