@@ -1154,6 +1154,8 @@ git-issues/git-issue-374-library.dfy
 # Allocation-independent pointwise interfaces for reference domains (issue 374).
 git-issues/git-issue-374-pointwise.dfy
 git-issues/git-issue-374-pointwise-intrinsic.dfy
+git-issues/git-issue-374-partial.dfy
+git-issues/git-issue-374-partial-probe.dfy
 # Declared audited solver digests for the verification cache (issue 574).
 git-issues/git-issue-574.dfy
 
@@ -1162,3 +1164,4 @@ git-issues/git-issue-572.dfy
 hofs/ReadsReads.dfy
 hofs/Apply.dfy
 git-issues/git-issue-569.dfy
+git-issues/git-issue-374-partial-stdlib.dfy
