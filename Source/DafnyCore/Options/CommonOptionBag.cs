@@ -87,7 +87,7 @@ public class CommonOptionBag {
     "Also keep module translations and whole-module results in the --verification-cache directory, across processes. " +
     "Requires --verification-cache and --type-system-refresh. A module whose translation key is unchanged is not translated again, " +
     "and a module whose regenerated Boogie program is unchanged is not prepared or solved again, when every one of its tasks " +
-    "was verified through the result cache. Unsupported modules and reporting options run normally.");
+    "was verified through the result cache. CSV logs support replay and mark replayed timing. Unsupported modules and reporting options run normally.");
   public static readonly Option<bool> PersistentTranslationAudit = new("--persistent-translation-audit",
     "With --persistent-translation, translate, prepare and verify every module as if nothing were stored, and report an error " +
     "when a stored translation or module result differs from the fresh one.") { IsHidden = true };
