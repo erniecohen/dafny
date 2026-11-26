@@ -412,12 +412,12 @@ jobs:
       - name: JavaScript runtime dependency
         timeout-minutes: 90
         run: npm install --no-save --package-lock=false bignumber.js@9.1.2
-      - name: Run the tests named in .github/review/regressions
+      - name: Run the tests named in .github/review/regressions.d/
         env:
           DAFNY_INTEGRATION_TESTS_ONLY_COMPILERS: cs
         timeout-minutes: 90
         run: |
-          filter=$(grep -v '^#' .github/review/regressions | grep . | sed 's|^|DisplayName~|' | paste -sd'|' -)
+          filter=$(python3 .github/review/regression-filter.py all)
           if [ -z "$filter" ]; then echo "no tests named"; exit 0; fi
           echo "$filter"
           dotnet test -p:NuGetAudit=false --settings .github/review/ci.runsettings --logger "trx;LogFileName=test-4.trx" --results-directory parity-results Source/IntegrationTests -c Release --no-build \

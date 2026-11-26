@@ -1,0 +1,3 @@
+
+# Revision 3 of the rules of --modular-termination: any trait may be extended from any module, a foreign implementation of a member without a global bound is a leaf or has a bound of its own, a member without a body reaches a dispatch unless it promises {:termination_closed}, and the VeriFast ports of ECOOP 2015 Fig. 4 and the CPS example (https://github.com/erniecohen/dafny/issues/211).
+git-issues/github-issue-211-rev3.dfy

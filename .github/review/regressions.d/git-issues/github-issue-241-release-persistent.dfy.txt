@@ -1,0 +1,3 @@
+# Opt-in --release-verified-modules with persistent translation and translation workers: the same report,
+# bodies released, translation-key and Boogie-graph replay (https://github.com/erniecohen/dafny/issues/241).
+git-issues/github-issue-241-release-persistent.dfy

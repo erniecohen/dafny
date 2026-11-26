@@ -1340,7 +1340,7 @@ jobs:
       - name: Pipeline unit tests with Debug contract assertions
         timeout-minutes: 90
         run: dotnet test -p:NuGetAudit=false --settings .github/review/ci.runsettings Source/DafnyPipeline.Test -c Debug --logger "console;verbosity=normal"
-      - name: Run the tests named in .github/review/regressions
+      - name: Run the tests named in .github/review/regressions.d/
         continue-on-error: ${{ github.event_name == 'workflow_dispatch' && inputs.review_followup_probe && startsWith(github.ref, 'refs/heads/scratch/') }}
         env:
           DAFNY_INTEGRATION_TESTS_ONLY_COMPILERS: cs
