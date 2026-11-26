@@ -1167,3 +1167,5 @@ git-issues/git-issue-569.dfy
 git-issues/git-issue-374-partial-stdlib.dfy
 # CSV module replay preserves verdicts, resource counts and seeds (issue 261).
 git-issues/git-issue-261-persistent-translation-csv.dfy
+# Qualified resource-exhausted module results preserve current diagnostics (issue 261).
+git-issues/git-issue-261-persistent-resources.dfy
