@@ -42,7 +42,7 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@d29ade2d1be8c8ec371abf1e605743600e67be0e
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@27608201c3b3c06582a8591fb394035b3e15ed98
         with:
           kind: ci:${{ github.workflow }}
           slots: ${{ vars.SELF_HOSTED_JOB_SLOTS }}
@@ -54,10 +54,22 @@ jobs:
           slot-poll-s: ${{ vars.SELF_HOSTED_JOB_SLOT_POLL_S }}
           memory-backoff-s: ${{ vars.SELF_HOSTED_JOB_MEMORY_BACKOFF_S }}
       - uses: actions/checkout@v4
+        with:
+          clean: false
+      - name: Remove untracked checkout state
+        shell: bash
+        timeout-minutes: 10
+        run: git clean -ffdx
       - uses: actions/checkout@v4
         with:
           ref: 587201ff5ec4e864cd8b80c7b06498c2859c1a6b
           path: baseline
+          clean: false
+      - name: Remove untracked checkout state
+        shell: bash
+        timeout-minutes: 10
+        working-directory: baseline
+        run: git clean -ffdx
       - uses: ./.github/actions/setup-dotnet
       - uses: actions/setup-java@v4
         with:
@@ -156,7 +168,7 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@d29ade2d1be8c8ec371abf1e605743600e67be0e
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@27608201c3b3c06582a8591fb394035b3e15ed98
         with:
           kind: ci:${{ github.workflow }}
           slots: ${{ vars.SELF_HOSTED_JOB_SLOTS }}
@@ -168,6 +180,12 @@ jobs:
           slot-poll-s: ${{ vars.SELF_HOSTED_JOB_SLOT_POLL_S }}
           memory-backoff-s: ${{ vars.SELF_HOSTED_JOB_MEMORY_BACKOFF_S }}
       - uses: actions/checkout@v4
+        with:
+          clean: false
+      - name: Remove untracked checkout state
+        shell: bash
+        timeout-minutes: 10
+        run: git clean -ffdx
       - uses: ./.github/actions/setup-dotnet
       - uses: ./.github/actions/host-artifact
         with:
@@ -241,7 +259,7 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@d29ade2d1be8c8ec371abf1e605743600e67be0e
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@27608201c3b3c06582a8591fb394035b3e15ed98
         with:
           kind: ci:${{ github.workflow }}
           slots: ${{ vars.SELF_HOSTED_JOB_SLOTS }}
@@ -253,6 +271,12 @@ jobs:
           slot-poll-s: ${{ vars.SELF_HOSTED_JOB_SLOT_POLL_S }}
           memory-backoff-s: ${{ vars.SELF_HOSTED_JOB_MEMORY_BACKOFF_S }}
       - uses: actions/checkout@v4
+        with:
+          clean: false
+      - name: Remove untracked checkout state
+        shell: bash
+        timeout-minutes: 10
+        run: git clean -ffdx
       - uses: ./.github/actions/setup-dotnet
       - uses: ./.github/actions/host-artifact
         with:
@@ -318,7 +342,7 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@d29ade2d1be8c8ec371abf1e605743600e67be0e
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@27608201c3b3c06582a8591fb394035b3e15ed98
         with:
           kind: ci:${{ github.workflow }}
           slots: ${{ vars.SELF_HOSTED_JOB_SLOTS }}
@@ -330,6 +354,12 @@ jobs:
           slot-poll-s: ${{ vars.SELF_HOSTED_JOB_SLOT_POLL_S }}
           memory-backoff-s: ${{ vars.SELF_HOSTED_JOB_MEMORY_BACKOFF_S }}
       - uses: actions/checkout@v4
+        with:
+          clean: false
+      - name: Remove untracked checkout state
+        shell: bash
+        timeout-minutes: 10
+        run: git clean -ffdx
       - uses: actions/download-artifact@v4
         with:
           pattern: suite-*

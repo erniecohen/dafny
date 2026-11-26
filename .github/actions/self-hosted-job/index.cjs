@@ -50,13 +50,35 @@ function callerPeak(env = process.env) {
   return JSON.stringify(value);
 }
 function prepareWorkspace(workspace, runnerWorkspace) {
-  // Only this runner's repository directory may be cleared. The cached action and
-  // RUNNER_TEMP live outside it. Remove stale Git metadata as well as build outputs:
-  // checkout's working-tree cleanup cannot repair colliding remote refs.
+  // Only this runner's repository directory may be prepared. Keep tracked files
+  // and objects for incremental checkout, but never carry outputs or stale refs
+  // into the next job. The cached action and RUNNER_TEMP live outside this root.
   const root = fs.realpathSync(workspace);
   if (path.dirname(root) !== fs.realpathSync(runnerWorkspace)) {
     throw new Error('Workspace must be an immediate child of RUNNER_WORKSPACE');
   }
+  const gitDir = path.join(root, '.git');
+  if (fs.existsSync(gitDir) && fs.lstatSync(gitDir).isDirectory() &&
+    !fs.existsSync(path.join(gitDir, 'commondir'))) {
+    for (const lock of ['index.lock', 'shallow.lock']) fs.rmSync(path.join(gitDir, lock), {force: true});
+    const git = args => cp.spawnSync('git', ['--git-dir=' + gitDir, '--work-tree=' + root, ...args],
+      {cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe']});
+    const head = git(['rev-parse', '--verify', 'HEAD^{commit}']);
+    if (head.status === 0 && /^[0-9a-f]{40}$/.test(head.stdout.trim()) &&
+      git(['reset', '--hard', 'HEAD']).status === 0) {
+      if (git(['clean', '-ffdx']).status !== 0) throw new Error('Checkout output cleanup failed');
+      // Detach before dropping all old ref names, including packed case collisions.
+      // Keep objects, index and shallow boundaries; checkout fetches only its target.
+      fs.writeFileSync(path.join(gitDir, 'HEAD'), head.stdout.trim() + '\n');
+      for (const entry of ['refs', 'packed-refs', 'logs', 'FETCH_HEAD', 'ORIG_HEAD']) {
+        fs.rmSync(path.join(gitDir, entry), {recursive: true, force: true});
+      }
+      fs.mkdirSync(path.join(gitDir, 'refs'));
+      return;
+    }
+  }
+  // An absent or unusable repository needs a fresh checkout. Do not follow a
+  // linked worktree's Git metadata or symlinks into another job's directories.
   for (const entry of fs.readdirSync(root)) {
     fs.rmSync(path.join(root, entry), {recursive: true, force: true});
   }
