@@ -1,0 +1,2 @@
+# Pure integer bitwise reference model; no language or solver changes (https://github.com/erniecohen/dafny/issues/193).
+git-issues/git-issue-193-reference-laws.dfy

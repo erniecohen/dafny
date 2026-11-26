@@ -1,0 +1,3 @@
+
+# A refining module that adds a field subject to definite assignment to a class verifies the constructor it inherits unchanged, which cannot assign the field; dafny verify skipped the copy and proved false (https://github.com/erniecohen/dafny/issues/411).
+git-issues/github-issue-411.dfy

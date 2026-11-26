@@ -1,0 +1,3 @@
+
+# Every command that loads libraries under --modular-termination (resolve, audit, doc, extract, format, verify, translate) takes --solver-path, and admits a library verified with that Z3 and refuses it with another (https://github.com/erniecohen/dafny/issues/358).
+git-issues/github-issue-358.dfy

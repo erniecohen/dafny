@@ -1,0 +1,3 @@
+
+# Bitvector keys at map and multiset lookups under --bitvector-map-keys (https://github.com/erniecohen/dafny/issues/192).
+git-issues/github-issue-192.dfy

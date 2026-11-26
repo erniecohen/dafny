@@ -1,0 +1,4 @@
+
+# A refining module may bind an inherited abstract import only to a refinement of its target; the
+# old rule proved false (https://github.com/erniecohen/dafny/issues/408).
+git-issues/github-issue-408.dfy

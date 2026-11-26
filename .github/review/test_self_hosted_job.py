@@ -1,5 +1,7 @@
 """Exercise admission with real advisory locks, including owner loss and termination."""
 import importlib.util
+import os
+from unittest.mock import patch
 from pathlib import Path
 import subprocess
 import sys
@@ -11,6 +13,33 @@ ACTION = Path(__file__).resolve().parents[1] / 'actions/self-hosted-job'
 spec = importlib.util.spec_from_file_location('admission', ACTION / 'admit.py')
 admission = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(admission)
+POLICY = dict(reserve_mb=100, default_peak_mb=1000, peak_min_samples=3, peak_history_days=30,
+              probe_timeout_s=2, slot_poll_s=.05, memory_backoff_s=[.05, .1, .2])
+
+
+def keeper_command(lock, ready, pid, owner, slots='2'):
+    # Fake only system readings; keep real locks, lifetime and cleanup.
+    import json
+    script = ('import runpy, sys; sys.path.insert(0, sys.argv.pop(1)); '
+              'import admit; admit.free_percent=lambda timeout: 100; '
+              'admit.physical_mb=lambda timeout: 1000000; admit.pressure_level=lambda timeout: 1; '
+              'import signal; signal.signal(signal.SIGTERM, admit.stop); '
+              'admit.hold(sys.argv[1], sys.argv[2], int(sys.argv[3]), sys.argv[4], '
+              'int(sys.argv[5]), __import__("json").loads(sys.argv[6]), repository="example/repo")')
+    return [sys.executable, '-c', script, str(ACTION), str(lock), str(ready), str(pid), owner, slots,
+            json.dumps(POLICY)]
+
+
+
+def setUpModule():
+    global environment
+    environment = patch.dict(os.environ, {k: v for k, v in os.environ.items()
+                                         if not k.startswith('ADMISSION_')}, clear=True)
+    environment.start()
+
+
+def tearDownModule():
+    environment.stop()
 
 
 class AdmissionTests(unittest.TestCase):
@@ -30,8 +59,7 @@ class AdmissionTests(unittest.TestCase):
                 time.sleep(.2)  # macOS Python launchers can re-exec before reaching the sleep.
                 identity = admission.identity(owner.pid)
                 for n in range(2):
-                    keepers.append(subprocess.Popen([sys.executable, str(ACTION / 'admit.py'),
-                        str(root / 'lock'), str(root / str(n)), str(owner.pid), identity, '1']))
+                    keepers.append(subprocess.Popen(keeper_command(root / 'lock', root / str(n), owner.pid, identity, '1')))
                     if n == 0:
                         self.wait_ready(root / '0')
                 time.sleep(.2)
@@ -51,21 +79,18 @@ class AdmissionTests(unittest.TestCase):
     def test_wrong_owner_identity_never_admits(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            child = subprocess.run([sys.executable, str(ACTION / 'admit.py'),
-                str(root / 'lock'), str(root / 'ready'), str(__import__('os').getpid()), 'wrong identity'], timeout=5)
+            child = subprocess.run(keeper_command(root / 'lock', root / 'ready', os.getpid(), 'wrong identity'), timeout=5)
             self.assertEqual(child.returncode, 0)
             self.assertFalse((root / 'ready').exists())
 
-    def test_default_two_slots_hold_third_job_until_release(self):
+    def test_configured_two_slots_hold_third_job_until_release(self):
         import os
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             keepers = []
             try:
                 for n in range(3):
-                    keepers.append(subprocess.Popen([sys.executable, str(ACTION / 'admit.py'),
-                        str(root / 'lock'), str(root / str(n)), str(os.getpid()),
-                        admission.identity(os.getpid())]))
+                    keepers.append(subprocess.Popen(keeper_command(root / 'lock', root / str(n), os.getpid(), admission.identity(os.getpid()))))
                     if n < 2:
                         self.wait_ready(root / str(n))
                 time.sleep(1.2)
@@ -82,107 +107,10 @@ class AdmissionTests(unittest.TestCase):
 
     def test_invalid_capacity_is_rejected(self):
         with self.assertRaisesRegex(ValueError, 'positive'):
-            admission.hold('unused', 'unused', 0, '', 0)
-
-class MemoryAdmissionTests(unittest.TestCase):
-    def setUp(self):
-        self.saved = admission.free_percent, admission.pressure_level, admission.MEMORY_POLL_SECONDS
-        admission.MEMORY_POLL_SECONDS = 1
-
-    def tearDown(self):
-        admission.free_percent, admission.pressure_level, admission.MEMORY_POLL_SECONDS = self.saved
-
-    def probes(self, free, level):
-        admission.free_percent = lambda: free
-        admission.pressure_level = lambda: level
-
-    def test_thresholds_are_validated_and_empty_drops_them(self):
-        self.assertEqual(admission.thresholds(), (None, None))
-        self.assertEqual(admission.thresholds('40', 'normal'), (40, 1))
-        self.assertEqual(admission.thresholds('', 'warn'), (None, 2))
-        for bad in ['-1', '101', '4.5', 'forty', ' 40']:
-            with self.assertRaisesRegex(ValueError, 'percentage'):
-                admission.thresholds(bad, '')
-        with self.assertRaisesRegex(ValueError, 'pressure'):
-            admission.thresholds('', 'high')
-
-    def test_healthy_only_at_or_above_floor_and_at_or_below_ceiling(self):
-        self.probes(40, 1)
-        self.assertTrue(admission.memory_healthy(40, 1))
-        self.probes(39, 1)
-        self.assertFalse(admission.memory_healthy(40, 1))
-        self.probes(90, 2)
-        self.assertFalse(admission.memory_healthy(40, 1))
-        self.assertTrue(admission.memory_healthy(40, 2))
-        self.probes(None, 1)
-        self.assertFalse(admission.memory_healthy(40, 1))
-        self.probes(90, None)
-        self.assertFalse(admission.memory_healthy(None, 1))
-        # Vacuity: with no thresholds the probes are never consulted.
-        def fail():
-            raise AssertionError('probe consulted without a threshold')
-        admission.free_percent = admission.pressure_level = fail
-        self.assertTrue(admission.memory_healthy(None, None))
-
-    def test_real_probes_read_this_host(self):
-        if sys.platform != 'darwin':
-            self.skipTest('The probes are macOS commands')
-        free = self.saved[0]()
-        self.assertIsInstance(free, int)
-        self.assertTrue(0 <= free <= 100)
-        self.assertIn(self.saved[1](), admission.PRESSURE.values())
-
-    def test_unhealthy_memory_waits_without_holding_a_slot_then_admits(self):
-        import fcntl
-        import threading
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            owner = subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(30)'])
-            try:
-                time.sleep(.2)
-                state = {'free': 10}
-                admission.free_percent = lambda: state['free']
-                admission.pressure_level = lambda: 1
-                keeper = threading.Thread(target=admission.hold, daemon=True, args=(
-                    str(root / 'lock'), str(root / 'ready'), owner.pid, admission.identity(owner.pid), 1, '40', 'normal'))
-                keeper.start()
-                time.sleep(2.5)
-                self.assertFalse((root / 'ready').exists())
-                # The waiter released the slot while memory was low, so another job could take it.
-                with open(root / 'lock.0', 'a') as stream:
-                    fcntl.flock(stream, fcntl.LOCK_EX | fcntl.LOCK_NB)
-                    fcntl.flock(stream, fcntl.LOCK_UN)
-                state['free'] = 80
-                AdmissionTests.wait_ready(self, root / 'ready')
-                # Admitted jobs are never stopped when memory drops afterwards.
-                state['free'] = 0
-                time.sleep(1.5)
-                self.assertTrue(keeper.is_alive())
-                with open(root / 'lock.0', 'a') as stream:
-                    with self.assertRaises(BlockingIOError):
-                        fcntl.flock(stream, fcntl.LOCK_EX | fcntl.LOCK_NB)
-                owner.terminate(); owner.wait(timeout=5)
-                keeper.join(timeout=5)
-                self.assertFalse(keeper.is_alive())
-            finally:
-                if owner.poll() is None:
-                    owner.terminate()
-                owner.wait(timeout=5)
-
-    def test_command_line_rejects_bad_thresholds(self):
-        import os
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            child = subprocess.run([sys.executable, str(ACTION / 'admit.py'), str(root / 'lock'), str(root / 'ready'),
-                str(os.getpid()), admission.identity(os.getpid()), '1', '40', 'high'],
-                capture_output=True, text=True, timeout=5)
-            self.assertNotEqual(child.returncode, 0)
-            self.assertIn('pressure', child.stderr)
-            self.assertFalse((root / 'ready').exists())
-
+            admission.hold('unused', 'unused', 0, '', 0, POLICY)
 
 class CapacityInputTests(unittest.TestCase):
-    def test_default_and_configured_capacity_and_invalid_inputs(self):
+    def test_required_and_configured_capacity_and_invalid_inputs(self):
         import shutil
         node = shutil.which('node')
         if not node:
@@ -191,7 +119,7 @@ class CapacityInputTests(unittest.TestCase):
 const assert = require('node:assert/strict');
 const {slots} = require(process.argv[1]);
 delete process.env.INPUT_SLOTS;
-assert.equal(slots(), 2);
+assert.throws(() => slots(), /positive safe integer/);
 process.env.INPUT_SLOTS = '3';
 assert.equal(slots(), 3);
 assert.equal(slots('1'), 1);
@@ -201,17 +129,40 @@ for (const bad of ['0', '-1', '2.5', 'NaN', '3garbage', '9007199254740992']) {
 """
         subprocess.run([node, '-e', script, str(ACTION / 'index.cjs')], check=True, timeout=5)
 
-    def test_memory_threshold_inputs_pass_through_and_default_empty(self):
+    def test_required_policy_and_optional_peak_pass_through(self):
         import shutil
         node = shutil.which('node')
         if not node:
             self.skipTest('Node is provided by the Actions runner')
         script = """
 const assert = require('node:assert/strict');
-const {memoryThresholds} = require(process.argv[1]);
-assert.deepEqual(memoryThresholds({}), ['', '']);
-assert.deepEqual(memoryThresholds({'INPUT_MIN-FREE-PERCENT': '40', 'INPUT_MAX-PRESSURE': 'normal'}), ['40', 'normal']);
-assert.deepEqual(memoryThresholds({'INPUT_MIN-FREE-PERCENT': ' 40 ', 'INPUT_MAX-PRESSURE': ''}), ['40', '']);
+const {memoryPolicy, callerPeak, admissionArgs} = require(process.argv[1]);
+const env = {'INPUT_RESERVE-MB': '100', 'INPUT_DEFAULT-PEAK-MB': '1000', 'INPUT_PEAK-MIN-SAMPLES': '3',
+  'INPUT_PEAK-HISTORY-DAYS': '30', 'INPUT_PROBE-TIMEOUT-S': '2', 'INPUT_SLOT-POLL-S': '1',
+  'INPUT_MEMORY-BACKOFF-S': '[1,2,3]', INPUT_KIND: 'ci:Exact key', GITHUB_REPOSITORY: 'example/repo'};
+const args = admissionArgs('/cache', '/ready', {pid: 123, identity: 'worker'}, 3, env);
+assert.deepEqual(args.slice(1, 6), ['/cache/active.lock', '/ready', '123', 'worker', '3']);
+assert.deepEqual(JSON.parse(args[6]), memoryPolicy(env));
+assert.deepEqual(args.slice(7), ['ci:Exact key', 'example/repo', '']);
+assert.equal(callerPeak({}), '');
+assert.equal(callerPeak({'INPUT_EXPECTED-PEAK-MB': '2048.5'}), '2048.5');
+assert.equal(admissionArgs('/cache', '/ready', {pid: 1, identity: 'w'}, 1,
+  {...env, 'INPUT_EXPECTED-PEAK-MB': '2048.5'})[9], '2048.5');
+for (const bad of ['[0]', '[true]', '[null]', '[1,-1]', '[1e999]', '["2"]']) {
+  assert.throws(() => memoryPolicy({...env, 'INPUT_MEMORY-BACKOFF-S': bad}));
+}
+for (const key of Object.keys(env).filter(k => k.startsWith('INPUT_') && k !== 'INPUT_KIND')) {
+  const missing = {...env}; delete missing[key]; assert.throws(() => memoryPolicy(missing));
+  for (const bad of ['0', '-1', 'true', 'null', '"2"', '1e999', '[]']) {
+    assert.throws(() => memoryPolicy({...env, [key]: bad}), key + bad);
+  }
+}
+assert.throws(() => memoryPolicy({...env, 'INPUT_PEAK-MIN-SAMPLES': '1.5'}));
+for (const bad of ['0', '-1', 'true', 'null', '"2"', '1e999']) {
+  assert.throws(() => callerPeak({'INPUT_EXPECTED-PEAK-MB': bad}));
+}
+assert.equal(admissionArgs('/cache', '/ready', {pid: 1, identity: 'w'}, 1,
+  {...env, INPUT_KIND: '', GITHUB_WORKFLOW: 'Review'})[7], 'ci:Review');
 """
         subprocess.run([node, '-e', script, str(ACTION / 'index.cjs')], check=True, timeout=5)
 
@@ -249,6 +200,70 @@ class CleanupTests(unittest.TestCase):
                 keeper.wait(timeout=5)
 
 
+    def test_start_failure_and_workspace_failure_stop_only_own_keeper(self):
+        import shutil
+        node = shutil.which('node')
+        if not node:
+            self.skipTest('Node is provided by the Actions runner')
+        script = r"""
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const vm = require('node:vm');
+const {EventEmitter} = require('node:events');
+const root = process.argv[2];
+const source = fs.readFileSync(process.argv[1], 'utf8');
+(async () => {
+  for (const failure of ['start', 'workspace', 'state']) {
+    const ready = path.join(root, 'admitted');
+    fs.writeFileSync(ready, 'stale');
+    let killed = 0;
+    const child = new EventEmitter();
+    child.pid = 456;
+    child.kill = sig => { assert.equal(sig, 'SIGTERM'); killed++; };
+    child.unref = () => {};
+    const cp = {
+      spawnSync: () => ({status: 0, stdout: 'Runner.Worker'}),
+      spawn: (command, args, options) => {
+        assert.equal(command, 'python3');
+        assert.deepEqual(Array.from(options.stdio), ['ignore', 'inherit', 'inherit']);
+        assert.equal(args[1], path.join(root, 'locks', 'active.lock'));
+        assert.equal(fs.existsSync(ready), false);
+        assert.deepEqual(Array.from(args.slice(7, 9)), ['ci:Exact key', 'example/repo']);
+        if (failure === 'start') setImmediate(() => child.emit('error', new Error('cannot start')));
+        else fs.writeFileSync(ready, 'published');
+        return child;
+      }
+    };
+    const sandbox = {
+      module: {exports: {}}, __dirname: path.dirname(process.argv[1]),
+      console: {log() {}, error() {}},
+      setTimeout: callback => setImmediate(callback),
+      process: {platform: 'darwin', arch: 'arm64', ppid: 123, env: {
+        INPUT_SLOTS: '2', 'INPUT_RESERVE-MB': '100', 'INPUT_DEFAULT-PEAK-MB': '1000',
+        'INPUT_PEAK-MIN-SAMPLES': '3', 'INPUT_PEAK-HISTORY-DAYS': '30', 'INPUT_PROBE-TIMEOUT-S': '2',
+        'INPUT_SLOT-POLL-S': '1', 'INPUT_MEMORY-BACKOFF-S': '[1,2]',
+        INPUT_KIND: 'ci:Exact key', GITHUB_REPOSITORY: 'example/repo',
+        ADMISSION_LOCK_DIR: path.join(root, 'locks'), TMPDIR: root,
+        GITHUB_STATE: failure === 'state' ? path.join(root, 'missing', 'state') : path.join(root, 'state'),
+        GITHUB_WORKSPACE: path.join(root, 'repo'), RUNNER_WORKSPACE: path.join(root, 'wrong-parent')
+      }},
+      require: name => name === 'node:child_process' ? cp : require(name)
+    };
+    vm.runInNewContext(source, sandbox);
+    const pattern = failure === 'start' ? /keeper exited/ : failure === 'state' ? /ENOENT/ : /immediate child/;
+    await assert.rejects(sandbox.module.exports.main(), pattern);
+    assert.equal(killed, 1);
+  }
+})().catch(error => { console.error(error); process.exitCode = 1; });
+"""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / 'repo').mkdir()
+            (root / 'wrong-parent').mkdir()
+            subprocess.run([node, '-e', script, str(ACTION / 'index.cjs'), str(root)], check=True, timeout=5)
+
+
 class WaitingCancellationTests(unittest.TestCase):
     def test_waiting_keeper_exits_when_its_owner_disappears(self):
         import os
@@ -259,8 +274,7 @@ class WaitingCancellationTests(unittest.TestCase):
             try:
                 time.sleep(.2)
                 for n, pid in enumerate([os.getpid(), owner.pid]):
-                    keepers.append(subprocess.Popen([sys.executable, str(ACTION / 'admit.py'),
-                        str(root / 'lock'), str(root / str(n)), str(pid), admission.identity(pid), '1']))
+                    keepers.append(subprocess.Popen(keeper_command(root / 'lock', root / str(n), pid, admission.identity(pid), '1')))
                     if n == 0:
                         AdmissionTests.wait_ready(self, root / '0')
                 time.sleep(.2)

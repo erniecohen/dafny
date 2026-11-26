@@ -1,0 +1,4 @@
+# Fifth stage: verification of classes (the check at 'new;', raw references and where they may go,
+# the constructor and witness rules) and the visibility of member invariants across export sets
+# (https://github.com/erniecohen/dafny/issues/105).
+git-issues/git-issue-105-classes.dfy
