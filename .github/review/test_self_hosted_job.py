@@ -176,6 +176,9 @@ class CleanupTests(unittest.TestCase):
             self.skipTest('Node is provided by the Actions runner for the post action')
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
+            # Never stop build servers belonging to the test caller.
+            (root / 'dotnet').write_text('#!/bin/sh\nexit 0\n')
+            (root / 'dotnet').chmod(0o755)
             repo = root / 'repo'; repo.mkdir()
             tmp = root / 'fork-job.example'; tmp.mkdir()
             unrelated = root / 'unrelated'; unrelated.mkdir()
@@ -187,7 +190,8 @@ class CleanupTests(unittest.TestCase):
             try:
                 time.sleep(.2)
                 env = dict(os.environ, STATE_keeper=str(keeper.pid), STATE_keeperIdentity=admission.identity(keeper.pid),
-                           STATE_tmp=str(tmp), RUNNER_TEMP=str(root), GITHUB_WORKSPACE=str(repo))
+                           STATE_tmp=str(tmp), RUNNER_TEMP=str(root), GITHUB_WORKSPACE=str(repo),
+                           PATH=str(root) + os.pathsep + os.environ['PATH'])
                 subprocess.run([node, str(ACTION / 'index.cjs')], env=env, check=True, timeout=5)
                 self.assertTrue((repo / 'tracked').exists())
                 self.assertFalse((repo / 'output').exists())
@@ -246,6 +250,7 @@ const source = fs.readFileSync(process.argv[1], 'utf8');
         INPUT_KIND: 'ci:Exact key', GITHUB_REPOSITORY: 'example/repo',
         ADMISSION_LOCK_DIR: path.join(root, 'locks'), TMPDIR: root,
         GITHUB_STATE: failure === 'state' ? path.join(root, 'missing', 'state') : path.join(root, 'state'),
+        GITHUB_ENV: path.join(root, 'env'),
         GITHUB_WORKSPACE: path.join(root, 'repo'), RUNNER_WORKSPACE: path.join(root, 'wrong-parent')
       }},
       require: name => name === 'node:child_process' ? cp : require(name)

@@ -4,6 +4,13 @@ The action holds a numbered advisory lock for the entire job, including post
 cleanup. It checks the owning job's process identity while waiting and holding.
 Admitted work keeps its reservation until completion or cancellation.
 
+Every admitted job sets `MSBUILDDISABLENODEREUSE=1` and
+`UseSharedCompilation=false` in its environment, overriding runner defaults.
+The always-run post action attempts `dotnet build-server shutdown` before
+removing outputs and releasing admission. Shutdown is bounded and best effort,
+including jobs where no SDK was installed.
+Shutdown runs outside the checkout so `global.json` cannot select an absent SDK.
+
 ## Required policy
 
 Every workflow passes these inputs from the corresponding repository variables,

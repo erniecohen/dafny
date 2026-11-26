@@ -66,11 +66,22 @@ function admissionArgs(cache, ready, owner, capacity, env = process.env) {
     String(owner.pid), owner.identity, String(capacity), JSON.stringify(memoryPolicy(env)),
     env.INPUT_KIND || `ci:${env.GITHUB_WORKFLOW || ''}`, env.GITHUB_REPOSITORY || '', callerPeak(env)];
 }
+function configureBuildEnvironment() {
+  for (const [key, value] of Object.entries({MSBUILDDISABLENODEREUSE: '1', UseSharedCompilation: 'false'})) {
+    process.env[key] = value;
+    fs.appendFileSync(process.env.GITHUB_ENV, `${key}=${value}\n`);
+  }
+}
 async function main() {
   if (process.env.STATE_keeper) {
     // The action is cached outside the checkout by Actions, so cleaning untracked outputs
     // does not remove this post action. Never remove tracked files or another job's checkout.
     try {
+      // Best effort even when setup never installed an SDK. Keep the reservation
+      // until shutdown finishes; a missing dotnet or a failed shutdown is harmless.
+      // Stay outside the checkout so global.json cannot pin shutdown to an absent SDK.
+      cp.spawnSync('dotnet', ['build-server', 'shutdown'],
+        {cwd: process.env.RUNNER_TEMP, stdio: 'ignore', timeout: 30000});
       if (fs.existsSync(path.join(process.env.GITHUB_WORKSPACE, '.git'))) {
         const r = cp.spawnSync('git', ['clean', '-ffdx'], {cwd: process.env.GITHUB_WORKSPACE, stdio: 'ignore'});
         if (r.status !== 0) throw new Error('Checkout output cleanup failed');
@@ -116,6 +127,7 @@ async function main() {
     }
     fs.appendFileSync(process.env.GITHUB_STATE, `keeperIdentity=${identity(keeper.pid)}\n`);
     keeper.unref();
+    configureBuildEnvironment();
     prepareWorkspace(process.env.GITHUB_WORKSPACE, process.env.RUNNER_WORKSPACE);
     console.log('Admitted self-hosted job; reservation held until post cleanup');
   } catch (error) {
@@ -124,4 +136,4 @@ async function main() {
   }
 }
 if (require.main === module) main().catch(e => { console.error(e.message); process.exitCode = 1; });
-module.exports = {identity, worker, slots, memoryPolicy, callerPeak, prepareWorkspace, admissionArgs, main};
+module.exports = {identity, worker, slots, memoryPolicy, callerPeak, prepareWorkspace, admissionArgs, configureBuildEnvironment, main};
