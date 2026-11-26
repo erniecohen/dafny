@@ -1,0 +1,3 @@
+
+# Compiled generic parent additions and inherited bounds under default termination (https://github.com/erniecohen/dafny/issues/88).
+git-issues/github-issue-88-runtime.dfy

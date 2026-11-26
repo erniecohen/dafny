@@ -1,0 +1,10 @@
+// CHECK: pub mod __dafny_recursive_group_A {
+// CHECK: pub mod A {
+// CHECK: pub mod B {
+// CHECK: pub mod C {
+// CHECK: pub mod A {
+// CHECK-NEXT: pub use crate::__dafny_recursive_group_A::A::[*];
+// CHECK: pub mod B {
+// CHECK-NEXT: pub use crate::__dafny_recursive_group_A::B::[*];
+// CHECK: pub mod C {
+// CHECK-NEXT: pub use crate::__dafny_recursive_group_A::C::[*];

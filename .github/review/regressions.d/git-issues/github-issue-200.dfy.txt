@@ -1,0 +1,3 @@
+
+# Opt-in --contextual-quantifier-domains: quantifier bound variables typed from argument positions (https://github.com/erniecohen/dafny/issues/200).
+git-issues/github-issue-200.dfy

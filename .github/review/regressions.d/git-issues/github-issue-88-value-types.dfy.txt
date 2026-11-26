@@ -1,0 +1,3 @@
+
+# A refining datatype, codatatype or newtype that adds a parent trait ('datatype D extends S ...') gets the override, termination, name-capture and cardinality checks in the refining module also at inherited text, across chains, abstract imports and libraries (https://github.com/erniecohen/dafny/issues/88).
+git-issues/github-issue-88-value-types.dfy

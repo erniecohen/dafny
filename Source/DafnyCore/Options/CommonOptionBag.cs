@@ -45,6 +45,15 @@ public class CommonOptionBag {
     "Use the cache store in DIR (also --cache-dir; or DAFNY_CACHE_DIR): reuse per-module resolution results, complete verification-task solver exchanges and, with --persistent-translation, module translations and results. " +
     "Requires --type-system-refresh. Opt-in; uses a fresh solver history and stable numeric declaration order for each task. " +
     "Replayed timing fields are identified in CSV/JSON logs. Unsupported modules and tasks run normally.") { ArgumentHelpName = "DIR" };
+  public static readonly Option<IList<string>> VerificationCacheSolverDigest = new("--verification-cache-solver-digest",
+    () => new List<string>(),
+    "With --verification-cache, also accept a solver binary whose SHA-256 digest is SHA256 (64 hexadecimal digits), in addition to " +
+    "the built-in list of audited Z3 5.1.0 release binaries. Repeatable; also verification-cache-solver-digest in dfyconfig.toml. " +
+    "Declare only a build you have audited, such as a reproducible source build of the same Z3 release. The binary's digest is still " +
+    "computed on every run and is part of every cache key: a binary whose digest is neither built-in nor declared is not cached, " +
+    "with a warning, and results from different binaries never mix.") {
+    ArgumentHelpName = "SHA256"
+  };
   public static readonly Option<string> CachePartition = new("--cache-partition",
     "The partition of the cache store whose budget this run's large cache entries (resolution snapshots, Boogie text) count against. " +
     "Defaults to DAFNY_CACHE_PARTITION, or else a name derived from the project's directory. It never changes what is reused.") {
@@ -342,7 +351,7 @@ true - All class instances are raw pointers and need to be manually deallocated"
   };
 
   public static readonly Option<bool> IntegerBitwise = new("--integer-bitwise", () => false,
-    "Enable the compiler-owned ghost integer bitwise reference functions and explicit one-step unfolding lemmas. Integer-newtype operators are not yet implemented.");
+    "Enable ghost bitwise operators on unsigned integer newtypes with an explicit {:bitWidth N}, compiler-owned integer references, and explicit one-step unfolding lemmas. Runtime operators and native bitvector bridges are not yet implemented.");
 
   public static readonly Option<bool> AdditionalAxioms = new("--additional-axioms", () => false,
     "Enable additional verifier axioms. May change verification performance and proof stability. Disabled by default.");
@@ -409,7 +418,7 @@ true - All class instances are raw pointers and need to be manually deallocated"
     "In a refining module, let the redeclaration of a function, method, lemma or constructor rename its type parameters, its out-parameters, its result and the local names of its in-parameters, and let the redeclaration of a class, trait, datatype or newtype rename its type parameters. A named argument still uses the name the parameter was first declared with. Inherited specifications and bodies are renamed with the declaration; a renaming that changes what a name in inherited code refers to is an error. The type of a parameter or result may be written differently from the refined declaration if it is the same type, with type synonyms expanded. Disabled by default.");
 
   public static readonly Option<bool> CopyImports = new("--copy-imports", () => false,
-    "Allow the copying import 'import X := Q' (optionally 'opened', optionally with an export set of Q): it declares in the importing module a module X that refines Q and adds nothing. The types of X are new types, different from those of Q and of every other copy of Q; X keeps the export sets of Q, with Q's default export as its own. A module that refines the importing module gets its own copy. Disabled by default.");
+    "Allow the copying import 'import X := Q' (optionally 'opened', optionally with an export set of Q): it declares in the importing module a module X that refines Q and adds nothing. The types of X are new types, different from those of Q and of every other copy of Q; X keeps the export sets of Q, with Q's default export as its own. A module that refines the importing module gets its own copy, and may rebind it with another copying import whose target is the previous target or a refinement of it. Rebinding retains opened status and every named export set. Disabled by default.");
 
   public static readonly Option<bool> DecreasesOrders = new("--decreases-orders", () => false,
     "Allow a decreases-clause component 'e by O', where O is a closed ghost expression of the trait type Std.Termination.Orders.Wfo<T> from the standard library and e has type T; a call or loop iteration must make O.gt(old e, e) true or leave e unchanged. Requires --type-system-refresh and --general-traits=datatype or full. With --modular-termination, such components are also allowed in {:global} and {:callback} bounds, and the orders library is verified with the program. Disabled by default.");
@@ -530,7 +539,7 @@ Value implementations must retain their type parameters in compatible parent pos
   };
 
   public static readonly Option<bool> RecursiveModules = new("--recursive-modules", () => false,
-    "(experimental, incomplete) Allow modules to import each other. The modules of an import cycle form a recursive module group, which means what one module with all their declarations would mean. Only imports may form a cycle. Requires --member-invariants. A program that has a recursive module group may not declare a codatatype. A group is all concrete or all abstract. Refinement and abstract imports must point to strictly lower groups. A .doo library retains and records complete groups; its client needs the same option. Executable compilation supports the C#, Java and Go targets; Go groups may not contain extern declarations. Replacement in a group is not yet supported.") {
+    "(experimental, incomplete) Allow modules to import each other. The modules of an import cycle form a recursive module group, which means what one module with all their declarations would mean. Only imports may form a cycle. Requires --member-invariants. A program that has a recursive module group may not declare a codatatype. A group is all concrete or all abstract. Refinement and abstract imports must point to strictly lower groups. A .doo library retains and records complete groups; its client needs the same option. Executable compilation supports the C#, Java, Go, JavaScript, Python and Rust targets; JavaScript, Python and Rust groups may not contain extern declarations. Python groups may not contain declarations marked '{:compile false}'. Rust group programs require explicit array initialization and the Rust backend's existing --enforce-determinism restriction. Replacement in a group is not yet supported.") {
     IsHidden = true
   };
 
@@ -969,6 +978,12 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(LogLocation, OptionScope.Cli);
     VerificationCache.AddAlias("--cache-dir");
     OptionRegistry.RegisterOption(VerificationCache, OptionScope.Cli);
+    VerificationCacheSolverDigest.AddValidator(result => {
+      if (result.GetValueOrDefault<IList<string>>()?.FirstOrDefault(digest => !Caching.CacheDigest.IsSolverDigest(digest)) is { } bad) {
+        result.ErrorMessage = $"--verification-cache-solver-digest must be a SHA-256 digest of 64 hexadecimal digits, not '{bad}'.";
+      }
+    });
+    OptionRegistry.RegisterOption(VerificationCacheSolverDigest, OptionScope.Cli);
     CachePartition.AddValidator(result => {
       if (result.Tokens.Count != 0 && !Caching.ArtifactStore.IsValidName(result.GetValueOrDefault<string>())) {
         result.ErrorMessage = "--cache-partition must be 1 to 100 letters, digits, '-', '_' or '.', not starting with '.'.";

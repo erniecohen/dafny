@@ -161,6 +161,7 @@ referrers	miss	miss	miss	false | true
 refinement-extends	miss	miss	miss	false | true	
 refinement-renaming	miss	miss	miss	false | true	
 relax-definite-assignment	miss	miss	miss	false | true	
+release-verified-modules	miss	miss	miss	false | true	keyed by default: it changes no report, but it is not on the list of options that change no result, so records made with and without it are kept apart
 report-file	n/a	n/a	n/a	-	not an option of verify
 report-format	n/a	n/a	n/a	-	not an option of verify
 resolution-cache	hit	hit	hit	false | true	whether resolution results are reused; a reused result is the one a fresh resolution produces
@@ -208,6 +209,7 @@ use-caching	n/a	n/a	n/a	-	not an option of verify
 user-defined-operators	miss	miss	miss	false | true	
 verbose	miss	miss	miss	false | true	
 verification-cache	hit	hit	hit	{dir}/a.dfy | {dir}/b.dfy	names the store root, which is never part of a key
+verification-cache-solver-digest	hit	hit	hit	aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa | bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb	declares which solver images are audited; the digest of the image actually run is keyed, never the declaration
 verification-coverage-report	hit	hit	hit	{dir}/a.dfy | {dir}/b.dfy	coverage reports; replay is bypassed while it is set (proof-dependency reporting)
 verification-module-window	miss	miss	miss	1 | 2	
 verification-module-window-memory	miss	miss	miss	1 | 2	

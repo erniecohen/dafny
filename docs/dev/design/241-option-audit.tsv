@@ -159,6 +159,7 @@ cli	referrers	--referrers	System.CommandLine.Option`1[System.Boolean]	input	pars
 cli	refinement-renaming	--refinement-renaming	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	refinement-extends	--refinement-extends	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	relax-definite-assignment	--relax-definite-assignment	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
+cli	release-verified-modules	--release-verified-modules	System.CommandLine.Option`1[System.Boolean]	input	bodies of reported modules are released before later modules translate, which read only signatures/specifications; exact prepared SMT and current assertion map unchanged, and a read of a released body throws
 cli	report-file	--report-file	System.CommandLine.Option`1[System.String]	command-setup	setup or another command; executes before/outside proof transport
 cli	report-format	--report-format	System.CommandLine.Option`1[System.Nullable`1[Microsoft.Dafny.Auditor.Auditor+ReportFormat]]	command-setup	setup or another command; executes before/outside proof transport
 cli	resolution-cache	--resolution-cache	System.CommandLine.Option`1[System.Boolean]	input	per-module resolution snapshots precede task lookup; current global admission and exact prepared SMT
@@ -206,6 +207,7 @@ cli	use-caching	--use-caching	System.CommandLine.Option`1[System.Boolean]	comman
 cli	user-defined-operators	--user-defined-operators	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	verbose	--verbose	System.CommandLine.Option`1[System.Boolean]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
 cli	verification-cache	--cache-dir,--verification-cache	System.CommandLine.Option`1[System.String]	profile	explicit opt-in lifecycle/naming/history; unknown profile bypasses
+cli	verification-cache-solver-digest	--verification-cache-solver-digest	System.CommandLine.Option`1[System.Collections.Generic.IList`1[System.String]]	profile	admits a declared solver image digest besides the built-in ones; the actual image is still hashed at run time and its digest is keyed, so the declaration itself is never in a key
 cli	verification-coverage-report	--verification-coverage-report	System.CommandLine.Option`1[System.String]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
 cli	verification-module-window	--verification-module-window	System.CommandLine.Option`1[System.UInt32]	profile	explicit opt-in lifecycle/naming/history; unknown profile bypasses
 cli	verification-module-window-memory	--verification-module-window-memory	System.CommandLine.Option`1[System.UInt32]	profile	explicit opt-in lifecycle/naming/history; unknown profile bypasses

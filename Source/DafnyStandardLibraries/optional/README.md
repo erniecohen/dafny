@@ -78,3 +78,16 @@ M1's historical both-off compatibility claim and unavailable flag modes remain
 scoped to its introducing revision, as recorded in the design. M2 has separate
 compiler identity, emission, bootstrap, control and comparison gates; the original
 historical audit does not establish compatibility for a later product change.
+
+`IntegerBitwiseNative.dfy` is the explicitly included checked native Boolean
+companion. With `--integer-bitwise`, its width-specific modules prove conversion
+round trips and AND/complement/OR/XOR/ANDNOT equations at 8, 16, 32 and 64 bits.
+It works independently of `--additional-axioms`; all helper and bridge bodies
+are verification inputs. See the model arguments and API in the implementation
+notes linked above.
+
+`IntegerBitwiseNativeShifts.dfy` adds checked left/right shift and modular-addition
+bridges at the same widths. Counts include zero and the word width. Its internal
+count proofs cover the small bitvector sorts used by the existing shift rewriter.
+Subtraction, multiplication, unsigned division/remainder, ordering, rotation,
+population-count bridges and runtime lowering remain later milestones.

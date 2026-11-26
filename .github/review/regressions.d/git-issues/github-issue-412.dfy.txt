@@ -1,0 +1,3 @@
+
+# A statement added by a skeleton may not call a method that modifies state, which made inherited postconditions contradict new ones (https://github.com/erniecohen/dafny/issues/412).
+git-issues/github-issue-412.dfy

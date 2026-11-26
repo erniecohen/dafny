@@ -1,0 +1,3 @@
+
+# With --copy-imports, `import X := Q` gives the importing module a copy of Q with types of its own; a refining module gets new copies; lemmas that identify two copies fail; the rejected declarations are errors; a copy takes the place of an inherited abstract import only if the copied module refines the import's target; copies of a module with an override, a constructor and recursion add no proofs, and a copy of a module whose class extends a trait of a nested copy repeats only the override check; a program with copies compiles and runs, also after printing; a library with copies loads only under the option; and without the option the syntax is the parse error it was (https://github.com/erniecohen/dafny/issues/107).
+git-issues/github-issue-107.dfy

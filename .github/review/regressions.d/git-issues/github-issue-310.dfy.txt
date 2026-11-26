@@ -1,0 +1,4 @@
+
+# The refreshed resolver resolves :- into array elements (https://github.com/erniecohen/dafny/issues/310)
+# and checks the types of match pattern variables (https://github.com/erniecohen/dafny/issues/309).
+git-issues/github-issue-310.dfy

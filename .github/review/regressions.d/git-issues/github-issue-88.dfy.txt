@@ -1,0 +1,3 @@
+
+# Opt-in --refinement-extends: a class or trait in a refining module may add parent traits ('trait T ... extends S'); the override checks, the definite assignment of the parent's fields and the termination checks that the added parent calls for are made in the refining module also at inherited text, a refinement cannot make a trait a reference type, and with the option off the syntax is a parse error as before (https://github.com/erniecohen/dafny/issues/88).
+git-issues/github-issue-88.dfy

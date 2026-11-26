@@ -1,0 +1,1 @@
+Keep the checked standard-library overlay compatible with the proof hint in `ConcatenatedProducer.Invoke`, preserving its direct `ValidChange()` check.

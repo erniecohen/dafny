@@ -12,7 +12,16 @@ def entries(path):
 
 
 def partition(directory):
-    all_tests = entries(directory / 'regressions')
+    manifest = directory / 'regressions.d'
+    all_tests = []
+    for path in sorted(manifest.rglob('*.txt')):
+        rows = entries(path)
+        expected = path.relative_to(manifest).as_posix().removesuffix('.txt')
+        if rows != [expected]:
+            raise ValueError('Expected one regression matching its fragment path: ' + str(path))
+        all_tests.extend(rows)
+    if not all_tests:
+        raise ValueError('Empty regression manifest')
     linux = entries(directory / 'regressions-linux')
     if not set(linux) <= set(all_tests):
         raise ValueError('Linux regression is not in the standing manifest')

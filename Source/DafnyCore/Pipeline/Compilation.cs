@@ -60,6 +60,8 @@ public class Compilation : IDisposable {
   public CompilationInput Input { get; }
   public DafnyProject Project => Input.Project;
   private readonly Func<ResolutionResult, ModuleDefinition, VerificationPreparationRequest> createPreparationRequest;
+  /// <summary>Lets the backend forget a reported module's work (F4 change 3); null releases nothing.</summary>
+  private readonly Func<IEnumerable<IVerificationWork>, int>? releaseWork;
 
   private readonly Subject<ICompilationEvent> updates = new();
   public IObservable<ICompilationEvent> Updates => updates;
@@ -89,7 +91,8 @@ public class Compilation : IDisposable {
     ExecutionEngine boogieEngine,
     CompilationInput input
     ) : this(logger, fileSystem, documentLoader, verifier, input,
-      (resolution, module) => BoogieVerificationBackend.CreateRequest(boogieEngine, resolution, module)) { }
+      (resolution, module) => BoogieVerificationBackend.CreateRequest(boogieEngine, resolution, module),
+      work => BoogieVerificationBackend.ReleasePrograms(boogieEngine, work)) { }
 
   /// <summary>The common scheduling path requires a backend request factory, not a Boogie engine.</summary>
   public Compilation(
@@ -98,9 +101,11 @@ public class Compilation : IDisposable {
     ITextDocumentLoader documentLoader,
     IProgramVerifier verifier,
     CompilationInput input,
-    Func<ResolutionResult, ModuleDefinition, VerificationPreparationRequest> createPreparationRequest) {
+    Func<ResolutionResult, ModuleDefinition, VerificationPreparationRequest> createPreparationRequest,
+    Func<IEnumerable<IVerificationWork>, int>? releaseWork = null) {
     Input = input;
     this.createPreparationRequest = createPreparationRequest;
+    this.releaseWork = releaseWork;
     profile = PipelineProfile.For(input.Options);
 
     this.documentLoader = documentLoader;
@@ -288,6 +293,13 @@ public class Compilation : IDisposable {
     updates.OnNext(new FinishedParsing(parseResult with { Program = programAfterParsing }));
     logger.LogDebug(
       $"Passed parsedCompilation to documentUpdates.OnNext, resolving ParsedCompilation task for version {Input.Version}.");
+    if (Input.OneShot) {
+      // Only formatting and the IDE read the parsed program after FinishedParsing; a one-shot run has
+      // neither, so the clone, about a whole AST, need not live while the program is resolved and
+      // verified.  It is still made, so that the run is otherwise the same.
+      programAfterParsing = null;
+      return null;
+    }
     return programAfterParsing;
   }
 
@@ -588,6 +600,9 @@ public class Compilation : IDisposable {
   }
 
   public async Task<TextEditContainer?> GetTextEditToFormatCode(Uri uri) {
+    if (Input.OneShot) {
+      throw new InvalidOperationException("A one-shot compilation does not keep the parsed program that formatting reads");
+    }
     var program = await ParsedProgram;
     if (program == null) {
       return null;
@@ -827,9 +842,76 @@ public class Compilation : IDisposable {
     }
   }
 
+  /// <summary>
+  /// Forgets the module's translation, after its symbols are reported.  Its Boogie programs will not
+  /// be verified again (a later request translates the module again), so the idle solver checkers
+  /// last set up for them forget them too; otherwise each keeps its last program, and that program's
+  /// prover context, alive until it is set up for another (issue 241, F4 change 3).  That sends the
+  /// solvers nothing and changes nothing they receive.
+  /// </summary>
   public void ClearModuleCache(ModuleDefinition moduleDefinition) {
+    translatedModules.TryGetValue(moduleDefinition, out var translation);
     translatedModules.Remove(moduleDefinition);
     moduleProofDependencies.TryRemove(moduleDefinition, out _);
+    if (translation is { IsCompletedSuccessfully: true }) {
+      ReleaseBoogiePrograms(translation.Result.Values.SelectMany(tasks => tasks));
+    }
+  }
+
+  /// <summary>
+  /// For --release-verified-modules: drops the bodies of the module's methods, lemmas, constructors
+  /// and iterators once the module is verified and reported.  Translating another module reads only
+  /// their signatures and specifications, so nothing reads the bodies again; a read that does throws
+  /// (see <see cref="MethodOrConstructor.ReleaseBody"/>) rather than see a body that is gone.  Returns
+  /// the number of bodies released.
+  /// </summary>
+  public int ReleaseModuleBodies(ModuleDefinition moduleDefinition) {
+    var released = 0;
+    foreach (var decl in moduleDefinition.TopLevelDecls) {
+      if (decl is IteratorDecl iterator) {
+        iterator.ReleaseBody();
+        released++;
+      }
+      if (decl is TopLevelDeclWithMembers withMembers) {
+        // The translation of every module visits each member for {:only} assertions; a body that
+        // holds one is kept, so that the visit of the member without its body finds the same ones.
+        foreach (var member in withMembers.Members.OfType<MethodOrConstructor>()) {
+          if (member.Body == null || !HoldsAssertOnly(member.Body)) {
+            member.ReleaseBody();
+            released++;
+          }
+        }
+      }
+    }
+    Interlocked.Add(ref releasedBodies, released);
+    profile?.Point("release", new Dictionary<string, object?> {
+      ["module"] = PipelineProfile.ModuleName(moduleDefinition),
+      ["bodies"] = released
+    });
+    return released;
+  }
+
+  private static bool HoldsAssertOnly(Node body) {
+    var holds = false;
+    body.Visit(node => {
+      holds |= node is AssertStmt assertStmt && assertStmt.HasAssertOnlyAttribute(out _);
+      return !holds;
+    });
+    return holds;
+  }
+
+  /// <summary>The number of bodies released by <see cref="ReleaseModuleBodies"/>, for tests.</summary>
+  public int ReleasedBodies => releasedBodies;
+  private int releasedBodies;
+
+  /// <summary>The number of solver checkers released by <see cref="ClearModuleCache"/>, for tests.</summary>
+  public int ReleasedCheckers => releasedCheckers;
+  private int releasedCheckers;
+
+  private void ReleaseBoogiePrograms(IEnumerable<IVerificationWork> work) {
+    if (releaseWork != null) {
+      Interlocked.Add(ref releasedCheckers, releaseWork(work));
+    }
   }
 
   public void ClearCanVerifyCache(ICanVerify canVerify, bool allowRepeat = false) {
