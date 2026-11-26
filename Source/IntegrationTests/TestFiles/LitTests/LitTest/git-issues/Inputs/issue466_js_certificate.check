@@ -1,0 +1,2 @@
+// CHECK: Function with {:extern} attribute
+// CHECK: Translation was aborted because errors were found

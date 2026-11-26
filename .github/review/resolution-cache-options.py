@@ -37,7 +37,7 @@ def verify(*options, target="B.dfy", check=False):
     runs += 1
     profile = destination / ("run%d.jsonl" % runs)
     args = ["dotnet", str(exe), "verify", target, "--type-system-refresh", "--cache-dir", str(store),
-            "--solver-path", str(solver), "--resource-limit", "1000000", "--allow-warnings",
+            "--solver-path", str(solver), "--cores", "2", "--resource-limit", "1000000", "--allow-warnings",
             "--standard-libraries:false", "--pipeline-profile", str(profile)] + list(options)
     if check:
         args.append("--resolution-cache-check")
@@ -55,7 +55,7 @@ assert all(s.startswith("hit") for s in verify().values()), "a warm run reuses e
 
 # Options the key leaves out: every module is reused, and equals a fresh resolution under the option.
 ignored = [
-    ["--progress", "Symbol"], ["--progress", "Batch"], ["--resolution-threads", "4"], ["--cores", "2"],
+    ["--progress", "Symbol"], ["--progress", "Batch"], ["--resolution-threads", "2"], ["--cores", "1"],
     ["--show-snippets:false"], ["--use-basename-for-filename"], ["--log-format", "csv"],
     ["--verification-coverage-report", str(destination / "coverage")], ["--bprint", str(destination / "out.bpl")],
     ["--cache-partition", "elsewhere"], ["--cache-partition-budget", "5"],
