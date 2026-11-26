@@ -47,8 +47,7 @@ remain in the issue's regression suite. The original resolver continues to
 reject the feature's member-invariant prerequisite.
 
 `git-issue-466-stage7-targets.dfy` checks the explicit rejection for
-C++ and resolved Dafny (`dfy`) without needing their
-compiler toolchains. Restoring the blanket executable rejection must break the C# positive test; admitting
+C++ and resolved Dafny (`dfy`) without invoking a native compiler. Restoring the blanket executable rejection must break the C# positive test; admitting
 an unqualified target must break its rejection control. These mutations change only the target
 admission site and are built and run separately.
 
@@ -269,8 +268,8 @@ source parses or compiles.
 The Python milestone depends on https://github.com/erniecohen/dafny/pull/535,
 through it https://github.com/erniecohen/dafny/pull/533, and through that
 https://github.com/erniecohen/dafny/pull/529. Python foreign linkage is described
-above. C++ and resolved Dafny remain unqualified. This milestone
-does not complete issue 466.
+above. C++ and resolved Dafny remain rejected for the capability reasons below.
+This milestone does not complete issue 466.
 
 
 ## Rust group emission
@@ -301,3 +300,62 @@ arguments and a separately translated producer/client pair compiled into one cra
 The facades export constructors through their types; clients do not need the
 private layout of a group container. `git-issue-466-rust-rejected.dfy` supplies
 module, type and member extern controls and an implicit-array-initialization control.
+
+
+## C++ qualification boundary
+
+C++ remains rejected for every recursive module group, including function-only
+groups. This is a limitation of the current backend, not a claim that C++ cannot
+express mutually recursive modules. Its existing feature coverage cannot qualify
+the complete runtime matrix above.
+
+`CppCodeGenerator.CreateModule` emits namespaces, with separate forward-declaration,
+datatype and class passes. Forward declarations alone do not fix the datatype
+layout: `IsRecursiveConstructor` recognizes only a field of the very same datatype.
+`DeclareDatatype` adds pointer indirection for that case, but emits a sibling's
+datatype field by value. In the native-bitvector probe, `A.Left.Next` contains a
+`B.Right` by value and `B.Right` contains `A.Left` by value. The generated header
+fails on incomplete fields; ordering the namespaces cannot give both types a
+finite layout. `CreateTrait` also explicitly rejects traits. The backend does
+not support the unbounded integers and runtime type descriptors used by the
+shared matrix. Replacing those cases with native arithmetic or removing traits
+would qualify a different, smaller feature set.
+
+The native layout probe is conditional: an unrelated `DafnySet<T>.disjoint`
+lookup, `other.find(elt)`, first prevented compilation of an ordinary program.
+With only that lookup corrected to `other.set.find(elt)` in a copied runtime
+header, the function-only three-member cycle compiles and reaches execution,
+while the mutual-datatype probe still fails on incomplete fields. This narrower
+result is not runtime qualification. No runtime correction or C++ group
+lowering is included here. A future milestone needs group-wide recursive datatype
+indirection and the missing matrix features before executable admission.
+
+`git-issue-466-stage7-targets.dfy` checks the specific C++ diagnostic.
+`git-issue-466-cpp-dfy-rejected.dfy` checks function-only and mutual-datatype
+source groups and a complete archive input. Its acyclic trait control confirms
+that traits fail independently of recursive-module admission. Its archive producer
+and C# client execute the existing recursion, constants, datatypes, defaults,
+witnesses, traits and refinement fixture as a positive control.
+
+## Resolved-Dafny qualification boundary
+
+The internal target `dfy` also remains rejected. It is the
+`ResolvedDesugaredExecutableDafnyBackend`, whose compiler sends DAST to
+`PrettyPrinter.PrettyPrint`. That printer is an unimplemented placeholder:
+`D2DPrettyPrinter` calls `WrapException.Throw`, which currently reports the
+unrelated `/runAllTests` unsupported-feature diagnostic. An ordinary acyclic
+program already reaches this placeholder. In addition, the backend inherits
+the no-op target runner and emits no main call. There is no implemented emitted
+program or execution pipeline on which to compare the required runtime behavior.
+
+The regression checks a specific group diagnostic for both source and archive
+inputs, and an acyclic control checks the current printer-placeholder failure.
+Implementing a real printer and defining an executable round trip that preserves
+group identities, defaults, refinement and archive references must precede
+qualification. Neither a successful DAST construction nor the inherited runner's
+success status would establish a runtime comparison.
+
+Both decisions retain the existing admission check before target emission and
+native compilation. Unknown targets retain the generic diagnostic. No verifier
+rule, fact, axiom, trusted assumption or obligation producer changes. With the
+option off, the existing emission and diagnostics remain unchanged.
