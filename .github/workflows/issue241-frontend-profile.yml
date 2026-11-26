@@ -215,6 +215,8 @@ jobs:
             export PATH="$PATH:$TMPDIR/dotnet-tools"
             python3 "$SCRIPT" heap --corpus std --project "$HEAP" --windows 1,4 --reps 3 --cores 2 \
               --dafny "$D" --out "results/$NAME"
+            python3 .github/review/retention-profile.py run --project "$HEAP" --windows 1 4 --reps 1 --cores 2 \
+              --dafny "$D" --out "results/$NAME/body-release"
             python3 "$SCRIPT" gcdump --corpus std --project "$HEAP" --windows 1,4 --cores 2 \
               --points parsed,resolved,1,20,43,80 --dafny "$D" --out "results/$NAME"
             rm -f results/"$NAME"/gcdumps/*.gcdump.tmp
