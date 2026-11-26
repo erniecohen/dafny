@@ -1443,7 +1443,14 @@ namespace Microsoft.Dafny.Compilers {
         wr.Write("_dafny.NewObject()");
       } else {
         wr.Write("new {0}(", TypeName(type, wr, tok));
-        EmitTypeDescriptorsActuals(TypeArgumentInstantiation.ListFromClass(cl, type.TypeArgs), tok, wr);
+        var sep = "";
+        EmitTypeDescriptorsActuals(TypeArgumentInstantiation.ListFromClass(cl, type.TypeArgs), tok, wr, ref sep);
+        if (cl.EnclosingModuleDefinition.RecursiveGroup != null &&
+            initCall?.Method is Constructor constructor && IsExternallyImported(constructor)) {
+          // Fully imported classes use the native constructor. Preserve the
+          // descriptor prefix, erase ghost arguments, and evaluate actuals once.
+          wr.Write(ConstructorArguments(initCall, wStmts, constructor, sep));
+        }
         wr.Write(")");
       }
     }

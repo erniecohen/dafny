@@ -290,10 +290,14 @@ extern type or, for module-level members, an extern module. Two-argument member
 qualifiers are supported only for functions and static methods; instance methods
 and fields retain receiver-based linkage. Refinements of group
 members containing extern types remain rejected because inherited foreign owners
-are not preserved. Extern constructors are explicitly rejected in groups: the
-ordinary JavaScript allocation path does not forward their arguments. Partial
-foreign classes can use a Dafny constructor body; their generated class extends
-the foreign class. Fully foreign classes can expose a factory member.
+are not preserved. Fully imported foreign classes declared in a group support
+bodiless extern constructors. Allocation passes the ordinary type-descriptor prefix followed by
+non-ghost constructor arguments, evaluated once in order. Constructor extern
+names do not select a separate JavaScript member: allocation invokes the class
+itself with `new`. Partial foreign classes still require a Dafny constructor body;
+their generated subclass constructor initializes type descriptors, and does not
+forward native constructor arguments. Adding that forwarding requires a separate
+constructor convention for generated subclasses.
 
 `git-issue-466-js.dfy` compares the existing group fixtures against C#, including
 wrapper-erasure settings, scheduled resolution, additional axioms, complete
@@ -306,6 +310,13 @@ constants, mutual datatypes, implicit defaults and extern-backed witnesses, trai
 refinement and library comparisons with extern members. It exercises foreign
 classes, instance functions, methods and fields, both wrapper-erasure settings,
 additional axioms, source relocation and separately translated clients.
+`git-issue-466-js-constructors.dfy` repeats that runtime matrix with generic native
+constructors, ghost parameters, descriptor-backed defaults and observable argument
+order. Source builds, both wrapper-erasure settings, archives rebuilt from relocated
+source, and separately translated producers and clients agree with C#. Wrong
+constructor results and a reachable false assertion remain verification errors.
+A partial-class constructor retains its explicit rejection, and an acyclic extern
+constructor retains the option-off allocation output.
 `git-issue-466-js-extern.dfy` checks each group-specific foreign linkage rejection.
 Archives with arbitrary extern contracts still cannot provide the modular
 termination certificate required by cross-module trait implementations; the

@@ -54,9 +54,11 @@ public class JavaScriptBackend : ExecutableBackend {
           return;
         }
         if (type.Members.OfType<Constructor>().FirstOrDefault(constructor =>
-              !constructor.IsGhost && constructor.Body == null && constructor.IsExtern(Options, out _, out _)) is { } externalConstructor) {
+              !constructor.IsGhost && constructor.Body == null && constructor.IsExtern(Options, out _, out _)) is { } externalConstructor &&
+            (!type.IsExtern(Options, out _, out _) || type.Members.Any(member =>
+              !member.IsGhost && !codeGenerator.IsExternallyImported(member)))) {
           Reporter.Error(MessageSource.Compiler, externalConstructor.Origin,
-            "JavaScript recursive groups do not support extern constructors");
+            "JavaScript recursive groups require extern constructors on fully imported classes; partial classes must use a Dafny constructor body");
           return;
         }
         if (type.Members.FirstOrDefault(member => !member.IsGhost &&
