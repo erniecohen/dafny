@@ -1822,6 +1822,17 @@ restriction that the functions must not impose any precondition. That is,
 values of type `(TT) -> U` are _total functions_, and the subset type
 `(TT) -> U` is called the _total arrow type_.
 
+The opt-in source library `function-domains/Partial.dfy` supplies explicit
+extensionality lemmas for heap-independent partial functions under
+`--additional-axioms`. Two values with the same exact declared argument domain
+are equal if their preconditions agree everywhere on that domain and their
+results agree wherever the precondition holds. The library's `Pointwise`
+predicate expresses this full-domain premise, including unallocated arguments.
+Agreement only where two different preconditions overlap is insufficient.
+Equality does not authorize a call outside the common precondition. See the
+[source-library guide](../../Source/DafnyStandardLibraries/function-domains/README.md)
+for the checked interface and its scope.
+
 The built-in total arrow type is defined as follows (here shown
 for arrows with arity 1):
 <!-- %no-check -->

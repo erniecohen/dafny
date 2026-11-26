@@ -1691,7 +1691,7 @@ module Std.Producers {
         }
       }
 
-      assert Ensures(t, result);
+      assert ValidChange();
     }
 
     method ForEach(consumer: IConsumer<T>, ghost totalActionProof: TotalActionProof<T, ()>)

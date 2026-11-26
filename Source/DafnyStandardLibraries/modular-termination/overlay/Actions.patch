@@ -3767,7 +3767,7 @@
            if result.Some? {
              assert 0 < old(Remaining()).value;
              assert Remaining() == Some(old(Remaining()).value - 1);
-@@ -1688,16 +1938,27 @@
+@@ -1688,16 +1938,26 @@
              assert old(Remaining()).value == 0;
              assert Remaining() == Some(0);
            }
@@ -3784,8 +3784,7 @@
 +                              old(first.Repr), old(second.Repr), old(Repr));
 +      assert fresh(Repr - old(Repr));
 +      assert old(history) <= history;
-+      assert ValidChange();
-       assert Ensures(t, result);
+       assert ValidChange();
      }
  
      method ForEach(consumer: IConsumer<T>, ghost totalActionProof: TotalActionProof<T, ()>)
