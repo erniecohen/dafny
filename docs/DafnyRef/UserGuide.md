@@ -437,6 +437,11 @@ Various options control the verification process, in addition to all those descr
   verifies every module afresh, and reports an error when a stored translation or
   module result differs from the fresh one.
 
+  The language server requires native assertion and split graphs for its reports.
+  It therefore translates and prepares current native tasks even when a whole-module
+  result is stored. Eligible solver responses can still be reused by the shared
+  task cache; the CLI's whole-module fast path is unaffected.
+
   The cache directory is named by `--verification-cache`, then by the
   `verification-cache` value of the project file, then by the `DAFNY_CACHE_DIR`
   environment variable; with none of them, nothing is cached. One directory can be

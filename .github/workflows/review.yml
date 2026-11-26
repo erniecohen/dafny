@@ -1475,6 +1475,13 @@ jobs:
       - name: Build resolver and language-server tests
         timeout-minutes: 20
         run: dotnet build -p:NuGetAudit=false Source/DafnyLanguageServer.Test -c Release
+      - name: Persistent IDE cache native evidence and lifecycle
+        timeout-minutes: 20
+        run: |
+          DAFNY_TEST_Z3=$(sh .github/review/setup-z3.sh 5.1.0 "$TMPDIR/ide-cache-z3")
+          export DAFNY_TEST_Z3
+          dotnet test -p:NuGetAudit=false --settings .github/review/ci.runsettings Source/DafnyLanguageServer.Test -c Release --no-build \
+            --filter "FullyQualifiedName~PersistentCacheLifecycleTest" --logger "console;verbosity=normal"
       # These tests exercise type resolution only. The language-server tests
       # explicitly disable automatic verification, so this job starts no solver.
       - name: Test redirecting dependencies, numeric ancestry and recovery scopes
