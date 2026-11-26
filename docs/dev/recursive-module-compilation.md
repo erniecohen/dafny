@@ -297,7 +297,8 @@ The complete extern runtime matrix includes such an abstract refinement of the
 member containing a fully imported foreign class.
 
 Concrete refinements may inherit, extend or introduce extern classes with at
-most one extern argument and no compiled fields or trait parents. Executable
+most one extern argument and no compiled fields, including fields inherited from
+traits. Trait parents follow the ordinary Rust implementation rules. Executable
 members may be bodiless foreign members or implemented non-extern functions,
 methods and constructors, including functions with method bodies. A refinement
 can add or rename foreign members, introduce generic foreign classes, and generate
@@ -316,13 +317,20 @@ arguments directly to the allocation hook. No layout is inferred for the foreign
 type. This also works with renamed generic classes, nested namespaces and separate
 producer/client translation.
 
+Trait implementations retain their ordinary ownership convention: each parent's
+proper methods must be wholly generated or wholly foreign. Foreign source supplies
+the trait implementations and upcast support for wholly foreign types and parent
+traits not implemented by generated class methods. An empty foreign implementation
+can select a trait's generated default methods. These declarations name the public
+refining namespaces, without referring to the group container.
+
 Other concrete refinements containing extern types remain rejected, with the type,
-refining module and supported class shape named in the diagnostic. Compiled fields
-and trait parents require additional layout or trait rules; foreign members with
-bodies (including constructors) and two-argument class externs remain unsupported.
-A refinement chain through an abstract intermediate module still checks its
-concrete descendant. Inherited extern members with explicit foreign paths remain
-supported. No new verifier fact or check is involved, and compilation without
+refining module and supported class shape named in the diagnostic. Own and inherited
+compiled fields still require additional layout rules; ghost fields remain erased.
+Foreign members with bodies (including constructors) and two-argument class externs
+remain unsupported. A refinement chain through an abstract intermediate module
+still checks its concrete descendant. Inherited extern members with explicit
+foreign paths remain supported. No new verifier fact or check is involved, and compilation without
 `--recursive-modules` is unchanged.
 
 Rust's existing implicit datatype-default and general-trait limitations remain:
@@ -385,7 +393,7 @@ explicit defaults, invariant witnesses, traits, refinement and complete archives
 Distinct foreign return values check the identity of each refining namespace;
 a renamed generic foreign class transports a recursive datatype. A separately
 translated client exercises the producer's foreign imports through the translation
-root. Negative controls retain the rejection of fields, trait parents and
+root. Negative controls retain the rejection of own and inherited fields and
 foreign members with generated bodies, including fields added by a refinement.
 A reachable false assertion after foreign construction and a call remains rejected. This milestone
 adds no verifier fact, axiom or assumption, and changes no emission with
@@ -412,7 +420,7 @@ refinement exercises inherited implementations and another generated method;
 distinct foreign return values distinguish the refining namespaces. Incorrect
 result and reachable false assertions remain rejected after a generated method
 calls a foreign member. A constructor with a compiled field retains its layout
-rejection, alongside the existing fields, trait parents and foreign-body controls.
+rejection, alongside the existing fields and foreign-body controls.
 
 `git-issue-466-rust-constructor-refinement.dfy` qualifies generated constructors
 using the same independent C#/Rust runtime matrix, complete archives and separate
@@ -425,3 +433,14 @@ rejected after construction. A foreign constructor with a body has its own expli
 rejection control. Allocation remains supplied by foreign source, and generated
 constructors on classes with compiled fields remain rejected. No verifier rule,
 fact or assumption changes.
+
+`git-issue-466-rust-trait-refinement.dfy` qualifies generated and wholly foreign
+implementations of a generic trait against independent C# emission through the full
+runtime matrix, complete archives and separate producer/client linkage. The trait
+inherits a default method and an erased ghost field. Concrete descendants through
+an abstract refinement use their own trait and foreign type identities. Calls
+through generic trait objects and parent upcasts preserve recursive datatype values;
+distinct foreign tags check the namespace pairing. Incorrect-result assertions for
+both implementation paths and a reachable false assertion remain rejected. Negative
+controls reject a compiled field inherited through two traits and the ordinary Rust
+mixed-implementation case. This changes no verifier rule or default-option emission.

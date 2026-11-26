@@ -9,6 +9,6 @@ Dafny program verifier did not attempt verification
 (0,-1): Error: Unsupported Invalid Operation: Error: In the class _dafny_recursive_group_Foreign.Foreign.Native, some proper methods of crate::Foreign::T are marked {:extern} and some are not. For the Rust compiler, please make all methods (F, G)  bodiless and mark as {:extern} and implement them in a Rust file, or mark none of them as {:extern} and implement them in Dafny. Alternatively, you can insert an intermediate trait that performs the partial implementation if feasible.
 
 Dafny program verifier did not attempt verification
-git-issue-466-rust-extern-refinement.dfy(3,27): Error: Rust cannot compile extern type 'Native' in refining module 'Refined' above a recursive module group: supported extern classes have no compiled fields or trait parents, at most one extern argument, and either bodiless foreign members or implemented non-extern functions, methods or constructors
+git-issue-466-rust-extern-refinement.dfy(3,27): Error: Rust cannot compile extern type 'Native' in refining module 'Refined' above a recursive module group: supported extern classes have no compiled fields (including inherited fields), at most one extern argument, and either bodiless foreign members or implemented non-extern functions, methods or constructors
 git-issue-466-rust-extern-refinement.dfy(10,7): Related location: refining module
 Translation was aborted because errors were found

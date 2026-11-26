@@ -1188,16 +1188,21 @@ that a later stage would have to reject:
   mixed foreign/generated implementations of a trait still apply. Abstract
   refinements with extern types emit no code and are allowed. Concrete refinements
   may inherit, extend or introduce extern classes with at most one extern argument
-  and no compiled fields or trait parents. Executable members may be bodiless foreign
-  members or implemented non-extern functions, methods and constructors, including
-  functions with method bodies. Generic classes and ghost declarations are supported. Supply each refined class and its foreign
-  members in the refining module's foreign namespace; it has its own foreign identity.
+  and no compiled fields, including fields inherited from traits. Executable members
+  may be bodiless foreign members or implemented non-extern functions, methods and
+  constructors, including functions with method bodies. Generic classes and ghost
+  declarations are supported. Supply each refined class and its foreign members in
+  the refining module's foreign namespace; it has its own foreign identity.
   Generated members become inherent implementations on that type. Generated
   constructors use the foreign type's zero-argument `_allocate_object()` hook before
   executing their Dafny bodies; bodiless foreign constructors instead pass their
   arguments to the allocation hook. Foreign members with bodies and other extern
   types in concrete refinements remain rejected. Inherited extern members with explicit
-  foreign paths are supported.
+  foreign paths are supported. Trait parents follow the ordinary Rust rule that each
+  parent's proper methods are wholly generated or wholly foreign. Supply the trait
+  implementations and upcast support for wholly foreign types and parent traits not
+  implemented by generated class methods; an empty implementation can use a trait's
+  generated default methods. Ghost fields are erased.
   Rust group programs may omit an array initializer when some dimension is zero,
   including a zero computed at runtime. All dimensions are evaluated once, in order;
   for auto-initializable elements, a runtime check halts a nonempty allocation
