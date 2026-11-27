@@ -100,7 +100,7 @@ public sealed class ModuleTranslationCache {
     if (BypassReason(program, module, flags) is { } bypass) {
       lock (gate) { Bypasses++; LastBypassReason = bypass; }
       var snapshot = Fresh(program, module, flags, program.Reporter, manager);
-      return new ModuleTranslation(BoogieSnapshotCloner.TryClone(snapshot, out var fresh, out _) ? fresh! : snapshot, manager);
+      return new ModuleTranslation(BoogieSnapshotCloner.TryClone(snapshot, out var fresh, out _, optimize: options.Get(CommonOptionBag.OptimizeTranslationCopy)) ? fresh! : snapshot, manager);
     }
     var key = Descriptor(program, module, flags);
     lock (gate) {
@@ -108,7 +108,7 @@ public sealed class ModuleTranslationCache {
         var symbols = SymbolExtensions.GetSymbolDescendants(program.DefaultModule).OfType<ICanVerify>()
           .GroupBy(BoogieSnapshotCloner.SymbolKey).Where(g => g.Count() == 1).ToDictionary(g => g.Key, g => g.Single());
         if (Hash(node.Value.Value.Text) != node.Value.Value.BoogieHash ||
-            !BoogieSnapshotCloner.TryClone(node.Value.Value.Template, out var graph, out _, symbols)) {
+            !BoogieSnapshotCloner.TryClone(node.Value.Value.Template, out var graph, out _, symbols, options.Get(CommonOptionBag.OptimizeTranslationCopy))) {
           Remove(node);
         } else {
           cancellationToken.ThrowIfCancellationRequested();
@@ -126,7 +126,7 @@ public sealed class ModuleTranslationCache {
       cancellationToken.ThrowIfCancellationRequested();
       string? reason = null;
       Bpl.Program? consumer = null;
-      var copied = BoogieSnapshotCloner.TryClone(translated, out consumer, out reason);
+      var copied = BoogieSnapshotCloner.TryClone(translated, out consumer, out reason, optimize: options.Get(CommonOptionBag.OptimizeTranslationCopy));
       if (reporter.HasErrors || !copied || BypassReason(program, module, flags) is { }) {
         Bypasses++; LastBypassReason = reporter.HasErrors ? "translation diagnostics" : reason ?? "unlisted global input";
         return new ModuleTranslation(copied ? consumer! : translated, manager);

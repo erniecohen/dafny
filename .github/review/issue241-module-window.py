@@ -84,7 +84,8 @@ def run(out, dafny, z3, cwd, k, args, gc='0', cores=None, smt=False):
     # An option the program sets itself is left to the program, as in lit-verdicts.py.
     own = {t.split('=')[0].split(':')[0] for t in args if t.startswith('--')}
     fixed = [('--cores', str(cores)), ('--verification-time-limit', '0')]
-    cmd = [dafny, 'verify'] + args + ['--solver-path', z3]
+    executable = ['dotnet', dafny] if dafny.endswith('.dll') else [dafny]
+    cmd = executable + ['verify'] + args + ['--solver-path', z3]
     for name, value in fixed:
         if name not in own:
             cmd += [name, value]

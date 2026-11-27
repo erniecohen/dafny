@@ -58,6 +58,7 @@ public class HistoryFreeTranslationTests {
     var translation = new Option<bool>("--translation-cache");
     var verification = new Option<string>("--verification-cache");
     foreach (var enabled in new[] { false, true }) {
+      options.Set(CommonOptionBag.ReadyModuleVerification, enabled);
       options.Set(translation, enabled);
       options.Set(verification, enabled ? "another-cache-directory" : "");
       Assert.Equal(expected, ModuleResolutionKey.Options(options).OrderBy(p => p.Key));
