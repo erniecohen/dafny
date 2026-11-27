@@ -3,6 +3,7 @@ module {:extern "Foreign"} A {
   class {:extern "Actual"} Native {
     constructor {:extern} ()
     function Local(): int { B.Value() }
+    var value: int
   }
 }
 module B { import A function Value(): int { 1 } }

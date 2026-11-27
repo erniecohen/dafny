@@ -1,0 +1,2 @@
+// CHECK: super\(\);
+// CHECK: rtd\$_T_parentTraits\(\)

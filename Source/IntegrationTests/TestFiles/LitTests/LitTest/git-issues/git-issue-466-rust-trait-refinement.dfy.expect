@@ -1,0 +1,28 @@
+
+Dafny program verifier finished with 47 verified, 0 errors
+6 7 8
+10 9 8 7
+true
+42
+true true true
+2
+17 13 3 5
+4 3
+47 59 71 4 5
+43 61
+31
+89 103 97 104 205
+73 79 83
+211 213 106 107 108 109
+113 127 131
+write 140
+write 141
+write 144
+write 145
+141 145 137 139
+write generic
+write generic
+149 151
+173 179 181 191
+163 167 165 169
+157 157

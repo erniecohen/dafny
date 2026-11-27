@@ -1,1 +1,1 @@
-// CHECK: Rust cannot compile extern type 'Native' in refining module 'Final' above a recursive module group: foreign imports and generated implementations are not remapped for refinement
+// CHECK: Rust cannot compile extern type 'Native' in refining module 'Final' above a recursive module group: supported extern classes have no compiled fields \(including inherited fields\), at most one extern argument, and either bodiless foreign members or implemented functions, methods or constructors without a foreign enclosing path
