@@ -25,7 +25,7 @@ namespace Microsoft.Dafny.LanguageServer.Language {
       ModuleDefinition moduleDefinition,
       CancellationToken cancellationToken) =>
       preparationPipeline.PrepareAsync(resolution, moduleDefinition, request.InsertChecksums,
-        request.CreateBackend, cancellationToken, request.Capture, requiresNativeTasks: request.RequiresNativeTasks);
+        request.CreateBackend, cancellationToken, request.Capture, requiresNativeTasks: request.RequiresNativeTasks, acceptsCachedIdeReports: request.AcceptsCachedIdeReports);
 
     public void Dispose() {
       preparationPipeline.Dispose();

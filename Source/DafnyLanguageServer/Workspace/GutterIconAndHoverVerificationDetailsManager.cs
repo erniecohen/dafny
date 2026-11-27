@@ -238,6 +238,95 @@ Send notifications about the verification status of each line in the program.
     canVerifyNode.RecomputeAssertionBatchNodeDiagnostics();
   }
 
+  /// <summary>Install source-bound reports without fabricating native implementations.</summary>
+  public void ReportCachedImplementations(IdeState state, ICanVerify canVerify, IEnumerable<Caching.IdeTaskReport> reports) {
+    var uri = canVerify.Origin.Uri;
+    var tree = state.VerificationTrees.GetValueOrDefault(uri);
+    var node = tree?.Children.OfType<TopLevelDeclMemberVerificationTree>()
+      .FirstOrDefault(t => t.Position == canVerify.Origin.GetLspPosition());
+    if (node == null) { return; }
+    var copyingModule = IdeState.CopyingModule(canVerify);
+    var verifiedAtRange = state.CanVerifyStates.GetValueOrDefault(uri)?
+      .GetValueOrDefault(canVerify.NavigationRange.ToLspRange())?.VerificationTasks.Values
+      .Select(task => IdeState.CopyingModule(Compilation.GetCanVerify(task.Task))).ToHashSet() ?? [];
+    node.ResetNewChildren();
+    foreach (var other in node.Children.OfType<ImplementationVerificationTree>()) {
+      if (other.CopyingModule != copyingModule && verifiedAtRange.Contains(other.CopyingModule)) { node.AddNewChild(other); }
+    }
+    foreach (var report in reports.DistinctBy(r => r.Name)) {
+      var old = node.Children.OfType<ImplementationVerificationTree>().FirstOrDefault(t =>
+        t.CopyingModule == copyingModule && t.Identifier == report.Name);
+      var child = new ImplementationVerificationTree(
+        node.DisplayName + " #" + (node.Children.Count + 1) + ":" + report.Name,
+        report.VerboseName, report.Name, node.Filename, node.Uri, node.Range, node.Position) {
+        CopyingModule = copyingModule
+      }.WithReport(report);
+      if (old != null) { child.Children = old.Children; }
+      node.AddNewChild(child);
+    }
+    node.SaveNewChildren();
+    if (node.Finished && node.Children.Any(child => !child.Finished)) {
+      node.Finished = false;
+      node.StatusCurrent = CurrentStatus.Obsolete;
+    }
+    node.PropagateChildrenErrorsUp();
+    node.RecomputeAssertionBatchNodeDiagnostics();
+  }
+
+  /// <summary>Publish a complete successful batch from its portable report.</summary>
+  public void ReportCachedBatch(IdeState state, ICanVerify canVerify, Caching.IdeTaskReport report,
+    VerificationRunResult result, bool finished, int resourceCount) {
+    var tree = state.VerificationTrees[canVerify.Origin.Uri];
+    var node = tree.Children.OfType<TopLevelDeclMemberVerificationTree>()
+      .FirstOrDefault(t => t.Position == canVerify.Origin.GetLspPosition());
+    var implementation = node?.Children.OfType<ImplementationVerificationTree>().SingleOrDefault(t =>
+      t.CopyingModule == IdeState.CopyingModule(canVerify) && t.Report?.Name == report.Name);
+    if (node == null || implementation == null) { return; }
+    lock (LockProcessing) {
+      if (!node.Started) { node.Start(); }
+      if (!implementation.Started) { implementation.Start(); }
+      if (!implementation.NewChildren.OfType<AssertionVerificationTree>().Any(a => a.AssertionBatchNum == result.VcNum)) {
+        var time = (int)result.RunTime.TotalMilliseconds;
+        implementation.AddAssertionBatchMetrics(result.VcNum, time, result.ResourceCount, result.CoveredElements.ToList());
+        foreach (var assertion in report.Assertions) {
+          var token = assertion.Origin;
+          if (token.Filepath != implementation.Filename) { continue; }
+          var count = implementation.GetNewChildrenCount();
+          var display = assertion.Kind == "ensures" ? " ensures" : assertion.Kind == "call" ? "Call" : "Assertion";
+          var identifier = assertion.Kind == "ensures" ? "_ensures" : assertion.Kind;
+          var child = new AssertionVerificationTree(
+            $"{node.DisplayName} {display} #{count}", $"{node.Identifier}_{count}_{identifier}",
+            token.Filepath, token.Uri, null, token.GetLspRange()) {
+            StatusVerification = GutterVerificationStatus.Verified,
+            StatusCurrent = CurrentStatus.Current, AssertionBatchNum = result.VcNum,
+            ImmediatelyRelatedRanges = assertion.RelatedOrigins.Select(o => o.GetLspRange()).ToList(),
+            Started = true, Finished = true
+          }.WithDuration(implementation.StartTime, time).WithReport(assertion);
+          implementation.AddNewChild(child);
+          var previous = implementation.Children.OfType<AssertionVerificationTree>()
+            .FirstOrDefault(c => c.Position == child.Position && c.SecondaryPosition == null);
+          if (previous != null) {
+            implementation.Children = new ConcurrentBag<VerificationTree>(implementation.Children.Where(c => c != previous)) {
+              previous with { StatusCurrent = CurrentStatus.Current, StatusVerification = GutterVerificationStatus.Verified }
+            };
+          } else { implementation.Children.Add(child); }
+        }
+      }
+      if (finished) {
+        implementation.Stop();
+        implementation.ResourceCount = resourceCount;
+        node.ResourceCount += resourceCount;
+        implementation.StatusVerification = GutterVerificationStatus.Verified;
+        if (node.Children.All(child => child.Finished)) {
+          node.Stop();
+          node.StatusVerification = GutterVerificationStatus.Verified;
+        }
+      }
+      node.PropagateChildrenErrorsUp();
+      node.RecomputeAssertionBatchNodeDiagnostics();
+    }
+  }
+
   /// <summary>
   /// Called when the verifier starts verifying an implementation
   /// </summary>

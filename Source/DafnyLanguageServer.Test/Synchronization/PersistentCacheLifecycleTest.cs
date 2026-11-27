@@ -29,7 +29,7 @@ public partial class PersistentCacheLifecycleTest : ClientBasedLanguageServerTes
   private const string Source = "module Cached { lemma Positive(x: int) ensures x + 1 > x {} }";
 
   private Task Start(string cache, int workers, bool audit = false,
-    VerifyOnMode verifyOn = VerifyOnMode.Change, uint legacyCache = 0, bool reuseSolvers = false) => SetUp(options => {
+    VerifyOnMode verifyOn = VerifyOnMode.Change, uint legacyCache = 0, bool reuseSolvers = false, bool ideReports = false) => SetUp(options => {
     options.Set(ProjectManager.Verification, verifyOn);
     options.Set(LanguageServer.VerifySnapshots, legacyCache);
     options.Set(ProjectManager.ReuseSolvers, reuseSolvers);
@@ -37,6 +37,7 @@ public partial class PersistentCacheLifecycleTest : ClientBasedLanguageServerTes
     options.Set(CommonOptionBag.PersistentTranslation, cache.Length != 0);
     options.Set(CommonOptionBag.PersistentCounterexamples, cache.Length != 0);
     options.Set(CommonOptionBag.PersistentTranslationAudit, audit);
+    options.Set(CommonOptionBag.PersistentIdeReports, ideReports);
     options.Set(CommonOptionBag.ResolutionCache, cache.Length != 0);
     options.Set(CommonOptionBag.ResolutionCacheCheck, cache.Length != 0);
     options.Set(CommonOptionBag.TranslationWorkers, workers);

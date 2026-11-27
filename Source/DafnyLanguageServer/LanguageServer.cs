@@ -27,6 +27,7 @@ namespace Microsoft.Dafny.LanguageServer {
         VerifySnapshots,
         CommonOptionBag.PersistentTranslation,
         CommonOptionBag.PersistentTranslationAudit,
+        CommonOptionBag.PersistentIdeReports,
         CommonOptionBag.PersistentCounterexamples,
         CommonOptionBag.TranslationWorkers,
         DafnyLangSymbolResolver.UseCaching,

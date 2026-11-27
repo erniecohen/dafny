@@ -469,6 +469,14 @@ public class Compilation : IDisposable {
         updated = true;
         return result;
       });
+      if (randomSeed != null && tasks.Any(task => !Caching.VerificationTaskFacts.HasSplit(BoogieVerificationReporting.GetTask(task)))) {
+        var native = await verifier.GetVerificationTasksAsync(createPreparationRequest(resolution, containingModule) with {
+          RequiresNativeTasks = true, AcceptsCachedIdeReports = false
+        }, resolution, containingModule, cancellationSource.Token);
+        moduleProofDependencies[containingModule] = native.ProofDependencies;
+        tasks = native.Preparation.GetWorkOrThrow().Where(task => GetCanVerify(task) == canVerify &&
+          (!canVerify.Origin.IsCopy || task.Source.IsReverifiedInheritedCheck)).ToList();
+      }
       if (updated || randomSeed != null) {
         updates.OnNext(new CanVerifyPartsIdentified(canVerify, tasks));
       }

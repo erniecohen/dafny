@@ -78,6 +78,7 @@ public static class VerifyCommand {
         CommonOptionBag.TranslationGlobalInputs,
         CommonOptionBag.PersistentTranslation,
         CommonOptionBag.PersistentTranslationAudit,
+        CommonOptionBag.PersistentIdeReports,
         CommonOptionBag.PersistentCounterexamples,
         CommonOptionBag.TranslationWorkers,
         CommonOptionBag.TranslationWorkersStress,

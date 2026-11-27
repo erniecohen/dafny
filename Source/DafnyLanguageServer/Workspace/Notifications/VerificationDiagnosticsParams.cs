@@ -564,6 +564,12 @@ namespace Microsoft.Dafny.LanguageServer.Workspace.Notifications {
       };
     }
 
+    public Caching.IdeTaskReport? Report { get; private set; }
+    public ImplementationVerificationTree WithReport(Caching.IdeTaskReport report) {
+      Report = report;
+      return this;
+    }
+
     private Implementation? implementation = null;
 
     public void AddAssertionBatchMetrics(int vcNum, int milliseconds, int resourceCount, List<TrackedNodeComponent> coveredIds) {
@@ -611,6 +617,12 @@ namespace Microsoft.Dafny.LanguageServer.Workspace.Notifications {
     // The range of this node.
     Range Range
   ) : VerificationTree("Assertion", DisplayName, Identifier, Filename, Uri, Range, Range.Start) {
+    public Caching.IdeAssertionReport? Report { get; private set; }
+    public AssertionVerificationTree WithReport(Caching.IdeAssertionReport report) {
+      Report = report;
+      return this;
+    }
+
     public AssertionVerificationTree WithDuration(DateTime parentStartTime, int batchTime) {
       Started = true;
       Finished = true;
