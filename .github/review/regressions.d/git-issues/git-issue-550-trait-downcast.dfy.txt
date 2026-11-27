@@ -1,0 +1,2 @@
+# A downcast of a general trait's value to a datatype with invariants (https://github.com/erniecohen/dafny/issues/550).
+git-issues/git-issue-550-trait-downcast.dfy

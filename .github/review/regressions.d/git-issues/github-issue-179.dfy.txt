@@ -1,0 +1,3 @@
+
+# Refining a module whose method has a :| with a member selection in its trigger (#179).
+git-issues/github-issue-179.dfy

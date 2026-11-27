@@ -1,0 +1,2 @@
+// The unimplemented printer currently throws this placeholder feature diagnostic.
+// CHECK: Error: Feature not supported for this compilation target: The /runAllTests option

@@ -1,0 +1,2 @@
+# Qualified resource-exhausted module results preserve current diagnostics (issue 261).
+git-issues/git-issue-261-persistent-resources.dfy
