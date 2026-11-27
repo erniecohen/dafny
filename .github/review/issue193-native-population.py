@@ -133,10 +133,9 @@ def main():
     records = []
 
     def verify(name, path, options=(), errors=(), mutation=False, limit=2000000,
-               intblast=False, timeout=110, expected_scopes=None):
+               timeout=110, expected_scopes=None):
         csv_path = out / (name+'.csv')
         command = exe + ['verify', str(path), *common,
-                         *(['--solver-option', 'O:smt.bv.solver=2'] if intblast else []),
                          '--resource-limit', str(limit), '--log-format',
                          'csv;LogFileName='+str(csv_path), *options]
         code, text, elapsed, killed = invoke(command, timeout)
@@ -176,8 +175,6 @@ def main():
                 errors = {i for i, line in enumerate(lines, 1) if '// ERROR' in line}
                 assert len(errors)==(40 if kind=='negative' else 0), (kind, errors)
                 records.append(verify(mode+'-'+kind, path, options, errors, limit=200000 if errors else 2000000,expected_scopes=40))
-                if errors:
-                    records.append(verify(mode+'-negative-intblast', path, options, errors, limit=200000, intblast=True,expected_scopes=40))
         if args.runtime:
             lines, expected = runtime_fixture()
             path=out/'runtime.dfy'

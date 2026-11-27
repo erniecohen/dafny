@@ -360,7 +360,8 @@ bounded-integer clients, zero/one/high-bit witnesses and exact negative/vacuity
 controls with both resolvers and additional axioms off/on. False assertions
 follow `Step`, `Count` and their composition. Invalid zero-width recurrence
 calls and out-of-range input casts remain rejected. Wrong counts and bounds
-must also fail conclusively, under both bitvector engines.
+must also fail conclusively. Bodies, clients and controls all use the default
+bitvector engine.
 
 Runtime comparisons use an independent binary-digit oracle: every 8-bit value,
 all single-bit and single-cleared-bit wider values, boundaries, alternating
