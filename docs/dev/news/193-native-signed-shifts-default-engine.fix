@@ -1,0 +1,1 @@
+Qualify the optional arithmetic right-shift helpers and their negative/vacuity controls exclusively with the default bitvector engine. Each observation now bounds its quotient explicitly before relating the signed results.

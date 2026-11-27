@@ -19,7 +19,7 @@ DEPENDENCY=LIBRARY.with_name('IntegerBitwiseNativeShifts.dfy')
 WIDTHS=(8,16,32,64)
 
 
-def fixtures(intblast=False):
+def fixtures():
     prelude=[f'include "{LIBRARY.as_posix()}"',
              'import R=Std.Arithmetic.IntegerBitwise',
              'import A=Std.Arithmetic.IntegerBitwiseSignedShiftArithmetic']
@@ -64,15 +64,6 @@ def fixtures(intblast=False):
                          f' var r:=N{w}.Right(x,{k}); assert S{w}.Decode(r)=={expected};', '}']
         observations = [f'N{w}.Observe(0,0,0)', f'N{w}.Observe({m-1},{w},{m-1})']
         together = [f' N{w}.SignDecision({m-3}); N{w}.Observe({m-3},1,{m-2});']
-        if intblast:
-            # Establish literal conversions explicitly for the integer BV engine;
-            # pass the constructed result so the call guard needs no evaluation.
-            observations = [
-                f'B{w}.RoundTrip({h}); B{w}.RoundTrip(0); var x:bv{w}:=0; var k:nat:=0; var r:=if x<{h} then x>>k else !((!x)>>k); N{w}.Observe(x,k,r)',
-                f'B{w}.RoundTrip({h}); B{w}.RoundTrip({m-1}); var x:bv{w}:={m-1}; var k:nat:={w}; var r:=if x<{h} then x>>k else !((!x)>>k); N{w}.Observe(x,k,r)']
-            together = [f' B{w}.RoundTrip({h}); B{w}.RoundTrip({m-3}); var x:bv{w}:={m-3}; var k:nat:=1;',
-                        f' var observed:=if x<{h} then x>>k else !((!x)>>k);',
-                        f' N{w}.SignDecision(x); N{w}.Observe(x,k,observed);']
         calls=[('SignPositive',f'N{w}.SignDecision(0)'),
                ('SignNegative',f'N{w}.SignDecision({m-1})'),
                ('ObservePositive',observations[0]), ('ObserveNegative',observations[1])]
@@ -187,11 +178,10 @@ def main():
     if args.additional_axioms:
         common += ['--additional-axioms']
     records = []
-    def verify(name, path, options=(), errors=(), mutation=False, limit=2000000,
-               intblast=False, timeout=110, expected_scopes=None):
+    def verify(name, path, options=(), errors=(), mutation=False, limit=2000000, timeout=110,
+               expected_scopes=None):
         csv_path = out / (name+'.csv')
         command = exe + ['verify', str(path), *common,
-                         *(['--solver-option', 'O:smt.bv.solver=2'] if intblast else []),
                          '--resource-limit', str(limit), '--log-format',
                          'csv;LogFileName='+str(csv_path), *options]
         code, text, elapsed, killed = invoke(command, timeout)
@@ -226,20 +216,13 @@ def main():
         for mode in modes:
             options=['--type-system-refresh:'+str(mode=='refreshed').lower()]
             records.append(verify(mode+'-dependencies',DEPENDENCY,[*options,'--verify-included-files'],expected_scopes=1176))
-            records.append(verify(mode+'-signed',SIGNED,options,intblast=True,expected_scopes=32))
-            records.append(verify(mode+'-bodies',LIBRARY,options,intblast=True,expected_scopes=54))
+            records.append(verify(mode+'-signed',SIGNED,options,expected_scopes=92))
+            records.append(verify(mode+'-bodies',LIBRARY,options,expected_scopes=141))
             for kind,lines in zip(('clients','negative'),fixtures()):
                 path=out/(mode+'-'+kind+'.dfy');path.write_text('\n'.join(lines)+'\n')
                 errors={i for i,line in enumerate(lines,1) if '// ERROR' in line}
                 assert len(errors)==(100 if kind=='negative' else 0)
                 records.append(verify(mode+'-'+kind,path,options,errors,limit=200000 if errors else 2000000,expected_scopes=100 if errors else 66))
-                if errors:
-                    int_lines=fixtures(intblast=True)[1]
-                    int_path=out/(mode+'-negative-intblast.dfy')
-                    int_path.write_text('\n'.join(int_lines)+'\n')
-                    int_errors={i for i,line in enumerate(int_lines,1) if '// ERROR' in line}
-                    assert len(int_errors)==100
-                    records.append(verify(mode+'-negative-intblast',int_path,options,int_errors,limit=200000,intblast=True,expected_scopes=100))
             if args.runtime:
                 lines,expected=runtime_fixture()
                 path=out/'runtime.dfy';path.write_text('\n'.join(lines)+'\n')
@@ -304,15 +287,15 @@ def main():
                 mutant=mutant[:at]+guard+mutant[at:]
                 sites.append((f'{module}.Right.{name}',baseline,mutant,
                               ['--filter-symbol',f'{module}.Right.']))
-        assert len(sites)==50,len(sites)
+        assert len(sites)==54,len(sites)
         sites=[s for s in sites if args.mutation_filter in s[0]];assert sites
         for mode in modes:
             for site,baseline,mutant,options in sites:
                 options=['--type-system-refresh:'+str(mode=='refreshed').lower(),*options]
                 path=out/'baseline.dfy';path.write_text(baseline)
-                clean=verify(mode+'.'+site+'.baseline',path,options,intblast=True)
+                clean=verify(mode+'.'+site+'.baseline',path,options)
                 path=out/'mutation.dfy';path.write_text(mutant)
-                result=verify(mode+'.'+site,path,options,mutation=True,intblast=True,timeout=max(5,3*clean['elapsed']))
+                result=verify(mode+'.'+site,path,options,mutation=True,timeout=max(5,3*clean['elapsed']))
                 result['baseline']=clean;records.append(result)
                 (out/'summary.json').write_text(json.dumps(records,indent=2)+'\n')
     (out/'summary.json').write_text(json.dumps(records,indent=2)+'\n')

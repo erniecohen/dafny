@@ -406,25 +406,25 @@ nonnegative and below P(k). The identity holds for every integer a and
 positive divisor, including endpoint powers. `SignDecision` checks that the
 native unsigned comparison with H selects the decoded sign; `Observe` checks
 the native result expression, and `Right` constructs that result and calls
-`Observe`. Every function and lemma has a checked body. No axiom, assumption,
+`Observe`. `Shrink`, from the product sign rule `NonNegative`, bounds a
+quotient of a natural by a positive divisor between zero and the dividend, so both observed results stay in their signed
+half. Every function and lemma has a checked body. No axiom, assumption,
 verification exemption or compiler fact is added.
 
-The new bodies and the signed-interpretation dependency are qualified with
-Z3 5.1.0's integer-based BV engine. The complete existing logical-shift and
-conversion closure is checked independently with the default engine, as are
-symbolic word/signed-integer clients and endpoint/concrete clients. Both
-resolvers and additional-axiom settings are required for qualification. The existing issue-284
+The new bodies, the signed-interpretation dependency, the complete existing
+logical-shift and conversion closure, symbolic word/signed-integer clients and
+endpoint/concrete clients are all checked with Z3 5.1.0's default bitvector
+engine. The integer-based engine (`smt.bv.solver=2`) is not used: it can
+report unsatisfiable for satisfiable queries
+(https://github.com/erniecohen/dafny/issues/618). Both resolvers and
+additional-axiom settings are required for qualification. The existing issue-284
 backend consistency qualification remains applicable.
 
 Negative controls reject invalid counts, incorrect result witnesses, invalid
 casts, wrong rounding/direction/sign results and nonpositive arithmetic
 divisors. Reachable false assertions follow both sign cases, each rule,
 zero/full-width function calls and the rules together; negative and vacuity
-controls run with both BV engines. For the integer-based engine, concrete
-observation controls construct the result expression and establish input and
-sign-threshold conversions using checked `RoundTrip` calls, so it need not
-infer literal conversion identities. Default-engine controls use literal result
-words for the same reachable calls. Serial mutation mode negates each
+controls use literal result words for the reachable calls. Serial mutation mode negates each
 postcondition and removes each explicit precondition, and separately changes
 the branch, sign boundary, positive shift direction, negative sign extension,
 inner complement and count in each executable function. Every mutant requires
