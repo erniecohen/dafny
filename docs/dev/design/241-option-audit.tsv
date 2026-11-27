@@ -194,6 +194,7 @@ cli	trait-rank-decreases	--trait-rank-decreases	System.CommandLine.Option`1[Syst
 cli	translate-standard-library	--translate-standard-library	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	translation-record	--translation-record	System.CommandLine.Option`1[System.Collections.Generic.IList`1[System.IO.FileInfo]]	command-setup	setup or another command; executes before/outside proof transport
 cli	translation-record-output	--translation-record-output	System.CommandLine.Option`1[System.IO.FileInfo]	command-setup	setup or another command; executes before/outside proof transport
+cli	ready-module-verification	--ready-module-verification	System.CommandLine.Option`1[System.Boolean]	execution	module readiness changes scheduling only; fresh solver per proof, identical translation and assertion maps
 cli	translation-workers	--translation-workers	System.CommandLine.Option`1[System.Int32]	input	translation scheduling precedes task lookup; commits in serial order, so exact prepared SMT and current assertion map equal N = 1
 cli	translation-workers-stress	--translation-workers-stress	System.CommandLine.Option`1[System.Int32]	input	test-only translation finish-order delays precede task lookup; exact prepared SMT and current assertion map
 cli	type-inference-trace	--type-inference-trace	System.CommandLine.Option`1[System.Boolean]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
@@ -346,3 +347,4 @@ solver-property	Help		System.String	command-setup	static option documentation; n
 solver-property	LibOptions		Microsoft.Boogie.SMTLibOptions	execution	covered by complete inherited prover interfaces; never serialized as an opaque object
 solver-property	UseTickleBool		System.Boolean	execution	all public solver fields/properties enumerated and encoded
 cli	integer-bitwise	--integer-bitwise	System.CommandLine.Option`1[System.Boolean]	input	compiler-owned resolved signatures and local defining equations before task lookup
+cli	optimize-translation-copy	--optimize-translation-copy	System.CommandLine.Option`1[System.Boolean]	execution	field-copy implementation; preserves resolution keys, traversal, aliases, fresh IDs, exact SMT and current assertion map

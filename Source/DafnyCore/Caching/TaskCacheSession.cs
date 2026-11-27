@@ -70,7 +70,8 @@ public sealed class TaskCacheSession {
       var transport = new CachedTaskSolver(results,
         () => run.Disabled ? null : environment.Freeze(library, solverOptions, out var reason) is { } bytes ? bytes : Bypass(reason),
         () => { Interlocked.Increment(ref starts); return original(library, solverOptions); },
-        library.PrintProverWarnings == CoreOptions.ProverWarnings.None);
+        library.PrintProverWarnings == CoreOptions.ProverWarnings.None,
+        audit: options.Get(CommonOptionBag.PersistentTranslationAudit));
       run.Solvers.Add(transport);
       return transport;
     };
