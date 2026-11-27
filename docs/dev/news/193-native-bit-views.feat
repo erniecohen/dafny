@@ -1,0 +1,1 @@
+Add explicitly included, checked little-endian bit-sequence views and inverses for 8-, 16-, 32- and 64-bit native words under `--integer-bitwise`, with digit, Boolean and shift view lemmas.
