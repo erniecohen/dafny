@@ -1,0 +1,1 @@
+Adds an explicitly included, checked population-count loop for native 8/16/32/64-bit words under `--integer-bitwise`, with integer and bit-sequence specifications, byte-sized counters and no added axioms or compiler changes.

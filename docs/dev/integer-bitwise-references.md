@@ -317,6 +317,63 @@ invalid-caller rejection, or fail contract well-formedness when the guard define
 a later premise (the count/divisor guards in `RightArithmetic` and `LeftArithmetic`). Exhaustion never counts as a control or mutation pass.
 The proof/control ceilings remain 2,000,000/200,000 resource units per scope.
 
-Remaining native equations include subtraction, multiplication, unsigned
-division/remainder, ordering, rotations and population count. General word APIs
-at other widths and runtime lowering of integer-newtype operators also remain.
+Other native equations, including subtraction, multiplication, unsigned
+division/remainder, ordering and rotations, remain separate companion work,
+as do general word APIs at other widths and integer-newtype runtime lowering.
+Population counting has the checked loop below; a hardware-popcount intrinsic
+remains unimplemented.
+
+## Checked native population count
+
+Include `Source/DafnyStandardLibraries/optional/IntegerBitwiseNativePopulation.dfy`
+with `--integer-bitwise`. The modules `Std.Arithmetic.IntegerBitwiseNativePopulation8`,
+`16`, `32` and `64` provide an executable `Count(x)` method returning `bv8`.
+Its integer observation equals both `IntegerBitwiseModel.popNat(N,x as int)`
+and the number of true digits in `IntegerBitwise.bitsNat(N,x as int)`, and is
+at most N. The result fits a byte for every supported width.
+
+`Step(n,x)` requires positive n and proves the recurrence relating the
+population of the low n digits to the native low digit plus the population of
+`x>>1` at n-1. This follows from the existing checked digit split and one local
+unfolding of the integer population reference.
+
+### Model and executable proof
+
+Interpret the input as its unsigned weighted digit sum U. The loop maintains
+`count + popNat(N-index,rest) == popNat(N,U)`. It adds one precisely when the
+low digit is set, shifts the remaining word right by one, and advances the
+index. The checked digit split and `Step` preserve that equation. The count is
+at most the index, which is at most N, so neither byte increment overflows.
+The natural measure N-index decreases by one. At exit the remaining population
+has width zero and is zero. The existing checked foundation and bit-view
+agreement give the two reference postconditions.
+
+The executable state consists of the native input word and two byte counters.
+Proof calls, integer observations and the bit-sequence specification are ghost
+code. This is a verified shift-and-test algorithm, not a new hardware-popcount
+intrinsic or a change to integer-newtype operator lowering. No compiler fact,
+axiom, assumption or verification exemption is added. Existing compiler and
+packaged library inputs are unchanged, and the companion is explicitly included.
+
+The regression checks the complete included proof closure, symbolic native and
+bounded-integer clients, zero/one/high-bit witnesses and exact negative/vacuity
+controls with both resolvers and additional axioms off/on. False assertions
+follow `Step`, `Count` and their composition. Invalid zero-width recurrence
+calls and out-of-range input casts remain rejected. Wrong counts and bounds
+must also fail conclusively, under both bitvector engines.
+
+Runtime comparisons use an independent binary-digit oracle: every 8-bit value,
+all single-bit and single-cleared-bit wider values, boundaries, alternating
+patterns and deterministic wider samples. Both C# and JavaScript execute the
+same checked counting method. These comparisons exercise the algorithm and
+existing backend operations; they do not establish whole-theory consistency
+of the erased backend discussed under issue 284.
+
+Serial mutations negate each postcondition, remove each explicit recurrence
+guard, and perturb executable initializations, the low-bit test, increments,
+right shift and loop progress. Every mutant first checks a clean baseline on
+the same inhabited input. A hung mutant is killed only through its own process
+group after approximately three times that baseline, with a five-second minimum;
+a kill is recorded separately from a proof failure. Baselines and controls must
+never time out or exhaust resources. The proof/control limits remain
+2,000,000/200,000 resource units per scope.
