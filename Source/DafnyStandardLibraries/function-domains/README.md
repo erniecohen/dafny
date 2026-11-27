@@ -104,7 +104,10 @@ https://github.com/erniecohen/dafny/issues/374.
 
 For partial arrows, supply `Partial.dfy` with `--additional-axioms` and import
 `Std.PartialFunctionDomains`. `Arity0` through `Arity4` supply `ExactDom`,
-`Pointwise`, `Equal` and the checked `Extensionality` lemma. `Pointwise` means
+`Pointwise`, `Equal`, the checked `Extensionality` lemma, and `Restrict` and
+`Restriction` helpers. `Restrict` has the checked eta-expansion body with
+`requires f.requires(...)`. `Restriction` proves exactness, full-domain
+precondition/result agreement, and `ExactDom(f) <==> Restrict(f) == f`. `Pointwise` means
 that preconditions agree on every correctly typed tuple, including unallocated
 arguments, and results agree wherever that common precondition holds. Exact
 domains are still required; viewing a wider function at a narrower arrow type
@@ -126,7 +129,8 @@ The lemma does not grant a call outside the precondition. Agreement only on the
 intersection of two different preconditions does not satisfy `Pointwise`.
 Heap-reading arrows are excluded. For subset-domain lambdas,
 `--heap-free-lambda-facts` can expose their precondition facts at every heap
-and establish the full-domain premise. Ordinary partial-arrow equality still
-needs this explicit call; the automatic equality option continues to cover
-total arrows. Partial restriction helpers and automatic partial equality are
-not provided in this milestone.
+and establish the full-domain premise. With `--function-extensionality-axiom`, ordinary `==` and `!=` also trigger
+partial extensionality; `--additional-axioms` alone still needs an explicit
+call. Concrete lambda precondition facts may also need `--additional-axioms`,
+as in the example. Restrict a wider value explicitly before comparing on a
+proper subdomain; narrowing its static arrow type preserves its identity.

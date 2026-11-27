@@ -102,6 +102,7 @@ legacy-replacement-cycles	miss	miss	miss	false | true
 legacy-skeleton-modifying-calls	miss	miss	miss	false | true	
 legacy-stored-function-callbacks	miss	miss	miss	false | true	
 legacy-unchecked-import-binding	miss	miss	miss	false | true	
+legacy-unchecked-member-invariant-proofs	miss	miss	miss	false | true	Conservatively distinguish the legacy proof rule at every stage.
 legacy-unchecked-type-variance	miss	miss	miss	false | true	
 legacy-unguarded-char	miss	miss	miss	false | true	
 lemma-bindings	miss	miss	miss	false | true	

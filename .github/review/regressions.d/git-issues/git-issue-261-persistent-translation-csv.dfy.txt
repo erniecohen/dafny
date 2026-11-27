@@ -1,0 +1,2 @@
+# CSV module replay preserves verdicts, resource counts and seeds (issue 261).
+git-issues/git-issue-261-persistent-translation-csv.dfy
