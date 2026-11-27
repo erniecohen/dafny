@@ -564,6 +564,7 @@ namespace Microsoft.Dafny.LanguageServer.Workspace.Notifications {
       };
     }
 
+    [Newtonsoft.Json.JsonIgnore, System.Text.Json.Serialization.JsonIgnore]
     public Caching.IdeTaskReport? Report { get; private set; }
     public ImplementationVerificationTree WithReport(Caching.IdeTaskReport report) {
       Report = report;
@@ -617,6 +618,7 @@ namespace Microsoft.Dafny.LanguageServer.Workspace.Notifications {
     // The range of this node.
     Range Range
   ) : VerificationTree("Assertion", DisplayName, Identifier, Filename, Uri, Range, Range.Start) {
+    [Newtonsoft.Json.JsonIgnore, System.Text.Json.Serialization.JsonIgnore]
     public Caching.IdeAssertionReport? Report { get; private set; }
     public AssertionVerificationTree WithReport(Caching.IdeAssertionReport report) {
       Report = report;

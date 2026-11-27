@@ -87,6 +87,13 @@ public partial class PersistentCacheLifecycleTest {
       if (node is AssertionVerificationTree assertion) { assertions.Add(assertion); }
     });
     Assert.NotEmpty(assertions);
+    var resolver = new Newtonsoft.Json.Serialization.DefaultContractResolver();
+    foreach (var type in new[] { typeof(ImplementationVerificationTree), typeof(AssertionVerificationTree) }) {
+      var contract = Assert.IsType<Newtonsoft.Json.Serialization.JsonObjectContract>(resolver.ResolveContract(type));
+      Assert.True(contract.Properties["Report"]!.Ignored);
+      Assert.NotNull(type.GetProperty("Report")!.GetCustomAttributes(
+        typeof(System.Text.Json.Serialization.JsonIgnoreAttribute), true).SingleOrDefault());
+    }
     var hovers = new List<string>();
     foreach (var position in assertions.SelectMany(a => a.ImmediatelyRelatedRanges.Select(r => r.Start).Prepend(a.Position)).Distinct()) {
       var hover = await client.RequestHover(new HoverParams { TextDocument = document.Uri, Position = position }, CancellationToken);
@@ -216,12 +223,23 @@ public partial class PersistentCacheLifecycleTest {
     var directory = GetFreshTempPath();
     var file = Path.Combine(directory, "input.dfy");
     var cache = Path.Combine(directory, "cache");
-    await Start(cache, workers, ideReports: true);
+    await Start("", workers, ideReports: true);
     var document = await CreateOpenAndWaitForResolve(ReportSource, file);
+    var fresh = await CompleteReports(document);
+    var freshFacts = ReportFacts(fresh);
+    var freshTrees = TreeFacts(fresh);
+    var freshHovers = await Hovers(document, fresh);
+    Projects.Dispose();
+    await client.Shutdown();
+    await Start(cache, workers, ideReports: true);
+    document = await CreateOpenAndWaitForResolve(ReportSource, file);
     var cold = await CompleteReports(document);
     var expected = ReportFacts(cold);
     var trees = TreeFacts(cold);
     var hovers = await Hovers(document, cold);
+    Assert.Equal(freshFacts, expected);
+    Assert.Equal(freshTrees, trees);
+    Assert.Equal(freshHovers, hovers);
     Assert.True(PersistentModuleCache.For(((Program)cold.ResolvedProgram!).Options)!.ManifestPublications > 0);
     Projects.Dispose();
     await client.Shutdown();

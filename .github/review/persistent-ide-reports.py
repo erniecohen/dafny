@@ -2,6 +2,8 @@
 import json
 from pathlib import Path
 import runpy
+import shutil
+import subprocess
 
 helper = runpy.run_path(str(Path(__file__).with_name("persistent-ide.py")))
 run = helper["run"]
@@ -14,6 +16,11 @@ def events(name):
 def hover(name):
     messages = [json.loads(line) for line in (destination / (name + ".protocol.jsonl")).read_text().splitlines()]
     return next(m["result"] for m in messages if m.get("id") == 2)
+
+invalid = subprocess.run([shutil.which("dotnet"), str(helper["exe"]), "verify", str(helper["source"]),
+    "--type-system-refresh", "--persistent-ide-reports", "--cores", "2"],
+    capture_output=True, timeout=60)
+assert invalid.returncode == 2 and b"--persistent-ide-reports requires --persistent-translation" in invalid.stdout
 
 cold = run("cold", extra=extra)
 warm = run("warm", extra=extra, module_reports=True)
