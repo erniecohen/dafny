@@ -1,0 +1,20 @@
+// Foreign functions and shared-package partial classes across the complete matrix.
+// NONUNIFORM: Compare independent C# emission with Go package emission.
+// RUN: %run --target cs --verify-included-files --cores 2 --solver-path %review-z3 --member-invariants --recursive-modules --allow-external-contracts --general-traits=legacy "%S/Inputs/git-issue-466-go-foreign-matrix-source.dfy" --input "%S/Inputs/git-issue-466-go-foreign-matrix.cs" --output "%t-cs" > "%t-cs.out"
+// RUN: %run --target go --verify-included-files --cores 2 --solver-path %review-z3 --member-invariants --recursive-modules --allow-external-contracts --general-traits=legacy "%S/Inputs/git-issue-466-go-foreign-matrix-source.dfy" --input "%S/Inputs/git-issue-466-go-foreign-matrix.go" --input "%S/Inputs/git-issue-466-go-foreign-matrix-group.go" --input "%S/Inputs/git-issue-466-go-foreign-matrix-refined.go" --output "%t-go" > "%t-go.out"
+// RUN: %diff "%t-cs.out" "%t-go.out"
+// RUN: %run --target cs --optimize-erasable-datatype-wrapper:false --verify-included-files --cores 2 --solver-path %review-z3 --member-invariants --recursive-modules --allow-external-contracts --general-traits=legacy "%S/Inputs/git-issue-466-go-foreign-matrix-source.dfy" --input "%S/Inputs/git-issue-466-go-foreign-matrix.cs" --output "%t-cs-unerased" > "%t-cs-unerased.out"
+// RUN: %run --target go --optimize-erasable-datatype-wrapper:false --verify-included-files --cores 2 --solver-path %review-z3 --member-invariants --recursive-modules --allow-external-contracts --general-traits=legacy "%S/Inputs/git-issue-466-go-foreign-matrix-source.dfy" --input "%S/Inputs/git-issue-466-go-foreign-matrix.go" --input "%S/Inputs/git-issue-466-go-foreign-matrix-group.go" --input "%S/Inputs/git-issue-466-go-foreign-matrix-refined.go" --output "%t-go-unerased" > "%t-go-unerased.out"
+// RUN: %diff "%t-cs-unerased.out" "%t-go-unerased.out"
+// RUN: %run --target go --verify-included-files --cores 2 --solver-path %review-z3 --member-invariants --recursive-modules --allow-external-contracts --general-traits=legacy --additional-axioms --resolution-threads 2 "%S/Inputs/git-issue-466-go-foreign-matrix-source.dfy" --input "%S/Inputs/git-issue-466-go-foreign-matrix.go" --input "%S/Inputs/git-issue-466-go-foreign-matrix-group.go" --input "%S/Inputs/git-issue-466-go-foreign-matrix-refined.go" --output "%t-scheduled" > "%t-scheduled.out"
+// RUN: %diff "%t-cs.out" "%t-scheduled.out"
+// Use a concrete counter for the archive certificate, as in the Rust extern matrix.
+// RUN: %sed "s/class Implementation extends A.Counter/class Implementation/" "%S/Inputs/git-issue-466-go-foreign-matrix-library.dfy" > "%t-archive.dfy"
+// RUN: %sed "s/var counter: A.Counter/var counter/" "%S/Inputs/git-issue-466-go-foreign-matrix-client.dfy" > "%t-client.dfy"
+// RUN: %build -t:lib --cores 2 --solver-path %review-z3 --member-invariants --recursive-modules --allow-external-contracts --general-traits=legacy "%t-archive.dfy" --output "%t.doo" > "%t-library.out"
+// RUN: %run --target cs --verify-included-files --cores 2 --solver-path %review-z3 --member-invariants --recursive-modules --allow-external-contracts --general-traits=legacy "%t-client.dfy" --input "%t.doo" --input "%S/Inputs/git-issue-466-go-foreign-matrix.cs" --output "%t-library-cs" > "%t-library-cs.out"
+// RUN: %run --target go --verify-included-files --cores 2 --solver-path %review-z3 --member-invariants --recursive-modules --allow-external-contracts --general-traits=legacy "%t-client.dfy" --input "%t.doo" --input "%S/Inputs/git-issue-466-go-foreign-matrix.go" --input "%S/Inputs/git-issue-466-go-foreign-matrix-group.go" --input "%S/Inputs/git-issue-466-go-foreign-matrix-refined.go" --output "%t-library-go" > "%t-library-go.out"
+// RUN: %diff "%t-library-cs.out" "%t-library-go.out"
+// RUN: %cp -f "%t-go.out" "%t"
+// RUN: cat "%t-library-go.out" >> "%t"
+// RUN: %diff "%s.expect" "%t"

@@ -1183,9 +1183,11 @@ that a later stage would have to reject:
   linkage paths. Foreign implementations use the public member namespaces, including
   for sibling types and generated classes, without naming the group container.
   The existing Rust restrictions on two-argument module and class externs and
-  mixed foreign/generated implementations of a trait still apply. Refinement of
-  a group member with extern types is explicitly unsupported; inherited extern
-  members with explicit foreign paths are supported.
+  mixed foreign/generated implementations of a trait still apply. Abstract
+  refinements with extern types emit no code and are allowed. Concrete refinements
+  with extern types remain rejected because their foreign imports and generated
+  implementations are not remapped. Inherited extern members with explicit foreign
+  paths are supported.
   Rust group programs require explicit array initialization; implicit datatype defaults
   remain unsupported. The Rust backend's existing `--enforce-determinism` requirement
   and trait restrictions still apply.

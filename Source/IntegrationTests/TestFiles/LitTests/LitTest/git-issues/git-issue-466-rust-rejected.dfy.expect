@@ -12,6 +12,6 @@ Dafny program verifier did not attempt verification
 git-issue-466-java-client.dfy(10,17): Error: Unsupported Invalid Operation: Rust compilation of recursive module groups requires explicit array initialization
 
 Dafny program verifier did not attempt verification
-git-issue-466-rust-extern-refinement.dfy(3,27): Error: Rust refinement of a recursive module group with extern types is not yet supported
+git-issue-466-rust-extern-refinement.dfy(3,27): Error: Rust cannot compile extern type 'Native' in refining module 'Refined' above a recursive module group: foreign imports and generated implementations are not remapped for refinement
 git-issue-466-rust-extern-refinement.dfy(9,7): Related location: refining module
 Translation was aborted because errors were found
