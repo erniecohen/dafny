@@ -577,8 +577,8 @@ explicit `--verification-module-window-memory` budget. Otherwise the automatic
 admission threshold would become half the GC limit and could reduce preparation
 throughput. The admission budget controls when more modules are started; the GC
 limit controls managed-heap commitment. Choose the two budgets separately.
-The option changes no generated obligations, solver settings or verification
-ordering. Ordinary verification and the language server retain their GC policy.
+The option changes no generated obligations, solver settings or scheduling
+policy. Ordinary verification and the language server retain their GC policy.
 
 By default `dafny verify` verifies one module at a time: it starts every symbol of a
 module, waits until all of them have finished, and only then translates and starts
