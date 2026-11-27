@@ -317,6 +317,52 @@ invalid-caller rejection, or fail contract well-formedness when the guard define
 a later premise (the count/divisor guards in `RightArithmetic` and `LeftArithmetic`). Exhaustion never counts as a control or mutation pass.
 The proof/control ceilings remain 2,000,000/200,000 resource units per scope.
 
-Remaining native equations include subtraction, multiplication, unsigned
+Remaining native equations include subtraction, unsigned
 division/remainder, ordering, rotations and population count. General word APIs
 at other widths and runtime lowering of integer-newtype operators also remain.
+
+## Checked native modular multiplication
+
+Explicitly include `Source/DafnyStandardLibraries/optional/IntegerBitwiseNativeMultiplication.dfy`
+with `--integer-bitwise`. The modules `Std.Arithmetic.IntegerBitwiseNativeMultiplication8`,
+`16`, `32` and `64` provide `Times(x,y)`, specifying
+`(x*y) as int == (x as int*y as int) % 2^N`. This is the unsigned
+observation of the wrapped native product, including overflow. Bounded integer
+clients first use the existing checked conversion round trips. No runtime
+integer-newtype multiplication or new globally installed fact is introduced.
+The optional companion is outside the packaged standard-library inputs.
+
+For M=2^N, the native `Step` identity writes `x*y` as `x*(y-1)+x` modulo M.
+`TimesWitness` names the native result under a checked equality premise and
+inducts on the unsigned integer observation of y. At zero, the result is zero.
+At positive y, the existing checked successor lemma gives
+U(y-1)=U(y)-1, both proving that the recursive call decreases and identifying
+its integer product. Checked modular addition combines the preceding native
+product with x. The integer-only `Reduce` helper then uses the existing
+modular-shift law to obtain (U(x)*U(y)) mod M. Its positive-modulus and two
+remainder-equation premises are explicit. Every declaration has a proof body;
+no axiom, assumption, verification exemption or compiler rule is added.
+
+Qualification requires the included proof closure and symbolic native and
+bounded integer clients under both resolvers, with additional axioms off/on.
+The regression covers zero, identity, both operand orders, maximum values,
+high-bit overflow and maximum-by-maximum wraparound. Wrong-result equations,
+inhabited false assertions after every new rule, incorrect witness results,
+invalid conversions and incorrect arithmetic premises must be rejected.
+Serial mutation mode negates every new postcondition and removes each new
+premise separately. Recursive fact mutations use an inhabited zero case so
+an inconsistent induction hypothesis cannot obscure the rejection. Resource
+exhaustion and timeout never count as successful controls; the proof/control
+ceilings are 2,000,000/200,000 resource units per scope.
+
+The new multiplication bodies use Z3's integer-based bitvector engine
+(`--solver-option O:smt.bv.solver=2`) with the pinned solver. The default
+bit-blasting engine can exhaust the proof budget on substitutions involving wide
+products; the integer-based engine checks the same native operations without
+adding a Dafny axiom. The included bitwise and shift proof closure is checked
+separately with the
+default engine, whose coverage of those operations is needed by the existing
+proofs. Clients are checked with the default engine. Negative and
+vacuity controls are also checked with the integer-based engine, so a successful
+body run alone is insufficient qualification. This solver setting belongs to the
+explicit proof gate and does not change compiler or verifier defaults.

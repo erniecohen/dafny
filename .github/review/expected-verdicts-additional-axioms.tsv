@@ -1415,6 +1415,7 @@ git-issues/github-issue-88.dfy	4	46 verified, 17 errors	51,83,113,121,122,139,14
 git-issues/github-issue-89.dfy	4	60 verified, 20 errors	50,64,65,98,100,101,102,103,115,133,134,149,171,188,189,193,215,224,232,242
 git-issues/github-issue-90.dfy	4	9 verified, 1 error	23
 git-issues/git-issue-193-bootstrap.dfy	0	4 verified, 0 errors
+git-issues/git-issue-193-native-multiplication.dfy	0	8 verified, 0 errors
 hofs/Apply.dfy	4	7 verified, 7 errors	46,48,57,58,61,93,95
 hofs/ArrowTypeOptimizations.dfy	4	10 verified, 3 errors	10,16
 hofs/Classes.dfy	4	4 verified, 2 errors	33,60
