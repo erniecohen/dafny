@@ -1,0 +1,4 @@
+includes = ["../../github-issue-618.dfy"]
+
+[options]
+solver-option = ["O:smt.bv.solver=2"]

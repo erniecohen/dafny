@@ -912,6 +912,7 @@ git-issues/git-issue-2307.dfy	0	16 verified, 0 errors
 git-issues/git-issue-2367.dfy	0	2 verified, 0 errors	
 git-issues/git-issue-2380.dfy	0	2 verified, 0 errors	
 git-issues/git-issue-2384.dfy	4	0 verified, 3 errors	11,14,17
+git-issues/git-issue-241-ready-modules.dfy	4	3 verified, 1 error	23
 git-issues/git-issue-2429.dfy	0	7 verified, 0 errors	
 git-issues/git-issue-2441.dfy	0	0 verified, 0 errors	
 git-issues/git-issue-245-instances.dfy	2		17,35,43,51
@@ -1406,6 +1407,8 @@ git-issues/github-issue-492.dfy	0	0 verified, 0 errors
 git-issues/github-issue-5029.dfy	0	3 verified, 0 errors	
 git-issues/github-issue-569-witness-race.dfy	0	7 verified, 0 errors	
 git-issues/github-issue-5814.dfy	0	3 verified, 0 errors	
+git-issues/github-issue-618-positive.dfy	0	5 verified, 0 errors	
+git-issues/github-issue-618.dfy	4		
 git-issues/github-issue-88-89-interactions.dfy	4	5 verified, 3 errors	32,51,58
 git-issues/github-issue-88-inherited-bounds.dfy	4	9 verified, 1 error	27
 git-issues/github-issue-88-modular-termination.dfy	4	20 verified, 6 errors	45,77,93,124,175,209
@@ -1443,3 +1446,4 @@ hofs/VectorUpdate.dfy	0	8 verified, 0 errors
 hofs/WhileLoop.dfy	0	4 verified, 0 errors	
 git-issues/git-issue-569.dfy	4	5 verified, 4 errors	33,36,37,38
 git-issues/git-issue-193-native-views.dfy	0	4 verified, 0 errors
+git-issues/git-issue-193-native-subtraction.dfy	0	8 verified, 0 errors

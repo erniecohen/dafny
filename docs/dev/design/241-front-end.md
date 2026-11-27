@@ -461,7 +461,58 @@ multi-module lit programs, the digests at N = 1 and N = 4 then agree, and
 `git-issues/github-issue-569-witness-race.dfy` compares them at N = 1, 2 and 4 under both kinds
 of schedule.
 
+### 2.8 Single-worker follow-up: translation graph copying
+
+Every uncached translation also materializes a private Boogie graph before preparation.
+Removing that copy would change the fresh node identities and identity-derived expression
+hashes on which solver emission depends. The opt-in `--optimize-translation-copy` instead
+reduces its reflection work, including with one translation worker. It uses a cached open
+delegate for `MemberwiseClone` and generates a field-copy routine per runtime type.
+
+The equivalence argument is local: allocate the same shallow copy, allocate the same fresh
+node identity, enter it in the same reference map, traverse fields in the existing order,
+then recompute immutable expression hashes. Each generated field operation performs the
+same read, recursive copy and write. A statically known primitive, enum, string, decimal,
+big-number value, URI or runtime type can be assigned directly because `Copy` returns it
+unchanged. Other fields, including tokens, still recurse; `CanVerifyOrigin` must bind to the
+current resolved program. Collections and unsupported-type rejection are unchanged.
+Generated delegates retain metadata only, never a program. Unsupported generation and
+runtimes without dynamic code support use reflection.
+
+The option is wired through ordinary translation, cold and warm in-process translation
+caches, their bypass path, and persistent translation recording. Unit controls require the
+selected copier to run, private inherited and readonly fields to copy, distinct node IDs,
+preserved aliases and hashes, current-symbol rebinding, and unsupported metadata rejection.
+The paired real-solver regression compares Boogie bytes, raw SMT, diagnostics and per-VC
+obligations and resources with the default under both resolvers, additional axioms and the
+translation cache. Its positive lemma must pass and its false assertion must fail.
+
 ---
+
+### 2.8 Ready module verification
+
+`--ready-module-verification` is an experimental hidden, default-off follow-up to F1.
+It requires `--translation-workers` and `--verification-module-window` greater than one,
+and an explicitly fresh solver per proof (`--boogie /restartProver`). It removes two
+ordering dependencies: an unfinished earlier translation need not block a later module's
+capture and preparation, and an unprepared earlier module need not block a ready module's
+proof-task submission. Submission remains ordered within each module.
+
+This relies on F1's private translation state and eligibility guards. Captures remain
+mutually exclusive and happen before their own module's preparation; the CLI writes each
+module to its own Boogie file. The existing module window still bounds admission and
+publishes results and diagnostics in canonical order. A module's submission queue is
+released together with its reported translation, including between position-filter batches.
+Neither obligations nor axioms change. Fresh solver histories prevent submission order
+from becoming solver-history input; equality controls compare complete per-proof SMT
+streams, assertion maps, verdicts and resource counts, together with Boogie text.
+
+The performance decision distinguishes translation and preparation from proof-task SMT
+generation. A preparation-only probe must count the prepared work before suppressing its
+execution; its empty solver log is no proof result. Acceptance also needs independent
+real-solver positive and false-assertion controls. Removing either ordering barrier must
+be observable in a held-predecessor control. Reduced readiness latency alone does not
+establish an end-to-end verification speedup.
 
 ## 3. F2 — Parallel module resolution (D8)
 
