@@ -43,7 +43,7 @@ public class JsonVerificationLogger : IVerificationResultFormatLogger {
       ["endLine"] = dependency.Range.EndToken.line,
       ["endCol"] = dependency.Range.EndToken.col,
       ["description"] = dependency.Description,
-      ["originalText"] = dependency.OriginalString()
+      ["originalText"] = dependency is Caching.ReplayedProofDependency replayed ? replayed.OriginalText : dependency.OriginalString()
     };
   }
 

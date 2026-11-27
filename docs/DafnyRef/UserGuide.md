@@ -411,21 +411,27 @@ Various options control the verification process, in addition to all those descr
   completed valid, or ran out of resources under a positive resource limit and no
   time limit, through the task-result cache. Resource-exhausted results retain their
   outcome and current-source diagnostic; the module identity and environment must
-  still match, including the effective limits. Counterexample errors, timed failures
+  still match, including the effective limits. Counterexample errors retain the normal task path unless
+  `--persistent-counterexamples` is also enabled (see below). Timed failures
   and unsupported outcomes retain the normal task path. When a module's translation key is
   unchanged, the module is neither translated, prepared nor solved again; when a
   dependency changed but the module's regenerated Boogie graph is unchanged, it is
   neither prepared nor solved again (early cutoff). Replayed results are reported
-  exactly as the result cache reports them. CSV and ordinary JSON verification logs
+  exactly as the result cache reports them. CSV, TRX and ordinary JSON/text verification logs
   also support module replay: names, verdicts, resource counts and seeds are preserved,
   while durations are marked as replayed (`TimingReplayed` in CSV and `timingReplayed`
-  in JSON). JSON also preserves every assertion's current filename, line, column and
-  success description. CSV and JSON loggers may be combined or repeated. A module
-  lacking complete, portable assertion metadata falls back for JSON. Dependency-aware
-  JSON, text and TRX logs require the normal translation/preparation path; requesting
-  one alongside an eligible logger also disables module replay. Stored Boogie text is a record, never
+  in JSON). Text prints `Timing replayed: true` for a batch whose timing is reused,
+  and for a scope containing any such batch; TRX includes the same marker in each
+  reused test result's `Output/StdOut`. JSON and text preserve every assertion's
+  current filename, line, column and success description. These loggers may be
+  combined or repeated. A module lacking complete, portable assertion metadata falls
+  back for JSON or text; CSV and TRX need only the stored task facts. Dependency-aware
+  JSON/text, verification coverage and contradictory/redundant-assumption warnings also
+  support replay when the complete dependency inventory, covered membership and current
+  source ranges are available. Missing or unsupported sidecars use fresh preparation.
+  Stored Boogie text is a record, never
   an input. Options that need a fresh translation or preparation (counterexample
-  extraction, printing Boogie, proof-dependency reports, and the like) and graphs
+  extraction, printing Boogie, proof-refactoring analysis, and the like) and graphs
   the snapshot copier does not support run normally. The hidden option
   `--persistent-translation-audit` replays nothing: it translates, prepares and
   verifies every module afresh, and reports an error when a stored translation or
@@ -444,6 +450,17 @@ Various options control the verification process, in addition to all those descr
   run finds what any partition stored, and an evicted entry is only a miss. A
   module whose translation was evicted is translated again and, when its Boogie
   graph is unchanged, replays its stored results (early cutoff).
+
+- `--persistent-counterexamples` requires `--persistent-translation` and additionally
+  allows whole-module reuse of resource-bounded failed results with complete terminal
+  diagnostics. It preserves the error count, main and related messages and current-source
+  ranges. Missing or unbindable metadata falls back for the whole module. Failed tasks
+  require a positive resource limit and no time limit. With `--extract-counterexample`,
+  failed modules may also replay complete native model payloads, preserving values,
+  function interpretations, aliases and captured-state order. State descriptions use
+  current source ranges. Unsupported native model shapes or unbindable state locations retain the
+  ordinary task path. `--persistent-translation-audit` also checks
+  every stored failure-report field. This option is off by default.
 
 - `--boogie /cacheBackground` is an opt-in Boogie option
   ([#241](https://github.com/erniecohen/dafny/issues/241)). When a split has the

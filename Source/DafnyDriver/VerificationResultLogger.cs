@@ -151,6 +151,8 @@ namespace Microsoft.Dafny {
         };
         if (task is Caching.IReplayedVerificationTask { IsReplayed: true }) {
           testResult.SetPropertyValue(TimingReplayedProperty, true);
+          // The TRX serializer does not emit custom TestResult properties.
+          testResult.Messages.Add(new TestResultMessage(TestResultMessage.StandardOutCategory, "Timing replayed: true"));
         }
         testResult.SetPropertyValue(ResourceCountProperty, vcResult.ResourceCount);
         if (task != null && Caching.VerificationTaskFacts.RandomSeed(task) != 0) {
