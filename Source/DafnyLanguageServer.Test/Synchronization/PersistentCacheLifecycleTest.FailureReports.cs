@@ -152,9 +152,10 @@ public partial class PersistentCacheLifecycleTest {
       "module Cached { lemma Quantified(s: seq<int>) { assert forall i :: 0 <= i < |s| ==> s[i] == 0; } }";
     string[]? facts = null, trees = null, hovers = null, actions = null, diagnostics = null;
     foreach (var phase in new[] { "fresh", "cold", "warm", "audit" }) {
-      // Exercise result/report replay with independently resolved current source on every restart.
+      var profile = Path.Combine(directory, phase + ".jsonl");
+      // Resolution, translation and result/report reuse must compose across server restarts.
       await Start(phase == "fresh" ? "" : cache, workers, audit: phase == "audit", ideReports: phase != "fresh",
-        resolutionCache: false);
+        profile: profile);
       var document = await CreateOpenAndWaitForResolve(source, file);
       var state = await CompleteReports(document, phase);
       facts ??= ReportFacts(state);
@@ -170,11 +171,13 @@ public partial class PersistentCacheLifecycleTest {
       Assert.Contains(facts, fact => fact.Contains(exhausted ? "OutOfResource" : "Invalid"));
       if (!exhausted) { Assert.Contains(actions, action => action.Contains("Insert a forall statement")); }
       if (phase == "warm") {
+        AssertCheckedResolutionHits(profile);
         var persistent = PersistentModuleCache.For(((Program)state.ResolvedProgram!).Options)!;
         Assert.True(persistent.KeyHits > 0, persistent.LastBypassReason);
         Assert.Equal(0, Session(state).SolverStarts);
       }
       if (phase == "audit") {
+        AssertCheckedResolutionHits(profile);
         var persistent = PersistentModuleCache.For(((Program)state.ResolvedProgram!).Options)!;
         Assert.True(persistent.AuditChecks > 0);
         Assert.Equal(0, persistent.AuditMismatches);
