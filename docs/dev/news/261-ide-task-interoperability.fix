@@ -1,0 +1,3 @@
+Allow the CLI and language server to share opt-in persistent task results when
+solver inputs agree, despite front-end cancellation bindings and inactive legacy
+cache sentinels. Active legacy-cache levels and solver parameters remain distinct.

@@ -955,6 +955,9 @@ namespace Microsoft.Dafny {
     }
 
     public void ProcessSolverOptions(ErrorReporter errorReporter, IOrigin token) {
+      if (!UnsoundSolverOptions.Check(this, errorReporter, token)) {
+        return;
+      }
       if (IsUsingZ3()) {
         var z3Version = SetZ3ExecutablePath(errorReporter, token);
         SetZ3Options(z3Version);
