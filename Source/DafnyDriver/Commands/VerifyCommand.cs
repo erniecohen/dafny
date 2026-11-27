@@ -81,6 +81,7 @@ public static class VerifyCommand {
         CommonOptionBag.PersistentCounterexamples,
         CommonOptionBag.TranslationWorkers,
         CommonOptionBag.TranslationWorkersStress,
+        CommonOptionBag.ReadyModuleVerification,
         FilterSymbol,
         FilterPosition,
         FilterPositionBatch,
@@ -95,7 +96,11 @@ public static class VerifyCommand {
   public static async Task<int> HandleVerification(DafnyOptions options) {
     var batch = options.GetOrOptionDefault(FilterPositionBatch).ToArray();
     string? conflict = null;
-    if (batch.Length != 0 && options.Get(FilterPosition) != null) {
+    if (options.Get(CommonOptionBag.ReadyModuleVerification) &&
+        (options.Get(CommonOptionBag.TranslationWorkers) <= 1 || options.Get(VerificationModuleWindow) <= 1 ||
+         !options.RestartProverPerVC)) {
+      conflict = "--ready-module-verification requires --translation-workers and --verification-module-window greater than 1, and --boogie /restartProver";
+    } else if (batch.Length != 0 && options.Get(FilterPosition) != null) {
       conflict = "--filter-position-batch cannot be combined with --filter-position";
     } else if (options.Get(ReleaseVerifiedModules) && batch.Length != 0) {
       conflict = "--release-verified-modules cannot be combined with --filter-position-batch";

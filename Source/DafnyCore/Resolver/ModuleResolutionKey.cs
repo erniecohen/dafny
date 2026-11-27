@@ -62,6 +62,7 @@ public static class ModuleResolutionKey {
     ["optimize-translation-copy"] = "a later stage's graph copier; preserves the copied graph and its traversal order",
     ["translation-workers"] = "a later stage's scheduling: any number of workers commits the same translations",
     ["translation-workers-stress"] = "test-only delays of a later stage's scheduling",
+    ["ready-module-verification"] = "a later stage's scheduling; changes neither resolution nor module translations",
     ["persistent-translation"] = "a later stage's cache",
     ["persistent-counterexamples"] = "a later stage's reporting cache; changes no resolved result",
     ["persistent-translation-audit"] = "checks a later stage's cache; changes no result",
