@@ -463,6 +463,31 @@ of schedule.
 
 ---
 
+### 2.8 Ready module verification
+
+`--ready-module-verification` is an experimental hidden, default-off follow-up to F1.
+It requires `--translation-workers` and `--verification-module-window` greater than one,
+and an explicitly fresh solver per proof (`--boogie /restartProver`). It removes two
+ordering dependencies: an unfinished earlier translation need not block a later module's
+capture and preparation, and an unprepared earlier module need not block a ready module's
+proof-task submission. Submission remains ordered within each module.
+
+This relies on F1's private translation state and eligibility guards. Captures remain
+mutually exclusive and happen before their own module's preparation; the CLI writes each
+module to its own Boogie file. The existing module window still bounds admission and
+publishes results and diagnostics in canonical order. A module's submission queue is
+released together with its reported translation, including between position-filter batches.
+Neither obligations nor axioms change. Fresh solver histories prevent submission order
+from becoming solver-history input; equality controls compare complete per-proof SMT
+streams, assertion maps, verdicts and resource counts, together with Boogie text.
+
+The performance decision distinguishes translation and preparation from proof-task SMT
+generation. A preparation-only probe must count the prepared work before suppressing its
+execution; its empty solver log is no proof result. Acceptance also needs independent
+real-solver positive and false-assertion controls. Removing either ordering barrier must
+be observable in a held-predecessor control. Reduced readiness latency alone does not
+establish an end-to-end verification speedup.
+
 ## 3. F2 — Parallel module resolution (D8)
 
 ### 3.1 Current structure

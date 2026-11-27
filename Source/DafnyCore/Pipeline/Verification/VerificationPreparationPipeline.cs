@@ -28,9 +28,11 @@ public record ModuleVerificationPreparation(VerificationPreparation Preparation,
 /// <see cref="TranslationWorkers"/>), up to N modules are translated and up to N prepared at once.
 /// Every translation is already history-free: <see cref="BoogieGenerator.DoTranslation"/> runs
 /// in its own <see cref="ModuleNamingScope"/>, so names, counters, proof-dependency ids and the
-/// translation-time AST caches are private to it. What remains ordered is committed through a
+/// translation-time AST caches are private to it. By default, captures are committed through a
 /// cursor: each call takes a ticket when it arrives, synchronously, and its commit (the capture
 /// callback, that is <c>--bprint</c>) runs only after every earlier ticket has committed or failed.
+/// With <c>--ready-module-verification</c> and fresh solvers, captures are mutually exclusive
+/// but need not wait for earlier translations; each still precedes its own preparation.
 /// Translation diagnostics keep their module's order and are published by the caller in its
 /// own order (the CLI's module window defers them per module). A translation is admitted only
 /// while the managed heap plus the running mean of a translation's allocation, for each
@@ -41,6 +43,7 @@ public sealed class VerificationPreparationPipeline : IDisposable {
 
   // Parallel path state, all guarded by gate.
   private readonly object gate = new();
+  private readonly object captureGate = new();
   private Task lastCommit = Task.CompletedTask;
   private long arrivals;
   private int translating;
@@ -176,6 +179,7 @@ public sealed class VerificationPreparationPipeline : IDisposable {
     Func<IVerificationBackend<Bpl.Program>> createBackend, CancellationToken cancellationToken,
     Action<Bpl.Program>? capture) {
     var options = resolution.ResolvedProgram.Options;
+    var ready = options.Get(CommonOptionBag.ReadyModuleVerification) && options.RestartProverPerVC;
     var profile = PipelineProfile.For(options);
     var moduleName = profile != null ? PipelineProfile.ModuleName(moduleDefinition) : null;
     var committed = NewSignal();
@@ -201,8 +205,8 @@ public sealed class VerificationPreparationPipeline : IDisposable {
     ProofDependencyManager dependencies;
     Caching.PersistentModuleCache.ModuleIdentity? translated;
     try {
-      // A translation-key hit needs no translation slot. It commits nothing, but its ticket still
-      // completes only after its predecessor's (the finally below), so the cursor's order holds.
+      // A translation-key hit needs no translation slot. In ordered mode its ticket still
+      // completes only after its predecessor's (the finally below), preserving the cursor.
       if (LookUpPersistent(program, moduleDefinition, insertChecksums, profile, moduleName, out var identity) is { } stored) {
         return stored;
       }
@@ -227,7 +231,9 @@ public sealed class VerificationPreparationPipeline : IDisposable {
 
       profileStart = profile?.Begin();
       previousAwaited = true;
-      await previous;
+      if (!ready) {
+        await previous;
+      }
       if (profile != null) {
         profile.Span("translate.commit", profileStart!.Value, new Dictionary<string, object?> {
           ["module"] = moduleName,
@@ -235,10 +241,18 @@ public sealed class VerificationPreparationPipeline : IDisposable {
         });
       }
       cancellationToken.ThrowIfCancellationRequested();
-      capture?.Invoke(boogieProgram);
+      if (ready) {
+        // Printing mutates tokens. Keep captures mutually exclusive and before their own
+        // preparation, but let a ready module pass an earlier, unfinished translation.
+        lock (captureGate) {
+          capture?.Invoke(boogieProgram);
+        }
+      } else {
+        capture?.Invoke(boogieProgram);
+      }
     }
     finally {
-      if (!previousAwaited) {
+      if (!ready && !previousAwaited) {
         await previous;
       }
       committed.SetResult();

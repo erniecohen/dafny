@@ -578,6 +578,18 @@ encoding other than the default. It composes with `--resolution-threads` and
 `--translation-cache`.
 
 
+The experimental hidden `--ready-module-verification` removes the dependency on earlier
+modules at translation commit and proof-task submission. Each ready module can prepare
+and submit its proofs while an earlier module is still translating or preparing. It is
+off by default and requires `--translation-workers` and `--verification-module-window`
+greater than one, together with `--boogie /restartProver`. The fresh solver requirement
+keeps each proof's solver history independent of submission order. Solver concurrency
+remains bounded by `--cores`, and module admission keeps the same memory budget.
+Captures remain mutually exclusive and precede their own module's preparation; Boogie
+files keep the same names and contents. Results and diagnostics retain module order.
+Batch completion order in JSON logs can vary, including without this option.
+
+
 #### 13.6.1.4. `dafny translate <language>` {#sec-dafny-translate}
 
 The `dafny translate` command translates Dafny source code to source code for another target programming language.

@@ -61,6 +61,7 @@ public static class ModuleResolutionKey {
     ["translation-cache"] = "a later stage's cache",
     ["translation-workers"] = "a later stage's scheduling: any number of workers commits the same translations",
     ["translation-workers-stress"] = "test-only delays of a later stage's scheduling",
+    ["ready-module-verification"] = "a later stage's scheduling; changes neither resolution nor module translations",
     ["persistent-translation"] = "a later stage's cache",
     ["persistent-translation-audit"] = "checks a later stage's cache; changes no result",
     ["verification-cache"] = "the store's root, not an input; keys never name a location",
