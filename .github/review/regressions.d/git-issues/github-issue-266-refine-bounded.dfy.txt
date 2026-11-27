@@ -1,0 +1,2 @@
+# Bounded callables: a module that refines one with bounded applications resolves, under both resolvers (the pre-type resolver used to fail an assertion) (https://github.com/erniecohen/dafny/issues/266).
+git-issues/github-issue-266-refine-bounded.dfy

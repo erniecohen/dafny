@@ -1,0 +1,3 @@
+
+# User-written {:auto_generated} members are kept in .doo libraries; a user-written {:opaque_reveal} trait lemma must be implemented; the auditor reports {:axiom}/{:verify false} beside a user-written {:auto_generated} (https://github.com/erniecohen/dafny/issues/325).
+git-issues/github-issue-325.dfy

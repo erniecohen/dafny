@@ -1,0 +1,3 @@
+
+# Under --quantified-check-call-facts, a universally quantified postcondition or assert condition whose body the solver simplifies until no trigger term remains, as abs(l[i] - l[i]) <= d, keeps the call facts of its body, and wrong bounds, assert false and calls outside their precondition still fail (https://github.com/erniecohen/dafny/issues/196).
+git-issues/github-issue-196.dfy

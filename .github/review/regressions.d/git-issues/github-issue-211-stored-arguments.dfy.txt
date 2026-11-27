@@ -1,0 +1,3 @@
+
+# Argument-dependent bounds, `bounded.certifyAt(b, f)` and `c.boundAt(x)`: cons.c's intersects, whose bound at another list grows with that list's, with controls, bounds that are not closed or that may apply their own, and orders that are not total arrows from the payload's parameters (https://github.com/erniecohen/dafny/issues/211).
+git-issues/github-issue-211-stored-arguments.dfy

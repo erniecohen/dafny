@@ -1,0 +1,3 @@
+
+# Member-invariant dependence must reach the owner through a datatype cycle (issue 504).
+git-issues/git-issue-504-dependence.dfy

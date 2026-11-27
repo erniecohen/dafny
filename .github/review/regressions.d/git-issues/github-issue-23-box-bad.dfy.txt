@@ -1,0 +1,3 @@
+
+# Upstream review follow-up (https://github.com/erniecohen/dafny/issues/23).
+git-issues/github-issue-23-box-bad.dfy

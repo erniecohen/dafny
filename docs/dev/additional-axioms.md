@@ -1658,7 +1658,71 @@ symbol. The live vacuity controls must still fail with it. Restoring an
 unguarded lambda application equation makes these controls prove `false`,
 which detects that mutation without making an invalid source call.
 
-Automatic partial-arrow equality, partial restriction helpers, stronger source
-introduction rules for reference-containing preconditions, precompiled-library
-packaging and the M1/M2 resource-unit trial remain separate work. Heap-reading
+At that milestone, automatic partial-arrow equality, partial restriction helpers,
+stronger source introduction rules for reference-containing preconditions,
+precompiled-library packaging and the M1/M2 resource-unit trial remained open. Heap-reading
 extensionality remains out of scope.
+
+### Automatic partial equality and restriction
+
+The next milestone depends on https://github.com/erniecohen/dafny/pull/542.
+With `--function-extensionality-axiom`, `==` and `!=` between heap-independent
+arrows also use `$FunEqN` when either operand is partial. Its new implication
+has exactly the explicit partial rule's premises: both values have partial-arrow
+types at the comparison's type arguments, both domains are exact, and
+`PartialAgreement` holds over the full boxed product at `$OneHeap`. The existing
+`$FunEqN <==> f == g` definition is unchanged. Mixed total/partial comparisons
+are included; `~>` operands have no automatic rule. This changes no translation
+when the automatic option is off. In particular, additional axioms alone still
+require an explicit equality-predicate call.
+
+`{:functionDomain "partialRestrict"}` supplies partial restriction at every
+arity. It accepts only a static ghost function over generic partial arrows,
+with no other specification, and the checked body
+`(x1: A1, ..., xn: An) requires f.requires(x1, ..., xn) => f(x1, ..., xn)`.
+The validator checks resolved declaration/parameter identities, argument order,
+types and arity, and rejects a missing body. The convenience modules
+`Std.PartialFunctionDomains.Arity0` through `Arity4` add `Restrict` and checked
+`Restriction` lemmas. No trusted source declaration or unchecked source
+postcondition is added.
+
+In the preceding graph model, restriction takes `(D, P, R, V)` to
+`(A, P|A, R|A, V|A)` for the requested argument product `A` contained in `D`.
+The checked input type makes `R|A` empty. The checked lambda body supplies domain exactness and application equality
+where its precondition holds, using the existing tagged-constructor equations.
+Its intrinsic axioms add only precondition equality throughout `A` and identity
+if `A = D`. They quantify over
+all heaps and selector type indices, as the existing total restriction does.
+They impose no equality between undefined application results of a restriction
+and its original wider value. For equal domains the representation itself is
+unchanged, so identity is valid, including undefined extensions. Empty products
+and the nullary singleton use the same argument. Total restrictions retain
+their existing axioms byte for byte.
+
+These facts hold in the same representation with all existing optional axiom
+families: restrict the original precondition, empty reads and defined graph,
+and use the fixed extension of that new tuple outside them. Guarding the
+application equation is essential; preserving raw lambda body results outside
+its precondition would distinguish equal partial values. The automatic rule
+adds only a new trigger for the tuple-identification argument already used by
+the explicit rule. This is a written encoding argument with regression
+controls, not a mechanized metatheory.
+
+`git-issue-374-partial-equality.dfy` checks automatic equality and inequality at
+arities zero through five, named/lambda agreement, empty preconditions and mixed
+arrows, with both resolvers and explicit option-off controls. Its negative
+input rejects differing preconditions/results, proper-subdomain agreement,
+allocated-only agreement, heap-reading values and invalid calls. Live automatic
+equalities at every tested arity retain failing `assert false` controls.
+`git-issue-374-partial-restrict.dfy` verifies all source helpers and generic
+clients, proper-subdomain restriction, idempotence and the compiler's fifth
+arity. It has live vacuity, non-identity, non-totality, differing-precondition,
+invalid-call and malformed-intrinsic controls. Existing partial probes continue
+to exercise undefined applications without adding a constraint on old symbols.
+
+Stronger source introduction rules for reference-containing preconditions,
+precompiled-library packaging and the M1/M2 resource-unit trial remain open.
+Heap-reading extensionality is separate work. Concrete lambda precondition
+introduction still uses the existing additional-axioms and heap-free-lambda
+options where those are needed; the automatic equality rule itself does not
+change those introduction rules.

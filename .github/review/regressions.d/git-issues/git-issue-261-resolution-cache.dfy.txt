@@ -1,0 +1,2 @@
+# The persistent per-module resolution cache (issue 261).
+git-issues/git-issue-261-resolution-cache.dfy
