@@ -464,15 +464,17 @@ Various options control the verification process, in addition to all those descr
   a cache entry does not schedule an unrequested symbol.
 
   With `--persistent-ide-reports` and `--persistent-translation`, the language server
-  can instead reuse a whole module with complete successful assertion reports. These
-  reports retain current-source assertion ranges, kinds, success descriptions, hover
-  details, batch membership and resource counts without executable split or assertion
-  graphs. Native runs with persistent translation record these reports for later use;
-  the new option enables their IDE consumption. Failed results, incomplete or stale
-  report metadata and unsupported shapes use native preparation and the task cache.
-  Explicit reseeding also prepares native tasks. Audit mode independently regenerates
-  the reports and compares every stored field except elapsed time. The option does not
-  enable failed whole-module IDE replay or change which symbols are scheduled.
+  can instead reuse a whole module with complete IDE assertion reports. These reports
+  retain current-source ranges, per-assertion outcomes, descriptions, hover details,
+  batch membership and resource counts without executable split or assertion graphs.
+  With `--persistent-counterexamples`, eligible resource-bounded failed and mixed-outcome
+  modules also retain diagnostics, counterexample models and code actions. Models restore
+  current-source state descriptions; code-action syntax is applied to the current parsed
+  source. Native runs with persistent translation record the reports for later use; the
+  option enables their IDE consumption. Incomplete or stale metadata and unsupported
+  shapes use native preparation and the task cache. Explicit reseeding also prepares
+  native tasks. Audit mode independently regenerates the reports and compares every
+  stored field except elapsed time. The option does not change which symbols are scheduled.
 
   The cache directory is named by `--verification-cache`, then by the
   `verification-cache` value of the project file, then by the `DAFNY_CACHE_DIR`

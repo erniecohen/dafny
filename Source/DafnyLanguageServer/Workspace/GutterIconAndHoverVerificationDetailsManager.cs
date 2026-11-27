@@ -273,9 +273,9 @@ Send notifications about the verification status of each line in the program.
     node.RecomputeAssertionBatchNodeDiagnostics();
   }
 
-  /// <summary>Publish a complete successful batch from its portable report.</summary>
+  /// <summary>Publish a complete batch from its portable report.</summary>
   public void ReportCachedBatch(IdeState state, ICanVerify canVerify, Caching.IdeTaskReport report,
-    VerificationRunResult result, bool finished, int resourceCount) {
+    VerificationRunResult result, bool finished, int resourceCount, VcOutcome outcome) {
     var tree = state.VerificationTrees[canVerify.Origin.Uri];
     var node = tree.Children.OfType<TopLevelDeclMemberVerificationTree>()
       .FirstOrDefault(t => t.Position == canVerify.Origin.GetLspPosition());
@@ -296,18 +296,19 @@ Send notifications about the verification status of each line in the program.
           var identifier = assertion.Kind == "ensures" ? "_ensures" : assertion.Kind;
           var child = new AssertionVerificationTree(
             $"{node.DisplayName} {display} #{count}", $"{node.Identifier}_{count}_{identifier}",
-            token.Filepath, token.Uri, null, token.GetLspRange()) {
-            StatusVerification = GutterVerificationStatus.Verified,
+            token.Filepath, token.Uri, assertion.SecondaryOrigin?.GetLspPosition(), token.GetLspRange()) {
+            StatusVerification = GetNodeStatus(assertion.Outcome),
             StatusCurrent = CurrentStatus.Current, AssertionBatchNum = result.VcNum,
             ImmediatelyRelatedRanges = assertion.RelatedOrigins.Select(o => o.GetLspRange()).ToList(),
+            DynamicallyRelatedRanges = (assertion.DynamicOrigins ?? []).Select(o => o.GetLspRange()).ToList(),
             Started = true, Finished = true
           }.WithDuration(implementation.StartTime, time).WithReport(assertion);
           implementation.AddNewChild(child);
           var previous = implementation.Children.OfType<AssertionVerificationTree>()
-            .FirstOrDefault(c => c.Position == child.Position && c.SecondaryPosition == null);
+            .FirstOrDefault(c => c.Position == child.Position && c.SecondaryPosition == child.SecondaryPosition);
           if (previous != null) {
             implementation.Children = new ConcurrentBag<VerificationTree>(implementation.Children.Where(c => c != previous)) {
-              previous with { StatusCurrent = CurrentStatus.Current, StatusVerification = GutterVerificationStatus.Verified }
+              previous with { StatusCurrent = CurrentStatus.Current, StatusVerification = GetNodeStatus(assertion.Outcome) }
             };
           } else { implementation.Children.Add(child); }
         }
@@ -316,10 +317,13 @@ Send notifications about the verification status of each line in the program.
         implementation.Stop();
         implementation.ResourceCount = resourceCount;
         node.ResourceCount += resourceCount;
-        implementation.StatusVerification = GutterVerificationStatus.Verified;
+        var status = outcome == VcOutcome.Correct ? GutterVerificationStatus.Verified : GutterVerificationStatus.Error;
+        implementation.StatusVerification = status;
         if (node.Children.All(child => child.Finished)) {
           node.Stop();
-          node.StatusVerification = GutterVerificationStatus.Verified;
+          node.StatusVerification = status;
+        } else if (status == GutterVerificationStatus.Error) {
+          node.StatusVerification = status;
         }
       }
       node.PropagateChildrenErrorsUp();

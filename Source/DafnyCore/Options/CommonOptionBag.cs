@@ -91,10 +91,10 @@ public class CommonOptionBag {
     "Also keep module translations and whole-module results in the --verification-cache directory, across processes. " +
     "Requires --verification-cache and --type-system-refresh. A module whose translation key is unchanged is not translated again, " +
     "and a module whose regenerated Boogie program is unchanged is not prepared or solved again, when every one of its tasks " +
-    "had a valid or resource-bounded resource-exhausted result through the result cache. CSV, TRX and ordinary JSON/text logs support replay and mark replayed timing. JSON/text retain current assertion and dependency locations and descriptions. Verification coverage and contradictory/redundant-assumption warnings support replay; proof-refactoring analysis and unsupported reporting options run normally. The language server retains current native tasks by default; --persistent-ide-reports also allows complete successful whole-module reports.");
+    "had a valid or resource-bounded resource-exhausted result through the result cache. CSV, TRX and ordinary JSON/text logs support replay and mark replayed timing. JSON/text retain current assertion and dependency locations and descriptions. Verification coverage and contradictory/redundant-assumption warnings support replay; proof-refactoring analysis and unsupported reporting options run normally. The language server retains current native tasks by default; --persistent-ide-reports also allows complete whole-module IDE reports.");
   public static readonly Option<bool> PersistentIdeReports = new("--persistent-ide-reports",
-    "With --persistent-translation, store complete successful IDE assertion reports and replay eligible whole modules in the language server. " +
-    "Requires --type-system-refresh. Failed or incomplete reports and explicitly reseeded requests retain native preparation.");
+    "With --persistent-translation, store complete IDE assertion reports and replay eligible whole modules in the language server. " +
+    "Requires --type-system-refresh. With --persistent-counterexamples, complete resource-bounded failed reports include models, diagnostics and code actions. Incomplete reports and explicitly reseeded requests retain native preparation.");
   public static readonly Option<bool> PersistentCounterexamples = new("--persistent-counterexamples",
     "With --persistent-translation, also reuse resource-bounded failed module results with complete current-source diagnostics. " +
     "Requires no time limit. Model extraction also supports complete native model payloads with current-source state descriptions; unsupported model shapes use the native task path.");

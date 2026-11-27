@@ -22,7 +22,7 @@ text = source.read_text()
 uri = program.as_uri()
 
 
-def run(name, overlay=text, directory=cache, extra=(), workspace=destination, document=program, manual=False, module_reports=False, expected_outcome="Valid"):
+def run(name, overlay=text, directory=cache, extra=(), workspace=destination, document=program, manual=False, module_reports=False, expected_outcome="Valid", failure_positions=()):
     uri = document.as_uri()
     profile = destination / (name + ".jsonl")
     environment = {k: v for k, v in os.environ.items()
@@ -124,6 +124,24 @@ def run(name, overlay=text, directory=cache, extra=(), workspace=destination, do
             send("textDocument/hover", {"textDocument": {"uri": uri},
                 "position": {"line": overlay[:overlay.index("Positive")].count("\n"), "character": 8}}, 2)
             assert "error" not in wait(lambda m: m.get("id") == 2)
+            if failure_positions:
+                send("dafny/counterExample", {"textDocument": {"uri": uri}, "counterExampleDepth": 5}, 20)
+                assert "error" not in wait(lambda m: m.get("id") == 20)
+                identifier = 21
+                for line, character in failure_positions:
+                    position = {"line": line, "character": character}
+                    send("textDocument/hover", {"textDocument": {"uri": uri}, "position": position}, identifier)
+                    assert "error" not in wait(lambda m: m.get("id") == identifier)
+                    identifier += 1
+                    send("textDocument/codeAction", {"textDocument": {"uri": uri},
+                        "range": {"start": position, "end": position}, "context": {"diagnostics": []}}, identifier)
+                    reply = wait(lambda m: m.get("id") == identifier)
+                    assert "error" not in reply
+                    identifier += 1
+                    for action in reply.get("result", []):
+                        send("codeAction/resolve", action, identifier)
+                        assert "error" not in wait(lambda m: m.get("id") == identifier)
+                        identifier += 1
             send("shutdown", None, 3)
             assert "error" not in wait(lambda m: m.get("id") == 3)
             send("exit")

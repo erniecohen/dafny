@@ -308,10 +308,10 @@ public sealed class PersistentModuleCache {
         Interlocked.Increment(ref misses); LastBypassReason = missReason = "a stored task has no current failure report";
         return null;
       }
-      var ideReport = requiresIdeReports && entry.Scheduled && entry.Outcome == SolverOutcome.Valid
-        ? PersistentIdeReports.Restore(locations, entry.IdeReport, entry.Asserts) : null;
+      var ideReport = requiresIdeReports && entry.Scheduled
+        ? PersistentIdeReports.Restore(locations, entry.IdeReport, entry.Asserts, options, entry.Outcome, entry.Failure?.Counterexamples ?? 0) : null;
       if (requiresIdeReports && entry.Scheduled && ideReport == null) {
-        Interlocked.Increment(ref misses); LastBypassReason = missReason = "a stored task has no complete successful IDE report";
+        Interlocked.Increment(ref misses); LastBypassReason = missReason = "a stored task has no complete IDE report";
         return null;
       }
       tasks.Add(new PersistedTask(canVerify, scopeToken, entry, hidden, token, assertions, covered, failures, models, ideReport));

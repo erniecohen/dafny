@@ -62,7 +62,7 @@ internal static class PersistentFailureReports {
       ? new StoredFailureReport(counterexamples, stored) : null;
   }
 
-  internal static StoredFailureReport? Capture(Program program, IVerificationTask task, VerificationRunResult result) {
+  internal static StoredFailureReport? Capture(Program program, IVerificationTask task, VerificationRunResult result, bool requireModels = false) {
     if (result.CounterExamples.Any(c => c.IsAuxiliaryCexForDiagnosingTimeouts)) { return null; }
     var originalOrder = result.CounterExamples.ToList();
     try {
@@ -72,7 +72,7 @@ internal static class PersistentFailureReports {
         BoogieGenerator.ToDafnyToken(task.Token), task.Split.Implementation.GetTimeLimit(program.Options), result, reporter, includeModels: false);
       var locations = SourceLocations.For(program);
       var stored = Capture(locations, result.CounterExamples.Count, reporter.AllMessages);
-      if (stored == null || !program.Options.ExtractCounterexample) { return stored; }
+      if (stored == null || !program.Options.ExtractCounterexample && !requireModels) { return stored; }
       var bindings = new Dictionary<string, (TokenRange Range, string Suffix)>(StringComparer.Ordinal);
       foreach (var command in task.Split.Implementation.Blocks.SelectMany(b => b.Cmds).OfType<AssumeCmd>()) {
         if (QKeyValue.FindStringAttribute(command.Attributes, "captureState") is not { } name) { continue; }
@@ -89,8 +89,8 @@ internal static class PersistentFailureReports {
       foreach (var counterexample in result.CounterExamples) {
         if (PersistentModels.Capture(locations, counterexample.Model, bindings) is not { } model) { return null; }
         var description = counterexample.FailingAssert.Description as ProofObligationDescription;
-        var render = !program.Options.Get(CommonOptionBag.JsonOutput) ||
-          description?.GetDiagnostic(BoogieGenerator.ToDafnyToken(counterexample.FailingAssert.tok).ReportingRange) == null;
+        var render = program.Options.ExtractCounterexample && (!program.Options.Get(CommonOptionBag.JsonOutput) ||
+          description?.GetDiagnostic(BoogieGenerator.ToDafnyToken(counterexample.FailingAssert.tok).ReportingRange) == null);
         models.Add(new StoredFailureModel(model, render));
       }
       return stored with { Models = models };
@@ -108,7 +108,7 @@ internal static class PersistentFailureReports {
   }
 
   internal static IReadOnlyList<DafnyDiagnostic>? Restore(SourceLocations locations, StoredFailureReport? stored,
-    DafnyOptions? options, out IReadOnlyList<DafnyModel>? models) {
+    DafnyOptions? options, out IReadOnlyList<DafnyModel>? models, bool requireModels = false) {
     models = null;
     if (stored?.Counterexamples is not > 0 || stored.Diagnostics == null ||
         stored.Diagnostics.Count(d => d?.Level == ErrorLevel.Error) != stored.Counterexamples) { return null; }
@@ -125,7 +125,7 @@ internal static class PersistentFailureReports {
       diagnostics.Add(new DafnyDiagnostic(diagnostic.Source, diagnostic.ErrorId!, range, diagnostic.MessageParts, diagnostic.Level, related));
     }
     if (stored.Models != null) {
-      if (options?.ExtractCounterexample != true || stored.Models.Count != stored.Counterexamples) { return null; }
+      if (options == null || !options.ExtractCounterexample && !requireModels || stored.Models.Count != stored.Counterexamples) { return null; }
       var index = 0;
       var restored = new List<DafnyModel>();
       for (var i = 0; i < diagnostics.Count; i++) {
@@ -141,7 +141,7 @@ internal static class PersistentFailureReports {
         }
       }
       models = restored;
-    } else if (options?.ExtractCounterexample == true) { return null; }
+    } else if (options?.ExtractCounterexample == true || requireModels) { return null; }
     return diagnostics;
   }
 }
