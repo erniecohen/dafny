@@ -3001,12 +3001,22 @@ and what information it produces about the verification process.
   this predicate and checked explicit-call extensionality lemmas whose domain
   type parameters need no `(!new)` characteristic. Partial and heap-reading
   arrows are excluded.
+  The source library `Partial.dfy` supplies `Std.PartialFunctionDomains.Arity0`
+  through `Arity4` for `-->` values, with full-domain `Pointwise`, `ExactDom`,
+  checked `Extensionality`, and precondition-preserving `Restrict` and
+  `Restriction` helpers. The `partialRestrict` intrinsic requires the checked
+  body `(x1: A1, ..., xn: An) requires f.requires(x1, ..., xn) => f(x1, ..., xn)`
+  and matching generic partial-arrow input/result types, with no other
+  specification. It gives the requested product domain, equal preconditions
+  there, and equal defined results. Restriction is the identity exactly when
+  the original domain was exact. All partial intrinsics remain opt-in.
   See [the soundness, trigger and solver-limit note](../dev/additional-axioms.md).
 
 * `--function-extensionality-axiom` - give function values domain tags, as
-  `--additional-axioms` does, and make two total functions of the same arity and
-  exact domain equal when they agree on it, at each equality between
-  them, including nullary functions. Products of `int`, `real`, `bool` and
+  `--additional-axioms` does, and make two heap-independent functions (`->` or `-->`) of the same arity and
+  exact domain equal when their preconditions agree everywhere on the domain
+  and their results agree wherever defined, at each equality between them,
+  including nullary functions. Products of `int`, `real`, `bool` and
   `ORDINAL` have exact domains; for other types the functions must have been
   built with that exact domain. `Restrict`, `ExactDom` and explicit-call
   extensionality support every arity. Disabled by default. It can change proof costs. See

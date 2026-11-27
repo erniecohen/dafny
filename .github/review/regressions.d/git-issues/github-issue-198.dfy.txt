@@ -1,0 +1,3 @@
+
+# With --inlined-body-call-permissions, a precondition calling a recursive member predicate on a constructed term verifies in every declaration order: the checked conjuncts of an inlined body get the body's call permissions at their layer (https://github.com/erniecohen/dafny/issues/198).
+git-issues/github-issue-198.dfy

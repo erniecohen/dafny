@@ -1,0 +1,4 @@
+
+
+# Body permissions of heap-free lambdas in every heap (--heap-free-lambda-facts).
+git-issues/lambda-facts-every-heap.dfy

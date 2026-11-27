@@ -1,0 +1,5 @@
+
+# Member invariants under the hidden --member-invariants, first stage: syntax, printing and
+# resolution, the reads restriction, the codatatype rule for programs and libraries, refinement,
+# opacity, and unchanged behaviour without the option (https://github.com/erniecohen/dafny/issues/105).
+git-issues/git-issue-105-option.dfy

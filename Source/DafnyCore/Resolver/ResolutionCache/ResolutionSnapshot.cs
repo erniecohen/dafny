@@ -143,7 +143,9 @@ internal sealed class ResolutionFrames {
 /// structure digest differ at most in where their tokens are.
 /// </summary>
 internal static class ResolutionSnapshot {
-  public const int MaxObjects = 4_000_000;
+  // Resolved compiler modules include the expanded match trees, which can exceed four million objects.
+  // Counts are also bounded by the remaining payload bytes before any materialization array is allocated.
+  public const int MaxObjects = 16_000_000;
   private const string StructureDomain = "dafny-resolution-structure-v1";
 
   private enum EntryKind : byte { Fields = 1, Array = 2, Collection = 3, Scope = 4, Lock = 5 }
@@ -173,6 +175,7 @@ internal static class ResolutionSnapshot {
   public sealed record Captured(byte[] Payload, string Structure, object[] Owned, uint[] OwnedTokens, HashSet<string> Anchors, Token[] SourceTokens);
 
   public sealed class MaterializeWorld {
+    public required DafnyOptions Options { get; init; }
     public required Func<ResolutionExternal, object> Object { get; init; }
     public required Func<ResolutionExternalToken, uint> Token { get; init; }
     public required ResolutionTokenIndex SourceTokens { get; init; }
@@ -623,6 +626,7 @@ internal static class ResolutionSnapshot {
         }
       }
     }
+    PipelineProfile.ModulePhase(world.Options, "cache.materialize.schema");
     long Int() => reader.Read7BitEncodedInt64();
     string Str() {
       var index = Int();
@@ -790,6 +794,7 @@ internal static class ResolutionSnapshot {
     for (var i = 0; i < roots.Length; i++) { roots[i] = ReadValue(); }
     var ownedTokenCount = Count(int.MaxValue);
     if (stream.Position != stream.Length) { throw new ResolutionSnapshotInvalid("trailing data"); }
+    PipelineProfile.ModulePhase(world.Options, "cache.materialize.read");
 
     // Fresh tokens, minted in rank order, keep the order of the captured tokens among themselves.
     var ownedTokens = new uint[ownedTokenCount];
@@ -824,12 +829,13 @@ internal static class ResolutionSnapshot {
       switch (entry.Kind) {
         case EntryKind.Fields: {
             var fields = ResolutionGraphSchema.Fields(entry.Type);
+            var writers = ResolutionGraphSchema.FieldWriters(entry.Type);
             for (var j = 0; j < fields.Length; j++) {
               var value = Read(vals[entry.Start + j]);
               if (value == null && fields[j].FieldType.IsValueType && Nullable.GetUnderlyingType(fields[j].FieldType) == null) {
                 throw new ResolutionSnapshotInvalid("null value field");
               }
-              fields[j].SetValue(target, value);
+              writers[j](target, value);
             }
             if (entry.Type == typeof(Token) && vals[entry.Start + TokenPlace[0]].Piece is var index && index != -1) {
               // An own piece's index, or an anchor's, as -2 - its index among the anchors read.
@@ -904,6 +910,7 @@ internal static class ResolutionSnapshot {
     } catch (InvalidCastException error) {
       throw new ResolutionSnapshotInvalid("materialization failed: " + error.Message);
     }
+    PipelineProfile.ModulePhase(world.Options, "cache.materialize.fill");
     return new(roots.Select(Read).ToArray(), objects, ownedTokens, ownTokens.ToArray());
   }
 }

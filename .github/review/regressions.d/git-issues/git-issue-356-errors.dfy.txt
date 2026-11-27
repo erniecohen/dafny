@@ -1,0 +1,2 @@
+# Preserve the original legacy character conversion range contract.
+git-issues/git-issue-356-errors.dfy

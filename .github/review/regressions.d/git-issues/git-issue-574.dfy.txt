@@ -1,0 +1,2 @@
+# Declared audited solver digests for the verification cache (issue 574).
+git-issues/git-issue-574.dfy

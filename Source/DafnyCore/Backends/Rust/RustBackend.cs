@@ -61,28 +61,75 @@ public class RustBackend : DafnyExecutableBackend {
       bool preventShadowing, bool canEmitUncompilableCode)
       : base(options, reporter, fieldPrefix, preventShadowing, canEmitUncompilableCode) { }
 
+    protected override bool UseExternalConstructorArguments(Constructor constructor) =>
+      // A constructor body runs after allocation and receives its arguments then.
+      // Only a bodiless foreign constructor passes arguments to the allocation hook.
+      (!HasRecursiveGroups || constructor.Body == null) && base.UseExternalConstructorArguments(constructor);
+
     protected override void EmitNewArray(Type elementType, IOrigin tok, List<Expression> dimensions,
       bool mustInitialize, string exampleElement, ConcreteSyntaxTree wr, ConcreteSyntaxTree wStmts) {
       if (HasRecursiveGroups && mustInitialize) {
-        AddUnsupported(tok, "Rust compilation of recursive module groups requires explicit array initialization");
-        return;
+        // With --enforce-determinism, verification permits an omitted array
+        // initializer only when some dimension is zero. Cache every dimension
+        // once, in source order, and also check this at runtime before exposing
+        // an array of uninitialized elements (including with --no-verify).
+        var cachedDimensions = new List<Expression>();
+        Expression nonempty = Expression.CreateBoolLiteral(tok, true);
+        foreach (var dimension in dimensions) {
+          var local = new LocalVariable(tok, ProtectedFreshId("_arrayDimension"), Type.Int, false) {
+            type = Type.Int
+          };
+          DeclareLocalVar(IdName(local), Type.Int, tok, dimension, false, wStmts);
+          var identifier = new IdentifierExpr(tok, local);
+          cachedDimensions.Add(identifier);
+          nonempty = Expression.CreateAnd(nonempty, Expression.CreateNot(tok,
+            Expression.CreateEq(identifier, Expression.CreateIntLiteral(tok, 0), Type.Int)));
+        }
+        var halt = EmitIf(out var guard, false, wStmts);
+        EmitExpr(nonempty, false, guard, wStmts);
+        EmitHalt(tok, null, halt);
+        dimensions = cachedDimensions;
       }
       base.EmitNewArray(elementType, tok, dimensions, mustInitialize, exampleElement, wr, wStmts);
     }
   }
 
   public override void Compile(Program dafnyProgram, string dafnyProgramName, ConcreteSyntaxTree output) {
-    if (dafnyProgram.Modules().FirstOrDefault(module => module.RecursiveGroup != null &&
-          (module.IsExtern(Options, out _, out _) || module.TopLevelDecls.Any(declaration =>
-            declaration.IsExtern(Options, out _, out _) || declaration is TopLevelDeclWithMembers type &&
-            type.Members.Any(member => member.IsExtern(Options, out _, out _))))) is { } externMember) {
-      Reporter.Error(MessageSource.Compiler, externMember.Origin,
-        "Rust compilation of recursive module groups with extern declarations is not yet supported");
-      return;
+    foreach (var module in dafnyProgram.CompileModules.Where(module => module.CanCompile())) {
+      var refinesGroup = false;
+      for (var ancestor = module.Implements?.Target.Def; ancestor != null; ancestor = ancestor.Implements?.Target.Def) {
+        refinesGroup |= ancestor.RecursiveGroup != null;
+      }
+      if (refinesGroup && module.TopLevelDecls.FirstOrDefault(declaration =>
+            declaration is not ModuleDecl and not DefaultClassDecl && declaration.IsExtern(Options, out _, out _) &&
+            !IsImportedRefinementClass(declaration, Options)) is { } externType) {
+        Reporter.Error(MessageSource.Compiler, externType.Origin,
+          $"Rust cannot compile extern type '{externType.Name}' in refining module '{module.FullDafnyName}' above a recursive module group: " +
+          "supported extern classes have no compiled fields (including inherited fields), at most one extern argument, and either bodiless foreign members or implemented functions, methods or constructors without a foreign enclosing path");
+        return;
+      }
     }
+    // Group members retain their attributes and public paths. The ordinary Rust
+    // lowering therefore imports foreign declarations from the same root-level
+    // extern namespace, including when their generated impls live in a container.
+    // Unsupported extern forms are diagnosed by that lowering as usual.
     ((GroupCodeGenerator)codeGenerator).HasRecursiveGroups = dafnyProgram.CompileModules.Any(module => module.RecursiveGroup != null);
     ((RustCodeGenerator)DafnyCodeGenerator).Program = dafnyProgram;
     base.Compile(dafnyProgram, dafnyProgramName, output);
+  }
+
+  // Import the refining foreign type once, then let ordinary class lowering
+  // generate its inherent members and ordinary trait implementations. Foreign
+  // types still supply allocation; own and inherited fields require layout rules.
+  internal static bool IsImportedRefinementClass(TopLevelDecl declaration, DafnyOptions options) {
+    return declaration is ClassDecl cl &&
+      cl.IsExtern(options, out var enclosing, out _) && enclosing == null &&
+      cl.InheritedMembers.All(member => member.IsGhost || member is not Field) &&
+      cl.Members.All(member => member.IsGhost ||
+        (member.IsExtern(options, out _, out _) &&
+         member is Function { Body: null } or MethodOrConstructor { Body: null }) ||
+        (member is Function { Body: not null } or MethodOrConstructor { Body: not null } &&
+         (!member.IsExtern(options, out var memberEnclosing, out _) || memberEnclosing == null)));
   }
 
   // Knowing that the result of the compilation will be placed in a dafnyProgramName.rs,

@@ -77,6 +77,19 @@ Three cases refine this:
   token's rank, when the prerequisite's result refers to it; otherwise the module
   is not cached.
 
+The persistent cache qualifies each declaration name by its runtime declaration
+kind. An import alias and an export set can legally share a qualified display
+name (`import Lib` beside `export Lib`); they are distinct cache entries, owners
+of prerequisite objects and tokens, and source frames. Collapsing them disables
+their dependents or binds a reference to the wrong declaration. The kind-qualified
+names are included in the versioned cache key, while profile events retain the
+source-level names and report each declaration's kind separately. The bounded
+snapshot graph limit admits the expanded compiler match trees, whose ordinary
+resolved graph exceeds ten million objects; materialization still bounds every
+count against the remaining payload before allocating. The equality oracle keeps
+its two-way identity maps and all field comparisons, and renders diagnostic path
+strings only when it finds a difference.
+
 The persistent resolution cache of issue 261 does all of these. A consumer of the
 identity that keeps absolute coordinates, such as Boogie text with source
 positions, must rebase them the same way or add where the module's text starts
@@ -168,18 +181,53 @@ kept from doing:
 - **Materialization.** Reading an entry fills its objects from one pooled array of
   entries and one of values per thread, with no record per object. Collections are
   created and filled through delegates made once per collection type, not by
-  reflection per element, and a field's name is computed once.
+  reflection per element, and a field's name is computed once. Fields are restored
+  through cached typed writers for each runtime type. These use the same ordered
+  field schema that every entry validates before restoring any object. Value-type
+  targets are unboxed by address, preserving writes into the original box; private,
+  inherited, readonly and nullable fields retain their values. Runtimes without
+  dynamic code use reflection instead.
 - **Capture.** A store asks where an object outside its module is (a builtin, a
   named context object, an anchor or a prerequisite's) once per object, not once
   per reference, and an object already in the snapshot is recognized before that
   question is asked.
 
-Fields are still read and written by reflection, in a capture and in a
-materialization; accessors compiled per type would cut that, at the price of
-compiling them in every process.
+Capture still reads fields by reflection. Materialization includes the cost of
+compiling its writers in each process; no generated code is stored in a snapshot.
+The snapshot format, token rebinding, prerequisite bindings and guards are unchanged.
 
 Each phase of a module's hit or store is reported in the `resolve.module` events
 of `--pipeline-profile`, among them `cache.read`, `cache.decode`,
-`cache.anchors`, `cache.guards`, `cache.materialize` and `cache.register` for a
+`cache.anchors`, `cache.guards`, `cache.materialize.schema`,
+`cache.materialize.read`, `cache.materialize.fill`, `cache.materialize` and `cache.register` for a
 hit; `store.anchors`, `store.capture`, `store.ownership` and `store.publish` for
 a store.
+
+
+### Quantifier allocation identities in the equality oracle
+
+`QuantifierExpr.UniqueId` is a process-wide allocation counter. Constructors,
+including resolved cloning, allocate a new value; a snapshot preserves the value
+it captured. Repeated resolution in one process therefore gives equivalent
+quantifiers different numerical counters. Comparing those numbers literally
+incorrectly rejects a warm entry under `--resolution-cache-check`.
+
+The oracle compares this field up to a consistent one-to-one renaming, in its
+own naming domain. It rejects both a split identity and two identities merged
+into one. The existing two-way graph-object correspondence still checks sharing,
+bindings and cycles, and every other quantifier field is compared normally.
+Ordinary integer values are not renamed. This is an allocation-identity rule,
+not an exception for quantifier contents.
+
+The counter's only read is the fallback spelling of `QuantifierExpr.FullName`.
+Module-scoped naming during resolution and translation instead uses the
+quantifier object as a key and a scope-local counter. This change affects only
+the opt-in equality oracle: snapshot bytes, materialized IDs, normal resolution
+and translation are unchanged.
+
+Controls resolve quantified source repeatedly in one process with serial and
+parallel workers, require actual checked warm hits, and compare emitted Boogie
+with an independently resolved baseline. Counter-collision and changed-content
+controls must be rejected. The lit control compares fresh, cold, warm and checked
+verification, requiring identical solver input, diagnostics, verdicts and per-VC
+resources, including a failing quantified assertion.

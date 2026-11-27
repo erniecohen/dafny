@@ -1,0 +1,7 @@
+With `--recursive-modules`, JavaScript compilation supports fully imported
+extern classes in concrete refinements of recursive group members, including
+descendants of abstract refinements. Each concrete module uses its own preloaded
+foreign module object, and native allocation preserves type descriptors and non-
+ghost constructor arguments. Extern traits requiring generated members,
+generated ancestors, and other extern type kinds in refinements,
+retain an explicit diagnostic.

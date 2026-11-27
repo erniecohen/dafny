@@ -1,0 +1,3 @@
+
+# Rebinding an inherited copying import preserves freshness and requires a refinement of its previous target; inherited overrides are checked again against the new copy, and with --member-invariants inherited code is checked against the invariants that the new target adds (https://github.com/erniecohen/dafny/issues/107).
+git-issues/git-issue-107-rebind.dfy

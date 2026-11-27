@@ -1,0 +1,4 @@
+# A conversion from a newtype to a trait that it extends and that is not a reference type failed an
+# internal assertion of the verifier; the value is now boxed, as a datatype's is. Found with member
+# invariants, but the test runs without the option (https://github.com/erniecohen/dafny/issues/105).
+git-issues/git-issue-105-newtype-trait-cast.dfy
