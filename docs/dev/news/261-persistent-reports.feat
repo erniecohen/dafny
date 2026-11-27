@@ -1,0 +1,1 @@
+With `--persistent-translation`, ordinary text and TRX verification logs can replay complete module results across processes. Text preserves current assertion locations and descriptions, and both formats identify replayed timing. Missing text metadata and dependency-aware reporting retain fresh preparation. Caching remains opt-in.

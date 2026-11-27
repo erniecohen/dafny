@@ -1,0 +1,6 @@
+Rust compilation with `--recursive-modules` now supports empty arrays without
+an element initializer, including dynamic zero extents and recursive datatype
+elements. Dimensions are evaluated once in order. For auto-initializable elements, a runtime check also prevents
+nonempty uninitialized allocations when verification is skipped; verified
+nonempty arrays still require an explicit initializer under `--enforce-determinism`.
+Compilation without a recursive group is unchanged.

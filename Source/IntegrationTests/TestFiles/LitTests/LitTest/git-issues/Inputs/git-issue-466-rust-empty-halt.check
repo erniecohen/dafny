@@ -1,0 +1,3 @@
+// CHECK-NOT: nonempty allocation returned
+// CHECK: Halt
+// CHECK-NOT: nonempty allocation returned

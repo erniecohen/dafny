@@ -133,6 +133,7 @@ optimize-erasable-datatype-wrapper	n/a	n/a	n/a	-	not an option of verify
 outer-module	n/a	n/a	n/a	-	not an option of verify
 output	n/a	n/a	n/a	-	not an option of verify
 performance-stats	miss	miss	miss	1 | 2	
+persistent-counterexamples	hit	hit	hit	false | true	controls eligible reporting reuse, without changing any solver input or output
 persistent-translation	hit	hit	hit	fixed	enables the persistent tables, which are neither read nor written without it
 persistent-translation-audit	hit	hit	hit	false | true	translates and verifies afresh, compares with what is stored and publishes nothing
 pipeline-profile	hit	hit	hit	fixed	what the pipeline profile records; this test reads the stage digests from it

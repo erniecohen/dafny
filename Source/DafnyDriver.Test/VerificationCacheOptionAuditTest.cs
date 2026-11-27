@@ -9,6 +9,16 @@ namespace DafnyDriver.Test;
 
 public class VerificationCacheOptionAuditTest {
   [Fact]
+  public void TranslationCopyIsAnExplicitVerifyOption() {
+    var verify = DafnyNewCli.RootCommand.Subcommands.Single(c => c.Name == "verify");
+    Assert.Contains(CommonOptionBag.OptimizeTranslationCopy, verify.Options);
+    Assert.False(verify.Parse(Array.Empty<string>()).GetValueForOption(CommonOptionBag.OptimizeTranslationCopy));
+    var enabled = verify.Parse(["--optimize-translation-copy"]);
+    Assert.Empty(enabled.Errors);
+    Assert.True(enabled.GetValueForOption(CommonOptionBag.OptimizeTranslationCopy));
+  }
+
+  [Fact]
   public void EveryModernOptionAndProverInputHasAnExplicitClassification() {
     var inventory = new List<string>();
     foreach (var option in Commands(DafnyNewCli.RootCommand).SelectMany(c => c.Options).Distinct()) {

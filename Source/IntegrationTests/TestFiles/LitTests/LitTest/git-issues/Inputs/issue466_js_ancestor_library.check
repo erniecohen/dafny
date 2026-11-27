@@ -1,0 +1,1 @@
+// CHECK: JavaScript recursive groups require imported trait ancestors to be emitted with their group

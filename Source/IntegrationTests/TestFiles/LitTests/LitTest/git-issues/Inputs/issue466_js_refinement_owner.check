@@ -1,0 +1,1 @@
+// CHECK: JavaScript recursive groups require extern types in a preloaded extern module
