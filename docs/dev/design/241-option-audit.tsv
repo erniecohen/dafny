@@ -72,6 +72,7 @@ cli	isolate-assertions	--isolate-assertions	System.CommandLine.Option`1[System.B
 cli	javadoclike-docstring-plugin	--javadoclike-docstring-plugin	System.CommandLine.Option`1[System.Boolean]	command-setup	setup or another command; executes before/outside proof transport
 cli	json-diagnostics	--json-diagnostics	System.CommandLine.Option`1[System.Boolean]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
 cli	json-output	--json-output	System.CommandLine.Option`1[System.Boolean]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
+cli	legacy-allow-unsound-bv-solver	--legacy-allow-unsound-bv-solver	System.CommandLine.Option`1[System.Boolean]	execution	decides, before any task, whether a prover option selecting smt.bv.solver=2 is rejected; the effective prover options are keyed
 cli	legacy-auto-generated-attributes	--legacy-auto-generated-attributes	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	legacy-boogie-library-check	--legacy-boogie-library-check	System.CommandLine.Option`1[System.Boolean]	command-setup	checked when a library is loaded, before proof transport; no effect on the proof task
 cli	legacy-cs-datatype-equality	--legacy-cs-datatype-equality	System.CommandLine.Option`1[System.Boolean]	command-setup	setup or another command; executes before/outside proof transport

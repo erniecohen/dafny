@@ -38,6 +38,7 @@ public static class DafnyCommands {
     BoogieOptionBag.SolverResourceLimit,
     BoogieOptionBag.SolverOption,
     BoogieOptionBag.SolverOptionHelp,
+    BoogieOptionBag.LegacyAllowUnsoundBvSolver,
     BoogieOptionBag.SolverPlugin,
     BoogieOptionBag.SolverLog,
     CommonOptionBag.JsonOutput,

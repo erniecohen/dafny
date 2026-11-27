@@ -2931,6 +2931,17 @@ and what information it produces about the verification process.
   so it also takes precedence over `--solver-option O:smt.arith.solver=N` or the
   corresponding `--boogie /proverOpt:O:smt.arith.solver=N` option.
 
+* Z3's int-blasting bit-vector solver, `smt.bv.solver=2`, is rejected. Z3 5.1.0 reports
+  satisfiable queries of the shape Dafny emits for bit-vector subtraction as unsatisfiable
+  with it, so Dafny would verify a false assertion
+  ([issue 618](https://github.com/erniecohen/dafny/issues/618)). A solver option that selects it,
+  whether given as `--solver-option`, as `--boogie /proverOpt:`, as the legacy `/proverOpt:` or
+  in a project file, and in any spelling Z3 accepts (`O:SMT.BV.SOLVER=02`, `#x2`, `2.0`), is an
+  error before verification starts; a value that is not a number is rejected too. The other values,
+  0 (the default) and 1, are accepted. The hidden `--legacy-allow-unsound-bv-solver`, kept for
+  migration and comparison, accepts the option with a warning that the verification results
+  are untrusted.
+
 * `--integer-bitwise` - enable the compiler-owned ghost class
   `IntegerBitwiseModel` and its explicit one-step definition-unfold lemmas for
   powers, normalization, Boolean operations, shifts, rotations and population
