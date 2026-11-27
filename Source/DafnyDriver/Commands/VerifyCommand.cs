@@ -77,6 +77,7 @@ public static class VerifyCommand {
         CommonOptionBag.TranslationCache,
         CommonOptionBag.PersistentTranslation,
         CommonOptionBag.PersistentTranslationAudit,
+        CommonOptionBag.PersistentCounterexamples,
         CommonOptionBag.TranslationWorkers,
         CommonOptionBag.TranslationWorkersStress,
         FilterSymbol,
@@ -237,7 +238,7 @@ public static class VerifyCommand {
             break;
           case SolverOutcome.Invalid:
             var total = runResult.Asserts.Count;
-            var errors = runResult.CounterExamples.Count;
+            var errors = Caching.VerificationTaskFacts.Counterexamples(taskResult.Task, runResult);
             Interlocked.Add(ref statistics.VerifiedAssertions, total - errors);
             Interlocked.Add(ref statistics.ErrorCount, errors);
             break;
@@ -328,7 +329,7 @@ public static class VerifyCommand {
         Compilation.ReportDiagnosticsInResult(compilation.Options, result.CanVerify.FullDafnyName,
           BoogieGenerator.ToDafnyToken(completed.Task.Token),
           (uint)completed.Result.RunTime.TotalSeconds,
-          completed.Result, batchReporter);
+          completed.Result, batchReporter, completed.Task);
       }
 
       foreach (var diagnostic in batchReporter.AllMessages.Order()) {
