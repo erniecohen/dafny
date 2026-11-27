@@ -44,7 +44,7 @@ namespace Microsoft.Dafny.Compilers {
     protected override void CompileFunctionCallExpr(FunctionCallExpr e, ConcreteSyntaxTree wr, bool inLetExprBody,
       ConcreteSyntaxTree wStmts, FCE_Arg_Translator tr, bool alreadyCoerced = false) {
       var function = e.Function;
-      if (function.EnclosingClass.EnclosingModuleDefinition.RecursiveGroup == null || function.Body != null ||
+      if (!Options.Get(CommonOptionBag.RecursiveModules) || function.Body != null ||
           !function.IsExtern(Options, out var qualifier, out var name) || qualifier == null) {
         base.CompileFunctionCallExpr(e, wr, inLetExprBody, wStmts, tr, alreadyCoerced);
         return;
@@ -52,6 +52,7 @@ namespace Microsoft.Dafny.Compilers {
 
       // The base generator separates a qualified function with ModuleSeparator ("_").
       // Foreign Go selectors use a dot, just as qualified extern methods do.
+      // This also applies to inherited functions in refinements above a group.
       if (!alreadyCoerced) {
         var toType = thisContext == null ? e.Type : e.Type.Subst(thisContext.ParentFormalTypeParametersToActuals);
         wr = EmitCoercionIfNecessary(function.Original.ResultType, toType, e.Origin, wr);
@@ -444,6 +445,15 @@ namespace Microsoft.Dafny.Compilers {
     protected override IClassWriter CreateClass(string moduleName, bool isExtern, string/*?*/ fullPrintName,
       List<TypeParameter> typeParameters, TopLevelDecl cls, List<Type>/*?*/ superClasses, IOrigin tok, ConcreteSyntaxTree wr) {
       var isDefaultClass = cls is DefaultClassDecl;
+
+      if (!isDefaultClass && isExtern && cls.EnclosingModuleDefinition.RecursiveGroup != null &&
+          (cls.EnclosingModuleDefinition.IsExtern(Options, out _, out _) ||
+           cls.IsExtern(Options, out var qualifier, out _) && qualifier != null)) {
+        Reporter.Error(MessageSource.Compiler, tok,
+          $"Go cannot generate members of partial extern class '{cls.Name}' owned by a foreign package in a recursive module group: " +
+          "declare the partial class in a non-extern member without a foreign type qualifier, and complete it in the shared package");
+        return new NullClassWriter(this);
+      }
 
       bool isSequence = superClasses.Any(superClass => superClass is UserDefinedType udt && IsDafnySequence(udt.ResolvedClass));
       return CreateClass(cls, isExtern, fullPrintName, typeParameters, superClasses, tok, wr, includeRtd: !isDefaultClass, includeEquals: !isSequence, includeString: !isSequence);
@@ -2857,7 +2867,7 @@ namespace Microsoft.Dafny.Compilers {
     }
 
     private string UserDefinedTypeName(TopLevelDecl cl, bool full, MemberDecl/*?*/ member = null) {
-      if (cl is NonNullTypeDecl nonNull && cl.EnclosingModuleDefinition.RecursiveGroup != null &&
+      if (cl is NonNullTypeDecl nonNull && Options.Get(CommonOptionBag.RecursiveModules) &&
           nonNull.Class.IsExtern(Options, out _, out _)) {
         cl = nonNull.Class;
       }
