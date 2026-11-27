@@ -288,12 +288,41 @@ semantics have not been qualified. Extern types must belong to a preloaded exter
 module and have no two-argument qualifier. Unqualified imported members require an
 extern type or, for module-level members, an extern module. Two-argument member
 qualifiers are supported only for functions and static methods; instance methods
-and fields retain receiver-based linkage. Refinements of group
-members containing extern types remain rejected because inherited foreign owners
-are not preserved. Extern constructors are explicitly rejected in groups: the
-ordinary JavaScript allocation path does not forward their arguments. Partial
-foreign classes can use a Dafny constructor body; their generated class extends
-the foreign class. Fully foreign classes can expose a factory member.
+and fields retain receiver-based linkage. Concrete refinements of group members
+may contain fully imported or partial extern classes, including through abstract
+refinements. Each concrete refinement must name its own preloaded extern module
+object; inherited classes use that object's public type names. Fully imported
+classes emit no
+generated class layout. Partial classes use the ordinary JavaScript lowering: a
+generated subclass extends the concrete module's foreign class, forwards its type
+descriptors to `super`, initializes generated fields, and supplies Dafny constructor
+bodies and members. Imported fields and members retain receiver-based linkage.
+Abstract refinements emit nothing. Fully imported extern traits whose ancestors are
+also fully imported extern traits preserve their preloaded objects, including
+through abstract refinements. These objects are runtime identities: native
+implementations may capture them before generated code runs. Ghost members do not
+require generated trait material. Generated implementations use the same concrete
+namespace's trait object. The native implementation supplies the complete ancestor
+identity list, including generic and diamond-shaped inheritance. Every non-object
+ancestor must also be extern and contain no generated members. Before emission,
+the compiler identifies every imported ancestor of a supported group trait,
+including ancestors declared in acyclic modules, and preserves its preloaded
+identity. These selected ancestors undergo the same module, type and member
+linkage checks as declarations in the group. Unrelated acyclic traits retain
+ordinary emission. An ancestor supplied only through `--library` retains a
+diagnostic: its separately emitted producer must contain the group so that
+ancestor preservation occurs there. Complete archive inputs remain supported. Traits
+requiring generated members or generated ancestors, and other extern type kinds in
+refinements, remain rejected with an explicit diagnostic. Fully imported
+foreign classes declared in a group or its concrete
+refinements support bodiless extern constructors. Allocation passes the ordinary
+type-descriptor prefix followed by
+non-ghost constructor arguments, evaluated once in order. Constructor extern
+names do not select a separate JavaScript member: allocation invokes the class
+itself with `new`. Partial foreign classes still require a Dafny constructor body;
+their generated subclass constructor initializes type descriptors, and does not
+forward native constructor arguments. Adding that forwarding requires a separate
+constructor convention for generated subclasses.
 
 `git-issue-466-js.dfy` compares the existing group fixtures against C#, including
 wrapper-erasure settings, scheduled resolution, additional axioms, complete
@@ -306,11 +335,61 @@ constants, mutual datatypes, implicit defaults and extern-backed witnesses, trai
 refinement and library comparisons with extern members. It exercises foreign
 classes, instance functions, methods and fields, both wrapper-erasure settings,
 additional axioms, source relocation and separately translated clients.
+`git-issue-466-js-constructors.dfy` repeats that runtime matrix with generic native
+constructors, ghost parameters, descriptor-backed defaults and observable argument
+order. Source builds, both wrapper-erasure settings, archives rebuilt from relocated
+source, and separately translated producers and clients agree with C#. Wrong
+constructor results and a reachable false assertion remain verification errors.
+A partial-class constructor retains its explicit rejection, and an acyclic extern
+constructor retains the option-off allocation output.
+`git-issue-466-js-refinement.dfy` repeats the runtime matrix with fully imported
+classes in a direct refinement and a concrete descendant of an abstract refinement.
+Distinct foreign namespaces return different values and print constructor traces,
+so aliasing an ancestor or dropping native arguments changes the result. Source
+builds, both wrapper-erasure settings, relocated archives and separately translated
+clients agree with independently emitted C#. Wrong constructor results and a
+reachable false assertion remain errors. Bodiless native constructors on partial
+classes, traits requiring generated members and refinements without their own
+preloaded extern owner retain tested rejections.
+`git-issue-466-js-partial-refinement.dfy` repeats the matrix with partial classes in
+the group and both refining namespaces. Generic fields, generated constructors,
+updates, descriptor-backed defaults and generated members calling recursive
+siblings agree with independently emitted C#. Distinct foreign fields and methods
+check each concrete namespace. Both wrapper-erasure modes, relocated archives and
+separately translated clients are covered. Wrong constructor results, wrong field
+and update results, and a reachable false assertion remain verification errors.
+`git-issue-466-js-trait-refinement.dfy` repeats the matrix with imported ordinary
+and generic traits in the group and both concrete refinements. Native factories,
+generated implementations, ghost members and cross-namespace runtime type tests
+agree with independently emitted C#. Native implementations capture the original
+trait identities before generated initialization, so replacement is observable.
+Two ordinary empty traits check that generated identities remain distinct. Both
+wrapper-erasure modes, relocated archives and separately translated clients are
+covered. Wrong reads, wrong generated fields and a reachable false assertion
+remain verification errors. The same matrix covers generic ancestors and diamond
+inheritance: native implementations retain every captured ancestor, generated
+implementations list the same concrete namespace's ancestors, and cross-namespace
+casts remain distinct. An ordinary generated parent and a transitive imported
+ancestor with a generated body retain tested rejections in refinements. A fully
+imported ancestor in an acyclic module is covered by
+`git-issue-466-js-acyclic-ancestors.dfy`, with the same runtime matrix from source
+and with the acyclic ancestor supplied by a complete archive input, including
+generic ancestor identity checks and generated implementations. The existing
+complete-group archive and separately translated producer/client comparisons
+remain covered by the group-local hierarchy. An unrelated imported trait in the
+same module still receives ordinary emission. Unsupported ancestor owners, type
+qualifiers, require-based modules, qualified instance members and library-only
+ancestors have negative controls. Both option settings preserve ordinary emission
+when no group uses the hierarchy; option-off output is unchanged.
 `git-issue-466-js-extern.dfy` checks each group-specific foreign linkage rejection.
 Archives with arbitrary extern contracts still cannot provide the modular
 termination certificate required by cross-module trait implementations; the
-library comparison uses a concrete-counter variant and retains that rejection as
-a negative control.
+library comparison for group-local hierarchies uses a concrete-counter variant
+and retains that rejection as a negative control. A hierarchy inheriting an
+acyclic foreign trait also introduces cross-module trait contracts: even its
+concrete-counter variant cannot be archived together with arbitrary extern
+contracts. A separate negative control retains this certificate restriction;
+the positive archive-input comparison archives the acyclic ancestors alone.
 
 This milestone depends on https://github.com/erniecohen/dafny/pull/535. It adds
 no verifier rule, axiom or trusted assumption. Programs without a recursive
