@@ -1,10 +1,6 @@
 
 Dafny program verifier did not attempt verification
-git-issue-466-js-extern.dfy(12,40): Error: JavaScript recursive groups require preloaded extern module objects; require-based extern modules are not yet supported
-Translation was aborted because errors were found
-
-Dafny program verifier did not attempt verification
-git-issue-466-js-extern-type.dfy(3,18): Error: JavaScript recursive groups require extern types in a preloaded extern module, without a two-argument type qualifier
+git-issue-466-js-extern-type.dfy(3,18): Error: JavaScript recursive groups require extern types in an extern module, without a two-argument type qualifier
 Translation was aborted because errors were found
 
 Dafny program verifier did not attempt verification
@@ -12,7 +8,7 @@ git-issue-466-js-extern-member.dfy(3,19): Error: JavaScript recursive groups req
 Translation was aborted because errors were found
 
 Dafny program verifier did not attempt verification
-git-issue-466-js-extern-qualified-type.dfy(3,38): Error: JavaScript recursive groups require extern types in a preloaded extern module, without a two-argument type qualifier
+git-issue-466-js-extern-qualified-type.dfy(3,38): Error: JavaScript recursive groups require extern types in an extern module, without a two-argument type qualifier
 Translation was aborted because errors were found
 
 Dafny program verifier did not attempt verification

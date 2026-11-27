@@ -11,6 +11,15 @@ using System.Threading.Tasks;
 namespace Microsoft.Dafny.Compilers;
 
 public class JavaScriptBackend : ExecutableBackend {
+  // These keywords are not escaped by PublicIdProtect. The other entries are
+  // bindings used by the loader or the generated translation unit itself.
+  private static readonly HashSet<string> RequiredModuleReservedNames = new(StringComparer.Ordinal) {
+    "break", "case", "class", "const", "else", "export", "extends", "false", "function",
+    "if", "import", "in", "new", "null", "return", "this", "true", "var", "while",
+    "yield", "static", "protected", "require", "module", "exports", "__filename", "__dirname",
+    "BigNumber", "_dafny", "_System", "_module"
+  };
+
   public override IReadOnlySet<string> SupportedExtensions => new HashSet<string> { ".js" };
 
   public override string TargetName => "JavaScript";
@@ -41,16 +50,18 @@ public class JavaScriptBackend : ExecutableBackend {
       }
     }
     foreach (var module in dafnyProgram.Modules().Where(module => module.RecursiveGroup != null)) {
-      if (module.IsExtern(Options, out var moduleQualifier, out _) && moduleQualifier != null) {
+      if (module.IsExtern(Options, out var moduleQualifier, out _) && moduleQualifier != null &&
+          (!System.Text.RegularExpressions.Regex.IsMatch(module.GetCompileName(Options), @"\A[A-Za-z_$][A-Za-z0-9_$]*\z") ||
+           RequiredModuleReservedNames.Contains(module.GetCompileName(Options)))) {
         Reporter.Error(MessageSource.Compiler, module.Origin,
-          "JavaScript recursive groups require preloaded extern module objects; require-based extern modules are not yet supported");
+          "JavaScript recursive groups require require-based extern module names to be unqualified ASCII identifiers that do not conflict with unescaped JavaScript keywords or runtime bindings");
         return;
       }
       foreach (var type in module.TopLevelDecls.OfType<TopLevelDeclWithMembers>()) {
         if (type.IsExtern(Options, out var qualifier, out _) &&
             (qualifier != null || !module.IsExtern(Options, out _, out _))) {
           Reporter.Error(MessageSource.Compiler, type.Origin,
-            "JavaScript recursive groups require extern types in a preloaded extern module, without a two-argument type qualifier");
+            "JavaScript recursive groups require extern types in an extern module, without a two-argument type qualifier");
           return;
         }
         if (type.Members.OfType<Constructor>().FirstOrDefault(constructor =>

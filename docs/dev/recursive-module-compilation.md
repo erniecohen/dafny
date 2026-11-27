@@ -253,9 +253,24 @@ trait identities and datatype defaults are evaluated when used, after all member
 closures have initialized. No ordering of the members is needed. Abstract groups
 emit nothing, and refinement retains its original sibling references.
 
-Supported foreign modules are preloaded objects (`{:extern}` or a single name).
-Require-based, two-argument extern modules remain rejected: their loading and cycle
-semantics have not been qualified. Extern types must belong to a preloaded extern
+Supported foreign modules are preloaded objects (`{:extern}` or a single name)
+or CommonJS exports loaded by a two-argument module extern. Required libraries
+are loaded once per member before entering the shared initialization closure.
+Their exported objects are retained and extended, just like preloaded objects;
+foreign code that captures the exports object sees generated declarations there.
+This preloading does not call generated functions or evaluate datatype defaults.
+Required libraries must defer callbacks into generated declarations until group
+initialization has completed, as ordinary foreign code must. CommonJS's own
+module-cache and native import-cycle behavior is unchanged. A native library is
+responsible for meeting its declared extern contracts; recursive groups introduce
+no additional trust or verification rule. Required module names must be unqualified
+ASCII identifiers, with ordinary JavaScript keyword escaping. Dotted namespaces,
+empty names, punctuation, unescaped JavaScript keywords, Node wrapper parameters
+(`require`, `module`, `exports`, `__filename`, `__dirname`) and the bindings
+`BigNumber`, `_dafny`, `_System` and `_module` retain a precise rejection. Supporting an external
+namespace path needs an ownership convention for its root object. This restriction
+does not apply to preloaded module paths or to the Node library specifier.
+Extern types must belong to an extern
 module and have no two-argument qualifier. Unqualified imported members require an
 extern type or, for module-level members, an extern module. Two-argument member
 qualifiers are supported only for functions and static methods; instance methods
@@ -277,6 +292,19 @@ constants, mutual datatypes, implicit defaults and extern-backed witnesses, trai
 refinement and library comparisons with extern members. It exercises foreign
 classes, instance functions, methods and fields, both wrapper-erasure settings,
 additional axioms, source relocation and separately translated clients.
+`git-issue-466-js-require.dfy` qualifies required modules against independent C#
+emission using the extern runtime fixture: three-member recursion, unordered
+constants, mutually recursive datatypes, defaults and extern-backed witnesses,
+traits, refinement and library inputs. It checks both wrapper-erasure modes,
+scheduled resolution with additional axioms, a relocated archive producer and
+separate producer/client translation. A real CommonJS module captures its exports
+object through a native CommonJS cycle and calls a generated sibling through it; copying that object or failing
+to populate it breaks execution. The test also checks that each required object
+is bound once outside the group closure. Dotted, empty and punctuated required
+module names, unescaped keywords and runtime binding collisions are rejected. Incorrect-result and inhabited false
+assertions fail with additional axioms off and on. The existing certificate
+restriction for arbitrary extern contracts remains a negative control. Ordinary
+acyclic require-based and preloaded extern tests provide option-off comparisons.
 `git-issue-466-js-extern.dfy` checks each group-specific foreign linkage rejection.
 Archives with arbitrary extern contracts still cannot provide the modular
 termination certificate required by cross-module trait implementations; the

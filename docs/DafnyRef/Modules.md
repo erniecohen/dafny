@@ -1193,9 +1193,18 @@ that a later stage would have to reject:
   select foreign Go packages; generated declarations of the group share a separate
   package. See [Go extern linkage](../Compilation/Go.md#recursive-module-groups)
   for names and foreign source-file conventions.
-  JavaScript groups support preloaded extern module objects, extern types in those
-  modules, and qualified extern members. They retain ordinary module and type names
-  inside a shared initialization closure. Require-based extern modules, two-argument
+  JavaScript groups support preloaded extern module objects, CommonJS libraries
+  named by two-argument module externs, extern types in those modules, and
+  qualified extern members. Required libraries are loaded before group initialization;
+  generated declarations extend their exported objects. Require-based extern module
+  names must be unqualified ASCII identifiers after ordinary keyword escaping,
+  without unescaped JavaScript keywords or collisions with Node wrapper parameters
+  (`require`, `module`, `exports`, `__filename`, `__dirname`), `BigNumber`,
+  `_dafny`, `_System` or `_module`;
+  library specifiers retain their usual Node resolution. Native libraries must defer
+  calls into generated declarations until initialization has completed. They retain
+  ordinary module and type names
+  inside a shared initialization closure. Two-argument
   extern type qualifiers, unqualified imported members without an extern owner,
   qualified instance methods or fields, extern constructors, and refinements containing extern types
   remain unsupported. See the
