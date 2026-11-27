@@ -851,6 +851,39 @@ private runs stay outside this document.
 
 ---
 
+### 5.4 Opt-in GC throughput policy
+
+`dafny verify --batch-gc` disables background collection from process startup.
+This addresses runtime work caused by allocation in translation, Boogie
+preparation, type erasure and SMT expression construction. It is hidden and off
+by default, changes neither obligation generation nor solver settings, and is
+independent of the module window and worker counts. It can reduce throughput
+costs on allocation-heavy workloads while increasing individual collection
+pauses. A runtime latency-mode switch is insufficient to reproduce startup GC
+configuration; the command-line entry point starts a child using the same host,
+runtime version, arguments and inherited standard streams, with concurrent GC
+disabled in its environment. Already-configured processes verify directly.
+
+Project binding precedes the decision, so project-only activation works. The
+parent defers preflight diagnostics and discards them only after the child starts;
+the child repeats project validation and publishes diagnostics once. It forwards
+the child's exit code and waits for cleanup on cancellation. A restart marker
+rejects an unexpectedly unconfigured child before verification instead of
+restarting indefinitely. In-process verification APIs reject the option because
+they cannot configure an initialized runtime. The default path publishes its
+preflight diagnostics and runs verification in the original process.
+
+The identity control compares complete per-module Boogie files and per-VC
+verdicts, resource counts and assertion records against the default. Profile
+manifests must show Batch only in opted-in runs, and completed nonempty task
+coverage prevents an identity check from succeeding without verification. A
+reachable false assertion still fails. Separate launcher controls exercise stdin,
+project diagnostics, restart rejection, argument preservation, child exit codes
+and cancellation cleanup. Performance measurements and runtime traces from
+private runs remain outside this document.
+
+---
+
 ## 6. Dependencies and order of work
 
 ```

@@ -8,6 +8,7 @@ cli	allow-warnings	--allow-warnings	System.CommandLine.Option`1[System.Boolean]	
 cli	analyze-proofs	--analyze-proofs	System.CommandLine.Option`1[System.Boolean]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
 cli	ancestor-qualified-module-ids	--ancestor-qualified-module-ids	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	arithmetic-solver	--arithmetic-solver	System.CommandLine.Option`1[System.Int32]	execution	effective prover interfaces/options plus exact SMT command stream; overrides retained
+cli	batch-gc	--batch-gc	System.CommandLine.Option`1[System.Boolean]	execution	startup GC execution policy; child preserves arguments and solver capacity; changes no generated obligation or solver option
 cli	bitvector-map-keys	--bitvector-map-keys	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	boogie	--boogie	System.CommandLine.Option`1[System.Collections.Generic.IEnumerable`1[System.String]]	execution	effective prover interfaces/options plus exact SMT command stream; overrides retained
 cli	bootstrapping	--bootstrapping	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map

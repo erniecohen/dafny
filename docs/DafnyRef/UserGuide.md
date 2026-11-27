@@ -540,6 +540,17 @@ proofs and does not establish that the whole project is verified.
    - `--release-verified-modules`
    - `--translation-workers`
 
+The hidden, default-off `--batch-gc` option runs `dafny verify` with background
+garbage collection disabled from process startup. This can improve throughput on
+allocation-heavy projects, at the cost of responsiveness during collections. The
+command-line executable starts a child with the same arguments and runtime,
+forwards its standard streams and exit code, and waits for it to finish. The
+parent stops its child on cancellation or process exit. The option requires the
+command-line executable; in-process verification APIs reject it. It changes no
+generated obligations or solver settings. `--pipeline-profile` records the active
+mode as `gcLatencyMode` in its manifest. It can also be set as `batch-gc = true` in
+a project's `[options]` table.
+
 By default `dafny verify` verifies one module at a time: it starts every symbol of a
 module, waits until all of them have finished, and only then translates and starts
 the next module, so cores can sit idle while the last proofs of a module finish.
