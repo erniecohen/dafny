@@ -320,3 +320,59 @@ The proof/control ceilings remain 2,000,000/200,000 resource units per scope.
 Remaining native equations include subtraction, multiplication, unsigned
 division/remainder, ordering, rotations and population count. General word APIs
 at other widths and runtime lowering of integer-newtype operators also remain.
+
+## Checked signed word interpretation
+
+Include `Source/DafnyStandardLibraries/optional/IntegerBitwiseNativeSigned.dfy`
+with `--integer-bitwise`. Modules `Std.Arithmetic.IntegerBitwiseNativeSigned8`,
+`16`, `32` and `64` provide ghost functions `Encode(a)` and `Decode(x)`, and
+checked lemmas `Range`, `RoundTrip`, `Inverse` and `SignBit`.
+
+For width N, let M=2^N and H=M/2. `Encode` requires `-H <= a < H` and converts
+`a+M` when a is negative, or a otherwise. `Decode` takes the existing unsigned
+integer observation U and returns U below H, or U-M otherwise. `Range` bounds
+the decoded result by `-H <= Decode(x) < H`. `RoundTrip` proves
+`Decode(Encode(a)) == a`; `Inverse` proves `Encode(Decode(x)) == x`. `SignBit`
+relates `((x>>(N-1))&1)==1` to `Decode(x)<0`.
+
+The existing `x as int` observation remains unsigned. These are explicit proof
+interfaces for a signed interpretation; they do not add signed arithmetic or
+change integer-newtype operators, division/remainder conventions, direct cast
+checks, or runtime lowering. A client can specify a native high-bit test using
+the signed interpretation, or compose the two inverses at a bounded signed
+integer newtype.
+
+### Model and qualification boundary
+
+Interpret each native word as its unsigned little-endian weighted digit sum U,
+with `0 <= U < M`. Subtracting M on the upper half maps the word bijectively to
+`[-H,H)`. Negative a encodes as `a+M` in `[H,M)` and nonnegative a encodes
+unchanged in `[0,H)`. Both conversions therefore use an in-range unsigned
+carrier, and the existing checked unsigned round trip and inverse prove the
+two signed inverse laws. The high digit is `floor(U/H)`, which is zero below H
+and one at or above H; the checked right-shift and low-digit rules identify it
+with the native shift-and-mask test. No assumption, added axiom, exemption or
+compiler change is introduced.
+
+The new functions and lemmas are checked with pinned Z3 5.1.0 and
+`--solver-option O:smt.bv.solver=2`. Their existing shift/reference dependency
+closure is independently checked with the default engine. Both resolver and
+additional-axiom modes are qualified. Default-engine wide sign-bit attempts
+exhausted the proof budget and are excluded from acceptance evidence.
+
+Positive controls cover symbolic native words and bounded signed integers,
+a Boolean-returning native sign-test client, minimum and maximum signed values,
+minus one, zero and the high-bit boundary. Negative controls reject the two
+signed bounds, wrong encodings and unsigned interpretations, wrong signs and
+invalid direct conversions. Reachable false assertions follow each lemma
+separately and all four together; controls must reject conclusively under both
+bitvector engines.
+
+Serial mutations negate every lemma's postcondition, remove each explicit
+encoding/round-trip premise, and perturb both conversion definitions. Every
+mutation first checks its corresponding unmodified baseline on the same
+inhabited inputs. A mutation that hangs is killed only through its own process
+group after approximately three times that clean baseline, with a five-second
+minimum. Such a kill is recorded separately from a failed proof; no timeout or
+resource exhaustion qualifies a baseline or control. Body/client and
+negative-control ceilings remain 2,000,000 and 200,000 resource units per scope.
