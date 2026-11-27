@@ -1,0 +1,5 @@
+With `--recursive-modules`, JavaScript preserves fully imported extern trait
+ancestors declared in acyclic modules when they are emitted with a supported
+group hierarchy. Unrelated acyclic traits retain ordinary emission. Ancestors
+obey the group linkage restrictions; ancestors supplied only as a library
+require a producer containing the group.

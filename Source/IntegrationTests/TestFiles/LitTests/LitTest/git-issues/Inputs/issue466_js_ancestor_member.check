@@ -1,0 +1,1 @@
+// CHECK: JavaScript recursive groups require qualified extern members to be functions or static methods
