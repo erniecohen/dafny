@@ -71,6 +71,7 @@ cli	isolate-assertions	--isolate-assertions	System.CommandLine.Option`1[System.B
 cli	javadoclike-docstring-plugin	--javadoclike-docstring-plugin	System.CommandLine.Option`1[System.Boolean]	command-setup	setup or another command; executes before/outside proof transport
 cli	json-diagnostics	--json-diagnostics	System.CommandLine.Option`1[System.Boolean]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
 cli	json-output	--json-output	System.CommandLine.Option`1[System.Boolean]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
+cli	legacy-allow-unsound-bv-solver	--legacy-allow-unsound-bv-solver	System.CommandLine.Option`1[System.Boolean]	execution	decides, before any task, whether a prover option selecting smt.bv.solver=2 is rejected; the effective prover options are keyed
 cli	legacy-auto-generated-attributes	--legacy-auto-generated-attributes	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	legacy-boogie-library-check	--legacy-boogie-library-check	System.CommandLine.Option`1[System.Boolean]	command-setup	checked when a library is loaded, before proof transport; no effect on the proof task
 cli	legacy-cs-datatype-equality	--legacy-cs-datatype-equality	System.CommandLine.Option`1[System.Boolean]	command-setup	setup or another command; executes before/outside proof transport
@@ -129,6 +130,7 @@ cli	optimize-erasable-datatype-wrapper	--optimize-erasable-datatype-wrapper	Syst
 cli	outer-module	--outer-module	System.CommandLine.Option`1[System.String]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	output	--output,-o	System.CommandLine.Option`1[System.IO.FileInfo]	command-setup	setup or another command; executes before/outside proof transport
 cli	performance-stats	--performance-stats	System.CommandLine.Option`1[System.Int32]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
+cli	persistent-counterexamples	--persistent-counterexamples	System.CommandLine.Option`1[System.Boolean]	profile	module-result reporting eligibility only; changes no task input or solver command
 cli	persistent-translation	--persistent-translation	System.CommandLine.Option`1[System.Boolean]	profile	explicit opt-in module tables beside the task results; keyed by translation descriptor, Boogie graph and verification environment; unsupported modules and reporting options bypass
 cli	persistent-translation-audit	--persistent-translation-audit	System.CommandLine.Option`1[System.Boolean]	profile	never replays a module; compares stored translations and module results with fresh ones and reports differences
 cli	pipeline-profile	--pipeline-profile	System.CommandLine.Option`1[System.String]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
@@ -193,6 +195,7 @@ cli	trait-rank-decreases	--trait-rank-decreases	System.CommandLine.Option`1[Syst
 cli	translate-standard-library	--translate-standard-library	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	translation-record	--translation-record	System.CommandLine.Option`1[System.Collections.Generic.IList`1[System.IO.FileInfo]]	command-setup	setup or another command; executes before/outside proof transport
 cli	translation-record-output	--translation-record-output	System.CommandLine.Option`1[System.IO.FileInfo]	command-setup	setup or another command; executes before/outside proof transport
+cli	ready-module-verification	--ready-module-verification	System.CommandLine.Option`1[System.Boolean]	execution	module readiness changes scheduling only; fresh solver per proof, identical translation and assertion maps
 cli	translation-workers	--translation-workers	System.CommandLine.Option`1[System.Int32]	input	translation scheduling precedes task lookup; commits in serial order, so exact prepared SMT and current assertion map equal N = 1
 cli	translation-workers-stress	--translation-workers-stress	System.CommandLine.Option`1[System.Int32]	input	test-only translation finish-order delays precede task lookup; exact prepared SMT and current assertion map
 cli	type-inference-trace	--type-inference-trace	System.CommandLine.Option`1[System.Boolean]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
@@ -345,3 +348,4 @@ solver-property	Help		System.String	command-setup	static option documentation; n
 solver-property	LibOptions		Microsoft.Boogie.SMTLibOptions	execution	covered by complete inherited prover interfaces; never serialized as an opaque object
 solver-property	UseTickleBool		System.Boolean	execution	all public solver fields/properties enumerated and encoded
 cli	integer-bitwise	--integer-bitwise	System.CommandLine.Option`1[System.Boolean]	input	compiler-owned resolved signatures and local defining equations before task lookup
+cli	optimize-translation-copy	--optimize-translation-copy	System.CommandLine.Option`1[System.Boolean]	execution	field-copy implementation; preserves resolution keys, traversal, aliases, fresh IDs, exact SMT and current assertion map

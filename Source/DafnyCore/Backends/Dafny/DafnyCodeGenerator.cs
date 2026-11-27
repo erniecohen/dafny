@@ -1524,11 +1524,14 @@ namespace Microsoft.Dafny.Compilers {
       return new BuilderSyntaxTree<StatementContainer>(new StatementBuffer(), this);
     }
 
+    protected virtual bool UseExternalConstructorArguments(Constructor constructor) =>
+      constructor.IsExtern(Options, out _, out _);
+
     protected override void EmitNew(Type type, IOrigin tok, CallStmt initCall, ConcreteSyntaxTree wr, ConcreteSyntaxTree wStmts) {
       if (GetExprConverter(wr, wStmts, out var builder, out var convert)) {
         var ctor = (Constructor)initCall?.Method;
         var arguments = Enumerable.Empty<DAST.Expression>();
-        if (ctor != null && ctor.IsExtern(Options, out _, out _)) {
+        if (ctor != null && UseExternalConstructorArguments(ctor)) {
           // the arguments of any external constructor are placed here
           arguments = ctor.Ins.Select((f, i) => (f, i))
             .Where(tp => !tp.f.IsGhost)

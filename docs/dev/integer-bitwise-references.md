@@ -317,9 +317,6 @@ invalid-caller rejection, or fail contract well-formedness when the guard define
 a later premise (the count/divisor guards in `RightArithmetic` and `LeftArithmetic`). Exhaustion never counts as a control or mutation pass.
 The proof/control ceilings remain 2,000,000/200,000 resource units per scope.
 
-Remaining native equations include subtraction, unsigned
-division/remainder, ordering, rotations and population count. General word APIs
-at other widths and runtime lowering of integer-newtype operators also remain.
 
 ## Checked native modular multiplication
 
@@ -368,3 +365,31 @@ not used: it can report unsatisfiable for satisfiable queries
 shift proof closure and all clients are checked with Boogie's settings. A
 successful body run alone is insufficient qualification. This solver setting
 belongs to the explicit proof gate and does not change compiler or verifier defaults.
+
+## Checked native modular subtraction
+
+Explicitly include `Source/DafnyStandardLibraries/optional/IntegerBitwiseNativeSubtraction.dfy`
+with `--integer-bitwise`. The modules `Std.Arithmetic.IntegerBitwiseNativeSubtraction8`,
+`16`, `32` and `64` provide `Minus(x,y)`, proving
+`(x-y) as int == (x as int-y as int) % 2^N`. The result is the unsigned
+observation of modular subtraction; it includes borrow and wraparound.
+
+For M=2^N, the checked native `ComplementSum` identity expresses subtraction as
+`x+!y+1`. Checked complement gives U(!y)=M-1-U(y). Two checked modular additions
+and the integer-only `Reduce` lemma then give (U(x)-U(y)) mod M. The helper names the intermediate and final integer
+observations, with checked
+positive-modulus and remainder-equation premises. `MinusWitness` similarly names
+the native result under its checked subtraction-equality premise. These interfaces
+keep the mixed integer/native obligations local. Every declaration has a proof
+body; no axiom, assumption, verification exemption or compiler fact is added.
+The companion remains outside the packaged standard-library inputs.
+
+The regression checks included proof bodies and symbolic native and bounded
+integer-newtype clients with both resolvers, independently of additional axioms.
+Concrete controls cover no borrow, borrow, zero, maximum values and self
+subtraction. Wrong-result equations and inhabited false assertions must fail;
+invalid conversion bounds, incorrect witness results, incorrect intermediate
+observations and a zero modulus must be rejected. Serial mutations
+negate every new postcondition and remove each new premise separately.
+Resource exhaustion or timeout is never accepted as a successful control. The existing proof/control
+ceilings are 2,000,000/200,000 resource units per scope.

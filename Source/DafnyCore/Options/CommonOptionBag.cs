@@ -44,7 +44,7 @@ public class CommonOptionBag {
   public static readonly Option<string> VerificationCache = new("--verification-cache",
     "Use the cache store in DIR (also --cache-dir; or DAFNY_CACHE_DIR): reuse per-module resolution results, complete verification-task solver exchanges and, with --persistent-translation, module translations and results. " +
     "Requires --type-system-refresh. Opt-in; uses a fresh solver history and stable numeric declaration order for each task. " +
-    "Replayed timing fields are identified in CSV/JSON logs. Unsupported modules and tasks run normally.") { ArgumentHelpName = "DIR" };
+    "Replayed timing fields are identified in verification logs. Unsupported modules and tasks run normally.") { ArgumentHelpName = "DIR" };
   public static readonly Option<IList<string>> VerificationCacheSolverDigest = new("--verification-cache-solver-digest",
     () => new List<string>(),
     "With --verification-cache, also accept a solver binary whose SHA-256 digest is SHA256 (64 hexadecimal digits), in addition to " +
@@ -83,11 +83,18 @@ public class CommonOptionBag {
   public static readonly Option<bool> TranslationCache = new("--translation-cache",
     "Reuse module translations in this process using semantic resolution keys. " +
     "Requires --type-system-refresh. Uses the default module-scoped translator. Stores no files or verification results.");
+  public static readonly Option<bool> OptimizeTranslationCopy = new("--optimize-translation-copy",
+    "Use generated field-copy routines when materializing Boogie module graphs, reducing front-end reflection work. " +
+    "Preserves graph aliases, generated names, solver input and resource counts. Defaults to false; " +
+    "uses reflection on runtimes without dynamic code support.");
   public static readonly Option<bool> PersistentTranslation = new("--persistent-translation",
     "Also keep module translations and whole-module results in the --verification-cache directory, across processes. " +
     "Requires --verification-cache and --type-system-refresh. A module whose translation key is unchanged is not translated again, " +
     "and a module whose regenerated Boogie program is unchanged is not prepared or solved again, when every one of its tasks " +
-    "had a valid or resource-bounded resource-exhausted result through the result cache. CSV and ordinary JSON logs support replay and mark replayed timing. JSON retains current assertion locations and descriptions; dependency-aware reports and unsupported reporting options run normally.");
+    "had a valid or resource-bounded resource-exhausted result through the result cache. CSV, TRX and ordinary JSON/text logs support replay and mark replayed timing. JSON/text retain current assertion and dependency locations and descriptions. Verification coverage and contradictory/redundant-assumption warnings support replay; proof-refactoring analysis and unsupported reporting options run normally. The language server retains current native tasks and reuses eligible solver responses after fresh translation and preparation.");
+  public static readonly Option<bool> PersistentCounterexamples = new("--persistent-counterexamples",
+    "With --persistent-translation, also reuse resource-bounded failed module results with complete current-source diagnostics. " +
+    "Requires no time limit. Model extraction also supports complete native model payloads with current-source state descriptions; unsupported model shapes use the native task path.");
   public static readonly Option<bool> PersistentTranslationAudit = new("--persistent-translation-audit",
     "With --persistent-translation, translate, prepare and verify every module as if nothing were stored, and report an error " +
     "when a stored translation or module result differs from the fresh one.") { IsHidden = true };
@@ -110,6 +117,13 @@ public class CommonOptionBag {
   public static readonly Option<int> TranslationWorkersStress = new("--translation-workers-stress", () => 0,
     "(testing) With --translation-workers, delay each translation's start: a positive seed draws a delay of up to " +
     "40 ms per module, -1 delays the k-th module by 100·(3 - k mod 4) ms, so that translations finish in reverse order.") {
+    IsHidden = true
+  };
+
+  public static readonly Option<bool> ReadyModuleVerification = new("--ready-module-verification",
+    "Prepare each translated module and submit its verification tasks without waiting for earlier modules. " +
+    "Requires --translation-workers and --verification-module-window greater than 1, and --boogie /restartProver. " +
+    "Results and diagnostics are still reported in module order; --cores still bounds solver concurrency.") {
     IsHidden = true
   };
 
@@ -1007,8 +1021,10 @@ NoGhost - disable printing of functions, ghost methods, and proof
     });
     OptionRegistry.RegisterOption(ResolutionThreads, OptionScope.Cli);
     OptionRegistry.RegisterOption(TranslationCache, OptionScope.Cli);
+    OptionRegistry.RegisterOption(OptimizeTranslationCopy, OptionScope.Cli);
     OptionRegistry.RegisterOption(PersistentTranslation, OptionScope.Cli);
     OptionRegistry.RegisterOption(PersistentTranslationAudit, OptionScope.Cli);
+    OptionRegistry.RegisterOption(PersistentCounterexamples, OptionScope.Cli);
     TranslationWorkers.AddValidator(result => {
       if (result.Tokens.Count != 0 && result.GetValueOrDefault<int>() < 1) {
         result.ErrorMessage = "--translation-workers must be a positive integer.";
@@ -1016,6 +1032,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
     });
     OptionRegistry.RegisterOption(TranslationWorkers, OptionScope.Cli);
     OptionRegistry.RegisterOption(TranslationWorkersStress, OptionScope.Cli);
+    OptionRegistry.RegisterOption(ReadyModuleVerification, OptionScope.Cli);
     OptionRegistry.RegisterOption(PipelineProfile, OptionScope.Cli);
     OptionRegistry.RegisterOption(PipelineProfileHeap, OptionScope.Cli);
     OptionRegistry.RegisterOption(PipelineProfileGcEvents, OptionScope.Cli);

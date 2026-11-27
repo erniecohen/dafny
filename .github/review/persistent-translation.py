@@ -182,7 +182,7 @@ assert projected["solver"] == 0 and not elsewhere.exists(), projected["stats"]
 # Audit translates and verifies everything afresh, compares, and publishes nothing new.
 audit = run("audit", extra=("--persistent-translation-audit",))
 same_report(cold, audit)
-check(audit, MODULES, {m: None for m in MODULES}, 0)
+check(audit, MODULES, {m: None for m in MODULES}, cold["solver"])
 assert audit["stats"]["auditChecks"] == 7 and audit["stats"]["auditMismatches"] == 0, audit["stats"]
 assert audit["stats"]["translationPublications"] == 0 and audit["stats"]["manifestPublications"] == 0, audit["stats"]
 
@@ -320,9 +320,9 @@ def replace(directory, index, entry, record):
 
 
 # Reports that only a fresh run produces replay nothing, and record as usual.
-logged = run("logged", extra=("--log-format", "text;LogFileName=" + str(destination / "logged.txt")))
+logged = run("logged", extra=("--suggest-proof-refactoring", "--allow-warnings", "--log-format", "json;LogFileName=" + str(destination / "logged.json")))
 assert logged["output"][0] == cold["output"][0] and logged["translated"] == MODULES
-assert logged["stats"]["keyHits"] == 0 and logged["stats"]["bypassReason"] == "verification logs", logged["stats"]
+assert logged["stats"]["keyHits"] == 0 and logged["stats"]["bypassReason"] == "proof-refactoring reporting", logged["stats"]
 
 # Negative control: audit reports a stored module result that differs from a fresh one.
 tampered = destination / "tampered-cache"
