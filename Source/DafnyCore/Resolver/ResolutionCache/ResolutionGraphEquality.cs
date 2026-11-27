@@ -14,7 +14,8 @@ namespace Microsoft.Dafny;
 /// same objects, and so must the boundary objects that both graphs share (the parsed context of the
 /// module and the objects of its prerequisites), which are not entered. Objects outside the snapshot schema (the
 /// options, the reporter, the program) are paired but not entered. Visibility-scope tokens are compared by their
-/// incidence in the paired scopes, Guids up to a renaming, and print labels not at all. An object
+/// incidence in the paired scopes, Guids and quantifier allocation identities up to a renaming,
+/// and print labels not at all. An object
 /// in both graphs is shared by them and is not entered.
 /// </summary>
 internal sealed class ResolutionGraphEquality(Func<object, bool> boundary) {
@@ -44,6 +45,12 @@ internal sealed class ResolutionGraphEquality(Func<object, bool> boundary) {
     typeof(PreTypeProxy).GetField(nameof(PreTypeProxy.UniqueId))!,
     typeof(TypeRefinementWrapper).GetField(nameof(TypeRefinementWrapper.UniqueId))!,
   ];
+
+  // Unlike the non-unique print labels above, quantifier counters identify distinct allocations.
+  // Preserve their equality pattern with a bijection rather than dropping the field or comparing
+  // the process-wide counter values. The field tags the naming domain separately from Guids.
+  private static readonly System.Reflection.FieldInfo QuantifierIdentity = typeof(QuantifierExpr)
+    .GetField("UniqueId", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!;
 
   /// <summary>Pair two boundary objects that stand for each other, such as a parsed declaration and its reused result.</summary>
   public void Pair(object expected, object actual) => pairs[expected] = actual;
@@ -148,7 +155,16 @@ internal sealed class ResolutionGraphEquality(Func<object, bool> boundary) {
     Compared++;
     foreach (var field in ResolutionGraphSchema.Fields(type)) {
       if (NamingFields.Contains(field)) { continue; }
-      pending.Enqueue((field.GetValue(expected), field.GetValue(actual), new GraphPath(path, field.Name)));
+      var fieldPath = new GraphPath(path, field.Name);
+      var expectedValue = field.GetValue(expected);
+      var actualValue = field.GetValue(actual);
+      if (field == QuantifierIdentity) {
+        if (Rename((field, expectedValue), (field, actualValue), reason => fieldPath + ": " + reason) is { } difference) {
+          return difference;
+        }
+      } else {
+        pending.Enqueue((expectedValue, actualValue, fieldPath));
+      }
     }
     return null;
   }
