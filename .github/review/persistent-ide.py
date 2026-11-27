@@ -22,7 +22,7 @@ text = source.read_text()
 uri = program.as_uri()
 
 
-def run(name, overlay=text, directory=cache, extra=(), workspace=destination, document=program, manual=False, module_reports=False):
+def run(name, overlay=text, directory=cache, extra=(), workspace=destination, document=program, manual=False, module_reports=False, expected_outcome="Valid"):
     uri = document.as_uri()
     profile = destination / (name + ".jsonl")
     environment = {k: v for k, v in os.environ.items()
@@ -118,7 +118,7 @@ def run(name, overlay=text, directory=cache, extra=(), workspace=destination, do
                 return m.get("method") == "dafny/textDocument/symbolStatus" and (
                 m["params"].get("uri") == uri and m["params"].get("version") == 1 and
                 m["params"].get("namedVerifiables") and all(
-                    symbol["status"] in (5, "correct", "Correct") for symbol in m["params"]["namedVerifiables"]))
+                    symbol["status"] in ((5, "correct", "Correct") if expected_outcome == "Valid" else (4, "error", "Error")) for symbol in m["params"]["namedVerifiables"]))
             # A warm task can finish before the manual request's response is read.
             status = next((m for m in reversed(received) if completed(m)), None) or wait(completed)
             send("textDocument/hover", {"textDocument": {"uri": uri},
@@ -139,7 +139,7 @@ def run(name, overlay=text, directory=cache, extra=(), workspace=destination, do
         tasks = [e for e in events if e.get("ev") == "result-task"]
         assert tasks or module_reports and any(e.get("ev") == "persistent-module" and e.get("hit") for e in events), (name, "no completed task evidence")
         facts = sorted((e["task"], e["split"], e["seed"], e["outcome"], e["resourceCount"]) for e in tasks)
-        assert all(e["outcome"] == "Valid" for e in tasks)
+        assert all(e["outcome"] == expected_outcome for e in tasks)
         return status["params"]["namedVerifiables"], facts, tasks
 
 
