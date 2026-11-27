@@ -408,7 +408,11 @@ Various options control the verification process, in addition to all those descr
   environment (the options, the audited solver and its environment, and the Dafny
   and Boogie builds), to the results of the module's tasks. A module's results are
   recorded only when its translation reported nothing and every task it schedules
-  completed valid through the task-result cache. When a module's translation key is
+  completed valid, or ran out of resources under a positive resource limit and no
+  time limit, through the task-result cache. Resource-exhausted results retain their
+  outcome and current-source diagnostic; the module identity and environment must
+  still match, including the effective limits. Counterexample errors, timed failures
+  and unsupported outcomes retain the normal task path. When a module's translation key is
   unchanged, the module is neither translated, prepared nor solved again; when a
   dependency changed but the module's regenerated Boogie graph is unchanged, it is
   neither prepared nor solved again (early cutoff). Replayed results are reported
