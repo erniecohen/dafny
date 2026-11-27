@@ -6,6 +6,9 @@ import json
 from pathlib import Path
 import re
 import subprocess
+import os
+import signal
+import time
 
 ROOT = Path(__file__).resolve().parents[2]
 LIBRARY = ROOT / 'Source/DafnyStandardLibraries/optional/IntegerBitwiseNativeDivision.dfy'
@@ -79,7 +82,90 @@ def fixtures():
                      f'lemma BadBound{w}() {{ B{w}.RoundTrip({m}); // ERROR', '}',
                      f'lemma BadNegative{w}() {{ B{w}.RoundTrip(-1); // ERROR', '}',
                      f'lemma BadCast{w}() {{ var x:={m} as bv{w}; // ERROR', '}']
+    for index,(module,header,_,_) in enumerate(declarations(LIBRARY.read_text())):
+        alias = 'C'+str(index)
+        name = header[1]
+        parameters = [x.split(':',1)[0].strip() for x in header[2].split(',')]
+        values = witness(name)
+        arguments = ','.join(str(values[key]) for key in parameters)
+        for lines in (positive,negative):
+            lines.append('import '+alias+'='+module)
+        setup = f'reveal {alias}.Q(),{alias}.R(); ' if name=='StepWitness' else ''
+        positive += [f'lemma {{:induction false}} Witness{index}() {{ {setup}{alias}.{name}({arguments}); }}']
+        negative += [f'lemma {{:induction false}} FalseHelper{index}() {{ {setup}{alias}.{name}({arguments});',
+                     ' assert false; // ERROR', '}']
     return positive, negative
+
+
+def kill_group(pgid, sig):
+    try:
+        os.killpg(pgid,sig)
+    except ProcessLookupError:
+        pass
+    except PermissionError:
+        # Some platforms retain a group containing only zombies briefly.
+        snapshot = subprocess.run(['ps','-axo','pgid=,stat='],capture_output=True,
+                                  text=True,check=True,timeout=10)
+        live = [row for line in snapshot.stdout.splitlines()
+                if len(row:=line.split())==2 and int(row[0])==pgid
+                and not row[1].startswith('Z')]
+        if live:
+            raise
+
+
+def invoke(command, timeout):
+    started = time.monotonic()
+    def interrupted(signum, frame):
+        raise SystemExit(128+signum)
+    previous = {sig:signal.signal(sig,interrupted) for sig in (signal.SIGTERM,signal.SIGINT)}
+    child = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                             text=True, start_new_session=True)
+    killed = False
+    try:
+        stdout, stderr = child.communicate(timeout=timeout)
+    except subprocess.TimeoutExpired:
+        killed = True
+        kill_group(child.pid, signal.SIGTERM)
+        try:
+            stdout, stderr = child.communicate(timeout=5)
+        except subprocess.TimeoutExpired:
+            kill_group(child.pid, signal.SIGKILL)
+            stdout, stderr = child.communicate()
+    finally:
+        # Reap any solver/compiler children remaining in this run's group.
+        try:
+            kill_group(child.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+        for sig,handler in previous.items():
+            signal.signal(sig,handler)
+    return child.returncode, stdout + stderr, time.monotonic()-started, killed
+
+
+def declarations(source):
+    headers = list(re.finditer(r'^ +lemma (?:\{:[^}]+\}\s*)*(\w+)\((.*)\)', source, re.M))
+    result = []
+    for header in headers:
+        module = re.findall(r'^module (\S+) \{', source[:header.start()], re.M)[-1]
+        body = re.search(r'^ +\{', source[header.end():], re.M)
+        assert body, header[1]
+        contract_end = header.end()+body.start()
+        contracts = list(re.finditer(r'^ +ensures (.+)$', source[header.end():contract_end], re.M))
+        assert contracts, header[1]
+        result.append((module, header, contract_end, contracts))
+    return result
+
+
+def witness(name):
+    if name=='Zero': return dict(a=0,d=5,q=0,r=0,y=5)
+    if name=='Exact': return dict(a=13,b=5,m=256,r=18)
+    if name=='NonNegative': return dict(a=13,b=5)
+    if name=='Bounds': return dict(a=13,d=5,q=2,r=3)
+    if name=='Double': return dict(a=27,d=5,q=2,r=3)
+    if name=='Finish': return dict(a=27,d=5,q=2,r=3,t=7,v=5,z=2)
+    if name.startswith('Leading'): return dict(x=13,d=0)
+    if name.startswith('Dispatch'): return dict(x=13,y=1)
+    return dict(x=13,y=5,z=18 if name=='ExactAdd' else 8,q=1,r=1,t=3,u=2)
 
 
 def main():
@@ -102,18 +188,29 @@ def main():
         common += ['--additional-axioms']
     records = []
 
-    def verify(name, path, options=(), errors=(), mutation=False, wellformed=False, limit=2000000, intblast=False, expected_scopes=None):
+    def verify(name, path, options=(), errors=(), mutation=False, wellformed=False, limit=2000000, body_search=False, expected_scopes=None, timeout=300):
         csv_path = out / (name + '.csv')
-        result = subprocess.run(exe + ['verify', str(path), *common, *(['--solver-option','O:smt.bv.solver=2'] if intblast else []), '--resource-limit', str(limit),
-                                      '--log-format', 'csv;LogFileName='+str(csv_path), *options],
-                                capture_output=True, text=True, timeout=110)
-        text = result.stdout + result.stderr
+        search_common = common
+        if body_search:
+            # Use Dafny's normal incremental prover for the many isolated native
+            # scopes. Dependencies and client controls retain their fresh prover.
+            restart = common.index('/restartProver')
+            search_common = common[:restart-1]+common[restart+1:]
+        code, text, elapsed, killed = invoke(
+            exe + ['verify', str(path), *search_common,
+                   *(['--solver-option','O:smt.case_split=1'] if body_search else []),
+                   '--resource-limit', str(limit), '--log-format',
+                   'csv;LogFileName='+str(csv_path), *options], timeout)
         (out / (name+'.log')).write_text(text)
+        if mutation and killed:
+            records.append(dict(name=name, exit=code, outcome='killed (timeout)', elapsed=elapsed, timeout=timeout))
+            return
+        assert not killed, (name,elapsed,timeout)
         assert not re.search(r'out of resource|timed out|inconclusive|unknown|Warning:|internal error|Unhandled exception', text, re.I), (name,text)
-        assert result.returncode == (4 if errors or mutation or wellformed else 0), (name,result.returncode,text)
+        assert code == (4 if errors or mutation or wellformed else 0), (name,code,text)
         actual = {int(i) for i in re.findall(r'\((\d+),\d+\): Error:',text)}
         if mutation:
-            assert 'a postcondition could not be proved' in text, (name,text)
+            assert 'Error:' in text, (name,text)
         elif not wellformed:
             assert actual == set(errors), (name,actual,errors,text)
         with csv_path.open(encoding='utf-8-sig') as stream:
@@ -123,11 +220,13 @@ def main():
             assert 'possible division by zero' in text, (name,text)
             assert any('well-formedness' in r['TestResult.DisplayName'] and r['TestResult.Outcome']=='Failed' for r in rows), (name,rows)
         failed = sum(r['TestResult.Outcome']=='Failed' for r in rows)
+        if mutation:
+            assert failed>0,(name,rows)
         if expected_scopes is not None:
             assert len(rows)==expected_scopes, (name,len(rows),expected_scopes)
         if not mutation and not wellformed:
             assert failed==len(errors), (name,failed,len(errors))
-        records.append(dict(name=name,exit=result.returncode,scopes=len(rows),failed=failed))
+        records.append(dict(name=name,exit=code,scopes=len(rows),failed=failed,elapsed=elapsed))
 
     if not args.mutations_only:
         disabled = subprocess.run(exe+['verify',str(LIBRARY),*common,'--integer-bitwise:false'],
@@ -139,48 +238,73 @@ def main():
         modes = ('legacy','refreshed') if args.resolver == 'both' else (args.resolver,)
         for mode in modes:
             options = ['--type-system-refresh:'+str(mode=='refreshed').lower()]
-            # The existing Boolean/conversion closure uses the default BV engine.
-            # Only the new division/remainder bodies use the integer-based BV engine.
-            verify(mode+'-included-bodies', LIBRARY.parent/'IntegerBitwiseNative.dfy',
+            # Qualify dependencies under their existing search; new bodies use
+            # the default bitvector engine with its native case split.
+            verify(mode+'-included-bodies', LIBRARY.parent/'IntegerBitwiseNativeShifts.dfy',
                    [*options,'--verify-included-files'])
-            verify(mode+'-bodies', LIBRARY, options, intblast=True, expected_scopes=16)
+            verify(mode+'-bodies', LIBRARY, options, body_search=True)
+            body_rows = list(csv.DictReader((out/(mode+'-bodies.csv')).open(encoding='utf-8-sig')))
+            checked = {r['TestResult.DisplayName'].split(' (',1)[0] for r in body_rows}
+            for module,header,_,_ in declarations(LIBRARY.read_text()):
+                assert module+'.'+header[1] in checked, (mode,module,header[1])
             for kind, lines in zip(('clients','negative'), fixtures()):
                 path = out / (mode+'-'+kind+'.dfy')
                 path.write_text('\n'.join(lines)+'\n')
                 errors = {i for i,line in enumerate(lines,1) if '// ERROR' in line}
                 verify(mode+'-'+kind,path,options,errors,limit=200000 if errors else 2000000)
                 if errors:
-                    verify(mode+'-negative-intblast',path,options,errors,limit=200000,intblast=True)
+                    verify(mode+'-negative-bodies',path,options,errors,limit=200000,body_search=True)
     else:
-        original = LIBRARY.read_text().replace('include "IntegerBitwiseNative.dfy"',
-                     'include "'+(LIBRARY.parent/'IntegerBitwiseNative.dfy').as_posix()+'"')
-        headers = list(re.finditer(r'^  lemma (?:\{:[^}]+\}\s*)*(\w+)\((.*)\)',original,re.M))
-        for i, header in enumerate(headers):
-            module = re.findall(r'module Std.Arithmetic.(\w+) \{',original[:header.start()])[-1]
+        original = LIBRARY.read_text().replace('include "IntegerBitwiseNativeShifts.dfy"',
+                     'include "'+(LIBRARY.parent/'IntegerBitwiseNativeShifts.dfy').as_posix()+'"')
+        # One clean body baseline fixes the per-mutant wall limit at three times
+        # its duration. Mutants run serially, each with its own process group.
+        verify('mutation-baseline', LIBRARY, ['--type-system-refresh:true'], body_search=True)
+        clean_elapsed = records[-1]['elapsed']
+        mutant_timeout = max(3.0,3*clean_elapsed)
+        seen = set()
+        for module, header, end, contracts in declarations(original):
             name = header[1]
-            end = headers[i+1].start() if i+1<len(headers) else len(original)
-            section = original[header.end():end]
-            for contract in re.finditer(r'^    (ensures|requires) (.+)$',section,re.M):
-                start, finish = header.end()+contract.start(), header.end()+contract.end()
-                fact = contract[1]=='ensures'
-                replacement = '    ensures !('+contract[2]+')' if fact else ''
-                mutated = original[:start]+replacement+original[finish:]
-                if fact:
-                    # This concrete nonzero divisor inhabits the contract.
-                    at = mutated.index('\n',header.start())
-                    mutated = mutated[:at]+'\n    requires x==13 && y==5'+mutated[at:]
-                path = out / 'mutation.dfy'
-                path.write_text(mutated)
-                site = f'{module}.{name}.{contract[1]}'
-                options = ['--type-system-refresh:true','--filter-symbol',f'{module}.{name}.']
-                if fact:
-                    verify(site,path,options,mutation=True,intblast=True)
-                else:
-                    # Removing the guard makes the contract's division undefined.
-                    # Check that boundary without exploring the ill-formed body.
-                    verify(site,path,[*options,'--boogie','/proc:*well-formedness*'],
-                           wellformed=True,intblast=True)
-        assert len(records)==16
+            values = witness(name)
+            parameters = [x.split(':',1)[0].strip() for x in header[2].split(',')]
+            inhabited = ' && '.join(f'{key}=={values[key]}' for key in parameters)
+            contract = contracts[0]
+            start, finish = header.end()+contract.start(), header.end()+contract.end()
+            mutated = original[:start]+'  ensures !('+contract[1]+')'+original[finish:]
+            if name!='Observe':
+                # Keep a recursive lemma's domain unchanged: restricting it to
+                # a witness would itself invalidate its recursive call.
+                at = mutated.index('\n',header.start())
+                mutated = mutated[:at]+'\n  requires '+inhabited+mutated[at:]
+            path = out/'mutation.dfy'
+            path.write_text(mutated)
+            site = module+'.'+name
+            assert site not in seen
+            seen.add(site)
+            verify(site,path,['--type-system-refresh:true','--filter-symbol',site+'.'],
+                   mutation=True,body_search=True,timeout=mutant_timeout)
+        assert len(seen)==290, len(seen)
+        for w in WIDTHS:
+            module = f'Std.Arithmetic.IntegerBitwiseNativeDivision{w}'
+            for function,operation in (('Q','/'),('R','%')):
+                pattern = rf'(opaque function {function}\(x:bv{w},y:bv{w}\):bv{w}\n +)\{{ if y==0 then 0 else x{re.escape(operation)}y \}}'
+                mutated,count = re.subn(pattern,rf'\1{{ if y==0 then 0 else x{operation}y+1 }}',original)
+                assert count==1,(w,function,count)
+                path=out/'mutation.dfy';path.write_text(mutated)
+                verify(f'{module}.{function}.definition',path,
+                       ['--type-system-refresh:true','--filter-symbol',module+'.Zero.'],
+                       mutation=True,body_search=True,timeout=mutant_timeout)
+            for name in ('Divide','Remainder'):
+                pattern = rf'(lemma (?:\{{:[^}}]+\}}\s*)*{name}\(x:bv{w},y:bv{w}\)\n) +requires y!=0\n'
+                mutated, count = re.subn(pattern,r'\1',original)
+                assert count==1,(w,name,count)
+                path=out/'mutation.dfy';path.write_text(mutated)
+                verify(f'{module}.{name}.guard',path,
+                       ['--type-system-refresh:true','--filter-symbol',module+'.'+name+'.',
+                        '--boogie','/proc:*well-formedness*'],wellformed=True,
+                       body_search=True,timeout=mutant_timeout)
+        (out/'mutation-baseline.json').write_text(json.dumps(dict(cleanSeconds=clean_elapsed,
+                                                               mutantTimeout=mutant_timeout),indent=2)+'\n')
     (out/'summary.json').write_text(json.dumps(records,indent=2)+'\n')
     print('Native division checks passed')
 

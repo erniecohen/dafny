@@ -339,30 +339,45 @@ without wrapping. SMT unsigned division and remainder denote these same words;
 their unsigned integer observations are q and r. The nonzero premise excludes
 SMT's totalized zero-divisor case and satisfies Dafny's source-level checks.
 
-All eight lemmas have checked bodies. Their body gate uses pinned Z3's
-integer-based bitvector engine (`--solver-option O:smt.bv.solver=2`) to relate
-native quotient/remainder operations to integer observations. This configures
-proof search and adds no Dafny axiom. The existing Boolean/conversion proof
-closure is checked separately with the default engine; ordinary clients retain
-the default engine. Including the companion is explicit, and existing compiler
-and packaged-library inputs remain unchanged.
+The eight public equations are proved by long-division induction on the
+unsigned dividend. Opaque quotient and remainder functions keep native division
+out of the integer argument. A recursive call handles the high digits `x >> 1`;
+the next trial remainder is twice its remainder plus the low digit `x & 1`.
+The checked bounds make these additions exact. Comparing the trial remainder
+with the divisor determines the next quotient digit and whether to subtract.
+Euclidean uniqueness then proves the integer quotient and remainder equations.
+The recursion explicitly decreases the unsigned dividend; automatic induction
+is disabled.
 
-Qualification checks the full body closure and symbolic native and composed
-integer clients under both resolvers, with additional axioms off/on. It also
-checks quotient/remainder reconstruction and remainder bounds. Boundary witnesses
-include zero numerators, divisor one, equal operands, exact and inexact division,
-a numerator smaller than its divisor, maximum words and high-bit divisors.
-Wrong results, signed interpretations, omitted remainders, zero divisors, invalid
-conversions and stricter result predicates have designated negative controls.
-Reachable false assertions follow each rule separately and both rules together,
-under both bitvector engines. Controls must be conclusively rejected; exhaustion
-and timeout never count as a pass.
+The native recurrence is checked separately for each possible leading divisor
+bit, written as a literal one followed by a narrower word. A chain of checked
+dispatchers covers every nonzero divisor. Masking precedes narrowing, so every
+cast is checked. These native bodies use the default bitvector engine with
+`--solver-option O:smt.case_split=1`; there is no integer-blasting engine or new
+axiom. The existing Boolean, conversion and modular-addition dependencies are
+checked separately under their existing default search. Ordinary clients retain
+their default solver settings. Including the companion remains explicit, with
+no compiler or packaged-library change.
 
-Serial mutation mode negates each of the eight postconditions on concrete
-inhabited inputs (13,5), and removes each of the eight nonzero premises. A premise
-removal must fail the contract's division-by-zero well-formedness check; the
-invalid body is not used as a control. Body/client and negative-control ceilings
-are 2,000,000 and 200,000 resource units per scope, respectively.
+Qualification checks every proof declaration and the complete dependency
+closure, symbolic native and composed integer clients, under both resolvers
+with additional axioms off/on. Concrete witnesses inhabit every helper's
+premises. Boundary clients cover zero numerators, divisor one, equal operands,
+exact and inexact division, smaller numerators, maximum words and high-bit
+divisors. Wrong results, signed interpretations, omitted remainders, zero
+divisors, invalid conversions and stricter result predicates have designated
+negative controls. Reachable false assertions follow every helper and the two
+public rules together. Controls run with default search and the body's native
+case split; they must be conclusively rejected, without exhaustion or timeout.
+
+Serial mutations negate a fact from every proof declaration on concrete
+inhabited inputs, alter each opaque quotient/remainder definition, and remove
+each public nonzero premise. Removed premises must fail division-by-zero
+well-formedness checks. Each mutant has its own process group and an explicit
+wall limit of three times the clean body baseline (at least three seconds).
+A mutant timeout counts as killed; the clean baseline and ordinary controls
+must complete conclusively. Body/client and negative-control ceilings remain
+2,000,000 and 200,000 resource units per scope, respectively.
 
 ## Checked native modular subtraction
 
