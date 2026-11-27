@@ -60,6 +60,7 @@ abstract module AbstractB {
 
 module {:extern} NativeOnly {
   import NativeClient
+  class {:extern} Opaque { constructor {:extern} () }
   function {:extern} Zero(): (r: nat) ensures r == 0
 }
 
@@ -67,3 +68,6 @@ module NativeClient {
   import NativeOnly
   function Zero(): nat { NativeOnly.Zero() }
 }
+
+// Abstract refinements emit no foreign imports or copied implementations.
+abstract module Ignored refines NativeOnly { }

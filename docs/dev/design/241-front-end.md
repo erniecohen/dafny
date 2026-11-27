@@ -875,6 +875,48 @@ of `A_res`, `A_cache`, `B_m` and `T_m` still needs analysis of the saved heap gr
 inferred from the sum of type sizes or labeled complete by this experiment. Measurements from
 private runs stay outside this document.
 
+#### Observed heap-graph cuts
+
+The opt-in offline analyzer `.github/review/heap-retention.py` reads existing
+`.gcdump` files with a pinned version of the collector's graph reader. For example:
+
+```sh
+python3 .github/review/heap-retention.py -- --self-test
+python3 .github/review/heap-retention.py --work work/retention-roots -- \
+  work/capture.gcdump '^Microsoft.Dafny.Program$' '^Microsoft.Dafny.ModuleResolver$'
+```
+
+Each regular expression selects **all rooted nodes** with matching collector type
+names. `ReachableBytes` counts their union of descendants. `RetainedBytes` is the
+rooted heap size minus the size still reachable from the synthetic GC root when
+the selected nodes are blocked. It includes the selected nodes' shallow sizes.
+`SharedBytes` is the difference: bytes reachable through the selection that also
+have an unblocked root path. A collective cut can retain more than the sum of
+individual cuts, while nested selections must not double-count descendants.
+These quantities are not additive across selectors. To measure a union, use one
+expression with alternatives, rather than adding report rows.
+
+Reports include the input digest and intentionally exclude dump process metadata,
+addresses and root labels. Empty or unrooted selections, a cut of the synthetic
+root, sampled graphs and reachable undefined non-null nodes are rejected. The
+collector can represent a null stack target as an undefined zero-address node;
+this contributes no size or edges. The controls cover shared descendants, cycles,
+nested and collective cuts, disconnected nodes, invalid evidence and a round trip
+through the actual gcdump writer/reader, including rejection of a sampled file.
+Run `.github/review/heap-retention-mutations.py --work work/retention-mutations`
+to test the analysis boundaries sequentially.
+
+**Scope.** This is retention in the **observed graph**, not a proof that EventPipe
+captured every runtime edge. Preserve and inspect the capture log for truncation,
+event loss and collector warnings; graph closure and unit sampling multipliers
+alone cannot establish capture completeness. Collector type names can abbreviate
+nested types; a matching type is not a field-level ownership certificate. Cutting
+an owner does not establish that a supported product operation can release it.
+In particular, do not equate a program's entire reachable graph with `A_res`, add
+overlapping cache/AST cuts, or apply the 10% gate to these cuts without establishing
+capture completeness, the intended ownership boundary and the matching process
+peak. Field-level attribution of `A_res`, `A_cache`, `B_m` and `T_m` remains open.
+
 ---
 
 ## 6. Dependencies and order of work

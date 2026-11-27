@@ -1,0 +1,3 @@
+// CHECK: assertion might not hold
+// CHECK: assertion might not hold
+// CHECK: 2 errors

@@ -64,7 +64,7 @@ public sealed class ModuleTranslationCache {
   /// Why a module's translation cannot be keyed by its descriptor, or null when it can. A module
   /// that cannot is translated afresh, by this cache and by the persistent tables alike.
   /// </summary>
-  internal static string? BypassReason(Program program, ModuleDefinition module, BoogieGenerator.TranslatorFlags flags) {
+  internal static string? BypassReason(Program program, ModuleDefinition module, BoogieGenerator.TranslatorFlags flags, bool persistentResults = false) {
     var options = program.Options;
     if (BoogieGenerator.DeclaresUnsupportedMemberInvariants(program)) {
       return "a member invariant whose verification is not yet supported";
@@ -74,7 +74,7 @@ public sealed class ModuleTranslationCache {
         // Modular termination reads downstream open-trait/dispatch facts; recompute until keyed.
         ModularTermination.Active(options, program) || options.PrintWithUniqueASTIds ||
         // Model extraction consumes graph/source report state not covered by the snapshot codec.
-        options.ExtractCounterexample ||
+        options.ExtractCounterexample && !persistentResults ||
         options.AdditionalPlugins.Count != 0 || options.AdditionalPluginArguments.Count != 0 ||
         flags.ObligationLowered != null || flags.ObligationPrepared != null) {
       return "missing module key, nonlocal names, debug identities or external callbacks";

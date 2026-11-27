@@ -1,0 +1,1 @@
+With `--persistent-translation`, modules containing resource-exhausted tasks can replay when every task has a valid or qualified resource-bounded result. Outcomes, resource counts and current-source diagnostics are preserved; counterexamples and timed failures retain the normal path.

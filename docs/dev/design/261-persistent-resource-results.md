@@ -1,0 +1,15 @@
+# Resource-exhausted tasks in persistent module results
+
+This extends the opt-in persistent module results of [PR 564](https://github.com/erniecohen/dafny/pull/564), following CSV replay in [PR 585](https://github.com/erniecohen/dafny/pull/585), as part of [issue 261](https://github.com/erniecohen/dafny/issues/261).
+
+A module containing a resource-exhausted task previously repeated translation and preparation even when the task-result cache could replay every solver interaction. Such a result can join the module manifest when its effective resource limit is positive, its effective time limit is zero, it has no counterexamples, and the task cache supplied a complete execution key. These are the same resource-bounded qualification requirements used by the task-result layer. Invalid, timed, unknown and unsupported outcomes retain the ordinary task path.
+
+The module key still covers the current resolved program and effective options; the graph fingerprint covers implementation attributes, and the result environment includes the exact global limits. The manifest additionally records each task's effective limits and actual outcome. This does not generalize reuse across limits. Changing a command/project limit, a method limit or the underlying graph cannot select the old result under the same identity. Lookup rejects unsupported outcomes or an unqualified resource-exhausted entry. A new module-result schema and key domain keep older records on the miss path; the translation record format is unchanged.
+
+Restoration preserves the resource-exhausted outcome, resource count, batch number, seed, assertion count and replay-marked duration. Resource diagnostics store a token offset relative to the bound declaration and validate its line and column against the current token stream. An unbindable diagnostic causes a miss. Diagnostics therefore use the current source token, including after relocation or inserted lines. IDE diagnostics obtain the stored effective time limit without inspecting a missing Boogie split. No counterexample or assertion-description codec is introduced: CSV and the existing normal diagnostics support replay, while JSON/text/TRX, coverage and other reports retain their existing exclusions.
+
+`--persistent-translation-audit` regenerates the translation and prepared tasks and compares all recorded fields except duration. The regression also uses independently populated fresh solver results, requires true module hits and no warm solver starts, retains a failing assertion, checks effective method limits, moves source locations, rejects malformed/older records and deliberately tampers with an outcome to require an audit failure. Unit tests cover the outcome/limit admission matrix and IDE diagnostics without a split. Serial mutations must fail these controls.
+
+For the later extensions, see [ordinary JSON replay](261-persistent-json.md) and [text/TRX replay](261-persistent-reports.md). Dependency-aware reports still use fresh preparation.
+
+For the subsequent dependency-aware report, warning and coverage extension, see [proof-dependency sidecars](261-persistent-dependencies.md).
