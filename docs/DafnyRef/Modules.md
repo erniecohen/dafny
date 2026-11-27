@@ -1185,9 +1185,25 @@ that a later stage would have to reject:
   The existing Rust restrictions on two-argument module and class externs and
   mixed foreign/generated implementations of a trait still apply. Abstract
   refinements with extern types emit no code and are allowed. Concrete refinements
-  with extern types remain rejected because their foreign imports and generated
-  implementations are not remapped. Inherited extern members with explicit foreign
-  paths are supported.
+  may inherit, extend or introduce extern classes with at most one extern argument
+  and no compiled fields, including fields inherited from traits. Executable members
+  may be bodiless foreign members or implemented functions, methods and constructors,
+  including functions with method bodies. An implemented extern member may rename
+  itself, but may not name a different foreign enclosing path. Generic classes and
+  ghost declarations are supported. Supply each refined class and its bodiless foreign
+  members in the refining module's foreign namespace; it has its own foreign identity.
+  Generated members become inherent implementations on that type. Generated
+  constructors use the foreign type's zero-argument `_allocate_object()` hook before
+  executing their Dafny bodies; bodiless foreign constructors instead pass their
+  arguments to the allocation hook. Foreign members with bodies use generated
+  implementations; foreign source supplies allocation and bodiless members. Members
+  with bodies and a foreign enclosing path, and other extern types in concrete
+  refinements, remain rejected. Inherited bodiless extern members with explicit
+  foreign paths are supported. Trait parents follow the ordinary Rust rule that each
+  parent's proper methods are wholly generated or wholly foreign. Supply the trait
+  implementations and upcast support for wholly foreign types and parent traits not
+  implemented by generated class methods; an empty implementation can use a trait's
+  generated default methods. Ghost fields are erased.
   Rust group programs may omit an array initializer when some dimension is zero,
   including a zero computed at runtime. All dimensions are evaluated once, in order;
   for auto-initializable elements, a runtime check halts a nonempty allocation
