@@ -1,0 +1,3 @@
+
+# The resolved program that --rprint prints lists the bitvector types the program uses, in order and with the widths that lowering a shift adds, as the translator declares them; under --type-system-refresh, _System again declares each bvN with RotateLeft and RotateRight. git-issue-1665 prints the module-prefixed names generated for :- and the match source's type for an untyped case variable (https://github.com/erniecohen/dafny/issues/441).
+dafny0/TypeConversions.dfy

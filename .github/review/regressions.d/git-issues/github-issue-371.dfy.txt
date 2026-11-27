@@ -1,0 +1,3 @@
+
+# Under --modular-termination, the reveal lemma Dafny generates for an opaque const is generated, in a concrete module and in the copies a refinement makes, so neither the library build nor 'dafny audit' counts it as a bodyless lemma with a postcondition (https://github.com/erniecohen/dafny/issues/371).
+git-issues/github-issue-371.dfy

@@ -1,0 +1,3 @@
+
+# A qualified module id through enclosing modules depends on its target, not on the enclosing module (#90).
+git-issues/github-issue-90.dfy

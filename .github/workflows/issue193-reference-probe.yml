@@ -52,14 +52,26 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@a8ef9c0acd833e35e6a13f798ac4c17dad9a64e1
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@4793c6ec33216941dc4b6c9352a329cf2536c996
         with:
-          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
-          min-free-percent: ${{ vars.SELF_HOSTED_JOB_MIN_FREE_PERCENT || '' }}
-          max-pressure: ${{ vars.SELF_HOSTED_JOB_MAX_PRESSURE || '' }}
+          kind: ci:${{ github.workflow }}
+          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS }}
+          reserve-mb: ${{ vars.SELF_HOSTED_JOB_RESERVE_MB }}
+          default-peak-mb: ${{ vars.SELF_HOSTED_JOB_DEFAULT_PEAK_MB }}
+          peak-min-samples: ${{ vars.SELF_HOSTED_JOB_PEAK_MIN_SAMPLES }}
+          peak-history-days: ${{ vars.SELF_HOSTED_JOB_PEAK_HISTORY_DAYS }}
+          probe-timeout-s: ${{ vars.SELF_HOSTED_JOB_PROBE_TIMEOUT_S }}
+          slot-poll-s: ${{ vars.SELF_HOSTED_JOB_SLOT_POLL_S }}
+          memory-backoff-s: ${{ vars.SELF_HOSTED_JOB_MEMORY_BACKOFF_S }}
+          heavy-wait-max-s: ${{ vars.SELF_HOSTED_JOB_HEAVY_WAIT_MAX_S }}
       - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.revision || github.sha }}
+          clean: false
+      - name: Remove untracked checkout state
+        shell: bash
+        timeout-minutes: 10
+        run: git clean -ffdx
       - uses: ./.github/actions/setup-dotnet
       - name: Record candidate source
         timeout-minutes: 360
@@ -72,8 +84,9 @@ jobs:
           . ./version.txt
           dotnet publish -p:NuGetAudit=false Source/Dafny/Dafny.csproj -c Release -o out/dafny -p:GeneratePackageOnBuild=false -p:SourceRevisionId="$revision"
           tar -C out -czf dafny.tar.gz dafny
-      - uses: actions/upload-artifact@v4
+      - uses: ./.github/actions/host-artifact
         with:
+          mode: put
           name: issue193-dafny
           path: dafny.tar.gz
       - name: Remove job temporary directory
@@ -116,17 +129,30 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@a8ef9c0acd833e35e6a13f798ac4c17dad9a64e1
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@4793c6ec33216941dc4b6c9352a329cf2536c996
         with:
-          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
-          min-free-percent: ${{ vars.SELF_HOSTED_JOB_MIN_FREE_PERCENT || '' }}
-          max-pressure: ${{ vars.SELF_HOSTED_JOB_MAX_PRESSURE || '' }}
+          kind: ci:${{ github.workflow }}
+          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS }}
+          reserve-mb: ${{ vars.SELF_HOSTED_JOB_RESERVE_MB }}
+          default-peak-mb: ${{ vars.SELF_HOSTED_JOB_DEFAULT_PEAK_MB }}
+          peak-min-samples: ${{ vars.SELF_HOSTED_JOB_PEAK_MIN_SAMPLES }}
+          peak-history-days: ${{ vars.SELF_HOSTED_JOB_PEAK_HISTORY_DAYS }}
+          probe-timeout-s: ${{ vars.SELF_HOSTED_JOB_PROBE_TIMEOUT_S }}
+          slot-poll-s: ${{ vars.SELF_HOSTED_JOB_SLOT_POLL_S }}
+          memory-backoff-s: ${{ vars.SELF_HOSTED_JOB_MEMORY_BACKOFF_S }}
+          heavy-wait-max-s: ${{ vars.SELF_HOSTED_JOB_HEAVY_WAIT_MAX_S }}
       - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.revision || github.sha }}
+          clean: false
+      - name: Remove untracked checkout state
+        shell: bash
+        timeout-minutes: 10
+        run: git clean -ffdx
       - uses: ./.github/actions/setup-dotnet
-      - uses: actions/download-artifact@v4
+      - uses: ./.github/actions/host-artifact
         with:
+          mode: get
           name: issue193-dafny
       - name: Unpack Dafny
         timeout-minutes: 30
@@ -136,6 +162,12 @@ jobs:
           ref: ${{ github.sha }}
           path: identity-gate
           sparse-checkout: .github/review
+          clean: false
+      - name: Remove untracked checkout state
+        shell: bash
+        timeout-minutes: 10
+        working-directory: identity-gate
+        run: git clean -ffdx
       - name: Check historical M1 identity
         timeout-minutes: 30
         run: |

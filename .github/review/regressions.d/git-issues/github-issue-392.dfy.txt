@@ -1,0 +1,5 @@
+
+# --warn-unchecked-termination is on by default, owner decision of 2026-11-15, with the hidden --legacy-no-unchecked-termination-warning (https://github.com/erniecohen/dafny/issues/211): extends git-issues/github-issue-211-warning.dfy, listed above.
+
+# Generated names carry a short module prefix, M plus the shortest unshared start of the base-32 SHA-256 of the module name, not the hex of the whole name, and the default module carries none (https://github.com/erniecohen/dafny/issues/392).
+git-issues/github-issue-392.dfy

@@ -1,0 +1,2 @@
+# Bounded callables, milestone 4: portable contracts of order types, bounded values and argument-dependent bounds in .doo libraries, private replacement, contract changes, tampered, refined and incomplete libraries, under --modular-termination (https://github.com/erniecohen/dafny/issues/266).
+git-issues/github-issue-266-m4.dfy

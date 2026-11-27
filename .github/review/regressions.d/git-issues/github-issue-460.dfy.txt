@@ -1,0 +1,3 @@
+
+# Under --modular-termination, the induction hypothesis of a lemma, of a prefix lemma and of its limit-ordinal case covers only the instances within the lemma's global bound; each proved false (https://github.com/erniecohen/dafny/issues/460).
+git-issues/github-issue-460.dfy

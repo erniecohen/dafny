@@ -1,0 +1,4 @@
+
+# A refining module may not change what a name in inherited code refers to; the old rule let an
+# added declaration capture it and proved false (https://github.com/erniecohen/dafny/issues/410).
+git-issues/github-issue-410.dfy

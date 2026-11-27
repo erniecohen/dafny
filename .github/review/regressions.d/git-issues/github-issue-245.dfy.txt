@@ -1,0 +1,3 @@
+
+# Well-founded orders in decreases clauses, "e by O" with --decreases-orders, also in the bounds of --modular-termination (https://github.com/erniecohen/dafny/issues/245).
+git-issues/github-issue-245.dfy

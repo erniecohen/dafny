@@ -1,6 +1,13 @@
-module A {
+module {:extern "Foreign"} A {
   import B
-  method {:extern} Foreign()
-  function F(): int { 1 }
+  trait T {
+    function F(): int
+    function G(): int
+  }
+  class {:extern} Native extends T {
+    constructor {:extern} ()
+    function {:extern} F(): int
+    function G(): int { B.Value() }
+  }
 }
-module B { import A function G(): int { A.F() } }
+module B { import A function Value(): int { 1 } }

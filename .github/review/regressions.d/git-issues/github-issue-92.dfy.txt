@@ -1,0 +1,3 @@
+
+# Opt-in legacy conversions to datatype subsets under --datatype-subset-conversions (https://github.com/erniecohen/dafny/issues/92).
+git-issues/github-issue-92.dfy

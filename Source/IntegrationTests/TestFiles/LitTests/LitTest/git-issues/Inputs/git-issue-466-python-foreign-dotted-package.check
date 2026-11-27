@@ -1,0 +1,1 @@
+// CHECK: Nested extern modules cannot be used with python-module-name. Nested extern: Foreign.Nested

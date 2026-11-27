@@ -1,0 +1,3 @@
+
+# Comparing two values of a trait that is not a reference type in a decreases clause no longer crashes the verifier (https://github.com/erniecohen/dafny/issues/350).
+git-issues/github-issue-350.dfy

@@ -1,6 +1,6 @@
 
 Dafny program verifier did not attempt verification
-Error: module 'A' is in a recursive module group; compiling a program that has a recursive module group is not yet supported for target 'cpp'
+Error: module 'A' is in a recursive module group; recursive module groups are not supported for target 'cpp': cross-module recursive datatype layouts require indirection that this backend does not emit, and traits are unsupported
 
 Dafny program verifier did not attempt verification
-Error: module 'A' is in a recursive module group; compiling a program that has a recursive module group is not yet supported for target 'dfy'
+Error: module 'A' is in a recursive module group; recursive module groups are not supported for target 'dfy': the DAST pretty printer is not implemented and the backend has no execution pipeline

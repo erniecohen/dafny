@@ -1,0 +1,3 @@
+
+# Hiding or revealing a static function or constant through an object, as in `reveal foo.Q`, resolves under --type-system-refresh instead of crashing, and verifies (https://github.com/erniecohen/dafny/issues/416).
+git-issues/github-issue-416.dfy
