@@ -346,3 +346,4 @@ solver-property	Help		System.String	command-setup	static option documentation; n
 solver-property	LibOptions		Microsoft.Boogie.SMTLibOptions	execution	covered by complete inherited prover interfaces; never serialized as an opaque object
 solver-property	UseTickleBool		System.Boolean	execution	all public solver fields/properties enumerated and encoded
 cli	integer-bitwise	--integer-bitwise	System.CommandLine.Option`1[System.Boolean]	input	compiler-owned resolved signatures and local defining equations before task lookup
+cli	optimize-translation-copy	--optimize-translation-copy	System.CommandLine.Option`1[System.Boolean]	execution	field-copy implementation; preserves resolution keys, traversal, aliases, fresh IDs, exact SMT and current assertion map
