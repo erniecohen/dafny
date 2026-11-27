@@ -353,11 +353,19 @@ therefore the unsigned word comparison and the comparison of U have the same
 sign. Non-strict order additionally includes equal words. This argument uses
 unsigned order throughout, including operands with their high bit set.
 
-All twelve lemmas have checked bodies. The new body gate uses pinned Z3's
-integer-based bitvector engine (`--solver-option O:smt.bv.solver=2`). This is a
-proof-search setting and adds no Dafny axiom. The existing Boolean/conversion
-proof closure and ordinary clients are checked with the default engine.
-Including the companion is explicit; existing compiler, packaged-library and
+All lemmas have checked bodies, on pinned Z3's default bitvector engine. Order
+inducts on the unsigned observations: the checked digit split identifies the
+native high digit and low bit with the integer quotient and remainder by two,
+a bit-level lemma compares two words by those digits, and an integer lemma
+compares two naturals the same way. Body runs, and the controls beside them,
+select Z3's own case-split heuristic (`--solver-option O:smt.case_split=1`) in
+place of Boogie's relevancy-based one, which makes the bit-blasted digit
+comparison cheap. This is a proof-search setting: it adds no Dafny axiom and
+leaves every theory solver at its default. The integer-based engine
+(`smt.bv.solver=2`) is not used: it can report unsatisfiable for satisfiable
+queries (https://github.com/erniecohen/dafny/issues/618). The existing
+Boolean/conversion proof closure and ordinary clients are checked with Boogie's
+settings. Including the companion is explicit; existing compiler, packaged-library and
 optional proof inputs remain unchanged.
 
 Qualification checks the full body closure and symbolic native and composed
@@ -366,10 +374,13 @@ Witnesses cover each truth value, zero, one, equal and unequal operands, maximum
 words, and both directions across the high-bit boundary. Wrong equality, strict
 and non-strict order, signed interpretations, invalid round trips and invalid
 word conversions have designated negative controls. Reachable false assertions
-follow each rule separately and all three together under both bitvector engines.
+follow each rule separately and all three together, with and without the body
+search setting.
 All rejections must be conclusive; timeout and exhaustion never count as a pass.
 
-Serial mutation mode negates each of the twelve postconditions on concrete
-inhabited operands (5,13). Each mutated body must fail its postcondition. There
-are no new caller preconditions to mutate. Body/client and negative-control
+Serial mutation mode negates each postcondition on concrete inhabited operands,
+(5,13) for the native lemmas, the base case (0,13) for the recursive order
+lemma and (5,13) with their digits for the integer lemma, and removes each
+digit premise of the integer lemma. Each mutated body must fail its
+postcondition. There are no new caller preconditions to mutate. Body/client and negative-control
 ceilings are 2,000,000 and 200,000 resource units per scope, respectively.

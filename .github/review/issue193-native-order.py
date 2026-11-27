@@ -9,6 +9,12 @@ import subprocess
 
 ROOT = Path(__file__).resolve().parents[2]
 LIBRARY = ROOT / 'Source/DafnyStandardLibraries/optional/IntegerBitwiseNativeOrder.dfy'
+
+# Body proofs, and the controls run beside them, replace Boogie's relevancy-based
+# case split with Z3's default one, which completes the bit-blasted identities.
+# This changes only the search order; the bitvector engine and every theory
+# solver stay at their defaults (https://github.com/erniecohen/dafny/issues/618).
+BODY_SEARCH = ['--solver-option', 'O:smt.case_split=1']
 WIDTHS = (8, 16, 32, 64)
 OPERATIONS = (('Equal', '=='), ('Less', '<'), ('LessEqual', '<='))
 
@@ -82,9 +88,9 @@ def main():
         common += ['--additional-axioms']
     records = []
 
-    def verify(name, path, options=(), errors=(), mutation=False, limit=2000000, intblast=False, expected_scopes=None):
+    def verify(name, path, options=(), errors=(), mutation=False, limit=2000000, bodies=False, expected_scopes=None):
         csv_path = out / (name + '.csv')
-        result = subprocess.run(exe + ['verify', str(path), *common, *(['--solver-option','O:smt.bv.solver=2'] if intblast else []), '--resource-limit', str(limit),
+        result = subprocess.run(exe + ['verify', str(path), *common, *(BODY_SEARCH if bodies else []), '--resource-limit', str(limit),
                                       '--log-format', 'csv;LogFileName='+str(csv_path), *options],
                                 capture_output=True, text=True, timeout=110)
         text = result.stdout + result.stderr
@@ -116,11 +122,11 @@ def main():
         modes = ('legacy','refreshed') if args.resolver == 'both' else (args.resolver,)
         for mode in modes:
             options = ['--type-system-refresh:'+str(mode=='refreshed').lower()]
-            # The existing Boolean/conversion closure uses the default BV engine.
-            # Only the new comparison bodies use the integer-based BV engine.
+            # The existing Boolean/conversion closure uses Boogie's search settings.
+            # Only the new comparison bodies use BODY_SEARCH.
             verify(mode+'-included-bodies', LIBRARY.parent/'IntegerBitwiseNative.dfy',
                    [*options,'--verify-included-files'])
-            verify(mode+'-bodies', LIBRARY, options, intblast=True, expected_scopes=12)
+            verify(mode+'-bodies', LIBRARY, options, bodies=True, expected_scopes=118)
             for kind, lines in zip(('clients','negative'), fixtures()):
                 path = out / (mode+'-'+kind+'.dfy')
                 path.write_text('\n'.join(lines)+'\n')
@@ -128,7 +134,7 @@ def main():
                 assert len(errors)==(44 if kind=='negative' else 0), (kind,errors)
                 verify(mode+'-'+kind,path,options,errors,limit=200000 if errors else 2000000)
                 if errors:
-                    verify(mode+'-negative-intblast',path,options,errors,limit=200000,intblast=True)
+                    verify(mode+'-negative-bodies',path,options,errors,limit=200000,bodies=True)
     else:
         original = LIBRARY.read_text().replace('include "IntegerBitwiseNative.dfy"',
                      'include "'+(LIBRARY.parent/'IntegerBitwiseNative.dfy').as_posix()+'"')
@@ -138,19 +144,30 @@ def main():
             name = header[1]
             end = headers[i+1].start() if i+1<len(headers) else len(original)
             section = original[header.end():end]
-            contract = re.search(r'^    ensures (.+)$',section,re.M)
-            assert contract, (module,name)
-            start, finish = header.end()+contract.start(), header.end()+contract.end()
-            mutated = original[:start]+'    ensures !('+contract[1]+')'+original[finish:]
-            # The concrete distinct operands inhabit every unconditional contract.
-            at = mutated.index('\n',header.start())
-            mutated = mutated[:at]+'\n    requires x==5 && y==13'+mutated[at:]
-            path = out / 'mutation.dfy'
-            path.write_text(mutated)
-            site = f'{module}.{name}.ensures'
-            options = ['--type-system-refresh:true','--filter-symbol',f'{module}.{name}.']
-            verify(site,path,options,mutation=True,intblast=True)
-        assert len(records)==12
+            contracts = list(re.finditer(r'^    (ensures|requires) (.+)$',section,re.M))
+            assert contracts, (module,name)
+            for j, contract in enumerate(contracts):
+                start, finish = header.end()+contract.start(), header.end()+contract.end()
+                fact = contract[1]=='ensures'
+                mutated = original[:start]+('    ensures !('+contract[2]+')' if fact else '')+original[finish:]
+                if fact:
+                    # Concrete operands inhabit every contract, so a negated
+                    # postcondition is refuted rather than vacuously proved. The
+                    # recursive order lemma takes its base case, so an
+                    # inconsistent induction hypothesis cannot obscure the rejection.
+                    if module.endswith('Arithmetic'):
+                        inhabited = 'a==5 && b==13 && ha==2 && hb==6 && la==1 && lb==1'
+                    else:
+                        inhabited = 'x==0 && y==13' if name=='Less' else 'x==5 && y==13'
+                    at = mutated.index('\n',header.start())
+                    mutated = mutated[:at]+'\n    requires '+inhabited+mutated[at:]
+                # A dropped digit hypothesis leaves the body's own postcondition unproved.
+                path = out / 'mutation.dfy'
+                path.write_text(mutated)
+                site = f'{module}.{name}.{contract[1]}.{j}'
+                options = ['--type-system-refresh:true','--filter-symbol',f'{module}.{name}.']
+                verify(site,path,options,mutation=True,bodies=True)
+        assert len(records)==25
     (out/'summary.json').write_text(json.dumps(records,indent=2)+'\n')
     print('Native comparison checks passed')
 
