@@ -35,6 +35,9 @@ public class TextVerificationLogger : IVerificationResultFormatLogger {
     textWriter.WriteLine($"Results for {verificationScope.Name}");
     textWriter.WriteLine($"  Overall outcome: {outcome}");
     textWriter.WriteLine($"  Overall time: {runtime}");
+    if (scopeResult.Results.Any(r => r.Task is Caching.IReplayedVerificationTask { IsReplayed: true })) {
+      textWriter.WriteLine("  Timing replayed: true");
+    }
     textWriter.WriteLine($"  Overall resource count: {results.Sum(r => r.ResourceCount)}");
     // It doesn't seem possible to get a result with zero VCResults, but being careful with nulls just in case :)
     var maximumTime = results.MaxBy(r => r.RunTime).RunTime.ToString() ?? "N/A";
@@ -50,12 +53,17 @@ public class TextVerificationLogger : IVerificationResultFormatLogger {
         textWriter.WriteLine($"    Random seed: {Caching.VerificationTaskFacts.RandomSeed(taskResult.Task)}");
       }
       textWriter.WriteLine($"    Duration: {vcResult.RunTime}");
+      if (taskResult.Task is Caching.IReplayedVerificationTask { IsReplayed: true }) {
+        textWriter.WriteLine("    Timing replayed: true");
+      }
       textWriter.WriteLine($"    Resource count: {vcResult.ResourceCount}");
       textWriter.WriteLine("");
       textWriter.WriteLine("    Assertions:");
-      foreach (var cmd in vcResult.Asserts) {
+      foreach (var assertion in Caching.VerificationTaskFacts.AssertionReport(taskResult.Task) ??
+               vcResult.Asserts.Select(a => new Caching.VerificationAssertionReport(a.tok.filename, a.tok.line, a.tok.col,
+                 a.Description.SuccessDescription)).ToList()) {
         textWriter.WriteLine(
-          $"      {cmd.tok.filename}({cmd.tok.line},{cmd.tok.col}): {cmd.Description.SuccessDescription}");
+          $"      {assertion.Filename}({assertion.Line},{assertion.Column}): {assertion.Description}");
       }
 
       if (vcResult.CoveredElements.Any() && vcResult.Outcome == SolverOutcome.Valid) {

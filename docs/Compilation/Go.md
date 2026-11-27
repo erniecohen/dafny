@@ -562,7 +562,9 @@ package. When a group contains an extern module, the generated package name is
 `DafnyGroup_` followed by its first member's protected compile name. This keeps
 the generated implementation distinct from the foreign package. Explicit extern
 qualifiers select foreign symbols; qualified functions use Go's dot selector,
-like qualified methods. External names must be valid for their Go declarations.
+like qualified methods, including when inherited by a refinement above the group.
+Renamed extern class allocations in such refinements use the same external name
+as the class declaration. External names must be valid for their Go declarations.
 An empty extern module name preserves unqualified references to built-in types.
 
 Pass foreign `.go` files as additional inputs (`--input` with `dafny run`). Each
@@ -576,7 +578,11 @@ Foreign Go packages remain subject to Go's import-cycle restriction. In
 particular, a foreign package imported by the shared package cannot import that
 shared package back. A partial extern class that needs generated methods should
 be declared in a non-extern group member and completed in the shared package;
-methods cannot be added to a type owned by a separate Go package.
+methods cannot be added to a type owned by a separate Go package. A partial
+extern class in an extern module, or one with an explicit foreign type qualifier,
+is rejected before emission when it belongs to a recursive group. Ordinary
+non-extern classes in an extern module still belong to the generated shared
+package. The import-cycle restriction is checked by the Go compiler.
 
 TODO
 ----

@@ -651,7 +651,7 @@ public class Compilation : IDisposable {
     errorReporter.Updates.Subscribe(d => diagnostics.Add(d.Diagnostic));
 
     ReportDiagnosticsInResult(options, canVerify.NavigationRange.StartToken.val, BoogieGenerator.ToDafnyToken(task.Token),
-      task.Split.Implementation.GetTimeLimit(options), result, errorReporter);
+      Caching.VerificationTaskFacts.TimeLimit(task, options), result, errorReporter, task);
 
     return diagnostics.OrderBy(d => d.Range.StartToken.GetLspPosition()).ToList();
   }
@@ -659,7 +659,11 @@ public class Compilation : IDisposable {
   public static void ReportDiagnosticsInResult(DafnyOptions options, string name, IOrigin token,
     uint timeLimit,
     VerificationRunResult result,
-    ErrorReporter errorReporter) {
+    ErrorReporter errorReporter, IVerificationTask? task = null, bool includeModels = true) {
+    if (Caching.VerificationTaskFacts.FailureDiagnostics(task) is { } cached) {
+      foreach (var diagnostic in cached) { errorReporter.MessageCore(diagnostic); }
+      return;
+    }
     var outcome = GetOutcome(result.Outcome);
     result.CounterExamples.Sort(new CounterexampleComparer());
     foreach (var counterExample in result.CounterExamples) {
@@ -673,7 +677,7 @@ public class Compilation : IDisposable {
         if (options.ShowProofObligationExpressions) {
           AddAssertedExprToCounterExampleErrorInfo(options, counterExample, errorInformation);
         }
-        var dafnyCounterExampleModel = options.ExtractCounterexample ? new DafnyModel(counterExample.Model, options) : null;
+        var dafnyCounterExampleModel = options.ExtractCounterexample && includeModels ? new DafnyModel(counterExample.Model, options) : null;
         errorReporter.ReportBoogieError(errorInformation, dafnyCounterExampleModel);
       }
     }

@@ -52,6 +52,7 @@ internal sealed class CachedTaskSolver : SMTLibSolver {
   private readonly Func<byte[]?> environment;
   private readonly Func<SMTLibSolver> createSolver;
   private readonly bool warningsHaveNoEffects;
+  private readonly bool audit;
   private readonly List<Step> steps = new();
   private Mode mode;
   private bool cacheable = true;
@@ -72,11 +73,12 @@ internal sealed class CachedTaskSolver : SMTLibSolver {
   private bool reachedLimit;
 
   public CachedTaskSolver(TaskResultCache cache, Func<byte[]?> completeEnvironment,
-    Func<SMTLibSolver> createFreshSolver, bool warningsHaveNoEffects = false) {
+    Func<SMTLibSolver> createFreshSolver, bool warningsHaveNoEffects = false, bool audit = false) {
     this.cache = cache;
     environment = completeEnvironment;
     createSolver = createFreshSolver;
     this.warningsHaveNoEffects = warningsHaveNoEffects;
+    this.audit = audit;
   }
 
   public string? ExecutionKey => descriptor?.Key;
@@ -176,7 +178,8 @@ internal sealed class CachedTaskSolver : SMTLibSolver {
               limitIndependentPrefix = WithoutEffectiveLimit(steps, limits.Resource);
               var input = JsonSerializer.SerializeToUtf8Bytes(limitIndependentPrefix.Append(new Step(Kind.Request, request)), JsonOptions);
               descriptor = new TaskCacheDescriptor(input, frozen, limits.Resource, limits.Milliseconds);
-              replay = cache.TryRead(descriptor, new ExchangeLoader(), out replaySlotKey);
+              // Audit needs the same execution identity, but an independent solver response.
+              if (!audit) { replay = cache.TryRead(descriptor, new ExchangeLoader(), out replaySlotKey); }
             } else { cacheable = false; }
           } else { cacheable = false; }
           if (replay != null) {
@@ -285,6 +288,8 @@ internal sealed class CachedTaskSolver : SMTLibSolver {
       var limit = descriptor.ResourceLimit;
       var stored = limitIndependentPrefix.Concat(steps.Skip(limitIndependentPrefix.Length).Select(step => WithoutLimit(step, limit)));
       var exchange = JsonSerializer.SerializeToUtf8Bytes(new Exchange(1, stored.ToArray()), JsonOptions);
+      // Keep the original evidence intact for the module-manifest comparison.
+      if (audit) { return CachePublication.Unavailable; }
       return cache.TryPublish(descriptor, true, outcome, resourceCount, Math.Max(peakResourceCount, resourceCount),
         reachedLimit || outcome == CacheTaskOutcome.OutOfResource, exchange);
     } catch (JsonException) {

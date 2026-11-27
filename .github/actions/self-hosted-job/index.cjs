@@ -26,8 +26,9 @@ function slots(value = process.env.INPUT_SLOTS) {
 function memoryPolicy(env = process.env) {
   const policy = {};
   for (const name of ['reserve_mb', 'default_peak_mb', 'peak_min_samples', 'peak_history_days',
-    'probe_timeout_s', 'slot_poll_s', 'memory_backoff_s']) {
-    const input = env[`INPUT_${name.toUpperCase().replaceAll('_', '-')}`];
+    'probe_timeout_s', 'slot_poll_s', 'memory_backoff_s', 'heavy_wait_max_s']) {
+    const raw = env[`INPUT_${name.toUpperCase().replaceAll('_', '-')}`];
+    const input = name === 'heavy_wait_max_s' && (raw === undefined || raw.trim() === '') ? '14400' : raw;
     let value;
     try { value = JSON.parse(input); } catch { throw new Error(`${name} is required and must be valid JSON`); }
     const positive = v => typeof v === 'number' && Number.isFinite(v) && v > 0;
