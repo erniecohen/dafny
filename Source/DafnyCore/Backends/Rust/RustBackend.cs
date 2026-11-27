@@ -64,8 +64,26 @@ public class RustBackend : DafnyExecutableBackend {
     protected override void EmitNewArray(Type elementType, IOrigin tok, List<Expression> dimensions,
       bool mustInitialize, string exampleElement, ConcreteSyntaxTree wr, ConcreteSyntaxTree wStmts) {
       if (HasRecursiveGroups && mustInitialize) {
-        AddUnsupported(tok, "Rust compilation of recursive module groups requires explicit array initialization");
-        return;
+        // With --enforce-determinism, verification permits an omitted array
+        // initializer only when some dimension is zero. Cache every dimension
+        // once, in source order, and also check this at runtime before exposing
+        // an array of uninitialized elements (including with --no-verify).
+        var cachedDimensions = new List<Expression>();
+        Expression nonempty = Expression.CreateBoolLiteral(tok, true);
+        foreach (var dimension in dimensions) {
+          var local = new LocalVariable(tok, ProtectedFreshId("_arrayDimension"), Type.Int, false) {
+            type = Type.Int
+          };
+          DeclareLocalVar(IdName(local), Type.Int, tok, dimension, false, wStmts);
+          var identifier = new IdentifierExpr(tok, local);
+          cachedDimensions.Add(identifier);
+          nonempty = Expression.CreateAnd(nonempty, Expression.CreateNot(tok,
+            Expression.CreateEq(identifier, Expression.CreateIntLiteral(tok, 0), Type.Int)));
+        }
+        var halt = EmitIf(out var guard, false, wStmts);
+        EmitExpr(nonempty, false, guard, wStmts);
+        EmitHalt(tok, null, halt);
+        dimensions = cachedDimensions;
       }
       base.EmitNewArray(elementType, tok, dimensions, mustInitialize, exampleElement, wr, wStmts);
     }

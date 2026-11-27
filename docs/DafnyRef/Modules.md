@@ -1188,9 +1188,13 @@ that a later stage would have to reject:
   with extern types remain rejected because their foreign imports and generated
   implementations are not remapped. Inherited extern members with explicit foreign
   paths are supported.
-  Rust group programs require explicit array initialization; implicit datatype defaults
-  remain unsupported. The Rust backend's existing `--enforce-determinism` requirement
-  and trait restrictions still apply.
+  Rust group programs may omit an array initializer when some dimension is zero,
+  including a zero computed at runtime. All dimensions are evaluated once, in order;
+  for auto-initializable elements, a runtime check halts a nonempty allocation
+  without an initializer even when verification is skipped. This does not require a datatype default or evaluate
+  an element witness. Nonempty arrays still require explicit initialization under
+  Rust's existing `--enforce-determinism` requirement. General implicit datatype
+  defaults and the backend's trait restrictions remain unsupported.
   Go groups support extern members and types. Extern module names continue to
   select foreign Go packages; generated declarations of the group share a separate
   package. See [Go extern linkage](../Compilation/Go.md#recursive-module-groups)
