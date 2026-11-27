@@ -1,2 +1,3 @@
 IDE restart, overlays, stale/corrupt fallback and per-VC equality pass
 CLI/IDE task reuse, legacy levels and seed isolation pass
+Manual requests defer verification until selection and preserve fresh VC facts

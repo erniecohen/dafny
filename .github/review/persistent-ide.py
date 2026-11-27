@@ -22,7 +22,7 @@ text = source.read_text()
 uri = program.as_uri()
 
 
-def run(name, overlay=text, directory=cache, extra=(), workspace=destination, document=program):
+def run(name, overlay=text, directory=cache, extra=(), workspace=destination, document=program, manual=False):
     uri = document.as_uri()
     profile = destination / (name + ".jsonl")
     environment = {k: v for k, v in os.environ.items()
@@ -36,6 +36,7 @@ def run(name, overlay=text, directory=cache, extra=(), workspace=destination, do
             stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=errors, env=environment,
             cwd=workspace, start_new_session=os.name != "nt")
         messages = queue.Queue()
+        received = []
 
         def read():
             try:
@@ -77,6 +78,7 @@ def run(name, overlay=text, directory=cache, extra=(), workspace=destination, do
                     raise TimeoutError(name + ": no matching server progress; see protocol log") from error
                 if isinstance(message, Exception):
                     raise message
+                received.append(message)
                 with (destination / (name + ".protocol.jsonl")).open("a") as protocol:
                     protocol.write(json.dumps(message) + "\n")
                 if "id" in message and "method" in message:
@@ -94,10 +96,31 @@ def run(name, overlay=text, directory=cache, extra=(), workspace=destination, do
             send("initialized", {})
             send("textDocument/didOpen", {"textDocument": {"uri": uri, "languageId": "dafny",
                                                          "version": 1, "text": overlay}})
-            status = wait(lambda m: m.get("method") == "dafny/textDocument/symbolStatus" and
+            if manual:
+                idle = wait(lambda m: m.get("method") == "dafny/textDocument/symbolStatus" and
+                    m["params"].get("uri") == uri and m["params"].get("version") == 1 and
+                    m["params"].get("namedVerifiables"))
+                assert all(symbol["status"] in (0, "stale", "Stale")
+                           for symbol in idle["params"]["namedVerifiables"]), "manual mode ran on open"
+                send("dafny/textDocument/verifySymbol", {"textDocument": {"uri": uri},
+                    "position": {"line": 50, "character": 0}}, 10)
+                assert wait(lambda m: m.get("id") == 10).get("result") is False
+                send("textDocument/didSave", {"textDocument": {"uri": uri}})
+                send("textDocument/hover", {"textDocument": {"uri": uri},
+                    "position": {"line": 0, "character": 0}}, 11)
+                assert "error" not in wait(lambda m: m.get("id") == 11)
+                before = [json.loads(line) for line in profile.read_text().splitlines()]
+                assert not any(e.get("ev") == "result-task" for e in before), "manual mode ran on save"
+                send("dafny/textDocument/verifySymbol", {"textDocument": {"uri": uri},
+                    "position": {"line": overlay[:overlay.index("Positive")].count("\n"), "character": 8}}, 12)
+                assert wait(lambda m: m.get("id") == 12).get("result") is True
+            def completed(m):
+                return m.get("method") == "dafny/textDocument/symbolStatus" and (
                 m["params"].get("uri") == uri and m["params"].get("version") == 1 and
                 m["params"].get("namedVerifiables") and all(
                     symbol["status"] in (5, "correct", "Correct") for symbol in m["params"]["namedVerifiables"]))
+            # A warm task can finish before the manual request's response is read.
+            status = next((m for m in reversed(received) if completed(m)), None) or wait(completed)
             send("textDocument/hover", {"textDocument": {"uri": uri},
                 "position": {"line": overlay[:overlay.index("Positive")].count("\n"), "character": 8}}, 2)
             assert "error" not in wait(lambda m: m.get("id") == 2)
@@ -127,6 +150,7 @@ assert all(not e["replayed"] for e in cold[2]), "cold cache unexpectedly populat
 assert all(e["replayed"] for e in warm[2]), "warm IDE transport did not actually hit"
 audit = run("audit", extra=("--persistent-translation-audit",))
 assert audit[:2] == cold[:2], "audited native IDE preparation changed a result"
+assert all(not e["replayed"] for e in audit[2]), "audit reused its stored task evidence"
 changed = text.replace("x + 1", "x + 2")
 assert changed != text
 stale = run("stale", overlay=changed)
@@ -195,3 +219,16 @@ seed_oracle = run("seed-oracle", directory=destination / "seed-cache", extra=("-
 assert seeded[:2] == seed_oracle[:2]
 assert all(not e["replayed"] for e in seeded[2]) and keys(seeded[2]) != keys(from_cli[2])
 print("CLI/IDE task reuse, legacy levels and seed isolation pass")
+
+manual_store = destination / "manual-cache"
+manual_extra = ("--verify-on", "Never")
+manual_fresh = run("manual-fresh", directory=destination / "manual-oracle", extra=manual_extra, manual=True)
+manual_cold = run("manual-cold", directory=manual_store, extra=manual_extra, manual=True)
+manual_warm = run("manual-warm", directory=manual_store, extra=manual_extra, manual=True)
+manual_audit = run("manual-audit", directory=manual_store,
+                   extra=(*manual_extra, "--persistent-translation-audit"), manual=True)
+assert manual_fresh[:2] == manual_cold[:2] == manual_warm[:2] == manual_audit[:2]
+assert all(not e["replayed"] for e in manual_cold[2])
+assert all(e["replayed"] for e in manual_warm[2]), "manual warm request did not hit"
+assert all(not e["replayed"] for e in manual_audit[2]), "manual audit reused its stored task evidence"
+print("Manual requests defer verification until selection and preserve fresh VC facts")

@@ -28,13 +28,13 @@ Mutating either replay guard or removing the IDE's native-task request must fail
 This closes the native-evidence eligibility boundary, not all of the IDE milestone
 in [the content-addressed cache design](261-content-addressed-caches.md). Persistent
 whole-module IDE replay needs a complete report adapter and current-source assertion
-metadata. Finalized global-analysis identities and the remaining
-cancellation/selection lifecycle matrix are separate work.
+metadata. Finalized global-analysis identities are separate work. The scheduling
+acceptance covered below uses current native tasks and solver-response replay.
 
 ## Shared task identities across front ends
 
-The task execution environment distinguishes proof-affecting options from two
-front-end lifecycle settings. The transport ABI is now version 4; previous
+The task execution environment distinguishes proof-affecting options from
+front-end lifecycle settings. The transport ABI is now version 5; previous
 execution descriptors cannot match the new environment bytes.
 
 * `SMTLibOptions.RunningBoogieFromCommandLine` binds the current console's
@@ -48,6 +48,15 @@ execution descriptors cannot match the new environment bytes.
   distinct. The file-discovery behavior of Boogie's `ProcessFiles` is outside the
   [GetVerificationTasks route](https://github.com/erniecohen/boogie/blob/a93a02c83aacb6849ca6518071c20e9bdc802213/Source/ExecutionEngine/ExecutionEngine.cs)
   used here; the prover's use of this option compares the level with three.
+* Applying project defaults can append the same `PROVER_PATH=` assignment more
+  than once. This occurs across edits and document close/reopen. In the pinned
+  [ProverOptions parser](https://github.com/erniecohen/boogie/blob/a93a02c83aacb6849ca6518071c20e9bdc802213/Source/Provers/SMTLib/ProverUtil.cs),
+  each such option only assigns `ProverPath`. When every path setting is the
+  same exact `PROVER_PATH=` assignment, retain one in the descriptor. Differing
+  assignments, colon/bare syntax and every other option retain their original
+  order and multiplicity. The live options are never modified. The effective
+  solver path and audited executable identity remain keyed separately. This
+  version-5 treatment prevents redundant defaults from encoding document history.
 
 Only those exact interface properties receive this treatment. All other execution
 options, ordered used types, solver/toolchain identity and complete lowered solver
@@ -63,3 +72,43 @@ seeds must miss an incompatible prior result. Separate project-root tests use
 matching declaration and file names with different assertions, compare fresh,
 cold and restarted warm results, and require current native implementation URIs
 and counterexamples. An edit/revert in one root must not alter the other root.
+
+## Manual selection, save and close/reopen acceptance
+
+The scheduling checks drive client requests rather than requesting whole-document
+verification through a test helper. They run with one and two translation workers.
+
+| Operation | Required observation |
+|---|---|
+| Open in `Never` or `Save` mode | Both verifiable symbols remain unprepared. A request outside any symbol returns false. |
+| Select the positive symbol | Only it completes; the unselected failing symbol stays unprepared and produces no counterexample. |
+| Save | In `Never`, the unselected symbol still needs an explicit request. In `Save`, it completes and exposes its expected failure and native model. |
+| Fresh/cold/restarted warm/audit | Every completed VC agrees in identity, verdict, assertion count and resource count. Warm requires actual transport hits and no solver starts; audit requires fresh solver starts, no task hits or publication, comparisons and no mismatches. |
+| Explicitly cancel pending work twice | The controlled task's observable must terminate with cancellation, not just remain initially stale. No task result is published. |
+| Edit after cancellation, then close/reopen | Completed facts agree with the independent fresh oracle. New graphs and current native origins replace the old generation; no cancellation diagnostics or counterexamples survive. Reopen and another server restart both require persistent hits without solver starts. |
+
+The stdio regression independently checks that manual mode does not run on open,
+an invalid selection or save, and that a valid manual request replays after a
+server restart with fresh per-VC facts. Unit controls retain differing path
+settings and repeated non-path solver options. Mutating path normalization,
+selection, save gating or explicit cancellation must fail the corresponding
+control. Controlled pending work makes cancellation deterministic; this is not
+a stress test of every possible in-flight solver timing.
+
+## Independent audit responses
+
+The audit must bypass task-response replay as well as whole-module replay.
+Previously, a fresh translation and preparation could still consume persistent
+solver responses. Audit mode now constructs the same task execution descriptor
+but neither reads nor publishes task exchanges. The module recorder can compare
+the stored key, verdict and resource count against an actual fresh solver run,
+without replacing the evidence under comparison. The pinned modern task route
+does not reuse the engine's legacy implementation-result cache; its wiring is
+unchanged.
+
+Transport controls populate a store with a different resource count and require
+the audit to observe the fresh count, leaving the original bytes unchanged. An
+empty-store audit must not publish. Client checks require fresh solver starts on
+successive audited generations with both new and reused solver engines. The
+stdio regression requires every audited task to report non-replayed timing.
+Mutating either transport guard or the session's audit wiring must fail.

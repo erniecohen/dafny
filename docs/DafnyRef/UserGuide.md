@@ -435,7 +435,8 @@ Various options control the verification process, in addition to all those descr
   the snapshot copier does not support run normally. The hidden option
   `--persistent-translation-audit` replays nothing: it translates, prepares and
   verifies every module afresh, and reports an error when a stored translation or
-  module result differs from the fresh one.
+  module result differs from the fresh one. It also bypasses persistent task-response
+  replay and publication, leaving the stored evidence unchanged.
 
   The language server requires native assertion and split graphs for its reports.
   It therefore translates and prepares current native tasks even when a whole-module
@@ -443,7 +444,11 @@ Various options control the verification process, in addition to all those descr
   task cache; the CLI's whole-module fast path is unaffected. The CLI and language
   server share task results when their complete solver inputs and execution
   settings agree; front-end cancellation bindings and inactive legacy-cache
-  sentinels do not prevent reuse.
+  sentinels do not prevent reuse. Repeated identical solver-path defaults also
+  do not prevent reuse after edits or document close/reopen. Differing path
+  settings and all other ordered prover options remain distinct. Persistent
+  results follow the current manual-selection and save-verification settings;
+  a cache entry does not schedule an unrequested symbol.
 
   The cache directory is named by `--verification-cache`, then by the
   `verification-cache` value of the project file, then by the `DAFNY_CACHE_DIR`

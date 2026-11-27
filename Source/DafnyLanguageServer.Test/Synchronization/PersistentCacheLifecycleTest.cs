@@ -22,13 +22,17 @@ using Range = OmniSharp.Extensions.LanguageServer.Protocol.Models.Range;
 
 namespace Microsoft.Dafny.LanguageServer.IntegrationTest.Synchronization;
 
-public class PersistentCacheLifecycleTest : ClientBasedLanguageServerTest {
+public partial class PersistentCacheLifecycleTest : ClientBasedLanguageServerTest {
   public PersistentCacheLifecycleTest(ITestOutputHelper output) : base(output) { }
   public override Task InitializeAsync() => Task.CompletedTask;
   private const string Negative = "module Cached { lemma Negative() { assert false; } }";
   private const string Source = "module Cached { lemma Positive(x: int) ensures x + 1 > x {} }";
 
-  private Task Start(string cache, int workers, bool audit = false) => SetUp(options => {
+  private Task Start(string cache, int workers, bool audit = false,
+    VerifyOnMode verifyOn = VerifyOnMode.Change, uint legacyCache = 0, bool reuseSolvers = false) => SetUp(options => {
+    options.Set(ProjectManager.Verification, verifyOn);
+    options.Set(LanguageServer.VerifySnapshots, legacyCache);
+    options.Set(ProjectManager.ReuseSolvers, reuseSolvers);
     options.Set(CommonOptionBag.VerificationCache, cache);
     options.Set(CommonOptionBag.PersistentTranslation, cache.Length != 0);
     options.Set(CommonOptionBag.PersistentCounterexamples, cache.Length != 0);
