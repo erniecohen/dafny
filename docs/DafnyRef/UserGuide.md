@@ -614,6 +614,28 @@ prints, traces, emits debug information, verifies snapshots or selects a type
 encoding other than the default. It composes with `--resolution-threads` and
 `--translation-cache`.
 
+The opt-in `--optimize-translation-copy` generates field-copy routines for the
+Boogie module graphs that `dafny verify` materializes before preparation. It
+reduces reflection work even with one translation worker, and works with both
+type systems, `--translation-cache`, and persistent translation recording.
+It preserves field traversal order, graph aliases, fresh node identities and
+expression hashes, so Boogie text, diagnostics, solver input, verdicts and
+resource counts are unchanged. The routines retain type metadata only. Runtimes
+without dynamic code support use the existing reflection copier. The default
+is false.
+
+
+The experimental hidden `--ready-module-verification` removes the dependency on earlier
+modules at translation commit and proof-task submission. Each ready module can prepare
+and submit its proofs while an earlier module is still translating or preparing. It is
+off by default and requires `--translation-workers` and `--verification-module-window`
+greater than one, together with `--boogie /restartProver`. The fresh solver requirement
+keeps each proof's solver history independent of submission order. Solver concurrency
+remains bounded by `--cores`, and module admission keeps the same memory budget.
+Captures remain mutually exclusive and precede their own module's preparation; Boogie
+files keep the same names and contents. Results and diagnostics retain module order.
+Batch completion order in JSON logs can vary, including without this option.
+
 
 #### 13.6.1.4. `dafny translate <language>` {#sec-dafny-translate}
 
@@ -2898,6 +2920,17 @@ and what information it produces about the verification process.
   so it also takes precedence over `--solver-option O:smt.arith.solver=N` or the
   corresponding `--boogie /proverOpt:O:smt.arith.solver=N` option.
 
+* Z3's int-blasting bit-vector solver, `smt.bv.solver=2`, is rejected. Z3 5.1.0 reports
+  satisfiable queries of the shape Dafny emits for bit-vector subtraction as unsatisfiable
+  with it, so Dafny would verify a false assertion
+  ([issue 618](https://github.com/erniecohen/dafny/issues/618)). A solver option that selects it,
+  whether given as `--solver-option`, as `--boogie /proverOpt:`, as the legacy `/proverOpt:` or
+  in a project file, and in any spelling Z3 accepts (`O:SMT.BV.SOLVER=02`, `#x2`, `2.0`), is an
+  error before verification starts; a value that is not a number is rejected too. The other values,
+  0 (the default) and 1, are accepted. The hidden `--legacy-allow-unsound-bv-solver`, kept for
+  migration and comparison, accepts the option with a warning that the verification results
+  are untrusted.
+
 * `--integer-bitwise` - enable the compiler-owned ghost class
   `IntegerBitwiseModel` and its explicit one-step definition-unfold lemmas for
   powers, normalization, Boolean operations, shifts, rotations and population
@@ -2913,6 +2946,8 @@ and what information it produces about the verification process.
   Boolean bridges at widths 8, 16, 32 and 64, independently of additional axioms.
   `IntegerBitwiseNativeShifts.dfy` adds checked shift and modular-addition equations
   at those widths, including shift counts zero and the width.
+  `IntegerBitwiseNativeSubtraction.dfy` adds checked modular-subtraction equations
+  at the same widths, including borrow and wraparound.
   Set `integer-bitwise = true` in the project file's `[options]` section;
   an enabled `.doo` library requires enabled clients. Declarations in an off-built
   library cannot use this compiler interface merely because the client enables

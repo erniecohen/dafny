@@ -1,0 +1,46 @@
+CLI: Error: The solver option 'O:smt.bv.solver=2' selects Z3's int-blasting bit-vector solver (smt.bv.solver=2), which can report unsatisfiable for satisfiable queries, so Dafny could verify a false assertion (https://github.com/erniecohen/dafny/issues/618). Remove the option. The hidden --legacy-allow-unsound-bv-solver allows it, for comparison only.
+1 resolution/type errors detected in github-issue-618.dfy
+solver-option without O:
+CLI: Error: The solver option 'smt.bv.solver=2' selects Z3's int-blasting bit-vector solver (smt.bv.solver=2), which can report unsatisfiable for satisfiable queries, so Dafny could verify a false assertion (https://github.com/erniecohen/dafny/issues/618). Remove the option. The hidden --legacy-allow-unsound-bv-solver allows it, for comparison only.
+1 resolution/type errors detected in github-issue-618.dfy
+solver-option, upper case name and padded value
+CLI: Error: The solver option 'O:SMT.BV.SOLVER=02' selects Z3's int-blasting bit-vector solver (smt.bv.solver=2), which can report unsatisfiable for satisfiable queries, so Dafny could verify a false assertion (https://github.com/erniecohen/dafny/issues/618). Remove the option. The hidden --legacy-allow-unsound-bv-solver allows it, for comparison only.
+1 resolution/type errors detected in github-issue-618.dfy
+solver-option, hexadecimal value
+CLI: Error: The solver option 'O:smt.bv.solver=#x2' selects Z3's int-blasting bit-vector solver (smt.bv.solver=2), which can report unsatisfiable for satisfiable queries, so Dafny could verify a false assertion (https://github.com/erniecohen/dafny/issues/618). Remove the option. The hidden --legacy-allow-unsound-bv-solver allows it, for comparison only.
+1 resolution/type errors detected in github-issue-618.dfy
+solver-option, value that is not a number
+CLI: Error: The solver option 'O:smt.bv.solver=two' selects Z3's int-blasting bit-vector solver (smt.bv.solver=2), which can report unsatisfiable for satisfiable queries, so Dafny could verify a false assertion (https://github.com/erniecohen/dafny/issues/618). Remove the option. The hidden --legacy-allow-unsound-bv-solver allows it, for comparison only.
+1 resolution/type errors detected in github-issue-618.dfy
+boogie /proverOpt:
+CLI: Error: The solver option 'O:smt.bv.solver=2' selects Z3's int-blasting bit-vector solver (smt.bv.solver=2), which can report unsatisfiable for satisfiable queries, so Dafny could verify a false assertion (https://github.com/erniecohen/dafny/issues/618). Remove the option. The hidden --legacy-allow-unsound-bv-solver allows it, for comparison only.
+1 resolution/type errors detected in github-issue-618.dfy
+project file, solver-option
+dfyconfig.toml(1,0): Error: The solver option 'O:smt.bv.solver=2' selects Z3's int-blasting bit-vector solver (smt.bv.solver=2), which can report unsatisfiable for satisfiable queries, so Dafny could verify a false assertion (https://github.com/erniecohen/dafny/issues/618). Remove the option. The hidden --legacy-allow-unsound-bv-solver allows it, for comparison only.
+1 resolution/type errors detected in dfyconfig.toml
+project file, boogie
+dfyconfig.toml(1,0): Error: The solver option 'O:smt.bv.solver=2' selects Z3's int-blasting bit-vector solver (smt.bv.solver=2), which can report unsatisfiable for satisfiable queries, so Dafny could verify a false assertion (https://github.com/erniecohen/dafny/issues/618). Remove the option. The hidden --legacy-allow-unsound-bv-solver allows it, for comparison only.
+1 resolution/type errors detected in dfyconfig.toml
+legacy command line, /proverOpt:
+Warning: this way of using the CLI is deprecated. Use 'dafny --help' to see help for the new Dafny CLI format
+CLI: Error: The solver option 'O:smt.bv.solver=2' selects Z3's int-blasting bit-vector solver (smt.bv.solver=2), which can report unsatisfiable for satisfiable queries, so Dafny could verify a false assertion (https://github.com/erniecohen/dafny/issues/618). Remove the option. The hidden --legacy-allow-unsound-bv-solver allows it, for comparison only.
+legacy-allow-unsound-bv-solver: the false assertion verifies, with a warning
+CLI: Warning: The solver option 'O:smt.bv.solver=2' selects Z3's int-blasting bit-vector solver (smt.bv.solver=2), which can report unsatisfiable for satisfiable queries, so Dafny could verify a false assertion (https://github.com/erniecohen/dafny/issues/618). --legacy-allow-unsound-bv-solver allows it: verification results are untrusted.
+
+Dafny program verifier finished with 1 verified, 0 errors
+legacy-allow-unsound-bv-solver, project file
+dfyconfig.toml(1,0): Warning: The solver option 'O:smt.bv.solver=2' selects Z3's int-blasting bit-vector solver (smt.bv.solver=2), which can report unsatisfiable for satisfiable queries, so Dafny could verify a false assertion (https://github.com/erniecohen/dafny/issues/618). --legacy-allow-unsound-bv-solver allows it: verification results are untrusted.
+
+Dafny program verifier finished with 1 verified, 0 errors
+default bit-vector solver: the false assertion fails
+github-issue-618.dfy(37,2): Error: assertion might not hold
+
+Dafny program verifier finished with 0 verified, 1 error
+smt.bv.solver=0
+github-issue-618.dfy(37,2): Error: assertion might not hold
+
+Dafny program verifier finished with 0 verified, 1 error
+smt.bv.solver=1
+github-issue-618.dfy(37,2): Error: assertion might not hold
+
+Dafny program verifier finished with 0 verified, 1 error

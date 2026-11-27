@@ -84,8 +84,12 @@ public class PersistentTranslationOptionClassesTest(ITestOutputHelper output) {
       // keys module M is then looked up under (null when the module is translated afresh).
       async Task<(Dictionary<string, string> Model, Dictionary<string, string?>? Keys)?> Digests(IEnumerable<string> extra) {
         var profile = Path.Combine(directory.FullName, $"profile{run++}.jsonl");
+        var extraArgs = extra.ToArray();
+        var coreArgs = extraArgs.Any(a => a == "--cores" || a.StartsWith("--cores:") || a.StartsWith("--cores="))
+          ? Array.Empty<string>() : new[] { "--cores", "2" };
         var args = new[] { "verify", input, "--type-system-refresh", "--persistent-translation",
-          "--verification-cache", Path.Combine(directory.FullName, "cache"), "--pipeline-profile", profile }.Concat(solverArgs).Concat(extra).ToArray();
+          "--verification-cache", Path.Combine(directory.FullName, "cache"), "--pipeline-profile", profile }
+          .Concat(coreArgs).Concat(solverArgs).Concat(extraArgs).ToArray();
         var writer = new StringWriter();
         await File.AppendAllTextAsync(Path.Combine(directory.FullName, "runs.log"), string.Join(' ', args) + "\n");
         var running = DafnyBackwardsCompatibleCli.MainWithWriters(writer, writer, TextReader.Null, args);

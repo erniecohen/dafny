@@ -1,0 +1,5 @@
+Add opt-in `dafny verify --optimize-translation-copy` to reduce reflection work
+when copying module translations for verification. It preserves graph aliases,
+fresh node identities, Boogie text and solver input, and works with both type
+systems and the translation caches. The existing copier remains the default;
+runtimes without dynamic code support use it with either option setting.
