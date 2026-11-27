@@ -1,13 +1,13 @@
 git-issue-374-partial-negative.dfy(5,25): Error: a precondition for this call could not be proved
-Partial.dfy(37,24): Related location: this is the precondition that could not be proved
+Partial.dfy(59,24): Related location: this is the precondition that could not be proved
 git-issue-374-partial-negative.dfy(10,25): Error: a precondition for this call could not be proved
-Partial.dfy(37,24): Related location: this is the precondition that could not be proved
+Partial.dfy(59,24): Related location: this is the precondition that could not be proved
 git-issue-374-partial-negative.dfy(16,25): Error: a precondition for this call could not be proved
-Partial.dfy(37,24): Related location: this is the precondition that could not be proved
+Partial.dfy(59,24): Related location: this is the precondition that could not be proved
 git-issue-374-partial-negative.dfy(21,25): Error: a precondition for this call could not be proved
-Partial.dfy(37,24): Related location: this is the precondition that could not be proved
+Partial.dfy(59,24): Related location: this is the precondition that could not be proved
 git-issue-374-partial-negative.dfy(27,35): Error: a precondition for this call could not be proved
-Partial.dfy(36,23): Related location: this is the precondition that could not be proved
+Partial.dfy(58,23): Related location: this is the precondition that could not be proved
 git-issue-374-partial-negative.dfy(33,2): Error: assertion might not hold
 git-issue-374-partial-negative.dfy(39,2): Error: assertion might not hold
 git-issue-374-partial-negative.dfy(45,0): Error: a postcondition could not be proved on this return path
@@ -24,17 +24,17 @@ git-issue-374-partial-negative.dfy(100,2): Error: assertion might not hold
 git-issue-374-partial-negative.dfy(106,2): Error: assertion might not hold
 git-issue-374-partial-negative.dfy(112,2): Error: assertion might not hold
 
-Dafny program verifier finished with 7 verified, 19 errors
+Dafny program verifier finished with 17 verified, 19 errors
 git-issue-374-partial-negative.dfy(5,25): Error: a precondition for this call could not be proved
-Partial.dfy(37,24): Related location: this is the precondition that could not be proved
+Partial.dfy(59,24): Related location: this is the precondition that could not be proved
 git-issue-374-partial-negative.dfy(10,25): Error: a precondition for this call could not be proved
-Partial.dfy(37,24): Related location: this is the precondition that could not be proved
+Partial.dfy(59,24): Related location: this is the precondition that could not be proved
 git-issue-374-partial-negative.dfy(16,25): Error: a precondition for this call could not be proved
-Partial.dfy(37,24): Related location: this is the precondition that could not be proved
+Partial.dfy(59,24): Related location: this is the precondition that could not be proved
 git-issue-374-partial-negative.dfy(21,25): Error: a precondition for this call could not be proved
-Partial.dfy(37,24): Related location: this is the precondition that could not be proved
+Partial.dfy(59,24): Related location: this is the precondition that could not be proved
 git-issue-374-partial-negative.dfy(27,35): Error: a precondition for this call could not be proved
-Partial.dfy(36,23): Related location: this is the precondition that could not be proved
+Partial.dfy(58,23): Related location: this is the precondition that could not be proved
 git-issue-374-partial-negative.dfy(33,2): Error: assertion might not hold
 git-issue-374-partial-negative.dfy(39,2): Error: assertion might not hold
 git-issue-374-partial-negative.dfy(45,0): Error: a postcondition could not be proved on this return path
@@ -51,4 +51,4 @@ git-issue-374-partial-negative.dfy(100,2): Error: assertion might not hold
 git-issue-374-partial-negative.dfy(106,2): Error: assertion might not hold
 git-issue-374-partial-negative.dfy(112,2): Error: assertion might not hold
 
-Dafny program verifier finished with 7 verified, 19 errors
+Dafny program verifier finished with 17 verified, 19 errors

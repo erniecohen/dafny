@@ -13,7 +13,7 @@ namespace Microsoft.Dafny;
 
 /// <summary>Backend selection and translation flags, independent of a native execution engine.</summary>
 public record VerificationPreparationRequest(bool InsertChecksums,
-  Func<IVerificationBackend<Bpl.Program>> CreateBackend, Action<Bpl.Program>? Capture = null);
+  Func<IVerificationBackend<Bpl.Program>> CreateBackend, Action<Bpl.Program>? Capture = null, bool RequiresNativeTasks = false);
 
 /// <summary>A prepared module and its source/dependency map retain one reporting owner.</summary>
 public record ModuleVerificationPreparation(VerificationPreparation Preparation, ProofDependencyManager ProofDependencies);
@@ -119,10 +119,13 @@ public sealed class VerificationPreparationPipeline : IDisposable {
     return null;
   }
 
+  /// <param name="requiresNativeTasks">The consumer needs native split, assertion and model evidence.
+  /// Keep translation/preparation on the fresh route; the task transport can still replay solver
+  /// responses against those current native graphs. Detached whole-module reports are insufficient.</param>
   public async Task<ModuleVerificationPreparation> PrepareAsync(
     ResolutionResult resolution, ModuleDefinition moduleDefinition, bool insertChecksums,
     Func<IVerificationBackend<Bpl.Program>> createBackend, CancellationToken cancellationToken,
-    Action<Bpl.Program>? capture = null) {
+    Action<Bpl.Program>? capture = null, bool requiresNativeTasks = false) {
     if (!BoogieGenerator.ShouldVerifyModule(resolution.ResolvedProgram, moduleDefinition)) {
       throw new Exception("tried to get verification tasks for a module that is not verified");
     }
@@ -130,7 +133,7 @@ public sealed class VerificationPreparationPipeline : IDisposable {
     var workers = TranslationWorkers(resolution.ResolvedProgram, out _);
     if (workers > 1) {
       return await PrepareInParallelAsync(workers, resolution, moduleDefinition, insertChecksums, createBackend,
-        cancellationToken, capture);
+        cancellationToken, capture, requiresNativeTasks);
     }
 
     var profile = PipelineProfile.For(resolution.ResolvedProgram.Options);
@@ -145,7 +148,7 @@ public sealed class VerificationPreparationPipeline : IDisposable {
       cancellationToken.ThrowIfCancellationRequested();
 
       var program = resolution.ResolvedProgram;
-      if (LookUpPersistent(program, moduleDefinition, insertChecksums, profile, moduleName, out var identity) is { } stored) {
+      if (LookUpPersistent(program, moduleDefinition, insertChecksums, profile, moduleName, requiresNativeTasks, out var identity) is { } stored) {
         return stored;
       }
       var (boogieProgram, dependencies, _, translated) = await DafnyMain.LargeStackFactory.StartNew(
@@ -154,11 +157,11 @@ public sealed class VerificationPreparationPipeline : IDisposable {
       cancellationToken.ThrowIfCancellationRequested();
       capture?.Invoke(boogieProgram);
 
-      if (PublishPersistent(program, moduleDefinition, translated, dependencies, profile, moduleName) is { } replayed) {
+      if (PublishPersistent(program, moduleDefinition, translated, dependencies, profile, moduleName, requiresNativeTasks) is { } replayed) {
         return replayed;
       }
       var preparation = await Prepare(boogieProgram, createBackend, profile, moduleName, cancellationToken);
-      return new ModuleVerificationPreparation(RecordPersistent(program, moduleDefinition, translated, preparation), dependencies);
+      return new ModuleVerificationPreparation(RecordPersistent(program, moduleDefinition, translated, preparation, dependencies), dependencies);
     }
     finally {
       mutex.Release();
@@ -174,7 +177,7 @@ public sealed class VerificationPreparationPipeline : IDisposable {
   private async Task<ModuleVerificationPreparation> PrepareInParallelAsync(int workers,
     ResolutionResult resolution, ModuleDefinition moduleDefinition, bool insertChecksums,
     Func<IVerificationBackend<Bpl.Program>> createBackend, CancellationToken cancellationToken,
-    Action<Bpl.Program>? capture) {
+    Action<Bpl.Program>? capture, bool requiresNativeTasks) {
     var options = resolution.ResolvedProgram.Options;
     var profile = PipelineProfile.For(options);
     var moduleName = profile != null ? PipelineProfile.ModuleName(moduleDefinition) : null;
@@ -203,7 +206,7 @@ public sealed class VerificationPreparationPipeline : IDisposable {
     try {
       // A translation-key hit needs no translation slot. It commits nothing, but its ticket still
       // completes only after its predecessor's (the finally below), so the cursor's order holds.
-      if (LookUpPersistent(program, moduleDefinition, insertChecksums, profile, moduleName, out var identity) is { } stored) {
+      if (LookUpPersistent(program, moduleDefinition, insertChecksums, profile, moduleName, requiresNativeTasks, out var identity) is { } stored) {
         return stored;
       }
       var profileStart = profile?.Begin();
@@ -244,13 +247,13 @@ public sealed class VerificationPreparationPipeline : IDisposable {
       committed.SetResult();
     }
 
-    if (PublishPersistent(program, moduleDefinition, translated, dependencies, profile, moduleName) is { } replayed) {
+    if (PublishPersistent(program, moduleDefinition, translated, dependencies, profile, moduleName, requiresNativeTasks) is { } replayed) {
       return replayed;
     }
     await AdmitPreparation(workers, cancellationToken);
     try {
       var preparation = await Prepare(boogieProgram, createBackend, profile, moduleName, cancellationToken);
-      return new ModuleVerificationPreparation(RecordPersistent(program, moduleDefinition, translated, preparation), dependencies);
+      return new ModuleVerificationPreparation(RecordPersistent(program, moduleDefinition, translated, preparation, dependencies), dependencies);
     }
     finally {
       FinishPreparation();
@@ -344,7 +347,7 @@ public sealed class VerificationPreparationPipeline : IDisposable {
   /// recorded under, or null when the module is translated afresh without the persistent tables.
   /// </summary>
   private static ModuleVerificationPreparation? LookUpPersistent(Program program, ModuleDefinition moduleDefinition,
-    bool insertChecksums, PipelineProfile? profile, string? moduleName,
+    bool insertChecksums, PipelineProfile? profile, string? moduleName, bool requiresNativeTasks,
     out Caching.PersistentModuleCache.ModuleIdentity? identity) {
     identity = null;
     var persistent = Caching.PersistentModuleCache.For(program.Options);
@@ -362,13 +365,13 @@ public sealed class VerificationPreparationPipeline : IDisposable {
       ["translation"] = key, ["results"] = persistent.EnvironmentDigest
     });
     identity = new Caching.PersistentModuleCache.ModuleIdentity(key, null, null, null);
-    if (!persistent.Audit && persistent.ReadTranslation(key) is { } stored &&
+    if (!requiresNativeTasks && !persistent.Audit && persistent.ReadTranslation(key) is { } stored &&
         persistent.TryReplay(program, moduleDefinition, stored.Fingerprint, true, out _) is { } replayed) {
       profile?.Point("persistent-module", new Dictionary<string, object?> {
-        ["module"] = moduleName, ["hit"] = "translation-key", ["tasks"] = replayed.Count
+        ["module"] = moduleName, ["hit"] = "translation-key", ["tasks"] = replayed.Tasks.Count
       });
       return new ModuleVerificationPreparation(
-        VerificationPreparation.Ready(replayed.Select(task => new BoogieVerificationWork(task))), new ProofDependencyManager());
+        VerificationPreparation.Ready(replayed.Tasks.Select(task => new BoogieVerificationWork(task))), replayed.Dependencies);
     }
     return null;
   }
@@ -379,19 +382,19 @@ public sealed class VerificationPreparationPipeline : IDisposable {
   /// </summary>
   private static ModuleVerificationPreparation? PublishPersistent(Program program, ModuleDefinition moduleDefinition,
     Caching.PersistentModuleCache.ModuleIdentity? identity, ProofDependencyManager dependencies,
-    PipelineProfile? profile, string? moduleName) {
+    PipelineProfile? profile, string? moduleName, bool requiresNativeTasks) {
     if (identity is not { Text: not null } || Caching.PersistentModuleCache.For(program.Options) is not { } persistent) {
       return null;
     }
     persistent.PublishTranslation(identity, program.Reporter, moduleDefinition.Origin);
-    string? missReason = "audit";
-    if (!persistent.Audit &&
+    string? missReason = requiresNativeTasks ? "native-task reporting" : "audit";
+    if (!requiresNativeTasks && !persistent.Audit &&
         persistent.TryReplay(program, moduleDefinition, identity.Fingerprint!, false, out missReason) is { } replayed) {
       profile?.Point("persistent-module", new Dictionary<string, object?> {
-        ["module"] = moduleName, ["hit"] = "boogie-graph", ["tasks"] = replayed.Count
+        ["module"] = moduleName, ["hit"] = "boogie-graph", ["tasks"] = replayed.Tasks.Count
       });
       return new ModuleVerificationPreparation(
-        VerificationPreparation.Ready(replayed.Select(task => new BoogieVerificationWork(task))), dependencies);
+        VerificationPreparation.Ready(replayed.Tasks.Select(task => new BoogieVerificationWork(task))), replayed.Dependencies);
     }
     profile?.Point("persistent-module", new Dictionary<string, object?> {
       ["module"] = moduleName, ["hit"] = null, ["reason"] = missReason
@@ -401,12 +404,12 @@ public sealed class VerificationPreparationPipeline : IDisposable {
 
   /// <summary>Observes a fresh module's prepared tasks, so that their results are recorded.</summary>
   private static VerificationPreparation RecordPersistent(Program program, ModuleDefinition moduleDefinition,
-    Caching.PersistentModuleCache.ModuleIdentity? identity, VerificationPreparation preparation) {
+    Caching.PersistentModuleCache.ModuleIdentity? identity, VerificationPreparation preparation, ProofDependencyManager dependencies) {
     if (identity is not { Text: not null } || Caching.PersistentModuleCache.For(program.Options) is not { } persistent ||
         !preparation.IsReady || !preparation.GetWorkOrThrow().All(work => work is BoogieVerificationWork)) {
       return preparation;
     }
-    var recorded = persistent.Record(program, moduleDefinition, identity, BoogieVerificationBackend.GetNativeTasks(preparation));
+    var recorded = persistent.Record(program, moduleDefinition, identity, BoogieVerificationBackend.GetNativeTasks(preparation), dependencies);
     return VerificationPreparation.Ready(recorded.Select(task => new BoogieVerificationWork(task)));
   }
 

@@ -16,6 +16,7 @@ pub mod Foreign {
     }
 }
 pub mod NativeOnly {
+    pub struct Opaque {}
     pub struct _default {}
     impl _default {
         pub fn Zero() -> dafny_runtime::DafnyInt { dafny_runtime::int!(0) }

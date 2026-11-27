@@ -101,9 +101,13 @@ public class ProofDependencyWarnings {
         .ThenBy(dep => dep.Description).ToList();
 
     foreach (var unusedDependency in unusedDependencies) {
+      if (unusedDependency is Caching.ReplayedProofDependency replayed) {
+        ReportReplayedWarning(scopeName, replayed);
+        continue;
+      }
       if (options.Get(CommonOptionBag.WarnContradictoryAssumptions) || options.Get(CommonOptionBag.AnalyzeProofs)) {
         if (unusedDependency is ProofObligationDependency obligation) {
-          if (ShouldWarnVacuous(scopeName, obligation)) {
+          if (ShouldWarnVacuous(scopeName, obligation, options)) {
             var message = $"proved using contradictory assumptions: {obligation.Description}";
             if (obligation.ProofObligation is AssertStatementDescription) {
               message += ". (Use the `{:contradiction}` attribute on the `assert` statement to silence.)";
@@ -115,7 +119,7 @@ public class ProofDependencyWarnings {
         }
 
         if (unusedDependency is EnsuresDependency ensures) {
-          if (ShouldWarnVacuous(scopeName, ensures)) {
+          if (ShouldWarnVacuous(scopeName, ensures, options)) {
             reporter.Warning(MessageSource.Verifier, "",
               new SourceOrigin(ensures.Range.StartToken, ensures.Range.EndToken),
               $"ensures clause proved using contradictory assumptions");
@@ -243,6 +247,37 @@ public class ProofDependencyWarnings {
     return assertionsProvenUsingFact;
   }
 
+  internal static Caching.ProofWarningFacts CacheWarningFacts(ProofDependency dependency, DafnyOptions options) =>
+    new(dependency is ProofObligationDependency or EnsuresDependency && ShouldWarnVacuous("", dependency, options),
+      dependency is RequiresDependency || dependency is AssumptionDependency && ShouldWarnUnused(dependency),
+      dependency is ProofObligationDependency { ProofObligation: AssertStatementDescription });
+
+  private static void ReportReplayedWarning(string scopeName, Caching.ReplayedProofDependency dependency) {
+    var range = dependency.Range;
+    var facts = dependency.Warnings;
+    if ((options.Get(CommonOptionBag.WarnContradictoryAssumptions) || options.Get(CommonOptionBag.AnalyzeProofs)) && facts.Vacuous) {
+      if (dependency.Kind == nameof(EnsuresDependency)) {
+        if (!scopeName.Contains("well-formedness")) {
+          reporter.Warning(MessageSource.Verifier, "", new SourceOrigin(range.StartToken, range.EndToken),
+            "ensures clause proved using contradictory assumptions");
+        }
+      } else {
+        var message = $"proved using contradictory assumptions: {dependency.Description}";
+        if (facts.AssertStatement) {
+          message += ". (Use the `{:contradiction}` attribute on the `assert` statement to silence.)";
+        }
+        reporter.Warning(MessageSource.Verifier, "", range.StartToken, message);
+      }
+    }
+    if ((options.Get(CommonOptionBag.WarnRedundantAssumptions) || options.Get(CommonOptionBag.AnalyzeProofs)) && facts.Unused) {
+      if (dependency.Kind == nameof(RequiresDependency)) {
+        reporter.Warning(MessageSource.Verifier, "", new SourceOrigin(range.StartToken, range.EndToken), "unnecessary requires clause");
+      } else {
+        reporter.Warning(MessageSource.Verifier, "", range.StartToken, $"unnecessary (or partly unnecessary) {dependency.Description}");
+      }
+    }
+  }
+
   /// <summary>
   /// Some proof obligations that don't show up in the dependency list
   /// are innocuous. Either they come about because of internal Dafny
@@ -257,7 +292,7 @@ public class ProofDependencyWarnings {
   /// <param name="dep">the dependency to examine</param>
   /// <returns>false to skip warning about the absence of this
   /// dependency, true otherwise</returns>
-  private static bool ShouldWarnVacuous(string verboseName, ProofDependency dep) {
+  private static bool ShouldWarnVacuous(string verboseName, ProofDependency dep, DafnyOptions options) {
     if (dep is ProofObligationDependency poDep) {
       // Dafny generates some assertions about definite assignment whose
       // proofs are always vacuous. Since these aren't written by Dafny

@@ -1183,22 +1183,57 @@ that a later stage would have to reject:
   linkage paths. Foreign implementations use the public member namespaces, including
   for sibling types and generated classes, without naming the group container.
   The existing Rust restrictions on two-argument module and class externs and
-  mixed foreign/generated implementations of a trait still apply. Refinement of
-  a group member with extern types is explicitly unsupported; inherited extern
-  members with explicit foreign paths are supported.
-  Rust group programs require explicit array initialization; implicit datatype defaults
-  remain unsupported. The Rust backend's existing `--enforce-determinism` requirement
-  and trait restrictions still apply.
+  mixed foreign/generated implementations of a trait still apply. Abstract
+  refinements with extern types emit no code and are allowed. Concrete refinements
+  may inherit, extend or introduce extern classes with at most one extern argument
+  and no compiled fields, including fields inherited from traits. Executable members
+  may be bodiless foreign members or implemented functions, methods and constructors,
+  including functions with method bodies. An implemented extern member may rename
+  itself, but may not name a different foreign enclosing path. Generic classes and
+  ghost declarations are supported. Supply each refined class and its bodiless foreign
+  members in the refining module's foreign namespace; it has its own foreign identity.
+  Generated members become inherent implementations on that type. Generated
+  constructors use the foreign type's zero-argument `_allocate_object()` hook before
+  executing their Dafny bodies; bodiless foreign constructors instead pass their
+  arguments to the allocation hook. Foreign members with bodies use generated
+  implementations; foreign source supplies allocation and bodiless members. Members
+  with bodies and a foreign enclosing path, and other extern types in concrete
+  refinements, remain rejected. Inherited bodiless extern members with explicit
+  foreign paths are supported. Trait parents follow the ordinary Rust rule that each
+  parent's proper methods are wholly generated or wholly foreign. Supply the trait
+  implementations and upcast support for wholly foreign types and parent traits not
+  implemented by generated class methods; an empty implementation can use a trait's
+  generated default methods. Ghost fields are erased.
+  Rust group programs may omit an array initializer when some dimension is zero,
+  including a zero computed at runtime. All dimensions are evaluated once, in order;
+  for auto-initializable elements, a runtime check halts a nonempty allocation
+  without an initializer even when verification is skipped. This does not require a datatype default or evaluate
+  an element witness. Nonempty arrays still require explicit initialization under
+  Rust's existing `--enforce-determinism` requirement. General implicit datatype
+  defaults and the backend's trait restrictions remain unsupported.
   Go groups support extern members and types. Extern module names continue to
   select foreign Go packages; generated declarations of the group share a separate
   package. See [Go extern linkage](../Compilation/Go.md#recursive-module-groups)
   for names and foreign source-file conventions.
   JavaScript groups support preloaded extern module objects, extern types in those
   modules, and qualified extern members. They retain ordinary module and type names
-  inside a shared initialization closure. Require-based extern modules, two-argument
-  extern type qualifiers, unqualified imported members without an extern owner,
-  qualified instance methods or fields, extern constructors, and refinements containing extern types
-  remain unsupported. See the
+  inside a shared initialization closure. Concrete refinements, including
+  descendants of abstract refinements, support fully imported and partial extern
+  classes when each concrete module supplies its own preloaded extern object. Fully
+  imported extern traits whose ancestors are also fully imported extern traits retain
+  their preloaded runtime identities in groups and concrete refinements. This
+  includes ancestors in acyclic modules emitted with the group. An ancestor supplied
+  only through `--library` must instead be linked by a producer containing the group.
+  Ghost members remain erased. Fully imported extern classes
+  in a group or its concrete refinements support native constructors: generated
+  calls pass type descriptors followed by non-ghost arguments. Partial extern
+  classes use generated subclasses for Dafny fields and members, and require a
+  Dafny constructor body. Require-based extern modules, two-argument extern type
+  qualifiers, unqualified imported members without an extern owner, qualified
+  instance methods or fields, and refinements containing extern traits with
+  generated members or generated ancestors, or other extern type kinds, remain
+  unsupported. Selected acyclic ancestors obey the same foreign linkage restrictions.
+  See the
   [compilation design](../dev/recursive-module-compilation.md#javascript-group-emission)
   for the linkage restrictions and qualification tests.
   C++ groups remain rejected: the backend does not emit the indirection needed for

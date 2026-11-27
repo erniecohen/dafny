@@ -469,6 +469,18 @@ profile suggests low priority until direct measurement says otherwise. Test
 alternate preludes/defines, edit/delete between batch requests, a later fresh
 invocation, concurrent modules, and default-path raw output/SMT preservation.
 
+**Decision: defer D5 implementation.** Use the existing `translate.prelude`
+constructor spans as an upper bound before building a template: the direct CPU
+saving is bounded by their sum, before subtracting clone/rebinding and lookup
+work. Compare their aggregate CPU with whole-process CPU in a separate timing
+profile, not a forced-GC heap experiment; measure allocation and collection
+effects separately. Proceed only when that saving is material on a target
+workload and a private-materialization prototype preserves the exact output.
+A large graph reachable from a prelude or
+resolver callback is not evidence of exclusive retention; the observed-graph
+cuts in the front-end design explain that distinction. No template or mutable
+declaration sharing is introduced by this decision.
+
 ### 4.6 Solver reuse
 
 Solver-process reuse and push/pop are already present. The further proposal is to

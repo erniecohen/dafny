@@ -50,7 +50,9 @@ internal sealed class TaskExecutionEnvironment(DafnyOptions options) {
       var manifest = new SortedDictionary<string, object?>(StringComparer.Ordinal) {
         // v2: paths under the Dafny, .NET and solver installations are named by placeholder.
         // v3: only the environment variables that can change a result are keyed.
-        ["abi"] = "dafny-task-transport-v3",
+        // v4: front-end cancellation binding and inactive legacy-cache sentinels are normalized.
+        // v5: repeated, identical prover-path assignments do not encode IDE history.
+        ["abi"] = "dafny-task-transport-v5",
         ["toolchain"] = JsonSerializer.Deserialize<SortedDictionary<string, string>>(identity)
       };
       // Enumerate the complete interfaces used by the pinned Boogie prover, including inherited
@@ -61,7 +63,25 @@ internal sealed class TaskExecutionEnvironment(DafnyOptions options) {
         if (ReportBindings.Contains(property.Name)) { manifest[name] = "current-report-binding"; continue; }
         if (VerifiedTransport.Contains(property.Name)) { manifest[name] = "verified-transport"; continue; }
         if (property.Name == ResourceLimit) { manifest[name] = TaskResourceLimit; continue; }
-        manifest[name] = Encode(property.GetValue(library));
+        // The pinned SMTLibProcess uses this only to subscribe to the current console's
+        // cancellation event. No solver command or response depends on that subscription.
+        if (property.DeclaringType == typeof(SMTLibOptions) &&
+            property.Name == nameof(SMTLibOptions.RunningBoogieFromCommandLine)) {
+          manifest[name] = "current-cancellation-binding";
+          continue;
+        }
+        var value = property.GetValue(library);
+        if (property.DeclaringType == typeof(CoreOptions) &&
+            property.Name == nameof(CoreOptions.ProverOptions) && value is IEnumerable<string> proverOptions) {
+          value = StableProverOptions(proverOptions);
+        }
+        // Both sentinels disable legacy result lookup/insertion on the modern task route.
+        // Positive levels remain distinct; all lowered solver input is still keyed verbatim.
+        if (property.DeclaringType == typeof(CoreOptions) &&
+            property.Name == nameof(CoreOptions.VerifySnapshots) && value is int snapshots && snapshots < 0) {
+          value = 0;
+        }
+        manifest[name] = Encode(value);
       }
       foreach (var field in solver.GetType().GetFields(BindingFlags.Instance | BindingFlags.Public).OrderBy(f => f.Name)) {
         if (field.Name == "UsedTypes") { continue; }
@@ -82,6 +102,25 @@ internal sealed class TaskExecutionEnvironment(DafnyOptions options) {
       reason = e.Message;
       return null;
     }
+  }
+
+  /// <summary>
+  /// Applying project defaults can append the same PROVER_PATH assignment again. In the
+  /// pinned parser this only assigns ProverPath; it sends no solver command. Collapse those
+  /// repetitions only if every path setting is the same assignment. Keep alternate syntax,
+  /// differing paths and all other options verbatim, including their multiplicity and order.
+  /// </summary>
+  internal static string[] StableProverOptions(IEnumerable<string> source) {
+    var values = source.ToArray();
+    var paths = values.Where(option => option == "PROVER_PATH" ||
+      option.StartsWith("PROVER_PATH=", StringComparison.Ordinal) ||
+      option.StartsWith("PROVER_PATH:", StringComparison.Ordinal)).ToArray();
+    if (paths.Length < 2 || !paths[0].StartsWith("PROVER_PATH=", StringComparison.Ordinal) ||
+        paths.Any(path => path != paths[0])) {
+      return values;
+    }
+    var first = Array.IndexOf(values, paths[0]);
+    return values.Where((option, index) => option != paths[0] || index == first).ToArray();
   }
 
   /// <summary>A copy of <paramref name="node"/> with every string value relocated; names are kept.</summary>
