@@ -21,11 +21,15 @@ public class ModuleTranslationCacheTests {
     """;
 
   [Theory]
-  [InlineData(false, false)]
-  [InlineData(true, false)]
-  [InlineData(false, true)]
-  [InlineData(true, true)]
-  public async Task DefaultColdAndWarmBoogieAndRawSmtAreIdentical(bool refresh, bool checksums) {
+  [InlineData(false, false, false)]
+  [InlineData(true, false, false)]
+  [InlineData(false, true, false)]
+  [InlineData(true, true, false)]
+  [InlineData(false, false, true)]
+  [InlineData(true, false, true)]
+  [InlineData(false, true, true)]
+  [InlineData(true, true, true)]
+  public async Task DefaultColdAndWarmBoogieAndRawSmtAreIdentical(bool refresh, bool checksums, bool optimize) {
     // Synthetic solver responses isolate emission order; native integration checks proofs/RU.
     var source = HistoryFreeTranslationTests.Units;
     var baseline = await Resolve(source, refresh: refresh, threads: 0, cached: false);
@@ -36,7 +40,7 @@ public class ModuleTranslationCacheTests {
     var commands = await HistoryFreeTranslationTests.CaptureCommands(baseline, graph);
     var cache = new ModuleTranslationCache();
     foreach (var warm in new[] { false, true }) {
-      var program = await Resolve(source, refresh: refresh, threads: 0, cached: true);
+      var program = await Resolve(source, refresh: refresh, threads: 0, cached: true, optimizeCopy: optimize);
       var next = program.RawModules().Single(m => m.Name == "Client");
       Assert.Equal(module.ResolutionKey, next.ResolutionKey);
       var actual = cache.Translate(program, next, new(program.Options) { InsertChecksums = checksums }, default, out var reused);
@@ -182,19 +186,23 @@ public class ModuleTranslationCacheTests {
     Assert.Equal(3, cache.Translations);
   }
 
-  [Fact]
-  public void LiteralAliasesArePreservedAndUnknownMetadataIsRejected() {
+  [Theory]
+  [InlineData(false)]
+  [InlineData(true)]
+  public void LiteralAliasesArePreservedAndUnknownMetadataIsRejected(bool optimize) {
     var graph = new Bpl.Program();
     var axiom = new Bpl.Axiom(Bpl.Token.NoToken, Bpl.Expr.True);
     graph.AddTopLevelDeclaration(axiom);
-    Assert.True(BoogieSnapshotCloner.TryClone(graph, out var copy, out _));
+    Assert.True(BoogieSnapshotCloner.TryClone(graph, out var copy, out _, optimize: optimize));
     Assert.Same(Bpl.Expr.True, Assert.Single(copy!.TopLevelDeclarations.OfType<Bpl.Axiom>()).Expr);
     axiom.SetMetadata(0, new object());
-    Assert.False(BoogieSnapshotCloner.TryClone(graph, out _, out _));
+    Assert.False(BoogieSnapshotCloner.TryClone(graph, out _, out _, optimize: optimize));
   }
 
-  [Fact]
-  public void TypeCopiesPreserveRuntimeTypeAndImmutableExpressionHashes() {
+  [Theory]
+  [InlineData(false)]
+  [InlineData(true)]
+  public void TypeCopiesPreserveRuntimeTypeAndImmutableExpressionHashes(bool optimize) {
     var proxy = new Bpl.TypeProxy(Bpl.Token.NoToken, "p");
     Assert.True(proxy.Unify(Bpl.Type.Int));
     var variable = new Bpl.Constant(Bpl.Token.NoToken, new Bpl.TypedIdent(Bpl.Token.NoToken, "x", proxy), false);
@@ -204,7 +212,7 @@ public class ModuleTranslationCacheTests {
     graph.AddTopLevelDeclaration(new Bpl.Axiom(Bpl.Token.NoToken, identifier));
     graph.AddTopLevelDeclaration(new Bpl.Constant(Bpl.Token.NoToken,
       new Bpl.TypedIdent(Bpl.Token.NoToken, "float", new Bpl.FloatType(24, 8)), false));
-    Assert.True(BoogieSnapshotCloner.TryClone(graph, out var copy, out var reason), reason);
+    Assert.True(BoogieSnapshotCloner.TryClone(graph, out var copy, out var reason, optimize: optimize), reason);
     var clonedVariable = copy!.Constants.Single(v => v.Name == "x");
     Assert.NotSame(proxy, Assert.IsType<Bpl.TypeProxy>(clonedVariable.TypedIdent.Type));
     Assert.Same(Bpl.Type.Int, ((Bpl.TypeProxy)clonedVariable.TypedIdent.Type).ProxyFor);
@@ -353,13 +361,14 @@ public class ModuleTranslationCacheTests {
     Assert.NotEqual(ModuleTranslationCache.Emit(first, before.Options), ModuleTranslationCache.Emit(third, other.Options));
   }
 
-  internal static async Task<Microsoft.Dafny.Program> Resolve(string source, string? unrelated = null, bool refresh = false, bool modularTermination = false, int threads = 1, bool cached = true, bool memberInvariants = false) {
+  internal static async Task<Microsoft.Dafny.Program> Resolve(string source, string? unrelated = null, bool refresh = false, bool modularTermination = false, int threads = 1, bool cached = true, bool memberInvariants = false, bool optimizeCopy = false) {
     DafnyType.ResetScopes();
     var options = new DafnyOptions(TextReader.Null, TextWriter.Null, TextWriter.Null);
     options.ApplyDefaultOptionsWithoutSettingsDefault();
     options.Set(CommonOptionBag.ModularTermination, modularTermination);
     options.Set(CommonOptionBag.ResolutionThreads, threads);
     options.Set(CommonOptionBag.TranslationCache, cached);
+    options.Set(CommonOptionBag.OptimizeTranslationCopy, optimizeCopy);
     options.Set(CommonOptionBag.TypeSystemRefresh, refresh);
     options.Set(CommonOptionBag.MemberInvariants, memberInvariants);
     var reporter = new BatchErrorReporter(options);

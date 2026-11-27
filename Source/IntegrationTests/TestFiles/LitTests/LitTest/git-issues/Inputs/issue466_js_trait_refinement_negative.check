@@ -1,0 +1,4 @@
+// CHECK: assertion might not hold
+// CHECK: assertion might not hold
+// CHECK: assertion might not hold
+// CHECK: 0 verified, 3 errors

@@ -45,7 +45,11 @@ namespace Microsoft.Dafny.LanguageServer.Language {
           serviceProvider.GetRequiredService<IFileSystem>(),
           serviceProvider.GetRequiredService<ITextDocumentLoader>(),
           serviceProvider.GetRequiredService<IProgramVerifier>(),
-          engine, compilation
+          compilation,
+          (resolution, module) => BoogieVerificationBackend.CreateRequest(engine, resolution, module) with {
+            RequiresNativeTasks = true
+          },
+          work => BoogieVerificationBackend.ReleasePrograms(engine, work)
           ))
         .AddSingleton<ISymbolTableFactory, SymbolTableFactory>()
         .AddSingleton<IGhostStateDiagnosticCollector, GhostStateDiagnosticCollector>();

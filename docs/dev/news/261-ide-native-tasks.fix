@@ -1,0 +1,3 @@
+Keep native verification tasks for IDE consumers when persistent caching is enabled,
+so warm solver-result reuse preserves gutter, hover, counterexample and reseeding
+inputs. The CLI retains whole-module report replay.
