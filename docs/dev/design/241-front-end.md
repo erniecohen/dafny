@@ -811,6 +811,44 @@ C ∈ {4, 8, 16} decides whether one process saturates the machine.
 | F4-3 | Change 4, after F1-2 (needs the commit cursor) | ~300 | medium |
 | F4-M | Heap-snapshot measurement of `A_clone`, `A_res`, `A_cache`, `A_body`, `B_m`, `T_m` and checker retention, in a workflow | ~200 | — |
 
+### 5.3 As implemented and the remaining measurement boundary
+
+PR #562 implements F4-1, F4-2 and F4-3. One-shot CLI compilations discard the parsed clone and
+do not retain parser or resolver caches for another edit. Reported modules release their idle
+Boogie checkers, using the adopted `CheckerPool.Release` API, and window slots discard their
+reported symbol state. `--release-verified-modules` additionally detaches method and iterator
+bodies, with a throwing hook for a later read. These are shipped changes, not pending items.
+
+F4-M's heap points and dump-collection workflow shipped with front-end profiling (#259).
+`.github/review/retention-profile.py run` adds a sequential paired experiment for the body-release
+option to the workflow's `std-heap` job. For example, after building Dafny:
+
+```sh
+python3 .github/review/retention-profile.py run --dafny Binaries/Dafny \
+  --project Source/DafnyStandardLibraries/src/Std/dfyconfig.toml \
+  --windows 1 4 --reps 3 --cores 2 --out work/body-release
+```
+
+The output directory must be new. Each pair checks the child exit, diagnostics and every module's
+Boogie text. It requires complete forced-GC observations, translation/report coverage, finished
+verification tasks and an actual body release. `comparison.json` records signed live-heap deltas
+at matching reporting points. Its decision compares the **final** live-heap difference with 10%
+of baseline peak process RSS, obtained from `wait4` in bytes. Earlier points at K > 1 can contain
+different modules still in flight; their deltas are descriptive and are never summed. Raw profiles,
+Boogie files, output and process accounting remain beside the decision for review. The lit control
+uses a real solver, checks Boogie, diagnostics and per-VC outcomes/resource counts, and retains a
+false assertion. No-op resource counts are never used as the real-solver equality oracle.
+
+**Decision boundary.** This experiment uses the no-op solver and forced full collections. A `go`
+or `no-go` applies only to that instrumented workload. A below-threshold body-release difference
+does not justify another F4 implementation, and does not rescind the already shipped releases.
+It says nothing about `A_clone` or idle solver contexts, which one-shot runs already release.
+The live-heap difference is not root-exclusive `A_body`, and is not an observed reduction in peak
+RSS. Type tables from `dotnet-gcdump report` likewise do not establish root ownership. Attribution
+of `A_res`, `A_cache`, `B_m` and `T_m` still needs analysis of the saved heap graph; it must not be
+inferred from the sum of type sizes or labeled complete by this experiment. Measurements from
+private runs stay outside this document.
+
 ---
 
 ## 6. Dependencies and order of work

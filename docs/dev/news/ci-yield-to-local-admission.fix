@@ -1,0 +1,4 @@
+Self-hosted CI admission yields to live waiting local admission clients without
+interrupting running jobs. Stale or malformed waiting announcements are ignored.
+The optional heavy-wait-max-s action input, supplied by repository variable
+SELF_HOSTED_JOB_HEAVY_WAIT_MAX_S, limits priority to four hours by default.

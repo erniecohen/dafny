@@ -651,7 +651,7 @@ public class Compilation : IDisposable {
     errorReporter.Updates.Subscribe(d => diagnostics.Add(d.Diagnostic));
 
     ReportDiagnosticsInResult(options, canVerify.NavigationRange.StartToken.val, BoogieGenerator.ToDafnyToken(task.Token),
-      task.Split.Implementation.GetTimeLimit(options), result, errorReporter);
+      Caching.VerificationTaskFacts.TimeLimit(task, options), result, errorReporter);
 
     return diagnostics.OrderBy(d => d.Range.StartToken.GetLspPosition()).ToList();
   }

@@ -31,6 +31,10 @@ inputs:
   expected-peak-mb:
     description: Optional positive expected peak in MiB overriding completed history
     required: false
+  heavy-wait-max-s:
+    description: Maximum age in seconds for yielding to a waiting local admission client
+    default: '14400'
+    required: false
 runs:
   using: node24
   main: index.cjs

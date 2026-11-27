@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.IO;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Text;
@@ -17,9 +18,8 @@ namespace Microsoft.Dafny.Caching;
 /// encloses it, by that declaration's qualified name, which is unique in the program, and not by
 /// its file. A position that no declaration encloses is recorded with its file, which is named by
 /// the SHA-256 of its text rather than by its path. In the stored Boogie text, which is never
-/// loaded, a source path is replaced by its file name. Nothing stored this way is a location
-/// that a report prints: a module's results are replayed only when it reported nothing, and its
-/// tasks are bound to the current program's symbols.
+/// loaded, a source path is replaced by its file name. Report positions use the same declaration anchors to recover current file names and lines;
+/// replayed tasks are bound to the current program's symbols.
 /// </summary>
 internal sealed class SourceLocations {
   private static readonly ConditionalWeakTable<Program, SourceLocations> ForProgram = new();
@@ -27,10 +27,12 @@ internal sealed class SourceLocations {
   private readonly Dictionary<string, Enclosing[]> declarations = new(StringComparer.Ordinal);
   private readonly (string Text, string Label)[] paths;
   private readonly Dictionary<string, Uri?> files = new(StringComparer.Ordinal);
+  private readonly Lazy<Dictionary<string, (Uri Uri, Enclosing Span)?>> reportAnchors;
 
   private readonly record struct Enclosing(int Start, int End, int Line, string Name);
 
   private SourceLocations(Program program) {
+    reportAnchors = new Lazy<Dictionary<string, (Uri, Enclosing)?>>(BuildReportAnchors);
     foreach (var file in program.Files) {
       var uri = file.Origin.Uri;
       if (uri == null || labels.ContainsKey(uri.ToString())) { continue; }
@@ -93,6 +95,69 @@ internal sealed class SourceLocations {
       if (path.Length != 0) { text = text.Replace(path, label, StringComparison.Ordinal); }
     }
     return text;
+  }
+
+  // A description containing a source name could derive that name from the current checkout.
+  // Leave such reports on the fresh path instead of guessing how to rewrite their prose.
+  internal bool PortableReportText(string? text) => text == null ||
+    !files.Keys.Any(name => name.Length != 0 && text.Contains(name, StringComparison.Ordinal));
+
+  private Dictionary<string, (Uri, Enclosing)?> BuildReportAnchors() {
+    var result = new Dictionary<string, (Uri, Enclosing)?>(StringComparer.Ordinal);
+    foreach (var (file, spans) in declarations) {
+      foreach (var span in spans) {
+        var value = (new Uri(file), span);
+        result[span.Name] = result.TryGetValue(span.Name, out var known) && known != value ? null : value;
+      }
+    }
+    return result;
+  }
+
+  internal ReportPosition? Report(Microsoft.Boogie.IToken token) {
+    // The graph fingerprint deliberately erases Boogie's printing-buffer coordinates.
+    // These cannot be restored as report locations under that same identity.
+    if (token is not IOrigin && (string.IsNullOrEmpty(token.filename) || token.filename.StartsWith('<'))) { return null; }
+    var uri = token is IOrigin origin ? origin.Uri : File(token.filename ?? "");
+    if (uri == null || !labels.ContainsKey(uri.ToString())) {
+      // The graph fingerprint retains literal coordinates for tokens outside this program.
+      return new ReportPosition("", "", token.line, token.col, token.pos, ReportFilename.Literal, token.filename);
+    }
+    var filename = token.filename == Path.GetFileName(uri.LocalPath) ? ReportFilename.Basename
+      : token.filename == uri.LocalPath ? ReportFilename.Path
+      : token.filename == uri.ToString() ? ReportFilename.Uri : (ReportFilename?)null;
+    if (filename == null) { return null; }
+    var (anchor, line, offset) = Relative(uri, token.line, token.pos);
+    return new ReportPosition(anchor, anchor.Length == 0 ? Label(uri) : "", line, token.col, offset, filename.Value, null);
+  }
+
+  internal VerificationAssertionReport? Report(ReportPosition position, string? description) {
+    if (position.Anchor == null || position.File == null) { return null; }
+    if (position.Filename == ReportFilename.Literal) {
+      return position.Anchor.Length == 0 && position.File.Length == 0
+        ? new VerificationAssertionReport(position.Literal, position.Line, position.Column, description) : null;
+    }
+    Uri? uri;
+    var line = position.Line;
+    if (position.Anchor.Length != 0) {
+      if (!reportAnchors.Value.TryGetValue(position.Anchor, out var binding) || binding == null ||
+          position.Line < 0 || position.Offset < 0 || position.Offset > binding.Value.Span.End - binding.Value.Span.Start) {
+        return null;
+      }
+      uri = binding.Value.Uri;
+      if (position.Line > int.MaxValue - binding.Value.Span.Line) { return null; }
+      line += binding.Value.Span.Line;
+    } else {
+      var matches = labels.Where(p => p.Value == position.File).Select(p => p.Key).Take(2).ToList();
+      if (matches.Count != 1) { return null; }
+      uri = new Uri(matches[0]);
+    }
+    var filename = position.Filename switch {
+      ReportFilename.Basename => Path.GetFileName(uri.LocalPath),
+      ReportFilename.Path => uri.LocalPath,
+      ReportFilename.Uri => uri.ToString(),
+      _ => null
+    };
+    return filename == null ? null : new VerificationAssertionReport(filename, line, position.Column, description);
   }
 
   /// <summary>

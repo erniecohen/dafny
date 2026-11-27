@@ -1,0 +1,44 @@
+name: Transfer an artifact between jobs
+description: Use a shared host directory when configured, otherwise GitHub artifacts
+inputs:
+  mode:
+    description: put or get
+    required: true
+  name:
+    description: Artifact name, unique within the run
+    required: true
+  path:
+    description: Single file or directory to put, or destination directory for get
+    default: '.'
+  retention-days:
+    description: GitHub retention (empty uses repository default); host retention defaults to 3
+  include-hidden-files:
+    description: Include hidden files, matching upload-artifact's default when false
+    default: 'false'
+runs:
+  using: composite
+  steps:
+    - name: Select and run artifact transport
+      id: transport
+      shell: bash
+      env:
+        ARTIFACT_MODE: ${{ inputs.mode }}
+        ARTIFACT_NAME: ${{ inputs.name }}
+        ARTIFACT_PATH: ${{ inputs.path }}
+        ARTIFACT_RETENTION_DAYS: ${{ inputs.retention-days }}
+        ARTIFACT_INCLUDE_HIDDEN_FILES: ${{ inputs.include-hidden-files }}
+        ARTIFACT_ACTION_PATH: ${{ github.action_path }}
+      run: python3 "$ARTIFACT_ACTION_PATH/host-artifact.py"
+    - uses: actions/upload-artifact@v4
+      if: steps.transport.outputs.backend == 'github' && inputs.mode == 'put'
+      with:
+        name: ${{ inputs.name }}
+        path: ${{ inputs.path }}
+        if-no-files-found: error
+        include-hidden-files: ${{ inputs.include-hidden-files }}
+        retention-days: ${{ inputs.retention-days }}
+    - uses: actions/download-artifact@v4
+      if: steps.transport.outputs.backend == 'github' && inputs.mode == 'get'
+      with:
+        name: ${{ inputs.name }}
+        path: ${{ inputs.path }}
