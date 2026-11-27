@@ -116,8 +116,8 @@ public class HistoryFreeTranslationTests {
     var commands = new List<string>();
     options.CreateSolver = (_, _) => new CommandCapture(commands);
     using var engine = new ExecutionEngine(options, new EmptyVerificationResultCache(), TaskScheduler.Default);
-    var module = program.RawModules().Single(m => m.Name == "Client");
-    var graph = suppliedGraph ?? new BoogieGenerator(program.Reporter, new ProofDependencyManager(), new(options)).DoTranslation(program, module);
+    var graph = suppliedGraph ?? new BoogieGenerator(program.Reporter, new ProofDependencyManager(), new(options))
+      .DoTranslation(program, program.RawModules().Single(m => m.Name == "Client"));
     var tasks = await engine.GetVerificationTasks(graph, default);
     Assert.NotEmpty(tasks);
     foreach (var task in tasks) { await task.TryRun()!.LastAsync(); }

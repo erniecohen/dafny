@@ -508,9 +508,11 @@ public sealed class VerificationPreparationPipeline : IDisposable {
       // Translator hints (Info) are printed only with tooltips, which every key includes; a
       // translation whose only reports are hints that this run does not print is silent.
       var reported = reporter.AllMessages.Where(m => m.Level != ErrorLevel.Info || program.Options.PrintTooltips).ToList();
-      text = copied && reported.Count == 0 ? ModuleTranslationCache.Emit(snapshot, program.Options) : null;
+      var complete = TranslationGlobalInputs.For(program, moduleDefinition) is not { Complete: false };
+      text = copied && reported.Count == 0 && complete ? ModuleTranslationCache.Emit(snapshot, program.Options) : null;
       unrecorded = !copied ? "unsupported graph: " + cloneFailure
-        : reported.Count != 0 ? "translation diagnostics (" + reported[0].Level + ")" : null;
+        : reported.Count != 0 ? "translation diagnostics (" + reported[0].Level + ")"
+        : !complete ? "unlisted global input" : null;
     }
     // The unprepared graph: preparation mutates it.
     string? unfingerprinted = null;

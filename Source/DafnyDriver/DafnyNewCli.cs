@@ -166,6 +166,13 @@ public static class DafnyNewCli {
         return;
       }
 
+      if (dafnyOptions.Get(CommonOptionBag.TranslationGlobalInputs) &&
+          !dafnyOptions.Get(CommonOptionBag.TypeSystemRefresh)) {
+        await dafnyOptions.OutputWriter.Status("Error: --translation-global-inputs requires --type-system-refresh");
+        context.ExitCode = (int)ExitValue.DAFNY_ERROR;
+        return;
+      }
+
       if (dafnyOptions.Get(CommonOptionBag.TranslationCache) &&
           !dafnyOptions.Get(CommonOptionBag.TypeSystemRefresh)) {
         await dafnyOptions.OutputWriter.Status("Error: --translation-cache requires --type-system-refresh");

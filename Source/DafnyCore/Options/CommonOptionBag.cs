@@ -83,6 +83,10 @@ public class CommonOptionBag {
   public static readonly Option<bool> TranslationCache = new("--translation-cache",
     "Reuse module translations in this process using semantic resolution keys. " +
     "Requires --type-system-refresh. Uses the default module-scoped translator. Stores no files or verification results.");
+  public static readonly Option<bool> TranslationGlobalInputs = new("--translation-global-inputs",
+    "Freeze current modular-termination classifications into module translation identities, allowing eligible " +
+    "--translation-cache and --persistent-translation hits when modular termination is active. Requires --type-system-refresh. " +
+    "Unsupported global reads run normally without publishing a translation snapshot.");
   public static readonly Option<bool> PersistentTranslation = new("--persistent-translation",
     "Also keep module translations and whole-module results in the --verification-cache directory, across processes. " +
     "Requires --verification-cache and --type-system-refresh. A module whose translation key is unchanged is not translated again, " +
@@ -1010,6 +1014,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
     });
     OptionRegistry.RegisterOption(ResolutionThreads, OptionScope.Cli);
     OptionRegistry.RegisterOption(TranslationCache, OptionScope.Cli);
+    OptionRegistry.RegisterOption(TranslationGlobalInputs, OptionScope.Cli);
     OptionRegistry.RegisterOption(PersistentTranslation, OptionScope.Cli);
     OptionRegistry.RegisterOption(PersistentTranslationAudit, OptionScope.Cli);
     OptionRegistry.RegisterOption(PersistentCounterexamples, OptionScope.Cli);

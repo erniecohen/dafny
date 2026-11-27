@@ -393,6 +393,19 @@ Various options control the verification process, in addition to all those descr
   Modular termination, counterexample extraction and unsupported graph metadata
   recompute through the default materialization path.
 
+- `--translation-global-inputs` requires `--type-system-refresh` and is off by
+  default. With `--translation-cache` or `--persistent-translation`, it allows
+  eligible translations with active modular termination to be reused. Before
+  lookup, it freezes the current dispatch, argument-only and dispatch-reachability
+  classifications for the resolved members and caller views in the module's
+  dependency closure. Both positive and negative answers enter the translation
+  identity; the translator consumes those same frozen answers. An unlisted read
+  uses the native analysis and prevents snapshot publication. External plugins,
+  generated test runners and ambiguous declaration views remain ineligible.
+  Current global admission and diagnostics still run, and
+  `--persistent-translation-audit` compares stored translations and results with
+  independently verified current output. Local resolution keys remain unchanged.
+
 - `--persistent-translation` ([#261](https://github.com/erniecohen/dafny/issues/261))
   keeps two more tables in the `--verification-cache` directory, across processes,
   and requires both `--verification-cache` and `--type-system-refresh`. The

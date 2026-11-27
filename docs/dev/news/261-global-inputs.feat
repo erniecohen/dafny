@@ -1,0 +1,1 @@
+Add opt-in --translation-global-inputs to cache eligible module translations with frozen current modular-termination classifications. Unsupported reads retain native translation without publishing a snapshot.

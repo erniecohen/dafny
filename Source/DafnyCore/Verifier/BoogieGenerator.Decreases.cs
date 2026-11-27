@@ -247,10 +247,9 @@ public partial class BoogieGenerator {
     if (!ModularTerminationActive || codeContext is not ICallable caller) {
       return;
     }
-    var analysis = ModularTerminationAnalysis.Of(program);
-    var dispatched = ModularTermination.IsOpenDispatch(callee, analysis.OpenTraits);
-    if (!dispatched && (analysis.AppliesOnlyItsArguments(callee) ||
-                        !analysis.ReachesOpenDispatch(callee, caller.EnclosingModule))) {
+    var facts = TranslationTerminationFacts(callee, caller.EnclosingModule);
+    var dispatched = facts.Dispatch;
+    if (!dispatched && (facts.ArgumentsOnly || !facts.ReachesDispatch)) {
       return;
     }
     var calleeBound = GlobalBound((ICallable)callee);
@@ -307,9 +306,9 @@ public partial class BoogieGenerator {
       // A lemma without a bound runs under TOP, and so may any call it makes.
       return null;
     }
-    var analysis = ModularTerminationAnalysis.Of(program);
-    var dispatched = ModularTermination.IsOpenDispatch(m, analysis.OpenTraits);
-    if (!dispatched && !analysis.ReachesOpenDispatch(m, ((ICallable)m).EnclosingModule)) {
+    var facts = TranslationTerminationFacts(m, ((ICallable)m).EnclosingModule);
+    var dispatched = facts.Dispatch;
+    if (!dispatched && !facts.ReachesDispatch) {
       return null;
     }
     return delegate (Dictionary<IVariable, Expression> renaming, ExpressionTranslator exprTran) {
@@ -331,6 +330,15 @@ public partial class BoogieGenerator {
       return BplImp(canCalls,
         DecreasesCheck(toks, null, instanceDafny, bound, instance, own, null, null, !dispatched, false));
     };
+  }
+
+  private TranslationGlobalInputs translationGlobalInputs;
+
+  private TranslationGlobalInputs.Facts TranslationTerminationFacts(MemberDecl member, ModuleDefinition caller) {
+    if (translationGlobalInputs != null) { return translationGlobalInputs.Read(member, caller); }
+    var analysis = ModularTerminationAnalysis.Of(program);
+    return new TranslationGlobalInputs.Facts(ModularTermination.IsOpenDispatch(member, analysis.OpenTraits),
+      analysis.AppliesOnlyItsArguments(member), analysis.ReachesOpenDispatch(member, caller));
   }
 
   /// <summary>

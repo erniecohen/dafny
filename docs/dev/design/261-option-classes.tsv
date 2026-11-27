@@ -196,6 +196,7 @@ track-print-effects	miss	miss	miss	false | true
 trait-rank-decreases	miss	miss	miss	false | true	
 translate-standard-library	n/a	n/a	n/a	-	not an option of verify
 translation-cache	hit	hit	hit	false | true	in-process reuse of translations, which yields the same Boogie programs
+translation-global-inputs	hit	hit	hit	false | true	freezes current global answers for a later translation identity; changes no local resolution or solver result
 translation-workers	hit	hit	hit	1 | 2	scheduling only: translations commit in arrival order, and one and many workers yield the same Boogie programs and solver input
 translation-workers-stress	hit	hit	hit	0 | 5	test-only delays of translation scheduling, which change no translation
 translation-record	n/a	n/a	n/a	-	not an option of verify
