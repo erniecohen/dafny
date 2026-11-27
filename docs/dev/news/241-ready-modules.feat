@@ -1,0 +1,1 @@
+Add experimental hidden `--ready-module-verification` to let translated modules prepare and submit proof tasks as soon as they are ready. Requires parallel translation, a module window greater than one and a fresh solver per proof; results and diagnostics retain module order.

@@ -23,6 +23,22 @@ namespace IntegrationTests;
 [Collection("Verification batch")]
 public class ModuleWindowTests {
 
+  [Fact]
+  public async Task ReadyModulesKeepResultsDiagnosticsAndResourcesWithDelayedPreparation() {
+    using var directory = new TemporaryDirectory();
+    var source = directory.Write("input.dfy", Program());
+    Task Delay(ModuleDefinition module, CancellationToken token) =>
+      module.Name == "M0" ? Task.Delay(400, token) : Task.CompletedTask;
+    var baseline = await Verify(source, 4, Delay, parallel: true);
+    var ready = await Verify(source, 4, Delay, ready: true);
+    Assert.Equal(ExitValue.VERIFICATION_ERROR, baseline.Exit);
+    Assert.Equal(baseline.Exit, ready.Exit);
+    Assert.Equal(baseline.Output, ready.Output);
+    Assert.Equal(baseline.Results, ready.Results);
+    Assert.Equal(2, ready.Results.Count(r => r.Contains("Invalid")));
+    Assert.Contains(ready.Results, r => r.Contains("Valid"));
+  }
+
   // Eight modules.  M1 and M5 have a failing lemma; M3 has no symbol to verify; M2 and M6
   // have slower proofs (nonlinear arithmetic), so that later modules finish before them.
   private static string Program() {
@@ -100,9 +116,11 @@ public class ModuleWindowTests {
   }
 
   [Theory]
-  [InlineData(true)]
-  [InlineData(false)]
-  public async Task FailureInLaterModuleWhileEarlierOnesRunIsReportedAsWithOneModule(bool proverFailure) {
+  [InlineData(true, false)]
+  [InlineData(false, false)]
+  [InlineData(true, true)]
+  [InlineData(false, true)]
+  public async Task FailureInLaterModuleWhileEarlierOnesRunIsReportedAsWithOneModule(bool proverFailure, bool ready) {
     using var directory = new TemporaryDirectory();
     var source = directory.Write("input.dfy", Program());
     // M4's preparation fails while M2, slower, is still in verification.  The earlier modules'
@@ -111,8 +129,8 @@ public class ModuleWindowTests {
       module.Name == "M4"
         ? Task.FromException(proverFailure ? new ProverException("the solver failed") : new InvalidOperationException("broken"))
         : Task.CompletedTask;
-    var baseline = await Verify(source, 1, Fail);
-    var windowed = await Verify(source, 4, Fail);
+    var baseline = await Verify(source, 1, Fail, parallel: ready);
+    var windowed = await Verify(source, 4, Fail, ready: ready);
     Assert.Equal(baseline.Results, windowed.Results);
     // An internal error prints its stack trace, whose frames name the loop that awaited it.
     Assert.Equal(WithoutStackFrames(WithoutInternalExceptionStatus(baseline.Output)),
@@ -152,8 +170,10 @@ public class ModuleWindowTests {
     Assert.StartsWith("M0.", windowed.Results[0]);
   }
 
-  [Fact]
-  public async Task CancellationDuringPreparationOfALaterModule() {
+  [Theory]
+  [InlineData(false)]
+  [InlineData(true)]
+  public async Task CancellationDuringPreparationOfALaterModule(bool ready) {
     using var directory = new TemporaryDirectory();
     var source = directory.Write("input.dfy", Program());
     var preparing = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -164,6 +184,9 @@ public class ModuleWindowTests {
       }
     }
     var options = Options(source, 4);
+    options.Set(CommonOptionBag.ReadyModuleVerification, ready);
+    options.Set(CommonOptionBag.TranslationWorkers, 4);
+    options.Set(CommonOptionBag.TypeSystemRefresh, true);
     var cli = CliCompilation.Create(options, new HookedVerifier(Block));
     using var compilation = cli.Compilation;
     cli.Start();
@@ -181,9 +204,14 @@ public class ModuleWindowTests {
   }
 
   private static async Task<Run> Verify(string source, int window,
-    Func<ModuleDefinition, CancellationToken, Task>? hook = null, uint memoryMiB = 0) {
+    Func<ModuleDefinition, CancellationToken, Task>? hook = null, uint memoryMiB = 0, bool ready = false, bool parallel = false) {
     var output = new StringWriter();
     var options = Options(source, window, output);
+    if (ready || parallel) {
+      options.Set(CommonOptionBag.ReadyModuleVerification, ready);
+      options.Set(CommonOptionBag.TranslationWorkers, 4);
+      options.Set(CommonOptionBag.TypeSystemRefresh, true);
+    }
     if (memoryMiB != 0) {
       options.Set(VerifyCommand.VerificationModuleWindowMemory, memoryMiB);
     }
@@ -230,7 +258,7 @@ public class ModuleWindowTests {
     // API construction does not populate the CLI option defaults.
     options.Set(CommonOptionBag.UnicodeCharacters, true);
     options.Set(VerifyCommand.VerificationModuleWindow, (uint)window);
-    options.VcsCores = 4;
+    options.VcsCores = 2;
     // Contract (b) of issue 241: per-proof SMT input and resource counts are compared between K = 1
     // and K > 1 only with a fresh solver per proof and deterministic literal hashes.
     options.RestartProverPerVC = true;

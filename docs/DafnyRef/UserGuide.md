@@ -640,6 +640,28 @@ prints, traces, emits debug information, verifies snapshots or selects a type
 encoding other than the default. It composes with `--resolution-threads` and
 `--translation-cache`.
 
+The opt-in `--optimize-translation-copy` generates field-copy routines for the
+Boogie module graphs that `dafny verify` materializes before preparation. It
+reduces reflection work even with one translation worker, and works with both
+type systems, `--translation-cache`, and persistent translation recording.
+It preserves field traversal order, graph aliases, fresh node identities and
+expression hashes, so Boogie text, diagnostics, solver input, verdicts and
+resource counts are unchanged. The routines retain type metadata only. Runtimes
+without dynamic code support use the existing reflection copier. The default
+is false.
+
+
+The experimental hidden `--ready-module-verification` removes the dependency on earlier
+modules at translation commit and proof-task submission. Each ready module can prepare
+and submit its proofs while an earlier module is still translating or preparing. It is
+off by default and requires `--translation-workers` and `--verification-module-window`
+greater than one, together with `--boogie /restartProver`. The fresh solver requirement
+keeps each proof's solver history independent of submission order. Solver concurrency
+remains bounded by `--cores`, and module admission keeps the same memory budget.
+Captures remain mutually exclusive and precede their own module's preparation; Boogie
+files keep the same names and contents. Results and diagnostics retain module order.
+Batch completion order in JSON logs can vary, including without this option.
+
 
 #### 13.6.1.4. `dafny translate <language>` {#sec-dafny-translate}
 
@@ -2939,6 +2961,8 @@ and what information it produces about the verification process.
   Boolean bridges at widths 8, 16, 32 and 64, independently of additional axioms.
   `IntegerBitwiseNativeShifts.dfy` adds checked shift and modular-addition equations
   at those widths, including shift counts zero and the width.
+  `IntegerBitwiseNativeSubtraction.dfy` adds checked modular-subtraction equations
+  at the same widths, including borrow and wraparound.
   Set `integer-bitwise = true` in the project file's `[options]` section;
   an enabled `.doo` library requires enabled clients. Declarations in an off-built
   library cannot use this compiler interface merely because the client enables

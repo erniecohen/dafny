@@ -370,6 +370,18 @@ public class Compilation : IDisposable {
 
   // When verifying a symbol, a ticket must be acquired before the SMT part of verification may start.
   private readonly AsyncQueue<Unit> verificationTickets = new();
+  private readonly ConcurrentDictionary<ModuleDefinition, AsyncQueue<Unit>> moduleVerificationTickets = new();
+
+  private AsyncQueue<Unit> VerificationTickets(ModuleDefinition module) {
+    if (!Options.Get(CommonOptionBag.ReadyModuleVerification) || !Options.RestartProverPerVC) {
+      return verificationTickets;
+    }
+    return moduleVerificationTickets.GetOrAdd(module, _ => {
+      var tickets = new AsyncQueue<Unit>();
+      tickets.Enqueue(Unit.Default);
+      return tickets;
+    });
+  }
   public async Task<bool> VerifyLocation(FilePosition verifiableLocation, Func<IVerificationWork, bool>? taskFilter = null,
     int? randomSeed = null,
     bool onlyPrepareVerificationForGutterTests = false) {
@@ -432,9 +444,10 @@ public class Compilation : IDisposable {
 
   private async Task VerifyUnverifiedSymbol(bool onlyPrepareVerificationForGutterTests, ICanVerify canVerify,
     ResolutionResult resolution, Func<IVerificationWork, bool> taskFilter, int? randomSeed) {
+    var tickets = VerificationTickets(canVerify.ContainingModule);
     try {
 
-      var ticket = verificationTickets.Dequeue();
+      var ticket = tickets.Dequeue();
       var containingModule = canVerify.ContainingModule;
 
       IReadOnlyDictionary<ICanVerify, IReadOnlyList<IVerificationWork>> tasksForModule;
@@ -469,7 +482,10 @@ public class Compilation : IDisposable {
         updated = true;
         return result;
       });
-      if (randomSeed != null && tasks.Any(task => !Caching.VerificationTaskFacts.HasSplit(BoogieVerificationReporting.GetTask(task)))) {
+      // Portable Boogie reports need native preparation for a different seed. Other backend
+      // work keeps its own FromSeed implementation and need not carry Boogie task evidence.
+      if (randomSeed != null && tasks.Any(task => task.Payload is BoogieVerificationTask nativeTask &&
+          !Caching.VerificationTaskFacts.HasSplit(nativeTask.NativeTask))) {
         var native = await verifier.GetVerificationTasksAsync(createPreparationRequest(resolution, containingModule) with {
           RequiresNativeTasks = true, AcceptsCachedIdeReports = false
         }, resolution, containingModule, cancellationSource.Token);
@@ -481,7 +497,7 @@ public class Compilation : IDisposable {
         updates.OnNext(new CanVerifyPartsIdentified(canVerify, tasks));
       }
 
-      // When multiple calls to VerifyUnverifiedSymbol are made, the order in which they pass this await matches the call order.
+      // Preserve call order globally by default, or within each module with ready-module verification.
       await ticket;
 
       if (!onlyPrepareVerificationForGutterTests) {
@@ -506,7 +522,7 @@ public class Compilation : IDisposable {
 
     }
     finally {
-      verificationTickets.Enqueue(Unit.Default);
+      tickets.Enqueue(Unit.Default);
     }
   }
 
@@ -865,6 +881,7 @@ public class Compilation : IDisposable {
     translatedModules.TryGetValue(moduleDefinition, out var translation);
     translatedModules.Remove(moduleDefinition);
     moduleProofDependencies.TryRemove(moduleDefinition, out _);
+    moduleVerificationTickets.TryRemove(moduleDefinition, out _);
     if (translation is { IsCompletedSuccessfully: true }) {
       ReleaseBoogiePrograms(translation.Result.Values.SelectMany(tasks => tasks));
     }

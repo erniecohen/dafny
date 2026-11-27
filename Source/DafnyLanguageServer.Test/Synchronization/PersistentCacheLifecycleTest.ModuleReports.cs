@@ -121,9 +121,10 @@ public partial class PersistentCacheLifecycleTest {
   }
 
   [Theory]
-  [InlineData(1)]
-  [InlineData(2)]
-  public async Task WholeModuleReportsPreserveGuttersHoversAndResources(int workers) {
+  [InlineData(1, false)]
+  [InlineData(2, false)]
+  [InlineData(2, true)]
+  public async Task WholeModuleReportsPreserveGuttersHoversAndResources(int workers, bool ready) {
     var directory = GetFreshTempPath();
     Directory.CreateDirectory(directory);
     var file = Path.Combine(directory, "input.dfy");
@@ -132,9 +133,15 @@ public partial class PersistentCacheLifecycleTest {
     var cache = Path.Combine(directory, "cache");
     string[]? expected = null, trees = null, hovers = null, seeded = null;
     foreach (var phase in new[] { "fresh", "cold", "warm", "audit" }) {
-      await Start(phase == "fresh" ? "" : cache, workers, audit: phase == "audit", ideReports: phase != "fresh");
+      await Start(phase == "fresh" ? "" : cache, workers, audit: phase == "audit", ideReports: phase != "fresh", ready: ready);
       var document = await CreateOpenAndWaitForResolve(ReportSource, file);
       var state = await CompleteReports(document, phase);
+      if (ready) {
+        var program = (Program)state.ResolvedProgram!;
+        Assert.True(program.Options.Get(CommonOptionBag.ReadyModuleVerification));
+        Assert.True(program.Options.RestartProverPerVC);
+        Assert.Equal(workers, VerificationPreparationPipeline.TranslationWorkers(program, out _));
+      }
       expected ??= ReportFacts(state);
       trees ??= TreeFacts(state);
       hovers ??= await Hovers(document, state);
@@ -166,7 +173,8 @@ public partial class PersistentCacheLifecycleTest {
         var failedOracle = ReportFacts(failed);
         Projects.Dispose();
         await client.Shutdown();
-        await Start(cache, workers, ideReports: false);
+        // Opting out must retain native tasks even with complete failed reports stored.
+        await Start(cache, workers, ideReports: false, ready: ready);
         document = await CreateOpenAndWaitForResolve(Negative, file);
         var failedWarm = await CompleteReports(document, "failed warm");
         Assert.Equal(failedOracle, ReportFacts(failedWarm));

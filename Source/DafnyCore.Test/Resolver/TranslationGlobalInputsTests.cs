@@ -30,11 +30,13 @@ public class TranslationGlobalInputsTests {
     }
     """;
 
-  private static Task<Program> Resolve(string source = Source, string? unrelated = null, bool enabled = true) =>
-    ModuleTranslationCacheTests.Resolve(source, unrelated, refresh: true, modularTermination: true, globalInputs: enabled);
+  private static Task<Program> Resolve(string source = Source, string? unrelated = null, bool enabled = true, bool optimizeCopy = false) =>
+    ModuleTranslationCacheTests.Resolve(source, unrelated, refresh: true, modularTermination: true, globalInputs: enabled, optimizeCopy: optimizeCopy);
 
-  [Fact]
-  public async Task FrozenColdAndWarmObligationsAndRawSmtEqualNative() {
+  [Theory]
+  [InlineData(false)]
+  [InlineData(true)]
+  public async Task FrozenColdAndWarmObligationsAndRawSmtEqualNative(bool optimizeCopy) {
     var cache = new ModuleTranslationCache();
     foreach (var name in new[] { "A", "M" }) {
       var native = await Resolve(enabled: false);
@@ -43,9 +45,12 @@ public class TranslationGlobalInputsTests {
       var text = ModuleTranslationCache.Emit(graph, native.Options);
       var commands = await HistoryFreeTranslationTests.CaptureCommands(native, graph);
       foreach (var warm in new[] { false, true }) {
-        var program = await Resolve();
+        var program = await Resolve(optimizeCopy: optimizeCopy);
         var next = program.RawModules().Single(m => m.Name == name);
+        var clones = BoogieSnapshotCloner.OptimizedClones;
         var actual = cache.Translate(program, next, new(program.Options), default, out var reused);
+        Assert.Equal(clones + (optimizeCopy && System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported ? 1 : 0),
+          BoogieSnapshotCloner.OptimizedClones);
         Assert.True(cache.Bypasses == 0, cache.LastBypassReason);
         Assert.Equal(warm, reused);
         Assert.Equal(text, ModuleTranslationCache.Emit(actual, program.Options));
@@ -198,12 +203,14 @@ public class TranslationGlobalInputsTests {
   }
 
   [Theory]
-  [InlineData(false)]
-  [InlineData(true)]
-  public async Task UnlistedTranslationReadCannotPublishPersistentSnapshot(bool inProcess) {
+  [InlineData(false, false)]
+  [InlineData(false, true)]
+  [InlineData(true, false)]
+  [InlineData(true, true)]
+  public async Task UnlistedTranslationReadCannotPublishPersistentSnapshot(bool inProcess, bool optimizeCopy) {
     var directory = Path.Combine(Path.GetTempPath(), "global-inputs-" + Guid.NewGuid());
     try {
-      var program = await Resolve();
+      var program = await Resolve(optimizeCopy: optimizeCopy);
       program.Options.Set(CommonOptionBag.TranslationCache, inProcess);
       program.Options.Set(CommonOptionBag.PersistentTranslation, true);
       program.Options.Set(CommonOptionBag.VerificationCache, directory);
@@ -224,6 +231,7 @@ public class TranslationGlobalInputsTests {
       var persistent = Microsoft.Dafny.Caching.PersistentModuleCache.TryFor(program.Options)!;
       Assert.NotNull(persistent);
       Assert.Equal(0, persistent.TranslationPublications);
+      Assert.Equal(0, ModuleTranslationCache.ProcessCache.EntryCount);
       Assert.Contains(persistent.UnrecordedReasons.Keys, reason => reason.Contains("unlisted") || reason.Contains("not snapshotted"));
     } finally {
       ModuleTranslationCache.ProcessCache.Clear();

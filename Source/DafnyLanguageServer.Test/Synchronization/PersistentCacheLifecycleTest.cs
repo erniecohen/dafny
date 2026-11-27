@@ -30,7 +30,7 @@ public partial class PersistentCacheLifecycleTest : ClientBasedLanguageServerTes
 
   private Task Start(string cache, int workers, bool audit = false,
     VerifyOnMode verifyOn = VerifyOnMode.Change, uint legacyCache = 0, bool reuseSolvers = false, bool ideReports = false,
-    bool resolutionCache = true, int errorLimit = 5, string? profile = null) => SetUp(options => {
+    bool resolutionCache = true, int errorLimit = 5, string? profile = null, bool ready = false) => SetUp(options => {
     options.Set(ProjectManager.Verification, verifyOn);
     options.Set(LanguageServer.VerifySnapshots, legacyCache);
     options.Set(ProjectManager.ReuseSolvers, reuseSolvers);
@@ -43,6 +43,8 @@ public partial class PersistentCacheLifecycleTest : ClientBasedLanguageServerTes
     options.Set(CommonOptionBag.ResolutionCacheCheck, resolutionCache && cache.Length != 0);
     if (profile != null) { options.Set(CommonOptionBag.PipelineProfile, profile); }
     options.Set(CommonOptionBag.TranslationWorkers, workers);
+    options.Set(CommonOptionBag.ReadyModuleVerification, ready);
+    if (ready) { options.RestartProverPerVC = true; }
     options.Set(BoogieOptionBag.Cores, 2U);
     options.Set(BoogieOptionBag.VerificationErrorLimit, errorLimit);
     options.ApplyBinding(BoogieOptionBag.VerificationErrorLimit);
