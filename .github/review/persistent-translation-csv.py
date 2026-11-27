@@ -97,7 +97,7 @@ assert audited["stats"]["keyHits"] == 0 and audited["translated"] == modules, au
 assert audited["stats"]["auditChecks"] >= 5 and audited["stats"]["auditMismatches"] == 0, audited["stats"]
 
 # Report eligibility is conjunctive. These loggers need a normal task graph; CSV remains equal.
-for logger in ("json", "text", "trx"):
+for logger in ("text", "trx"):
     mixed = run("mixed-" + logger, extra=("--log-format", logger + ";LogFileName=" + str(other_report)))
     # TRX includes a results-file status line, so compare the CSV and exit independently.
     assert mixed["facts"] == oracle["facts"] and mixed["output"][0] == oracle["output"][0], mixed

@@ -320,7 +320,7 @@ def replace(directory, index, entry, record):
 
 
 # Reports that only a fresh run produces replay nothing, and record as usual.
-logged = run("logged", extra=("--log-format", "json;LogFileName=" + str(destination / "logged.json")))
+logged = run("logged", extra=("--log-format", "text;LogFileName=" + str(destination / "logged.txt")))
 assert logged["output"][0] == cold["output"][0] and logged["translated"] == MODULES
 assert logged["stats"]["keyHits"] == 0 and logged["stats"]["bypassReason"] == "verification logs", logged["stats"]
 
