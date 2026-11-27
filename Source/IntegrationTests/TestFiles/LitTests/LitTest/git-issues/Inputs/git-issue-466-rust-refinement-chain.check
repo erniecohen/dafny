@@ -1,0 +1,1 @@
+// CHECK: Rust cannot compile extern type 'Native' in refining module 'Final' above a recursive module group: foreign imports and generated implementations are not remapped for refinement

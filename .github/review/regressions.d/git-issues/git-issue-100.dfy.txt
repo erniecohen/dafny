@@ -1,0 +1,3 @@
+
+# Consistent obligation checks and project option precedence.
+git-issues/git-issue-100.dfy

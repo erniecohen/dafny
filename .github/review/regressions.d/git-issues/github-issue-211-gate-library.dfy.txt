@@ -1,0 +1,3 @@
+
+# Soundness gates of the plan for https://github.com/erniecohen/dafny/issues/211: (a) a library verified alone under --modular-termination is not invalidated by a later extension, with both resolvers; (b) every context in which code runs is ordered by the rules, one marked member per context.
+git-issues/github-issue-211-gate-library.dfy

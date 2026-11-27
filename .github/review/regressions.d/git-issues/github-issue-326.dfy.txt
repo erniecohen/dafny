@@ -1,0 +1,3 @@
+
+# Rank of arrow-typed datatype fields under --additional-axioms (https://github.com/erniecohen/dafny/issues/326).
+git-issues/github-issue-326.dfy

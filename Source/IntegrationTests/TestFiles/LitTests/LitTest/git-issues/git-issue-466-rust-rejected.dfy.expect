@@ -1,15 +1,17 @@
 
 Dafny program verifier did not attempt verification
-git-issue-466-rust-rejected.dfy(7,17): Error: Rust compilation of recursive module groups with extern declarations is not yet supported
-Translation was aborted because errors were found
+(0,-1): Error: Unsupported Invalid Operation: Externs on modules can only have 1 string argument
 
 Dafny program verifier did not attempt verification
-git-issue-466-rust-extern-type.dfy(1,7): Error: Rust compilation of recursive module groups with extern declarations is not yet supported
-Translation was aborted because errors were found
+(0,-1): Error: Unsupported Invalid Operation: Multi-argument externs not supported for classes yet
 
 Dafny program verifier did not attempt verification
-git-issue-466-rust-extern-member.dfy(1,7): Error: Rust compilation of recursive module groups with extern declarations is not yet supported
-Translation was aborted because errors were found
+(0,-1): Error: Unsupported Invalid Operation: Error: In the class _dafny_recursive_group_Foreign.Foreign.Native, some proper methods of crate::Foreign::T are marked {:extern} and some are not. For the Rust compiler, please make all methods (F, G)  bodiless and mark as {:extern} and implement them in a Rust file, or mark none of them as {:extern} and implement them in Dafny. Alternatively, you can insert an intermediate trait that performs the partial implementation if feasible.
 
 Dafny program verifier did not attempt verification
 git-issue-466-java-client.dfy(10,17): Error: Unsupported Invalid Operation: Rust compilation of recursive module groups requires explicit array initialization
+
+Dafny program verifier did not attempt verification
+git-issue-466-rust-extern-refinement.dfy(3,27): Error: Rust cannot compile extern type 'Native' in refining module 'Refined' above a recursive module group: foreign imports and generated implementations are not remapped for refinement
+git-issue-466-rust-extern-refinement.dfy(9,7): Related location: refining module
+Translation was aborted because errors were found
