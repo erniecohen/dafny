@@ -1,0 +1,49 @@
+
+Dafny program verifier finished with 26 verified, 0 errors
+
+Dafny program verifier finished with 26 verified, 0 errors
+
+Dafny program verifier finished with 26 verified, 0 errors
+git-issue-374-partial-restrict-negative.dfy(7,2): Error: assertion might not hold
+git-issue-374-partial-restrict-negative.dfy(14,2): Error: assertion might not hold
+git-issue-374-partial-restrict-negative.dfy(21,2): Error: assertion might not hold
+git-issue-374-partial-restrict-negative.dfy(28,2): Error: assertion might not hold
+git-issue-374-partial-restrict-negative.dfy(35,2): Error: assertion might not hold
+git-issue-374-partial-restrict-negative.dfy(41,2): Error: assertion might not hold
+git-issue-374-partial-restrict-negative.dfy(47,2): Error: assertion might not hold
+git-issue-374-partial-restrict-negative.dfy(56,35): Error: a precondition for this call could not be proved
+Partial.dfy(59,24): Related location: this is the precondition that could not be proved
+git-issue-374-partial-restrict-negative.dfy(62,9): Error: function precondition could not be proved
+
+Dafny program verifier finished with 15 verified, 9 errors
+git-issue-374-partial-restrict-malformed.dfy(3,68): Error: {:functionDomain "partialRestrict"} expects a static ghost function with type parameters <A1, ..., An, B>, argument (f: (A1, ..., An) --> B), matching partial-arrow result, no older parameters or other specification, and body (x1: A1, ..., xn: An) requires f.requires(x1, ..., xn) => f(x1, ..., xn)
+git-issue-374-partial-restrict-malformed.dfy(4,68): Error: {:functionDomain "partialRestrict"} expects a static ghost function with type parameters <A1, ..., An, B>, argument (f: (A1, ..., An) --> B), matching partial-arrow result, no older parameters or other specification, and body (x1: A1, ..., xn: An) requires f.requires(x1, ..., xn) => f(x1, ..., xn)
+git-issue-374-partial-restrict-malformed.dfy(5,68): Error: {:functionDomain "partialRestrict"} expects a static ghost function with type parameters <A1, ..., An, B>, argument (f: (A1, ..., An) --> B), matching partial-arrow result, no older parameters or other specification, and body (x1: A1, ..., xn: An) requires f.requires(x1, ..., xn) => f(x1, ..., xn)
+git-issue-374-partial-restrict-malformed.dfy(6,68): Error: {:functionDomain "partialRestrict"} expects a static ghost function with type parameters <A1, ..., An, B>, argument (f: (A1, ..., An) --> B), matching partial-arrow result, no older parameters or other specification, and body (x1: A1, ..., xn: An) requires f.requires(x1, ..., xn) => f(x1, ..., xn)
+git-issue-374-partial-restrict-malformed.dfy(7,68): Error: {:functionDomain "partialRestrict"} expects a static ghost function with type parameters <A1, ..., An, B>, argument (f: (A1, ..., An) --> B), matching partial-arrow result, no older parameters or other specification, and body (x1: A1, ..., xn: An) requires f.requires(x1, ..., xn) => f(x1, ..., xn)
+git-issue-374-partial-restrict-malformed.dfy(8,68): Error: {:functionDomain "partialRestrict"} expects a static ghost function with type parameters <A1, ..., An, B>, argument (f: (A1, ..., An) --> B), matching partial-arrow result, no older parameters or other specification, and body (x1: A1, ..., xn: An) requires f.requires(x1, ..., xn) => f(x1, ..., xn)
+git-issue-374-partial-restrict-malformed.dfy(9,68): Error: {:functionDomain "partialRestrict"} expects a static ghost function with type parameters <A1, ..., An, B>, argument (f: (A1, ..., An) --> B), matching partial-arrow result, no older parameters or other specification, and body (x1: A1, ..., xn: An) requires f.requires(x1, ..., xn) => f(x1, ..., xn)
+git-issue-374-partial-restrict-malformed.dfy(10,68): Error: {:functionDomain "partialRestrict"} expects a static ghost function with type parameters <A1, ..., An, B>, argument (f: (A1, ..., An) --> B), matching partial-arrow result, no older parameters or other specification, and body (x1: A1, ..., xn: An) requires f.requires(x1, ..., xn) => f(x1, ..., xn)
+git-issue-374-partial-restrict-malformed.dfy(11,68): Error: {:functionDomain "partialRestrict"} expects a static ghost function with type parameters <A1, ..., An, B>, argument (f: (A1, ..., An) --> B), matching partial-arrow result, no older parameters or other specification, and body (x1: A1, ..., xn: An) requires f.requires(x1, ..., xn) => f(x1, ..., xn)
+git-issue-374-partial-restrict-malformed.dfy(5,150): Error: function precondition could not be proved
+git-issue-374-partial-restrict-malformed.dfy(6,118): Error: function precondition could not be proved
+git-issue-374-partial-restrict-malformed.dfy(10,108): Error: value does not satisfy the subset constraints of 'A -> B' (possible cause: it may be partial or have read effects)
+
+Dafny program verifier finished with 4 verified, 3 errors
+git-issue-374-partial-restrict-malformed.dfy(3,68): Error: {:functionDomain "partialRestrict"} expects a static ghost function with type parameters <A1, ..., An, B>, argument (f: (A1, ..., An) --> B), matching partial-arrow result, no older parameters or other specification, and body (x1: A1, ..., xn: An) requires f.requires(x1, ..., xn) => f(x1, ..., xn)
+git-issue-374-partial-restrict-malformed.dfy(4,68): Error: {:functionDomain "partialRestrict"} expects a static ghost function with type parameters <A1, ..., An, B>, argument (f: (A1, ..., An) --> B), matching partial-arrow result, no older parameters or other specification, and body (x1: A1, ..., xn: An) requires f.requires(x1, ..., xn) => f(x1, ..., xn)
+git-issue-374-partial-restrict-malformed.dfy(5,68): Error: {:functionDomain "partialRestrict"} expects a static ghost function with type parameters <A1, ..., An, B>, argument (f: (A1, ..., An) --> B), matching partial-arrow result, no older parameters or other specification, and body (x1: A1, ..., xn: An) requires f.requires(x1, ..., xn) => f(x1, ..., xn)
+git-issue-374-partial-restrict-malformed.dfy(6,68): Error: {:functionDomain "partialRestrict"} expects a static ghost function with type parameters <A1, ..., An, B>, argument (f: (A1, ..., An) --> B), matching partial-arrow result, no older parameters or other specification, and body (x1: A1, ..., xn: An) requires f.requires(x1, ..., xn) => f(x1, ..., xn)
+git-issue-374-partial-restrict-malformed.dfy(7,68): Error: {:functionDomain "partialRestrict"} expects a static ghost function with type parameters <A1, ..., An, B>, argument (f: (A1, ..., An) --> B), matching partial-arrow result, no older parameters or other specification, and body (x1: A1, ..., xn: An) requires f.requires(x1, ..., xn) => f(x1, ..., xn)
+git-issue-374-partial-restrict-malformed.dfy(8,68): Error: {:functionDomain "partialRestrict"} expects a static ghost function with type parameters <A1, ..., An, B>, argument (f: (A1, ..., An) --> B), matching partial-arrow result, no older parameters or other specification, and body (x1: A1, ..., xn: An) requires f.requires(x1, ..., xn) => f(x1, ..., xn)
+git-issue-374-partial-restrict-malformed.dfy(9,68): Error: {:functionDomain "partialRestrict"} expects a static ghost function with type parameters <A1, ..., An, B>, argument (f: (A1, ..., An) --> B), matching partial-arrow result, no older parameters or other specification, and body (x1: A1, ..., xn: An) requires f.requires(x1, ..., xn) => f(x1, ..., xn)
+git-issue-374-partial-restrict-malformed.dfy(10,68): Error: {:functionDomain "partialRestrict"} expects a static ghost function with type parameters <A1, ..., An, B>, argument (f: (A1, ..., An) --> B), matching partial-arrow result, no older parameters or other specification, and body (x1: A1, ..., xn: An) requires f.requires(x1, ..., xn) => f(x1, ..., xn)
+git-issue-374-partial-restrict-malformed.dfy(11,68): Error: {:functionDomain "partialRestrict"} expects a static ghost function with type parameters <A1, ..., An, B>, argument (f: (A1, ..., An) --> B), matching partial-arrow result, no older parameters or other specification, and body (x1: A1, ..., xn: An) requires f.requires(x1, ..., xn) => f(x1, ..., xn)
+git-issue-374-partial-restrict-malformed.dfy(5,150): Error: function precondition could not be proved
+git-issue-374-partial-restrict-malformed.dfy(6,118): Error: function precondition could not be proved
+git-issue-374-partial-restrict-malformed.dfy(10,108): Error: value does not satisfy the subset constraints of 'A -> B' (possible cause: it may be partial or have read effects)
+
+Dafny program verifier finished with 4 verified, 3 errors
+Dafny auditor completed with 0 findings
+
+Dafny program verifier did not attempt verification

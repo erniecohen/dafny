@@ -1,0 +1,2 @@
+# Ordinary text/TRX reports from persistent module results (issue 261).
+git-issues/git-issue-261-persistent-reports.dfy

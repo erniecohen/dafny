@@ -2,6 +2,7 @@
 from contextlib import ExitStack
 import fcntl
 import importlib.util
+import io
 import json
 import os
 from pathlib import Path
@@ -12,6 +13,7 @@ import tempfile
 import time
 import unittest
 from unittest.mock import patch
+from contextlib import redirect_stdout
 
 ACTION = Path(__file__).resolve().parents[1] / 'actions/self-hosted-job'
 spec = importlib.util.spec_from_file_location('budget_admission', ACTION / 'admit.py')
@@ -83,6 +85,140 @@ class AdmissionFixture(unittest.TestCase):
         self.assertIsNone(stream)
         self.assertTrue(reason.startswith(category), reason)
         self.assert_free('budget.lock')
+
+
+class WaitingClientTests(AdmissionFixture):
+    NOW = 200000
+
+    def waiting(self, name=None, **changes):
+        data = dict(pid=os.getpid(), declared_mb=9000, expected_mb=9000, source='caller',
+                    project='example', kind='heavy_step', started=self.NOW - 20,
+                    waiting_since=self.NOW - 10)
+        data.update(changes)
+        path = self.locks / (name or f'heavy-waiting.{data["pid"]}.json')
+        temporary = path.with_suffix('.tmp')
+        temporary.write_text(json.dumps(data))
+        temporary.replace(path)
+        return path
+
+    def test_live_waiter_blocks_new_ci_only_and_removal_admits(self):
+        running = self.take()
+        with patch.object(admission.time, 'time', return_value=self.NOW):
+            path = self.waiting()
+            stream, reason = self.attempt()
+            if stream:
+                self.addCleanup(admission.release, stream)
+            self.assertIsNone(stream)
+            self.assertIn(f'pid={os.getpid()}', reason)
+            self.assertIn('declared_mb=9000', reason)
+            self.assertIn('waited_s=10.0', reason)
+            self.assert_free('budget.lock')
+            self.assert_free('active.lock.1')
+            self.assertFalse(running.closed)
+            self.assertTrue(Path(str(running.name) + '.json').exists())
+            self.assertIsNone(admission.try_lock(running.name))
+            self.assertTrue(path.exists())
+            path.unlink()
+            self.take()
+
+    def test_dead_malformed_and_nonpositive_announcements_are_ignored_not_deleted(self):
+        live = dict(pid=os.getpid(), declared_mb=9000, waiting_since=self.NOW - 10)
+        cases = ['{', '[]', 'null', '"text"', b'\xff',
+                 json.dumps(dict(live, pid=2147483647)),
+                 *[json.dumps(dict(live, declared_mb=v)) for v in [0, -1, True, 1.5, None]],
+                 *[json.dumps(dict(live, pid=v)) for v in [0, -1, True, None]],
+                 *[json.dumps(dict(live, waiting_since=v)) for v in [0, -1, True, None,
+                     float('nan'), float('inf'), self.NOW + 1]], '{}']
+        path = self.locks / 'heavy-waiting.1.json'
+        for content in cases:
+            with self.subTest(content=content), patch.object(admission.time, 'time', return_value=self.NOW), \
+                    patch.object(admission, 'pid_alive', side_effect=lambda pid: pid == os.getpid()):
+                content = content if isinstance(content, bytes) else content.encode()
+                path.write_bytes(content)
+                output = io.StringIO()
+                with redirect_stdout(output):
+                    stream = self.take()
+                    admission.release(stream)
+                self.assertNotIn('Ignoring expired', output.getvalue())
+                self.assertEqual(path.read_bytes(), content)
+
+    def test_invalid_pid_is_rejected_before_liveness_probe(self):
+        for pid in [0, -1, True, None, 1.5, '1']:
+            with self.subTest(pid=pid), patch.object(admission.time, 'time', return_value=self.NOW), \
+                    patch.object(admission, 'pid_alive', return_value=True):
+                self.waiting('heavy-waiting.1.json', pid=pid)
+                admission.release(self.take())
+
+    def test_default_expiry_and_configurable_boundary_are_logged(self):
+        with patch.object(admission.time, 'time', return_value=self.NOW):
+            path = self.waiting(waiting_since=self.NOW - 14400)
+            output = io.StringIO()
+            with redirect_stdout(output):
+                stream = self.take()
+                admission.release(stream)
+            self.assertIn('Ignoring expired local admission client:', output.getvalue())
+            self.assertIn(f'pid={os.getpid()} declared_mb=9000', output.getvalue())
+            self.assertIn('max_wait_s=14400', output.getvalue())
+            self.assertTrue(path.exists())
+            policy = dict(POLICY, heavy_wait_max_s=60)
+            self.waiting(waiting_since=self.NOW - 59)
+            self.denied('local-client', policy=policy)
+            self.waiting(waiting_since=self.NOW - 60)
+            with redirect_stdout(output):
+                self.take(policy=policy)
+            self.assertIn('max_wait_s=60', output.getvalue())
+
+    def test_multiple_waiters_and_unrelated_filenames(self):
+        with patch.object(admission.time, 'time', return_value=self.NOW):
+            first = self.waiting('heavy-waiting.1.json')
+            expired = self.waiting('heavy-waiting.2.json', waiting_since=self.NOW - 14400)
+            second = self.waiting('heavy-waiting.3.json')
+            self.denied('local-client')
+            first.unlink()
+            self.denied('local-client')
+            second.unlink()
+            expired.unlink()
+            for name in ['heavy-waiting.bad.json', 'heavy-waiting.1.json.tmp', 'unrelated.json']:
+                self.waiting(name)
+            self.take()
+
+    def test_waiter_applies_without_declared_budget_configuration(self):
+        with patch.dict(os.environ), patch.object(admission.time, 'time', return_value=self.NOW):
+            del os.environ['ADMISSION_RUNNERS_JSON'], os.environ['ADMISSION_PROJECTS_DIR']
+            self.waiting()
+            self.denied('local-client')
+
+    def test_no_sidecars_preserves_admission_and_exact_peak_log(self):
+        actual, bypass = io.StringIO(), io.StringIO()
+        with redirect_stdout(actual):
+            admission.release(self.take())
+        with redirect_stdout(bypass), patch.object(admission, 'waiting_local_clients', return_value=(None, [])):
+            admission.release(self.take())
+        self.assertEqual(actual.getvalue(), bypass.getvalue())
+        self.assertEqual(actual.getvalue(), 'Admission peak: project=example kind=ci:small '
+                         'expected_mb=1000 source=default n=0\n')
+
+    def test_expiration_notice_is_not_repeated_while_waiting_for_memory(self):
+        self.waiting(waiting_since=self.NOW - 14400)
+        output = io.StringIO()
+        with patch.object(admission.time, 'time', return_value=self.NOW), \
+                patch.object(admission, 'identity', side_effect=['owner'] * 4 + ['gone']), \
+                patch.object(admission.time, 'monotonic', side_effect=[0, 1] * 2), \
+                patch.object(admission, 'memory_healthy', return_value=(False, 'deficit')), \
+                redirect_stdout(output):
+            admission.hold(self.locks / 'active.lock', self.root / 'ready', os.getpid(),
+                           'owner', 2, POLICY, repository='example/repo')
+        self.assertEqual(output.getvalue().count('Ignoring expired local admission client:'), 1)
+
+    def test_maximum_is_positive_finite_and_waiting_uses_slot_poll(self):
+        for value in [0, -1, True, None, float('nan'), float('inf'), '60']:
+            with self.subTest(value=value), self.assertRaises(ValueError):
+                admission.validate_policy(dict(POLICY, heavy_wait_max_s=value))
+        backoff = admission.Backoff(POLICY)
+        backoff.delay('budget')
+        backoff.delay('budget')
+        self.assertEqual(backoff.delay('local-client: waiting'), POLICY['slot_poll_s'])
+        self.assertEqual(backoff.delay('memory'), POLICY['memory_backoff_s'][0])
 
 
 class BudgetTests(AdmissionFixture):
@@ -401,7 +537,8 @@ class BudgetTests(AdmissionFixture):
 
 
 class ProcessTests(AdmissionFixture):
-    def spawn(self, number, owner=None, kind='ci:small', pause_publish=False, physical_mb=1000000, orphan=False):
+    def spawn(self, number, owner=None, kind='ci:small', pause_publish=False, physical_mb=1000000, orphan=False,
+              output=None):
         ready = self.root / f'ready{number}'
         gate = self.root / 'publish-gate'
         script = '''
@@ -446,7 +583,7 @@ a.hold(sys.argv[2] + '/active.lock', sys.argv[4], pid, a.identity(pid), 6,
                 self.until(lambda: not admission.identity(child_pid))
             self.addCleanup(cleanup_orphan)
             return child_pid, ready
-        child = subprocess.Popen(command, stdout=subprocess.DEVNULL)
+        child = subprocess.Popen(command, stdout=output if output is not None else subprocess.DEVNULL)
         def cleanup():
             if child.poll() is None:
                 child.terminate()
@@ -465,6 +602,22 @@ a.hold(sys.argv[2] + '/active.lock', sys.argv[4], pid, a.identity(pid), 6,
                 return
             time.sleep(.02)
         self.fail('Timed out waiting for keeper state')
+
+    def test_live_waiter_waits_then_removal_admits_real_keeper(self):
+        path = self.locks / f'heavy-waiting.{os.getpid()}.json'
+        path.write_text(json.dumps(dict(pid=os.getpid(), declared_mb=9000, expected_mb=9000,
+            source='caller', project='example', kind='heavy_step', started=time.time() - 20,
+            waiting_since=time.time() - 10)))
+        log = self.root / 'waiting.log'
+        with log.open('w') as output:
+            child, ready = self.spawn(1, output=output)
+            self.until(lambda: 'Waiting for admission: local-client:' in log.read_text())
+            self.assertFalse(ready.exists())
+            self.assertIsNone(child.poll())
+            self.assert_free('budget.lock')
+            path.unlink()
+            self.until(ready.exists)
+            self.assertIsNone(child.poll())
 
     def test_orphaned_keeper_records_worker_and_credits_worker_tree(self):
         keeper_pid, ready = self.spawn(1, orphan=True)

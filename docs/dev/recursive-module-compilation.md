@@ -613,7 +613,6 @@ rejected. Functions and constructors with bodies naming a foreign enclosing path
 remain explicitly rejected, as do compiled fields and mixed trait implementations.
 This changes no verifier rule, fact or assumption.
 
-
 ## C++ qualification boundary
 
 C++ remains rejected for every recursive module group, including function-only

@@ -1,0 +1,2 @@
+# Portable terminal counterexample reports (issue 261).
+git-issues/git-issue-261-persistent-counterexamples.dfy
