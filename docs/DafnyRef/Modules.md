@@ -1178,18 +1178,71 @@ that a later stage would have to reject:
   JavaScript emits one closure per group, with distinct declaration names.
   Python emits a group in one file, orders class definitions after their trait bases,
   and preserves module-qualified imports through wrapper files.
-  Python groups containing extern modules, types or members are not yet supported.
-  Python groups also reject declarations marked `{:compile false}` pending a foreign-linkage convention.
   Rust emits one container per group, with public facades preserving the member namespaces.
-  Rust groups containing extern modules, types or members are not yet supported.
-  Rust group programs require explicit array initialization; implicit datatype defaults
-  remain unsupported. The Rust backend's existing `--enforce-determinism` requirement
-  and trait restrictions still apply.
+  Rust groups support extern modules, types and members using the ordinary Rust
+  linkage paths. Foreign implementations use the public member namespaces, including
+  for sibling types and generated classes, without naming the group container.
+  The existing Rust restrictions on two-argument module and class externs and
+  mixed foreign/generated implementations of a trait still apply. Abstract
+  refinements with extern types emit no code and are allowed. Concrete refinements
+  with extern types remain rejected because their foreign imports and generated
+  implementations are not remapped. Inherited extern members with explicit foreign
+  paths are supported.
+  Rust group programs may omit an array initializer when some dimension is zero,
+  including a zero computed at runtime. All dimensions are evaluated once, in order;
+  for auto-initializable elements, a runtime check halts a nonempty allocation
+  without an initializer even when verification is skipped. This does not require a datatype default or evaluate
+  an element witness. Nonempty arrays still require explicit initialization under
+  Rust's existing `--enforce-determinism` requirement. General implicit datatype
+  defaults and the backend's trait restrictions remain unsupported.
   Go groups support extern members and types. Extern module names continue to
   select foreign Go packages; generated declarations of the group share a separate
   package. See [Go extern linkage](../Compilation/Go.md#recursive-module-groups)
   for names and foreign source-file conventions.
-  JavaScript groups containing extern modules, types or members are not yet supported.
+  JavaScript groups support preloaded extern module objects, extern types in those
+  modules, and qualified extern members. They retain ordinary module and type names
+  inside a shared initialization closure. Require-based extern modules, two-argument
+  extern type qualifiers, unqualified imported members without an extern owner,
+  qualified instance methods or fields, extern constructors, and refinements containing extern types
+  remain unsupported. See the
+  [compilation design](../dev/recursive-module-compilation.md#javascript-group-emission)
+  for the linkage restrictions and qualification tests.
+  C++ groups remain rejected: the backend does not emit the indirection needed for
+  mutually recursive datatype layouts across modules and does not support traits.
+  The internal resolved-Dafny target (`dfy`) remains rejected because its DAST
+  pretty printer is not implemented and it has no execution pipeline. These
+  capability-specific errors apply to source groups and complete `.doo` inputs,
+  including groups containing only functions.
+  A Python group member containing any `{:extern}` or `{:compile false}` declaration
+  is supplied as a complete foreign Python module, as described below.
+
+For Python, supply each such member's complete implementation with `--input`.
+The member is excluded from the generated group implementation; its ordinary
+module and declaration names remain the foreign interface, without group prefixes.
+This applies to attributes on the module, a type, or a member. The foreign file
+must implement the whole member module, including declarations with Dafny bodies;
+it is not merged with a generated class or wrapper. Declarations omitted by
+`{:compile false}` can therefore be supplied by that file.
+
+The ordinary Python input conventions apply: `# Module: Name` selects the target
+module, otherwise the `.py` filename does. A dotted module name denotes directories.
+`{:extern}` names retain the ordinary backend's spelling. A renamed type is an
+attribute of its module; a renamed top-level member belongs to `default__`.
+The existing two-argument static method qualifier uses a dot before the member;
+a static function qualifier uses an underscore before the member. For example,
+`{:extern "Members.ForeignOps", "other"}` on a function calls
+`Members.ForeignOps_other(...)`.
+
+Foreign modules may be imported before generated siblings have initialized.
+Callbacks must import those siblings inside the callable, after initialization,
+rather than reading their declarations at foreign-module import time. With
+`--python-module-name`, foreign files reside in that package and callbacks use
+package-relative imports. A separate client uses the complete library archive,
+the producer's translation record, and its Python package. An omitted module
+inherits the package recorded for a compiled sibling. Package translation of a
+group with every module marked `{:compile false}` is rejected because no member
+would record that package. Dotted extern module names retain the existing
+restriction against combining them with `--python-module-name`.
 
 A `.doo` library built with `--recursive-modules` requires its client to enable
 the option too; one built without it records nothing. A group is retained as a

@@ -1,0 +1,4 @@
+
+# Certified standard-library core under --modular-termination, milestone M5a: the core resolves
+# and dafny audit finds nothing in it (https://github.com/erniecohen/dafny/issues/211).
+git-issues/github-issue-211-m5a.dfy

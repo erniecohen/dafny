@@ -1,0 +1,4 @@
+# Sixth stage: verification of traits, reference and general (inherited invariants, raw parent types,
+# type tests, joins and receivers), the order of well-formedness assumptions, and what stays behind
+# the gate (https://github.com/erniecohen/dafny/issues/105).
+git-issues/git-issue-105-traits.dfy

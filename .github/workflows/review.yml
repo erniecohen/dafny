@@ -131,12 +131,25 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@a8ef9c0acd833e35e6a13f798ac4c17dad9a64e1
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@4793c6ec33216941dc4b6c9352a329cf2536c996
         with:
-          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
-          min-free-percent: ${{ vars.SELF_HOSTED_JOB_MIN_FREE_PERCENT || '' }}
-          max-pressure: ${{ vars.SELF_HOSTED_JOB_MAX_PRESSURE || '' }}
+          kind: ci:${{ github.workflow }}
+          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS }}
+          reserve-mb: ${{ vars.SELF_HOSTED_JOB_RESERVE_MB }}
+          default-peak-mb: ${{ vars.SELF_HOSTED_JOB_DEFAULT_PEAK_MB }}
+          peak-min-samples: ${{ vars.SELF_HOSTED_JOB_PEAK_MIN_SAMPLES }}
+          peak-history-days: ${{ vars.SELF_HOSTED_JOB_PEAK_HISTORY_DAYS }}
+          probe-timeout-s: ${{ vars.SELF_HOSTED_JOB_PROBE_TIMEOUT_S }}
+          slot-poll-s: ${{ vars.SELF_HOSTED_JOB_SLOT_POLL_S }}
+          memory-backoff-s: ${{ vars.SELF_HOSTED_JOB_MEMORY_BACKOFF_S }}
+          heavy-wait-max-s: ${{ vars.SELF_HOSTED_JOB_HEAVY_WAIT_MAX_S }}
       - uses: actions/checkout@v4
+        with:
+          clean: false
+      - name: Remove untracked checkout state
+        shell: bash
+        timeout-minutes: 10
+        run: git clean -ffdx
       - name: Controls for the tree matching
         timeout-minutes: 10
         run: python3 -m unittest discover -s .github/review -p test_tree_reuse.py
@@ -188,15 +201,26 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@a8ef9c0acd833e35e6a13f798ac4c17dad9a64e1
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@4793c6ec33216941dc4b6c9352a329cf2536c996
         with:
-          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
-          min-free-percent: ${{ vars.SELF_HOSTED_JOB_MIN_FREE_PERCENT || '' }}
-          max-pressure: ${{ vars.SELF_HOSTED_JOB_MAX_PRESSURE || '' }}
+          kind: ci:${{ github.workflow }}
+          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS }}
+          reserve-mb: ${{ vars.SELF_HOSTED_JOB_RESERVE_MB }}
+          default-peak-mb: ${{ vars.SELF_HOSTED_JOB_DEFAULT_PEAK_MB }}
+          peak-min-samples: ${{ vars.SELF_HOSTED_JOB_PEAK_MIN_SAMPLES }}
+          peak-history-days: ${{ vars.SELF_HOSTED_JOB_PEAK_HISTORY_DAYS }}
+          probe-timeout-s: ${{ vars.SELF_HOSTED_JOB_PROBE_TIMEOUT_S }}
+          slot-poll-s: ${{ vars.SELF_HOSTED_JOB_SLOT_POLL_S }}
+          memory-backoff-s: ${{ vars.SELF_HOSTED_JOB_MEMORY_BACKOFF_S }}
+          heavy-wait-max-s: ${{ vars.SELF_HOSTED_JOB_HEAVY_WAIT_MAX_S }}
       - uses: actions/checkout@v4
         with:
           fetch-depth: 1
-          clean: true
+          clean: false
+      - name: Remove untracked checkout state
+        shell: bash
+        timeout-minutes: 10
+        run: git clean -ffdx
       - uses: ./.github/actions/fetch-refs
         if: github.event_name == 'pull_request'
         with:
@@ -259,12 +283,25 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@a8ef9c0acd833e35e6a13f798ac4c17dad9a64e1
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@4793c6ec33216941dc4b6c9352a329cf2536c996
         with:
-          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
-          min-free-percent: ${{ vars.SELF_HOSTED_JOB_MIN_FREE_PERCENT || '' }}
-          max-pressure: ${{ vars.SELF_HOSTED_JOB_MAX_PRESSURE || '' }}
+          kind: ci:${{ github.workflow }}
+          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS }}
+          reserve-mb: ${{ vars.SELF_HOSTED_JOB_RESERVE_MB }}
+          default-peak-mb: ${{ vars.SELF_HOSTED_JOB_DEFAULT_PEAK_MB }}
+          peak-min-samples: ${{ vars.SELF_HOSTED_JOB_PEAK_MIN_SAMPLES }}
+          peak-history-days: ${{ vars.SELF_HOSTED_JOB_PEAK_HISTORY_DAYS }}
+          probe-timeout-s: ${{ vars.SELF_HOSTED_JOB_PROBE_TIMEOUT_S }}
+          slot-poll-s: ${{ vars.SELF_HOSTED_JOB_SLOT_POLL_S }}
+          memory-backoff-s: ${{ vars.SELF_HOSTED_JOB_MEMORY_BACKOFF_S }}
+          heavy-wait-max-s: ${{ vars.SELF_HOSTED_JOB_HEAVY_WAIT_MAX_S }}
       - uses: actions/checkout@v4
+        with:
+          clean: false
+      - name: Remove untracked checkout state
+        shell: bash
+        timeout-minutes: 10
+        run: git clean -ffdx
       - name: Check Python version
         timeout-minutes: 60
         run: python3 -c 'import sys; assert sys.version_info >= (3, 11), "Python 3.11 or newer is required"'
@@ -336,6 +373,20 @@ jobs:
           sh .github/review/portable-dafny.sh out/dafny
           tar -C out -czf dafny.tar.gz dafny
           python3 .github/review/check-distribution.py out/dafny --archive dafny.tar.gz
+      - name: Select host build handoff
+        id: host-handoff
+        if: ${{ needs.tree.outputs.reuse != 'true' }}
+        shell: bash
+        run: |
+          enabled=false
+          if test -n "${HOST_ARTIFACT_DIR:-}"; then enabled=true; fi
+          echo "enabled=$enabled" >> "$GITHUB_OUTPUT"
+      - uses: ./.github/actions/host-artifact
+        if: steps.host-handoff.outputs.enabled == 'true'
+        with:
+          mode: put
+          name: dafny
+          path: dafny.tar.gz
       - uses: actions/upload-artifact@v4
         if: ${{ needs.tree.outputs.reuse != 'true' }}
         with:
@@ -381,15 +432,29 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@a8ef9c0acd833e35e6a13f798ac4c17dad9a64e1
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@4793c6ec33216941dc4b6c9352a329cf2536c996
         with:
-          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
-          min-free-percent: ${{ vars.SELF_HOSTED_JOB_MIN_FREE_PERCENT || '' }}
-          max-pressure: ${{ vars.SELF_HOSTED_JOB_MAX_PRESSURE || '' }}
+          kind: ci:${{ github.workflow }}
+          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS }}
+          reserve-mb: ${{ vars.SELF_HOSTED_JOB_RESERVE_MB }}
+          default-peak-mb: ${{ vars.SELF_HOSTED_JOB_DEFAULT_PEAK_MB }}
+          peak-min-samples: ${{ vars.SELF_HOSTED_JOB_PEAK_MIN_SAMPLES }}
+          peak-history-days: ${{ vars.SELF_HOSTED_JOB_PEAK_HISTORY_DAYS }}
+          probe-timeout-s: ${{ vars.SELF_HOSTED_JOB_PROBE_TIMEOUT_S }}
+          slot-poll-s: ${{ vars.SELF_HOSTED_JOB_SLOT_POLL_S }}
+          memory-backoff-s: ${{ vars.SELF_HOSTED_JOB_MEMORY_BACKOFF_S }}
+          heavy-wait-max-s: ${{ vars.SELF_HOSTED_JOB_HEAVY_WAIT_MAX_S }}
       - uses: actions/checkout@v4
-      - uses: ./.github/actions/setup-dotnet
-      - uses: actions/download-artifact@v4
         with:
+          clean: false
+      - name: Remove untracked checkout state
+        shell: bash
+        timeout-minutes: 10
+        run: git clean -ffdx
+      - uses: ./.github/actions/setup-dotnet
+      - uses: ./.github/actions/host-artifact
+        with:
+          mode: get
           name: dafny
       - name: Unpack Dafny
         timeout-minutes: 240
@@ -540,12 +605,25 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@a8ef9c0acd833e35e6a13f798ac4c17dad9a64e1
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@4793c6ec33216941dc4b6c9352a329cf2536c996
         with:
-          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
-          min-free-percent: ${{ vars.SELF_HOSTED_JOB_MIN_FREE_PERCENT || '' }}
-          max-pressure: ${{ vars.SELF_HOSTED_JOB_MAX_PRESSURE || '' }}
+          kind: ci:${{ github.workflow }}
+          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS }}
+          reserve-mb: ${{ vars.SELF_HOSTED_JOB_RESERVE_MB }}
+          default-peak-mb: ${{ vars.SELF_HOSTED_JOB_DEFAULT_PEAK_MB }}
+          peak-min-samples: ${{ vars.SELF_HOSTED_JOB_PEAK_MIN_SAMPLES }}
+          peak-history-days: ${{ vars.SELF_HOSTED_JOB_PEAK_HISTORY_DAYS }}
+          probe-timeout-s: ${{ vars.SELF_HOSTED_JOB_PROBE_TIMEOUT_S }}
+          slot-poll-s: ${{ vars.SELF_HOSTED_JOB_SLOT_POLL_S }}
+          memory-backoff-s: ${{ vars.SELF_HOSTED_JOB_MEMORY_BACKOFF_S }}
+          heavy-wait-max-s: ${{ vars.SELF_HOSTED_JOB_HEAVY_WAIT_MAX_S }}
       - uses: actions/checkout@v4
+        with:
+          clean: false
+      - name: Remove untracked checkout state
+        shell: bash
+        timeout-minutes: 10
+        run: git clean -ffdx
       - uses: actions/download-artifact@v4
         with:
           pattern: verdicts-${{ matrix.axioms }}-*
@@ -626,15 +704,29 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@a8ef9c0acd833e35e6a13f798ac4c17dad9a64e1
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@4793c6ec33216941dc4b6c9352a329cf2536c996
         with:
-          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
-          min-free-percent: ${{ vars.SELF_HOSTED_JOB_MIN_FREE_PERCENT || '' }}
-          max-pressure: ${{ vars.SELF_HOSTED_JOB_MAX_PRESSURE || '' }}
+          kind: ci:${{ github.workflow }}
+          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS }}
+          reserve-mb: ${{ vars.SELF_HOSTED_JOB_RESERVE_MB }}
+          default-peak-mb: ${{ vars.SELF_HOSTED_JOB_DEFAULT_PEAK_MB }}
+          peak-min-samples: ${{ vars.SELF_HOSTED_JOB_PEAK_MIN_SAMPLES }}
+          peak-history-days: ${{ vars.SELF_HOSTED_JOB_PEAK_HISTORY_DAYS }}
+          probe-timeout-s: ${{ vars.SELF_HOSTED_JOB_PROBE_TIMEOUT_S }}
+          slot-poll-s: ${{ vars.SELF_HOSTED_JOB_SLOT_POLL_S }}
+          memory-backoff-s: ${{ vars.SELF_HOSTED_JOB_MEMORY_BACKOFF_S }}
+          heavy-wait-max-s: ${{ vars.SELF_HOSTED_JOB_HEAVY_WAIT_MAX_S }}
       - uses: actions/checkout@v4
-      - uses: ./.github/actions/setup-dotnet
-      - uses: actions/download-artifact@v4
         with:
+          clean: false
+      - name: Remove untracked checkout state
+        shell: bash
+        timeout-minutes: 10
+        run: git clean -ffdx
+      - uses: ./.github/actions/setup-dotnet
+      - uses: ./.github/actions/host-artifact
+        with:
+          mode: get
           name: dafny
       - name: Unpack Dafny
         timeout-minutes: 15
@@ -690,20 +782,45 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@a8ef9c0acd833e35e6a13f798ac4c17dad9a64e1
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@4793c6ec33216941dc4b6c9352a329cf2536c996
         with:
-          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
-          min-free-percent: ${{ vars.SELF_HOSTED_JOB_MIN_FREE_PERCENT || '' }}
-          max-pressure: ${{ vars.SELF_HOSTED_JOB_MAX_PRESSURE || '' }}
+          kind: ci:${{ github.workflow }}
+          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS }}
+          reserve-mb: ${{ vars.SELF_HOSTED_JOB_RESERVE_MB }}
+          default-peak-mb: ${{ vars.SELF_HOSTED_JOB_DEFAULT_PEAK_MB }}
+          peak-min-samples: ${{ vars.SELF_HOSTED_JOB_PEAK_MIN_SAMPLES }}
+          peak-history-days: ${{ vars.SELF_HOSTED_JOB_PEAK_HISTORY_DAYS }}
+          probe-timeout-s: ${{ vars.SELF_HOSTED_JOB_PROBE_TIMEOUT_S }}
+          slot-poll-s: ${{ vars.SELF_HOSTED_JOB_SLOT_POLL_S }}
+          memory-backoff-s: ${{ vars.SELF_HOSTED_JOB_MEMORY_BACKOFF_S }}
+          heavy-wait-max-s: ${{ vars.SELF_HOSTED_JOB_HEAVY_WAIT_MAX_S }}
       - uses: actions/checkout@v4
+        with:
+          clean: false
+      - name: Remove untracked checkout state
+        shell: bash
+        timeout-minutes: 10
+        run: git clean -ffdx
       - uses: actions/checkout@v4
         with:
           ref: 4e98f3f592310854ca1448d517b82dcbcc0f51f4
           path: comparison-baseline
+          clean: false
+      - name: Remove untracked checkout state
+        shell: bash
+        timeout-minutes: 10
+        working-directory: comparison-baseline
+        run: git clean -ffdx
       - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.default_comparison_mode == 'baseline-control' && '4e98f3f592310854ca1448d517b82dcbcc0f51f4' || 'b85e4b6f3af7eedd39bf355394a3f50c1b348646' }}
           path: comparison-candidate
+          clean: false
+      - name: Remove untracked checkout state
+        shell: bash
+        timeout-minutes: 10
+        working-directory: comparison-candidate
+        run: git clean -ffdx
       - uses: actions/setup-dotnet@v4
         env:
           DOTNET_INSTALL_DIR: ${{ env.TMPDIR }}/comparison-dotnet
@@ -838,15 +955,29 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@a8ef9c0acd833e35e6a13f798ac4c17dad9a64e1
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@4793c6ec33216941dc4b6c9352a329cf2536c996
         with:
-          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
-          min-free-percent: ${{ vars.SELF_HOSTED_JOB_MIN_FREE_PERCENT || '' }}
-          max-pressure: ${{ vars.SELF_HOSTED_JOB_MAX_PRESSURE || '' }}
+          kind: ci:${{ github.workflow }}
+          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS }}
+          reserve-mb: ${{ vars.SELF_HOSTED_JOB_RESERVE_MB }}
+          default-peak-mb: ${{ vars.SELF_HOSTED_JOB_DEFAULT_PEAK_MB }}
+          peak-min-samples: ${{ vars.SELF_HOSTED_JOB_PEAK_MIN_SAMPLES }}
+          peak-history-days: ${{ vars.SELF_HOSTED_JOB_PEAK_HISTORY_DAYS }}
+          probe-timeout-s: ${{ vars.SELF_HOSTED_JOB_PROBE_TIMEOUT_S }}
+          slot-poll-s: ${{ vars.SELF_HOSTED_JOB_SLOT_POLL_S }}
+          memory-backoff-s: ${{ vars.SELF_HOSTED_JOB_MEMORY_BACKOFF_S }}
+          heavy-wait-max-s: ${{ vars.SELF_HOSTED_JOB_HEAVY_WAIT_MAX_S }}
       - uses: actions/checkout@v4
-      - uses: ./.github/actions/setup-dotnet
-      - uses: actions/download-artifact@v4
         with:
+          clean: false
+      - name: Remove untracked checkout state
+        shell: bash
+        timeout-minutes: 10
+        run: git clean -ffdx
+      - uses: ./.github/actions/setup-dotnet
+      - uses: ./.github/actions/host-artifact
+        with:
+          mode: get
           name: dafny
       - name: Unpack Dafny
         timeout-minutes: 45
@@ -936,15 +1067,29 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@a8ef9c0acd833e35e6a13f798ac4c17dad9a64e1
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@4793c6ec33216941dc4b6c9352a329cf2536c996
         with:
-          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
-          min-free-percent: ${{ vars.SELF_HOSTED_JOB_MIN_FREE_PERCENT || '' }}
-          max-pressure: ${{ vars.SELF_HOSTED_JOB_MAX_PRESSURE || '' }}
+          kind: ci:${{ github.workflow }}
+          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS }}
+          reserve-mb: ${{ vars.SELF_HOSTED_JOB_RESERVE_MB }}
+          default-peak-mb: ${{ vars.SELF_HOSTED_JOB_DEFAULT_PEAK_MB }}
+          peak-min-samples: ${{ vars.SELF_HOSTED_JOB_PEAK_MIN_SAMPLES }}
+          peak-history-days: ${{ vars.SELF_HOSTED_JOB_PEAK_HISTORY_DAYS }}
+          probe-timeout-s: ${{ vars.SELF_HOSTED_JOB_PROBE_TIMEOUT_S }}
+          slot-poll-s: ${{ vars.SELF_HOSTED_JOB_SLOT_POLL_S }}
+          memory-backoff-s: ${{ vars.SELF_HOSTED_JOB_MEMORY_BACKOFF_S }}
+          heavy-wait-max-s: ${{ vars.SELF_HOSTED_JOB_HEAVY_WAIT_MAX_S }}
       - uses: actions/checkout@v4
-      - uses: ./.github/actions/setup-dotnet
-      - uses: actions/download-artifact@v4
         with:
+          clean: false
+      - name: Remove untracked checkout state
+        shell: bash
+        timeout-minutes: 10
+        run: git clean -ffdx
+      - uses: ./.github/actions/setup-dotnet
+      - uses: ./.github/actions/host-artifact
+        with:
+          mode: get
           name: dafny
       - name: Unpack Dafny
         timeout-minutes: 180
@@ -1063,12 +1208,25 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@a8ef9c0acd833e35e6a13f798ac4c17dad9a64e1
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@4793c6ec33216941dc4b6c9352a329cf2536c996
         with:
-          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
-          min-free-percent: ${{ vars.SELF_HOSTED_JOB_MIN_FREE_PERCENT || '' }}
-          max-pressure: ${{ vars.SELF_HOSTED_JOB_MAX_PRESSURE || '' }}
+          kind: ci:${{ github.workflow }}
+          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS }}
+          reserve-mb: ${{ vars.SELF_HOSTED_JOB_RESERVE_MB }}
+          default-peak-mb: ${{ vars.SELF_HOSTED_JOB_DEFAULT_PEAK_MB }}
+          peak-min-samples: ${{ vars.SELF_HOSTED_JOB_PEAK_MIN_SAMPLES }}
+          peak-history-days: ${{ vars.SELF_HOSTED_JOB_PEAK_HISTORY_DAYS }}
+          probe-timeout-s: ${{ vars.SELF_HOSTED_JOB_PROBE_TIMEOUT_S }}
+          slot-poll-s: ${{ vars.SELF_HOSTED_JOB_SLOT_POLL_S }}
+          memory-backoff-s: ${{ vars.SELF_HOSTED_JOB_MEMORY_BACKOFF_S }}
+          heavy-wait-max-s: ${{ vars.SELF_HOSTED_JOB_HEAVY_WAIT_MAX_S }}
       - uses: actions/checkout@v4
+        with:
+          clean: false
+      - name: Remove untracked checkout state
+        shell: bash
+        timeout-minutes: 10
+        run: git clean -ffdx
       - uses: actions/download-artifact@v4
         with:
           pattern: verdicts-*-*
@@ -1123,12 +1281,25 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@a8ef9c0acd833e35e6a13f798ac4c17dad9a64e1
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@4793c6ec33216941dc4b6c9352a329cf2536c996
         with:
-          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
-          min-free-percent: ${{ vars.SELF_HOSTED_JOB_MIN_FREE_PERCENT || '' }}
-          max-pressure: ${{ vars.SELF_HOSTED_JOB_MAX_PRESSURE || '' }}
+          kind: ci:${{ github.workflow }}
+          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS }}
+          reserve-mb: ${{ vars.SELF_HOSTED_JOB_RESERVE_MB }}
+          default-peak-mb: ${{ vars.SELF_HOSTED_JOB_DEFAULT_PEAK_MB }}
+          peak-min-samples: ${{ vars.SELF_HOSTED_JOB_PEAK_MIN_SAMPLES }}
+          peak-history-days: ${{ vars.SELF_HOSTED_JOB_PEAK_HISTORY_DAYS }}
+          probe-timeout-s: ${{ vars.SELF_HOSTED_JOB_PROBE_TIMEOUT_S }}
+          slot-poll-s: ${{ vars.SELF_HOSTED_JOB_SLOT_POLL_S }}
+          memory-backoff-s: ${{ vars.SELF_HOSTED_JOB_MEMORY_BACKOFF_S }}
+          heavy-wait-max-s: ${{ vars.SELF_HOSTED_JOB_HEAVY_WAIT_MAX_S }}
       - uses: actions/checkout@v4
+        with:
+          clean: false
+      - name: Remove untracked checkout state
+        shell: bash
+        timeout-minutes: 10
+        run: git clean -ffdx
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
@@ -1194,12 +1365,25 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@a8ef9c0acd833e35e6a13f798ac4c17dad9a64e1
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@4793c6ec33216941dc4b6c9352a329cf2536c996
         with:
-          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
-          min-free-percent: ${{ vars.SELF_HOSTED_JOB_MIN_FREE_PERCENT || '' }}
-          max-pressure: ${{ vars.SELF_HOSTED_JOB_MAX_PRESSURE || '' }}
+          kind: ci:${{ github.workflow }}
+          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS }}
+          reserve-mb: ${{ vars.SELF_HOSTED_JOB_RESERVE_MB }}
+          default-peak-mb: ${{ vars.SELF_HOSTED_JOB_DEFAULT_PEAK_MB }}
+          peak-min-samples: ${{ vars.SELF_HOSTED_JOB_PEAK_MIN_SAMPLES }}
+          peak-history-days: ${{ vars.SELF_HOSTED_JOB_PEAK_HISTORY_DAYS }}
+          probe-timeout-s: ${{ vars.SELF_HOSTED_JOB_PROBE_TIMEOUT_S }}
+          slot-poll-s: ${{ vars.SELF_HOSTED_JOB_SLOT_POLL_S }}
+          memory-backoff-s: ${{ vars.SELF_HOSTED_JOB_MEMORY_BACKOFF_S }}
+          heavy-wait-max-s: ${{ vars.SELF_HOSTED_JOB_HEAVY_WAIT_MAX_S }}
       - uses: actions/checkout@v4
+        with:
+          clean: false
+      - name: Remove untracked checkout state
+        shell: bash
+        timeout-minutes: 10
+        run: git clean -ffdx
       - uses: ./.github/actions/setup-dotnet
       - uses: actions/setup-java@v4
         with:
@@ -1268,7 +1452,7 @@ jobs:
       - name: Pipeline unit tests with Debug contract assertions
         timeout-minutes: 90
         run: dotnet test -p:NuGetAudit=false --settings .github/review/ci.runsettings Source/DafnyPipeline.Test -c Debug --logger "console;verbosity=normal"
-      - name: Run the tests named in .github/review/regressions
+      - name: Run the tests named in .github/review/regressions.d/
         continue-on-error: ${{ github.event_name == 'workflow_dispatch' && inputs.review_followup_probe && startsWith(github.ref, 'refs/heads/scratch/') }}
         env:
           DAFNY_INTEGRATION_TESTS_ONLY_COMPILERS: cs
@@ -1384,12 +1568,25 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@a8ef9c0acd833e35e6a13f798ac4c17dad9a64e1
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@4793c6ec33216941dc4b6c9352a329cf2536c996
         with:
-          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
-          min-free-percent: ${{ vars.SELF_HOSTED_JOB_MIN_FREE_PERCENT || '' }}
-          max-pressure: ${{ vars.SELF_HOSTED_JOB_MAX_PRESSURE || '' }}
+          kind: ci:${{ github.workflow }}
+          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS }}
+          reserve-mb: ${{ vars.SELF_HOSTED_JOB_RESERVE_MB }}
+          default-peak-mb: ${{ vars.SELF_HOSTED_JOB_DEFAULT_PEAK_MB }}
+          peak-min-samples: ${{ vars.SELF_HOSTED_JOB_PEAK_MIN_SAMPLES }}
+          peak-history-days: ${{ vars.SELF_HOSTED_JOB_PEAK_HISTORY_DAYS }}
+          probe-timeout-s: ${{ vars.SELF_HOSTED_JOB_PROBE_TIMEOUT_S }}
+          slot-poll-s: ${{ vars.SELF_HOSTED_JOB_SLOT_POLL_S }}
+          memory-backoff-s: ${{ vars.SELF_HOSTED_JOB_MEMORY_BACKOFF_S }}
+          heavy-wait-max-s: ${{ vars.SELF_HOSTED_JOB_HEAVY_WAIT_MAX_S }}
       - uses: actions/checkout@v4
+        with:
+          clean: false
+      - name: Remove untracked checkout state
+        shell: bash
+        timeout-minutes: 10
+        run: git clean -ffdx
       - uses: ./.github/actions/setup-dotnet
       - name: Harness solver and Boogie packages
         timeout-minutes: 30
@@ -1462,12 +1659,25 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@a8ef9c0acd833e35e6a13f798ac4c17dad9a64e1
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@4793c6ec33216941dc4b6c9352a329cf2536c996
         with:
-          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
-          min-free-percent: ${{ vars.SELF_HOSTED_JOB_MIN_FREE_PERCENT || '' }}
-          max-pressure: ${{ vars.SELF_HOSTED_JOB_MAX_PRESSURE || '' }}
+          kind: ci:${{ github.workflow }}
+          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS }}
+          reserve-mb: ${{ vars.SELF_HOSTED_JOB_RESERVE_MB }}
+          default-peak-mb: ${{ vars.SELF_HOSTED_JOB_DEFAULT_PEAK_MB }}
+          peak-min-samples: ${{ vars.SELF_HOSTED_JOB_PEAK_MIN_SAMPLES }}
+          peak-history-days: ${{ vars.SELF_HOSTED_JOB_PEAK_HISTORY_DAYS }}
+          probe-timeout-s: ${{ vars.SELF_HOSTED_JOB_PROBE_TIMEOUT_S }}
+          slot-poll-s: ${{ vars.SELF_HOSTED_JOB_SLOT_POLL_S }}
+          memory-backoff-s: ${{ vars.SELF_HOSTED_JOB_MEMORY_BACKOFF_S }}
+          heavy-wait-max-s: ${{ vars.SELF_HOSTED_JOB_HEAVY_WAIT_MAX_S }}
       - uses: actions/checkout@v4
+        with:
+          clean: false
+      - name: Remove untracked checkout state
+        shell: bash
+        timeout-minutes: 10
+        run: git clean -ffdx
       - uses: ./.github/actions/setup-dotnet
       - name: Boogie packages
         timeout-minutes: 20
@@ -1563,15 +1773,29 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@a8ef9c0acd833e35e6a13f798ac4c17dad9a64e1
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@4793c6ec33216941dc4b6c9352a329cf2536c996
         with:
-          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
-          min-free-percent: ${{ vars.SELF_HOSTED_JOB_MIN_FREE_PERCENT || '' }}
-          max-pressure: ${{ vars.SELF_HOSTED_JOB_MAX_PRESSURE || '' }}
+          kind: ci:${{ github.workflow }}
+          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS }}
+          reserve-mb: ${{ vars.SELF_HOSTED_JOB_RESERVE_MB }}
+          default-peak-mb: ${{ vars.SELF_HOSTED_JOB_DEFAULT_PEAK_MB }}
+          peak-min-samples: ${{ vars.SELF_HOSTED_JOB_PEAK_MIN_SAMPLES }}
+          peak-history-days: ${{ vars.SELF_HOSTED_JOB_PEAK_HISTORY_DAYS }}
+          probe-timeout-s: ${{ vars.SELF_HOSTED_JOB_PROBE_TIMEOUT_S }}
+          slot-poll-s: ${{ vars.SELF_HOSTED_JOB_SLOT_POLL_S }}
+          memory-backoff-s: ${{ vars.SELF_HOSTED_JOB_MEMORY_BACKOFF_S }}
+          heavy-wait-max-s: ${{ vars.SELF_HOSTED_JOB_HEAVY_WAIT_MAX_S }}
       - uses: actions/checkout@v4
-      - uses: ./.github/actions/setup-dotnet
-      - uses: actions/download-artifact@v4
         with:
+          clean: false
+      - name: Remove untracked checkout state
+        shell: bash
+        timeout-minutes: 10
+        run: git clean -ffdx
+      - uses: ./.github/actions/setup-dotnet
+      - uses: ./.github/actions/host-artifact
+        with:
+          mode: get
           name: dafny
       - name: Unpack Dafny
         timeout-minutes: 20
@@ -1628,15 +1852,29 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@a8ef9c0acd833e35e6a13f798ac4c17dad9a64e1
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@4793c6ec33216941dc4b6c9352a329cf2536c996
         with:
-          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
-          min-free-percent: ${{ vars.SELF_HOSTED_JOB_MIN_FREE_PERCENT || '' }}
-          max-pressure: ${{ vars.SELF_HOSTED_JOB_MAX_PRESSURE || '' }}
+          kind: ci:${{ github.workflow }}
+          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS }}
+          reserve-mb: ${{ vars.SELF_HOSTED_JOB_RESERVE_MB }}
+          default-peak-mb: ${{ vars.SELF_HOSTED_JOB_DEFAULT_PEAK_MB }}
+          peak-min-samples: ${{ vars.SELF_HOSTED_JOB_PEAK_MIN_SAMPLES }}
+          peak-history-days: ${{ vars.SELF_HOSTED_JOB_PEAK_HISTORY_DAYS }}
+          probe-timeout-s: ${{ vars.SELF_HOSTED_JOB_PROBE_TIMEOUT_S }}
+          slot-poll-s: ${{ vars.SELF_HOSTED_JOB_SLOT_POLL_S }}
+          memory-backoff-s: ${{ vars.SELF_HOSTED_JOB_MEMORY_BACKOFF_S }}
+          heavy-wait-max-s: ${{ vars.SELF_HOSTED_JOB_HEAVY_WAIT_MAX_S }}
       - uses: actions/checkout@v4
-      - uses: ./.github/actions/setup-dotnet
-      - uses: actions/download-artifact@v4
         with:
+          clean: false
+      - name: Remove untracked checkout state
+        shell: bash
+        timeout-minutes: 10
+        run: git clean -ffdx
+      - uses: ./.github/actions/setup-dotnet
+      - uses: ./.github/actions/host-artifact
+        with:
+          mode: get
           name: dafny
       - name: Unpack Dafny
         timeout-minutes: 20
@@ -1701,15 +1939,29 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@a8ef9c0acd833e35e6a13f798ac4c17dad9a64e1
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@4793c6ec33216941dc4b6c9352a329cf2536c996
         with:
-          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
-          min-free-percent: ${{ vars.SELF_HOSTED_JOB_MIN_FREE_PERCENT || '' }}
-          max-pressure: ${{ vars.SELF_HOSTED_JOB_MAX_PRESSURE || '' }}
+          kind: ci:${{ github.workflow }}
+          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS }}
+          reserve-mb: ${{ vars.SELF_HOSTED_JOB_RESERVE_MB }}
+          default-peak-mb: ${{ vars.SELF_HOSTED_JOB_DEFAULT_PEAK_MB }}
+          peak-min-samples: ${{ vars.SELF_HOSTED_JOB_PEAK_MIN_SAMPLES }}
+          peak-history-days: ${{ vars.SELF_HOSTED_JOB_PEAK_HISTORY_DAYS }}
+          probe-timeout-s: ${{ vars.SELF_HOSTED_JOB_PROBE_TIMEOUT_S }}
+          slot-poll-s: ${{ vars.SELF_HOSTED_JOB_SLOT_POLL_S }}
+          memory-backoff-s: ${{ vars.SELF_HOSTED_JOB_MEMORY_BACKOFF_S }}
+          heavy-wait-max-s: ${{ vars.SELF_HOSTED_JOB_HEAVY_WAIT_MAX_S }}
       - uses: actions/checkout@v4
-      - uses: ./.github/actions/setup-dotnet
-      - uses: actions/download-artifact@v4
         with:
+          clean: false
+      - name: Remove untracked checkout state
+        shell: bash
+        timeout-minutes: 10
+        run: git clean -ffdx
+      - uses: ./.github/actions/setup-dotnet
+      - uses: ./.github/actions/host-artifact
+        with:
+          mode: get
           name: dafny
       - name: Unpack Dafny
         timeout-minutes: 30
@@ -1797,12 +2049,25 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@a8ef9c0acd833e35e6a13f798ac4c17dad9a64e1
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@4793c6ec33216941dc4b6c9352a329cf2536c996
         with:
-          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
-          min-free-percent: ${{ vars.SELF_HOSTED_JOB_MIN_FREE_PERCENT || '' }}
-          max-pressure: ${{ vars.SELF_HOSTED_JOB_MAX_PRESSURE || '' }}
+          kind: ci:${{ github.workflow }}
+          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS }}
+          reserve-mb: ${{ vars.SELF_HOSTED_JOB_RESERVE_MB }}
+          default-peak-mb: ${{ vars.SELF_HOSTED_JOB_DEFAULT_PEAK_MB }}
+          peak-min-samples: ${{ vars.SELF_HOSTED_JOB_PEAK_MIN_SAMPLES }}
+          peak-history-days: ${{ vars.SELF_HOSTED_JOB_PEAK_HISTORY_DAYS }}
+          probe-timeout-s: ${{ vars.SELF_HOSTED_JOB_PROBE_TIMEOUT_S }}
+          slot-poll-s: ${{ vars.SELF_HOSTED_JOB_SLOT_POLL_S }}
+          memory-backoff-s: ${{ vars.SELF_HOSTED_JOB_MEMORY_BACKOFF_S }}
+          heavy-wait-max-s: ${{ vars.SELF_HOSTED_JOB_HEAVY_WAIT_MAX_S }}
       - uses: actions/checkout@v4
+        with:
+          clean: false
+      - name: Remove untracked checkout state
+        shell: bash
+        timeout-minutes: 10
+        run: git clean -ffdx
       - name: The tag must name this tree's version
         if: github.ref_type == 'tag'
         timeout-minutes: 240
@@ -1948,12 +2213,25 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@a8ef9c0acd833e35e6a13f798ac4c17dad9a64e1
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@4793c6ec33216941dc4b6c9352a329cf2536c996
         with:
-          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
-          min-free-percent: ${{ vars.SELF_HOSTED_JOB_MIN_FREE_PERCENT || '' }}
-          max-pressure: ${{ vars.SELF_HOSTED_JOB_MAX_PRESSURE || '' }}
+          kind: ci:${{ github.workflow }}
+          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS }}
+          reserve-mb: ${{ vars.SELF_HOSTED_JOB_RESERVE_MB }}
+          default-peak-mb: ${{ vars.SELF_HOSTED_JOB_DEFAULT_PEAK_MB }}
+          peak-min-samples: ${{ vars.SELF_HOSTED_JOB_PEAK_MIN_SAMPLES }}
+          peak-history-days: ${{ vars.SELF_HOSTED_JOB_PEAK_HISTORY_DAYS }}
+          probe-timeout-s: ${{ vars.SELF_HOSTED_JOB_PROBE_TIMEOUT_S }}
+          slot-poll-s: ${{ vars.SELF_HOSTED_JOB_SLOT_POLL_S }}
+          memory-backoff-s: ${{ vars.SELF_HOSTED_JOB_MEMORY_BACKOFF_S }}
+          heavy-wait-max-s: ${{ vars.SELF_HOSTED_JOB_HEAVY_WAIT_MAX_S }}
       - uses: actions/checkout@v4
+        with:
+          clean: false
+      - name: Remove untracked checkout state
+        shell: bash
+        timeout-minutes: 10
+        run: git clean -ffdx
       - name: Judge the jobs
         id: gate
         env:
@@ -2020,12 +2298,25 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@a8ef9c0acd833e35e6a13f798ac4c17dad9a64e1
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@4793c6ec33216941dc4b6c9352a329cf2536c996
         with:
-          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
-          min-free-percent: ${{ vars.SELF_HOSTED_JOB_MIN_FREE_PERCENT || '' }}
-          max-pressure: ${{ vars.SELF_HOSTED_JOB_MAX_PRESSURE || '' }}
+          kind: ci:${{ github.workflow }}
+          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS }}
+          reserve-mb: ${{ vars.SELF_HOSTED_JOB_RESERVE_MB }}
+          default-peak-mb: ${{ vars.SELF_HOSTED_JOB_DEFAULT_PEAK_MB }}
+          peak-min-samples: ${{ vars.SELF_HOSTED_JOB_PEAK_MIN_SAMPLES }}
+          peak-history-days: ${{ vars.SELF_HOSTED_JOB_PEAK_HISTORY_DAYS }}
+          probe-timeout-s: ${{ vars.SELF_HOSTED_JOB_PROBE_TIMEOUT_S }}
+          slot-poll-s: ${{ vars.SELF_HOSTED_JOB_SLOT_POLL_S }}
+          memory-backoff-s: ${{ vars.SELF_HOSTED_JOB_MEMORY_BACKOFF_S }}
+          heavy-wait-max-s: ${{ vars.SELF_HOSTED_JOB_HEAVY_WAIT_MAX_S }}
       - uses: actions/checkout@v4
+        with:
+          clean: false
+      - name: Remove untracked checkout state
+        shell: bash
+        timeout-minutes: 10
+        run: git clean -ffdx
       - uses: actions/download-artifact@v4
         with:
           pattern: binaries-*
@@ -2112,12 +2403,25 @@ jobs:
         run: |
           job_tmp=$(mktemp -d "$RUNNER_TEMP/fork-job.XXXXXX")
           echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
-      - uses: erniecohen/dafny/.github/actions/self-hosted-job@a8ef9c0acd833e35e6a13f798ac4c17dad9a64e1
+      - uses: erniecohen/dafny/.github/actions/self-hosted-job@4793c6ec33216941dc4b6c9352a329cf2536c996
         with:
-          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS || '2' }}
-          min-free-percent: ${{ vars.SELF_HOSTED_JOB_MIN_FREE_PERCENT || '' }}
-          max-pressure: ${{ vars.SELF_HOSTED_JOB_MAX_PRESSURE || '' }}
+          kind: ci:${{ github.workflow }}
+          slots: ${{ vars.SELF_HOSTED_JOB_SLOTS }}
+          reserve-mb: ${{ vars.SELF_HOSTED_JOB_RESERVE_MB }}
+          default-peak-mb: ${{ vars.SELF_HOSTED_JOB_DEFAULT_PEAK_MB }}
+          peak-min-samples: ${{ vars.SELF_HOSTED_JOB_PEAK_MIN_SAMPLES }}
+          peak-history-days: ${{ vars.SELF_HOSTED_JOB_PEAK_HISTORY_DAYS }}
+          probe-timeout-s: ${{ vars.SELF_HOSTED_JOB_PROBE_TIMEOUT_S }}
+          slot-poll-s: ${{ vars.SELF_HOSTED_JOB_SLOT_POLL_S }}
+          memory-backoff-s: ${{ vars.SELF_HOSTED_JOB_MEMORY_BACKOFF_S }}
+          heavy-wait-max-s: ${{ vars.SELF_HOSTED_JOB_HEAVY_WAIT_MAX_S }}
       - uses: actions/checkout@v4
+        with:
+          clean: false
+      - name: Remove untracked checkout state
+        shell: bash
+        timeout-minutes: 10
+        run: git clean -ffdx
       - uses: actions/download-artifact@v4
         with:
           pattern: parity-*-verdicts-*

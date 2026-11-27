@@ -1,0 +1,3 @@
+
+# A cast through a chain of forty newtypes translates as before and keeps its verdicts, now that the translator remembers the ancestor of each type it converts (https://github.com/erniecohen/dafny/issues/378).
+git-issues/github-issue-378.dfy

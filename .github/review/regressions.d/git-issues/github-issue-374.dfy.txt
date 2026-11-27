@@ -1,0 +1,6 @@
+
+# Function domains: under --additional-axioms lambdas carry their parameter types as domain tags,
+# {:functionDomain} declarations give Restrict and ExactDom, and --function-extensionality-axiom makes
+# total functions of one argument with the same exact domain equal when they agree on it
+# (https://github.com/erniecohen/dafny/issues/374).
+git-issues/github-issue-374.dfy

@@ -1,0 +1,3 @@
+
+# With --refinement-renaming a refining declaration renames type parameters, out-parameters, results and the local names of in-parameters; named arguments use the unchanged labels; a renaming that changes what an inherited name refers to is rejected; without the option the old errors remain; and a typed match pattern is inherited with a type of the refining module; a renaming from or to the name of a label that the inherited code reveals is rejected; and an abstract type with members that a synonym refines, and an iterator, take no renaming (https://github.com/erniecohen/dafny/issues/106, https://github.com/erniecohen/dafny/issues/107).
+git-issues/github-issue-106.dfy

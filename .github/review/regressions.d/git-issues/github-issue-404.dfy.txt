@@ -1,0 +1,3 @@
+
+# A refining module makes the override check of an inherited class member when it strengthens the trait member, adds the extension or replaces the import that declares it, and not when it changes neither member; the old rule proved false (https://github.com/erniecohen/dafny/issues/404).
+git-issues/github-issue-404.dfy

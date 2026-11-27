@@ -1,0 +1,3 @@
+
+# A function with read effects stored in a multi-dimensional array element, or stored in a field, an array element or an iterator's yield parameter as the result of a method call, is rejected like one stored by a plain assignment; the hidden --legacy-function-store-locations restores the old check (https://github.com/erniecohen/dafny/issues/483).
+git-issues/github-issue-483.dfy

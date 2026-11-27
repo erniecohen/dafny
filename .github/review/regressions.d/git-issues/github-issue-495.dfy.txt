@@ -1,0 +1,3 @@
+
+# A conversion to a newtype whose base type is inferred checks the constraints of that base, under both resolvers, for literals and conversions from int, real and bitvector values; correct conversions still verify, and --legacy-inferred-newtype-base-conversions restores the old, unsound check (https://github.com/erniecohen/dafny/issues/495).
+git-issues/github-issue-495.dfy

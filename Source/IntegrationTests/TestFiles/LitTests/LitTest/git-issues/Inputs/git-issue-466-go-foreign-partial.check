@@ -1,0 +1,1 @@
+// CHECK: Go cannot generate members of partial extern class 'Native' owned by a foreign package in a recursive module group: declare the partial class in a non-extern member without a foreign type qualifier, and complete it in the shared package

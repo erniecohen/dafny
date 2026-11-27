@@ -1,0 +1,4 @@
+
+# The refreshed resolver gives a variable bound by a match case pattern the declared type of the
+# constructor's field (https://github.com/erniecohen/dafny/issues/327).
+git-issues/github-issue-327.dfy

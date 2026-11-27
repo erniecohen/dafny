@@ -1,0 +1,12 @@
+
+Dafny program verifier finished with 5 verified, 0 errors
+
+Dafny program verifier finished with 1 verified, 0 errors
+6 7 8
+10 9 8 7
+true
+42
+A.Tree.Node(A.Tree.Leaf(42))
+true true true
+2
+4 3

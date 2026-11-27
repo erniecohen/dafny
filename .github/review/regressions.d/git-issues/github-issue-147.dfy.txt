@@ -1,0 +1,3 @@
+# Rotations at widths that are not powers of two are defined by shifts; Z3 composed native
+# rotation counts modulo 2^W (https://github.com/erniecohen/dafny/issues/147).
+git-issues/github-issue-147.dfy
