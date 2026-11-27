@@ -354,19 +354,21 @@ and one at or above H; the checked right-shift and low-digit rules identify it
 with the native shift-and-mask test. No assumption, added axiom, exemption or
 compiler change is introduced.
 
-The new functions and lemmas are checked with pinned Z3 5.1.0 and
-`--solver-option O:smt.bv.solver=2`. Their existing shift/reference dependency
-closure is independently checked with the default engine. Both resolver and
-additional-axiom modes are qualified. Default-engine wide sign-bit attempts
-exhausted the proof budget and are excluded from acceptance evidence.
+The new functions and lemmas, their dependency closure and every control are
+checked with pinned Z3 5.1.0 and the default bitvector engine. Both resolver and
+additional-axiom modes are qualified. The sign-bit proofs fix the power of two
+for the high digit once, then combine two helpers per width: the native high
+digit equals its own low bit, and an integer's quotient by H is one exactly on
+`[H,M)`. The integer-based engine
+(`smt.bv.solver=2`) is not used: it can report unsatisfiable for satisfiable
+queries (https://github.com/erniecohen/dafny/issues/618).
 
 Positive controls cover symbolic native words and bounded signed integers,
 a Boolean-returning native sign-test client, minimum and maximum signed values,
 minus one, zero and the high-bit boundary. Negative controls reject the two
 signed bounds, wrong encodings and unsigned interpretations, wrong signs and
 invalid direct conversions. Reachable false assertions follow each lemma
-separately and all four together; controls must reject conclusively under both
-bitvector engines.
+separately and all four together; controls must reject conclusively.
 
 Serial mutations negate every lemma's postcondition, remove each explicit
 encoding/round-trip premise, and perturb both conversion definitions. Every

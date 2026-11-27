@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: MIT
 
 // Checked two's-complement interpretation; requires --integer-bitwise.
-// New body qualification uses O:smt.bv.solver=2; dependencies use the default engine.
+// Every body and dependency is checked with the default bitvector engine.
 include "IntegerBitwiseNativeShifts.dfy"
 module Std.Arithmetic.IntegerBitwiseNativeSigned8 {
  import B=IntegerBitwiseNative8
@@ -23,9 +23,23 @@ module Std.Arithmetic.IntegerBitwiseNativeSigned8 {
  lemma {:induction false} Inverse(x:bv8)
  ensures Encode(Decode(x))==x
  { B.Inverse8(x); }
- lemma {:induction false} SignBit(x:bv8)
+ lemma {:induction false} HighDigit(x:bv8)
+ ensures (x>>7)&1==x>>7
+ {}
+ lemma {:induction false} HighQuotient(u:int)
+ ensures (u/128==1)==(128<=u<256)
+ {}
+ lemma {:induction false} {:isolate_assertions} SignBit(x:bv8)
  ensures (((x>>7)&1)==1)==(Decode(x)<0)
- { B.Power(); reveal R.P(); S.NativeRight(x,7); B.DigitSplit8(x>>7); var low:=(x>>7)&1; assert low==0 || low==1; }
+ {
+  var t:=x>>7;
+  assert R.P(7)==128 by { B.Power(); reveal R.P(); assert R.P(8)==2*R.P(7); }
+  S.NativeRight(x,7);
+  HighQuotient(x as int);
+  HighDigit(x);
+  B.Inverse8(t);
+  assert (t==1)==(t as int==1);
+ }
 }
 module Std.Arithmetic.IntegerBitwiseNativeSigned16 {
  import B=IntegerBitwiseNative16
@@ -46,9 +60,23 @@ module Std.Arithmetic.IntegerBitwiseNativeSigned16 {
  lemma {:induction false} Inverse(x:bv16)
  ensures Encode(Decode(x))==x
  { B.Inverse16(x); }
- lemma {:induction false} SignBit(x:bv16)
+ lemma {:induction false} HighDigit(x:bv16)
+ ensures (x>>15)&1==x>>15
+ {}
+ lemma {:induction false} HighQuotient(u:int)
+ ensures (u/32768==1)==(32768<=u<65536)
+ {}
+ lemma {:induction false} {:isolate_assertions} SignBit(x:bv16)
  ensures (((x>>15)&1)==1)==(Decode(x)<0)
- { B.Power(); reveal R.P(); S.NativeRight(x,15); B.DigitSplit16(x>>15); var low:=(x>>15)&1; assert low==0 || low==1; }
+ {
+  var t:=x>>15;
+  assert R.P(15)==32768 by { B.Power(); reveal R.P(); assert R.P(16)==2*R.P(15); }
+  S.NativeRight(x,15);
+  HighQuotient(x as int);
+  HighDigit(x);
+  B.Inverse16(t);
+  assert (t==1)==(t as int==1);
+ }
 }
 module Std.Arithmetic.IntegerBitwiseNativeSigned32 {
  import B=IntegerBitwiseNative32
@@ -69,9 +97,23 @@ module Std.Arithmetic.IntegerBitwiseNativeSigned32 {
  lemma {:induction false} Inverse(x:bv32)
  ensures Encode(Decode(x))==x
  { B.Inverse32(x); }
- lemma {:induction false} SignBit(x:bv32)
+ lemma {:induction false} HighDigit(x:bv32)
+ ensures (x>>31)&1==x>>31
+ {}
+ lemma {:induction false} HighQuotient(u:int)
+ ensures (u/2147483648==1)==(2147483648<=u<4294967296)
+ {}
+ lemma {:induction false} {:isolate_assertions} SignBit(x:bv32)
  ensures (((x>>31)&1)==1)==(Decode(x)<0)
- { B.Power(); reveal R.P(); S.NativeRight(x,31); B.DigitSplit32(x>>31); var low:=(x>>31)&1; assert low==0 || low==1; }
+ {
+  var t:=x>>31;
+  assert R.P(31)==2147483648 by { B.Power(); reveal R.P(); assert R.P(32)==2*R.P(31); }
+  S.NativeRight(x,31);
+  HighQuotient(x as int);
+  HighDigit(x);
+  B.Inverse32(t);
+  assert (t==1)==(t as int==1);
+ }
 }
 module Std.Arithmetic.IntegerBitwiseNativeSigned64 {
  import B=IntegerBitwiseNative64
@@ -92,7 +134,21 @@ module Std.Arithmetic.IntegerBitwiseNativeSigned64 {
  lemma {:induction false} Inverse(x:bv64)
  ensures Encode(Decode(x))==x
  { B.Inverse64(x); }
- lemma {:induction false} SignBit(x:bv64)
+ lemma {:induction false} HighDigit(x:bv64)
+ ensures (x>>63)&1==x>>63
+ {}
+ lemma {:induction false} HighQuotient(u:int)
+ ensures (u/9223372036854775808==1)==(9223372036854775808<=u<18446744073709551616)
+ {}
+ lemma {:induction false} {:isolate_assertions} SignBit(x:bv64)
  ensures (((x>>63)&1)==1)==(Decode(x)<0)
- { B.Power(); reveal R.P(); S.NativeRight(x,63); B.DigitSplit64(x>>63); var low:=(x>>63)&1; assert low==0 || low==1; }
+ {
+  var t:=x>>63;
+  assert R.P(63)==9223372036854775808 by { B.Power(); reveal R.P(); assert R.P(64)==2*R.P(63); }
+  S.NativeRight(x,63);
+  HighQuotient(x as int);
+  HighDigit(x);
+  B.Inverse64(t);
+  assert (t==1)==(t as int==1);
+ }
 }
