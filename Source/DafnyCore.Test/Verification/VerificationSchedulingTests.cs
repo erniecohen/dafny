@@ -9,10 +9,102 @@ namespace DafnyCore.Test.Verification;
 [Collection("Cardinality resolution")]
 public class VerificationSchedulingTests {
   [Theory]
-  [InlineData(false)]
-  [InlineData(true)]
-  public async Task EngineFreeSchedulingPreservesFiltersSeedsCacheAndCancellation(bool cached) {
+  [InlineData(false, true)]
+  [InlineData(true, false)]
+  [InlineData(true, true)]
+  public async Task ReadyTasksPassAnUnpreparedModuleOnlyWithFreshSolvers(bool ready, bool fresh) {
+    var program = await ModuleTranslationCacheTests.Resolve("""
+      module A { lemma First() {} lemma Second() {} }
+      module B { lemma Later() {} }
+      """, cached: false);
+    program.Options.Set(CommonOptionBag.ReadyModuleVerification, ready);
+    program.Options.RestartProverPerVC = fresh;
+    var owners = program.Modules().SelectMany(m => m.TopLevelDecls).OfType<TopLevelDeclWithMembers>()
+      .SelectMany(d => d.Members).OfType<Method>().ToDictionary(m => m.Name);
+    var works = owners.ToDictionary(p => p.Key,
+      p => new Work(new(new(p.Key, 0), p.Value.Origin, p.Value.Origin) { CanVerify = p.Value }, false));
+    var earlier = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+    var preparedLater = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+    var verifier = new ModuleVerifier(async module => {
+      if (module.Name == "A") { await earlier.Task; }
+      else { preparedLater.TrySetResult(); }
+      return new(VerificationPreparation.Ready(works.Values.Where(w =>
+        ReferenceEquals(w.Source.CanVerify!.ContainingModule, module)).ToArray()), new());
+    });
+    using var compilation = Create(program, verifier, new(false, () => throw new Exception()));
+    var finishedLater = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+    var finishedAll = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+    var order = new ConcurrentQueue<string>();
+    using var subscription = compilation.Updates.Subscribe(update => {
+      if (update is VerificationUpdate { Status: VerificationWorkCompleted } result) {
+        order.Enqueue(((Method)result.CanVerify).Name);
+        if (((Method)result.CanVerify).Name == "Later") { finishedLater.TrySetResult(); }
+        if (order.Count == 3) { finishedAll.TrySetResult(); }
+      }
+    });
+    compilation.Start();
+    foreach (var name in new[] { "First", "Second", "Later" }) {
+      Assert.True(await compilation.VerifyCanVerify(owners[name], _ => true, null));
+    }
+    await preparedLater.Task.WaitAsync(TimeSpan.FromSeconds(30));
+    try {
+      if (ready && fresh) {
+        await finishedLater.Task.WaitAsync(TimeSpan.FromSeconds(30));
+        Assert.Equal(0, works["First"].Runs);
+      } else {
+        Assert.NotSame(finishedLater.Task, await Task.WhenAny(finishedLater.Task, Task.Delay(100)));
+        Assert.Equal(0, works["Later"].Runs);
+      }
+    } finally {
+      earlier.TrySetResult();
+      await finishedLater.Task.WaitAsync(TimeSpan.FromSeconds(30));
+    }
+    await finishedAll.Task.WaitAsync(TimeSpan.FromSeconds(30));
+    Assert.All(works.Values, work => Assert.Equal(1, work.Runs));
+    Assert.True(Array.IndexOf(order.ToArray(), "First") < Array.IndexOf(order.ToArray(), "Second"));
+    Assert.Equal(2, verifier.Calls);
+    var queues = (System.Collections.IDictionary)typeof(Compilation).GetField("moduleVerificationTickets",
+      System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!.GetValue(compilation)!;
+    Assert.Equal(ready && fresh ? 2 : 0, queues.Count);
+    foreach (var module in owners.Values.Select(o => o.ContainingModule).Distinct()) {
+      compilation.ClearModuleCache(module);
+    }
+    Assert.Empty(queues);
+    foreach (var owner in owners.Values) {
+      compilation.ClearCanVerifyCache(owner, allowRepeat: true);
+    }
+    order.Clear();
+    finishedAll = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+    foreach (var name in new[] { "First", "Second", "Later" }) {
+      Assert.True(await compilation.VerifyCanVerify(owners[name], _ => true, null));
+    }
+    await finishedAll.Task.WaitAsync(TimeSpan.FromSeconds(30));
+    Assert.All(works.Values, work => Assert.Equal(2, work.Runs));
+    Assert.Equal(4, verifier.Calls);
+    foreach (var module in owners.Values.Select(o => o.ContainingModule).Distinct()) {
+      compilation.ClearModuleCache(module);
+    }
+    Assert.Empty(queues);
+  }
+
+  private sealed class ModuleVerifier(Func<ModuleDefinition, Task<ModuleVerificationPreparation>> prepare) : IProgramVerifier {
+    public int Calls;
+    public Task<ModuleVerificationPreparation> GetVerificationTasksAsync(VerificationPreparationRequest request,
+      ResolutionResult resolution, ModuleDefinition moduleDefinition, CancellationToken cancellationToken) {
+      Interlocked.Increment(ref Calls);
+      return prepare(moduleDefinition);
+    }
+  }
+
+  [Theory]
+  [InlineData(false, false)]
+  [InlineData(true, false)]
+  [InlineData(false, true)]
+  [InlineData(true, true)]
+  public async Task EngineFreeSchedulingPreservesFiltersSeedsCacheAndCancellation(bool cached, bool ready) {
     var program = await ModuleTranslationCacheTests.Resolve("lemma Good() { assert true; }", cached: false);
+    program.Options.Set(CommonOptionBag.ReadyModuleVerification, ready);
+    program.Options.RestartProverPerVC = true;
     var owner = Owner(program);
     var kept = new Work(new(new("Good", 1), owner.Origin, owner.Origin) { CanVerify = owner }, cached);
     var excluded = new Work(kept.Source with { Id = new("Good", 2) }, cached);

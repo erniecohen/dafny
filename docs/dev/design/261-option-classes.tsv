@@ -197,6 +197,7 @@ track-print-effects	miss	miss	miss	false | true
 trait-rank-decreases	miss	miss	miss	false | true	
 translate-standard-library	n/a	n/a	n/a	-	not an option of verify
 translation-cache	hit	hit	hit	false | true	in-process reuse of translations, which yields the same Boogie programs
+ready-module-verification	hit	hit	hit	--translation-workers 2 --verification-module-window 2 --boogie /restartProver --ready-module-verification:false | --translation-workers 2 --verification-module-window 2 --boogie /restartProver --ready-module-verification:true	scheduling only: private translations and fresh solver histories keep all three stages identical
 translation-workers	hit	hit	hit	1 | 2	scheduling only: translations commit in arrival order, and one and many workers yield the same Boogie programs and solver input
 translation-workers-stress	hit	hit	hit	0 | 5	test-only delays of translation scheduling, which change no translation
 translation-record	n/a	n/a	n/a	-	not an option of verify

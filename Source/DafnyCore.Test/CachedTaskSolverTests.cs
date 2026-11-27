@@ -12,11 +12,56 @@ public class CachedTaskSolverTests : IDisposable {
   private readonly string directory = Path.Combine(Path.GetTempPath(), "dafny-exchanges-" + Guid.NewGuid().ToString("N"));
   private int starts;
   private static SExpr S(string name, params SExpr[] children) => new(name, children);
-  private CachedTaskSolver Transport(string reason = "unknown", bool warningsHaveNoEffects = false, string? warning = null) => new(new TaskResultCache(new ContentAddressedCache(directory)),
+  private CachedTaskSolver Transport(string reason = "unknown", bool warningsHaveNoEffects = false, string? warning = null,
+    bool audit = false) => new(new TaskResultCache(new ContentAddressedCache(directory)),
     () => Encoding.UTF8.GetBytes("frozen adaptive execution program"), () => {
       starts++;
       return new Solver(reason, warning);
-    }, warningsHaveNoEffects);
+    }, warningsHaveNoEffects, audit);
+
+  [Theory]
+  [InlineData(false)]
+  [InlineData(true)]
+  public async Task AuditUsesFreshResponsesAndDoesNotPublish(bool populated) {
+    string? key = null;
+    if (populated) {
+      var cold = Transport();
+      Setup(cold);
+      Assert.Equal("unsat", (await cold.SendRequest("(check-sat)")).Name);
+      await Finish(cold);
+      Assert.Equal(CachePublication.Stored, cold.CompleteNormally(CacheTaskOutcome.Correct, 17));
+      key = cold.ExecutionKey;
+      cold.Close();
+    }
+    var before = Directory.Exists(directory) ? Directory.GetFiles(directory, "*", SearchOption.AllDirectories)
+      .ToDictionary(path => path, File.ReadAllBytes) : new Dictionary<string, byte[]>();
+    var startsBefore = starts;
+    var audit = Transport(audit: true);
+    Setup(audit);
+    Assert.Equal("unsat", (await audit.SendRequest("(check-sat)")).Name);
+    await Finish(audit);
+    // A deliberately different reported resource count must neither replace nor quarantine evidence.
+    Assert.Equal(CachePublication.Unavailable, audit.CompleteNormally(CacheTaskOutcome.Correct, 19));
+    Assert.NotNull(audit.ExecutionKey);
+    if (populated) { Assert.Equal(key, audit.ExecutionKey); }
+    Assert.False(audit.Replayed);
+    Assert.Equal(startsBefore + 1, starts);
+    audit.Close();
+    var after = Directory.Exists(directory) ? Directory.GetFiles(directory, "*", SearchOption.AllDirectories)
+      .ToDictionary(path => path, File.ReadAllBytes) : new Dictionary<string, byte[]>();
+    Assert.Equal(before.Keys.Order(), after.Keys.Order());
+    foreach (var path in before.Keys) { Assert.Equal(before[path], after[path]); }
+    if (populated) {
+      var warm = Transport();
+      Setup(warm);
+      Assert.Equal("unsat", (await warm.SendRequest("(check-sat)")).Name);
+      await Finish(warm);
+      Assert.Equal(CachePublication.AlreadyPresent, warm.CompleteNormally(CacheTaskOutcome.Correct, 17));
+      Assert.True(warm.Replayed);
+      Assert.Equal(startsBefore + 1, starts);
+      warm.Close();
+    }
+  }
 
   private static void Setup(CachedTaskSolver transport, uint resourceLimit = 100) {
     transport.NewProblem("current split");

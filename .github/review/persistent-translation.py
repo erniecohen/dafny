@@ -182,7 +182,7 @@ assert projected["solver"] == 0 and not elsewhere.exists(), projected["stats"]
 # Audit translates and verifies everything afresh, compares, and publishes nothing new.
 audit = run("audit", extra=("--persistent-translation-audit",))
 same_report(cold, audit)
-check(audit, MODULES, {m: None for m in MODULES}, 0)
+check(audit, MODULES, {m: None for m in MODULES}, cold["solver"])
 assert audit["stats"]["auditChecks"] == 7 and audit["stats"]["auditMismatches"] == 0, audit["stats"]
 assert audit["stats"]["translationPublications"] == 0 and audit["stats"]["manifestPublications"] == 0, audit["stats"]
 
