@@ -1,0 +1,3 @@
+Boogie text identical: 2 modules, 4 runs
+GC modes: default Interactive, opt-in Batch, explicit false Interactive, project Batch
+Identical verdicts, resources and assertions: 3 VCs, 4 runs

@@ -21,7 +21,9 @@ record ExitImmediately(ExitValue ExitValue) : ILegacyParseArguments;
 public static class DafnyBackwardsCompatibleCli {
 
   public static Task<int> Main(string[] args) {
-    return MainWithWriters(Console.Out, Console.Error, Console.In, args);
+    return args.Length > 0 && args[0] == "verify"
+      ? VerificationGc.RunCli(args)
+      : MainWithWriters(Console.Out, Console.Error, Console.In, args);
   }
 
   static DafnyBackwardsCompatibleCli() {
