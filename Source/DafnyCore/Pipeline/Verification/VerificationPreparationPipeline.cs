@@ -429,7 +429,7 @@ public sealed class VerificationPreparationPipeline : IDisposable {
         identity, profile, moduleName, profileStart, cancellationToken);
       return (graph, persistentDependencies, GC.GetAllocatedBytesForCurrentThread() - started, recorded);
     }
-    if (program.Options.Get(CommonOptionBag.TranslationCache)) {
+    if (program.Options.Get(CommonOptionBag.TranslationCache) && !program.Options.Get(CommonOptionBag.PersistentTranslationAudit)) {
       var cache = ModuleTranslationCache.ProcessCache;
       var module = cache.TranslateModule(program, moduleDefinition, translatorFlags, cancellationToken, out var reused);
       var cached = module.Program;
@@ -490,7 +490,8 @@ public sealed class VerificationPreparationPipeline : IDisposable {
     string? text;
     string? unrecorded = null;
     var reused = false;
-    if (program.Options.Get(CommonOptionBag.TranslationCache)) {
+    // Persistent audit must translate independently even when the process-local cache is warm.
+    if (program.Options.Get(CommonOptionBag.TranslationCache) && !program.Options.Get(CommonOptionBag.PersistentTranslationAudit)) {
       var module = ModuleTranslationCache.ProcessCache.TranslateModule(program, moduleDefinition, translatorFlags,
         cancellationToken, out reused);
       graph = module.Program;

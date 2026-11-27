@@ -40,6 +40,10 @@ start checks, failed-bound and reachable-false controls, corrupted records and
 source edits. An injected analysis-answer change with unchanged local identity
 checks the final-key boundary. Unlisted-read controls exercise both publishers.
 The existing persistent audit remains the independent result/graph oracle.
+Audit bypasses process-local translation snapshots, including when no persistent
+key is available, and reads native classifications rather than the frozen
+projection. A deliberately poisoned projection and a genuinely warm process
+snapshot exercise this independence.
 
 Whole-module IDE report adapters remain separate work: IDE consumers still
 require current native tasks and use late solver-response reuse. Export-view

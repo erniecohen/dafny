@@ -235,4 +235,54 @@ public class TranslationGlobalInputsTests {
     public Task<VerificationPreparation> PrepareAsync(Microsoft.Boogie.Program input, CancellationToken cancellationToken) =>
       Task.FromResult(VerificationPreparation.Ready([]));
   }
+
+  [Theory]
+  [InlineData(false)]
+  [InlineData(true)]
+  public async Task AuditRegeneratesNativeAnswersEvenWithAWarmProcessSnapshot(bool persistentKey) {
+    var directory = Path.Combine(Path.GetTempPath(), "global-audit-" + Guid.NewGuid());
+    var cache = ModuleTranslationCache.ProcessCache;
+    cache.Clear();
+    try {
+      var program = await Resolve();
+      program.Options.Set(CommonOptionBag.PersistentTranslation, true);
+      program.Options.Set(CommonOptionBag.VerificationCache, directory);
+      program.Options.Set(CommonOptionBag.VerificationLogFormat, Array.Empty<string>());
+      Microsoft.Dafny.Caching.TaskCacheSession.For(program.Options);
+      var module = program.RawModules().Single(m => m.Name == "M");
+      if (!persistentKey) { module.ResolutionIdentity = null; } // Still eligible for the local process cache.
+      program.Options.Set(CommonOptionBag.TranslationGlobalInputs, false);
+      var expected = ModuleTranslationCache.Emit(new BoogieGenerator(program.Reporter, new(), new(program.Options))
+        .DoTranslation(program, module), program.Options);
+      program.Options.Set(CommonOptionBag.TranslationGlobalInputs, true);
+      var view = TranslationGlobalInputs.For(program, module)!;
+      var callee = program.RawModules().Single(m => m.Name == "A").TopLevelDecls.OfType<TopLevelDeclWithMembers>()
+        .SelectMany(t => t.Members).Single(m => m.Name == "Invoke");
+      var field = typeof(TranslationGlobalInputs).GetField("answers", System.Reflection.BindingFlags.Instance |
+        System.Reflection.BindingFlags.NonPublic)!;
+      var answers = (Dictionary<(MemberDecl, ModuleDefinition?), TranslationGlobalInputs.Facts>)field.GetValue(view)!;
+      // Deliberately corrupt a frozen answer without changing its key. Audit must not share this fault.
+      answers[(callee, module)] = view.Read(callee, module) with { ArgumentsOnly = true };
+      var bad = cache.Translate(program, module, new(program.Options), default);
+      Assert.NotEqual(expected, ModuleTranslationCache.Emit(bad, program.Options));
+      cache.Translate(program, module, new(program.Options), default, out var reused);
+      Assert.True(reused); // The process snapshot is genuinely eligible before audit.
+      var hits = cache.Hits;
+      program.Options.Set(CommonOptionBag.PersistentTranslationAudit, true);
+      using var pipeline = new VerificationPreparationPipeline();
+      string? captured = null;
+      var prepared = await pipeline.PrepareAsync(new(false, program, null), module, false,
+        () => new EmptyBackend(), default, graph => captured = ModuleTranslationCache.Emit(graph, program.Options));
+      Assert.True(prepared.Preparation.IsReady);
+      Assert.Equal(expected, captured);
+      Assert.Equal(hits, cache.Hits);
+      var persistent = Microsoft.Dafny.Caching.PersistentModuleCache.TryFor(program.Options)!;
+      Assert.True(persistent.Audit);
+      // An empty persistent store may record the independently regenerated translation.
+      Assert.Equal(persistentKey ? 1 : 0, persistent.TranslationPublications);
+    } finally {
+      cache.Clear();
+      if (Directory.Exists(directory)) { Directory.Delete(directory, true); }
+    }
+  }
 }

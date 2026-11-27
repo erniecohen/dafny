@@ -335,7 +335,10 @@ public partial class BoogieGenerator {
   private TranslationGlobalInputs translationGlobalInputs;
 
   private TranslationGlobalInputs.Facts TranslationTerminationFacts(MemberDecl member, ModuleDefinition caller) {
-    if (translationGlobalInputs != null) { return translationGlobalInputs.Read(member, caller); }
+    // Audit must regenerate the graph from native analysis, independently of the projection codec.
+    if (translationGlobalInputs != null && !options.Get(CommonOptionBag.PersistentTranslationAudit)) {
+      return translationGlobalInputs.Read(member, caller);
+    }
     var analysis = ModularTerminationAnalysis.Of(program);
     return new TranslationGlobalInputs.Facts(ModularTermination.IsOpenDispatch(member, analysis.OpenTraits),
       analysis.AppliesOnlyItsArguments(member), analysis.ReachesOpenDispatch(member, caller));
