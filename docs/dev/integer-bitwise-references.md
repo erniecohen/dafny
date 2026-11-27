@@ -317,6 +317,52 @@ invalid-caller rejection, or fail contract well-formedness when the guard define
 a later premise (the count/divisor guards in `RightArithmetic` and `LeftArithmetic`). Exhaustion never counts as a control or mutation pass.
 The proof/control ceilings remain 2,000,000/200,000 resource units per scope.
 
-Remaining native equations include subtraction, multiplication, unsigned
-division/remainder, ordering, rotations and population count. General word APIs
+Remaining native equations include subtraction, multiplication, ordering,
+rotations and population count. General word APIs
 at other widths and runtime lowering of integer-newtype operators also remain.
+
+## Checked native unsigned division and remainder
+
+Include `Source/DafnyStandardLibraries/optional/IntegerBitwiseNativeDivision.dfy`
+with `--integer-bitwise`. The modules `Std.Arithmetic.IntegerBitwiseNativeDivision8`,
+`16`, `32` and `64` provide `Divide(x,y)` and `Remainder(x,y)`. Both require
+`y != 0` and establish the unsigned observations
+`(x/y) as int == (x as int)/(y as int)` and
+`(x%y) as int == (x as int)%(y as int)`, respectively. Bounded integer clients
+compose these facts with the existing checked round trips. A result cast still
+checks the complete destination predicate, including stricter predicates that
+exclude zero. This companion adds no runtime lowering of integer-newtype operators.
+
+### Model and checked proof boundary
+
+Interpret a word by its unsigned value U in [0,2^N). For a nonzero divisor y,
+let d=U(y)>0, q=floor(U(x)/d) and r=U(x)-q*d. Euclidean division gives
+U(x)=q*d+r and 0<=r<d. Also q<=U(x)<2^N and r<d<2^N, so both results fit
+without wrapping. SMT unsigned division and remainder denote these same words;
+their unsigned integer observations are q and r. The nonzero premise excludes
+SMT's totalized zero-divisor case and satisfies Dafny's source-level checks.
+
+All eight lemmas have checked bodies. Their body gate uses pinned Z3's
+integer-based bitvector engine (`--solver-option O:smt.bv.solver=2`) to relate
+native quotient/remainder operations to integer observations. This configures
+proof search and adds no Dafny axiom. The existing Boolean/conversion proof
+closure is checked separately with the default engine; ordinary clients retain
+the default engine. Including the companion is explicit, and existing compiler
+and packaged-library inputs remain unchanged.
+
+Qualification checks the full body closure and symbolic native and composed
+integer clients under both resolvers, with additional axioms off/on. It also
+checks quotient/remainder reconstruction and remainder bounds. Boundary witnesses
+include zero numerators, divisor one, equal operands, exact and inexact division,
+a numerator smaller than its divisor, maximum words and high-bit divisors.
+Wrong results, signed interpretations, omitted remainders, zero divisors, invalid
+conversions and stricter result predicates have designated negative controls.
+Reachable false assertions follow each rule separately and both rules together,
+under both bitvector engines. Controls must be conclusively rejected; exhaustion
+and timeout never count as a pass.
+
+Serial mutation mode negates each of the eight postconditions on concrete
+inhabited inputs (13,5), and removes each of the eight nonzero premises. A premise
+removal must fail the contract's division-by-zero well-formedness check; the
+invalid body is not used as a control. Body/client and negative-control ceilings
+are 2,000,000 and 200,000 resource units per scope, respectively.
