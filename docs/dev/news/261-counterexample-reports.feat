@@ -1,0 +1,1 @@
+With `--persistent-translation`, the new opt-in `--persistent-counterexamples` can replay resource-bounded failed module results with complete current-source terminal diagnostics, related locations and error counts. Failed results requiring solver models retain the ordinary task path.

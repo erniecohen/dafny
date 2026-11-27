@@ -28,11 +28,30 @@ internal sealed class SourceLocations {
   private readonly (string Text, string Label)[] paths;
   private readonly Dictionary<string, Uri?> files = new(StringComparer.Ordinal);
   private readonly Lazy<Dictionary<string, (Uri Uri, Enclosing Span)?>> reportAnchors;
+  private readonly Lazy<Dictionary<(string Uri, int Position), Token?>> proofTokens;
 
   private readonly record struct Enclosing(int Start, int End, int Line, string Name);
 
   private SourceLocations(Program program) {
     reportAnchors = new Lazy<Dictionary<string, (Uri, Enclosing)?>>(BuildReportAnchors);
+    proofTokens = new Lazy<Dictionary<(string, int), Token?>>(() => {
+      var result = new Dictionary<(string, int), Token?>();
+      var seen = new HashSet<Token>(ReferenceEqualityComparer.Instance);
+      var starts = program.Files.Select(f => f.Origin.EntireRangeWithFallback.StartToken)
+        .Concat(program.RawModules().SelectMany(m => m.TopLevelDecls)
+          .SelectMany(d => d is TopLevelDeclWithMembers members
+            ? members.Members.Select(m => m.StartToken).Prepend(d.StartToken) : new[] { d.StartToken }));
+      foreach (var start in starts) {
+        for (var token = start; token != null && seen.Add(token); token = token.Next) {
+          if (token.Uri == null) { continue; }
+          var key = (token.Uri.ToString(), token.pos);
+          // Parsed files take precedence over generated/cloned tokens at the same source offset.
+          // The complete current excerpt is validated before any dependency is restored.
+          result.TryAdd(key, token);
+        }
+      }
+      return result;
+    });
     foreach (var file in program.Files) {
       var uri = file.Origin.Uri;
       if (uri == null || labels.ContainsKey(uri.ToString())) { continue; }
@@ -79,6 +98,35 @@ internal sealed class SourceLocations {
   }
 
   public static SourceLocations For(Program program) => ForProgram.GetValue(program, p => new SourceLocations(p));
+
+  internal ReportPosition? ProofPosition(Token token) {
+    var position = Report(token);
+    return position?.Filename == ReportFilename.Literal && token.Uri != null
+      ? position with { Literal = token.Uri.ToString() } : position;
+  }
+
+  internal Token? ProofToken(ReportPosition position) {
+    if (position == null || position.Offset < 0) { return null; }
+    string? uri;
+    long offset = position.Offset;
+    var line = position.Line;
+    if (position.Filename == ReportFilename.Literal) {
+      if (position.Anchor != "" || position.File != "") { return null; }
+      uri = position.Literal;
+    } else {
+      if (Report(position, null) is not { } report) { return null; }
+      line = report.Line;
+      if (position.Anchor.Length != 0) {
+        if (!reportAnchors.Value.TryGetValue(position.Anchor, out var binding) || binding == null) { return null; }
+        uri = binding.Value.Uri.ToString();
+        offset += binding.Value.Span.Start;
+      } else {
+        uri = labels.SingleOrDefault(p => p.Value == position.File).Key;
+      }
+    }
+    return uri != null && offset <= int.MaxValue && proofTokens.Value.TryGetValue((uri, (int)offset), out var token) &&
+           token != null && token.line == line && token.col == position.Column ? token : null;
+  }
 
   /// <summary>The file of <paramref name="uri"/> by its content, or the URI itself when it names no file of the program.</summary>
   public string Label(Uri? uri) => uri == null ? "" : labels.TryGetValue(uri.ToString(), out var label) ? label : uri.ToString();

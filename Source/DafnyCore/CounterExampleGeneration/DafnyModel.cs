@@ -24,7 +24,8 @@ namespace Microsoft.Dafny {
     private readonly DafnyOptions options;
     public readonly Model Model;
     public readonly List<PartialState> States = [];
-    internal string CapturedStateDescription(string name) => options.CapturedStateDescription(name);
+    private readonly IReadOnlyDictionary<string, string>? stateDescriptions;
+    internal string CapturedStateDescription(string name) => stateDescriptions?.GetValueOrDefault(name, name) ?? options.CapturedStateDescription(name);
     public static readonly UserDefinedType UnknownType =
       new(new Token(), "?", null);
     private readonly ModelFuncWrapper fSelect, fSetMember, fSeqLength, fSeqIndex, fBox,
@@ -44,9 +45,12 @@ namespace Microsoft.Dafny {
 
     private readonly Dictionary<Model.Element, LiteralExpr> concretizedValues = new();
 
-    public DafnyModel(Model model, DafnyOptions options) {
+    public DafnyModel(Model model, DafnyOptions options) : this(model, options, null) { }
+
+    internal DafnyModel(Model model, DafnyOptions options, IReadOnlyDictionary<string, string>? stateDescriptions) {
       Model = model;
       this.options = options;
+      this.stateDescriptions = stateDescriptions;
       var tyArgMultiplier = options.TypeEncodingMethod switch {
         CoreOptions.TypeEncoding.Arguments => 1,
         _ => 0
