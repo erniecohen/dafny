@@ -1,0 +1,3 @@
+// CHECK-NOT: panic!
+// CHECK: pub fn Main\(
+// CHECK-NOT: panic!
