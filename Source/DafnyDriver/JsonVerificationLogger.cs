@@ -25,12 +25,12 @@ public class JsonVerificationLogger : IVerificationResultFormatLogger {
     output = parameters.TryGetValue("LogFileName", out string filename) ? new StreamWriter(filename) : fallbackOutput.StatusWriter();
   }
 
-  private static JsonNode SerializeAssertion(AssertCmd assertion) {
+  private static JsonNode SerializeAssertion(Caching.VerificationAssertionReport assertion) {
     return new JsonObject {
-      ["filename"] = assertion.tok.filename,
-      ["line"] = assertion.tok.line,
-      ["col"] = assertion.tok.col,
-      ["description"] = assertion.Description.SuccessDescription
+      ["filename"] = assertion.Filename,
+      ["line"] = assertion.Line,
+      ["col"] = assertion.Column,
+      ["description"] = assertion.Description
     };
   }
 
@@ -54,7 +54,9 @@ public class JsonVerificationLogger : IVerificationResultFormatLogger {
       ["outcome"] = SerializeOutcome(vcResult.Outcome),
       ["runTime"] = SerializeTimeSpan(vcResult.RunTime),
       ["resourceCount"] = vcResult.ResourceCount,
-      ["assertions"] = new JsonArray(vcResult.Asserts.Select(SerializeAssertion).ToArray()),
+      ["assertions"] = new JsonArray((Caching.VerificationTaskFacts.AssertionReport(taskResult.Task) ??
+        vcResult.Asserts.Select(a => new Caching.VerificationAssertionReport(a.tok.filename, a.tok.line, a.tok.col,
+          a.Description.SuccessDescription)).ToList()).Select(SerializeAssertion).ToArray()),
     };
     if (taskResult.Task is Caching.IReplayedVerificationTask { IsReplayed: true }) { result["timingReplayed"] = true; }
     if (taskResult.Task != null && Caching.VerificationTaskFacts.RandomSeed(taskResult.Task) != 0) {
