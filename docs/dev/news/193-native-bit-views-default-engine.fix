@@ -1,0 +1,1 @@
+Qualify the optional bit-sequence views and their negative/vacuity controls exclusively with the default bitvector engine. Their body proofs already used that engine.

@@ -364,7 +364,7 @@ sequences, composed bounded-integer callers, low/high digits, all-ones words,
 and zero/width shift endpoints with both resolvers and additional axioms off/on.
 Negative controls reject invalid lengths, indices, counts, casts and equations.
 An inhabited false assertion follows each lemma, the two functions and all
-lemmas together; these controls run with both native BV solvers. Serial mutation
+lemmas together; these controls run with the default bitvector engine. Serial mutation
 mode negates every postcondition, removes every explicit precondition, and
 changes each function definition, requiring a clean baseline for each mutation.
 The proof/control ceilings are 2,000,000/200,000 resource units per scope;
