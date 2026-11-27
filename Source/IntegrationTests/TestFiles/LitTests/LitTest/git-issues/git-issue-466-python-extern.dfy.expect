@@ -1,18 +1,16 @@
 
 Dafny program verifier did not attempt verification
-Error: module 'A' is in a recursive module group; Python compilation of recursive module groups with extern declarations is not yet supported
 
 Dafny program verifier did not attempt verification
-Error: module 'A' is in a recursive module group; Python compilation of recursive module groups with extern declarations is not yet supported
 
 Dafny program verifier did not attempt verification
-Error: module 'A' is in a recursive module group; Python compilation of recursive module groups with extern declarations is not yet supported
 
 Dafny program verifier did not attempt verification
-Error: module 'A' is in a recursive module group; Python compilation of recursive module groups with declarations marked '{:compile false}' is not yet supported
 
 Dafny program verifier did not attempt verification
-Error: module 'A' is in a recursive module group; Python compilation of recursive module groups with declarations marked '{:compile false}' is not yet supported
 
 Dafny program verifier did not attempt verification
-Error: module 'A' is in a recursive module group; Python compilation of recursive module groups with declarations marked '{:compile false}' is not yet supported
+
+Dafny program verifier did not attempt verification
+git-issue-466-python-all-omitted.dfy(1,24): Error: Python package translation of a recursive module group with every member marked '{:compile false}' is not yet supported
+Translation was aborted because errors were found

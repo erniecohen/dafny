@@ -70,6 +70,20 @@ namespace Microsoft.Dafny.Compilers {
       if (groups.Count == 0) {
         return modules;
       }
+      var importedClasses = new Dictionary<string, List<string>>();
+      foreach (var module in Program.CompileModules.Where(module => module.CanCompile())) {
+        var refinesGroup = false;
+        for (var ancestor = module.Implements?.Target.Def; ancestor != null; ancestor = ancestor.Implements?.Target.Def) {
+          refinesGroup |= ancestor.RecursiveGroup != null;
+        }
+        if (refinesGroup) {
+          var classes = module.TopLevelDecls.Where(declaration => RustBackend.IsImportedRefinementClass(declaration, Options))
+            .Select(declaration => RustPath(declaration.GetCompileName(Options))).ToList();
+          if (classes.Count != 0) {
+            importedClasses.Add(RustPath(module.GetCompileName(Options)), classes);
+          }
+        }
+      }
       var byName = modules.Elements.ToDictionary(module => module.dtor_name.ToVerbatimString(false));
       var reserved = byName.Keys.Select(name => RustPath(name.Split('.')[0])).ToHashSet();
       var groupedNames = new HashSet<string>();
@@ -112,6 +126,17 @@ namespace Microsoft.Dafny.Compilers {
           }
           body.Add(RAST.ModDecl.create_UseDecl(RAST.Use.create(RAST.Visibility.create_PUB(),
             importPath.MSel(Sequence<Rune>.UnicodeFromString("*")))));
+        }
+        if (importedClasses.TryGetValue(path, out var classes)) {
+          // Refinement gives each imported type a new foreign identity. Import
+          // from that namespace, rather than copying the ancestor's type or impls.
+          foreach (var name in classes) {
+            var importPath = root.MSel(Sequence<Rune>.UnicodeFromString("_dafny_externs"));
+            foreach (var segment in (path + "::" + name).Split("::")) {
+              importPath = importPath.MSel(Sequence<Rune>.UnicodeFromString(segment));
+            }
+            body.Add(RAST.ModDecl.create_UseDecl(RAST.Use.create(RAST.Visibility.create_PUB(), importPath)));
+          }
         }
         return RAST.Mod.create_Mod(module.dtor_docString, module.dtor_attributes, module.dtor_name,
           Sequence<RAST._IModDecl>.FromArray(body.ToArray()));

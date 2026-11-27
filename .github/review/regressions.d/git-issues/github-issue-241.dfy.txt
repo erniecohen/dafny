@@ -1,0 +1,3 @@
+
+# Opt-in --pipeline-profile writes a timing sidecar and leaves the output unchanged (#241).
+git-issues/github-issue-241.dfy

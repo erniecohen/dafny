@@ -1,0 +1,3 @@
+
+# Constructor type arguments under --invariant-constructor-inference (https://github.com/erniecohen/dafny/issues/101).
+git-issues/github-issue-101.dfy

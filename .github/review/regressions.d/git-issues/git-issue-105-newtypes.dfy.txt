@@ -1,0 +1,5 @@
+# Eighth stage: newtypes (a newtype N with member invariants is a subset of "raw N"; the header
+# constraint moves into N, the witness rules, raw N is ghost, operations checked per invariant, native
+# types, compilation, and the instantiated and inferred base types of the newtype check); the gate is
+# gone, so trait-gates, raw-errors, verify and not-yet changed (https://github.com/erniecohen/dafny/issues/105).
+git-issues/git-issue-105-newtypes.dfy

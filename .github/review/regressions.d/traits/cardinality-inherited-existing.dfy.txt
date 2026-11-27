@@ -1,0 +1,1 @@
+traits/cardinality-inherited-existing.dfy

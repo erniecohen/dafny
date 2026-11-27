@@ -1,0 +1,3 @@
+
+# Function call permissions after assign-such-that (#36 here).
+git-issues/github-issue-36.dfy

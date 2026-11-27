@@ -1,0 +1,3 @@
+
+# Opt-in --verification-module-window K reports what K = 1 reports (#241).
+git-issues/github-issue-241-module-window.dfy

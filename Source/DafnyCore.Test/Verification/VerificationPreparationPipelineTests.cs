@@ -7,6 +7,48 @@ namespace DafnyCore.Test.Verification;
 
 [Collection("Cardinality resolution")]
 public class VerificationPreparationPipelineTests {
+  [Theory]
+  [InlineData(false, true)]
+  [InlineData(true, false)]
+  [InlineData(true, true)]
+  public async Task ReadyPreparationPassesAnUnfinishedEarlierTranslationOnlyWithFreshSolvers(bool ready, bool fresh) {
+    var program = await ModuleTranslationCacheTests.Resolve(Source, cached: false, refresh: true);
+    program.Options.Set(CommonOptionBag.TranslationWorkers, 2);
+    program.Options.Set(CommonOptionBag.ReadyModuleVerification, ready);
+    program.Options.RestartProverPerVC = fresh;
+    var module = program.RawModules().Single(m => m.Name == "Boundary");
+    using var pipeline = new VerificationPreparationPipeline();
+    // Hold the cursor of an earlier translation without relying on a timing delay in that translation.
+    var earlier = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+    typeof(VerificationPreparationPipeline).GetField("lastCommit",
+      System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!.SetValue(pipeline, earlier.Task);
+    var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+    var captures = 0;
+    var calls = 0;
+    var backend = new Backend((graph, _) => {
+      Assert.Equal(1, captures);
+      Assert.NotEmpty(graph.Implementations);
+      Interlocked.Increment(ref calls);
+      entered.TrySetResult();
+      return Task.FromResult(VerificationPreparation.Ready([]));
+    });
+    var preparation = pipeline.PrepareAsync(new(false, program, null), module, false, () => backend, default,
+      _ => Interlocked.Increment(ref captures));
+    try {
+      if (ready && fresh) {
+        await entered.Task.WaitAsync(TimeSpan.FromSeconds(30));
+        Assert.False(earlier.Task.IsCompleted);
+      } else {
+        Assert.NotSame(entered.Task, await Task.WhenAny(entered.Task, Task.Delay(100)));
+      }
+    } finally {
+      earlier.TrySetResult();
+      await preparation.WaitAsync(TimeSpan.FromSeconds(30));
+    }
+    Assert.Equal(1, captures);
+    Assert.Equal(1, calls);
+  }
+
   private const string Source = """
     module Boundary {
       lemma Positive(x: int) ensures x + 1 > x { }

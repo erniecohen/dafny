@@ -461,7 +461,58 @@ multi-module lit programs, the digests at N = 1 and N = 4 then agree, and
 `git-issues/github-issue-569-witness-race.dfy` compares them at N = 1, 2 and 4 under both kinds
 of schedule.
 
+### 2.8 Single-worker follow-up: translation graph copying
+
+Every uncached translation also materializes a private Boogie graph before preparation.
+Removing that copy would change the fresh node identities and identity-derived expression
+hashes on which solver emission depends. The opt-in `--optimize-translation-copy` instead
+reduces its reflection work, including with one translation worker. It uses a cached open
+delegate for `MemberwiseClone` and generates a field-copy routine per runtime type.
+
+The equivalence argument is local: allocate the same shallow copy, allocate the same fresh
+node identity, enter it in the same reference map, traverse fields in the existing order,
+then recompute immutable expression hashes. Each generated field operation performs the
+same read, recursive copy and write. A statically known primitive, enum, string, decimal,
+big-number value, URI or runtime type can be assigned directly because `Copy` returns it
+unchanged. Other fields, including tokens, still recurse; `CanVerifyOrigin` must bind to the
+current resolved program. Collections and unsupported-type rejection are unchanged.
+Generated delegates retain metadata only, never a program. Unsupported generation and
+runtimes without dynamic code support use reflection.
+
+The option is wired through ordinary translation, cold and warm in-process translation
+caches, their bypass path, and persistent translation recording. Unit controls require the
+selected copier to run, private inherited and readonly fields to copy, distinct node IDs,
+preserved aliases and hashes, current-symbol rebinding, and unsupported metadata rejection.
+The paired real-solver regression compares Boogie bytes, raw SMT, diagnostics and per-VC
+obligations and resources with the default under both resolvers, additional axioms and the
+translation cache. Its positive lemma must pass and its false assertion must fail.
+
 ---
+
+### 2.8 Ready module verification
+
+`--ready-module-verification` is an experimental hidden, default-off follow-up to F1.
+It requires `--translation-workers` and `--verification-module-window` greater than one,
+and an explicitly fresh solver per proof (`--boogie /restartProver`). It removes two
+ordering dependencies: an unfinished earlier translation need not block a later module's
+capture and preparation, and an unprepared earlier module need not block a ready module's
+proof-task submission. Submission remains ordered within each module.
+
+This relies on F1's private translation state and eligibility guards. Captures remain
+mutually exclusive and happen before their own module's preparation; the CLI writes each
+module to its own Boogie file. The existing module window still bounds admission and
+publishes results and diagnostics in canonical order. A module's submission queue is
+released together with its reported translation, including between position-filter batches.
+Neither obligations nor axioms change. Fresh solver histories prevent submission order
+from becoming solver-history input; equality controls compare complete per-proof SMT
+streams, assertion maps, verdicts and resource counts, together with Boogie text.
+
+The performance decision distinguishes translation and preparation from proof-task SMT
+generation. A preparation-only probe must count the prepared work before suppressing its
+execution; its empty solver log is no proof result. Acceptance also needs independent
+real-solver positive and false-assertion controls. Removing either ordering barrier must
+be observable in a held-predecessor control. Reduced readiness latency alone does not
+establish an end-to-end verification speedup.
 
 ## 3. F2 — Parallel module resolution (D8)
 
@@ -810,6 +861,86 @@ C ∈ {4, 8, 16} decides whether one process saturates the machine.
 | F4-2 | Change 3 (Boogie PR plus adoption) | ~60 + repin | low |
 | F4-3 | Change 4, after F1-2 (needs the commit cursor) | ~300 | medium |
 | F4-M | Heap-snapshot measurement of `A_clone`, `A_res`, `A_cache`, `A_body`, `B_m`, `T_m` and checker retention, in a workflow | ~200 | — |
+
+### 5.3 As implemented and the remaining measurement boundary
+
+PR #562 implements F4-1, F4-2 and F4-3. One-shot CLI compilations discard the parsed clone and
+do not retain parser or resolver caches for another edit. Reported modules release their idle
+Boogie checkers, using the adopted `CheckerPool.Release` API, and window slots discard their
+reported symbol state. `--release-verified-modules` additionally detaches method and iterator
+bodies, with a throwing hook for a later read. These are shipped changes, not pending items.
+
+F4-M's heap points and dump-collection workflow shipped with front-end profiling (#259).
+`.github/review/retention-profile.py run` adds a sequential paired experiment for the body-release
+option to the workflow's `std-heap` job. For example, after building Dafny:
+
+```sh
+python3 .github/review/retention-profile.py run --dafny Binaries/Dafny \
+  --project Source/DafnyStandardLibraries/src/Std/dfyconfig.toml \
+  --windows 1 4 --reps 3 --cores 2 --out work/body-release
+```
+
+The output directory must be new. Each pair checks the child exit, diagnostics and every module's
+Boogie text. It requires complete forced-GC observations, translation/report coverage, finished
+verification tasks and an actual body release. `comparison.json` records signed live-heap deltas
+at matching reporting points. Its decision compares the **final** live-heap difference with 10%
+of baseline peak process RSS, obtained from `wait4` in bytes. Earlier points at K > 1 can contain
+different modules still in flight; their deltas are descriptive and are never summed. Raw profiles,
+Boogie files, output and process accounting remain beside the decision for review. The lit control
+uses a real solver, checks Boogie, diagnostics and per-VC outcomes/resource counts, and retains a
+false assertion. No-op resource counts are never used as the real-solver equality oracle.
+
+**Decision boundary.** This experiment uses the no-op solver and forced full collections. A `go`
+or `no-go` applies only to that instrumented workload. A below-threshold body-release difference
+does not justify another F4 implementation, and does not rescind the already shipped releases.
+It says nothing about `A_clone` or idle solver contexts, which one-shot runs already release.
+The live-heap difference is not root-exclusive `A_body`, and is not an observed reduction in peak
+RSS. Type tables from `dotnet-gcdump report` likewise do not establish root ownership. Attribution
+of `A_res`, `A_cache`, `B_m` and `T_m` still needs analysis of the saved heap graph; it must not be
+inferred from the sum of type sizes or labeled complete by this experiment. Measurements from
+private runs stay outside this document.
+
+#### Observed heap-graph cuts
+
+The opt-in offline analyzer `.github/review/heap-retention.py` reads existing
+`.gcdump` files with a pinned version of the collector's graph reader. For example:
+
+```sh
+python3 .github/review/heap-retention.py -- --self-test
+python3 .github/review/heap-retention.py --work work/retention-roots -- \
+  work/capture.gcdump '^Microsoft.Dafny.Program$' '^Microsoft.Dafny.ModuleResolver$'
+```
+
+Each regular expression selects **all rooted nodes** with matching collector type
+names. `ReachableBytes` counts their union of descendants. `RetainedBytes` is the
+rooted heap size minus the size still reachable from the synthetic GC root when
+the selected nodes are blocked. It includes the selected nodes' shallow sizes.
+`SharedBytes` is the difference: bytes reachable through the selection that also
+have an unblocked root path. A collective cut can retain more than the sum of
+individual cuts, while nested selections must not double-count descendants.
+These quantities are not additive across selectors. To measure a union, use one
+expression with alternatives, rather than adding report rows.
+
+Reports include the input digest and intentionally exclude dump process metadata,
+addresses and root labels. Empty or unrooted selections, a cut of the synthetic
+root, sampled graphs and reachable undefined non-null nodes are rejected. The
+collector can represent a null stack target as an undefined zero-address node;
+this contributes no size or edges. The controls cover shared descendants, cycles,
+nested and collective cuts, disconnected nodes, invalid evidence and a round trip
+through the actual gcdump writer/reader, including rejection of a sampled file.
+Run `.github/review/heap-retention-mutations.py --work work/retention-mutations`
+to test the analysis boundaries sequentially.
+
+**Scope.** This is retention in the **observed graph**, not a proof that EventPipe
+captured every runtime edge. Preserve and inspect the capture log for truncation,
+event loss and collector warnings; graph closure and unit sampling multipliers
+alone cannot establish capture completeness. Collector type names can abbreviate
+nested types; a matching type is not a field-level ownership certificate. Cutting
+an owner does not establish that a supported product operation can release it.
+In particular, do not equate a program's entire reachable graph with `A_res`, add
+overlapping cache/AST cuts, or apply the 10% gate to these cuts without establishing
+capture completeness, the intended ownership boundary and the matching process
+peak. Field-level attribution of `A_res`, `A_cache`, `B_m` and `T_m` remains open.
 
 ---
 

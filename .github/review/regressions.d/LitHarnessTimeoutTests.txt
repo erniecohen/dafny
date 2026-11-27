@@ -1,0 +1,3 @@
+
+# A lit test that times out fails, and its commands are stopped (#176).
+LitHarnessTimeoutTests

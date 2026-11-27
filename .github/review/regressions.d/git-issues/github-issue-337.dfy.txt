@@ -1,0 +1,4 @@
+
+# A library (.doo) and --print keep the opaque modifier of constants
+# (https://github.com/erniecohen/dafny/issues/337).
+git-issues/github-issue-337.dfy

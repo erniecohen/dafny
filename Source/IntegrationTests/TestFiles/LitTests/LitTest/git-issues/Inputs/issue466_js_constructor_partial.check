@@ -1,0 +1,1 @@
+// CHECK: JavaScript recursive groups require extern constructors on fully imported classes; partial classes must use a Dafny constructor body

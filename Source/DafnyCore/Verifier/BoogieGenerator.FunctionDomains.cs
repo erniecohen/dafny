@@ -35,7 +35,7 @@ public partial class BoogieGenerator {
 
   bool FunctionDomainTags => options.Get(CommonOptionBag.AdditionalAxioms) || FunctionExtensionalityAxiom;
 
-  // M2 of the trial: extensionality as an axiom triggered at each equality of total arrows.
+  // M2 of the trial: extensionality at each equality of heap-independent arrows.
   bool FunctionExtensionalityAxiom => options.Get(CommonOptionBag.FunctionExtensionalityAxiom);
 
   public static string ExactDom(int arity) {
@@ -250,6 +250,13 @@ public partial class BoogieGenerator {
           FunctionCall(tok, ExactDom(arity), Bpl.Type.Bool, Snoc(domains, g))));
       AddOtherDefinition(typeConstructor, new Axiom(tok,
         BplForall(bvars, BplTrigger(eq), BplImp(BplAnd(premises, pointwise), eq))));
+      var partialArrow = ClassTyCon(program.SystemModuleManager.PartialArrowTypeDecls[arity], types);
+      var partialPremises = BplAnd(BplAnd(MkIs(f, partialArrow), MkIs(g, partialArrow)),
+        BplAnd(FunctionCall(tok, ExactDom(arity), Bpl.Type.Bool, Snoc(domains, f)),
+          FunctionCall(tok, ExactDom(arity), Bpl.Type.Bool, Snoc(domains, g))));
+      AddOtherDefinition(typeConstructor, new Axiom(tok,
+        BplForall(bvars, BplTrigger(eq),
+          BplImp(BplAnd(partialPremises, PartialAgreement(tok, arity, types, f, g)), eq))));
     }
   }
 
@@ -290,11 +297,11 @@ public partial class BoogieGenerator {
   }
 
   /// <summary>
-  /// With --function-extensionality-axiom, an equality between total arrows is FunEqN
+  /// With --function-extensionality-axiom, an equality between heap-independent arrows is FunEqN
   /// at the left operand's type arguments; otherwise null.
   /// </summary>
   internal Bpl.Expr FunctionEquality(IOrigin tok, Type t0, Type t1, Bpl.Expr e0, Bpl.Expr e1) {
-    if (!FunctionExtensionalityAxiom || !IsTotalArrow(t0) || !IsTotalArrow(t1)) {
+    if (!FunctionExtensionalityAxiom || !IsHeapIndependentArrow(t0) || !IsHeapIndependentArrow(t1)) {
       return null;
     }
     var arrow = t0.AsArrowType;
@@ -302,8 +309,8 @@ public partial class BoogieGenerator {
       arrow.TypeArgs.Select(TypeToTy).Concat(new[] { e0, e1 }).ToList());
   }
 
-  private static bool IsTotalArrow(Type t) {
-    return t.AsArrowType != null && t.IsArrowTypeWithoutPreconditions && t.IsArrowTypeWithoutReadEffects;
+  private static bool IsHeapIndependentArrow(Type t) {
+    return t.AsArrowType != null && t.IsArrowTypeWithoutReadEffects;
   }
 
   /// <summary>
@@ -334,9 +341,9 @@ public partial class BoogieGenerator {
       return null;
     }
     string kind = args.Count == 1 && args[0] is StringLiteralExpr { Value: string s } ? s : null;
-    var partial = kind is "partialExactDom" or "partialEqual" or "partialPointwise";
+    var partial = kind is "partialRestrict" or "partialExactDom" or "partialEqual" or "partialPointwise";
     var operation = kind switch {
-      "partialExactDom" => "exactDom", "partialEqual" => "equal", "partialPointwise" => "pointwise", _ => kind
+      "partialRestrict" => "restrict", "partialExactDom" => "exactDom", "partialEqual" => "equal", "partialPointwise" => "pointwise", _ => kind
     };
     var pair = operation is "equal" or "pointwise";
     var signature = (operation is "restrict" or "exactDom" or "equal" or "pointwise") &&
@@ -344,13 +351,13 @@ public partial class BoogieGenerator {
                     f.IsGhost && f.IsStatic && f.EnclosingClass is DefaultClassDecl &&
                     f.TypeArgs.Count >= 1 && f.Ins.Count == (pair ? 2 : 1) &&
                     (!(partial || kind == "pointwise") || f.Ins.All(p => !p.IsOlder)) &&
-                    (!(partial || kind == "pointwise") || f.ResultType.NormalizeExpandKeepConstraints() is BoolType) &&
+                    (operation == "restrict" || !(partial || kind == "pointwise") || f.ResultType.NormalizeExpandKeepConstraints() is BoolType) &&
                     !f.IsFuelAware() && !f.IsOpaque && !f.IsMadeImplicitlyOpaque(options) &&
                     f is not TwoStateFunction &&
                     f.Ins.All(p => partial ? IsPartialArrowOver(p.Type, f.TypeArgs) : IsTotalArrowOver(p.Type, f.TypeArgs)) &&
-                    (kind == "restrict" ? IsTotalArrowOver(f.ResultType, f.TypeArgs) : f.ResultType.IsBoolType);
+                    (operation == "restrict" ? (partial ? IsPartialArrowOver(f.ResultType, f.TypeArgs) : IsTotalArrowOver(f.ResultType, f.TypeArgs)) : f.ResultType.IsBoolType);
     var body = signature && (operation switch {
-      "restrict" => f.Body == null || IsRestrictionBody(f),
+      "restrict" => partial ? IsPartialRestrictionBody(f) : f.Body == null || IsRestrictionBody(f),
       "exactDom" or "pointwise" => f.Body == null,
       "equal" => f.Body?.Resolved is BinaryExpr { Op: BinaryExpr.Opcode.Eq } eq &&
                  IsParameter(eq.E0, f.Ins[0]) && IsParameter(eq.E1, f.Ins[1]),
@@ -358,7 +365,12 @@ public partial class BoogieGenerator {
     });
     if (!body) {
       reporter.Error(MessageSource.Verifier, f.Origin,
-        partial
+        kind == "partialRestrict"
+          ? "{:functionDomain \"partialRestrict\"} expects a static ghost function with type parameters " +
+            "<A1, ..., An, B>, argument (f: (A1, ..., An) --> B), matching partial-arrow result, " +
+            "no older parameters or other specification, and body " +
+            "(x1: A1, ..., xn: An) requires f.requires(x1, ..., xn) => f(x1, ..., xn)"
+          : partial
           ? "{:functionDomain \"" + kind + "\"} expects a static ghost predicate with type parameters " +
             "<A1, ..., An, B>, matching arguments of type (A1, ..., An) --> B, plain bool result, " +
             "no older parameters or other specification, and " +
@@ -405,6 +417,20 @@ public partial class BoogieGenerator {
            apply.Args.Zip(lambda.BoundVars, (e, v) => IsParameter(e, v)).All(x => x);
   }
 
+  private static bool IsPartialRestrictionBody(Function f) {
+    return f.Body?.Resolved is LambdaExpr lambda &&
+           lambda.Reads.Expressions.Count == 0 && lambda.BoundVars.Count == f.TypeArgs.Count - 1 &&
+           lambda.BoundVars.Zip(f.TypeArgs, (v, t) => v.Type.AsTypeParameter == t).All(x => x) &&
+           lambda.Range?.Resolved is FunctionCallExpr pre &&
+           pre.Function.EnclosingClass is ArrowTypeDecl ad && pre.Function == ad.Requires &&
+           IsParameter(pre.Receiver, f.Ins[0]) &&
+           pre.Args.Count == lambda.BoundVars.Count &&
+           pre.Args.Zip(lambda.BoundVars, (e, v) => IsParameter(e, v)).All(x => x) &&
+           lambda.Body.Resolved is ApplyExpr apply && IsParameter(apply.Function, f.Ins[0]) &&
+           apply.Args.Count == lambda.BoundVars.Count &&
+           apply.Args.Zip(lambda.BoundVars, (e, v) => IsParameter(e, v)).All(x => x);
+  }
+
   /// <summary>
   /// Restrict's domain is the product of its argument types. Its application agrees
   /// with f on that product, and restriction is the identity exactly on exact domains.
@@ -417,9 +443,9 @@ public partial class BoogieGenerator {
     if (kind == null) {
       return;
     }
-    var partial = kind is "partialExactDom" or "partialEqual" or "partialPointwise";
+    var partial = kind is "partialRestrict" or "partialExactDom" or "partialEqual" or "partialPointwise";
     kind = kind switch {
-      "partialExactDom" => "exactDom", "partialEqual" => "equal", "partialPointwise" => "pointwise", _ => kind
+      "partialRestrict" => "restrict", "partialExactDom" => "exactDom", "partialEqual" => "equal", "partialPointwise" => "pointwise", _ => kind
     };
     var tok = f.Origin;
     var name = f.FullSanitizedName;
@@ -433,7 +459,7 @@ public partial class BoogieGenerator {
     var exact = FunctionCall(tok, ExactDom(arity), Bpl.Type.Bool, Snoc(domains, fn));
     if (kind == "restrict") {
       var restricted = FunctionCall(tok, name, Predef.HandleType, callArgs);
-      {
+      if (!partial) {
         var vars = new List<Bpl.Variable>(bvars);
         var boxes = Map(Enumerable.Range(0, arity), i => BplBoundVar("bx" + i, Predef.BoxType, vars));
         var dom = FunctionCall(tok, FunDom(arity), Bpl.Type.Bool, Cons(restricted, boxes));
@@ -449,8 +475,18 @@ public partial class BoogieGenerator {
         var lhs = FunctionCall(tok, Apply(arity), Predef.BoxType, Concat(applyTypes, Cons(heap, Cons(restricted, boxes))));
         var rhs = FunctionCall(tok, Apply(arity), Predef.BoxType, Concat(applyTypes, Cons(heap, Cons(fn, boxes))));
         var inDomain = BplAnd(boxes.Zip(domains, (bx, a) => MkIs(bx, a, true)));
-        AddOtherDefinition(GetOrCreateFunction(f), new Axiom(tok,
-          BplForall(vars, BplTrigger(lhs), BplImp(inDomain, Bpl.Expr.Eq(lhs, rhs))), Apply(arity) + " of " + name));
+        if (partial) {
+          var restrictedPre = FunctionCall(tok, Requires(arity), Bpl.Type.Bool,
+            Concat(applyTypes, Cons(heap, Cons(restricted, boxes))));
+          var originalPre = FunctionCall(tok, Requires(arity), Bpl.Type.Bool,
+            Concat(applyTypes, Cons(heap, Cons(fn, boxes))));
+          AddOtherDefinition(GetOrCreateFunction(f), new Axiom(tok,
+            BplForall(vars, BplTrigger(restrictedPre), BplImp(inDomain, BplIff(restrictedPre, originalPre))),
+            "precondition of " + name));
+        } else {
+          AddOtherDefinition(GetOrCreateFunction(f), new Axiom(tok,
+            BplForall(vars, BplTrigger(lhs), BplImp(inDomain, Bpl.Expr.Eq(lhs, rhs))), Apply(arity) + " of " + name));
+        }
       }
       AddOtherDefinition(GetOrCreateFunction(f), new Axiom(tok,
         BplForall(bvars, BplTrigger(restricted), BplImp(exact, Bpl.Expr.Eq(restricted, fn))), "exact domain of " + name));
