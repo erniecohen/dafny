@@ -76,6 +76,7 @@ javadoclike-docstring-plugin	n/a	n/a	n/a	-	not an option of verify
 json-diagnostics	miss	miss	miss	false | true	
 json-output	miss	miss	miss	false | true	
 legacy-allocated-in-lambdas	miss	miss	miss	false | true	
+legacy-allow-unsound-bv-solver	miss	miss	miss	false | true	
 legacy-auto-generated-attributes	miss	miss	miss	false | true	
 legacy-boogie-library-check	miss	miss	miss	false | true	
 legacy-boxed-newtype-obligations	miss	miss	miss	false | true	

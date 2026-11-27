@@ -1,0 +1,3 @@
+
+# Z3's int-blasting bit-vector solver (smt.bv.solver=2) proves false; a solver option that selects it is rejected in every spelling and channel, with the hidden --legacy-allow-unsound-bv-solver opt-out (https://github.com/erniecohen/dafny/issues/618).
+git-issues/github-issue-618.dfy
