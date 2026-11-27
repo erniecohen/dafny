@@ -1,0 +1,6 @@
+Under the experimental `--recursive-modules` option, Rust compilation now supports
+extern modules, types and members with the ordinary Rust linkage convention.
+Public member facades preserve foreign type identity and allow foreign code to
+complete generated classes. Existing unsupported extern forms retain explicit
+diagnostics, and refinement of group members with extern types is explicitly
+rejected until its foreign type and partial-implementation identity is qualified. Compilation with the option off is unchanged.

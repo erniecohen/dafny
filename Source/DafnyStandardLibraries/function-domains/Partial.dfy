@@ -7,6 +7,17 @@
     Verify this source with --additional-axioms. */
 module Std.PartialFunctionDomains {
   module Arity0 {
+
+    /** Preserve the precondition and defined results on exactly this product. */
+    ghost function {:transparent} {:functionDomain "partialRestrict"} Restrict<B>(f: () --> B): () --> B {
+      () requires f.requires() => f()
+    }
+
+    lemma Restriction<B>(f: () --> B)
+      ensures ExactDom(Restrict(f))
+      ensures ExactDom(f) <==> Restrict(f) == f
+      ensures Pointwise(Restrict(f), f)
+    {}
     ghost predicate {:transparent} {:functionDomain "partialExactDom"} ExactDom<B>(f: () --> B)
 
     /** Equal preconditions on every correctly typed tuple, and equal results
@@ -24,6 +35,17 @@ module Std.PartialFunctionDomains {
     }
   }
   module Arity1 {
+
+    /** Preserve the precondition and defined results on exactly this product. */
+    ghost function {:transparent} {:functionDomain "partialRestrict"} Restrict<A0, B>(f: A0 --> B): A0 --> B {
+      (x0: A0) requires f.requires(x0) => f(x0)
+    }
+
+    lemma Restriction<A0, B>(f: A0 --> B)
+      ensures ExactDom(Restrict(f))
+      ensures ExactDom(f) <==> Restrict(f) == f
+      ensures Pointwise(Restrict(f), f)
+    {}
     ghost predicate {:transparent} {:functionDomain "partialExactDom"} ExactDom<A0, B>(f: A0 --> B)
 
     /** Equal preconditions on every correctly typed tuple, and equal results
@@ -41,6 +63,17 @@ module Std.PartialFunctionDomains {
     }
   }
   module Arity2 {
+
+    /** Preserve the precondition and defined results on exactly this product. */
+    ghost function {:transparent} {:functionDomain "partialRestrict"} Restrict<A0, A1, B>(f: (A0, A1) --> B): (A0, A1) --> B {
+      (x0: A0, x1: A1) requires f.requires(x0, x1) => f(x0, x1)
+    }
+
+    lemma Restriction<A0, A1, B>(f: (A0, A1) --> B)
+      ensures ExactDom(Restrict(f))
+      ensures ExactDom(f) <==> Restrict(f) == f
+      ensures Pointwise(Restrict(f), f)
+    {}
     ghost predicate {:transparent} {:functionDomain "partialExactDom"} ExactDom<A0, A1, B>(f: (A0, A1) --> B)
 
     /** Equal preconditions on every correctly typed tuple, and equal results
@@ -58,6 +91,17 @@ module Std.PartialFunctionDomains {
     }
   }
   module Arity3 {
+
+    /** Preserve the precondition and defined results on exactly this product. */
+    ghost function {:transparent} {:functionDomain "partialRestrict"} Restrict<A0, A1, A2, B>(f: (A0, A1, A2) --> B): (A0, A1, A2) --> B {
+      (x0: A0, x1: A1, x2: A2) requires f.requires(x0, x1, x2) => f(x0, x1, x2)
+    }
+
+    lemma Restriction<A0, A1, A2, B>(f: (A0, A1, A2) --> B)
+      ensures ExactDom(Restrict(f))
+      ensures ExactDom(f) <==> Restrict(f) == f
+      ensures Pointwise(Restrict(f), f)
+    {}
     ghost predicate {:transparent} {:functionDomain "partialExactDom"} ExactDom<A0, A1, A2, B>(f: (A0, A1, A2) --> B)
 
     /** Equal preconditions on every correctly typed tuple, and equal results
@@ -75,6 +119,17 @@ module Std.PartialFunctionDomains {
     }
   }
   module Arity4 {
+
+    /** Preserve the precondition and defined results on exactly this product. */
+    ghost function {:transparent} {:functionDomain "partialRestrict"} Restrict<A0, A1, A2, A3, B>(f: (A0, A1, A2, A3) --> B): (A0, A1, A2, A3) --> B {
+      (x0: A0, x1: A1, x2: A2, x3: A3) requires f.requires(x0, x1, x2, x3) => f(x0, x1, x2, x3)
+    }
+
+    lemma Restriction<A0, A1, A2, A3, B>(f: (A0, A1, A2, A3) --> B)
+      ensures ExactDom(Restrict(f))
+      ensures ExactDom(f) <==> Restrict(f) == f
+      ensures Pointwise(Restrict(f), f)
+    {}
     ghost predicate {:transparent} {:functionDomain "partialExactDom"} ExactDom<A0, A1, A2, A3, B>(f: (A0, A1, A2, A3) --> B)
 
     /** Equal preconditions on every correctly typed tuple, and equal results

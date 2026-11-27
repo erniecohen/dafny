@@ -1,6 +1,8 @@
 // Cross-process equality and corruption controls use the external CLI.
 // RUN: python3 "%repositoryRoot/.github/review/translation-global-inputs.py" "%binaryDir/Dafny.dll" "%review-z3" "%s" "%t.dir" > "%t"
 // RUN: %diff "%s.expect" "%t"
+// RUN: python3 "%repositoryRoot/.github/review/translation-global-inputs.py" "%binaryDir/Dafny.dll" "%review-z3" "%s" "%t.merged.dir" --merged-optimizations > "%t.merged"
+// RUN: %diff "%s.expect" "%t.merged"
 // UNSUPPORTED: windows
 
 module A {

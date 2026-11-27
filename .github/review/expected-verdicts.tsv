@@ -912,6 +912,7 @@ git-issues/git-issue-2307.dfy	0	16 verified, 0 errors
 git-issues/git-issue-2367.dfy	0	2 verified, 0 errors	
 git-issues/git-issue-2380.dfy	0	2 verified, 0 errors	
 git-issues/git-issue-2384.dfy	4	0 verified, 3 errors	11,14,17
+git-issues/git-issue-241-ready-modules.dfy	4	3 verified, 1 error	23
 git-issues/git-issue-2429.dfy	0	7 verified, 0 errors	
 git-issues/git-issue-2441.dfy	0	0 verified, 0 errors	
 git-issues/git-issue-245-instances.dfy	2		17,35,43,51
@@ -1037,6 +1038,7 @@ git-issues/git-issue-3719a.dfy	0	1 verified, 0 errors
 git-issues/git-issue-3719b.dfy	0	1 verified, 0 errors	
 git-issues/git-issue-374-arities.dfy	4	0 verified, 9 errors	13,18,25,30,39,48,54,63,72
 git-issues/git-issue-374-domains.dfy	4	0 verified, 19 errors	18,25,32,39,46,53,59,66,75
+git-issues/git-issue-374-partial-equality.dfy	0	17 verified, 0 errors
 git-issues/git-issue-374-pointwise-intrinsic.dfy	4	0 verified, 3 errors	20,24,28
 git-issues/git-issue-374.dfy	0	1 verified, 0 errors	
 git-issues/git-issue-3792.dfy	0	2 verified, 0 errors	
@@ -1441,3 +1443,4 @@ hofs/Underspecified.dfy	2		6,7,8
 hofs/VectorUpdate.dfy	0	8 verified, 0 errors	
 hofs/WhileLoop.dfy	0	4 verified, 0 errors	
 git-issues/git-issue-569.dfy	4	5 verified, 4 errors	33,36,37,38
+git-issues/git-issue-193-native-subtraction.dfy	0	8 verified, 0 errors

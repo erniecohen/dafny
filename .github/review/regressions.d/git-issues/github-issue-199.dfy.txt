@@ -1,0 +1,3 @@
+
+# Under --lemma-bindings, `var y1, ..., yk := L(args); e` binds results of the lemma L in an expression: the call is checked as a call statement, the results satisfy the postcondition and depend only on the arguments (and the heap the postcondition reads), and inadmissible lemmas and forms are rejected (https://github.com/erniecohen/dafny/issues/199).
+git-issues/github-issue-199.dfy

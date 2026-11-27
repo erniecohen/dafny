@@ -1,0 +1,3 @@
+
+# Stable source contracts for https://github.com/erniecohen/dafny/issues/211: both resolvers, effect boundaries, export/refinement views and reachable false controls.
+git-issues/github-issue-211-m4b.dfy

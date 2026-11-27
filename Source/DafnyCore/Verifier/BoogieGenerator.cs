@@ -853,7 +853,7 @@ namespace Microsoft.Dafny {
 
     public Bpl.Program DoTranslation(Program p, ModuleDefinition forModule) {
       var snapshot = DoTranslationForSnapshot(p, forModule);
-      return BoogieSnapshotCloner.TryClone(snapshot, out var consumer, out _) ? consumer : snapshot;
+      return BoogieSnapshotCloner.TryClone(snapshot, out var consumer, out _, optimize: options.Get(CommonOptionBag.OptimizeTranslationCopy)) ? consumer : snapshot;
     }
 
     // The snapshot is never prepared or returned to another mutable consumer.

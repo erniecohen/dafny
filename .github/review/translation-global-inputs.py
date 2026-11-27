@@ -6,7 +6,9 @@ import shutil
 import subprocess
 import sys
 
-exe, solver, source, output = map(lambda value: Path(value).resolve(), sys.argv[1:])
+exe, solver, source, output = map(lambda value: Path(value).resolve(), sys.argv[1:5])
+assert sys.argv[5:] in ([], ["--merged-optimizations"]), sys.argv[5:]
+merged_optimizations = bool(sys.argv[5:])
 if output.exists():
     shutil.rmtree(output)
 output.mkdir(parents=True)
@@ -27,6 +29,13 @@ def run(name, enabled=True, persistent=True, store="cache", audit=False):
             "--show-snippets:false", "--use-basename-for-filename", "--allow-warnings", "--modular-termination",
             "--verification-cache", str(output / store), "--pipeline-profile", str(profile),
             "--log-format", "csv;LogFileName=" + str(report)]
+    if merged_optimizations:
+        # Keep native and cached solver histories identical. The fresh baseline uses
+        # ordered translation and the original copier; cached modes compose the options.
+        args += ["--boogie", "/restartProver"]
+        if enabled:
+            args += ["--optimize-translation-copy", "--ready-module-verification",
+                     "--verification-module-window", "2", "--translation-workers", "2"]
     if enabled:
         args += ["--translation-global-inputs"]
     if persistent:

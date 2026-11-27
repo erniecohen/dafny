@@ -1,0 +1,3 @@
+
+# Trait axioms and added parents with refinement renaming and copying imports.
+git-issues/github-issue-88-89-interactions.dfy

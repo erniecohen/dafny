@@ -1,0 +1,3 @@
+
+# A function that reads nothing, reading a constant whose initializer applies an arrow or calls a function that reads the heap, no longer crashes the verifier; such an initializer is inlined into the function's axioms only when it needs no heap (https://github.com/erniecohen/dafny/issues/485).
+git-issues/github-issue-485.dfy

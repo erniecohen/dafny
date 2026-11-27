@@ -87,6 +87,10 @@ public class CommonOptionBag {
     "Freeze current modular-termination classifications into module translation identities, allowing eligible " +
     "--translation-cache and --persistent-translation hits when modular termination is active. Requires --type-system-refresh. " +
     "Unsupported global reads run normally without publishing a translation snapshot.");
+  public static readonly Option<bool> OptimizeTranslationCopy = new("--optimize-translation-copy",
+    "Use generated field-copy routines when materializing Boogie module graphs, reducing front-end reflection work. " +
+    "Preserves graph aliases, generated names, solver input and resource counts. Defaults to false; " +
+    "uses reflection on runtimes without dynamic code support.");
   public static readonly Option<bool> PersistentTranslation = new("--persistent-translation",
     "Also keep module translations and whole-module results in the --verification-cache directory, across processes. " +
     "Requires --verification-cache and --type-system-refresh. A module whose translation key is unchanged is not translated again, " +
@@ -120,6 +124,13 @@ public class CommonOptionBag {
   public static readonly Option<int> TranslationWorkersStress = new("--translation-workers-stress", () => 0,
     "(testing) With --translation-workers, delay each translation's start: a positive seed draws a delay of up to " +
     "40 ms per module, -1 delays the k-th module by 100·(3 - k mod 4) ms, so that translations finish in reverse order.") {
+    IsHidden = true
+  };
+
+  public static readonly Option<bool> ReadyModuleVerification = new("--ready-module-verification",
+    "Prepare each translated module and submit its verification tasks without waiting for earlier modules. " +
+    "Requires --translation-workers and --verification-module-window greater than 1, and --boogie /restartProver. " +
+    "Results and diagnostics are still reported in module order; --cores still bounds solver concurrency.") {
     IsHidden = true
   };
 
@@ -367,7 +378,7 @@ true - All class instances are raw pointers and need to be manually deallocated"
     "Enable additional verifier axioms. May change verification performance and proof stability. Disabled by default.");
 
   public static readonly Option<bool> FunctionExtensionalityAxiom = new("--function-extensionality-axiom", () => false,
-    "Give function values domain tags, as --additional-axioms does, and make two total functions of the same arity and exact domain equal when they agree on it, at each equality between them. May change verification performance. Disabled by default.");
+    "Give function values domain tags, as --additional-axioms does, and make two heap-independent functions of the same arity and exact domain equal when their preconditions and defined results agree on it, at each equality between them. May change verification performance. Disabled by default.");
 
   public static readonly Option<bool> HeapFreeLambdaFacts = new("--heap-free-lambda-facts", () => false,
     "Check a lambda without a reads clause, whose body observes neither the heap nor allocation, in every heap and without assuming its parameters allocated, and let the calls in its body unfold wherever it is applied. May change verification performance. Disabled by default.");
@@ -549,7 +560,7 @@ Value implementations must retain their type parameters in compatible parent pos
   };
 
   public static readonly Option<bool> RecursiveModules = new("--recursive-modules", () => false,
-    "(experimental, incomplete) Allow modules to import each other. The modules of an import cycle form a recursive module group, which means what one module with all their declarations would mean. Only imports may form a cycle. Requires --member-invariants. A program that has a recursive module group may not declare a codatatype. A group is all concrete or all abstract. Refinement and abstract imports must point to strictly lower groups. A .doo library retains and records complete groups; its client needs the same option. Executable compilation supports the C#, Java, Go, JavaScript, Python and Rust targets; JavaScript, Python and Rust groups may not contain extern declarations. Python groups may not contain declarations marked '{:compile false}'. Rust group programs require explicit array initialization and the Rust backend's existing --enforce-determinism restriction. Replacement in a group is not yet supported.") {
+    "(experimental, incomplete) Allow modules to import each other. The modules of an import cycle form a recursive module group, which means what one module with all their declarations would mean. Only imports may form a cycle. Requires --member-invariants. A program that has a recursive module group may not declare a codatatype. A group is all concrete or all abstract. Refinement and abstract imports must point to strictly lower groups. A .doo library retains and records complete groups; its client needs the same option. Executable compilation supports the C#, Java, Go, JavaScript, Python and Rust targets; JavaScript and Rust groups may not contain extern declarations. Python group members containing extern or omitted declarations require complete foreign Python modules; a Python package group must retain a compiled member. Rust group programs require explicit array initialization and the Rust backend's existing --enforce-determinism restriction. Replacement in a group is not yet supported.") {
     IsHidden = true
   };
 
@@ -1018,6 +1029,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(ResolutionThreads, OptionScope.Cli);
     OptionRegistry.RegisterOption(TranslationCache, OptionScope.Cli);
     OptionRegistry.RegisterOption(TranslationGlobalInputs, OptionScope.Cli);
+    OptionRegistry.RegisterOption(OptimizeTranslationCopy, OptionScope.Cli);
     OptionRegistry.RegisterOption(PersistentTranslation, OptionScope.Cli);
     OptionRegistry.RegisterOption(PersistentTranslationAudit, OptionScope.Cli);
     OptionRegistry.RegisterOption(PersistentIdeReports, OptionScope.Cli);
@@ -1029,6 +1041,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
     });
     OptionRegistry.RegisterOption(TranslationWorkers, OptionScope.Cli);
     OptionRegistry.RegisterOption(TranslationWorkersStress, OptionScope.Cli);
+    OptionRegistry.RegisterOption(ReadyModuleVerification, OptionScope.Cli);
     OptionRegistry.RegisterOption(PipelineProfile, OptionScope.Cli);
     OptionRegistry.RegisterOption(PipelineProfileHeap, OptionScope.Cli);
     OptionRegistry.RegisterOption(PipelineProfileGcEvents, OptionScope.Cli);

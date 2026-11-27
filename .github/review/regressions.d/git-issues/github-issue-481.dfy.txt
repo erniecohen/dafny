@@ -1,0 +1,3 @@
+
+# A type parameter whose values may be stored in memory (a mutable field, a store, or an instantiation of such a parameter) may not be instantiated with a type that contains a function reading the heap; a generic class could store such a function that read itself and prove false, through a class, a trait, a datatype wrapper or a nested class. The rule holds across modules, export sets and .doo libraries, and for overriding and refining declarations, with the characteristic (!reads) for a base without a body (https://github.com/erniecohen/dafny/issues/481).
+git-issues/github-issue-481.dfy

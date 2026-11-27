@@ -1,0 +1,3 @@
+// CHECK: unless an initializer is provided for the array elements, a new array of 'bool' must have empty size
+// CHECK: assertion might not hold
+// CHECK: 2 errors

@@ -1,6 +1,6 @@
 # Recursive module compilation (issue 466, stage 7)
 
-The executable targets admitted for recursive module groups are C#, Java, Go, JavaScript and Python.
+The executable targets admitted for recursive module groups are C#, Java, Go, JavaScript, Python and Rust.
 The feature remains behind the hidden, experimental `--recursive-modules`
 option and its existing prerequisites. Other executable targets are rejected
 before code generation, with the target named in the diagnostic. Library
@@ -47,8 +47,7 @@ remain in the issue's regression suite. The original resolver continues to
 reject the feature's member-invariant prerequisite.
 
 `git-issue-466-stage7-targets.dfy` checks the explicit rejection for
-Rust, C++ and resolved Dafny (`dfy`) without needing their
-compiler toolchains. Restoring the blanket executable rejection must break the C# positive test; admitting
+C++ and resolved Dafny (`dfy`) without invoking a native compiler. Restoring the blanket executable rejection must break the C# positive test; admitting
 an unqualified target must break its rejection control. These mutations change only the target
 admission site and are built and run separately.
 
@@ -136,6 +135,35 @@ files, calls within and outside a group, complete `.doo` inputs and separately
 translated producer/client packages. It repeats the foreign-module comparison
 with additional axioms and scheduled resolution.
 
+Qualified foreign functions inherited by a refinement above a group use the same
+Go dot selectors as calls within the group. With `--recursive-modules`, non-null
+extern class references also retain their renamed class identity outside the
+group, including allocation in a refinement. These paths previously used a
+Dafny module separator or the source class name in the refining package.
+
+`git-issue-466-go-foreign-matrix.dfy` compares the three-member recursion,
+unordered constants, mutually recursive datatypes, implicit defaults, invariant
+witnesses, trait dispatch, refinement and complete archive inputs with independent
+C# emission. Foreign identity calls occur in the recursion, constants, witness,
+datatype construction and trait implementation. A partial extern class is completed
+in the shared package and, separately, in the refining package. The source run
+also repeats with additional axioms and scheduled resolution. As in the Rust
+extern matrix, the archive uses a concrete counter because arbitrary extern
+contracts cannot form a modular termination certificate.
+
+The remaining foreign-package boundaries are Go language constraints, not an
+ordering restriction that group emission can lift. A foreign package imported by
+the generated shared package cannot import that package back: Go rejects the
+import cycle. A partial extern class owned by a foreign package cannot receive
+generated methods in the shared package. The compiler now diagnoses that ownership
+conflict before emission, including an explicitly qualified foreign class in an
+ordinary group member. A non-extern group member can instead declare a partial
+class completed in the shared package. `git-issue-466-extern-boundaries.dfy` checks
+both ownership errors and the native import-cycle error; the runtime matrix is
+the positive control for the supported ownership arrangement. The source comparison
+also covers disabled datatype-wrapper erasure. No foreign source
+is moved between package identities to circumvent Go's rules.
+
 This is an opt-in compilation feature. It adds no verification condition, axiom,
 trusted assumption or verifier-lowering site. With recursive modules off, the
 existing Go emission paths are unchanged.
@@ -170,10 +198,39 @@ the group remains a separate module referring to its original siblings.
 The wrappers also preserve separate-compilation interfaces. Their imports use
 `--python-module-name` when present. Group and declaration identities and file
 assembly order depend on names, so relocating sources and reloading a complete
-archive preserve the implementation file. Extern modules, types and members
-inside a Python group, and declarations marked `{:compile false}`, remain
-explicitly rejected pending a foreign-linkage convention; ordinary foreign dependencies below a group keep their existing
-lowering.
+archive preserve the implementation file.
+
+### Python foreign interfaces
+
+A group member with an extern or omitted declaration is a complete foreign
+Python module. No declarations from that member, including ordinary bodies,
+are added to the group's implementation, and no generated wrapper replaces its
+foreign interface. This follows Python's existing whole-module input convention:
+`# Module: Name` overrides the input filename, and otherwise the `.py` filename
+selects the module. Dotted extern module names use the ordinary directory
+layout. The generated group filename comes from a generated member, so a
+foreign name does not become an implementation path. Extern module and declaration names keep their ordinary
+spelling; internal group prefixes never appear in the foreign API. Static
+functions with a two-argument extern qualifier retain Python's underscore
+separator, while static methods retain the dot separator.
+
+A group's foreign interfaces are registered before its implementation file's
+imports are emitted, after lower dependencies have been generated. This is necessary even when the foreign member appears
+later in compilation order. Generated siblings use module-qualified references
+to foreign declarations and datatype constructors. Foreign files must defer
+imports of generated siblings until their callables execute: importing a wrapper
+and reading its classes during foreign-module initialization can re-enter a
+partially initialized implementation. This is a foreign-code initialization
+requirement, not an extra verifier assumption.
+
+Ordinary builds copy foreign files supplied with `--input` using the existing
+backend convention. For package translation, place those files in the generated
+package. Package-mode source compilation imports them in the current package.
+A separate client imports the package recorded by the producer. A wholly
+omitted module has no record row, so its compiled sibling supplies the group's
+package. Package translation of a wholly omitted group remains explicitly
+unsupported, as do the existing dotted extern names in package mode. Ordinary
+foreign dependencies below a group keep their existing lowering.
 
 `git-issue-466-python.dfy` compares Python with C# for every runtime case of the
 Java fixture: source execution, both wrapper-erasure settings, scheduled
@@ -188,8 +245,14 @@ It compares the implementation emitted from relocated sources byte
 for byte, builds those sources into an archive, and runs a separately translated
 client against the producer's Python package using the archive and translation
 record.
-`git-issue-466-python-extern.dfy` has module, type and member rejection controls
-for both extern and omitted declarations.
+`git-issue-466-python-extern.dfy` now accepts the six former module, type and
+member rejection cases. `git-issue-466-python-foreign.dfy` compares complete
+foreign-module execution with C#, constructs a foreign datatype, tests renamed
+classes and members and explicit static qualifiers, exercises callbacks through
+each group, inherits a lower generated trait in two foreign modules, and runs
+both a complete archive input and a separately translated
+client using the producer's package and translation record. Its negative control
+rejects a wholly omitted group in package mode.
 
 This extends an opt-in compilation feature. It changes no verifier rule,
 verification condition, axiom, trusted assumption or obligation producer.
@@ -198,29 +261,139 @@ their existing paths.
 
 ## JavaScript group emission
 
-JavaScript emits one closure and module object per recursive group. Names of
+Groups without extern declarations emit one closure and module object. Names of
 classes, traits, datatypes, iterators and default classes carry a member prefix;
 qualified type, constructor, conversion and entry-point references use the same
 identity. Both the group name and member order depend on full module names,
 so separately translated clients reconstruct them after source relocation.
 The generated constructor strings retain their Dafny names.
 
+A group containing extern declarations instead initializes its ordinary module
+objects inside one shared group closure. Generated objects are declared outside
+that closure; preloaded extern module objects are extended in place. Classes and
+members retain the ordinary JavaScript backend's public names. This preserves
+foreign object identity and the paths used by separately translated clients,
+including fully foreign classes and partial classes with generated members.
+Qualified extern functions and methods use the existing foreign calling convention;
+extern attributes on members with bodies continue to compile those bodies.
+
 Declarations initialize only class objects: sibling type descriptors, constants,
-trait identities and datatype defaults are evaluated when used, after all module
+trait identities and datatype defaults are evaluated when used, after all member
 closures have initialized. No ordering of the members is needed. Abstract groups
 emit nothing, and refinement retains its original sibling references.
+
+Supported foreign modules are preloaded objects (`{:extern}` or a single name).
+Require-based, two-argument extern modules remain rejected: their loading and cycle
+semantics have not been qualified. Extern types must belong to a preloaded extern
+module and have no two-argument qualifier. Unqualified imported members require an
+extern type or, for module-level members, an extern module. Two-argument member
+qualifiers are supported only for functions and static methods; instance methods
+and fields retain receiver-based linkage. Concrete refinements of group members
+may contain fully imported or partial extern classes, including through abstract
+refinements. Each concrete refinement must name its own preloaded extern module
+object; inherited classes use that object's public type names. Fully imported
+classes emit no
+generated class layout. Partial classes use the ordinary JavaScript lowering: a
+generated subclass extends the concrete module's foreign class, forwards its type
+descriptors to `super`, initializes generated fields, and supplies Dafny constructor
+bodies and members. Imported fields and members retain receiver-based linkage.
+Abstract refinements emit nothing. Fully imported extern traits whose ancestors are
+also fully imported extern traits preserve their preloaded objects, including
+through abstract refinements. These objects are runtime identities: native
+implementations may capture them before generated code runs. Ghost members do not
+require generated trait material. Generated implementations use the same concrete
+namespace's trait object. The native implementation supplies the complete ancestor
+identity list, including generic and diamond-shaped inheritance. Every non-object
+ancestor must also be extern and contain no generated members. Before emission,
+the compiler identifies every imported ancestor of a supported group trait,
+including ancestors declared in acyclic modules, and preserves its preloaded
+identity. These selected ancestors undergo the same module, type and member
+linkage checks as declarations in the group. Unrelated acyclic traits retain
+ordinary emission. An ancestor supplied only through `--library` retains a
+diagnostic: its separately emitted producer must contain the group so that
+ancestor preservation occurs there. Complete archive inputs remain supported. Traits
+requiring generated members or generated ancestors, and other extern type kinds in
+refinements, remain rejected with an explicit diagnostic. Fully imported
+foreign classes declared in a group or its concrete
+refinements support bodiless extern constructors. Allocation passes the ordinary
+type-descriptor prefix followed by
+non-ghost constructor arguments, evaluated once in order. Constructor extern
+names do not select a separate JavaScript member: allocation invokes the class
+itself with `new`. Partial foreign classes still require a Dafny constructor body;
+their generated subclass constructor initializes type descriptors, and does not
+forward native constructor arguments. Adding that forwarding requires a separate
+constructor convention for generated subclasses.
 
 `git-issue-466-js.dfy` compares the existing group fixtures against C#, including
 wrapper-erasure settings, scheduled resolution, additional axioms, complete
 archives, repeated names, nested groups, constrained defaults, value-type trait
 conversions and a group entry point. It links a separately translated client to
 a producer using an archive rebuilt from relocated source files. The invalid
-invariant and reachable false assertion remain errors. Module, type and member
-extern controls reject unsupported foreign linkage explicitly.
+invariant and reachable false assertion remain errors.
+`git-issue-466-js-extern-runtime.dfy` repeats the three-member recursion, unordered
+constants, mutual datatypes, implicit defaults and extern-backed witnesses, traits,
+refinement and library comparisons with extern members. It exercises foreign
+classes, instance functions, methods and fields, both wrapper-erasure settings,
+additional axioms, source relocation and separately translated clients.
+`git-issue-466-js-constructors.dfy` repeats that runtime matrix with generic native
+constructors, ghost parameters, descriptor-backed defaults and observable argument
+order. Source builds, both wrapper-erasure settings, archives rebuilt from relocated
+source, and separately translated producers and clients agree with C#. Wrong
+constructor results and a reachable false assertion remain verification errors.
+A partial-class constructor retains its explicit rejection, and an acyclic extern
+constructor retains the option-off allocation output.
+`git-issue-466-js-refinement.dfy` repeats the runtime matrix with fully imported
+classes in a direct refinement and a concrete descendant of an abstract refinement.
+Distinct foreign namespaces return different values and print constructor traces,
+so aliasing an ancestor or dropping native arguments changes the result. Source
+builds, both wrapper-erasure settings, relocated archives and separately translated
+clients agree with independently emitted C#. Wrong constructor results and a
+reachable false assertion remain errors. Bodiless native constructors on partial
+classes, traits requiring generated members and refinements without their own
+preloaded extern owner retain tested rejections.
+`git-issue-466-js-partial-refinement.dfy` repeats the matrix with partial classes in
+the group and both refining namespaces. Generic fields, generated constructors,
+updates, descriptor-backed defaults and generated members calling recursive
+siblings agree with independently emitted C#. Distinct foreign fields and methods
+check each concrete namespace. Both wrapper-erasure modes, relocated archives and
+separately translated clients are covered. Wrong constructor results, wrong field
+and update results, and a reachable false assertion remain verification errors.
+`git-issue-466-js-trait-refinement.dfy` repeats the matrix with imported ordinary
+and generic traits in the group and both concrete refinements. Native factories,
+generated implementations, ghost members and cross-namespace runtime type tests
+agree with independently emitted C#. Native implementations capture the original
+trait identities before generated initialization, so replacement is observable.
+Two ordinary empty traits check that generated identities remain distinct. Both
+wrapper-erasure modes, relocated archives and separately translated clients are
+covered. Wrong reads, wrong generated fields and a reachable false assertion
+remain verification errors. The same matrix covers generic ancestors and diamond
+inheritance: native implementations retain every captured ancestor, generated
+implementations list the same concrete namespace's ancestors, and cross-namespace
+casts remain distinct. An ordinary generated parent and a transitive imported
+ancestor with a generated body retain tested rejections in refinements. A fully
+imported ancestor in an acyclic module is covered by
+`git-issue-466-js-acyclic-ancestors.dfy`, with the same runtime matrix from source
+and with the acyclic ancestor supplied by a complete archive input, including
+generic ancestor identity checks and generated implementations. The existing
+complete-group archive and separately translated producer/client comparisons
+remain covered by the group-local hierarchy. An unrelated imported trait in the
+same module still receives ordinary emission. Unsupported ancestor owners, type
+qualifiers, require-based modules, qualified instance members and library-only
+ancestors have negative controls. Both option settings preserve ordinary emission
+when no group uses the hierarchy; option-off output is unchanged.
+`git-issue-466-js-extern.dfy` checks each group-specific foreign linkage rejection.
+Archives with arbitrary extern contracts still cannot provide the modular
+termination certificate required by cross-module trait implementations; the
+library comparison for group-local hierarchies uses a concrete-counter variant
+and retains that rejection as a negative control. A hierarchy inheriting an
+acyclic foreign trait also introduces cross-module trait contracts: even its
+concrete-counter variant cannot be archived together with arbitrary extern
+contracts. A separate negative control retains this certificate restriction;
+the positive archive-input comparison archives the acyclic ancestors alone.
 
 This milestone depends on https://github.com/erniecohen/dafny/pull/535. It adds
 no verifier rule, axiom or trusted assumption. Programs without a recursive
-group use their existing emission paths.
+group and groups without extern declarations use their existing emission paths.
 
 ## Remaining compilation work
 
@@ -233,9 +406,9 @@ source parses or compiles.
 
 The Python milestone depends on https://github.com/erniecohen/dafny/pull/535,
 through it https://github.com/erniecohen/dafny/pull/533, and through that
-https://github.com/erniecohen/dafny/pull/529. Python foreign linkage within
-groups remains separate work. C++ and resolved Dafny remain
-unqualified. This milestone does not complete issue 466.
+https://github.com/erniecohen/dafny/pull/529. Python foreign linkage is described
+above. C++ and resolved Dafny remain rejected for the capability reasons below.
+This milestone does not complete issue 466.
 
 
 ## Rust group emission
@@ -251,13 +424,90 @@ modules at the same enclosing path.
 
 The Rust milestone depends on https://github.com/erniecohen/dafny/pull/535.
 It extends only the existing experimental option and changes no verifier rule.
-Extern modules, types and members inside a group are explicitly rejected pending
-a linkage convention. Rust's existing implicit datatype-default and general-trait
-limitations remain: the runtime comparisons use the existing three-member producer
-with explicit array initializers and reference traits (`--general-traits=legacy`).
-C# comparisons disable wrapper erasure, which Rust already disables. Group programs
-that require implicit array initialization are rejected rather than emitted with
-placebo elements. Supporting implicit defaults is a separate milestone.
+Extern modules, types and members retain the ordinary Rust linkage convention.
+Each member keeps its extern attributes and `requiresExterns` flag when moved into
+the container. Imports still start at the translation root's `_dafny_externs`,
+not at the container; two-argument member externs still name their foreign path
+directly. The public facades re-export imported types and default classes as well
+as generated declarations. Foreign implementations can therefore name sibling
+types and complete generated classes through the same public paths as in an
+acyclic program; they never name the group container.
+
+The ordinary Rust diagnostics still reject two-argument module and class externs
+and a class that mixes foreign and generated implementations of one trait.
+These forms have rejection controls. Abstract refinements of a group member
+containing extern types are allowed: they emit no imports or implementations.
+The complete extern runtime matrix includes such an abstract refinement of the
+member containing a fully imported foreign class.
+
+Concrete refinements may inherit, extend or introduce extern classes with at
+most one extern argument and no compiled fields, including fields inherited from
+traits. Trait parents follow the ordinary Rust implementation rules. Executable
+members may be bodiless foreign members or implemented functions, methods and
+constructors, including functions with method bodies. An implemented extern member
+may rename itself, but may not name a different foreign enclosing path. A refinement
+can add or rename foreign members, introduce generic foreign classes, and generate
+inherent implementations on those classes. Ghost declarations remain erased.
+
+The refining module imports each class by its compiled name from its own foreign
+namespace beneath the translation root's `_dafny_externs`. Ordinary class lowering
+then emits inherent implementations on that imported type, including generated
+members inherited through an abstract refinement. Each refinement therefore has
+its own foreign identity, as in independent C# emission; it does not alias the
+ancestor's foreign type or attach generated methods to that ancestor type. Foreign
+source must supply each refined type and its bodiless foreign members. Generated
+constructors use the type's ordinary zero-argument Rust `_allocate_object()` hook,
+then execute
+the Dafny constructor body. Bodiless foreign constructors continue to pass their
+arguments directly to the allocation hook. No layout is inferred for the foreign
+type. This also works with renamed generic classes, nested namespaces and separate
+producer/client translation.
+
+Trait implementations retain their ordinary ownership convention: each parent's
+proper methods must be wholly generated or wholly foreign. Foreign source supplies
+the trait implementations and upcast support for wholly foreign types and parent
+traits not implemented by generated class methods. An empty foreign implementation
+can select a trait's generated default methods. These declarations name the public
+refining namespaces, without referring to the group container.
+
+Other concrete refinements containing extern types remain rejected, with the type,
+refining module and supported class shape named in the diagnostic. Own and inherited
+compiled fields still require additional layout rules; ghost fields remain erased.
+Members with bodies and a foreign enclosing path, and two-argument class externs,
+remain unsupported: a generated body belongs on the refining type. A refinement
+chain through an abstract intermediate module still checks its concrete descendant.
+Inherited bodiless extern members with explicit foreign paths remain supported. No
+new verifier fact or check is involved, and compilation without
+`--recursive-modules` is unchanged.
+
+Rust's existing implicit datatype-default and general-trait limitations remain:
+the runtime comparisons use the existing three-member producer with explicit
+initializers for nonempty arrays and reference traits (`--general-traits=legacy`).
+C# comparisons disable wrapper erasure, which Rust already disables.
+
+Empty arrays may omit their element initializer, including when the zero extent
+is computed at runtime. Rust's required `--enforce-determinism` already makes
+verification prove that an array without an initializer has a zero extent.
+For allocations that would otherwise require default elements, the group lowering
+evaluates every dimension once, in source order, and checks that at least one is
+zero before allocating and finalizing the empty array. The check halts even with
+verification skipped if all extents are nonzero. There are no element slots to
+initialize, so recursive datatype and invariant-bearing element types need no Rust
+`Default` implementation or evaluation of a witness. Generic auto-initializable
+parameters retain the backend's existing Rust `Default` bound. Explicit element
+initializers retain their existing lowering. Nonempty arrays still require an explicit
+initializer under `--enforce-determinism`; this does not add general datatype
+default construction or change verification. Programs without a recursive group
+retain their existing array emission.
+
+`git-issue-466-rust-empty-arrays.dfy` compares source and complete-archive execution
+with independent C# emission for the existing recursion, constants, recursive
+datatypes, witnesses, traits and refinement matrix. It adds dynamic empty arrays
+of different ranks, a zero in each dimension position, generic elements and
+inherited allocation in a refinement. A function-by-method prints the dimension
+evaluation order, including dimensions after a zero extent. Controls retain the
+verifier's nonempty-array and reachable-false failures, exercise the runtime halt
+with verification skipped, and compare emission with the option off.
 
 `git-issue-466-rust.dfy` compares the resulting recursion, constants, values,
 witness construction, traits, refinement and complete-archive execution with C#.
@@ -265,4 +515,158 @@ It also tests repeated declaration names, nested groups, Rust keywords, entry-po
 arguments and a separately translated producer/client pair compiled into one crate.
 The facades export constructors through their types; clients do not need the
 private layout of a group container. `git-issue-466-rust-rejected.dfy` supplies
-module, type and member extern controls and an implicit-array-initialization control.
+two-argument module and class extern controls, a mixed trait-implementation control
+and a refinement-with-extern-types control.
+
+`git-issue-466-rust-extern.dfy` compares foreign linkage with C#'s independent
+module emission for three-member recursion, constants without a module order,
+mutually recursive datatypes, explicit defaults, member-invariant witnesses,
+reference traits, refinement and complete library archives. A separately translated
+producer/client pair also links through the public facades with the same foreign
+source. The archive variant uses a concrete counter: arbitrary extern contracts
+cannot receive a modular termination certificate; the source comparison separately
+checks the cross-module trait implementation. No certificate or runtime-trust rule
+is changed. It covers zero- and one-argument module externs, nested foreign names,
+renamed instance members,
+two-argument static members, partial foreign classes and foreign implementations
+of generated class methods. An extern round trip of a mutually recursive datatype
+checks sibling type identity across the foreign boundary. The ordinary Rust extern
+tests are option-off controls.
+
+`git-issue-466-rust-imported-refinement.dfy` extends the complete extern runtime
+matrix with concrete refinements of fully imported classes. Independent C# and
+Rust runs compare three-member recursion, unordered constants, recursive datatypes,
+explicit defaults, invariant witnesses, traits, refinement and complete archives.
+Distinct foreign return values check the identity of each refining namespace;
+a renamed generic foreign class transports a recursive datatype. A separately
+translated client exercises the producer's foreign imports through the translation
+root. Negative controls retain the rejection of own and inherited compiled fields,
+including fields added by a refinement, and of members whose bodies name a foreign
+enclosing path. A reachable false assertion after foreign construction and a call
+remains rejected. This milestone adds no verifier fact, axiom or assumption, and
+changes no emission with
+`--recursive-modules` disabled.
+
+`git-issue-466-rust-extended-refinement.dfy` qualifies extensions and newly declared
+foreign classes against independent C# emission using the same full runtime matrix,
+complete archives and separately translated producer/client pair. It adds a
+renamed foreign member and a generic foreign class in a refinement, a ghost
+function used by a proof, and another foreign member above an abstract refinement.
+Distinct foreign return values check the refining namespaces, and foreign generic
+round trips preserve recursive datatype values. Both an incorrect result assertion
+and a reachable false assertion after a new foreign call remain rejected.
+The eligibility check depends on the kinds of compiled members and the class
+layout, rather than whether declarations were copied by refinement. Compilation
+with the option disabled and all verifier rules remain unchanged.
+
+`git-issue-466-rust-partial-refinement.dfy` extends the same runtime matrix with
+generated functions, methods and function-by-method bodies on foreign classes,
+including a renamed generic class transporting values through a foreign member.
+It compares independent C# and Rust source runs, complete archives and separately
+translated producer/client outputs. A concrete descendant above an abstract
+refinement exercises inherited implementations and another generated method;
+distinct foreign return values distinguish the refining namespaces. Incorrect
+result and reachable false assertions remain rejected after a generated method
+calls a foreign member. A constructor with a compiled field retains its layout
+rejection, alongside the existing fields and foreign-enclosing-path controls.
+
+`git-issue-466-rust-constructor-refinement.dfy` qualifies generated constructors
+using the same independent C#/Rust runtime matrix, complete archives and separate
+producer/client translation. An unnamed constructor calls foreign setters in order;
+a named generic constructor transports a recursive datatype. Both are inherited
+through an abstract refinement, with distinct foreign namespaces for the concrete
+types. Foreign setter traces detect skipped, duplicated or reordered execution.
+Incorrect-result assertions for both classes and a reachable false assertion remain
+rejected after construction. A constructor with a body naming a different foreign
+enclosing path has its own explicit rejection control. Allocation remains supplied
+by foreign source, and generated constructors on classes with compiled fields
+remain rejected. No verifier rule,
+fact or assumption changes.
+
+`git-issue-466-rust-trait-refinement.dfy` qualifies generated and wholly foreign
+implementations of a generic trait against independent C# emission through the full
+runtime matrix, complete archives and separate producer/client linkage. The trait
+inherits a default method and an erased ghost field. Concrete descendants through
+an abstract refinement use their own trait and foreign type identities. Calls
+through generic trait objects and parent upcasts preserve recursive datatype values;
+distinct foreign tags check the namespace pairing. Incorrect-result assertions for
+both implementation paths and a reachable false assertion remain rejected. Negative
+controls reject a compiled field inherited through two traits and the ordinary Rust
+mixed-implementation case. This changes no verifier rule or default-option emission.
+
+`git-issue-466-rust-body-refinement.dfy` qualifies locally named extern members
+with bodies through the same full C#/Rust runtime matrix, complete archives and
+separate producer/client linkage. Renamed functions, methods and constructors,
+generic functions and function-by-method bodies use ordinary generated
+implementations on their imported foreign type. Concrete descendants through an
+abstract refinement retain their own foreign identities. Foreign source supplies
+allocation and bodiless members; it must not duplicate the generated bodies.
+Constructor arguments are passed only to the generated body, after zero-argument
+allocation. Evaluation and setter traces detect duplicated, skipped or reordered
+execution. Bodiless foreign constructors retain their ordinary argument-taking
+allocation hooks. The adjustment applies only to Rust programs containing a
+recursive group; emission without the option remains unchanged.
+
+Incorrect-result assertions for constructors, functions and function-by-method
+bodies, and a reachable false assertion after a generated method call, remain
+rejected. Functions and constructors with bodies naming a foreign enclosing path
+remain explicitly rejected, as do compiled fields and mixed trait implementations.
+This changes no verifier rule, fact or assumption.
+
+## C++ qualification boundary
+
+C++ remains rejected for every recursive module group, including function-only
+groups. This is a limitation of the current backend, not a claim that C++ cannot
+express mutually recursive modules. Its existing feature coverage cannot qualify
+the complete runtime matrix above.
+
+`CppCodeGenerator.CreateModule` emits namespaces, with separate forward-declaration,
+datatype and class passes. Forward declarations alone do not fix the datatype
+layout: `IsRecursiveConstructor` recognizes only a field of the very same datatype.
+`DeclareDatatype` adds pointer indirection for that case, but emits a sibling's
+datatype field by value. In the native-bitvector probe, `A.Left.Next` contains a
+`B.Right` by value and `B.Right` contains `A.Left` by value. The generated header
+fails on incomplete fields; ordering the namespaces cannot give both types a
+finite layout. `CreateTrait` also explicitly rejects traits. The backend does
+not support the unbounded integers and runtime type descriptors used by the
+shared matrix. Replacing those cases with native arithmetic or removing traits
+would qualify a different, smaller feature set.
+
+The native layout probe is conditional: an unrelated `DafnySet<T>.disjoint`
+lookup, `other.find(elt)`, first prevented compilation of an ordinary program.
+With only that lookup corrected to `other.set.find(elt)` in a copied runtime
+header, the function-only three-member cycle compiles and reaches execution,
+while the mutual-datatype probe still fails on incomplete fields. This narrower
+result is not runtime qualification. No runtime correction or C++ group
+lowering is included here. A future milestone needs group-wide recursive datatype
+indirection and the missing matrix features before executable admission.
+
+`git-issue-466-stage7-targets.dfy` checks the specific C++ diagnostic.
+`git-issue-466-cpp-dfy-rejected.dfy` checks function-only and mutual-datatype
+source groups and a complete archive input. Its acyclic trait control confirms
+that traits fail independently of recursive-module admission. Its archive producer
+and C# client execute the existing recursion, constants, datatypes, defaults,
+witnesses, traits and refinement fixture as a positive control.
+
+## Resolved-Dafny qualification boundary
+
+The internal target `dfy` also remains rejected. It is the
+`ResolvedDesugaredExecutableDafnyBackend`, whose compiler sends DAST to
+`PrettyPrinter.PrettyPrint`. That printer is an unimplemented placeholder:
+`D2DPrettyPrinter` calls `WrapException.Throw`, which currently reports the
+unrelated `/runAllTests` unsupported-feature diagnostic. An ordinary acyclic
+program already reaches this placeholder. In addition, the backend inherits
+the no-op target runner and emits no main call. There is no implemented emitted
+program or execution pipeline on which to compare the required runtime behavior.
+
+The regression checks a specific group diagnostic for both source and archive
+inputs, and an acyclic control checks the current printer-placeholder failure.
+Implementing a real printer and defining an executable round trip that preserves
+group identities, defaults, refinement and archive references must precede
+qualification. Neither a successful DAST construction nor the inherited runner's
+success status would establish a runtime comparison.
+
+Both decisions retain the existing admission check before target emission and
+native compilation. Unknown targets retain the generic diagnostic. No verifier
+rule, fact, axiom, trusted assumption or obligation producer changes. With the
+option off, the existing emission and diagnostics remain unchanged.

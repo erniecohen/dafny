@@ -1,0 +1,3 @@
+
+# Bounded callables, milestone 2: bounded.certify, application below the bound, the bound and erase members, admitted named functions, stored values and the divergence kernels, under --modular-termination (https://github.com/erniecohen/dafny/issues/266).
+git-issues/github-issue-266-m2.dfy

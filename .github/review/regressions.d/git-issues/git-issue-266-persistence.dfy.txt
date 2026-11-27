@@ -1,0 +1,3 @@
+
+# Stored and returned bounded evidence, including ghost return and strict-cycle controls (https://github.com/erniecohen/dafny/issues/266).
+git-issues/git-issue-266-persistence.dfy
