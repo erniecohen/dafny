@@ -2900,6 +2900,9 @@ and what information it produces about the verification process.
   Boolean bridges at widths 8, 16, 32 and 64, independently of additional axioms.
   `IntegerBitwiseNativeShifts.dfy` adds checked shift and modular-addition equations
   at those widths, including shift counts zero and the width.
+  `IntegerBitwiseNativeSignedShifts.dfy` adds checked executable arithmetic
+  right shifts at those widths. `Right(x,k)` agrees with signed floor division
+  by `P(k)` for `0 <= k <= N`, preserving the sign even at the width endpoint.
   Set `integer-bitwise = true` in the project file's `[options]` section;
   an enabled `.doo` library requires enabled clients. Declarations in an off-built
   library cannot use this compiler interface merely because the client enables

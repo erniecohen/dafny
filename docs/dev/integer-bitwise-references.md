@@ -376,3 +376,64 @@ group after approximately three times that clean baseline, with a five-second
 minimum. Such a kill is recorded separately from a failed proof; no timeout or
 resource exhaustion qualifies a baseline or control. Body/client and
 negative-control ceilings remain 2,000,000 and 200,000 resource units per scope.
+
+## Checked arithmetic right shifts
+
+Include `Source/DafnyStandardLibraries/optional/IntegerBitwiseNativeSignedShifts.dfy`
+with `--integer-bitwise`. The modules
+`Std.Arithmetic.IntegerBitwiseNativeSignedShifts8`, `16`, `32` and `64`
+extend [the signed interpretation milestone](https://github.com/erniecohen/dafny/pull/611).
+Their executable opaque function `Right(x,k)` requires `k <= N` and proves
+`Decode(Right(x,k)) == Decode(x) / P(k)`. Division here is Euclidean floor
+division by the positive power, so shifting -3 once yields -2. Count zero
+preserves the word; count N yields zero for nonnegative words and all ones
+(signed -1) for negative words. Existing native `bvN` shifts remain logical.
+This API does not change integer-newtype operator lowering.
+
+### Model and checked derivation
+
+Put M=2^N, H=M/2 and U=`x as int`. A nonnegative word has U<H, and the
+existing checked logical-shift bridge gives U/P(k); its value remains below H.
+For a negative word put a=M-1-U, so a<H and `Decode(x)=-a-1`. Complement the
+word, shift it logically, and complement the result. The existing checked
+complement and logical-shift bridges give unsigned result M-1-a/P(k). Its
+signed value is -1-a/P(k). `NegativeQuotient` proves this equals
+(-a-1)/P(k) by constructing quotient -1-a/P(k) and remainder
+P(k)-1-a%P(k), then invoking checked quotient uniqueness. The remainder is
+nonnegative and below P(k). The identity holds for every integer a and
+positive divisor, including endpoint powers. `SignDecision` checks that the
+native unsigned comparison with H selects the decoded sign; `Observe` checks
+the native result expression, and `Right` constructs that result and calls
+`Observe`. Every function and lemma has a checked body. No axiom, assumption,
+verification exemption or compiler fact is added.
+
+The new bodies and the signed-interpretation dependency are qualified with
+Z3 5.1.0's integer-based BV engine. The complete existing logical-shift and
+conversion closure is checked independently with the default engine, as are
+symbolic word/signed-integer clients and endpoint/concrete clients. Both
+resolvers and additional-axiom settings are required for qualification. The existing issue-284
+backend consistency qualification remains applicable.
+
+Negative controls reject invalid counts, incorrect result witnesses, invalid
+casts, wrong rounding/direction/sign results and nonpositive arithmetic
+divisors. Reachable false assertions follow both sign cases, each rule,
+zero/full-width function calls and the rules together; negative and vacuity
+controls run with both BV engines. For the integer-based engine, concrete
+observation controls construct the result expression and establish input and
+sign-threshold conversions using checked `RoundTrip` calls, so it need not
+infer literal conversion identities. Default-engine controls use literal result
+words for the same reachable calls. Serial mutation mode negates each
+postcondition and removes each explicit precondition, and separately changes
+the branch, sign boundary, positive shift direction, negative sign extension,
+inner complement and count in each executable function. Every mutant requires
+a passing baseline. A mutant exceeding three times that baseline (with a
+five-second minimum) is stopped by its own process group and recorded
+separately; no baseline/control exhaustion or timeout passes.
+
+Runtime qualification compares C# and JavaScript with an independent signed
+integer oracle. It exhausts all 8-bit inputs, exercises structured and seeded
+wider words, and tests every count from zero through N for every selected word.
+The proof/control ceilings are 2,000,000/200,000 resource units per scope.
+This adds a source-level native-word helper; rotations, signed division and
+remainder conventions, arbitrary-width APIs and runtime lowering of bounded
+integer-newtype operators remain separate work.

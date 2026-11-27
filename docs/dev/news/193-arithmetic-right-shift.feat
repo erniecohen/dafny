@@ -1,0 +1,1 @@
+Add explicitly included, checked arithmetic right-shift helpers for 8-, 16-, 32- and 64-bit words under `--integer-bitwise`. Results preserve the sign and agree with signed floor division by a power of two, including shift counts zero and the word width.
