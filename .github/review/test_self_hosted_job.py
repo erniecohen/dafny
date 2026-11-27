@@ -110,6 +110,10 @@ class AdmissionTests(unittest.TestCase):
             admission.hold('unused', 'unused', 0, '', 0, POLICY)
 
 class CapacityInputTests(unittest.TestCase):
+    def test_waiting_input_metadata_has_four_hour_default(self):
+        self.assertRegex((ACTION / 'action.yml').read_text(),
+                         r"heavy-wait-max-s:\n(?:    [^\n]*\n)*?    default: '14400'\n")
+
     def test_required_and_configured_capacity_and_invalid_inputs(self):
         import shutil
         node = shutil.which('node')
@@ -143,6 +147,14 @@ const env = {'INPUT_RESERVE-MB': '100', 'INPUT_DEFAULT-PEAK-MB': '1000', 'INPUT_
 const args = admissionArgs('/cache', '/ready', {pid: 123, identity: 'worker'}, 3, env);
 assert.deepEqual(args.slice(1, 6), ['/cache/active.lock', '/ready', '123', 'worker', '3']);
 assert.deepEqual(JSON.parse(args[6]), memoryPolicy(env));
+assert.equal(JSON.parse(args[6]).heavy_wait_max_s, 14400);
+assert.equal(memoryPolicy({...env, 'INPUT_HEAVY-WAIT-MAX-S': ''}).heavy_wait_max_s, 14400);
+assert.equal(memoryPolicy({...env, 'INPUT_HEAVY-WAIT-MAX-S': '60'}).heavy_wait_max_s, 60);
+assert.equal(JSON.parse(admissionArgs('/cache', '/ready', {pid: 1, identity: 'w'}, 1,
+  {...env, 'INPUT_HEAVY-WAIT-MAX-S': '60'})[6]).heavy_wait_max_s, 60);
+for (const bad of ['0', '-1', 'true', 'null', '"2"', '1e999', '[]', 'oops']) {
+  assert.throws(() => memoryPolicy({...env, 'INPUT_HEAVY-WAIT-MAX-S': bad}));
+}
 assert.deepEqual(args.slice(7), ['ci:Exact key', 'example/repo', '']);
 assert.equal(callerPeak({}), '');
 assert.equal(callerPeak({'INPUT_EXPECTED-PEAK-MB': '2048.5'}), '2048.5');
@@ -176,6 +188,9 @@ class CleanupTests(unittest.TestCase):
             self.skipTest('Node is provided by the Actions runner for the post action')
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
+            # Never stop build servers belonging to the test caller.
+            (root / 'dotnet').write_text('#!/bin/sh\nexit 0\n')
+            (root / 'dotnet').chmod(0o755)
             repo = root / 'repo'; repo.mkdir()
             tmp = root / 'fork-job.example'; tmp.mkdir()
             unrelated = root / 'unrelated'; unrelated.mkdir()
@@ -187,7 +202,8 @@ class CleanupTests(unittest.TestCase):
             try:
                 time.sleep(.2)
                 env = dict(os.environ, STATE_keeper=str(keeper.pid), STATE_keeperIdentity=admission.identity(keeper.pid),
-                           STATE_tmp=str(tmp), RUNNER_TEMP=str(root), GITHUB_WORKSPACE=str(repo))
+                           STATE_tmp=str(tmp), RUNNER_TEMP=str(root), GITHUB_WORKSPACE=str(repo),
+                           PATH=str(root) + os.pathsep + os.environ['PATH'])
                 subprocess.run([node, str(ACTION / 'index.cjs')], env=env, check=True, timeout=5)
                 self.assertTrue((repo / 'tracked').exists())
                 self.assertFalse((repo / 'output').exists())
@@ -246,6 +262,7 @@ const source = fs.readFileSync(process.argv[1], 'utf8');
         INPUT_KIND: 'ci:Exact key', GITHUB_REPOSITORY: 'example/repo',
         ADMISSION_LOCK_DIR: path.join(root, 'locks'), TMPDIR: root,
         GITHUB_STATE: failure === 'state' ? path.join(root, 'missing', 'state') : path.join(root, 'state'),
+        GITHUB_ENV: path.join(root, 'env'),
         GITHUB_WORKSPACE: path.join(root, 'repo'), RUNNER_WORKSPACE: path.join(root, 'wrong-parent')
       }},
       require: name => name === 'node:child_process' ? cp : require(name)

@@ -1,0 +1,5 @@
+CI can transfer internal build outputs through a shared runner directory configured
+by HOST_ARTIFACT_DIR, with readable atomic publication, earlier-attempt lookup,
+shared reader locks and pruning by each run's maximum retention (default three
+days). Unconfigured runners retain GitHub retention and hidden-file defaults. Review
+evidence, releases and cross-workflow artifacts remain available on GitHub.

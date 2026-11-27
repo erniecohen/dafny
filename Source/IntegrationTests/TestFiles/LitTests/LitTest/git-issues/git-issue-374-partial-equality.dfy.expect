@@ -1,0 +1,83 @@
+
+Dafny program verifier finished with 17 verified, 0 errors
+
+Dafny program verifier finished with 17 verified, 0 errors
+git-issue-374-partial-equality.dfy(15,0): Error: a postcondition could not be proved on this return path
+git-issue-374-partial-equality.dfy(13,12): Related location: this is the postcondition that could not be proved
+git-issue-374-partial-equality.dfy(21,0): Error: a postcondition could not be proved on this return path
+git-issue-374-partial-equality.dfy(19,12): Related location: this is the postcondition that could not be proved
+git-issue-374-partial-equality.dfy(27,0): Error: a postcondition could not be proved on this return path
+git-issue-374-partial-equality.dfy(25,12): Related location: this is the postcondition that could not be proved
+git-issue-374-partial-equality.dfy(33,0): Error: a postcondition could not be proved on this return path
+git-issue-374-partial-equality.dfy(31,12): Related location: this is the postcondition that could not be proved
+git-issue-374-partial-equality.dfy(39,0): Error: a postcondition could not be proved on this return path
+git-issue-374-partial-equality.dfy(37,12): Related location: this is the postcondition that could not be proved
+git-issue-374-partial-equality.dfy(45,0): Error: a postcondition could not be proved on this return path
+git-issue-374-partial-equality.dfy(43,12): Related location: this is the postcondition that could not be proved
+git-issue-374-partial-equality.dfy(49,2): Error: assertion might not hold
+git-issue-374-partial-equality.dfy(50,2): Error: assertion might not hold
+git-issue-374-partial-equality.dfy(51,2): Error: assertion might not hold
+git-issue-374-partial-equality.dfy(56,2): Error: assertion might not hold
+git-issue-374-partial-equality.dfy(58,2): Error: assertion might not hold
+git-issue-374-partial-equality.dfy(63,9): Error: assertion might not hold
+git-issue-374-partial-equality.dfy(63,26): Error: assertion might not hold
+git-issue-374-partial-equality.dfy(64,2): Error: assertion might not hold
+git-issue-374-partial-equality.dfy(70,0): Error: a postcondition could not be proved on this return path
+git-issue-374-partial-equality.dfy(69,12): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 7 verified, 15 errors
+git-issue-374-partial-equality.dfy(15,0): Error: a postcondition could not be proved on this return path
+git-issue-374-partial-equality.dfy(13,12): Related location: this is the postcondition that could not be proved
+git-issue-374-partial-equality.dfy(21,0): Error: a postcondition could not be proved on this return path
+git-issue-374-partial-equality.dfy(19,12): Related location: this is the postcondition that could not be proved
+git-issue-374-partial-equality.dfy(27,0): Error: a postcondition could not be proved on this return path
+git-issue-374-partial-equality.dfy(25,12): Related location: this is the postcondition that could not be proved
+git-issue-374-partial-equality.dfy(33,0): Error: a postcondition could not be proved on this return path
+git-issue-374-partial-equality.dfy(31,12): Related location: this is the postcondition that could not be proved
+git-issue-374-partial-equality.dfy(39,0): Error: a postcondition could not be proved on this return path
+git-issue-374-partial-equality.dfy(37,12): Related location: this is the postcondition that could not be proved
+git-issue-374-partial-equality.dfy(45,0): Error: a postcondition could not be proved on this return path
+git-issue-374-partial-equality.dfy(43,12): Related location: this is the postcondition that could not be proved
+git-issue-374-partial-equality.dfy(51,2): Error: assertion might not hold
+git-issue-374-partial-equality.dfy(58,2): Error: assertion might not hold
+git-issue-374-partial-equality.dfy(64,2): Error: assertion might not hold
+git-issue-374-partial-equality.dfy(70,0): Error: a postcondition could not be proved on this return path
+git-issue-374-partial-equality.dfy(69,12): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 7 verified, 10 errors
+git-issue-374-partial-equality-negative.dfy(5,2): Error: assertion might not hold
+git-issue-374-partial-equality-negative.dfy(10,2): Error: assertion might not hold
+git-issue-374-partial-equality-negative.dfy(15,2): Error: assertion might not hold
+git-issue-374-partial-equality-negative.dfy(22,2): Error: assertion might not hold
+git-issue-374-partial-equality-negative.dfy(29,0): Error: a postcondition could not be proved on this return path
+git-issue-374-partial-equality-negative.dfy(28,12): Related location: this is the postcondition that could not be proved
+git-issue-374-partial-equality-negative.dfy(34,0): Error: a postcondition could not be proved on this return path
+git-issue-374-partial-equality-negative.dfy(33,12): Related location: this is the postcondition that could not be proved
+git-issue-374-partial-equality-negative.dfy(41,9): Error: function precondition could not be proved
+git-issue-374-partial-equality-negative.dfy(48,2): Error: assertion might not hold
+git-issue-374-partial-equality-negative.dfy(55,2): Error: assertion might not hold
+git-issue-374-partial-equality-negative.dfy(62,2): Error: assertion might not hold
+git-issue-374-partial-equality-negative.dfy(69,2): Error: assertion might not hold
+git-issue-374-partial-equality-negative.dfy(76,2): Error: assertion might not hold
+git-issue-374-partial-equality-negative.dfy(83,2): Error: assertion might not hold
+
+Dafny program verifier finished with 2 verified, 13 errors
+git-issue-374-partial-equality-negative.dfy(5,2): Error: assertion might not hold
+git-issue-374-partial-equality-negative.dfy(10,2): Error: assertion might not hold
+git-issue-374-partial-equality-negative.dfy(15,2): Error: assertion might not hold
+git-issue-374-partial-equality-negative.dfy(22,2): Error: assertion might not hold
+git-issue-374-partial-equality-negative.dfy(29,0): Error: a postcondition could not be proved on this return path
+git-issue-374-partial-equality-negative.dfy(28,12): Related location: this is the postcondition that could not be proved
+git-issue-374-partial-equality-negative.dfy(34,0): Error: a postcondition could not be proved on this return path
+git-issue-374-partial-equality-negative.dfy(33,12): Related location: this is the postcondition that could not be proved
+git-issue-374-partial-equality-negative.dfy(41,9): Error: function precondition could not be proved
+git-issue-374-partial-equality-negative.dfy(48,2): Error: assertion might not hold
+git-issue-374-partial-equality-negative.dfy(55,2): Error: assertion might not hold
+git-issue-374-partial-equality-negative.dfy(62,2): Error: assertion might not hold
+git-issue-374-partial-equality-negative.dfy(69,2): Error: assertion might not hold
+git-issue-374-partial-equality-negative.dfy(76,2): Error: assertion might not hold
+git-issue-374-partial-equality-negative.dfy(83,2): Error: assertion might not hold
+
+Dafny program verifier finished with 2 verified, 13 errors
+
+Dafny program verifier finished with 12 verified, 0 errors

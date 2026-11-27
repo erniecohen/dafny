@@ -28,13 +28,52 @@ public class JavaScriptBackend : ExecutableBackend {
   }
 
   public override void Compile(Program dafnyProgram, string dafnyProgramName, ConcreteSyntaxTree output) {
-    foreach (var module in dafnyProgram.Modules().Where(module => module.RecursiveGroup != null)) {
-      if (module.IsExtern(Options, out _, out _) || module.TopLevelDecls.Any(declaration =>
-            declaration.IsExtern(Options, out _, out _) || declaration is TopLevelDeclWithMembers type &&
-            type.Members.Any(member => member.IsExtern(Options, out _, out _)))) {
-        Reporter.Error(MessageSource.Compiler, module.Origin,
-          "JavaScript compilation of recursive module groups with extern declarations is not yet supported");
+    foreach (var module in dafnyProgram.CompileModules) {
+      var refinesGroup = false;
+      for (var ancestor = module.Implements?.Target.Def; ancestor != null; ancestor = ancestor.Implements?.Target.Def) {
+        refinesGroup |= ancestor.RecursiveGroup != null;
+      }
+      if (refinesGroup && module.TopLevelDecls.FirstOrDefault(declaration =>
+            declaration is not ModuleDecl and not DefaultClassDecl && declaration.IsExtern(Options, out _, out _)) is { } externType) {
+        Reporter.Error(MessageSource.Compiler, externType.Origin,
+          "JavaScript refinement of a recursive module group with extern types is not yet supported");
         return;
+      }
+    }
+    foreach (var module in dafnyProgram.Modules().Where(module => module.RecursiveGroup != null)) {
+      if (module.IsExtern(Options, out var moduleQualifier, out _) && moduleQualifier != null) {
+        Reporter.Error(MessageSource.Compiler, module.Origin,
+          "JavaScript recursive groups require preloaded extern module objects; require-based extern modules are not yet supported");
+        return;
+      }
+      foreach (var type in module.TopLevelDecls.OfType<TopLevelDeclWithMembers>()) {
+        if (type.IsExtern(Options, out var qualifier, out _) &&
+            (qualifier != null || !module.IsExtern(Options, out _, out _))) {
+          Reporter.Error(MessageSource.Compiler, type.Origin,
+            "JavaScript recursive groups require extern types in a preloaded extern module, without a two-argument type qualifier");
+          return;
+        }
+        if (type.Members.OfType<Constructor>().FirstOrDefault(constructor =>
+              !constructor.IsGhost && constructor.Body == null && constructor.IsExtern(Options, out _, out _)) is { } externalConstructor) {
+          Reporter.Error(MessageSource.Compiler, externalConstructor.Origin,
+            "JavaScript recursive groups do not support extern constructors");
+          return;
+        }
+        if (type.Members.FirstOrDefault(member => !member.IsGhost &&
+              member is not Function and not Method { IsStatic: true } and not MethodOrConstructor { Body: not null } &&
+              member.IsExtern(Options, out var memberQualifier, out _) && memberQualifier != null) is { } qualifiedMember) {
+          Reporter.Error(MessageSource.Compiler, qualifiedMember.Origin,
+            "JavaScript recursive groups require qualified extern members to be functions or static methods");
+          return;
+        }
+        if (type.Members.FirstOrDefault(member => !member.IsGhost &&
+              member is not Function { Body: not null } and not MethodOrConstructor { Body: not null } &&
+              member.IsExtern(Options, out var memberQualifier, out _) && memberQualifier == null &&
+              !(type is DefaultClassDecl ? module.IsExtern(Options, out _, out _) : type.IsExtern(Options, out _, out _))) is { } unboundMember) {
+          Reporter.Error(MessageSource.Compiler, unboundMember.Origin,
+            "JavaScript recursive groups require unqualified extern members in an extern type or module");
+          return;
+        }
       }
     }
     base.Compile(dafnyProgram, dafnyProgramName, output);
