@@ -1,0 +1,7 @@
+includes = ["../../github-issue-241-server-gc.dfy"]
+
+[options]
+batch-gc = true
+server-gc-memory = 1024
+verification-module-window = 4
+verification-module-window-memory = 1024

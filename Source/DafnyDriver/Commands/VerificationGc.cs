@@ -3,6 +3,7 @@ using System;
 using System.Diagnostics;
 using System.Collections.Generic;
 using System.IO;
+using System.Globalization;
 using System.Reflection;
 using System.Runtime;
 using System.Runtime.CompilerServices;
@@ -33,6 +34,18 @@ internal static class VerificationGc {
 
   internal static Task<int> RunVerification(DafnyOptions options, Func<Task<int>> verify) {
     var invocation = Invocation.Value;
+    var serverMemory = options.GetOrOptionDefault(VerifyCommand.ServerGcMemory);
+    string? conflict = serverMemory == 0 ? null
+      : !options.GetOrOptionDefault(VerifyCommand.BatchGc) ? "--server-gc-memory requires --batch-gc."
+      : serverMemory < 256 ? "--server-gc-memory must be 0 or at least 256 MiB."
+      : options.GetOrOptionDefault(VerifyCommand.VerificationModuleWindow) > 1 &&
+        options.GetOrOptionDefault(VerifyCommand.VerificationModuleWindowMemory) == 0
+        ? "--server-gc-memory with a module window greater than 1 requires an explicit --verification-module-window-memory budget."
+        : null;
+    if (conflict != null) {
+      invocation?.Publish();
+      return Reject(options, conflict);
+    }
     if (!options.GetOrOptionDefault(VerifyCommand.BatchGc)) {
       invocation?.Publish();
       return verify();
@@ -40,15 +53,43 @@ internal static class VerificationGc {
     if (invocation == null) {
       return Reject(options, "--batch-gc requires the command-line executable so GC can be configured at startup.");
     }
-    if (invocation.StartupMode == GCLatencyMode.Batch) {
+    var bounded = serverMemory > 0 ? BoundedConfiguration(serverMemory) : null;
+    if (invocation.StartupMode == GCLatencyMode.Batch && (serverMemory == 0 || bounded != null)) {
       invocation.Publish();
+      if (bounded != null) {
+        PipelineProfile.For(options)?.Point("verification-gc", new Dictionary<string, object?> {
+          ["heapCount"] = bounded.Value.HeapCount,
+          ["maxHeapCount"] = bounded.Value.MaxHeapCount,
+          ["heapHardLimitBytes"] = bounded.Value.LimitBytes
+        });
+      }
       return verify();
     }
     if (invocation.Restarted) {
       invocation.Publish();
-      return Reject(options, "--batch-gc could not disable background GC at startup; verification was not started.");
+      return Reject(options, serverMemory == 0
+        ? "--batch-gc could not disable background GC at startup; verification was not started."
+        : "--server-gc-memory could not configure bounded server GC at startup; verification was not started.");
     }
     return Relaunch(options, invocation);
+  }
+
+  private static (long HeapCount, long MaxHeapCount, long LimitBytes)? BoundedConfiguration(uint memoryMiB) {
+    if (!GCSettings.IsServerGC) { return null; }
+    var configuration = GC.GetConfigurationVariables();
+    long Read(string key) => configuration.TryGetValue(key, out var value) ? Convert.ToInt64(value) : -1;
+    var heaps = Read("HeapCount");
+    var maximum = Read("MaxHeapCount");
+    var limit = Read("GCHeapHardLimit");
+    if (heaps is < 1 or > 2 || maximum is < 1 or > 2 || limit != memoryMiB * 1024L * 1024L) {
+      return null;
+    }
+    // Per-object-heap limits override the overall limit. Reject a runtime configuration
+    // that retained one, even if it also reports the requested overall limit.
+    foreach (var suffix in new[] { "SOH", "LOH", "POH", "SOHPercent", "LOHPercent", "POHPercent" }) {
+      if (Read("GCHeapHardLimit" + suffix) != 0) { return null; }
+    }
+    return (heaps, maximum, limit);
   }
 
   private static async Task<int> Reject(DafnyOptions options, string message) {
@@ -56,7 +97,8 @@ internal static class VerificationGc {
     return (int)ExitValue.PREPROCESSING_ERROR;
   }
 
-  internal static ProcessStartInfo StartInfo(string host, string entry, string runtimeVersion, string[] args) {
+  internal static ProcessStartInfo StartInfo(string host, string entry, string runtimeVersion, string[] args,
+    uint serverMemoryMiB = 0) {
     var start = new ProcessStartInfo(host) { UseShellExecute = false };
     if (Path.GetFileNameWithoutExtension(host).Equals("dotnet", StringComparison.OrdinalIgnoreCase)) {
       start.ArgumentList.Add("exec");
@@ -67,6 +109,16 @@ internal static class VerificationGc {
     foreach (var arg in args) { start.ArgumentList.Add(arg); }
     foreach (var prefix in new[] { "DOTNET_", "COMPlus_" }) {
       start.Environment[prefix + "gcConcurrent"] = "0";
+      if (serverMemoryMiB > 0) {
+        start.Environment[prefix + "gcServer"] = "1";
+        start.Environment[prefix + "GCHeapCount"] = "2";
+        start.Environment[prefix + "GCMaxHeapCount"] = "2";
+        start.Environment[prefix + "GCHeapHardLimit"] =
+          (serverMemoryMiB * 1024L * 1024L).ToString("x", CultureInfo.InvariantCulture);
+        foreach (var suffix in new[] { "Percent", "SOH", "LOH", "POH", "SOHPercent", "LOHPercent", "POHPercent" }) {
+          start.Environment.Remove(prefix + "GCHeapHardLimit" + suffix);
+        }
+      }
     }
     start.Environment[RestartedVariable] = "1";
     return start;
@@ -79,7 +131,8 @@ internal static class VerificationGc {
       return await Reject(options, "--batch-gc requires the command-line executable.");
     }
     using var child = new Process {
-      StartInfo = StartInfo(Environment.ProcessPath, entry.Location, Environment.Version.ToString(), invocation.Args)
+      StartInfo = StartInfo(Environment.ProcessPath, entry.Location, Environment.Version.ToString(), invocation.Args,
+        options.GetOrOptionDefault(VerifyCommand.ServerGcMemory))
     };
     try {
       child.Start();
