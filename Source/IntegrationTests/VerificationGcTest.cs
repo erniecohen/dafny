@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Dafny;
@@ -100,6 +101,47 @@ public class VerificationGcTest {
   }
 
   [Fact]
+  public void PreflightAsyncWritesKeepConsoleOrderAndCompleteInline() {
+    var target = new CallingThreadWriter();
+    var journal = new VerificationGc.Preflight();
+    var output = journal.Writer(target);
+    var error = journal.Writer(target);
+    Assert.True(output.WriteLineAsync("buffered output").IsCompletedSuccessfully);
+    Assert.True(error.WriteLineAsync("buffered error").IsCompletedSuccessfully);
+    Assert.Equal("", target.ToString());
+    journal.Publish();
+    journal.Publish();
+    // Blocking here also makes a deferred write's different thread observable.
+    output.WriteLineAsync("diagnostic").GetAwaiter().GetResult();
+    error.WriteLine("related");
+    output.WriteAsync('x').GetAwaiter().GetResult();
+    output.WriteAsync(new[] { 'y' }, 0, 1).GetAwaiter().GetResult();
+    output.WriteAsync("z".AsMemory()).GetAwaiter().GetResult();
+    output.WriteLineAsync().GetAwaiter().GetResult();
+    output.FlushAsync().GetAwaiter().GetResult();
+    Assert.Equal(string.Join(Environment.NewLine,
+      "buffered output", "buffered error", "diagnostic", "related", "xyz", ""), target.ToString());
+    Assert.True(target.Writes > 0);
+    Assert.False(target.WroteOnAnotherThread);
+  }
+
+  private sealed class CallingThreadWriter : StringWriter {
+    private readonly int callingThread = Environment.CurrentManagedThreadId;
+    internal int Writes { get; private set; }
+    internal bool WroteOnAnotherThread { get; private set; }
+    private void RecordWrite() {
+      Writes++;
+      WroteOnAnotherThread |= callingThread != Environment.CurrentManagedThreadId;
+    }
+    public override void Write(char value) { RecordWrite(); base.Write(value); }
+    public override void Write(string? value) { RecordWrite(); base.Write(value); }
+    public override void Write(char[] buffer, int index, int count) {
+      RecordWrite();
+      base.Write(buffer, index, count);
+    }
+  }
+
+  [Fact]
   public void DelegatedPreflightIsDiscardedIncludingLaterWrites() {
     var target = new StringWriter();
     var writer = new VerificationGc.PreflightWriter(target);
@@ -182,6 +224,27 @@ public class VerificationGcTest {
       "lemma Positive(x: int) ensures x + 1 > x {}\nlemma Counterexample() { assert false; }");
     Assert.Equal((int)ExitValue.VERIFICATION_ERROR, result.Exit);
     Assert.Contains("1 verified, 1 error", result.Output);
+  }
+
+  [Theory]
+  [InlineData(false)]
+  [InlineData(true)]
+  public async Task JsonDiagnosticsPreserveAssertionOrder(bool batchGc) {
+    var args = VerifyArgs("--stdin", "--json-diagnostics", "--isolate-assertions", "--extract-counterexample");
+    if (!batchGc) { args = args.Where(a => a != "--batch-gc").ToArray(); }
+    var result = await Cli(args,
+      "method Counterexamples(x: int) {\n  assert x > 0;\n  assert x > 1;\n  assert x > 2;\n}");
+    Assert.Equal((int)ExitValue.VERIFICATION_ERROR, result.Exit);
+    var diagnostics = result.Output.Split('\n').Where(line => line.StartsWith('{'))
+      .Select(line => JsonDocument.Parse(line)).ToArray();
+    try {
+      Assert.Equal(new[] { 2, 3, 4 }, diagnostics.Select(d => d.RootElement.GetProperty("location")
+        .GetProperty("range").GetProperty("start").GetProperty("line").GetInt32()));
+      Assert.All(diagnostics, d => Assert.Contains("Related counterexample:",
+        d.RootElement.GetProperty("message").GetString()));
+    } finally {
+      foreach (var diagnostic in diagnostics) { diagnostic.Dispose(); }
+    }
   }
 
   [Fact]

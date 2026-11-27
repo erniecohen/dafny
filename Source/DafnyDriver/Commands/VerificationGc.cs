@@ -127,12 +127,12 @@ internal static class VerificationGc {
     internal readonly GCLatencyMode StartupMode = GCSettings.LatencyMode;
     internal readonly bool Restarted = Environment.GetEnvironmentVariable(RestartedVariable) == "1";
     private readonly Preflight preflight = new();
-    internal readonly PreflightWriter Output;
-    internal readonly PreflightWriter Error;
+    internal readonly TextWriter Output;
+    internal readonly TextWriter Error;
     internal CliInvocation(string[] args) {
       Args = args;
-      Output = new PreflightWriter(Console.Out, preflight);
-      Error = new PreflightWriter(Console.Error, preflight);
+      Output = preflight.Writer(Console.Out);
+      Error = preflight.Writer(Console.Error);
     }
     internal void Publish() => preflight.Publish();
     internal void Discard() => preflight.Discard();
@@ -144,6 +144,10 @@ internal static class VerificationGc {
     private List<(TextWriter Target, string Text)>? pending = new();
     private bool discarded;
     internal bool Published => pending == null && !discarded;
+    // Console writers complete async writes inline and serialize whole writes.
+    // Keep those semantics: TextWriter's default async methods schedule work,
+    // which can reorder unawaited diagnostics even after preflight publication.
+    internal TextWriter Writer(TextWriter target) => TextWriter.Synchronized(new PreflightWriter(target, this));
     internal void Write(TextWriter target, string? value) {
       if (pending != null) { pending.Add((target, value ?? "")); }
       else if (!discarded) { target.Write(value); }
