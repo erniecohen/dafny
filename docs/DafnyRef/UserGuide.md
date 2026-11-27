@@ -577,6 +577,16 @@ prints, traces, emits debug information, verifies snapshots or selects a type
 encoding other than the default. It composes with `--resolution-threads` and
 `--translation-cache`.
 
+The opt-in `--optimize-translation-copy` generates field-copy routines for the
+Boogie module graphs that `dafny verify` materializes before preparation. It
+reduces reflection work even with one translation worker, and works with both
+type systems, `--translation-cache`, and persistent translation recording.
+It preserves field traversal order, graph aliases, fresh node identities and
+expression hashes, so Boogie text, diagnostics, solver input, verdicts and
+resource counts are unchanged. The routines retain type metadata only. Runtimes
+without dynamic code support use the existing reflection copier. The default
+is false.
+
 
 #### 13.6.1.4. `dafny translate <language>` {#sec-dafny-translate}
 

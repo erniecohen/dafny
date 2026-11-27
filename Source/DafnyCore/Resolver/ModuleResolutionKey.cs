@@ -59,6 +59,7 @@ public static class ModuleResolutionKey {
     ["resolution-cache"] = "switches this cache; a reused result equals a fresh one",
     ["resolution-cache-check"] = "compares reused results with fresh ones; changes no result",
     ["translation-cache"] = "a later stage's cache",
+    ["optimize-translation-copy"] = "a later stage's graph copier; preserves the copied graph and its traversal order",
     ["translation-workers"] = "a later stage's scheduling: any number of workers commits the same translations",
     ["translation-workers-stress"] = "test-only delays of a later stage's scheduling",
     ["persistent-translation"] = "a later stage's cache",

@@ -461,6 +461,32 @@ multi-module lit programs, the digests at N = 1 and N = 4 then agree, and
 `git-issues/github-issue-569-witness-race.dfy` compares them at N = 1, 2 and 4 under both kinds
 of schedule.
 
+### 2.8 Single-worker follow-up: translation graph copying
+
+Every uncached translation also materializes a private Boogie graph before preparation.
+Removing that copy would change the fresh node identities and identity-derived expression
+hashes on which solver emission depends. The opt-in `--optimize-translation-copy` instead
+reduces its reflection work, including with one translation worker. It uses a cached open
+delegate for `MemberwiseClone` and generates a field-copy routine per runtime type.
+
+The equivalence argument is local: allocate the same shallow copy, allocate the same fresh
+node identity, enter it in the same reference map, traverse fields in the existing order,
+then recompute immutable expression hashes. Each generated field operation performs the
+same read, recursive copy and write. A statically known primitive, enum, string, decimal,
+big-number value, URI or runtime type can be assigned directly because `Copy` returns it
+unchanged. Other fields, including tokens, still recurse; `CanVerifyOrigin` must bind to the
+current resolved program. Collections and unsupported-type rejection are unchanged.
+Generated delegates retain metadata only, never a program. Unsupported generation and
+runtimes without dynamic code support use reflection.
+
+The option is wired through ordinary translation, cold and warm in-process translation
+caches, their bypass path, and persistent translation recording. Unit controls require the
+selected copier to run, private inherited and readonly fields to copy, distinct node IDs,
+preserved aliases and hashes, current-symbol rebinding, and unsupported metadata rejection.
+The paired real-solver regression compares Boogie bytes, raw SMT, diagnostics and per-VC
+obligations and resources with the default under both resolvers, additional axioms and the
+translation cache. Its positive lemma must pass and its false assertion must fail.
+
 ---
 
 ## 3. F2 — Parallel module resolution (D8)

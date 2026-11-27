@@ -500,7 +500,7 @@ public sealed class VerificationPreparationPipeline : IDisposable {
       var reporter = new BatchErrorReporter(program.Options);
       var snapshot = new BoogieGenerator(reporter, dependencies, translatorFlags).DoTranslationForSnapshot(program, moduleDefinition);
       foreach (var diagnostic in reporter.AllMessages) { errorReporter.MessageCore(diagnostic); }
-      var copied = BoogieSnapshotCloner.TryClone(snapshot, out var consumer, out var cloneFailure);
+      var copied = BoogieSnapshotCloner.TryClone(snapshot, out var consumer, out var cloneFailure, optimize: program.Options.Get(CommonOptionBag.OptimizeTranslationCopy));
       graph = copied ? consumer! : snapshot;
       // Translator hints (Info) are printed only with tooltips, which every key includes; a
       // translation whose only reports are hints that this run does not print is silent.

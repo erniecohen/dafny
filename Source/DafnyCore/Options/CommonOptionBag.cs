@@ -83,6 +83,10 @@ public class CommonOptionBag {
   public static readonly Option<bool> TranslationCache = new("--translation-cache",
     "Reuse module translations in this process using semantic resolution keys. " +
     "Requires --type-system-refresh. Uses the default module-scoped translator. Stores no files or verification results.");
+  public static readonly Option<bool> OptimizeTranslationCopy = new("--optimize-translation-copy",
+    "Use generated field-copy routines when materializing Boogie module graphs, reducing front-end reflection work. " +
+    "Preserves graph aliases, generated names, solver input and resource counts. Defaults to false; " +
+    "uses reflection on runtimes without dynamic code support.");
   public static readonly Option<bool> PersistentTranslation = new("--persistent-translation",
     "Also keep module translations and whole-module results in the --verification-cache directory, across processes. " +
     "Requires --verification-cache and --type-system-refresh. A module whose translation key is unchanged is not translated again, " +
@@ -1007,6 +1011,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
     });
     OptionRegistry.RegisterOption(ResolutionThreads, OptionScope.Cli);
     OptionRegistry.RegisterOption(TranslationCache, OptionScope.Cli);
+    OptionRegistry.RegisterOption(OptimizeTranslationCopy, OptionScope.Cli);
     OptionRegistry.RegisterOption(PersistentTranslation, OptionScope.Cli);
     OptionRegistry.RegisterOption(PersistentTranslationAudit, OptionScope.Cli);
     TranslationWorkers.AddValidator(result => {

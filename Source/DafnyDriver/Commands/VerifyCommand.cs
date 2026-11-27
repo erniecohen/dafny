@@ -75,6 +75,7 @@ public static class VerifyCommand {
     new Option[] {
         PerformanceStatisticsOption,
         CommonOptionBag.TranslationCache,
+        CommonOptionBag.OptimizeTranslationCopy,
         CommonOptionBag.PersistentTranslation,
         CommonOptionBag.PersistentTranslationAudit,
         CommonOptionBag.TranslationWorkers,
