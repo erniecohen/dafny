@@ -2876,6 +2876,8 @@ and what information it produces about the verification process.
   Boolean bridges at widths 8, 16, 32 and 64, independently of additional axioms.
   `IntegerBitwiseNativeShifts.dfy` adds checked shift and modular-addition equations
   at those widths, including shift counts zero and the width.
+  `IntegerBitwiseNativeSubtraction.dfy` adds checked modular-subtraction equations
+  at the same widths, including borrow and wraparound.
   Set `integer-bitwise = true` in the project file's `[options]` section;
   an enabled `.doo` library requires enabled clients. Declarations in an off-built
   library cannot use this compiler interface merely because the client enables
