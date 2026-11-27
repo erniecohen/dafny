@@ -9,6 +9,12 @@ import subprocess
 
 ROOT = Path(__file__).resolve().parents[2]
 LIBRARY = ROOT / 'Source/DafnyStandardLibraries/optional/IntegerBitwiseNativeMultiplication.dfy'
+
+# Body proofs, and the controls run beside them, replace Boogie's relevancy-based
+# case split with Z3's default one, which completes the bit-blasted identities.
+# This changes only the search order; the bitvector engine and every theory
+# solver stay at their defaults (https://github.com/erniecohen/dafny/issues/618).
+BODY_SEARCH = ['--solver-option', 'O:smt.case_split=1']
 WIDTHS = (8, 16, 32, 64)
 
 
@@ -76,9 +82,9 @@ def main():
         common += ['--additional-axioms']
     records = []
 
-    def verify(name, path, options=(), errors=(), mutation=False, lost=False, wellformed=False, limit=2000000, intblast=False):
+    def verify(name, path, options=(), errors=(), mutation=False, lost=False, wellformed=False, limit=2000000, bodies=False):
         csv_path = out / (name + '.csv')
-        result = subprocess.run(exe + ['verify', str(path), *common, *(['--solver-option','O:smt.bv.solver=2'] if intblast else []), '--resource-limit', str(limit),
+        result = subprocess.run(exe + ['verify', str(path), *common, *(BODY_SEARCH if bodies else []), '--resource-limit', str(limit),
                                       '--log-format', 'csv;LogFileName='+str(csv_path), *options],
                                 capture_output=True, text=True, timeout=110)
         text = result.stdout + result.stderr
@@ -110,18 +116,18 @@ def main():
         modes = ('legacy','refreshed') if args.resolver == 'both' else (args.resolver,)
         for mode in modes:
             options = ['--type-system-refresh:'+str(mode=='refreshed').lower()]
-            # The existing bitwise/shift closure uses the default BV engine.
-            # Only the new arithmetic bodies use the integer-based BV engine.
+            # The existing bitwise/shift closure uses Boogie's search settings.
+            # Only the new arithmetic bodies use BODY_SEARCH.
             verify(mode+'-included-bodies', LIBRARY.parent/'IntegerBitwiseNativeShifts.dfy',
                    [*options,'--verify-included-files'])
-            verify(mode+'-bodies', LIBRARY, options, intblast=True)
+            verify(mode+'-bodies', LIBRARY, options, bodies=True)
             for kind, lines in zip(('clients','negative'), fixtures()):
                 path = out / (mode+'-'+kind+'.dfy')
                 path.write_text('\n'.join(lines)+'\n')
                 errors = {i for i,line in enumerate(lines,1) if '// ERROR' in line}
                 verify(mode+'-'+kind,path,options,errors,limit=200000 if errors else 2000000)
                 if errors:
-                    verify(mode+'-negative-intblast',path,options,errors,limit=200000,intblast=True)
+                    verify(mode+'-negative-bodies',path,options,errors,limit=200000,bodies=True)
     else:
         original = LIBRARY.read_text().replace('include "IntegerBitwiseNativeShifts.dfy"',
                      'include "'+(LIBRARY.parent/'IntegerBitwiseNativeShifts.dfy').as_posix()+'"')
@@ -148,10 +154,10 @@ def main():
                 site = f'{module}.{name}.{contract[1]}.{j}'
                 options = ['--type-system-refresh:true','--filter-symbol',f'{module}.{name}.']
                 if fact:
-                    verify(site,path,options,mutation=True,intblast=True)
+                    verify(site,path,options,mutation=True,bodies=True)
                 elif name=='Reduce' and j==0:
                     verify(site,path,[*options,'--boogie','/proc:*well-formedness*'],
-                           wellformed=True,intblast=True)
+                           wellformed=True,bodies=True)
                 else:
                     lines = fixtures()[1]
                     lines[0] = f'include "{path.as_posix()}"'
@@ -167,7 +173,7 @@ def main():
                     lost = {k+1 for k in range(at,stop) if '// ERROR' in lines[k]}
                     assert len(lost)==1, (site,lost)
                     verify(site,caller,['--type-system-refresh:true'],errors,lost=lost,limit=200000)
-        assert len(records)==20
+        assert len(records)==32
     (out/'summary.json').write_text(json.dumps(records,indent=2)+'\n')
     print('Native multiplication checks passed')
 

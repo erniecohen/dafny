@@ -350,19 +350,21 @@ high-bit overflow and maximum-by-maximum wraparound. Wrong-result equations,
 inhabited false assertions after every new rule, incorrect witness results,
 invalid conversions and incorrect arithmetic premises must be rejected.
 Serial mutation mode negates every new postcondition and removes each new
-premise separately. Recursive fact mutations use an inhabited zero case so
-an inconsistent induction hypothesis cannot obscure the rejection. Resource
+premise separately. Each fact mutation adds a concrete inhabiting premise, so
+a negated postcondition is refuted rather than proved vacuously. Resource
 exhaustion and timeout never count as successful controls; the proof/control
 ceilings are 2,000,000/200,000 resource units per scope.
 
-The new multiplication bodies use Z3's integer-based bitvector engine
-(`--solver-option O:smt.bv.solver=2`) with the pinned solver. The default
-bit-blasting engine can exhaust the proof budget on substitutions involving wide
-products; the integer-based engine checks the same native operations without
-adding a Dafny axiom. The included bitwise and shift proof closure is checked
-separately with the
-default engine, whose coverage of those operations is needed by the existing
-proofs. Clients are checked with the default engine. Negative and
-vacuity controls are also checked with the integer-based engine, so a successful
-body run alone is insufficient qualification. This solver setting belongs to the
-explicit proof gate and does not change compiler or verifier defaults.
+The new multiplication bodies are checked with the default bitvector engine of
+the pinned solver. The induction works on an opaque product, so the native
+multiplier never enters its integer reasoning, and each step uses one native
+addition. Body runs, and the negative and vacuity controls beside them, select
+Z3's own case-split heuristic (`--solver-option O:smt.case_split=1`) in place of
+Boogie's relevancy-based one, which makes the bit-blasted step identities cheap;
+this changes only the search order, adds no Dafny axiom and leaves every
+theory solver at its default. The integer-based engine (`smt.bv.solver=2`) is
+not used: it can report unsatisfiable for satisfiable queries
+(https://github.com/erniecohen/dafny/issues/618). The included bitwise and
+shift proof closure and all clients are checked with Boogie's settings. A
+successful body run alone is insufficient qualification. This solver setting
+belongs to the explicit proof gate and does not change compiler or verifier defaults.
