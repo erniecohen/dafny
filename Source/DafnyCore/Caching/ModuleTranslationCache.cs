@@ -64,7 +64,7 @@ public sealed class ModuleTranslationCache {
   /// Why a module's translation cannot be keyed by its descriptor, or null when it can. A module
   /// that cannot is translated afresh, by this cache and by the persistent tables alike.
   /// </summary>
-  internal static string? BypassReason(Program program, ModuleDefinition module, BoogieGenerator.TranslatorFlags flags) {
+  internal static string? BypassReason(Program program, ModuleDefinition module, BoogieGenerator.TranslatorFlags flags, bool persistentResults = false) {
     var options = program.Options;
     if (BoogieGenerator.DeclaresUnsupportedMemberInvariants(program)) {
       return "a member invariant whose verification is not yet supported";
@@ -74,7 +74,7 @@ public sealed class ModuleTranslationCache {
         // Modular termination reads downstream open-trait/dispatch facts; recompute until keyed.
         ModularTermination.Active(options, program) || options.PrintWithUniqueASTIds ||
         // Model extraction consumes graph/source report state not covered by the snapshot codec.
-        options.ExtractCounterexample ||
+        options.ExtractCounterexample && !persistentResults ||
         options.AdditionalPlugins.Count != 0 || options.AdditionalPluginArguments.Count != 0 ||
         flags.ObligationLowered != null || flags.ObligationPrepared != null) {
       return "missing module key, nonlocal names, debug identities or external callbacks";
@@ -100,7 +100,7 @@ public sealed class ModuleTranslationCache {
     if (BypassReason(program, module, flags) is { } bypass) {
       lock (gate) { Bypasses++; LastBypassReason = bypass; }
       var snapshot = Fresh(program, module, flags, program.Reporter, manager);
-      return new ModuleTranslation(BoogieSnapshotCloner.TryClone(snapshot, out var fresh, out _) ? fresh! : snapshot, manager);
+      return new ModuleTranslation(BoogieSnapshotCloner.TryClone(snapshot, out var fresh, out _, optimize: options.Get(CommonOptionBag.OptimizeTranslationCopy)) ? fresh! : snapshot, manager);
     }
     var key = Descriptor(program, module, flags);
     lock (gate) {
@@ -108,7 +108,7 @@ public sealed class ModuleTranslationCache {
         var symbols = SymbolExtensions.GetSymbolDescendants(program.DefaultModule).OfType<ICanVerify>()
           .GroupBy(BoogieSnapshotCloner.SymbolKey).Where(g => g.Count() == 1).ToDictionary(g => g.Key, g => g.Single());
         if (Hash(node.Value.Value.Text) != node.Value.Value.BoogieHash ||
-            !BoogieSnapshotCloner.TryClone(node.Value.Value.Template, out var graph, out _, symbols)) {
+            !BoogieSnapshotCloner.TryClone(node.Value.Value.Template, out var graph, out _, symbols, options.Get(CommonOptionBag.OptimizeTranslationCopy))) {
           Remove(node);
         } else {
           cancellationToken.ThrowIfCancellationRequested();
@@ -126,7 +126,7 @@ public sealed class ModuleTranslationCache {
       cancellationToken.ThrowIfCancellationRequested();
       string? reason = null;
       Bpl.Program? consumer = null;
-      var copied = BoogieSnapshotCloner.TryClone(translated, out consumer, out reason);
+      var copied = BoogieSnapshotCloner.TryClone(translated, out consumer, out reason, optimize: options.Get(CommonOptionBag.OptimizeTranslationCopy));
       if (reporter.HasErrors || !copied) {
         Bypasses++; LastBypassReason = reporter.HasErrors ? "translation diagnostics" : reason;
         return new ModuleTranslation(copied ? consumer! : translated, manager);

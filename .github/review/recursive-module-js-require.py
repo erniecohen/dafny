@@ -49,17 +49,32 @@ def main():
         'module {:extern "NativeOnly", "./issue466_required_zero.js"} NativeOnly {')
     library = library.replace("witness Positive(Identity(2))", "witness Positive(Identity(2) + NativeOnly.Zero())")
     library = library.replace("B.Middle + Identity(1)", "B.Middle + Identity(1) + NativeOnly.Zero()")
+    library = library.replace('  class {:extern "Actual"} Native {', '''  class {:extern} RequiredCell<T(0)> {
+    constructor {:extern} (ghost erased: int, seed: T)
+      ensures Read() == seed
+    function {:extern} Read(): T
+    function {:extern} InitialValue(): T
+  }
+  class {:extern "Actual"} Native {''')
     producer = write("producer.dfy", library)
     client = (inputs / "git-issue-466-js-extern-client.dfy").read_text()
     client = client.replace('print counter.Eval(4)', 'print B.NativeCount(5), "\\n";\n    print counter.Eval(4)')
     client = client.replace("B.Echo(", "B.NativeEcho(")
+    client = client.replace('    var native := new B.Native();',
+        '    var cell := new B.RequiredCell<int>(99, 41);\n'
+        '    print cell.Read(), " ", cell.InitialValue(), "\\n";\n'
+        '    var native := new B.Native();')
     consumer = write("client.dfy", client)
     source = write("source.dfy", 'include "producer.dfy"\ninclude "client.dfy"\n')
     for name in ["issue466_required.js", "issue466_required_zero.js", "issue466_required_peer.js"]:
         shutil.copyfile(inputs / name, directory / name)
     prelude = inputs / "issue466_required_prelude.js"
     foreign_cs = write("foreign.cs", (inputs / "git-issue-466-js-extern-foreign.cs").read_text() +
-        '\nnamespace ForeignB { public partial class __default {\n'
+        '\nnamespace ForeignB { public class RequiredCell<T> {\n'
+        'private readonly T value; private readonly T initial;\n'
+        'public RequiredCell(Dafny.TypeDescriptor<T> rtd, T seed) { value = seed; initial = rtd.Default(); }\n'
+        'public T Read() { return value; } public T InitialValue() { return initial; } }\n'
+        'public partial class __default {\n'
         'public static System.Numerics.BigInteger NativeCount(System.Numerics.BigInteger n) { return Count(n); }\n'
         'public static A._ITree<System.Numerics.BigInteger> NativeEcho(A._ITree<System.Numerics.BigInteger> x) { return x; } } }\n')
     plain = ["--optimize-erasable-datatype-wrapper:false"]
@@ -104,6 +119,21 @@ method Main() { print Native.Same(4, 4), "\\n"; }
             assert "both have CompileName" in rejected
         else:
             assert "require-based extern module names to be unqualified ASCII identifiers" in rejected
+    partial = write("partial-constructor.dfy", library.replace(
+        'class {:extern} RequiredCell<T(0)> {',
+        'class {:extern} RequiredCell<T(0)> { function Generated(): int { 0 }'))
+    rejected = run("partial-constructor", "translate", [partial], ["--no-verify"], 3)
+    assert "partial classes must use a Dafny constructor body" in rejected
+    # Keep refinements and imported ancestor owners behind their existing boundary.
+    for label, declaration in [("refinement", 'module {:extern "RequiredRefined", "./issue466_required.js"} RequiredRefined refines B { }'),
+                               ("abstract-refinement", 'abstract module AbstractForeign refines B { }\nmodule {:extern "RequiredFinal", "./issue466_required.js"} RequiredFinal refines AbstractForeign { }')]:
+        unsupported = write(label + ".dfy", library.replace("class Implementation extends A.Counter", "class Implementation") + "\n" + declaration + "\n")
+        rejected = run(label, "translate", [unsupported], ["--no-verify"], 3)
+        assert "preloaded extern module objects for refinements" in rejected
+    # The broader filter must also validate require names in refining namespaces.
+    invalid_refinement = write("invalid-refinement.dfy", library.replace("class Implementation extends A.Counter", "class Implementation") + '\nmodule {:extern "bad-name", "./issue466_required.js"} RequiredRefined refines B { }\n')
+    rejected = run("invalid-refinement", "translate", [invalid_refinement], ["--no-verify"], 3)
+    assert "require-based extern module names to be unqualified ASCII identifiers" in rejected
     no_certificate = run("certificate", "build", [producer], plain + ["-t:lib", "--output", directory / "rejected.doo"], 3)
     assert "cannot build a library under --modular-termination" in no_certificate
     # Keep the existing archive trust boundary. Arbitrary extern contracts cannot
@@ -151,16 +181,18 @@ module Negative {
   import B
   method Wrong() { assert B.NativeCount(4) == 5; }
   method Live() { assert B.NativeCount(4) == 4; assert false; }
+  method WrongConstructor() { var c := new B.RequiredCell<int>(99, 41); assert c.Read() == 42; }
+  method LiveConstructor() { var c := new B.RequiredCell<int>(99, 41); assert c.Read() == 41; assert false; }
   method WrongEcho() { assert B.NativeEcho(A.Leaf(4)).value == 5; }
   method LiveEcho() { assert B.NativeEcho(A.Leaf(4)).value == 4; assert false; }
 }
 ''')
     for flags, suffix in [([], "plain"), (["--additional-axioms"], "axioms")]:
         bad = run("negative-" + suffix, "verify", [negative], flags, 4)
-        assert bad.count("Error: assertion might not hold") == 4, bad
-        assert "4 errors" in bad, bad
+        assert bad.count("Error: assertion might not hold") == 6, bad
+        assert "6 errors" in bad, bad
     print(oracle, end="")
-    print("CommonJS group runtime matrix, archive, separate linkage and 8 negative/vacuity controls passed.")
+    print("CommonJS group runtime matrix, archive, separate linkage and 12 negative/vacuity controls passed.")
     print(f"Dafny commands checked: {commands}.")
 
 

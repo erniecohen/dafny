@@ -6,9 +6,10 @@ true
 42
 true true true
 2
+41 0
 17 13 3 5
 5 3 23 19 9
 5
 4 3
-CommonJS group runtime matrix, archive, separate linkage and 8 negative/vacuity controls passed.
-Dafny commands checked: 31.
+CommonJS group runtime matrix, archive, separate linkage and 12 negative/vacuity controls passed.
+Dafny commands checked: 35.

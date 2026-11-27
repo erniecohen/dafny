@@ -37,19 +37,32 @@ public class JavaScriptBackend : ExecutableBackend {
   }
 
   public override void Compile(Program dafnyProgram, string dafnyProgramName, ConcreteSyntaxTree output) {
-    foreach (var module in dafnyProgram.CompileModules) {
+    var jsGenerator = (JavaScriptCodeGenerator)codeGenerator;
+    jsGenerator.RegisterImportedTraitAncestors(dafnyProgram);
+    if (jsGenerator.ImportedTraitAncestors.FirstOrDefault(ancestor =>
+          !ancestor.EnclosingModuleDefinition.CanCompile() ||
+          !ancestor.EnclosingModuleDefinition.ShouldCompile(dafnyProgram.Compilation)) is { } unavailableAncestor) {
+      Reporter.Error(MessageSource.Compiler, unavailableAncestor.Origin,
+        "JavaScript recursive groups require imported trait ancestors to be emitted with their group; an ancestor supplied only as a library must be linked by a producer containing that group");
+      return;
+    }
+    foreach (var module in dafnyProgram.CompileModules.Where(module => module.CanCompile())) {
       var refinesGroup = false;
       for (var ancestor = module.Implements?.Target.Def; ancestor != null; ancestor = ancestor.Implements?.Target.Def) {
         refinesGroup |= ancestor.RecursiveGroup != null;
       }
       if (refinesGroup && module.TopLevelDecls.FirstOrDefault(declaration =>
-            declaration is not ModuleDecl and not DefaultClassDecl && declaration.IsExtern(Options, out _, out _)) is { } externType) {
+            declaration is not ModuleDecl and not DefaultClassDecl && declaration.IsExtern(Options, out _, out _) &&
+            (declaration is not ClassDecl &&
+             (declaration is not TraitDecl trait || !JavaScriptCodeGenerator.CanImportTrait(trait, codeGenerator)))) is { } externType) {
         Reporter.Error(MessageSource.Compiler, externType.Origin,
-          "JavaScript refinement of a recursive module group with extern types is not yet supported");
+          "JavaScript refinements of recursive module groups require extern classes or fully imported extern traits with fully imported extern ancestors; generated traits, generated ancestors and other extern type kinds are not yet supported");
         return;
       }
     }
-    foreach (var module in dafnyProgram.Modules().Where(module => module.RecursiveGroup != null)) {
+    foreach (var module in dafnyProgram.Modules().Where(module => module.CanCompile() &&
+               (JavaScriptCodeGenerator.IsRecursiveGroupContext(module) ||
+                jsGenerator.ImportedTraitAncestors.Any(ancestor => ancestor.EnclosingModuleDefinition == module)))) {
       if (module.IsExtern(Options, out var moduleQualifier, out _) && moduleQualifier != null &&
           (!System.Text.RegularExpressions.Regex.IsMatch(module.GetCompileName(Options), @"\A[A-Za-z_$][A-Za-z0-9_$]*\z") ||
            RequiredModuleReservedNames.Contains(module.GetCompileName(Options)))) {
@@ -57,7 +70,14 @@ public class JavaScriptBackend : ExecutableBackend {
           "JavaScript recursive groups require require-based extern module names to be unqualified ASCII identifiers that do not conflict with unescaped JavaScript keywords or runtime bindings");
         return;
       }
-      foreach (var type in module.TopLevelDecls.OfType<TopLevelDeclWithMembers>()) {
+      if (moduleQualifier != null && module.RecursiveGroup == null) {
+        Reporter.Error(MessageSource.Compiler, module.Origin,
+          "JavaScript recursive groups require preloaded extern module objects for refinements and imported trait ancestor modules; require-based linkage in these contexts is not yet supported");
+        return;
+      }
+      foreach (var type in module.TopLevelDecls.OfType<TopLevelDeclWithMembers>().Where(type =>
+                 JavaScriptCodeGenerator.IsRecursiveGroupContext(module) ||
+                 type is TraitDecl trait && jsGenerator.ImportedTraitAncestors.Contains(trait))) {
         if (type.IsExtern(Options, out var qualifier, out _) &&
             (qualifier != null || !module.IsExtern(Options, out _, out _))) {
           Reporter.Error(MessageSource.Compiler, type.Origin,
@@ -65,9 +85,11 @@ public class JavaScriptBackend : ExecutableBackend {
           return;
         }
         if (type.Members.OfType<Constructor>().FirstOrDefault(constructor =>
-              !constructor.IsGhost && constructor.Body == null && constructor.IsExtern(Options, out _, out _)) is { } externalConstructor) {
+              !constructor.IsGhost && constructor.Body == null && constructor.IsExtern(Options, out _, out _)) is { } externalConstructor &&
+            (!type.IsExtern(Options, out _, out _) || type.Members.Any(member =>
+              !member.IsGhost && !codeGenerator.IsExternallyImported(member)))) {
           Reporter.Error(MessageSource.Compiler, externalConstructor.Origin,
-            "JavaScript recursive groups do not support extern constructors");
+            "JavaScript recursive groups require extern constructors on fully imported classes; partial classes must use a Dafny constructor body");
           return;
         }
         if (type.Members.FirstOrDefault(member => !member.IsGhost &&

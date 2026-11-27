@@ -9,3 +9,7 @@ Eligibility follows the logger parser's case-sensitive name boundary: every requ
 The equality contract excludes runtime and replay-marker fields. With the result cache enabled, CSV ordering is already canonical by display name; current names, outcomes, resource counts and seeds must equal an independently populated run without persistent translation. Cached durations are labeled `TimingReplayed=true`. The existing `--persistent-translation-audit` oracle independently checks stored translations and module results against freshly translated/prepared tasks. Modules containing a failed task still use the ordinary task-result path.
 
 The regression compares cold and warm reports with an independent nonpersistent oracle, requires actual module hits and zero solver starts on warm runs, retains an unsoundness witness, and exercises audit, source rebinding, stale/corrupt entries and mixed logger fallback. Mutations that disable CSV replay or admit unsupported loggers must fail those checks.
+
+For the later extensions, see [ordinary JSON replay](261-persistent-json.md) and [text/TRX replay](261-persistent-reports.md). Together they admit all ordinary verification loggers. Dependency-aware reports still use fresh preparation.
+
+For the subsequent dependency-aware report, warning and coverage extension, see [proof-dependency sidecars](261-persistent-dependencies.md).

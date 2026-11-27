@@ -21,10 +21,43 @@ namespace Microsoft.Dafny.Compilers {
   class JavaScriptCodeGenerator : SinglePassCodeGenerator {
     private readonly Dictionary<RecursiveModuleGroup, ConcreteSyntaxTree> groupWriters = new();
     private readonly Dictionary<RecursiveModuleGroup, ConcreteSyntaxTree> foreignGroupWriters = new();
+    internal readonly HashSet<TraitDecl> ImportedTraitAncestors = new();
+
+    // Discover ancestors before any module emits a replacement trait object.
+    // Library consumers must leave preservation to the producer that owns the group.
+    internal void RegisterImportedTraitAncestors(Program program) {
+      ImportedTraitAncestors.Clear();
+      foreach (var module in program.Modules().Where(module => module.CanCompile() &&
+                 module.ShouldCompile(program.Compilation) && IsRecursiveGroupContext(module))) {
+        foreach (var trait in module.TopLevelDecls.OfType<TraitDecl>().Where(trait =>
+                   IsExternallyImported(trait) && CanImportTrait(trait, this))) {
+          foreach (var parent in trait.ParentTypeInformation.UniqueParentTraits().Where(parent => !parent.IsObject)) {
+            ImportedTraitAncestors.Add(parent.AsTraitType);
+          }
+        }
+      }
+    }
 
     // Source positions and archive layout must not affect separately translated references.
     private static List<ModuleDefinition> GroupMembers(RecursiveModuleGroup group) =>
       group.Members.Select(member => member.ModuleDef).OrderBy(member => member.FullDafnyName, StringComparer.Ordinal).ToList();
+
+    // Concrete refinements emit separately but retain the group allocation convention.
+    internal static bool IsRecursiveGroupContext(ModuleDefinition module) {
+      for (var current = module; current != null; current = current.Implements?.Target.Def) {
+        if (current.RecursiveGroup != null) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    internal static bool CanImportTrait(TraitDecl trait, SinglePassCodeGenerator generator) =>
+      // Imported implementations supply the complete ancestor identity list. Every ancestor
+      // must also preserve its imported identity, with no generated trait material to lose.
+      trait.Traits.All(parent => parent.IsObject || parent.AsTraitType is { } ancestor &&
+        generator.IsExternallyImported(ancestor) && CanImportTrait(ancestor, generator)) &&
+      trait.Members.All(member => member.IsGhost || generator.IsExternallyImported(member));
 
     private bool UsesForeignModuleObjects(ModuleDefinition module) =>
       module.RecursiveGroup is { } group && GroupMembers(group).Any(member =>
@@ -165,7 +198,9 @@ namespace Microsoft.Dafny.Compilers {
       if (isExtern) {
         fieldWriter.Write("super(");
         if (typeParameters != null) {
-          WriteRuntimeTypeDescriptorsFormals(typeParameters, false, w);
+          // Group refinements use the same native base class convention as their members.
+          var descriptorWriter = IsRecursiveGroupContext(cls.EnclosingModuleDefinition) ? fieldWriter : w;
+          WriteRuntimeTypeDescriptorsFormals(typeParameters, false, descriptorWriter);
         }
         fieldWriter.WriteLine(");");
       }
@@ -190,6 +225,10 @@ namespace Microsoft.Dafny.Compilers {
 
     protected override IClassWriter CreateTrait(string name, bool isExtern, List<TypeParameter> typeParameters /*?*/,
       TraitDecl trait, List<Type> superClasses /*?*/, IOrigin tok, ConcreteSyntaxTree wr) {
+      if (isExtern && (IsRecursiveGroupContext(trait.EnclosingModuleDefinition) || ImportedTraitAncestors.Contains(trait)) && CanImportTrait(trait, this)) {
+        // Foreign implementations may retain this object as their runtime trait identity.
+        return new NullClassWriter(this);
+      }
       var w = wr.NewBlock(string.Format("$module.{0} = class {0}", trait.EnclosingModuleDefinition.RecursiveGroup == null ? IdProtect(name) : IdName(trait)), ";");
       var fieldWriter = w;  // not used for traits, but we need a value to give to the ClassWriter
       var methodWriter = w;
@@ -1454,7 +1493,14 @@ namespace Microsoft.Dafny.Compilers {
         wr.Write("_dafny.NewObject()");
       } else {
         wr.Write("new {0}(", TypeName(type, wr, tok));
-        EmitTypeDescriptorsActuals(TypeArgumentInstantiation.ListFromClass(cl, type.TypeArgs), tok, wr);
+        var sep = "";
+        EmitTypeDescriptorsActuals(TypeArgumentInstantiation.ListFromClass(cl, type.TypeArgs), tok, wr, ref sep);
+        if (IsRecursiveGroupContext(cl.EnclosingModuleDefinition) &&
+            initCall?.Method is Constructor constructor && IsExternallyImported(constructor)) {
+          // Fully imported classes use the native constructor. Preserve the
+          // descriptor prefix, erase ghost arguments, and evaluate actuals once.
+          wr.Write(ConstructorArguments(initCall, wStmts, constructor, sep));
+        }
         wr.Write(")");
       }
     }

@@ -1,0 +1,4 @@
+The optional `IntegerBitwiseNativeSubtraction.dfy` companion provides checked
+modular subtraction bridges at widths 8, 16, 32 and 64 under `--integer-bitwise`.
+Each bridge proves the unsigned integer observation of native subtraction,
+including borrow and wraparound, without additional axioms.

@@ -1,0 +1,2 @@
+ready modules: identical Boogie, SMT, assertions, verdicts and resources; positive and vacuity controls exercised
+invalid combinations rejected; hidden option absent from help

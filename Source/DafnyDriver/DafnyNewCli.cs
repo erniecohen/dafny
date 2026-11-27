@@ -187,6 +187,13 @@ public static class DafnyNewCli {
         return;
       }
 
+      if (dafnyOptions.Get(CommonOptionBag.PersistentCounterexamples) &&
+          !dafnyOptions.Get(CommonOptionBag.PersistentTranslation)) {
+        await dafnyOptions.OutputWriter.Status("Error: --persistent-counterexamples requires --persistent-translation");
+        context.ExitCode = (int)ExitValue.DAFNY_ERROR;
+        return;
+      }
+
       if (dafnyOptions.Get(CommonOptionBag.PersistentTranslationAudit) &&
           !dafnyOptions.Get(CommonOptionBag.PersistentTranslation)) {
         await dafnyOptions.OutputWriter.Status("Error: --persistent-translation-audit requires --persistent-translation");

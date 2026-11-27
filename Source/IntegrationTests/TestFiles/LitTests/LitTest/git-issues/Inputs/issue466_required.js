@@ -2,6 +2,15 @@
 globalThis.issue466RequiredLoads = (globalThis.issue466RequiredLoads || 0) + 1;
 const foreign = {
   __default: class {},
+  RequiredCell: class {
+    constructor(rtd, seed) {
+      if (arguments.length !== 2) { throw new Error('native constructor arity'); }
+      this.value = seed;
+      this.initial = rtd.Default;
+    }
+    Read() { return this.value; }
+    InitialValue() { return this.initial; }
+  },
   Actual: class {
     constructor() { this.number = globalThis.issue466RequiredInt(19); }
     Read() { return globalThis.issue466RequiredInt(13); }

@@ -68,7 +68,7 @@ public class CoverageReporter {
         .OrderBy(dep => dep.Range.StartToken);
     var coverageReport = new CoverageReport("Verification coverage", "Proof Dependencies", "_verification", dafnyProgram);
     foreach (var proofDependency in allDependencies) {
-      if (proofDependency is FunctionDefinitionDependency) {
+      if (typeof(FunctionDefinitionDependency).IsAssignableFrom(Caching.ReplayedProofDependency.TypeOf(proofDependency))) {
         continue;
       }
       coverageReport.LabelCode(proofDependency.Range,
@@ -87,10 +87,10 @@ public class CoverageReporter {
     foreach (var (manager, components) in requests) {
       var used = components.Select(manager.GetFullIdDependency).ToHashSet();
       foreach (var dependency in manager.GetAllPotentialDependencies()) {
-        if (dependency is FunctionDefinitionDependency) {
+        if (typeof(FunctionDefinitionDependency).IsAssignableFrom(Caching.ReplayedProofDependency.TypeOf(dependency))) {
           continue;
         }
-        var key = (dependency.Range, dependency.Description, dependency.GetType());
+        var key = (dependency.Range, dependency.Description, Caching.ReplayedProofDependency.TypeOf(dependency));
         coverage[key] = coverage.GetValueOrDefault(key) || used.Contains(dependency);
       }
     }

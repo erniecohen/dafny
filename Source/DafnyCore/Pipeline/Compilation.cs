@@ -370,6 +370,18 @@ public class Compilation : IDisposable {
 
   // When verifying a symbol, a ticket must be acquired before the SMT part of verification may start.
   private readonly AsyncQueue<Unit> verificationTickets = new();
+  private readonly ConcurrentDictionary<ModuleDefinition, AsyncQueue<Unit>> moduleVerificationTickets = new();
+
+  private AsyncQueue<Unit> VerificationTickets(ModuleDefinition module) {
+    if (!Options.Get(CommonOptionBag.ReadyModuleVerification) || !Options.RestartProverPerVC) {
+      return verificationTickets;
+    }
+    return moduleVerificationTickets.GetOrAdd(module, _ => {
+      var tickets = new AsyncQueue<Unit>();
+      tickets.Enqueue(Unit.Default);
+      return tickets;
+    });
+  }
   public async Task<bool> VerifyLocation(FilePosition verifiableLocation, Func<IVerificationWork, bool>? taskFilter = null,
     int? randomSeed = null,
     bool onlyPrepareVerificationForGutterTests = false) {
@@ -432,9 +444,10 @@ public class Compilation : IDisposable {
 
   private async Task VerifyUnverifiedSymbol(bool onlyPrepareVerificationForGutterTests, ICanVerify canVerify,
     ResolutionResult resolution, Func<IVerificationWork, bool> taskFilter, int? randomSeed) {
+    var tickets = VerificationTickets(canVerify.ContainingModule);
     try {
 
-      var ticket = verificationTickets.Dequeue();
+      var ticket = tickets.Dequeue();
       var containingModule = canVerify.ContainingModule;
 
       IReadOnlyDictionary<ICanVerify, IReadOnlyList<IVerificationWork>> tasksForModule;
@@ -473,7 +486,7 @@ public class Compilation : IDisposable {
         updates.OnNext(new CanVerifyPartsIdentified(canVerify, tasks));
       }
 
-      // When multiple calls to VerifyUnverifiedSymbol are made, the order in which they pass this await matches the call order.
+      // Preserve call order globally by default, or within each module with ready-module verification.
       await ticket;
 
       if (!onlyPrepareVerificationForGutterTests) {
@@ -498,7 +511,7 @@ public class Compilation : IDisposable {
 
     }
     finally {
-      verificationTickets.Enqueue(Unit.Default);
+      tickets.Enqueue(Unit.Default);
     }
   }
 
@@ -651,7 +664,7 @@ public class Compilation : IDisposable {
     errorReporter.Updates.Subscribe(d => diagnostics.Add(d.Diagnostic));
 
     ReportDiagnosticsInResult(options, canVerify.NavigationRange.StartToken.val, BoogieGenerator.ToDafnyToken(task.Token),
-      Caching.VerificationTaskFacts.TimeLimit(task, options), result, errorReporter);
+      Caching.VerificationTaskFacts.TimeLimit(task, options), result, errorReporter, task);
 
     return diagnostics.OrderBy(d => d.Range.StartToken.GetLspPosition()).ToList();
   }
@@ -659,7 +672,11 @@ public class Compilation : IDisposable {
   public static void ReportDiagnosticsInResult(DafnyOptions options, string name, IOrigin token,
     uint timeLimit,
     VerificationRunResult result,
-    ErrorReporter errorReporter) {
+    ErrorReporter errorReporter, IVerificationTask? task = null, bool includeModels = true) {
+    if (Caching.VerificationTaskFacts.FailureDiagnostics(task) is { } cached) {
+      foreach (var diagnostic in cached) { errorReporter.MessageCore(diagnostic); }
+      return;
+    }
     var outcome = GetOutcome(result.Outcome);
     result.CounterExamples.Sort(new CounterexampleComparer());
     foreach (var counterExample in result.CounterExamples) {
@@ -673,7 +690,7 @@ public class Compilation : IDisposable {
         if (options.ShowProofObligationExpressions) {
           AddAssertedExprToCounterExampleErrorInfo(options, counterExample, errorInformation);
         }
-        var dafnyCounterExampleModel = options.ExtractCounterexample ? new DafnyModel(counterExample.Model, options) : null;
+        var dafnyCounterExampleModel = options.ExtractCounterexample && includeModels ? new DafnyModel(counterExample.Model, options) : null;
         errorReporter.ReportBoogieError(errorInformation, dafnyCounterExampleModel);
       }
     }
@@ -853,6 +870,7 @@ public class Compilation : IDisposable {
     translatedModules.TryGetValue(moduleDefinition, out var translation);
     translatedModules.Remove(moduleDefinition);
     moduleProofDependencies.TryRemove(moduleDefinition, out _);
+    moduleVerificationTickets.TryRemove(moduleDefinition, out _);
     if (translation is { IsCompletedSuccessfully: true }) {
       ReleaseBoogiePrograms(translation.Result.Values.SelectMany(tasks => tasks));
     }

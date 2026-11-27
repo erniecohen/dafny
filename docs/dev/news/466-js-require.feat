@@ -1,1 +1,3 @@
 JavaScript recursive module groups now support CommonJS libraries named by two-argument module externs under `--recursive-modules`. Required exports are loaded before group initialization and retain their identity when extended with generated declarations. Required module names must be unqualified ASCII identifiers. Other extern linkage restrictions remain; ordinary module compilation is unchanged.
+
+Fully imported classes in require-based group members also support native constructors, including generic descriptors and erased ghost arguments. Require-based refinements and imported trait ancestor modules retain explicit rejections pending qualification; preloaded refinements keep their existing constructor, class and trait support.

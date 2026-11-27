@@ -1685,6 +1685,13 @@ jobs:
       - name: Build resolver and language-server tests
         timeout-minutes: 20
         run: dotnet build -p:NuGetAudit=false Source/DafnyLanguageServer.Test -c Release
+      - name: Persistent IDE cache native evidence and lifecycle
+        timeout-minutes: 20
+        run: |
+          DAFNY_TEST_Z3=$(sh .github/review/setup-z3.sh 5.1.0 "$TMPDIR/ide-cache-z3")
+          export DAFNY_TEST_Z3
+          dotnet test -p:NuGetAudit=false --settings .github/review/ci.runsettings Source/DafnyLanguageServer.Test -c Release --no-build \
+            --filter "FullyQualifiedName~PersistentCacheLifecycleTest" --logger "console;verbosity=normal"
       # These tests exercise type resolution only. The language-server tests
       # explicitly disable automatic verification, so this job starts no solver.
       - name: Test redirecting dependencies, numeric ancestry and recovery scopes
@@ -2054,6 +2061,8 @@ jobs:
           slot-poll-s: ${{ vars.SELF_HOSTED_JOB_SLOT_POLL_S }}
           memory-backoff-s: ${{ vars.SELF_HOSTED_JOB_MEMORY_BACKOFF_S }}
           heavy-wait-max-s: ${{ vars.SELF_HOSTED_JOB_HEAVY_WAIT_MAX_S }}
+          # Release binaries peaked at 6.6-8.6 GB, far above the workflow-wide estimate.
+          expected-peak-mb: 9000
       - uses: actions/checkout@v4
         with:
           clean: false

@@ -12,7 +12,7 @@ git-issue-466-js-extern-qualified-type.dfy(3,38): Error: JavaScript recursive gr
 Translation was aborted because errors were found
 
 Dafny program verifier did not attempt verification
-git-issue-466-js-extern-refinement.dfy(3,18): Error: JavaScript refinement of a recursive module group with extern types is not yet supported
+git-issue-466-js-extern-refinement.dfy(3,18): Error: JavaScript refinements of recursive module groups require extern classes or fully imported extern traits with fully imported extern ancestors; generated traits, generated ancestors and other extern type kinds are not yet supported
 git-issue-466-js-extern-refinement.dfy(7,7): Related location: refining module
 Translation was aborted because errors were found
 
@@ -25,5 +25,5 @@ git-issue-466-js-extern-qualified-field.dfy(3,56): Error: JavaScript recursive g
 Translation was aborted because errors were found
 
 Dafny program verifier did not attempt verification
-git-issue-466-js-extern-constructor.dfy(3,22): Error: JavaScript recursive groups do not support extern constructors
+git-issue-466-js-extern-constructor.dfy(3,22): Error: JavaScript recursive groups require extern constructors on fully imported classes; partial classes must use a Dafny constructor body
 Translation was aborted because errors were found
