@@ -1049,3 +1049,22 @@ relocation (E2, E3) are aimed at exactly that, and nothing else needs to be hand
 
 The sample is 20 of 86 programs, and the probe does not compare SMT input. F1-2's dry run must repeat
 this on all modules and add SMT logs.
+
+### 10.1 Solver-input buffering: no-go for this milestone
+
+Larger solver-input writer buffers and bounded coalescing of SMT commands do not establish the
+required 10% whole-verification improvement. Do not ship a new buffering option from this evaluation.
+This decision is scoped to these routes with the startup GC policy held constant; it does not rule
+out changes to SMT construction or Boogie preparation.
+
+A transport prototype must preserve the exact command stream and flush before every response read,
+input close, problem transition, ping and shutdown. Coalescing also adds managed string construction;
+a hot pipe-write frame alone is insufficient evidence of an end-to-end gain. Compare complete runs,
+not just transport microbenchmarks, and check that the proposed buffer and batching mode actually
+activate. Bound buffered data and cover oversized commands, Unicode and error forwarding.
+
+Acceptance still requires unchanged Boogie text, VC membership, verdicts and per-VC resource counts,
+plus positive, negative, vacuity and mutation controls. Repeated unmodified runs are needed to
+identify pre-existing pooled-solver variation before attributing a resource-count difference to a
+transport change. A future proposal must meet both the throughput and memory gates before adding
+product code.
