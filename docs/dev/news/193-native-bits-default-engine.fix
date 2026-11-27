@@ -1,0 +1,1 @@
+Qualify the optional single-bit bridges and their negative/vacuity controls exclusively with the default bitvector engine. Their body proofs already used that engine.

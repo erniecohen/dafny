@@ -362,7 +362,7 @@ returning client, zero and maximum words, low and high bits, and alternating-bit
 witnesses. Negative controls reject set/clear inversions, reversed endianness,
 wrong digit values, out-of-range and negative indices, and invalid conversions.
 Reachable false assertions follow each rule separately and both together under
-the default and integer-based bitvector engines. Each designated rejection must
+the default bitvector engine. Each designated rejection must
 be conclusive; exhaustion and timeout never count as a pass.
 
 Serial mutation mode negates each of the eight postconditions on inhabited
@@ -399,3 +399,7 @@ observations and a zero modulus must be rejected. Serial mutations
 negate every new postcondition and remove each new premise separately.
 Resource exhaustion or timeout is never accepted as a successful control. The existing proof/control
 ceilings are 2,000,000/200,000 resource units per scope.
+
+The single-bit qualification runner uses the default engine for every body,
+client, negative control and mutation. No accepted single-bit body depended on
+the alternative engine implicated in https://github.com/erniecohen/dafny/issues/618.

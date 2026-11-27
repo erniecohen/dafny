@@ -93,9 +93,9 @@ def main():
         common += ['--additional-axioms']
     records = []
 
-    def verify(name, path, options=(), errors=(), mutation=False, wellformed=False, limit=2000000, intblast=False, expected_scopes=None):
+    def verify(name, path, options=(), errors=(), mutation=False, wellformed=False, limit=2000000, expected_scopes=None):
         csv_path = out / (name + '.csv')
-        result = subprocess.run(exe + ['verify', str(path), *common, *(['--solver-option','O:smt.bv.solver=2'] if intblast else []), '--resource-limit', str(limit),
+        result = subprocess.run(exe + ['verify', str(path), *common, '--resource-limit', str(limit),
                                       '--log-format', 'csv;LogFileName='+str(csv_path), *options],
                                 capture_output=True, text=True, timeout=110)
         text = result.stdout + result.stderr
@@ -137,8 +137,6 @@ def main():
                 errors = {i for i,line in enumerate(lines,1) if '// ERROR' in line}
                 assert len(errors)==(68 if kind=='negative' else 0), (kind,errors)
                 verify(mode+'-'+kind,path,options,errors,limit=200000 if errors else 2000000)
-                if errors:
-                    verify(mode+'-negative-intblast',path,options,errors,limit=200000,intblast=True)
     else:
         original = LIBRARY.read_text()
         for dependency in ('IntegerBitwiseNativeShifts.dfy','IntegerBitwiseCompiler.dfy'):
