@@ -1741,8 +1741,9 @@ observation bridges: the six ghost operators lower to the M2 compiler-owned
 reference calls, with checked shift counts and ordinary checked conversion to the
 entire result newtype. Its exact rules, model argument and regression controls
 are in [the implementation notes](../integer-bitwise-references.md). This does
-not implement M3a/M3b or any runtime milestone; compiled operators are rejected
-through the reference functions' ghost restriction.
+not implement the proposed M3a/M3b emitter. The common-generator/C# runtime
+stage now compiles the six existing operators with checked reference semantics;
+other targets and M6 source operations remain unimplemented.
 
 The next implementation uses checked optional-source bridge proofs instead of
 adding the design's proposed trusted bridge instances. Its Boolean/conversion

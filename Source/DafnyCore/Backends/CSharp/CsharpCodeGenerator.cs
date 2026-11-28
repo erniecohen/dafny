@@ -30,6 +30,50 @@ namespace Microsoft.Dafny.Compilers {
     public CsharpCodeGenerator(DafnyOptions options, ErrorReporter reporter) : base(options, reporter) {
     }
 
+    protected override void EmitIntegerBitwise(ConversionExpr expression, bool inLetExprBody,
+      ConcreteSyntaxTree wr, ConcreteSyntaxTree wStmts) {
+      var width = expression.IntegerBitwiseWidth.Value;
+      var name = ((FunctionCallExpr)expression.E.Resolved).Function.Name;
+      var operands = expression.IntegerBitwiseOperands.ToList();
+      var native = expression.Type.AsNativeType() != null;
+      var typeName = TypeName(expression.Type, wr, expression.Origin);
+      var shift = name is "shlNat" or "shrNat";
+      var binding = ProtectedFreshId("_integerBitwise");
+      var types = operands.Select(operand => TypeName(operand.Type, wr, operand.Origin)).ToList();
+      var inputType = operands.Count == 1 ? types[0] : $"({string.Join(", ", types)})";
+      var variables = operands.Count == 1 ? new List<string> { binding }
+        : new List<string> { binding + ".Item1", binding + ".Item2" };
+      // The tuple evaluates operands once, in source order, outside the lambda.
+      // A static lambda captures neither out parameters nor caller state.
+      wr.Write($"Dafny.Helpers.Let<{inputType}, {typeName}>(");
+      if (operands.Count == 2) { wr.Write("("); }
+      for (var i = 0; i < operands.Count; i++) {
+        if (i != 0) { wr.Write(", "); }
+        EmitExpr(operands[i], inLetExprBody, wr, wStmts);
+      }
+      if (operands.Count == 2) { wr.Write(")"); }
+      wr.Write($", static {binding} => ");
+      var x = native ? $"((ulong){variables[0]})" : variables[0];
+      var mask = native ? $"{(width >= 64 ? ulong.MaxValue : (1UL << width) - 1)}UL"
+        : $"((BigInteger.One << {width}) - BigInteger.One)";
+      var y = operands.Count == 2 && native && !shift ? $"((ulong){variables[1]})" : variables.Last();
+      var operation = name switch {
+        "andNat" => $"{x} & {y}",
+        "orNat" => $"{x} | {y}",
+        "xorNat" => $"{x} ^ {y}",
+        "notNat" => $"(~{x}) & {mask}",
+        "shlNat" => $"({x} << (int){variables[1]}) & {mask}",
+        "shrNat" => $"{x} >> (int){variables[1]}",
+        _ => throw new InvalidOperationException("unexpected integer bitwise reference")
+      };
+      wr.Write($"unchecked(({typeName})(");
+      // A C# integral shift masks its count; a semantic full-width shift is zero.
+      if (shift) { wr.Write($"{variables[1]} >= {Math.Min(width, native ? 64 : int.MaxValue)} ? 0 : "); }
+      wr.Write(operation);
+      wr.Write("))");
+      wr.Write(")");
+    }
+
     private readonly Dictionary<TopLevelDecl, TopLevelDecl> replacementTypes = new();
 
     protected override void OrganizeModules(Program program, out List<ModuleDefinition> modules) {

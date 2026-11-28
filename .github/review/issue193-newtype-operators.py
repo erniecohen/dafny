@@ -173,8 +173,6 @@ def main():
                                    'ghost function F(a:V,b:V):V { a & b }'],
             'opaque': ['module L { export provides U newtype {:bitWidth 8} U = x:nat | x < 256 }',
                        'module C { import L lemma Hidden(a:L.U,b:L.U) { var r := a & b; } }'],
-            'compiled': ['newtype {:bitWidth 8} U = x:nat | x < 256',
-                         'function Compiled(a:U,b:U):U { a & b }'],
         }.items():
             path = source(mode + '-reject-' + name, lines)
             invoke(mode + '-reject-' + name, ['resolve', str(path), *resolver_common], 2)

@@ -1,10 +1,10 @@
 # Integer bitwise references and newtype frontend (issue 193)
 
 `--integer-bitwise` is disabled by default. It installs the ghost class
-`IntegerBitwiseModel` and its explicit one-step unfold lemmas. It also enables the six basic bitwise operators in ghost code on
+`IntegerBitwiseModel` and its explicit one-step unfold lemmas. It also enables the six basic bitwise operators on
 explicitly width-qualified integer newtypes. The optional native companion below
-provides checked conversion and Boolean bridges; runtime operators remain later
-milestones. The independent
+provides checked conversion and Boolean bridges. The six source operators
+compile to C#; runtime support for other targets remains later work. The independent
 `--additional-axioms` option does not expose this public interface.
 
 Include `Source/DafnyStandardLibraries/optional/IntegerBitwiseCompiler.dfy` for
@@ -178,14 +178,16 @@ call remains opaque. Clones use the standard resolved-child/type substitution;
 source and `.doo` reload rebuild the selection from recorded options and visible
 declarations. Off-built files cannot acquire the surface or width capability
 from an enabled client, including in the merged default module. No source name
-or attribute can replace the compiler-owned target. Compiled uses receive the
-ordinary ghost-function diagnostic; backend lowering is explicitly deferred.
+or attribute can replace the compiler-owned target. The reference call remains
+the verifier meaning in compiled contexts as well.
+C# compilation of these six operators is described below; other targets reject
+compiled uses explicitly.
 
 `issue193-newtype-operators.py` verifies actual source clients against M1 at widths
 8, 16, 32 and 64, checks live false assertions with every definition active, and
 rejects missing range proofs, strict-predicate violations, invalid counts,
-invalid width declarations, mixed nominal types, opaque capability and compiled
-uses. It preserves existing BV and Boolean intrinsics. Negative controls must
+invalid width declarations, mixed nominal types and opaque capability. It
+preserves existing BV and Boolean intrinsics. Negative controls must
 finish within 200,000 RU; exhaustion is never accepted. The existing M2
 foundation/emission controls remain separate gates.
 
@@ -348,3 +350,42 @@ observations and a zero modulus must be rejected. Serial mutations
 negate every new postcondition and remove each new premise separately.
 Resource exhaustion or timeout is never accepted as a successful control. The existing proof/control
 ceilings are 2,000,000/200,000 resource units per scope.
+
+## C# runtime lowering for integer newtypes
+
+With `--integer-bitwise`, the six existing source operators compile to C#.
+The resolved result conversion retains its ordinary compiler-owned reference
+call as its verifier meaning. An internal width marker selects runtime emission
+and survives resolved cloning and substitution. Compilability examines exactly
+the source operands: a ghost operand remains forbidden, and a direct call to a
+ghost reference function remains forbidden. The existing count assertion and
+full result-newtype membership checks are unchanged. No axiom or new verifier
+fact is introduced.
+
+C# binds operands once, from left to right. A native newtype uses unsigned
+machine operations and converts the checked result to its original carrier;
+other newtypes use BigInteger operators. AND, OR and XOR preserve the finite
+unsigned domain. Complement is masked to the semantic width; left shift is
+masked after shifting; right shift is logical because operands are nonnegative.
+A count at least the semantic width returns zero. Native intermediates also
+return zero for counts at least 64, avoiding C# count masking. For a semantic
+width larger than a native carrier, the existing result predicate must still
+prove representability: any discarded high bits are zero in a verified result.
+No bitvector or sequence conversion is executed. Semantic width is never
+inferred from the carrier. These rules refine the weighted-digit reference:
+masking is remainder modulo a power of two, complement flips exactly those
+digits, and the two shifts move their indices with zero fill.
+
+Other targets report an explicit unsupported-feature diagnostic. The fixed
+reference interface remains ghost-only. Other target implementations, native
+rotation bridges and rotation/bit/population-count source surface remain open.
+
+`issue193-runtime-csharp.py` checks complete generated programs (including the
+runtime drivers), symbolic reference contracts, both resolvers and axiom modes,
+and an independent arithmetic-digit runtime oracle. It exhausts small-word
+binary inputs, exercises wide structured/seeded inputs, and checks exact runtime
+case identities as a vacuity control. Unsigned and signed native carriers at
+widths 4/5/8/12/16/31/32/63/64 and nonnative 80/128-bit cases cover masks, signs and count endpoints. Wrong results, invalid
+counts, ghost operands and unsupported targets are rejected. Generated-code
+inspection, clone/substitution unit tests, serial mutations and paired
+option-off/code/verdict/resource comparisons qualify the compilation boundary.

@@ -8,9 +8,18 @@ public class ConversionExpr : TypeUnaryExpr, ICloneable<ConversionExpr> {
   // Internal elaboration marker; ordinary source conversions keep their explicit target.
   public bool IsBaseOperation;
 
+  // Only integer-bitwise elaboration sets this marker. E remains the checked
+  // reference call; compilation consumes its operands without executing ghost code.
+  public int? IntegerBitwiseWidth;
+
+  public System.Collections.Generic.IEnumerable<Expression> IntegerBitwiseOperands =>
+    System.Linq.Enumerable.Select(System.Linq.Enumerable.Skip(((FunctionCallExpr)E.Resolved).Args, 1),
+      argument => ((ConversionExpr)argument).E);
+
   public ConversionExpr(Cloner cloner, ConversionExpr original) : base(cloner, original) {
     messagePrefix = original.messagePrefix;
     IsBaseOperation = original.IsBaseOperation;
+    IntegerBitwiseWidth = original.IntegerBitwiseWidth;
   }
 
   [SyntaxConstructor]

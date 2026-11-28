@@ -89,6 +89,12 @@ public class ExpressionTester {
       return false;
     }
 
+    if (expr is ConversionExpr { IntegerBitwiseWidth: not null } bitwise) {
+      foreach (var operand in bitwise.IntegerBitwiseOperands) {
+        isCompilable = CheckIsCompilable(operand, codeContext) && isCompilable;
+      }
+      return isCompilable;
+    }
     if (expr is IdentifierExpr expression) {
       if (expression.Var is { IsGhost: true }) {
         ReportError(ErrorId.r_ghost_var_only_in_specifications, expression,
@@ -532,6 +538,9 @@ public class ExpressionTester {
     Contract.Requires(expr != null);
     Contract.Requires(expr.WasResolved());  // this check approximates the requirement that "expr" be resolved
 
+    if (expr is ConversionExpr { IntegerBitwiseWidth: not null } bitwise) {
+      return bitwise.IntegerBitwiseOperands.Any(UsesSpecFeatures);
+    }
     if (expr is LiteralExpr) {
       return false;
     } else if (expr is ThisExpr) {

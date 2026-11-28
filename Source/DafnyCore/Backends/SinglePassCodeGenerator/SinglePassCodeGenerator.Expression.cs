@@ -19,6 +19,12 @@ using static Microsoft.Dafny.GeneratorErrors;
 namespace Microsoft.Dafny.Compilers {
   public abstract partial class SinglePassCodeGenerator {
 
+    protected virtual void EmitIntegerBitwise(ConversionExpr expression, bool inLetExprBody,
+      ConcreteSyntaxTree wr, ConcreteSyntaxTree wStmts) {
+      Error(ErrorId.c_unsupported_feature, expression.Origin, wr,
+        "compiled integer bitwise operators are currently supported only by the C# target");
+    }
+
     public virtual Type GetRuntimeType(Type tpe) {
       return tpe.GetRuntimeType();
     }
@@ -296,6 +302,10 @@ namespace Microsoft.Dafny.Compilers {
             }
 
             EmitUnaryExpr(UnaryOpCodeMap[e.ResolvedOp], e.E, inLetExprBody, wr, wStmts);
+            break;
+          }
+        case ConversionExpr { IntegerBitwiseWidth: not null } bitwise: {
+            EmitIntegerBitwise(bitwise, inLetExprBody, wr, wStmts);
             break;
           }
         case ConversionExpr conversionExpr: {

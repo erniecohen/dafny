@@ -272,7 +272,9 @@ namespace Microsoft.Dafny {
           if (se != e.E || toType != typeUnaryExpr.ToType) {
             if (e is ConversionExpr) {
               var ee = (ConversionExpr)e;
-              newExpr = new ConversionExpr(expr.Origin, se, toType);
+              newExpr = new ConversionExpr(expr.Origin, se, toType) {
+                IntegerBitwiseWidth = ee.IntegerBitwiseWidth
+              };
             } else if (e is TypeTestExpr) {
               var ee = (TypeTestExpr)e;
               newExpr = new TypeTestExpr(expr.Origin, se, toType);
