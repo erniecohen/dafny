@@ -1107,6 +1107,7 @@ git-issues/git-issue-452.dfy	0	0 verified, 0 errors
 git-issues/git-issue-452a.dfy	2		20,25
 git-issues/git-issue-452b.dfy	2		13
 git-issues/git-issue-452c.dfy	0	0 verified, 0 errors	
+git-issues/git-issue-466-persistent-groups.dfy	0	3 verified, 0 errors
 git-issues/git-issue-4684.dfy	0	4 verified, 0 errors	
 git-issues/git-issue-471-controls.dfy	4	0 verified, 5 errors	19,23,27,32,35
 git-issues/git-issue-471.dfy	0	17 verified, 0 errors	

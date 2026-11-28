@@ -187,9 +187,12 @@ internal sealed class PersistentResolutionCache {
   private static int Size(object value, HashSet<object>? effects = null) =>
     value is ICollection collection && effects?.Contains(value) != true ? collection.Count : -1;
 
-  /// <summary>One module to resolve, with what its key needs.</summary>
+  /// <summary>One resolution unit, with its owned declarations and key inputs.</summary>
   public sealed record ModuleContext(ModuleDecl Declaration, string LocalKey, string Prefix,
-    IReadOnlyList<(string Role, ModuleDecl Prerequisite)> Direct, IReadOnlyList<ModuleDecl> Closure);
+    IReadOnlyList<(string Role, ModuleDecl Prerequisite)> Direct, IReadOnlyList<ModuleDecl> Closure,
+    RecursiveModuleGroup? Group = null) {
+    public IEnumerable<ModuleDecl> OwnedDeclarations => Group?.Declarations ?? [Declaration];
+  }
 
   /// <summary>A worker's mutable state, which a failed hit discards.</summary>
   public sealed record Worker(SystemModuleManager Builtins, ProgramResolver Resolver, Program Program);
@@ -208,7 +211,15 @@ internal sealed class PersistentResolutionCache {
     // Imports and export sets are distinct declarations even when they have the same qualified name.
     // Use the same kind-qualified name for keys, source frames and all prerequisite references.
     ambiguousNames = all.GroupBy(Name).Where(g => g.Count() > 1).Select(g => g.Key).ToHashSet();
-    frames = new ResolutionFrames(all.Select((d, i) => (Name: Name(d), Pieces: pieces[i])).Where(p => !ambiguousNames.Contains(p.Name)));
+    var groups = all.OfType<LiteralModuleDecl>().Select(d => d.ModuleDef.RecursiveGroup)
+      .OfType<RecursiveModuleGroup>().Distinct().ToArray();
+    var owners = groups.SelectMany(g => g.Declarations.Select(d => (Declaration: d, Owner: g.Members[0])))
+      .ToDictionary(p => p.Declaration, p => (ModuleDecl)p.Owner);
+    // A group owns every member's source, including its internal imports. Source coordinates in
+    // any of these pieces are relative to the one group entry, never to an unresolved sibling.
+    frames = new ResolutionFrames(all.Select((d, i) => (Name: Name(owners.GetValueOrDefault(d, d)), Pieces: pieces[i]))
+      .Where(p => !ambiguousNames.Contains(p.Name)).GroupBy(p => p.Name, StringComparer.Ordinal)
+      .Select(g => (g.Key, g.SelectMany(p => p.Pieces).ToArray())));
     foreach (var declaration in all) {
       // A module's own scope, and those of its export sets, which its dependents see through its result.
       if (declaration is LiteralModuleDecl literal && ResolutionGraphSchema.Tokens(literal.ModuleDef.VisibilityScope) is { Count: 1 } own) {
@@ -218,6 +229,10 @@ internal sealed class PersistentResolutionCache {
         }
         ownScopeTokens[Name(declaration)] = tokens;
       }
+    }
+    foreach (var group in groups) {
+      ownScopeTokens[Name(group.Members[0])] = group.Members
+        .SelectMany(m => ownScopeTokens.GetValueOrDefault(Name(m)) ?? []).ToHashSet();
     }
     // Scope tokens are allocated in increasing order. Those of the parsed program are at most this one.
     lastParseToken = ResolutionGraphSchema.Tokens(new VisibilityScope("resolution-cache")).Single();
@@ -229,7 +244,7 @@ internal sealed class PersistentResolutionCache {
   private static string Name(ModuleDecl declaration) => declaration.GetType().Name + ":" + declaration.FullName;
 
   public string? Key(ModuleContext context) {
-    if (ambiguousNames.Contains(Name(context.Declaration))) { return null; }
+    if (context.OwnedDeclarations.Any(d => ambiguousNames.Contains(Name(d)))) { return null; }
     var structures = new List<(string, string)>();
     foreach (var prerequisite in context.Closure) {
       if (!records.TryGetValue(Name(prerequisite), out var record) || record.Structure == null) { return null; }
@@ -271,12 +286,11 @@ internal sealed class PersistentResolutionCache {
   public ModuleResolutionResult Resolve(ModuleContext context, Func<Worker> worker, Action recreate,
     Func<ModuleResolutionResult> resolve, Func<SystemModuleManager, ModuleResolutionResult, IReadOnlyList<ModuleResolutionResult>, bool> cacheable,
     IReadOnlyList<ModuleResolutionResult> closure, out string state, out string? key) {
-    var name = Name(context.Declaration);
     key = Key(context);
     PipelineProfile.ModulePhase(program.Options, "cache.key");
     if (key == null) {
       state = "uncacheable: prerequisite";
-      return Uncacheable(name, resolve());
+      return Uncacheable(context, resolve());
     }
     var invalid = (string?)null;
     var stored = store.TryRead(ArtifactTable.Resolutions, key);
@@ -298,7 +312,7 @@ internal sealed class PersistentResolutionCache {
     var output = resolve();
     if (!cacheable(worker().Builtins, output, closure)) {
       state = "uncacheable: output";
-      return Uncacheable(name, output);
+      return Uncacheable(context, output);
     }
     try {
       // An entry that did not apply is replaced. The module's structure is known even if the entry is not
@@ -309,7 +323,7 @@ internal sealed class PersistentResolutionCache {
       };
     } catch (ResolutionSnapshotUnsupported error) {
       state = "uncacheable: " + error.Message;
-      return Uncacheable(name, output);
+      return Uncacheable(context, output);
     }
     return output;
   }
@@ -336,8 +350,9 @@ internal sealed class PersistentResolutionCache {
       }
     }
     var freshRoots = Roots(fresh, worker().Builtins);
-    var difference = fresh.ErrorReporter.HasErrors
-      ? "the fresh resolution has errors: " + fresh.ErrorReporter.AllMessagesByLevel[ErrorLevel.Error].FirstOrDefault()?.Message
+    var freshError = (fresh.GroupOutputs ?? [fresh]).SelectMany(r => r.ErrorReporter.AllMessagesByLevel[ErrorLevel.Error]).FirstOrDefault();
+    var difference = freshError != null
+      ? "the fresh resolution has errors: " + freshError.Message
       : equality.Difference(freshRoots.Append(ViewTables(fresh.Builtins)).ToArray(),
         Roots(hit, hit.Builtins).Append(ViewTables(hit.Builtins)).ToArray());
     // The fresh resolution also registered its traits with the traits they extend; only the reused ones stay.
@@ -366,11 +381,11 @@ internal sealed class PersistentResolutionCache {
     ];
   }
 
-  /// <summary>A module that is resolved without the cache, such as a member of a recursive module group.</summary>
+  /// <summary>A declaration that has no reusable resolution structure.</summary>
   public void Uncacheable(ModuleDecl declaration) => records[Name(declaration)] = Record.None;
 
-  private ModuleResolutionResult Uncacheable(string name, ModuleResolutionResult output) {
-    records[name] = Record.None;
+  private ModuleResolutionResult Uncacheable(ModuleContext context, ModuleResolutionResult output) {
+    foreach (var declaration in context.OwnedDeclarations) { records[Name(declaration)] = Record.None; }
     return output;
   }
 
@@ -429,7 +444,7 @@ internal sealed class PersistentResolutionCache {
       }
     }
     // A hit rebases tokens, but not text: a message that names a coordinate would keep the old one.
-    if (output.ErrorReporter.AllMessages.FirstOrDefault(m => NamesPosition(m.Message) ||
+    if ((output.GroupOutputs ?? [output]).SelectMany(r => r.ErrorReporter.AllMessages).FirstOrDefault(m => NamesPosition(m.Message) ||
           m.RelatedInformation.Any(r => NamesPosition(r.Message))) is { } positional) {
       throw new ResolutionSnapshotUnsupported("a message names a position: " + positional.ErrorId);
     }
@@ -443,7 +458,7 @@ internal sealed class PersistentResolutionCache {
       usedAnchors.Select(a => (a, anchors.Guard(a))).ToArray(), anchors.TokenCount);
     var publication = store.TryPublish(ArtifactTable.Resolutions, key, Encode(manifest, captured.Payload), replace);
     PipelineProfile.ModulePhase(program.Options, "store.publish");
-    Register(name, captured.Structure, captured.Owned, captured.OwnedTokens, captured.SourceTokens);
+    Register(context, captured.Structure, captured.Owned, captured.OwnedTokens, captured.SourceTokens);
     return publication;
   }
 
@@ -454,11 +469,16 @@ internal sealed class PersistentResolutionCache {
     // The parser records the widest tuple of the whole program, at its first use, in every view; a module's result
     // holds the widest tuple only when the module or a prerequisite used a wider one.
     var wider = view.MaxNonGhostTupleSizeUsed > initialBuiltins.MaxNonGhostTupleSizeUsed;
-    return [
+    object?[] roots = [
       output.ResolvedDeclaration, output.Signatures, output.ClassMembers, output.TranslationInputs, output.SystemClassMembers,
       wider ? view.MaxNonGhostTupleSizeToken : null, wider ? view.MaxNonGhostTupleSizeUsed : 0, output.ErrorReporter.AllMessages,
       Effects(output), RefinementBases(output)
     ];
+    // Preserve each declaration's publication separately: sibling diagnostics must neither disappear
+    // nor be reported twice. The tables share the same graph as the leader's aggregate tables.
+    return output.GroupOutputs == null ? roots : roots.Append((object)output.GroupOutputs.Select(r => new object[] {
+      r.ResolvedDeclaration, r.Signatures, r.ClassMembers, r.ErrorReporter.AllMessages, r.ResolvedDeclaration.CloneId
+    }).ToArray()).ToArray();
   }
 
   /// <summary>
@@ -515,8 +535,11 @@ internal sealed class PersistentResolutionCache {
   }
 
   private static HashSet<object> Contextual(ModuleResolutionResult output) {
-    var result = new HashSet<object>(ReferenceEqualityComparer.Instance) { output.ResolvedDeclaration };
-    if (output.ResolvedDeclaration is LiteralModuleDecl literal) { result.Add(literal.ModuleDef); }
+    var result = new HashSet<object>(ReferenceEqualityComparer.Instance);
+    foreach (var member in output.GroupOutputs ?? [output]) {
+      result.Add(member.ResolvedDeclaration);
+      if (member.ResolvedDeclaration is LiteralModuleDecl literal) { result.Add(literal.ModuleDef); }
+    }
     return result;
   }
 
@@ -527,6 +550,8 @@ internal sealed class PersistentResolutionCache {
   /// </summary>
   private void CheckOwnership(ModuleResolutionResult output, object[] owned) {
     var set = new HashSet<object>(owned, ReferenceEqualityComparer.Instance);
+    var declarations = (output.GroupOutputs ?? [output]).Select(r => r.ResolvedDeclaration)
+      .ToHashSet(ReferenceEqualityComparer.Instance);
     if (output.ResolvedDeclaration is LiteralModuleDecl { ModuleDef.IsDefaultModule: true }) { set.UnionWith(program.Files); }
     // The module's resolution builds a view of the module for each export set, to check that the set is consistent.
     var views = owned.OfType<ModuleExportDecl>().Select(e => e.EffectiveModule).Where(v => v != null)
@@ -535,7 +560,7 @@ internal sealed class PersistentResolutionCache {
       switch (value) {
         case ModuleDefinition definition when !output.Signatures.ContainsKey(definition) && !views.Contains(definition):
           throw new ResolutionSnapshotUnsupported("copies module " + definition.FullName);
-        case TopLevelDecl declaration when !ReferenceEquals(declaration, output.ResolvedDeclaration) &&
+        case TopLevelDecl declaration when !declarations.Contains(declaration) &&
                                            declaration.EnclosingModuleDefinition is { } module && !set.Contains(module):
           throw new ResolutionSnapshotUnsupported("copies declaration " + declaration.FullName);
         case MemberDecl member when member.EnclosingClass is { } enclosing && !set.Contains(enclosing):
@@ -544,7 +569,8 @@ internal sealed class PersistentResolutionCache {
     }
   }
 
-  private void Register(string name, string structure, object[] owned, uint[] tokens, Token[] sourceTokens) {
+  private void Register(ModuleContext context, string structure, object[] owned, uint[] tokens, Token[] sourceTokens) {
+    var name = Name(context.Declaration);
     pendingOwners.Enqueue((name, owned));
     lock (completed) { completed.Add((name, owned)); }
     for (var i = 0; i < tokens.Length; i++) {
@@ -556,7 +582,8 @@ internal sealed class PersistentResolutionCache {
     for (var i = 0; i < owned.Length; i++) {
       sizes[i] = Size(owned[i], effects);
     }
-    records[name] = new Record(structure, owned, tokens, sizes, sourceTokens);
+    var record = new Record(structure, owned, tokens, sizes, sourceTokens);
+    foreach (var declaration in context.OwnedDeclarations) { records[Name(declaration)] = record; }
   }
 
   // ---------------------------------------------------------------- hit
@@ -613,7 +640,7 @@ internal sealed class PersistentResolutionCache {
     };
     var materialized = ResolutionSnapshot.Materialize(payload, world);
     PipelineProfile.ModulePhase(program.Options, "cache.materialize");
-    if (materialized.Roots.Length != 10 || materialized.Roots[0] is not ModuleDecl resolved ||
+    if (materialized.Roots.Length != (context.Group == null ? 10 : 11) || materialized.Roots[0] is not ModuleDecl resolved ||
         materialized.Roots[1] is not Dictionary<ModuleDefinition, ModuleSignature> signatures ||
         materialized.Roots[2] is not Dictionary<TopLevelDeclWithMembers, Dictionary<string, MemberDecl>> members ||
         materialized.Roots[3] is not ModuleTranslationInputs translationInputs ||
@@ -629,6 +656,50 @@ internal sealed class PersistentResolutionCache {
     if (resolved is LiteralModuleDecl literal && context.Declaration is LiteralModuleDecl parsed) {
       CopyContextual(parsed.ModuleDef, literal.ModuleDef);
     }
+    var reporter = new BatchErrorReporter(context.Declaration.Options);
+    foreach (var message in messages) { reporter.MessageCore(message); }
+    IReadOnlyList<ModuleResolutionResult>? groupOutputs = null;
+    if (context.Group is { } group) {
+      if (materialized.Roots[10] is not object[][] outputs || outputs.Length != group.Declarations.Count) {
+        throw new ResolutionSnapshotInvalid("bad group roots");
+      }
+      var results = new List<ModuleResolutionResult>();
+      var cloneIdentities = new Dictionary<Guid, Guid>();
+      for (var i = 0; i < outputs.Length; i++) {
+        var declaration = group.Declarations[i];
+        if (outputs[i]?.Length != 5 || outputs[i][0] is not ModuleDecl member || Name(member) != Name(declaration) ||
+            outputs[i][1] is not Dictionary<ModuleDefinition, ModuleSignature> memberSignatures ||
+            outputs[i][2] is not Dictionary<TopLevelDeclWithMembers, Dictionary<string, MemberDecl>> memberMembers ||
+            outputs[i][3] is not List<DafnyDiagnostic> memberMessages || memberMessages.Any(m => m.Level == ErrorLevel.Error) ||
+            outputs[i][4] is not Guid cloneId) {
+          throw new ResolutionSnapshotInvalid("bad group member roots");
+        }
+        if (cloneIdentities.TryGetValue(cloneId, out var currentId) && currentId != declaration.CloneId) {
+          throw new ResolutionSnapshotInvalid("ambiguous group clone identity");
+        }
+        cloneIdentities[cloneId] = declaration.CloneId;
+        CopyContextual(declaration, member);
+        if (declaration is LiteralModuleDecl parsedMember && member is LiteralModuleDecl reusedMember) {
+          CopyContextual(parsedMember.ModuleDef, reusedMember.ModuleDef);
+        }
+        // The root and the published leader share one reporter, including oracle failures.
+        var memberReporter = ReferenceEquals(member, resolved) ? reporter : new BatchErrorReporter(declaration.Options);
+        if (!ReferenceEquals(memberReporter, reporter)) {
+          foreach (var message in memberMessages) { memberReporter.MessageCore(message); }
+        }
+        results.Add(new ModuleResolutionResult(member, memberReporter, memberSignatures, memberMembers) {
+          Key = program.ResolutionKeys[declaration], Identity = program.ResolutionIdentities[declaration],
+          Builtins = view, SystemClassMembers = systemMembers, TranslationInputs = translationInputs
+        });
+      }
+      // Export views and refinement copies keep their original import's CloneId. Rebase that
+      // complete equivalence class, not just the parsed declaration, to the current parse.
+      var cloneField = ResolutionGraphSchema.Fields(typeof(ModuleDecl)).Single(f => f.Name == "<CloneId>k__BackingField");
+      foreach (var member in materialized.Owned.OfType<ModuleDecl>()) {
+        if (cloneIdentities.TryGetValue(member.CloneId, out var currentId)) { cloneField.SetValue(member, currentId); }
+      }
+      groupOutputs = results;
+    }
     // Only the builtins the module's output uses remain in its view, in the order of its fresh resolution.
     // A fresh resolution would only widen the view's widest tuple, which the parse and the prerequisites set.
     if (maxTupleSize > view.MaxNonGhostTupleSizeUsed) {
@@ -637,21 +708,20 @@ internal sealed class PersistentResolutionCache {
     view.RestrictResolutionOutput(translationInputs);
     manifest.Journal.Order(view);
     PipelineProfile.ModulePhase(program.Options, "cache.restrict");
-    Register(name, manifest.Structure, materialized.Owned, materialized.OwnedTokens, materialized.SourceTokens);
+    Register(context, manifest.Structure, materialized.Owned, materialized.OwnedTokens, materialized.SourceTokens);
     PipelineProfile.ModulePhase(program.Options, "cache.register");
     Replay(effects, false);
     for (var i = 0; i + 1 < refinementBases.Count; i += 2) {
       refinementBases[i].CardinalityRefinementBase = refinementBases[i + 1];
     }
     // The module's warnings and information messages, which its fresh resolution reported.
-    var reporter = new BatchErrorReporter(context.Declaration.Options);
-    foreach (var message in messages) { reporter.MessageCore(message); }
     return new ModuleResolutionResult(resolved, reporter, signatures, members) {
       Key = program.ResolutionKeys[context.Declaration],
       Identity = program.ResolutionIdentities[context.Declaration],
       Builtins = view,
       SystemClassMembers = systemMembers,
-      TranslationInputs = translationInputs
+      TranslationInputs = translationInputs,
+      GroupOutputs = groupOutputs
     };
   }
 
@@ -670,6 +740,11 @@ internal sealed class PersistentResolutionCache {
     }
     Add(context.Declaration.Options, "options.module");
     Add(program.Options, "options.program");
+    if (context.Group != null) {
+      foreach (var declaration in context.Group.Declarations) {
+        Add(declaration.Options, "options.group:" + Name(declaration));
+      }
+    }
     // A refinement or an export copies a prerequisite's declarations with the options of that prerequisite's file.
     foreach (var prerequisite in context.Closure.OrderBy(Name, StringComparer.Ordinal)) {
       Add(prerequisite.Options, "options.prerequisite:" + Name(prerequisite));

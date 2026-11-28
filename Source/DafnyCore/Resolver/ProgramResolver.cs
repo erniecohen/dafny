@@ -251,6 +251,7 @@ public class ProgramResolver {
     var prerequisites = declarations.Select(d => Prerequisites(d)
       .Select(v => indices[v]).Distinct().Order().ToArray()).ToArray();
     var groupResults = new Dictionary<ModuleDecl, ModuleResolutionResult>(); // guarded by "gate"
+    var groupSnapshots = new Dictionary<ModuleDecl, (string State, string Key)>(); // guarded by "gate"
     var dependents = declarations.Select(_ => new List<int>()).ToArray();
     var remaining = prerequisites.Select(p => p.Length).ToArray();
     var ready = new SortedSet<int>();
@@ -418,6 +419,7 @@ public class ProgramResolver {
                 return output;
               }
               Dictionary<ModuleDecl, ModuleResolutionResult> ResolveGroupOutputs(RecursiveModuleGroup group) {
+                resolverCalls++;
                 var resolved = RecursiveModuleGroupResolver.Resolve(worker, group, Program.Compilation);
                 var invalid = resolved.Values.Any(r => r.ErrorReporter.HasErrors || r.Signatures.Keys.Any(m => !m.SuccessfullyResolved)) ||
                   closure.Any(i => results[i].ErrorReporter.HasErrors ||
@@ -462,19 +464,43 @@ public class ProgramResolver {
               }
               if (groupOf.TryGetValue(declarations[index], out var group)) {
                 // A recursive module group is resolved by the worker of its leader, which is a prerequisite
-                // of the other declarations of the group.  A group is not cached.
+                // of the other declarations of the group. Its snapshot contains all member outputs, so no
+                // sibling can hit independently or publish a different copy of shared group state.
                 if (ReferenceEquals(declarations[index], group.Members[0])) {
-                  var outputs = ResolveGroupOutputs(group);
+                  ModuleResolutionResult ResolveGroupRoot() {
+                    var outputs = ResolveGroupOutputs(group);
+                    return outputs[group.Members[0]] with {
+                      GroupOutputs = group.Declarations.Select(d => outputs[d]).ToArray()
+                    };
+                  }
+                  var groupOutput = persistent == null ? ResolveGroupRoot() : persistent.Resolve(
+                    new PersistentResolutionCache.ModuleContext(group.Members[0],
+                      ModuleResolutionKey.Compute("recursive-module-snapshot/v1", "", ModuleResolutionKey.DafnyVersion,
+                        [], group.Declarations.Select((d, i) => new ModuleResolutionKey.Prerequisite(
+                          "member:" + i.ToString("D8", System.Globalization.CultureInfo.InvariantCulture),
+                          d.GetType().Name + ":" + d.FullName,
+                          ModuleResolutionIdentity.Compute(localKeys[indices[d]],
+                            ModuleResolutionIdentity.Context(namePrefixes.Prefix(d.FullName), []))))),
+                      namePrefixes.Prefix(declarations[index].FullName),
+                      prerequisites[index].Select((j, k) => (roles[index][k], declarations[j])).ToArray(),
+                      closure.Select(i => declarations[i]).ToArray(), group),
+                    () => new(builtins, worker, workerProgram), CreateWorker, ResolveGroupRoot,
+                    (_, output, closureOutputs) => output.GroupOutputs.All(r => !r.ErrorReporter.HasErrors) &&
+                      output.Signatures.Keys.All(m => m.SuccessfullyResolved) &&
+                      closureOutputs.All(r => !r.ErrorReporter.HasErrors && r.Signatures.Keys.All(m => m.SuccessfullyResolved)),
+                    closure.Select(i => results[i]).ToArray(), out snapshotState, out snapshotKey);
                   lock (gate) {
-                    foreach (var groupOutput in outputs) { groupResults[groupOutput.Key] = groupOutput.Value; }
+                    for (var i = 0; i < group.Declarations.Count; i++) {
+                      groupResults[group.Declarations[i]] = groupOutput.GroupOutputs[i];
+                      groupSnapshots[group.Declarations[i]] = (snapshotState, snapshotKey);
+                    }
                   }
                 }
-                lock (gate) { moduleOutput = groupResults[declarations[index]]; }
-                cached = false;
-                if (persistent != null) {
-                  snapshotState = "uncacheable: recursive module group";
-                  persistent.Uncacheable(declarations[index]);
+                lock (gate) {
+                  moduleOutput = groupResults[declarations[index]];
+                  (snapshotState, snapshotKey) = groupSnapshots[declarations[index]];
                 }
+                cached = snapshotState?.StartsWith("hit", StringComparison.Ordinal) == true;
               } else if (persistent != null) {
                 var declaration = declarations[index];
                 var context = new PersistentResolutionCache.ModuleContext(declaration, localKeys[index],
@@ -541,6 +567,15 @@ public class ProgramResolver {
               // cannot run until all their prerequisite declarations have completed.
               if (!ReferenceEquals(declarations[index], output.ResolvedDeclaration)) {
                 pointers[declarations[index]](output.ResolvedDeclaration);
+                // A group's internal declarations publish after its leader. Their parsed pointer
+                // setters restore the parsed parent, so immediately restore the accepted group
+                // parent before a downstream refinement can observe the declaration.
+                if (groupOf.TryGetValue(declarations[index], out var acceptedGroup) &&
+                    acceptedGroup.Members.FirstOrDefault(m => ReferenceEquals(m.ModuleDef,
+                      declarations[index].EnclosingModuleDefinition)) is { } parentMember &&
+                    groupResults[parentMember].ResolvedDeclaration is LiteralModuleDecl acceptedParent) {
+                  output.ResolvedDeclaration.EnclosingModuleDefinition = acceptedParent.ModuleDef;
+                }
                 // Issue 261: the nested modules of a reused module are complete, and are rebound to it now rather
                 // than after all modules, so that a refinement of it that is resolved in this run sees one module
                 // and its nested modules inside it.
