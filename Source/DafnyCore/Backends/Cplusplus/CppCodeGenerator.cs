@@ -17,6 +17,94 @@ using JetBrains.Annotations;
 namespace Microsoft.Dafny.Compilers {
   class CppCodeGenerator : SinglePassCodeGenerator {
 
+    protected override void EmitIntegerBitwise(ConversionExpr expression, bool inLetExprBody,
+      ConcreteSyntaxTree wr, ConcreteSyntaxTree wStmts) {
+      var width = expression.IntegerBitwiseWidth.Value;
+      var name = ((FunctionCallExpr)expression.E.Resolved).Function.Name;
+      var operands = expression.IntegerBitwiseOperands.ToList();
+      if (width > 64 || AsNativeType(operands[0].Type) == null) {
+        Error(GeneratorErrors.ErrorId.c_unsupported_feature, expression.Origin, wr,
+          "C++ integer bitwise operations require a native integer newtype with :bitWidth between 1 and 64");
+        return;
+      }
+      // A source count may widen a native newtype to int. No unbounded integer
+      // is materialized: the widening is exact and the checked count is <= 64.
+      if (operands.Count == 2 && name is "shlNat" or "shrNat" or "rolNat" or "rorNat") {
+        if (operands[1].Resolved is ConversionExpr count && count.ToType.NormalizeToAncestorType() is IntType &&
+            AsNativeType(count.E.Type) != null) {
+          operands[1] = count.E;
+        }
+        if (AsNativeType(operands[1].Type) == null && PartiallyEvaluate(operands[1]) == null) {
+          Error(GeneratorErrors.ErrorId.c_unsupported_feature, expression.Origin, wr,
+            "C++ integer bitwise counts require a native integer type or an integer constant");
+          return;
+        }
+      }
+      var constantCount = operands.Count == 2 && name is "shlNat" or "shrNat" or "rolNat" or "rorNat"
+        ? PartiallyEvaluate(operands[1]) : null;
+      var variables = operands.Select(_ => ProtectedFreshId("_integerBitwise")).ToList();
+      var resultType = AsNativeType(expression.Type) is { } resultNative
+        ? GetNativeTypeName(resultNative) : "uint64";
+      // C++ argument order is unspecified. Sequenced declarations evaluate each
+      // source operand once, left to right, before any operation or early return.
+      wr.Write($"([&]() -> {resultType} {{ ");
+      for (var i = 0; i < operands.Count; i++) {
+        wr.Write($"const uint64 {variables[i]} = uint64(");
+        if (i == 1 && constantCount is { } constant) {
+          // Fold pure constant arithmetic before the backend's unsupported int
+          // arithmetic path. A verified count is nonnegative and at most 64.
+          wr.Write($"{constant}ULL");
+        } else {
+          wr.Append(Expr(operands[i], inLetExprBody, wStmts));
+        }
+        wr.Write("); ");
+      }
+      var x = variables[0];
+      var y = variables.Count == 2 ? variables[1] : "";
+      var mask = width == 64 ? "~uint64(0)" : $"{(1UL << width) - 1}ULL";
+      if (name == "popNat") {
+        var bits = ProtectedFreshId("_bits");
+        var count = ProtectedFreshId("_count");
+        wr.Write($"uint64 {count} = 0; for (uint64 {bits} = {x}; {bits} != 0; {bits} &= {bits} - 1) {{ ++{count}; }} return {count}; }})()");
+        return;
+      }
+      // Shifting by 64 is undefined in C++. Rotations at either endpoint are
+      // identities; shifts at the semantic width are zero, even for N < 64.
+      if (name is "rolNat" or "rorNat") {
+        wr.Write($"if ({y} == 0 || {y} == {width}) return {x}; ");
+      } else if (name is "shlNat" or "shrNat") {
+        wr.Write($"if ({y} == {width}) return 0; ");
+      }
+      var operation = name switch {
+        "andNat" => $"{x} & {y}",
+        "orNat" => $"{x} | {y}",
+        "xorNat" => $"{x} ^ {y}",
+        "notNat" => $"(~{x}) & {mask}",
+        "shlNat" => $"({x} << {y}) & {mask}",
+        "shrNat" => $"{x} >> {y}",
+        "rolNat" => $"(({x} << {y}) & {mask}) | ({x} >> ({width} - {y}))",
+        "rorNat" => $"({x} >> {y}) | (({x} << ({width} - {y})) & {mask})",
+        _ => throw new InvalidOperationException("unexpected integer bitwise reference")
+      };
+      wr.Write($"return {resultType}({operation}); }})()");
+    }
+
+    public override void EmitExpr(Expression expression, bool inLetExprBody, ConcreteSyntaxTree wr,
+      ConcreteSyntaxTree wStmts) {
+      // bit(i) elaborates to shrNat(N,x,i) % 2 == 1. This compiler-owned
+      // intermediate is bounded, so it needs no unbounded-integer runtime.
+      if (expression is BinaryExpr { ResolvedOp: BinaryExpr.ResolvedOpcode.Mod,
+            E0.Resolved: ConversionExpr { IntegerBitwiseWidth: not null } shift,
+            E1.Resolved: LiteralExpr { Value: BigInteger divisor } } && divisor == 2 &&
+          ((FunctionCallExpr)shift.E.Resolved).Function.Name == "shrNat") {
+        wr.Write("(");
+        EmitIntegerBitwise(shift, inLetExprBody, wr, wStmts);
+        wr.Write(" % 2ULL)");
+      } else {
+        base.EmitExpr(expression, inLetExprBody, wr, wStmts);
+      }
+    }
+
     private readonly ReadOnlyCollection<string> headers;
 
     public CppCodeGenerator(DafnyOptions options, ErrorReporter reporter, ReadOnlyCollection<string> headers) : base(options, reporter) {
@@ -2296,6 +2384,16 @@ namespace Microsoft.Dafny.Compilers {
     }
 
     protected override void EmitConversionExpr(Expression fromExpr, Type fromType, Type toType, bool inLetExprBody, ConcreteSyntaxTree wr, ConcreteSyntaxTree wStmts) {
+      // PopCount returns nat. Its proven <= 64 result may be explicitly
+      // narrowed to native storage without constructing an unbounded integer.
+      if (fromExpr.Resolved is ConversionExpr { IntegerBitwiseWidth: not null } population &&
+          ((FunctionCallExpr)population.E.Resolved).Function.Name == "popNat" &&
+          AsNativeType(toType) is { } countNative) {
+        wr.Write($"{GetNativeTypeName(countNative)}(");
+        EmitIntegerBitwise(population, inLetExprBody, wr, wStmts);
+        wr.Write(")");
+        return;
+      }
       if (fromType.IsNumericBased(Type.NumericPersuasion.Int) || fromType.IsBitVectorType || fromType.IsCharType) {
         if (toType.IsNumericBased(Type.NumericPersuasion.Real)) {
           throw new UnsupportedFeatureException(fromExpr.Origin, Feature.RealNumbers);

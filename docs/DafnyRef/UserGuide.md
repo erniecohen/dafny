@@ -2955,7 +2955,7 @@ and what information it produces about the verification process.
   semantic-width integer operators. Go uses unsigned native intermediates or its
   arbitrary-precision Int runtime. Java uses unsigned long intermediates or
   BigInteger; Python uses arbitrary-precision integers. Other targets reject
-  compiled uses. The members `x.RotateLeft(k)` and `x.RotateRight(k)` return the
+  compiled uses, except for the bounded C++ support described below. The members `x.RotateLeft(k)` and `x.RotateRight(k)` return the
   same newtype after checking its entire predicate; their integer count must
   satisfy `0 <= k <= N`. Both endpoints return x. The query `x.bit(i)` returns
   bool, requires an integer index `0 <= i < N`, and does not require any
@@ -2979,6 +2979,14 @@ and what information it produces about the verification process.
   at those widths, including shift counts zero and the width.
   `IntegerBitwiseNativeSubtraction.dfy` adds checked modular-subtraction equations
   at the same widths, including borrow and wraparound.
+  C++ supports all ten operations on native integer newtypes at semantic widths
+  1 through 64, including narrower native carriers. Wider widths and nonnative
+  word storage are compilation errors. Counts must be integer constants or native
+  integers (use `count as int` for rotation and bit-query members). Full-width
+  shifts produce zero; rotations at zero or the width preserve the word, without
+  undefined C++ shifts. `PopCount()` can be printed directly or explicitly converted
+  to a native integer newtype; ordinary `int`/`nat` storage remains unsupported by
+  the C++ backend. Use `--unicode-char:false`, as required by that backend.
   Set `integer-bitwise = true` in the project file's `[options]` section;
   an enabled `.doo` library requires enabled clients. Declarations in an off-built
   library cannot use this compiler interface merely because the client enables

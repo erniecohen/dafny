@@ -596,3 +596,38 @@ wide masks, endpoint counts and single argument evaluation. Generated Go is
 also inspected for single evaluation outside the function body. Live-false and
 wrong-result controls, serial backend mutations, paired parent proof/resource
 comparisons and fresh/cold/warm/audit equality checks qualify this boundary.
+
+
+## Bounded C++ runtime lowering
+
+With `--integer-bitwise`, the C++ target compiles the six Boolean/shift operators,
+rotation members, `bit(i)` and `PopCount()` on native integer newtypes with semantic
+widths 1 through 64. Widths above 64 and nonnative word storage receive compiler
+errors. Native carrier width does not replace semantic width: intermediates are
+unsigned 64-bit values and results still require the complete source predicate.
+
+C++ has no unbounded-integer runtime. Counts must be integer constants or native
+integers; rotation and bit-query calls use `count as int` to meet their source
+signatures. The compiler consumes that exact widening without materializing an
+unbounded integer. Pure constant count arithmetic is folded before emission, so
+`x << (32 + 32)` at width 64 needs no unbounded arithmetic runtime. `PopCount()` is a natural number independent of the receiver
+predicate. It can be printed directly or explicitly converted to native storage
+whose predicate must be proved. Ordinary unbounded `int`/`nat` storage is rejected
+by the existing backend restriction. Compilation requires `--unicode-char:false`.
+
+The lowering sequences operand declarations in an immediately invoked lambda,
+once each and left to right. Unsigned intermediates avoid promotion and signed
+shift issues. Explicit endpoint branches prevent shifts by 64: shifts at N yield
+zero; rotations at 0 or N are identities. Complement, left shift and the wrapped
+rotation portion are masked at N. Population count repeatedly clears the lowest
+set digit. The bounded intermediate in `bit(i)` uses unsigned remainder by two.
+No new axioms or verifier facts are introduced.
+
+`issue193-runtime-cpp.py` verifies the source wrappers, then executes generated
+C++ functions through a native consumer and compares every row against independent
+arithmetic oracles. It covers signed/unsigned native carriers, endpoint counts,
+non-power-of-two widths, narrow storage, single operand evaluation, and explicit
+width/count/storage rejection. `--sanitize` also checks C++ undefined behavior.
+The shared wrong-result, invalid-count and `assert false` controls remain failures.
+A pre-existing runtime-header lookup error in set disjointness is corrected from
+`other.find` to `other.set.find`; disjoint and overlapping sets are executed too.
