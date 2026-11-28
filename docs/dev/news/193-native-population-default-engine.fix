@@ -1,0 +1,1 @@
+Qualify the optional population-count loop and its negative/vacuity controls exclusively with the default bitvector engine. Its body proofs already used that engine.
