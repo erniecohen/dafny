@@ -12,6 +12,7 @@ allow-warnings	miss	miss	miss	false | true
 analyze-proofs	miss	miss	miss	false | true	
 ancestor-qualified-module-ids	miss	miss	miss	false | true	
 arithmetic-solver	miss	miss	miss	1 | 2	
+batch-gc	miss	miss	miss	fixed	startup GC policy requires the command-line executable; in-process opt-in is rejected; conservatively keyed by the default-deny inventory
 bitvector-map-keys	miss	miss	miss	false | true	
 boogie	miss	miss	miss	(none) | /vcsSplitOnEveryAssert	
 bootstrapping	miss	miss	miss	false | true	
@@ -76,6 +77,7 @@ javadoclike-docstring-plugin	n/a	n/a	n/a	-	not an option of verify
 json-diagnostics	miss	miss	miss	false | true	
 json-output	miss	miss	miss	false | true	
 legacy-allocated-in-lambdas	miss	miss	miss	false | true	
+legacy-allow-unsound-bv-solver	miss	miss	miss	false | true	
 legacy-auto-generated-attributes	miss	miss	miss	false | true	
 legacy-boogie-library-check	miss	miss	miss	false | true	
 legacy-boxed-newtype-obligations	miss	miss	miss	false | true	
