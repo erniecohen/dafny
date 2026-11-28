@@ -365,7 +365,7 @@ true - All class instances are raw pointers and need to be manually deallocated"
   };
 
   public static readonly Option<bool> IntegerBitwise = new("--integer-bitwise", () => false,
-    "Enable bitwise operators on unsigned integer newtypes with an explicit {:bitWidth N}, compiler-owned integer references, and explicit one-step unfolding lemmas. Boolean and shift operators, RotateLeft/RotateRight members, bit(i) queries and PopCount() compile to C#, Go, Java and Python; other runtime targets are not yet implemented.");
+    "Enable bitwise operators on unsigned integer newtypes with an explicit {:bitWidth N}, compiler-owned integer references, and explicit one-step unfolding lemmas. Boolean and shift operators, RotateLeft/RotateRight members, bit(i) queries and PopCount() compile to C#, Go, Java and Python; C++ supports native words with widths 1 through 64, native or constant counts, and native population-count storage. Other runtime targets are not yet implemented.");
 
   public static readonly Option<bool> AdditionalAxioms = new("--additional-axioms", () => false,
     "Enable additional verifier axioms. May change verification performance and proof stability. Disabled by default.");

@@ -1,0 +1,1 @@
+The opt-in integer-newtype bitwise, shift, rotation, bit-query and population-count operations compile to C++ for native words of widths 1 through 64. Unsupported widths, storage and dynamic unbounded counts are rejected. C++ set-disjointness also uses the correct runtime lookup.
