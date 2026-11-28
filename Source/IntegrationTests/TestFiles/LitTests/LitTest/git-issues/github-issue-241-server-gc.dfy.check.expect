@@ -1,0 +1,3 @@
+Boogie text identical: 2 modules, 7 runs
+Bounded server GC: three activated runs, four unchanged runs
+Identical verdicts, resources and assertions: 3 VCs, 5 fresh-prover runs; 3 VCs, 2 pooled-prover runs

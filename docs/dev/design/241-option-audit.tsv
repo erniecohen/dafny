@@ -172,6 +172,7 @@ cli	resource-limit	--resource-limit	System.CommandLine.Option`1[System.UInt32]	e
 cli	rprint	--rprint	System.CommandLine.Option`1[System.String]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
 cli	rust-module-name	--rust-module-name	System.CommandLine.Option`1[System.String]	command-setup	setup or another command; executes before/outside proof transport
 cli	rust-sync	--rust-sync	System.CommandLine.Option`1[System.Boolean]	command-setup	setup or another command; executes before/outside proof transport
+cli	server-gc-memory	--server-gc-memory	System.CommandLine.Option`1[System.UInt32]	execution	CLI-only bounded server GC with batch collection; changes no obligation or solver option
 cli	show-hints	--show-hints	System.CommandLine.Option`1[System.Boolean]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
 cli	show-proof-obligation-expressions	--show-proof-obligation-expressions	System.CommandLine.Option`1[System.Boolean]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
 cli	show-snippets	--show-snippets	System.CommandLine.Option`1[System.Boolean]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces

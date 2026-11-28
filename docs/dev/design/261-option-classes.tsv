@@ -175,6 +175,7 @@ resource-limit	miss	miss	miss	1 | 2
 rprint	hit	hit	hit	{dir}/a.dfy | {dir}/b.dfy	prints the resolved Dafny program, which no stage reads
 rust-module-name	n/a	n/a	n/a	-	not an option of verify
 rust-sync	n/a	n/a	n/a	-	not an option of verify
+server-gc-memory	miss	miss	miss	fixed	startup GC policy requires the command-line executable; conservatively keyed by the default-deny inventory
 show-hints	miss	miss	miss	false | true	
 show-proof-obligation-expressions	miss	miss	miss	false | true	
 show-snippets	hit	miss	hit	false | true	resolution: how diagnostics are printed; translation: it sets the reported ranges of the Boogie tokens; results: no solver option depends on it
