@@ -1,1 +1,1 @@
-// CHECK: JavaScript recursive groups require extern types in a preloaded extern module
+// CHECK: JavaScript recursive groups require extern types in an extern module
