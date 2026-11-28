@@ -19,6 +19,71 @@ using static Microsoft.Dafny.ConcreteSyntaxTreeUtils;
 
 namespace Microsoft.Dafny.Compilers {
   class GoCodeGenerator : SinglePassCodeGenerator {
+    protected override void EmitIntegerBitwise(ConversionExpr expression, bool inLetExprBody,
+      ConcreteSyntaxTree wr, ConcreteSyntaxTree wStmts) {
+      var width = expression.IntegerBitwiseWidth.Value;
+      var name = ((FunctionCallExpr)expression.E.Resolved).Function.Name;
+      var operands = expression.IntegerBitwiseOperands.ToList();
+      var variables = operands.Select(_ => ProtectedFreshId("_integerBitwise")).ToList();
+      // Function arguments are evaluated once, left to right, outside the body.
+      var body = EmitBetaRedex(variables, operands, operands.Select(e => e.Type).ToList(),
+        expression.Type, expression.Origin, inLetExprBody, wr, ref wStmts);
+      var sourceNative = AsNativeType(operands[0].Type);
+      string BigIntegerValue(string value) => sourceNative == null ? value :
+        $"_dafny.IntOfUint64(uint64({value}))";
+      var native = sourceNative != null && (width <= 64 || name == "popNat");
+      var x = native ? $"uint64({variables[0]})" : BigIntegerValue(variables[0]);
+      var y = operands.Count < 2 ? "" : native ? $"uint64({variables[1]})" : BigIntegerValue(variables[1]);
+      var count = operands.Count < 2 ? "" : AsNativeType(operands[1].Type) == null
+        ? variables[1] : $"_dafny.IntOfUint64(uint64({variables[1]}))";
+      if (name == "popNat") {
+        var bits = ProtectedFreshId("_bits");
+        var total = ProtectedFreshId("_count");
+        body.Write(native
+          ? $"(func() _dafny.Int {{ {total} := 0; for {bits} := {x}; {bits} != 0; {bits} &= {bits} - 1 {{ {total}++ }}; return _dafny.IntOf({total}) }})()"
+          : $"(func() _dafny.Int {{ {total} := _dafny.Zero; for {bits} := {x}; {bits}.Sign() != 0; {bits} = {bits}.And({bits}.Minus(_dafny.One)) {{ {total} = {total}.Plus(_dafny.One) }}; return {total} }})()");
+        return;
+      }
+      string operation;
+      if (native) {
+        var mask = width == 64 ? "^uint64(0)" : $"uint64({(1UL << width) - 1})";
+        var shift = $"({count}).Uint64()";
+        operation = name switch {
+          "andNat" => $"{x} & {y}",
+          "orNat" => $"{x} | {y}",
+          "xorNat" => $"{x} ^ {y}",
+          "notNat" => $"(^{x}) & {mask}",
+          "shlNat" => $"({x} << {shift}) & {mask}",
+          "shrNat" => $"{x} >> {shift}",
+          "rolNat" => $"(({x} << {shift}) & {mask}) | ({x} >> ({width} - {shift}))",
+          "rorNat" => $"({x} >> {shift}) | (({x} << ({width} - {shift})) & {mask})",
+          _ => throw new InvalidOperationException("unexpected integer bitwise reference")
+        };
+        // Go shifts by the full word width yield zero; counts never wrap.
+        operation = AsNativeType(expression.Type) is { } resultNative
+          ? $"{GetNativeTypeName(resultNative)}({operation})"
+          : $"_dafny.IntOfUint64({operation})";
+      } else {
+        var mask = $"_dafny.One.Lsh(_dafny.IntOf({width})).Minus(_dafny.One)";
+        var otherCount = $"_dafny.IntOf({width}).Minus({count})";
+        operation = name switch {
+          "andNat" => $"{x}.And({y})",
+          "orNat" => $"{x}.Or({y})",
+          "xorNat" => $"{x}.Xor({y})",
+          "notNat" => $"{x}.Not().And({mask})",
+          "shlNat" => $"{x}.Lsh({count}).And({mask})",
+          "shrNat" => $"{x}.Rsh({count})",
+          "rolNat" => $"{x}.Lsh({count}).And({mask}).Or({x}.Rsh({otherCount}))",
+          "rorNat" => $"{x}.Rsh({count}).Or({x}.Lsh({otherCount}).And({mask}))",
+          _ => throw new InvalidOperationException("unexpected integer bitwise reference")
+        };
+        if (AsNativeType(expression.Type) is { } resultNative) {
+          operation = $"({operation}).{Capitalize(GetNativeTypeName(resultNative))}()";
+        }
+      }
+      body.Write(operation);
+    }
+
     protected override void EmitStaticExternMethodQualifier(string qual, ConcreteSyntaxTree wr) {
       if (qual != null) {
         qual = ExternQualifier(qual);
