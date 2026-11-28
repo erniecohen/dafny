@@ -19,6 +19,44 @@ using JetBrains.Annotations;
 
 namespace Microsoft.Dafny.Compilers {
   class JavaScriptCodeGenerator : SinglePassCodeGenerator {
+    protected override void EmitIntegerBitwise(ConversionExpr expression, bool inLetExprBody,
+      ConcreteSyntaxTree wr, ConcreteSyntaxTree wStmts) {
+      var width = expression.IntegerBitwiseWidth.Value;
+      var name = ((FunctionCallExpr)expression.E.Resolved).Function.Name;
+      var operands = expression.IntegerBitwiseOperands.ToList();
+      var variables = operands.Select(_ => ProtectedFreshId("_integerBitwise")).ToList();
+      // JavaScript evaluates the arguments once, left to right, before the body.
+      var body = EmitBetaRedex(variables, operands, operands.Select(e => e.Type).ToList(),
+        expression.Type, expression.Origin, inLetExprBody, wr, ref wStmts);
+      string Integer(int i) => AsNativeType(operands[i].Type) == null
+        ? $"BigInt({variables[i]}.toFixed())" : $"BigInt({variables[i]})";
+      var x = Integer(0);
+      var y = operands.Count < 2 ? "" : Integer(1);
+      if (name == "popNat") {
+        var bits = ProtectedFreshId("_bits");
+        var count = ProtectedFreshId("_count");
+        body.Write($"{{ let {count} = 0n; for (let {bits} = {x}; {bits} !== 0n; {bits} &= {bits} - 1n) {{ ++{count}; }} return new BigNumber({count}.toString()); }}");
+        return;
+      }
+      var mask = $"((1n << BigInt({width})) - 1n)";
+      var otherCount = $"(BigInt({width}) - {y})";
+      var operation = name switch {
+        "andNat" => $"{x} & {y}",
+        "orNat" => $"{x} | {y}",
+        "xorNat" => $"{x} ^ {y}",
+        "notNat" => $"(~{x}) & {mask}",
+        "shlNat" => $"({x} << {y}) & {mask}",
+        "shrNat" => $"{x} >> {y}",
+        "rolNat" => $"(({x} << {y}) & {mask}) | ({x} >> {otherCount})",
+        "rorNat" => $"({x} >> {y}) | (({x} << {otherCount}) & {mask})",
+        _ => throw new InvalidOperationException("unexpected integer bitwise reference")
+      };
+      // BigNumber's decimal spelling is exact. Only a proven native result is
+      // converted to Number, whose selected carrier is a safe-integer range.
+      body.Write(AsNativeType(expression.Type) == null
+        ? $"new BigNumber(({operation}).toString())" : $"Number({operation})");
+    }
+
     private readonly Dictionary<RecursiveModuleGroup, ConcreteSyntaxTree> groupWriters = new();
     private readonly Dictionary<RecursiveModuleGroup, ConcreteSyntaxTree> foreignGroupWriters = new();
     internal readonly HashSet<TraitDecl> ImportedTraitAncestors = new();

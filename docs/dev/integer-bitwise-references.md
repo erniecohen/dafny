@@ -631,3 +631,40 @@ width/count/storage rejection. `--sanitize` also checks C++ undefined behavior.
 The shared wrong-result, invalid-count and `assert false` controls remain failures.
 A pre-existing runtime-header lookup error in set disjointness is corrected from
 `other.find` to `other.set.find`; disjoint and overlapping sets are executed too.
+
+
+## JavaScript runtime lowering for integer newtypes
+
+The opt-in ten-operation source surface also compiles to JavaScript. Native
+Number operands are exact within their selected safe-integer range; other word
+and count operands use the existing BigNumber representation. Both are observed
+as BigInt values before any operation. BigNumber observations and results pass
+through decimal strings, preserving every digit above 2^53. No source operation
+uses JavaScript's signed 32-bit Number bitwise operators.
+
+The mask is computed at the declared semantic width, independently of native
+storage. Left shifts and the wrapped portion of rotations are masked there;
+complement is masked too. BigInt shifts do not wrap their counts at 32 or 64.
+Rotations at zero or the width are identities. Only results with native storage
+are converted back to Number, after the ordinary verifier has checked the full
+result predicate. Other results are reconstructed as BigNumbers. Population
+counts repeatedly clear the lowest set digit and return a BigNumber natural,
+independently of the receiver predicate. Arguments are bound once, left to right,
+through the backend's existing immediately invoked arrow-function convention.
+No axioms or verifier facts are added, and Rust compilation remains unsupported.
+
+`issue193-runtime-javascript.py` reuses the shared arithmetic-oracle runner and
+source programs, selecting target-compatible native storage. Its Boolean matrix
+checks digit arithmetic; rotation, bit-query and population matrices use integer
+quotient/remainder arithmetic. Additional 53/54-bit checks straddle native
+Number's precision boundary. The same strict/narrow predicates, full-width counts,
+single-evaluation inspections, invalid-count and wrong-result controls, and
+reachable `assert false` cases used for the other runtimes remain covered.
+
+The JavaScript launcher also has a separate backpressure regression:
+`javascript-process-pipes.py` sends output larger than pipe capacity to both
+redirected streams, in text and JSON modes, for successful and failing child
+exits. Both pipes drain concurrently through the shared process waiter. The
+status writer retains stdout until disposal, so it publishes the complete
+output once. Restoring serial stderr-before-stdout draining is detected by a
+bounded timeout with a passing clean control.
