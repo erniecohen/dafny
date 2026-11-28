@@ -1,0 +1,1 @@
+Qualify the optional modular multiplication bridges and their negative/vacuity controls with the default bitvector engine. The induction now works on an opaque product, and body runs select Z3's own case-split heuristic instead of the integer-based engine.

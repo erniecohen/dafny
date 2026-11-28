@@ -1,0 +1,1 @@
+Adds an explicitly included, checked modular multiplication companion for native bitvectors of widths 8, 16, 32 and 64 under `--integer-bitwise`, without adding axioms or changing existing compiler inputs.
