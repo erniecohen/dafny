@@ -134,13 +134,24 @@ namespace Microsoft.Dafny.Compilers {
           // Foreign code keeps the ordinary public module/type paths. Declare
           // generated module objects outside the shared initialization closure;
           // preloaded extern objects retain their identity and are extended there.
-          foreach (var member in GroupMembers(foreignModuleGroup).Where(member => !member.IsExtern(Options, out _, out _))) {
-            wr.WriteLine("let {0};", ModuleName(member));
+          foreach (var member in GroupMembers(foreignModuleGroup)) {
+            if (!member.IsExtern(Options, out _, out _)) {
+              wr.WriteLine("let {0};", ModuleName(member));
+            } else if (Attributes.FindExpressions(member.Attributes, "extern") is { Count: 2 } arguments) {
+              // Load every required object before initializing any group member,
+              // just as supplied objects are preloaded. Keep the exports object:
+              // foreign callbacks can retain it and observe generated declarations.
+              wr.WriteLine("let {0} = require({1});", ModuleName(member),
+                ToStringLiteral((string)((StringLiteralExpr)arguments[1]).Value));
+            }
           }
           outer = wr.NewBlock("(function()", ")(); // end of recursive group");
           foreignGroupWriters.Add(foreignModuleGroup, outer);
         }
         wr = outer;
+        // Required exports were bound outside the closure along with the other
+        // public module objects. Extend that same object without loading it again.
+        libraryName = null;
       } else if (module.RecursiveGroup is { } existingGroup && groupWriters.TryGetValue(existingGroup, out var groupWriter)) {
         return groupWriter;
       }

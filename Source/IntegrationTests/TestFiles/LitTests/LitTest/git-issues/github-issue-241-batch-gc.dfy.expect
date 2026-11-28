@@ -1,0 +1,3 @@
+github-issue-241-batch-gc.dfy(25,27): Error: assertion might not hold
+
+Dafny program verifier finished with 2 verified, 1 error
