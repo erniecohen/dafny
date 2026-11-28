@@ -106,28 +106,30 @@ def hit(snapshots, members, audit=False):
     return selected[0]['key']
 
 
-def compare(label, inputs, members, *, threads=0, axioms=False, library=None):
+def compare(label, inputs, members, *, threads=0, axioms=False, library=None, expected=0, cache_label=None):
     for graphs in (True, False):
-        cache = destination / (label + ('-resolution' if graphs else '-composed'))
+        cache = destination / ((cache_label or label) + ('-resolution' if graphs else '-composed'))
         observations = []
         for phase in ('fresh', 'cold', 'warm', 'audit'):
             result, snapshots, events = run(label + '-' + str(graphs) + '-' + phase, inputs,
                 cache=None if phase == 'fresh' else cache, audit=phase == 'audit',
                 graphs=graphs, persistent=not graphs and phase != 'fresh',
-                threads=threads, axioms=axioms, library=library)
+                threads=threads, axioms=axioms, library=library, expected=expected)
             observations.append(result)
             if phase in ('warm', 'audit'):
                 hit(snapshots, members, phase == 'audit')
                 assert snapshots and all(e['state'].startswith('hit (checked ' if phase == 'audit' else 'hit')
                                          for e in snapshots), snapshots
-            if phase == 'warm' and not graphs:
+            if phase == 'warm' and not graphs and expected == 0:
                 modules = [e for e in events if e.get('ev') == 'persistent-module']
                 assert modules and all(e['hit'] == 'translation-key' for e in modules), modules
                 counters = [e for e in events if e.get('ev') == 'result-cache']
                 assert len(counters) == 1 and counters[0]['solverStarts'] == 0, counters
             if phase == 'audit' and not graphs:
                 counters = [e for e in events if e.get('ev') == 'persistent-translation']
-                assert len(counters) == 1 and counters[0]['auditChecks'] > 0 and counters[0]['auditMismatches'] == 0, counters
+                assert len(counters) == 1 and counters[0]['auditMismatches'] == 0, counters
+                if expected == 0:
+                    assert counters[0]['auditChecks'] > 0, counters
         assert all(r == observations[0] for r in observations), label
 
 
@@ -165,6 +167,22 @@ for threads in (0, 3):
     compare('library-' + str(threads), [client], ['A', 'B'], threads=threads, library=library)
 with zipfile.ZipFile(library) as archive:
     entries = {name: archive.read(name) for name in archive.namelist()}
+# A fully admitted replacement archive must invalidate the entire old group and its proofs.
+old_keys = {}
+for graphs in (True, False):
+    events = [json.loads(line) for line in
+              (destination / ('library-0-' + str(graphs) + '-warm') / 'profile.jsonl').read_text().splitlines()]
+    old_keys[graphs] = group([e for e in events if e.get('stage') == 'resolve.snapshot'], ['A', 'B'])[0]['key']
+producer.write_text(original.replace('Choice(): bool { true }', 'Choice(): bool { false }'))
+run('library-edit-producer', [producer], command='build', extra=['--target', 'lib', '--output', library])
+compare('library-edit', [client], ['A', 'B'], library=library, expected=4, cache_label='library-0')
+for graphs in (True, False):
+    events = [json.loads(line) for line in
+              (destination / ('library-edit-' + str(graphs) + '-cold') / 'profile.jsonl').read_text().splitlines()]
+    selected = group([e for e in events if e.get('stage') == 'resolve.snapshot'], ['A', 'B'])
+    assert all(not e['state'].startswith('hit') and e['key'] != old_keys[graphs] for e in selected), selected
+producer.write_text(original)
+# The following tampering control uses the original admitted archive and its still-warm entries.
 manifest = tomllib.loads(entries['manifest.toml'].decode('utf-8-sig'))
 record = copy.deepcopy(manifest['recursive_modules'])
 record['groups'] = []

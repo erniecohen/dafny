@@ -127,7 +127,7 @@ also breaks the malformed-manifest diagnostic control.
 resolution, native Boogie graphs, VC verdicts and per-VC resource counts. It also
 requires actual group hits, no resolver or solver work on composed warm runs,
 whole-group invalidation after private and semantic edits, position rebasing,
-unrelated-input independence, library admission on warm runs and corruption
+unrelated-input independence, valid archive replacement, library admission on warm runs and corruption
 fallback. The checks cover scheduled and caller-thread resolution and both
 additional-axiom settings. Reachable false assertions remain failures on every
 path. The in-process unit control repeats the equality oracle for groups whose
