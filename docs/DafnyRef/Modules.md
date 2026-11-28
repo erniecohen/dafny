@@ -1215,24 +1215,31 @@ that a later stage would have to reject:
   select foreign Go packages; generated declarations of the group share a separate
   package. See [Go extern linkage](../Compilation/Go.md#recursive-module-groups)
   for names and foreign source-file conventions.
-  JavaScript groups support preloaded extern module objects, extern types in those
-  modules, and qualified extern members. They retain ordinary module and type names
-  inside a shared initialization closure. Concrete refinements, including
-  descendants of abstract refinements, support fully imported and partial extern
-  classes when each concrete module supplies its own preloaded extern object. Fully
-  imported extern traits whose ancestors are also fully imported extern traits retain
-  their preloaded runtime identities in groups and concrete refinements. This
-  includes ancestors in acyclic modules emitted with the group. An ancestor supplied
-  only through `--library` must instead be linked by a producer containing the group.
-  Ghost members remain erased. Fully imported extern classes
-  in a group or its concrete refinements support native constructors: generated
-  calls pass type descriptors followed by non-ghost arguments. Partial extern
-  classes use generated subclasses for Dafny fields and members, and require a
-  Dafny constructor body. Require-based extern modules, two-argument extern type
-  qualifiers, unqualified imported members without an extern owner, qualified
-  instance methods or fields, and refinements containing extern traits with
-  generated members or generated ancestors, or other extern type kinds, remain
-  unsupported. Selected acyclic ancestors obey the same foreign linkage restrictions.
+  JavaScript groups support preloaded extern module objects, CommonJS libraries
+  named by two-argument module externs, extern types in those modules, and
+  qualified extern members. Required libraries load before group initialization;
+  generated declarations extend their exported objects. Require-based module names
+  must be unqualified ASCII identifiers after ordinary keyword escaping, without
+  unescaped JavaScript keywords or collisions with Node wrapper parameters
+  (`require`, `module`, `exports`, `__filename`, `__dirname`), `BigNumber`,
+  `_dafny`, `_System` or `_module`. Library specifiers retain ordinary Node resolution.
+  Native libraries must defer callbacks until group initialization completes.
+  Ordinary module and type names remain inside a shared initialization closure.
+  Concrete refinements, including descendants of abstract refinements, support fully
+  imported and partial extern classes when each concrete module supplies its own
+  preloaded extern object. Fully imported extern traits with fully imported extern
+  ancestors retain their runtime identities in groups and concrete refinements,
+  including ancestors in acyclic modules emitted with the group. An ancestor supplied
+  only through `--library` must be linked by a producer containing the group.
+  Ghost members remain erased. Fully imported extern classes in a group or its
+  concrete refinements support native constructors: generated calls pass type
+  descriptors followed by non-ghost arguments. This includes require-based group
+  members. Partial extern classes use generated subclasses and require a Dafny
+  constructor body. Require-based refinements and imported trait ancestor modules,
+  two-argument extern type qualifiers, unqualified imported members without an extern
+  owner, qualified instance methods or fields, and refinements containing extern
+  traits with generated members or generated ancestors, or other extern type kinds,
+  remain unsupported. Selected acyclic ancestors obey the same linkage restrictions.
   See the
   [compilation design](../dev/recursive-module-compilation.md#javascript-group-emission)
   for the linkage restrictions and qualification tests.
