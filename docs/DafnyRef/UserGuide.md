@@ -302,6 +302,13 @@ programs together in a single run of `dafny`.
 
 Various options control the verification process, in addition to all those described for [`dafny resolve`](#sec-dafny-resolve).
 
+- `--release-cache-recordings` is a hidden, default-off memory option for
+  `--verification-cache`. It releases a completed task context's references to recording transports after
+  response and report extraction, the final checker handshake and cache publication.
+  Execution identity, replay status and mismatch quarantine remain available.
+  It changes no cache key, stored exchange, obligation or resource count, and
+  has no effect without a verification cache.
+
 - `--verification-cache DIR` opts into a persistent cache for individual prepared
   verification tasks. It requires `--type-system-refresh`; selecting the legacy
   type system is an option error (exit 2). It uses a fresh solver history and deterministic numeric
@@ -589,6 +596,22 @@ command-line executable; in-process verification APIs reject it. It changes no
 generated obligations or solver settings. `--pipeline-profile` records the active
 mode as `gcLatencyMode` in its manifest. It can also be set as `batch-gc = true` in
 a project's `[options]` table.
+
+The hidden, default-off `--server-gc-memory M` option, together with `--batch-gc`,
+uses server garbage collection with at most two collector heaps and a managed-heap
+limit of M MiB. Zero leaves the collector unchanged; a positive limit must be at
+least 256 MiB. The limit includes GC bookkeeping and excludes other process memory
+and native solver memory. It can also be set as `server-gc-memory = M` in a
+project's `[options]` table. The command checks the effective startup configuration
+before verification and rejects a restarted child that could not apply it.
+
+With a module window greater than one, `--server-gc-memory` also requires an
+explicit `--verification-module-window-memory` budget. Otherwise the automatic
+admission threshold would become half the GC limit and could reduce preparation
+throughput. The admission budget controls when more modules are started; the GC
+limit controls managed-heap commitment. Choose the two budgets separately.
+The option changes no generated obligations, solver settings or scheduling
+policy. Ordinary verification and the language server retain their GC policy.
 
 By default `dafny verify` verifies one module at a time: it starts every symbol of a
 module, waits until all of them have finished, and only then translates and starts

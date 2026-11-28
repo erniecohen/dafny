@@ -1,0 +1,3 @@
+Recording release: activated cold, warm and audit; default and explicit false unchanged
+Identical obligations, verdicts, resources, assertion reports and cache payloads (except module timing)
+Positive proofs, fresh failing false assertion, nonempty replay and equality-oracle negative controls passed

@@ -975,6 +975,66 @@ project diagnostics, restart rejection, argument preservation, child exit codes
 and cancellation cleanup. Performance measurements and runtime traces from
 private runs remain outside this document.
 
+#### Bounded parallel collection
+
+The hidden opt-in `--server-gc-memory M`, with `--batch-gc`, selects server GC
+with at most two collector heaps and an explicit managed-heap limit of M MiB.
+Zero leaves the collector policy unchanged; a positive value must be at least
+256 MiB. The limit covers GC heap commitment and bookkeeping, not total process
+memory or native solver memory (see [.NET GC configuration](https://learn.microsoft.com/en-us/dotnet/core/runtime-config/garbage-collector)). The language server and ordinary verification
+keep their existing startup policy.
+
+The launcher sets both the initial and maximum collector heap counts, removes
+inherited competing per-object-heap limits, and preserves the existing host,
+runtime, arguments, streams, exit propagation and cancellation cleanup. Before
+verification the child checks the runtime's actual collector configuration: Batch
+server GC, one or two heaps, a maximum of two, the requested overall limit, and
+no overriding per-object-heap limits. A failed restart guard rejects verification.
+An already configured process verifies directly.
+
+A module window greater than one also requires an explicit
+`--verification-module-window-memory` budget. Its automatic default is half the
+memory available to the GC, which becomes half the new hard limit. Retaining
+that implicit default can introduce preparation gaps and mask the collector's
+throughput benefit. The admission budget is a scheduling threshold, not another
+heap limit; choose it separately from the GC commitment limit.
+
+The identity control compares complete Boogie text, diagnostics, assertion records,
+verdicts and per-VC resource counts. It covers default, batch-only, explicit zero,
+command-line and project activation, with fresh and pooled provers. Positive proofs
+and a reachable failing false assertion are required in every comparison. A
+`verification-gc` profile event reports the runtime heap counts and limit only
+when bounded collection was requested and its startup checks succeeded.
+
+#### Completed cache recordings
+
+The hidden, default-off `--release-cache-recordings` makes each completed task
+attempt's captured execution context forget its solver transports and releases
+the completed native split's error reporter. A transport's
+error subscription points back to its prover and its setup graph, so retaining
+only the recording transport can keep much more than its SMT strings alive.
+
+The transport list is cleared in the attempt's existing finalization path, after
+Boogie result extraction, final handshake, publication and replay validation, or
+after failure/fallback handling. The split reporter is cleared only when that
+attempt completed; the completed result already owns diagnostics, coverage and
+models, including the context needed by a counterexample. Clearing this owner reference neither modifies
+the transport nor closes a solver. A checker or pending operation that still
+needs a transport retains its own reference. Execution identity, replay status,
+mismatch quarantine, retries and publication ordering remain unchanged.
+
+Lifetime controls keep a captured context alive with a completed transport and
+an error-subscriber cycle, and keep a native split alive with its reporter. Both objects must become collectible after release,
+and must remain alive without release, including for a disabled retry. An
+incomplete attempt must retain its reporter. Existing
+transport controls cover publication, mismatched replay, quarantine and final
+handshake races. Integration controls compare complete Boogie text, per-VC
+verdicts, resources and assertion records, and persistent table keys and payloads.
+Module-report runtime ticks are the sole payload exception, as in the existing
+persistent report equality rule; they vary between fresh executions. Positive
+proofs, a fresh reachable false assertion, warm replay, independent audit and an
+explicit-false run prevent vacuous cache or identity acceptance.
+
 ---
 
 ## 6. Dependencies and order of work

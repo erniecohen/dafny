@@ -166,6 +166,7 @@ referrers	miss	miss	miss	false | true
 refinement-extends	miss	miss	miss	false | true	
 refinement-renaming	miss	miss	miss	false | true	
 relax-definite-assignment	miss	miss	miss	false | true	
+release-cache-recordings	hit	hit	hit	false | true	releases completed recording buffers only after their cache publication; changes no cache key or payload
 release-verified-modules	miss	miss	miss	false | true	keyed by default: it changes no report, but it is not on the list of options that change no result, so records made with and without it are kept apart
 report-file	n/a	n/a	n/a	-	not an option of verify
 report-format	n/a	n/a	n/a	-	not an option of verify
@@ -176,6 +177,7 @@ resource-limit	miss	miss	miss	1 | 2
 rprint	hit	hit	hit	{dir}/a.dfy | {dir}/b.dfy	prints the resolved Dafny program, which no stage reads
 rust-module-name	n/a	n/a	n/a	-	not an option of verify
 rust-sync	n/a	n/a	n/a	-	not an option of verify
+server-gc-memory	miss	miss	miss	fixed	startup GC policy requires the command-line executable; conservatively keyed by the default-deny inventory
 show-hints	miss	miss	miss	false | true	
 show-proof-obligation-expressions	miss	miss	miss	false | true	
 show-snippets	hit	miss	hit	false | true	resolution: how diagnostics are printed; translation: it sets the reported ranges of the Boogie tokens; results: no solver option depends on it

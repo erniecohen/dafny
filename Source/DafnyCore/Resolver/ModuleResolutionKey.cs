@@ -69,6 +69,7 @@ public static class ModuleResolutionKey {
     ["persistent-counterexamples"] = "a later stage's reporting cache; changes no resolved result",
     ["persistent-translation-audit"] = "checks a later stage's cache; changes no result",
     ["verification-cache"] = "the store's root, not an input; keys never name a location",
+    ["release-cache-recordings"] = "releases completed transport buffers after publication; changes no input or stored result",
     ["verification-cache-solver-digest"] = "declares which solver images the result cache accepts; the digest of the image run is in its keys",
     ["cache-partition"] = "store accounting only",
     ["cache-partition-budget"] = "store retention only",
