@@ -1,0 +1,1 @@
+With `--recursive-modules` and `--resolution-cache`, recursive module groups can reuse one complete persistent resolution snapshot, including groups loaded from libraries. Source edits invalidate the group together, while the existing translation and verification caches retain their task-level early cutoff.

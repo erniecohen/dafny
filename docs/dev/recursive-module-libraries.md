@@ -33,9 +33,12 @@ workflow for programs outside the modular-termination design. Termination
 certification remains a separate policy: when those checks are active, either
 through `--modular-termination` or a use of the design under the default rules,
 the complete-verification record and contracts are required in addition to the
-group inventory. The library's source is resolved
-again, so invariant extension checks, raw-member inference, export views and the
-group call graph are recomputed rather than trusted from a serialized summary.
+group inventory. Whole-program archive admission and group partition checks run
+before snapshot reuse. On a miss, the library's source is resolved again,
+recomputing invariant extension checks, raw-member inference, export views and
+the group call graph. On a hit, these semantic outputs come from the complete
+content-addressed snapshot, validated by the same resolution equality oracle as
+source groups.
 
 A library built with the option requires it in its client. Older acyclic
 libraries need no group inventory: after resolution their group partition is
@@ -57,8 +60,26 @@ effective options and resolver identity separately in the group input digest.
 Every member's resolution key depends on that digest, directly or through the
 leader. A private method body is an owned input too.
 
-Resolution outputs for a group are rebuilt together. Shared datatype, call-graph
-and invariant analysis state belongs to that new group. The owner-specific
+With `--resolution-cache`, the group is one persistent snapshot owned by its
+leader. Its key frames every member and internal declaration, including each
+source, effective options and name prefix, and all lower prerequisites. A sibling
+cannot hit independently. Source frames and visibility-scope ownership cover the
+whole group. Phase-local resolver and inference tables are discarded after
+resolution; the semantic datatype, call-graph and invariant state is retained.
+
+The snapshot keeps each declaration's signatures, member table and diagnostics
+in one shared graph. Publication preserves member identity and reporter sharing,
+rebases every member's contextual fields and source tokens, and registers every
+internal declaration as a prerequisite of downstream modules. Export and
+refinement copies retain the same clone-identity equivalence classes in the
+current parse. Publishing an internal import also restores its accepted group
+parent immediately, before a downstream refinement can observe it. A malformed or
+incomplete snapshot misses and resolves the whole group. The existing
+`--resolution-cache-check` oracle compares this entire graph with a fresh group
+resolution, including sibling outputs and shared identities.
+
+Without a reusable snapshot, resolution outputs for a group are rebuilt together.
+Shared datatype, call-graph and invariant analysis state belongs to that new group. The owner-specific
 dependence caches of issue 504 belong to the new extension check; they are not
 retained between resolutions. Editing a sibling's function or datatype therefore
 cannot retain a previous negative dependence answer.
@@ -101,3 +122,22 @@ descriptor with only the translated member's source allows the edit-and-rerun
 false assertion to verify, and the cache regression fails. Each mutation is
 built and run separately, then restored. Removing the missing-options guard
 also breaks the malformed-manifest diagnostic control.
+
+`git-issue-466-persistent-groups.dfy` compares fresh, cold, warm and audited
+resolution, native Boogie graphs, VC verdicts and per-VC resource counts. It also
+requires actual group hits, no resolver or solver work on composed warm runs,
+whole-group invalidation after private and semantic edits, position rebasing,
+unrelated-input independence, valid archive replacement, library admission on warm runs and corruption
+fallback. The checks cover scheduled and caller-thread resolution and both
+additional-axiom settings. Reachable false assertions remain failures on every
+path. The in-process unit control repeats the equality oracle for groups whose
+members have distinct source files and for both two- and three-member groups.
+
+The persistent-group mutation controls separately disable group admission,
+omit sibling key inputs, split source frames, omit sibling visibility scopes,
+retain resolver or inference state, drop a member payload field, skip clone or
+context rebinding, omit internal prerequisite registration, split the leader's
+reporter, omit per-file option bindings and restore a parsed internal-import
+parent. The warm-hit, key, graph-equality, diagnostic or higher-refinement
+controls reject each mutation. Each mutant runs serially under a timeout derived
+from its passing clean control, and its process group is reaped before the next.

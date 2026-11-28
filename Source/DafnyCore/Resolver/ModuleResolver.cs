@@ -28,6 +28,8 @@ namespace Microsoft.Dafny {
     public SystemModuleManager Builtins { get; init; }
     public Dictionary<TopLevelDeclWithMembers, Dictionary<string, MemberDecl>> SystemClassMembers { get; init; }
     internal ModuleTranslationInputs TranslationInputs { get; init; }
+    /// <summary>The complete outputs of one recursive resolution unit, on its cache root only.</summary>
+    internal IReadOnlyList<ModuleResolutionResult> GroupOutputs { get; init; }
   }
 
   public interface ICanResolveNewAndOld {

@@ -514,6 +514,11 @@ public static class RecursiveModuleGroupResolver {
         results[declaration] = new ModuleResolutionResult(declaration, new BatchErrorReporter(declaration.Options), new(), new());
       }
     }
+    // These tables are phase-local inference machinery, not resolution outputs. In particular,
+    // retaining their resolvers would retain whole worker programs and prevent a group snapshot.
+    // Keep the group's graphs, declarations and analysis answers, which later stages read.
+    group.Resolvers.Clear();
+    group.Shared.Clear();
     return results;
   }
 
