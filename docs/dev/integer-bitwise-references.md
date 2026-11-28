@@ -321,6 +321,57 @@ Remaining native equations include multiplication, unsigned
 division/remainder, ordering, rotations and population count. General word APIs
 at other widths and runtime lowering of integer-newtype operators also remain.
 
+
+## Checked native single-bit access
+
+Include `Source/DafnyStandardLibraries/optional/IntegerBitwiseNativeBits.dfy`
+with `--integer-bitwise`. Modules `Std.Arithmetic.IntegerBitwiseNativeBits8`,
+`16`, `32` and `64` provide `NativeBit(x,i)` and `BitTest(x,i)` for natural
+indices `i < N`. The first establishes the arithmetic digit equation
+`((x>>i)&1) as int == ((x as int)/P(i))%2`, where `P` is the checked reference
+power function. The second establishes
+`(((x>>i)&1)==1) == Std.Arithmetic.IntegerBitwiseCompiler.bit(N,x as int,i)`.
+Index zero selects the least significant bit; index `N-1` selects the high bit.
+The index equal to the word width is excluded, even though shifting by the
+width is legal. It is not a position in the N-digit bit view.
+
+Bounded integer clients compose these facts with the existing checked round
+trips. A client can return the native test's Boolean result while specifying it
+using the integer bit view. Both the source conversion and the index bounds
+remain checked. This companion adds no runtime lowering of integer-newtype
+operators and introduces no native rotation or population-count implementation.
+
+### Model and checked proof boundary
+
+Interpret the word by its unsigned little-endian weighted digit sum U. The
+existing right-shift bridge gives `U(x>>i) = U(x)/2^i`. Its checked low-digit
+split gives `U((x>>i)&1) = (U(x)/2^i)%2`, proving `NativeBit`. The masked native
+word is either zero or one, so comparing it with one agrees with comparing its
+integer observation with one. The existing checked `BitAt` theorem identifies
+that digit with the indexed integer bit view, proving `BitTest`. The premise
+`i < N` supplies both shift well-formedness and the bit-view index check.
+
+All eight new lemmas and their entire shift/reference include closure are
+checked with the default solver engine, with additional axioms off/on and both
+resolvers. No assumption, added axiom, verification exemption, trusted emitter
+or compiler change is introduced. The companion is explicitly included, and
+existing compiler, packaged-library and optional proof inputs remain unchanged.
+
+Qualification checks symbolic words and composed bounded integers, a Boolean
+returning client, zero and maximum words, low and high bits, and alternating-bit
+witnesses. Negative controls reject set/clear inversions, reversed endianness,
+wrong digit values, out-of-range and negative indices, and invalid conversions.
+Reachable false assertions follow each rule separately and both together under
+the default bitvector engine. Each designated rejection must
+be conclusive; exhaustion and timeout never count as a pass.
+
+Serial mutation mode negates each of the eight postconditions on inhabited
+operands (zero word, zero index), and removes each of the eight index premises.
+A removed premise must fail the contract's shift or indexed-function
+well-formedness check. Every site is run separately under both resolvers and
+additional-axiom modes. Body/client and negative-control ceilings are 2,000,000
+and 200,000 resource units per scope, respectively.
+
 ## Checked native modular subtraction
 
 Explicitly include `Source/DafnyStandardLibraries/optional/IntegerBitwiseNativeSubtraction.dfy`
@@ -348,3 +399,7 @@ observations and a zero modulus must be rejected. Serial mutations
 negate every new postcondition and remove each new premise separately.
 Resource exhaustion or timeout is never accepted as a successful control. The existing proof/control
 ceilings are 2,000,000/200,000 resource units per scope.
+
+The single-bit qualification runner uses the default engine for every body,
+client, negative control and mutation. No accepted single-bit body depended on
+the alternative engine implicated in https://github.com/erniecohen/dafny/issues/618.
