@@ -4,7 +4,7 @@
 `IntegerBitwiseModel` and its explicit one-step unfold lemmas. It also enables the six basic bitwise operators on
 explicitly width-qualified integer newtypes. The optional native companion below
 provides checked conversion and Boolean bridges. The six source operators
-compile to C#; runtime support for other targets remains later work. The independent
+compile to C# and Python; runtime support for other targets remains later work. The independent
 `--additional-axioms` option does not expose this public interface.
 
 Include `Source/DafnyStandardLibraries/optional/IntegerBitwiseCompiler.dfy` for
@@ -180,7 +180,7 @@ declarations. Off-built files cannot acquire the surface or width capability
 from an enabled client, including in the merged default module. No source name
 or attribute can replace the compiler-owned target. The reference call remains
 the verifier meaning in compiled contexts as well.
-C# compilation of these six operators is described below; other targets reject
+C# and Python compilation of these six operators is described below; other targets reject
 compiled uses explicitly.
 
 `issue193-newtype-operators.py` verifies actual source clients against M1 at widths
@@ -376,7 +376,8 @@ inferred from the carrier. These rules refine the weighted-digit reference:
 masking is remainder modulo a power of two, complement flips exactly those
 digits, and the two shifts move their indices with zero fill.
 
-Other targets report an explicit unsupported-feature diagnostic. The fixed
+Python compilation is described below. Other targets report an explicit
+unsupported-feature diagnostic. The fixed
 reference interface remains ghost-only. Other target implementations, native
 rotation bridges and rotation/bit/population-count source surface were separate work.
 The rotation and bit-query source extension is described below.
@@ -465,7 +466,7 @@ shrinks; it allocates no byte array and does not truncate to the storage width
 or the first chunk. The result is a BigInteger natural, and the source receiver
 is evaluated once through the existing static binding. Narrow native storage
 for larger semantic widths remains valid because all stored high bits are zero.
-Other targets reject compiled source calls explicitly.
+Python compilation is described below; other targets reject compiled source calls explicitly.
 
 `issue193-popcount-source.py` checks generic reference/sequence agreement, bounds,
 zero/all-ones/high-bit/power-of-two laws, complete compiled drivers and independent
@@ -480,3 +481,42 @@ No alternate bitvector solver engine is used.
 
 Other runtime backends and the final cumulative acceptance matrix remain
 separate milestones for https://github.com/erniecohen/dafny/issues/193.
+
+
+## Python runtime lowering for integer newtypes
+
+The opt-in source surface also compiles to Python: `&`, `|`, `^`, `!`, `<<`,
+`>>`, `RotateLeft`, `RotateRight`, `bit` and `PopCount`. This milestone stacks on
+https://github.com/erniecohen/dafny/pull/624. It changes no resolved reference,
+verification obligation, result-membership check or added-axiom setting.
+
+Python represents both native-hinted and nonnative integer newtypes with
+arbitrary-precision integers. The backend binds source operands once, left to
+right, as arguments to a lambda with fresh parameters. Complement and left
+shift are masked with `2^N-1`; a full-width shift returns zero. Right shift is
+logical because the source operand is nonnegative. Rotations combine the two
+shifted parts at the declared semantic width, with identity cases at zero and
+N. Bit queries reuse the checked right-shift and parity elaboration.
+Population count uses `bin(value).count('1')`, which counts every significant
+bit and is available on Python 3.8; it does not require `int.bit_count`.
+Native storage hints never truncate a Python intermediate or determine its
+semantic width. The already checked complete result predicate still applies.
+
+These operations refine the existing weighted-digit model: AND, OR and XOR
+act on corresponding nonnegative binary digits; masking takes the remainder
+modulo `2^N`; complement flips precisely those N digits; shifts move digits
+with zero fill. The disjoint shifted parts of a rotation partition the N
+positions, and counting the binary ones equals the sum of the individual
+digits. Leading zeros change none of those sums. No runtime reference body,
+bitvector conversion, new axiom or assumed range fact is introduced.
+
+`issue193-runtime-python.py` reuses the C# program generators and independent
+arithmetic-digit oracles. It checks the complete drivers before executing them,
+compares exact case identities and all outputs, exercises native and wide
+carriers, narrow-storage/wide-semantic words, both count endpoints and strict
+predicates, and inspects single operand evaluation and Python 3.8 syntax.
+The same wrong-result, invalid-count and live-false controls must fail under
+both resolvers and additional-axiom settings. Serial backend mutations and
+paired parent Boogie/verdict/per-VC resource and option-off generated-source
+comparisons cover the compilation boundary. C# remains qualified separately;
+other targets retain an explicit unsupported-feature diagnostic.
