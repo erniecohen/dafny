@@ -27,8 +27,8 @@
 // RUN: %OutputCheck --file-to-check "%t-ancestor-owner.out" "%S/Inputs/issue466_js_refinement_owner.check"
 // RUN: %exits-with 3 %translate js %trargs --no-verify --member-invariants --recursive-modules --allow-external-contracts "%S/Inputs/git-issue-466-js-ancestor-type.dfy" --output "%t-ancestor-type.js" > "%t-ancestor-type.out"
 // RUN: %OutputCheck --file-to-check "%t-ancestor-type.out" "%S/Inputs/issue466_js_refinement_owner.check"
-// RUN: %exits-with 3 %translate js %trargs --no-verify --member-invariants --recursive-modules --allow-external-contracts "%S/Inputs/git-issue-466-js-ancestor-module.dfy" --output "%t-ancestor-module.js" > "%t-ancestor-module.out"
-// RUN: %OutputCheck --file-to-check "%t-ancestor-module.out" "%S/Inputs/issue466_js_ancestor_module.check"
+// RUN: %translate js %trargs --no-verify --member-invariants --recursive-modules --allow-external-contracts "%S/Inputs/git-issue-466-js-ancestor-module.dfy" --output "%t-ancestor-module.js" > "%t-ancestor-module.out"
+// RUN: %OutputCheck --file-to-check "%t-ancestor-module.js" "%S/Inputs/issue466_js_ancestor_module.check"
 // RUN: %exits-with 3 %translate js %trargs --no-verify --member-invariants --recursive-modules --allow-external-contracts "%S/Inputs/git-issue-466-js-ancestor-member.dfy" --output "%t-ancestor-member.js" > "%t-ancestor-member.out"
 // RUN: %OutputCheck --file-to-check "%t-ancestor-member.out" "%S/Inputs/issue466_js_ancestor_member.check"
 // A producer without the group cannot certify preservation of its native identities.

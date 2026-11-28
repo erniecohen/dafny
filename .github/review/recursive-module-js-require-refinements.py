@@ -6,7 +6,7 @@ import subprocess
 import sys
 
 
-def main():
+def main(required_ancestors=False):
     dll, solver, inputs, directory = (Path(a).resolve() for a in sys.argv[1:])
     directory.mkdir(parents=True, exist_ok=True)
     commands = 0
@@ -38,7 +38,21 @@ def main():
         commands += 1
         return result.stdout
 
-    library = (inputs / "git-issue-466-js-trait-refinement-library.dfy").read_text()
+    ancestor = ""
+    if required_ancestors:
+        ancestor = (inputs / "git-issue-466-js-acyclic-ancestors-ancestor-library.dfy").read_text()
+        ancestor = ancestor.replace('module {:extern "ForeignOutside"}',
+            'module {:extern "ForeignOutside", "./ForeignOutside.js"}')
+        ancestor = ancestor.replace('  trait {:extern "NativeUnused"}', '''  function Generated(n: nat): nat { n }
+  function {:extern} Check(n: nat): (r: nat) ensures r == n
+  method {:extern} NativeObject(n: nat) returns (value: object)
+  trait {:extern "NativeUnused"}''')
+        group = (inputs / "git-issue-466-js-acyclic-ancestors-group.dfy").read_text()
+        group = group.replace('module {:extern "ForeignB"}',
+            'module {:extern "ForeignB", "./ForeignB.js"}')
+        library = ancestor + "\n" + group
+    else:
+        library = (inputs / "git-issue-466-js-trait-refinement-library.dfy").read_text()
     for name, parent in [("ForeignRefined", "B"), ("ForeignFinal", "AbstractForeign")]:
         header = "RefinedB" if parent == "B" else "Final"
         original = f'module {{:extern "{name}"}} {header} refines {parent} {{ }}'
@@ -47,7 +61,12 @@ def main():
   function {{:extern}} RequiredCount(n: nat): (r: nat) ensures r == n
 }}''')
     producer = write("producer.dfy", library)
-    client = (inputs / "git-issue-466-js-trait-refinement-client.dfy").read_text()
+    client = (inputs / ("git-issue-466-js-acyclic-ancestors-client.dfy" if required_ancestors
+                        else "git-issue-466-js-trait-refinement-client.dfy")).read_text()
+    if required_ancestors:
+        client = client.replace("    Client.Main();", '''    Client.Main();
+    assert Outside.Check(6) == 6;
+    print Outside.Check(6), "\\n";''')
     client = client.replace("    Client.Main();", '''    Client.Main();
     assert RefinedB.RequiredCount(4) == 4 && Final.RequiredCount(5) == 5;
     print RefinedB.RequiredCount(4), " ", Final.RequiredCount(5), "\\n";''')
@@ -65,7 +84,35 @@ def main():
 globalThis.issue466RefiningOwners = { ForeignRefined, ForeignFinal };
 }
 ''')
-    for name in ["ForeignRefined", "ForeignFinal"]:
+    if required_ancestors:
+        native = native.replace("let Foreign =", "Foreign =").replace("let NativeOnly =", "NativeOnly =")
+        prelude = write("foreign.js", "let Foreign, NativeOnly;\n{\n" + native + "\n" +
+            (inputs / "git-issue-466-js-acyclic-ancestors-foreign.js").read_text() + '''
+ForeignOutside.__default = class {};
+globalThis.issue466RefiningOwners = { ForeignB, ForeignRefined, ForeignFinal };
+globalThis.issue466AncestorOwner = ForeignOutside;
+}
+''')
+        write("ForeignOutside.js", '''// Publish before entering a native CommonJS cycle.
+const captured = globalThis.issue466AncestorOwner;
+module.exports = captured;
+const peer = require('./ancestor-peer.js');
+captured.Check = n => peer.Check(n);
+captured.NativeObject = n => globalThis.issue466RefiningOwners.ForeignFinal.NativeViewer.Make(n);
+''')
+        write("ancestor-peer.js", '''const captured = require('./ForeignOutside.js');
+const root = captured.NativeOutsideRoot;
+const genericRoot = captured.NativeOutsideGenericRoot;
+module.exports.Check = n => {
+  if (require('./ForeignOutside.js') !== captured ||
+      root !== captured.NativeOutsideRoot || genericRoot !== captured.NativeOutsideGenericRoot) {
+    throw new Error("required ancestor identity changed");
+  }
+  return captured.__default.Generated(n);
+};
+''')
+    required_owners = ["ForeignRefined", "ForeignFinal"] + (["ForeignB"] if required_ancestors else [])
+    for name in required_owners:
         write(name + ".js", f'''// A real CommonJS loader retains this exact object.
 const captured = globalThis.issue466RefiningOwners.{name};
 module.exports = captured;
@@ -86,6 +133,13 @@ captured.RequiredCount = n => {{
         "\n".join(f'''namespace {name} {{ public partial class __default {{
 public static System.Numerics.BigInteger RequiredCount(System.Numerics.BigInteger n) {{ return Count(n); }}
 }} }}''' for name in ["ForeignRefined", "ForeignFinal"]))
+    if required_ancestors:
+        cs_native.write_text(cs_native.read_text() + '''
+namespace ForeignOutside { public partial class __default {
+public static System.Numerics.BigInteger Check(System.Numerics.BigInteger n) { return Generated(n); }
+public static object NativeObject(System.Numerics.BigInteger n) { return ForeignFinal.NativeViewer<System.Numerics.BigInteger>.Make(n); }
+} }
+''')
     plain = ["--optimize-erasable-datatype-wrapper:false"]
     common = ["--verify-included-files", "--main-method", "TraitChecks.Main"]
     oracle = run("source-cs", "run", [source], common + plain +
@@ -107,27 +161,54 @@ public static System.Numerics.BigInteger RequiredCount(System.Numerics.BigIntege
     assert "cannot build a library under --modular-termination" in rejected, rejected
     producer.write_text(library.replace("class Implementation extends A.Counter", "class Implementation"))
     consumer.write_text(consumer.read_text().replace("var counter: A.Counter", "var counter"))
+    if required_ancestors:
+        rejected = run("whole-group-certificate", "build", [producer], plain +
+                       ["-t:lib", "--output", directory / "rejected-hierarchy.doo"], 3)
+        assert "cannot build a library under --modular-termination" in rejected, rejected
     relocated = directory / "relocated"
     relocated.mkdir(exist_ok=True)
     moved = relocated / "renamed.dfy"
-    shutil.copyfile(producer, moved)
+    # The acyclic-ancestor hierarchy cannot form a whole-group certificate with
+    # arbitrary foreign contracts. Archive its complete ancestor owner, then
+    # compile that archive together with the group, retaining this rejection.
+    if required_ancestors:
+        moved.write_text(ancestor)
+        archived_group = write("archive-group.dfy", producer.read_text().removeprefix(ancestor))
+        consumer_flags = ["--input", archived_group]
+    else:
+        shutil.copyfile(producer, moved)
+        consumer_flags = []
     archive = directory / "group.doo"
     run("archive", "build", [moved], plain + ["-t:lib", "--output", archive])
     archived = []
     for target, foreign in [("cs", cs_native), ("js", prelude)]:
-        archived.append(run("archive-" + target, "run", [consumer], common + plain +
+        archived.append(run("archive-" + target, "run", [consumer], common + plain + consumer_flags +
             ["--target", target, "--input", archive, "--input", foreign,
              "--output", directory / ("archive-" + target)]))
     assert archived[0] == archived[1], "archive runtimes differ"
     emitted_producer = directory / "producer.js"
     emitted_consumer = directory / "consumer.js"
-    run("translate-producer", "translate", [producer], plain +
+    emission_files = [archived_group, archive] if required_ancestors else [producer]
+    run("translate-producer", "translate", emission_files, plain +
         ["--no-verify", "--include-runtime", "--output", emitted_producer])
-    run("translate-consumer", "translate", [consumer], plain +
+    # The full group hierarchy cannot form a certificate. A separate client
+    # consumes the certified ancestor owner and a native object supplied by the
+    # group, checking that producer/client code shares the ancestor identities.
+    linked_consumer = write("separate-client.dfy", '''module SeparateChecks {
+  import Outside
+  method {:main} Main() {
+    assert Outside.Check(6) == 6;
+    print Outside.Check(6), "\\n";
+    var value := Outside.NativeObject(7);
+    print value is Outside.OutsideRoot, "\\n";
+  }
+}
+''') if required_ancestors else consumer
+    run("translate-consumer", "translate", [linked_consumer], plain +
         ["--no-verify", "--include-runtime:false", "--library", archive,
          "--output", emitted_consumer])
     emitted = emitted_producer.read_text()
-    for name in ["ForeignRefined", "ForeignFinal"]:
+    for name in required_owners + (["ForeignOutside"] if required_ancestors else []):
         assert emitted.count(f'require("./{name}.js")') == 1, name
     link = write("link.js", '''const fs = require('fs');
 const sources = process.argv.slice(2).map(file => fs.readFileSync(file, 'utf8'));
@@ -139,8 +220,9 @@ new Function('require', '"use strict";\\n' + program)(require);
                             stderr=subprocess.STDOUT, timeout=120)
     (directory / "link.log").write_text(linked.stdout)
     assert linked.returncode == 0, linked.stdout
-    linked_cs = run("link-cs", "run", [consumer], plain +
-        ["--no-verify", "--main-method", "TraitChecks.Main", "--target", "cs", "--input", archive,
+    linked_cs = run("link-cs", "run", [linked_consumer], plain + consumer_flags +
+        ["--no-verify", "--main-method", "SeparateChecks.Main" if required_ancestors else "TraitChecks.Main",
+         "--target", "cs", "--input", archive,
          "--input", cs_native, "--output", directory / "link-cs"])
     assert linked_cs == "\nDafny program verifier did not attempt verification\n" + linked.stdout
 
@@ -160,10 +242,18 @@ module Negative {
   method LiveRead() { var c := Final.Viewer<int>.Create(7); assert c.Read() == 7; assert false; }
 }
 ''')
+    assertion_errors = 8
+    if required_ancestors:
+        negative.write_text(negative.read_text().replace("module Negative {", '''module Negative {
+  import Outside
+  method WrongAncestor() { assert Outside.Check(6) == 7; }
+  method LiveAncestor() { assert Outside.Check(6) == 6; assert false; }
+'''))
+        assertion_errors += 2
     for label, flags in [("plain", []), ("axioms", ["--additional-axioms"])]:
         errors = run("negative-" + label, "verify", [negative], flags, 4)
-        assert errors.count("Error: assertion might not hold") == 8, errors
-        assert "8 errors" in errors, errors
+        assert errors.count("Error: assertion might not hold") == assertion_errors, errors
+        assert f"{assertion_errors} errors" in errors, errors
     for label, before, after in [
             ("name", '"ForeignFinal",', '"bad-name",'),
             ("constructor", 'class {:extern "NativeCell"} Cell<T(0)> {',
@@ -173,12 +263,25 @@ module Negative {
         message = ("require-based extern module names to be unqualified ASCII identifiers" if label == "name"
                    else "partial classes must use a Dafny constructor body")
         assert message in errors, errors
-    outside = run("ancestor-owner", "translate", [inputs / "git-issue-466-js-ancestor-module.dfy"],
+    outside = run("ancestor-owner", "translate", [inputs / "git-issue-466-js-ancestor-owner.dfy"],
                   ["--no-verify"], 3)
-    assert "preloaded extern module objects" in outside, outside
-    print("CommonJS refinement source, archive and separate-link runtime comparisons passed.")
+    assert "extern types in an extern module" in outside, outside
+    if required_ancestors:
+        for label, text, message in [
+                ("ancestor-name", library.replace('"ForeignOutside",', '"bad-name",'),
+                 "require-based extern module names to be unqualified ASCII identifiers"),
+                ("generated-ancestor", library.replace('trait {:extern "NativeOutsideRoot"} OutsideRoot extends object {',
+                    'trait {:extern "NativeOutsideRoot"} OutsideRoot extends object { function Body(): int { 1 }'),
+                 "fully imported extern ancestors")]:
+            errors = run(label, "translate", [write(label + ".dfy", text)], ["--no-verify"], 3)
+            assert message in errors, errors
+        errors = run("library-only-owner", "translate", [archived_group],
+                     ["--no-verify", "--library", archive], 3)
+        assert "ancestor supplied only as a library" in errors, errors
+    print("CommonJS " + ("ancestor" if required_ancestors else "refinement") +
+          " source, archive and separate-link runtime comparisons passed.")
     print("Both wrapper modes, scheduled resolution, constructors, partial classes and trait identities checked.")
-    print("16 negative/vacuity assertions and 4 rejection controls passed.")
+    print(f"{2 * assertion_errors} negative/vacuity assertions and {8 if required_ancestors else 4} rejection controls passed.")
     print(f"Dafny commands checked: {commands}.")
 
 

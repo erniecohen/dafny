@@ -1231,14 +1231,15 @@ that a later stage would have to reject:
   extends that library's exported object, preserving its native constructors and
   trait identities; abstract intermediates emit no loader. Fully imported extern traits with fully imported extern
   ancestors retain their runtime identities in groups and concrete refinements,
-  including ancestors in acyclic modules emitted with the group. An ancestor supplied
+  including ancestors in acyclic modules emitted with the group. Those acyclic
+  owners may be preloaded objects or CommonJS libraries; their selected imported
+  trait identities are preserved while unrelated traits retain ordinary emission. An ancestor supplied
   only through `--library` must be linked by a producer containing the group.
   Ghost members remain erased. Fully imported extern classes in a group or its
   concrete refinements support native constructors: generated calls pass type
   descriptors followed by non-ghost arguments. This includes require-based group
   members. Partial extern classes use generated subclasses and require a Dafny
-  constructor body. Require-based refinements and imported trait ancestor modules,
-  two-argument extern type qualifiers, unqualified imported members without an extern
+  constructor body. Two-argument extern type qualifiers, unqualified imported members without an extern
   owner, qualified instance methods or fields, and refinements containing extern
   traits with generated members or generated ancestors, or other extern type kinds,
   remain unsupported. Selected acyclic ancestors obey the same linkage restrictions.

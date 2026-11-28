@@ -1,0 +1,5 @@
+With the hidden experimental `--recursive-modules` option, JavaScript imported
+ancestor traits in acyclic modules can belong to CommonJS-loaded owners. Selected
+native trait identities and the library's exported object are preserved; unrelated
+traits retain ordinary generated emission. Library-only ancestor owners still need
+a producer containing the recursive group.
