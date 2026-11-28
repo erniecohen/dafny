@@ -1,0 +1,1 @@
+Add the hidden opt-in `--server-gc-memory` option for `dafny verify --batch-gc`: bound server garbage collection to at most two heaps within an explicit managed-heap limit. Multi-module windows require an explicit admission budget. The default GC policy, generated obligations and solver settings are unchanged.
