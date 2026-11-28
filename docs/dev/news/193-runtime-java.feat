@@ -1,0 +1,1 @@
+With `--integer-bitwise`, bounded unsigned integer-newtype Boolean, shift, rotation, bit-query and population-count operations now compile to Java, preserving unsigned carrier values and semantic widths.

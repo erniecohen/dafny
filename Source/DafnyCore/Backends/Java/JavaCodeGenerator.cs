@@ -24,6 +24,78 @@ namespace Microsoft.Dafny.Compilers {
       LambdaExecute = ".apply";
     }
 
+    protected override void EmitIntegerBitwise(ConversionExpr expression, bool inLetExprBody,
+      ConcreteSyntaxTree wr, ConcreteSyntaxTree wStmts) {
+      var width = expression.IntegerBitwiseWidth.Value;
+      var name = ((FunctionCallExpr)expression.E.Resolved).Function.Name;
+      var operands = expression.IntegerBitwiseOperands.ToList();
+      var variables = operands.Select(_ => ProtectedFreshId("_integerBitwise")).ToList();
+      // The existing beta-redex emitter evaluates arguments once, left to right,
+      // outside the lambda, and unboxes primitive parameters inside its body.
+      var body = EmitBetaRedex(variables, operands, operands.Select(e => e.Type).ToList(),
+        expression.Type, expression.Origin, inLetExprBody, wr, ref wStmts);
+      var sourceNative = AsNativeType(operands[0].Type);
+      string UnsignedLong(string value) => sourceNative != null && IsUnsignedJavaNativeType(sourceNative) &&
+        AsJavaNativeType(sourceNative) != JavaNativeType.Long
+          ? $"{GetBoxedNativeTypeName(sourceNative)}.toUnsignedLong({value})" : $"((long){value})";
+      string BigIntegerValue(string value) => sourceNative == null ? value :
+        sourceNative.LowerBound >= 0 ? $"{DafnyHelpersClass}.unsignedToBigInteger({value})" :
+        $"java.math.BigInteger.valueOf({value})";
+      var native = sourceNative != null && (width <= 64 || name == "popNat");
+      var x = native ? UnsignedLong(variables[0]) : BigIntegerValue(variables[0]);
+      var shift = name is "shlNat" or "shrNat";
+      var rotation = name is "rolNat" or "rorNat";
+      var count = operands.Count < 2 ? "" : AsNativeType(operands[1].Type) == null
+        ? $"{variables[1]}.intValue()" : $"((int){variables[1]})";
+      var y = operands.Count < 2 ? "" : native ? UnsignedLong(variables[1]) : BigIntegerValue(variables[1]);
+      if (name == "popNat") {
+        body.Write(native ? $"java.math.BigInteger.valueOf(java.lang.Long.bitCount({x}))"
+          : $"java.math.BigInteger.valueOf({x}.bitCount())");
+        return;
+      }
+      string operation;
+      if (native) {
+        var mask = width == 64 ? "-1L" : $"{(1UL << width) - 1}L";
+        operation = name switch {
+          "andNat" => $"{x} & {y}",
+          "orNat" => $"{x} | {y}",
+          "xorNat" => $"{x} ^ {y}",
+          "notNat" => $"(~{x}) & {mask}",
+          "shlNat" => $"({x} << {count}) & {mask}",
+          "shrNat" => $"{x} >>> {count}",
+          "rolNat" => $"(({x} << {count}) & {mask}) | ({x} >>> ({width} - {count}))",
+          "rorNat" => $"({x} >>> {count}) | (({x} << ({width} - {count})) & {mask})",
+          _ => throw new InvalidOperationException("unexpected integer bitwise reference")
+        };
+        // Java masks long shift counts. Guard the semantic endpoints first.
+        if (shift) { operation = $"{count} >= {width} ? 0L : {operation}"; }
+        if (rotation) { operation = $"{count} == 0 || {count} == {width} ? {x} : {operation}"; }
+        operation = AsNativeType(expression.Type) is { } resultNative
+          ? $"({GetNativeTypeName(resultNative)})({operation})"
+          : $"{DafnyHelpersClass}.unsignedToBigInteger((long)({operation}))";
+      } else {
+        var mask = $"java.math.BigInteger.ONE.shiftLeft({width}).subtract(java.math.BigInteger.ONE)";
+        operation = name switch {
+          "andNat" => $"{x}.and({y})",
+          "orNat" => $"{x}.or({y})",
+          "xorNat" => $"{x}.xor({y})",
+          "notNat" => $"{x}.not().and({mask})",
+          "shlNat" => $"{x}.shiftLeft({count}).and({mask})",
+          "shrNat" => $"{x}.shiftRight({count})",
+          "rolNat" => $"{x}.shiftLeft({count}).and({mask}).or({x}.shiftRight({width} - {count}))",
+          "rorNat" => $"{x}.shiftRight({count}).or({x}.shiftLeft({width} - {count}).and({mask}))",
+          _ => throw new InvalidOperationException("unexpected integer bitwise reference")
+        };
+        if (shift) { operation = $"{count} >= {width} ? java.math.BigInteger.ZERO : {operation}"; }
+        if (rotation) { operation = $"{count} == 0 || {count} == {width} ? {x} : {operation}"; }
+        operation = $"({operation})";
+        if (AsNativeType(expression.Type) is { } resultNative) {
+          operation += $".{GetNativeTypeName(resultNative)}Value()";
+        }
+      }
+      body.Write(operation);
+    }
+
     public override IReadOnlySet<Feature> UnsupportedFeatures => new HashSet<Feature> {
       Feature.Iterators,
       Feature.SubsetTypeTests,

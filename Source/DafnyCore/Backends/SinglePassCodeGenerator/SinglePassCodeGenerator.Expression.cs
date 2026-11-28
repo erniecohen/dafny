@@ -22,7 +22,7 @@ namespace Microsoft.Dafny.Compilers {
     protected virtual void EmitIntegerBitwise(ConversionExpr expression, bool inLetExprBody,
       ConcreteSyntaxTree wr, ConcreteSyntaxTree wStmts) {
       Error(ErrorId.c_unsupported_feature, expression.Origin, wr,
-        "compiled integer bitwise operators are currently supported only by the C# and Python targets");
+        "compiled integer bitwise operators are currently supported only by the C#, Java and Python targets");
     }
 
     public virtual Type GetRuntimeType(Type tpe) {
