@@ -1,0 +1,4 @@
+includes = ["../../github-issue-241-batch-gc.dfy"]
+
+[options]
+batch-gc = true

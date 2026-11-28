@@ -169,6 +169,9 @@ namespace IntegrationTests {
           "%verify", (args, config) =>
             DafnyCommand(AddExtraArgs(defaultVerifyArgs, args), config, InvokeMainMethodsDirectly)
         }, {
+          "%verify-process", (args, config) =>
+            DafnyCommand(AddExtraArgs(defaultVerifyArgs, args), config, false)
+        }, {
           "%build", (args, config) =>
             DafnyCommand(AddExtraArgs(defaultBuildArgs, args), config, InvokeMainMethodsDirectly)
         }, {
