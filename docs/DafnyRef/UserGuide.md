@@ -2981,6 +2981,9 @@ and what information it produces about the verification process.
   Boolean bridges at widths 8, 16, 32 and 64, independently of additional axioms.
   `IntegerBitwiseNativeShifts.dfy` adds checked shift and modular-addition equations
   at those widths, including shift counts zero and the width.
+  `IntegerBitwiseNativeViews.dfy` adds ghost little-endian `Bits` and `Word`
+  conversions, checked inverses, equality, digit, Boolean and shift view lemmas
+  at the same four widths. `Word` requires a sequence of exactly that width.
   `IntegerBitwiseNativeSubtraction.dfy` adds checked modular-subtraction equations
   at the same widths, including borrow and wraparound.
   Set `integer-bitwise = true` in the project file's `[options]` section;

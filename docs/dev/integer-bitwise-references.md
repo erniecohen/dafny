@@ -321,6 +321,62 @@ Remaining native equations include multiplication, unsigned
 division/remainder, ordering, rotations and population count. General word APIs
 at other widths and runtime lowering of integer-newtype operators also remain.
 
+
+## Checked native bit-sequence views
+
+Include `Source/DafnyStandardLibraries/optional/IntegerBitwiseNativeViews.dfy`
+with `--integer-bitwise`. The modules
+`Std.Arithmetic.IntegerBitwiseNativeViews8`, `16`, `32` and `64` provide the
+native-word sequence interface requested in
+[issue 193](https://github.com/erniecohen/dafny/issues/193).
+This is an explicitly included ghost proof API, independent of
+`--additional-axioms`. It changes no compiler, packaged library or runtime code.
+
+`Bits(x)` is an opaque little-endian Boolean sequence of exactly N digits.
+`Word(s)` is its opaque inverse and requires exactly N digits: short and long
+sequences are rejected rather than padded or truncated. `Observe` proves
+`value(Bits(x)) == x as int`; `Build` proves
+`Word(s) as int == value(s)`. `WordRoundTrip` and `SequenceRoundTrip` prove
+both inverse laws. `Equality` reduces word equality to equality of bit views.
+`Digit` observes digit i as `(U(x)/P(i))%2 == 1`. `Boolean` gives the five
+pointwise native Boolean laws; `Shifts` gives zero-filled left/right shift views
+for `k <= N`, including counts zero and N. Digit indices satisfy `i < N`.
+No native rotation is used.
+
+### Model and checked derivation
+
+Interpret the native word by its unsigned weighted binary sum U. Define
+`Bits(x) = bitsNat(N,U(x))` using the existing ordinary integer reference, and
+`Word(s) = value(s) as bvN`. The existing `ValueBound` theorem puts a length-N
+sequence's value below 2^N, so that cast is in range. `BitsValue` and normalization
+identity prove `Observe`; the existing checked native `RoundTrip` proves `Build`.
+The checked native inverse then identifies `Word(Bits(x))` with x, and
+`ValueBits` proves the sequence inverse. Applying the word inverse to both
+operands proves equality reflection. `BitAt` proves the digit formula.
+The existing native Boolean/shift bridges and compiler-to-reference agreement
+lemmas transport the ordinary `BooleanBits` and `ShiftBits` laws to the native
+sequence API. Every new function and lemma has a checked body; there is no
+assumption, axiom or verification exemption. The issue-284 backend qualification
+above still applies.
+
+The regression checks the complete included closure, symbolic words and
+sequences, composed bounded-integer callers, low/high digits, all-ones words,
+and zero/width shift endpoints with both resolvers and additional axioms off/on.
+Negative controls reject invalid lengths, indices, counts, casts and equations.
+An inhabited false assertion follows each lemma, the two functions and all
+lemmas together; these controls run with the default bitvector engine. Serial mutation
+mode negates every postcondition, removes every explicit precondition, and
+changes each function definition, requiring a clean baseline for each mutation.
+The proof/control ceilings are 2,000,000/200,000 resource units per scope;
+exhaustion does not pass. A mutant exceeding three times its clean baseline
+(with a five-second minimum) is stopped by its own process group and recorded
+separately.
+
+This supplies a native view API rather than runtime lowering. Native arithmetic,
+ordering, bit tests and population count have separate milestones. Rotations,
+general word APIs at other widths and integer-newtype runtime lowering remain
+outside this milestone.
+
 ## Checked native modular subtraction
 
 Explicitly include `Source/DafnyStandardLibraries/optional/IntegerBitwiseNativeSubtraction.dfy`
