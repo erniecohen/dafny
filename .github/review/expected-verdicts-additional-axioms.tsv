@@ -912,6 +912,7 @@ git-issues/git-issue-2307.dfy	0	16 verified, 0 errors
 git-issues/git-issue-2367.dfy	0	2 verified, 0 errors	
 git-issues/git-issue-2380.dfy	0	2 verified, 0 errors	
 git-issues/git-issue-2384.dfy	4	0 verified, 3 errors	11,14,17
+git-issues/git-issue-241-cache-recordings.dfy	4	2 verified, 1 error	30
 git-issues/git-issue-241-ready-modules.dfy	4	3 verified, 1 error	23
 git-issues/git-issue-2429.dfy	0	7 verified, 0 errors	
 git-issues/git-issue-2441.dfy	0	0 verified, 0 errors	

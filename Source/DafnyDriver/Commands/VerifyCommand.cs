@@ -98,6 +98,7 @@ public static class VerifyCommand {
         CommonOptionBag.TranslationGlobalInputs,
         CommonOptionBag.OptimizeTranslationCopy,
         CommonOptionBag.PersistentTranslation,
+        CommonOptionBag.ReleaseCacheRecordings,
         CommonOptionBag.PersistentTranslationAudit,
         CommonOptionBag.PersistentIdeReports,
         CommonOptionBag.PersistentCounterexamples,
@@ -191,6 +192,8 @@ public static class VerifyCommand {
       PipelineProfile.For(options)?.Point("result-cache", new Dictionary<string, object?> {
         ["solverStarts"] = cache.SolverStarts, ["solverVersionProbes"] = options.VerificationCacheVersionProbes, ["hits"] = cache.Hits,
         ["publications"] = cache.Publications, ["fallbacks"] = cache.Fallbacks, ["conflicts"] = cache.Conflicts,
+        ["releasedRecordings"] = cache.ReleasedRecordings,
+        ["releasedReporters"] = cache.ReleasedReporters,
         ["bypassReason"] = cache.LastBypassReason, ["imagesHashed"] = Caching.TaskCacheSession.ImagesHashed,
         ["imageDigestsRemembered"] = Caching.TaskCacheSession.ImageDigestsRemembered
       });

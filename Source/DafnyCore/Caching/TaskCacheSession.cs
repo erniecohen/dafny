@@ -30,11 +30,15 @@ public sealed class TaskCacheSession {
   private long publications;
   private long fallbacks;
   private long conflicts;
+  private long releasedRecordings;
+  private long releasedReporters;
   public long SolverStarts => Interlocked.Read(ref starts);
   public long Hits => Interlocked.Read(ref hits);
   public long Publications => Interlocked.Read(ref publications);
   public long Fallbacks => Interlocked.Read(ref fallbacks);
   public long Conflicts => Interlocked.Read(ref conflicts);
+  public long ReleasedRecordings => Interlocked.Read(ref releasedRecordings);
+  public long ReleasedReporters => Interlocked.Read(ref releasedReporters);
   /// <summary>Execution images whose bytes this process hashed, and whose digests it took from the memo.</summary>
   public static int ImagesHashed => ExecutionImageIdentity.ImagesHashed;
   public static int ImageDigestsRemembered => ExecutionImageIdentity.ImageDigestsRemembered;
@@ -43,10 +47,27 @@ public sealed class TaskCacheSession {
   /// <summary>The directory's store, shared with the persistent translation and module-result tables.</summary>
   internal ContentAddressedCache Store { get; }
 
-  private sealed class Run(IVerificationTask task, bool disabled) {
+  internal sealed class Run(IVerificationTask task, bool disabled) {
     public readonly IVerificationTask Task = task;
     public readonly bool Disabled = disabled;
     public readonly List<CachedTaskSolver> Solvers = new();
+
+    public (int Recordings, int Reporters) ReleaseRecordings(bool completed) {
+      var count = Solvers.Count;
+      var reporters = 0;
+      // The run can outlive completion in a captured execution context. Its
+      // transports point back to retired provers through error subscriptions;
+      // those provers own much more than the recorded SMT strings.
+      Solvers.Clear();
+      if (completed && Task.Split.reporter != null) {
+        // ReadOutcome has already copied diagnostics, coverage and models into
+        // the completed result. A split's reporter otherwise retains the retired
+        // checker's prover context until the entire module is reported.
+        Task.Split.reporter = null;
+        reporters = 1;
+      }
+      return (count, reporters);
+    }
   }
 
   private TaskCacheSession(DafnyOptions options, string directory) {
@@ -152,10 +173,12 @@ public sealed class TaskCacheSession {
         Completed? completed = null;
         for (var attempt = 0; attempt < 2; attempt++) {
           var context = new Run(active, attempt != 0);
+          var attemptCompleted = false;
           var previous = Current.Value;
           Current.Value = context;
           try {
             completed = await Observe(active, subject);
+            attemptCompleted = completed != null;
             if (completed != null && context.Solvers.Count == 1) {
               await context.Solvers[0].AwaitPendingHandshake();
             }
@@ -184,6 +207,11 @@ public sealed class TaskCacheSession {
             active = original.FromSeed(original.Split.RandomSeed);
           } finally {
             Current.Value = previous;
+            if (session.options.Get(CommonOptionBag.ReleaseCacheRecordings)) {
+              var released = context.ReleaseRecordings(attemptCompleted);
+              Interlocked.Add(ref session.releasedRecordings, released.Recordings);
+              Interlocked.Add(ref session.releasedReporters, released.Reporters);
+            }
           }
         }
         if (completed != null) {

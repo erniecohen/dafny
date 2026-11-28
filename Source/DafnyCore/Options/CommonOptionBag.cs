@@ -45,6 +45,9 @@ public class CommonOptionBag {
     "Use the cache store in DIR (also --cache-dir; or DAFNY_CACHE_DIR): reuse per-module resolution results, complete verification-task solver exchanges and, with --persistent-translation, module translations and results. " +
     "Requires --type-system-refresh. Opt-in; uses a fresh solver history and stable numeric declaration order for each task. " +
     "Replayed timing fields are identified in verification logs. Unsupported modules and tasks run normally.") { ArgumentHelpName = "DIR" };
+  public static readonly Option<bool> ReleaseCacheRecordings = new("--release-cache-recordings",
+    "With --verification-cache, release completed task recording buffers after publication and report extraction. " +
+    "Changes neither cache keys nor stored solver exchanges. Defaults to false.") { IsHidden = true };
   public static readonly Option<IList<string>> VerificationCacheSolverDigest = new("--verification-cache-solver-digest",
     () => new List<string>(),
     "With --verification-cache, also accept a solver binary whose SHA-256 digest is SHA256 (64 hexadecimal digits), in addition to " +
@@ -999,6 +1002,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(LogLocation, OptionScope.Cli);
     VerificationCache.AddAlias("--cache-dir");
     OptionRegistry.RegisterOption(VerificationCache, OptionScope.Cli);
+    OptionRegistry.RegisterOption(ReleaseCacheRecordings, OptionScope.Cli);
     VerificationCacheSolverDigest.AddValidator(result => {
       if (result.GetValueOrDefault<IList<string>>()?.FirstOrDefault(digest => !Caching.CacheDigest.IsSolverDigest(digest)) is { } bad) {
         result.ErrorMessage = $"--verification-cache-solver-digest must be a SHA-256 digest of 64 hexadecimal digits, not '{bad}'.";

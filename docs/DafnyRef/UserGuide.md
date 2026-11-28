@@ -302,6 +302,13 @@ programs together in a single run of `dafny`.
 
 Various options control the verification process, in addition to all those described for [`dafny resolve`](#sec-dafny-resolve).
 
+- `--release-cache-recordings` is a hidden, default-off memory option for
+  `--verification-cache`. It releases a completed task context's references to recording transports after
+  response and report extraction, the final checker handshake and cache publication.
+  Execution identity, replay status and mismatch quarantine remain available.
+  It changes no cache key, stored exchange, obligation or resource count, and
+  has no effect without a verification cache.
+
 - `--verification-cache DIR` opts into a persistent cache for individual prepared
   verification tasks. It requires `--type-system-refresh`; selecting the legacy
   type system is an option error (exit 2). It uses a fresh solver history and deterministic numeric

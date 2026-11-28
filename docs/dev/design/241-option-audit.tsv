@@ -163,6 +163,7 @@ cli	referrers	--referrers	System.CommandLine.Option`1[System.Boolean]	input	pars
 cli	refinement-renaming	--refinement-renaming	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	refinement-extends	--refinement-extends	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	relax-definite-assignment	--relax-definite-assignment	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
+cli	release-cache-recordings	--release-cache-recordings	System.CommandLine.Option`1[System.Boolean]	profile	releases completed task recording buffers after publication; preserves solver input, cache keys and payloads
 cli	release-verified-modules	--release-verified-modules	System.CommandLine.Option`1[System.Boolean]	input	bodies of reported modules are released before later modules translate, which read only signatures/specifications; exact prepared SMT and current assertion map unchanged, and a read of a released body throws
 cli	report-file	--report-file	System.CommandLine.Option`1[System.String]	command-setup	setup or another command; executes before/outside proof transport
 cli	report-format	--report-format	System.CommandLine.Option`1[System.Nullable`1[Microsoft.Dafny.Auditor.Auditor+ReportFormat]]	command-setup	setup or another command; executes before/outside proof transport

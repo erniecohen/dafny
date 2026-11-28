@@ -1,0 +1,1 @@
+Add the hidden opt-in `--release-cache-recordings` to release completed verification-cache transport buffers after publication, preserving solver exchanges, cache identities and reports.

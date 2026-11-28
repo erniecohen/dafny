@@ -1006,6 +1006,35 @@ and a reachable failing false assertion are required in every comparison. A
 `verification-gc` profile event reports the runtime heap counts and limit only
 when bounded collection was requested and its startup checks succeeded.
 
+#### Completed cache recordings
+
+The hidden, default-off `--release-cache-recordings` makes each completed task
+attempt's captured execution context forget its solver transports and releases
+the completed native split's error reporter. A transport's
+error subscription points back to its prover and its setup graph, so retaining
+only the recording transport can keep much more than its SMT strings alive.
+
+The transport list is cleared in the attempt's existing finalization path, after
+Boogie result extraction, final handshake, publication and replay validation, or
+after failure/fallback handling. The split reporter is cleared only when that
+attempt completed; the completed result already owns diagnostics, coverage and
+models, including the context needed by a counterexample. Clearing this owner reference neither modifies
+the transport nor closes a solver. A checker or pending operation that still
+needs a transport retains its own reference. Execution identity, replay status,
+mismatch quarantine, retries and publication ordering remain unchanged.
+
+Lifetime controls keep a captured context alive with a completed transport and
+an error-subscriber cycle, and keep a native split alive with its reporter. Both objects must become collectible after release,
+and must remain alive without release, including for a disabled retry. An
+incomplete attempt must retain its reporter. Existing
+transport controls cover publication, mismatched replay, quarantine and final
+handshake races. Integration controls compare complete Boogie text, per-VC
+verdicts, resources and assertion records, and persistent table keys and payloads.
+Module-report runtime ticks are the sole payload exception, as in the existing
+persistent report equality rule; they vary between fresh executions. Positive
+proofs, a fresh reachable false assertion, warm replay, independent audit and an
+explicit-false run prevent vacuous cache or identity acceptance.
+
 ---
 
 ## 6. Dependencies and order of work
